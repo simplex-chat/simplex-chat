@@ -85,6 +85,7 @@ module Simplex.Chat.Store.Groups
     matchReceivedProbeHash,
     matchSentProbe,
     mergeContactRecords,
+    deleteContactSentProbeHashesByProbeId,
     associateMemberWithContactRecord,
     associateContactWithMemberRecord,
     deleteOldProbes,
@@ -1266,17 +1267,25 @@ matchReceivedProbeHash db user@User {userId} from (ProbeHash probeHash) = do
     (ctId, gmId, probeHash, userId, currentTs, currentTs)
   pure probeIds $>>= \(Only probe :. cgmIds) -> (,Probe probe) <$$> getContactOrMember_ db user cgmIds
 
-matchSentProbe :: DB.Connection -> User -> ContactOrMember -> Probe -> IO (Maybe ContactOrMember)
-matchSentProbe db user@User {userId} _from (Probe probe) =
-  cgmIds $>>= getContactOrMember_ db user
+matchSentProbe :: DB.Connection -> User -> ContactOrMember -> Probe -> IO (Maybe (ContactOrMember, Int64))
+matchSentProbe db user@User {userId} _from (Probe probe) = do
+  r <- getCgmIds
+  join
+    <$> forM
+      r
+      ( \(ctId_, gId, mId_, probeId) -> do
+          let cgmIds = (ctId_, gId, mId_)
+          cgm_ <- getContactOrMember_ db user cgmIds
+          forM cgm_ $ \cgm -> pure (cgm, probeId)
+      )
   where
     (ctId, gmId) = contactOrMemberIds _from
-    cgmIds =
+    getCgmIds =
       maybeFirstRow id $
         DB.query
           db
           [sql|
-            SELECT s.contact_id, g.group_id, s.group_member_id
+            SELECT s.contact_id, g.group_id, s.group_member_id, s.sent_probe_id
             FROM sent_probes s
             LEFT JOIN contacts c ON s.contact_id = c.contact_id AND c.deleted = 0
             LEFT JOIN group_members m ON s.group_member_id = m.group_member_id
@@ -1294,8 +1303,7 @@ getContactOrMember_ db user ids =
     (_, Just gId, Just gmId) -> COMGroupMember <$> getGroupMember db user gId gmId
     _ -> throwError $ SEInternalError ""
 
--- connection being verified and connection level 0 have priority over requested merge direction;
--- if requested merge direction is overruled, keepLDN is kept
+-- if requested merge direction is overruled (toFromContacts), keepLDN is kept
 mergeContactRecords :: DB.Connection -> User -> Contact -> Contact -> ExceptT StoreError IO Contact
 mergeContactRecords db user@User {userId} to@Contact {localDisplayName = keepLDN} from = do
   let (toCt, fromCt) = toFromContacts to from
@@ -1324,6 +1332,18 @@ mergeContactRecords db user@User {userId} to@Contact {localDisplayName = keepLDN
     DB.execute
       db
       "UPDATE chat_items SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
+      (toContactId, currentTs, fromContactId, userId)
+    DB.execute
+      db
+      "UPDATE sent_probes SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
+      (toContactId, currentTs, fromContactId, userId)
+    DB.execute
+      db
+      "UPDATE sent_probe_hashes SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
+      (toContactId, currentTs, fromContactId, userId)
+    DB.execute
+      db
+      "UPDATE received_probes SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
       (toContactId, currentTs, fromContactId, userId)
     DB.executeNamed
       db
@@ -1365,6 +1385,10 @@ mergeContactRecords db user@User {userId} to@Contact {localDisplayName = keepLDN
         d1 = directOrUsed c1
         d2 = directOrUsed c2
         ctCreatedAt Contact {createdAt} = createdAt
+
+deleteContactSentProbeHashesByProbeId :: DB.Connection -> Int64 -> IO ()
+deleteContactSentProbeHashesByProbeId db probeId =
+  DB.execute db "DELETE FROM sent_probe_hashes WHERE sent_probe_id = ? AND contact_id IS NOT NULL" (Only probeId)
 
 associateMemberWithContactRecord :: DB.Connection -> User -> Contact -> GroupMember -> IO ()
 associateMemberWithContactRecord

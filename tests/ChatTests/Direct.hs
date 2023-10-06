@@ -41,6 +41,9 @@ chatDirectTests = do
     it "direct timed message" testDirectTimedMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
+  describe "duplicate contacts" $ do
+    it "duplicate contacts are separate (contacts don't merge)" testDuplicateContactsSeparate
+    it "new contact is separate with multiple duplicate contacts (contacts don't merge)" testDuplicateContactsMultipleSeparate
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
     it "test SMP server connection" testTestSMPServerConnection
@@ -166,6 +169,72 @@ testAddContact = versionTestMatrix2 runTestAddContact
       bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
       alice #$> ("/_read chat @2", id, "ok")
       bob #$> ("/_read chat @2", id, "ok")
+
+testDuplicateContactsSeparate :: HasCallStack => FilePath -> IO ()
+testDuplicateContactsSeparate =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+
+      alice ##> "/c"
+      inv' <- getInvitation alice
+      bob ##> ("/c " <> inv')
+      bob <## "confirmation sent!"
+      concurrently_
+        (alice <## "bob_1 (Bob): contact is connected")
+        (bob <## "alice_1 (Alice): contact is connected")
+
+      alice <##> bob
+      alice #> "@bob_1 1"
+      bob <# "alice_1> 1"
+      bob #> "@alice_1 2"
+      alice <# "bob_1> 2"
+
+      alice @@@ [("@bob", "hey"), ("@bob_1", "2")]
+      alice `hasContactProfiles` ["alice", "bob", "bob"]
+      bob @@@ [("@alice", "hey"), ("@alice_1", "2")]
+      bob `hasContactProfiles` ["bob", "alice", "alice"]
+
+testDuplicateContactsMultipleSeparate :: HasCallStack => FilePath -> IO ()
+testDuplicateContactsMultipleSeparate =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+      alice <##> bob
+
+      alice ##> "/c"
+      inv' <- getInvitation alice
+      bob ##> ("/c " <> inv')
+      bob <## "confirmation sent!"
+      concurrently_
+        (alice <## "bob_1 (Bob): contact is connected")
+        (bob <## "alice_1 (Alice): contact is connected")
+
+      alice ##> "/c"
+      inv'' <- getInvitation alice
+      bob ##> ("/c " <> inv'')
+      bob <## "confirmation sent!"
+      concurrently_
+        (alice <## "bob_2 (Bob): contact is connected")
+        (bob <## "alice_2 (Alice): contact is connected")
+
+      alice <##> bob
+      alice #> "@bob_1 1"
+      bob <# "alice_1> 1"
+      bob #> "@alice_1 2"
+      alice <# "bob_1> 2"
+      alice #> "@bob_2 3"
+      bob <# "alice_2> 3"
+      bob #> "@alice_2 4"
+      alice <# "bob_2> 4"
+
+      alice ##> "/contacts"
+      alice <### ["bob (Bob)", "bob_1 (Bob)", "bob_2 (Bob)"]
+      bob ##> "/contacts"
+      bob <### ["alice (Alice)", "alice_1 (Alice)", "alice_2 (Alice)"]
+      alice `hasContactProfiles` ["alice", "bob", "bob", "bob"]
+      bob `hasContactProfiles` ["bob", "alice", "alice", "alice"]
 
 testContactClear :: HasCallStack => FilePath -> IO ()
 testContactClear =

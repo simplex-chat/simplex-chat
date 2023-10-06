@@ -3144,8 +3144,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               withStore' $ \db -> setConnectionVerified db user connId Nothing
               let ct' = ct {activeConn = conn {connectionCode = Nothing}} :: Contact
               ratchetSyncEventItem ct'
-              toView $ CRContactVerificationReset user ct'
-              createInternalChatItem user (CDDirectRcv ct') (CIRcvConnEvent RCEVerificationCodeReset) Nothing
+              securityCodeChanged ct'
             _ -> ratchetSyncEventItem ct
           where
             processErr cryptoErr = do
@@ -4386,19 +4385,22 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       case cgm1 of
         COMContact c1@Contact {contactId = cId1} ->
           case cgm2 of
-            Just (COMContact c2@Contact {contactId = cId2})
-              | cId1 /= cId2 -> void $ mergeContacts c1 c2
+            Just (COMContact c2@Contact {contactId = cId2}, probeId)
+              | cId1 /= cId2 -> do
+                void $ mergeContacts c1 c2
+                -- prevent further merges with contacts
+                withStore' $ \db -> deleteContactSentProbeHashesByProbeId db probeId
               | otherwise -> messageWarning "xInfoProbeOk ignored: same contact id"
-            Just (COMGroupMember m2@GroupMember {memberContactId})
+            Just (COMGroupMember m2@GroupMember {memberContactId}, _)
               | isNothing memberContactId -> void $ associateMemberAndContact c1 m2
               | otherwise -> messageWarning "xInfoProbeOk ignored: member already has contact"
             _ -> pure ()
-        COMGroupMember m1@GroupMember {memberContactId} ->
+        COMGroupMember (m1@GroupMember {memberContactId}) ->
           case cgm2 of
-            Just (COMContact c2)
+            Just (COMContact c2, _)
               | isNothing memberContactId -> void $ associateMemberAndContact c2 m1
               | otherwise -> messageWarning "xInfoProbeOk ignored: member already has contact"
-            Just (COMGroupMember _) -> messageWarning "xInfoProbeOk ignored: members are not matched with members"
+            Just (COMGroupMember _, _) -> messageWarning "xInfoProbeOk ignored: members are not matched with members"
             _ -> pure ()
 
     -- to party accepting call
@@ -4520,7 +4522,21 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         merge c1' c2' = do
           c2'' <- withStore $ \db -> mergeContactRecords db user c1' c2'
           toView $ CRContactsMerged user c1' c2' c2''
+          showSecurityCodeChanged c2''
           pure $ Just c2''
+          where
+            showSecurityCodeChanged mergedCt = do
+              let sc1_ = contactSecurityCode c1'
+                  sc2_ = contactSecurityCode c2'
+                  scMerged_ = contactSecurityCode mergedCt
+              case (sc1_, sc2_) of
+                (Just sc1, Nothing)
+                  | scMerged_ /= Just sc1 -> securityCodeChanged mergedCt
+                  | otherwise -> pure ()
+                (Nothing, Just sc2)
+                  | scMerged_ /= Just sc2 -> securityCodeChanged mergedCt
+                  | otherwise -> pure ()
+                _ -> pure ()
 
     associateMemberAndContact :: Contact -> GroupMember -> m (Maybe Contact)
     associateMemberAndContact c m = do
@@ -4776,9 +4792,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           forM_ mContent_ $ \mc -> do
             ci <- saveRcvChatItem user (CDDirectRcv mCt') msg msgMeta (CIRcvMsgContent mc)
             toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat mCt') ci)
-        securityCodeChanged ct = do
-          toView $ CRContactVerificationReset user ct
-          createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
+
+    securityCodeChanged :: Contact -> m ()
+    securityCodeChanged ct = do
+      toView $ CRContactVerificationReset user ct
+      createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do
