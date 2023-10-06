@@ -39,7 +39,6 @@ import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find, foldl', isSuffixOf, partition, sortOn)
-import Data.List (intercalate)
 import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -3106,7 +3105,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 setActive $ ActiveC c
                 showToast (c <> "> ") "connected"
               when (contactConnInitiated conn) $ do
-                probeMatchingContactsAndMembers ct (contactConnIncognito ct)
+                let Connection {groupLinkId} = conn
+                    doProbeContacts = isJust groupLinkId
+                probeMatchingContactsAndMembers ct (contactConnIncognito ct) doProbeContacts
                 withStore' $ \db -> resetContactConnInitiated db user conn
               forM_ viaUserContactLink $ \userContactLinkId ->
                 withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
@@ -3125,7 +3126,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
                 notifyMemberConnected gInfo m $ Just ct
                 let connectedIncognito = contactConnIncognito ct || incognitoMembership gInfo
-                when (memberCategory m == GCPreMember) $ probeMatchingContactsAndMembers ct connectedIncognito
+                when (memberCategory m == GCPreMember) $ probeMatchingContactsAndMembers ct connectedIncognito True
         SENT msgId -> do
           sentMsgDeliveryEvent conn msgId
           checkSndInlineFTComplete conn msgId
@@ -3298,7 +3299,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 when (connStatus == ConnReady) $ do
                   notifyMemberConnected gInfo m $ Just ct
                   let connectedIncognito = contactConnIncognito ct || incognitoMembership gInfo
-                  when (memberCategory m == GCPreMember) $ probeMatchingContactsAndMembers ct connectedIncognito
+                  when (memberCategory m == GCPreMember) $ probeMatchingContactsAndMembers ct connectedIncognito True
       MSG msgMeta _msgFlags msgBody -> do
         cmdId <- createAckCmd conn
         withAckMessage agentConnId cmdId msgMeta $ do
@@ -3691,8 +3692,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         setActive $ ActiveG g
         showToast ("#" <> g) $ "member " <> c <> " is connected"
 
-    probeMatchingContactsAndMembers :: Contact -> IncognitoEnabled -> m ()
-    probeMatchingContactsAndMembers ct connectedIncognito = do
+    probeMatchingContactsAndMembers :: Contact -> IncognitoEnabled -> Bool -> m ()
+    probeMatchingContactsAndMembers ct connectedIncognito doProbeContacts = do
       gVar <- asks idsDrg
       contactMerge <- readTVarIO =<< asks contactMergeEnabled
       if contactMerge && not connectedIncognito
@@ -3703,7 +3704,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           -- sendProbe -> sendProbeHashes (currently)
           -- sendProbeHashes -> sendProbe (reversed - change order in code, may add delay)
           sendProbe probe
-          cs <- map COMContact <$> withStore' (\db -> getMatchingContacts db user ct)
+          cs <- if doProbeContacts
+            then map COMContact <$> withStore' (\db -> getMatchingContacts db user ct)
+            else pure []
           ms <- map COMGroupMember <$> withStore' (\db -> getMatchingMembers db user ct)
           sendProbeHashes (cs <> ms) probe probeId
         else sendProbe . Probe =<< liftIO (encodedRandomBytes gVar 32)
@@ -4363,32 +4366,18 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 COMContact <$$> mergeContacts c1 c2
               | otherwise -> messageWarning "probeMatch ignored: profiles don't match or same contact id" >> pure Nothing
             COMGroupMember m2@GroupMember {memberProfile = p2, memberContactId}
-              | profilesMatch p1 p2 -> case memberContactId of
-                Nothing -> do
-                  void . sendDirectContactMessage c1 $ XInfoProbeOk probe
-                  COMContact <$$> associateMemberAndContact c1 m2
-                Just mCtId
-                  | mCtId /= cId1 -> do
-                    void . sendDirectContactMessage c1 $ XInfoProbeOk probe
-                    mCt <- withStore $ \db -> getContact db user mCtId
-                    COMContact <$$> mergeContacts c1 mCt
-                  | otherwise -> messageWarning "probeMatch ignored: same contact id" >> pure Nothing
-              | otherwise -> messageWarning "probeMatch ignored: profiles don't match" >> pure Nothing
+              | isNothing memberContactId && profilesMatch p1 p2 -> do
+                void . sendDirectContactMessage c1 $ XInfoProbeOk probe
+                COMContact <$$> associateMemberAndContact c1 m2
+              | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact" >> pure Nothing
         COMGroupMember GroupMember {activeConn = Nothing} -> pure Nothing
         COMGroupMember m1@GroupMember {groupId, memberProfile = p1, memberContactId, activeConn = Just conn} ->
           case cgm2 of
-            COMContact c2@Contact {contactId = cId2, profile = p2}
-              | memberCurrent m1 && profilesMatch p1 p2 -> case memberContactId of
-                Nothing -> do
-                  void $ sendDirectMessage conn (XInfoProbeOk probe) (GroupId groupId)
-                  COMContact <$$> associateMemberAndContact c2 m1
-                Just mCtId
-                  | mCtId /= cId2 -> do
-                    void $ sendDirectMessage conn (XInfoProbeOk probe) (GroupId groupId)
-                    mCt <- withStore $ \db -> getContact db user mCtId
-                    COMContact <$$> mergeContacts c2 mCt
-                  | otherwise -> messageWarning "probeMatch ignored: same contact id" >> pure Nothing
-              | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member not current" >> pure Nothing
+            COMContact c2@Contact {profile = p2}
+              | memberCurrent m1 && isNothing memberContactId && profilesMatch p1 p2 -> do
+                void $ sendDirectMessage conn (XInfoProbeOk probe) (GroupId groupId)
+                COMContact <$$> associateMemberAndContact c2 m1
+              | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact or member not current" >> pure Nothing
             COMGroupMember _ -> messageWarning "probeMatch ignored: members are not matched with members" >> pure Nothing
 
     xInfoProbeOk :: ContactOrMember -> Probe -> m ()
@@ -4400,24 +4389,15 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             Just (COMContact c2@Contact {contactId = cId2})
               | cId1 /= cId2 -> void $ mergeContacts c1 c2
               | otherwise -> messageWarning "xInfoProbeOk ignored: same contact id"
-            Just (COMGroupMember m2@GroupMember {memberContactId}) ->
-              case memberContactId of
-                Nothing -> void $ associateMemberAndContact c1 m2
-                Just mCtId
-                  | mCtId /= cId1 -> do
-                    mCt <- withStore $ \db -> getContact db user mCtId
-                    void $ mergeContacts c1 mCt
-                  | otherwise -> messageWarning "xInfoProbeOk ignored: same contact id"
+            Just (COMGroupMember m2@GroupMember {memberContactId})
+              | isNothing memberContactId -> void $ associateMemberAndContact c1 m2
+              | otherwise -> messageWarning "xInfoProbeOk ignored: member already has contact"
             _ -> pure ()
         COMGroupMember m1@GroupMember {memberContactId} ->
           case cgm2 of
-            Just (COMContact c2@Contact {contactId = cId2}) -> case memberContactId of
-              Nothing -> void $ associateMemberAndContact c2 m1
-              Just mCtId
-                | mCtId /= cId2 -> do
-                  mCt <- withStore $ \db -> getContact db user mCtId
-                  void $ mergeContacts c2 mCt
-                | otherwise -> messageWarning "xInfoProbeOk ignored: same contact id"
+            Just (COMContact c2)
+              | isNothing memberContactId -> void $ associateMemberAndContact c2 m1
+              | otherwise -> messageWarning "xInfoProbeOk ignored: member already has contact"
             Just (COMGroupMember _) -> messageWarning "xInfoProbeOk ignored: members are not matched with members"
             _ -> pure ()
 

@@ -75,12 +75,8 @@ chatGroupTests = do
     it "members have different local display names in different groups" testNoDirectDifferentLDNs
   describe "merge members and contacts" $ do
     it "new member should merge with existing contact" testMergeMemberExistingContact
-    it "new member should merge with multiple existing contacts" testMergeMemberMultipleContacts
     it "new contact should merge with existing member" testMergeContactExistingMember
-    it "new contact should merge with existing member with associated contact" testMergeContactExistingMemberWithContact
     it "new contact should merge with multiple existing members" testMergeContactMultipleMembers
-    it "new contact should merge with both existing members and contacts" testMergeContactExistingMembersAndContacts
-    it "new member contact is merged with existing contact" testMergeMemberContact
   describe "create member contact" $ do
     it "create contact with group member with invitation message" testMemberContactMessage
     it "create contact with group member without invitation message" testMemberContactNoMessage
@@ -2788,76 +2784,6 @@ testMergeMemberExistingContact =
       alice `hasContactProfiles` ["alice", "bob", "cath"]
       cath `hasContactProfiles` ["cath", "alice", "bob"]
 
-testMergeMemberMultipleContacts :: HasCallStack => FilePath -> IO ()
-testMergeMemberMultipleContacts =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      alice ##> "/contact_merge off"
-      alice <## "ok"
-
-      connectUsers alice bob
-      connectUsers alice cath
-
-      alice ##> "/c"
-      inv' <- getInvitation alice
-      cath ##> ("/c " <> inv')
-      cath <## "confirmation sent!"
-      concurrently_
-        (alice <## "cath_1 (Catherine): contact is connected")
-        (cath <## "alice_1 (Alice): contact is connected")
-
-      alice `hasContactProfiles` ["alice", "bob", "cath", "cath"]
-      cath `hasContactProfiles` ["cath", "alice", "alice"]
-
-      alice ##> "/contact_merge on"
-      alice <## "ok"
-
-      createGroup2 "team" bob cath
-      bob ##> "/a #team alice"
-      bob <## "invitation to join the group #team sent to alice"
-      alice <## "#team: bob invites you to join the group as member"
-      alice <## "use /j team to accept"
-      alice ##> "/j team"
-      concurrentlyN_
-        [ alice
-            <### [ "#team: you joined the group",
-                   "#team: member cath_2 (Catherine) is connected",
-                   StartsWith "contact and member are merged: cath",
-                   StartsWith "use @cath",
-                   StartsWith "contact cath_",
-                   StartsWith "use @cath"
-                 ],
-          bob <## "#team: alice joined the group",
-          cath
-            <### [ "#team: bob added alice_2 (Alice) to the group (connecting...)",
-                   "#team: new member alice_2 is connected",
-                   StartsWith "contact and member are merged: alice",
-                   StartsWith "use @alice",
-                   StartsWith "contact alice_",
-                   StartsWith "use @alice"
-                 ]
-        ]
-      alice <##> cath
-      alice #> "#team hello"
-      bob <# "#team alice> hello"
-      cath <# "#team alice> hello"
-      cath #> "#team hello too"
-      bob <# "#team cath> hello too"
-      alice <# "#team cath> hello too"
-
-      alice ##> "/contacts"
-      alice
-        <### [ "bob (Bob)",
-               "cath (Catherine)"
-             ]
-      cath ##> "/contacts"
-      cath
-        <### [ "alice (Alice)",
-               "bob (Bob)"
-             ]
-      alice `hasContactProfiles` ["alice", "bob", "cath"]
-      cath `hasContactProfiles` ["cath", "alice", "bob"]
-
 testMergeContactExistingMember :: HasCallStack => FilePath -> IO ()
 testMergeContactExistingMember =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -2877,66 +2803,6 @@ testMergeContactExistingMember =
           cath
             <### [ "bob_1 (Bob): contact is connected",
                    "contact and member are merged: bob_1, #team bob",
-                   "use @bob <message> to send messages"
-                 ]
-        ]
-      bob <##> cath
-
-      bob ##> "/contacts"
-      bob <### ["alice (Alice)", "cath (Catherine)"]
-      cath ##> "/contacts"
-      cath <### ["alice (Alice)", "bob (Bob)"]
-      bob `hasContactProfiles` ["alice", "bob", "cath"]
-      cath `hasContactProfiles` ["cath", "alice", "bob"]
-
-testMergeContactExistingMemberWithContact :: HasCallStack => FilePath -> IO ()
-testMergeContactExistingMemberWithContact =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      createGroup3 "team" alice bob cath
-
-      -- create contact, delete only for bob so he would send probe hash to member
-      bob ##> "/_create member contact #1 3"
-      bob <## "contact for member #team cath is created"
-
-      bob ##> "/_invite member contact @3 text hi"
-      bob
-        <### [ "sent invitation to connect directly to member #team cath",
-               WithTime "@cath hi"
-             ]
-      cath
-        <### [ "#team bob is creating direct contact bob with you",
-               WithTime "bob> hi"
-             ]
-      concurrently_
-        (bob <## "cath (Catherine): contact is connected")
-        (cath <## "bob (Bob): contact is connected")
-      bob <##> cath
-
-      bob ##> "/_delete @3 notify=off"
-      bob <## "cath: contact is deleted"
-
-      bob ##> "/contacts"
-      bob <### ["alice (Alice)"]
-      cath ##> "/contacts"
-      cath <### ["alice (Alice)", "bob (Bob)"]
-      bob `hasContactProfiles` ["alice", "bob", "cath"]
-      cath `hasContactProfiles` ["cath", "alice", "bob"]
-
-      -- contact connects, member is merged
-      bob ##> "/c"
-      inv' <- getInvitation bob
-      cath ##> ("/c " <> inv')
-      cath <## "confirmation sent!"
-      concurrentlyN_
-        [ bob
-            <### [ "cath_1 (Catherine): contact is connected",
-                   "contact and member are merged: cath_1, #team cath",
-                   "use @cath <message> to send messages"
-                 ],
-          cath
-            <### [ "bob_1 (Bob): contact is connected",
-                   "contact bob_1 is merged into bob",
                    "use @bob <message> to send messages"
                  ]
         ]
@@ -2986,135 +2852,6 @@ testMergeContactMultipleMembers =
       cath <### ["alice (Alice)", "bob (Bob)"]
       bob `hasContactProfiles` ["alice", "bob", "cath"]
       cath `hasContactProfiles` ["cath", "alice", "bob"]
-
-testMergeContactExistingMembersAndContacts :: HasCallStack => FilePath -> IO ()
-testMergeContactExistingMembersAndContacts =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      bob ##> "/contact_merge off"
-      bob <## "ok"
-
-      create2Groups3 "team" "club" alice bob cath
-
-      bob ##> "/c"
-      inv' <- getInvitation bob
-      cath ##> ("/c " <> inv')
-      cath <## "confirmation sent!"
-      concurrently_
-        (bob <## "cath_2 (Catherine): contact is connected")
-        (cath <## "bob_2 (Bob): contact is connected")
-
-      bob `hasContactProfiles` ["alice", "bob", "cath", "cath", "cath"]
-      cath `hasContactProfiles` ["cath", "alice", "bob", "bob", "bob"]
-
-      bob ##> "/contact_merge on"
-      bob <## "ok"
-
-      bob ##> "/c"
-      inv'' <- getInvitation bob
-      cath ##> ("/c " <> inv'')
-      cath <## "confirmation sent!"
-      concurrentlyN_
-        [ bob
-            <### [ "cath_3 (Catherine): contact is connected",
-                   StartsWith "contact and member are merged: cath",
-                   StartsWith "use @cath",
-                   StartsWith "contact and member are merged: cath",
-                   StartsWith "use @cath",
-                   StartsWith "contact cath_3 is merged into cath",
-                   StartsWith "use @cath"
-                 ],
-          cath
-            <### [ "bob_3 (Bob): contact is connected",
-                   StartsWith "contact and member are merged: bob",
-                   StartsWith "use @bob",
-                   StartsWith "contact and member are merged: bob",
-                   StartsWith "use @bob",
-                   StartsWith "contact bob_3 is merged into bob",
-                   StartsWith "use @bob"
-                 ]
-        ]
-      bob <##> cath
-
-      bob ##> "/contacts"
-      bob <### ["alice (Alice)", "cath (Catherine)"]
-      cath ##> "/contacts"
-      cath <### ["alice (Alice)", "bob (Bob)"]
-      bob `hasContactProfiles` ["alice", "bob", "cath"]
-      cath `hasContactProfiles` ["cath", "alice", "bob"]
-
-testMergeMemberContact :: HasCallStack => FilePath -> IO ()
-testMergeMemberContact =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      bob ##> "/contact_merge off"
-      bob <## "ok"
-
-      createGroup3 "team" alice bob cath
-
-      bob ##> "/c"
-      inv' <- getInvitation bob
-      cath ##> ("/c " <> inv')
-      cath <## "confirmation sent!"
-      concurrently_
-        (bob <## "cath_1 (Catherine): contact is connected")
-        (cath <## "bob_1 (Bob): contact is connected")
-
-      bob `hasContactProfiles` ["alice", "bob", "cath", "cath"]
-      cath `hasContactProfiles` ["cath", "alice", "bob", "bob"]
-
-      bob ##> "/contact_merge on"
-      bob <## "ok"
-
-      -- bob and cath connect
-      bob ##> "/_create member contact #1 3"
-      bob <## "contact for member #team cath is created"
-
-      bob ##> "/_invite member contact @4 text hi"
-      bob
-        <### [ "sent invitation to connect directly to member #team cath",
-               WithTime "@cath hi"
-             ]
-      cath
-        <### [ "#team bob is creating direct contact bob with you",
-               WithTime "bob> hi"
-             ]
-      concurrentlyN_
-        [ bob
-            <### [ "cath (Catherine): contact is connected",
-                   "contact cath_1 is merged into cath",
-                   -- StartsWith "use @cath"
-                   "use @cath <message> to send messages"
-                 ],
-          cath
-            <### [ "bob (Bob): contact is connected",
-                   "contact bob_1 is merged into bob",
-                   -- StartsWith "use @bob"
-                   "use @bob <message> to send messages"
-                 ]
-        ]
-      bob <##> cath
-
-      bob ##> "/contacts"
-      bob <### ["alice (Alice)", "cath (Catherine)"]
-      cath ##> "/contacts"
-      cath <### ["alice (Alice)", "bob (Bob)"]
-      bob `hasContactProfiles` ["alice", "bob", "cath"]
-      cath `hasContactProfiles` ["cath", "alice", "bob"]
-
-      -- group messages work
-      alice #> "#team hello"
-      concurrently_
-        (bob <# "#team alice> hello")
-        (cath <# "#team alice> hello")
-      bob #> "#team hi there"
-      concurrently_
-        (alice <# "#team bob> hi there")
-        (cath <# "#team bob> hi there")
-      cath #> "#team hey team"
-      concurrently_
-        (alice <# "#team cath> hey team")
-        (bob <# "#team cath> hey team")
 
 testMemberContactMessage :: HasCallStack => FilePath -> IO ()
 testMemberContactMessage =

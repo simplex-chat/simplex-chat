@@ -159,7 +159,7 @@ getConnReqContactXContactId db user@User {userId} cReqHash = do
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
             JOIN connections c ON c.contact_id = ct.contact_id
             WHERE ct.user_id = ? AND c.via_contact_uri_hash = ? AND ct.deleted = 0
-            ORDER BY c.connection_id DESC
+            ORDER BY c.created_at DESC
             LIMIT 1
           |]
           (userId, cReqHash)
@@ -517,7 +517,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
             JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
             LEFT JOIN connections c ON c.contact_id = ct.contact_id
             WHERE ct.user_id = ? AND ct.xcontact_id = ? AND ct.deleted = 0
-            ORDER BY c.connection_id DESC
+            ORDER BY c.created_at DESC
             LIMIT 1
           |]
           (userId, xContactId)
@@ -667,7 +667,7 @@ getContact_ :: DB.Connection -> User -> Int64 -> Bool -> ExceptT StoreError IO C
 getContact_ db user@User {userId} contactId deleted =
   ExceptT . fmap join . firstRow (toContactOrError user) (SEContactNotFound contactId) $
     DB.query
-      db 
+      db
       [sql|
         SELECT
           -- Contact
@@ -686,10 +686,11 @@ getContact_ db user@User {userId} contactId deleted =
             SELECT cc_connection_id FROM (
               SELECT
                 cc.connection_id AS cc_connection_id,
+                cc.created_at AS cc_created_at,
                 (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
               FROM connections cc
               WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
-              ORDER BY cc_conn_status_ord DESC, cc_connection_id DESC
+              ORDER BY cc_conn_status_ord DESC, cc_created_at DESC
               LIMIT 1
             )
           )

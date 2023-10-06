@@ -41,9 +41,6 @@ chatDirectTests = do
     it "direct timed message" testDirectTimedMessage
     it "repeat AUTH errors disable contact" testRepeatAuthErrorsDisableContact
     it "should send multiline message" testMultilineMessage
-  describe "contact merge" $ do
-    it "merge duplicate contacts" testContactMerge
-    it "new contact should merge with multiple existing contacts" testMergeContactMultipleContacts
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
     it "test SMP server connection" testTestSMPServerConnection
@@ -169,89 +166,6 @@ testAddContact = versionTestMatrix2 runTestAddContact
       bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
       alice #$> ("/_read chat @2", id, "ok")
       bob #$> ("/_read chat @2", id, "ok")
-
-testContactMerge :: HasCallStack => FilePath -> IO ()
-testContactMerge =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      connectUsers alice bob
-      alice <##> bob
-
-      alice ##> "/c"
-      inv' <- getInvitation alice
-      bob ##> ("/c " <> inv')
-      bob <## "confirmation sent!"
-      concurrentlyN_
-        [ alice
-            <### [ "bob_1 (Bob): contact is connected",
-                   "contact bob_1 is merged into bob",
-                   "use @bob <message> to send messages"
-                 ],
-          bob
-            <### [ "alice_1 (Alice): contact is connected",
-                   "contact alice_1 is merged into alice",
-                   "use @alice <message> to send messages"
-                 ]
-        ]
-      alice <##> bob
-      alice @@@ [("@bob", "hey")]
-      alice `hasContactProfiles` ["alice", "bob"]
-      bob @@@ [("@alice", "hey")]
-      bob `hasContactProfiles` ["bob", "alice"]
-
-testMergeContactMultipleContacts :: HasCallStack => FilePath -> IO ()
-testMergeContactMultipleContacts =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
-      bob ##> "/contact_merge off"
-      bob <## "ok"
-
-      connectUsers alice bob
-
-      alice ##> "/c"
-      inv' <- getInvitation alice
-      bob ##> ("/c " <> inv')
-      bob <## "confirmation sent!"
-      concurrently_
-        (alice <## "bob_1 (Bob): contact is connected")
-        (bob <## "alice_1 (Alice): contact is connected")
-
-      alice `hasContactProfiles` ["alice", "bob", "bob"]
-      bob `hasContactProfiles` ["bob", "alice", "alice"]
-
-      threadDelay 500000
-
-      bob ##> "/contact_merge on"
-      bob <## "ok"
-
-      alice ##> "/c"
-      inv'' <- getInvitation alice
-      bob ##> ("/c " <> inv'')
-      bob <## "confirmation sent!"
-      concurrentlyN_
-        [ alice
-            <### [ "bob_2 (Bob): contact is connected",
-                   StartsWith "contact bob_2 is merged into bob",
-                   StartsWith "use @bob",
-                   StartsWith "contact bob_1 is merged into bob",
-                   StartsWith "use @bob"
-                 ],
-          bob
-            <### [ "alice_2 (Alice): contact is connected",
-                   StartsWith "contact alice_2 is merged into alice",
-                   StartsWith "use @alice",
-                   StartsWith "contact alice_1 is merged into alice",
-                   StartsWith "use @alice"
-                 ]
-        ]
-      alice <##> bob
-
-      alice ##> "/contacts"
-      alice <## "bob (Bob)"
-      bob ##> "/contacts"
-      bob <## "alice (Alice)"
-      alice `hasContactProfiles` ["alice", "bob"]
-      bob `hasContactProfiles` ["bob", "alice"]
 
 testContactClear :: HasCallStack => FilePath -> IO ()
 testContactClear =

@@ -107,7 +107,7 @@ import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
 import Data.Either (rights)
 import Data.Int (Int64)
-import Data.List (sortOn)
+import Data.List (partition, sortOn)
 import Data.Maybe (fromMaybe, isNothing, catMaybes, isJust)
 import Data.Ord (Down (..))
 import Data.Text (Text)
@@ -695,31 +695,21 @@ createNewContactMemberAsync db gVar user@User {userId, userContactId} groupId Co
         )
 
 getContactViaMember :: DB.Connection -> User -> GroupMember -> ExceptT StoreError IO Contact
-getContactViaMember db user@User {userId} GroupMember {groupMemberId} =
-  ExceptT $
-    firstRow (toContact user) (SEContactNotFoundByMemberId groupMemberId) $
-      DB.query
-        db
-        [sql|
-          SELECT
-            -- Contact
-            ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-            cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent,
-            -- Connection
-            c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-            c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-            c.peer_chat_min_version, c.peer_chat_max_version
-          FROM contacts ct
-          JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
-          JOIN connections c ON c.connection_id = (
-            SELECT max(cc.connection_id)
-            FROM connections cc
-            where cc.contact_id = ct.contact_id
-          )
-          JOIN group_members m ON m.contact_id = ct.contact_id
-          WHERE ct.user_id = ? AND m.group_member_id = ? AND ct.deleted = 0
-        |]
-        (userId, groupMemberId)
+getContactViaMember db user@User {userId} GroupMember {groupMemberId} = do
+  contactId <-
+    ExceptT $
+      firstRow fromOnly (SEContactNotFoundByMemberId groupMemberId) $
+        DB.query
+          db
+          [sql|
+            SELECT ct.contact_id
+            FROM group_members m
+            JOIN contacts ct ON ct.contact_id = m.contact_id
+            WHERE m.user_id = ? AND m.group_member_id = ? AND ct.deleted = 0
+            LIMIT 1
+          |]
+          (userId, groupMemberId)
+  getContact db user contactId
 
 setNewContactMemberConnRequest :: DB.Connection -> User -> GroupMember -> ConnReqInvitation -> IO ()
 setNewContactMemberConnRequest db User {userId} GroupMember {groupMemberId} connRequest = do
@@ -1041,37 +1031,21 @@ getViaGroupMember db User {userId, userContactId} Contact {contactId} =
        in (groupInfo, (member :: GroupMember) {activeConn = toMaybeConnection connRow})
 
 getViaGroupContact :: DB.Connection -> User -> GroupMember -> IO (Maybe Contact)
-getViaGroupContact db user@User {userId} GroupMember {groupMemberId} =
-  maybeFirstRow toContact' $
-    DB.query
-      db
-      [sql|
-        SELECT
-          ct.contact_id, ct.contact_profile_id, ct.local_display_name, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, ct.via_group, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-          p.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.contact_group_member_id, ct.contact_grp_inv_sent,
-          c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.auth_err_counter,
-          c.peer_chat_min_version, c.peer_chat_max_version
-        FROM contacts ct
-        JOIN contact_profiles p ON ct.contact_profile_id = p.contact_profile_id
-        JOIN connections c ON c.connection_id = (
-          SELECT max(cc.connection_id)
-          FROM connections cc
-          where cc.contact_id = ct.contact_id
-        )
-        JOIN groups g ON g.group_id = ct.via_group
-        JOIN group_members m ON m.group_id = g.group_id AND m.contact_id = ct.contact_id
-        WHERE ct.user_id = ? AND m.group_member_id = ? AND ct.deleted = 0
-      |]
-      (userId, groupMemberId)
-  where
-    toContact' :: ((ContactId, ProfileId, ContactName, Text, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Maybe Int64, Bool, ContactStatus) :. (Maybe Bool, Maybe Bool, Bool, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime, Maybe GroupMemberId, Bool)) :. ConnectionRow -> Contact
-    toContact' (((contactId, profileId, localDisplayName, displayName, fullName, image, contactLink, localAlias, viaGroup, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent)) :. connRow) =
-      let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
-          chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_, sendRcpts, favorite}
-          activeConn = toConnection connRow
-          mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-       in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent}
+getViaGroupContact db user@User {userId} GroupMember {groupMemberId} = do
+  contactId_ <-
+    maybeFirstRow fromOnly $
+      DB.query
+        db
+        [sql|
+          SELECT ct.contact_id
+          FROM group_members m
+          JOIN groups g ON g.group_id = m.group_id
+          JOIN contacts ct ON ct.contact_id = m.contact_id AND ct.via_group = g.group_id
+          WHERE m.user_id = ? AND m.group_member_id = ? AND ct.deleted = 0
+          LIMIT 1
+        |]
+        (userId, groupMemberId)
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db user) contactId_
 
 updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
 updateGroupProfile db User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, description, image, groupPreferences}
@@ -1258,7 +1232,16 @@ matchReceivedProbe db user@User {userId} from (Probe probe) = do
     db
     "INSERT INTO received_probes (contact_id, group_member_id, probe, probe_hash, user_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
     (ctId, gmId, probe, probeHash, userId, currentTs, currentTs)
-  catMaybes <$> mapM (getContactOrMember_ db user) cgmIds
+  let cgmIds' = filterFirstContactId cgmIds
+  catMaybes <$> mapM (getContactOrMember_ db user) cgmIds'
+  where
+    filterFirstContactId :: [(Maybe ContactId, Maybe GroupId, Maybe GroupMemberId)] -> [(Maybe ContactId, Maybe GroupId, Maybe GroupMemberId)]
+    filterFirstContactId cgmIds = do
+      let (ctIds, memIds) = partition (\(ctId, _, _) -> isJust ctId) cgmIds
+          ctIds' = case ctIds of
+            [] -> []
+            (x : _) -> [x]
+      ctIds' <> memIds
 
 matchReceivedProbeHash :: DB.Connection -> User -> ContactOrMember -> ProbeHash -> IO (Maybe (ContactOrMember, Probe))
 matchReceivedProbeHash db user@User {userId} from (ProbeHash probeHash) = do
@@ -1315,7 +1298,7 @@ getContactOrMember_ db user ids =
 -- if requested merge direction is overruled, keepLDN is kept
 mergeContactRecords :: DB.Connection -> User -> Contact -> Contact -> ExceptT StoreError IO Contact
 mergeContactRecords db user@User {userId} to@Contact {localDisplayName = keepLDN} from = do
-  let (toCt, fromCt) = checkToFromContacts
+  let (toCt, fromCt) = toFromContacts to from
       Contact {contactId = toContactId, localDisplayName = toLDN} = toCt
       Contact {contactId = fromContactId, localDisplayName = fromLDN} = fromCt
   liftIO $ do
@@ -1341,18 +1324,6 @@ mergeContactRecords db user@User {userId} to@Contact {localDisplayName = keepLDN
     DB.execute
       db
       "UPDATE chat_items SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
-      (toContactId, currentTs, fromContactId, userId)
-    DB.execute
-      db
-      "UPDATE sent_probes SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
-      (toContactId, currentTs, fromContactId, userId)
-    DB.execute
-      db
-      "UPDATE sent_probe_hashes SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
-      (toContactId, currentTs, fromContactId, userId)
-    DB.execute
-      db
-      "UPDATE received_probes SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
       (toContactId, currentTs, fromContactId, userId)
     DB.executeNamed
       db
@@ -1384,16 +1355,16 @@ mergeContactRecords db user@User {userId} to@Contact {localDisplayName = keepLDN
         (keepLDN, currentTs, userId, toLDN)
   getContact db user toContactId
   where
-    checkToFromContacts :: (Contact, Contact)
-    checkToFromContacts
-      | vrfFrom && not vrfTo = (from, to)
-      | dirFrom && not vrfTo && not dirTo = (from, to)
-      | otherwise = (to, from)
+    toFromContacts :: Contact -> Contact -> (Contact, Contact)
+    toFromContacts c1 c2
+      | d1 && not d2 = (c1, c2)
+      | d2 && not d1 = (c2, c1)
+      | ctCreatedAt c1 <= ctCreatedAt c2 = (c1, c2)
+      | otherwise = (c2, c1)
       where
-        vrfTo = isJust $ contactSecurityCode to
-        vrfFrom = isJust $ contactSecurityCode from
-        dirTo = let Contact {activeConn = Connection {connLevel = clTo}} = to in clTo == 0
-        dirFrom = let Contact {activeConn = Connection {connLevel = clFrom}} = from in clFrom == 0
+        d1 = directOrUsed c1
+        d2 = directOrUsed c2
+        ctCreatedAt Contact {createdAt} = createdAt
 
 associateMemberWithContactRecord :: DB.Connection -> User -> Contact -> GroupMember -> IO ()
 associateMemberWithContactRecord
