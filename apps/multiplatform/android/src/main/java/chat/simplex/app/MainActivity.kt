@@ -27,6 +27,7 @@ class MainActivity: FragmentActivity() {
     super.onCreate(savedInstanceState)
     // testJson()
     mainActivity = WeakReference(this)
+    AppLock.destroyedAfterBackPress.value = false
     // When call ended and orientation changes, it re-process old intent, it's unneeded.
     // Only needed to be processed on first creation of activity
     if (savedInstanceState == null) {
