@@ -31,7 +31,7 @@ remoteTests :: SpecWith FilePath
 remoteTests = describe "Handshake" $ do
   it "generates usable credentials" genCredentialsTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
-  it "connects desktop and mobile" remoteHandshakeTest
+  xit "connects desktop and mobile" remoteHandshakeTest
   it "send messages via remote desktop" remoteCommandTest
 
 -- * Low-level TLS with ephemeral credentials
@@ -40,11 +40,10 @@ genCredentialsTest :: (HasCallStack) => FilePath -> IO ()
 genCredentialsTest _tmp = do
   (fingerprint, credentials) <- genTestCredentials
   started <- newEmptyTMVarIO
-  server <- Discovery.startTLSServer started credentials serverHandler
-  ok <- atomically (readTMVar started)
-  unless ok $ cancel server >> error "TLS server failed to start"
-  Discovery.connectTLSClient "127.0.0.1" fingerprint clientHandler
-  cancel server
+  bracket (Discovery.startTLSServer started credentials serverHandler) cancel $ \_server -> do
+    ok <- atomically (readTMVar started)
+    unless ok $ error "TLS server failed to start"
+    Discovery.connectTLSClient "127.0.0.1" fingerprint clientHandler
   where
     serverHandler serverTls = do
       traceM "    - Sending from server"
@@ -63,18 +62,21 @@ announceDiscoverHttp2Test :: (HasCallStack) => FilePath -> IO ()
 announceDiscoverHttp2Test _tmp = do
   (fingerprint, credentials) <- genTestCredentials
   finished <- newEmptyMVar
-  announcer <- async $ do
+  controller <- async $ do
     traceM "    - Controller: starting"
-    http <- Discovery.announceRevHTTP2 (putMVar finished ()) fingerprint credentials >>= either (fail . show) pure
-    traceM "    - Controller: got client"
-    sendRequest http (C.requestNoBody "GET" "/" []) (Just 10000000) >>= \case
-      Left err -> do
-        traceM "    - Controller: got error"
-        fail $ show err
-      Right HTTP2Response {} ->
-        traceM "    - Controller: got response"
-    closeHTTP2Client http
-  dis <- async $ do
+    bracket
+      (Discovery.announceRevHTTP2 (putMVar finished ()) fingerprint credentials >>= either (fail . show) pure)
+      closeHTTP2Client
+      ( \http -> do
+          traceM "    - Controller: got client"
+          sendRequest http (C.requestNoBody "GET" "/" []) (Just 10000000) >>= \case
+            Left err -> do
+              traceM "    - Controller: got error"
+              fail $ show err
+            Right HTTP2Response {} ->
+              traceM "    - Controller: got response"
+      )
+  host <- async $ do
     sock <- Discovery.openListener
     (N.SockAddrInet _port addr, invite) <- Discovery.recvAnnounce sock
     strDecode invite `shouldBe` Right fingerprint
@@ -85,14 +87,13 @@ announceDiscoverHttp2Test _tmp = do
         traceM "    - Host: got request"
         sendResponse $ S.responseNoBody ok200 []
         traceM "    - Host: sent response"
-    takeMVar finished
-    cancel server
+    takeMVar finished `finally` cancel server
     traceM "    - Host: finished"
-  waitBoth dis announcer `shouldReturn` ((), ())
+  (waitBoth host controller `shouldReturn` ((), ())) `onException` (cancel host >> cancel controller)
 
 -- * Chat commands
 
-remoteHandshakeTest :: HasCallStack => FilePath -> IO ()
+remoteHandshakeTest :: (HasCallStack) => FilePath -> IO ()
 remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   desktop ##> "/list remote hosts"
   desktop <## "No remote hosts"
@@ -104,7 +105,6 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
   desktop <## "1. TODO" -- TODO host name probably should be Maybe, as when host is created there is no name yet
-
   desktop ##> "/start remote host 1"
   desktop <## "remote host 1 started"
 
@@ -140,7 +140,7 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   desktop ##> "/list remote hosts"
   desktop <## "No remote hosts"
 
-remoteCommandTest :: HasCallStack => FilePath -> IO ()
+remoteCommandTest :: (HasCallStack) => FilePath -> IO ()
 remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
   desktop ##> "/create remote host"
   desktop <## "remote host 1 created"

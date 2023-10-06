@@ -61,6 +61,7 @@ announceRevHTTP2 finishAction invite credentials = do
   tlsServer <- startTLSServer started credentials $ \tls -> cancel announcer >> runHTTP2Client finished httpClient tls
   _ <- forkIO $ do
     readMVar finished
+    cancel announcer
     cancel tlsServer
     finishAction
   readMVar httpClient

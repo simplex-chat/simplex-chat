@@ -113,12 +113,15 @@ pollRemote finished http path f queue = loop
 
 closeRemoteHostSession :: (ChatMonad m) => RemoteHostId -> m ChatResponse
 closeRemoteHostSession remoteHostId = withRemoteHostSession remoteHostId $ \session -> do
-  case session of
-    RemoteHostSessionStarting {announcer} -> cancel announcer
-    RemoteHostSessionStarted {ctrlClient} -> liftIO (HTTP2.closeHTTP2Client ctrlClient)
+  liftIO $ cancelRemoteHostSession session
   chatWriteVar currentRemoteHost Nothing
   chatModifyVar remoteHostSessions $ M.delete remoteHostId
   pure CRRemoteHostStopped {remoteHostId}
+
+cancelRemoteHostSession :: MonadUnliftIO m => RemoteHostSession -> m ()
+cancelRemoteHostSession = \case
+  RemoteHostSessionStarting {announcer} -> cancel announcer
+  RemoteHostSessionStarted {ctrlClient} -> liftIO $ HTTP2.closeHTTP2Client ctrlClient
 
 createRemoteHost :: (ChatMonad m) => m ChatResponse
 createRemoteHost = do
@@ -279,9 +282,9 @@ discoverRemoteCtrls discovered = Discovery.openListener >>= go
             let addr = THIPv4 (hostAddressToTuple sockAddr)
             ifM
               (atomically $ TM.member fingerprint discovered)
-              (logDebug $ "Fingerprint announce already knwon: " <> T.pack (show (addr, fingerprint)))
+              (logDebug $ "Fingerprint announce already knwon: " <> T.pack (show (addr, invite)))
               (do
-                logInfo $ "New fingerprint announce: " <> T.pack (show (addr, fingerprint))
+                logInfo $ "New fingerprint announce: " <> T.pack (show (addr, invite))
                 atomically $ TM.insert fingerprint addr discovered
               )
             withStore' (`getRemoteCtrlByFingerprint` fingerprint) >>= \case
@@ -334,15 +337,23 @@ stopRemoteCtrl :: (ChatMonad m) => m ChatResponse
 stopRemoteCtrl =
   chatReadVar remoteCtrlSession >>= \case
     Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
-    Just RemoteCtrlSession {discoverer, supervisor, hostServer} -> do
-      cancel discoverer -- may be gone by now
-      case hostServer of
-        Just host -> cancel host -- supervisor will clean up
-        Nothing -> do
-          cancel supervisor -- supervisor is blocked until session progresses
-          chatWriteVar remoteCtrlSession Nothing
-          toView $ CRRemoteCtrlStopped Nothing
+    Just rcs -> do
+      cancelRemoteCtrlSession rcs $ do
+        chatWriteVar remoteCtrlSession Nothing
+        toView $ CRRemoteCtrlStopped Nothing
       pure $ CRCmdOk Nothing
+
+cancelRemoteCtrlSession_ :: MonadUnliftIO m => RemoteCtrlSession -> m ()
+cancelRemoteCtrlSession_ rcs = cancelRemoteCtrlSession rcs $ pure ()
+
+cancelRemoteCtrlSession :: MonadUnliftIO m => RemoteCtrlSession -> m () -> m ()
+cancelRemoteCtrlSession RemoteCtrlSession {discoverer, supervisor, hostServer} cleanup = do
+  cancel discoverer -- may be gone by now
+  case hostServer of
+    Just host -> cancel host -- supervisor will clean up
+    Nothing -> do
+      cancel supervisor -- supervisor is blocked until session progresses
+      cleanup
 
 deleteRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> m ChatResponse
 deleteRemoteCtrl remoteCtrlId =
