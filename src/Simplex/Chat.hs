@@ -5333,21 +5333,12 @@ showMsgToast from mc md_ = showToast from $ maybe (msgContentText mc) (mconcat .
     hideSecret FormattedText {text} = text
 
 showToast :: ChatMonad' m => Text -> Text -> m ()
-showToast title text = do
-  ChatController {notifyQ} <- ask
-  atomically $ writeTBQueue notifyQ Notification {title, text}
+showToast title text = atomically . (`writeTBQueue` Notification {title, text}) =<< asks notifyQ
 
 notificationSubscriber :: ChatMonad' m => m ()
 notificationSubscriber = do
-  ChatController {currentRemoteHost, notifyQ, sendNotification} <- ask
-  forever $ do
-    n <- atomically $ do
-      readTVar currentRemoteHost >>= \case
-        Nothing -> pure ()
-        Just _ -> retry
-      readTBQueue notifyQ
-    -- TODO: check remote session
-    liftIO $ sendNotification n
+  ChatController {notifyQ, sendNotification} <- ask
+  forever $ atomically (readTBQueue notifyQ) >>= liftIO . sendNotification
 
 withUser' :: ChatMonad m => (User -> m ChatResponse) -> m ChatResponse
 withUser' action =

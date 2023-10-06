@@ -77,7 +77,7 @@ startRemoteHost remoteHostId = do
         Discovery.announceRevHTTP2 cleanup fingerprint credentials >>= \case
           Left h2ce -> do
             logError $ "Failed to set up remote host connection: " <> T.pack (show h2ce)
-            liftIO cleanup -- TODO: log error
+            liftIO cleanup
           Right ctrlClient -> do
             chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSessionStarted {storePath, ctrlClient}
             chatWriteVar currentRemoteHost $ Just remoteHostId
@@ -87,9 +87,7 @@ startRemoteHost remoteHostId = do
                 liftIO cleanup
               Right HTTP2.HTTP2Response {respBody=HTTP2Body{bodyHead}} -> do
                 logDebug $ "Got initial from remote host: " <> T.pack (show bodyHead)
-                _ <- asks outputQ >>= async . pumpRemote finished ctrlClient "/output" (Nothing, Just remoteHostId,)
-                _ <- asks notifyQ >>= async . pumpRemote finished ctrlClient "/notify" id
-                relayCommand ctrlClient "/contacts" >>= logDebug . T.pack . show
+                _ <- asks outputQ >>= async . pollRemote finished ctrlClient "/recv" (Nothing, Just remoteHostId,)
                 toView CRRemoteHostConnected {remoteHostId}
       chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSessionStarting {announcer}
       pure CRRemoteHostStarted {remoteHostId}
@@ -99,15 +97,15 @@ sendHello http = liftIO (HTTP2.sendRequestDirect http req Nothing)
   where
     req = HTTP2Client.requestNoBody "GET" "/" mempty
 
-pumpRemote :: (ChatMonad m, J.FromJSON a) => TVar Bool -> HTTP2Client -> ByteString -> (a -> b) -> TBQueue b -> m ()
-pumpRemote finished http path f queue = loop
+pollRemote :: (ChatMonad m, J.FromJSON a) => TVar Bool -> HTTP2Client -> ByteString -> (a -> b) -> TBQueue b -> m ()
+pollRemote finished http path f queue = loop
   where
     loop = do
       liftIO (HTTP2.sendRequestDirect http req Nothing) >>= \case
-        Left e -> logError $ "pumpRemote: " <> T.pack (show (path, e))
+        Left e -> logError $ "pollRemote: " <> T.pack (show (path, e))
         Right HTTP2.HTTP2Response {respBody=HTTP2Body{bodyHead}} ->
           case J.eitherDecodeStrict' bodyHead of
-            Left e -> logError $ "pumpRemote/decode: " <> T.pack (show (path, e))
+            Left e -> logError $ "pollRemote/decode: " <> T.pack (show (path, e))
             Right o -> atomically $ writeTBQueue queue (f o)
       readTVarIO finished >>= (`unless` loop)
     req = HTTP2Client.requestNoBody "GET" path mempty
@@ -163,10 +161,10 @@ processRemoteCommand RemoteHostSessionStarted {ctrlClient} (s, cmd) = do
 
 relayCommand :: (ChatMonad m) => HTTP2Client -> ByteString -> m ChatResponse
 relayCommand http s =
-  postBytestring (Just 1000000) http "/command" mempty s >>= \case
+  postBytestring Nothing http "/send" mempty s >>= \case
     Left e -> oops $ "relayCommand/post: " <> show e
     Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
-      logDebug $ "Got /command response: " <> T.pack (show bodyHead)
+      logDebug $ "Got /send response: " <> T.pack (show bodyHead)
       remoteChatResponse <-
         if iTax
           then case J.eitherDecodeStrict bodyHead of -- XXX: large JSONs can overflow into buffered chunks
@@ -219,16 +217,15 @@ fetchRemoteFile http storePath remoteFileId = do
     req = HTTP2Client.requestNoBody "GET" path mempty
     path = "/fetch/" <> bshow remoteFileId
 
-processControllerRequest :: forall m . (ChatMonad m) => (ByteString -> m ChatResponse) -> RemoteCtrlId -> HTTP2.HTTP2Request -> m ()
-processControllerRequest execChatCommand rc HTTP2.HTTP2Request {request, reqBody = HTTP2Body {bodyHead}, sendResponse} = do
+processControllerRequest :: forall m . (ChatMonad m) => (ByteString -> m ChatResponse) -> HTTP2.HTTP2Request -> m ()
+processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody = HTTP2Body {bodyHead}, sendResponse} = do
   logDebug $ "Remote controller request: " <> T.pack (show $ method <> " " <> path)
   res <- try $ case (method, path) of
     ("GET", "/") -> getHello
-    ("POST", "/command") -> postCommand
-    ("GET", "/output") -> getOutput
-    ("GET", "/notify") -> getNotify
-    ("PUT", "/store") -> putStore
-    ("GET", "/fetch") -> getFetch
+    ("POST", "/send") -> sendCommand
+    ("GET", "/recv") -> recvMessage
+    ("PUT", "/store") -> storeFile
+    ("GET", "/fetch") -> fetchFile
     unexpected -> respondWith Status.badRequest400 $ "unexpected method/path: " <> Binary.putStringUtf8 (show unexpected)
   case res of
     Left (SomeException e) -> logError $ "Error handling remote controller request (" <> T.pack (show $ method <> " " <> path) <> "): " <> T.pack (show e)
@@ -237,16 +234,12 @@ processControllerRequest execChatCommand rc HTTP2.HTTP2Request {request, reqBody
     method = maybe "" id $ HTTP2Server.requestMethod request
     path = maybe "" id $ HTTP2Server.requestPath request
     getHello = respond "OK"
-    postCommand = execChatCommand bodyHead >>= respondJSON
-    getOutput = pump remoteOutputQ
-    getNotify = pump remoteNotifyQ
-    putStore = respondWith Status.notImplemented501 "TODO: putStore"
-    getFetch = respondWith Status.notImplemented501 "TODO: getFetch"
-
-    pump :: J.ToJSON a => (RemoteCtrlSession -> TBQueue a) -> m ()
-    pump field = chatReadVar remoteCtrlSession >>= \case
+    sendCommand = execChatCommand bodyHead >>= respondJSON
+    recvMessage = chatReadVar remoteCtrlSession >>= \case
       Nothing -> respondWith Status.internalServerError500 "session not active"
-      Just rcs -> atomically (readTBQueue $ field rcs) >>= respondJSON
+      Just rcs -> atomically (readTBQueue $ remoteOutputQ rcs) >>= respondJSON
+    storeFile = respondWith Status.notImplemented501 "TODO: storeFile"
+    fetchFile = respondWith Status.notImplemented501 "TODO: fetchFile"
 
     respondJSON :: J.ToJSON a => a -> m ()
     respondJSON = respond . Binary.fromLazyByteString . J.encode
@@ -273,7 +266,7 @@ startRemoteCtrl execChatCommand =
           source <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure
           toView $ CRRemoteCtrlConnecting {remoteCtrlId, displayName}
           atomically $ writeTVar discovered mempty -- flush unused sources
-          server <- async $ Discovery.connectRevHTTP2 source fingerprint (processControllerRequest execChatCommand remoteCtrlId)
+          server <- async $ Discovery.connectRevHTTP2 source fingerprint (processControllerRequest execChatCommand)
           chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
           toView $ CRRemoteCtrlConnected {remoteCtrlId, displayName}
           _ <- waitCatch server

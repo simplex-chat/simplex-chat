@@ -164,8 +164,7 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   mobile <## "remote controller 1 connected, TODO"
   desktop <## "remote host 1 connected"
 
-  -- XXX: generic setup finished
-
+  traceM "    - exchanging contacts"
   bob ##> "/c"
   inv' <- getInvitation bob
   desktop ##> ("/c " <> inv')
@@ -174,8 +173,11 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
     (desktop <## "bob (Bob): contact is connected")
     (bob <## "alice (Alice): contact is connected")
 
-  -- XXX: post-remote tests
+  traceM "    - sending messages"
+  desktop #> "@bob hello there 🙂"
+  bob <# "alice> hello there 🙂"
 
+  traceM "    - post-remote checks"
   mobile ##> "/stop remote ctrl"
   mobile <## "ok"
   concurrently_
@@ -183,6 +185,8 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
     (desktop <## "remote host 1 stopped")
   mobile ##> "/contacts"
   mobile <## "bob (Bob)"
+
+  traceM "    - done"
 
 -- * Utils
 

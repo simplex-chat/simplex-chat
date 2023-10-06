@@ -43,7 +43,7 @@ import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), MsgReceiptSta
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, parseAll, sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, parseAll, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
@@ -880,7 +880,7 @@ data SndCIStatusProgress
   deriving (Eq, Show, Generic)
 
 instance FromJSON SndCIStatusProgress where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "SSP"
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "SSP"
 
 instance ToJSON SndCIStatusProgress where
   toJSON = J.genericToJSON . enumJSON $ dropPrefix "SSP"
