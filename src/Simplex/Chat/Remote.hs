@@ -23,7 +23,7 @@ import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Network.HTTP.Types as HTTP
-import Network.HTTP.Types.Status (ok200, badRequest400)
+import qualified Network.HTTP.Types.Status as Status
 import qualified Network.HTTP2.Client as HTTP2Client
 import qualified Network.HTTP2.Server as HTTP2Server
 import Network.Socket (SockAddr (..), hostAddressToTuple)
@@ -152,9 +152,27 @@ deleteRemoteHost remoteHostId = withRemoteHost remoteHostId $ \rh -> do
   withStore' $ \db -> deleteRemoteHostRecord db remoteHostId
   pure CRRemoteHostDeleted {remoteHostId}
 
-remoteCommand :: ChatCommand -> Bool
+remoteCommand :: ChatCommand -> Bool -- XXX: consider using Relay/Block/ForceLocal
 remoteCommand = \case
+  StartChat {} -> False
+  APIStopChat -> False
+  APIActivateChat -> False
+  APISuspendChat {} -> False
+  SetTempFolder {} -> False
   QuitChat -> False
+  CreateRemoteHost -> False
+  ListRemoteHosts -> False
+  StartRemoteHost {} -> False
+  -- SwitchRemoteHost {} -> False
+  StopRemoteHost {} -> False
+  DeleteRemoteHost {} -> False
+  RegisterRemoteCtrl {} -> False
+  StartRemoteCtrl -> False
+  ListRemoteCtrls -> False
+  AcceptRemoteCtrl {} -> False
+  RejectRemoteCtrl {} -> False
+  StopRemoteCtrl -> False
+  DeleteRemoteCtrl {} -> False
   _ -> True
 
 processRemoteCommand :: (ChatMonad m) => RemoteHostSession -> (ByteString, ChatCommand) -> m ChatResponse
@@ -234,7 +252,7 @@ processControllerRequest execChatCommand rc HTTP2.HTTP2Request {request, reqBody
     ("GET", "/notify") -> getNotify
     ("PUT", "/store") -> putStore
     ("GET", "/fetch") -> getFetch
-    unexpected -> respondWith badRequest400 $ "unexpected method/path: " <> Binary.putStringUtf8 (show unexpected)
+    unexpected -> respondWith Status.badRequest400 $ "unexpected method/path: " <> Binary.putStringUtf8 (show unexpected)
   case res of
     Left (SomeException e) -> logError $ "Error handling remote controller request (" <> T.pack (show $ method <> " " <> path) <> "): " <> T.pack (show e)
     Right () -> logDebug $ "Remote controller request: " <> T.pack (show $ method <> " " <> path) <> " OK"
@@ -243,14 +261,20 @@ processControllerRequest execChatCommand rc HTTP2.HTTP2Request {request, reqBody
     path = maybe "" id $ HTTP2Server.requestPath request
     getHello = respond "OK"
     postCommand = execChatCommand bodyHead >>= respondJSON
-    getOutput = asks outputQ >>= atomically . readTBQueue >>= respondJSON
-    getNotify = asks notifyQ >>= atomically . readTBQueue >>= respondJSON
-    putStore = respond "TODO: putStore"
-    getFetch = respond "TODO: getFetch"
+    getOutput = pump remoteOutputQ
+    getNotify = pump remoteNotifyQ
+    putStore = respondWith Status.notImplemented501 "TODO: putStore"
+    getFetch = respondWith Status.notImplemented501 "TODO: getFetch"
+
+    pump :: J.ToJSON a => (RemoteCtrlSession -> TBQueue a) -> m ()
+    pump field = chatReadVar remoteCtrlSession >>= \case
+      Nothing -> respondWith Status.internalServerError500 "session not active"
+      Just rcs -> atomically (readTBQueue $ field rcs) >>= respondJSON
 
     respondJSON :: J.ToJSON a => a -> m ()
     respondJSON = respond . Binary.fromLazyByteString . J.encode
-    respond = respondWith ok200
+
+    respond = respondWith Status.ok200
     respondWith status = liftIO . sendResponse . HTTP2Server.responseBuilder status []
 
 -- * ChatRequest handlers
@@ -277,7 +301,7 @@ startRemoteCtrl execChatCommand =
           toView $ CRRemoteCtrlConnected {remoteCtrlId, displayName}
           _ <- waitCatch server
           chatWriteVar remoteCtrlSession Nothing
-          toView $ CRRemoteCtrlStopped {remoteCtrlId}
+          toView $ CRRemoteCtrlStopped Nothing
       chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {discoverer, supervisor, hostServer = Nothing, discovered, accepted, remoteOutputQ, remoteNotifyQ}
       pure $ CRRemoteCtrlStarted Nothing
 
@@ -336,8 +360,8 @@ rejectRemoteCtrl remoteCtrlId = do
       cancel supervisor
   pure $ CRRemoteCtrlRejected {remoteCtrlId}
 
-stopRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> m ChatResponse
-stopRemoteCtrl remoteCtrlId =
+stopRemoteCtrl :: (ChatMonad m) => m ChatResponse
+stopRemoteCtrl =
   chatReadVar remoteCtrlSession >>= \case
     Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
     Just RemoteCtrlSession {discoverer, supervisor, hostServer} -> do
@@ -347,7 +371,7 @@ stopRemoteCtrl remoteCtrlId =
         Nothing -> do
           cancel supervisor -- supervisor is blocked until session progresses
           chatWriteVar remoteCtrlSession Nothing
-          toView $ CRRemoteCtrlStopped {remoteCtrlId}
+          toView $ CRRemoteCtrlStopped Nothing
       pure $ CRCmdOk Nothing
 
 deleteRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> m ChatResponse

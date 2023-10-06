@@ -426,6 +426,7 @@ data ChatCommand
   | CreateRemoteHost -- ^ Configure a new remote host
   | ListRemoteHosts
   | StartRemoteHost RemoteHostId -- ^ Start and announce a remote host
+  -- | SwitchRemoteHost (Maybe RemoteHostId) -- ^ Switch current remote host
   | StopRemoteHost RemoteHostId -- ^ Shut down a running session
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
   | RegisterRemoteCtrl RemoteCtrlOOB -- ^ Register OOB data for satellite discovery and handshake
@@ -433,7 +434,7 @@ data ChatCommand
   | ListRemoteCtrls
   | AcceptRemoteCtrl RemoteCtrlId -- ^ Accept discovered data and store confirmation
   | RejectRemoteCtrl RemoteCtrlId -- ^ Reject and blacklist discovered data
-  | StopRemoteCtrl RemoteCtrlId -- ^ Stop listening for announcements or terminate an active session
+  | StopRemoteCtrl -- ^ Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a satellite session
   | QuitChat
   | ShowVersion
@@ -621,7 +622,7 @@ data ChatResponse
   | CRRemoteCtrlRejected {remoteCtrlId :: RemoteCtrlId}
   | CRRemoteCtrlConnecting {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
   | CRRemoteCtrlConnected {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
-  | CRRemoteCtrlStopped {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlStopped {_nullary :: Maybe Int}
   | CRRemoteCtrlDeleted {remoteCtrlId :: RemoteCtrlId}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
@@ -1187,7 +1188,7 @@ toView_ rh event = do
   chatReadVar remoteCtrlSession >>= \case
     Nothing -> atomically $ writeTBQueue localQ (Nothing, rh, event)
     Just RemoteCtrlSession {remoteOutputQ} -> do
-      atomically $ writeTBQueue localQ (Nothing, rh, event) -- TODO: filter events ?
+      -- atomically $ writeTBQueue localQ (Nothing, rh, event) -- TODO: filter events ?
       atomically $ writeTBQueue remoteOutputQ (Nothing, rh, event) -- TODO: check full
 
 withStore' :: ChatMonad m => (DB.Connection -> IO a) -> m a

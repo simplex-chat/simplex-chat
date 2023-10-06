@@ -62,7 +62,7 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
     CRChatCmdError _ _ -> when (isMessage cmd) $ echo s
     CRChatError _ _ -> when (isMessage cmd) $ echo s
     _ -> pure ()
-  printRespToTerminal ct cc False r
+  printRespToTerminal ct cc False rh r
   startLiveMessage cmd r
   where
     echo s = printToTerminal ct [plain s]
@@ -135,7 +135,7 @@ runTerminalInput ct cc = withChatTerm ct $ do
   receiveFromTTY cc ct
 
 receiveFromTTY :: forall m. MonadTerminal m => ChatController -> ChatTerminal -> m ()
-receiveFromTTY cc@ChatController {inputQ, activeTo, currentUser, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState} =
+receiveFromTTY cc@ChatController {inputQ, activeTo, currentUser, currentRemoteHost, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState} =
   forever $ getKey >>= liftIO . processKey >> withTermLock ct (updateInput ct)
   where
     processKey :: (Key, Modifiers) -> IO ()
@@ -167,7 +167,8 @@ receiveFromTTY cc@ChatController {inputQ, activeTo, currentUser, chatStore} ct@C
       kill promptThreadId
       atomically $ writeTVar liveMessageState Nothing
       r <- sendUpdatedLiveMessage cc sentMsg lm False
-      printRespToTerminal ct cc False r
+      rh <- readTVarIO currentRemoteHost -- XXX: should be inherited from live message state
+      printRespToTerminal ct cc False rh r
       where
         kill sel = deRefWeak (sel lm) >>= mapM_ killThread
 

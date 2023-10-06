@@ -1847,7 +1847,7 @@ processChatCommand = \case
   StartRemoteCtrl -> startRemoteCtrl (execChatCommand Nothing)
   AcceptRemoteCtrl rc -> acceptRemoteCtrl rc
   RejectRemoteCtrl rc -> rejectRemoteCtrl rc
-  StopRemoteCtrl rc -> stopRemoteCtrl rc
+  StopRemoteCtrl -> stopRemoteCtrl
   RegisterRemoteCtrl oob -> registerRemoteCtrl oob
   ListRemoteCtrls -> listRemoteCtrls
   DeleteRemoteCtrl rc -> deleteRemoteCtrl rc
@@ -5641,7 +5641,7 @@ chatCommandP =
       "/list remote ctrls" $> ListRemoteCtrls,
       "/accept remote ctrl " *> (AcceptRemoteCtrl <$> A.decimal),
       "/reject remote ctrl " *> (RejectRemoteCtrl <$> A.decimal),
-      "/stop remote ctrl " *> (StopRemoteCtrl <$> A.decimal),
+      "/stop remote ctrl" $> StopRemoteCtrl,
       "/delete remote ctrl " *> (DeleteRemoteCtrl <$> A.decimal),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,

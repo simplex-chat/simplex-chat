@@ -32,6 +32,7 @@ remoteTests = describe "Handshake" $ do
   it "generates usable credentials" genCredentialsTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
   it "connects desktop and mobile" remoteHandshakeTest
+  it "relays commands and results" remoteCommandTest
 
 -- * Low-level TLS with ephemeral credentials
 
@@ -92,7 +93,7 @@ announceDiscoverHttp2Test _tmp = do
 -- * Chat commands
 
 remoteHandshakeTest :: HasCallStack => FilePath -> IO ()
-remoteHandshakeTest = testChat3 aliceProfile bobProfile cathProfile $ \desktop mobile cath -> do
+remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   desktop ##> "/list remote hosts"
   desktop <## "No remote hosts"
   desktop ##> "/create remote host"
@@ -124,9 +125,9 @@ remoteHandshakeTest = testChat3 aliceProfile bobProfile cathProfile $ \desktop m
   mobile <## "remote controller 1 accepted" -- alternative scenario: accepted before controller start
   mobile <## "remote controller 1 connecting to TODO"
   mobile <## "remote controller 1 connected, TODO"
-  mobile ##> "/stop remote ctrl 1"
+  mobile ##> "/stop remote ctrl"
   mobile <## "ok"
-  mobile <## "remote controller 1 stopped" -- TODO two outputs
+  mobile <## "remote controller stopped"
   mobile ##> "/delete remote ctrl 1"
   mobile <## "remote controller 1 deleted"
   mobile ##> "/list remote ctrls"
@@ -139,10 +140,50 @@ remoteHandshakeTest = testChat3 aliceProfile bobProfile cathProfile $ \desktop m
   desktop ##> "/list remote hosts"
   desktop <## "No remote hosts"
 
-  cath ##> "/c"
-  inv' <- getInvitation cath
+remoteCommandTest :: HasCallStack => FilePath -> IO ()
+remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
+  desktop ##> "/create remote host"
+  desktop <## "remote host 1 created"
+  desktop <## "connection code:"
+  fingerprint <- getTermLine desktop
+
+  desktop ##> "/start remote host 1"
+  desktop <## "remote host 1 started"
+
+  mobile ##> "/start remote ctrl"
+  mobile <## "remote controller started"
+  mobile <## "remote controller announced"
+  mobile <## "connection code:"
+  fingerprint' <- getTermLine mobile
+  fingerprint' `shouldBe` fingerprint
+  mobile ##> ("/register remote ctrl " <> fingerprint')
+  mobile <## "remote controller 1 registered"
+  mobile ##> "/accept remote ctrl 1"
+  mobile <## "remote controller 1 accepted" -- alternative scenario: accepted before controller start
+  mobile <## "remote controller 1 connecting to TODO"
+  mobile <## "remote controller 1 connected, TODO"
+  desktop <## "remote host 1 connected"
+
+  -- XXX: generic setup finished
+
+  bob ##> "/c"
+  inv' <- getInvitation bob
   desktop ##> ("/c " <> inv')
   desktop <## "confirmation sent!"
+  concurrently_
+    (desktop <## "bob (Bob): contact is connected")
+    -- (mobile <## "bob (Bob): contact is connected") -- BUG: must reach desktop
+    (bob <## "alice (Alice): contact is connected")
+
+  -- XXX: post-remote tests
+
+  mobile ##> "/stop remote ctrl"
+  mobile <## "ok"
+  concurrently_
+    (mobile <## "remote controller stopped")
+    (desktop <## "remote host 1 stopped")
+  mobile ##> "/contacts"
+  mobile <## "bob (Bob)"
 
 -- * Utils
 
