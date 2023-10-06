@@ -172,7 +172,6 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   desktop <## "confirmation sent!"
   concurrently_
     (desktop <## "bob (Bob): contact is connected")
-    -- (mobile <## "bob (Bob): contact is connected") -- BUG: must reach desktop
     (bob <## "alice (Alice): contact is connected")
 
   -- XXX: post-remote tests

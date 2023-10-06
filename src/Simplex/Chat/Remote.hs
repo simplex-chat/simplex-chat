@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 
 module Simplex.Chat.Remote where
 
@@ -29,7 +30,6 @@ import qualified Network.HTTP2.Server as HTTP2Server
 import Network.Socket (SockAddr (..), hostAddressToTuple)
 import Simplex.Chat.Controller
 import qualified Simplex.Chat.Remote.Discovery as Discovery
-import Simplex.Messaging.Protocol (CorrId)
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store.Remote
 import Simplex.Chat.Types
@@ -42,7 +42,7 @@ import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import qualified Simplex.Messaging.Transport.HTTP2.Client as HTTP2
 import qualified Simplex.Messaging.Transport.HTTP2.Server as HTTP2
-import Simplex.Messaging.Util (bshow)
+import Simplex.Messaging.Util (bshow, ifM)
 import System.Directory (getFileSize)
 import UnliftIO
 
@@ -87,7 +87,7 @@ startRemoteHost remoteHostId = do
                 liftIO cleanup
               Right HTTP2.HTTP2Response {respBody=HTTP2Body{bodyHead}} -> do
                 logDebug $ "Got initial from remote host: " <> T.pack (show bodyHead)
-                _ <- asks outputQ >>= async . pumpRemote finished ctrlClient "/output" (\(ci, _noHost :: Maybe (), cr) -> (ci, Just remoteHostId, cr))
+                _ <- asks outputQ >>= async . pumpRemote finished ctrlClient "/output" (Nothing, Just remoteHostId,)
                 _ <- asks notifyQ >>= async . pumpRemote finished ctrlClient "/notify" id
                 relayCommand ctrlClient "/contacts" >>= logDebug . T.pack . show
                 toView CRRemoteHostConnected {remoteHostId}
@@ -151,29 +151,6 @@ deleteRemoteHost remoteHostId = withRemoteHost remoteHostId $ \rh -> do
   -- TODO: delete files
   withStore' $ \db -> deleteRemoteHostRecord db remoteHostId
   pure CRRemoteHostDeleted {remoteHostId}
-
-remoteCommand :: ChatCommand -> Bool -- XXX: consider using Relay/Block/ForceLocal
-remoteCommand = \case
-  StartChat {} -> False
-  APIStopChat -> False
-  APIActivateChat -> False
-  APISuspendChat {} -> False
-  SetTempFolder {} -> False
-  QuitChat -> False
-  CreateRemoteHost -> False
-  ListRemoteHosts -> False
-  StartRemoteHost {} -> False
-  -- SwitchRemoteHost {} -> False
-  StopRemoteHost {} -> False
-  DeleteRemoteHost {} -> False
-  RegisterRemoteCtrl {} -> False
-  StartRemoteCtrl -> False
-  ListRemoteCtrls -> False
-  AcceptRemoteCtrl {} -> False
-  RejectRemoteCtrl {} -> False
-  StopRemoteCtrl -> False
-  DeleteRemoteCtrl {} -> False
-  _ -> True
 
 processRemoteCommand :: (ChatMonad m) => RemoteHostSession -> (ByteString, ChatCommand) -> m ChatResponse
 processRemoteCommand RemoteHostSessionStarting {} _ = pure . CRChatError Nothing . ChatError $ CEInternalError "sending remote commands before session started"
@@ -310,14 +287,21 @@ discoverRemoteCtrls discovered = Discovery.openListener >>= go
   where
     go sock =
       Discovery.recvAnnounce sock >>= \case
-        (SockAddrInet _port addr, invite) -> case strDecode invite of
+        (SockAddrInet _sockPort sockAddr, invite) -> case strDecode invite of
           Left _ -> go sock -- ignore malformed datagrams
           Right fingerprint -> do
-            atomically $ TM.insert fingerprint (THIPv4 $ hostAddressToTuple addr) discovered
+            let addr = THIPv4 (hostAddressToTuple sockAddr)
+            ifM
+              (atomically $ TM.member fingerprint discovered)
+              (logDebug $ "Fingerprint announce already knwon: " <> T.pack (show (addr, fingerprint)))
+              (do
+                logInfo $ "New fingerprint announce: " <> T.pack (show (addr, fingerprint))
+                atomically $ TM.insert fingerprint addr discovered
+              )
             withStore' (`getRemoteCtrlByFingerprint` fingerprint) >>= \case
-              Nothing -> toView $ CRRemoteCtrlAnnounce fingerprint -- unknown controller, ui action required
+              Nothing -> toView $ CRRemoteCtrlAnnounce fingerprint -- unknown controller, ui "register" action required
               Just found@RemoteCtrl {remoteCtrlId, accepted=storedChoice} -> case storedChoice of
-                Nothing -> toView $ CRRemoteCtrlFound found -- first-time controller, ui action required
+                Nothing -> toView $ CRRemoteCtrlFound found -- first-time controller, ui "accept" action required
                 Just False -> pure () -- skipping a rejected item
                 Just True -> chatReadVar remoteCtrlSession >>= \case
                   Nothing -> toView . CRChatError Nothing . ChatError $ CEInternalError "Remote host found without running a session"

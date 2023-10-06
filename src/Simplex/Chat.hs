@@ -350,7 +350,7 @@ execChatCommand rh s = do
   case parseChatCommand s of
     Left e -> pure $ chatCmdError u e
     Right cmd -> case rh of
-      Just remoteHostId | remoteCommand cmd -> execRemoteCommand u remoteHostId (s, cmd)
+      Just remoteHostId | allowRemoteCommand cmd -> execRemoteCommand u remoteHostId (s, cmd)
       _ -> execChatCommand_ u cmd
 
 execChatCommand' :: ChatMonad' m => ChatCommand -> m ChatResponse

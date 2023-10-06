@@ -445,6 +445,29 @@ data ChatCommand
   | GetAgentSubsDetails
   deriving (Show)
 
+allowRemoteCommand :: ChatCommand -> Bool -- XXX: consider using Relay/Block/ForceLocal
+allowRemoteCommand = \case
+  StartChat {} -> False
+  APIStopChat -> False
+  APIActivateChat -> False
+  APISuspendChat {} -> False
+  SetTempFolder {} -> False
+  QuitChat -> False
+  CreateRemoteHost -> False
+  ListRemoteHosts -> False
+  StartRemoteHost {} -> False
+  -- SwitchRemoteHost {} -> False
+  StopRemoteHost {} -> False
+  DeleteRemoteHost {} -> False
+  RegisterRemoteCtrl {} -> False
+  StartRemoteCtrl -> False
+  ListRemoteCtrls -> False
+  AcceptRemoteCtrl {} -> False
+  RejectRemoteCtrl {} -> False
+  StopRemoteCtrl -> False
+  DeleteRemoteCtrl {} -> False
+  _ -> True
+
 data ChatResponse
   = CRActiveUser {user :: User}
   | CRUsersList {users :: [UserInfo]}
@@ -640,6 +663,27 @@ data ChatResponse
   | CRArchiveImported {archiveErrors :: [ArchiveError]}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   deriving (Show)
+
+allowRemoteEvent :: ChatResponse -> Bool
+allowRemoteEvent = \case
+  CRRemoteHostCreated {} -> False
+  CRRemoteHostList {} -> False
+  CRRemoteHostStarted {} -> False
+  CRRemoteHostConnected {} -> False
+  CRRemoteHostStopped {} -> False
+  CRRemoteHostDeleted {} -> False
+  CRRemoteCtrlList {} -> False
+  CRRemoteCtrlRegistered {} -> False
+  CRRemoteCtrlStarted {} -> False
+  CRRemoteCtrlAnnounce {} -> False
+  CRRemoteCtrlFound {} -> False
+  CRRemoteCtrlAccepted {} -> False
+  CRRemoteCtrlRejected {} -> False
+  CRRemoteCtrlConnecting {} -> False
+  CRRemoteCtrlConnected {} -> False
+  CRRemoteCtrlStopped {} -> False
+  CRRemoteCtrlDeleted {} -> False
+  _ -> True
 
 logResponseToFile :: ChatResponse -> Bool
 logResponseToFile = \case
@@ -1127,7 +1171,7 @@ data RemoteCtrlSession = RemoteCtrlSession
     hostServer :: Maybe (Async ()),
     discovered :: TMap C.KeyHash TransportHost,
     accepted :: TMVar RemoteCtrlId,
-    remoteOutputQ :: TBQueue (Maybe CorrId, Maybe RemoteHostId, ChatResponse),
+    remoteOutputQ :: TBQueue ChatResponse,
     remoteNotifyQ :: TBQueue Notification
   }
 
@@ -1176,20 +1220,19 @@ unsetActive a = asks activeTo >>= atomically . (`modifyTVar` unset)
 
 -- | Emit local events.
 toView :: ChatMonad' m => ChatResponse -> m ()
-toView = toView_ Nothing
-
--- | Used by transport to mark remote events with source.
-toViewRemote :: ChatMonad' m => RemoteHostId -> ChatResponse -> m ()
-toViewRemote = toView_ . Just
-
-toView_ :: ChatMonad' m => Maybe RemoteHostId -> ChatResponse -> m ()
-toView_ rh event = do
+toView event = do
   localQ <- asks outputQ
   chatReadVar remoteCtrlSession >>= \case
-    Nothing -> atomically $ writeTBQueue localQ (Nothing, rh, event)
-    Just RemoteCtrlSession {remoteOutputQ} -> do
-      -- atomically $ writeTBQueue localQ (Nothing, rh, event) -- TODO: filter events ?
-      atomically $ writeTBQueue remoteOutputQ (Nothing, rh, event) -- TODO: check full
+    Nothing -> atomically $ writeTBQueue localQ (Nothing, Nothing, event)
+    Just RemoteCtrlSession {remoteOutputQ} ->
+      if allowRemoteEvent event
+        then do
+          -- TODO: filter events or let the UI ignore trigger events by itself?
+          -- traceM $ "Sending event to remote Q: " <> show event
+          atomically $ writeTBQueue remoteOutputQ event -- TODO: check full?
+        else do
+          -- traceM $ "Sending event to local Q: " <> show event
+          atomically $ writeTBQueue localQ (Nothing, Nothing, event)
 
 withStore' :: ChatMonad m => (DB.Connection -> IO a) -> m a
 withStore' action = withStore $ liftIO . action
