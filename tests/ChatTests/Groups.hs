@@ -77,7 +77,7 @@ chatGroupTests = do
     it "new member should merge with existing contact" testMergeMemberExistingContact
     it "new contact should merge with existing member" testMergeContactExistingMember
     it "new contact should merge with multiple existing members" testMergeContactMultipleMembers
-    it "new group link host contact should merge with both existing contact and members" testMergeGroupLinkHostExistingMembersAndContact
+    it "new group link host contact should merge with single existing contact out of multiple" testMergeGroupLinkHostMultipleContacts
   describe "create member contact" $ do
     it "create contact with group member with invitation message" testMemberContactMessage
     it "create contact with group member without invitation message" testMemberContactNoMessage
@@ -2854,30 +2854,22 @@ testMergeContactMultipleMembers =
       bob `hasContactProfiles` ["alice", "bob", "cath"]
       cath `hasContactProfiles` ["cath", "alice", "bob"]
 
-testMergeGroupLinkHostExistingMembersAndContact :: HasCallStack => FilePath -> IO ()
-testMergeGroupLinkHostExistingMembersAndContact =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
-      bob ##> "/contact_merge off"
-      bob <## "ok"
-
-      create2Groups3 "team" "club" alice bob cath
+testMergeGroupLinkHostMultipleContacts :: HasCallStack => FilePath -> IO ()
+testMergeGroupLinkHostMultipleContacts =
+  testChat2 bobProfile cathProfile $
+    \bob cath -> do
+      connectUsers bob cath
 
       bob ##> "/c"
       inv' <- getInvitation bob
       cath ##> ("/c " <> inv')
       cath <## "confirmation sent!"
       concurrently_
-        (bob <## "cath_2 (Catherine): contact is connected")
-        (cath <## "bob_2 (Bob): contact is connected")
+        (bob <## "cath_1 (Catherine): contact is connected")
+        (cath <## "bob_1 (Bob): contact is connected")
 
-      bob `hasContactProfiles` ["alice", "bob", "cath", "cath", "cath"]
-      cath `hasContactProfiles` ["cath", "alice", "bob", "bob", "bob"]
-
-      threadDelay 500000
-
-      bob ##> "/contact_merge on"
-      bob <## "ok"
+      bob `hasContactProfiles` ["bob", "cath", "cath"]
+      cath `hasContactProfiles` ["cath", "bob", "bob"]
 
       bob ##> "/g party"
       bob <## "group #party is created"
@@ -2886,40 +2878,30 @@ testMergeGroupLinkHostExistingMembersAndContact =
       gLink <- getGroupLink bob "party" GRMember True
       cath ##> ("/c " <> gLink)
       cath <## "connection request sent!"
-      bob <## "cath_3 (Catherine): accepting request to join group #party..."
+      bob <## "cath_2 (Catherine): accepting request to join group #party..."
       concurrentlyN_
         [ bob
-            <### [ "cath_3 (Catherine): contact is connected",
+            <### [ "cath_2 (Catherine): contact is connected",
                    EndsWith "invited to group #party via your group link",
                    EndsWith "joined the group",
-                   StartsWith "contact and member are merged: cath",
-                   StartsWith "use @cath",
-                   StartsWith "contact and member are merged: cath",
-                   StartsWith "use @cath",
-                   StartsWith "contact cath_3 is merged into cath",
+                   StartsWith "contact cath_2 is merged into cath",
                    StartsWith "use @cath"
                  ],
           cath
-            <### [ "bob_3 (Bob): contact is connected",
+            <### [ "bob_2 (Bob): contact is connected",
                    "#party: you joined the group",
-                   StartsWith "contact and member are merged: bob",
-                   StartsWith "use @bob",
-                   StartsWith "contact and member are merged: bob",
-                   StartsWith "use @bob",
-                   StartsWith "contact bob_3 is merged into bob",
+                   StartsWith "contact bob_2 is merged into bob",
                    StartsWith "use @bob"
                  ]
         ]
       bob <##> cath
 
       bob ##> "/contacts"
-      bob <### ["alice (Alice)", "cath (Catherine)"]
+      bob <### ["cath (Catherine)", "cath_1 (Catherine)"]
       cath ##> "/contacts"
-      cath <### ["alice (Alice)", "bob (Bob)"]
-      -- some unused profiles aren't deleted
-      -- redundant checks in deleteUnusedProfile_?
-      bob `hasContactProfiles` ["alice", "bob", "cath", "cath"]
-      cath `hasContactProfiles` ["cath", "alice", "bob", "bob"]
+      cath <### ["bob (Bob)", "bob_1 (Bob)"]
+      bob `hasContactProfiles` ["bob", "cath", "cath"]
+      cath `hasContactProfiles` ["cath", "bob", "bob"]
 
 testMemberContactMessage :: HasCallStack => FilePath -> IO ()
 testMemberContactMessage =

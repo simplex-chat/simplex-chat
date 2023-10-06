@@ -4385,22 +4385,19 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       case cgm1 of
         COMContact c1@Contact {contactId = cId1} ->
           case cgm2 of
-            Just (COMContact c2@Contact {contactId = cId2}, probeId)
-              | cId1 /= cId2 -> do
-                void $ mergeContacts c1 c2
-                -- prevent further merges with contacts
-                withStore' $ \db -> deleteContactSentProbeHashesByProbeId db probeId
+            Just (COMContact c2@Contact {contactId = cId2})
+              | cId1 /= cId2 -> void $ mergeContacts c1 c2
               | otherwise -> messageWarning "xInfoProbeOk ignored: same contact id"
-            Just (COMGroupMember m2@GroupMember {memberContactId}, _)
+            Just (COMGroupMember m2@GroupMember {memberContactId})
               | isNothing memberContactId -> void $ associateMemberAndContact c1 m2
               | otherwise -> messageWarning "xInfoProbeOk ignored: member already has contact"
             _ -> pure ()
         COMGroupMember m1@GroupMember {memberContactId} ->
           case cgm2 of
-            Just (COMContact c2, _)
+            Just (COMContact c2)
               | isNothing memberContactId -> void $ associateMemberAndContact c2 m1
               | otherwise -> messageWarning "xInfoProbeOk ignored: member already has contact"
-            Just (COMGroupMember _, _) -> messageWarning "xInfoProbeOk ignored: members are not matched with members"
+            Just (COMGroupMember _) -> messageWarning "xInfoProbeOk ignored: members are not matched with members"
             _ -> pure ()
 
     -- to party accepting call
