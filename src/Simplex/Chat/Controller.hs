@@ -338,7 +338,7 @@ data ChatCommand
   | APIAddContact UserId IncognitoEnabled
   | AddContact IncognitoEnabled
   | APISetConnectionIncognito Int64 IncognitoEnabled
-  | APICheckConnectionRequestURI UserId AConnectionRequestUri
+  | APIConnectPlan UserId AConnectionRequestUri
   | APIConnect UserId IncognitoEnabled (Maybe AConnectionRequestUri)
   | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
@@ -490,7 +490,7 @@ data ChatResponse
   | CRVersionInfo {versionInfo :: CoreVersionInfo, chatMigrations :: [UpMigration], agentMigrations :: [UpMigration]}
   | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection}
-  | CRConnectionRequestURIChecked {user :: User, checkResult :: ConnReqURICheckResult}
+  | CRConnectionPlan {user :: User, connectionPlan :: ConnectionPlan}
   | CRSentConfirmation {user :: User}
   | CRSentInvitation {user :: User, customUserProfile :: Maybe Profile}
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
@@ -626,28 +626,71 @@ instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
--- reduce to 4 result types, add connection type to result?
--- results may diverge per type, for example:
--- CRUInvitationLinkKnown shouldn't be possible, because conn_req_inv is removed on connection status changing to ready;
--- own link and own address / group link are checks for different things
-data ConnReqURICheckResult
-  = CRUInvitationLinkOkToConnect
-  | CRUInvitationLinkOwn
-  | CRUInvitationLinkConnecting {contact_ :: Maybe Contact}
-  | CRUInvitationLinkKnown {contact :: Contact}
-  | CRUContactAddressOkToConnect
-  | CRUContactAddressOwn
-  | CRUContactAddressConnecting {contact_ :: Maybe Contact}
-  | CRUContactAddressKnown {contact :: Contact}
-  | CRUGroupLinkOkToConnect
-  | CRUGroupLinkOwn
-  | CRUGroupLinkConnecting {groupInfo_ :: Maybe GroupInfo}
-  | CRUGroupLinkKnown {groupInfo :: GroupInfo}
+-- -- reduce to 4 result types, add connection type to result?
+-- -- results may diverge per type, for example:
+-- -- CRUInvitationLinkKnown shouldn't be possible, because conn_req_inv is removed on connection status changing to ready;
+-- -- own link and own address / group link are checks for different things
+-- data ConnReqURICheckResult
+--   = CRUInvitationLinkOkToConnect
+--   | CRUInvitationLinkOwn
+--   | CRUInvitationLinkConnecting {contact_ :: Maybe Contact}
+--   | CRUInvitationLinkKnown {contact :: Contact}
+--   | CRUContactAddressOkToConnect
+--   | CRUContactAddressOwn
+--   | CRUContactAddressConnecting {contact_ :: Maybe Contact}
+--   | CRUContactAddressKnown {contact :: Contact}
+--   | CRUGroupLinkOkToConnect
+--   | CRUGroupLinkOwn
+--   | CRUGroupLinkConnecting {groupInfo_ :: Maybe GroupInfo}
+--   | CRUGroupLinkKnown {groupInfo :: GroupInfo}
+--   deriving (Show, Generic)
+
+-- instance ToJSON ConnReqURICheckResult where
+--   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CRU"
+--   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CRU"
+
+data ConnectionPlan
+  = CPInvitationLink {invitationLinkConnectionPlan :: InvitationLinkConnectionPlan}
+  | CPContactAddress {contactAddressConnectionPlan :: ContactAddressConnectionPlan}
+  | CPGroupLink {groupLinkConnectionPlan :: GroupLinkConnectionPlan}
   deriving (Show, Generic)
 
-instance ToJSON ConnReqURICheckResult where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CRU"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CRU"
+instance ToJSON ConnectionPlan where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CP"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CP"
+
+data InvitationLinkConnectionPlan
+  = ILCPOk
+  | ILCPOwnLink
+  | ILCPConnecting {contact_ :: Maybe Contact}
+  | ILCPKnown {contact :: Contact}
+  deriving (Show, Generic)
+
+instance ToJSON InvitationLinkConnectionPlan where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "ILCP"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "ILCP"
+
+data ContactAddressConnectionPlan
+  = CACPOk
+  | CACPOwnLink
+  | CACPConnecting {contact_ :: Maybe Contact}
+  | CACPKnown {contact :: Contact}
+  deriving (Show, Generic)
+
+instance ToJSON ContactAddressConnectionPlan where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CACP"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CACP"
+
+data GroupLinkConnectionPlan
+  = GLCPOk
+  | GLCPOwnLink
+  | GLCPConnecting {contact_ :: Maybe Contact}
+  | GLCPKnown {contact :: Contact}
+  deriving (Show, Generic)
+
+instance ToJSON GroupLinkConnectionPlan where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "GLCP"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "GLCP"
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
@@ -913,6 +956,7 @@ data ChatErrorType
   | CEChatNotStarted
   | CEChatNotStopped
   | CEChatStoreChanged
+  | CEConnectionPlan {connectionPlan :: ConnectionPlan}
   | CEInvalidConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}
