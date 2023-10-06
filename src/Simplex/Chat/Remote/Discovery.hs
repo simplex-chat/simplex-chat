@@ -52,14 +52,14 @@ pattern BROADCAST_PORT = "5226"
 -- | Announce tls server, wait for connection and attach http2 client to it.
 --
 -- Announcer is started when TLS server is started and stopped when a connection is made.
-announceRevHTTP2 :: (StrEncoding invite, MonadUnliftIO m) => IO () -> invite -> TLS.Credentials -> m (Either HTTP2ClientError HTTP2Client)
+announceRevHTTP2 :: (StrEncoding invite, MonadUnliftIO m) => m () -> invite -> TLS.Credentials -> m (Either HTTP2ClientError HTTP2Client)
 announceRevHTTP2 finishAction invite credentials = do
   httpClient <- newEmptyMVar
   started <- newEmptyTMVarIO
   finished <- newEmptyMVar
   announcer <- async . liftIO . whenM (atomically $ takeTMVar started) $ runAnnouncer (strEncode invite)
   tlsServer <- startTLSServer started credentials $ \tls -> cancel announcer >> runHTTP2Client finished httpClient tls
-  _ <- forkIO . liftIO $ do
+  _ <- forkIO $ do
     readMVar finished
     cancel tlsServer
     finishAction

@@ -21,6 +21,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Char8 as B
 import Data.List.NonEmpty (NonEmpty (..))
+import Data.Maybe (fromMaybe)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import qualified Network.HTTP.Types as HTTP
@@ -42,7 +43,7 @@ import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import qualified Simplex.Messaging.Transport.HTTP2.Client as HTTP2
 import qualified Simplex.Messaging.Transport.HTTP2.Server as HTTP2
-import Simplex.Messaging.Util (bshow, ifM)
+import Simplex.Messaging.Util (bshow, ifM, tshow)
 import System.Directory (getFileSize)
 import UnliftIO
 
@@ -60,37 +61,37 @@ withRemoteHost remoteHostId action =
 
 startRemoteHost :: (ChatMonad m) => RemoteHostId -> m ChatResponse
 startRemoteHost remoteHostId = do
-  M.lookup remoteHostId <$> chatReadVar remoteHostSessions >>= \case
+  asks remoteHostSessions >>= atomically . TM.lookup remoteHostId >>= \case
     Just _ -> throwError $ ChatErrorRemoteHost remoteHostId RHBusy
-    Nothing -> withRemoteHost remoteHostId run
-  where
-    run RemoteHost {storePath, caKey, caCert} = do
-      finished <- newTVarIO False
-      announcer <- async $ do
-        cleanup <- toIO $ do
-          logInfo "Remote host http2 client fininshed"
-          atomically $ writeTVar finished True
-          closeRemoteHostSession remoteHostId >>= toView
-        let parent = (C.signatureKeyPair caKey, caCert)
-        sessionCreds <- liftIO $ genCredentials (Just parent) (0, 24) "Session"
-        let (fingerprint, credentials) = tlsCredentials $ sessionCreds :| [parent]
-        Discovery.announceRevHTTP2 cleanup fingerprint credentials >>= \case
-          Left h2ce -> do
-            logError $ "Failed to set up remote host connection: " <> T.pack (show h2ce)
-            liftIO cleanup
-          Right ctrlClient -> do
-            chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSessionStarted {storePath, ctrlClient}
-            chatWriteVar currentRemoteHost $ Just remoteHostId
-            sendHello ctrlClient >>= \case
-              Left h2ce -> do
-                logError $ "Failed to send initial remote host request: " <> T.pack (show h2ce)
-                liftIO cleanup
-              Right HTTP2.HTTP2Response {respBody=HTTP2Body{bodyHead}} -> do
-                logDebug $ "Got initial from remote host: " <> T.pack (show bodyHead)
-                _ <- asks outputQ >>= async . pollRemote finished ctrlClient "/recv" (Nothing, Just remoteHostId,)
-                toView CRRemoteHostConnected {remoteHostId}
+    Nothing -> withRemoteHost remoteHostId $ \rh -> do
+      announcer <- async $ run rh
       chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSessionStarting {announcer}
       pure CRRemoteHostStarted {remoteHostId}
+  where
+    cleanup finished = do
+      logInfo "Remote host http2 client fininshed"
+      atomically $ writeTVar finished True
+      closeRemoteHostSession remoteHostId >>= toView
+    run RemoteHost {storePath, caKey, caCert} = do
+      finished <- newTVarIO False
+      let parent = (C.signatureKeyPair caKey, caCert)
+      sessionCreds <- liftIO $ genCredentials (Just parent) (0, 24) "Session"
+      let (fingerprint, credentials) = tlsCredentials $ sessionCreds :| [parent]
+      Discovery.announceRevHTTP2 (cleanup finished) fingerprint credentials >>= \case
+        Left h2ce -> do
+          logError $ "Failed to set up remote host connection: " <> tshow h2ce
+          cleanup finished
+        Right ctrlClient -> do
+          chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSessionStarted {storePath, ctrlClient}
+          chatWriteVar currentRemoteHost $ Just remoteHostId
+          sendHello ctrlClient >>= \case
+            Left h2ce -> do
+              logError $ "Failed to send initial remote host request: " <> tshow h2ce
+              cleanup finished
+            Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
+              logDebug $ "Got initial from remote host: " <> tshow bodyHead
+              _ <- asks outputQ >>= async . pollRemote finished ctrlClient "/recv" (Nothing, Just remoteHostId,)
+              toView CRRemoteHostConnected {remoteHostId}
 
 sendHello :: (ChatMonad m) => HTTP2Client -> m (Either HTTP2.HTTP2ClientError HTTP2.HTTP2Response)
 sendHello http = liftIO (HTTP2.sendRequestDirect http req Nothing)
@@ -102,10 +103,10 @@ pollRemote finished http path f queue = loop
   where
     loop = do
       liftIO (HTTP2.sendRequestDirect http req Nothing) >>= \case
-        Left e -> logError $ "pollRemote: " <> T.pack (show (path, e))
-        Right HTTP2.HTTP2Response {respBody=HTTP2Body{bodyHead}} ->
+        Left e -> logError $ "pollRemote: " <> tshow (path, e)
+        Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} ->
           case J.eitherDecodeStrict' bodyHead of
-            Left e -> logError $ "pollRemote/decode: " <> T.pack (show (path, e))
+            Left e -> logError $ "pollRemote/decode: " <> tshow (path, e)
             Right o -> atomically $ writeTBQueue queue (f o)
       readTVarIO finished >>= (`unless` loop)
     req = HTTP2Client.requestNoBody "GET" path mempty
@@ -117,7 +118,7 @@ closeRemoteHostSession remoteHostId = withRemoteHostSession remoteHostId $ \sess
     RemoteHostSessionStarted {ctrlClient} -> liftIO (HTTP2.closeHTTP2Client ctrlClient)
   chatWriteVar currentRemoteHost Nothing
   chatModifyVar remoteHostSessions $ M.delete remoteHostId
-  pure CRRemoteHostStopped { remoteHostId }
+  pure CRRemoteHostStopped {remoteHostId}
 
 createRemoteHost :: (ChatMonad m) => m ChatResponse
 createRemoteHost = do
@@ -125,10 +126,7 @@ createRemoteHost = do
   ((_, caKey), caCert) <- liftIO $ genCredentials Nothing (-25, 24 * 365) displayName
   storePath <- liftIO randomStorePath
   remoteHostId <- withStore' $ \db -> insertRemoteHost db storePath displayName caKey caCert
-  let oobData =
-        RemoteCtrlOOB
-          { caFingerprint = C.certificateFingerprint caCert
-          }
+  let oobData = RemoteCtrlOOB {caFingerprint = C.certificateFingerprint caCert}
   pure CRRemoteHostCreated {remoteHostId, oobData}
 
 -- | Generate a random 16-char filepath without / in it by using base64url encoding.
@@ -157,39 +155,34 @@ processRemoteCommand RemoteHostSessionStarted {ctrlClient} (s, cmd) = do
   -- XXX: intercept and filter some commands
   -- TODO: store missing files on remote host
   relayCommand ctrlClient s
-  where
 
 relayCommand :: (ChatMonad m) => HTTP2Client -> ByteString -> m ChatResponse
 relayCommand http s =
   postBytestring Nothing http "/send" mempty s >>= \case
-    Left e -> oops $ "relayCommand/post: " <> show e
+    Left e -> err $ "relayCommand/post: " <> show e
     Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
       logDebug $ "Got /send response: " <> T.pack (show bodyHead)
-      remoteChatResponse <-
-        if iTax
-          then case J.eitherDecodeStrict bodyHead of -- XXX: large JSONs can overflow into buffered chunks
-            Left e -> oops $ "relayCommand/decodeValue: " <> show e
-            Right (raw :: J.Value) -> case J.fromJSON (sum2tagged raw) of
-              J.Error e -> oops $ "relayCommand/sum2tagged: " <> show e
-              J.Success cr -> pure cr
-          else case J.eitherDecodeStrict bodyHead of -- XXX: large JSONs can overflow into buffered chunks
-            Left e -> oops $ "relayCommand/decode: " <> show e
-            Right cr -> pure cr
+      remoteChatResponse <- case J.eitherDecodeStrict bodyHead of -- XXX: large JSONs can overflow into buffered chunks
+        Left e -> err $ "relayCommand/decodeValue: " <> show e
+        Right json -> case J.fromJSON $ toTaggedJSON json of
+          J.Error e -> err $ "relayCommand/fromJSON: " <> show e
+          J.Success cr -> pure cr
       case remoteChatResponse of
         -- TODO: intercept file responses and fetch files when needed
         -- XXX: is that even possible, to have a file response to a command?
         _ -> pure remoteChatResponse
   where
-    oops = pure . CRChatError Nothing . ChatError . CEInternalError
-    iTax = True -- TODO: get from RemoteHost
+    err = pure . CRChatError Nothing . ChatError . CEInternalError
+    toTaggedJSON :: J.Value -> J.Value
+    toTaggedJSON = id -- owsf2tagged TODO: get from RemoteHost
     -- XXX: extract to http2 transport
-    postBytestring timeout c path hs body = liftIO $ HTTP2.sendRequestDirect c req timeout
+    postBytestring timeout' c path hs body = liftIO $ HTTP2.sendRequestDirect c req timeout'
       where
         req = HTTP2Client.requestBuilder "POST" path hs (Binary.fromByteString body)
 
 -- | Convert swift single-field sum encoding into tagged/discriminator-field
-sum2tagged :: J.Value -> J.Value
-sum2tagged = \case
+owsf2tagged :: J.Value -> J.Value
+owsf2tagged = \case
   J.Object todo'convert -> J.Object todo'convert
   skip -> skip
 
@@ -220,7 +213,7 @@ fetchRemoteFile http storePath remoteFileId = do
 processControllerRequest :: forall m . (ChatMonad m) => (ByteString -> m ChatResponse) -> HTTP2.HTTP2Request -> m ()
 processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody = HTTP2Body {bodyHead}, sendResponse} = do
   logDebug $ "Remote controller request: " <> T.pack (show $ method <> " " <> path)
-  res <- try $ case (method, path) of
+  res <- tryChatError $ case (method, path) of
     ("GET", "/") -> getHello
     ("POST", "/send") -> sendCommand
     ("GET", "/recv") -> recvMessage
@@ -228,11 +221,11 @@ processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody = 
     ("GET", "/fetch") -> fetchFile
     unexpected -> respondWith Status.badRequest400 $ "unexpected method/path: " <> Binary.putStringUtf8 (show unexpected)
   case res of
-    Left (SomeException e) -> logError $ "Error handling remote controller request (" <> T.pack (show $ method <> " " <> path) <> "): " <> T.pack (show e)
-    Right () -> logDebug $ "Remote controller request: " <> T.pack (show $ method <> " " <> path) <> " OK"
+    Left e -> logError $ "Error handling remote controller request: (" <> tshow (method <> " " <> path) <> "): " <> tshow e
+    Right () -> logDebug $ "Remote controller request: " <> tshow (method <> " " <> path) <> " OK"
   where
-    method = maybe "" id $ HTTP2Server.requestMethod request
-    path = maybe "" id $ HTTP2Server.requestPath request
+    method = fromMaybe "" $ HTTP2Server.requestMethod request
+    path = fromMaybe "" $ HTTP2Server.requestPath request
     getHello = respond "OK"
     sendCommand = execChatCommand bodyHead >>= respondJSON
     recvMessage = chatReadVar remoteCtrlSession >>= \case

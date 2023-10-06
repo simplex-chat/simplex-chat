@@ -32,7 +32,7 @@ remoteTests = describe "Handshake" $ do
   it "generates usable credentials" genCredentialsTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
   it "connects desktop and mobile" remoteHandshakeTest
-  it "relays commands and results" remoteCommandTest
+  it "send messages via remote desktop" remoteCommandTest
 
 -- * Low-level TLS with ephemeral credentials
 
@@ -176,6 +176,8 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   traceM "    - sending messages"
   desktop #> "@bob hello there 🙂"
   bob <# "alice> hello there 🙂"
+  bob #> "@alice hi"
+  desktop <# "bob> hi"
 
   traceM "    - post-remote checks"
   mobile ##> "/stop remote ctrl"
