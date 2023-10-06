@@ -4395,7 +4395,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               | isNothing memberContactId -> void $ associateMemberAndContact c1 m2
               | otherwise -> messageWarning "xInfoProbeOk ignored: member already has contact"
             _ -> pure ()
-        COMGroupMember (m1@GroupMember {memberContactId}) ->
+        COMGroupMember m1@GroupMember {memberContactId} ->
           case cgm2 of
             Just (COMContact c2, _)
               | isNothing memberContactId -> void $ associateMemberAndContact c2 m1
