@@ -12,6 +12,7 @@ module Simplex.Chat.Remote.Discovery
 
     -- * Discovery
     connectRevHTTP2,
+    withListener,
     openListener,
     recvAnnounce,
     connectTLSClient,
@@ -69,12 +70,12 @@ announceRevHTTP2 finishAction invite credentials = do
 -- | Broadcast invite with link-local datagrams
 runAnnouncer :: ByteString -> IO ()
 runAnnouncer inviteBS = do
-  sock <- UDP.clientSocket BROADCAST_ADDR_V4 BROADCAST_PORT False
-  N.setSocketOption (UDP.udpSocket sock) N.Broadcast 1
-  N.setSocketOption (UDP.udpSocket sock) N.ReuseAddr 1
-  forever $ do
-    UDP.send sock inviteBS
-    threadDelay 1000000
+  bracket (UDP.clientSocket BROADCAST_ADDR_V4 BROADCAST_PORT False) UDP.close $ \sock -> do
+    N.setSocketOption (UDP.udpSocket sock) N.Broadcast 1
+    N.setSocketOption (UDP.udpSocket sock) N.ReuseAddr 1
+    forever $ do
+      UDP.send sock inviteBS
+      threadDelay 1000000
 
 startTLSServer :: (MonadUnliftIO m) => TMVar Bool -> TLS.Credentials -> (Transport.TLS -> IO ()) -> m (Async ())
 startTLSServer started credentials = async . liftIO . runTransportServer started BROADCAST_PORT serverParams defaultTransportServerConfig
@@ -94,6 +95,9 @@ runHTTP2Client finishedVar clientVar tls = do
   readMVar finishedVar
   where
     config = defaultHTTP2ClientConfig { connTimeout = 86400000000 }
+
+withListener :: (MonadUnliftIO m) => (UDP.ListenSocket -> m a) -> m a
+withListener = bracket openListener (liftIO . UDP.stop)
 
 openListener :: (MonadIO m) => m UDP.ListenSocket
 openListener = liftIO $ do

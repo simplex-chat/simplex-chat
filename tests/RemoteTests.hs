@@ -76,8 +76,7 @@ announceDiscoverHttp2Test _tmp = do
             Right HTTP2Response {} ->
               traceM "    - Controller: got response"
       )
-  host <- async $ do
-    sock <- Discovery.openListener
+  host <- async $ Discovery.withListener $ \sock -> do
     (N.SockAddrInet _port addr, invite) <- Discovery.recvAnnounce sock
     strDecode invite `shouldBe` Right fingerprint
     traceM "    - Host: connecting"

@@ -272,7 +272,7 @@ startRemoteCtrl execChatCommand =
       pure $ CRRemoteCtrlStarted Nothing
 
 discoverRemoteCtrls :: (ChatMonad m) => TM.TMap C.KeyHash TransportHost -> m ()
-discoverRemoteCtrls discovered = Discovery.openListener >>= go
+discoverRemoteCtrls discovered = Discovery.withListener go
   where
     go sock =
       Discovery.recvAnnounce sock >>= \case
