@@ -179,7 +179,8 @@ struct AddGroupView: View {
     }
 
     func canCreateProfile() -> Bool {
-        profile.displayName != "" && validDisplayName(profile.displayName.trimmingCharacters(in: .whitespaces))
+        let name = profile.displayName.trimmingCharacters(in: .whitespaces)
+        return name != "" && validDisplayName(name)
     }
 }
 

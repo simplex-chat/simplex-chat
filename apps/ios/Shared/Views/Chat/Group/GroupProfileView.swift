@@ -80,7 +80,7 @@ struct GroupProfileView: View {
                 HStack(spacing: 20) {
                     Button("Cancel") { dismiss() }
                     Button("Save group profile") { saveProfile() }
-                        .disabled(groupProfile.displayName == "" || !validNewProfileName())
+                        .disabled(!canUpdateProfile())
                 }
             }
             .frame(maxWidth: .infinity, minHeight: 120, alignment: .leading)
@@ -132,6 +132,10 @@ struct GroupProfileView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture { hideKeyboard() }
+    }
+
+    private func canUpdateProfile() -> Bool {
+        groupProfile.displayName.trimmingCharacters(in: .whitespaces) != "" && validNewProfileName()
     }
 
     private func validNewProfileName() -> Bool {

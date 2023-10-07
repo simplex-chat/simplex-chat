@@ -162,7 +162,7 @@ struct UserProfile: View {
     }
 
     private func canSaveProfile(_ user: User) -> Bool {
-        profile.displayName != "" && validNewProfileName(user)
+        profile.displayName.trimmingCharacters(in: .whitespaces) != "" && validNewProfileName(user)
     }
 
     func saveProfile() {
