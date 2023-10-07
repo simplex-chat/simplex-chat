@@ -97,6 +97,7 @@ fun TerminalLayout(
             updateLiveMessage = null,
             editPrevMessage = {},
             onMessageChange = ::onMessageChange,
+            onFilesPasted = {},
             textStyle = textStyle
           )
         }

@@ -19,15 +19,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.ProfileNameField
 import chat.simplex.common.views.chat.group.AddGroupMembersView
 import chat.simplex.common.views.chatlist.setGroupMembers
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.isValidDisplayName
 import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.views.usersettings.DeleteImageButton
 import chat.simplex.common.views.usersettings.EditImageButton
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -60,7 +59,6 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
   val displayName = rememberSaveable { mutableStateOf("") }
-  val fullName = rememberSaveable { mutableStateOf("") }
   val chosenImage = rememberSaveable { mutableStateOf<URI?>(null) }
   val profileImage = rememberSaveable { mutableStateOf<String?>(null) }
   val focusRequester = remember { FocusRequester() }
@@ -110,31 +108,22 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
               stringResource(MR.strings.group_display_name_field),
               fontSize = 16.sp
             )
-            if (!isValidDisplayName(displayName.value)) {
+            if (!isValidDisplayName(displayName.value.trim())) {
               Spacer(Modifier.size(DEFAULT_PADDING_HALF))
-              Text(
-                stringResource(MR.strings.no_spaces),
-                fontSize = 16.sp,
-                color = Color.Red
-              )
+              IconButton({ showInvalidNameAlert(mkValidName(displayName.value.trim()), displayName) }, Modifier.size(20.dp)) {
+                Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
+              }
             }
           }
-          ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
-          Spacer(Modifier.height(DEFAULT_PADDING))
-          Text(
-            stringResource(MR.strings.group_full_name_field),
-            fontSize = 16.sp,
-            modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
-          )
-          ProfileNameField(fullName, "")
+          ProfileNameField(displayName, "", { isValidDisplayName(it.trim()) }, focusRequester)
           Spacer(Modifier.height(8.dp))
-          val enabled = displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
+          val enabled = canCreateProfile(displayName.value)
           if (enabled) {
             CreateGroupButton(MaterialTheme.colors.primary, Modifier
               .clickable {
                 createGroup(GroupProfile(
-                  displayName = displayName.value,
-                  fullName = fullName.value,
+                  displayName = displayName.value.trim(),
+                  fullName = "",
                   image = profileImage.value
                 ))
               }
@@ -166,6 +155,8 @@ fun CreateGroupButton(color: Color, modifier: Modifier) {
     }
   }
 }
+
+fun canCreateProfile(displayName: String): Boolean = displayName.trim().isNotEmpty() && isValidDisplayName(displayName.trim())
 
 @Preview
 @Composable

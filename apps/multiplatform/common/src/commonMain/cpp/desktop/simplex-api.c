@@ -21,6 +21,7 @@ extern char *chat_recv_msg_wait(chat_ctrl ctrl, const int wait);
 extern char *chat_parse_markdown(const char *str);
 extern char *chat_parse_server(const char *str);
 extern char *chat_password_hash(const char *pwd, const char *salt);
+extern char *chat_valid_name(const char *name);
 extern char *chat_write_file(const char *path, char *ptr, int length);
 extern char *chat_read_file(const char *path, const char *key, const char *nonce);
 extern char *chat_encrypt_file(const char *from_path, const char *to_path);
@@ -75,7 +76,7 @@ Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, jclass cla
     jstring res = decode_to_utf8_string(env, chat_migrate_init(_dbPath, _dbKey, _confirm, &_ctrl));
     (*env)->ReleaseStringUTFChars(env, dbPath, _dbPath);
     (*env)->ReleaseStringUTFChars(env, dbKey, _dbKey);
-    (*env)->ReleaseStringUTFChars(env, dbKey, _confirm);
+    (*env)->ReleaseStringUTFChars(env, confirm, _confirm);
 
     // Creating array of Object's (boxed values can be passed, eg. Long instead of long)
     jobjectArray ret = (jobjectArray)(*env)->NewObjectArray(env, 2, (*env)->FindClass(env, "java/lang/Object"), NULL);
@@ -130,6 +131,14 @@ Java_chat_simplex_common_platform_CoreKt_chatPasswordHash(JNIEnv *env, jclass cl
     jstring res = decode_to_utf8_string(env, chat_password_hash(_pwd, _salt));
     (*env)->ReleaseStringUTFChars(env, pwd, _pwd);
     (*env)->ReleaseStringUTFChars(env, salt, _salt);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatValidName(JNIEnv *env, jclass clazz, jstring name) {
+    const char *_name = encode_to_utf8_chars(env, name);
+    jstring res = decode_to_utf8_string(env, chat_valid_name(_name));
+    (*env)->ReleaseStringUTFChars(env, name, _name);
     return res;
 }
 

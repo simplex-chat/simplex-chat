@@ -17,6 +17,7 @@ import chat.simplex.common.views.usersettings.SetDeliveryReceiptsView
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.CreateFirstProfile
 import chat.simplex.common.views.helpers.SimpleButton
 import chat.simplex.common.views.SplashView
 import chat.simplex.common.views.call.ActiveCallView
@@ -135,7 +136,7 @@ fun MainScreen() {
           ModalManager.fullscreen.showInView()
         }
       }
-      onboarding == OnboardingStage.Step2_CreateProfile -> CreateProfile(chatModel) {}
+      onboarding == OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
       onboarding == OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
       onboarding == OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel)
       onboarding == OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
