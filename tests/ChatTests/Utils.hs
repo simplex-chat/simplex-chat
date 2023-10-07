@@ -34,6 +34,9 @@ import Test.Hspec
 defaultPrefs :: Maybe Preferences
 defaultPrefs = Just $ toChatPrefs defaultChatPrefs
 
+aliceDesktopProfile :: Profile
+aliceDesktopProfile = Profile {displayName = "alice_desktop", fullName = "Alice Desktop", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
+
 aliceProfile :: Profile
 aliceProfile = Profile {displayName = "alice", fullName = "Alice", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 

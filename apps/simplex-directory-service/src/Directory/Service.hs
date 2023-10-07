@@ -494,7 +494,7 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
           sendChatCmdStr cc cmdStr >>= \r -> do
             ts <- getCurrentTime
             tz <- getCurrentTimeZone
-            sendReply $ serializeChatResponse (Just user) ts tz r
+            sendReply $ serializeChatResponse (Nothing, Just user) ts tz Nothing r
         DCCommandError tag -> sendReply $ "Command error: " <> show tag
       | otherwise = sendReply "You are not allowed to use this command"
       where

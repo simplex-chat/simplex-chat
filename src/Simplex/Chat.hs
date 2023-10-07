@@ -193,6 +193,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
   currentUser <- newTVarIO user
+  currentRemoteHost <- newTVarIO Nothing
   servers <- agentServers config
   smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore
   agentAsync <- newTVarIO Nothing
@@ -216,7 +217,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   showLiveItems <- newTVarIO False
   userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
   tempDirectory <- newTVarIO tempDir
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, remoteHostSessions, remoteCtrlSession, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
+  pure ChatController {activeTo, firstTime, currentUser, currentRemoteHost, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, remoteHostSessions, remoteCtrlSession, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile}
   where
     configServers :: DefaultAgentServers
     configServers =
@@ -327,7 +328,9 @@ restoreCalls = do
   atomically $ writeTVar calls callsMap
 
 stopChatController :: forall m. MonadUnliftIO m => ChatController -> m ()
-stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags} = do
+stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
+  readTVarIO remoteHostSessions >>= mapM_ cancelRemoteHostSession
+  readTVarIO remoteCtrlSession >>= mapM_ cancelRemoteCtrlSession_
   disconnectAgentClient smpAgent
   readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
   closeFiles sndFiles
@@ -349,8 +352,8 @@ execChatCommand rh s = do
   case parseChatCommand s of
     Left e -> pure $ chatCmdError u e
     Right cmd -> case rh of
-      Nothing -> execChatCommand_ u cmd
-      Just remoteHostId -> execRemoteCommand u remoteHostId (s, cmd)
+      Just remoteHostId | allowRemoteCommand cmd -> execRemoteCommand u remoteHostId (s, cmd)
+      _ -> execChatCommand_ u cmd
 
 execChatCommand' :: ChatMonad' m => ChatCommand -> m ChatResponse
 execChatCommand' cmd = asks currentUser >>= readTVarIO >>= (`execChatCommand_` cmd)
@@ -1843,10 +1846,10 @@ processChatCommand = \case
   StartRemoteHost rh -> startRemoteHost rh
   StopRemoteHost rh -> closeRemoteHostSession rh
   DeleteRemoteHost rh -> deleteRemoteHost rh
-  StartRemoteCtrl -> startRemoteCtrl
+  StartRemoteCtrl -> startRemoteCtrl (execChatCommand Nothing)
   AcceptRemoteCtrl rc -> acceptRemoteCtrl rc
   RejectRemoteCtrl rc -> rejectRemoteCtrl rc
-  StopRemoteCtrl rc -> stopRemoteCtrl rc
+  StopRemoteCtrl -> stopRemoteCtrl
   RegisterRemoteCtrl oob -> registerRemoteCtrl oob
   ListRemoteCtrls -> listRemoteCtrls
   DeleteRemoteCtrl rc -> deleteRemoteCtrl rc
@@ -5631,7 +5634,7 @@ chatCommandP =
       "/list remote ctrls" $> ListRemoteCtrls,
       "/accept remote ctrl " *> (AcceptRemoteCtrl <$> A.decimal),
       "/reject remote ctrl " *> (RejectRemoteCtrl <$> A.decimal),
-      "/stop remote ctrl " *> (StopRemoteCtrl <$> A.decimal),
+      "/stop remote ctrl" $> StopRemoteCtrl,
       "/delete remote ctrl " *> (DeleteRemoteCtrl <$> A.decimal),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
       ("/version" <|> "/v") $> ShowVersion,

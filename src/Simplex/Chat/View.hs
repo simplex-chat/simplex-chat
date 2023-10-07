@@ -66,11 +66,11 @@ import System.Console.ANSI.Types
 
 type CurrentTime = UTCTime
 
-serializeChatResponse :: Maybe User -> CurrentTime -> TimeZone -> ChatResponse -> String
-serializeChatResponse user_ ts tz = unlines . map unStyle . responseToView user_ defaultChatConfig False ts tz
+serializeChatResponse :: (Maybe RemoteHostId, Maybe User) -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> String
+serializeChatResponse user_ ts tz remoteHost_ = unlines . map unStyle . responseToView user_ defaultChatConfig False ts tz remoteHost_
 
-responseToView :: Maybe User -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> ChatResponse -> [StyledString]
-responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz = \case
+responseToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> [StyledString]
+responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz outputRH = \case
   CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
   CRUsersList users -> viewUsersList users
   CRChatStarted _ -> ["chat started"]
@@ -274,7 +274,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRRemoteCtrlRejected rcId -> ["remote controller " <> sShow rcId <> " rejected"]
   CRRemoteCtrlConnecting rcId rcName -> ["remote controller " <> sShow rcId <> " connecting to " <> plain rcName]
   CRRemoteCtrlConnected rcId rcName -> ["remote controller " <> sShow rcId <> " connected, " <> plain rcName]
-  CRRemoteCtrlStopped rcId -> ["remote controller " <> sShow rcId <> " stopped"]
+  CRRemoteCtrlStopped _ -> ["remote controller stopped"]
   CRRemoteCtrlDeleted rcId -> ["remote controller " <> sShow rcId <> " deleted"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
@@ -323,12 +323,14 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
       | otherwise = []
     ttyUserPrefix :: User -> [StyledString] -> [StyledString]
     ttyUserPrefix _ [] = []
-    ttyUserPrefix User {userId, localDisplayName = u} ss = prependFirst userPrefix ss
+    ttyUserPrefix User {userId, localDisplayName = u} ss = prependFirst prefix ss
       where
-        userPrefix = case user_ of
-          Just User {userId = activeUserId} -> if userId /= activeUserId then prefix else ""
-          _ -> prefix
-        prefix = "[user: " <> highlight u <> "] "
+        prefix = if outputRH /= currentRH then r else userPrefix
+        r = case outputRH of
+          Nothing -> "[local] " <> userPrefix
+          Just rh -> "[remote: ]" <> highlight (show rh) <> "] "
+        userPrefix = if Just userId /= currentUserId then "[user: " <> highlight u <> "] " else ""
+        currentUserId = fmap (\User {userId} -> userId) user_
     ttyUser' :: Maybe User -> [StyledString] -> [StyledString]
     ttyUser' = maybe id ttyUser
     ttyUserPrefix' :: Maybe User -> [StyledString] -> [StyledString]

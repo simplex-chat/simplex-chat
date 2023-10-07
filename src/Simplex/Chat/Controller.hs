@@ -72,6 +72,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), Cor
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
+import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, liftEitherError, tryAllErrors, (<$$>))
 import Simplex.Messaging.Version
 import System.IO (Handle)
@@ -171,6 +172,7 @@ data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLite
 
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
+    currentRemoteHost :: TVar (Maybe RemoteHostId),
     activeTo :: TVar ActiveTo,
     firstTime :: Bool,
     smpAgent :: AgentClient,
@@ -424,6 +426,7 @@ data ChatCommand
   | CreateRemoteHost -- ^ Configure a new remote host
   | ListRemoteHosts
   | StartRemoteHost RemoteHostId -- ^ Start and announce a remote host
+  -- | SwitchRemoteHost (Maybe RemoteHostId) -- ^ Switch current remote host
   | StopRemoteHost RemoteHostId -- ^ Shut down a running session
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
   | RegisterRemoteCtrl RemoteCtrlOOB -- ^ Register OOB data for satellite discovery and handshake
@@ -431,7 +434,7 @@ data ChatCommand
   | ListRemoteCtrls
   | AcceptRemoteCtrl RemoteCtrlId -- ^ Accept discovered data and store confirmation
   | RejectRemoteCtrl RemoteCtrlId -- ^ Reject and blacklist discovered data
-  | StopRemoteCtrl RemoteCtrlId -- ^ Stop listening for announcements or terminate an active session
+  | StopRemoteCtrl -- ^ Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a satellite session
   | QuitChat
   | ShowVersion
@@ -441,6 +444,29 @@ data ChatCommand
   | GetAgentSubs
   | GetAgentSubsDetails
   deriving (Show)
+
+allowRemoteCommand :: ChatCommand -> Bool -- XXX: consider using Relay/Block/ForceLocal
+allowRemoteCommand = \case
+  StartChat {} -> False
+  APIStopChat -> False
+  APIActivateChat -> False
+  APISuspendChat {} -> False
+  SetTempFolder {} -> False
+  QuitChat -> False
+  CreateRemoteHost -> False
+  ListRemoteHosts -> False
+  StartRemoteHost {} -> False
+  -- SwitchRemoteHost {} -> False
+  StopRemoteHost {} -> False
+  DeleteRemoteHost {} -> False
+  RegisterRemoteCtrl {} -> False
+  StartRemoteCtrl -> False
+  ListRemoteCtrls -> False
+  AcceptRemoteCtrl {} -> False
+  RejectRemoteCtrl {} -> False
+  StopRemoteCtrl -> False
+  DeleteRemoteCtrl {} -> False
+  _ -> True
 
 data ChatResponse
   = CRActiveUser {user :: User}
@@ -619,7 +645,7 @@ data ChatResponse
   | CRRemoteCtrlRejected {remoteCtrlId :: RemoteCtrlId}
   | CRRemoteCtrlConnecting {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
   | CRRemoteCtrlConnected {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
-  | CRRemoteCtrlStopped {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlStopped {_nullary :: Maybe Int}
   | CRRemoteCtrlDeleted {remoteCtrlId :: RemoteCtrlId}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
@@ -637,6 +663,27 @@ data ChatResponse
   | CRArchiveImported {archiveErrors :: [ArchiveError]}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   deriving (Show)
+
+allowRemoteEvent :: ChatResponse -> Bool
+allowRemoteEvent = \case
+  CRRemoteHostCreated {} -> False
+  CRRemoteHostList {} -> False
+  CRRemoteHostStarted {} -> False
+  CRRemoteHostConnected {} -> False
+  CRRemoteHostStopped {} -> False
+  CRRemoteHostDeleted {} -> False
+  CRRemoteCtrlList {} -> False
+  CRRemoteCtrlRegistered {} -> False
+  CRRemoteCtrlStarted {} -> False
+  CRRemoteCtrlAnnounce {} -> False
+  CRRemoteCtrlFound {} -> False
+  CRRemoteCtrlAccepted {} -> False
+  CRRemoteCtrlRejected {} -> False
+  CRRemoteCtrlConnecting {} -> False
+  CRRemoteCtrlConnected {} -> False
+  CRRemoteCtrlStopped {} -> False
+  CRRemoteCtrlDeleted {} -> False
+  _ -> True
 
 logResponseToFile :: ChatResponse -> Bool
 logResponseToFile = \case
@@ -1107,6 +1154,27 @@ instance ToJSON ArchiveError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "AE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "AE"
 
+data RemoteHostSession
+  = RemoteHostSessionStarting
+      { announcer :: Async ()
+      }
+  | RemoteHostSessionStarted
+      { -- | Path for local resources to be synchronized with host
+        storePath :: FilePath,
+        ctrlClient :: HTTP2Client
+      }
+
+data RemoteCtrlSession = RemoteCtrlSession
+  { -- | Server side of transport to process remote commands and forward notifications
+    discoverer :: Async (),
+    supervisor :: Async (),
+    hostServer :: Maybe (Async ()),
+    discovered :: TMap C.KeyHash TransportHost,
+    accepted :: TMVar RemoteCtrlId,
+    remoteOutputQ :: TBQueue ChatResponse,
+    remoteNotifyQ :: TBQueue Notification
+  }
+
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
 type ChatMonad m = (ChatMonad' m, MonadError ChatError m)
@@ -1152,16 +1220,19 @@ unsetActive a = asks activeTo >>= atomically . (`modifyTVar` unset)
 
 -- | Emit local events.
 toView :: ChatMonad' m => ChatResponse -> m ()
-toView = toView_ Nothing
-
--- | Used by transport to mark remote events with source.
-toViewRemote :: ChatMonad' m => RemoteHostId -> ChatResponse -> m ()
-toViewRemote = toView_ . Just
-
-toView_ :: ChatMonad' m => Maybe RemoteHostId -> ChatResponse -> m ()
-toView_ rh event = do
-  q <- asks outputQ
-  atomically $ writeTBQueue q (Nothing, rh, event)
+toView event = do
+  localQ <- asks outputQ
+  chatReadVar remoteCtrlSession >>= \case
+    Nothing -> atomically $ writeTBQueue localQ (Nothing, Nothing, event)
+    Just RemoteCtrlSession {remoteOutputQ} ->
+      if allowRemoteEvent event
+        then do
+          -- TODO: filter events or let the UI ignore trigger events by itself?
+          -- traceM $ "Sending event to remote Q: " <> show event
+          atomically $ writeTBQueue remoteOutputQ event -- TODO: check full?
+        else do
+          -- traceM $ "Sending event to local Q: " <> show event
+          atomically $ writeTBQueue localQ (Nothing, Nothing, event)
 
 withStore' :: ChatMonad m => (DB.Connection -> IO a) -> m a
 withStore' action = withStore $ liftIO . action
