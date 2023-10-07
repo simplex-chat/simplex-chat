@@ -3,6 +3,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -15,7 +16,11 @@ import Control.Monad.IO.Class
 import Control.Monad.Reader (asks)
 import Control.Monad.STM (retry)
 import Crypto.Random (getRandomBytes)
+import Data.Aeson ((.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Key as JK
+import qualified Data.Aeson.KeyMap as JM
+import Data.Bifunctor (second)
 import qualified Data.Binary.Builder as Binary
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
@@ -36,6 +41,7 @@ import Simplex.Chat.Store.Remote
 import Simplex.Chat.Types
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
+import Simplex.Messaging.Parsers (pattern SingleFieldJSONTag, pattern TaggedObjectJSONTag, pattern TaggedObjectJSONData)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
@@ -185,9 +191,20 @@ relayCommand http s =
 
 -- | Convert swift single-field sum encoding into tagged/discriminator-field
 owsf2tagged :: J.Value -> J.Value
-owsf2tagged = \case
-  J.Object todo'convert -> J.Object todo'convert
-  skip -> skip
+owsf2tagged v = case v of
+  J.Object o -> J.Object $ case JM.toList o of
+    [OswfTag, (k2, v2)] -> tagged k2 v2
+    [(k1, v1), OswfTag] -> tagged k1 v1
+    ps -> JM.fromList $ map (second owsf2tagged) ps
+  J.Array a -> J.Array $ fmap owsf2tagged a
+  _ -> v
+  where
+    tagged k = \case
+      J.Object o -> JM.insert TaggedObjectJSONTag (text k) o
+      v' -> JM.fromList [TaggedObjectJSONTag .= text k, TaggedObjectJSONData .= v']
+    text = J.String . JK.toText
+
+pattern OswfTag = (SingleFieldJSONTag, J.Bool True)
 
 storeRemoteFile :: (ChatMonad m) => HTTP2Client -> FilePath -> m ChatResponse
 storeRemoteFile http localFile = do
