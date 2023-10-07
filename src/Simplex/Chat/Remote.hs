@@ -191,17 +191,17 @@ relayCommand http s =
 
 -- | Convert swift single-field sum encoding into tagged/discriminator-field
 owsf2tagged :: J.Value -> J.Value
-owsf2tagged v = case v of
+owsf2tagged val = case val of
   J.Object o -> J.Object $ case JM.toList o of
-    [OswfTag, (k2, v2)] -> tagged k2 v2
-    [(k1, v1), OswfTag] -> tagged k1 v1
+    [OswfTag, (k, v)] -> tagged k v
+    [(k, v), OswfTag] -> tagged k v
     ps -> JM.fromList $ map (second owsf2tagged) ps
   J.Array a -> J.Array $ fmap owsf2tagged a
-  _ -> v
+  _ -> val
   where
     tagged k = \case
       J.Object o -> JM.insert TaggedObjectJSONTag (text k) o
-      v' -> JM.fromList [TaggedObjectJSONTag .= text k, TaggedObjectJSONData .= v']
+      v -> JM.fromList [TaggedObjectJSONTag .= text k, TaggedObjectJSONData .= v]
     text = J.String . JK.toText
 
 pattern OswfTag = (SingleFieldJSONTag, J.Bool True)
