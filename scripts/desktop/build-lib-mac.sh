@@ -4,8 +4,12 @@ set -e
 
 OS=mac
 ARCH="${1:-`uname -a | rev | cut -d' ' -f1 | rev`}"
+COMPOSE_ARCH=$ARCH
+
 if [ "$ARCH" == "arm64" ]; then
     ARCH=aarch64
+else
+    COMPOSE_ARCH=x64
 fi
 LIB_EXT=dylib
 LIB=libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT
@@ -66,30 +70,29 @@ rm deps/`basename $LIB`
 cd -
 
 rm -rf apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
-rm -rf apps/multiplatform/desktop/src/jvmMain/resources/libs/$OS-$ARCH/
 rm -rf apps/multiplatform/desktop/build/cmake
 
 mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
-cp -r $BUILD_DIR/build/deps apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
+cp -r $BUILD_DIR/build/deps/* apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 cp $BUILD_DIR/build/libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 
 cd apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 
-LIBCRYPTO_PATH=$(otool -l deps/libHSdrct-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
-install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.1.1.$LIB_EXT deps/libHSdrct-*.$LIB_EXT
-cp $LIBCRYPTO_PATH deps/libcrypto.1.1.$LIB_EXT
-chmod 755 deps/libcrypto.1.1.$LIB_EXT
-install_name_tool -id "libcrypto.1.1.$LIB_EXT" deps/libcrypto.1.1.$LIB_EXT
-install_name_tool -id "libffi.8.$LIB_EXT" deps/libffi.$LIB_EXT
+LIBCRYPTO_PATH=$(otool -l libHSdrct-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
+install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.1.1.$LIB_EXT libHSdrct-*.$LIB_EXT
+cp $LIBCRYPTO_PATH libcrypto.1.1.$LIB_EXT
+chmod 755 libcrypto.1.1.$LIB_EXT
+install_name_tool -id "libcrypto.1.1.$LIB_EXT" libcrypto.1.1.$LIB_EXT
+install_name_tool -id "libffi.8.$LIB_EXT" libffi.$LIB_EXT
 
 LIBCRYPTO_PATH=$(otool -l $LIB | grep libcrypto | cut -d' ' -f11)
 if [ -n "$LIBCRYPTO_PATH" ]; then
     install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.1.1.$LIB_EXT $LIB
 fi
 
-LIBCRYPTO_PATH=$(otool -l deps/libHSsmplxmq*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
+LIBCRYPTO_PATH=$(otool -l libHSsmplxmq*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
 if [ -n "$LIBCRYPTO_PATH" ]; then
-    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.1.1.$LIB_EXT deps/libHSsmplxmq*.$LIB_EXT
+    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.1.1.$LIB_EXT libHSsmplxmq*.$LIB_EXT
 fi
 
 for lib in $(find . -type f -name "*.$LIB_EXT"); do
@@ -108,3 +111,9 @@ fi
 
 cd -
 scripts/desktop/prepare-vlc-mac.sh
+
+links_dir=apps/multiplatform/build/links
+mkdir -p $links_dir
+cd $links_dir
+rm macos-$COMPOSE_ARCH 2>/dev/null | true
+ln -sf ../../common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/ macos-$COMPOSE_ARCH

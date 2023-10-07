@@ -146,7 +146,7 @@ library
       src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns
   build-depends:
-      aeson ==2.0.*
+      aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
     , attoparsec ==0.14.*
@@ -194,7 +194,7 @@ executable simplex-bot
       apps/simplex-bot
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.0.*
+      aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
     , attoparsec ==0.14.*
@@ -243,7 +243,7 @@ executable simplex-bot-advanced
       apps/simplex-bot-advanced
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.0.*
+      aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
     , attoparsec ==0.14.*
@@ -294,7 +294,7 @@ executable simplex-broadcast-bot
       apps/simplex-broadcast-bot/src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.0.*
+      aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
     , attoparsec ==0.14.*
@@ -344,7 +344,7 @@ executable simplex-chat
       apps/simplex-chat
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.0.*
+      aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
     , attoparsec ==0.14.*
@@ -398,7 +398,7 @@ executable simplex-directory-service
       apps/simplex-directory-service/src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.0.*
+      aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
     , attoparsec ==0.14.*
@@ -472,7 +472,7 @@ test-suite simplex-chat-test
       apps/simplex-directory-service/src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.0.*
+      aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
     , attoparsec ==0.14.*

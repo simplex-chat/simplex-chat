@@ -13,7 +13,7 @@ extra-source-files:
   - cabal.project
 
 dependencies:
-  - aeson == 2.0.*
+  - aeson == 2.2.*
   - ansi-terminal >= 0.10 && < 0.12
   - async == 2.2.*
   - attoparsec == 0.14.*

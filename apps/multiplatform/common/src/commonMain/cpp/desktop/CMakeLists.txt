@@ -54,12 +54,11 @@ add_library( # Sets the name of the library.
     simplex-api.c)
 
 add_library( simplex SHARED IMPORTED )
-# Lib has different name because of version, find it
-FILE(GLOB SIMPLEXLIB ${CMAKE_SOURCE_DIR}/libs/${OS_LIB_PATH}-${OS_LIB_ARCH}/lib*simplex*.${OS_LIB_EXT})
-
 if(WIN32)
+    FILE(GLOB SIMPLEXLIB ${CMAKE_SOURCE_DIR}/libs/${OS_LIB_PATH}-${OS_LIB_ARCH}/lib*simplex*.${OS_LIB_EXT})
     set_target_properties( simplex PROPERTIES IMPORTED_IMPLIB ${SIMPLEXLIB})
 else()
+    FILE(GLOB SIMPLEXLIB ${CMAKE_SOURCE_DIR}/libs/${OS_LIB_PATH}-${OS_LIB_ARCH}/lib*simplex-chat*.${OS_LIB_EXT})
     set_target_properties( simplex PROPERTIES IMPORTED_LOCATION ${SIMPLEXLIB})
 endif()
 
@@ -72,7 +71,7 @@ if(NOT APPLE)
 else()
 	# Without direct linking it can't find hs_init in linking step
 	add_library( rts SHARED IMPORTED )
-	FILE(GLOB RTSLIB ${CMAKE_SOURCE_DIR}/libs/${OS_LIB_PATH}-${OS_LIB_ARCH}/deps/libHSrts_thr-*.${OS_LIB_EXT})
+	FILE(GLOB RTSLIB ${CMAKE_SOURCE_DIR}/libs/${OS_LIB_PATH}-${OS_LIB_ARCH}/deps/libHSrts*_thr-*.${OS_LIB_EXT})
 	set_target_properties( rts PROPERTIES IMPORTED_LOCATION ${RTSLIB})
 
 	target_link_libraries(app-lib rts simplex)

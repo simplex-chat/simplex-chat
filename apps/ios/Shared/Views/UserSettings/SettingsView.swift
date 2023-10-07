@@ -381,7 +381,9 @@ struct ProfilePreview: View {
                 Text(profileOf.displayName)
                     .fontWeight(.bold)
                     .font(.title2)
-                Text(profileOf.fullName)
+                if profileOf.fullName != "" && profileOf.fullName != profileOf.displayName {
+                    Text(profileOf.fullName)
+                }
             }
         }
     }
