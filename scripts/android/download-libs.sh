@@ -7,7 +7,7 @@ function readlink() {
 }
 
 if [ -z "${1}" ]; then
-    echo "Job repo is unset. Provide it via first argument like: $(readlink "$0")/download_libs.sh https://something.com/job/something/{master,stable}"
+    echo "Job repo is unset. Provide it via first argument like: $(readlink "$0")/download-libs.sh https://something.com/job/something/{master,stable}"
     exit 1
 fi
 

@@ -322,6 +322,15 @@ fun ChatLockItem(
   }
 }
 
+@Composable fun TerminalAlwaysVisibleItem(pref: SharedPreference<Boolean>, onChange: (Boolean) -> Unit) {
+  SettingsActionItemWithContent(painterResource(MR.images.ic_engineering), stringResource(MR.strings.terminal_always_visible), extraPadding = false) {
+    DefaultSwitch(
+      checked = remember { pref.state }.value,
+      onCheckedChange = onChange,
+    )
+  }
+}
+
 @Composable fun InstallTerminalAppItem(uriHandler: UriHandler) {
   SectionItemView({ uriHandler.openUriCatching("https://github.com/simplex-chat/simplex-chat") }) {
     Icon(
@@ -355,7 +364,7 @@ fun AppVersionItem(showVersion: () -> Unit) {
       maxLines = 1,
       overflow = TextOverflow.Ellipsis
     )
-    if (profileOf.fullName.isNotEmpty()) {
+    if (profileOf.fullName.isNotEmpty() && profileOf.fullName != profileOf.displayName) {
       Text(
         profileOf.fullName,
         Modifier.padding(vertical = 5.dp),

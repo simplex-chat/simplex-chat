@@ -16,11 +16,11 @@ struct AddGroupView: View {
     @State private var groupInfo: GroupInfo?
     @State private var profile = GroupProfile(displayName: "", fullName: "")
     @FocusState private var focusDisplayName
-    @FocusState private var focusFullName
     @State private var showChooseSource = false
     @State private var showImagePicker = false
     @State private var showTakePhoto = false
     @State private var chosenImage: UIImage? = nil
+    @State private var showInvalidNameAlert = false
 
     var body: some View {
         if let chat = chat, let groupInfo = groupInfo {
@@ -76,26 +76,24 @@ struct AddGroupView: View {
             .padding(.bottom, 4)
 
             ZStack(alignment: .topLeading) {
-                if !validDisplayName(profile.displayName) {
-                    Image(systemName: "exclamationmark.circle")
-                        .foregroundColor(.red)
-                        .padding(.top, 4)
+                let name = profile.displayName.trimmingCharacters(in: .whitespaces)
+                if name != mkValidName(name) {
+                    Button {
+                        showInvalidNameAlert = true
+                    } label: {
+                        Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                    }
+                } else {
+                    Image(systemName: "exclamationmark.circle").foregroundColor(.clear)
                 }
-                textField("Group display name", text: $profile.displayName)
+                textField("Enter group name…", text: $profile.displayName)
                     .focused($focusDisplayName)
-                    .submitLabel(.next)
+                    .submitLabel(.go)
                     .onSubmit {
-                        if canCreateProfile() { focusFullName = true }
-                        else { focusDisplayName = true }
+                        if canCreateProfile() { createGroup() }
                     }
             }
-            textField("Group full name (optional)", text: $profile.fullName)
-                .focused($focusFullName)
-                .submitLabel(.go)
-                .onSubmit {
-                    if canCreateProfile() { createGroup() }
-                    else { focusFullName = true }
-                }
+            .padding(.bottom)
 
             Spacer()
 
@@ -133,6 +131,9 @@ struct AddGroupView: View {
                 didSelectItem in showImagePicker = false
             }
         }
+        .alert(isPresented: $showInvalidNameAlert) {
+            createInvalidNameAlert(mkValidName(profile.displayName), $profile.displayName)
+        }
         .onChange(of: chosenImage) { image in
             if let image = image {
                 profile.image = resizeImageToStrSize(cropToSquare(image), maxDataSize: 12500)
@@ -146,15 +147,13 @@ struct AddGroupView: View {
 
     func textField(_ placeholder: LocalizedStringKey, text: Binding<String>) -> some View {
         TextField(placeholder, text: text)
-            .textInputAutocapitalization(.never)
-            .disableAutocorrection(true)
-            .padding(.leading, 28)
-            .padding(.bottom)
+            .padding(.leading, 32)
     }
 
     func createGroup() {
         hideKeyboard()
         do {
+            profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
             let gInfo = try apiNewGroup(profile)
             Task {
                 let groupMembers = await apiListMembers(gInfo.groupId)
@@ -180,7 +179,8 @@ struct AddGroupView: View {
     }
 
     func canCreateProfile() -> Bool {
-        profile.displayName != "" && validDisplayName(profile.displayName)
+        let name = profile.displayName.trimmingCharacters(in: .whitespaces)
+        return name != "" && validDisplayName(name)
     }
 }
 

@@ -9,6 +9,7 @@ on:
       - website/**
       - images/**
       - blog/**
+      - docs/**
       - .github/workflows/web.yml
 
 jobs:

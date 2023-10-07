@@ -96,7 +96,7 @@ Incognito mode was [added a year ago](./20220901-simplex-chat-v3.2-incognito-mod
 
 It is now simpler to use - you can decide whether to connect to a contact or join a group using your main profile at a point when you create an invitation link or connect via a link or QR code.
 
-When you are connecting to people your know you usually want to share your main profile, and when connecting to public groups or strangers, you may prefer to use a random profile.
+When you are connecting to people you know you usually want to share your main profile, and when connecting to public groups or strangers, you may prefer to use a random profile.
 
 ## SimpleX platform
 

@@ -6,7 +6,7 @@ function readlink() {
   echo "$(cd "$(dirname "$1")"; pwd -P)"
 }
 root_dir="$(dirname "$(dirname "$(readlink "$0")")")"
-vlc_dir=$root_dir/apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-x86_64/deps/vlc
+vlc_dir=$root_dir/apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-x86_64/vlc
 
 mkdir $vlc_dir || exit 0
 
