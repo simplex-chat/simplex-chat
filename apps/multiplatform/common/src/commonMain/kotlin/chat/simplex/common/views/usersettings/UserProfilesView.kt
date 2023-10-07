@@ -28,9 +28,8 @@ import chat.simplex.common.views.chatlist.UserProfilePickerItem
 import chat.simplex.common.views.chatlist.UserProfileRow
 import chat.simplex.common.views.database.PassphraseField
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.onboarding.CreateProfile
-import chat.simplex.common.model.*
 import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.views.CreateProfile
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay

@@ -364,7 +364,7 @@ fun AppVersionItem(showVersion: () -> Unit) {
       maxLines = 1,
       overflow = TextOverflow.Ellipsis
     )
-    if (profileOf.fullName.isNotEmpty()) {
+    if (profileOf.fullName.isNotEmpty() && profileOf.fullName != profileOf.displayName) {
       Text(
         profileOf.fullName,
         Modifier.padding(vertical = 5.dp),

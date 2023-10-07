@@ -16,7 +16,7 @@ function readlink() {
 }
 
 root_dir="$(dirname "$(dirname "$(readlink "$0")")")"
-vlc_dir=$root_dir/apps/multiplatform/common/src/commonMain/cpp/desktop/libs/mac-$ARCH/deps/vlc
+vlc_dir=$root_dir/apps/multiplatform/common/src/commonMain/cpp/desktop/libs/mac-$ARCH/vlc
 #rm -rf $vlc_dir
 mkdir -p $vlc_dir/vlc || exit 0
 
