@@ -193,8 +193,8 @@ relayCommand http s =
 owsf2tagged :: J.Value -> J.Value
 owsf2tagged val = case val of
   J.Object o -> J.Object $ case JM.toList o of
-    [OswfTag, (k, v)] -> tagged k v
-    [(k, v), OswfTag] -> tagged k v
+    [OwsfTag, (k, v)] -> tagged k v
+    [(k, v), OwsfTag] -> tagged k v
     ps -> JM.fromList $ map (second owsf2tagged) ps
   J.Array a -> J.Array $ fmap owsf2tagged a
   _ -> val
@@ -204,7 +204,7 @@ owsf2tagged val = case val of
       v -> JM.fromList [TaggedObjectJSONTag .= text k, TaggedObjectJSONData .= v]
     text = J.String . JK.toText
 
-pattern OswfTag = (SingleFieldJSONTag, J.Bool True)
+pattern OwsfTag = (SingleFieldJSONTag, J.Bool True)
 
 storeRemoteFile :: (ChatMonad m) => HTTP2Client -> FilePath -> m ChatResponse
 storeRemoteFile http localFile = do
