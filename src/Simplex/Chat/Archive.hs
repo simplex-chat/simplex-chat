@@ -44,16 +44,16 @@ exportArchive :: ChatMonad m => ArchiveConfig -> m ()
 exportArchive cfg@ArchiveConfig {archivePath, disableCompression} =
   handleErr $ withTempDir cfg "simplex-chat." $ \dir -> do
     fs@StorageFiles {chatStore, agentStore, filesPath} <- storageFiles
-    setWALMode False `withStores` fs
+    setWALMode SQLModeDelete `withStores` fs
     copyFile (dbFilePath chatStore) $ dir </> archiveChatDbFile
     copyFile (dbFilePath agentStore) $ dir </> archiveAgentDbFile
-    setWALMode True `withStores` fs
+    setWALMode SQLModeWAL `withStores` fs
     forM_ filesPath $ \fp ->
       copyDirectoryFiles fp $ dir </> archiveFilesFolder
     let method = if disableCompression == Just True then Z.Store else Z.Deflate
     Z.createArchive archivePath $ Z.packDirRecur method Z.mkEntrySelector dir
   where
-    setWALMode walMode st = liftIO $ setSQLiteModeWAL st walMode
+    setWALMode mode st = liftIO $ setSQLiteJournalMode st mode
 
 importArchive :: ChatMonad m => ArchiveConfig -> m [ArchiveError]
 importArchive cfg@ArchiveConfig {archivePath} =

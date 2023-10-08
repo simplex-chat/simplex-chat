@@ -82,7 +82,7 @@ import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentCl
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withConnection, checkpointSQLiteStore)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withConnection, checkpointSQLiteStore, getSQLiteJournalMode, setSQLiteJournalMode)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
@@ -517,6 +517,16 @@ processChatCommand = \case
             . sortOn (timeAvg . snd)
             . M.assocs
             <$> withConnection st (readTVarIO . DB.slow)
+  StoreSQLMode mode_ -> checkChatStopped $ do
+    ChatController {chatStore, smpAgent} <- ask
+    let agentStore = agentClientStore smpAgent
+    forM_ mode_ $ \mode -> do
+      setStoreChanged
+      liftIO $ setSQLiteJournalMode chatStore mode >> setSQLiteJournalMode agentStore mode
+    liftIO $ do
+      chatMode <- getSQLiteJournalMode chatStore
+      agentMode <- getSQLiteJournalMode agentStore
+      pure CRStoreSQLMode {chatMode, agentMode}
   APIGetChats userId withPCC -> withUserId userId $ \user ->
     CRApiChats user <$> withStoreCtx' (Just "APIGetChats, getChatPreviews") (\db -> getChatPreviews db user withPCC)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
@@ -5402,6 +5412,7 @@ chatCommandP =
       "/sql chat " *> (ExecChatStoreSQL <$> textP),
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
       "/sql slow" $> SlowSQLQueries,
+      "/sql mode" *> (StoreSQLMode <$> optional (A.space *> strP)),
       "/_get chats " *> (APIGetChats <$> A.decimal <*> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
       "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
