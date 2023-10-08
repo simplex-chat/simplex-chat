@@ -487,6 +487,7 @@ test-suite simplex-chat-test
       ChatTests.Groups
       ChatTests.Profiles
       ChatTests.Utils
+      JSONTests
       MarkdownTests
       MobileTests
       ProtocolTests
@@ -508,7 +509,8 @@ test-suite simplex-chat-test
       apps/simplex-directory-service/src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.2.*
+      QuickCheck ==2.14.*
+    , aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
     , attoparsec ==0.14.*
@@ -527,6 +529,7 @@ test-suite simplex-chat-test
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
+    , generic-random ==1.5.*
     , hspec ==2.11.*
     , http-types ==0.12.*
     , http2 ==4.1.*

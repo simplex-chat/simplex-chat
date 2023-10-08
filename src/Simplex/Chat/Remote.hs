@@ -20,7 +20,6 @@ import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Key as JK
 import qualified Data.Aeson.KeyMap as JM
-import Data.Bifunctor (second)
 import qualified Data.Binary.Builder as Binary
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
@@ -191,19 +190,31 @@ relayCommand http s =
 
 -- | Convert swift single-field sum encoding into tagged/discriminator-field
 owsf2tagged :: J.Value -> J.Value
-owsf2tagged val = case val of
-  J.Object o -> J.Object $ case JM.toList o of
-    [OwsfTag, (k, v)] -> tagged k v
-    [(k, v), OwsfTag] -> tagged k v
-    ps -> JM.fromList $ map (second owsf2tagged) ps
-  J.Array a -> J.Array $ fmap owsf2tagged a
-  _ -> val
+owsf2tagged = fst . convert
   where
-    tagged k = \case
-      J.Object o -> JM.insert TaggedObjectJSONTag (text k) o
-      v -> JM.fromList [TaggedObjectJSONTag .= text k, TaggedObjectJSONData .= v]
+    convert val = case val of
+      J.Object o
+        | JM.size o == 2 ->
+            case JM.toList o of
+              [OwsfTag, (k, v)] -> (tagged k v, True)
+              [(k, v), OwsfTag] -> (tagged k v, True)
+              _ -> props
+        | otherwise -> props
+        where
+          props = (J.Object $ fmap owsf2tagged o, False)
+      J.Array a -> (J.Array $ fmap owsf2tagged a, False)
+      _ -> (val, False)
+    tagged k v = J.Object $ case v' of
+      J.Object o
+        | innerTag -> pair
+        | otherwise -> JM.insert TaggedObjectJSONTag (text k) o
+      _ -> pair
+      where
+        (v', innerTag) = convert v
+        pair = JM.fromList [TaggedObjectJSONTag .= text k, TaggedObjectJSONData .= v']
     text = J.String . JK.toText
 
+pattern OwsfTag :: (JK.Key, J.Value)
 pattern OwsfTag = (SingleFieldJSONTag, J.Bool True)
 
 storeRemoteFile :: (ChatMonad m) => HTTP2Client -> FilePath -> m ChatResponse
