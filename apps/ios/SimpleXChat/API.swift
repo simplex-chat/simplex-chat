@@ -50,6 +50,13 @@ public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: Migratio
     return result
 }
 
+public func chatCloseStore() {
+    let err = fromCString(chat_close_store(getChatCtrl()))
+    if err != "" {
+        logger.error("chatCloseStore error: \(err)")
+    }
+}
+
 public func resetChatCtrl() {
     chatController = nil
     migrationResult = nil

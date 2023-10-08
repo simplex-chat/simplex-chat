@@ -45,7 +45,10 @@ func suspendBgRefresh() {
     }
 }
 
+private var terminating = false
+
 func terminateChat() {
+    terminating = true
     suspendLockQueue.sync {
         switch appStateGroupDefault.get() {
         case .suspending:
@@ -72,6 +75,9 @@ private func _chatSuspended() {
     appStateGroupDefault.set(.suspended)
     if ChatModel.shared.chatRunning == true {
         ChatReceiver.shared.stop()
+    }
+    if terminating {
+         chatCloseStore()
     }
 }
 
