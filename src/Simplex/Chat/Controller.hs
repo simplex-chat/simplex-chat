@@ -314,7 +314,7 @@ data ChatCommand
   | APIVerifyGroupMember GroupId GroupMemberId (Maybe Text)
   | APIEnableContact ContactId
   | APIEnableGroupMember GroupId GroupMemberId
-  | SetShowMessages ChatName Bool
+  | SetShowMessages ChatName MsgFilter
   | SetSendReceipts ChatName (Maybe Bool)
   | ContactInfo ContactName
   | ShowGroupInfo GroupName

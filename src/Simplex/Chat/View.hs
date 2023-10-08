@@ -386,6 +386,7 @@ viewUsersList = mapMaybe userInfo . sortOn ldn
 
 muted :: ChatInfo c -> CIDirection c d -> Bool
 muted chat chatDir = case (chat, chatDir) of
+  -- TODO *** should depend on the message and on the member too, DisableNtfs won't be used?
   (DirectChat Contact {chatSettings = DisableNtfs}, CIDirectRcv) -> True
   (GroupChat GroupInfo {chatSettings = DisableNtfs}, CIGroupRcv _) -> True
   _ -> False
@@ -691,7 +692,7 @@ viewContactsList =
    in map (\ct -> ctIncognito ct <> ttyFullContact ct <> muted' ct <> alias ct) . sortOn ldn
   where
     muted' Contact {chatSettings, localDisplayName = ldn}
-      | enableNtfs chatSettings = ""
+      | chatHasNtfs chatSettings = ""
       | otherwise = " (muted, you can " <> highlight ("/unmute @" <> ldn) <> ")"
     alias Contact {profile = LocalProfile {localAlias}}
       | localAlias == "" = ""
@@ -872,7 +873,7 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
           GSMemLeft -> delete "you left"
           GSMemGroupDeleted -> delete "group deleted"
           _
-            | enableNtfs chatSettings -> " (" <> memberCount <> ")"
+            | chatHasNtfs chatSettings -> " (" <> memberCount <> ")"
             | otherwise -> " (" <> memberCount <> ", muted, you can " <> highlight ("/unmute #" <> viewGroupName g) <> ")"
         delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> viewGroupName g) <> ")"
         memberCount = sShow currentMembers <> " member" <> if currentMembers == 1 then "" else "s"
