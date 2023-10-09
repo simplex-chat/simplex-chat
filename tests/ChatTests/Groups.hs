@@ -73,7 +73,11 @@ chatGroupTests = do
       testNoDirect _1 _0 False
       testNoDirect _1 _1 False
     it "members have different local display names in different groups" testNoDirectDifferentLDNs
-    it "member should connect to contact when profile match" testConnectMemberToContact
+  describe "merge members and contacts" $ do
+    it "new member should merge with existing contact" testMergeMemberExistingContact
+    it "new contact should merge with existing member" testMergeContactExistingMember
+    it "new contact should merge with multiple existing members" testMergeContactMultipleMembers
+    it "new group link host contact should merge with single existing contact out of multiple" testMergeGroupLinkHostMultipleContacts
   describe "create member contact" $ do
     it "create contact with group member with invitation message" testMemberContactMessage
     it "create contact with group member without invitation message" testMemberContactNoMessage
@@ -2734,8 +2738,8 @@ testNoDirectDifferentLDNs =
           bob <# ("#" <> gName <> " " <> cathLDN <> "> hey")
         ]
 
-testConnectMemberToContact :: HasCallStack => FilePath -> IO ()
-testConnectMemberToContact =
+testMergeMemberExistingContact :: HasCallStack => FilePath -> IO ()
+testMergeMemberExistingContact =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       connectUsers alice bob
@@ -2750,13 +2754,15 @@ testConnectMemberToContact =
         [ do
             alice <## "#team: you joined the group"
             alice <## "#team: member cath_1 (Catherine) is connected"
-            alice <## "member #team cath_1 is merged into cath",
+            alice <## "contact and member are merged: cath, #team cath_1"
+            alice <## "use @cath <message> to send messages",
           do
             bob <## "#team: alice joined the group",
           do
             cath <## "#team: bob added alice_1 (Alice) to the group (connecting...)"
             cath <## "#team: new member alice_1 is connected"
-            cath <## "member #team alice_1 is merged into alice"
+            cath <## "contact and member are merged: alice, #team alice_1"
+            cath <## "use @alice <message> to send messages"
         ]
       alice <##> cath
       alice #> "#team hello"
@@ -2778,6 +2784,124 @@ testConnectMemberToContact =
              ]
       alice `hasContactProfiles` ["alice", "bob", "cath"]
       cath `hasContactProfiles` ["cath", "alice", "bob"]
+
+testMergeContactExistingMember :: HasCallStack => FilePath -> IO ()
+testMergeContactExistingMember =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      bob ##> "/c"
+      inv' <- getInvitation bob
+      cath ##> ("/c " <> inv')
+      cath <## "confirmation sent!"
+      concurrentlyN_
+        [ bob
+            <### [ "cath_1 (Catherine): contact is connected",
+                   "contact and member are merged: cath_1, #team cath",
+                   "use @cath <message> to send messages"
+                 ],
+          cath
+            <### [ "bob_1 (Bob): contact is connected",
+                   "contact and member are merged: bob_1, #team bob",
+                   "use @bob <message> to send messages"
+                 ]
+        ]
+      bob <##> cath
+
+      bob ##> "/contacts"
+      bob <### ["alice (Alice)", "cath (Catherine)"]
+      cath ##> "/contacts"
+      cath <### ["alice (Alice)", "bob (Bob)"]
+      bob `hasContactProfiles` ["alice", "bob", "cath"]
+      cath `hasContactProfiles` ["cath", "alice", "bob"]
+
+testMergeContactMultipleMembers :: HasCallStack => FilePath -> IO ()
+testMergeContactMultipleMembers =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      create2Groups3 "team" "club" alice bob cath
+
+      bob `hasContactProfiles` ["alice", "bob", "cath", "cath"]
+      cath `hasContactProfiles` ["cath", "alice", "bob", "bob"]
+
+      bob ##> "/c"
+      inv' <- getInvitation bob
+      cath ##> ("/c " <> inv')
+      cath <## "confirmation sent!"
+      concurrentlyN_
+        [ bob
+            <### [ "cath_2 (Catherine): contact is connected",
+                   StartsWith "contact and member are merged: cath",
+                   StartsWith "use @cath",
+                   StartsWith "contact and member are merged: cath",
+                   StartsWith "use @cath"
+                 ],
+          cath
+            <### [ "bob_2 (Bob): contact is connected",
+                   StartsWith "contact and member are merged: bob",
+                   StartsWith "use @bob",
+                   StartsWith "contact and member are merged: bob",
+                   StartsWith "use @bob"
+                 ]
+        ]
+      bob <##> cath
+
+      bob ##> "/contacts"
+      bob <### ["alice (Alice)", "cath (Catherine)"]
+      cath ##> "/contacts"
+      cath <### ["alice (Alice)", "bob (Bob)"]
+      bob `hasContactProfiles` ["alice", "bob", "cath"]
+      cath `hasContactProfiles` ["cath", "alice", "bob"]
+
+testMergeGroupLinkHostMultipleContacts :: HasCallStack => FilePath -> IO ()
+testMergeGroupLinkHostMultipleContacts =
+  testChat2 bobProfile cathProfile $
+    \bob cath -> do
+      connectUsers bob cath
+
+      bob ##> "/c"
+      inv' <- getInvitation bob
+      cath ##> ("/c " <> inv')
+      cath <## "confirmation sent!"
+      concurrently_
+        (bob <## "cath_1 (Catherine): contact is connected")
+        (cath <## "bob_1 (Bob): contact is connected")
+
+      bob `hasContactProfiles` ["bob", "cath", "cath"]
+      cath `hasContactProfiles` ["cath", "bob", "bob"]
+
+      bob ##> "/g party"
+      bob <## "group #party is created"
+      bob <## "to add members use /a party <name> or /create link #party"
+      bob ##> "/create link #party"
+      gLink <- getGroupLink bob "party" GRMember True
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      bob <## "cath_2 (Catherine): accepting request to join group #party..."
+      concurrentlyN_
+        [ bob
+            <### [ "cath_2 (Catherine): contact is connected",
+                   EndsWith "invited to group #party via your group link",
+                   EndsWith "joined the group",
+                   StartsWith "contact cath_2 is merged into cath",
+                   StartsWith "use @cath"
+                 ],
+          cath
+            <### [ "bob_2 (Bob): contact is connected",
+                   "#party: you joined the group",
+                   StartsWith "contact bob_2 is merged into bob",
+                   StartsWith "use @bob"
+                 ]
+        ]
+      bob <##> cath
+
+      bob ##> "/contacts"
+      bob <### ["cath (Catherine)", "cath_1 (Catherine)"]
+      cath ##> "/contacts"
+      cath <### ["bob (Bob)", "bob_1 (Bob)"]
+      bob `hasContactProfiles` ["bob", "cath", "cath"]
+      cath `hasContactProfiles` ["cath", "bob", "bob"]
 
 testMemberContactMessage :: HasCallStack => FilePath -> IO ()
 testMemberContactMessage =
