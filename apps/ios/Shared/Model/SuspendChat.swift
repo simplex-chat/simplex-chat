@@ -50,6 +50,7 @@ func suspendBgRefresh() {
 private var terminating = false
 
 func terminateChat() {
+    logger.debug("terminateChat")
     suspendLockQueue.sync {
         switch appStateGroupDefault.get() {
         case .suspending:
@@ -91,6 +92,7 @@ private func _chatSuspended() {
 
 func activateChat(appState: AppState = .active) {
     logger.debug("DEBUGGING: activateChat")
+    terminating = false
     suspendLockQueue.sync {
         appStateGroupDefault.set(appState)
         if ChatModel.ok { apiActivateChat() }
@@ -99,6 +101,7 @@ func activateChat(appState: AppState = .active) {
 }
 
 func initChatAndMigrate(refreshInvitations: Bool = true) {
+    terminating = false
     let m = ChatModel.shared
     if (!m.chatInitialized) {
         do {
@@ -111,6 +114,7 @@ func initChatAndMigrate(refreshInvitations: Bool = true) {
 }
 
 func startChatAndActivate() {
+    terminating = false
     logger.debug("DEBUGGING: startChatAndActivate")
     if ChatModel.shared.chatRunning == true {
         ChatReceiver.shared.start()
