@@ -34,7 +34,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import GHC.Generics (Generic)
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
-import Simplex.Chat (defaultChatConfig, maxImageSize)
+import Simplex.Chat (defaultChatConfig, maxImageSize, showMessageNtf)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
@@ -349,13 +349,13 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
     contactList :: [ContactRef] -> String
     contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
     unmuted :: ChatInfo c -> ChatItem c d -> [StyledString] -> [StyledString]
-    unmuted chat ChatItem {chatDir} = unmuted' chat chatDir
+    unmuted chat ci@ChatItem {chatDir} = unmuted' chat chatDir $ isReference ci
     unmutedReaction :: ChatInfo c -> CIReaction c d -> [StyledString] -> [StyledString]
-    unmutedReaction chat CIReaction {chatDir} = unmuted' chat chatDir
-    unmuted' :: ChatInfo c -> CIDirection c d -> [StyledString] -> [StyledString]
-    unmuted' chat chatDir s
-      | muted chat chatDir = []
-      | otherwise = s
+    unmutedReaction chat CIReaction {chatDir} = unmuted' chat chatDir False
+    unmuted' :: ChatInfo c -> CIDirection c d -> Bool -> [StyledString] -> [StyledString]
+    unmuted' chat chatDir reference s
+      | unmutedMsg chat chatDir reference = s
+      | otherwise = []
 
 chatItemDeletedText :: ChatItem c d -> Maybe GroupMember -> Maybe Text
 chatItemDeletedText ci membership_ = deletedStateToText <$> chatItemDeletedState ci
@@ -384,12 +384,13 @@ viewUsersList = mapMaybe userInfo . sortOn ldn
             <> ["muted" | not showNtfs]
             <> [plain ("unread: " <> show count) | count /= 0]
 
-muted :: ChatInfo c -> CIDirection c d -> Bool
-muted chat chatDir = case (chat, chatDir) of
-  -- TODO *** should depend on the message and on the member too, DisableNtfs won't be used?
-  (DirectChat Contact {chatSettings = DisableNtfs}, CIDirectRcv) -> True
-  (GroupChat GroupInfo {chatSettings = DisableNtfs}, CIGroupRcv _) -> True
-  _ -> False
+unmutedMsg :: ChatInfo c -> CIDirection c d -> Bool -> Bool
+unmutedMsg chat chatDir reference = case (chat, chatDir) of
+  (DirectChat Contact {chatSettings}, CIDirectRcv) ->
+    showMessageNtf chatSettings reference
+  (GroupChat GroupInfo {chatSettings}, CIGroupRcv GroupMember {memberSettings}) ->
+    showMessageNtf chatSettings reference && showMessages memberSettings
+  _ -> True
 
 viewGroupSubscribed :: GroupInfo -> [StyledString]
 viewGroupSubscribed g = [membershipIncognito g <> ttyFullGroup g <> ": connected to server(s)"]

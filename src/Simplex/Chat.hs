@@ -1174,10 +1174,12 @@ processChatCommand = \case
       ok user
     _ -> pure $ chatCmdError (Just user) "not supported"
   APISetMemberSettings gId gMemberId settings -> withUser $ \user -> do
-    withStore $ \db -> do
-      m <- getGroupMember db user gId gMemberId
-      liftIO . unless (memberSettings m == settings) $
-        updateGroupMemberSettings db user gId gMemberId settings
+    m <- withStore $ \db -> do
+      liftIO $ updateGroupMemberSettings db user gId gMemberId settings
+      getGroupMember db user gId gMemberId
+    when (memberActive m) $ forM_ (memberConnId m) $ \connId -> do
+      let ntfOn = showMessages $ memberSettings m
+      withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchChatError` (toView . CRChatError (Just user))
     ok user
   APIContactInfo contactId -> withUser $ \user@User {userId} -> do
     -- [incognito] print user's incognito profile for this contact
@@ -3287,7 +3289,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           GCInviteeMember -> do
             memberConnectedChatItem gInfo m
             toView $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected}
-            whenGroupNtfs user gInfo $ do
+            whenGroupNtfs user gInfo m False $ do
               setActive $ ActiveG gName
               showToast ("#" <> gName) $ "member " <> m.localDisplayName <> " is connected"
             intros <- withStore' $ \db -> createIntroductions db members m
@@ -3698,7 +3700,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       memberConnectedChatItem gInfo m
       toView $ CRConnectedToGroupMember user gInfo m ct_
       let g = groupName' gInfo
-      whenGroupNtfs user gInfo $ do
+      whenGroupNtfs user gInfo m False $ do
         setActive $ ActiveG g
         showToast ("#" <> g) $ "member " <> c <> " is connected"
 
@@ -3783,7 +3785,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           file_ <- processFileInvitation fInv_ content $ \db -> createRcvFileTransfer db userId ct
           ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ live
           autoAcceptFile file_
-          whenContactNtfs user ct $ do
+          whenContactNtfs user ct (isQuote mc) $ do
             showMsgToast (c <> "> ") content formattedText
             setActive $ ActiveC c
       where
@@ -3982,7 +3984,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ live
           autoAcceptFile file_
           let g = groupName' gInfo
-          whenGroupNtfs user gInfo $ do
+          whenGroupNtfs user gInfo m (isQuote mc) $ do
             showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
             setActive $ ActiveG g
         newChatItem ciContent ciFile_ timed_ live = do
@@ -4067,7 +4069,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           ciFile = Just $ CIFile {fileId, fileName, fileSize, fileSource = Nothing, fileStatus = CIFSRcvInvitation, fileProtocol}
       ci <- saveRcvChatItem' user (CDDirectRcv ct) msg sharedMsgId_ msgMeta (CIRcvMsgContent $ MCFile "") ciFile Nothing False
       toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
-      whenContactNtfs user ct $ do
+      whenContactNtfs user ct False $ do
         showToast (c <> "> ") "wants to send a file"
         setActive $ ActiveC c
 
@@ -4082,7 +4084,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ msgMeta (CIRcvMsgContent $ MCFile "") ciFile Nothing False
       groupMsgToView gInfo m ci msgMeta
       let g = groupName' gInfo
-      whenGroupNtfs user gInfo $ do
+      whenGroupNtfs user gInfo m False $ do
         showToast ("#" <> g <> " " <> c <> "> ") "wants to send a file"
         setActive $ ActiveG g
 
@@ -4264,7 +4266,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
           toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
           toView $ CRReceivedGroupInvitation {user, groupInfo = gInfo, contact = ct, fromMemberRole = fromRole, memberRole = memRole}
-          whenContactNtfs user ct $
+          whenContactNtfs user ct True $
             showToast ("#" <> localDisplayName <> " " <> c <> "> ") "invited you to join the group"
       where
         sameGroupLinkId :: Maybe GroupLinkId -> Maybe GroupLinkId -> Bool
@@ -4663,8 +4665,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       dm <- directMessage $ XGrpMemInfo membership.memberId (fromLocalProfile $ memberProfile membership)
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       groupConnIds <- joinAgentConnectionAsync user (chatHasNtfs chatSettings) groupConnReq dm subMode
-      -- TODO *** should be based on contact's settings or just True
-      directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user (chatHasNtfs chatSettings) dcr dm subMode
+      directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user True dcr dm subMode
       let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
           mcvr = maybe chatInitialVRange fromChatVRange memberChatVRange
       withStore' $ \db -> createIntroToMemberContact db user m toMember mcvr groupConnIds directConnIds customUserProfileId subMode
@@ -5416,13 +5417,17 @@ getCreateActiveUser st testView = do
 whenUserNtfs :: ChatMonad' m => User -> m () -> m ()
 whenUserNtfs User {showNtfs, activeUser} = when $ showNtfs || activeUser
 
--- TODO *** show notifications when enabled for contact or a message
-whenContactNtfs :: ChatMonad' m => User -> Contact -> m () -> m ()
-whenContactNtfs user Contact {chatSettings} = whenUserNtfs user . when (chatHasNtfs chatSettings)
+whenContactNtfs :: ChatMonad' m => User -> Contact -> Bool -> m () -> m ()
+whenContactNtfs user Contact {chatSettings} reference =
+  whenUserNtfs user . when (showMessageNtf chatSettings reference)
 
--- TODO *** show notifications when enabled for group, member or a message
-whenGroupNtfs :: ChatMonad' m => User -> GroupInfo -> m () -> m ()
-whenGroupNtfs user GroupInfo {chatSettings} = whenUserNtfs user . when (chatHasNtfs chatSettings)
+whenGroupNtfs :: ChatMonad' m => User -> GroupInfo -> GroupMember -> Bool -> m () -> m ()
+whenGroupNtfs user GroupInfo {chatSettings} GroupMember {memberSettings} reference =
+  whenUserNtfs user . when (showMessageNtf chatSettings reference && showMessages memberSettings)
+
+showMessageNtf :: ChatSettings -> Bool -> Bool
+showMessageNtf ChatSettings {enableNtfs} reference =
+  enableNtfs == MFAll || (reference && enableNtfs == MFReference)
 
 showMsgToast :: ChatMonad' m => Text -> MsgContent -> Maybe MarkdownList -> m ()
 showMsgToast from mc md_ = showToast from $ maybe (msgContentText mc) (mconcat . map hideSecret) md_
