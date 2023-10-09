@@ -242,18 +242,18 @@ data ContactRef = ContactRef
 
 instance ToJSON ContactRef where toEncoding = J.genericToEncoding J.defaultOptions
 
-data ContactOrGroupMember = CGMContact Contact | CGMGroupMember GroupInfo GroupMember
+data ContactOrMember = COMContact Contact | COMGroupMember GroupMember
   deriving (Show)
 
-contactOrGroupMemberIds :: ContactOrGroupMember -> (Maybe ContactId, Maybe GroupMemberId)
-contactOrGroupMemberIds = \case
-  CGMContact Contact {contactId} -> (Just contactId, Nothing)
-  CGMGroupMember _ GroupMember {groupMemberId} -> (Nothing, Just groupMemberId)
+contactOrMemberIds :: ContactOrMember -> (Maybe ContactId, Maybe GroupMemberId)
+contactOrMemberIds = \case
+  COMContact Contact {contactId} -> (Just contactId, Nothing)
+  COMGroupMember GroupMember {groupMemberId} -> (Nothing, Just groupMemberId)
 
-contactOrGroupMemberIncognito :: ContactOrGroupMember -> IncognitoEnabled
-contactOrGroupMemberIncognito = \case
-  CGMContact ct -> contactConnIncognito ct
-  CGMGroupMember _ m -> memberIncognito m
+contactOrMemberIncognito :: ContactOrMember -> IncognitoEnabled
+contactOrMemberIncognito = \case
+  COMContact ct -> contactConnIncognito ct
+  COMGroupMember m -> memberIncognito m
 
 data UserContact = UserContact
   { userContactLinkId :: Int64,
@@ -1233,6 +1233,7 @@ data Connection = Connection
     customUserProfileId :: Maybe Int64,
     connType :: ConnType,
     connStatus :: ConnStatus,
+    contactConnInitiated :: Bool,
     localAlias :: Text,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
     connectionCode :: Maybe SecurityCode,
