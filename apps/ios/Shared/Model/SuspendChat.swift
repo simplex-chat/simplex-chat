@@ -56,7 +56,7 @@ func terminateChat() {
             // when apiSuspendChat is called with timeout 0, it won't send any events on suspension
             if ChatModel.ok { apiSuspendChat(timeoutMicroseconds: 0) }
             chatCloseStore()
-        case .stopped: ()
+        case .stopped:
             chatCloseStore()
         default:
             terminating = true
