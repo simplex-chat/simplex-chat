@@ -1485,4 +1485,10 @@
 \n- отчеты о доставке (до 20 членов).
 \n- быстрее и стабильнее.</string>
     <string name="settings_is_storing_in_clear_text">Пароль хранится в настройках, как открытый текст.</string>
+    <string name="rcv_group_event_open_chat">Открыть</string>
+    <string name="error_creating_member_contact">Ошибка при создании контакта</string>
+    <string name="compose_send_direct_message_to_connect">Послать прямое сообщение адресату</string>
+    <string name="error_sending_message_contact_invitation">Передача приглашения адресату</string>
+    <string name="member_contact_send_direct_message">Постать прямое сообщение</string>
+    <string name="rcv_group_event_member_created_contact">соединен напрямую</string>
 </resources>
