@@ -28,14 +28,14 @@ import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import qualified Network.HTTP.Types as HTTP
 import qualified Network.HTTP.Types.Status as Status
 import qualified Network.HTTP2.Client as HTTP2Client
 import qualified Network.HTTP2.Server as HTTP2Server
 import Network.Socket (SockAddr (..), hostAddressToTuple)
 import Simplex.Chat.Controller
-import Simplex.Chat.Messages (AChatItem (..), CIFile (..), CIFileStatus (..), ChatItem (..))
+import Simplex.Chat.Messages (AChatItem (..), CIFile (..), CIFileStatus (..), ChatItem (..), chatNameStr)
 import Simplex.Chat.Messages.CIContent (MsgDirection (..), SMsgDirection (..))
 import qualified Simplex.Chat.Remote.Discovery as Discovery
 import Simplex.Chat.Remote.Types
@@ -54,9 +54,9 @@ import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import qualified Simplex.Messaging.Transport.HTTP2.Client as HTTP2
 import qualified Simplex.Messaging.Transport.HTTP2.Server as HTTP2
 import Simplex.Messaging.Util (bshow, ifM, tshow)
-import System.FilePath ((</>))
+import System.FilePath (isPathSeparator, takeFileName, (</>))
 import UnliftIO
-import UnliftIO.Directory (createDirectoryIfMissing, getFileSize)
+import UnliftIO.Directory (createDirectoryIfMissing, getFileSize, makeAbsolute)
 
 withRemoteHostSession :: (ChatMonad m) => RemoteHostId -> (RemoteHostSession -> m a) -> m a
 withRemoteHostSession remoteHostId action = do
@@ -175,11 +175,20 @@ processRemoteCommand :: (ChatMonad m) => RemoteHostSession -> (ByteString, ChatC
 processRemoteCommand RemoteHostSessionStarting {} _ = pure . CRChatError Nothing . ChatError $ CEInternalError "sending remote commands before session started"
 processRemoteCommand RemoteHostSessionStarted {ctrlClient} (s, cmd) = do
   logDebug $ "processRemoteCommand: " <> tshow (s, cmd)
-  -- case cmd of
+  case cmd of
+    SendFile cn ctrlPath -> do
+      storeRemoteFile ctrlClient ctrlPath >>= \case
+        -- TODO: use Left
+        Nothing -> pure . CRChatError Nothing . ChatError $ CEInternalError "failed to store file on remote host"
+        Just hostPath -> relayCommand ctrlClient $ "/file " <> utf8String (chatNameStr cn) <> " " <> utf8String hostPath
+    SendImage cn ctrlPath -> do
+      storeRemoteFile ctrlClient ctrlPath >>= \case
+        Nothing -> pure . CRChatError Nothing . ChatError $ CEInternalError "failed to store image on remote host"
+        Just hostPath -> relayCommand ctrlClient $ "/image " <> utf8String (chatNameStr cn) <> " " <> utf8String hostPath
   --   APISendMessage
   -- XXX: intercept and filter some commands
   -- TODO: store missing files on remote host
-  relayCommand ctrlClient s
+    _ -> relayCommand ctrlClient s
 
 relayCommand :: (ChatMonad m) => HTTP2Client -> ByteString -> m ChatResponse
 relayCommand http s =
@@ -224,15 +233,17 @@ owsf2tagged = \case
   J.Object todo'convert -> J.Object todo'convert
   skip -> skip
 
-storeRemoteFile :: (ChatMonad m) => HTTP2Client -> FilePath -> m ChatResponse
+storeRemoteFile :: (MonadUnliftIO m) => HTTP2Client -> FilePath -> m (Maybe FilePath)
 storeRemoteFile http localFile = do
-  postFile Nothing http "/store" mempty localFile >>= \case
-    Left todo'err -> error "TODO: http2chatError"
-    Right HTTP2.HTTP2Response {response} -> case HTTP.statusCode <$> HTTP2Client.responseStatus response of
-      Just 200 -> pure $ CRCmdOk Nothing
-      todo'notOk -> error "TODO: http2chatError"
+  putFile Nothing http uri mempty localFile >>= \case
+    Left h2ce -> Nothing <$ logError (tshow h2ce)
+    Right HTTP2.HTTP2Response {response, respBody=HTTP2Body{bodyHead}} ->
+      case HTTP.statusCode <$> HTTP2Client.responseStatus response of
+        Just 200 -> pure . Just $ B.unpack bodyHead
+        notOk -> Nothing <$ logError ("Bad response status: " <> tshow notOk)
   where
-    postFile timeout c path hs file = liftIO $ do
+    uri = "/store?" <> HTTP.renderSimpleQuery False [("file_name", utf8String $ takeFileName localFile)]
+    putFile timeout c path hs file = liftIO $ do
       fileSize <- fromIntegral <$> getFileSize file
       HTTP2.sendRequestDirect c (req fileSize) timeout
       where
@@ -248,12 +259,12 @@ fetchRemoteFile http User {userId = remoteUserId} remoteFileId localPath = do
         else False <$ (logError $ "Request failed: " <> maybe "(??)" tshow (HTTP2Client.responseStatus response) <> " " <> decodeUtf8 (bodyHead respBody))
   where
     req = HTTP2Client.requestNoBody "GET" path mempty
-    path = "/fetch?" <> HTTP.renderSimpleQuery False [("userId", bshow remoteUserId), ("fileId", bshow remoteFileId)]
+    path = "/fetch?" <> HTTP.renderSimpleQuery False [("user_id", bshow remoteUserId), ("file_id", bshow remoteFileId)]
 
 -- XXX: extract to Transport.HTTP2 ?
 writeBodyToFile :: (MonadUnliftIO m) => FilePath -> HTTP2Body -> m ()
 writeBodyToFile path HTTP2Body {bodyHead, bodySize, bodyPart} = do
-  logInfo $ "Downloading " <> tshow bodySize <> " bytes to " <> tshow path
+  logInfo $ "Receiving " <> tshow bodySize <> " bytes to " <> tshow path
   liftIO . withFile path WriteMode $ \h -> do
     hPut h bodyHead
     mapM_ (hPutBodyChunks h) bodyPart
@@ -266,7 +277,7 @@ hPutBodyChunks h getChunk = do
     hPutBodyChunks h getChunk
 
 processControllerRequest :: forall m. (ChatMonad m) => (ByteString -> m ChatResponse) -> HTTP2.HTTP2Request -> m ()
-processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody = HTTP2Body {bodyHead}, sendResponse} = do
+processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody, sendResponse} = do
   logDebug $ "Remote controller request: " <> tshow (method <> " " <> path)
   res <- tryChatError $ case (method, ps) of
     ("GET", []) -> getHello
@@ -283,13 +294,20 @@ processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody = 
     path = fromMaybe "/" $ HTTP2Server.requestPath request
     (ps, query) = HTTP.decodePath path
     getHello = respond "OK"
-    sendCommand = execChatCommand bodyHead >>= respondJSON
+    sendCommand = execChatCommand (bodyHead reqBody) >>= respondJSON
     recvMessage =
       chatReadVar remoteCtrlSession >>= \case
         Nothing -> respondWith Status.internalServerError500 "session not active"
         Just rcs -> atomically (readTBQueue $ remoteOutputQ rcs) >>= respondJSON
-    storeFile = respondWith Status.notImplemented501 "TODO: storeFile"
-    fetchFile :: m ()
+    storeFile = case storeFileQuery of
+      Left err -> respondWith Status.badRequest400 (Binary.putStringUtf8 err)
+      Right fileName -> do
+        baseDir <- fromMaybe "." <$> chatReadVar filesFolder
+        localPath <- uniqueCombine baseDir fileName >>= makeAbsolute
+        writeBodyToFile localPath reqBody
+        respond $ Binary.putStringUtf8 localPath
+      where
+        storeFileQuery = parseField "file_name" $ A.many1 (A.satisfy $ not . isPathSeparator)
     fetchFile = case fetchFileQuery of
       Left err -> respondWith Status.badRequest400 (Binary.putStringUtf8 err)
       Right (userId, fileId) -> do
@@ -310,8 +328,11 @@ processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody = 
       where
         fetchFileQuery =
           (,)
-            <$> maybe (Left "missing userId") (A.parseOnly A.decimal) (join $ lookup "userId" query)
-            <*> maybe (Left "missing fileId") (A.parseOnly A.decimal) (join $ lookup "fileId" query)
+            <$> parseField "user_id" A.decimal
+            <*> parseField "file_id" A.decimal
+
+    parseField :: ByteString -> A.Parser a -> Either String a
+    parseField field p = maybe (Left $ "missing " <> B.unpack field) (A.parseOnly $ p <* A.endOfInput) (join $ lookup field query)
 
     respondJSON :: (J.ToJSON a) => a -> m ()
     respondJSON = respond . Binary.fromLazyByteString . J.encode
@@ -445,3 +466,7 @@ withRemoteCtrl remoteCtrlId action =
   withStore' (`getRemoteCtrl` remoteCtrlId) >>= \case
     Nothing -> throwError $ ChatErrorRemoteCtrl RCEMissing {remoteCtrlId}
     Just rc -> action rc
+
+utf8String :: [Char] -> ByteString
+utf8String = encodeUtf8 . T.pack
+{-# INLINE utf8String #-}

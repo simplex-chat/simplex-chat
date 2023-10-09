@@ -192,8 +192,8 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
     -- startFileTransfer bob mobile -- XXX: fails with `invalid time: /f @alice ./tests/fixtures/test.jpg`
 
     mobileName <- userName mobile
-    filePath <- makeAbsolute "tests/fixtures/test.pdf"
-    bob #> ("/f @" <> mobileName <> " " <> filePath)
+    srcPath <- makeAbsolute "tests/fixtures/test.pdf"
+    bob #> ("/f @" <> mobileName <> " " <> srcPath)
     bob <## "use /fc 1 to cancel sending"
 
     desktop <# "bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
@@ -208,7 +208,7 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
         unexpected -> fail $ "unable to match path suffix: " <> show unexpected
       unexpected -> fail $ "unable to match path prefix: " <> show unexpected
     traceM $ "    * Found file path: " <> show desktopPath
-    src <- B.readFile filePath
+    src <- B.readFile srcPath
     dst <- B.readFile desktopPath
     src `shouldBe` dst
     mobile ##> "/fs 1"
@@ -219,6 +219,23 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
     bob <## "completed sending file 1 (test.pdf) to alice"
 
     traceM "    - file received"
+
+    srcPath2 <- makeAbsolute "tests/fixtures/test.jpg"
+    traceM $ "    - sending " <> show srcPath2
+    -- desktop #> ("/f @bob " <> srcPath)
+    -- BUG: srcPath mismatch:
+    --   expected: "/f @bob ./tests/fixtures/test.pdf"
+    --    but got: "/f @bob ./tests/tmp/mobile_files/test_1.pdf"
+    desktop `send` ("/f @bob " <> srcPath2)
+    getTermLine desktop >>= traceShowM
+    desktop <## "use /fc 2 to cancel sending"
+
+    bob <# "alice> sends file test_1.pdf (266.0 KiB / 272376 bytes)"
+    bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+    bob ##> "/fr 2 ./tests/tmp/bobs_test.pdf"
+    bob <## "saving file 2 from alice to ./tests/tmp/bobs_test.pdf"
+
+    traceM "    - file sent"
 
   traceM "    - post-remote checks"
   mobile ##> "/stop remote ctrl"
