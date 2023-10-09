@@ -91,11 +91,11 @@ class MainActivity: FragmentActivity() {
       // When pressed Back and there is no one wants to process the back event, clear auth state to force re-auth on launch
       AppLock.clearAuthState()
       AppLock.laFailed.value = true
-      AppLock.destroyedAfterBackPress.value = true
     }
     if (!onBackPressedDispatcher.hasEnabledCallbacks()) {
       // Drop shared content
       SimplexApp.context.chatModel.sharedContent.value = null
+      finish()
     }
   }
 }
