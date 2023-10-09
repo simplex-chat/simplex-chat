@@ -626,29 +626,6 @@ instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
--- -- reduce to 4 result types, add connection type to result?
--- -- results may diverge per type, for example:
--- -- CRUInvitationLinkKnown shouldn't be possible, because conn_req_inv is removed on connection status changing to ready;
--- -- own link and own address / group link are checks for different things
--- data ConnReqURICheckResult
---   = CRUInvitationLinkOkToConnect
---   | CRUInvitationLinkOwn
---   | CRUInvitationLinkConnecting {contact_ :: Maybe Contact}
---   | CRUInvitationLinkKnown {contact :: Contact}
---   | CRUContactAddressOkToConnect
---   | CRUContactAddressOwn
---   | CRUContactAddressConnecting {contact_ :: Maybe Contact}
---   | CRUContactAddressKnown {contact :: Contact}
---   | CRUGroupLinkOkToConnect
---   | CRUGroupLinkOwn
---   | CRUGroupLinkConnecting {groupInfo_ :: Maybe GroupInfo}
---   | CRUGroupLinkKnown {groupInfo :: GroupInfo}
---   deriving (Show, Generic)
-
--- instance ToJSON ConnReqURICheckResult where
---   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CRU"
---   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CRU"
-
 data ConnectionPlan
   = CPInvitationLink {invitationLinkConnectionPlan :: InvitationLinkConnectionPlan}
   | CPContactAddress {contactAddressConnectionPlan :: ContactAddressConnectionPlan}
@@ -683,14 +660,29 @@ instance ToJSON ContactAddressConnectionPlan where
 
 data GroupLinkConnectionPlan
   = GLCPOk
-  | GLCPOwnLink
-  | GLCPConnecting {contact_ :: Maybe GroupInfo}
-  | GLCPKnown {contact :: GroupInfo}
+  | GLCPOwnLink {groupInfo :: GroupInfo}
+  | GLCPConnecting {groupInfo_ :: Maybe GroupInfo}
+  | GLCPKnown {groupInfo :: GroupInfo}
   deriving (Show, Generic)
 
 instance ToJSON GroupLinkConnectionPlan where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "GLCP"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "GLCP"
+
+connectionPlanOkToProceed :: ConnectionPlan -> Bool
+connectionPlanOkToProceed = \case
+  CPInvitationLink ilcp -> case ilcp of
+    ILCPOk -> True
+    ILCPOwnLink -> True
+    _ -> False
+  CPContactAddress cacp -> case cacp of
+    CACPOk -> True
+    CACPOwnLink -> True
+    _ -> False
+  CPGroupLink glcp -> case glcp of
+    GLCPOk -> True
+    GLCPOwnLink _ -> True
+    _ -> False
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)

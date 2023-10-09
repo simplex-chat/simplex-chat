@@ -261,8 +261,8 @@ getTermLine cc =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
-      when (printOutput cc) $ do
-      -- when True $ do
+      -- when (printOutput cc) $ do
+      when True $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s

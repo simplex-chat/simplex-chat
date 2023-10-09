@@ -902,7 +902,7 @@ processChatCommand = \case
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
       withChatLock "deleteChat direct" . procCmd $ do
         deleteFilesAndConns user filesInfo
-        when (isReady ct && contactActive ct && notify) $
+        when (contactReady ct && contactActive ct && notify) $
           void (sendDirectContactMessage ct XDirectDel) `catchChatError` const (pure ())
         contactConnIds <- map aConnId <$> withStore (\db -> getContactConnections db userId ct)
         deleteAgentConnectionsAsync user contactConnIds
@@ -1311,48 +1311,15 @@ processChatCommand = \case
     case conn'_ of
       Just conn' -> pure $ CRConnectionIncognitoUpdated user conn'
       Nothing -> throwChatError CEConnectionIncognitoChangeProhibited
-  APIConnectPlan userId (ACR SCMInvitation cReq) -> do
-    -- TODO [repeat connect]
-    -- - search connections (getConnectionEntity?) where conn_req_inv = cReq (and user_id? if yes add to idx_connections_conn_req_inv)
-    --   - if connection not found, return CPInvitationLink ILCPOk
-    --   - if connection entity is not RcvDirectMsgConnection, throw chat error
-    --   - if connection found and contactConnInitiated, return CPInvitationLink ILCPOwnLink
-    --   - if connection found and not ready, return CPInvitationLink ILCPConnecting
-    --   - if connection found and ready, return CPInvitationLink ILCPKnown (redundant as we now clean up conn_req_inv)
-    ok_
-  APIConnectPlan userId (ACR SCMContact cReq) -> do
-    -- TODO [repeat connect]
-    -- - check if cReq is contact address or group link by parsing cReq crClientData (see connectViaContact):
-    --   let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
-    -- - if contact address:
-    --   - search user_contact_links by conn_req_contact = cReq (and user_id?)
-    --     - if found, return CPContactAddress CACPOwnLink
-    --   - search connections by via_contact_uri_hash = hash(cReq) (and user_id?)
-    --     - if connection not found, return CPContactAddress CACPOk
-    --     - if connection found and not ready, return CPContactAddress CACPConnecting
-    --     - if connection found and ready, return CPContactAddress CACPKnown
-    -- - if group link *:
-    --   - search user_contact_links by conn_req_contact = cReq (and user_id?)
-    --     - if found, return CPGroupLink GLCPOwnLink
-    --   - search connections and groups ** by via_contact_uri_hash (via_group_link_uri_hash) = hash(cReq) (and user_id?)
-    --     - if group not found, return CPGroupLink GLCPOk ***
-    --     - if connection found and not ready and group not found, return CPGroupLink GLCPConnecting
-    --     - if group found and connecting, return CPGroupLink GLCPConnecting
-    --       (group connecting: group connection not ready? membership !active and !removed?)
-    --       could return CPGroupLink GLCPKnown instead and open inactive group
-    --     - if group found, return CPGroupLink GLCPKnown (don't chek membership? or check !active and !removed?)
-    --   (*) rework group links to connect directly to group, w/t creating contact? would remove merge scenario
-    --   (**) host contact may be deleted, but group may exist - no reason to reconnect with contact;
-    --        add via_contact_uri_hash (via_group_link_uri_hash) to groups and populate on auto accepting invitation? (use group_link_id?)
-    --   (***) even if host contact exists, host should allow repeat connection:
-    --         to do: check how host reacts to repeated XContactId, and/or don't repeat XContactId when requesting,
-    --         see https://github.com/simplex-chat/simplex-chat/pull/2956/files
-    ok_
+  APIConnectPlan userId (ACR SCMInvitation cReq) -> withUserId userId $ \user -> withChatLock "connectPlan SCMInvitation" . procCmd $ do
+    plan <- connectPlanInvitation user cReq
+    pure $ CRConnectionPlan user plan
+  APIConnectPlan userId (ACR SCMContact cReq) -> withUserId userId $ \user -> withChatLock "connectPlan SCMContact" . procCmd $ do
+    plan <- connectPlanContact user cReq
+    pure $ CRConnectionPlan user plan
   APIConnect userId incognito (Just (ACR SCMInvitation cReq)) -> withUserId userId $ \user -> withChatLock "connect" . procCmd $ do
-    -- TODO [repeat connect]
-    -- repeat check as in APIConnectPlan (SCMInvitation)
-    -- proceed to connect only if OkToConnect or Own
-    -- otherwise throw CEConnectionPlan error
+    plan <- connectPlanInvitation user cReq `catchChatError` const (pure $ CPInvitationLink ILCPOk)
+    unless (connectionPlanOkToProceed plan) $ throwChatError (CEConnectionPlan plan)
     subMode <- chatReadVar subscriptionMode
     -- [incognito] generate profile to send
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
@@ -1363,10 +1330,9 @@ processChatCommand = \case
     toView $ CRNewContactConnection user conn
     pure $ CRSentConfirmation user
   APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> do
-    -- TODO [repeat connect]
-    -- repeat check as in APIConnectPlan (SCMContact)
-    -- proceed to connect only if OkToConnect (or Own?)
-    -- otherwise throw CEConnectionPlan error
+    plan <- connectPlanContact user cReq `catchChatError` const (pure $ CPContactAddress CACPOk)
+    liftIO $ print $ "APIConnect SCMContact plan: " <> show plan
+    unless (connectionPlanOkToProceed plan) $ throwChatError (CEConnectionPlan plan)
     connectViaContact user incognito cReq
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito cReqUri -> withUser $ \User {userId} ->
@@ -1469,7 +1435,7 @@ processChatCommand = \case
     processChatCommand . APISendMessage chatRef True Nothing $ ComposedMessage Nothing Nothing mc
   SendMessageBroadcast msg -> withUser $ \user -> do
     contacts <- withStore' (`getUserContacts` user)
-    let cts = filter (\ct -> isReady ct && contactActive ct && directOrUsed ct) contacts
+    let cts = filter (\ct -> contactReady ct && contactActive ct && directOrUsed ct) contacts
     ChatConfig {logLevel} <- asks config
     withChatLock "sendMessageBroadcast" . procCmd $ do
       (successes, failures) <- foldM (sendAndCount user logLevel) (0, 0) cts
@@ -2021,7 +1987,7 @@ processChatCommand = \case
         -- read contacts before user update to correctly merge preferences
         -- [incognito] filter out contacts with whom user has incognito connections
         contacts <-
-          filter (\ct -> isReady ct && contactActive ct && not (contactConnIncognito ct))
+          filter (\ct -> contactReady ct && contactActive ct && not (contactConnIncognito ct))
             <$> withStore' (`getUserContacts` user)
         user' <- updateUser
         asks currentUser >>= atomically . (`writeTVar` Just user')
@@ -2092,10 +2058,6 @@ processChatCommand = \case
       g@(Group GroupInfo {groupProfile = p} _) <- withStore $ \db ->
         getGroupIdByName db user gName >>= getGroup db user
       runUpdateGroupProfile user g $ update p
-    isReady :: Contact -> Bool
-    isReady ct =
-      let s = connStatus $ ct.activeConn
-       in s == ConnReady || s == ConnSndReady
     withCurrentCall :: ContactId -> (User -> Contact -> Call -> m (Maybe Call)) -> m ChatResponse
     withCurrentCall ctId action = do
       (user, ct) <- withStore $ \db -> do
@@ -2214,6 +2176,71 @@ processChatCommand = \case
           pure (gId, chatSettings)
         _ -> throwChatError $ CECommandError "not supported"
       processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ updateSettings chatSettings
+    connectPlanInvitation :: User -> ConnReqInvitation -> m ConnectionPlan
+    connectPlanInvitation user cReq =
+      withStore' (\db -> getConnectionEntityByConnReq db user cReq) >>= \case
+        Nothing -> pure $ CPInvitationLink ILCPOk
+        Just (RcvDirectMsgConnection conn ct_) -> do
+          let Connection {connStatus, contactConnInitiated} = conn
+          if
+              | connStatus == ConnNew && contactConnInitiated ->
+                  pure $ CPInvitationLink ILCPOwnLink
+              | not (connReady conn) ->
+                  pure $ CPInvitationLink (ILCPConnecting ct_)
+              | otherwise -> case ct_ of
+                  Just ct -> pure $ CPInvitationLink (ILCPKnown ct)
+                  Nothing -> throwChatError $ CEInternalError "ready RcvDirectMsgConnection connection should have associated contact"
+        Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
+    connectPlanContact :: User -> ConnReqContact -> m ConnectionPlan
+    connectPlanContact user cReq = do
+      let CRContactUri ConnReqUriData {crClientData} = cReq
+          groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
+      case groupLinkId of
+        -- contact address
+        Nothing ->
+          withStore' (`getUserContactLinkByConnReq` cReq) >>= \case
+            Just _ -> pure $ CPContactAddress CACPOwnLink
+            Nothing -> do
+              let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
+              withStore' (\db -> getConnectionEntityByConnReqHash db user cReqHash) >>= \case
+                Nothing -> pure $ CPContactAddress CACPOk
+                Just (RcvDirectMsgConnection conn ct_) -> do
+                  let Connection {connStatus, contactConnInitiated} = conn
+                  case (connReady conn, ct_) of
+                    (False, Nothing)
+                      | connStatus == ConnJoined && contactConnInitiated -> pure $ CPContactAddress CACPOk -- connecting?
+                      | otherwise -> pure $ CPContactAddress (CACPConnecting ct_)
+                    (False, Just ct)
+                      | contactActive ct -> pure $ CPContactAddress (CACPConnecting ct_)
+                      | otherwise -> pure $ CPContactAddress CACPOk
+                    (True, Just ct) -> pure $ CPContactAddress (CACPKnown ct)
+                    (True, Nothing) -> throwChatError $ CEInternalError "ready RcvDirectMsgConnection connection should have associated contact"
+                Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
+        -- group link
+        Just _ ->
+          withStore' (\db -> getGroupInfoByUserContactLinkConnReq db user cReq) >>= \case
+            Just g -> pure $ CPGroupLink (GLCPOwnLink g)
+            Nothing -> do
+              let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
+              connEntity_ <- withStore' $ \db -> getConnectionEntityByConnReqHash db user cReqHash
+              gInfo_ <- withStore' $ \db -> getGroupInfoByGroupLinkHash db user cReqHash
+              case (gInfo_, connEntity_) of
+                (Nothing, Nothing) -> pure $ CPGroupLink GLCPOk
+                (Nothing, Just (RcvDirectMsgConnection conn ct_)) -> do
+                  let Connection {connStatus, contactConnInitiated} = conn
+                  case (connReady conn, ct_) of
+                    (False, Nothing)
+                      | connStatus == ConnJoined && contactConnInitiated -> pure $ CPGroupLink GLCPOk -- connecting?
+                      | otherwise -> pure $ CPGroupLink (GLCPConnecting gInfo_)
+                    (False, Just ct)
+                      | contactActive ct -> pure $ CPGroupLink (GLCPConnecting gInfo_)
+                      | otherwise -> pure $ CPGroupLink GLCPOk
+                    (True, _) -> pure $ CPGroupLink GLCPOk
+                (Nothing, Just _) -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
+                (Just gInfo@GroupInfo {membership}, _)
+                  | not (memberActive membership) && not (memberRemoved membership) ->
+                      pure $ CPGroupLink (GLCPConnecting gInfo_)
+                  | otherwise -> pure $ CPGroupLink (GLCPKnown gInfo)
 
 assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =
@@ -4276,7 +4303,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     processGroupInvitation :: Contact -> GroupInvitation -> RcvMessage -> MsgMeta -> m ()
     processGroupInvitation ct inv msg msgMeta = do
-      let Contact {localDisplayName = c, activeConn = Connection {peerChatVRange, customUserProfileId, groupLinkId = groupLinkId'}} = ct
+      let Contact {localDisplayName = c, activeConn = Connection {connId, peerChatVRange, customUserProfileId, groupLinkId = groupLinkId'}} = ct
           GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole), connRequest, groupLinkId} = inv
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
@@ -4289,6 +4316,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           dm <- directMessage $ XGrpAcpt memberId
           connIds <- joinAgentConnectionAsync user True connRequest dm subMode
           withStore' $ \db -> do
+            setViaGroupLinkHash db groupId connId
             createMemberConnectionAsync db user hostId connIds (fromJVersionRange peerChatVRange) subMode
             updateGroupMemberStatusById db userId hostId GSMemAccepted
             updateGroupMemberStatus db userId membership GSMemAccepted
