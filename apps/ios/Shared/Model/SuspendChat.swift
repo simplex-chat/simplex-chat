@@ -23,9 +23,7 @@ private func _suspendChat(timeout: Int) {
     let state = appStateGroupDefault.get()
     if !state.canSuspend {
         logger.error("_suspendChat called, current state: \(state.rawValue, privacy: .public)")
-        return
-    }
-    if ChatModel.ok {
+    } else if ChatModel.ok {
         appStateGroupDefault.set(.suspending)
         apiSuspendChat(timeoutMicroseconds: timeout * 1000000)
         let endTask = beginBGTask(chatSuspended)
@@ -37,9 +35,7 @@ private func _suspendChat(timeout: Int) {
 
 func suspendChat() {
     suspendLockQueue.sync {
-        if appStateGroupDefault.get() != .stopped {
-            _suspendChat(timeout: appSuspendTimeout)
-        }
+        _suspendChat(timeout: appSuspendTimeout)
     }
 }
 
