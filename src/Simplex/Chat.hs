@@ -1173,6 +1173,12 @@ processChatCommand = \case
         withAgent (\a -> toggleConnectionNtfs a connId $ chatHasNtfs chatSettings) `catchChatError` (toView . CRChatError (Just user))
       ok user
     _ -> pure $ chatCmdError (Just user) "not supported"
+  APISetMemberSettings gId gMemberId settings -> withUser $ \user -> do
+    withStore $ \db -> do
+      m <- getGroupMember db user gId gMemberId
+      liftIO . unless (memberSettings m == settings) $
+        updateGroupMemberSettings db user gId gMemberId settings
+    ok user
   APIContactInfo contactId -> withUser $ \user@User {userId} -> do
     -- [incognito] print user's incognito profile for this contact
     ct@Contact {activeConn = Connection {customUserProfileId}} <- withStore $ \db -> getContact db user contactId
@@ -1267,6 +1273,11 @@ processChatCommand = \case
       _ -> throwChatError CEGroupMemberNotActive
   SetShowMessages cName ntfOn -> updateChatSettings cName (\cs -> cs {enableNtfs = ntfOn})
   SetSendReceipts cName rcptsOn_ -> updateChatSettings cName (\cs -> cs {sendRcpts = rcptsOn_})
+  SetShowMemberMessages gName mName showMessages -> withUser $ \user -> do
+    (gId, mId) <- getGroupAndMemberId user gName mName
+    m <- withStore $ \db -> getGroupMember db user gId mId
+    let settings = (memberSettings m) {showMessages}
+    processChatCommand $ APISetMemberSettings gId mId settings
   ContactInfo cName -> withContactName cName APIContactInfo
   ShowGroupInfo gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
@@ -5468,6 +5479,7 @@ chatCommandP =
     [ "/mute " *> ((`SetShowMessages` MFNone) <$> chatNameP),
       "/unmute " *> ((`SetShowMessages` MFAll) <$> chatNameP),
       "/receipts " *> (SetSendReceipts <$> chatNameP <* " " <*> ((Just <$> onOffP) <|> ("default" $> Nothing))),
+      "/mute #" *> (SetShowMemberMessages <$> displayName <* A.space <*> displayName <* A.space <*> onOffP),
       "/_create user " *> (CreateActiveUser <$> jsonP),
       "/create user " *> (CreateActiveUser <$> newUserP),
       "/users" $> ListUsers,
@@ -5571,6 +5583,7 @@ chatCommandP =
       ("/network" <|> "/net") $> APIGetNetworkConfig,
       "/reconnect" $> ReconnectAllServers,
       "/_settings " *> (APISetChatSettings <$> chatRefP <* A.space <*> jsonP),
+      "/_member settings #" *> (APISetMemberSettings <$> A.decimal <* A.space <*> A.decimal <* A.space <*> jsonP),
       "/_info #" *> (APIGroupMemberInfo <$> A.decimal <* A.space <*> A.decimal),
       "/_info #" *> (APIGroupInfo <$> A.decimal),
       "/_info @" *> (APIContactInfo <$> A.decimal),

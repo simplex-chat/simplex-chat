@@ -301,6 +301,7 @@ data ChatCommand
   | APIGetNetworkConfig
   | ReconnectAllServers
   | APISetChatSettings ChatRef ChatSettings
+  | APISetMemberSettings GroupId GroupMemberId GroupMemberSettings
   | APIContactInfo ContactId
   | APIGroupInfo GroupId
   | APIGroupMemberInfo GroupId GroupMemberId
@@ -318,6 +319,7 @@ data ChatCommand
   | APIEnableGroupMember GroupId GroupMemberId
   | SetShowMessages ChatName MsgFilter
   | SetSendReceipts ChatName (Maybe Bool)
+  | SetShowMemberMessages GroupName ContactName Bool
   | ContactInfo ContactName
   | ShowGroupInfo GroupName
   | GroupMemberInfo GroupName ContactName

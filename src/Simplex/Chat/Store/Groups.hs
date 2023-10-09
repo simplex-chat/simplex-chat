@@ -89,6 +89,7 @@ module Simplex.Chat.Store.Groups
     associateContactWithMemberRecord,
     deleteOldProbes,
     updateGroupSettings,
+    updateGroupMemberSettings,
     getXGrpMemIntroContDirect,
     getXGrpMemIntroContGroup,
     getHostConnId,
@@ -1466,6 +1467,18 @@ deleteOldProbes db createdAtCutoff = do
 updateGroupSettings :: DB.Connection -> User -> Int64 -> ChatSettings -> IO ()
 updateGroupSettings db User {userId} groupId ChatSettings {enableNtfs, sendRcpts, favorite} =
   DB.execute db "UPDATE groups SET enable_ntfs = ?, send_rcpts = ?, favorite = ? WHERE user_id = ? AND group_id = ?" (enableNtfs, sendRcpts, favorite, userId, groupId)
+
+updateGroupMemberSettings :: DB.Connection -> User -> GroupId -> GroupMemberId -> GroupMemberSettings -> IO ()
+updateGroupMemberSettings db User {userId} gId gMemberId GroupMemberSettings {showMessages} = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET show_messages = ?, updated_at = ?
+      WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+    |]
+    (showMessages, currentTs, userId, gId, gMemberId)
 
 getXGrpMemIntroContDirect :: DB.Connection -> User -> Contact -> IO (Maybe (Int64, XGrpMemIntroCont))
 getXGrpMemIntroContDirect db User {userId} Contact {contactId} = do
