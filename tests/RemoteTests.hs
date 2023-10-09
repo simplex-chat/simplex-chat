@@ -10,6 +10,7 @@ import ChatClient
 import ChatTests.Utils
 import Control.Monad
 import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.ByteString as B
 import Debug.Trace
 import Network.HTTP.Types (ok200)
 import qualified Network.HTTP2.Client as C
@@ -26,6 +27,7 @@ import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Response (..), closeHTTP2C
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Test.Hspec
 import UnliftIO
+import UnliftIO.Directory
 
 remoteTests :: SpecWith FilePath
 remoteTests = describe "Handshake" $ do
@@ -141,6 +143,13 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
 
 remoteCommandTest :: (HasCallStack) => FilePath -> IO ()
 remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
+  mobile ##> "/_files_folder ./tests/tmp/mobile_files"
+  mobile <## "ok"
+  desktop ##> "/_files_folder ./tests/tmp/desktop_files"
+  desktop <## "ok"
+  bob ##> "/_files_folder ./tests/tmp/bob_files"
+  bob <## "ok"
+
   desktop ##> "/create remote host"
   desktop <## "remote host 1 created"
   desktop <## "connection code:"
@@ -178,12 +187,46 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   bob #> "@alice hi"
   desktop <# "bob> hi"
 
+  withXFTPServer $ do
+    -- startFileTransfer bob mobile
+    mobileName <- userName mobile
+    -- "test.jpg" "136.5 KiB / 139737 bytes"
+
+    filePath <- makeAbsolute "tests/fixtures/test.pdf"
+    bob #> ("/f @" <> mobileName <> " " <> filePath)
+    bob <## "use /fc 1 to cancel sending"
+
+    desktop <# "bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
+    desktop <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    desktop ##> "/fr 1"
+    desktop <## "saving file 1 from bob to test.pdf"
+    desktop <## "started receiving file 1 (test.pdf) from bob"
+    completed <- getTermLine desktop -- "completed receiving file 1 (./tests/tmp/desktop_files/bAsEPq0ykf-JFhyN/test.pdf) from bob"
+    desktopPath <- case break (== '(') completed of
+      ("completed receiving file 1 ", '(' : rest) -> case break (== ')') rest of
+        (path, ") from bob") -> pure path
+        unexpected -> fail $ "unable to match path suffix: " <> show unexpected
+      unexpected -> fail $ "unable to match path prefix: " <> show unexpected
+    traceM $ "    * Found file path: " <> show desktopPath
+    src <- B.readFile filePath
+    dst <- B.readFile desktopPath
+    src `shouldBe` dst
+    mobile ##> "/fs 1"
+    mobile <## "receiving file 1 (test.pdf) complete, path: test.pdf"
+    B.readFile "./tests/tmp/mobile_files/test.pdf" `shouldReturn` src
+
+    bob <## "started sending file 1 (test.pdf) to alice"
+    bob <## "completed sending file 1 (test.pdf) to alice"
+
+    traceM "    - file received"
+
   traceM "    - post-remote checks"
   mobile ##> "/stop remote ctrl"
   mobile <## "ok"
   concurrently_
     (mobile <## "remote controller stopped")
     (desktop <## "remote host 1 stopped")
+
   mobile ##> "/contacts"
   mobile <## "bob (Bob)"
 
