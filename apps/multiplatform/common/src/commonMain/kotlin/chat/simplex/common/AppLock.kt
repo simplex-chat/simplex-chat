@@ -24,7 +24,6 @@ object AppLock {
 
   // Remember result and show it after orientation change
   val laFailed = mutableStateOf(false)
-  val destroyedAfterBackPress = mutableStateOf(false)
 
   fun clearAuthState() {
     userAuthorized.value = null
