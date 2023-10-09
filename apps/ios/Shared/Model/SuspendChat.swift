@@ -48,15 +48,19 @@ func suspendBgRefresh() {
 private var terminating = false
 
 func terminateChat() {
-    terminating = true
     suspendLockQueue.sync {
         switch appStateGroupDefault.get() {
         case .suspending:
             // suspend instantly if already suspending
             _chatSuspended()
+            // when apiSuspendChat is called with timeout 0, it won't send any events on suspension
             if ChatModel.ok { apiSuspendChat(timeoutMicroseconds: 0) }
+            chatCloseStore()
         case .stopped: ()
+            chatCloseStore()
         default:
+            terminating = true
+            // the store will be closed in _chatSuspended when event is received
             _suspendChat(timeout: terminationTimeout)
         }
     }
