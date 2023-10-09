@@ -272,8 +272,8 @@ testPlanInvitationLinkOwn tmp =
     alice <## "confirmation sent!"
     alice
       <### [ "alice_1 (Alice): contact is connected",
-            "alice_2 (Alice): contact is connected"
-            ]
+             "alice_2 (Alice): contact is connected"
+           ]
 
     alice ##> ("/_connect_plan 1 " <> inv)
     alice <## "invitation link: ok to connect" -- conn_req_inv is forgotten after connection
