@@ -8,6 +8,7 @@ module RemoteTests where
 
 import ChatClient
 import ChatTests.Utils
+import ChatTests.Files (startFileTransfer)
 import Control.Monad
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.ByteString as B
@@ -188,10 +189,9 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   desktop <# "bob> hi"
 
   withXFTPServer $ do
-    -- startFileTransfer bob mobile
-    mobileName <- userName mobile
-    -- "test.jpg" "136.5 KiB / 139737 bytes"
+    -- startFileTransfer bob mobile -- XXX: fails with `invalid time: /f @alice ./tests/fixtures/test.jpg`
 
+    mobileName <- userName mobile
     filePath <- makeAbsolute "tests/fixtures/test.pdf"
     bob #> ("/f @" <> mobileName <> " " <> filePath)
     bob <## "use /fc 1 to cancel sending"
