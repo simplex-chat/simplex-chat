@@ -21,7 +21,7 @@ let terminationTimeout: Int = 3 // seconds
 private func _suspendChat(timeout: Int) {
     // this is a redundant check to prevent logical errors, like the one fixed in this PR
     let state = appStateGroupDefault.get()
-    if state.canSuspend {
+    if !state.canSuspend {
         logger.error("_suspendChat called, current state: \(state.rawValue, privacy: .public)")
         return
     }
