@@ -196,23 +196,28 @@ owsf2tagged = fst . convert
       J.Object o
         | JM.size o == 2 ->
             case JM.toList o of
-              [OwsfTag, (k, v)] -> (tagged k v, True)
-              [(k, v), OwsfTag] -> (tagged k v, True)
+              [OwsfTag, o'] -> tagged o'
+              [o', OwsfTag] -> tagged o'
               _ -> props
         | otherwise -> props
         where
           props = (J.Object $ fmap owsf2tagged o, False)
       J.Array a -> (J.Array $ fmap owsf2tagged a, False)
       _ -> (val, False)
-    tagged k v = J.Object $ case v' of
-      J.Object o
-        | innerTag -> pair
-        | otherwise -> JM.insert TaggedObjectJSONTag (text k) o
-      _ -> pair
+    -- `tagged` converts the pair of single-field object encoding to tagged encoding.
+    -- It sets innerTag returned by `convert` to True to prevent the tag being overwritten.
+    tagged (k, v) = (J.Object pairs, True)
       where
         (v', innerTag) = convert v
-        pair = JM.fromList [TaggedObjectJSONTag .= text k, TaggedObjectJSONData .= v']
-    text = J.String . JK.toText
+        pairs = case v' of
+          -- `innerTag` indicates that internal object already has tag,
+          -- so the current tag cannot be inserted into it.
+          J.Object o
+            | innerTag -> pair
+            | otherwise -> JM.insert TaggedObjectJSONTag tag o
+          _ -> pair
+        tag = J.String $ JK.toText k
+        pair = JM.fromList [TaggedObjectJSONTag .= tag, TaggedObjectJSONData .= v']
 
 pattern OwsfTag :: (JK.Key, J.Value)
 pattern OwsfTag = (SingleFieldJSONTag, J.Bool True)
