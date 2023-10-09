@@ -368,7 +368,6 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
       (bob <## "alice (Alice): contact is connected")
       (alice <## "bob (Bob): contact is connected")
 
-    threadDelay 100000
     bob ##> ("/c " <> cLink)
     bob <## "contact address: known contact alice"
     bob <## "use @alice <message> to send messages"
