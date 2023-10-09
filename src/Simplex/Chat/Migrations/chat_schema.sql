@@ -144,7 +144,7 @@ CREATE TABLE group_members(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   member_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
-  show_messages INTEGER,
+  show_messages INTEGER NOT NULL DEFAULT 1,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -265,6 +265,7 @@ CREATE TABLE connections(
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   to_subscribe INTEGER DEFAULT 0 NOT NULL,
+  contact_conn_initiated INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -733,3 +734,6 @@ CREATE INDEX idx_received_probes_user_id ON received_probes(user_id);
 CREATE INDEX idx_received_probes_contact_id ON received_probes(contact_id);
 CREATE INDEX idx_received_probes_probe ON received_probes(probe);
 CREATE INDEX idx_received_probes_probe_hash ON received_probes(probe_hash);
+CREATE INDEX idx_sent_probes_created_at ON sent_probes(created_at);
+CREATE INDEX idx_sent_probe_hashes_created_at ON sent_probe_hashes(created_at);
+CREATE INDEX idx_received_probes_created_at ON received_probes(created_at);

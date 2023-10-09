@@ -3,11 +3,12 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.Mobile where
 
 import Control.Concurrent.STM
-import Control.Exception (catch)
+import Control.Exception (catch, SomeException)
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Aeson (ToJSON (..))
@@ -40,8 +41,9 @@ import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
+import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, closeSQLiteStore)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
@@ -52,6 +54,8 @@ import System.IO (utf8)
 import System.Timeout (timeout)
 
 foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
+
+foreign export ccall "chat_close_store" cChatCloseStore :: StablePtr ChatController -> IO CString
 
 foreign export ccall "chat_send_cmd" cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
 
@@ -96,6 +100,9 @@ cChatMigrateInit fp key conf ctrl = do
       Right cc -> (newStablePtr cc >>= poke ctrl) $> DBMOk
       Left e -> pure e
   newCStringFromLazyBS $ J.encode r
+
+cChatCloseStore :: StablePtr ChatController -> IO CString
+cChatCloseStore cPtr = deRefStablePtr cPtr >>= chatCloseStore >>= newCAString
 
 -- | send command to chat (same syntax as in terminal for now)
 cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
@@ -201,6 +208,14 @@ chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
           _ -> dbError e
         dbError e = Left . DBMErrorSQL dbFile $ show e
 
+chatCloseStore :: ChatController -> IO String
+chatCloseStore ChatController {chatStore, smpAgent} = handleErr $ do
+  closeSQLiteStore chatStore
+  closeSQLiteStore $ agentClientStore smpAgent
+
+handleErr :: IO () -> IO String
+handleErr a = (a $> "") `catch` (pure . show @SomeException)
+  
 chatSendCmd :: ChatController -> ByteString -> IO JSONByteString
 chatSendCmd cc s = J.encode . APIResponse Nothing <$> runReaderT (execChatCommand s) cc
 
