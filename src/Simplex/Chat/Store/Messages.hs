@@ -517,10 +517,11 @@ getDirectChatPreviews_ db user@User {userId} = do
             SELECT cc_connection_id FROM (
               SELECT
                 cc.connection_id AS cc_connection_id,
+                cc.created_at AS cc_created_at,
                 (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
               FROM connections cc
               WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
-              ORDER BY cc_conn_status_ord DESC, cc_connection_id DESC
+              ORDER BY cc_conn_status_ord DESC, cc_created_at DESC
               LIMIT 1
             )
           )
