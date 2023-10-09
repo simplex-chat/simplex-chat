@@ -66,7 +66,7 @@ chatDirectTests = do
     it "should not subscribe in NSE and subscribe in the app" testSubscribeAppNSE
   describe "mute/unmute messages" $ do
     it "mute/unmute contact" testMuteContact
-    it "mute/unmute group" testMuteGroup
+    it "mute/unmute group and member" testMuteGroup
   describe "multiple users" $ do
     it "create second user" testCreateSecondUser
     it "multiple users subscribe and receive messages after restart" testUsersSubscribeAfterRestart
@@ -1129,14 +1129,74 @@ testMuteGroup =
       concurrently_
         (bob </)
         (cath <# "#team alice> hi")
+      bob #> "#team hello"
+      concurrently_
+        (alice <# "#team bob> hello")
+        (cath <# "#team bob> hello")
+      cath `send` "> #team (hello) hello too!"
+      cath <# "#team > bob hello"
+      cath <## "      hello too!"
+      concurrently_
+        (bob </)
+        ( do alice <# "#team cath> > bob hello"
+             alice <## "      hello too!"
+        )
+      bob ##> "/unmute refs #team"
+      bob <## "ok"
+      alice `send` "> #team @bob (hello) hey bob!"
+      alice <# "#team > bob hello"
+      alice <## "      hey bob!"
+      concurrently_
+        ( do bob <# "#team alice> > bob hello"
+             bob <## "      hey bob!"
+        )
+        ( do cath <# "#team alice> > bob hello"
+             cath <## "      hey bob!"
+        )
+      alice `send` "> #team @cath (hello) hey cath!"
+      alice <# "#team > cath hello too!"
+      alice <## "      hey cath!"
+      concurrently_
+        (bob </)
+        ( do cath <# "#team alice> > cath hello too!"
+             cath <## "      hey cath!"
+        )
       bob ##> "/gs"
-      bob <## "#team (3 members, muted, you can /unmute #team)"
+      bob <## "#team (3 members, mentions only, you can /unmute #team)"
       bob ##> "/unmute #team"
       bob <## "ok"
       alice #> "#team hi again"
       concurrently_
         (bob <# "#team alice> hi again")
         (cath <# "#team alice> hi again")
+      bob ##> "/mute #team alice"
+      bob <## "ok"
+      bob ##> "/ms team"
+      bob <## "bob (Bob): admin, you, connected"
+      bob <## "alice (Alice): owner, host, connected, muted"
+      bob <## "cath (Catherine): admin, connected"
+      alice #> "#team test 1"
+      concurrently_
+        (bob </)
+        (cath <# "#team alice> test 1")
+      cath #> "#team test 2"
+      concurrently_
+        (bob <# "#team cath> test 2")
+        (alice <# "#team cath> test 2")
+      bob ##> "/unmute #team alice"
+      bob <## "ok"
+      bob ##> "/ms team"
+      bob <## "bob (Bob): admin, you, connected"
+      bob <## "alice (Alice): owner, host, connected"
+      bob <## "cath (Catherine): admin, connected"
+      alice #> "#team test 3"
+      concurrently_
+        (bob <# "#team alice> test 3")
+        (cath <# "#team alice> test 3")
+      cath #> "#team test 4"
+      concurrently_
+        (bob <# "#team cath> test 4")
+        (alice <# "#team cath> test 4")
       bob ##> "/gs"
       bob <## "#team (3 members)"
 

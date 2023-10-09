@@ -405,7 +405,7 @@ defaultChatSettings =
 chatHasNtfs :: ChatSettings -> Bool
 chatHasNtfs ChatSettings {enableNtfs} = enableNtfs /= MFNone
 
-data MsgFilter = MFAll | MFNone | MFReference
+data MsgFilter = MFAll | MFNone | MFReferences
   deriving (Eq, Show, Generic)
 
 instance FromJSON MsgFilter where
@@ -423,13 +423,13 @@ msgFilterInt :: MsgFilter -> Int
 msgFilterInt = \case
   MFNone -> 0
   MFAll -> 1
-  MFReference -> 2
+  MFReferences -> 2
 
 msgFilterIntP :: Int64 -> Maybe MsgFilter
 msgFilterIntP = \case
   0 -> Just MFNone
   1 -> Just MFAll
-  2 -> Just MFReference
+  2 -> Just MFReferences
   _ -> Just MFAll
 
 fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> Field -> Ok a

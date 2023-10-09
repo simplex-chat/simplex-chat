@@ -1532,7 +1532,6 @@ testGroupDelayedModerationFullDelete tmp = do
 
 testGroupAsync :: HasCallStack => FilePath -> IO ()
 testGroupAsync tmp = do
-  print (0 :: Integer)
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     withNewTestChat tmp "bob" bobProfile $ \bob -> do
       connectUsers alice bob

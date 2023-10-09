@@ -5427,7 +5427,7 @@ whenGroupNtfs user GroupInfo {chatSettings} GroupMember {memberSettings} referen
 
 showMessageNtf :: ChatSettings -> Bool -> Bool
 showMessageNtf ChatSettings {enableNtfs} reference =
-  enableNtfs == MFAll || (reference && enableNtfs == MFReference)
+  enableNtfs == MFAll || (reference && enableNtfs == MFReferences)
 
 showMsgToast :: ChatMonad' m => Text -> MsgContent -> Maybe MarkdownList -> m ()
 showMsgToast from mc md_ = showToast from $ maybe (msgContentText mc) (mconcat . map hideSecret) md_
@@ -5483,8 +5483,10 @@ chatCommandP =
   choice
     [ "/mute " *> ((`SetShowMessages` MFNone) <$> chatNameP),
       "/unmute " *> ((`SetShowMessages` MFAll) <$> chatNameP),
+      "/unmute refs " *> ((`SetShowMessages` MFReferences) <$> chatNameP),
       "/receipts " *> (SetSendReceipts <$> chatNameP <* " " <*> ((Just <$> onOffP) <|> ("default" $> Nothing))),
-      "/mute #" *> (SetShowMemberMessages <$> displayName <* A.space <*> displayName <* A.space <*> onOffP),
+      "/mute #" *> (SetShowMemberMessages <$> displayName <* A.space <*> (char_ '@' *> displayName) <*> pure False),
+      "/unmute #" *> (SetShowMemberMessages <$> displayName <* A.space <*> (char_ '@' *> displayName) <*> pure True),
       "/_create user " *> (CreateActiveUser <$> jsonP),
       "/create user " *> (CreateActiveUser <$> newUserP),
       "/users" $> ListUsers,

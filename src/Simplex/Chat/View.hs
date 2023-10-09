@@ -826,22 +826,25 @@ viewGroupMembers :: Group -> [StyledString]
 viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filter (not . removedOrLeft) $ membership : members
   where
     removedOrLeft m = let s = memberStatus m in s == GSMemRemoved || s == GSMemLeft
-    groupMember m = memIncognito m <> ttyFullMember m <> ": " <> role m <> ", " <> category m <> status m
-    role :: GroupMember -> StyledString
-    role m = plain . strEncode $ m.memberRole
+    groupMember m = memIncognito m <> ttyFullMember m <> ": " <> plain (intercalate ", " $ [role m] <> category m <> status m <> muted m)
+    role :: GroupMember -> String
+    role m = B.unpack . strEncode $ m.memberRole
     category m = case memberCategory m of
-      GCUserMember -> "you, "
-      GCInviteeMember -> "invited, "
-      GCHostMember -> "host, "
-      _ -> ""
+      GCUserMember -> ["you"]
+      GCInviteeMember -> ["invited"]
+      GCHostMember -> ["host"]
+      _ -> []
     status m = case memberStatus m of
-      GSMemRemoved -> "removed"
-      GSMemLeft -> "left"
-      GSMemInvited -> "not yet joined"
-      GSMemConnected -> "connected"
-      GSMemComplete -> "connected"
-      GSMemCreator -> "created group"
-      _ -> ""
+      GSMemRemoved -> ["removed"]
+      GSMemLeft -> ["left"]
+      GSMemInvited -> ["not yet joined"]
+      GSMemConnected -> ["connected"]
+      GSMemComplete -> ["connected"]
+      GSMemCreator -> ["created group"]
+      _ -> []
+    muted m
+      | showMessages (memberSettings m) = []
+      | otherwise = ["muted"]
 
 viewContactConnected :: Contact -> Maybe Profile -> Bool -> [StyledString]
 viewContactConnected ct userIncognitoProfile testView =
@@ -864,7 +867,7 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
   where
     ldn_ :: GroupInfo -> Text
     ldn_ g = T.toLower g.localDisplayName
-    groupSS (g@GroupInfo {membership, chatSettings}, GroupSummary {currentMembers}) =
+    groupSS (g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}}, GroupSummary {currentMembers}) =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
         s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s
@@ -873,9 +876,13 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
           GSMemRemoved -> delete "you are removed"
           GSMemLeft -> delete "you left"
           GSMemGroupDeleted -> delete "group deleted"
-          _
-            | chatHasNtfs chatSettings -> " (" <> memberCount <> ")"
-            | otherwise -> " (" <> memberCount <> ", muted, you can " <> highlight ("/unmute #" <> viewGroupName g) <> ")"
+          _ -> " (" <> memberCount <>
+            case enableNtfs of
+              MFAll -> ")"
+              MFNone -> ", muted, " <> unmute
+              MFReferences -> ", mentions only, " <> unmute
+            where
+              unmute = "you can " <> highlight ("/unmute #" <> viewGroupName g) <> ")"
         delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> viewGroupName g) <> ")"
         memberCount = sShow currentMembers <> " member" <> if currentMembers == 1 then "" else "s"
 
