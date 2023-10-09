@@ -1331,7 +1331,6 @@ processChatCommand = \case
     pure $ CRSentConfirmation user
   APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> do
     plan <- connectPlanContact user cReq `catchChatError` const (pure $ CPContactAddress CACPOk)
-    liftIO $ print $ "APIConnect SCMContact plan: " <> show plan
     unless (connectionPlanOkToProceed plan) $ throwChatError (CEConnectionPlan plan)
     connectViaContact user incognito cReq
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
@@ -2223,7 +2222,8 @@ processChatCommand = \case
                 (Just gInfo@GroupInfo {membership}, _)
                   | not (memberActive membership) && not (memberRemoved membership) ->
                       pure $ CPGroupLink (GLCPConnecting gInfo_)
-                  | otherwise -> pure $ CPGroupLink (GLCPKnown gInfo)
+                  | memberActive membership -> pure $ CPGroupLink (GLCPKnown gInfo)
+                  | otherwise -> pure $ CPGroupLink GLCPOk
 
 assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =
