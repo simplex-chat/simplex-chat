@@ -4519,7 +4519,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         merge c1' c2' = do
           c2'' <- withStore $ \db -> mergeContactRecords db user c1' c2'
           toView $ CRContactsMerged user c1' c2' c2''
-          showSecurityCodeChanged c2''
+          when (directOrUsed c2'') $ showSecurityCodeChanged c2''
           pure $ Just c2''
           where
             showSecurityCodeChanged mergedCt = do
