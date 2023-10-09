@@ -805,14 +805,14 @@ instance ToJSON GroupMemberRole where
   toEncoding = strToJEncoding
 
 data GroupMemberSettings = GroupMemberSettings
-  { showMessages :: Maybe MsgFilter
+  { showMessages :: Bool
   }
   deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON GroupMemberSettings where toEncoding = J.genericToEncoding J.defaultOptions
 
 defaultMemberSettings :: GroupMemberSettings
-defaultMemberSettings = GroupMemberSettings {showMessages = Nothing}
+defaultMemberSettings = GroupMemberSettings {showMessages = True}
 
 newtype Probe = Probe {unProbe :: ByteString}
   deriving (Eq, Show)
