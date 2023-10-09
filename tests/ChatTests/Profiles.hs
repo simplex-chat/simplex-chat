@@ -22,7 +22,7 @@ chatProfileTests = do
     it "create and connect via contact link" testUserContactLink
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
-    fit "deduplicate contact requests" testDeduplicateContactRequests
+    it "deduplicate contact requests" testDeduplicateContactRequests
     it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
@@ -370,7 +370,6 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
 
     threadDelay 100000
     bob ##> ("/c " <> cLink)
-    -- bob <## "alice (Alice): contact already exists"
     bob <## "contact address: known contact alice"
     bob <## "use @alice <message> to send messages"
     alice @@@ [("@bob", lastChatFeature)]
@@ -444,7 +443,8 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
       (alice <## "robert (Robert): contact is connected")
 
     bob ##> ("/c " <> cLink)
-    bob <## "alice (Alice): contact already exists"
+    bob <## "contact address: known contact alice"
+    bob <## "use @alice <message> to send messages"
     alice @@@ [("@robert", lastChatFeature)]
     bob @@@ [("@alice", lastChatFeature), (":3", ""), (":2", ""), (":1", "")]
     bob ##> "/_delete :1"
@@ -459,7 +459,8 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     bob @@@ [("@alice", "hey")]
 
     bob ##> ("/c " <> cLink)
-    bob <## "alice (Alice): contact already exists"
+    bob <## "contact address: known contact alice"
+    bob <## "use @alice <message> to send messages"
 
     alice <##> bob
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (0, "hey"), (1, "hi"), (0, "hey")])

@@ -2202,41 +2202,24 @@ processChatCommand = \case
             Just _ -> pure $ CPContactAddress CACPOwnLink
             Nothing -> do
               let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-              withStore' (\db -> getConnectionEntityByConnReqHash db user cReqHash) >>= \case
+              withStore' (\db -> getContactByConnReqHash db user cReqHash) >>= \case
                 Nothing -> pure $ CPContactAddress CACPOk
-                Just (RcvDirectMsgConnection conn ct_) -> do
-                  let Connection {connStatus, contactConnInitiated} = conn
-                  case (connReady conn, ct_) of
-                    (False, Nothing)
-                      | connStatus == ConnJoined && contactConnInitiated -> pure $ CPContactAddress CACPOk -- connecting?
-                      | otherwise -> pure $ CPContactAddress (CACPConnecting ct_)
-                    (False, Just ct)
-                      | contactActive ct -> pure $ CPContactAddress (CACPConnecting ct_)
-                      | otherwise -> pure $ CPContactAddress CACPOk
-                    (True, Just ct) -> pure $ CPContactAddress (CACPKnown ct)
-                    (True, Nothing) -> throwChatError $ CEInternalError "ready RcvDirectMsgConnection connection should have associated contact"
-                Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
+                Just ct
+                  | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CACPConnecting ct)
+                  | otherwise -> pure $ CPContactAddress (CACPKnown ct)
         -- group link
         Just _ ->
           withStore' (\db -> getGroupInfoByUserContactLinkConnReq db user cReq) >>= \case
             Just g -> pure $ CPGroupLink (GLCPOwnLink g)
             Nothing -> do
               let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-              connEntity_ <- withStore' $ \db -> getConnectionEntityByConnReqHash db user cReqHash
+              ct_ <- withStore' $ \db -> getContactByConnReqHash db user cReqHash
               gInfo_ <- withStore' $ \db -> getGroupInfoByGroupLinkHash db user cReqHash
-              case (gInfo_, connEntity_) of
+              case (gInfo_, ct_) of
                 (Nothing, Nothing) -> pure $ CPGroupLink GLCPOk
-                (Nothing, Just (RcvDirectMsgConnection conn ct_)) -> do
-                  let Connection {connStatus, contactConnInitiated} = conn
-                  case (connReady conn, ct_) of
-                    (False, Nothing)
-                      | connStatus == ConnJoined && contactConnInitiated -> pure $ CPGroupLink GLCPOk -- connecting?
-                      | otherwise -> pure $ CPGroupLink (GLCPConnecting gInfo_)
-                    (False, Just ct)
-                      | contactActive ct -> pure $ CPGroupLink (GLCPConnecting gInfo_)
-                      | otherwise -> pure $ CPGroupLink GLCPOk
-                    (True, _) -> pure $ CPGroupLink GLCPOk
-                (Nothing, Just _) -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
+                (Nothing, Just ct)
+                  | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLCPConnecting gInfo_)
+                  | otherwise -> pure $ CPGroupLink GLCPOk
                 (Just gInfo@GroupInfo {membership}, _)
                   | not (memberActive membership) && not (memberRemoved membership) ->
                       pure $ CPGroupLink (GLCPConnecting gInfo_)

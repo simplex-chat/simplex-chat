@@ -650,7 +650,7 @@ instance ToJSON InvitationLinkConnectionPlan where
 data ContactAddressConnectionPlan
   = CACPOk
   | CACPOwnLink
-  | CACPConnecting {contact_ :: Maybe Contact}
+  | CACPConnecting {contact :: Contact}
   | CACPKnown {contact :: Contact}
   deriving (Show, Generic)
 

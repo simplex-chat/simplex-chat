@@ -1240,8 +1240,7 @@ viewConnectionPlan = \case
   CPContactAddress cacp -> case cacp of
     CACPOk -> [ctAddr "ok to connect"]
     CACPOwnLink -> [ctAddr "own address"]
-    CACPConnecting Nothing -> [ctAddr "connecting"]
-    CACPConnecting (Just ct) -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
+    CACPConnecting ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
     CACPKnown ct ->
       [ ctAddr ("known contact " <> ttyContact' ct),
         "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
