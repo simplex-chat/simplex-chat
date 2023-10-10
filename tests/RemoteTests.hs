@@ -11,12 +11,14 @@ import ChatTests.Utils
 import Control.Monad
 import qualified Data.ByteString as B
 import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.Map.Strict as M
 import Debug.Trace
 import Network.HTTP.Types (ok200)
 import qualified Network.HTTP2.Client as C
 import qualified Network.HTTP2.Server as S
 import qualified Network.Socket as N
 import qualified Network.TLS as TLS
+import qualified Simplex.Chat.Controller as Controller
 import qualified Simplex.Chat.Remote.Discovery as Discovery
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
@@ -25,6 +27,7 @@ import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Response (..), closeHTTP2Client, sendRequest)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
+import System.FilePath ((</>))
 import Test.Hspec
 import UnliftIO
 import UnliftIO.Concurrent (threadDelay)
@@ -189,8 +192,13 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   desktop <# "bob> hi"
 
   withXFTPServer $ do
-    -- startFileTransfer bob mobile -- XXX: fails with `invalid time: /f @alice ./tests/fixtures/test.jpg`
+    rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
+    desktopStore <- case M.lookup 1 rhs of
+      Just Controller.RemoteHostSessionStarted {storePath} -> pure storePath
+      _ -> fail "Host session 1 should be started"
 
+    doesFileExist "./tests/tmp/mobile_files/test.pdf" `shouldReturn` False
+    doesFileExist ("./tests/tmp/desktop_files" </> desktopStore </> "test.pdf") `shouldReturn` False
     mobileName <- userName mobile
     srcPath <- makeAbsolute "tests/fixtures/test.pdf"
     bob #> ("/f @" <> mobileName <> " " <> srcPath)
@@ -201,13 +209,8 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
     desktop ##> "/fr 1"
     desktop <## "saving file 1 from bob to test.pdf"
     desktop <## "started receiving file 1 (test.pdf) from bob"
-    completed <- getTermLine desktop -- "completed receiving file 1 (./tests/tmp/desktop_files/bAsEPq0ykf-JFhyN/test.pdf) from bob"
-    desktopPath <- case break (== '(') completed of
-      ("completed receiving file 1 ", '(' : rest) -> case break (== ')') rest of
-        (path, ") from bob") -> pure path
-        unexpected -> fail $ "unable to match path suffix: " <> show unexpected
-      unexpected -> fail $ "unable to match path prefix: " <> show unexpected
-    traceM $ "    * Found file path: " <> show desktopPath
+    let desktopPath = "./tests/tmp/desktop_files" </> desktopStore </> "test.pdf"
+    desktop <## ("completed receiving file 1 (" <> desktopPath <> ") from bob")
     src <- B.readFile srcPath
     dst <- B.readFile desktopPath
     src `shouldBe` dst
@@ -230,6 +233,7 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
     -- getTermLine desktop >>= traceShowM
     -- desktop <## "use /fc 2 to cancel sending"
 
+    doesFileExist "./tests/tmp/bob_files/logo.jpg" `shouldReturn` False
     desktop ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/logo.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}"
     desktop <# "@bob hi, sending a file"
     getTermLine desktop >>= traceShowM -- XXX: "/f @bob ./tests/tmp/mobile_files/logo.jpg"
