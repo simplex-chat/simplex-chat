@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -27,7 +28,7 @@ import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Response (..), closeHTTP2Client, sendRequest)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
-import System.FilePath ((</>))
+import System.FilePath (makeRelative, (</>))
 import Test.Hspec
 import UnliftIO
 import UnliftIO.Concurrent (threadDelay)
@@ -147,11 +148,14 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
 
 remoteCommandTest :: (HasCallStack) => FilePath -> IO ()
 remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
-  mobile ##> "/_files_folder ./tests/tmp/mobile_files"
+  let mobileFiles = "./tests/tmp/mobile_files"
+  mobile ##> ("/_files_folder " <> mobileFiles)
   mobile <## "ok"
-  desktop ##> "/_files_folder ./tests/tmp/desktop_files"
+  let desktopFiles = "./tests/tmp/desktop_files"
+  desktop ##> ("/_files_folder " <> desktopFiles)
   desktop <## "ok"
-  bob ##> "/_files_folder ./tests/tmp/bob_files"
+  let bobFiles = "./tests/tmp/bob_files"
+  bob ##> ("/_files_folder " <> bobFiles)
   bob <## "ok"
 
   desktop ##> "/create remote host"
@@ -198,73 +202,70 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
       _ -> fail "Host session 1 should be started"
 
     doesFileExist "./tests/tmp/mobile_files/test.pdf" `shouldReturn` False
-    doesFileExist ("./tests/tmp/desktop_files" </> desktopStore </> "test.pdf") `shouldReturn` False
+    doesFileExist (desktopFiles </> desktopStore </> "test.pdf") `shouldReturn` False
     mobileName <- userName mobile
-    srcPath <- makeAbsolute "tests/fixtures/test.pdf"
-    bob #> ("/f @" <> mobileName <> " " <> srcPath)
+
+    bobsFile <- makeRelative bobFiles <$> makeAbsolute "tests/fixtures/test.pdf"
+    bob #> ("/f @" <> mobileName <> " " <> bobsFile)
     bob <## "use /fc 1 to cancel sending"
 
     desktop <# "bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
     desktop <## "use /fr 1 [<dir>/ | <path>] to receive it"
     desktop ##> "/fr 1"
-    desktop <## "saving file 1 from bob to test.pdf"
-    desktop <## "started receiving file 1 (test.pdf) from bob"
-    let desktopPath = "./tests/tmp/desktop_files" </> desktopStore </> "test.pdf"
-    desktop <## ("completed receiving file 1 (" <> desktopPath <> ") from bob")
-    src <- B.readFile srcPath
-    dst <- B.readFile desktopPath
-    src `shouldBe` dst
+    concurrently_
+      do
+        bob <## "started sending file 1 (test.pdf) to alice"
+        bob <## "completed sending file 1 (test.pdf) to alice"
+
+      do
+        desktop <## "saving file 1 from bob to test.pdf"
+        desktop <## "started receiving file 1 (test.pdf) from bob"
+
+    let desktopReceived = desktopFiles </> desktopStore </> "test.pdf"
+    desktop <## ("completed receiving file 1 (" <> desktopReceived <> ") from bob")
+    bobsFileSize <- getFileSize bobsFile
+    getFileSize desktopReceived `shouldReturn` bobsFileSize
+    bobsFileBytes <- B.readFile bobsFile
+    B.readFile desktopReceived `shouldReturn` bobsFileBytes
+
+    -- test file transit on mobile
     mobile ##> "/fs 1"
     mobile <## "receiving file 1 (test.pdf) complete, path: test.pdf"
-    B.readFile "./tests/tmp/mobile_files/test.pdf" `shouldReturn` src
-
-    bob <## "started sending file 1 (test.pdf) to alice"
-    bob <## "completed sending file 1 (test.pdf) to alice"
+    getFileSize (mobileFiles </> "test.pdf") `shouldReturn` bobsFileSize
+    B.readFile (mobileFiles </> "test.pdf") `shouldReturn` bobsFileBytes
 
     traceM "    - file received"
 
-    srcPath2 <- makeAbsolute "tests/fixtures/logo.jpg"
-    traceM $ "    - sending " <> show srcPath2
-    -- desktop #> ("/f @bob " <> srcPath)
-    -- BUG: srcPath mismatch:
-    --   expected: "/f @bob ./tests/fixtures/test.pdf"
-    --    but got: "/f @bob ./tests/tmp/mobile_files/test_1.pdf"
-    -- desktop `send` ("/f @bob " <> srcPath2)
-    -- getTermLine desktop >>= traceShowM
-    -- desktop <## "use /fc 2 to cancel sending"
-
-    doesFileExist "./tests/tmp/bob_files/logo.jpg" `shouldReturn` False
+    desktopFile <- makeRelative desktopFiles <$> makeAbsolute "tests/fixtures/logo.jpg" -- XXX: not necessary for _send, but required for /f
+    traceM $ "    - sending " <> show desktopFile
+    doesFileExist (bobFiles </> "logo.jpg") `shouldReturn` False
+    doesFileExist (mobileFiles </> "logo.jpg") `shouldReturn` False
     desktop ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/logo.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}"
     desktop <# "@bob hi, sending a file"
-    getTermLine desktop >>= traceShowM -- XXX: "/f @bob ./tests/tmp/mobile_files/logo.jpg"
+    desktop <# "/f @bob logo.jpg"
     desktop <## "use /fc 2 to cancel sending"
 
     bob <# "alice> hi, sending a file"
     bob <# "alice> sends file logo.jpg (31.3 KiB / 32080 bytes)"
-    -- bob <# "alice> sends file test_1.pdf (266.0 KiB / 272376 bytes)"
     bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
-    -- bob ##> "/fr 2 ./tests/tmp/bobs_test.pdf"
-    -- bob <## "saving file 2 from alice to ./tests/tmp/bobs_test.pdf"
     bob ##> "/fr 2"
     concurrently_
-      ( do
-          bob <## "saving file 2 from alice to logo.jpg"
-          bob <## "started receiving file 2 (logo.jpg) from alice"
-          threadDelay 1000000
-          bob <## "completed receiving file 2 (logo.jpg) from alice"
-          bob ##> "/fs 2"
-          bob <## "receiving file 2 (logo.jpg) complete, path: logo.jpg"
-      )
-      ( do
-          desktop <## "started sending file 2 (logo.jpg) to bob"
-          desktop <## "completed sending file 2 (logo.jpg) to bob"
-      )
-    sentLogoSize <- getFileSize srcPath2
-    recvLogoSize <- getFileSize "./tests/tmp/bob_files/logo.jpg"
-    recvLogoSize `shouldBe` sentLogoSize
-    src2 <- B.readFile srcPath2
-    dst2 <- B.readFile "./tests/tmp/bob_files/logo.jpg"
-    src2 `shouldBe` dst2
+      do
+        bob <## "saving file 2 from alice to logo.jpg"
+        bob <## "started receiving file 2 (logo.jpg) from alice"
+        bob <## "completed receiving file 2 (logo.jpg) from alice"
+        bob ##> "/fs 2"
+        bob <## "receiving file 2 (logo.jpg) complete, path: logo.jpg"
+      do
+        desktop <## "started sending file 2 (logo.jpg) to bob"
+        desktop <## "completed sending file 2 (logo.jpg) to bob"
+    desktopFileSize <- getFileSize desktopFile
+    getFileSize (bobFiles </> "logo.jpg") `shouldReturn` desktopFileSize
+    getFileSize (mobileFiles </> "logo.jpg") `shouldReturn` desktopFileSize
+
+    desktopFileBytes <- B.readFile desktopFile
+    B.readFile (bobFiles </> "logo.jpg") `shouldReturn` desktopFileBytes
+    B.readFile (mobileFiles </> "logo.jpg") `shouldReturn` desktopFileBytes
 
     traceM "    - file sent"
 

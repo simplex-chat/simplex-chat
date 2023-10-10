@@ -307,9 +307,11 @@ processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody, s
       Left err -> respondWith Status.badRequest400 (Binary.putStringUtf8 err)
       Right fileName -> do
         baseDir <- fromMaybe "." <$> chatReadVar filesFolder
-        localPath <- uniqueCombine baseDir fileName >>= makeAbsolute
+        localPath <- uniqueCombine baseDir fileName
+        logDebug $ "Storing controller file to " <> tshow (baseDir, localPath)
         writeBodyToFile localPath reqBody
-        respond $ Binary.putStringUtf8 localPath
+        let storeRelative = takeFileName localPath
+        respond $ Binary.putStringUtf8 storeRelative
       where
         storeFileQuery = parseField "file_name" $ A.many1 (A.satisfy $ not . isPathSeparator)
     fetchFile = case fetchFileQuery of
