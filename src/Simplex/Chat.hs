@@ -33,7 +33,6 @@ import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char
-import Data.Composition ((.:))
 import Data.Constraint (Dict (..))
 import Data.Either (fromRight, rights)
 import Data.Fixed (div')
@@ -5391,12 +5390,6 @@ getCreateActiveUser st testView = do
         | otherwise -> pure $ T.pack displayName
     getWithPrompt :: String -> IO String
     getWithPrompt s = putStr (s <> ": ") >> hFlush stdout >> getLine
-
-whenUserNtfs :: ChatMonad' m => User -> m () -> m ()
-whenUserNtfs = when . userNtf
-
-whenGroupNtfs :: ChatMonad' m => User -> GroupInfo -> m () -> m ()
-whenGroupNtfs = when .: groupNtf
 
 userNtf :: User -> Bool
 userNtf User {showNtfs, activeUser} = showNtfs || activeUser

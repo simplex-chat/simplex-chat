@@ -40,7 +40,7 @@ terminalChatConfig =
     }
 
 simplexChatTerminal :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
-simplexChatTerminal cfg opts t = do
+simplexChatTerminal cfg opts t =
   handle checkDBKeyError . simplexChatCore cfg opts $ \u cc -> do
     ct <- newChatTerminal t opts
     when (firstTime cc) . printToTerminal ct $ chatWelcome u
