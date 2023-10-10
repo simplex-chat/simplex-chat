@@ -8,10 +8,9 @@ module RemoteTests where
 
 import ChatClient
 import ChatTests.Utils
-import ChatTests.Files (startFileTransfer)
 import Control.Monad
-import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.ByteString as B
+import Data.List.NonEmpty (NonEmpty (..))
 import Debug.Trace
 import Network.HTTP.Types (ok200)
 import qualified Network.HTTP2.Client as C
@@ -28,6 +27,7 @@ import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Response (..), closeHTTP2C
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Test.Hspec
 import UnliftIO
+import UnliftIO.Concurrent (threadDelay)
 import UnliftIO.Directory
 
 remoteTests :: SpecWith FilePath
@@ -220,20 +220,47 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
 
     traceM "    - file received"
 
-    srcPath2 <- makeAbsolute "tests/fixtures/test.jpg"
+    srcPath2 <- makeAbsolute "tests/fixtures/logo.jpg"
     traceM $ "    - sending " <> show srcPath2
     -- desktop #> ("/f @bob " <> srcPath)
     -- BUG: srcPath mismatch:
     --   expected: "/f @bob ./tests/fixtures/test.pdf"
     --    but got: "/f @bob ./tests/tmp/mobile_files/test_1.pdf"
-    desktop `send` ("/f @bob " <> srcPath2)
-    getTermLine desktop >>= traceShowM
+    -- desktop `send` ("/f @bob " <> srcPath2)
+    -- getTermLine desktop >>= traceShowM
+    -- desktop <## "use /fc 2 to cancel sending"
+
+    desktop ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/logo.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}"
+    desktop <# "@bob hi, sending a file"
+    getTermLine desktop >>= traceShowM -- XXX: "/f @bob ./tests/tmp/mobile_files/logo.jpg"
     desktop <## "use /fc 2 to cancel sending"
 
-    bob <# "alice> sends file test_1.pdf (266.0 KiB / 272376 bytes)"
+    bob <# "alice> hi, sending a file"
+    bob <# "alice> sends file logo.jpg (31.3 KiB / 32080 bytes)"
+    -- bob <# "alice> sends file test_1.pdf (266.0 KiB / 272376 bytes)"
     bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
-    bob ##> "/fr 2 ./tests/tmp/bobs_test.pdf"
-    bob <## "saving file 2 from alice to ./tests/tmp/bobs_test.pdf"
+    -- bob ##> "/fr 2 ./tests/tmp/bobs_test.pdf"
+    -- bob <## "saving file 2 from alice to ./tests/tmp/bobs_test.pdf"
+    bob ##> "/fr 2"
+    concurrently_
+      ( do
+          bob <## "saving file 2 from alice to logo.jpg"
+          bob <## "started receiving file 2 (logo.jpg) from alice"
+          threadDelay 1000000
+          bob <## "completed receiving file 2 (logo.jpg) from alice"
+          bob ##> "/fs 2"
+          bob <## "receiving file 2 (logo.jpg) complete, path: logo.jpg"
+      )
+      ( do
+          desktop <## "started sending file 2 (logo.jpg) to bob"
+          desktop <## "completed sending file 2 (logo.jpg) to bob"
+      )
+    sentLogoSize <- getFileSize srcPath2
+    recvLogoSize <- getFileSize "./tests/tmp/bob_files/logo.jpg"
+    recvLogoSize `shouldBe` sentLogoSize
+    src2 <- B.readFile srcPath2
+    dst2 <- B.readFile "./tests/tmp/bob_files/logo.jpg"
+    src2 `shouldBe` dst2
 
     traceM "    - file sent"
 

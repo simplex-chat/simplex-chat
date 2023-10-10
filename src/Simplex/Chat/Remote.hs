@@ -9,7 +9,6 @@
 
 module Simplex.Chat.Remote where
 
-import Simplex.FileTransfer.Util (uniqueCombine)
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
@@ -44,7 +43,9 @@ import Simplex.Chat.Store.Profiles (getUser)
 import Simplex.Chat.Store.Remote
 import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Types
+import Simplex.FileTransfer.Util (uniqueCombine)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
@@ -185,9 +186,12 @@ processRemoteCommand RemoteHostSessionStarted {ctrlClient} (s, cmd) = do
       storeRemoteFile ctrlClient ctrlPath >>= \case
         Nothing -> pure . CRChatError Nothing . ChatError $ CEInternalError "failed to store image on remote host"
         Just hostPath -> relayCommand ctrlClient $ "/image " <> utf8String (chatNameStr cn) <> " " <> utf8String hostPath
-  --   APISendMessage
-  -- XXX: intercept and filter some commands
-  -- TODO: store missing files on remote host
+    APISendMessage {composedMessage = cm@ComposedMessage {fileSource = Just CryptoFile {filePath = ctrlPath, cryptoArgs}}} -> do
+      storeRemoteFile ctrlClient ctrlPath >>= \case
+        Nothing -> pure . CRChatError Nothing . ChatError $ CEInternalError "failed to store file on remote host"
+        Just hostPath -> do
+          let cm' = cm {fileSource = Just CryptoFile {filePath = hostPath, cryptoArgs}} :: ComposedMessage
+          relayCommand ctrlClient $ B.takeWhile (/= '{') s <> B.toStrict (J.encode cm')
     _ -> relayCommand ctrlClient s
 
 relayCommand :: (ChatMonad m) => HTTP2Client -> ByteString -> m ChatResponse
@@ -237,7 +241,7 @@ storeRemoteFile :: (MonadUnliftIO m) => HTTP2Client -> FilePath -> m (Maybe File
 storeRemoteFile http localFile = do
   putFile Nothing http uri mempty localFile >>= \case
     Left h2ce -> Nothing <$ logError (tshow h2ce)
-    Right HTTP2.HTTP2Response {response, respBody=HTTP2Body{bodyHead}} ->
+    Right HTTP2.HTTP2Response {response, respBody = HTTP2Body {bodyHead}} ->
       case HTTP.statusCode <$> HTTP2Client.responseStatus response of
         Just 200 -> pure . Just $ B.unpack bodyHead
         notOk -> Nothing <$ logError ("Bad response status: " <> tshow notOk)
