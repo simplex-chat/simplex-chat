@@ -44,6 +44,10 @@ chatDirectTests = do
   describe "duplicate contacts" $ do
     it "duplicate contacts are separate (contacts don't merge)" testDuplicateContactsSeparate
     it "new contact is separate with multiple duplicate contacts (contacts don't merge)" testDuplicateContactsMultipleSeparate
+  describe "invitation link connection plan" $ do
+    it "invitation link ok to connect" testPlanInvitationLinkOk
+    it "own invitation link" testPlanInvitationLinkOwn
+    it "connecting via invitation link" testPlanInvitationLinkConnecting
   describe "SMP servers" $ do
     it "get and set SMP servers" testGetSetSMPServers
     it "test SMP server connection" testTestSMPServerConnection
@@ -235,6 +239,69 @@ testDuplicateContactsMultipleSeparate =
       bob <### ["alice (Alice)", "alice_1 (Alice)", "alice_2 (Alice)"]
       alice `hasContactProfiles` ["alice", "bob", "bob", "bob"]
       bob `hasContactProfiles` ["bob", "alice", "alice", "alice"]
+
+testPlanInvitationLinkOk :: HasCallStack => FilePath -> IO ()
+testPlanInvitationLinkOk =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/c"
+      inv <- getInvitation alice
+      bob ##> ("/_connect plan 1 " <> inv)
+      bob <## "invitation link: ok to connect"
+
+      bob ##> ("/c " <> inv)
+      bob <## "confirmation sent!"
+      concurrently_
+        (alice <## "bob (Bob): contact is connected")
+        (bob <## "alice (Alice): contact is connected")
+
+      bob ##> ("/_connect plan 1 " <> inv)
+      bob <## "invitation link: ok to connect" -- conn_req_inv is forgotten after connection
+
+      alice <##> bob
+
+testPlanInvitationLinkOwn :: HasCallStack => FilePath -> IO ()
+testPlanInvitationLinkOwn tmp =
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    alice ##> "/c"
+    inv <- getInvitation alice
+    alice ##> ("/_connect plan 1 " <> inv)
+    alice <## "invitation link: own link"
+
+    alice ##> ("/c " <> inv)
+    alice <## "confirmation sent!"
+    alice
+      <### [ "alice_1 (Alice): contact is connected",
+             "alice_2 (Alice): contact is connected"
+           ]
+
+    alice ##> ("/_connect plan 1 " <> inv)
+    alice <## "invitation link: ok to connect" -- conn_req_inv is forgotten after connection
+
+    alice @@@ [("@alice_1", lastChatFeature), ("@alice_2", lastChatFeature)]
+    alice `send` "@alice_2 hi"
+    alice
+      <### [ WithTime "@alice_2 hi",
+             WithTime "alice_1> hi"
+           ]
+    alice `send` "@alice_1 hey"
+    alice
+      <### [ WithTime "@alice_1 hey",
+             WithTime "alice_2> hey"
+           ]
+    alice @@@ [("@alice_1", "hey"), ("@alice_2", "hey")]
+
+testPlanInvitationLinkConnecting :: HasCallStack => FilePath -> IO ()
+testPlanInvitationLinkConnecting tmp = do
+  inv <- withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    alice ##> "/c"
+    getInvitation alice
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    bob ##> ("/c " <> inv)
+    bob <## "confirmation sent!"
+
+    bob ##> ("/_connect plan 1 " <> inv)
+    bob <## "invitation link: connecting"
 
 testContactClear :: HasCallStack => FilePath -> IO ()
 testContactClear =

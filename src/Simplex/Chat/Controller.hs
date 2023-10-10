@@ -338,6 +338,7 @@ data ChatCommand
   | APIAddContact UserId IncognitoEnabled
   | AddContact IncognitoEnabled
   | APISetConnectionIncognito Int64 IncognitoEnabled
+  | APIConnectPlan UserId AConnectionRequestUri
   | APIConnect UserId IncognitoEnabled (Maybe AConnectionRequestUri)
   | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
@@ -489,6 +490,7 @@ data ChatResponse
   | CRVersionInfo {versionInfo :: CoreVersionInfo, chatMigrations :: [UpMigration], agentMigrations :: [UpMigration]}
   | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection}
+  | CRConnectionPlan {user :: User, connectionPlan :: ConnectionPlan}
   | CRSentConfirmation {user :: User}
   | CRSentInvitation {user :: User, customUserProfile :: Maybe Profile}
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
@@ -623,6 +625,64 @@ logResponseToFile = \case
 instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
+
+data ConnectionPlan
+  = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
+  | CPContactAddress {contactAddressPlan :: ContactAddressPlan}
+  | CPGroupLink {groupLinkPlan :: GroupLinkPlan}
+  deriving (Show, Generic)
+
+instance ToJSON ConnectionPlan where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CP"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CP"
+
+data InvitationLinkPlan
+  = ILPOk
+  | ILPOwnLink
+  | ILPConnecting {contact_ :: Maybe Contact}
+  | ILPKnown {contact :: Contact}
+  deriving (Show, Generic)
+
+instance ToJSON InvitationLinkPlan where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "ILP"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "ILP"
+
+data ContactAddressPlan
+  = CAPOk
+  | CAPOwnLink
+  | CAPConnecting {contact :: Contact}
+  | CAPKnown {contact :: Contact}
+  deriving (Show, Generic)
+
+instance ToJSON ContactAddressPlan where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CAP"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CAP"
+
+data GroupLinkPlan
+  = GLPOk
+  | GLPOwnLink {groupInfo :: GroupInfo}
+  | GLPConnecting {groupInfo_ :: Maybe GroupInfo}
+  | GLPKnown {groupInfo :: GroupInfo}
+  deriving (Show, Generic)
+
+instance ToJSON GroupLinkPlan where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "GLP"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "GLP"
+
+connectionPlanOk :: ConnectionPlan -> Bool
+connectionPlanOk = \case
+  CPInvitationLink ilp -> case ilp of
+    ILPOk -> True
+    ILPOwnLink -> True
+    _ -> False
+  CPContactAddress cap -> case cap of
+    CAPOk -> True
+    CAPOwnLink -> True
+    _ -> False
+  CPGroupLink glp -> case glp of
+    GLPOk -> True
+    GLPOwnLink _ -> True
+    _ -> False
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
@@ -888,6 +948,7 @@ data ChatErrorType
   | CEChatNotStarted
   | CEChatNotStopped
   | CEChatStoreChanged
+  | CEConnectionPlan {connectionPlan :: ConnectionPlan}
   | CEInvalidConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}

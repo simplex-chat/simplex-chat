@@ -206,6 +206,9 @@ directOrUsed ct@Contact {contactUsed} =
 anyDirectOrUsed :: Contact -> Bool
 anyDirectOrUsed Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed
 
+contactReady :: Contact -> Bool
+contactReady Contact {activeConn} = connReady activeConn
+
 contactActive :: Contact -> Bool
 contactActive Contact {contactStatus} = contactStatus == CSActive
 
@@ -1243,6 +1246,9 @@ data Connection = Connection
     createdAt :: UTCTime
   }
   deriving (Eq, Show, Generic)
+
+connReady :: Connection -> Bool
+connReady Connection {connStatus} = connStatus == ConnReady || connStatus == ConnSndReady
 
 authErrDisableCount :: Int
 authErrDisableCount = 10

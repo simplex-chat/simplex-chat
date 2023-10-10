@@ -148,6 +148,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRVersionInfo info _ _ -> viewVersionInfo logLevel info
   CRInvitation u cReq _ -> ttyUser u $ viewConnReqInvitation cReq
   CRConnectionIncognitoUpdated u c -> ttyUser u $ viewConnectionIncognitoUpdated c
+  CRConnectionPlan u connectionPlan -> ttyUser u $ viewConnectionPlan connectionPlan
   CRSentConfirmation u -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
@@ -1223,6 +1224,41 @@ viewConnectionIncognitoUpdated PendingContactConnection {pccConnId, customUserPr
   | isJust customUserProfileId = ["connection " <> sShow pccConnId <> " changed to incognito"]
   | otherwise = ["connection " <> sShow pccConnId <> " changed to non incognito"]
 
+viewConnectionPlan :: ConnectionPlan -> [StyledString]
+viewConnectionPlan = \case
+  CPInvitationLink ilp -> case ilp of
+    ILPOk -> [invLink "ok to connect"]
+    ILPOwnLink -> [invLink "own link"]
+    ILPConnecting Nothing -> [invLink "connecting"]
+    ILPConnecting (Just ct) -> [invLink ("connecting to contact " <> ttyContact' ct)]
+    ILPKnown ct ->
+      [ invLink ("known contact " <> ttyContact' ct),
+        "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
+      ]
+    where
+      invLink = ("invitation link: " <>)
+  CPContactAddress cap -> case cap of
+    CAPOk -> [ctAddr "ok to connect"]
+    CAPOwnLink -> [ctAddr "own address"]
+    CAPConnecting ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
+    CAPKnown ct ->
+      [ ctAddr ("known contact " <> ttyContact' ct),
+        "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
+      ]
+    where
+      ctAddr = ("contact address: " <>)
+  CPGroupLink glp -> case glp of
+    GLPOk -> [grpLink "ok to connect"]
+    GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
+    GLPConnecting Nothing -> [grpLink "connecting"]
+    GLPConnecting (Just g) -> [grpLink ("connecting to group " <> ttyGroup' g)]
+    GLPKnown g ->
+      [ grpLink ("known group " <> ttyGroup' g),
+        "use " <> ttyToGroup g <> highlight' "<message>" <> " to send messages"
+      ]
+    where
+      grpLink = ("group link: " <>)
+
 viewContactUpdated :: Contact -> Contact -> [StyledString]
 viewContactUpdated
   Contact {localDisplayName = n, profile = LocalProfile {fullName, contactLink}}
@@ -1565,6 +1601,7 @@ viewChatError logLevel = \case
     CEChatNotStarted -> ["error: chat not started"]
     CEChatNotStopped -> ["error: chat not stopped"]
     CEChatStoreChanged -> ["error: chat store changed, please restart chat"]
+    CEConnectionPlan connectionPlan -> viewConnectionPlan connectionPlan
     CEInvalidConnReq -> viewInvalidConnReq
     CEInvalidChatMessage Connection {connId} msgMeta_ msg e ->
       [ plain $

@@ -9,6 +9,7 @@
 
 module Simplex.Chat.Store.Connections
   ( getConnectionEntity,
+    getConnectionEntityByConnReq,
     getConnectionsToSubscribe,
     unsetConnectionToSubscribe,
   )
@@ -31,7 +32,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ConnId)
-import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow')
+import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Util (eitherToMaybe)
 
@@ -151,6 +152,12 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
         userContact_ :: [(ConnReqContact, Maybe GroupId)] -> Either StoreError UserContact
         userContact_ [(cReq, groupId)] = Right UserContact {userContactLinkId, connReqContact = cReq, groupId}
         userContact_ _ = Left SEUserContactLinkNotFound
+
+getConnectionEntityByConnReq :: DB.Connection -> User -> ConnReqInvitation -> IO (Maybe ConnectionEntity)
+getConnectionEntityByConnReq db user cReq = do
+  connId_ <- maybeFirstRow fromOnly $
+    DB.query db "SELECT agent_conn_id FROM connections WHERE conn_req_inv = ? LIMIT 1" (Only cReq)
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db user) connId_
 
 getConnectionsToSubscribe :: DB.Connection -> IO ([ConnId], [ConnectionEntity])
 getConnectionsToSubscribe db = do
