@@ -154,26 +154,10 @@ defaultInlineFilesConfig =
       receiveInstant = True -- allow receiving instant files, within receiveChunks limit
     }
 
-data ActiveTo = ActiveNone | ActiveC Contact | ActiveG GroupInfo
-  deriving (Eq)
-
-activeToStr :: ActiveTo -> String
-activeToStr = \case
-  ActiveNone -> ""
-  ActiveC c -> T.unpack $ "@" <> viewContactName c <> " "
-  ActiveG g -> T.unpack $ "#" <> viewGroupName g <> " "
-
-chatActiveTo :: ChatName -> String
-chatActiveTo (ChatName cType name) = case cType of
-  CTDirect -> T.unpack $ "@" <> viewName name <> " "
-  CTGroup -> T.unpack $ "#" <> viewName name <> " "
-  _ -> ""
-
 data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLiteStore}
 
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
-    activeTo :: TVar String,
     firstTime :: Bool,
     smpAgent :: AgentClient,
     agentAsync :: TVar (Maybe (Async (), Maybe (Async ()))),
@@ -438,7 +422,7 @@ data ChatResponse
   | CRApiChats {user :: User, chats :: [AChat]}
   | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat}
-  | CRChatItems {user :: User, chatItems :: [AChatItem]}
+  | CRChatItems {user :: User, chatName_ :: Maybe ChatName, chatItems :: [AChatItem]}
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
@@ -1078,20 +1062,6 @@ mkChatError = ChatError . CEException . show
 
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError
-
-setActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
-setActive a' = ask >>= liftIO . (`setActive'` a')
-
-setActive' :: ChatController -> ActiveTo -> IO ()
-setActive' cc = setActive'' cc . activeToStr
-
-setActive'' :: ChatController -> String -> IO ()
-setActive'' cc = atomically . writeTVar (activeTo cc)
-
-unsetActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
-unsetActive a = asks activeTo >>= atomically . (`modifyTVar` unset)
-  where
-    unset pfx = if pfx == activeToStr a then "" else pfx
 
 toView :: ChatMonad' m => ChatResponse -> m ()
 toView event = do

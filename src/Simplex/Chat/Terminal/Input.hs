@@ -57,14 +57,39 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       cmd = parseChatCommand bs
   unless (isMessage cmd) $ echo s
   r <- runReaderT (execChatCommand bs) cc
-  case r of
-    CRChatCmdError _ _ -> when (isMessage cmd) $ echo s
-    CRChatError _ _ -> when (isMessage cmd) $ echo s
-    _ -> pure ()
+  processResp s cmd r
   printRespToTerminal ct cc False r
   startLiveMessage cmd r
   where
     echo s = printToTerminal ct [plain s]
+    processResp s cmd = \case
+      -- TODO all actions only if user matches current
+      CRActiveUser u -> setActive ct cc u ActiveNone
+      CRChatItems u chatName_ _ ->
+        mapM_ (setActive' ct cc u . chatActiveTo) chatName_
+      CRNewChatItem u (AChatItem _ SMDSnd cInfo _) -> case cInfo of
+        DirectChat c -> setActive ct cc u $ ActiveC c
+        GroupChat g -> setActive ct cc u $ ActiveG g
+        _ -> pure ()
+      CRChatItemUpdated u (AChatItem _ SMDSnd cInfo _) -> case cInfo of
+        DirectChat c -> setActive ct cc u $ ActiveC c
+        GroupChat g -> setActive ct cc u $ ActiveG g
+        _ -> pure ()
+      CRChatItemDeleted u (AChatItem _ _ cInfo _) _ _ _ -> case cInfo of
+        DirectChat c -> setActive ct cc u $ ActiveC c
+        GroupChat g -> setActive ct cc u $ ActiveG g
+        _ -> pure ()
+      -- TODO user?
+      CRContactDeleted u c -> unsetActive ct $ ActiveC c
+      CRGroupDeletedUser u g -> unsetActive ct $ ActiveG g
+      CRSentGroupInvitation u _ c _ -> setActive ct cc u $ ActiveC c
+      CRChatCmdError _ _ -> when (isMessage cmd) $ echo s
+      CRChatError _ _ -> when (isMessage cmd) $ echo s
+      CRCmdOk _ -> case cmd of
+        -- TODO don't match user here
+        -- Right APIDeleteUser -> setActive ct cc Nothing? ActiveNone
+        _ -> pure ()
+      _ -> pure ()
     isMessage = \case
       Right SendMessage {} -> True
       Right SendLiveMessage {} -> True
@@ -134,7 +159,7 @@ runTerminalInput ct cc = withChatTerm ct $ do
   receiveFromTTY cc ct
 
 receiveFromTTY :: forall m. MonadTerminal m => ChatController -> ChatTerminal -> m ()
-receiveFromTTY cc@ChatController {inputQ, activeTo, currentUser, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState} =
+receiveFromTTY cc@ChatController {inputQ, currentUser, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState, activeTo} =
   forever $ getKey >>= liftIO . processKey >> withTermLock ct (updateInput ct)
   where
     processKey :: (Key, Modifiers) -> IO ()
