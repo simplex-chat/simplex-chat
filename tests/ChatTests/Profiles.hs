@@ -32,6 +32,7 @@ chatProfileTests = do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
     it "connecting via contact address" testPlanAddressConnecting
+    it "re-connect with deleted contact" testPlanAddressContactDeletedReconnected
   describe "incognito" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
@@ -666,6 +667,61 @@ testPlanAddressConnecting tmp = do
 
     bob ##> ("/c " <> cLink)
     bob <## "contact address: connecting to contact alice"
+
+testPlanAddressContactDeletedReconnected :: HasCallStack => FilePath -> IO ()
+testPlanAddressContactDeletedReconnected =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/ad"
+      cLink <- getContactLink alice True
+
+      bob ##> ("/c " <> cLink)
+      alice <#? bob
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request..."
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice <##> bob
+
+      bob ##> ("/_connect_plan 1 " <> cLink)
+      bob <## "contact address: known contact alice"
+      bob <## "use @alice <message> to send messages"
+
+      bob ##> ("/c " <> cLink)
+      bob <## "contact address: known contact alice"
+      bob <## "use @alice <message> to send messages"
+
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      bob ##> ("/_connect_plan 1 " <> cLink)
+      bob <## "contact address: ok to connect"
+
+      bob ##> ("/c " <> cLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request..."
+      concurrently_
+        (bob <## "alice_1 (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+
+      alice #> "@bob hi"
+      bob <# "alice_1> hi"
+      bob #> "@alice_1 hey"
+      alice <# "bob> hey"
+
+      bob ##> ("/_connect_plan 1 " <> cLink)
+      bob <## "contact address: known contact alice_1"
+      bob <## "use @alice_1 <message> to send messages"
+
+      bob ##> ("/c " <> cLink)
+      bob <## "contact address: known contact alice_1"
+      bob <## "use @alice_1 <message> to send messages"
 
 testConnectIncognitoInvitationLink :: HasCallStack => FilePath -> IO ()
 testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfile $

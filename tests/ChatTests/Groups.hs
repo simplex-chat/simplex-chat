@@ -61,8 +61,8 @@ chatGroupTests = do
     it "group link ok to connect; known group" testPlanGroupLinkOkKnown
     it "group is known if host contact was deleted" testPlanHostContactDeletedGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
-    it "group link ok to connect; known group" testPlanGroupLinkConnecting
-    it "re-join existing group after leaving" testGroupLinkLeaveRejoin
+    it "connecting via group link" testPlanGroupLinkConnecting
+    it "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
   describe "group message errors" $ do
     it "show message decryption error" testGroupMsgDecryptError
     it "should report ratchet de-synchronization, synchronize ratchets" testGroupSyncRatchet
@@ -2414,8 +2414,8 @@ testPlanGroupLinkConnecting tmp = do
     bob ##> ("/c " <> gLink)
     bob <## "group link: connecting"
 
-testGroupLinkLeaveRejoin :: HasCallStack => FilePath -> IO ()
-testGroupLinkLeaveRejoin =
+testPlanGroupLinkLeaveRejoin :: HasCallStack => FilePath -> IO ()
+testPlanGroupLinkLeaveRejoin =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       alice ##> "/g team"
@@ -2438,6 +2438,10 @@ testGroupLinkLeaveRejoin =
         ]
 
       bob ##> ("/_connect_plan 1 " <> gLink)
+      bob <## "group link: known group #team"
+      bob <## "use #team <message> to send messages"
+
+      bob ##> ("/c " <> gLink)
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
 
@@ -2476,9 +2480,13 @@ testGroupLinkLeaveRejoin =
       bob #> "#team_1 hey"
       alice <# "#team bob> hey"
 
-      -- bob ##> ("/_connect_plan 1 " <> gLink)
-      -- bob <## "group link: known group #team"
-      -- bob <## "use #team <message> to send messages"
+      bob ##> ("/_connect_plan 1 " <> gLink)
+      bob <## "group link: known group #team_1"
+      bob <## "use #team_1 <message> to send messages"
+
+      bob ##> ("/c " <> gLink)
+      bob <## "group link: known group #team_1"
+      bob <## "use #team_1 <message> to send messages"
 
 testGroupMsgDecryptError :: HasCallStack => FilePath -> IO ()
 testGroupMsgDecryptError tmp =

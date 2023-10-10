@@ -1130,9 +1130,19 @@ getGroupInfoByUserContactLinkConnReq db user cReq = do
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupInfo db user) groupId_
 
 getGroupInfoByGroupLinkHash :: DB.Connection -> User -> ConnReqUriHash -> IO (Maybe GroupInfo)
-getGroupInfoByGroupLinkHash db user groupLinkHash = do
+getGroupInfoByGroupLinkHash db user@User {userId, userContactId} groupLinkHash = do
   groupId_ <- maybeFirstRow fromOnly $
-    DB.query db "SELECT group_id FROM groups WHERE via_group_link_uri_hash = ? LIMIT 1" (Only groupLinkHash)
+    DB.query
+      db
+      [sql|
+        SELECT g.group_id
+        FROM groups g
+        JOIN group_members mu ON mu.group_id = g.group_id
+        WHERE g.user_id = ? AND mu.contact_id = ? AND g.via_group_link_uri_hash = ?
+          AND mu.member_status NOT IN (?,?,?)
+        LIMIT 1
+      |]
+      (userId, userContactId, groupLinkHash, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupInfo db user) groupId_
 
 getGroupIdByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO GroupId
