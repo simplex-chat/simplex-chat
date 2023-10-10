@@ -28,7 +28,7 @@ chatProfileTests = do
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
     it "auto-reply message" testAutoReplyMessage
     it "auto-reply message in incognito" testAutoReplyMessageInIncognito
-  describe "contact address connection plan" $ do
+  fdescribe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
     it "connecting via contact address" testPlanAddressConnecting

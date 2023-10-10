@@ -1311,15 +1311,10 @@ processChatCommand = \case
     case conn'_ of
       Just conn' -> pure $ CRConnectionIncognitoUpdated user conn'
       Nothing -> throwChatError CEConnectionIncognitoChangeProhibited
-  APIConnectPlan userId (ACR SCMInvitation cReq) -> withUserId userId $ \user -> withChatLock "connectPlan SCMInvitation" . procCmd $ do
-    plan <- connectPlanInvitation user cReq
-    pure $ CRConnectionPlan user plan
-  APIConnectPlan userId (ACR SCMContact cReq) -> withUserId userId $ \user -> withChatLock "connectPlan SCMContact" . procCmd $ do
-    plan <- connectPlanContact user cReq
+  APIConnectPlan userId cReqUri -> withUserId userId $ \user -> withChatLock "connectPlan" . procCmd $ do
+    plan <- connectPlan user cReqUri
     pure $ CRConnectionPlan user plan
   APIConnect userId incognito (Just (ACR SCMInvitation cReq)) -> withUserId userId $ \user -> withChatLock "connect" . procCmd $ do
-    plan <- connectPlanInvitation user cReq `catchChatError` const (pure $ CPInvitationLink ILCPOk)
-    unless (connectionPlanOkToProceed plan) $ throwChatError (CEConnectionPlan plan)
     subMode <- chatReadVar subscriptionMode
     -- [incognito] generate profile to send
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
@@ -1329,16 +1324,18 @@ processChatCommand = \case
     conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode
     toView $ CRNewContactConnection user conn
     pure $ CRSentConfirmation user
-  APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> do
-    plan <- connectPlanContact user cReq `catchChatError` const (pure $ CPContactAddress CACPOk)
-    unless (connectionPlanOkToProceed plan) $ throwChatError (CEConnectionPlan plan)
-    connectViaContact user incognito cReq
+  APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> connectViaContact user incognito cReq
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
-  Connect incognito cReqUri -> withUser $ \User {userId} ->
-    processChatCommand $ APIConnect userId incognito cReqUri
-  ConnectSimplex incognito -> withUser $ \user ->
-    -- [incognito] generate profile to send
-    connectViaContact user incognito adminContactReq
+  Connect _ Nothing -> throwChatError CEInvalidConnReq
+  Connect incognito (Just cReqUri) -> withUser $ \user@User {userId} -> do
+    plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILCPOk)
+    unless (connectionPlanOkToProceed plan) $ throwChatError (CEConnectionPlan plan)
+    processChatCommand $ APIConnect userId incognito (Just cReqUri)
+  ConnectSimplex incognito -> withUser $ \user@User {userId} -> do
+    let cReqUri = ACR SCMContact adminContactReq
+    plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILCPOk)
+    unless (connectionPlanOkToProceed plan) $ throwChatError (CEConnectionPlan plan)
+    processChatCommand $ APIConnect userId incognito (Just cReqUri)
   DeleteContact cName -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId) True
   ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CTDirect
   APIListContacts userId -> withUserId userId $ \user ->
@@ -2192,8 +2189,8 @@ processChatCommand = \case
           pure (gId, chatSettings)
         _ -> throwChatError $ CECommandError "not supported"
       processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ updateSettings chatSettings
-    connectPlanInvitation :: User -> ConnReqInvitation -> m ConnectionPlan
-    connectPlanInvitation user cReq =
+    connectPlan :: User -> AConnectionRequestUri -> m ConnectionPlan
+    connectPlan user (ACR SCMInvitation cReq) = do
       withStore' (\db -> getConnectionEntityByConnReq db user cReq) >>= \case
         Nothing -> pure $ CPInvitationLink ILCPOk
         Just (RcvDirectMsgConnection conn ct_) -> do
@@ -2207,8 +2204,7 @@ processChatCommand = \case
                   Just ct -> pure $ CPInvitationLink (ILCPKnown ct)
                   Nothing -> throwChatError $ CEInternalError "ready RcvDirectMsgConnection connection should have associated contact"
         Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
-    connectPlanContact :: User -> ConnReqContact -> m ConnectionPlan
-    connectPlanContact user cReq = do
+    connectPlan user (ACR SCMContact cReq) = do
       let CRContactUri ConnReqUriData {crClientData} = cReq
           groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
       case groupLinkId of

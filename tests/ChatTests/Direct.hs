@@ -44,7 +44,7 @@ chatDirectTests = do
   describe "duplicate contacts" $ do
     it "duplicate contacts are separate (contacts don't merge)" testDuplicateContactsSeparate
     it "new contact is separate with multiple duplicate contacts (contacts don't merge)" testDuplicateContactsMultipleSeparate
-  describe "invitation link connection plan" $ do
+  fdescribe "invitation link connection plan" $ do
     it "invitation link ok to connect" testPlanInvitationLinkOk
     it "own invitation link" testPlanInvitationLinkOwn
     it "connecting via invitation link" testPlanInvitationLinkConnecting

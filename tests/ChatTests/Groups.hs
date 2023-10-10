@@ -57,7 +57,7 @@ chatGroupTests = do
     it "leaving groups with unused host contacts deletes incognito profiles" testGroupLinkIncognitoUnusedHostContactsDeleted
     it "group link member role" testGroupLinkMemberRole
     it "leaving and deleting the group joined via link should NOT delete previously existing direct contacts" testGroupLinkLeaveDelete
-  describe "group link connection plan" $ do
+  fdescribe "group link connection plan" $ do
     it "group link ok to connect; known group" testPlanGroupLinkOkKnown
     it "group is known if host contact was deleted" testPlanHostContactDeletedGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
