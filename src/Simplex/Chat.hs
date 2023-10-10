@@ -1947,10 +1947,16 @@ processChatCommand = \case
               xContactId <- maybe randomXContactId pure xContactId_
               connect' Nothing cReqHash xContactId
         -- group link
-        Just gLinkId -> procCmd $ do
-          -- allow repeat contact request
-          newXContactId <- XContactId <$> drgRandomBytes 16
-          connect' (Just gLinkId) cReqHash newXContactId
+        Just gLinkId ->
+          withStore' (\db -> getConnReqContactXContactId db user cReqHash) >>= \case
+            (Just _contact, _) -> procCmd $ do
+              -- allow repeat contact request
+              newXContactId <- XContactId <$> drgRandomBytes 16
+              connect' (Just gLinkId) cReqHash newXContactId
+            (_, xContactId_) -> procCmd $ do
+              let randomXContactId = XContactId <$> drgRandomBytes 16
+              xContactId <- maybe randomXContactId pure xContactId_
+              connect' (Just gLinkId) cReqHash xContactId
       where
         connect' groupLinkId cReqHash xContactId = do
           -- [incognito] generate profile to send
