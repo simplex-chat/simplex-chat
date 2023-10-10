@@ -1138,11 +1138,11 @@ getGroupInfoByGroupLinkHash db user@User {userId, userContactId} groupLinkHash =
         SELECT g.group_id
         FROM groups g
         JOIN group_members mu ON mu.group_id = g.group_id
-        WHERE g.user_id = ? AND mu.contact_id = ? AND g.via_group_link_uri_hash = ?
-          AND mu.member_status NOT IN (?,?,?)
+        WHERE g.user_id = ? AND g.via_group_link_uri_hash = ?
+          AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?)
         LIMIT 1
       |]
-      (userId, userContactId, groupLinkHash, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
+      (userId, groupLinkHash, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupInfo db user) groupId_
 
 getGroupIdByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO GroupId
