@@ -44,7 +44,7 @@ chatDirectTests = do
   describe "duplicate contacts" $ do
     it "duplicate contacts are separate (contacts don't merge)" testDuplicateContactsSeparate
     it "new contact is separate with multiple duplicate contacts (contacts don't merge)" testDuplicateContactsMultipleSeparate
-  describe "connection plan" $ do
+  describe "invitation link connection plan" $ do
     it "invitation link ok to connect" testPlanInvitationLinkOk
     it "own invitation link" testPlanInvitationLinkOwn
     it "connecting via invitation link" testPlanInvitationLinkConnecting
@@ -277,6 +277,19 @@ testPlanInvitationLinkOwn tmp =
 
     alice ##> ("/_connect_plan 1 " <> inv)
     alice <## "invitation link: ok to connect" -- conn_req_inv is forgotten after connection
+
+    alice @@@ [("@alice_1", lastChatFeature), ("@alice_2", lastChatFeature)]
+    alice `send` "@alice_2 hi"
+    alice
+      <### [ WithTime "@alice_2 hi",
+             WithTime "alice_1> hi"
+           ]
+    alice `send` "@alice_1 hey"
+    alice
+      <### [ WithTime "@alice_1 hey",
+             WithTime "alice_2> hey"
+           ]
+    alice @@@ [("@alice_1", "hey"), ("@alice_2", "hey")]
 
 testPlanInvitationLinkConnecting :: HasCallStack => FilePath -> IO ()
 testPlanInvitationLinkConnecting tmp = do
