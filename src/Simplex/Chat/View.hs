@@ -1254,7 +1254,7 @@ viewConnectionPlan = \case
     GLCPConnecting (Just g) -> [grpLink ("connecting to group " <> ttyGroup' g)]
     GLCPKnown g ->
       [ grpLink ("known group " <> ttyGroup' g),
-        "use " <> ttyGroup' g <> highlight' "<message>" <> " to send messages"
+        "use " <> ttyToGroup g <> highlight' "<message>" <> " to send messages"
       ]
     where
       grpLink = ("group link: " <>)

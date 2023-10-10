@@ -598,6 +598,10 @@ testPlanAddressOkKnown =
       bob <## "contact address: known contact alice"
       bob <## "use @alice <message> to send messages"
 
+      bob ##> ("/c " <> cLink)
+      bob <## "contact address: known contact alice"
+      bob <## "use @alice <message> to send messages"
+
 testPlanAddressOwn :: HasCallStack => FilePath -> IO ()
 testPlanAddressOwn tmp =
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
@@ -658,6 +662,9 @@ testPlanAddressConnecting tmp = do
     threadDelay 500000
     bob @@@ [("@alice", "")]
     bob ##> ("/_connect_plan 1 " <> cLink)
+    bob <## "contact address: connecting to contact alice"
+
+    bob ##> ("/c " <> cLink)
     bob <## "contact address: connecting to contact alice"
 
 testConnectIncognitoInvitationLink :: HasCallStack => FilePath -> IO ()

@@ -1935,19 +1935,30 @@ processChatCommand = \case
       _ -> throwChatError $ CECommandError "not supported"
     connectViaContact :: User -> IncognitoEnabled -> ConnectionRequestUri 'CMContact -> m ChatResponse
     connectViaContact user@User {userId} incognito cReq@(CRContactUri ConnReqUriData {crClientData}) = withChatLock "connectViaContact" $ do
-      let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-      withStore' (\db -> getConnReqContactXContactId db user cReqHash) >>= \case
-        (Just contact, _) -> pure $ CRContactAlreadyExists user contact
-        (_, xContactId_) -> procCmd $ do
-          let randomXContactId = XContactId <$> drgRandomBytes 16
-          xContactId <- maybe randomXContactId pure xContactId_
-          subMode <- chatReadVar subscriptionMode
+      let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
+          cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
+      case groupLinkId of
+        -- contact address
+        Nothing ->
+          withStore' (\db -> getConnReqContactXContactId db user cReqHash) >>= \case
+            (Just contact, _) -> pure $ CRContactAlreadyExists user contact
+            (_, xContactId_) -> procCmd $ do
+              let randomXContactId = XContactId <$> drgRandomBytes 16
+              xContactId <- maybe randomXContactId pure xContactId_
+              connect' Nothing cReqHash xContactId
+        -- group link
+        Just gLinkId -> procCmd $ do
+          -- allow repeat contact request
+          newXContactId <- XContactId <$> drgRandomBytes 16
+          connect' (Just gLinkId) cReqHash newXContactId
+      where
+        connect' groupLinkId cReqHash xContactId = do
           -- [incognito] generate profile to send
           incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
           let profileToSend = userProfileToSend user incognitoProfile Nothing
           dm <- directMessage (XContact profileToSend $ Just xContactId)
+          subMode <- chatReadVar subscriptionMode
           connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm subMode
-          let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId subMode
           toView $ CRNewContactConnection user conn
           pure $ CRSentInvitation user incognitoProfile

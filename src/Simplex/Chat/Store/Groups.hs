@@ -1122,7 +1122,7 @@ getGroupInfoByUserContactLinkConnReq db user cReq = do
     DB.query
       db
       [sql|
-        SELECT groupId
+        SELECT group_id
         FROM user_contact_links
         WHERE conn_req_contact = ?
       |]
