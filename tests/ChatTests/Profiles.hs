@@ -28,7 +28,7 @@ chatProfileTests = do
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
     it "auto-reply message" testAutoReplyMessage
     it "auto-reply message in incognito" testAutoReplyMessageInIncognito
-  fdescribe "contact address connection plan" $ do
+  describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
     it "connecting via contact address" testPlanAddressConnecting
@@ -582,7 +582,7 @@ testPlanAddressOkKnown =
       alice ##> "/ad"
       cLink <- getContactLink alice True
 
-      bob ##> ("/_connect_plan 1 " <> cLink)
+      bob ##> ("/_connect plan 1 " <> cLink)
       bob <## "contact address: ok to connect"
 
       bob ##> ("/c " <> cLink)
@@ -595,7 +595,7 @@ testPlanAddressOkKnown =
         (alice <## "bob (Bob): contact is connected")
       alice <##> bob
 
-      bob ##> ("/_connect_plan 1 " <> cLink)
+      bob ##> ("/_connect plan 1 " <> cLink)
       bob <## "contact address: known contact alice"
       bob <## "use @alice <message> to send messages"
 
@@ -609,7 +609,7 @@ testPlanAddressOwn tmp =
     alice ##> "/ad"
     cLink <- getContactLink alice True
 
-    alice ##> ("/_connect_plan 1 " <> cLink)
+    alice ##> ("/_connect plan 1 " <> cLink)
     alice <## "contact address: own address"
 
     alice ##> ("/c " <> cLink)
@@ -638,7 +638,7 @@ testPlanAddressOwn tmp =
            ]
     alice @@@ [("@alice_1", "hey"), ("@alice_2", "hey")]
 
-    alice ##> ("/_connect_plan 1 " <> cLink)
+    alice ##> ("/_connect plan 1 " <> cLink)
     alice <## "contact address: own address"
 
     alice ##> ("/c " <> cLink)
@@ -662,7 +662,7 @@ testPlanAddressConnecting tmp = do
   withTestChat tmp "bob" $ \bob -> do
     threadDelay 500000
     bob @@@ [("@alice", "")]
-    bob ##> ("/_connect_plan 1 " <> cLink)
+    bob ##> ("/_connect plan 1 " <> cLink)
     bob <## "contact address: connecting to contact alice"
 
     bob ##> ("/c " <> cLink)
@@ -684,7 +684,7 @@ testPlanAddressContactDeletedReconnected =
         (alice <## "bob (Bob): contact is connected")
       alice <##> bob
 
-      bob ##> ("/_connect_plan 1 " <> cLink)
+      bob ##> ("/_connect plan 1 " <> cLink)
       bob <## "contact address: known contact alice"
       bob <## "use @alice <message> to send messages"
 
@@ -696,7 +696,7 @@ testPlanAddressContactDeletedReconnected =
       alice <## "bob: contact is deleted"
       bob <## "alice (Alice) deleted contact with you"
 
-      bob ##> ("/_connect_plan 1 " <> cLink)
+      bob ##> ("/_connect plan 1 " <> cLink)
       bob <## "contact address: ok to connect"
 
       bob ##> ("/c " <> cLink)
@@ -715,7 +715,7 @@ testPlanAddressContactDeletedReconnected =
       bob #> "@alice_1 hey"
       alice <# "bob> hey"
 
-      bob ##> ("/_connect_plan 1 " <> cLink)
+      bob ##> ("/_connect plan 1 " <> cLink)
       bob <## "contact address: known contact alice_1"
       bob <## "use @alice_1 <message> to send messages"
 

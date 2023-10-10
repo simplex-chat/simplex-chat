@@ -627,61 +627,61 @@ instance ToJSON ChatResponse where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
 
 data ConnectionPlan
-  = CPInvitationLink {invitationLinkConnectionPlan :: InvitationLinkConnectionPlan}
-  | CPContactAddress {contactAddressConnectionPlan :: ContactAddressConnectionPlan}
-  | CPGroupLink {groupLinkConnectionPlan :: GroupLinkConnectionPlan}
+  = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
+  | CPContactAddress {contactAddressPlan :: ContactAddressPlan}
+  | CPGroupLink {groupLinkPlan :: GroupLinkPlan}
   deriving (Show, Generic)
 
 instance ToJSON ConnectionPlan where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CP"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CP"
 
-data InvitationLinkConnectionPlan
-  = ILCPOk
-  | ILCPOwnLink
-  | ILCPConnecting {contact_ :: Maybe Contact}
-  | ILCPKnown {contact :: Contact}
+data InvitationLinkPlan
+  = ILPOk
+  | ILPOwnLink
+  | ILPConnecting {contact_ :: Maybe Contact}
+  | ILPKnown {contact :: Contact}
   deriving (Show, Generic)
 
-instance ToJSON InvitationLinkConnectionPlan where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "ILCP"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "ILCP"
+instance ToJSON InvitationLinkPlan where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "ILP"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "ILP"
 
-data ContactAddressConnectionPlan
-  = CACPOk
-  | CACPOwnLink
-  | CACPConnecting {contact :: Contact}
-  | CACPKnown {contact :: Contact}
+data ContactAddressPlan
+  = CAPOk
+  | CAPOwnLink
+  | CAPConnecting {contact :: Contact}
+  | CAPKnown {contact :: Contact}
   deriving (Show, Generic)
 
-instance ToJSON ContactAddressConnectionPlan where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CACP"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CACP"
+instance ToJSON ContactAddressPlan where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CAP"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CAP"
 
-data GroupLinkConnectionPlan
-  = GLCPOk
-  | GLCPOwnLink {groupInfo :: GroupInfo}
-  | GLCPConnecting {groupInfo_ :: Maybe GroupInfo}
-  | GLCPKnown {groupInfo :: GroupInfo}
+data GroupLinkPlan
+  = GLPOk
+  | GLPOwnLink {groupInfo :: GroupInfo}
+  | GLPConnecting {groupInfo_ :: Maybe GroupInfo}
+  | GLPKnown {groupInfo :: GroupInfo}
   deriving (Show, Generic)
 
-instance ToJSON GroupLinkConnectionPlan where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "GLCP"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "GLCP"
+instance ToJSON GroupLinkPlan where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "GLP"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "GLP"
 
-connectionPlanOkToProceed :: ConnectionPlan -> Bool
-connectionPlanOkToProceed = \case
-  CPInvitationLink ilcp -> case ilcp of
-    ILCPOk -> True
-    ILCPOwnLink -> True
+connectionPlanOk :: ConnectionPlan -> Bool
+connectionPlanOk = \case
+  CPInvitationLink ilp -> case ilp of
+    ILPOk -> True
+    ILPOwnLink -> True
     _ -> False
-  CPContactAddress cacp -> case cacp of
-    CACPOk -> True
-    CACPOwnLink -> True
+  CPContactAddress cap -> case cap of
+    CAPOk -> True
+    CAPOwnLink -> True
     _ -> False
-  CPGroupLink glcp -> case glcp of
-    GLCPOk -> True
-    GLCPOwnLink _ -> True
+  CPGroupLink glp -> case glp of
+    GLPOk -> True
+    GLPOwnLink _ -> True
     _ -> False
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}

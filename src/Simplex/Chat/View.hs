@@ -1226,33 +1226,33 @@ viewConnectionIncognitoUpdated PendingContactConnection {pccConnId, customUserPr
 
 viewConnectionPlan :: ConnectionPlan -> [StyledString]
 viewConnectionPlan = \case
-  CPInvitationLink ilcp -> case ilcp of
-    ILCPOk -> [invLink "ok to connect"]
-    ILCPOwnLink -> [invLink "own link"]
-    ILCPConnecting Nothing -> [invLink "connecting"]
-    ILCPConnecting (Just ct) -> [invLink ("connecting to contact " <> ttyContact' ct)]
-    ILCPKnown ct ->
+  CPInvitationLink ilp -> case ilp of
+    ILPOk -> [invLink "ok to connect"]
+    ILPOwnLink -> [invLink "own link"]
+    ILPConnecting Nothing -> [invLink "connecting"]
+    ILPConnecting (Just ct) -> [invLink ("connecting to contact " <> ttyContact' ct)]
+    ILPKnown ct ->
       [ invLink ("known contact " <> ttyContact' ct),
         "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
       ]
     where
       invLink = ("invitation link: " <>)
-  CPContactAddress cacp -> case cacp of
-    CACPOk -> [ctAddr "ok to connect"]
-    CACPOwnLink -> [ctAddr "own address"]
-    CACPConnecting ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
-    CACPKnown ct ->
+  CPContactAddress cap -> case cap of
+    CAPOk -> [ctAddr "ok to connect"]
+    CAPOwnLink -> [ctAddr "own address"]
+    CAPConnecting ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
+    CAPKnown ct ->
       [ ctAddr ("known contact " <> ttyContact' ct),
         "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
       ]
     where
       ctAddr = ("contact address: " <>)
-  CPGroupLink glcp -> case glcp of
-    GLCPOk -> [grpLink "ok to connect"]
-    GLCPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
-    GLCPConnecting Nothing -> [grpLink "connecting"]
-    GLCPConnecting (Just g) -> [grpLink ("connecting to group " <> ttyGroup' g)]
-    GLCPKnown g ->
+  CPGroupLink glp -> case glp of
+    GLPOk -> [grpLink "ok to connect"]
+    GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
+    GLPConnecting Nothing -> [grpLink "connecting"]
+    GLPConnecting (Just g) -> [grpLink ("connecting to group " <> ttyGroup' g)]
+    GLPKnown g ->
       [ grpLink ("known group " <> ttyGroup' g),
         "use " <> ttyToGroup g <> highlight' "<message>" <> " to send messages"
       ]

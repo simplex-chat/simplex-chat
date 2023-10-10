@@ -44,7 +44,7 @@ chatDirectTests = do
   describe "duplicate contacts" $ do
     it "duplicate contacts are separate (contacts don't merge)" testDuplicateContactsSeparate
     it "new contact is separate with multiple duplicate contacts (contacts don't merge)" testDuplicateContactsMultipleSeparate
-  fdescribe "invitation link connection plan" $ do
+  describe "invitation link connection plan" $ do
     it "invitation link ok to connect" testPlanInvitationLinkOk
     it "own invitation link" testPlanInvitationLinkOwn
     it "connecting via invitation link" testPlanInvitationLinkConnecting
@@ -246,7 +246,7 @@ testPlanInvitationLinkOk =
     \alice bob -> do
       alice ##> "/c"
       inv <- getInvitation alice
-      bob ##> ("/_connect_plan 1 " <> inv)
+      bob ##> ("/_connect plan 1 " <> inv)
       bob <## "invitation link: ok to connect"
 
       bob ##> ("/c " <> inv)
@@ -255,7 +255,7 @@ testPlanInvitationLinkOk =
         (alice <## "bob (Bob): contact is connected")
         (bob <## "alice (Alice): contact is connected")
 
-      bob ##> ("/_connect_plan 1 " <> inv)
+      bob ##> ("/_connect plan 1 " <> inv)
       bob <## "invitation link: ok to connect" -- conn_req_inv is forgotten after connection
 
       alice <##> bob
@@ -265,7 +265,7 @@ testPlanInvitationLinkOwn tmp =
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     alice ##> "/c"
     inv <- getInvitation alice
-    alice ##> ("/_connect_plan 1 " <> inv)
+    alice ##> ("/_connect plan 1 " <> inv)
     alice <## "invitation link: own link"
 
     alice ##> ("/c " <> inv)
@@ -275,7 +275,7 @@ testPlanInvitationLinkOwn tmp =
              "alice_2 (Alice): contact is connected"
            ]
 
-    alice ##> ("/_connect_plan 1 " <> inv)
+    alice ##> ("/_connect plan 1 " <> inv)
     alice <## "invitation link: ok to connect" -- conn_req_inv is forgotten after connection
 
     alice @@@ [("@alice_1", lastChatFeature), ("@alice_2", lastChatFeature)]
@@ -300,7 +300,7 @@ testPlanInvitationLinkConnecting tmp = do
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
 
-    bob ##> ("/_connect_plan 1 " <> inv)
+    bob ##> ("/_connect plan 1 " <> inv)
     bob <## "invitation link: connecting"
 
 testContactClear :: HasCallStack => FilePath -> IO ()

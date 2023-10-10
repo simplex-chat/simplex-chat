@@ -57,7 +57,7 @@ chatGroupTests = do
     it "leaving groups with unused host contacts deletes incognito profiles" testGroupLinkIncognitoUnusedHostContactsDeleted
     it "group link member role" testGroupLinkMemberRole
     it "leaving and deleting the group joined via link should NOT delete previously existing direct contacts" testGroupLinkLeaveDelete
-  fdescribe "group link connection plan" $ do
+  describe "group link connection plan" $ do
     it "group link ok to connect; known group" testPlanGroupLinkOkKnown
     it "group is known if host contact was deleted" testPlanHostContactDeletedGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
@@ -2267,7 +2267,7 @@ testPlanGroupLinkOkKnown =
       alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" GRMember True
 
-      bob ##> ("/_connect_plan 1 " <> gLink)
+      bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: ok to connect"
 
       bob ##> ("/c " <> gLink)
@@ -2287,7 +2287,7 @@ testPlanGroupLinkOkKnown =
       bob #> "#team hey"
       alice <# "#team bob> hey"
 
-      bob ##> ("/_connect_plan 1 " <> gLink)
+      bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
 
@@ -2328,7 +2328,7 @@ testPlanHostContactDeletedGroupLinkKnown =
       bob <## "alice: contact is deleted"
       alice <## "bob (Bob) deleted contact with you"
 
-      bob ##> ("/_connect_plan 1 " <> gLink)
+      bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
 
@@ -2345,7 +2345,7 @@ testPlanGroupLinkOwn tmp =
     alice ##> "/create link #team"
     gLink <- getGroupLink alice "team" GRMember True
 
-    alice ##> ("/_connect_plan 1 " <> gLink)
+    alice ##> ("/_connect plan 1 " <> gLink)
     alice <## "group link: own link for group #team"
 
     alice ##> ("/c " <> gLink)
@@ -2371,7 +2371,7 @@ testPlanGroupLinkOwn tmp =
              WithTime "#team alice_1> 2"
            ]
 
-    alice ##> ("/_connect_plan 1 " <> gLink)
+    alice ##> ("/_connect plan 1 " <> gLink)
     alice <## "group link: own link for group #team"
 
     -- group works if merged contact is deleted
@@ -2408,7 +2408,7 @@ testPlanGroupLinkConnecting tmp = do
            ]
   withTestChat tmp "bob" $ \bob -> do
     threadDelay 500000
-    bob ##> ("/_connect_plan 1 " <> gLink)
+    bob ##> ("/_connect plan 1 " <> gLink)
     bob <## "group link: connecting"
 
     bob ##> ("/c " <> gLink)
@@ -2437,7 +2437,7 @@ testPlanGroupLinkLeaveRejoin =
             bob <## "#team: you joined the group"
         ]
 
-      bob ##> ("/_connect_plan 1 " <> gLink)
+      bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
 
@@ -2453,7 +2453,7 @@ testPlanGroupLinkLeaveRejoin =
           alice <## "#team: bob left the group"
         ]
 
-      bob ##> ("/_connect_plan 1 " <> gLink)
+      bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: ok to connect"
 
       bob ##> ("/c " <> gLink)
@@ -2480,7 +2480,7 @@ testPlanGroupLinkLeaveRejoin =
       bob #> "#team_1 hey"
       alice <# "#team bob> hey"
 
-      bob ##> ("/_connect_plan 1 " <> gLink)
+      bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: known group #team_1"
       bob <## "use #team_1 <message> to send messages"
 

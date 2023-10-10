@@ -1311,9 +1311,8 @@ processChatCommand = \case
     case conn'_ of
       Just conn' -> pure $ CRConnectionIncognitoUpdated user conn'
       Nothing -> throwChatError CEConnectionIncognitoChangeProhibited
-  APIConnectPlan userId cReqUri -> withUserId userId $ \user -> withChatLock "connectPlan" . procCmd $ do
-    plan <- connectPlan user cReqUri
-    pure $ CRConnectionPlan user plan
+  APIConnectPlan userId cReqUri -> withUserId userId $ \user -> withChatLock "connectPlan" . procCmd $
+    CRConnectionPlan user <$> connectPlan user cReqUri
   APIConnect userId incognito (Just (ACR SCMInvitation cReq)) -> withUserId userId $ \user -> withChatLock "connect" . procCmd $ do
     subMode <- chatReadVar subscriptionMode
     -- [incognito] generate profile to send
@@ -1326,15 +1325,15 @@ processChatCommand = \case
     pure $ CRSentConfirmation user
   APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> connectViaContact user incognito cReq
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
+  Connect incognito aCReqUri@(Just cReqUri) -> withUser $ \user@User {userId} -> do
+    plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILPOk)
+    unless (connectionPlanOk plan) $ throwChatError (CEConnectionPlan plan)
+    processChatCommand $ APIConnect userId incognito aCReqUri
   Connect _ Nothing -> throwChatError CEInvalidConnReq
-  Connect incognito (Just cReqUri) -> withUser $ \user@User {userId} -> do
-    plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILCPOk)
-    unless (connectionPlanOkToProceed plan) $ throwChatError (CEConnectionPlan plan)
-    processChatCommand $ APIConnect userId incognito (Just cReqUri)
   ConnectSimplex incognito -> withUser $ \user@User {userId} -> do
     let cReqUri = ACR SCMContact adminContactReq
-    plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILCPOk)
-    unless (connectionPlanOkToProceed plan) $ throwChatError (CEConnectionPlan plan)
+    plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILPOk)
+    unless (connectionPlanOk plan) $ throwChatError (CEConnectionPlan plan)
     processChatCommand $ APIConnect userId incognito (Just cReqUri)
   DeleteContact cName -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId) True
   ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CTDirect
@@ -2192,16 +2191,16 @@ processChatCommand = \case
     connectPlan :: User -> AConnectionRequestUri -> m ConnectionPlan
     connectPlan user (ACR SCMInvitation cReq) = do
       withStore' (\db -> getConnectionEntityByConnReq db user cReq) >>= \case
-        Nothing -> pure $ CPInvitationLink ILCPOk
+        Nothing -> pure $ CPInvitationLink ILPOk
         Just (RcvDirectMsgConnection conn ct_) -> do
           let Connection {connStatus, contactConnInitiated} = conn
           if
               | connStatus == ConnNew && contactConnInitiated ->
-                  pure $ CPInvitationLink ILCPOwnLink
+                  pure $ CPInvitationLink ILPOwnLink
               | not (connReady conn) ->
-                  pure $ CPInvitationLink (ILCPConnecting ct_)
+                  pure $ CPInvitationLink (ILPConnecting ct_)
               | otherwise -> case ct_ of
-                  Just ct -> pure $ CPInvitationLink (ILCPKnown ct)
+                  Just ct -> pure $ CPInvitationLink (ILPKnown ct)
                   Nothing -> throwChatError $ CEInternalError "ready RcvDirectMsgConnection connection should have associated contact"
         Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
     connectPlan user (ACR SCMContact cReq) = do
@@ -2211,32 +2210,32 @@ processChatCommand = \case
         -- contact address
         Nothing ->
           withStore' (`getUserContactLinkByConnReq` cReq) >>= \case
-            Just _ -> pure $ CPContactAddress CACPOwnLink
+            Just _ -> pure $ CPContactAddress CAPOwnLink
             Nothing -> do
               let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
               withStore' (\db -> getContactByConnReqHash db user cReqHash) >>= \case
-                Nothing -> pure $ CPContactAddress CACPOk
+                Nothing -> pure $ CPContactAddress CAPOk
                 Just ct
-                  | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CACPConnecting ct)
-                  | otherwise -> pure $ CPContactAddress (CACPKnown ct)
+                  | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CAPConnecting ct)
+                  | otherwise -> pure $ CPContactAddress (CAPKnown ct)
         -- group link
         Just _ ->
           withStore' (\db -> getGroupInfoByUserContactLinkConnReq db user cReq) >>= \case
-            Just g -> pure $ CPGroupLink (GLCPOwnLink g)
+            Just g -> pure $ CPGroupLink (GLPOwnLink g)
             Nothing -> do
               let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
               ct_ <- withStore' $ \db -> getContactByConnReqHash db user cReqHash
               gInfo_ <- withStore' $ \db -> getGroupInfoByGroupLinkHash db user cReqHash
               case (gInfo_, ct_) of
-                (Nothing, Nothing) -> pure $ CPGroupLink GLCPOk
+                (Nothing, Nothing) -> pure $ CPGroupLink GLPOk
                 (Nothing, Just ct)
-                  | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLCPConnecting gInfo_)
-                  | otherwise -> pure $ CPGroupLink GLCPOk
+                  | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLPConnecting gInfo_)
+                  | otherwise -> pure $ CPGroupLink GLPOk
                 (Just gInfo@GroupInfo {membership}, _)
                   | not (memberActive membership) && not (memberRemoved membership) ->
-                      pure $ CPGroupLink (GLCPConnecting gInfo_)
-                  | memberActive membership -> pure $ CPGroupLink (GLCPKnown gInfo)
-                  | otherwise -> pure $ CPGroupLink GLCPOk
+                      pure $ CPGroupLink (GLPConnecting gInfo_)
+                  | memberActive membership -> pure $ CPGroupLink (GLPKnown gInfo)
+                  | otherwise -> pure $ CPGroupLink GLPOk
 
 assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =
@@ -5712,7 +5711,7 @@ chatCommandP =
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* char_ '@' <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
-      "/_connect_plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> strP),
+      "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> strP),
       "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
       "/_connect " *> (APIAddContact <$> A.decimal <*> incognitoOnOffP),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
