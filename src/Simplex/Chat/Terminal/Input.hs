@@ -153,11 +153,11 @@ receiveFromTTY cc@ChatController {inputQ, activeTo, currentUser, chatStore} ct@C
       when (inputString ts /= "" || isLive) $
         atomically (submitInput live ts) >>= mapM_ (uncurry endLiveMessage)
     update key = do
-      ac <- readTVarIO activeTo
+      chatPrefix <- readTVarIO activeTo
       live <- isJust <$> readTVarIO liveMessageState
       ts <- readTVarIO termState
       user_ <- readTVarIO currentUser
-      ts' <- updateTermState user_ chatStore ac live (width termSize) key ts
+      ts' <- updateTermState user_ chatStore chatPrefix live (width termSize) key ts
       atomically $ writeTVar termState $! ts'
 
     endLiveMessage :: String -> LiveMessage -> IO ()
@@ -203,8 +203,8 @@ data AutoComplete
   | ACCommand Text
   | ACNone
 
-updateTermState :: Maybe User -> SQLiteStore -> ActiveTo -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> IO TerminalState
-updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p, autoComplete = acp} = case key of
+updateTermState :: Maybe User -> SQLiteStore -> String -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> IO TerminalState
+updateTermState user_ st chatPrefix live tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p, autoComplete = acp} = case key of
   CharKey c
     | ms == mempty || ms == shiftKey -> pure $ insertChars $ charsWithContact [c]
     | ms == altKey && c == 'b' -> pure $ setPosition prevWordPos
@@ -326,17 +326,13 @@ updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s,
     charsWithContact cs
       | live = cs
       | null s && cs /= "@" && cs /= "#" && cs /= "/" && cs /= ">" && cs /= "\\" && cs /= "!" && cs /= "+" && cs /= "-" =
-        contactPrefix <> cs
+        chatPrefix <> cs
       | (s == ">" || s == "\\" || s == "!") && cs == " " =
-        cs <> contactPrefix
+        cs <> chatPrefix
       | otherwise = cs
     insertChars = ts' . if p >= length s then append else insert
     append cs = let s' = s <> cs in (s', length s')
     insert cs = let (b, a) = splitAt p s in (b <> cs <> a, p + length cs)
-    contactPrefix = case ac of
-      ActiveNone -> ""
-      ActiveC c -> "@" <> T.unpack c <> " "
-      ActiveG g -> "#" <> T.unpack g <> " "
     backDeleteChar
       | p == 0 || null s = ts
       | p >= length s = ts' (init s, length s - 1)

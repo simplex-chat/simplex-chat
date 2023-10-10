@@ -12,6 +12,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 
 module Simplex.Chat.Controller where
 
@@ -28,14 +29,14 @@ import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Char (ord)
+import Data.Char (isSpace, ord)
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
-import Data.Time (NominalDiffTime)
-import Data.Time.Clock (UTCTime)
+import qualified Data.Text as T
+import Data.Time (NominalDiffTime, UTCTime)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Language.Haskell.TH (Exp, Q, runIO)
@@ -153,20 +154,26 @@ defaultInlineFilesConfig =
       receiveInstant = True -- allow receiving instant files, within receiveChunks limit
     }
 
-data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName
+data ActiveTo = ActiveNone | ActiveC Contact | ActiveG GroupInfo
   deriving (Eq)
 
-chatActiveTo :: ChatName -> ActiveTo
+activeToStr :: ActiveTo -> String
+activeToStr = \case
+  ActiveNone -> ""
+  ActiveC c -> T.unpack $ "@" <> viewContactName c <> " "
+  ActiveG g -> T.unpack $ "#" <> viewGroupName g <> " "
+
+chatActiveTo :: ChatName -> String
 chatActiveTo (ChatName cType name) = case cType of
-  CTDirect -> ActiveC name
-  CTGroup -> ActiveG name
-  _ -> ActiveNone
+  CTDirect -> T.unpack $ "@" <> viewName name <> " "
+  CTGroup -> T.unpack $ "#" <> viewName name <> " "
+  _ -> ""
 
 data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLiteStore}
 
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
-    activeTo :: TVar ActiveTo,
+    activeTo :: TVar String,
     firstTime :: Bool,
     smpAgent :: AgentClient,
     agentAsync :: TVar (Maybe (Async (), Maybe (Async ()))),
@@ -1073,12 +1080,18 @@ chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError
 
 setActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
-setActive to = asks activeTo >>= atomically . (`writeTVar` to)
+setActive a' = ask >>= liftIO . (`setActive'` a')
+
+setActive' :: ChatController -> ActiveTo -> IO ()
+setActive' cc = setActive'' cc . activeToStr
+
+setActive'' :: ChatController -> String -> IO ()
+setActive'' cc = atomically . writeTVar (activeTo cc)
 
 unsetActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
 unsetActive a = asks activeTo >>= atomically . (`modifyTVar` unset)
   where
-    unset a' = if a == a' then ActiveNone else a'
+    unset pfx = if pfx == activeToStr a then "" else pfx
 
 toView :: ChatMonad' m => ChatResponse -> m ()
 toView event = do
@@ -1111,3 +1124,12 @@ withStoreCtx ctx_ action = do
   where
     handleInternal :: String -> SomeException -> IO (Either StoreError a)
     handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
+
+viewName :: Text -> Text
+viewName s = if T.any isSpace s then "'" <> s <> "'" else s
+
+viewContactName :: Contact -> Text
+viewContactName = viewName . localDisplayName'
+
+viewGroupName :: GroupInfo -> Text
+viewGroupName = viewName . groupName'

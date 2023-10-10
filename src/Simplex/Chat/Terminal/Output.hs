@@ -14,7 +14,6 @@ import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.Composition ((.:))
 import Data.List (intercalate)
 import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime)
@@ -23,7 +22,7 @@ import Simplex.Chat (processChatCommand, contactNtf, groupNtf, userNtf)
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.CIContent (CIContent(..))
+import Simplex.Chat.Messages.CIContent (CIContent(..), SMsgDirection (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..), msgContentText)
 import Simplex.Chat.Styled
@@ -145,10 +144,10 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
           _ -> printToTerminal ct
     liveItems <- readTVarIO showLiveItems
     responseString cc liveItems r >>= printResp
-    forM_ (sendNotification ct) $ \send ->
-      forM_ (responseNotification r) $ \(active_, ntf) -> liftIO $ do
-        forM_ active_ $ \active -> runReaderT (setActive active) cc
-        send ntf
+    forM_ (sendNotification ct) $ \send -> do
+      let (active_, ntf_) = responseNotification r
+      mapM_ (setActive' cc) active_
+      mapM_ send ntf_
   where
     markChatItemRead (AChatItem _ _ chat item@ChatItem {chatDir, meta = CIMeta {itemStatus}}) =
       case (muted chat chatDir, itemStatus) of
@@ -159,41 +158,41 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
         _ -> pure ()
     logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
 
-responseNotification :: ChatResponse -> Maybe (Maybe ActiveTo, Notification)
+responseNotification :: ChatResponse -> (Maybe ActiveTo, Maybe Notification)
 responseNotification = \case
-  CRNewChatItem u (AChatItem _ _ (DirectChat ct) ChatItem {chatDir = CIDirectRcv, content = CIRcvMsgContent mc, formattedText}) ->
-    let c = viewContactName ct
-     in cNtf u ct (ActiveC c) (c <> "> ") (msgText mc formattedText)
-  CRNewChatItem u (AChatItem _ _ (GroupChat g) ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent mc, formattedText}) ->
-    gNtf u g (ActiveG $ viewGroupName g) (fromGroup_ g m) (msgText mc formattedText)
+  CRNewChatItem u (AChatItem _ SMDRcv cInfo ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) ->
+    case (cInfo, chatDir) of
+      (DirectChat ct, _) -> ntf (contactNtf u ct) (Just $ ActiveC ct) (viewContactName ct <> "> ", text)
+      (GroupChat g, CIGroupRcv m) -> ntf (groupNtf u g) (Just $ ActiveG g) (fromGroup_ g m, text)
+      _ -> (Nothing, Nothing)
+    where
+      text = msgText mc formattedText
+  CRChatItemUpdated u (AChatItem _ SMDRcv cInfo ChatItem {content = CIRcvMsgContent _}) ->
+    case cInfo of
+      DirectChat ct -> ntf' (contactNtf u ct) (Just $ ActiveC ct) Nothing
+      GroupChat g -> ntf' (groupNtf u g) (Just $ ActiveG g) Nothing
+      _ -> (Nothing, Nothing)
   CRContactConnected u ct _ ->
-    let c = viewContactName ct
-     in cNtf u ct (ActiveC c) (c <> "> ") "connected"
+    ntf (contactNtf u ct) (Just $ ActiveC ct) (viewContactName ct <> "> ", "connected")
   CRContactAnotherClient u ct ->
-    let c = viewContactName ct
-     in toMaybe (contactNtf u ct) (Nothing, Notification {title = c <> "> ", text = "connected to another client"})
+    ntf (contactNtf u ct) Nothing (viewContactName ct <> "> ", "connected to another client")
   CRContactsDisconnected srv _ -> serverNtf srv "disconnected"
   CRContactsSubscribed srv _ -> serverNtf srv "connected"
   CRReceivedGroupInvitation u g ct _ _ ->
-    let c = viewContactName ct
-     in cNtf u ct (ActiveC c) ("#" <> viewGroupName g <> " " <> c <> "> ") "invited you to join the group"
+    ntf (contactNtf u ct) (Just $ ActiveC ct) ("#" <> viewGroupName g <> " " <> viewContactName ct <> "> ", "invited you to join the group")
   CRUserJoinedGroup u g _ ->
-    let gn = viewGroupName g
-     in gNtf u g (ActiveG gn) ("#" <> gn) "you are connected to group"
+    ntf (groupNtf u g) (Just $ ActiveG g) ("#" <> viewGroupName g, "you are connected to group")
   CRJoinedGroupMember u g m ->
-    let gn = viewGroupName g
-     in gNtf u g (ActiveG gn) ("#" <> gn) ("member " <> viewMemberName m <> " is connected")
+    ntf (groupNtf u g) Nothing ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
   CRConnectedToGroupMember u g m _ ->
-    let gn = viewGroupName g
-     in gNtf u g (ActiveG gn) ("#" <> gn) ("member " <> viewMemberName m <> " is connected")
+    ntf (groupNtf u g) Nothing ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
   CRReceivedContactRequest u UserContactRequest {localDisplayName = n} ->
-    toMaybe (userNtf u) (Nothing, Notification {title = viewName n <> ">", text = "wants to connect to you"})
-  _ -> Nothing
+    ntf (userNtf u) Nothing (viewName n <> ">", "wants to connect to you")
+  _ -> (Nothing, Nothing)
   where
-    cNtf = ntf .: contactNtf
-    gNtf = ntf .: groupNtf
-    ntf cond active title text = toMaybe cond (Just active, Notification {title, text})
-    serverNtf (SMPServer host _ _) str = Just (Nothing, Notification {title = "server " <> str, text = safeDecodeUtf8 $ strEncode host})
+    ntf cond a = ntf' cond a . Just
+    ntf' cond active_ titleText_ = (toMaybe' cond active_, toMaybe cond . uncurry Notification =<< titleText_)
+    serverNtf (SMPServer host _ _) str = (Nothing, Just Notification {title = "server " <> str, text = safeDecodeUtf8 $ strEncode host})
 
 msgText :: MsgContent -> Maybe MarkdownList -> Text
 msgText (MCFile _) _ = "wants to send a file"
@@ -204,8 +203,10 @@ msgText mc md_ = maybe (msgContentText mc) (mconcat . map hideSecret) md_
     hideSecret FormattedText {text} = text
 
 toMaybe :: Bool -> a -> Maybe a
-toMaybe True a = Just a
-toMaybe False _ = Nothing
+toMaybe cond a = if cond then Just a else Nothing
+
+toMaybe' :: Bool -> Maybe a -> Maybe a
+toMaybe' cond a = if cond then a else Nothing
 
 printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> ChatResponse -> IO ()
 printRespToTerminal ct cc liveItems r = responseString cc liveItems r >>= printToTerminal ct

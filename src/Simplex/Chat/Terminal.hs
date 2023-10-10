@@ -15,7 +15,6 @@ import Simplex.Chat.Core
 import Simplex.Chat.Help (chatWelcome)
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal.Input
-import Simplex.Chat.Terminal.Notification
 import Simplex.Chat.Terminal.Output
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Client (defaultNetworkConfig)
