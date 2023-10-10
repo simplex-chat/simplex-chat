@@ -175,8 +175,6 @@ data ChatController = ChatController
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, ChatResponse),
-    notifyQ :: TBQueue Notification,
-    sendNotification :: Notification -> IO (),
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
     sndFiles :: TVar (Map Int64 Handle),

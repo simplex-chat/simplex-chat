@@ -33,6 +33,7 @@ import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char
+import Data.Composition ((.:))
 import Data.Constraint (Dict (..))
 import Data.Either (fromRight, rights)
 import Data.Fixed (div')
@@ -183,11 +184,10 @@ createChatDatabase filePrefix key confirmMigrations = runExceptT $ do
   agentStore <- ExceptT $ createAgentStore (agentStoreFile filePrefix) key confirmMigrations
   pure ChatDatabase {chatStore, agentStore}
 
-newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Maybe (Notification -> IO ()) -> IO ChatController
-newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, tempDir} ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, networkConfig, logLevel, logConnections, logServerHosts, logFile, tbqSize}, optFilesFolder, showReactions, allowInstantFiles, autoAcceptFileSize} sendToast = do
+newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> IO ChatController
+newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, tempDir} ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, networkConfig, logLevel, logConnections, logServerHosts, logFile, tbqSize}, optFilesFolder, showReactions, allowInstantFiles, autoAcceptFileSize} = do
   let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
       config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles', autoAcceptFileSize}
-      sendNotification = fromMaybe (const $ pure ()) sendToast
       firstTime = dbNew chatStore
   activeTo <- newTVarIO ActiveNone
   currentUser <- newTVarIO user
@@ -197,7 +197,6 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   idsDrg <- newTVarIO =<< liftIO drgNew
   inputQ <- newTBQueueIO tbqSize
   outputQ <- newTBQueueIO tbqSize
-  notifyQ <- newTBQueueIO tbqSize
   subscriptionMode <- newTVarIO SMSubscribe
   chatLock <- newEmptyTMVarIO
   sndFiles <- newTVarIO M.empty
@@ -213,7 +212,35 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
   tempDirectory <- newTVarIO tempDir
   contactMergeEnabled <- newTVarIO True
-  pure ChatController {activeTo, firstTime, currentUser, smpAgent, agentAsync, chatStore, chatStoreChanged, idsDrg, inputQ, outputQ, notifyQ, subscriptionMode, chatLock, sndFiles, rcvFiles, currentCalls, config, sendNotification, filesFolder, expireCIThreads, expireCIFlags, cleanupManagerAsync, timedItemThreads, showLiveItems, userXFTPFileConfig, tempDirectory, logFilePath = logFile, contactMergeEnabled}
+  pure
+    ChatController
+      { activeTo,
+        firstTime,
+        currentUser,
+        smpAgent,
+        agentAsync,
+        chatStore,
+        chatStoreChanged,
+        idsDrg,
+        inputQ,
+        outputQ,
+        subscriptionMode,
+        chatLock,
+        sndFiles,
+        rcvFiles,
+        currentCalls,
+        config,
+        filesFolder,
+        expireCIThreads,
+        expireCIFlags,
+        cleanupManagerAsync,
+        timedItemThreads,
+        showLiveItems,
+        userXFTPFileConfig,
+        tempDirectory,
+        logFilePath = logFile,
+        contactMergeEnabled
+      }
   where
     configServers :: DefaultAgentServers
     configServers =
@@ -260,7 +287,7 @@ startChatController subConns enableExpireCIs startXFTPWorkers = do
   readTVarIO s >>= maybe (start s users) (pure . fst)
   where
     start s users = do
-      a1 <- async $ race_ notificationSubscriber agentSubscriber
+      a1 <- async agentSubscriber
       a2 <-
         if subConns
           then Just <$> async (subscribeUsers False users)
@@ -2799,17 +2826,16 @@ processAgentMessageNoConn :: forall m. ChatMonad m => ACommand 'Agent 'AENone ->
 processAgentMessageNoConn = \case
   CONNECT p h -> hostEvent $ CRHostConnected p h
   DISCONNECT p h -> hostEvent $ CRHostDisconnected p h
-  DOWN srv conns -> serverEvent srv conns CRContactsDisconnected "disconnected"
-  UP srv conns -> serverEvent srv conns CRContactsSubscribed "connected"
+  DOWN srv conns -> serverEvent srv conns CRContactsDisconnected
+  UP srv conns -> serverEvent srv conns CRContactsSubscribed
   SUSPENDED -> toView CRChatSuspended
   DEL_USER agentUserId -> toView $ CRAgentUserDeleted agentUserId
   where
     hostEvent :: ChatResponse -> m ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
-    serverEvent srv@(SMPServer host _ _) conns event str = do
-      cs <- withStore' $ \db -> getConnectionsContacts db conns
+    serverEvent srv conns event = do
+      cs <- withStore' (`getConnectionsContacts` conns)
       toView $ event srv cs
-      showToast ("server " <> str) (safeDecodeUtf8 $ strEncode host)
 
 processAgentMsgSndFile :: forall m. ChatMonad m => ACorrId -> SndFileId -> ACommand 'Agent 'AESndFile -> m ()
 processAgentMsgSndFile _corrId aFileId msg =
@@ -2948,7 +2974,6 @@ processAgentMessageConn user _ agentConnId END =
   withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= \case
     RcvDirectMsgConnection _ (Just ct@Contact {localDisplayName = c}) -> do
       toView $ CRContactAnotherClient user ct
-      whenUserNtfs user $ showToast (c <> "> ") "connected to another client"
       unsetActive $ ActiveC c
     entity -> toView $ CRSubscriptionEnd user entity
 processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
@@ -3016,7 +3041,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
-      Just ct@Contact {localDisplayName = c, contactId} -> case agentMsg of
+      Just ct@Contact {contactId} -> case agentMsg of
         INV (ACR _ cReq) ->
           -- [async agent commands] XGrpMemIntro continuation on receiving INV
           withCompletedCommand conn agentMsg $ \_ ->
@@ -3101,9 +3126,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
               toView $ CRContactConnected user ct (fmap fromLocalProfile incognitoProfile)
               when (directOrUsed ct) $ createFeatureEnabledItems ct
-              whenUserNtfs user $ do
-                setActive $ ActiveC c
-                showToast (c <> "> ") "connected"
               when (contactConnInitiated conn) $ do
                 let Connection {groupLinkId} = conn
                     doProbeContacts = isJust groupLinkId
@@ -3180,7 +3202,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         _ -> pure ()
 
     processGroupMessage :: ACommand 'Agent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> m ()
-    processGroupMessage agentMsg connEntity conn@Connection {connId, connectionCode} gInfo@GroupInfo {groupId, localDisplayName = gName, groupProfile, membership, chatSettings} m = case agentMsg of
+    processGroupMessage agentMsg connEntity conn@Connection {connId, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
       INV (ACR _ cReq) ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cReq of
@@ -3270,15 +3292,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
             memberConnectedChatItem gInfo m
             forM_ description $ groupDescriptionChatItem gInfo m
-            whenUserNtfs user $ do
-              setActive $ ActiveG gName
-              showToast ("#" <> gName) "you are connected to group"
           GCInviteeMember -> do
             memberConnectedChatItem gInfo m
             toView $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected}
-            whenGroupNtfs user gInfo $ do
-              setActive $ ActiveG gName
-              showToast ("#" <> gName) $ "member " <> m.localDisplayName <> " is connected"
             intros <- withStore' $ \db -> createIntroductions db members m
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro ->
@@ -3574,7 +3590,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         profileContactRequest invId chatVRange p xContactId_ = do
           withStore (\db -> createOrUpdateContactRequest db user userContactLinkId invId chatVRange p xContactId_) >>= \case
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted user contact
-            CORRequest cReq@UserContactRequest {localDisplayName} -> do
+            CORRequest cReq -> do
               withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
                 Just (UserContactLink {autoAccept}, groupId_, _) ->
                   case autoAccept of
@@ -3589,10 +3605,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                         let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                         ct <- acceptContactRequestAsync user cReq profileMode
                         toView $ CRAcceptingGroupJoinRequest user gInfo ct
-                    _ -> do
-                      toView $ CRReceivedContactRequest user cReq
-                      whenUserNtfs user $
-                        showToast (localDisplayName <> "> ") "wants to connect to you"
+                    _ -> toView $ CRReceivedContactRequest user cReq
                 _ -> pure ()
 
     incAuthErrCounter :: ConnectionEntity -> Connection -> AgentErrorType -> m ()
@@ -3683,13 +3696,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       createInternalChatItem user (CDGroupRcv gInfo m) (CIRcvMsgContent $ MCText descr) Nothing
 
     notifyMemberConnected :: GroupInfo -> GroupMember -> Maybe Contact -> m ()
-    notifyMemberConnected gInfo m@GroupMember {localDisplayName = c} ct_ = do
+    notifyMemberConnected gInfo m ct_ = do
       memberConnectedChatItem gInfo m
       toView $ CRConnectedToGroupMember user gInfo m ct_
-      let g = groupName' gInfo
-      whenGroupNtfs user gInfo $ do
-        setActive $ ActiveG g
-        showToast ("#" <> g) $ "member " <> c <> " is connected"
 
     probeMatchingContactsAndMembers :: Contact -> IncognitoEnabled -> Bool -> m ()
     probeMatchingContactsAndMembers ct connectedIncognito doProbeContacts = do
@@ -3770,17 +3779,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               timed_ = rcvContactCITimed ct itemTTL
               live = fromMaybe False live_
           file_ <- processFileInvitation fInv_ content $ \db -> createRcvFileTransfer db userId ct
-          ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ live
+          newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ live
           autoAcceptFile file_
-          whenContactNtfs user ct $ do
-            showMsgToast (c <> "> ") content formattedText
-            setActive $ ActiveC c
       where
         newChatItem ciContent ciFile_ timed_ live = do
           ci <- saveRcvChatItem' user (CDDirectRcv ct) msg sharedMsgId_ msgMeta ciContent ciFile_ timed_ live
           reactions <- maybe (pure []) (\sharedMsgId -> withStore' $ \db -> getDirectCIReactions db ct sharedMsgId) sharedMsgId_
           toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci {reactions})
-          pure ci
 
     autoAcceptFile :: Maybe (RcvFileTransfer, CIFile 'MDRcv) -> m ()
     autoAcceptFile = mapM_ $ \(ft, CIFile {fileSize}) -> do
@@ -3938,7 +3943,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         e -> throwError e
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
-    newGroupContentMessage gInfo m@GroupMember {localDisplayName = c, memberId, memberRole} mc msg@RcvMessage {sharedMsgId_} msgMeta
+    newGroupContentMessage gInfo m@GroupMember {memberId, memberRole} mc msg@RcvMessage {sharedMsgId_} msgMeta
       | isVoice content && not (groupFeatureAllowed SGFVoice gInfo) = rejected GFVoice
       | not (isVoice content) && isJust fInv_ && not (groupFeatureAllowed SGFFiles gInfo) = rejected GFFiles
       | otherwise = do
@@ -3968,17 +3973,12 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             toView cr
         createItem timed_ live = do
           file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
-          ChatItem {formattedText} <- newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ live
+          newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ live
           autoAcceptFile file_
-          let g = groupName' gInfo
-          whenGroupNtfs user gInfo $ do
-            showMsgToast ("#" <> g <> " " <> c <> "> ") content formattedText
-            setActive $ ActiveG g
         newChatItem ciContent ciFile_ timed_ live = do
           ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ msgMeta ciContent ciFile_ timed_ live
           reactions <- maybe (pure []) (\sharedMsgId -> withStore' $ \db -> getGroupCIReactions db gInfo memberId sharedMsgId) sharedMsgId_
           groupMsgToView gInfo m ci {reactions} msgMeta
-          pure ci
 
     groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> Maybe Int -> Maybe Bool -> m ()
     groupMessageUpdate gInfo@GroupInfo {groupId, localDisplayName = g} m@GroupMember {groupMemberId, memberId} sharedMsgId mc msg@RcvMessage {msgId} msgMeta ttl_ live_ =
@@ -4047,7 +4047,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     -- TODO remove once XFile is discontinued
     processFileInvitation' :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
-    processFileInvitation' ct@Contact {localDisplayName = c} fInv@FileInvitation {fileName, fileSize} msg@RcvMessage {sharedMsgId_} msgMeta = do
+    processFileInvitation' ct fInv@FileInvitation {fileName, fileSize} msg@RcvMessage {sharedMsgId_} msgMeta = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       ChatConfig {fileChunkSize} <- asks config
       inline <- receiveInlineMode fInv Nothing fileChunkSize
@@ -4056,13 +4056,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           ciFile = Just $ CIFile {fileId, fileName, fileSize, fileSource = Nothing, fileStatus = CIFSRcvInvitation, fileProtocol}
       ci <- saveRcvChatItem' user (CDDirectRcv ct) msg sharedMsgId_ msgMeta (CIRcvMsgContent $ MCFile "") ciFile Nothing False
       toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
-      whenContactNtfs user ct $ do
-        showToast (c <> "> ") "wants to send a file"
-        setActive $ ActiveC c
 
     -- TODO remove once XFile is discontinued
     processGroupFileInvitation' :: GroupInfo -> GroupMember -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
-    processGroupFileInvitation' gInfo m@GroupMember {localDisplayName = c} fInv@FileInvitation {fileName, fileSize} msg@RcvMessage {sharedMsgId_} msgMeta = do
+    processGroupFileInvitation' gInfo m fInv@FileInvitation {fileName, fileSize} msg@RcvMessage {sharedMsgId_} msgMeta = do
       ChatConfig {fileChunkSize} <- asks config
       inline <- receiveInlineMode fInv Nothing fileChunkSize
       RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvGroupFileTransfer db userId m fInv inline fileChunkSize
@@ -4070,10 +4067,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           ciFile = Just $ CIFile {fileId, fileName, fileSize, fileSource = Nothing, fileStatus = CIFSRcvInvitation, fileProtocol}
       ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ msgMeta (CIRcvMsgContent $ MCFile "") ciFile Nothing False
       groupMsgToView gInfo m ci msgMeta
-      let g = groupName' gInfo
-      whenGroupNtfs user gInfo $ do
-        showToast ("#" <> g <> " " <> c <> "> ") "wants to send a file"
-        setActive $ ActiveG g
 
     receiveInlineMode :: FileInvitation -> Maybe MsgContent -> Integer -> m (Maybe InlineFileMode)
     receiveInlineMode FileInvitation {fileSize, fileInline, fileDescr} mc_ chSize = case (fileInline, fileDescr) of
@@ -4253,8 +4246,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           withStore' $ \db -> setGroupInvitationChatItemId db user groupId (chatItemId' ci)
           toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
           toView $ CRReceivedGroupInvitation {user, groupInfo = gInfo, contact = ct, fromMemberRole = fromRole, memberRole = memRole}
-          whenContactNtfs user ct $
-            showToast ("#" <> localDisplayName <> " " <> c <> "> ") "invited you to join the group"
       where
         sameGroupLinkId :: Maybe GroupLinkId -> Maybe GroupLinkId -> Bool
         sameGroupLinkId (Just gli) (Just gli') = gli == gli'
@@ -5402,28 +5393,19 @@ getCreateActiveUser st testView = do
     getWithPrompt s = putStr (s <> ": ") >> hFlush stdout >> getLine
 
 whenUserNtfs :: ChatMonad' m => User -> m () -> m ()
-whenUserNtfs User {showNtfs, activeUser} = when $ showNtfs || activeUser
-
-whenContactNtfs :: ChatMonad' m => User -> Contact -> m () -> m ()
-whenContactNtfs user Contact {chatSettings} = whenUserNtfs user . when (enableNtfs chatSettings)
+whenUserNtfs = when . userNtf
 
 whenGroupNtfs :: ChatMonad' m => User -> GroupInfo -> m () -> m ()
-whenGroupNtfs user GroupInfo {chatSettings} = whenUserNtfs user . when (enableNtfs chatSettings)
+whenGroupNtfs = when .: groupNtf
 
-showMsgToast :: ChatMonad' m => Text -> MsgContent -> Maybe MarkdownList -> m ()
-showMsgToast from mc md_ = showToast from $ maybe (msgContentText mc) (mconcat . map hideSecret) md_
-  where
-    hideSecret :: FormattedText -> Text
-    hideSecret FormattedText {format = Just Secret} = "..."
-    hideSecret FormattedText {text} = text
+userNtf :: User -> Bool
+userNtf User {showNtfs, activeUser} = showNtfs || activeUser
 
-showToast :: ChatMonad' m => Text -> Text -> m ()
-showToast title text = atomically . (`writeTBQueue` Notification {title, text}) =<< asks notifyQ
+contactNtf :: User -> Contact -> Bool
+contactNtf user Contact {chatSettings} = userNtf user && enableNtfs chatSettings
 
-notificationSubscriber :: ChatMonad' m => m ()
-notificationSubscriber = do
-  ChatController {notifyQ, sendNotification} <- ask
-  forever $ atomically (readTBQueue notifyQ) >>= liftIO . sendNotification
+groupNtf :: User -> GroupInfo -> Bool
+groupNtf user GroupInfo {chatSettings} = userNtf user && enableNtfs chatSettings
 
 withUser' :: ChatMonad m => (User -> m ChatResponse) -> m ChatResponse
 withUser' action =
