@@ -885,10 +885,10 @@ viewContactConnected ct userIncognitoProfile testView =
 
 viewGroupsList :: [(GroupInfo, GroupSummary)] -> [StyledString]
 viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
-viewGroupsList gs = map groupSS $ sortOn ldn_ gs
+viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
   where
     ldn_ :: GroupInfo -> Text
-    ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName) . fst
+    ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName)
     groupSS (g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}}, GroupSummary {currentMembers}) =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g

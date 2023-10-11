@@ -15,7 +15,7 @@
 module Simplex.Chat where
 
 import Control.Applicative (optional, (<|>))
-import Control.Concurrent.STM (retry, stateTVar)
+import Control.Concurrent.STM (retry)
 import Control.Logger.Simple
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
