@@ -27,7 +27,7 @@ main = do
         welcome opts
         t <- withTerminal pure
         simplexChatTerminal terminalChatConfig opts t
-    else simplexChatCore terminalChatConfig opts Nothing $ \user cc -> do
+    else simplexChatCore terminalChatConfig opts $ \user cc -> do
       r <- sendChatCmdStr cc chatCmd
       ts <- getCurrentTime
       tz <- getCurrentTimeZone

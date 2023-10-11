@@ -34,8 +34,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
-import Data.Time (NominalDiffTime)
-import Data.Time.Clock (UTCTime)
+import Data.Time (NominalDiffTime, UTCTime)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Language.Haskell.TH (Exp, Q, runIO)
@@ -153,20 +152,10 @@ defaultInlineFilesConfig =
       receiveInstant = True -- allow receiving instant files, within receiveChunks limit
     }
 
-data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName
-  deriving (Eq)
-
-chatActiveTo :: ChatName -> ActiveTo
-chatActiveTo (ChatName cType name) = case cType of
-  CTDirect -> ActiveC name
-  CTGroup -> ActiveG name
-  _ -> ActiveNone
-
 data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLiteStore}
 
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
-    activeTo :: TVar ActiveTo,
     firstTime :: Bool,
     smpAgent :: AgentClient,
     agentAsync :: TVar (Maybe (Async (), Maybe (Async ()))),
@@ -175,8 +164,6 @@ data ChatController = ChatController
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, ChatResponse),
-    notifyQ :: TBQueue Notification,
-    sendNotification :: Notification -> IO (),
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
     sndFiles :: TVar (Map Int64 Handle),
@@ -338,6 +325,7 @@ data ChatCommand
   | APIAddContact UserId IncognitoEnabled
   | AddContact IncognitoEnabled
   | APISetConnectionIncognito Int64 IncognitoEnabled
+  | APIConnectPlan UserId AConnectionRequestUri
   | APIConnect UserId IncognitoEnabled (Maybe AConnectionRequestUri)
   | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
@@ -432,7 +420,7 @@ data ChatResponse
   | CRApiChats {user :: User, chats :: [AChat]}
   | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat}
-  | CRChatItems {user :: User, chatItems :: [AChatItem]}
+  | CRChatItems {user :: User, chatName_ :: Maybe ChatName, chatItems :: [AChatItem]}
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
@@ -489,6 +477,7 @@ data ChatResponse
   | CRVersionInfo {versionInfo :: CoreVersionInfo, chatMigrations :: [UpMigration], agentMigrations :: [UpMigration]}
   | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection}
+  | CRConnectionPlan {user :: User, connectionPlan :: ConnectionPlan}
   | CRSentConfirmation {user :: User}
   | CRSentInvitation {user :: User, customUserProfile :: Maybe Profile}
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
@@ -623,6 +612,64 @@ logResponseToFile = \case
 instance ToJSON ChatResponse where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CR"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CR"
+
+data ConnectionPlan
+  = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
+  | CPContactAddress {contactAddressPlan :: ContactAddressPlan}
+  | CPGroupLink {groupLinkPlan :: GroupLinkPlan}
+  deriving (Show, Generic)
+
+instance ToJSON ConnectionPlan where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CP"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CP"
+
+data InvitationLinkPlan
+  = ILPOk
+  | ILPOwnLink
+  | ILPConnecting {contact_ :: Maybe Contact}
+  | ILPKnown {contact :: Contact}
+  deriving (Show, Generic)
+
+instance ToJSON InvitationLinkPlan where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "ILP"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "ILP"
+
+data ContactAddressPlan
+  = CAPOk
+  | CAPOwnLink
+  | CAPConnecting {contact :: Contact}
+  | CAPKnown {contact :: Contact}
+  deriving (Show, Generic)
+
+instance ToJSON ContactAddressPlan where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CAP"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CAP"
+
+data GroupLinkPlan
+  = GLPOk
+  | GLPOwnLink {groupInfo :: GroupInfo}
+  | GLPConnecting {groupInfo_ :: Maybe GroupInfo}
+  | GLPKnown {groupInfo :: GroupInfo}
+  deriving (Show, Generic)
+
+instance ToJSON GroupLinkPlan where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "GLP"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "GLP"
+
+connectionPlanOk :: ConnectionPlan -> Bool
+connectionPlanOk = \case
+  CPInvitationLink ilp -> case ilp of
+    ILPOk -> True
+    ILPOwnLink -> True
+    _ -> False
+  CPContactAddress cap -> case cap of
+    CAPOk -> True
+    CAPOwnLink -> True
+    _ -> False
+  CPGroupLink glp -> case glp of
+    GLPOk -> True
+    GLPOwnLink _ -> True
+    _ -> False
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
   deriving (Eq, Show)
@@ -888,6 +935,7 @@ data ChatErrorType
   | CEChatNotStarted
   | CEChatNotStopped
   | CEChatStoreChanged
+  | CEConnectionPlan {connectionPlan :: ConnectionPlan}
   | CEInvalidConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
   | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}
@@ -1012,14 +1060,6 @@ mkChatError = ChatError . CEException . show
 
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError
-
-setActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
-setActive to = asks activeTo >>= atomically . (`writeTVar` to)
-
-unsetActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
-unsetActive a = asks activeTo >>= atomically . (`modifyTVar` unset)
-  where
-    unset a' = if a == a' then ActiveNone else a'
 
 toView :: ChatMonad' m => ChatResponse -> m ()
 toView event = do
