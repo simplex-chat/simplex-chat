@@ -35,7 +35,11 @@ import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
-import Database.SQLite.Simple.FromField (FromField (..))
+import Data.Typeable (Typeable)
+import Database.SQLite.Simple (ResultError (..), SQLData (..))
+import Database.SQLite.Simple.FromField (returnError, FromField(..))
+import Database.SQLite.Simple.Internal (Field (..))
+import Database.SQLite.Simple.Ok
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Types.Preferences
@@ -44,7 +48,7 @@ import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON, taggedObjectJSON, enumJSON)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util ((<$?>))
 import Simplex.Messaging.Version
@@ -383,7 +387,7 @@ contactAndGroupIds = \case
 
 -- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
 data ChatSettings = ChatSettings
-  { enableNtfs :: Bool,
+  { enableNtfs :: MsgFilter,
     sendRcpts :: Maybe Bool,
     favorite :: Bool
   }
@@ -394,13 +398,48 @@ instance ToJSON ChatSettings where toEncoding = J.genericToEncoding J.defaultOpt
 defaultChatSettings :: ChatSettings
 defaultChatSettings =
   ChatSettings
-    { enableNtfs = True,
+    { enableNtfs = MFAll,
       sendRcpts = Nothing,
       favorite = False
     }
 
-pattern DisableNtfs :: ChatSettings
-pattern DisableNtfs <- ChatSettings {enableNtfs = False}
+chatHasNtfs :: ChatSettings -> Bool
+chatHasNtfs ChatSettings {enableNtfs} = enableNtfs /= MFNone
+
+data MsgFilter = MFNone | MFAll | MFMentions
+  deriving (Eq, Show, Generic)
+
+instance FromJSON MsgFilter where
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MF"
+
+instance ToJSON MsgFilter where
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "MF"
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "MF"
+
+instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
+
+instance ToField MsgFilter where toField = toField . msgFilterInt
+
+msgFilterInt :: MsgFilter -> Int
+msgFilterInt = \case
+  MFNone -> 0
+  MFAll -> 1
+  MFMentions -> 2
+
+msgFilterIntP :: Int64 -> Maybe MsgFilter
+msgFilterIntP = \case
+  0 -> Just MFNone
+  1 -> Just MFAll
+  2 -> Just MFMentions
+  _ -> Just MFAll
+
+fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> Field -> Ok a
+fromIntField_ fromInt = \case
+  f@(Field (SQLInteger i) _) ->
+    case fromInt i of
+      Just x -> Ok x
+      _ -> returnError ConversionFailed f ("invalid integer: " <> show i)
+  f -> returnError ConversionFailed f "expecting SQLInteger column type"
 
 featureAllowed :: SChatFeature f -> (PrefEnabled -> Bool) -> Contact -> Bool
 featureAllowed feature forWhom Contact {mergedPreferences} =
@@ -628,6 +667,7 @@ data GroupMember = GroupMember
     memberRole :: GroupMemberRole,
     memberCategory :: GroupMemberCategory,
     memberStatus :: GroupMemberStatus,
+    memberSettings :: GroupMemberSettings,
     invitedBy :: InvitedBy,
     localDisplayName :: ContactName,
     -- for membership, memberProfile can be either user's profile or incognito profile, based on memberIncognito test.
@@ -761,6 +801,16 @@ instance FromJSON GroupMemberRole where
 instance ToJSON GroupMemberRole where
   toJSON = strToJSON
   toEncoding = strToJEncoding
+
+data GroupMemberSettings = GroupMemberSettings
+  { showMessages :: Bool
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON GroupMemberSettings where toEncoding = J.genericToEncoding J.defaultOptions
+
+defaultMemberSettings :: GroupMemberSettings
+defaultMemberSettings = GroupMemberSettings {showMessages = True}
 
 newtype Probe = Probe {unProbe :: ByteString}
   deriving (Eq, Show)

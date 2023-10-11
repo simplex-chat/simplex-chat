@@ -147,6 +147,19 @@ instance MsgDirectionI d => ToJSON (ChatItem c d) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+isMention :: ChatItem c d -> Bool
+isMention ChatItem {chatDir, quotedItem} = case chatDir of
+  CIDirectRcv -> userItem quotedItem
+  CIGroupRcv _ -> userItem quotedItem
+  _ -> False
+  where
+    userItem = \case
+      Nothing -> False
+      Just CIQuote {chatDir = cd} -> case cd of
+        CIQDirectSnd -> True
+        CIQGroupSnd -> True
+        _ -> False
+    
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv
@@ -216,26 +229,6 @@ chatItemMember GroupInfo {membership} ChatItem {chatDir} = case chatDir of
 ciReactionAllowed :: ChatItem c d -> Bool
 ciReactionAllowed ChatItem {meta = CIMeta {itemDeleted = Just _}} = False
 ciReactionAllowed ChatItem {content} = isJust $ ciMsgContent content
-
-data CIDeletedState = CIDeletedState
-  { markedDeleted :: Bool,
-    deletedByMember :: Maybe GroupMember
-  }
-  deriving (Show, Eq)
-
-chatItemDeletedState :: ChatItem c d -> Maybe CIDeletedState
-chatItemDeletedState ChatItem {meta = CIMeta {itemDeleted}, content} =
-  ciDeletedToDeletedState <$> itemDeleted
-  where
-    ciDeletedToDeletedState cid =
-      case content of
-        CISndModerated -> CIDeletedState {markedDeleted = False, deletedByMember = byMember cid}
-        CIRcvModerated -> CIDeletedState {markedDeleted = False, deletedByMember = byMember cid}
-        _ -> CIDeletedState {markedDeleted = True, deletedByMember = byMember cid}
-    byMember :: CIDeleted c -> Maybe GroupMember
-    byMember = \case
-      CIModerated _ m -> Just m
-      CIDeleted _ -> Nothing
 
 data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectSnd :: Contact -> ChatDirection 'CTDirect 'MDSnd
@@ -926,6 +919,7 @@ checkDirection x = case testEquality (msgDirection @d) (msgDirection @d') of
 
 data CIDeleted (c :: ChatType) where
   CIDeleted :: Maybe UTCTime -> CIDeleted c
+  CIBlocked :: Maybe UTCTime -> CIDeleted c
   CIModerated :: Maybe UTCTime -> GroupMember -> CIDeleted 'CTGroup
 
 deriving instance Show (CIDeleted c)
@@ -936,6 +930,7 @@ instance ToJSON (CIDeleted d) where
 
 data JSONCIDeleted
   = JCIDDeleted {deletedTs :: Maybe UTCTime}
+  | JCIBlocked {deletedTs :: Maybe UTCTime}
   | JCIDModerated {deletedTs :: Maybe UTCTime, byGroupMember :: GroupMember}
   deriving (Show, Generic)
 
@@ -946,11 +941,13 @@ instance ToJSON JSONCIDeleted where
 jsonCIDeleted :: CIDeleted d -> JSONCIDeleted
 jsonCIDeleted = \case
   CIDeleted ts -> JCIDDeleted ts
+  CIBlocked ts -> JCIBlocked ts
   CIModerated ts m -> JCIDModerated ts m
 
 itemDeletedTs :: CIDeleted d -> Maybe UTCTime
 itemDeletedTs = \case
   CIDeleted ts -> ts
+  CIBlocked ts -> ts
   CIModerated ts _ -> ts
 
 data ChatItemInfo = ChatItemInfo
