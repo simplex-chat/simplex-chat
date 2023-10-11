@@ -63,31 +63,18 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
   where
     echo s = printToTerminal ct [plain s]
     processResp s cmd = \case
-      -- TODO all actions only if user matches current
-      CRActiveUser u -> setActive ct cc u ActiveNone
-      CRChatItems u chatName_ _ ->
-        mapM_ (setActive' ct cc u . chatActiveTo) chatName_
-      CRNewChatItem u (AChatItem _ SMDSnd cInfo _) -> case cInfo of
-        DirectChat c -> setActive ct cc u $ ActiveC c
-        GroupChat g -> setActive ct cc u $ ActiveG g
-        _ -> pure ()
-      CRChatItemUpdated u (AChatItem _ SMDSnd cInfo _) -> case cInfo of
-        DirectChat c -> setActive ct cc u $ ActiveC c
-        GroupChat g -> setActive ct cc u $ ActiveG g
-        _ -> pure ()
-      CRChatItemDeleted u (AChatItem _ _ cInfo _) _ _ _ -> case cInfo of
-        DirectChat c -> setActive ct cc u $ ActiveC c
-        GroupChat g -> setActive ct cc u $ ActiveG g
-        _ -> pure ()
-      -- TODO user?
-      CRContactDeleted u c -> unsetActive ct $ ActiveC c
-      CRGroupDeletedUser u g -> unsetActive ct $ ActiveG g
-      CRSentGroupInvitation u _ c _ -> setActive ct cc u $ ActiveC c
+      CRActiveUser _ -> setActive ct ""
+      CRChatItems u chatName_ _ -> whenCurrUser cc u $ mapM_ (setActive ct . chatActiveTo) chatName_
+      CRNewChatItem u (AChatItem _ SMDSnd cInfo _) -> whenCurrUser cc u $ setActiveChat ct cInfo
+      CRChatItemUpdated u (AChatItem _ SMDSnd cInfo _) -> whenCurrUser cc u $ setActiveChat ct cInfo
+      CRChatItemDeleted u (AChatItem _ _ cInfo _) _ _ _ -> whenCurrUser cc u $ setActiveChat ct cInfo
+      CRContactDeleted u c -> whenCurrUser cc u $ unsetActiveContact ct c
+      CRGroupDeletedUser u g -> whenCurrUser cc u $ unsetActiveGroup ct g
+      CRSentGroupInvitation u g _ _ -> whenCurrUser cc u $ setActiveGroup ct g
       CRChatCmdError _ _ -> when (isMessage cmd) $ echo s
       CRChatError _ _ -> when (isMessage cmd) $ echo s
       CRCmdOk _ -> case cmd of
-        -- TODO don't match user here
-        -- Right APIDeleteUser -> setActive ct cc Nothing? ActiveNone
+        Right APIDeleteUser {} -> setActive ct ""
         _ -> pure ()
       _ -> pure ()
     isMessage = \case

@@ -148,8 +148,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
           _ -> printToTerminal ct
     liveItems <- readTVarIO showLiveItems
     responseString cc liveItems r >>= printResp
-    forM_ (sendNotification ct) $ \send ->
-      responseNotification ct cc r >>= mapM_ send
+    responseNotification ct cc r
   where
     markChatItemRead (AChatItem _ _ chat item@ChatItem {chatDir, meta = CIMeta {itemStatus}}) =
       case (muted chat chatDir, itemStatus) of
@@ -160,44 +159,43 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
         _ -> pure ()
     logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
 
-responseNotification :: ChatTerminal -> ChatController -> ChatResponse -> IO (Maybe Notification)
-responseNotification t cc = \case
-  CRNewChatItem u (AChatItem _ SMDRcv cInfo ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) -> do
-    when (chatNtf u cInfo) $ setActiveChat t cc u cInfo
-    case (cInfo, chatDir) of
-      (DirectChat ct, _) -> ntf (contactNtf u ct) (viewContactName ct <> "> ", text)
-      (GroupChat g, CIGroupRcv m) -> ntf (groupNtf u g) (fromGroup_ g m, text)
-      _ -> ok
+responseNotification :: ChatTerminal -> ChatController -> ChatResponse -> IO ()
+responseNotification t@ChatTerminal {sendNotification} cc = \case
+  CRNewChatItem u (AChatItem _ SMDRcv cInfo ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) ->
+    when (chatNtf u cInfo) $ do
+      whenCurrUser cc u $ setActiveChat t cInfo
+      case (cInfo, chatDir) of
+        (DirectChat ct, _) -> sendNtf (viewContactName ct <> "> ", text)
+        (GroupChat g, CIGroupRcv m) -> sendNtf (fromGroup_ g m, text)
+        _ -> pure ()
     where
       text = msgText mc formattedText
-  CRChatItemUpdated u (AChatItem _ SMDRcv cInfo ChatItem {content = CIRcvMsgContent _}) -> do
-    when (chatNtf u cInfo) $ setActiveChat t cc u cInfo
-    ok
-  CRContactConnected u ct _ -> do
-    when (contactNtf u ct) $ setActive t cc u $ ActiveC ct
-    ntf (contactNtf u ct) (viewContactName ct <> "> ", "connected")
+  CRChatItemUpdated u (AChatItem _ SMDRcv cInfo ChatItem {content = CIRcvMsgContent _}) ->
+    whenCurrUser cc u $ when (chatNtf u cInfo) $ setActiveChat t cInfo
+  CRContactConnected u ct _ -> when (contactNtf u ct) $ do
+    whenCurrUser cc u $ setActiveContact t ct
+    sendNtf (viewContactName ct <> "> ", "connected")
   CRContactAnotherClient u ct -> do
-    unsetActive t $ ActiveC ct
-    ntf (contactNtf u ct) (viewContactName ct <> "> ", "connected to another client")
+    whenCurrUser cc u $ unsetActiveContact t ct
+    when (contactNtf u ct) $ sendNtf (viewContactName ct <> "> ", "connected to another client")
   CRContactsDisconnected srv _ -> serverNtf srv "disconnected"
   CRContactsSubscribed srv _ -> serverNtf srv "connected"
-  CRReceivedGroupInvitation u g ct _ _ -> do
-    when (contactNtf u ct) $ setActive t cc u $ ActiveC ct
-    ntf (contactNtf u ct) ("#" <> viewGroupName g <> " " <> viewContactName ct <> "> ", "invited you to join the group")
-  CRUserJoinedGroup u g _ -> do
-    when (groupNtf u g) $ setActive t cc u $ ActiveG g
-    ntf (groupNtf u g) ("#" <> viewGroupName g, "you are connected to group")
+  CRReceivedGroupInvitation u g ct _ _ ->
+    when (contactNtf u ct) $
+      sendNtf ("#" <> viewGroupName g <> " " <> viewContactName ct <> "> ", "invited you to join the group")
+  CRUserJoinedGroup u g _ -> when (groupNtf u g) $ do
+    whenCurrUser cc u $ setActiveGroup t g
+    sendNtf ("#" <> viewGroupName g, "you are connected to group")
   CRJoinedGroupMember u g m ->
-    ntf (groupNtf u g) ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
+    when (groupNtf u g) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
   CRConnectedToGroupMember u g m _ ->
-    ntf (groupNtf u g) ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
+    when (groupNtf u g) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
   CRReceivedContactRequest u UserContactRequest {localDisplayName = n} ->
-    ntf (userNtf u) (viewName n <> ">", "wants to connect to you")
-  _ -> ok
+    when (userNtf u) $ sendNtf (viewName n <> ">", "wants to connect to you")
+  _ -> pure ()
   where
-    ntf cond = pure . toMaybe cond . uncurry Notification
-    serverNtf (SMPServer host _ _) str = pure $ Just Notification {title = "server " <> str, text = safeDecodeUtf8 $ strEncode host}
-    ok = pure Nothing
+    sendNtf = maybe (\_ -> pure ()) (. uncurry Notification) sendNotification
+    serverNtf (SMPServer host _ _) str = sendNtf ("server " <> str, safeDecodeUtf8 $ strEncode host)
 
 msgText :: MsgContent -> Maybe MarkdownList -> Text
 msgText (MCFile _) _ = "wants to send a file"
@@ -207,21 +205,6 @@ msgText mc md_ = maybe (msgContentText mc) (mconcat . map hideSecret) md_
     hideSecret FormattedText {format = Just Secret} = "..."
     hideSecret FormattedText {text} = text
 
-toMaybe :: Bool -> a -> Maybe a
-toMaybe cond a = if cond then Just a else Nothing
-
-toMaybe' :: Bool -> Maybe a -> Maybe a
-toMaybe' cond a = if cond then a else Nothing
-
-data ActiveTo = ActiveNone | ActiveC Contact | ActiveG GroupInfo
-  deriving (Eq)
-
-activeToStr :: ActiveTo -> String
-activeToStr = \case
-  ActiveNone -> ""
-  ActiveC c -> T.unpack $ "@" <> viewContactName c <> " "
-  ActiveG g -> T.unpack $ "#" <> viewGroupName g <> " "
-
 chatActiveTo :: ChatName -> String
 chatActiveTo (ChatName cType name) = case cType of
   CTDirect -> T.unpack $ "@" <> viewName name <> " "
@@ -230,25 +213,45 @@ chatActiveTo (ChatName cType name) = case cType of
 
 chatInfoActiveTo :: ChatInfo c -> String
 chatInfoActiveTo = \case
-  DirectChat c -> T.unpack $ "@" <> viewContactName c <> " "
-  GroupChat g -> T.unpack $ "#" <> viewGroupName g <> " "
+  DirectChat c -> contactActiveTo c
+  GroupChat g -> groupActiveTo g
   _ -> ""
 
-setActiveChat :: ChatTerminal -> ChatController -> User -> ChatInfo c -> IO ()
-setActiveChat t cc u = setActive' t cc u . chatInfoActiveTo
+contactActiveTo :: Contact -> String
+contactActiveTo c = T.unpack $ "@" <> viewContactName c <> " "
 
-setActive :: ChatTerminal -> ChatController -> User -> ActiveTo -> IO ()
-setActive t cc u = setActive' t cc u . activeToStr
+groupActiveTo :: GroupInfo -> String
+groupActiveTo g = T.unpack $ "#" <> viewGroupName g <> " "
 
-setActive' :: ChatTerminal -> ChatController -> User -> String -> IO ()
-setActive' ChatTerminal {activeTo} cc User {userId = userId'} pfx = atomically $
-  readTVar (currentUser cc) >>=
-    mapM_ (\User {userId} -> when (userId == userId') $ writeTVar activeTo pfx)
+setActiveChat :: ChatTerminal -> ChatInfo c -> IO ()
+setActiveChat t = setActive t . chatInfoActiveTo
 
-unsetActive :: ChatTerminal -> ActiveTo -> IO ()
-unsetActive ChatTerminal {activeTo} a = atomically $ modifyTVar activeTo unset
+setActiveContact :: ChatTerminal -> Contact -> IO ()
+setActiveContact t = setActive t . contactActiveTo
+
+setActiveGroup :: ChatTerminal -> GroupInfo -> IO ()
+setActiveGroup t = setActive t . groupActiveTo
+
+setActive :: ChatTerminal -> String -> IO ()
+setActive ChatTerminal {activeTo} to = atomically $ writeTVar activeTo to
+
+unsetActiveContact :: ChatTerminal -> Contact -> IO ()
+unsetActiveContact t = unsetActive t . contactActiveTo
+
+unsetActiveGroup :: ChatTerminal -> GroupInfo -> IO ()
+unsetActiveGroup t = unsetActive t . groupActiveTo
+
+unsetActive :: ChatTerminal -> String -> IO ()
+unsetActive ChatTerminal {activeTo} to' = atomically $ modifyTVar activeTo unset
   where
-    unset pfx = if pfx == activeToStr a then "" else pfx
+    unset to = if to == to' then "" else to
+
+whenCurrUser :: ChatController -> User -> IO () -> IO ()
+whenCurrUser cc u a = do
+  u_ <- readTVarIO $ currentUser cc
+  when (sameUser u u_) a
+  where
+    sameUser User {userId = uId} = maybe False $ \User {userId} -> userId == uId
 
 printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> ChatResponse -> IO ()
 printRespToTerminal ct cc liveItems r = responseString cc liveItems r >>= printToTerminal ct
