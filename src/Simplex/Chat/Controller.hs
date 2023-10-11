@@ -29,13 +29,12 @@ import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Char (isSpace, ord)
+import Data.Char (ord)
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
-import qualified Data.Text as T
 import Data.Time (NominalDiffTime, UTCTime)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
@@ -1094,12 +1093,3 @@ withStoreCtx ctx_ action = do
   where
     handleInternal :: String -> SomeException -> IO (Either StoreError a)
     handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
-
-viewName :: Text -> Text
-viewName s = if T.any isSpace s then "'" <> s <> "'" else s
-
-viewContactName :: Contact -> Text
-viewContactName = viewName . localDisplayName'
-
-viewGroupName :: GroupInfo -> Text
-viewGroupName = viewName . groupName'

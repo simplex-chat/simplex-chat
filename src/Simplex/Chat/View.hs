@@ -15,7 +15,7 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Char (toUpper)
+import Data.Char (isSpace, toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
@@ -1797,6 +1797,12 @@ ttyGroup g = styled (colored Blue) $ "#" <> viewName g
 ttyGroup' :: GroupInfo -> StyledString
 ttyGroup' = ttyGroup . groupName'
 
+viewContactName :: Contact -> Text
+viewContactName = viewName . localDisplayName'
+
+viewGroupName :: GroupInfo -> Text
+viewGroupName = viewName . groupName'
+
 viewMemberName :: GroupMember -> Text
 viewMemberName GroupMember {localDisplayName = n} = viewName n
 
@@ -1833,6 +1839,9 @@ ttyToGroup g = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " ")
 
 ttyToGroupEdited :: GroupInfo -> StyledString
 ttyToGroupEdited g = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " [edited] ")
+
+viewName :: Text -> Text
+viewName s = if T.any isSpace s then "'" <> s <> "'" else s
 
 ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain
