@@ -826,7 +826,7 @@ runDirectory cfg opts@DirectoryOpts {directoryLog} action = do
   threadDelay 500000
   action `finally` (mapM_ hClose (directoryLogFile st) >> killThread t)
   where
-    bot st = simplexChatCore cfg (mkChatOpts opts) Nothing $ directoryService st opts
+    bot st = simplexChatCore cfg (mkChatOpts opts) $ directoryService st opts
 
 registerGroup :: TestCC -> TestCC -> String -> String -> IO ()
 registerGroup su u n fn = registerGroupId su u n fn 1 1

@@ -47,8 +47,10 @@ import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
   deriving (Eq, Show, Ord, Generic)
 
-data ChatName = ChatName ChatType Text
-  deriving (Show)
+data ChatName = ChatName {chatType :: ChatType, chatName :: Text}
+  deriving (Show, Generic)
+
+instance ToJSON ChatName where toEncoding = J.genericToEncoding J.defaultOptions
 
 chatTypeStr :: ChatType -> String
 chatTypeStr = \case

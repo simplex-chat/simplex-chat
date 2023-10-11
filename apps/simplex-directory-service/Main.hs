@@ -12,4 +12,4 @@ main :: IO ()
 main = do
   opts@DirectoryOpts {directoryLog} <- welcomeGetOpts
   st <- restoreDirectoryStore directoryLog
-  simplexChatCore terminalChatConfig (mkChatOpts opts) Nothing $ directoryService st opts
+  simplexChatCore terminalChatConfig (mkChatOpts opts) $ directoryService st opts

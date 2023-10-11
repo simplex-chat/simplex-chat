@@ -158,8 +158,8 @@ startTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefi
 startTestChat_ :: ChatDatabase -> ChatConfig -> ChatOpts -> User -> IO TestCC
 startTestChat_ db cfg opts user = do
   t <- withVirtualTerminal termSettings pure
-  ct <- newChatTerminal t
-  cc <- newChatController db (Just user) cfg opts Nothing -- no notifications
+  ct <- newChatTerminal t opts
+  cc <- newChatController db (Just user) cfg opts
   chatAsync <- async . runSimplexChat opts user cc . const $ runChatTerminal ct
   atomically . unless (maintenance opts) $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO

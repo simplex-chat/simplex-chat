@@ -15,7 +15,6 @@ import Simplex.Chat.Core
 import Simplex.Chat.Help (chatWelcome)
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal.Input
-import Simplex.Chat.Terminal.Notification
 import Simplex.Chat.Terminal.Output
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.Messaging.Client (defaultNetworkConfig)
@@ -40,10 +39,9 @@ terminalChatConfig =
     }
 
 simplexChatTerminal :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
-simplexChatTerminal cfg opts t = do
-  sendToast <- if muteNotifications opts then pure Nothing else Just <$> initializeNotifications
-  handle checkDBKeyError . simplexChatCore cfg opts sendToast $ \u cc -> do
-    ct <- newChatTerminal t
+simplexChatTerminal cfg opts t =
+  handle checkDBKeyError . simplexChatCore cfg opts $ \u cc -> do
+    ct <- newChatTerminal t opts
     when (firstTime cc) . printToTerminal ct $ chatWelcome u
     runChatTerminal ct cc
 
