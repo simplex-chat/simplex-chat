@@ -12,7 +12,6 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.ComposeState
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -726,7 +725,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contactConnection.apiId
     override val ready get() = contactConnection.ready
     override val sendMsgEnabled get() = contactConnection.sendMsgEnabled
-    override val ntfsEnabled get() = contactConnection.incognito
+    override val ntfsEnabled get() = false
     override val incognito get() = contactConnection.incognito
     override fun featureEnabled(feature: ChatFeature) = contactConnection.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = contactConnection.timedMessagesTTL
@@ -822,7 +821,7 @@ data class Contact(
     (ready && active && !(activeConn.connectionStats?.ratchetSyncSendProhibited ?: false))
         || nextSendGrpInv
   val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
-  override val ntfsEnabled get() = chatSettings.enableNtfs
+  override val ntfsEnabled get() = chatSettings.enableNtfs == MsgFilter.All
   override val incognito get() = contactConnIncognito
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.enabled.forUser
@@ -869,7 +868,7 @@ data class Contact(
       activeConn = Connection.sampleData,
       contactUsed = true,
       contactStatus = ContactStatus.Active,
-      chatSettings = ChatSettings(enableNtfs = true, sendRcpts = null, favorite = false),
+      chatSettings = ChatSettings(enableNtfs = MsgFilter.All, sendRcpts = null, favorite = false),
       userPreferences = ChatPreferences.sampleData,
       mergedPreferences = ContactUserPreferences.sampleData,
       createdAt = Clock.System.now(),
@@ -1009,7 +1008,7 @@ data class GroupInfo (
   override val apiId get() = groupId
   override val ready get() = membership.memberActive
   override val sendMsgEnabled get() = membership.memberActive
-  override val ntfsEnabled get() = chatSettings.enableNtfs
+  override val ntfsEnabled get() = chatSettings.enableNtfs == MsgFilter.All
   override val incognito get() = membership.memberIncognito
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
     ChatFeature.TimedMessages -> fullGroupPreferences.timedMessages.on
@@ -1041,7 +1040,7 @@ data class GroupInfo (
       fullGroupPreferences = FullGroupPreferences.sampleData,
       membership = GroupMember.sampleData,
       hostConnCustomUserProfileId = null,
-      chatSettings = ChatSettings(enableNtfs = true, sendRcpts = null, favorite = false),
+      chatSettings = ChatSettings(enableNtfs = MsgFilter.All, sendRcpts = null, favorite = false),
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )
@@ -1073,6 +1072,7 @@ data class GroupMember (
   var memberRole: GroupMemberRole,
   var memberCategory: GroupMemberCategory,
   var memberStatus: GroupMemberStatus,
+  var memberSettings: GroupMemberSettings,
   var invitedBy: InvitedBy,
   val localDisplayName: String,
   val memberProfile: LocalProfile,
@@ -1140,6 +1140,7 @@ data class GroupMember (
       memberRole = GroupMemberRole.Member,
       memberCategory = GroupMemberCategory.InviteeMember,
       memberStatus = GroupMemberStatus.MemComplete,
+      memberSettings = GroupMemberSettings(showMessages = true),
       invitedBy = InvitedBy.IBUser(),
       localDisplayName = "alice",
       memberProfile = LocalProfile.sampleData,
@@ -1149,6 +1150,9 @@ data class GroupMember (
     )
   }
 }
+
+@Serializable
+data class GroupMemberSettings(val showMessages: Boolean) {}
 
 @Serializable
 class GroupMemberRef(
@@ -1844,6 +1848,7 @@ enum class SndCIStatusProgress {
 @Serializable
 sealed class CIDeleted {
   @Serializable @SerialName("deleted") class Deleted(val deletedTs: Instant?): CIDeleted()
+  @Serializable @SerialName("blocked") class Blocked(val deletedTs: Instant?): CIDeleted()
   @Serializable @SerialName("moderated") class Moderated(val deletedTs: Instant?, val byGroupMember: GroupMember): CIDeleted()
 }
 

@@ -2472,13 +2472,20 @@ data class KeepAliveOpts(
 
 @Serializable
 data class ChatSettings(
-  val enableNtfs: Boolean,
+  val enableNtfs: MsgFilter,
   val sendRcpts: Boolean?,
   val favorite: Boolean
 ) {
   companion object {
-    val defaults: ChatSettings = ChatSettings(enableNtfs = true, sendRcpts = null, favorite = false)
+    val defaults: ChatSettings = ChatSettings(enableNtfs = MsgFilter.All, sendRcpts = null, favorite = false)
   }
+}
+
+@Serializable
+enum class MsgFilter {
+  @SerialName("all") All,
+  @SerialName("none") None,
+  @SerialName("mentions") Mentions,
 }
 
 @Serializable
