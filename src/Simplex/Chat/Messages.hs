@@ -150,8 +150,8 @@ instance MsgDirectionI d => ToJSON (ChatItem c d) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-isReference :: ChatItem c d -> Bool
-isReference ChatItem {chatDir, quotedItem} = case chatDir of
+isMention :: ChatItem c d -> Bool
+isMention ChatItem {chatDir, quotedItem} = case chatDir of
   CIDirectRcv -> userItem quotedItem
   CIGroupRcv _ -> userItem quotedItem
   _ -> False

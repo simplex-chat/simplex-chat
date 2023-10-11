@@ -350,40 +350,40 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
     contactList :: [ContactRef] -> String
     contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
     unmuted :: User -> ChatInfo c -> ChatItem c d -> [StyledString] -> [StyledString]
-    unmuted u chat ci@ChatItem {chatDir} = unmuted' u chat chatDir $ isReference ci
+    unmuted u chat ci@ChatItem {chatDir} = unmuted' u chat chatDir $ isMention ci
     unmutedReaction :: User -> ChatInfo c -> CIReaction c d -> [StyledString] -> [StyledString]
     unmutedReaction u chat CIReaction {chatDir} = unmuted' u chat chatDir False
     unmuted' :: User -> ChatInfo c -> CIDirection c d -> Bool -> [StyledString] -> [StyledString]
-    unmuted' u chat chatDir reference s
-      | chatDirNtf u chat chatDir reference = s
+    unmuted' u chat chatDir mention s
+      | chatDirNtf u chat chatDir mention = s
       | otherwise = []
 
 userNtf :: User -> Bool
 userNtf User {showNtfs, activeUser} = showNtfs || activeUser
 
 chatNtf :: User -> ChatInfo c -> Bool -> Bool
-chatNtf user cInfo reference = case cInfo of
-  DirectChat ct -> contactNtf user ct reference
-  GroupChat g -> groupNtf user g reference
+chatNtf user cInfo mention = case cInfo of
+  DirectChat ct -> contactNtf user ct mention
+  GroupChat g -> groupNtf user g mention
   _ -> False
 
 chatDirNtf :: User -> ChatInfo c -> CIDirection c d -> Bool -> Bool
-chatDirNtf user cInfo chatDir reference = case (cInfo, chatDir) of
-  (DirectChat ct, CIDirectRcv) -> contactNtf user ct reference
-  (GroupChat g, CIGroupRcv m) -> groupNtf user g reference && showMessages (memberSettings m)
+chatDirNtf user cInfo chatDir mention = case (cInfo, chatDir) of
+  (DirectChat ct, CIDirectRcv) -> contactNtf user ct mention
+  (GroupChat g, CIGroupRcv m) -> groupNtf user g mention && showMessages (memberSettings m)
   _ -> True
 
 contactNtf :: User -> Contact -> Bool -> Bool
-contactNtf user Contact {chatSettings} reference =
-  userNtf user && showMessageNtf chatSettings reference
+contactNtf user Contact {chatSettings} mention =
+  userNtf user && showMessageNtf chatSettings mention
 
 groupNtf :: User -> GroupInfo -> Bool -> Bool
-groupNtf user GroupInfo {chatSettings} reference =
-  userNtf user && showMessageNtf chatSettings reference
+groupNtf user GroupInfo {chatSettings} mention =
+  userNtf user && showMessageNtf chatSettings mention
 
 showMessageNtf :: ChatSettings -> Bool -> Bool
-showMessageNtf ChatSettings {enableNtfs} reference =
-  enableNtfs == MFAll || (reference && enableNtfs == MFMentions)
+showMessageNtf ChatSettings {enableNtfs} mention =
+  enableNtfs == MFAll || (mention && enableNtfs == MFMentions)
 
 chatItemDeletedText :: ChatItem c d -> Maybe GroupMember -> Maybe Text
 chatItemDeletedText ChatItem {meta = CIMeta {itemDeleted}, content} membership_ =
