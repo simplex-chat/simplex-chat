@@ -204,6 +204,9 @@ directOrUsed ct@Contact {contactUsed} =
 anyDirectOrUsed :: Contact -> Bool
 anyDirectOrUsed Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed
 
+contactReady :: Contact -> Bool
+contactReady Contact {activeConn} = connReady activeConn
+
 contactActive :: Contact -> Bool
 contactActive Contact {contactStatus} = contactStatus == CSActive
 
@@ -1242,6 +1245,9 @@ data Connection = Connection
   }
   deriving (Eq, Show, Generic)
 
+connReady :: Connection -> Bool
+connReady Connection {connStatus} = connStatus == ConnReady || connStatus == ConnSndReady
+
 authErrDisableCount :: Int
 authErrDisableCount = 10
 
@@ -1415,8 +1421,6 @@ serializeIntroStatus = \case
   GMIntroReConnected -> "re-con"
   GMIntroToConnected -> "to-con"
   GMIntroConnected -> "con"
-
-data Notification = Notification {title :: Text, text :: Text}
 
 textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
 textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode
