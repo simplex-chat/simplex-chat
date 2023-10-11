@@ -355,7 +355,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
     unmutedReaction u chat CIReaction {chatDir} = unmuted' u chat chatDir False
     unmuted' :: User -> ChatInfo c -> CIDirection c d -> Bool -> [StyledString] -> [StyledString]
     unmuted' u chat chatDir reference s
-      | chatRcvNtf u chat chatDir reference = s
+      | chatDirNtf u chat chatDir reference = s
       | otherwise = []
 
 userNtf :: User -> Bool
@@ -367,10 +367,11 @@ chatNtf user cInfo reference = case cInfo of
   GroupChat g -> groupNtf user g reference
   _ -> False
 
-chatRcvNtf :: User -> ChatInfo c -> CIDirection c d -> Bool -> Bool
-chatRcvNtf user cInfo chatDir reference =
-  chatNtf user cInfo reference
-    && case chatDir of CIGroupRcv m -> showMessages (memberSettings m); _ -> True
+chatDirNtf :: User -> ChatInfo c -> CIDirection c d -> Bool -> Bool
+chatDirNtf user cInfo chatDir reference = case (cInfo, chatDir) of
+  (DirectChat ct, CIDirectRcv) -> contactNtf user ct reference
+  (GroupChat g, CIGroupRcv m) -> groupNtf user g reference && showMessages (memberSettings m)
+  _ -> True
 
 contactNtf :: User -> Contact -> Bool -> Bool
 contactNtf user Contact {chatSettings} reference =

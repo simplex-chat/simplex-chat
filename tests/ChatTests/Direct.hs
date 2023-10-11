@@ -1997,7 +1997,7 @@ testUserPrivacy =
       -- shows hidden user when active
       alice ##> "/users"
       alice <## "alice (Alice)"
-      alice <## "alisa (active, hidden, muted)"
+      alice <## "alisa (active, hidden, muted, unread: 1)"
       -- hidden message is saved
       alice ##> "/tail"
       alice <##? chatHistory
