@@ -5,6 +5,7 @@ import ChatTests
 import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
+import MarkdownDiffTests
 import MarkdownTests
 import MobileTests
 import ProtocolTests
@@ -21,6 +22,7 @@ main = do
   withGlobalLogging logCfg . hspec $ do
     describe "Schema dump" schemaDumpTest
     describe "SimpleX chat markdown" markdownTests
+    fdescribe "SimpleX chat markdown diff" markdownDiffTests
     describe "SimpleX chat view" viewTests
     describe "SimpleX chat protocol" protocolTests
     describe "WebRTC encryption" webRTCTests

@@ -17,7 +17,7 @@ import qualified Data.Attoparsec.Text as A
 import Data.Char (isDigit)
 import Data.Either (fromRight)
 import Data.Functor (($>))
-import Data.List (intercalate, foldl')
+import Data.List (foldl', intercalate)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe, isNothing)
@@ -51,7 +51,15 @@ data Format
   | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, trustedUri :: Bool, smpHosts :: NonEmpty Text}
   | Email
   | Phone
+  | Edited EditAction Format
   deriving (Eq, Show, Generic)
+
+data EditAction = EAInsert | EADelete | EAChangeFormat
+  deriving (Eq, Show, Generic)
+
+instance ToJSON EditAction where
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "EA"
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "EA"
 
 data SimplexLinkType = XLContact | XLInvitation | XLGroup
   deriving (Eq, Show, Generic)
@@ -129,7 +137,7 @@ parseMaybeMarkdownList s
   | otherwise = Just . reverse $ foldl' acc [] ml
   where
     ml = intercalate ["\n"] . map (markdownToList . parseMarkdown) $ T.lines s
-    acc [] m = [m] 
+    acc [] m = [m]
     acc ms@(FormattedText f t : ms') ft@(FormattedText f' t')
       | f == f' = FormattedText f (t <> t') : ms'
       | otherwise = ft : ms
@@ -170,14 +178,14 @@ markdownP = mconcat <$> A.many' fragmentP
     md :: Char -> Format -> Text -> Markdown
     md c f s
       | T.null s || T.head s == ' ' || T.last s == ' ' =
-        unmarked $ c `T.cons` s `T.snoc` c
+          unmarked $ c `T.cons` s `T.snoc` c
       | otherwise = markdown f s
     secretP :: Parser Markdown
     secretP = secret <$> A.takeWhile (== '#') <*> A.takeTill (== '#') <*> A.takeWhile (== '#')
     secret :: Text -> Text -> Text -> Markdown
     secret b s a
       | T.null a || T.null s || T.head s == ' ' || T.last s == ' ' =
-        unmarked $ '#' `T.cons` ss
+          unmarked $ '#' `T.cons` ss
       | otherwise = markdown Secret $ T.init ss
       where
         ss = b <> s <> a
@@ -218,8 +226,8 @@ markdownP = mconcat <$> A.many' fragmentP
     wordMD s
       | T.null s = unmarked s
       | isUri s = case strDecode $ encodeUtf8 s of
-        Right cReq -> markdown (simplexUriFormat cReq) s
-        _ -> markdown Uri s
+          Right cReq -> markdown (simplexUriFormat cReq) s
+          _ -> markdown Uri s
       | isEmail s = markdown Email s
       | otherwise = unmarked s
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]

@@ -32,6 +32,7 @@ dependencies:
   - http-types == 0.12.*
   - memory == 0.18.*
   - mtl == 2.3.*
+  - myers-diff >= 0.2.0.0
   - network >= 3.1.2.7 && < 3.2
   - optparse-applicative >= 0.15 && < 0.17
   - process == 1.6.*
