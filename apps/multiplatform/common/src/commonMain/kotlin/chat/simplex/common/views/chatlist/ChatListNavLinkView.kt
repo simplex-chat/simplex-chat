@@ -595,8 +595,8 @@ fun groupInvitationAcceptedAlert() {
   )
 }
 
-fun toggleNotifications(chat: Chat, enableNtfs: Boolean, chatModel: ChatModel, currentState: MutableState<Boolean>? = null) {
-  val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(enableNtfs = enableNtfs)
+fun toggleNotifications(chat: Chat, enableAllNtfs: Boolean, chatModel: ChatModel, currentState: MutableState<Boolean>? = null) {
+  val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(enableNtfs = if (enableAllNtfs) MsgFilter.All else MsgFilter.None)
   updateChatSettings(chat, chatSettings, chatModel, currentState)
 }
 
@@ -627,7 +627,7 @@ fun updateChatSettings(chat: Chat, chatSettings: ChatSettings, chatModel: ChatMo
     }
     if (res && newChatInfo != null) {
       chatModel.updateChatInfo(newChatInfo)
-      if (!chatSettings.enableNtfs) {
+      if (chatSettings.enableNtfs != MsgFilter.All) {
         ntfManager.cancelNotificationsForChat(chat.id)
       }
       val current = currentState?.value

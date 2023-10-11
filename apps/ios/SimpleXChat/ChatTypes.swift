@@ -1292,7 +1292,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
     }
 
     public var ntfsEnabled: Bool {
-        self.chatSettings?.enableNtfs ?? false
+        self.chatSettings?.enableNtfs == .all
     }
 
     public var chatSettings: ChatSettings? {
@@ -1758,6 +1758,7 @@ public struct GroupMember: Identifiable, Decodable {
     public var memberRole: GroupMemberRole
     public var memberCategory: GroupMemberCategory
     public var memberStatus: GroupMemberStatus
+    public var memberSettings: GroupMemberSettings
     public var invitedBy: InvitedBy
     public var localDisplayName: ContactName
     public var memberProfile: LocalProfile
@@ -1851,6 +1852,7 @@ public struct GroupMember: Identifiable, Decodable {
         memberRole: .admin,
         memberCategory: .inviteeMember,
         memberStatus: .memComplete,
+        memberSettings: GroupMemberSettings(showMessages: true),
         invitedBy: .user,
         localDisplayName: "alice",
         memberProfile: LocalProfile.sampleData,
@@ -1858,6 +1860,10 @@ public struct GroupMember: Identifiable, Decodable {
         memberContactProfileId: 1,
         activeConn: Connection.sampleData
     )
+}
+
+public struct GroupMemberSettings: Decodable {
+    var showMessages: Bool
 }
 
 public struct GroupMemberRef: Decodable {
@@ -1983,8 +1989,8 @@ public enum ConnectionEntity: Decodable {
 
     public var ntfsEnabled: Bool {
         switch self {
-        case let .rcvDirectMsgConnection(contact): return contact?.chatSettings.enableNtfs ?? false
-        case let .rcvGroupMsgConnection(groupInfo, _): return groupInfo.chatSettings.enableNtfs
+        case let .rcvDirectMsgConnection(contact): return contact?.chatSettings.enableNtfs == .all
+        case let .rcvGroupMsgConnection(groupInfo, _): return groupInfo.chatSettings.enableNtfs == .all
         case .sndFileConnection: return false
         case .rcvFileConnection: return false
         case let .userContactConnection(userContact): return userContact.groupId == nil
