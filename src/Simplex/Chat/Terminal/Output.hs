@@ -18,7 +18,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
-import Simplex.Chat (processChatCommand, chatNtf, contactNtf, groupNtf, userNtf)
+import Simplex.Chat (processChatCommand)
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
@@ -27,7 +27,7 @@ import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..), msgContentText)
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Notification (Notification (..), initializeNotifications)
-import Simplex.Chat.Types (Contact, GroupInfo (..), User (..), UserContactRequest (..))
+import Simplex.Chat.Types
 import Simplex.Chat.View
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Encoding.String
@@ -139,8 +139,8 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
   forever $ do
     (_, r) <- atomically $ readTBQueue outputQ
     case r of
-      CRNewChatItem _ ci -> markChatItemRead ci
-      CRChatItemUpdated _ ci -> markChatItemRead ci
+      CRNewChatItem u ci -> markChatItemRead u ci
+      CRChatItemUpdated u ci -> markChatItemRead u ci
       _ -> pure ()
     let printResp = case logFilePath of
           Just path -> if logResponseToFile r then logResponse path else printToTerminal ct
@@ -149,10 +149,10 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
     responseString cc liveItems r >>= printResp
     responseNotification ct cc r
   where
-    markChatItemRead (AChatItem _ _ chat item@ChatItem {chatDir, meta = CIMeta {itemStatus}}) =
-      case (muted chat chatDir, itemStatus) of
-        (False, CISRcvNew) -> do
-          let itemId = chatItemId' item
+    markChatItemRead u (AChatItem _ _ chat ci@ChatItem {chatDir, meta = CIMeta {itemStatus}}) =
+      case (chatDirNtf u chat chatDir (isMention ci), itemStatus) of
+        (True, CISRcvNew) -> do
+          let itemId = chatItemId' ci
               chatRef = chatInfoToRef chat
           void $ runReaderT (runExceptT $ processChatCommand (APIChatRead chatRef (Just (itemId, itemId)))) cc
         _ -> pure ()
@@ -160,8 +160,8 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
 
 responseNotification :: ChatTerminal -> ChatController -> ChatResponse -> IO ()
 responseNotification t@ChatTerminal {sendNotification} cc = \case
-  CRNewChatItem u (AChatItem _ SMDRcv cInfo ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) ->
-    when (chatNtf u cInfo) $ do
+  CRNewChatItem u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) ->
+    when (chatDirNtf u cInfo chatDir $ isMention ci) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
       case (cInfo, chatDir) of
         (DirectChat ct, _) -> sendNtf (viewContactName ct <> "> ", text)
@@ -169,26 +169,26 @@ responseNotification t@ChatTerminal {sendNotification} cc = \case
         _ -> pure ()
     where
       text = msgText mc formattedText
-  CRChatItemUpdated u (AChatItem _ SMDRcv cInfo ChatItem {content = CIRcvMsgContent _}) ->
-    whenCurrUser cc u $ when (chatNtf u cInfo) $ setActiveChat t cInfo
-  CRContactConnected u ct _ -> when (contactNtf u ct) $ do
+  CRChatItemUpdated u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent _}) ->
+    whenCurrUser cc u $ when (chatDirNtf u cInfo chatDir $ isMention ci) $ setActiveChat t cInfo
+  CRContactConnected u ct _ -> when (contactNtf u ct False) $ do
     whenCurrUser cc u $ setActiveContact t ct
     sendNtf (viewContactName ct <> "> ", "connected")
   CRContactAnotherClient u ct -> do
     whenCurrUser cc u $ unsetActiveContact t ct
-    when (contactNtf u ct) $ sendNtf (viewContactName ct <> "> ", "connected to another client")
+    when (contactNtf u ct False) $ sendNtf (viewContactName ct <> "> ", "connected to another client")
   CRContactsDisconnected srv _ -> serverNtf srv "disconnected"
   CRContactsSubscribed srv _ -> serverNtf srv "connected"
   CRReceivedGroupInvitation u g ct _ _ ->
-    when (contactNtf u ct) $
+    when (contactNtf u ct False) $
       sendNtf ("#" <> viewGroupName g <> " " <> viewContactName ct <> "> ", "invited you to join the group")
-  CRUserJoinedGroup u g _ -> when (groupNtf u g) $ do
+  CRUserJoinedGroup u g _ -> when (groupNtf u g False) $ do
     whenCurrUser cc u $ setActiveGroup t g
     sendNtf ("#" <> viewGroupName g, "you are connected to group")
   CRJoinedGroupMember u g m ->
-    when (groupNtf u g) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
+    when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
   CRConnectedToGroupMember u g m _ ->
-    when (groupNtf u g) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
+    when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
   CRReceivedContactRequest u UserContactRequest {localDisplayName = n} ->
     when (userNtf u) $ sendNtf (viewName n <> ">", "wants to connect to you")
   _ -> pure ()
