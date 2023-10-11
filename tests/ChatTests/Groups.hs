@@ -1538,7 +1538,6 @@ testGroupDelayedModerationFullDelete tmp = do
 
 testGroupAsync :: HasCallStack => FilePath -> IO ()
 testGroupAsync tmp = do
-  print (0 :: Integer)
   withNewTestChat tmp "alice" aliceProfile $ \alice -> do
     withNewTestChat tmp "bob" bobProfile $ \bob -> do
       connectUsers alice bob
@@ -3252,9 +3251,9 @@ testMemberContactProhibitedRepeatInv =
 
 testMemberContactInvitedConnectionReplaced :: HasCallStack => FilePath -> IO ()
 testMemberContactInvitedConnectionReplaced tmp = do
-  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
-      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+  withNewTestChat tmp "alice" aliceProfile $ \a -> withTestOutput a $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \b -> withTestOutput b $ \bob -> do
+      withNewTestChat tmp "cath" cathProfile $ \c -> withTestOutput c $ \cath -> do
         createGroup3 "team" alice bob cath
 
         alice ##> "/d bob"
@@ -3277,7 +3276,9 @@ testMemberContactInvitedConnectionReplaced tmp = do
           (alice <## "bob (Bob): contact is connected")
           (bob <## "alice (Alice): contact is connected")
 
-        bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "received invitation to join group team as admin"), (0, "contact deleted"), (0, "hi"), (0, "security code changed")] <> chatFeatures)
+        bob ##> "/_get chat @2 count=100"
+        items <- chat <$> getTermLine bob
+        items `shouldContain` [(0, "received invitation to join group team as admin"), (0, "contact deleted"), (0, "hi"), (0, "security code changed")]
 
     withTestChat tmp "bob" $ \bob -> do
       subscriptions bob 1
