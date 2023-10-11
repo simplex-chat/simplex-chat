@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
@@ -16,36 +17,47 @@ import Control.Monad.Reader (asks)
 import Control.Monad.STM (retry)
 import Crypto.Random (getRandomBytes)
 import qualified Data.Aeson as J
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.Binary.Builder as Binary
-import Data.ByteString (ByteString)
+import Data.ByteString (ByteString, hPut)
 import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Char8 as B
+import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty (..))
-import Data.Maybe (fromMaybe)
 import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import qualified Network.HTTP.Types as HTTP
 import qualified Network.HTTP.Types.Status as Status
 import qualified Network.HTTP2.Client as HTTP2Client
 import qualified Network.HTTP2.Server as HTTP2Server
 import Network.Socket (SockAddr (..), hostAddressToTuple)
 import Simplex.Chat.Controller
+import Simplex.Chat.Messages (AChatItem (..), CIFile (..), CIFileStatus (..), ChatItem (..), chatNameStr)
+import Simplex.Chat.Messages.CIContent (MsgDirection (..), SMsgDirection (..))
 import qualified Simplex.Chat.Remote.Discovery as Discovery
 import Simplex.Chat.Remote.Types
+import Simplex.Chat.Store.Files (getRcvFileTransfer)
+import Simplex.Chat.Store.Profiles (getUser)
 import Simplex.Chat.Store.Remote
+import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Types
+import Simplex.FileTransfer.Util (uniqueCombine)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
-import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..))
+import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), defaultHTTP2BufferSize)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import qualified Simplex.Messaging.Transport.HTTP2.Client as HTTP2
 import qualified Simplex.Messaging.Transport.HTTP2.Server as HTTP2
 import Simplex.Messaging.Util (bshow, ifM, tshow)
-import System.Directory (getFileSize)
+import System.FilePath (isPathSeparator, takeFileName, (</>))
 import UnliftIO
+import UnliftIO.Directory (createDirectoryIfMissing, getFileSize, makeAbsolute)
 
 withRemoteHostSession :: (ChatMonad m) => RemoteHostId -> (RemoteHostSession -> m a) -> m a
 withRemoteHostSession remoteHostId action = do
@@ -90,7 +102,15 @@ startRemoteHost remoteHostId = do
               cleanup finished
             Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
               logDebug $ "Got initial from remote host: " <> tshow bodyHead
-              _ <- asks outputQ >>= async . pollRemote finished ctrlClient "/recv" (Nothing, Just remoteHostId,)
+              oq <- asks outputQ
+              let toViewRemote = atomically . writeTBQueue oq . (Nothing,Just remoteHostId,)
+              void . async $ pollRemote finished ctrlClient "/recv" $ \chatResponse -> do
+                case chatResponse of
+                  CRRcvFileComplete {user = ru, chatItem = AChatItem c d@SMDRcv i ci@ChatItem {file = Just ciFile}} -> do
+                    handleRcvFileComplete ctrlClient storePath ru ciFile >>= \case
+                      Nothing -> toViewRemote chatResponse
+                      Just localFile -> toViewRemote CRRcvFileComplete {user = ru, chatItem = AChatItem c d i ci {file = Just localFile}}
+                  _ -> toViewRemote chatResponse
               toView CRRemoteHostConnected {remoteHostId}
 
 sendHello :: (ChatMonad m) => HTTP2Client -> m (Either HTTP2.HTTP2ClientError HTTP2.HTTP2Response)
@@ -98,16 +118,17 @@ sendHello http = liftIO (HTTP2.sendRequestDirect http req Nothing)
   where
     req = HTTP2Client.requestNoBody "GET" "/" mempty
 
-pollRemote :: (ChatMonad m, J.FromJSON a) => TVar Bool -> HTTP2Client -> ByteString -> (a -> b) -> TBQueue b -> m ()
-pollRemote finished http path f queue = loop
+pollRemote :: (ChatMonad m, J.FromJSON a) => TVar Bool -> HTTP2Client -> ByteString -> (a -> m ()) -> m ()
+pollRemote finished http path action = loop
   where
     loop = do
       liftIO (HTTP2.sendRequestDirect http req Nothing) >>= \case
         Left e -> logError $ "pollRemote: " <> tshow (path, e)
-        Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} ->
+        Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
+          logDebug $ "Got /recv response: " <> decodeUtf8 bodyHead
           case J.eitherDecodeStrict' bodyHead of
             Left e -> logError $ "pollRemote/decode: " <> tshow (path, e)
-            Right o -> atomically $ writeTBQueue queue (f o)
+            Right o -> action o
       readTVarIO finished >>= (`unless` loop)
     req = HTTP2Client.requestNoBody "GET" path mempty
 
@@ -118,7 +139,7 @@ closeRemoteHostSession remoteHostId = withRemoteHostSession remoteHostId $ \sess
   chatModifyVar remoteHostSessions $ M.delete remoteHostId
   pure CRRemoteHostStopped {remoteHostId}
 
-cancelRemoteHostSession :: MonadUnliftIO m => RemoteHostSession -> m ()
+cancelRemoteHostSession :: (MonadUnliftIO m) => RemoteHostSession -> m ()
 cancelRemoteHostSession = \case
   RemoteHostSessionStarting {announcer} -> cancel announcer
   RemoteHostSessionStarted {ctrlClient} -> liftIO $ HTTP2.closeHTTP2Client ctrlClient
@@ -154,17 +175,31 @@ deleteRemoteHost remoteHostId = withRemoteHost remoteHostId $ \rh -> do
 processRemoteCommand :: (ChatMonad m) => RemoteHostSession -> (ByteString, ChatCommand) -> m ChatResponse
 processRemoteCommand RemoteHostSessionStarting {} _ = pure . CRChatError Nothing . ChatError $ CEInternalError "sending remote commands before session started"
 processRemoteCommand RemoteHostSessionStarted {ctrlClient} (s, cmd) = do
-  logDebug $ "processRemoteCommand: " <> T.pack (show s)
-  -- XXX: intercept and filter some commands
-  -- TODO: store missing files on remote host
-  relayCommand ctrlClient s
+  logDebug $ "processRemoteCommand: " <> tshow (s, cmd)
+  case cmd of
+    SendFile cn ctrlPath -> do
+      storeRemoteFile ctrlClient ctrlPath >>= \case
+        -- TODO: use Left
+        Nothing -> pure . CRChatError Nothing . ChatError $ CEInternalError "failed to store file on remote host"
+        Just hostPath -> relayCommand ctrlClient $ "/file " <> utf8String (chatNameStr cn) <> " " <> utf8String hostPath
+    SendImage cn ctrlPath -> do
+      storeRemoteFile ctrlClient ctrlPath >>= \case
+        Nothing -> pure . CRChatError Nothing . ChatError $ CEInternalError "failed to store image on remote host"
+        Just hostPath -> relayCommand ctrlClient $ "/image " <> utf8String (chatNameStr cn) <> " " <> utf8String hostPath
+    APISendMessage {composedMessage = cm@ComposedMessage {fileSource = Just CryptoFile {filePath = ctrlPath, cryptoArgs}}} -> do
+      storeRemoteFile ctrlClient ctrlPath >>= \case
+        Nothing -> pure . CRChatError Nothing . ChatError $ CEInternalError "failed to store file on remote host"
+        Just hostPath -> do
+          let cm' = cm {fileSource = Just CryptoFile {filePath = hostPath, cryptoArgs}} :: ComposedMessage
+          relayCommand ctrlClient $ B.takeWhile (/= '{') s <> B.toStrict (J.encode cm')
+    _ -> relayCommand ctrlClient s
 
 relayCommand :: (ChatMonad m) => HTTP2Client -> ByteString -> m ChatResponse
 relayCommand http s =
   postBytestring Nothing http "/send" mempty s >>= \case
     Left e -> err $ "relayCommand/post: " <> show e
     Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
-      logDebug $ "Got /send response: " <> T.pack (show bodyHead)
+      logDebug $ "Got /send response: " <> decodeUtf8 bodyHead
       remoteChatResponse <- case J.eitherDecodeStrict bodyHead of -- XXX: large JSONs can overflow into buffered chunks
         Left e -> err $ "relayCommand/decodeValue: " <> show e
         Right json -> case J.fromJSON $ toTaggedJSON json of
@@ -183,61 +218,129 @@ relayCommand http s =
       where
         req = HTTP2Client.requestBuilder "POST" path hs (Binary.fromByteString body)
 
+handleRcvFileComplete :: (ChatMonad m) => HTTP2Client -> FilePath -> User -> CIFile 'MDRcv -> m (Maybe (CIFile 'MDRcv))
+handleRcvFileComplete http storePath remoteUser cif@CIFile {fileId, fileName, fileStatus} = case fileStatus of
+  CIFSRcvComplete ->
+    chatReadVar filesFolder >>= \case
+      Just baseDir -> do
+        let hostStore = baseDir </> storePath
+        createDirectoryIfMissing True hostStore
+        localPath <- uniqueCombine hostStore fileName
+        ok <- fetchRemoteFile http remoteUser fileId localPath
+        pure $ Just (cif {fileName = localPath} :: CIFile 'MDRcv)
+      Nothing -> Nothing <$ logError "Local file store not available while fetching remote file"
+  _ -> Nothing <$ logDebug ("Ingoring invalid file notification for file (" <> tshow fileId <> ") " <> tshow fileName)
+
 -- | Convert swift single-field sum encoding into tagged/discriminator-field
 owsf2tagged :: J.Value -> J.Value
 owsf2tagged = \case
   J.Object todo'convert -> J.Object todo'convert
   skip -> skip
 
-storeRemoteFile :: (ChatMonad m) => HTTP2Client -> FilePath -> m ChatResponse
+storeRemoteFile :: (MonadUnliftIO m) => HTTP2Client -> FilePath -> m (Maybe FilePath)
 storeRemoteFile http localFile = do
-  postFile Nothing http "/store" mempty localFile >>= \case
-    Left todo'err -> error "TODO: http2chatError"
-    Right HTTP2.HTTP2Response {response} -> case HTTP.statusCode <$> HTTP2Client.responseStatus response of
-      Just 200 -> pure $ CRCmdOk Nothing
-      todo'notOk -> error "TODO: http2chatError"
+  putFile Nothing http uri mempty localFile >>= \case
+    Left h2ce -> Nothing <$ logError (tshow h2ce)
+    Right HTTP2.HTTP2Response {response, respBody = HTTP2Body {bodyHead}} ->
+      case HTTP.statusCode <$> HTTP2Client.responseStatus response of
+        Just 200 -> pure . Just $ B.unpack bodyHead
+        notOk -> Nothing <$ logError ("Bad response status: " <> tshow notOk)
   where
-    postFile timeout c path hs file = liftIO $ do
+    uri = "/store?" <> HTTP.renderSimpleQuery False [("file_name", utf8String $ takeFileName localFile)]
+    putFile timeout c path hs file = liftIO $ do
       fileSize <- fromIntegral <$> getFileSize file
       HTTP2.sendRequestDirect c (req fileSize) timeout
       where
         req size = HTTP2Client.requestFile "PUT" path hs (HTTP2Client.FileSpec file 0 size)
 
-fetchRemoteFile :: (ChatMonad m) => HTTP2Client -> FilePath -> FileTransferId -> m ChatResponse
-fetchRemoteFile http storePath remoteFileId = do
+fetchRemoteFile :: (MonadUnliftIO m) => HTTP2Client -> User -> Int64 -> FilePath -> m Bool
+fetchRemoteFile http User {userId = remoteUserId} remoteFileId localPath = do
   liftIO (HTTP2.sendRequestDirect http req Nothing) >>= \case
-    Left e -> error "TODO: http2chatError"
-    Right HTTP2.HTTP2Response {respBody} -> do
-      error "TODO: stream body into a local file" -- XXX: consult headers for a file name?
+    Left h2ce -> False <$ logError (tshow h2ce)
+    Right HTTP2.HTTP2Response {response, respBody} ->
+      if HTTP2Client.responseStatus response == Just Status.ok200
+        then True <$ writeBodyToFile localPath respBody
+        else False <$ (logError $ "Request failed: " <> maybe "(??)" tshow (HTTP2Client.responseStatus response) <> " " <> decodeUtf8 (bodyHead respBody))
   where
     req = HTTP2Client.requestNoBody "GET" path mempty
-    path = "/fetch/" <> bshow remoteFileId
+    path = "/fetch?" <> HTTP.renderSimpleQuery False [("user_id", bshow remoteUserId), ("file_id", bshow remoteFileId)]
 
-processControllerRequest :: forall m . (ChatMonad m) => (ByteString -> m ChatResponse) -> HTTP2.HTTP2Request -> m ()
-processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody = HTTP2Body {bodyHead}, sendResponse} = do
-  logDebug $ "Remote controller request: " <> T.pack (show $ method <> " " <> path)
-  res <- tryChatError $ case (method, path) of
-    ("GET", "/") -> getHello
-    ("POST", "/send") -> sendCommand
-    ("GET", "/recv") -> recvMessage
-    ("PUT", "/store") -> storeFile
-    ("GET", "/fetch") -> fetchFile
+-- XXX: extract to Transport.HTTP2 ?
+writeBodyToFile :: (MonadUnliftIO m) => FilePath -> HTTP2Body -> m ()
+writeBodyToFile path HTTP2Body {bodyHead, bodySize, bodyPart} = do
+  logInfo $ "Receiving " <> tshow bodySize <> " bytes to " <> tshow path
+  liftIO . withFile path WriteMode $ \h -> do
+    hPut h bodyHead
+    mapM_ (hPutBodyChunks h) bodyPart
+
+hPutBodyChunks :: Handle -> (Int -> IO ByteString) -> IO ()
+hPutBodyChunks h getChunk = do
+  chunk <- getChunk defaultHTTP2BufferSize
+  unless (B.null chunk) $ do
+    hPut h chunk
+    hPutBodyChunks h getChunk
+
+processControllerRequest :: forall m. (ChatMonad m) => (ByteString -> m ChatResponse) -> HTTP2.HTTP2Request -> m ()
+processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody, sendResponse} = do
+  logDebug $ "Remote controller request: " <> tshow (method <> " " <> path)
+  res <- tryChatError $ case (method, ps) of
+    ("GET", []) -> getHello
+    ("POST", ["send"]) -> sendCommand
+    ("GET", ["recv"]) -> recvMessage
+    ("PUT", ["store"]) -> storeFile
+    ("GET", ["fetch"]) -> fetchFile
     unexpected -> respondWith Status.badRequest400 $ "unexpected method/path: " <> Binary.putStringUtf8 (show unexpected)
   case res of
     Left e -> logError $ "Error handling remote controller request: (" <> tshow (method <> " " <> path) <> "): " <> tshow e
     Right () -> logDebug $ "Remote controller request: " <> tshow (method <> " " <> path) <> " OK"
   where
     method = fromMaybe "" $ HTTP2Server.requestMethod request
-    path = fromMaybe "" $ HTTP2Server.requestPath request
+    path = fromMaybe "/" $ HTTP2Server.requestPath request
+    (ps, query) = HTTP.decodePath path
     getHello = respond "OK"
-    sendCommand = execChatCommand bodyHead >>= respondJSON
-    recvMessage = chatReadVar remoteCtrlSession >>= \case
-      Nothing -> respondWith Status.internalServerError500 "session not active"
-      Just rcs -> atomically (readTBQueue $ remoteOutputQ rcs) >>= respondJSON
-    storeFile = respondWith Status.notImplemented501 "TODO: storeFile"
-    fetchFile = respondWith Status.notImplemented501 "TODO: fetchFile"
+    sendCommand = execChatCommand (bodyHead reqBody) >>= respondJSON
+    recvMessage =
+      chatReadVar remoteCtrlSession >>= \case
+        Nothing -> respondWith Status.internalServerError500 "session not active"
+        Just rcs -> atomically (readTBQueue $ remoteOutputQ rcs) >>= respondJSON
+    storeFile = case storeFileQuery of
+      Left err -> respondWith Status.badRequest400 (Binary.putStringUtf8 err)
+      Right fileName -> do
+        baseDir <- fromMaybe "." <$> chatReadVar filesFolder
+        localPath <- uniqueCombine baseDir fileName
+        logDebug $ "Storing controller file to " <> tshow (baseDir, localPath)
+        writeBodyToFile localPath reqBody
+        let storeRelative = takeFileName localPath
+        respond $ Binary.putStringUtf8 storeRelative
+      where
+        storeFileQuery = parseField "file_name" $ A.many1 (A.satisfy $ not . isPathSeparator)
+    fetchFile = case fetchFileQuery of
+      Left err -> respondWith Status.badRequest400 (Binary.putStringUtf8 err)
+      Right (userId, fileId) -> do
+        logInfo $ "Fetching file " <> tshow fileId <> " from user " <> tshow userId
+        x <- withStore' $ \db -> runExceptT $ do
+          user <- getUser db userId
+          getRcvFileTransfer db user fileId
+        case x of
+          Right RcvFileTransfer {fileStatus = RFSComplete RcvFileInfo {filePath}} -> do
+            baseDir <- fromMaybe "." <$> chatReadVar filesFolder
+            let fullPath = baseDir </> filePath
+            size <- fromInteger <$> getFileSize fullPath
+            liftIO . sendResponse . HTTP2Server.responseFile Status.ok200 mempty $ HTTP2Server.FileSpec fullPath 0 size
+          Right _ -> respondWith Status.internalServerError500 "The requested file is not complete"
+          Left SEUserNotFound {} -> respondWith Status.notFound404 "User not found"
+          Left SERcvFileNotFound {} -> respondWith Status.notFound404 "File not found"
+          _ -> respondWith Status.internalServerError500 "Store error"
+      where
+        fetchFileQuery =
+          (,)
+            <$> parseField "user_id" A.decimal
+            <*> parseField "file_id" A.decimal
 
-    respondJSON :: J.ToJSON a => a -> m ()
+    parseField :: ByteString -> A.Parser a -> Either String a
+    parseField field p = maybe (Left $ "missing " <> B.unpack field) (A.parseOnly $ p <* A.endOfInput) (join $ lookup field query)
+
+    respondJSON :: (J.ToJSON a) => a -> m ()
     respondJSON = respond . Binary.fromLazyByteString . J.encode
 
     respond = respondWith Status.ok200
@@ -282,19 +385,20 @@ discoverRemoteCtrls discovered = Discovery.withListener go
             let addr = THIPv4 (hostAddressToTuple sockAddr)
             ifM
               (atomically $ TM.member fingerprint discovered)
-              (logDebug $ "Fingerprint announce already knwon: " <> T.pack (show (addr, invite)))
-              (do
-                logInfo $ "New fingerprint announce: " <> T.pack (show (addr, invite))
-                atomically $ TM.insert fingerprint addr discovered
+              (logDebug $ "Fingerprint announce already knwon: " <> tshow (addr, invite))
+              ( do
+                  logInfo $ "New fingerprint announce: " <> tshow (addr, invite)
+                  atomically $ TM.insert fingerprint addr discovered
               )
             withStore' (`getRemoteCtrlByFingerprint` fingerprint) >>= \case
               Nothing -> toView $ CRRemoteCtrlAnnounce fingerprint -- unknown controller, ui "register" action required
-              Just found@RemoteCtrl {remoteCtrlId, accepted=storedChoice} -> case storedChoice of
+              Just found@RemoteCtrl {remoteCtrlId, accepted = storedChoice} -> case storedChoice of
                 Nothing -> toView $ CRRemoteCtrlFound found -- first-time controller, ui "accept" action required
                 Just False -> pure () -- skipping a rejected item
-                Just True -> chatReadVar remoteCtrlSession >>= \case
-                  Nothing -> toView . CRChatError Nothing . ChatError $ CEInternalError "Remote host found without running a session"
-                  Just RemoteCtrlSession {accepted} -> atomically $ void $ tryPutTMVar accepted remoteCtrlId -- previously accepted controller, connect automatically
+                Just True ->
+                  chatReadVar remoteCtrlSession >>= \case
+                    Nothing -> toView . CRChatError Nothing . ChatError $ CEInternalError "Remote host found without running a session"
+                    Just RemoteCtrlSession {accepted} -> atomically $ void $ tryPutTMVar accepted remoteCtrlId -- previously accepted controller, connect automatically
         _nonV4 -> go sock
 
 registerRemoteCtrl :: (ChatMonad m) => RemoteCtrlOOB -> m ChatResponse
@@ -343,10 +447,10 @@ stopRemoteCtrl =
         toView $ CRRemoteCtrlStopped Nothing
       pure $ CRCmdOk Nothing
 
-cancelRemoteCtrlSession_ :: MonadUnliftIO m => RemoteCtrlSession -> m ()
+cancelRemoteCtrlSession_ :: (MonadUnliftIO m) => RemoteCtrlSession -> m ()
 cancelRemoteCtrlSession_ rcs = cancelRemoteCtrlSession rcs $ pure ()
 
-cancelRemoteCtrlSession :: MonadUnliftIO m => RemoteCtrlSession -> m () -> m ()
+cancelRemoteCtrlSession :: (MonadUnliftIO m) => RemoteCtrlSession -> m () -> m ()
 cancelRemoteCtrlSession RemoteCtrlSession {discoverer, supervisor, hostServer} cleanup = do
   cancel discoverer -- may be gone by now
   case hostServer of
@@ -368,3 +472,7 @@ withRemoteCtrl remoteCtrlId action =
   withStore' (`getRemoteCtrl` remoteCtrlId) >>= \case
     Nothing -> throwError $ ChatErrorRemoteCtrl RCEMissing {remoteCtrlId}
     Just rc -> action rc
+
+utf8String :: [Char] -> ByteString
+utf8String = encodeUtf8 . T.pack
+{-# INLINE utf8String #-}
