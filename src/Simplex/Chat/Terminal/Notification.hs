@@ -13,12 +13,13 @@ import qualified Data.Map as M
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Simplex.Chat.Types
 import Simplex.Messaging.Util (catchAll_)
 import System.Directory (createDirectoryIfMissing, doesFileExist, findExecutable, getAppUserDataDirectory)
 import System.FilePath (combine)
 import System.Info (os)
 import System.Process (readCreateProcess, shell)
+
+data Notification = Notification {title :: Text, text :: Text}
 
 initializeNotifications :: IO (Notification -> IO ())
 initializeNotifications =

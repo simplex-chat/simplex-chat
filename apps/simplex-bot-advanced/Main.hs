@@ -24,7 +24,7 @@ import Text.Read
 main :: IO ()
 main = do
   opts <- welcomeGetOpts
-  simplexChatCore terminalChatConfig opts Nothing mySquaringBot
+  simplexChatCore terminalChatConfig opts mySquaringBot
 
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do

@@ -34,8 +34,7 @@ import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
 import Data.String
 import Data.Text (Text)
-import Data.Time (NominalDiffTime)
-import Data.Time.Clock (UTCTime)
+import Data.Time (NominalDiffTime, UTCTime)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Language.Haskell.TH (Exp, Q, runIO)
@@ -153,20 +152,10 @@ defaultInlineFilesConfig =
       receiveInstant = True -- allow receiving instant files, within receiveChunks limit
     }
 
-data ActiveTo = ActiveNone | ActiveC ContactName | ActiveG GroupName
-  deriving (Eq)
-
-chatActiveTo :: ChatName -> ActiveTo
-chatActiveTo (ChatName cType name) = case cType of
-  CTDirect -> ActiveC name
-  CTGroup -> ActiveG name
-  _ -> ActiveNone
-
 data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLiteStore}
 
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
-    activeTo :: TVar ActiveTo,
     firstTime :: Bool,
     smpAgent :: AgentClient,
     agentAsync :: TVar (Maybe (Async (), Maybe (Async ()))),
@@ -175,8 +164,6 @@ data ChatController = ChatController
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, ChatResponse),
-    notifyQ :: TBQueue Notification,
-    sendNotification :: Notification -> IO (),
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
     sndFiles :: TVar (Map Int64 Handle),
@@ -433,7 +420,7 @@ data ChatResponse
   | CRApiChats {user :: User, chats :: [AChat]}
   | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat}
-  | CRChatItems {user :: User, chatItems :: [AChatItem]}
+  | CRChatItems {user :: User, chatName_ :: Maybe ChatName, chatItems :: [AChatItem]}
   | CRChatItemInfo {user :: User, chatItem :: AChatItem, chatItemInfo :: ChatItemInfo}
   | CRChatItemId User (Maybe ChatItemId)
   | CRApiParsedMarkdown {formattedText :: Maybe MarkdownList}
@@ -1073,14 +1060,6 @@ mkChatError = ChatError . CEException . show
 
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError
-
-setActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
-setActive to = asks activeTo >>= atomically . (`writeTVar` to)
-
-unsetActive :: (MonadUnliftIO m, MonadReader ChatController m) => ActiveTo -> m ()
-unsetActive a = asks activeTo >>= atomically . (`modifyTVar` unset)
-  where
-    unset a' = if a == a' then ActiveNone else a'
 
 toView :: ChatMonad' m => ChatResponse -> m ()
 toView event = do

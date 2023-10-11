@@ -87,7 +87,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolTypeI (..), SubscriptionMode)
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
+import Simplex.Messaging.Util (safeDecodeUtf8)
 
 createUserRecord :: DB.Connection -> AgentUserId -> Profile -> Bool -> ExceptT StoreError IO User
 createUserRecord db auId p activeUser = createUserRecordAt db auId p activeUser =<< liftIO getCurrentTime
