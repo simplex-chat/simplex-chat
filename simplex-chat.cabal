@@ -115,7 +115,8 @@ library
       Simplex.Chat.Migrations.M20230914_member_probes
       Simplex.Chat.Migrations.M20230926_contact_status
       Simplex.Chat.Migrations.M20231002_conn_initiated
-      Simplex.Chat.Migrations.M20231008_member_settings
+      Simplex.Chat.Migrations.M20231009_via_group_link_uri_hash
+      Simplex.Chat.Migrations.M20231010_member_settings
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared

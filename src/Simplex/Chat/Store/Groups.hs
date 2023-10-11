@@ -31,9 +31,12 @@ module Simplex.Chat.Store.Groups
     getGroupAndMember,
     createNewGroup,
     createGroupInvitation,
+    setViaGroupLinkHash,
     setGroupInvitationChatItemId,
     getGroup,
     getGroupInfo,
+    getGroupInfoByUserContactLinkConnReq,
+    getGroupInfoByGroupLinkHash,
     updateGroupProfile,
     getGroupIdByName,
     getGroupMemberIdByName,
@@ -407,6 +410,17 @@ createContactMemberInv_ db User {userId, userContactId} groupId userOrContact Me
               :. (userId, incognitoLdn, contactId' userOrContact, localProfileId $ profile' userOrContact, customUserProfileId, createdAt, createdAt)
           )
         pure $ Right incognitoLdn
+
+setViaGroupLinkHash :: DB.Connection -> GroupId -> Int64 -> IO ()
+setViaGroupLinkHash db groupId connId =
+  DB.execute
+    db
+    [sql|
+      UPDATE groups
+      SET via_group_link_uri_hash = (SELECT via_contact_uri_hash FROM connections WHERE connection_id = ?)
+      WHERE group_id = ?
+    |]
+    (connId, groupId)
 
 setGroupInvitationChatItemId :: DB.Connection -> User -> GroupId -> ChatItemId -> IO ()
 setGroupInvitationChatItemId db User {userId} groupId chatItemId = do
@@ -1106,6 +1120,35 @@ getGroupInfo db User {userId, userContactId} groupId =
         WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
       |]
       (groupId, userId, userContactId)
+
+getGroupInfoByUserContactLinkConnReq :: DB.Connection -> User -> ConnReqContact -> IO (Maybe GroupInfo)
+getGroupInfoByUserContactLinkConnReq db user cReq = do
+  groupId_ <- maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT group_id
+        FROM user_contact_links
+        WHERE conn_req_contact = ?
+      |]
+      (Only cReq)
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupInfo db user) groupId_
+
+getGroupInfoByGroupLinkHash :: DB.Connection -> User -> ConnReqUriHash -> IO (Maybe GroupInfo)
+getGroupInfoByGroupLinkHash db user@User {userId, userContactId} groupLinkHash = do
+  groupId_ <- maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT g.group_id
+        FROM groups g
+        JOIN group_members mu ON mu.group_id = g.group_id
+        WHERE g.user_id = ? AND g.via_group_link_uri_hash = ?
+          AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?)
+        LIMIT 1
+      |]
+      (userId, groupLinkHash, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupInfo db user) groupId_
 
 getGroupIdByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO GroupId
 getGroupIdByName db User {userId} gName =
