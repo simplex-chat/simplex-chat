@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -8,13 +9,16 @@ module RemoteTests where
 import ChatClient
 import ChatTests.Utils
 import Control.Monad
+import qualified Data.ByteString as B
 import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.Map.Strict as M
 import Debug.Trace
 import Network.HTTP.Types (ok200)
 import qualified Network.HTTP2.Client as C
 import qualified Network.HTTP2.Server as S
 import qualified Network.Socket as N
 import qualified Network.TLS as TLS
+import qualified Simplex.Chat.Controller as Controller
 import qualified Simplex.Chat.Remote.Discovery as Discovery
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
@@ -23,8 +27,11 @@ import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Response (..), closeHTTP2Client, sendRequest)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
+import System.FilePath (makeRelative, (</>))
 import Test.Hspec
 import UnliftIO
+import UnliftIO.Concurrent (threadDelay)
+import UnliftIO.Directory
 
 remoteTests :: SpecWith FilePath
 remoteTests = describe "Handshake" $ do
@@ -140,6 +147,16 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
 
 remoteCommandTest :: (HasCallStack) => FilePath -> IO ()
 remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
+  let mobileFiles = "./tests/tmp/mobile_files"
+  mobile ##> ("/_files_folder " <> mobileFiles)
+  mobile <## "ok"
+  let desktopFiles = "./tests/tmp/desktop_files"
+  desktop ##> ("/_files_folder " <> desktopFiles)
+  desktop <## "ok"
+  let bobFiles = "./tests/tmp/bob_files"
+  bob ##> ("/_files_folder " <> bobFiles)
+  bob <## "ok"
+
   desktop ##> "/create remote host"
   desktop <## "remote host 1 created"
   desktop <## "connection code:"
@@ -177,12 +194,87 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   bob #> "@alice hi"
   desktop <# "bob> hi"
 
+  withXFTPServer $ do
+    rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
+    desktopStore <- case M.lookup 1 rhs of
+      Just Controller.RemoteHostSessionStarted {storePath} -> pure storePath
+      _ -> fail "Host session 1 should be started"
+
+    doesFileExist "./tests/tmp/mobile_files/test.pdf" `shouldReturn` False
+    doesFileExist (desktopFiles </> desktopStore </> "test.pdf") `shouldReturn` False
+    mobileName <- userName mobile
+
+    bobsFile <- makeRelative bobFiles <$> makeAbsolute "tests/fixtures/test.pdf"
+    bob #> ("/f @" <> mobileName <> " " <> bobsFile)
+    bob <## "use /fc 1 to cancel sending"
+
+    desktop <# "bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
+    desktop <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    desktop ##> "/fr 1"
+    concurrently_
+      do
+        bob <## "started sending file 1 (test.pdf) to alice"
+        bob <## "completed sending file 1 (test.pdf) to alice"
+
+      do
+        desktop <## "saving file 1 from bob to test.pdf"
+        desktop <## "started receiving file 1 (test.pdf) from bob"
+
+    let desktopReceived = desktopFiles </> desktopStore </> "test.pdf"
+    desktop <## ("completed receiving file 1 (" <> desktopReceived <> ") from bob")
+    bobsFileSize <- getFileSize bobsFile
+    getFileSize desktopReceived `shouldReturn` bobsFileSize
+    bobsFileBytes <- B.readFile bobsFile
+    B.readFile desktopReceived `shouldReturn` bobsFileBytes
+
+    -- test file transit on mobile
+    mobile ##> "/fs 1"
+    mobile <## "receiving file 1 (test.pdf) complete, path: test.pdf"
+    getFileSize (mobileFiles </> "test.pdf") `shouldReturn` bobsFileSize
+    B.readFile (mobileFiles </> "test.pdf") `shouldReturn` bobsFileBytes
+
+    traceM "    - file received"
+
+    desktopFile <- makeRelative desktopFiles <$> makeAbsolute "tests/fixtures/logo.jpg" -- XXX: not necessary for _send, but required for /f
+    traceM $ "    - sending " <> show desktopFile
+    doesFileExist (bobFiles </> "logo.jpg") `shouldReturn` False
+    doesFileExist (mobileFiles </> "logo.jpg") `shouldReturn` False
+    desktop ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/logo.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}"
+    desktop <# "@bob hi, sending a file"
+    desktop <# "/f @bob logo.jpg"
+    desktop <## "use /fc 2 to cancel sending"
+
+    bob <# "alice> hi, sending a file"
+    bob <# "alice> sends file logo.jpg (31.3 KiB / 32080 bytes)"
+    bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+    bob ##> "/fr 2"
+    concurrently_
+      do
+        bob <## "saving file 2 from alice to logo.jpg"
+        bob <## "started receiving file 2 (logo.jpg) from alice"
+        bob <## "completed receiving file 2 (logo.jpg) from alice"
+        bob ##> "/fs 2"
+        bob <## "receiving file 2 (logo.jpg) complete, path: logo.jpg"
+      do
+        desktop <## "started sending file 2 (logo.jpg) to bob"
+        desktop <## "completed sending file 2 (logo.jpg) to bob"
+    desktopFileSize <- getFileSize desktopFile
+    getFileSize (bobFiles </> "logo.jpg") `shouldReturn` desktopFileSize
+    getFileSize (mobileFiles </> "logo.jpg") `shouldReturn` desktopFileSize
+
+    desktopFileBytes <- B.readFile desktopFile
+    B.readFile (bobFiles </> "logo.jpg") `shouldReturn` desktopFileBytes
+    B.readFile (mobileFiles </> "logo.jpg") `shouldReturn` desktopFileBytes
+
+    traceM "    - file sent"
+
   traceM "    - post-remote checks"
   mobile ##> "/stop remote ctrl"
   mobile <## "ok"
   concurrently_
     (mobile <## "remote controller stopped")
     (desktop <## "remote host 1 stopped")
+
   mobile ##> "/contacts"
   mobile <## "bob (Bob)"
 

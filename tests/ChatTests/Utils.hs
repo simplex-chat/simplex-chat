@@ -280,7 +280,7 @@ cc <##.. ls = do
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
 
-data ConsoleResponse = ConsoleString String | WithTime String | EndsWith String
+data ConsoleResponse = ConsoleString String | WithTime String | EndsWith String | StartsWith String
   deriving (Show)
 
 instance IsString ConsoleResponse where fromString = ConsoleString
@@ -290,7 +290,7 @@ getInAnyOrder :: HasCallStack => (String -> String) -> TestCC -> [ConsoleRespons
 getInAnyOrder _ _ [] = pure ()
 getInAnyOrder f cc ls = do
   line <- f <$> getTermLine cc
-  let rest = filter (not . expected line) ls
+  let rest = filterFirst (expected line) ls
   if length rest < length ls
     then getInAnyOrder f cc rest
     else error $ "unexpected output: " <> line
@@ -300,6 +300,12 @@ getInAnyOrder f cc ls = do
       ConsoleString s -> l == s
       WithTime s -> dropTime_ l == Just s
       EndsWith s -> s `isSuffixOf` l
+      StartsWith s -> s `isPrefixOf` l
+    filterFirst :: (a -> Bool) -> [a] -> [a]
+    filterFirst _ [] = []
+    filterFirst p (x:xs)
+      | p x = xs
+      | otherwise = x : filterFirst p xs
 
 (<###) :: HasCallStack => TestCC -> [ConsoleResponse] -> Expectation
 (<###) = getInAnyOrder id
@@ -459,8 +465,11 @@ showName (TestCC ChatController {currentUser} _ _ _ _ _) = do
   pure . T.unpack $ localDisplayName <> optionalFullName localDisplayName fullName
 
 createGroup2 :: HasCallStack => String -> TestCC -> TestCC -> IO ()
-createGroup2 gName cc1 cc2 = do
-  connectUsers cc1 cc2
+createGroup2 gName cc1 cc2 = createGroup2' gName cc1 cc2 True
+
+createGroup2' :: HasCallStack => String -> TestCC -> TestCC -> Bool -> IO ()
+createGroup2' gName cc1 cc2 doConnectUsers = do
+  when doConnectUsers $ connectUsers cc1 cc2
   name2 <- userName cc2
   cc1 ##> ("/g " <> gName)
   cc1 <## ("group #" <> gName <> " is created")
@@ -489,6 +498,24 @@ createGroup3 gName cc1 cc2 cc3 = do
       do
         cc2 <## ("#" <> gName <> ": " <> name1 <> " added " <> sName3 <> " to the group (connecting...)")
         cc2 <## ("#" <> gName <> ": new member " <> name3 <> " is connected")
+    ]
+
+create2Groups3 :: HasCallStack => String -> String -> TestCC -> TestCC -> TestCC -> IO ()
+create2Groups3 gName1 gName2 cc1 cc2 cc3 = do
+  createGroup3 gName1 cc1 cc2 cc3
+  createGroup2' gName2 cc1 cc2 False
+  name1 <- userName cc1
+  name3 <- userName cc3
+  addMember gName2 cc1 cc3 GRAdmin
+  cc3 ##> ("/j " <> gName2)
+  concurrentlyN_
+    [ cc1 <## ("#" <> gName2 <> ": " <> name3 <> " joined the group"),
+      do
+        cc3 <## ("#" <> gName2 <> ": you joined the group")
+        cc3 <##. ("#" <> gName2 <> ": member "), -- "#gName2: member sName2 is connected"
+      do
+        cc2 <##. ("#" <> gName2 <> ": " <> name1 <> " added ") -- "#gName2: name1 added sName3 to the group (connecting...)"
+        cc2 <##. ("#" <> gName2 <> ": new member ") -- "#gName2: new member name3 is connected"
     ]
 
 addMember :: HasCallStack => String -> TestCC -> TestCC -> GroupMemberRole -> IO ()
