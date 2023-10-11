@@ -34,7 +34,7 @@ import Data.Time.Format (defaultTimeLocale, formatTime)
 import GHC.Generics (Generic)
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
-import Simplex.Chat (defaultChatConfig, maxImageSize, showMessageNtf)
+import Simplex.Chat (defaultChatConfig, maxImageSize)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Help
@@ -102,15 +102,15 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
   CRContactCode u ct code -> ttyUser u $ viewContactCode ct code testView
   CRGroupMemberCode u g m code -> ttyUser u $ viewGroupMemberCode g m code testView
-  CRNewChatItem u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewChatItem chat item False ts tz <> viewItemReactions item
+  CRNewChatItem u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewChatItem chat item False ts tz <> viewItemReactions item
   CRChatItems u _ chatItems -> ttyUser u $ concatMap (\(AChatItem _ _ chat item) -> viewChatItem chat item True ts tz <> viewItemReactions item) chatItems
   CRChatItemInfo u ci ciInfo -> ttyUser u $ viewChatItemInfo ci ciInfo tz
   CRChatItemId u itemId -> ttyUser u [plain $ maybe "no item" show itemId]
   CRChatItemStatusUpdated u ci -> ttyUser u $ viewChatItemStatusUpdated ci ts tz testView showReceipts
-  CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted chat item $ viewItemUpdate chat item liveItems ts tz
+  CRChatItemUpdated u (AChatItem _ _ chat item) -> ttyUser u $ unmuted u chat item $ viewItemUpdate chat item liveItems ts tz
   CRChatItemNotChanged u ci -> ttyUser u $ viewItemNotChanged ci
-  CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
-  CRChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction chat reaction $ viewItemReaction showReactions chat reaction added ts tz
+  CRChatItemDeleted u (AChatItem _ _ chat deletedItem) toItem byUser timed -> ttyUser u $ unmuted u chat deletedItem $ viewItemDelete chat deletedItem toItem byUser timed ts tz testView
+  CRChatItemReaction u added (ACIReaction _ _ chat reaction) -> ttyUser u $ unmutedReaction u chat reaction $ viewItemReaction showReactions chat reaction added ts tz
   CRChatItemDeletedNotFound u Contact {localDisplayName = c} _ -> ttyUser u [ttyFrom $ c <> "> [deleted - original message not found]"]
   CRBroadcastSent u mc s f t -> ttyUser u $ viewSentBroadcast mc s f ts tz t
   CRMsgIntegrityError u mErr -> ttyUser u $ viewMsgIntegrityError mErr
@@ -349,14 +349,40 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
     viewErrorsSummary summary s = [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)" | not (null summary)]
     contactList :: [ContactRef] -> String
     contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
-    unmuted :: ChatInfo c -> ChatItem c d -> [StyledString] -> [StyledString]
-    unmuted chat ci@ChatItem {chatDir} = unmuted' chat chatDir $ isReference ci
-    unmutedReaction :: ChatInfo c -> CIReaction c d -> [StyledString] -> [StyledString]
-    unmutedReaction chat CIReaction {chatDir} = unmuted' chat chatDir False
-    unmuted' :: ChatInfo c -> CIDirection c d -> Bool -> [StyledString] -> [StyledString]
-    unmuted' chat chatDir reference s
-      | unmutedMsg chat chatDir reference = s
+    unmuted :: User -> ChatInfo c -> ChatItem c d -> [StyledString] -> [StyledString]
+    unmuted u chat ci@ChatItem {chatDir} = unmuted' u chat chatDir $ isReference ci
+    unmutedReaction :: User -> ChatInfo c -> CIReaction c d -> [StyledString] -> [StyledString]
+    unmutedReaction u chat CIReaction {chatDir} = unmuted' u chat chatDir False
+    unmuted' :: User -> ChatInfo c -> CIDirection c d -> Bool -> [StyledString] -> [StyledString]
+    unmuted' u chat chatDir reference s
+      | chatRcvNtf u chat chatDir reference = s
       | otherwise = []
+
+userNtf :: User -> Bool
+userNtf User {showNtfs, activeUser} = showNtfs || activeUser
+
+chatNtf :: User -> ChatInfo c -> Bool -> Bool
+chatNtf user cInfo reference = case cInfo of
+  DirectChat ct -> contactNtf user ct reference
+  GroupChat g -> groupNtf user g reference
+  _ -> False
+
+chatRcvNtf :: User -> ChatInfo c -> CIDirection c d -> Bool -> Bool
+chatRcvNtf user cInfo chatDir reference =
+  chatNtf user cInfo reference
+    && case chatDir of CIGroupRcv m -> showMessages (memberSettings m); _ -> True
+
+contactNtf :: User -> Contact -> Bool -> Bool
+contactNtf user Contact {chatSettings} reference =
+  userNtf user && showMessageNtf chatSettings reference
+
+groupNtf :: User -> GroupInfo -> Bool -> Bool
+groupNtf user GroupInfo {chatSettings} reference =
+  userNtf user && showMessageNtf chatSettings reference
+
+showMessageNtf :: ChatSettings -> Bool -> Bool
+showMessageNtf ChatSettings {enableNtfs} reference =
+  enableNtfs == MFAll || (reference && enableNtfs == MFReferences)
 
 chatItemDeletedText :: ChatItem c d -> Maybe GroupMember -> Maybe Text
 chatItemDeletedText ci membership_ = deletedStateToText <$> chatItemDeletedState ci
@@ -384,14 +410,6 @@ viewUsersList = mapMaybe userInfo . sortOn ldn
             <> [highlight' "hidden" | isJust viewPwdHash]
             <> ["muted" | not showNtfs]
             <> [plain ("unread: " <> show count) | count /= 0]
-
-unmutedMsg :: ChatInfo c -> CIDirection c d -> Bool -> Bool
-unmutedMsg chat chatDir reference = case (chat, chatDir) of
-  (DirectChat Contact {chatSettings}, CIDirectRcv) ->
-    showMessageNtf chatSettings reference
-  (GroupChat GroupInfo {chatSettings}, CIGroupRcv GroupMember {memberSettings}) ->
-    showMessageNtf chatSettings reference && showMessages memberSettings
-  _ -> True
 
 viewGroupSubscribed :: GroupInfo -> [StyledString]
 viewGroupSubscribed g = [membershipIncognito g <> ttyFullGroup g <> ": connected to server(s)"]

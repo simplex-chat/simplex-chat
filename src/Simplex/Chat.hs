@@ -5453,40 +5453,6 @@ getCreateActiveUser st testView = do
     getWithPrompt :: String -> IO String
     getWithPrompt s = putStr (s <> ": ") >> hFlush stdout >> getLine
 
-userNtf :: User -> Bool
-userNtf User {showNtfs, activeUser} = showNtfs || activeUser
-
--- whenContactNtfs :: ChatMonad' m => User -> Contact -> Bool -> m () -> m ()
--- whenContactNtfs user Contact {chatSettings} reference =
---   whenUserNtfs user . when (showMessageNtf chatSettings reference)
-
--- whenGroupNtfs :: ChatMonad' m => User -> GroupInfo -> GroupMember -> Bool -> m () -> m ()
--- whenGroupNtfs user GroupInfo {chatSettings} GroupMember {memberSettings} reference =
---   whenUserNtfs user . when (showMessageNtf chatSettings reference && showMessages memberSettings)
-
-chatNtf :: User -> ChatInfo c -> Bool -> Bool
-chatNtf user cInfo reference = case cInfo of
-  DirectChat ct -> contactNtf user ct reference
-  GroupChat g -> groupNtf user g reference
-  _ -> False
-
-chatRcvNtf :: User -> ChatInfo c -> CIDirection c d -> Bool -> Bool
-chatRcvNtf user cInfo chatDir reference =
-  chatNtf user cInfo reference
-    && case chatDir of CIGroupRcv m -> showMessages (memberSettings m); _ -> True
-
-contactNtf :: User -> Contact -> Bool -> Bool
-contactNtf user Contact {chatSettings} reference =
-  userNtf user && showMessageNtf chatSettings reference
-
-groupNtf :: User -> GroupInfo -> Bool -> Bool
-groupNtf user GroupInfo {chatSettings} reference =
-  userNtf user && showMessageNtf chatSettings reference
-
-showMessageNtf :: ChatSettings -> Bool -> Bool
-showMessageNtf ChatSettings {enableNtfs} reference =
-  enableNtfs == MFAll || (reference && enableNtfs == MFReferences)
-
 withUser' :: ChatMonad m => (User -> m ChatResponse) -> m ChatResponse
 withUser' action =
   asks currentUser
