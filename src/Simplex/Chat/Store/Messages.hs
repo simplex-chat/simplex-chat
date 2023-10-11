@@ -1229,8 +1229,8 @@ createChatItemVersion db itemId itemVersionTs msgContent =
     |]
     (itemId, toMCText msgContent, itemVersionTs)
 
-deleteDirectChatItem :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> IO ()
-deleteDirectChatItem db User {userId} Contact {contactId} (CChatItem _ ci) = do
+deleteDirectChatItem :: DB.Connection -> User -> Contact -> ChatItem 'CTDirect d -> IO ()
+deleteDirectChatItem db User {userId} Contact {contactId} ci = do
   let itemId = chatItemId' ci
   deleteChatItemMessages_ db itemId
   deleteChatItemVersions_ db itemId
@@ -1261,8 +1261,8 @@ deleteChatItemVersions_ :: DB.Connection -> ChatItemId -> IO ()
 deleteChatItemVersions_ db itemId =
   DB.execute db "DELETE FROM chat_item_versions WHERE chat_item_id = ?" (Only itemId)
 
-markDirectChatItemDeleted :: DB.Connection -> User -> Contact -> CChatItem 'CTDirect -> MessageId -> UTCTime -> IO ()
-markDirectChatItemDeleted db User {userId} Contact {contactId} (CChatItem _ ci) msgId deletedTs = do
+markDirectChatItemDeleted :: DB.Connection -> User -> Contact -> ChatItem 'CTDirect d -> MessageId -> UTCTime -> IO (ChatItem 'CTDirect d)
+markDirectChatItemDeleted db User {userId} Contact {contactId} ci@ChatItem {meta} msgId deletedTs = do
   currentTs <- liftIO getCurrentTime
   let itemId = chatItemId' ci
   insertChatItemMessage_ db itemId msgId currentTs
@@ -1274,6 +1274,7 @@ markDirectChatItemDeleted db User {userId} Contact {contactId} (CChatItem _ ci) 
       WHERE user_id = ? AND contact_id = ? AND chat_item_id = ?
     |]
     (DBCIDeleted, deletedTs, currentTs, userId, contactId, itemId)
+  pure ci {meta = meta {itemDeleted = Just $ CIDeleted $ Just deletedTs}}
 
 getDirectChatItemBySharedMsgId :: DB.Connection -> User -> ContactId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTDirect)
 getDirectChatItemBySharedMsgId db user@User {userId} contactId sharedMsgId = do
