@@ -386,14 +386,19 @@ showMessageNtf ChatSettings {enableNtfs} reference =
   enableNtfs == MFAll || (reference && enableNtfs == MFReferences)
 
 chatItemDeletedText :: ChatItem c d -> Maybe GroupMember -> Maybe Text
-chatItemDeletedText ci membership_ = deletedStateToText <$> chatItemDeletedState ci
+chatItemDeletedText ChatItem {meta = CIMeta {itemDeleted}, content} membership_ =
+  deletedText <$> itemDeleted
   where
-    deletedStateToText = \CIDeletedState {markedDeleted, deletedByMember} ->
-      if markedDeleted
-        then "marked deleted" <> byMember deletedByMember
-        else "deleted" <> byMember deletedByMember
-    byMember m_ = case (m_, membership_) of
-      (Just GroupMember {groupMemberId = mId, localDisplayName = n}, Just GroupMember {groupMemberId = membershipId}) ->
+    deletedText = \case
+      CIModerated _ m -> markedDeleted content <> byMember m
+      CIDeleted _ -> markedDeleted content
+      CIBlocked _ -> "blocked"
+    markedDeleted = \case
+      CISndModerated -> "deleted"
+      CIRcvModerated -> "deleted"
+      _ -> "marked deleted"
+    byMember GroupMember {groupMemberId = mId, localDisplayName = n} = case membership_ of
+      Just GroupMember {groupMemberId = membershipId} ->
         " by " <> if mId == membershipId then "you" else n
       _ -> ""
 
@@ -864,7 +869,7 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       _ -> []
     muted m
       | showMessages (memberSettings m) = []
-      | otherwise = ["muted"]
+      | otherwise = ["blocked"]
 
 viewContactConnected :: Contact -> Maybe Profile -> Bool -> [StyledString]
 viewContactConnected ct userIncognitoProfile testView =

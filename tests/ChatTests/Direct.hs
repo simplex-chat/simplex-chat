@@ -1236,11 +1236,11 @@ testMuteGroup =
       concurrently_
         (bob <# "#team alice> hi again")
         (cath <# "#team alice> hi again")
-      bob ##> "/mute #team alice"
+      bob ##> "/block #team alice"
       bob <## "ok"
       bob ##> "/ms team"
       bob <## "bob (Bob): admin, you, connected"
-      bob <## "alice (Alice): owner, host, connected, muted"
+      bob <## "alice (Alice): owner, host, connected, blocked"
       bob <## "cath (Catherine): admin, connected"
       alice #> "#team test 1"
       concurrently_
@@ -1250,7 +1250,12 @@ testMuteGroup =
       concurrently_
         (bob <# "#team cath> test 2")
         (alice <# "#team cath> test 2")
-      bob ##> "/unmute #team alice"
+      bob ##> "/tail #team 3"
+      bob <# "#team alice> hi again"
+      bob <# "#team alice> test 1 [blocked]"
+      bob <# "#team cath> test 2"
+      threadDelay 1000000
+      bob ##> "/unblock #team alice"
       bob <## "ok"
       bob ##> "/ms team"
       bob <## "bob (Bob): admin, you, connected"
