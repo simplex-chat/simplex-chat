@@ -4,6 +4,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -16,7 +17,10 @@ import Control.Monad.IO.Class
 import Control.Monad.Reader (asks)
 import Control.Monad.STM (retry)
 import Crypto.Random (getRandomBytes)
+import Data.Aeson ((.=))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.Key as JK
+import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.Binary.Builder as Binary
 import Data.ByteString (ByteString, hPut)
@@ -47,6 +51,7 @@ import Simplex.FileTransfer.Util (uniqueCombine)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
+import Simplex.Messaging.Parsers (pattern SingleFieldJSONTag, pattern TaggedObjectJSONTag, pattern TaggedObjectJSONData)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
@@ -233,9 +238,37 @@ handleRcvFileComplete http storePath remoteUser cif@CIFile {fileId, fileName, fi
 
 -- | Convert swift single-field sum encoding into tagged/discriminator-field
 owsf2tagged :: J.Value -> J.Value
-owsf2tagged = \case
-  J.Object todo'convert -> J.Object todo'convert
-  skip -> skip
+owsf2tagged = fst . convert
+  where
+    convert val = case val of
+      J.Object o
+        | JM.size o == 2 ->
+            case JM.toList o of
+              [OwsfTag, o'] -> tagged o'
+              [o', OwsfTag] -> tagged o'
+              _ -> props
+        | otherwise -> props
+        where
+          props = (J.Object $ fmap owsf2tagged o, False)
+      J.Array a -> (J.Array $ fmap owsf2tagged a, False)
+      _ -> (val, False)
+    -- `tagged` converts the pair of single-field object encoding to tagged encoding.
+    -- It sets innerTag returned by `convert` to True to prevent the tag being overwritten.
+    tagged (k, v) = (J.Object pairs, True)
+      where
+        (v', innerTag) = convert v
+        pairs = case v' of
+          -- `innerTag` indicates that internal object already has tag,
+          -- so the current tag cannot be inserted into it.
+          J.Object o
+            | innerTag -> pair
+            | otherwise -> JM.insert TaggedObjectJSONTag tag o
+          _ -> pair
+        tag = J.String $ JK.toText k
+        pair = JM.fromList [TaggedObjectJSONTag .= tag, TaggedObjectJSONData .= v']
+
+pattern OwsfTag :: (JK.Key, J.Value)
+pattern OwsfTag = (SingleFieldJSONTag, J.Bool True)
 
 storeRemoteFile :: (MonadUnliftIO m) => HTTP2Client -> FilePath -> m (Maybe FilePath)
 storeRemoteFile http localFile = do
