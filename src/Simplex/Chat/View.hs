@@ -383,7 +383,7 @@ groupNtf user GroupInfo {chatSettings} reference =
 
 showMessageNtf :: ChatSettings -> Bool -> Bool
 showMessageNtf ChatSettings {enableNtfs} reference =
-  enableNtfs == MFAll || (reference && enableNtfs == MFReferences)
+  enableNtfs == MFAll || (reference && enableNtfs == MFMentions)
 
 chatItemDeletedText :: ChatItem c d -> Maybe GroupMember -> Maybe Text
 chatItemDeletedText ChatItem {meta = CIMeta {itemDeleted}, content} membership_ =
@@ -905,7 +905,7 @@ viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
             case enableNtfs of
               MFAll -> ")"
               MFNone -> ", muted, " <> unmute
-              MFReferences -> ", mentions only, " <> unmute
+              MFMentions -> ", mentions only, " <> unmute
             where
               unmute = "you can " <> highlight ("/unmute #" <> viewGroupName g) <> ")"
         delete reason = " (" <> reason <> ", delete local copy: " <> highlight ("/d #" <> viewGroupName g) <> ")"

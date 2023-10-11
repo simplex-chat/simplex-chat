@@ -5498,7 +5498,7 @@ chatCommandP =
   choice
     [ "/mute " *> ((`SetShowMessages` MFNone) <$> chatNameP),
       "/unmute " *> ((`SetShowMessages` MFAll) <$> chatNameP),
-      "/unmute refs " *> ((`SetShowMessages` MFReferences) <$> chatNameP),
+      "/unmute mentions " *> ((`SetShowMessages` MFMentions) <$> chatNameP),
       "/receipts " *> (SetSendReceipts <$> chatNameP <* " " <*> ((Just <$> onOffP) <|> ("default" $> Nothing))),
       "/block #" *> (SetShowMemberMessages <$> displayName <* A.space <*> (char_ '@' *> displayName) <*> pure False),
       "/unblock #" *> (SetShowMemberMessages <$> displayName <* A.space <*> (char_ '@' *> displayName) <*> pure True),

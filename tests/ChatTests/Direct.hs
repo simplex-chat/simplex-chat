@@ -1208,7 +1208,7 @@ testMuteGroup =
         ( do alice <# "#team cath> > bob hello"
              alice <## "      hello too!"
         )
-      bob ##> "/unmute refs #team"
+      bob ##> "/unmute mentions #team"
       bob <## "ok"
       alice `send` "> #team @bob (hello) hey bob!"
       alice <# "#team > bob hello"
