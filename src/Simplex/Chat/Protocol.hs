@@ -378,6 +378,11 @@ mcExtMsgContent = \case
   MCQuote _ c -> c
   MCForward c -> c
 
+isQuote :: MsgContainer -> Bool
+isQuote = \case
+  MCQuote {} -> True
+  _ -> False
+
 data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData, content :: Maybe LinkContent}
   deriving (Eq, Show, Generic)
 
