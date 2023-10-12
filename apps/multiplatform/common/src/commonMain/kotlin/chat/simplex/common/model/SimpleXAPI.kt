@@ -4,6 +4,7 @@ import chat.simplex.common.views.helpers.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import chat.simplex.common.model.ChatModel.updatingChatsMutex
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -16,6 +17,7 @@ import com.charleskorn.kaml.YamlConfiguration
 import chat.simplex.res.MR
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.*
@@ -349,8 +351,10 @@ object ChatController {
         startReceiver()
         Log.d(TAG, "startChat: started")
       } else {
-        val chats = apiGetChats()
-        chatModel.updateChats(chats)
+        updatingChatsMutex.withLock {
+          val chats = apiGetChats()
+          chatModel.updateChats(chats)
+        }
         Log.d(TAG, "startChat: running")
       }
     } catch (e: Error) {
@@ -384,8 +388,10 @@ object ChatController {
   suspend fun getUserChatData() {
     chatModel.userAddress.value = apiGetUserAddress()
     chatModel.chatItemTTL.value = getChatItemTTL()
-    val chats = apiGetChats()
-    chatModel.updateChats(chats)
+    updatingChatsMutex.withLock {
+      val chats = apiGetChats()
+      chatModel.updateChats(chats)
+    }
   }
 
   private fun startReceiver() {
