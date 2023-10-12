@@ -3,11 +3,13 @@
 To make audio and video calls on desktop there are some options:
 - adapt [libwebrtc](webrtc.googlesource.com/) from Google which would be the most reliable, performant and seamless solution;
 - include some kind of WebView to the app via libraries;
-- implement a signaling server in the app and let users to use HTML page with WebRTC code that is already exist for Android.
+- implement a signaling server in the app and let users to use HTML page with WebRTC code that already exist for Android.
 
 ## WebRTC lib
 
 To adapt libwebrtc we need to make SDK that is compatible with Java (JNI layer + desktop implementation of VideoCodecs and other features). There are two SDKs exist already: for Android and for Objective-C. Making Android SDK compatible with Java-only SDK gives a lot of problems and requires to have 5+ professional C++ developers with weeks/months for developing. Which is not something good.
+
+Another considered option was adopting Jitsi Java SDK, but it's state is not very clear, and in any case it is much more effort.
 
 ## WebView
 
