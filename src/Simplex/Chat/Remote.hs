@@ -280,9 +280,9 @@ storeRemoteFile http localFile = do
         notOk -> Nothing <$ logError ("Bad response status: " <> tshow notOk)
   where
     uri = "/store?" <> HTTP.renderSimpleQuery False [("file_name", utf8String $ takeFileName localFile)]
-    putFile timeout c path hs file = liftIO $ do
+    putFile timeout' c path hs file = liftIO $ do
       fileSize <- fromIntegral <$> getFileSize file
-      HTTP2.sendRequestDirect c (req fileSize) timeout
+      HTTP2.sendRequestDirect c (req fileSize) timeout'
       where
         req size = HTTP2Client.requestFile "PUT" path hs (HTTP2Client.FileSpec file 0 size)
 
@@ -388,7 +388,6 @@ startRemoteCtrl execChatCommand =
     Nothing -> do
       size <- asks $ tbqSize . config
       remoteOutputQ <- newTBQueueIO size
-      remoteNotifyQ <- newTBQueueIO size
       discovered <- newTVarIO mempty
       discoverer <- async $ discoverRemoteCtrls discovered
       accepted <- newEmptyTMVarIO
@@ -403,9 +402,9 @@ startRemoteCtrl execChatCommand =
           toView $ CRRemoteCtrlConnected {remoteCtrlId, displayName}
           _ <- waitCatch server
           chatWriteVar remoteCtrlSession Nothing
-          toView $ CRRemoteCtrlStopped Nothing
-      chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {discoverer, supervisor, hostServer = Nothing, discovered, accepted, remoteOutputQ, remoteNotifyQ}
-      pure $ CRRemoteCtrlStarted Nothing
+          toView CRRemoteCtrlStopped
+      chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {discoverer, supervisor, hostServer = Nothing, discovered, accepted, remoteOutputQ}
+      pure CRRemoteCtrlStarted
 
 discoverRemoteCtrls :: (ChatMonad m) => TM.TMap C.KeyHash TransportHost -> m ()
 discoverRemoteCtrls discovered = Discovery.withListener go
@@ -477,7 +476,7 @@ stopRemoteCtrl =
     Just rcs -> do
       cancelRemoteCtrlSession rcs $ do
         chatWriteVar remoteCtrlSession Nothing
-        toView $ CRRemoteCtrlStopped Nothing
+        toView CRRemoteCtrlStopped
       pure $ CRCmdOk Nothing
 
 cancelRemoteCtrlSession_ :: (MonadUnliftIO m) => RemoteCtrlSession -> m ()

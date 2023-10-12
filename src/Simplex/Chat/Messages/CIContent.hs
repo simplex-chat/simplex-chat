@@ -21,12 +21,8 @@ import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Type.Equality
-import Data.Typeable (Typeable)
 import Data.Word (Word32)
-import Database.SQLite.Simple (ResultError (..), SQLData (..))
-import Database.SQLite.Simple.FromField (Field, FromField (..), returnError)
-import Database.SQLite.Simple.Internal (Field (..))
-import Database.SQLite.Simple.Ok
+import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Protocol
@@ -51,14 +47,6 @@ instance ToJSON MsgDirection where
 instance FromField AMsgDirection where fromField = fromIntField_ $ fmap fromMsgDirection . msgDirectionIntP
 
 instance ToField MsgDirection where toField = toField . msgDirectionInt
-
-fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> Field -> Ok a
-fromIntField_ fromInt = \case
-  f@(Field (SQLInteger i) _) ->
-    case fromInt i of
-      Just x -> Ok x
-      _ -> returnError ConversionFailed f ("invalid integer: " <> show i)
-  f -> returnError ConversionFailed f "expecting SQLInteger column type"
 
 data SMsgDirection (d :: MsgDirection) where
   SMDRcv :: SMsgDirection 'MDRcv
@@ -524,8 +512,8 @@ data JSONCIContent
   | JCISndGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int}
   | JCIRcvChatFeatureRejected {feature :: ChatFeature}
   | JCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
-  | JCISndModerated {_nullary :: Maybe Int}
-  | JCIRcvModerated {_nullary :: Maybe Int}
+  | JCISndModerated
+  | JCIRcvModerated
   | JCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 jsonCIContent :: forall d. MsgDirectionI d => CIContent d -> JSONCIContent
@@ -553,8 +541,8 @@ jsonCIContent = \case
   CISndGroupFeature groupFeature preference param -> JCISndGroupFeature {groupFeature, preference, param}
   CIRcvChatFeatureRejected feature -> JCIRcvChatFeatureRejected {feature}
   CIRcvGroupFeatureRejected groupFeature -> JCIRcvGroupFeatureRejected {groupFeature}
-  CISndModerated -> JCISndModerated Nothing
-  CIRcvModerated -> JCISndModerated Nothing
+  CISndModerated -> JCISndModerated
+  CIRcvModerated -> JCISndModerated
   CIInvalidJSON json -> JCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentJSON :: JSONCIContent -> ACIContent
@@ -582,8 +570,8 @@ aciContentJSON = \case
   JCISndGroupFeature {groupFeature, preference, param} -> ACIContent SMDSnd $ CISndGroupFeature groupFeature preference param
   JCIRcvChatFeatureRejected {feature} -> ACIContent SMDRcv $ CIRcvChatFeatureRejected feature
   JCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
-  JCISndModerated _ -> ACIContent SMDSnd CISndModerated
-  JCIRcvModerated _ -> ACIContent SMDRcv CIRcvModerated
+  JCISndModerated -> ACIContent SMDSnd CISndModerated
+  JCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
   JCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -612,8 +600,8 @@ data DBJSONCIContent
   | DBJCISndGroupFeature {groupFeature :: GroupFeature, preference :: GroupPreference, param :: Maybe Int}
   | DBJCIRcvChatFeatureRejected {feature :: ChatFeature}
   | DBJCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
-  | DBJCISndModerated {_nullary :: Maybe Int}
-  | DBJCIRcvModerated {_nullary :: Maybe Int}
+  | DBJCISndModerated
+  | DBJCIRcvModerated
   | DBJCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 dbJsonCIContent :: forall d. MsgDirectionI d => CIContent d -> DBJSONCIContent
@@ -641,8 +629,8 @@ dbJsonCIContent = \case
   CISndGroupFeature groupFeature preference param -> DBJCISndGroupFeature {groupFeature, preference, param}
   CIRcvChatFeatureRejected feature -> DBJCIRcvChatFeatureRejected {feature}
   CIRcvGroupFeatureRejected groupFeature -> DBJCIRcvGroupFeatureRejected {groupFeature}
-  CISndModerated -> DBJCISndModerated Nothing
-  CIRcvModerated -> DBJCIRcvModerated Nothing
+  CISndModerated -> DBJCISndModerated
+  CIRcvModerated -> DBJCIRcvModerated
   CIInvalidJSON json -> DBJCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
@@ -670,8 +658,8 @@ aciContentDBJSON = \case
   DBJCISndGroupFeature {groupFeature, preference, param} -> ACIContent SMDSnd $ CISndGroupFeature groupFeature preference param
   DBJCIRcvChatFeatureRejected {feature} -> ACIContent SMDRcv $ CIRcvChatFeatureRejected feature
   DBJCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
-  DBJCISndModerated _ -> ACIContent SMDSnd CISndModerated
-  DBJCIRcvModerated _ -> ACIContent SMDRcv CIRcvModerated
+  DBJCISndModerated -> ACIContent SMDSnd CISndModerated
+  DBJCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
   DBJCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 

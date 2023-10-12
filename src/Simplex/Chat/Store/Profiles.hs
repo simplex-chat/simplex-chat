@@ -43,6 +43,7 @@ module Simplex.Chat.Store.Profiles
     deleteUserAddress,
     getUserAddress,
     getUserContactLinkById,
+    getUserContactLinkByConnReq,
     updateUserAddressAutoAccept,
     getProtocolServers,
     overwriteProtocolServers,
@@ -440,6 +441,18 @@ getUserContactLinkById db userId userContactLinkId =
           AND user_contact_link_id = ?
       |]
       (userId, userContactLinkId)
+
+getUserContactLinkByConnReq :: DB.Connection -> ConnReqContact -> IO (Maybe UserContactLink)
+getUserContactLinkByConnReq db cReq =
+  maybeFirstRow toUserContactLink $
+    DB.query
+      db
+      [sql|
+        SELECT conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content
+        FROM user_contact_links
+        WHERE conn_req_contact = ?
+      |]
+      (Only cReq)
 
 updateUserAddressAutoAccept :: DB.Connection -> User -> Maybe AutoAccept -> ExceptT StoreError IO UserContactLink
 updateUserAddressAutoAccept db user@User {userId} autoAccept = do

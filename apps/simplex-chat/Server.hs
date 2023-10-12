@@ -30,7 +30,7 @@ import UnliftIO.STM
 
 simplexChatServer :: ChatServerConfig -> ChatConfig -> ChatOpts -> IO ()
 simplexChatServer srvCfg cfg opts =
-  simplexChatCore cfg opts Nothing . const $ runChatServer srvCfg
+  simplexChatCore cfg opts . const $ runChatServer srvCfg
 
 data ChatServerConfig = ChatServerConfig
   { chatPort :: ServiceName,

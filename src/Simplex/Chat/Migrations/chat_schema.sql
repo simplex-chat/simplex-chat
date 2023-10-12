@@ -117,7 +117,8 @@ CREATE TABLE groups(
   unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL),
   chat_ts TEXT,
   favorite INTEGER NOT NULL DEFAULT 0,
-  send_rcpts INTEGER, -- received
+  send_rcpts INTEGER,
+  via_group_link_uri_hash BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -144,6 +145,7 @@ CREATE TABLE group_members(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   member_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
+  show_messages INTEGER NOT NULL DEFAULT 1,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -752,3 +754,7 @@ CREATE INDEX idx_received_probes_probe_hash ON received_probes(probe_hash);
 CREATE INDEX idx_sent_probes_created_at ON sent_probes(created_at);
 CREATE INDEX idx_sent_probe_hashes_created_at ON sent_probe_hashes(created_at);
 CREATE INDEX idx_received_probes_created_at ON received_probes(created_at);
+CREATE INDEX idx_connections_conn_req_inv ON connections(conn_req_inv);
+CREATE INDEX idx_groups_via_group_link_uri_hash ON groups(
+  via_group_link_uri_hash
+);
