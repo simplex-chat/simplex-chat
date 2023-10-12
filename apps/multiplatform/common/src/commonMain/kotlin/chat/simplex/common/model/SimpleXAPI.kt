@@ -3761,23 +3761,23 @@ sealed class CR {
     is ChatCmdError -> withUser(user_, chatError.string)
     is ChatRespError -> withUser(user_, chatError.string)
     is ArchiveImported -> "${archiveErrors.map { it.string } }"
-    is RemoteHostCreated -> "remote host $remoteHostId: created ${json.encodeToString(oobData)}"
-    is RemoteHostList -> json.encodeToString(remoteHosts)
-    is RemoteHostStarted -> "remote host $remoteHostId: started"
-    is RemoteHostConnected -> "remote host $remoteHostId: connected"
-    is RemoteHostStopped -> "remote host $remoteHostId: stopped"
-    is RemoteHostDeleted -> "remote host $remoteHostId: deleted"
+    is RemoteHostCreated -> "remote host ID: $remoteHostId\noobData ${json.encodeToString(oobData)}"
+    is RemoteHostList -> "remote hosts: ${json.encodeToString(remoteHosts)}"
+    is RemoteHostStarted -> "remote host $remoteHostId"
+    is RemoteHostConnected -> "remote host ID: $remoteHostId"
+    is RemoteHostStopped -> "remote host ID: $remoteHostId"
+    is RemoteHostDeleted -> "remote host ID: $remoteHostId"
     is RemoteCtrlList -> json.encodeToString(remoteCtrls)
-    is RemoteCtrlRegistered -> "remote ctrl $remoteCtrlId: registered"
-    is RemoteCtrlStarted -> "remote ctrl started"
-    is RemoteCtrlAnnounce -> "remote ctrl announce: $fingerprint"
-    is RemoteCtrlFound -> "remote ctrl found ${json.encodeToString(remoteCtrl)}"
-    is RemoteCtrlAccepted -> "remote ctrl $remoteCtrlId: accepted"
-    is RemoteCtrlRejected -> "remote ctrl $remoteCtrlId: rejected"
-    is RemoteCtrlConnecting -> "remote ctrl $remoteCtrlId: connecting to $displayName"
-    is RemoteCtrlConnected -> "remote ctrl $remoteCtrlId: connected to $displayName"
-    is RemoteCtrlStopped -> "remote ctrl stopped"
-    is RemoteCtrlDeleted -> "remote ctrl $remoteCtrlId: deleted"
+    is RemoteCtrlRegistered -> "remote ctrl ID: $remoteCtrlId"
+    is RemoteCtrlStarted -> ""
+    is RemoteCtrlAnnounce -> "fingerprint: $fingerprint"
+    is RemoteCtrlFound -> "remote ctrl: ${json.encodeToString(remoteCtrl)}"
+    is RemoteCtrlAccepted -> "remote ctrl ID: $remoteCtrlId"
+    is RemoteCtrlRejected -> "remote ctrl ID: $remoteCtrlId"
+    is RemoteCtrlConnecting -> "remote ctrl ID: $remoteCtrlId\nhost displayName: $displayName"
+    is RemoteCtrlConnected -> "remote ctrl ID: $remoteCtrlId\nhost displayName: $displayName"
+    is RemoteCtrlStopped -> ""
+    is RemoteCtrlDeleted -> "remote ctrl ID: $remoteCtrlId"
     is Response -> json
     is Invalid -> str
   }
