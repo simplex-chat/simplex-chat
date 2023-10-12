@@ -58,11 +58,6 @@ struct NewChatButton: View {
     }
 }
 
-enum ConnReqType: Equatable {
-    case contact
-    case invitation
-}
-
 enum PlanAndConnectAlert: Identifiable {
     case ownLinkConfirmConnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool)
     case alreadyConnectingContact(contact: Contact?, connectionPlan: ConnectionPlan)
@@ -83,7 +78,7 @@ enum PlanAndConnectAlert: Identifiable {
     }
 }
 
-func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: DismissAction? = nil) -> Alert {
+func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: (() -> Void)?) -> Alert {
     switch alert {
     case let .ownLinkConfirmConnect(connectionLink, connectionPlan, incognito):
         return Alert(
@@ -91,7 +86,7 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: DismissAction? =
             message: Text("This is your own link. Confirm to connect."),
             primaryButton: .default(
                 Text("Connect via own link"),
-                action: { connectViaLink(connectionLink, dismiss: dismiss, incognito: incognito) }
+                action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) }
             ),
             secondaryButton: .cancel()
         )
@@ -127,7 +122,7 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: DismissAction? =
             title: Text(connectionPlan.planTitle),
             message: Text("You will join a group this link refers to and connect to its group members."),
             primaryButton: .default(Text(incognito ? "Connect incognito" : "Connect")) {
-                connectViaLink(connectionLink, incognito: incognito)
+                connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito)
             },
             secondaryButton: .cancel()
         )
@@ -168,14 +163,14 @@ enum PlanAndConnectActionSheet: Identifiable {
     }
 }
 
-func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: DismissAction? = nil) -> ActionSheet {
+func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: (() -> Void)?) -> ActionSheet {
     switch sheet {
     case let .askCurrentOrIncognitoProfile(connectionLink, connectionPlan):
         return ActionSheet(
             title: Text(planTitle_(connectionPlan)),
             buttons: [
-                .default(Text("Use current profile")) { connectViaLink(connectionLink, dismiss: dismiss, incognito: false) },
-                .default(Text("Use new incognito profile")) { connectViaLink(connectionLink, dismiss: dismiss, incognito: true) },
+                .default(Text("Use current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false) },
+                .default(Text("Use new incognito profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true) },
                 .cancel()
             ]
         )
@@ -184,8 +179,8 @@ func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: Dism
             return ActionSheet(
                 title: Text(connectionPlan.planTitle),
                 buttons: [
-                    .default(Text("Open \(groupInfo.displayName)")) { openKnownGroup(groupInfo, dismiss: dismiss) },
-                    .default(Text(incognito ? "Connect incognito" : "Connect")) { connectViaLink(connectionLink, dismiss: dismiss, incognito: incognito) },
+                    .default(Text("Open group")) { openKnownGroup(groupInfo, dismiss: dismiss) },
+                    .default(Text(incognito ? "Connect incognito" : "Connect")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) },
                     .cancel()
                 ]
             )
@@ -193,9 +188,9 @@ func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: Dism
             return ActionSheet(
                 title: Text(connectionPlan.planTitle),
                 buttons: [
-                    .default(Text("Open \(groupInfo.displayName)")) { openKnownGroup(groupInfo, dismiss: dismiss) },
-                    .default(Text("Use current profile")) { connectViaLink(connectionLink, dismiss: dismiss, incognito: false) },
-                    .default(Text("Use new incognito profile")) { connectViaLink(connectionLink, dismiss: dismiss, incognito: true) },
+                    .default(Text("Open group")) { openKnownGroup(groupInfo, dismiss: dismiss) },
+                    .default(Text("Use current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false) },
+                    .default(Text("Use new incognito profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true) },
                     .cancel()
                 ]
             )
@@ -203,30 +198,34 @@ func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: Dism
     }
 }
 
-func planTitle_(_ connectionPlan: ConnectionPlan?) -> LocalizedStringKey {
+func planTitle_(_ connectionPlan: ConnectionPlan?) -> String {
     if let connectionPlan = connectionPlan {
         return connectionPlan.planTitle
     } else {
-        return "Connect via link"
+        return NSLocalizedString("Connect via link", comment: "connection plan title")
     }
 }
 
-func openKnownContact(_ contact: Contact, dismiss: DismissAction?) {
+func openKnownContact(_ contact: Contact, dismiss: (() -> Void)?) {
     Task {
         let m = ChatModel.shared
         if let c = m.getContactChat(contact.contactId) {
-            dismiss?()
-            await MainActor.run { m.chatId = c.id }
+            DispatchQueue.main.async {
+                dismiss?()
+                m.chatId = c.id
+            }
         }
     }
 }
 
-func openKnownGroup(_ groupInfo: GroupInfo, dismiss: DismissAction?) {
+func openKnownGroup(_ groupInfo: GroupInfo, dismiss: (() -> Void)?) {
     Task {
         let m = ChatModel.shared
         if let g = m.getGroupChat(groupInfo.groupId) {
-            dismiss?()
-            await MainActor.run { m.chatId = g.id }
+            DispatchQueue.main.async {
+                dismiss?()
+                m.chatId = g.id
+            }
         }
     }
 }
@@ -235,7 +234,7 @@ func planAndConnect(
     _ connectionLink: String,
     showAlert: @escaping (PlanAndConnectAlert) -> Void,
     showActionSheet: @escaping (PlanAndConnectActionSheet) -> Void,
-    dismiss: DismissAction? = nil,
+    dismiss: (() -> Void)?,
     incognito: Bool?
 ) {
     Task {
@@ -247,7 +246,7 @@ func planAndConnect(
                 case .ok:
                     logger.debug("planAndConnect, .invitationLink, .ok, incognito=\(incognito?.description ?? "nil")")
                     if let incognito = incognito {
-                        connectViaLink(connectionLink, dismiss: dismiss, incognito: incognito)
+                        connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito)
                     } else {
                         showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan))
                     }
@@ -270,7 +269,7 @@ func planAndConnect(
                 case .ok:
                     logger.debug("planAndConnect, .contactAddress, .ok, incognito=\(incognito?.description ?? "nil")")
                     if let incognito = incognito {
-                        connectViaLink(connectionLink, dismiss: dismiss, incognito: incognito)
+                        connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito)
                     } else {
                         showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan))
                     }
@@ -310,7 +309,7 @@ func planAndConnect(
         } catch {
             logger.debug("planAndConnect, plan error")
             if let incognito = incognito {
-                connectViaLink(connectionLink, dismiss: dismiss, incognito: incognito)
+                connectViaLink(connectionLink, connectionPlan: nil, dismiss: dismiss, incognito: incognito)
             } else {
                 showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: nil))
             }
@@ -318,13 +317,18 @@ func planAndConnect(
     }
 }
 
-// TODO replace connReqType with connection plan type?
-func connectViaLink(_ connectionLink: String, dismiss: DismissAction? = nil, incognito: Bool) {
+private func connectViaLink(_ connectionLink: String, connectionPlan: ConnectionPlan?, dismiss: (() -> Void)?, incognito: Bool) {
     Task {
         if let connReqType = await apiConnect(incognito: incognito, connReq: connectionLink) {
+            let crt: ConnReqType
+            if let plan = connectionPlan {
+                crt = planToConnReqType(plan)
+            } else {
+                crt = connReqType
+            }
             DispatchQueue.main.async {
                 dismiss?()
-                AlertManager.shared.showAlert(connReqSentAlert(connReqType))
+                AlertManager.shared.showAlert(connReqSentAlert(crt))
             }
         } else {
             DispatchQueue.main.async {
@@ -334,45 +338,32 @@ func connectViaLink(_ connectionLink: String, dismiss: DismissAction? = nil, inc
     }
 }
 
-struct CReqClientData: Decodable {
-    var type: String
-    var groupLinkId: String?
-}
+enum ConnReqType: Equatable {
+    case invitation
+    case contact
+    case groupLink
 
-func parseLinkQueryData(_ connectionLink: String) -> CReqClientData? {
-    if let hashIndex = connectionLink.firstIndex(of: "#"),
-       let urlQuery = URL(string: String(connectionLink[connectionLink.index(after: hashIndex)...])),
-       let components = URLComponents(url: urlQuery, resolvingAgainstBaseURL: false),
-       let data = components.queryItems?.first(where: { $0.name == "data" })?.value,
-       let d = data.data(using: .utf8),
-       let crData = try? getJSONDecoder().decode(CReqClientData.self, from: d) {
-        return crData
-    } else {
-        return nil
+    var connReqSentText: LocalizedStringKey {
+        switch self {
+        case .invitation: return "You will be connected when your contact's device is online, please wait or check later!"
+        case .contact: return "You will be connected when your connection request is accepted, please wait or check later!"
+        case .groupLink: return "You will be connected when group link host's device is online, please wait or check later!"
+        }
     }
 }
 
-func checkCRDataGroup(_ crData: CReqClientData) -> Bool {
-    return crData.type == "group" && crData.groupLinkId != nil
-}
-
-func groupLinkAlert(_ connectionLink: String, incognito: Bool) -> Alert {
-    return Alert(
-        title: Text("Connect via group link?"),
-        message: Text("You will join a group this link refers to and connect to its group members."),
-        primaryButton: .default(Text(incognito ? "Connect incognito" : "Connect")) {
-            connectViaLink(connectionLink, incognito: incognito)
-        },
-        secondaryButton: .cancel()
-    )
+private func planToConnReqType(_ connectionPlan: ConnectionPlan) -> ConnReqType {
+    switch connectionPlan {
+    case .invitationLink: return .invitation
+    case .contactAddress: return .contact
+    case .groupLink: return .groupLink
+    }
 }
 
 func connReqSentAlert(_ type: ConnReqType) -> Alert {
     return mkAlert(
         title: "Connection request sent!",
-        message: type == .contact
-            ? "You will be connected when your connection request is accepted, please wait or check later!"
-            : "You will be connected when your contact's device is online, please wait or check later!"
+        message: type.connReqSentText
     )
 }
 

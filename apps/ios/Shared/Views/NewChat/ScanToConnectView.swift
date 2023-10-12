@@ -13,6 +13,8 @@ import CodeScanner
 struct ScanToConnectView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
+    @State private var alert: PlanAndConnectAlert?
+    @State private var sheet: PlanAndConnectActionSheet?
 
     var body: some View {
         ScrollView {
@@ -49,18 +51,20 @@ struct ScanToConnectView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .background(Color(.systemGroupedBackground))
+        .alert(item: $alert) { a in planAndConnectAlert(a, dismiss: { dismiss() }) }
+        .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: { dismiss() }) }
     }
 
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            if let crData = parseLinkQueryData(r.string),
-               checkCRDataGroup(crData) {
-                dismiss()
-                AlertManager.shared.showAlert(groupLinkAlert(r.string, incognito: incognitoDefault))
-            } else {
-                Task { connectViaLink(r.string, dismiss: dismiss, incognito: incognitoDefault) }
-            }
+            planAndConnect(
+                r.string,
+                showAlert: { alert = $0 },
+                showActionSheet: { sheet = $0 },
+                dismiss: { dismiss() },
+                incognito: incognitoDefault
+            )
         case let .failure(e):
             logger.error("ConnectContactView.processQRCode QR code error: \(e.localizedDescription)")
             dismiss()

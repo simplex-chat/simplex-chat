@@ -862,28 +862,28 @@ public enum ConnectionPlan: Decodable {
     case contactAddress(contactAddressPlan: ContactAddressPlan)
     case groupLink(groupLinkPlan: GroupLinkPlan)
 
-    public var planTitle: LocalizedStringKey {
+    public var planTitle: String {
         switch self {
         case let .invitationLink(ilp):
             switch ilp {
-            case .ok: return "Connect via one-time link"
-            case .ownLink: return "Your own one-time link"
-            case .connecting: return "Already connecting via one-time link"
-            case .known: return "Already connected via one-time link"
+            case .ok: return NSLocalizedString("Connect via one-time link", comment: "connection plan title")
+            case .ownLink: return NSLocalizedString("Your own one-time link", comment: "connection plan title")
+            case .connecting: return NSLocalizedString("Already connecting via one-time link", comment: "connection plan title")
+            case .known: return NSLocalizedString("Already connected via one-time link", comment: "connection plan title")
             }
         case let .contactAddress(cap):
             switch cap {
-            case .ok: return "Connect via contact link"
-            case .ownLink: return "Your own contact link"
-            case .connecting: return "Already connecting via contact link"
-            case .known: return "Already connected via contact link"
+            case .ok: return NSLocalizedString("Connect via contact link", comment: "connection plan title")
+            case .ownLink: return NSLocalizedString("Your own contact link", comment: "connection plan title")
+            case .connecting: return NSLocalizedString("Already connecting via contact link", comment: "connection plan title")
+            case .known: return NSLocalizedString("Already connected via contact link", comment: "connection plan title")
             }
         case let .groupLink(glp):
             switch glp {
-            case .ok: return "Connect via group link"
-            case .ownLink: return "Your own group link"
-            case .connecting: return "Already connecting via group link"
-            case .known: return "Already connected via group link"
+            case .ok: return NSLocalizedString("Connect via group link", comment: "connection plan title")
+            case let .ownLink(groupInfo): return String.localizedStringWithFormat(NSLocalizedString("Own link for group %@", comment: "connection plan title"), groupInfo.displayName)
+            case .connecting: return NSLocalizedString("Already connecting via group link", comment: "connection plan title")
+            case .known: return NSLocalizedString("Already connected via group link", comment: "connection plan title")
             }
         }
     }

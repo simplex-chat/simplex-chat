@@ -93,7 +93,7 @@ struct ContentView: View {
                 mainView()
                 .actionSheet(item: $chatListActionSheet) { sheet in
                     switch sheet {
-                    case let .planAndConnectSheet(sheet): return planAndConnectActionSheet(sheet)
+                    case let .planAndConnectSheet(sheet): return planAndConnectActionSheet(sheet, dismiss: nil)
                     }
                 }
             } else {
@@ -290,13 +290,12 @@ struct ContentView: View {
             if let url = m.appOpenUrl {
                 m.appOpenUrl = nil
                 var path = url.path
-                logger.debug("ContentView.connectViaUrl path: \(path)")
                 if (path == "/contact" || path == "/invitation") {
                     path.removeFirst()
+                    // TODO normalize in backend; revert
                     // let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
                     var link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
                     link = link.starts(with: "simplex:/") ? link.replacingOccurrences(of: "simplex:/", with: "https://simplex.chat/") : link
-                    logger.debug("########## connectViaUrl \(link)")
                     planAndConnect(
                         link,
                         showAlert: showPlanAndConnectAlert,
@@ -312,7 +311,7 @@ struct ContentView: View {
     }
 
     private func showPlanAndConnectAlert(_ alert: PlanAndConnectAlert) {
-        AlertManager.shared.showAlert(planAndConnectAlert(alert))
+        AlertManager.shared.showAlert(planAndConnectAlert(alert, dismiss: nil))
     }
 }
 

@@ -59,8 +59,8 @@ struct PasteToConnectView: View {
                 + Text("You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button.")
             }
         }
-        .alert(item: $alert) { a in planAndConnectAlert(a) }
-        .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s) }
+        .alert(item: $alert) { a in planAndConnectAlert(a, dismiss: { dismiss() }) }
+        .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: { dismiss() }) }
     }
 
     private func linkEditor() -> some View {
@@ -91,16 +91,9 @@ struct PasteToConnectView: View {
             link,
             showAlert: { alert = $0 },
             showActionSheet: { sheet = $0 },
-            dismiss: dismiss,
+            dismiss: { dismiss() },
             incognito: incognitoDefault
         )
-//        if let crData = parseLinkQueryData(link),
-//           checkCRDataGroup(crData) {
-//            dismiss()
-//            AlertManager.shared.showAlert(groupLinkAlert(link, incognito: incognitoDefault))
-//        } else {
-//            connectViaLink(link, dismiss: dismiss, incognito: incognitoDefault)
-//        }
     }
 }
 
