@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20231005_remote_controller where
+module Simplex.Chat.Migrations.M20231020_remote_controller where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20231005_remote_controller :: Query
-m20231005_remote_controller =
+m20231020_remote_controller :: Query
+m20231020_remote_controller =
   [sql|
 CREATE TABLE remote_hosts ( -- hosts known to a controlling app
   remote_host_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,8 +25,8 @@ CREATE TABLE remote_controllers ( -- controllers known to a hosting app
 );
 |]
 
-down_m20231005_remote_controller :: Query
-down_m20231005_remote_controller =
+down_m20231020_remote_controller :: Query
+down_m20231020_remote_controller =
   [sql|
 DROP TABLE remote_hosts;
 DROP TABLE remote_controllers;

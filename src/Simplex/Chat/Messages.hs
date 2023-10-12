@@ -50,8 +50,10 @@ import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
   deriving (Eq, Show, Ord, Generic)
 
-data ChatName = ChatName ChatType Text
-  deriving (Show)
+data ChatName = ChatName {chatType :: ChatType, chatName :: Text}
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON ChatName where toEncoding = J.genericToEncoding J.defaultOptions
 
 chatTypeStr :: ChatType -> String
 chatTypeStr = \case
@@ -170,6 +172,19 @@ instance (ChatTypeI c, MsgDirectionI d) => ToJSON (ChatItem c d) where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+isMention :: ChatItem c d -> Bool
+isMention ChatItem {chatDir, quotedItem} = case chatDir of
+  CIDirectRcv -> userItem quotedItem
+  CIGroupRcv _ -> userItem quotedItem
+  _ -> False
+  where
+    userItem = \case
+      Nothing -> False
+      Just CIQuote {chatDir = cd} -> case cd of
+        CIQDirectSnd -> True
+        CIQGroupSnd -> True
+        _ -> False
+    
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv
@@ -270,26 +285,6 @@ chatItemMember GroupInfo {membership} ChatItem {chatDir} = case chatDir of
 ciReactionAllowed :: ChatItem c d -> Bool
 ciReactionAllowed ChatItem {meta = CIMeta {itemDeleted = Just _}} = False
 ciReactionAllowed ChatItem {content} = isJust $ ciMsgContent content
-
-data CIDeletedState = CIDeletedState
-  { markedDeleted :: Bool,
-    deletedByMember :: Maybe GroupMember
-  }
-  deriving (Show, Eq)
-
-chatItemDeletedState :: ChatItem c d -> Maybe CIDeletedState
-chatItemDeletedState ChatItem {meta = CIMeta {itemDeleted}, content} =
-  ciDeletedToDeletedState <$> itemDeleted
-  where
-    ciDeletedToDeletedState cid =
-      case content of
-        CISndModerated -> CIDeletedState {markedDeleted = False, deletedByMember = byMember cid}
-        CIRcvModerated -> CIDeletedState {markedDeleted = False, deletedByMember = byMember cid}
-        _ -> CIDeletedState {markedDeleted = True, deletedByMember = byMember cid}
-    byMember :: CIDeleted c -> Maybe GroupMember
-    byMember = \case
-      CIModerated _ m -> Just m
-      CIDeleted _ -> Nothing
 
 data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectSnd :: Contact -> ChatDirection 'CTDirect 'MDSnd
@@ -1012,7 +1007,7 @@ data MsgMetaJSON = MsgMetaJSON
     serverTs :: UTCTime,
     sndId :: Int64
   }
-  deriving (Eq, Show, FromJSON, Generic)
+  deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON MsgMetaJSON where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
@@ -1079,6 +1074,7 @@ msgDeliveryStatusT' s =
 
 data CIDeleted (c :: ChatType) where
   CIDeleted :: Maybe UTCTime -> CIDeleted c
+  CIBlocked :: Maybe UTCTime -> CIDeleted 'CTGroup
   CIModerated :: Maybe UTCTime -> GroupMember -> CIDeleted 'CTGroup
 
 deriving instance Show (CIDeleted c)
@@ -1094,6 +1090,7 @@ instance ChatTypeI c => ToJSON (CIDeleted c) where
 
 data JSONCIDeleted
   = JCIDDeleted {deletedTs :: Maybe UTCTime, chatType :: ChatType}
+  | JCIBlocked {deletedTs :: Maybe UTCTime}
   | JCIDModerated {deletedTs :: Maybe UTCTime, byGroupMember :: GroupMember}
   deriving (Show, Generic)
 
@@ -1107,16 +1104,19 @@ instance ToJSON JSONCIDeleted where
 jsonCIDeleted :: forall d. ChatTypeI d => CIDeleted d -> JSONCIDeleted
 jsonCIDeleted = \case
   CIDeleted ts -> JCIDDeleted ts (toChatType $ chatTypeI @d)
+  CIBlocked ts -> JCIBlocked ts
   CIModerated ts m -> JCIDModerated ts m
 
 jsonACIDeleted :: JSONCIDeleted -> ACIDeleted
 jsonACIDeleted = \case
   JCIDDeleted ts cType -> case aChatType cType of ACT c -> ACIDeleted c $ CIDeleted ts
+  JCIBlocked ts -> ACIDeleted SCTGroup $ CIBlocked ts
   JCIDModerated ts m -> ACIDeleted SCTGroup (CIModerated ts m)
 
 itemDeletedTs :: CIDeleted d -> Maybe UTCTime
 itemDeletedTs = \case
   CIDeleted ts -> ts
+  CIBlocked ts -> ts
   CIModerated ts _ -> ts
 
 data ChatItemInfo = ChatItemInfo

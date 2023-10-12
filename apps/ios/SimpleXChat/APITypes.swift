@@ -1182,17 +1182,23 @@ public struct KeepAliveOpts: Codable, Equatable {
 }
 
 public struct ChatSettings: Codable {
-    public var enableNtfs: Bool
+    public var enableNtfs: MsgFilter
     public var sendRcpts: Bool?
     public var favorite: Bool
 
-    public init(enableNtfs: Bool, sendRcpts: Bool?, favorite: Bool) {
+    public init(enableNtfs: MsgFilter, sendRcpts: Bool?, favorite: Bool) {
         self.enableNtfs = enableNtfs
         self.sendRcpts = sendRcpts
         self.favorite = favorite
     }
 
-    public static let defaults: ChatSettings = ChatSettings(enableNtfs: true, sendRcpts: nil, favorite: false)
+    public static let defaults: ChatSettings = ChatSettings(enableNtfs: .all, sendRcpts: nil, favorite: false)
+}
+
+public enum MsgFilter: String, Codable {
+    case none
+    case all
+    case mentions
 }
 
 public struct UserMsgReceiptSettings: Codable {

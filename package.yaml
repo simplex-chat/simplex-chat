@@ -1,5 +1,5 @@
 name: simplex-chat
-version: 5.4.0.0
+version: 5.4.0.1
 #synopsis:
 #description:
 homepage: https://github.com/simplex-chat/simplex-chat#readme
@@ -120,9 +120,11 @@ tests:
       - apps/simplex-directory-service/src
     main: Test.hs
     dependencies:
+      - QuickCheck == 2.14.*
       - simplex-chat
       - async == 2.2.*
       - deepseq == 1.4.*
+      - generic-random == 1.5.*
       - hspec == 2.11.*
       - network == 3.1.*
       - silently == 1.2.*

@@ -26,7 +26,7 @@ withBroadcastBot :: BroadcastBotOpts -> IO () -> IO ()
 withBroadcastBot opts test =
   bracket (forkIO bot) killThread (\_ -> threadDelay 500000 >> test)
   where
-    bot = simplexChatCore testCfg (mkChatOpts opts) Nothing $ broadcastBot opts
+    bot = simplexChatCore testCfg (mkChatOpts opts) $ broadcastBot opts
 
 broadcastBotProfile :: Profile
 broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadcast Bot", image = Nothing, contactLink = Nothing, preferences = Nothing}
