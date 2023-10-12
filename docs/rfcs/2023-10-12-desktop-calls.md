@@ -28,3 +28,5 @@ There is no need to have TLS-secured connection between server and webpage since
 After accepting the call, webpage will be opened in the default browser. URL will look like: http://localhost:123. After that internal machinary will connect both parties together. Same as on Android but with a different signaling channel, in this case it's websockets. 
 
 Ending the call by the user will also send a new action to signaling server to allow the backend to notify other party.
+
+The solution will also allow to make screen sharing in the future that will be supported on every OS and graphics environment where the user's browser supports it.
