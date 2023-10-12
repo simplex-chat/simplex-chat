@@ -27,7 +27,7 @@ Since the code for WebView has already written (https://github.com/simplex-chat/
 
 There is no need to have TLS-secured connection between server and webpage since it's only used locally. And browser will not be happy with self-signed certificate too.
 
-After accepting the call, webpage will be opened in the default browser. URL will look like: http://localhost:123. After that internal machinary will connect both parties together. Same as on Android but with a different signaling channel, in this case it's websockets. 
+After accepting the call, webpage will be opened in the default browser. URL will look like: `https://localhost:123/simplex/call/` (to reduce questions and to namespace other files - the main UI page will be index.html, that would load via folder path) After that internal machinary will connect both parties together. Same as on Android but with a different signaling channel, in this case it's websockets. 
 
 Ending the call by the user will also send a new action to signaling server to allow the backend to notify other party.
 
