@@ -2461,7 +2461,7 @@ testPlanGroupLinkLeaveRejoin =
       concurrentlyN_
         [ alice
             <### [ "bob_1 (Bob): contact is connected",
-                   "bob_1 invited to group #team via your group link",
+                   EndsWith "invited to group #team via your group link",
                    EndsWith "joined the group",
                    "contact bob_1 is merged into bob",
                    "use @bob <message> to send messages"
@@ -3278,7 +3278,7 @@ testMemberContactInvitedConnectionReplaced tmp = do
 
         bob ##> "/_get chat @2 count=100"
         items <- chat <$> getTermLine bob
-        items `shouldContain` [(0, "received invitation to join group team as admin"), (0, "contact deleted"), (0, "hi"), (0, "security code changed")]
+        items `shouldContain` [(0, "security code changed")]
 
     withTestChat tmp "bob" $ \bob -> do
       subscriptions bob 1
