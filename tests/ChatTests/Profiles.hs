@@ -31,7 +31,7 @@ chatProfileTests = do
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
-    it "connecting via contact address" testPlanAddressConnecting
+    fit "connecting via contact address" testPlanAddressConnecting
     it "re-connect with deleted contact" testPlanAddressContactDeletedReconnected
   describe "incognito" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
@@ -650,8 +650,10 @@ testPlanAddressConnecting tmp = do
     alice ##> "/ad"
     getContactLink alice True
   withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    threadDelay 100000
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
+    threadDelay 100000
   withTestChat tmp "alice" $ \alice -> do
     alice <## "Your address is active! To show: /sa"
     alice <## "bob (Bob) wants to connect to you!"

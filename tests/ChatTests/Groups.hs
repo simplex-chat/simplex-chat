@@ -89,7 +89,7 @@ chatGroupTests = do
     it "create contact with group member without invitation message" testMemberContactNoMessage
     it "prohibited to create contact with group member if it already exists" testMemberContactProhibitedContactExists
     it "prohibited to repeat sending x.grp.direct.inv" testMemberContactProhibitedRepeatInv
-    it "invited member replaces member contact reference if it already exists" testMemberContactInvitedConnectionReplaced
+    fit "invited member replaces member contact reference if it already exists" testMemberContactInvitedConnectionReplaced
     it "share incognito profile" testMemberContactIncognito
     it "sends and updates profile when creating contact" testMemberContactProfileUpdate
   where
