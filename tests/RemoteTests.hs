@@ -30,14 +30,13 @@ import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import System.FilePath (makeRelative, (</>))
 import Test.Hspec
 import UnliftIO
-import UnliftIO.Concurrent (threadDelay)
 import UnliftIO.Directory
 
 remoteTests :: SpecWith FilePath
 remoteTests = describe "Handshake" $ do
   it "generates usable credentials" genCredentialsTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
-  xit "connects desktop and mobile" remoteHandshakeTest
+  it "connects desktop and mobile" remoteHandshakeTest
   it "send messages via remote desktop" remoteCommandTest
 
 -- * Low-level TLS with ephemeral credentials
@@ -130,6 +129,24 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   mobile <## "remote controller 1 accepted" -- alternative scenario: accepted before controller start
   mobile <## "remote controller 1 connecting to TODO"
   mobile <## "remote controller 1 connected, TODO"
+
+  traceM "    - Session active"
+  desktop ##> "/list remote hosts"
+  desktop <## "Remote hosts:"
+  desktop <## "1. TODO (active)"
+  mobile ##> "/list remote ctrls"
+  mobile <## "Remote controllers:"
+  mobile <## "1. TODO (active)"
+
+  traceM "    - Shutting desktop"
+  desktop ##> "/stop remote host 1"
+  desktop <## "remote host 1 stopped"
+  desktop ##> "/delete remote host 1"
+  desktop <## "remote host 1 deleted"
+  desktop ##> "/list remote hosts"
+  desktop <## "No remote hosts"
+
+  traceM "    - Shutting mobile"
   mobile ##> "/stop remote ctrl"
   mobile <## "ok"
   mobile <## "remote controller stopped"
@@ -137,13 +154,6 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   mobile <## "remote controller 1 deleted"
   mobile ##> "/list remote ctrls"
   mobile <## "No remote controllers"
-
-  desktop ##> "/stop remote host 1"
-  desktop <## "remote host 1 stopped"
-  desktop ##> "/delete remote host 1"
-  desktop <## "remote host 1 deleted"
-  desktop ##> "/list remote hosts"
-  desktop <## "No remote hosts"
 
 remoteCommandTest :: (HasCallStack) => FilePath -> IO ()
 remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
