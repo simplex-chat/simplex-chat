@@ -152,6 +152,16 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func getGroupChat(_ groupId: Int64) -> Chat? {
+        chats.first { chat in
+            if case let .group(groupInfo) = chat.chatInfo {
+                return groupInfo.groupId == groupId
+            } else {
+                return false
+            }
+        }
+    }
+
     private func getChatIndex(_ id: String) -> Int? {
         chats.firstIndex(where: { $0.id == id })
     }

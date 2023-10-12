@@ -586,6 +586,15 @@ func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> P
     throw r
 }
 
+func apiConnectPlan(connReq: String) async throws -> ConnectionPlan {
+    logger.error("apiConnectPlan connReq: \(connReq)")
+    let userId = try currentUserId("apiConnectPlan")
+    let r = await chatSendCmd(.apiConnectPlan(userId: userId, connReq: connReq))
+    if case let .connectionPlan(_, connectionPlan) = r { return connectionPlan }
+    logger.error("apiConnectPlan error: \(responseError(r))")
+    throw r
+}
+
 func apiConnect(incognito: Bool, connReq: String) async -> ConnReqType? {
     let (connReqType, alert) = await apiConnect_(incognito: incognito, connReq: connReq)
     if let alert = alert {
