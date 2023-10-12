@@ -212,6 +212,8 @@ func openKnownContact(_ contact: Contact, dismiss: (() -> Void)?) {
         if let c = m.getContactChat(contact.contactId) {
             DispatchQueue.main.async {
                 dismiss?()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 m.chatId = c.id
             }
         }
@@ -224,6 +226,8 @@ func openKnownGroup(_ groupInfo: GroupInfo, dismiss: (() -> Void)?) {
         if let g = m.getGroupChat(groupInfo.groupId) {
             DispatchQueue.main.async {
                 dismiss?()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 m.chatId = g.id
             }
         }
@@ -328,6 +332,8 @@ private func connectViaLink(_ connectionLink: String, connectionPlan: Connection
             }
             DispatchQueue.main.async {
                 dismiss?()
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 AlertManager.shared.showAlert(connReqSentAlert(crt))
             }
         } else {
