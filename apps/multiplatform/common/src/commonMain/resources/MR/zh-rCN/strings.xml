@@ -67,7 +67,7 @@
     <string name="connect_via_group_link">通过群组链接连接？</string>
     <string name="connect_via_link_or_qr">通过群组链接/二维码连接</string>
     <string name="always_use_relay">总是通过中继连接</string>
-    <string name="allow_your_contacts_irreversibly_delete">允许您的联系人永久删除已发送消息。</string>
+    <string name="allow_your_contacts_irreversibly_delete">允许您的联系人不可撤回地删除已发送消息。</string>
     <string name="chat_preferences_contact_allows">联系人允许</string>
     <string name="allow_voice_messages_only_if">仅有您的联系人许可后才允许语音消息。</string>
     <string name="group_info_member_you">您: %1$s</string>
