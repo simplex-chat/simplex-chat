@@ -192,6 +192,9 @@ instance ToJSON Contact where
 contactConn :: Contact -> Connection
 contactConn Contact {activeConn} = activeConn
 
+contactAgentConnId :: Contact -> AgentConnId
+contactAgentConnId Contact {activeConn = Connection {agentConnId}} = agentConnId
+
 contactConnId :: Contact -> ConnId
 contactConnId = aConnId . contactConn
 
@@ -1140,12 +1143,15 @@ liveRcvFileTransferPath ft = fp <$> liveRcvFileTransferInfo ft
     fp RcvFileInfo {filePath} = filePath
 
 newtype AgentConnId = AgentConnId ConnId
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 instance StrEncoding AgentConnId where
   strEncode (AgentConnId connId) = strEncode connId
   strDecode s = AgentConnId <$> strDecode s
   strP = AgentConnId <$> strP
+
+instance FromJSON AgentConnId where
+  parseJSON = strParseJSON "AgentConnId"
 
 instance ToJSON AgentConnId where
   toJSON = strToJSON
@@ -1476,6 +1482,28 @@ serializeIntroStatus = \case
 
 textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
 textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode
+
+data NetworkStatus
+  = NSUnknown
+  | NSConnected
+  | NSDisconnected
+  | NSError String
+  deriving (Show, Generic)
+
+instance FromJSON NetworkStatus where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "NS"
+
+instance ToJSON NetworkStatus where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "NS"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "NS"
+
+data ConnNetworkStatus = ConnNetworkStatus
+  { agentConnId :: AgentConnId,
+    networkStatus :: NetworkStatus
+  }
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON ConnNetworkStatus where toEncoding = J.genericToEncoding J.defaultOptions
 
 type CommandId = Int64
 

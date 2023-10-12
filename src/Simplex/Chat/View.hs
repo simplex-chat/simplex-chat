@@ -210,6 +210,8 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
       (addresses, groupLinks) = partition (\UserContactSubStatus {userContact} -> isNothing . userContactGroupId $ userContact) summary
       addressSS UserContactSubStatus {userContactError} = maybe ("Your address is active! To show: " <> highlight' "/sa") (\e -> "User address error: " <> sShow e <> ", to delete your address: " <> highlight' "/da") userContactError
       (groupLinkErrors, groupLinksSubscribed) = partition (isJust . userContactError) groupLinks
+  CRNetworkStatus _ _ -> []
+  CRNetworkStatuses _ -> []
   CRGroupInvitation u g -> ttyUser u [groupInvitation' g]
   CRReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CRUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g

@@ -143,7 +143,8 @@ defaultChatConfig =
       initialCleanupManagerDelay = 30 * 1000000, -- 30 seconds
       cleanupManagerInterval = 30 * 60, -- 30 minutes
       cleanupManagerStepDelay = 3 * 1000000, -- 3 seconds
-      ciExpirationInterval = 30 * 60 * 1000000 -- 30 minutes
+      ciExpirationInterval = 30 * 60 * 1000000, -- 30 minutes
+      coreApi = False
     }
 
 _defaultSMPServers :: NonEmpty SMPServerWithAuth
@@ -195,6 +196,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   idsDrg <- newTVarIO =<< liftIO drgNew
   inputQ <- newTBQueueIO tbqSize
   outputQ <- newTBQueueIO tbqSize
+  connNetworkStatuses <- atomically TM.empty
   subscriptionMode <- newTVarIO SMSubscribe
   chatLock <- newEmptyTMVarIO
   sndFiles <- newTVarIO M.empty
@@ -221,6 +223,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
         idsDrg,
         inputQ,
         outputQ,
+        connNetworkStatuses,
         subscriptionMode,
         chatLock,
         sndFiles,
@@ -1086,6 +1089,8 @@ processChatCommand = \case
         user <- getUserByContactId db contactId
         contact <- getContact db user contactId
         pure RcvCallInvitation {user, contact, callType = peerCallType, sharedKey, callTs}
+  APIGetNetworkStatuses -> withUser $ \_ ->
+    CRNetworkStatuses . map (uncurry ConnNetworkStatus) . M.toList <$> chatReadVar connNetworkStatuses
   APICallStatus contactId receivedStatus ->
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
@@ -1688,6 +1693,8 @@ processChatCommand = \case
         (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing subMode
         -- [incognito] reuse membership incognito profile
         ct <- withStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
+        -- TODO not sure it is correct to set connections status here?
+        setContactNetworkStatus ct NSConnected
         pure $ CRNewMemberContact user ct g m
       _ -> throwChatError CEGroupMemberNotActive
   APISendMemberContactInvitation contactId msgContent_ -> withUser $ \user -> do
@@ -2627,6 +2634,7 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
   rs <- withAgent $ \a -> agentBatchSubscribe a conns
   -- send connection events to view
   contactSubsToView rs cts ce
+-- TODO possibly, we could either disable these events or replace with less noisy for API
   contactLinkSubsToView rs ucs
   groupSubsToView rs gs ms ce
   sndFileSubsToView rs sfts
@@ -2687,12 +2695,30 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
       let connIds = map aConnId' pcs
       pure (connIds, M.fromList $ zip connIds pcs)
     contactSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId Contact -> Bool -> m ()
-    contactSubsToView rs cts ce = do
-      toView . CRContactSubSummary user $ map (uncurry ContactSubStatus) cRs
-      when ce $ mapM_ (toView . uncurry (CRContactSubError user)) cErrors
+    contactSubsToView rs cts ce = ifM (asks $ coreApi . config) notifyAPI notifyCLI
       where
-        cRs = resultsFor rs cts
-        cErrors = sortOn (\(Contact {localDisplayName = n}, _) -> n) $ filterErrors cRs
+        notifyCLI = do
+          let cRs = resultsFor rs cts
+              cErrors = sortOn (\(Contact {localDisplayName = n}, _) -> n) $ filterErrors cRs
+          toView . CRContactSubSummary user $ map (uncurry ContactSubStatus) cRs
+          when ce $ mapM_ (toView . uncurry (CRContactSubError user)) cErrors
+        notifyAPI = do
+          let statuses = M.foldrWithKey' addStatus [] cts
+          chatModifyVar connNetworkStatuses $ M.union (M.fromList statuses)
+          toView $ CRNetworkStatuses $ map (uncurry ConnNetworkStatus) statuses
+          where
+            addStatus :: ConnId -> Contact -> [(AgentConnId, NetworkStatus)] -> [(AgentConnId, NetworkStatus)]
+            addStatus connId ct =
+              let ns = (contactAgentConnId ct, netStatus $ resultErr connId rs)
+              in (ns :)
+            netStatus :: Maybe ChatError -> NetworkStatus
+            netStatus = maybe NSConnected $ NSError . errorNetworkStatus
+            errorNetworkStatus :: ChatError -> String
+            errorNetworkStatus = \case
+              ChatErrorAgent (BROKER _ NETWORK) _ -> "network"
+              ChatErrorAgent (SMP SMP.AUTH) _ -> "contact deleted"
+              e -> show e
+-- TODO possibly below could be replaced with less noisy events for API
     contactLinkSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId UserContact -> m ()
     contactLinkSubsToView rs = toView . CRUserContactSubSummary user . map (uncurry UserContactSubStatus) . resultsFor rs
     groupSubsToView :: Map ConnId (Either AgentErrorType ()) -> [Group] -> Map ConnId GroupMember -> Bool -> m ()
@@ -2742,12 +2768,12 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
     resultsFor rs = M.foldrWithKey' addResult []
       where
         addResult :: ConnId -> a -> [(a, Maybe ChatError)] -> [(a, Maybe ChatError)]
-        addResult connId = (:) . (,err)
-          where
-            err = case M.lookup connId rs of
-              Just (Left e) -> Just $ ChatErrorAgent e Nothing
-              Just _ -> Nothing
-              _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
+        addResult connId = (:) . (,resultErr connId rs)
+    resultErr :: ConnId -> Map ConnId (Either AgentErrorType ()) -> Maybe ChatError
+    resultErr connId rs = case M.lookup connId rs of
+      Just (Left e) -> Just $ ChatErrorAgent e Nothing
+      Just _ -> Nothing
+      _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
 cleanupManager :: forall m. ChatMonad m => m ()
 cleanupManager = do
@@ -2892,16 +2918,22 @@ processAgentMessageNoConn :: forall m. ChatMonad m => ACommand 'Agent 'AENone ->
 processAgentMessageNoConn = \case
   CONNECT p h -> hostEvent $ CRHostConnected p h
   DISCONNECT p h -> hostEvent $ CRHostDisconnected p h
-  DOWN srv conns -> serverEvent srv conns CRContactsDisconnected
-  UP srv conns -> serverEvent srv conns CRContactsSubscribed
+  DOWN srv conns -> serverEvent srv conns NSDisconnected CRContactsDisconnected
+  UP srv conns -> serverEvent srv conns NSConnected CRContactsSubscribed
   SUSPENDED -> toView CRChatSuspended
   DEL_USER agentUserId -> toView $ CRAgentUserDeleted agentUserId
   where
     hostEvent :: ChatResponse -> m ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
-    serverEvent srv conns event = do
-      cs <- withStore' (`getConnectionsContacts` conns)
-      toView $ event srv cs
+    serverEvent srv conns nsStatus event = ifM (asks $ coreApi . config) notifyAPI notifyCLI
+      where
+        notifyAPI = do
+          let connIds = map AgentConnId conns
+          chatModifyVar connNetworkStatuses $ \m -> foldl' (\m' cId -> M.insert cId nsStatus m') m connIds
+          toView $ CRNetworkStatus nsStatus connIds
+        notifyCLI = do
+          cs <- withStore' (`getConnectionsContacts` conns)
+          toView $ event srv cs
 
 processAgentMsgSndFile :: forall m. ChatMonad m => ACorrId -> SndFileId -> ACommand 'Agent 'AESndFile -> m ()
 processAgentMsgSndFile _corrId aFileId msg =
@@ -3188,6 +3220,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             Nothing -> do
               -- [incognito] print incognito profile used for this contact
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
+              setContactNetworkStatus ct NSConnected
               toView $ CRContactConnected user ct (fmap fromLocalProfile incognitoProfile)
               when (directOrUsed ct) $ createFeatureEnabledItems ct
               when (contactConnInitiated conn) $ do
@@ -3762,6 +3795,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     notifyMemberConnected :: GroupInfo -> GroupMember -> Maybe Contact -> m ()
     notifyMemberConnected gInfo m ct_ = do
       memberConnectedChatItem gInfo m
+      mapM_ (`setContactNetworkStatus` NSConnected) ct_
       toView $ CRConnectedToGroupMember user gInfo m ct_
 
     probeMatchingContactsAndMembers :: Contact -> IncognitoEnabled -> Bool -> m ()
@@ -5569,6 +5603,7 @@ chatCommandP =
       "/_call end @" *> (APIEndCall <$> A.decimal),
       "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP),
       "/_call get" $> APIGetCallInvitations,
+      "/_network_statuses" $> APIGetNetworkStatuses,
       "/_profile " *> (APIUpdateProfile <$> A.decimal <* A.space <*> jsonP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
