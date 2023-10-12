@@ -22,7 +22,7 @@ The last solution is what can give the most useful result: the same package size
 # Details of implementation
 
 Since the code for WebView has already written (https://github.com/simplex-chat/simplex-chat/tree/0e4376bada2d0c4ec2ade7f30b0048dc8b13abd8/apps/multiplatform/android/src/main/assets/www) it can be used to make calls on a desktop browser too. The only differences are these:
-- UI needs to be changed - buttons controlling calls should be added. For example, end call, disable camera/mic
+- UI needs to be changed - buttons controlling calls should be added. For example, end call, disable camera/mic. This will be added to separate HTML and JS files that would communication with the existing WebRTC JS code via the existing functional API.
 - signaling websocket server should be started in order to allow Haskell backend to talk with HTML page and to exchange messages between all parties. It is bidirectional communication between server and webpage since both parties have to send messages to each other.
 
 There is no need to have TLS-secured connection between server and webpage since it's only used locally. And browser will not be happy with self-signed certificate too.
