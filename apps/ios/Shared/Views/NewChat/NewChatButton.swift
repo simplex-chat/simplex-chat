@@ -130,7 +130,7 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: (() -> Void)?) -
         if let groupInfo = groupInfo {
             return Alert(
                 title: Text(connectionPlan.planTitle),
-                message: Text("You are already connecting to \(groupInfo.displayName).")
+                message: Text("You are already connecting to group \(groupInfo.displayName).")
             )
         } else {
             return Alert(
@@ -141,7 +141,7 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: (() -> Void)?) -
     case let .alreadyConnectedGroup(groupInfo, connectionPlan):
         return Alert(
             title: Text(connectionPlan.planTitle),
-            message: Text("You are already connected to \(groupInfo.displayName)."),
+            message: Text("You are already connected to group \(groupInfo.displayName)."),
             primaryButton: .default(
                 Text("Open group"),
                 action: { openKnownGroup(groupInfo, dismiss: dismiss) }
