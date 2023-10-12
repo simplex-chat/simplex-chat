@@ -31,7 +31,7 @@ chatProfileTests = do
   describe "contact address connection plan" $ do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
-    fit "connecting via contact address" testPlanAddressConnecting
+    it "connecting via contact address" testPlanAddressConnecting
     it "re-connect with deleted contact" testPlanAddressContactDeletedReconnected
   describe "incognito" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
