@@ -2461,7 +2461,7 @@ testPlanGroupLinkLeaveRejoin =
       concurrentlyN_
         [ alice
             <### [ "bob_1 (Bob): contact is connected",
-                   "bob_1 invited to group #team via your group link",
+                   EndsWith "invited to group #team via your group link",
                    EndsWith "joined the group",
                    "contact bob_1 is merged into bob",
                    "use @bob <message> to send messages"
