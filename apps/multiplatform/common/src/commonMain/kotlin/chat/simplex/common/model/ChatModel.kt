@@ -6,17 +6,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
-import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.ComposeState
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.*
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.*
@@ -102,6 +102,8 @@ object ChatModel {
 
   val filesToDelete = mutableSetOf<File>()
   val simplexLinkMode by lazy { mutableStateOf(ChatController.appPrefs.simplexLinkMode.get()) }
+
+  var updatingChatsMutex: Mutex = Mutex()
 
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value
@@ -199,7 +201,7 @@ object ChatModel {
     }
   }
 
-  suspend fun addChatItem(cInfo: ChatInfo, cItem: ChatItem) {
+  suspend fun addChatItem(cInfo: ChatInfo, cItem: ChatItem) = updatingChatsMutex.withLock {
     // update previews
     val i = getChatIndex(cInfo.id)
     val chat: Chat
@@ -222,10 +224,11 @@ object ChatModel {
     } else {
       addChat(Chat(chatInfo = cInfo, chatItems = arrayListOf(cItem)))
     }
-    // add to current chat
-    if (chatId.value == cInfo.id) {
-      Log.d(TAG, "TODOCHAT: addChatItem: adding to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
-      withContext(Dispatchers.Main) {
+    Log.d(TAG, "TODOCHAT: addChatItem: adding to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
+    withContext(Dispatchers.Main) {
+      // add to current chat
+      if (chatId.value == cInfo.id) {
+        Log.d(TAG, "TODOCHAT: addChatItem: chatIds are equal, size ${chatItems.size}")
         // Prevent situation when chat item already in the list received from backend
         if (chatItems.none { it.id == cItem.id }) {
           if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
@@ -239,7 +242,7 @@ object ChatModel {
     }
   }
 
-  suspend fun upsertChatItem(cInfo: ChatInfo, cItem: ChatItem): Boolean {
+  suspend fun upsertChatItem(cInfo: ChatInfo, cItem: ChatItem): Boolean  = updatingChatsMutex.withLock {
     // update previews
     val i = getChatIndex(cInfo.id)
     val chat: Chat
@@ -259,10 +262,10 @@ object ChatModel {
       addChat(Chat(chatInfo = cInfo, chatItems = arrayListOf(cItem)))
       res = true
     }
-    // update current chat
-    return if (chatId.value == cInfo.id) {
-      Log.d(TAG, "TODOCHAT: upsertChatItem: upserting to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
-      withContext(Dispatchers.Main) {
+    Log.d(TAG, "TODOCHAT: upsertChatItem: upserting to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
+    return withContext(Dispatchers.Main) {
+      // update current chat
+      if (chatId.value == cInfo.id) {
         val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
         if (itemIndex >= 0) {
           chatItems[itemIndex] = cItem
@@ -273,15 +276,15 @@ object ChatModel {
           Log.d(TAG, "TODOCHAT: upsertChatItem: added to chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           true
         }
+      } else {
+        res
       }
-    } else {
-      res
     }
   }
 
   suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem) {
-    if (chatId.value == cInfo.id) {
-      withContext(Dispatchers.Main) {
+    withContext(Dispatchers.Main) {
+      if (chatId.value == cInfo.id) {
         val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
         if (itemIndex >= 0) {
           chatItems[itemIndex] = cItem
