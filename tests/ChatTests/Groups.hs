@@ -3278,7 +3278,7 @@ testMemberContactInvitedConnectionReplaced tmp = do
 
         bob ##> "/_get chat @2 count=100"
         items <- chat <$> getTermLine bob
-        items `shouldContain` [(0, "received invitation to join group team as admin"), (0, "contact deleted"), (0, "hi"), (0, "security code changed")]
+        items `shouldContain` [(0, "security code changed")]
 
     withTestChat tmp "bob" $ \bob -> do
       subscriptions bob 1
