@@ -80,8 +80,8 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool) -> Alert {
     switch alert {
     case let .ownInvitationLinkConfirmConnect(connectionLink, connectionPlan, incognito):
         return Alert(
-            title: Text("Connect with yourself?"),
-            message: Text("This is your own one-time link."),
+            title: Text("Connect to yourself?"),
+            message: Text("This is your own one-time link!"),
             primaryButton: .destructive(
                 Text(incognito ? "Connect incognito" : "Connect"),
                 action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) }
@@ -90,13 +90,13 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool) -> Alert {
         )
     case .invitationLinkConnecting:
         return Alert(
-            title: Text("Already connecting via one-time link"),
-            message: Text("You are already connecting via this link.")
+            title: Text("Already connecting!"),
+            message: Text("You are already connecting via this one-time link!")
         )
     case let .ownContactAddressConfirmConnect(connectionLink, connectionPlan, incognito):
         return Alert(
-            title: Text("Connect with yourself?"),
-            message: Text("This is your own SimpleX address."),
+            title: Text("Connect to yourself?"),
+            message: Text("This is your own SimpleX address!"),
             primaryButton: .destructive(
                 Text(incognito ? "Connect incognito" : "Connect"),
                 action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) }
@@ -105,10 +105,10 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool) -> Alert {
         )
     case let .groupLinkConfirmConnect(connectionLink, connectionPlan, incognito):
         return Alert(
-            title: Text("Connect via group link?"),
-            message: Text("You will join a group this link refers to and connect to its group members."),
+            title: Text("Join group?"),
+            message: Text("You will connect to all group members."),
             primaryButton: .default(
-                Text(incognito ? "Connect incognito" : "Connect"),
+                Text(incognito ? "Join incognito" : "Join"),
                 action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) }
             ),
             secondaryButton: .cancel()
@@ -116,21 +116,21 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool) -> Alert {
     case let .groupLinkConnecting(_, groupInfo):
         if let groupInfo = groupInfo {
             return Alert(
-                title: Text("Group already exists"),
-                message: Text("You are already connecting to group \(groupInfo.displayName).")
+                title: Text("Group already exists!"),
+                message: Text("You are already joining the group \(groupInfo.displayName).")
             )
         } else {
             return Alert(
-                title: Text("Already connecting via group link"),
-                message: Text("You are already connecting via this link.")
+                title: Text("Already joining the group!"),
+                message: Text("You are already joining the group via this link.")
             )
         }
     }
 }
 
 enum PlanAndConnectActionSheet: Identifiable {
-    case askCurrentOrIncognitoProfile(connectionLink: String, connectionPlan: ConnectionPlan?, title: String)
-    case ownLinkAskCurrentOrIncognitoProfile(connectionLink: String, connectionPlan: ConnectionPlan, title: String)
+    case askCurrentOrIncognitoProfile(connectionLink: String, connectionPlan: ConnectionPlan?, title: LocalizedStringKey)
+    case ownLinkAskCurrentOrIncognitoProfile(connectionLink: String, connectionPlan: ConnectionPlan, title: LocalizedStringKey)
     case ownGroupLinkConfirmConnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool?, groupInfo: GroupInfo)
 
     var id: String {
@@ -165,16 +165,16 @@ func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: Bool
     case let .ownGroupLinkConfirmConnect(connectionLink, connectionPlan, incognito, groupInfo):
         if let incognito = incognito {
             return ActionSheet(
-                title: Text("Your link for group \(groupInfo.displayName)!"),
+                title: Text("Join your group?\nThis is your link for group \(groupInfo.displayName)!"),
                 buttons: [
                     .default(Text("Open group")) { openKnownGroup(groupInfo, dismiss: dismiss, showAlreadyExistsAlert: nil) },
-                    .destructive(Text(incognito ? "Connect incognito" : "Connect")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) },
+                    .destructive(Text(incognito ? "Join incognito" : "Join with current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) },
                     .cancel()
                 ]
             )
         } else {
             return ActionSheet(
-                title: Text("Your link for group \(groupInfo.displayName)!"),
+                title: Text("Join your group?\nThis is your link for group \(groupInfo.displayName)!"),
                 buttons: [
                     .default(Text("Open group")) { openKnownGroup(groupInfo, dismiss: dismiss, showAlreadyExistsAlert: nil) },
                     .destructive(Text("Use current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false) },
@@ -204,16 +204,14 @@ func planAndConnect(
                     if let incognito = incognito {
                         connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito)
                     } else {
-                        let title = NSLocalizedString("Connect via one-time link", comment: "connection plan title")
-                        showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: title))
+                        showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "Connect via one-time link"))
                     }
                 case .ownLink:
                     logger.debug("planAndConnect, .invitationLink, .ownLink, incognito=\(incognito?.description ?? "nil")")
                     if let incognito = incognito {
                         showAlert(.ownInvitationLinkConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
                     } else {
-                        let title = NSLocalizedString("Your one-time link!", comment: "connection plan title")
-                        showActionSheet(.ownLinkAskCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: title))
+                        showActionSheet(.ownLinkAskCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "Connect with yourself?\nThis is your own one-time link!"))
                     }
                 case let .connecting(contact_):
                     logger.debug("planAndConnect, .invitationLink, .connecting, incognito=\(incognito?.description ?? "nil")")
@@ -233,16 +231,14 @@ func planAndConnect(
                     if let incognito = incognito {
                         connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito)
                     } else {
-                        let title = NSLocalizedString("Connect via contact address", comment: "connection plan title")
-                        showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: title))
+                        showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "Connect via contact address"))
                     }
                 case .ownLink:
                     logger.debug("planAndConnect, .contactAddress, .ownLink, incognito=\(incognito?.description ?? "nil")")
                     if let incognito = incognito {
                         showAlert(.ownContactAddressConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
                     } else {
-                        let title = NSLocalizedString("Your contact address!", comment: "connection plan title")
-                        showActionSheet(.ownLinkAskCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: title))
+                        showActionSheet(.ownLinkAskCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "Connect with yourself?\nThis is your own SimpleX address!"))
                     }
                 case let .connecting(contact):
                     logger.debug("planAndConnect, .contactAddress, .connecting, incognito=\(incognito?.description ?? "nil")")
@@ -257,8 +253,7 @@ func planAndConnect(
                     if let incognito = incognito {
                         showAlert(.groupLinkConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
                     } else {
-                        let title = NSLocalizedString("Connect via group link", comment: "connection plan title")
-                        showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: title))
+                        showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "Join group"))
                     }
                 case let .ownLink(groupInfo):
                     logger.debug("planAndConnect, .groupLink, .ownLink, incognito=\(incognito?.description ?? "nil")")
