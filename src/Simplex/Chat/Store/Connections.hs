@@ -10,6 +10,7 @@
 module Simplex.Chat.Store.Connections
   ( getConnectionEntity,
     getConnectionEntityByConnReq,
+    getConnectionEntityByConnReqHash,
     getConnectionsToSubscribe,
     unsetConnectionToSubscribe,
   )
@@ -157,6 +158,13 @@ getConnectionEntityByConnReq :: DB.Connection -> User -> ConnReqInvitation -> IO
 getConnectionEntityByConnReq db user cReq = do
   connId_ <- maybeFirstRow fromOnly $
     DB.query db "SELECT agent_conn_id FROM connections WHERE conn_req_inv = ? LIMIT 1" (Only cReq)
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db user) connId_
+
+-- TODO repeat getGroupInfoByGroupLinkHash logic
+getConnectionEntityByConnReqHash :: DB.Connection -> User -> ConnReqUriHash -> IO (Maybe ConnectionEntity)
+getConnectionEntityByConnReqHash db user cReqHash = do
+  connId_ <- maybeFirstRow fromOnly $
+    DB.query db "SELECT agent_conn_id FROM connections WHERE via_contact_uri_hash = ? LIMIT 1" (Only cReqHash)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db user) connId_
 
 getConnectionsToSubscribe :: DB.Connection -> IO ([ConnId], [ConnectionEntity])

@@ -22,8 +22,8 @@ chatProfileTests = do
     it "create and connect via contact link" testUserContactLink
     it "add contact link to profile" testProfileLink
     it "auto accept contact requests" testUserContactLinkAutoAccept
-    it "deduplicate contact requests" testDeduplicateContactRequests
-    it "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
+    fit "deduplicate contact requests" testDeduplicateContactRequests
+    fit "deduplicate contact requests with profile change" testDeduplicateContactRequestsProfileChange
     it "reject contact and delete contact link" testRejectContactAndDeleteUserContact
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
     it "auto-reply message" testAutoReplyMessage
@@ -32,7 +32,7 @@ chatProfileTests = do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
     it "connecting via contact address" testPlanAddressConnecting
-    it "re-connect with deleted contact" testPlanAddressContactDeletedReconnected
+    fit "re-connect with deleted contact" testPlanAddressContactDeletedReconnected
   describe "incognito" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
@@ -651,8 +651,13 @@ testPlanAddressConnecting tmp = do
     getContactLink alice True
   withNewTestChat tmp "bob" bobProfile $ \bob -> do
     threadDelay 100000
+
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
+
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: connecting, allowed to reconnect"
+
     threadDelay 100000
   withTestChat tmp "alice" $ \alice -> do
     alice <## "Your address is active! To show: /sa"

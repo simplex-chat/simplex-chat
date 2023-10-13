@@ -2397,8 +2397,15 @@ testPlanGroupLinkConnecting tmp = do
     alice ##> "/create link #team"
     getGroupLink alice "team" GRMember True
   withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    threadDelay 100000
+
     bob ##> ("/c " <> gLink)
     bob <## "connection request sent!"
+
+    bob ##> ("/_connect plan 1 " <> gLink)
+    bob <## "group link: connecting, allowed to reconnect"
+
+    threadDelay 100000
   withTestChat tmp "alice" $ \alice -> do
     alice
       <### [ "1 group links active",

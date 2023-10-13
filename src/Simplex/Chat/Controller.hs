@@ -645,7 +645,8 @@ instance ToJSON InvitationLinkPlan where
 data ContactAddressPlan
   = CAPOk
   | CAPOwnLink
-  | CAPConnecting {contact :: Contact}
+  | CAPConnectingConfirmReconnect
+  | CAPConnectingProhibit {contact :: Contact}
   | CAPKnown {contact :: Contact}
   deriving (Show, Generic)
 
@@ -656,7 +657,8 @@ instance ToJSON ContactAddressPlan where
 data GroupLinkPlan
   = GLPOk
   | GLPOwnLink {groupInfo :: GroupInfo}
-  | GLPConnecting {groupInfo_ :: Maybe GroupInfo}
+  | GLPConnectingConfirmReconnect
+  | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
   | GLPKnown {groupInfo :: GroupInfo}
   deriving (Show, Generic)
 
@@ -664,8 +666,8 @@ instance ToJSON GroupLinkPlan where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "GLP"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "GLP"
 
-connectionPlanOk :: ConnectionPlan -> Bool
-connectionPlanOk = \case
+connectionPlanProceed :: ConnectionPlan -> Bool
+connectionPlanProceed = \case
   CPInvitationLink ilp -> case ilp of
     ILPOk -> True
     ILPOwnLink -> True
@@ -673,10 +675,12 @@ connectionPlanOk = \case
   CPContactAddress cap -> case cap of
     CAPOk -> True
     CAPOwnLink -> True
+    CAPConnectingConfirmReconnect -> True
     _ -> False
   CPGroupLink glp -> case glp of
     GLPOk -> True
     GLPOwnLink _ -> True
+    GLPConnectingConfirmReconnect -> True
     _ -> False
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}

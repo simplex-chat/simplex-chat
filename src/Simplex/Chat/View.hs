@@ -1281,7 +1281,8 @@ viewConnectionPlan = \case
   CPContactAddress cap -> case cap of
     CAPOk -> [ctAddr "ok to connect"]
     CAPOwnLink -> [ctAddr "own address"]
-    CAPConnecting ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
+    CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
+    CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
     CAPKnown ct ->
       [ ctAddr ("known contact " <> ttyContact' ct),
         "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
@@ -1291,8 +1292,9 @@ viewConnectionPlan = \case
   CPGroupLink glp -> case glp of
     GLPOk -> [grpLink "ok to connect"]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
-    GLPConnecting Nothing -> [grpLink "connecting"]
-    GLPConnecting (Just g) -> [grpLink ("connecting to group " <> ttyGroup' g)]
+    GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
+    GLPConnectingProhibit Nothing -> [grpLink "connecting"]
+    GLPConnectingProhibit (Just g) -> [grpLink ("connecting to group " <> ttyGroup' g)]
     GLPKnown g ->
       [ grpLink ("known group " <> ttyGroup' g),
         "use " <> ttyToGroup g <> highlight' "<message>" <> " to send messages"
