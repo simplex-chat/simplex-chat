@@ -1057,20 +1057,6 @@ chatModifyVar f newValue = asks f >>= atomically . (`modifyTVar'` newValue)
 setContactNetworkStatus :: ChatMonad' m => Contact -> NetworkStatus -> m ()
 setContactNetworkStatus ct = chatModifyVar connNetworkStatuses . M.insert (contactAgentConnId ct)
 
--- iOS:
--- keep <- + CRContactConnected: setContactNetworkStatus(contact, .connected)
--- CRNetworkStatuses <- + CRContactSubSummary: setContactNetworkStatus(sub.contact, .connected) / processContactSubError(sub.contact, err)
--- CRNetworkStatuses <- + CRContactSubError: processContactSubError(contact, chatError)
--- keep <- + CRConnectedToGroupMember: m.setContactNetworkStatus(contact, .connected)
--- CRNetworkStatus <- + CRContactsSubscribed: updateContactsStatus(contactRefs, status: .connected)
--- CRNetworkStatus <- + CRContactsDisconnected: updateContactsStatus(contactRefs, status: .disconnected)
-
--- + updateContactsStatus(): networkStatuses[c.agentConnId] = status
--- + processContactSubError(): m.setContactNetworkStatus(contact, .error(err))
-
--- Below seems pre-mature? maybe it was not connected yet? It will send contact connected and it will set the status, that will be spinning until then?
--- ? createMemberContactButton(): setContactNetworkStatus(memberContact, .connected)
-
 tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
 tryChatError = tryAllErrors mkChatError
 {-# INLINE tryChatError #-}
