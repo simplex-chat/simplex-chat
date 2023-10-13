@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -53,7 +54,7 @@ import Simplex.FileTransfer.Util (uniqueCombine)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
-import Simplex.Messaging.Parsers (pattern SingleFieldJSONTag, pattern TaggedObjectJSONTag, pattern TaggedObjectJSONData)
+import Simplex.Messaging.Parsers (pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
@@ -64,7 +65,7 @@ import qualified Simplex.Messaging.Transport.HTTP2.Server as HTTP2
 import Simplex.Messaging.Util (bshow, ifM, tshow)
 import System.FilePath (isPathSeparator, takeFileName, (</>))
 import UnliftIO
-import UnliftIO.Directory (createDirectoryIfMissing, getFileSize, makeAbsolute)
+import UnliftIO.Directory (createDirectoryIfMissing, getFileSize)
 
 withRemoteHostSession :: (ChatMonad m) => RemoteHostId -> (RemoteHostSession -> m a) -> m a
 withRemoteHostSession remoteHostId action = do
@@ -90,7 +91,9 @@ startRemoteHost remoteHostId = do
     cleanup finished = do
       logInfo "Remote host http2 client fininshed"
       atomically $ writeTVar finished True
-      closeRemoteHostSession remoteHostId >>= toView
+      M.lookup remoteHostId <$> chatReadVar remoteHostSessions >>= \case
+        Nothing -> logInfo $ "Session already closed for remote host " <> tshow remoteHostId
+        Just _ -> closeRemoteHostSession remoteHostId >>= toView
     run RemoteHost {storePath, caKey, caCert} = do
       finished <- newTVarIO False
       let parent = (C.signatureKeyPair caKey, caCert)
@@ -141,6 +144,7 @@ pollRemote finished http path action = loop
 
 closeRemoteHostSession :: (ChatMonad m) => RemoteHostId -> m ChatResponse
 closeRemoteHostSession remoteHostId = withRemoteHostSession remoteHostId $ \session -> do
+  logInfo $ "Closing remote host session for " <> tshow remoteHostId
   liftIO $ cancelRemoteHostSession session
   chatWriteVar currentRemoteHost Nothing
   chatModifyVar remoteHostSessions $ M.delete remoteHostId
@@ -174,8 +178,12 @@ listRemoteHosts = do
     pure RemoteHostInfo {remoteHostId, storePath, displayName, sessionActive}
 
 deleteRemoteHost :: (ChatMonad m) => RemoteHostId -> m ChatResponse
-deleteRemoteHost remoteHostId = withRemoteHost remoteHostId $ \rh -> do
-  -- TODO: delete files
+deleteRemoteHost remoteHostId = withRemoteHost remoteHostId $ \RemoteHost {storePath} -> do
+  chatReadVar filesFolder >>= \case
+    Just baseDir -> do
+      let hostStore = baseDir </> storePath
+      logError $ "TODO: remove " <> tshow hostStore
+    Nothing -> logWarn "Local file store not available while deleting remote host"
   withStore' $ \db -> deleteRemoteHostRecord db remoteHostId
   pure CRRemoteHostDeleted {remoteHostId}
 
@@ -234,7 +242,9 @@ handleRcvFileComplete http storePath remoteUser cif@CIFile {fileId, fileName, fi
         createDirectoryIfMissing True hostStore
         localPath <- uniqueCombine hostStore fileName
         ok <- fetchRemoteFile http remoteUser fileId localPath
-        pure $ Just (cif {fileName = localPath} :: CIFile 'MDRcv)
+        if ok
+          then pure $ Just (cif {fileName = localPath} :: CIFile 'MDRcv)
+          else Nothing <$ logError "fetchRemoteFile failed"
       Nothing -> Nothing <$ logError "Local file store not available while fetching remote file"
   _ -> Nothing <$ logDebug ("Ingoring invalid file notification for file (" <> tshow fileId <> ") " <> tshow fileName)
 
