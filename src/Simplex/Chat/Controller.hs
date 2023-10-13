@@ -1219,14 +1219,17 @@ instance ToJSON ArchiveError where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "AE"
 
 data RemoteHostSession
-  = RemoteHostSessionStarting
-      { announcer :: Async ()
-      }
-  | RemoteHostSessionStarted
-      { -- | Path for local resources to be synchronized with host
-        storePath :: FilePath,
-        ctrlClient :: HTTP2Client
-      }
+  = RemoteHostSessionStarting {cancelRemoteHostSession :: IO ()}
+  | RemoteHostSessionConnected {cancelRemoteHostSession :: IO (), ctrlClient :: HTTP2Client, storePath :: FilePath} -- FIXME: storePath needed only for tests
+  -- = RemoteHostSessionStarting -- Atomically grab remoteHostId
+  -- | RemoteHostSessionAnnouncing -- Setup finished, waiting for incoming connection
+  --     { announcer :: Async ()
+  --     }
+  -- | RemoteHostSessionConnected
+  --     { -- | Path for local resources to be synchronized with host
+  --       storePath :: FilePath,
+  --       ctrlClient :: HTTP2Client
+  --     }
 
 data RemoteCtrlSession = RemoteCtrlSession
   { -- | Server side of transport to process remote commands and forward notifications

@@ -21,6 +21,7 @@ module Simplex.Chat.Remote.Discovery
 where
 
 import Control.Monad
+import Control.Logger.Simple
 import Data.ByteString (ByteString)
 import Data.Default (def)
 import Data.String (IsString)
@@ -36,7 +37,7 @@ import Simplex.Messaging.Transport.HTTP2 (defaultHTTP2BufferSize, getHTTP2Body)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError, attachHTTP2Client, connTimeout, defaultHTTP2ClientConfig)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..), runHTTP2ServerWith)
 import Simplex.Messaging.Transport.Server (defaultTransportServerConfig, runTransportServer)
-import Simplex.Messaging.Util (whenM)
+import Simplex.Messaging.Util (tshow, whenM)
 import UnliftIO
 import UnliftIO.Concurrent
 
@@ -58,22 +59,23 @@ announceRevHTTP2 finishAction invite credentials = do
   httpClient <- newEmptyMVar
   started <- newEmptyTMVarIO
   finished <- newEmptyMVar
-  announcer <- async . liftIO . whenM (atomically $ takeTMVar started) $ runAnnouncer (strEncode invite)
-  tlsServer <- startTLSServer started credentials $ \tls -> cancel announcer >> runHTTP2Client finished httpClient tls
+  announcer <- forkIO . liftIO . whenM (atomically $ takeTMVar started) $ runAnnouncer (strEncode invite)
+  tlsServer <- startTLSServer started credentials $ \tls -> killThread announcer >> runHTTP2Client finished httpClient tls
   _ <- forkIO $ do
     readMVar finished
-    cancel announcer
+    killThread announcer
     cancel tlsServer
     finishAction
   readMVar httpClient
 
 -- | Broadcast invite with link-local datagrams
 runAnnouncer :: ByteString -> IO ()
-runAnnouncer inviteBS = do
+runAnnouncer inviteBS =
   bracket (UDP.clientSocket BROADCAST_ADDR_V4 BROADCAST_PORT False) UDP.close $ \sock -> do
     N.setSocketOption (UDP.udpSocket sock) N.Broadcast 1
     N.setSocketOption (UDP.udpSocket sock) N.ReuseAddr 1
     forever $ do
+      logDebug $ "Announcing " <> tshow inviteBS
       UDP.send sock inviteBS
       threadDelay 1000000
 

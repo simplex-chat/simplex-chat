@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -182,6 +182,7 @@ library
     , process ==1.6.*
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
+    , resourcet
     , simple-logger ==0.1.*
     , simplexmq >=5.0
     , socks ==0.6.*
@@ -235,6 +236,7 @@ executable simplex-bot
     , process ==1.6.*
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
+    , resourcet
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=5.0
@@ -289,6 +291,7 @@ executable simplex-bot-advanced
     , process ==1.6.*
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
+    , resourcet
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=5.0
@@ -345,6 +348,7 @@ executable simplex-broadcast-bot
     , process ==1.6.*
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
+    , resourcet
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=5.0
@@ -400,6 +404,7 @@ executable simplex-chat
     , process ==1.6.*
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
+    , resourcet
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=5.0
@@ -459,6 +464,7 @@ executable simplex-directory-service
     , process ==1.6.*
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
+    , resourcet
     , simple-logger ==0.1.*
     , simplex-chat
     , simplexmq >=5.0
@@ -544,6 +550,7 @@ test-suite simplex-chat-test
     , process ==1.6.*
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
+    , resourcet
     , silently ==1.2.*
     , simple-logger ==0.1.*
     , simplex-chat
