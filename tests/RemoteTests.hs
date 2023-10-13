@@ -110,10 +110,10 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   desktop <## "Remote hosts:"
   desktop <## "1. TODO" -- TODO host name probably should be Maybe, as when host is created there is no name yet
   desktop ##> "/start remote host 1"
-  desktop <## "remote host 1 started"
+  desktop <## "ok"
 
   mobile ##> "/start remote ctrl"
-  mobile <## "remote controller started"
+  mobile <## "ok"
   mobile <## "remote controller announced"
   mobile <## "connection code:"
   fingerprint' <- getTermLine mobile
@@ -126,7 +126,7 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   mobile <## "Remote controllers:"
   mobile <## "1. TODO"
   mobile ##> "/accept remote ctrl 1"
-  mobile <## "remote controller 1 accepted" -- alternative scenario: accepted before controller start
+  mobile <## "ok" -- alternative scenario: accepted before controller start
   mobile <## "remote controller 1 connecting to TODO"
   mobile <## "remote controller 1 connected, TODO"
 
@@ -140,9 +140,9 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
 
   traceM "    - Shutting desktop"
   desktop ##> "/stop remote host 1"
-  desktop <## "remote host 1 stopped"
+  desktop <## "ok"
   desktop ##> "/delete remote host 1"
-  desktop <## "remote host 1 deleted"
+  desktop <## "ok"
   desktop ##> "/list remote hosts"
   desktop <## "No remote hosts"
 
@@ -151,7 +151,7 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   mobile <## "ok"
   mobile <## "remote controller stopped"
   mobile ##> "/delete remote ctrl 1"
-  mobile <## "remote controller 1 deleted"
+  mobile <## "ok"
   mobile ##> "/list remote ctrls"
   mobile <## "No remote controllers"
 
@@ -173,10 +173,10 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   fingerprint <- getTermLine desktop
 
   desktop ##> "/start remote host 1"
-  desktop <## "remote host 1 started"
+  desktop <## "ok"
 
   mobile ##> "/start remote ctrl"
-  mobile <## "remote controller started"
+  mobile <## "ok"
   mobile <## "remote controller announced"
   mobile <## "connection code:"
   fingerprint' <- getTermLine mobile
@@ -184,7 +184,7 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   mobile ##> ("/register remote ctrl " <> fingerprint')
   mobile <## "remote controller 1 registered"
   mobile ##> "/accept remote ctrl 1"
-  mobile <## "remote controller 1 accepted" -- alternative scenario: accepted before controller start
+  mobile <## "ok" -- alternative scenario: accepted before controller start
   mobile <## "remote controller 1 connecting to TODO"
   mobile <## "remote controller 1 connected, TODO"
   desktop <## "remote host 1 connected"

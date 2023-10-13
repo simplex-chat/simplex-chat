@@ -264,21 +264,15 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
   CRNtfMessages {} -> []
   CRRemoteHostCreated rhId oobData -> ("remote host " <> sShow rhId <> " created") : viewRemoteCtrlOOBData oobData
   CRRemoteHostList hs -> viewRemoteHosts hs
-  CRRemoteHostStarted rhId -> ["remote host " <> sShow rhId <> " started"]
   CRRemoteHostConnected rhId -> ["remote host " <> sShow rhId <> " connected"]
   CRRemoteHostStopped rhId -> ["remote host " <> sShow rhId <> " stopped"]
-  CRRemoteHostDeleted rhId -> ["remote host " <> sShow rhId <> " deleted"]
   CRRemoteCtrlList cs -> viewRemoteCtrls cs
   CRRemoteCtrlRegistered rcId -> ["remote controller " <> sShow rcId <> " registered"]
-  CRRemoteCtrlStarted -> ["remote controller started"]
   CRRemoteCtrlAnnounce fingerprint -> ["remote controller announced", "connection code:", plain $ strEncode fingerprint]
   CRRemoteCtrlFound rc -> ["remote controller found:", viewRemoteCtrl rc]
-  CRRemoteCtrlAccepted rcId -> ["remote controller " <> sShow rcId <> " accepted"]
-  CRRemoteCtrlRejected rcId -> ["remote controller " <> sShow rcId <> " rejected"]
   CRRemoteCtrlConnecting rcId rcName -> ["remote controller " <> sShow rcId <> " connecting to " <> plain rcName]
   CRRemoteCtrlConnected rcId rcName -> ["remote controller " <> sShow rcId <> " connected, " <> plain rcName]
   CRRemoteCtrlStopped -> ["remote controller stopped"]
-  CRRemoteCtrlDeleted rcId -> ["remote controller " <> sShow rcId <> " deleted"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
     let viewQuery SlowSQLQuery {query, queryStats = SlowQueryStats {count, timeMax, timeAvg}} =

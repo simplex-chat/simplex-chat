@@ -882,6 +882,38 @@ func apiCancelFile(fileId: Int64) async -> AChatItem? {
     }
 }
 
+func startRemoteCtrl() async throws {
+    try await sendCommandOkResp(.startRemoteCtrl)
+}
+
+func registerRemoteCtrl(_ remoteCtrlOOB: RemoteCtrlOOB) async throws -> Int64 {
+    let r = await chatSendCmd(.registerRemoteCtrl(remoteCtrlOOB: remoteCtrlOOB))
+    if case let .remoteCtrlRegistered(rcId) = r { return rcId }
+    throw r
+}
+
+func listRemoteCtrls() async throws -> [RemoteCtrlInfo] {
+    let r = await chatSendCmd(.listRemoteCtrls)
+    if case let .remoteCtrlList(rcInfo) = r { return rcInfo }
+    throw r
+}
+
+func acceptRemoteCtrl(_ rcId: Int64) async throws {
+    try await sendCommandOkResp(.acceptRemoteCtrl(remoteCtrlId: rcId))
+}
+
+func rejectRemoteCtrl(_ rcId: Int64) async throws {
+    try await sendCommandOkResp(.rejectRemoteCtrl(remoteCtrlId: rcId))
+}
+
+func stopRemoteCtrl() async throws {
+    try await sendCommandOkResp(.stopRemoteCtrl)
+}
+
+func deleteRemoteCtrl(_ rcId: Int64) async throws {
+    try await sendCommandOkResp(.deleteRemoteCtrl(remoteCtrlId: rcId))
+}
+
 func networkErrorAlert(_ r: ChatResponse) -> Alert? {
     switch r {
     case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TIMEOUT))):
