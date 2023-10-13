@@ -30,7 +30,6 @@ import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import System.FilePath (makeRelative, (</>))
 import Test.Hspec
 import UnliftIO
-import UnliftIO.Concurrent (threadDelay)
 import UnliftIO.Directory
 
 remoteTests :: SpecWith FilePath
