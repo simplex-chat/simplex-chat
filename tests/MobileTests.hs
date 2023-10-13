@@ -120,19 +120,19 @@ chatStartedSwift = "{\"resp\":{\"_owsf\":true,\"chatStarted\":{}}}"
 chatStartedTagged :: LB.ByteString
 chatStartedTagged = "{\"resp\":{\"type\":\"chatStarted\"}}"
 
-contactSubSummary :: LB.ByteString
-contactSubSummary =
+networkStatuses :: LB.ByteString
+networkStatuses =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-  contactSubSummarySwift
+  networkStatusesSwift
 #else
-  contactSubSummaryTagged
+  networkStatusesTagged
 #endif
 
-contactSubSummarySwift :: LB.ByteString
-contactSubSummarySwift = "{\"resp\":{\"_owsf\":true,\"contactSubSummary\":{" <> userJSON <> ",\"contactSubscriptions\":[]}}}"
+networkStatusesSwift :: LB.ByteString
+networkStatusesSwift = "{\"resp\":{\"_owsf\":true,\"networkStatuses\":{\"user_\":" <> userJSON <> ",\"networkStatuses\":[]}}}"
 
-contactSubSummaryTagged :: LB.ByteString
-contactSubSummaryTagged = "{\"resp\":{\"type\":\"contactSubSummary\"," <> userJSON <> ",\"contactSubscriptions\":[]}}"
+networkStatusesTagged :: LB.ByteString
+networkStatusesTagged = "{\"resp\":{\"type\":\"networkStatuses\",\"user_\":" <> userJSON <> ",\"networkStatuses\":[]}}"
 
 memberSubSummary :: LB.ByteString
 memberSubSummary =
@@ -143,10 +143,10 @@ memberSubSummary =
 #endif
 
 memberSubSummarySwift :: LB.ByteString
-memberSubSummarySwift = "{\"resp\":{\"_owsf\":true,\"memberSubSummary\":{" <> userJSON <> ",\"memberSubscriptions\":[]}}}"
+memberSubSummarySwift = "{\"resp\":{\"_owsf\":true,\"memberSubSummary\":{\"user\":" <> userJSON <> ",\"memberSubscriptions\":[]}}}"
 
 memberSubSummaryTagged :: LB.ByteString
-memberSubSummaryTagged = "{\"resp\":{\"type\":\"memberSubSummary\"," <> userJSON <> ",\"memberSubscriptions\":[]}}"
+memberSubSummaryTagged = "{\"resp\":{\"type\":\"memberSubSummary\",\"user\":" <> userJSON <> ",\"memberSubscriptions\":[]}}"
 
 userContactSubSummary :: LB.ByteString
 userContactSubSummary =
@@ -157,10 +157,10 @@ userContactSubSummary =
 #endif
 
 userContactSubSummarySwift :: LB.ByteString
-userContactSubSummarySwift = "{\"resp\":{\"_owsf\":true,\"userContactSubSummary\":{" <> userJSON <> ",\"userContactSubscriptions\":[]}}}"
+userContactSubSummarySwift = "{\"resp\":{\"_owsf\":true,\"userContactSubSummary\":{\"user\":" <> userJSON <> ",\"userContactSubscriptions\":[]}}}"
 
 userContactSubSummaryTagged :: LB.ByteString
-userContactSubSummaryTagged = "{\"resp\":{\"type\":\"userContactSubSummary\"," <> userJSON <> ",\"userContactSubscriptions\":[]}}"
+userContactSubSummaryTagged = "{\"resp\":{\"type\":\"userContactSubSummary\",\"user\":" <> userJSON <> ",\"userContactSubscriptions\":[]}}"
 
 pendingSubSummary :: LB.ByteString
 pendingSubSummary =
@@ -171,13 +171,13 @@ pendingSubSummary =
 #endif
 
 pendingSubSummarySwift :: LB.ByteString
-pendingSubSummarySwift = "{\"resp\":{\"_owsf\":true,\"pendingSubSummary\":{" <> userJSON <> ",\"pendingSubscriptions\":[]}}}"
+pendingSubSummarySwift = "{\"resp\":{\"_owsf\":true,\"pendingSubSummary\":{\"user\":" <> userJSON <> ",\"pendingSubscriptions\":[]}}}"
 
 pendingSubSummaryTagged :: LB.ByteString
-pendingSubSummaryTagged = "{\"resp\":{\"type\":\"pendingSubSummary\"," <> userJSON <> ",\"pendingSubscriptions\":[]}}"
+pendingSubSummaryTagged = "{\"resp\":{\"type\":\"pendingSubSummary\",\"user\":" <> userJSON <> ",\"pendingSubscriptions\":[]}}"
 
 userJSON :: LB.ByteString
-userJSON = "\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}"
+userJSON = "{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}"
 
 parsedMarkdown :: LB.ByteString
 parsedMarkdown =
@@ -215,7 +215,7 @@ testChatApi tmp = do
   chatSendCmd cc "/u" `shouldReturn` activeUser
   chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
-  chatRecvMsg cc `shouldReturn` contactSubSummary
+  chatRecvMsg cc `shouldReturn` networkStatuses
   chatRecvMsg cc `shouldReturn` userContactSubSummary
   chatRecvMsg cc `shouldReturn` memberSubSummary
   chatRecvMsgWait cc 10000 `shouldReturn` pendingSubSummary
