@@ -1891,18 +1891,18 @@ processChatCommand = \case
     let pref = uncurry TimedMessagesGroupPreference $ maybe (FEOff, Just 86400) (\ttl -> (FEOn, Just ttl)) ttl_
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
-  CreateRemoteHost -> createRemoteHost
-  ListRemoteHosts -> listRemoteHosts
-  StartRemoteHost rh -> startRemoteHost rh
-  StopRemoteHost rh -> closeRemoteHostSession rh
-  DeleteRemoteHost rh -> deleteRemoteHost rh
-  StartRemoteCtrl -> startRemoteCtrl (execChatCommand Nothing)
-  AcceptRemoteCtrl rc -> acceptRemoteCtrl rc
-  RejectRemoteCtrl rc -> rejectRemoteCtrl rc
-  StopRemoteCtrl -> stopRemoteCtrl
-  RegisterRemoteCtrl oob -> registerRemoteCtrl oob
-  ListRemoteCtrls -> listRemoteCtrls
-  DeleteRemoteCtrl rc -> deleteRemoteCtrl rc
+  CreateRemoteHost -> uncurry CRRemoteHostCreated <$> createRemoteHost
+  ListRemoteHosts -> CRRemoteHostList <$> listRemoteHosts
+  StartRemoteHost rh -> startRemoteHost rh >> ok_
+  StopRemoteHost rh -> closeRemoteHostSession rh >> ok_
+  DeleteRemoteHost rh -> deleteRemoteHost rh >> ok_
+  StartRemoteCtrl -> startRemoteCtrl (execChatCommand Nothing) >> ok_
+  AcceptRemoteCtrl rc -> acceptRemoteCtrl rc >> ok_
+  RejectRemoteCtrl rc -> rejectRemoteCtrl rc >> ok_
+  StopRemoteCtrl -> stopRemoteCtrl >> ok_
+  RegisterRemoteCtrl oob -> CRRemoteCtrlRegistered <$> registerRemoteCtrl oob
+  ListRemoteCtrls -> CRRemoteCtrlList <$> listRemoteCtrls
+  DeleteRemoteCtrl rc -> deleteRemoteCtrl rc >> ok_
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
     let versionInfo = coreVersionInfo $(simplexmqCommitQ)

@@ -33,7 +33,7 @@ main = do
       describe "SimpleX chat client" chatTests
       xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
       xdescribe'' "SimpleX Directory service bot" directoryServiceTests
-      describe "Remote session" remoteTests
+      fdescribe "Remote session" remoteTests
   where
     testBracket test = do
       t <- getSystemTime

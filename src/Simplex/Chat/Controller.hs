@@ -425,8 +425,8 @@ data ChatCommand
   -- | SwitchRemoteHost (Maybe RemoteHostId) -- ^ Switch current remote host
   | StopRemoteHost RemoteHostId -- ^ Shut down a running session
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
-  | RegisterRemoteCtrl RemoteCtrlOOB -- ^ Register OOB data for satellite discovery and handshake
   | StartRemoteCtrl -- ^ Start listening for announcements from all registered controllers
+  | RegisterRemoteCtrl RemoteCtrlOOB -- ^ Register OOB data for satellite discovery and handshake
   | ListRemoteCtrls
   | AcceptRemoteCtrl RemoteCtrlId -- ^ Accept discovered data and store confirmation
   | RejectRemoteCtrl RemoteCtrlId -- ^ Reject and blacklist discovered data
@@ -631,21 +631,15 @@ data ChatResponse
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostCreated {remoteHostId :: RemoteHostId, oobData :: RemoteCtrlOOB}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]} -- XXX: RemoteHostInfo is mostly concerned with session setup
-  | CRRemoteHostStarted {remoteHostId :: RemoteHostId}
   | CRRemoteHostConnected {remoteHostId :: RemoteHostId}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
-  | CRRemoteHostDeleted {remoteHostId :: RemoteHostId}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
   | CRRemoteCtrlRegistered {remoteCtrlId :: RemoteCtrlId}
-  | CRRemoteCtrlStarted
   | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- unregistered fingerprint, needs confirmation
   | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrl} -- registered fingerprint, may connect
-  | CRRemoteCtrlAccepted {remoteCtrlId :: RemoteCtrlId}
-  | CRRemoteCtrlRejected {remoteCtrlId :: RemoteCtrlId}
   | CRRemoteCtrlConnecting {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
   | CRRemoteCtrlConnected {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
   | CRRemoteCtrlStopped
-  | CRRemoteCtrlDeleted {remoteCtrlId :: RemoteCtrlId}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
@@ -667,21 +661,15 @@ allowRemoteEvent :: ChatResponse -> Bool
 allowRemoteEvent = \case
   CRRemoteHostCreated {} -> False
   CRRemoteHostList {} -> False
-  CRRemoteHostStarted {} -> False
   CRRemoteHostConnected {} -> False
   CRRemoteHostStopped {} -> False
-  CRRemoteHostDeleted {} -> False
   CRRemoteCtrlList {} -> False
   CRRemoteCtrlRegistered {} -> False
-  CRRemoteCtrlStarted {} -> False
   CRRemoteCtrlAnnounce {} -> False
   CRRemoteCtrlFound {} -> False
-  CRRemoteCtrlAccepted {} -> False
-  CRRemoteCtrlRejected {} -> False
   CRRemoteCtrlConnecting {} -> False
   CRRemoteCtrlConnected {} -> False
   CRRemoteCtrlStopped {} -> False
-  CRRemoteCtrlDeleted {} -> False
   _ -> True
 
 logResponseToFile :: ChatResponse -> Bool

@@ -1938,8 +1938,8 @@ sealed class CC {
   class StartRemoteHost(val remoteHostId: Long): CC()
   class StopRemoteHost(val remoteHostId: Long): CC()
   class DeleteRemoteHost(val remoteHostId: Long): CC()
-  class RegisterRemoteCtrl(val remoteCtrlOOB: RemoteCtrlOOB): CC()
   class StartRemoteCtrl(): CC()
+  class RegisterRemoteCtrl(val remoteCtrlOOB: RemoteCtrlOOB): CC()
   class ListRemoteCtrls(): CC()
   class AcceptRemoteCtrl(val remoteCtrlId: Long): CC()
   class RejectRemoteCtrl(val remoteCtrlId: Long): CC()
@@ -2167,8 +2167,8 @@ sealed class CC {
     is StartRemoteHost -> "startRemoteHost"
     is StopRemoteHost -> "stopRemoteHost"
     is DeleteRemoteHost -> "deleteRemoteHost"
-    is RegisterRemoteCtrl -> "registerRemoteCtrl"
     is StartRemoteCtrl -> "startRemoteCtrl"
+    is RegisterRemoteCtrl -> "registerRemoteCtrl"
     is ListRemoteCtrls -> "listRemoteCtrls"
     is AcceptRemoteCtrl -> "acceptRemoteCtrl"
     is RejectRemoteCtrl -> "rejectRemoteCtrl"
@@ -3483,30 +3483,24 @@ sealed class CR {
   @Serializable @SerialName("callEnded") class CallEnded(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("newContactConnection") class NewContactConnection(val user: UserRef, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val user: UserRef, val connection: PendingContactConnection): CR()
+  // remote events (desktop)
+  @Serializable @SerialName("remoteHostCreated") class RemoteHostCreated(val remoteHostId: Long, val oobData: RemoteCtrlOOB): CR()
+  @Serializable @SerialName("remoteHostList") class RemoteHostList(val remoteHosts: List<RemoteHostInfo>): CR()
+  @Serializable @SerialName("remoteHostConnected") class RemoteHostConnected(val remoteHostId: Long): CR()
+  @Serializable @SerialName("remoteHostStopped") class RemoteHostStopped(val remoteHostId: Long): CR()
+  // remote events (mobile)
+  @Serializable @SerialName("remoteCtrlList") class RemoteCtrlList(val remoteCtrls: List<RemoteCtrlInfo>): CR()
+  @Serializable @SerialName("remoteCtrlRegistered") class RemoteCtrlRegistered(val remoteCtrlId: Long): CR()
+  @Serializable @SerialName("remoteCtrlAnnounce") class RemoteCtrlAnnounce(val fingerprint: String): CR()
+  @Serializable @SerialName("remoteCtrlFound") class RemoteCtrlFound(val remoteCtrl: RemoteCtrl): CR()
+  @Serializable @SerialName("remoteCtrlConnecting") class RemoteCtrlConnecting(val remoteCtrlId: Long, val displayName: String): CR()
+  @Serializable @SerialName("remoteCtrlConnected") class RemoteCtrlConnected(val remoteCtrlId: Long, val displayName: String): CR()
+  @Serializable @SerialName("remoteCtrlStopped") class RemoteCtrlStopped(): CR()
   @Serializable @SerialName("versionInfo") class VersionInfo(val versionInfo: CoreVersionInfo, val chatMigrations: List<UpMigration>, val agentMigrations: List<UpMigration>): CR()
   @Serializable @SerialName("cmdOk") class CmdOk(val user: UserRef?): CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val user_: UserRef?, val chatError: ChatError): CR()
   @Serializable @SerialName("chatError") class ChatRespError(val user_: UserRef?, val chatError: ChatError): CR()
   @Serializable @SerialName("archiveImported") class ArchiveImported(val archiveErrors: List<ArchiveError>): CR()
-  // remote events (desktop)
-  @Serializable @SerialName("remoteHostCreated") class RemoteHostCreated(val remoteHostId: Long, val oobData: RemoteCtrlOOB): CR()
-  @Serializable @SerialName("remoteHostList") class RemoteHostList(val remoteHosts: List<RemoteHostInfo>): CR()
-  @Serializable @SerialName("remoteHostStarted") class RemoteHostStarted(val remoteHostId: Long): CR()
-  @Serializable @SerialName("remoteHostConnected") class RemoteHostConnected(val remoteHostId: Long): CR()
-  @Serializable @SerialName("remoteHostStopped") class RemoteHostStopped(val remoteHostId: Long): CR()
-  @Serializable @SerialName("remoteHostDeleted") class RemoteHostDeleted(val remoteHostId: Long): CR()
-  // remote events (mobile)
-  @Serializable @SerialName("remoteCtrlList") class RemoteCtrlList(val remoteCtrls: List<RemoteCtrlInfo>): CR()
-  @Serializable @SerialName("remoteCtrlRegistered") class RemoteCtrlRegistered(val remoteCtrlId: Long): CR()
-  @Serializable @SerialName("remoteCtrlStarted") class RemoteCtrlStarted(): CR()
-  @Serializable @SerialName("remoteCtrlAnnounce") class RemoteCtrlAnnounce(val fingerprint: String): CR()
-  @Serializable @SerialName("remoteCtrlFound") class RemoteCtrlFound(val remoteCtrl: RemoteCtrl): CR()
-  @Serializable @SerialName("remoteCtrlAccepted") class RemoteCtrlAccepted(val remoteCtrlId: Long): CR()
-  @Serializable @SerialName("remoteCtrlRejected") class RemoteCtrlRejected(val remoteCtrlId: Long): CR()
-  @Serializable @SerialName("remoteCtrlConnecting") class RemoteCtrlConnecting(val remoteCtrlId: Long, val displayName: String): CR()
-  @Serializable @SerialName("remoteCtrlConnected") class RemoteCtrlConnected(val remoteCtrlId: Long, val displayName: String): CR()
-  @Serializable @SerialName("remoteCtrlStopped") class RemoteCtrlStopped(): CR()
-  @Serializable @SerialName("remoteCtrlDeleted") class RemoteCtrlDeleted(val remoteCtrlId: Long): CR()
   // general
   @Serializable class Response(val type: String, val json: String): CR()
   @Serializable class Invalid(val str: String): CR()
@@ -3632,28 +3626,22 @@ sealed class CR {
     is CallEnded -> "callEnded"
     is NewContactConnection -> "newContactConnection"
     is ContactConnectionDeleted -> "contactConnectionDeleted"
+    is RemoteHostCreated -> "remoteHostCreated"
+    is RemoteHostList -> "remoteHostList"
+    is RemoteHostConnected -> "remoteHostConnected"
+    is RemoteHostStopped -> "remoteHostStopped"
+    is RemoteCtrlList -> "remoteCtrlList"
+    is RemoteCtrlRegistered -> "remoteCtrlRegistered"
+    is RemoteCtrlAnnounce -> "remoteCtrlAnnounce"
+    is RemoteCtrlFound -> "remoteCtrlFound"
+    is RemoteCtrlConnecting -> "remoteCtrlConnecting"
+    is RemoteCtrlConnected -> "remoteCtrlConnected"
+    is RemoteCtrlStopped -> "remoteCtrlStopped"
     is VersionInfo -> "versionInfo"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
     is ArchiveImported -> "archiveImported"
-    is RemoteHostCreated -> "remoteHostCreated"
-    is RemoteHostList -> "remoteHostList"
-    is RemoteHostStarted -> "remoteHostStarted"
-    is RemoteHostConnected -> "remoteHostConnected"
-    is RemoteHostStopped -> "remoteHostStopped"
-    is RemoteHostDeleted -> "remoteHostDeleted"
-    is RemoteCtrlList -> "remoteCtrlList"
-    is RemoteCtrlRegistered -> "remoteCtrlRegistered"
-    is RemoteCtrlStarted -> "remoteCtrlStarted"
-    is RemoteCtrlAnnounce -> "remoteCtrlAnnounce"
-    is RemoteCtrlFound -> "remoteCtrlFound"
-    is RemoteCtrlAccepted -> "remoteCtrlAccepted"
-    is RemoteCtrlRejected -> "remoteCtrlRejected"
-    is RemoteCtrlConnecting -> "remoteCtrlConnecting"
-    is RemoteCtrlConnected -> "remoteCtrlConnected"
-    is RemoteCtrlStopped -> "remoteCtrlStopped"
-    is RemoteCtrlDeleted -> "remoteCtrlDeleted"
     is Response -> "* $type"
     is Invalid -> "* invalid json"
   }
@@ -3779,6 +3767,17 @@ sealed class CR {
     is CallEnded -> withUser(user, "contact: ${contact.id}")
     is NewContactConnection -> withUser(user, json.encodeToString(connection))
     is ContactConnectionDeleted -> withUser(user, json.encodeToString(connection))
+    is RemoteHostCreated -> "remote host ID: $remoteHostId\noobData ${json.encodeToString(oobData)}"
+    is RemoteHostList -> "remote hosts: ${json.encodeToString(remoteHosts)}"
+    is RemoteHostConnected -> "remote host ID: $remoteHostId"
+    is RemoteHostStopped -> "remote host ID: $remoteHostId"
+    is RemoteCtrlList -> json.encodeToString(remoteCtrls)
+    is RemoteCtrlRegistered -> "remote ctrl ID: $remoteCtrlId"
+    is RemoteCtrlAnnounce -> "fingerprint: $fingerprint"
+    is RemoteCtrlFound -> "remote ctrl: ${json.encodeToString(remoteCtrl)}"
+    is RemoteCtrlConnecting -> "remote ctrl ID: $remoteCtrlId\nhost displayName: $displayName"
+    is RemoteCtrlConnected -> "remote ctrl ID: $remoteCtrlId\nhost displayName: $displayName"
+    is RemoteCtrlStopped -> ""
     is VersionInfo -> "version ${json.encodeToString(versionInfo)}\n\n" +
         "chat migrations: ${json.encodeToString(chatMigrations.map { it.upName })}\n\n" +
         "agent migrations: ${json.encodeToString(agentMigrations.map { it.upName })}"
@@ -3786,23 +3785,6 @@ sealed class CR {
     is ChatCmdError -> withUser(user_, chatError.string)
     is ChatRespError -> withUser(user_, chatError.string)
     is ArchiveImported -> "${archiveErrors.map { it.string } }"
-    is RemoteHostCreated -> "remote host ID: $remoteHostId\noobData ${json.encodeToString(oobData)}"
-    is RemoteHostList -> "remote hosts: ${json.encodeToString(remoteHosts)}"
-    is RemoteHostStarted -> "remote host $remoteHostId"
-    is RemoteHostConnected -> "remote host ID: $remoteHostId"
-    is RemoteHostStopped -> "remote host ID: $remoteHostId"
-    is RemoteHostDeleted -> "remote host ID: $remoteHostId"
-    is RemoteCtrlList -> json.encodeToString(remoteCtrls)
-    is RemoteCtrlRegistered -> "remote ctrl ID: $remoteCtrlId"
-    is RemoteCtrlStarted -> ""
-    is RemoteCtrlAnnounce -> "fingerprint: $fingerprint"
-    is RemoteCtrlFound -> "remote ctrl: ${json.encodeToString(remoteCtrl)}"
-    is RemoteCtrlAccepted -> "remote ctrl ID: $remoteCtrlId"
-    is RemoteCtrlRejected -> "remote ctrl ID: $remoteCtrlId"
-    is RemoteCtrlConnecting -> "remote ctrl ID: $remoteCtrlId\nhost displayName: $displayName"
-    is RemoteCtrlConnected -> "remote ctrl ID: $remoteCtrlId\nhost displayName: $displayName"
-    is RemoteCtrlStopped -> ""
-    is RemoteCtrlDeleted -> "remote ctrl ID: $remoteCtrlId"
     is Response -> json
     is Invalid -> str
   }
@@ -3948,16 +3930,16 @@ sealed class ChatError {
     is ChatErrorAgent -> "agent ${agentError.string}"
     is ChatErrorStore -> "store ${storeError.string}"
     is ChatErrorDatabase -> "database ${databaseError.string}"
-    is ChatErrorRemoteCtrl -> "remoteCtrl ${remoteCtrlError.string}"
     is ChatErrorRemoteHost -> "remoteHost ${remoteHostError.string}"
+    is ChatErrorRemoteCtrl -> "remoteCtrl ${remoteCtrlError.string}"
     is ChatErrorInvalidJSON -> "invalid json ${json}"
   }
   @Serializable @SerialName("error") class ChatErrorChat(val errorType: ChatErrorType): ChatError()
   @Serializable @SerialName("errorAgent") class ChatErrorAgent(val agentError: AgentErrorType): ChatError()
   @Serializable @SerialName("errorStore") class ChatErrorStore(val storeError: StoreError): ChatError()
   @Serializable @SerialName("errorDatabase") class ChatErrorDatabase(val databaseError: DatabaseError): ChatError()
-  @Serializable @SerialName("errorRemoteCtrl") class ChatErrorRemoteCtrl(val remoteCtrlError: RemoteCtrlError): ChatError()
   @Serializable @SerialName("errorRemoteHost") class ChatErrorRemoteHost(val remoteHostError: RemoteHostError): ChatError()
+  @Serializable @SerialName("errorRemoteCtrl") class ChatErrorRemoteCtrl(val remoteCtrlError: RemoteCtrlError): ChatError()
   @Serializable @SerialName("invalidJSON") class ChatErrorInvalidJSON(val json: String): ChatError()
 }
 
