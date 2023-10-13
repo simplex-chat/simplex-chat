@@ -619,10 +619,7 @@ func apiConnect_(incognito: Bool, connReq: String) async -> (ConnReqType?, Alert
         if let c = m.getContactChat(contact.contactId) {
             await MainActor.run { m.chatId = c.id }
         }
-        let alert = mkAlert(
-            title: "Contact already exists",
-            message: "You are already connected to \(contact.displayName)."
-        )
+        let alert = contactAlreadyExistsAlert(contact)
         return (nil, alert)
     case .chatCmdError(_, .error(.invalidConnReq)):
         let alert = mkAlert(
@@ -648,6 +645,13 @@ func apiConnect_(incognito: Bool, connReq: String) async -> (ConnReqType?, Alert
     }
     let alert = connectionErrorAlert(r)
     return (nil, alert)
+}
+
+func contactAlreadyExistsAlert(_ contact: Contact) -> Alert {
+    mkAlert(
+        title: "Contact already exists",
+        message: "You are already connected to \(contact.displayName)."
+    )
 }
 
 private func connectionErrorAlert(_ r: ChatResponse) -> Alert {

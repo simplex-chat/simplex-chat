@@ -861,32 +861,6 @@ public enum ConnectionPlan: Decodable {
     case invitationLink(invitationLinkPlan: InvitationLinkPlan)
     case contactAddress(contactAddressPlan: ContactAddressPlan)
     case groupLink(groupLinkPlan: GroupLinkPlan)
-
-    public var planTitle: String {
-        switch self {
-        case let .invitationLink(ilp):
-            switch ilp {
-            case .ok: return NSLocalizedString("Connect via one-time link", comment: "connection plan title")
-            case .ownLink: return NSLocalizedString("Your own one-time link", comment: "connection plan title")
-            case .connecting: return NSLocalizedString("Already connecting via one-time link", comment: "connection plan title")
-            case .known: return NSLocalizedString("Already connected via one-time link", comment: "connection plan title")
-            }
-        case let .contactAddress(cap):
-            switch cap {
-            case .ok: return NSLocalizedString("Connect via contact link", comment: "connection plan title")
-            case .ownLink: return NSLocalizedString("Your own contact link", comment: "connection plan title")
-            case .connecting: return NSLocalizedString("Already connecting via contact link", comment: "connection plan title")
-            case .known: return NSLocalizedString("Already connected via contact link", comment: "connection plan title")
-            }
-        case let .groupLink(glp):
-            switch glp {
-            case .ok: return NSLocalizedString("Connect via group link", comment: "connection plan title")
-            case let .ownLink(groupInfo): return String.localizedStringWithFormat(NSLocalizedString("Own link for group %@", comment: "connection plan title"), groupInfo.displayName)
-            case .connecting: return NSLocalizedString("Already connecting via group link", comment: "connection plan title")
-            case .known: return NSLocalizedString("Already connected via group link", comment: "connection plan title")
-            }
-        }
-    }
 }
 
 public enum InvitationLinkPlan: Decodable {

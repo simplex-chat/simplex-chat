@@ -59,183 +59,129 @@ struct NewChatButton: View {
 }
 
 enum PlanAndConnectAlert: Identifiable {
-    case ownLinkConfirmConnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool)
-    case alreadyConnectingContact(contact: Contact?, connectionPlan: ConnectionPlan)
-    case alreadyConnectedContact(contact: Contact, connectionPlan: ConnectionPlan)
+    case ownInvitationLinkConfirmConnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool)
+    case invitationLinkConnecting(connectionLink: String)
+    case ownContactAddressConfirmConnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool)
     case groupLinkConfirmConnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool)
-    case alreadyConnectingGroup(groupInfo: GroupInfo?, connectionPlan: ConnectionPlan)
-    case alreadyConnectedGroup(groupInfo: GroupInfo, connectionPlan: ConnectionPlan)
+    case groupLinkConnecting(connectionLink: String, groupInfo: GroupInfo?)
 
     var id: String {
         switch self {
-        case let .ownLinkConfirmConnect(connectionLink, _, _): return "ownLinkConfirmConnect \(connectionLink)"
-        case .alreadyConnectingContact: return "alreadyConnectingContact"
-        case .alreadyConnectedContact: return "alreadyConnectedContact"
+        case let .ownInvitationLinkConfirmConnect(connectionLink, _, _): return "ownInvitationLinkConfirmConnect \(connectionLink)"
+        case let .invitationLinkConnecting(connectionLink): return "invitationLinkConnecting \(connectionLink)"
+        case let .ownContactAddressConfirmConnect(connectionLink, _, _): return "ownContactAddressConfirmConnect \(connectionLink)"
         case let .groupLinkConfirmConnect(connectionLink, _, _): return "groupLinkConfirmConnect \(connectionLink)"
-        case .alreadyConnectingGroup: return "alreadyConnectingGroup"
-        case .alreadyConnectedGroup: return "alreadyConnectedGroup"
+        case let .groupLinkConnecting(connectionLink, _): return "groupLinkConnecting \(connectionLink)"
         }
     }
 }
 
 func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool) -> Alert {
     switch alert {
-    case let .ownLinkConfirmConnect(connectionLink, connectionPlan, incognito):
+    case let .ownInvitationLinkConfirmConnect(connectionLink, connectionPlan, incognito):
         return Alert(
-            title: Text(connectionPlan.planTitle),
-            message: Text("This is your own link. Confirm to connect."),
-            primaryButton: .default(
-                Text("Connect via own link"),
+            title: Text("Connect with yourself?"),
+            message: Text("This is your own one-time link."),
+            primaryButton: .destructive(
+                Text(incognito ? "Connect incognito" : "Connect"),
                 action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) }
             ),
             secondaryButton: .cancel()
         )
-    case let .alreadyConnectingContact(contact, connectionPlan):
-        if let contact = contact {
-            return Alert(
-                title: Text(connectionPlan.planTitle),
-                message: Text("You are already connecting to \(contact.displayName)."),
-                primaryButton: .default(
-                    Text("Open contact"),
-                    action: { openKnownContact(contact, dismiss: dismiss) }
-                ),
-                secondaryButton: .cancel()
-            )
-        } else {
-            return Alert(
-                title: Text(connectionPlan.planTitle),
-                message: Text("You are already connecting via this link.")
-            )
-        }
-    case let .alreadyConnectedContact(contact, connectionPlan):
+    case .invitationLinkConnecting:
         return Alert(
-            title: Text(connectionPlan.planTitle),
-            message: Text("You are already connected to \(contact.displayName)."),
-            primaryButton: .default(
-                Text("Open contact"),
-                action: { openKnownContact(contact, dismiss: dismiss) }
+            title: Text("Already connecting via one-time link"),
+            message: Text("You are already connecting via this link.")
+        )
+    case let .ownContactAddressConfirmConnect(connectionLink, connectionPlan, incognito):
+        return Alert(
+            title: Text("Connect with yourself?"),
+            message: Text("This is your own SimpleX address."),
+            primaryButton: .destructive(
+                Text(incognito ? "Connect incognito" : "Connect"),
+                action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) }
             ),
             secondaryButton: .cancel()
         )
     case let .groupLinkConfirmConnect(connectionLink, connectionPlan, incognito):
         return Alert(
-            title: Text(connectionPlan.planTitle),
+            title: Text("Connect via group link?"),
             message: Text("You will join a group this link refers to and connect to its group members."),
-            primaryButton: .default(Text(incognito ? "Connect incognito" : "Connect")) {
-                connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito)
-            },
+            primaryButton: .default(
+                Text(incognito ? "Connect incognito" : "Connect"),
+                action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) }
+            ),
             secondaryButton: .cancel()
         )
-    case let .alreadyConnectingGroup(groupInfo, connectionPlan):
+    case let .groupLinkConnecting(_, groupInfo):
         if let groupInfo = groupInfo {
             return Alert(
-                title: Text(connectionPlan.planTitle),
+                title: Text("Group already exists"),
                 message: Text("You are already connecting to group \(groupInfo.displayName).")
             )
         } else {
             return Alert(
-                title: Text(connectionPlan.planTitle),
-                message: Text("You are already connecting to this group.")
+                title: Text("Already connecting via group link"),
+                message: Text("You are already connecting via this link.")
             )
         }
-    case let .alreadyConnectedGroup(groupInfo, connectionPlan):
-        return Alert(
-            title: Text(connectionPlan.planTitle),
-            message: Text("You are already connected to group \(groupInfo.displayName)."),
-            primaryButton: .default(
-                Text("Open group"),
-                action: { openKnownGroup(groupInfo, dismiss: dismiss) }
-            ),
-            secondaryButton: .cancel()
-        )
     }
 }
 
 enum PlanAndConnectActionSheet: Identifiable {
-    case askCurrentOrIncognitoProfile(connectionLink: String, connectionPlan: ConnectionPlan?)
-    case ownGroupLinkConfirmConnect(groupInfo: GroupInfo, connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool?)
+    case askCurrentOrIncognitoProfile(connectionLink: String, connectionPlan: ConnectionPlan?, title: String)
+    case ownLinkAskCurrentOrIncognitoProfile(connectionLink: String, connectionPlan: ConnectionPlan, title: String)
+    case ownGroupLinkConfirmConnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool?, groupInfo: GroupInfo)
 
     var id: String {
         switch self {
-        case let .askCurrentOrIncognitoProfile(connectionLink, _): return "askCurrentOrIncognitoProfile \(connectionLink)"
-        case let .ownGroupLinkConfirmConnect(_, connectionLink, _, _): return "ownGroupLinkConfirmConnect \(connectionLink)"
+        case let .askCurrentOrIncognitoProfile(connectionLink, _, _): return "askCurrentOrIncognitoProfile \(connectionLink)"
+        case let .ownLinkAskCurrentOrIncognitoProfile(connectionLink, _, _): return "ownLinkAskCurrentOrIncognitoProfile \(connectionLink)"
+        case let .ownGroupLinkConfirmConnect(connectionLink, _, _, _): return "ownGroupLinkConfirmConnect \(connectionLink)"
         }
     }
 }
 
 func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: Bool) -> ActionSheet {
     switch sheet {
-    case let .askCurrentOrIncognitoProfile(connectionLink, connectionPlan):
+    case let .askCurrentOrIncognitoProfile(connectionLink, connectionPlan, title):
         return ActionSheet(
-            title: Text(planTitle_(connectionPlan)),
+            title: Text(title),
             buttons: [
                 .default(Text("Use current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false) },
                 .default(Text("Use new incognito profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true) },
                 .cancel()
             ]
         )
-    case let .ownGroupLinkConfirmConnect(groupInfo, connectionLink, connectionPlan, incognito):
+    case let .ownLinkAskCurrentOrIncognitoProfile(connectionLink, connectionPlan, title):
+        return ActionSheet(
+            title: Text(title),
+            buttons: [
+                .destructive(Text("Use current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false) },
+                .destructive(Text("Use new incognito profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true) },
+                .cancel()
+            ]
+        )
+    case let .ownGroupLinkConfirmConnect(connectionLink, connectionPlan, incognito, groupInfo):
         if let incognito = incognito {
             return ActionSheet(
-                title: Text(connectionPlan.planTitle),
+                title: Text("Your link for group \(groupInfo.displayName)!"),
                 buttons: [
-                    .default(Text("Open group")) { openKnownGroup(groupInfo, dismiss: dismiss) },
-                    .default(Text(incognito ? "Connect incognito" : "Connect")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) },
+                    .default(Text("Open group")) { openKnownGroup(groupInfo, dismiss: dismiss, showAlreadyExistsAlert: nil) },
+                    .destructive(Text(incognito ? "Connect incognito" : "Connect")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) },
                     .cancel()
                 ]
             )
         } else {
             return ActionSheet(
-                title: Text(connectionPlan.planTitle),
+                title: Text("Your link for group \(groupInfo.displayName)!"),
                 buttons: [
-                    .default(Text("Open group")) { openKnownGroup(groupInfo, dismiss: dismiss) },
-                    .default(Text("Use current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false) },
-                    .default(Text("Use new incognito profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true) },
+                    .default(Text("Open group")) { openKnownGroup(groupInfo, dismiss: dismiss, showAlreadyExistsAlert: nil) },
+                    .destructive(Text("Use current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false) },
+                    .destructive(Text("Use new incognito profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true) },
                     .cancel()
                 ]
             )
-        }
-    }
-}
-
-func planTitle_(_ connectionPlan: ConnectionPlan?) -> String {
-    if let connectionPlan = connectionPlan {
-        return connectionPlan.planTitle
-    } else {
-        return NSLocalizedString("Connect via link", comment: "connection plan title")
-    }
-}
-
-func openKnownContact(_ contact: Contact, dismiss: Bool) {
-    Task {
-        let m = ChatModel.shared
-        if let c = m.getContactChat(contact.contactId) {
-            DispatchQueue.main.async {
-                if dismiss {
-                    dismissAllSheets(animated: true) {
-                        m.chatId = c.id
-                    }
-                } else {
-                    m.chatId = c.id
-                }
-            }
-        }
-    }
-}
-
-func openKnownGroup(_ groupInfo: GroupInfo, dismiss: Bool) {
-    Task {
-        let m = ChatModel.shared
-        if let g = m.getGroupChat(groupInfo.groupId) {
-            DispatchQueue.main.async {
-                if dismiss {
-                    dismissAllSheets(animated: true) {
-                        m.chatId = g.id
-                    }
-                } else {
-                    m.chatId = g.id
-                }
-            }
         }
     }
 }
@@ -258,21 +204,27 @@ func planAndConnect(
                     if let incognito = incognito {
                         connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito)
                     } else {
-                        showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan))
+                        let title = NSLocalizedString("Connect via one-time link", comment: "connection plan title")
+                        showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: title))
                     }
                 case .ownLink:
                     logger.debug("planAndConnect, .invitationLink, .ownLink, incognito=\(incognito?.description ?? "nil")")
                     if let incognito = incognito {
-                        showAlert(.ownLinkConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
+                        showAlert(.ownInvitationLinkConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
                     } else {
-                        showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan))
+                        let title = NSLocalizedString("Your one-time link!", comment: "connection plan title")
+                        showActionSheet(.ownLinkAskCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: title))
                     }
                 case let .connecting(contact_):
                     logger.debug("planAndConnect, .invitationLink, .connecting, incognito=\(incognito?.description ?? "nil")")
-                    showAlert(.alreadyConnectingContact(contact: contact_, connectionPlan: connectionPlan))
+                    if let contact = contact_ {
+                        openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyConnectingAlert(contact)) }
+                    } else {
+                        showAlert(.invitationLinkConnecting(connectionLink: connectionLink))
+                    }
                 case let .known(contact):
                     logger.debug("planAndConnect, .invitationLink, .known, incognito=\(incognito?.description ?? "nil")")
-                    showAlert(.alreadyConnectedContact(contact: contact, connectionPlan: connectionPlan))
+                    openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyExistsAlert(contact)) }
                 }
             case let .contactAddress(cap):
                 switch cap {
@@ -281,21 +233,23 @@ func planAndConnect(
                     if let incognito = incognito {
                         connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito)
                     } else {
-                        showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan))
+                        let title = NSLocalizedString("Connect via contact address", comment: "connection plan title")
+                        showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: title))
                     }
                 case .ownLink:
                     logger.debug("planAndConnect, .contactAddress, .ownLink, incognito=\(incognito?.description ?? "nil")")
                     if let incognito = incognito {
-                        showAlert(.ownLinkConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
+                        showAlert(.ownContactAddressConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
                     } else {
-                        showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan))
+                        let title = NSLocalizedString("Your contact address!", comment: "connection plan title")
+                        showActionSheet(.ownLinkAskCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: title))
                     }
                 case let .connecting(contact):
                     logger.debug("planAndConnect, .contactAddress, .connecting, incognito=\(incognito?.description ?? "nil")")
-                    showAlert(.alreadyConnectingContact(contact: contact, connectionPlan: connectionPlan))
+                    openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyConnectingAlert(contact)) }
                 case let .known(contact):
                     logger.debug("planAndConnect, .contactAddress, .known, incognito=\(incognito?.description ?? "nil")")
-                    showAlert(.alreadyConnectedContact(contact: contact, connectionPlan: connectionPlan))
+                    openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyExistsAlert(contact)) }
                 }
             case let .groupLink(glp):
                 switch glp {
@@ -303,17 +257,18 @@ func planAndConnect(
                     if let incognito = incognito {
                         showAlert(.groupLinkConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
                     } else {
-                        showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan))
+                        let title = NSLocalizedString("Connect via group link", comment: "connection plan title")
+                        showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: title))
                     }
                 case let .ownLink(groupInfo):
                     logger.debug("planAndConnect, .groupLink, .ownLink, incognito=\(incognito?.description ?? "nil")")
-                    showActionSheet(.ownGroupLinkConfirmConnect(groupInfo: groupInfo, connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
+                    showActionSheet(.ownGroupLinkConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito, groupInfo: groupInfo))
                 case let .connecting(groupInfo_):
                     logger.debug("planAndConnect, .groupLink, .connecting, incognito=\(incognito?.description ?? "nil")")
-                    showAlert(.alreadyConnectingGroup(groupInfo: groupInfo_, connectionPlan: connectionPlan))
+                    showAlert(.groupLinkConnecting(connectionLink: connectionLink, groupInfo: groupInfo_))
                 case let .known(groupInfo):
                     logger.debug("planAndConnect, .groupLink, .known, incognito=\(incognito?.description ?? "nil")")
-                    showAlert(.alreadyConnectedGroup(groupInfo: groupInfo, connectionPlan: connectionPlan))
+                    openKnownGroup(groupInfo, dismiss: dismiss) { AlertManager.shared.showAlert(groupAlreadyExistsAlert(groupInfo)) }
                 }
             }
         } catch {
@@ -321,7 +276,7 @@ func planAndConnect(
             if let incognito = incognito {
                 connectViaLink(connectionLink, connectionPlan: nil, dismiss: dismiss, incognito: incognito)
             } else {
-                showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: nil))
+                showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: nil, title: "Connect via link"))
             }
         }
     }
@@ -353,6 +308,58 @@ private func connectViaLink(_ connectionLink: String, connectionPlan: Connection
             }
         }
     }
+}
+
+func openKnownContact(_ contact: Contact, dismiss: Bool, showAlreadyExistsAlert: (() -> Void)?) {
+    Task {
+        let m = ChatModel.shared
+        if let c = m.getContactChat(contact.contactId) {
+            DispatchQueue.main.async {
+                if dismiss {
+                    dismissAllSheets(animated: true) {
+                        m.chatId = c.id
+                        showAlreadyExistsAlert?()
+                    }
+                } else {
+                    m.chatId = c.id
+                    showAlreadyExistsAlert?()
+                }
+            }
+        }
+    }
+}
+
+func openKnownGroup(_ groupInfo: GroupInfo, dismiss: Bool, showAlreadyExistsAlert: (() -> Void)?) {
+    Task {
+        let m = ChatModel.shared
+        if let g = m.getGroupChat(groupInfo.groupId) {
+            DispatchQueue.main.async {
+                if dismiss {
+                    dismissAllSheets(animated: true) {
+                        m.chatId = g.id
+                        showAlreadyExistsAlert?()
+                    }
+                } else {
+                    m.chatId = g.id
+                    showAlreadyExistsAlert?()
+                }
+            }
+        }
+    }
+}
+
+func contactAlreadyConnectingAlert(_ contact: Contact) -> Alert {
+    mkAlert(
+        title: "Contact already exists",
+        message: "You are already connecting to \(contact.displayName)."
+    )
+}
+
+func groupAlreadyExistsAlert(_ groupInfo: GroupInfo) -> Alert {
+    mkAlert(
+        title: "Group already exists",
+        message: "You are already in group \(groupInfo.displayName)."
+    )
 }
 
 enum ConnReqType: Equatable {
