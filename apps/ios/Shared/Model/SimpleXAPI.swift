@@ -1374,7 +1374,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.networkStatuses[cId] = status
             }
         }
-    case let .networkStatuses(statuses): ()
+    case let .networkStatuses(_, statuses): ()
         await MainActor.run {
             for s in statuses {
                 m.networkStatuses[s.agentConnId] = s.networkStatus
