@@ -51,8 +51,8 @@ struct ScanToConnectView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .background(Color(.systemGroupedBackground))
-        .alert(item: $alert) { a in planAndConnectAlert(a, dismiss: { dismiss() }) }
-        .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: { dismiss() }) }
+        .alert(item: $alert) { a in planAndConnectAlert(a, dismiss: true) }
+        .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: true) }
     }
 
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
@@ -62,7 +62,7 @@ struct ScanToConnectView: View {
                 r.string,
                 showAlert: { alert = $0 },
                 showActionSheet: { sheet = $0 },
-                dismiss: { dismiss() },
+                dismiss: true,
                 incognito: incognitoDefault
             )
         case let .failure(e):

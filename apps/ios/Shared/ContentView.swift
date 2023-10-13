@@ -93,7 +93,7 @@ struct ContentView: View {
                 mainView()
                 .actionSheet(item: $chatListActionSheet) { sheet in
                     switch sheet {
-                    case let .planAndConnectSheet(sheet): return planAndConnectActionSheet(sheet, dismiss: nil)
+                    case let .planAndConnectSheet(sheet): return planAndConnectActionSheet(sheet, dismiss: false)
                     }
                 }
             } else {
@@ -300,7 +300,7 @@ struct ContentView: View {
                         link,
                         showAlert: showPlanAndConnectAlert,
                         showActionSheet: { chatListActionSheet = .planAndConnectSheet(sheet: $0) },
-                        dismiss: nil,
+                        dismiss: false,
                         incognito: nil
                     )
                 } else {
@@ -311,7 +311,7 @@ struct ContentView: View {
     }
 
     private func showPlanAndConnectAlert(_ alert: PlanAndConnectAlert) {
-        AlertManager.shared.showAlert(planAndConnectAlert(alert, dismiss: nil))
+        AlertManager.shared.showAlert(planAndConnectAlert(alert, dismiss: false))
     }
 }
 

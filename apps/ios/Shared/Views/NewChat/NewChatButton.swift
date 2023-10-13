@@ -78,7 +78,7 @@ enum PlanAndConnectAlert: Identifiable {
     }
 }
 
-func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: (() -> Void)?) -> Alert {
+func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool) -> Alert {
     switch alert {
     case let .ownLinkConfirmConnect(connectionLink, connectionPlan, incognito):
         return Alert(
@@ -163,7 +163,7 @@ enum PlanAndConnectActionSheet: Identifiable {
     }
 }
 
-func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: (() -> Void)?) -> ActionSheet {
+func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: Bool) -> ActionSheet {
     switch sheet {
     case let .askCurrentOrIncognitoProfile(connectionLink, connectionPlan):
         return ActionSheet(
@@ -206,29 +206,35 @@ func planTitle_(_ connectionPlan: ConnectionPlan?) -> String {
     }
 }
 
-func openKnownContact(_ contact: Contact, dismiss: (() -> Void)?) {
+func openKnownContact(_ contact: Contact, dismiss: Bool) {
     Task {
         let m = ChatModel.shared
         if let c = m.getContactChat(contact.contactId) {
             DispatchQueue.main.async {
-                dismiss?()
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                m.chatId = c.id
+                if dismiss {
+                    dismissAllSheets(animated: true) {
+                        m.chatId = c.id
+                    }
+                } else {
+                    m.chatId = c.id
+                }
             }
         }
     }
 }
 
-func openKnownGroup(_ groupInfo: GroupInfo, dismiss: (() -> Void)?) {
+func openKnownGroup(_ groupInfo: GroupInfo, dismiss: Bool) {
     Task {
         let m = ChatModel.shared
         if let g = m.getGroupChat(groupInfo.groupId) {
             DispatchQueue.main.async {
-                dismiss?()
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                m.chatId = g.id
+                if dismiss {
+                    dismissAllSheets(animated: true) {
+                        m.chatId = g.id
+                    }
+                } else {
+                    m.chatId = g.id
+                }
             }
         }
     }
@@ -238,7 +244,7 @@ func planAndConnect(
     _ connectionLink: String,
     showAlert: @escaping (PlanAndConnectAlert) -> Void,
     showActionSheet: @escaping (PlanAndConnectActionSheet) -> Void,
-    dismiss: (() -> Void)?,
+    dismiss: Bool,
     incognito: Bool?
 ) {
     Task {
@@ -321,7 +327,7 @@ func planAndConnect(
     }
 }
 
-private func connectViaLink(_ connectionLink: String, connectionPlan: ConnectionPlan?, dismiss: (() -> Void)?, incognito: Bool) {
+private func connectViaLink(_ connectionLink: String, connectionPlan: ConnectionPlan?, dismiss: Bool, incognito: Bool) {
     Task {
         if let connReqType = await apiConnect(incognito: incognito, connReq: connectionLink) {
             let crt: ConnReqType
@@ -331,14 +337,19 @@ private func connectViaLink(_ connectionLink: String, connectionPlan: Connection
                 crt = connReqType
             }
             DispatchQueue.main.async {
-                dismiss?()
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                AlertManager.shared.showAlert(connReqSentAlert(crt))
+                if dismiss {
+                    dismissAllSheets(animated: true) {
+                        AlertManager.shared.showAlert(connReqSentAlert(crt))
+                    }
+                } else {
+                    AlertManager.shared.showAlert(connReqSentAlert(crt))
+                }
             }
         } else {
-            DispatchQueue.main.async {
-                dismiss?()
+            if dismiss {
+                DispatchQueue.main.async {
+                    dismissAllSheets(animated: true)
+                }
             }
         }
     }

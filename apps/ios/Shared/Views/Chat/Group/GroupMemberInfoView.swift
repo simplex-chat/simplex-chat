@@ -204,11 +204,11 @@ struct GroupMemberInfoView: View {
                 case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
                 case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchMemberAddress)
                 case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncMemberConnection(force: true) })
-                case let .planAndConnectAlert(alert): return planAndConnectAlert(alert, dismiss: { dismiss() })
+                case let .planAndConnectAlert(alert): return planAndConnectAlert(alert, dismiss: true)
                 case let .error(title, error): return Alert(title: Text(title), message: Text(error))
                 }
             }
-            .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: { dismissAllSheets(animated: true) }) }
+            .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: true) }
 
             if progressIndicator {
                 ProgressView().scaleEffect(2)
@@ -222,7 +222,7 @@ struct GroupMemberInfoView: View {
                 contactLink,
                 showAlert: { alert = .planAndConnectAlert(alert: $0) },
                 showActionSheet: { sheet = $0 },
-                dismiss: { dismissAllSheets(animated: true) },
+                dismiss: true,
                 incognito: nil
             )
         } label: {
