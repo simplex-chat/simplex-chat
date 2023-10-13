@@ -9,6 +9,8 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
+
 module Simplex.Chat.Remote where
 
 import Control.Logger.Simple
@@ -63,7 +65,7 @@ import qualified Simplex.Messaging.Transport.HTTP2.Server as HTTP2
 import Simplex.Messaging.Util (bshow, ifM, tshow)
 import System.FilePath (isPathSeparator, takeFileName, (</>))
 import UnliftIO
-import UnliftIO.Directory (createDirectoryIfMissing, getFileSize, makeAbsolute)
+import UnliftIO.Directory (createDirectoryIfMissing, getFileSize)
 
 withRemoteHostSession :: (ChatMonad m) => RemoteHostId -> (RemoteHostSession -> m a) -> m a
 withRemoteHostSession remoteHostId action = do
