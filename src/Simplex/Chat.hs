@@ -1090,7 +1090,7 @@ processChatCommand = \case
         contact <- getContact db user contactId
         pure RcvCallInvitation {user, contact, callType = peerCallType, sharedKey, callTs}
   APIGetNetworkStatuses -> withUser $ \_ ->
-    CRNetworkStatuses . map (uncurry ConnNetworkStatus) . M.toList <$> chatReadVar connNetworkStatuses
+    CRNetworkStatuses Nothing . map (uncurry ConnNetworkStatus) . M.toList <$> chatReadVar connNetworkStatuses
   APICallStatus contactId receivedStatus ->
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
@@ -2705,7 +2705,7 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
         notifyAPI = do
           let statuses = M.foldrWithKey' addStatus [] cts
           chatModifyVar connNetworkStatuses $ M.union (M.fromList statuses)
-          toView $ CRNetworkStatuses $ map (uncurry ConnNetworkStatus) statuses
+          toView $ CRNetworkStatuses (Just user) $ map (uncurry ConnNetworkStatus) statuses
           where
             addStatus :: ConnId -> Contact -> [(AgentConnId, NetworkStatus)] -> [(AgentConnId, NetworkStatus)]
             addStatus connId ct =

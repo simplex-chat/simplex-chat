@@ -533,7 +533,7 @@ data ChatResponse
   | CRContactSubSummary {user :: User, contactSubscriptions :: [ContactSubStatus]}
   | CRUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]}
   | CRNetworkStatus {networkStatus :: NetworkStatus, connections :: [AgentConnId]}
-  | CRNetworkStatuses {networkStatuses :: [ConnNetworkStatus]}
+  | CRNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]}
   | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRGroupInvitation {user :: User, groupInfo :: GroupInfo}

@@ -1487,8 +1487,15 @@ data NetworkStatus
   = NSUnknown
   | NSConnected
   | NSDisconnected
-  | NSError String
-  deriving (Show, Generic)
+  | NSError {connectionError :: String}
+  deriving (Eq, Ord, Show, Generic)
+
+netStatusStr :: NetworkStatus -> String
+netStatusStr = \case
+  NSUnknown -> "unknown"
+  NSConnected -> "connected"
+  NSDisconnected -> "disconnected"
+  NSError e -> "error: " <> e
 
 instance FromJSON NetworkStatus where
   parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "NS"

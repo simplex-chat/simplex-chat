@@ -110,6 +110,7 @@ public enum ChatCommand {
     case apiEndCall(contact: Contact)
     case apiGetCallInvitations
     case apiCallStatus(contact: Contact, callStatus: WebRTCCallStatus)
+    case apiGetNetworkStatuses
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
     case receiveFile(fileId: Int64, encrypted: Bool, inline: Bool?)
@@ -241,6 +242,7 @@ public enum ChatCommand {
             case let .apiEndCall(contact): return "/_call end @\(contact.apiId)"
             case .apiGetCallInvitations: return "/_call get"
             case let .apiCallStatus(contact, callStatus): return "/_call status @\(contact.apiId) \(callStatus.rawValue)"
+            case .apiGetNetworkStatuses: return "/_network_statuses"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
             case let .receiveFile(fileId, encrypted, inline):
@@ -356,6 +358,7 @@ public enum ChatCommand {
             case .apiEndCall: return "apiEndCall"
             case .apiGetCallInvitations: return "apiGetCallInvitations"
             case .apiCallStatus: return "apiCallStatus"
+            case .apiGetNetworkStatuses: return "apiGetNetworkStatuses"
             case .apiChatRead: return "apiChatRead"
             case .apiChatUnread: return "apiChatUnread"
             case .receiveFile: return "receiveFile"
@@ -480,11 +483,14 @@ public enum ChatResponse: Decodable, Error {
     case acceptingContactRequest(user: UserRef, contact: Contact)
     case contactRequestRejected(user: UserRef)
     case contactUpdated(user: UserRef, toContact: Contact)
+    // TODO remove events below
     case contactsSubscribed(server: String, contactRefs: [ContactRef])
     case contactsDisconnected(server: String, contactRefs: [ContactRef])
-    case contactSubError(user: UserRef, contact: Contact, chatError: ChatError)
     case contactSubSummary(user: UserRef, contactSubscriptions: [ContactSubStatus])
-    case groupSubscribed(user: UserRef, groupInfo: GroupInfo)
+    // TODO remove events above
+    case networkStatus(networkStatus: NetworkStatus, connections: [String])
+    case networkStatuses(user_: UserRef?, networkStatuses: [ConnNetworkStatus])
+    case groupSubscribed(user: UserRef, groupInfo: GroupRef)
     case memberSubErrors(user: UserRef, memberSubErrors: [MemberSubError])
     case groupEmpty(user: UserRef, groupInfo: GroupInfo)
     case userContactLinkSubscribed
@@ -620,8 +626,9 @@ public enum ChatResponse: Decodable, Error {
             case .contactUpdated: return "contactUpdated"
             case .contactsSubscribed: return "contactsSubscribed"
             case .contactsDisconnected: return "contactsDisconnected"
-            case .contactSubError: return "contactSubError"
             case .contactSubSummary: return "contactSubSummary"
+            case .networkStatus: return "networkStatus"
+            case .networkStatuses: return "networkStatuses"
             case .groupSubscribed: return "groupSubscribed"
             case .memberSubErrors: return "memberSubErrors"
             case .groupEmpty: return "groupEmpty"
@@ -757,8 +764,9 @@ public enum ChatResponse: Decodable, Error {
             case let .contactUpdated(u, toContact): return withUser(u, String(describing: toContact))
             case let .contactsSubscribed(server, contactRefs): return "server: \(server)\ncontacts:\n\(String(describing: contactRefs))"
             case let .contactsDisconnected(server, contactRefs): return "server: \(server)\ncontacts:\n\(String(describing: contactRefs))"
-            case let .contactSubError(u, contact, chatError): return withUser(u, "contact:\n\(String(describing: contact))\nerror:\n\(String(describing: chatError))")
             case let .contactSubSummary(u, contactSubscriptions): return withUser(u, String(describing: contactSubscriptions))
+            case let .networkStatus(status, conns): return "networkStatus: \(String(describing: status))\nconnections: \(String(describing: conns))"
+            case let .networkStatuses(u, statuses): return withUser(u, String(describing: statuses))
             case let .groupSubscribed(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .memberSubErrors(u, memberSubErrors): return withUser(u, String(describing: memberSubErrors))
             case let .groupEmpty(u, groupInfo): return withUser(u, String(describing: groupInfo))
@@ -1179,6 +1187,49 @@ public struct KeepAliveOpts: Codable, Equatable {
     public var keepCnt: Int // times
 
     public static let defaults: KeepAliveOpts = KeepAliveOpts(keepIdle: 30, keepIntvl: 15, keepCnt: 4)
+}
+
+public enum NetworkStatus: Decodable, Equatable {
+    case unknown
+    case connected
+    case disconnected
+    case error(connectionError: String)
+
+    public var statusString: LocalizedStringKey {
+        get {
+            switch self {
+            case .connected: return "connected"
+            case .error: return "error"
+            default: return "connecting"
+            }
+        }
+    }
+
+    public var statusExplanation: LocalizedStringKey {
+        get {
+            switch self {
+            case .connected: return "You are connected to the server used to receive messages from this contact."
+            case let .error(err): return "Trying to connect to the server used to receive messages from this contact (error: \(err))."
+            default: return "Trying to connect to the server used to receive messages from this contact."
+            }
+        }
+    }
+
+    public var imageName: String {
+        get {
+            switch self {
+            case .unknown: return "circle.dotted"
+            case .connected: return "circle.fill"
+            case .disconnected: return "ellipsis.circle.fill"
+            case .error: return "exclamationmark.circle.fill"
+            }
+        }
+    }
+}
+
+public struct ConnNetworkStatus: Decodable {
+    public var agentConnId: String
+    public var networkStatus: NetworkStatus
 }
 
 public struct ChatSettings: Codable {

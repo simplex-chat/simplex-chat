@@ -1729,6 +1729,11 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     )
 }
 
+public struct GroupRef: Decodable {
+    public var groupId: Int64
+    var localDisplayName: GroupName
+}
+
 public struct GroupProfile: Codable, NamedChat {
     public init(displayName: String, fullName: String, description: String? = nil, image: String? = nil, groupPreferences: GroupPreferences? = nil) {
         self.displayName = displayName
@@ -1871,6 +1876,11 @@ public struct GroupMemberRef: Decodable {
     var profile: Profile
 }
 
+public struct GroupMemberIds: Decodable {
+    var groupMemberId: Int64
+    var groupId: Int64
+}
+
 public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Decodable {
     case observer = "observer"
     case member = "member"
@@ -1963,7 +1973,7 @@ public enum InvitedBy: Decodable {
 }
 
 public struct MemberSubError: Decodable {
-    var member: GroupMember
+    var member: GroupMemberIds
     var memberError: ChatError
 }
 
