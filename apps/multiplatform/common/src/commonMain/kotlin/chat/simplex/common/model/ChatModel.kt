@@ -789,15 +789,18 @@ sealed class NetworkStatus {
   val statusExplanation: String get() =
     when (this) {
       is Connected -> generalGetString(MR.strings.connected_to_server_to_receive_messages_from_contact)
-      is Error -> String.format(generalGetString(MR.strings.trying_to_connect_to_server_to_receive_messages_with_error), error)
+      is Error -> String.format(generalGetString(MR.strings.trying_to_connect_to_server_to_receive_messages_with_error), connectionError)
       else -> generalGetString(MR.strings.trying_to_connect_to_server_to_receive_messages)
     }
 
   @Serializable @SerialName("unknown") class Unknown: NetworkStatus()
   @Serializable @SerialName("connected") class Connected: NetworkStatus()
   @Serializable @SerialName("disconnected") class Disconnected: NetworkStatus()
-  @Serializable @SerialName("error") class Error(val error: String): NetworkStatus()
+  @Serializable @SerialName("error") class Error(val connectionError: String): NetworkStatus()
 }
+
+@Serializable
+data class ConnNetworkStatus(val agentConnId: String, val networkStatus: NetworkStatus)
 
 @Serializable
 data class Contact(
@@ -1052,6 +1055,9 @@ data class GroupInfo (
 }
 
 @Serializable
+data class GroupRef(val groupId: Long, val localDisplayName: String)
+
+@Serializable
 data class GroupProfile (
   override val displayName: String,
   override val fullName: String,
@@ -1159,9 +1165,15 @@ data class GroupMember (
 data class GroupMemberSettings(val showMessages: Boolean) {}
 
 @Serializable
-class GroupMemberRef(
+data class GroupMemberRef(
   val groupMemberId: Long,
   val profile: Profile
+)
+
+@Serializable
+data class GroupMemberIds(
+  val groupMemberId: Long,
+  val groupId: Long
 )
 
 @Serializable
@@ -1257,7 +1269,7 @@ class LinkPreview (
 
 @Serializable
 class MemberSubError (
-  val member: GroupMember,
+  val member: GroupMemberIds,
   val memberError: ChatError
 )
 

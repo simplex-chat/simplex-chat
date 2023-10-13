@@ -944,6 +944,12 @@ func apiCallStatus(_ contact: Contact, _ status: String) async throws {
     }
 }
 
+func apiGetNetworkStatuses() throws -> [ConnNetworkStatus] {
+    let r = chatSendCmdSync(.apiGetNetworkStatuses)
+    if case let .networkStatuses(_, statuses) = r { return statuses }
+    throw r
+}
+
 func markChatRead(_ chat: Chat, aboveItem: ChatItem? = nil) async {
     do {
         if chat.chatStats.unreadCount > 0 {
@@ -1348,13 +1354,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
         await updateContactsStatus(contactRefs, status: .connected)
     case let .contactsDisconnected(_, contactRefs):
         await updateContactsStatus(contactRefs, status: .disconnected)
-    case let .contactSubError(user, contact, chatError):
-        await MainActor.run {
-            if active(user) {
-                m.updateContact(contact)
-            }
-            processContactSubError(contact, chatError)
-        }
     case let .contactSubSummary(_, contactSubscriptions):
         await MainActor.run {
             for sub in contactSubscriptions {
@@ -1367,6 +1366,18 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 } else {
                     m.setContactNetworkStatus(sub.contact, .connected)
                 }
+            }
+        }
+    case let .networkStatus(status, connections):
+        await MainActor.run {
+            for cId in connections {
+                m.networkStatuses[cId] = status
+            }
+        }
+    case let .networkStatuses(statuses): ()
+        await MainActor.run {
+            for s in statuses {
+                m.networkStatuses[s.agentConnId] = s.networkStatus
             }
         }
     case let .newChatItem(user, aChatItem):
@@ -1649,7 +1660,7 @@ func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
     case .errorAgent(agentError: .SMP(smpErr: .AUTH)): err = "contact deleted"
     default: err = String(describing: chatError)
     }
-    m.setContactNetworkStatus(contact, .error(err))
+    m.setContactNetworkStatus(contact, .error(connectionError: err))
 }
 
 func refreshCallInvitations() throws {
