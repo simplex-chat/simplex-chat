@@ -211,7 +211,7 @@ func planAndConnect(
                     if let incognito = incognito {
                         showAlert(.ownInvitationLinkConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
                     } else {
-                        showActionSheet(.ownLinkAskCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "Connect with yourself?\nThis is your own one-time link!"))
+                        showActionSheet(.ownLinkAskCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "Connect to yourself?\nThis is your own one-time link!"))
                     }
                 case let .connecting(contact_):
                     logger.debug("planAndConnect, .invitationLink, .connecting, incognito=\(incognito?.description ?? "nil")")
