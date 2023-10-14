@@ -24,6 +24,7 @@ type WCallResponse =
   | WCallIceCandidates
   | WRConnection
   | WRCallConnected
+  | WRCallEnd
   | WRCallEnded
   | WROk
   | WRError
@@ -31,7 +32,7 @@ type WCallResponse =
 
 type WCallCommandTag = "capabilities" | "start" | "offer" | "answer" | "ice" | "media" | "camera" | "end"
 
-type WCallResponseTag = "capabilities" | "offer" | "answer" | "ice" | "connection" | "connected" | "ended" | "ok" | "error"
+type WCallResponseTag = "capabilities" | "offer" | "answer" | "ice" | "connection" | "connected" | "end" | "ended" | "ok" | "error"
 
 enum CallMediaType {
   Audio = "audio",
@@ -132,6 +133,10 @@ interface WRConnection extends IWCallResponse {
 interface WRCallConnected extends IWCallResponse {
   type: "connected"
   connectionInfo: ConnectionInfo
+}
+
+interface WRCallEnd extends IWCallResponse {
+  type: "end"
 }
 
 interface WRCallEnded extends IWCallResponse {
@@ -494,6 +499,7 @@ const processCommand = (function () {
     } catch (e) {
       console.log(e)
     }
+    shutdownCameraAndMic()
     activeCall = undefined
     resetVideoElements()
   }
@@ -680,6 +686,12 @@ const processCommand = (function () {
     remote: HTMLMediaElement
   }
 
+  function shutdownCameraAndMic() {
+    if (activeCall?.localStream) {
+      activeCall.localStream.getTracks().forEach((track) => track.stop())
+    }
+  }
+
   function resetVideoElements() {
     const videos = getVideoElements()
     if (!videos) return
@@ -706,9 +718,18 @@ const processCommand = (function () {
     const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks()
     for (const t of tracks) t.enabled = enable
   }
-
   return processCommand
 })()
+
+function toggleMedia(s: MediaStream, media: CallMediaType): boolean {
+  let res = false
+  const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks()
+  for (const t of tracks) {
+    t.enabled = !t.enabled
+    res = t.enabled
+  }
+  return res
+}
 
 type TransformFrameFunc = (key: CryptoKey) => (frame: RTCEncodedVideoFrame, controller: TransformStreamDefaultController) => Promise<void>
 

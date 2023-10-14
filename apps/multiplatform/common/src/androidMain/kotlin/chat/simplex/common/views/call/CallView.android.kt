@@ -145,6 +145,9 @@ actual fun ActiveCallView() {
               setCallSound(call.soundSpeaker, audioViaBluetooth)
             }
           }
+          is WCallResponse.End -> {
+            withApi { chatModel.callManager.endCall(call) }
+          }
           is WCallResponse.Ended -> {
             chatModel.activeCall.value = call.copy(callState = CallState.Ended)
             withApi { chatModel.callManager.endCall(call) }
@@ -512,7 +515,7 @@ fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessa
             webViewSettings.javaScriptEnabled = true
             webViewSettings.mediaPlaybackRequiresUserGesture = false
             webViewSettings.cacheMode = WebSettings.LOAD_NO_CACHE
-            this.loadUrl("file:android_asset/www/call.html")
+            this.loadUrl("file:android_asset/www/android/call.html")
           }
         }
       ) { wv ->

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link href="/desktop/style.css" rel="stylesheet" />
+    <script src="/lz-string.min.js"></script>
+  </head>
+  <body>
+    <video
+      id="remote-video-stream"
+      autoplay
+      playsinline
+      poster="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAQAAAAnOwc2AAAAEUlEQVR42mNk+M+AARiHsiAAcCIKAYwFoQ8AAAAASUVORK5CYII="
+    ></video>
+    <video
+      id="local-video-stream"
+      muted
+      autoplay
+      playsinline
+      poster="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAQAAAAnOwc2AAAAEUlEQVR42mNk+M+AARiHsiAAcCIKAYwFoQ8AAAAASUVORK5CYII="
+    ></video>
+    <div id="progress"></div>
+    <p id="manage-call">
+      <button id="toggle-audio" style="display: none" onclick="javascript:toggleAudioManually()">
+        <img src="/desktop/images/ic_mic.svg" />
+      </button>
+      <button id="end-call" onclick="javascript:endCallManually()">
+        <img src="/desktop/images/ic_call_end_filled.svg" />
+      </button>
+      <button id="toggle-speaker" style="display: none" onclick="javascript:toggleSpeakerManually()">
+        <img src="/desktop/images/ic_volume_up.svg" />
+      </button>
+      <button id="toggle-video" style="display: none" onclick="javascript:toggleVideoManually()">
+        <img src="/desktop/images/ic_videocam_filled.svg" />
+      </button>
+    </p>
+  </body>
+  <footer>
+    <script src="/call.js"></script>
+    <script src="/desktop/ui.js"></script>
+  </footer>
+</html>

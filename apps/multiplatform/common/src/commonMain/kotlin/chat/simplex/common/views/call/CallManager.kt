@@ -3,8 +3,6 @@ package chat.simplex.common.views.call
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.withApi
-import chat.simplex.common.views.helpers.withBGApi
-import chat.simplex.common.views.usersettings.showInDevelopingAlert
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.minutes
 
@@ -26,10 +24,6 @@ class CallManager(val chatModel: ChatModel) {
   }
 
   fun acceptIncomingCall(invitation: RcvCallInvitation) {
-    if (appPlatform.isDesktop) {
-      return showInDevelopingAlert()
-    }
-
     val call = chatModel.activeCall.value
     if (call == null) {
       justAcceptIncomingCall(invitation = invitation)

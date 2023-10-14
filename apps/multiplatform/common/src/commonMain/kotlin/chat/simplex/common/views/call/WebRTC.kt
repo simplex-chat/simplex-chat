@@ -85,6 +85,7 @@ sealed class WCallResponse {
   @Serializable @SerialName("ice") data class Ice(val iceCandidates: String): WCallResponse()
   @Serializable @SerialName("connection") data class Connection(val state: ConnectionState): WCallResponse()
   @Serializable @SerialName("connected") data class Connected(val connectionInfo: ConnectionInfo): WCallResponse()
+  @Serializable @SerialName("end") object End: WCallResponse()
   @Serializable @SerialName("ended") object Ended: WCallResponse()
   @Serializable @SerialName("ok") object Ok: WCallResponse()
   @Serializable @SerialName("error") data class Error(val message: String): WCallResponse()

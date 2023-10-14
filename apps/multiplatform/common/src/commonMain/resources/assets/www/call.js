@@ -310,6 +310,7 @@ const processCommand = (function () {
         catch (e) {
             console.log(e);
         }
+        shutdownCameraAndMic();
         activeCall = undefined;
         resetVideoElements();
     }
@@ -479,6 +480,11 @@ const processCommand = (function () {
         return (("createEncodedStreams" in RTCRtpSender.prototype && "createEncodedStreams" in RTCRtpReceiver.prototype) ||
             (!!useWorker && "RTCRtpScriptTransform" in window));
     }
+    function shutdownCameraAndMic() {
+        if (activeCall === null || activeCall === void 0 ? void 0 : activeCall.localStream) {
+            activeCall.localStream.getTracks().forEach((track) => track.stop());
+        }
+    }
     function resetVideoElements() {
         const videos = getVideoElements();
         if (!videos)
@@ -507,6 +513,15 @@ const processCommand = (function () {
     }
     return processCommand;
 })();
+function toggleMedia(s, media) {
+    let res = false;
+    const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks();
+    for (const t of tracks) {
+        t.enabled = !t.enabled;
+        res = t.enabled;
+    }
+    return res;
+}
 // Cryptography function - it is loaded both in the main window and in worker context (if the worker is used)
 function callCryptoFunction() {
     const initialPlainTextRequired = {

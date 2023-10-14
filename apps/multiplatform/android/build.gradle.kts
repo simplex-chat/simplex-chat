@@ -77,6 +77,7 @@ android {
         }
         jniLibs.useLegacyPackaging = rootProject.extra["compression.level"] as Int != 0
     }
+    android.sourceSets["main"].assets.setSrcDirs(listOf("../common/src/commonMain/resources/assets"))
     val isRelease = gradle.startParameter.taskNames.find { it.toLowerCase().contains("release") } != null
     val isBundle = gradle.startParameter.taskNames.find { it.toLowerCase().contains("bundle") } != null
     //    if (isRelease) {
