@@ -36,8 +36,7 @@ remoteTests :: SpecWith FilePath
 remoteTests = describe "Handshake" $ do
   it "generates usable credentials" genCredentialsTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
-  it "qqq 1 connects desktop and mobile" remoteHandshakeTest
-  it "qqq 2 connects desktop and mobile" remoteHandshakeTest
+  it "connects desktop and mobile" remoteHandshakeTest
   it "send messages via remote desktop" remoteCommandTest
 
 -- * Low-level TLS with ephemeral credentials
@@ -148,9 +147,9 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   desktop <## "No remote hosts"
 
   traceM "    - Shutting mobile"
-  mobile ##> "/stop remote ctrl"
-  mobile <## "ok"
   mobile <## "remote controller stopped"
+  mobile ##> "/stop remote ctrl"
+  mobile <## "RCEInactive"
   mobile ##> "/delete remote ctrl 1"
   mobile <## "ok"
   mobile ##> "/list remote ctrls"
@@ -286,7 +285,7 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   mobile <## "remote controller stopped"
 
   desktop ##> "/stop remote host 1" -- FIXME: remote cancel not detected here
-  desktop <## "remote host 1 stopped"
+  desktop <## "ok"
 
   mobile ##> "/contacts"
   mobile <## "bob (Bob)"
