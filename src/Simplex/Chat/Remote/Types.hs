@@ -24,6 +24,25 @@ data RemoteHost = RemoteHost
   }
   deriving (Show)
 
+data RemoteCtrlOOB = RemoteCtrlOOB
+  { fingerprint :: C.KeyHash,
+    displayName :: Text
+  }
+  deriving (Show)
+
+$(J.deriveJSON J.defaultOptions ''RemoteCtrlOOB)
+
+data RemoteHostInfo = RemoteHostInfo
+  { remoteHostId :: RemoteHostId,
+    storePath :: FilePath,
+    displayName :: Text,
+    remoteCtrlOOB :: RemoteCtrlOOB,
+    sessionActive :: Bool
+  }
+  deriving (Show)
+
+$(J.deriveJSON J.defaultOptions ''RemoteHostInfo)
+
 type RemoteCtrlId = Int64
 
 data RemoteCtrl = RemoteCtrl
@@ -34,4 +53,15 @@ data RemoteCtrl = RemoteCtrl
   }
   deriving (Show)
 
-$(J.deriveJSON J.defaultOptions ''RemoteCtrl)
+$(J.deriveJSON J.defaultOptions {J.omitNothingFields = True} ''RemoteCtrl)
+
+data RemoteCtrlInfo = RemoteCtrlInfo
+  { remoteCtrlId :: RemoteCtrlId,
+    displayName :: Text,
+    fingerprint :: C.KeyHash,
+    accepted :: Maybe Bool,
+    sessionActive :: Bool
+  }
+  deriving (Show)
+
+$(J.deriveJSON J.defaultOptions {J.omitNothingFields = True} ''RemoteCtrlInfo)

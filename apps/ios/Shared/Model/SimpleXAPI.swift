@@ -886,9 +886,9 @@ func startRemoteCtrl() async throws {
     try await sendCommandOkResp(.startRemoteCtrl)
 }
 
-func registerRemoteCtrl(_ remoteCtrlOOB: RemoteCtrlOOB) async throws -> Int64 {
+func registerRemoteCtrl(_ remoteCtrlOOB: RemoteCtrlOOB) async throws -> RemoteCtrlInfo {
     let r = await chatSendCmd(.registerRemoteCtrl(remoteCtrlOOB: remoteCtrlOOB))
-    if case let .remoteCtrlRegistered(rcId) = r { return rcId }
+    if case let .remoteCtrlRegistered(rcInfo) = r { return rcInfo }
     throw r
 }
 

@@ -633,14 +633,14 @@ data ChatResponse
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostCreated {remoteHost :: RemoteHostInfo}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
-  | CRRemoteHostConnected {remoteHostId :: RemoteHostId} -- TODO add displayName
+  | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
-  | CRRemoteCtrlRegistered {remoteCtrlId :: RemoteCtrlId}
+  | CRRemoteCtrlRegistered {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- unregistered fingerprint, needs confirmation
-  | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrl} -- registered fingerprint, may connect
-  | CRRemoteCtrlConnecting {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
-  | CRRemoteCtrlConnected {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
+  | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo} -- registered fingerprint, may connect
+  | CRRemoteCtrlConnecting {remoteCtrl :: RemoteCtrlInfo}
+  | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlStopped
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
@@ -692,34 +692,6 @@ logResponseToFile = \case
   CRChatError {} -> True
   CRMessageError {} -> True
   _ -> False
-
-data RemoteCtrlOOB = RemoteCtrlOOB
-  { caFingerprint :: C.KeyHash,
-    displayName :: Text
-  }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON RemoteCtrlOOB where toEncoding = J.genericToEncoding J.defaultOptions
-
-data RemoteHostInfo = RemoteHostInfo
-  { remoteHostId :: RemoteHostId,
-    storePath :: FilePath,
-    displayName :: Text,
-    remoteCtrlOOB :: RemoteCtrlOOB,
-    sessionActive :: Bool
-  }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON RemoteHostInfo where toEncoding = J.genericToEncoding J.defaultOptions
-
-data RemoteCtrlInfo = RemoteCtrlInfo
-  { remoteCtrlId :: RemoteCtrlId,
-    displayName :: Text,
-    sessionActive :: Bool
-  }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON RemoteCtrlInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}

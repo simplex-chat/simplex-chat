@@ -117,6 +117,7 @@ public enum ChatCommand {
     case receiveFile(fileId: Int64, encrypted: Bool, inline: Bool?)
     case setFileToReceive(fileId: Int64, encrypted: Bool)
     case cancelFile(fileId: Int64)
+    case setLocalDeviceName(displayName: String)
     case startRemoteCtrl
     case registerRemoteCtrl(remoteCtrlOOB: RemoteCtrlOOB)
     case listRemoteCtrls
@@ -262,6 +263,7 @@ public enum ChatCommand {
                 return s
             case let .setFileToReceive(fileId, encrypted): return "/_set_file_to_receive \(fileId) encrypt=\(onOff(encrypted))"
             case let .cancelFile(fileId): return "/fcancel \(fileId)"
+            case let .setLocalDeviceName(displayName): return "/set device name \(displayName)"
             case .startRemoteCtrl: return "/start remote ctrl"
             case let .registerRemoteCtrl(oob): return "/register remote ctrl \(oob.caFingerprint)"
             case let .acceptRemoteCtrl(rcId): return "/accept remote ctrl \(rcId)"
@@ -381,6 +383,7 @@ public enum ChatCommand {
             case .receiveFile: return "receiveFile"
             case .setFileToReceive: return "setFileToReceive"
             case .cancelFile: return "cancelFile"
+            case .setLocalDeviceName: return "setLocalDeviceName"
             case .startRemoteCtrl: return "startRemoteCtrl"
             case .registerRemoteCtrl: return "registerRemoteCtrl"
             case .listRemoteCtrls: return "listRemoteCtrls"
@@ -585,11 +588,11 @@ public enum ChatResponse: Decodable, Error {
     case newContactConnection(user: UserRef, connection: PendingContactConnection)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
     case remoteCtrlList(remoteCtrls: [RemoteCtrlInfo])
-    case remoteCtrlRegistered(remoteCtrlId: Int64)
+    case remoteCtrlRegistered(remoteCtrl: RemoteCtrlInfo)
     case remoteCtrlAnnounce(fingerprint: String)
-    case remoteCtrlFound(remoteCtrl: RemoteCtrl)
-    case remoteCtrlConnecting(remoteCtrlId: Int64, displayName: String)
-    case remoteCtrlConnected(remoteCtrlId: Int64, displayName: String)
+    case remoteCtrlFound(remoteCtrl: RemoteCtrlInfo)
+    case remoteCtrlConnecting(remoteCtrl: RemoteCtrlInfo)
+    case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
     case remoteCtrlStopped
     case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
     case cmdOk(user: UserRef?)
@@ -874,11 +877,11 @@ public enum ChatResponse: Decodable, Error {
             case let .newContactConnection(u, connection): return withUser(u, String(describing: connection))
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
             case let .remoteCtrlList(remoteCtrls): return String(describing: remoteCtrls)
-            case let .remoteCtrlRegistered(rcId): return "remote ctrl ID: \(rcId)"
+            case let .remoteCtrlRegistered(remoteCtrl): return String(describing: remoteCtrl)
             case let .remoteCtrlAnnounce(fingerprint): return "fingerprint: \(fingerprint)"
-            case let .remoteCtrlFound(remoteCtrl): return "remote ctrl: \(String(describing: remoteCtrl))"
-            case let .remoteCtrlConnecting(rcId, displayName): return "remote ctrl ID: \(rcId)\nhost displayName: \(displayName)"
-            case let .remoteCtrlConnected(rcId, displayName): return "remote ctrl ID: \(rcId)\nhost displayName: \(displayName)"
+            case let .remoteCtrlFound(remoteCtrl): return String(describing: remoteCtrl)
+            case let .remoteCtrlConnecting(remoteCtrl): return String(describing: remoteCtrl)
+            case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
             case .remoteCtrlStopped: return noDetails
             case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails
