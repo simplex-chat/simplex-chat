@@ -264,14 +264,14 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
   CRNtfMessages {} -> []
   CRRemoteHostCreated RemoteHostInfo {remoteHostId, remoteCtrlOOB} -> ("remote host " <> sShow remoteHostId <> " created") : viewRemoteCtrlOOBData remoteCtrlOOB
   CRRemoteHostList hs -> viewRemoteHosts hs
-  CRRemoteHostConnected rhId -> ["remote host " <> sShow rhId <> " connected"]
+  CRRemoteHostConnected RemoteHostInfo {remoteHostId = rhId} -> ["remote host " <> sShow rhId <> " connected"]
   CRRemoteHostStopped rhId -> ["remote host " <> sShow rhId <> " stopped"]
   CRRemoteCtrlList cs -> viewRemoteCtrls cs
-  CRRemoteCtrlRegistered rcId -> ["remote controller " <> sShow rcId <> " registered"]
+  CRRemoteCtrlRegistered RemoteCtrlInfo {remoteCtrlId = rcId} -> ["remote controller " <> sShow rcId <> " registered"]
   CRRemoteCtrlAnnounce fingerprint -> ["remote controller announced", "connection code:", plain $ strEncode fingerprint]
   CRRemoteCtrlFound rc -> ["remote controller found:", viewRemoteCtrl rc]
-  CRRemoteCtrlConnecting rcId rcName -> ["remote controller " <> sShow rcId <> " connecting to " <> plain rcName]
-  CRRemoteCtrlConnected rcId rcName -> ["remote controller " <> sShow rcId <> " connected, " <> plain rcName]
+  CRRemoteCtrlConnecting RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} -> ["remote controller " <> sShow rcId <> " connecting to " <> plain rcName]
+  CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} -> ["remote controller " <> sShow rcId <> " connected, " <> plain rcName]
   CRRemoteCtrlStopped -> ["remote controller stopped"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
@@ -1633,8 +1633,8 @@ viewVersionInfo logLevel CoreVersionInfo {version, simplexmqVersion, simplexmqCo
     parens s = " (" <> s <> ")"
 
 viewRemoteCtrlOOBData :: RemoteCtrlOOB -> [StyledString]
-viewRemoteCtrlOOBData RemoteCtrlOOB {caFingerprint} =
-  ["connection code:", plain $ strEncode caFingerprint]
+viewRemoteCtrlOOBData RemoteCtrlOOB {fingerprint} =
+  ["connection code:", plain $ strEncode fingerprint]
 
 viewRemoteHosts :: [RemoteHostInfo] -> [StyledString]
 viewRemoteHosts = \case
@@ -1653,8 +1653,8 @@ viewRemoteCtrls = \case
       plain $ tshow remoteCtrlId <> ". " <> displayName <> if sessionActive then " (active)" else ""
 
 -- TODO fingerprint, accepted?
-viewRemoteCtrl :: RemoteCtrl -> StyledString
-viewRemoteCtrl RemoteCtrl {remoteCtrlId, displayName} =
+viewRemoteCtrl :: RemoteCtrlInfo -> StyledString
+viewRemoteCtrl RemoteCtrlInfo {remoteCtrlId, displayName} =
   plain $ tshow remoteCtrlId <> ". " <> displayName
 
 viewChatError :: ChatLogLevel -> ChatError -> [StyledString]

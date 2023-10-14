@@ -70,6 +70,7 @@ import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.Profiles
+import Simplex.Chat.Store.Remote
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -1900,7 +1901,7 @@ processChatCommand = \case
   StopRemoteHost rh -> closeRemoteHostSession rh >> ok_
   DeleteRemoteHost rh -> deleteRemoteHost rh >> ok_
   StartRemoteCtrl -> startRemoteCtrl (execChatCommand Nothing) >> ok_
-  RegisterRemoteCtrl oob -> CRRemoteCtrlRegistered <$> registerRemoteCtrl oob
+  RegisterRemoteCtrl oob -> CRRemoteCtrlRegistered <$> withStore' (`insertRemoteCtrl` oob)
   AcceptRemoteCtrl rc -> acceptRemoteCtrl rc >> ok_
   RejectRemoteCtrl rc -> rejectRemoteCtrl rc >> ok_
   StopRemoteCtrl -> stopRemoteCtrl >> ok_

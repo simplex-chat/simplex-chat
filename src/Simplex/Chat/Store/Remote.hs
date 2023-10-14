@@ -9,14 +9,15 @@ import Data.Text (Text)
 import Database.SQLite.Simple (Only (..))
 import qualified Database.SQLite.Simple as SQL
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Chat.Remote.Types (RemoteCtrl (..), RemoteCtrlId, RemoteHost (..), RemoteHostId)
+import Simplex.Chat.Store.Shared (insertedRowId)
+import Simplex.Chat.Remote.Types
 import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow)
 import qualified Simplex.Messaging.Crypto as C
 
 insertRemoteHost :: DB.Connection -> FilePath -> Text -> C.APrivateSignKey -> C.SignedCertificate -> IO RemoteHostId
 insertRemoteHost db storePath displayName caKey caCert = do
   DB.execute db "INSERT INTO remote_hosts (store_path, display_name, ca_key, ca_cert) VALUES (?,?,?,?)" (storePath, displayName, caKey, C.SignedObject caCert)
-  fromOnly . head <$> DB.query_ db "SELECT last_insert_rowid()"
+  insertedRowId db
 
 getRemoteHosts :: DB.Connection -> IO [RemoteHost]
 getRemoteHosts db =
@@ -37,10 +38,11 @@ toRemoteHost (remoteHostId, storePath, displayName, caKey, C.SignedObject caCert
 deleteRemoteHostRecord :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (Only remoteHostId)
 
-insertRemoteCtrl :: DB.Connection -> Text -> C.KeyHash -> IO RemoteCtrlId
-insertRemoteCtrl db displayName fingerprint = do
+insertRemoteCtrl :: DB.Connection -> RemoteCtrlOOB -> IO RemoteCtrlInfo
+insertRemoteCtrl db RemoteCtrlOOB {fingerprint, displayName} = do
   DB.execute db "INSERT INTO remote_controllers (display_name, fingerprint) VALUES (?,?)" (displayName, fingerprint)
-  fromOnly . head <$> DB.query_ db "SELECT last_insert_rowid()"
+  remoteCtrlId <- insertedRowId db
+  pure RemoteCtrlInfo {remoteCtrlId, displayName, fingerprint, accepted = Nothing, sessionActive = False}
 
 getRemoteCtrls :: DB.Connection -> IO [RemoteCtrl]
 getRemoteCtrls db =
