@@ -1804,7 +1804,6 @@ public enum ArchiveError: Decodable {
 }
 
 public enum RemoteCtrlError: Decodable {
-  case missing(remoteCtrlId: Int64)
   case inactive
   case busy
   case timeout

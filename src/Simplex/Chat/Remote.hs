@@ -68,44 +68,44 @@ import System.FilePath (isPathSeparator, takeFileName, (</>))
 import UnliftIO
 import UnliftIO.Directory (createDirectoryIfMissing, getFileSize)
 
-withRemoteHostSession :: (ChatMonad m) => RemoteHostId -> (RemoteHostSession -> m a) -> m a
-withRemoteHostSession remoteHostId action = do
-  chatReadVar remoteHostSessions >>= maybe err action . M.lookup remoteHostId
+getRemoteHostSession :: ChatMonad m => RemoteHostId -> m RemoteHostSession
+getRemoteHostSession rhId = chatReadVar remoteHostSessions >>= maybe err pure . M.lookup rhId
   where
-    err = throwError $ ChatErrorRemoteHost remoteHostId RHMissing
+    err = throwError $ ChatErrorRemoteHost rhId RHMissing
 
-withRemoteHost :: (ChatMonad m) => RemoteHostId -> (RemoteHost -> m a) -> m a
-withRemoteHost remoteHostId action =
-  withStore' (`getRemoteHost` remoteHostId) >>= \case
-    Nothing -> throwError $ ChatErrorRemoteHost remoteHostId RHMissing
-    Just rh -> action rh
+checkNoRemoteHostSession :: ChatMonad m => RemoteHostId -> m ()
+checkNoRemoteHostSession rhId = chatReadVar remoteHostSessions >>= maybe (pure ()) err . M.lookup rhId
+  where
+    err _ = throwError $ ChatErrorRemoteHost rhId RHBusy
 
-startRemoteHost :: (ChatMonad m) => RemoteHostId -> m ()
-startRemoteHost remoteHostId = do
-  asks remoteHostSessions >>= atomically . TM.lookup remoteHostId >>= \case
-    Just _ -> throwError $ ChatErrorRemoteHost remoteHostId RHBusy
-    Nothing -> withRemoteHost remoteHostId $ \rh -> do
-      announcer <- async $ run rh
-      chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSessionStarting {announcer}
+startRemoteHost :: ChatMonad m => RemoteHostId -> m ()
+startRemoteHost rhId = do
+  checkNoRemoteHostSession rhId
+  rh <- withStore (`getRemoteHost` rhId)
+  announcer <- async $ run rh
+  chatModifyVar remoteHostSessions $ M.insert rhId RemoteHostSessionStarting {announcer}
   where
     cleanup finished = do
       logInfo "Remote host http2 client fininshed"
       atomically $ writeTVar finished True
-      M.lookup remoteHostId <$> chatReadVar remoteHostSessions >>= \case
-        Nothing -> logInfo $ "Session already closed for remote host " <> tshow remoteHostId
-        Just _ -> closeRemoteHostSession remoteHostId >> toView (CRRemoteHostStopped remoteHostId)
+      -- TODO why this is not an error?
+      M.lookup rhId <$> chatReadVar remoteHostSessions >>= \case
+        Nothing -> logInfo $ "Session already closed for remote host " <> tshow rhId
+        Just _ -> closeRemoteHostSession rhId >> toView (CRRemoteHostStopped rhId)
     run rh@RemoteHost {storePath, caKey, caCert} = do
       finished <- newTVarIO False
       let parent = (C.signatureKeyPair caKey, caCert)
       sessionCreds <- liftIO $ genCredentials (Just parent) (0, 24) "Session"
       let (fingerprint, credentials) = tlsCredentials $ sessionCreds :| [parent]
+      -- TODO ExceptT
       Discovery.announceRevHTTP2 (cleanup finished) fingerprint credentials >>= \case
         Left h2ce -> do
           logError $ "Failed to set up remote host connection: " <> tshow h2ce
           cleanup finished
         Right ctrlClient -> do
-          chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSessionStarted {storePath, ctrlClient}
-          chatWriteVar currentRemoteHost $ Just remoteHostId
+          chatModifyVar remoteHostSessions $ M.insert rhId RemoteHostSessionStarted {storePath, ctrlClient}
+          chatWriteVar currentRemoteHost $ Just rhId
+          -- TODO ExceptT
           sendHello ctrlClient >>= \case
             Left h2ce -> do
               logError $ "Failed to send initial remote host request: " <> tshow h2ce
@@ -113,8 +113,9 @@ startRemoteHost remoteHostId = do
             Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
               logDebug $ "Got initial from remote host: " <> tshow bodyHead
               oq <- asks outputQ
-              let toViewRemote = atomically . writeTBQueue oq . (Nothing,Just remoteHostId,)
+              let toViewRemote = atomically . writeTBQueue oq . (Nothing,Just rhId,)
               void . async $ pollRemote finished ctrlClient "/recv" $ \chatResponse -> do
+                -- TODO move to view / terminal
                 case chatResponse of
                   CRRcvFileComplete {user = ru, chatItem = AChatItem c d@SMDRcv i ci@ChatItem {file = Just ciFile}} -> do
                     handleRcvFileComplete ctrlClient storePath ru ciFile >>= \case
@@ -125,7 +126,7 @@ startRemoteHost remoteHostId = do
               -- TODO what sets session active?
               toView CRRemoteHostConnected {remoteHost = remoteHostInfo rh True rcName}
 
-sendHello :: (ChatMonad m) => HTTP2Client -> m (Either HTTP2.HTTP2ClientError HTTP2.HTTP2Response)
+sendHello :: ChatMonad m => HTTP2Client -> m (Either HTTP2.HTTP2ClientError HTTP2.HTTP2Response)
 sendHello http = liftIO (HTTP2.sendRequestDirect http req Nothing)
   where
     req = HTTP2Client.requestNoBody "GET" "/" mempty
@@ -134,29 +135,33 @@ pollRemote :: (ChatMonad m, J.FromJSON a) => TVar Bool -> HTTP2Client -> ByteStr
 pollRemote finished http path action = loop
   where
     loop = do
+      -- TODO ExceptT
       liftIO (HTTP2.sendRequestDirect http req Nothing) >>= \case
         Left e -> logError $ "pollRemote: " <> tshow (path, e)
         Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
           logDebug $ "Got /recv response: " <> decodeUtf8 bodyHead
+          -- TODO ExceptT (liftEither)
           case J.eitherDecodeStrict' bodyHead of
+            -- send error toView
             Left e -> logError $ "pollRemote/decode: " <> tshow (path, e)
             Right o -> action o
       readTVarIO finished >>= (`unless` loop)
     req = HTTP2Client.requestNoBody "GET" path mempty
 
-closeRemoteHostSession :: (ChatMonad m) => RemoteHostId -> m ()
-closeRemoteHostSession remoteHostId = withRemoteHostSession remoteHostId $ \session -> do
+closeRemoteHostSession :: ChatMonad m => RemoteHostId -> m ()
+closeRemoteHostSession remoteHostId = do
+  session <- getRemoteHostSession remoteHostId
   logInfo $ "Closing remote host session for " <> tshow remoteHostId
   liftIO $ cancelRemoteHostSession session
   chatWriteVar currentRemoteHost Nothing
   chatModifyVar remoteHostSessions $ M.delete remoteHostId
 
-cancelRemoteHostSession :: (MonadUnliftIO m) => RemoteHostSession -> m ()
+cancelRemoteHostSession :: MonadUnliftIO m => RemoteHostSession -> m ()
 cancelRemoteHostSession = \case
   RemoteHostSessionStarting {announcer} -> cancel announcer
   RemoteHostSessionStarted {ctrlClient} -> liftIO $ HTTP2.closeHTTP2Client ctrlClient
 
-createRemoteHost :: (ChatMonad m) => m RemoteHostInfo
+createRemoteHost :: ChatMonad m => m RemoteHostInfo
 createRemoteHost = do
   let rhName = "TODO" -- you don't have remote host name here, it will be passed from remote host
   ((_, caKey), caCert) <- liftIO $ genCredentials Nothing (-25, 24 * 365) rhName
@@ -170,7 +175,7 @@ createRemoteHost = do
 randomStorePath :: IO FilePath
 randomStorePath = B.unpack . B64U.encode <$> getRandomBytes 12
 
-listRemoteHosts :: (ChatMonad m) => m [RemoteHostInfo]
+listRemoteHosts :: ChatMonad m => m [RemoteHostInfo]
 listRemoteHosts = do
   active <- chatReadVar remoteHostSessions
   rcName <- chatReadVar localDeviceName
@@ -184,43 +189,51 @@ remoteHostInfo RemoteHost {remoteHostId, storePath, displayName, caCert} session
   let remoteCtrlOOB = RemoteCtrlOOB {fingerprint = C.certificateFingerprint caCert, displayName = rcName}
    in RemoteHostInfo {remoteHostId, storePath, displayName, remoteCtrlOOB, sessionActive}
 
-deleteRemoteHost :: (ChatMonad m) => RemoteHostId -> m ()
-deleteRemoteHost remoteHostId = withRemoteHost remoteHostId $ \RemoteHost {storePath} -> do
+deleteRemoteHost :: ChatMonad m => RemoteHostId -> m ()
+deleteRemoteHost rhId = do
+  RemoteHost {storePath} <- withStore (`getRemoteHost` rhId)
   chatReadVar filesFolder >>= \case
     Just baseDir -> do
       let hostStore = baseDir </> storePath
       logError $ "TODO: remove " <> tshow hostStore
     Nothing -> logWarn "Local file store not available while deleting remote host"
-  withStore' $ \db -> deleteRemoteHostRecord db remoteHostId
+  withStore' (`deleteRemoteHostRecord` rhId)
 
-processRemoteCommand :: (ChatMonad m) => RemoteHostSession -> (ByteString, ChatCommand) -> m ChatResponse
+processRemoteCommand :: ChatMonad m => RemoteHostSession -> (ByteString, ChatCommand) -> m ChatResponse
 processRemoteCommand RemoteHostSessionStarting {} _ = pure . CRChatError Nothing . ChatError $ CEInternalError "sending remote commands before session started"
 processRemoteCommand RemoteHostSessionStarted {ctrlClient} (s, cmd) = do
   logDebug $ "processRemoteCommand: " <> tshow (s, cmd)
   case cmd of
     SendFile cn ctrlPath -> do
+      -- TODO this would look likg this:
+      -- hostPath <- storeRemoteFile ctrlClient ctrlPath
+      -- relayCommand ctrlClient $ utf8String $ "/file " <> chatNameStr cn <> " " <> hostPath
       storeRemoteFile ctrlClient ctrlPath >>= \case
-        -- TODO: use Left
+        -- TODO: There are file specific errors, they are not internal, should be thrown in storeRemoteFile
         Nothing -> pure . CRChatError Nothing . ChatError $ CEInternalError "failed to store file on remote host"
-        Just hostPath -> relayCommand ctrlClient $ "/file " <> utf8String (chatNameStr cn) <> " " <> utf8String hostPath
+        Just hostPath -> relayCommand ctrlClient $ utf8String $ "/file " <> chatNameStr cn <> " " <> hostPath
     SendImage cn ctrlPath -> do
       storeRemoteFile ctrlClient ctrlPath >>= \case
         Nothing -> pure . CRChatError Nothing . ChatError $ CEInternalError "failed to store image on remote host"
-        Just hostPath -> relayCommand ctrlClient $ "/image " <> utf8String (chatNameStr cn) <> " " <> utf8String hostPath
+        Just hostPath -> relayCommand ctrlClient $ utf8String $ "/image " <> chatNameStr cn <> " " <> hostPath
     APISendMessage {composedMessage = cm@ComposedMessage {fileSource = Just CryptoFile {filePath = ctrlPath, cryptoArgs}}} -> do
       storeRemoteFile ctrlClient ctrlPath >>= \case
         Nothing -> pure . CRChatError Nothing . ChatError $ CEInternalError "failed to store file on remote host"
         Just hostPath -> do
+          -- TODO something is wrong here. What if file encryption is disabled?
           let cm' = cm {fileSource = Just CryptoFile {filePath = hostPath, cryptoArgs}} :: ComposedMessage
+          -- TODO we shouldn't manipulate JSON like that
           relayCommand ctrlClient $ B.takeWhile (/= '{') s <> B.toStrict (J.encode cm')
     _ -> relayCommand ctrlClient s
 
-relayCommand :: (ChatMonad m) => HTTP2Client -> ByteString -> m ChatResponse
+relayCommand :: ChatMonad m => HTTP2Client -> ByteString -> m ChatResponse
 relayCommand http s =
+  -- TODO ExceptT
   postBytestring Nothing http "/send" mempty s >>= \case
     Left e -> err $ "relayCommand/post: " <> show e
     Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
       logDebug $ "Got /send response: " <> decodeUtf8 bodyHead
+      -- TODO liftEither
       remoteChatResponse <- case J.eitherDecodeStrict bodyHead of -- XXX: large JSONs can overflow into buffered chunks
         Left e -> err $ "relayCommand/decodeValue: " <> show e
         Right json -> case J.fromJSON $ toTaggedJSON json of
@@ -239,13 +252,15 @@ relayCommand http s =
       where
         req = HTTP2Client.requestBuilder "POST" path hs (Binary.fromByteString body)
 
-handleRcvFileComplete :: (ChatMonad m) => HTTP2Client -> FilePath -> User -> CIFile 'MDRcv -> m (Maybe (CIFile 'MDRcv))
+handleRcvFileComplete :: ChatMonad m => HTTP2Client -> FilePath -> User -> CIFile 'MDRcv -> m (Maybe (CIFile 'MDRcv))
 handleRcvFileComplete http storePath remoteUser cif@CIFile {fileId, fileName, fileStatus} = case fileStatus of
   CIFSRcvComplete ->
     chatReadVar filesFolder >>= \case
       Just baseDir -> do
         let hostStore = baseDir </> storePath
         createDirectoryIfMissing True hostStore
+        -- TODO the problem here is that the name may turn out to be different and nothing will work
+        -- file processing seems to work "accidentally", not "by design"
         localPath <- uniqueCombine hostStore fileName
         ok <- fetchRemoteFile http remoteUser fileId localPath
         if ok
@@ -288,13 +303,16 @@ owsf2tagged = fst . convert
 pattern OwsfTag :: (JK.Key, J.Value)
 pattern OwsfTag = (SingleFieldJSONTag, J.Bool True)
 
-storeRemoteFile :: (MonadUnliftIO m) => HTTP2Client -> FilePath -> m (Maybe FilePath)
+-- TODO storeRemoteFile :: ChatMonad m => HTTP2Client -> FilePath -> m FilePath
+storeRemoteFile :: MonadUnliftIO m => HTTP2Client -> FilePath -> m (Maybe FilePath)
 storeRemoteFile http localFile = do
+  -- TODO use ExceptT / ChatMonad m
   putFile Nothing http uri mempty localFile >>= \case
     Left h2ce -> Nothing <$ logError (tshow h2ce)
     Right HTTP2.HTTP2Response {response, respBody = HTTP2Body {bodyHead}} ->
       case HTTP.statusCode <$> HTTP2Client.responseStatus response of
         Just 200 -> pure . Just $ B.unpack bodyHead
+        -- TODO errors should be sent to view, this logging won't help debugging on devices
         notOk -> Nothing <$ logError ("Bad response status: " <> tshow notOk)
   where
     uri = "/store?" <> HTTP.renderSimpleQuery False [("file_name", utf8String $ takeFileName localFile)]
@@ -304,20 +322,23 @@ storeRemoteFile http localFile = do
       where
         req size = HTTP2Client.requestFile "PUT" path hs (HTTP2Client.FileSpec file 0 size)
 
-fetchRemoteFile :: (MonadUnliftIO m) => HTTP2Client -> User -> Int64 -> FilePath -> m Bool
+-- TODO fetchRemoteFile :: ChatMonad m => HTTP2Client -> User -> Int64 -> FilePath -> m ()
+fetchRemoteFile :: MonadUnliftIO m => HTTP2Client -> User -> Int64 -> FilePath -> m Bool
 fetchRemoteFile http User {userId = remoteUserId} remoteFileId localPath = do
+  -- TODO use ExceptT / ChatMonad m
   liftIO (HTTP2.sendRequestDirect http req Nothing) >>= \case
     Left h2ce -> False <$ logError (tshow h2ce)
     Right HTTP2.HTTP2Response {response, respBody} ->
       if HTTP2Client.responseStatus response == Just Status.ok200
         then True <$ writeBodyToFile localPath respBody
+        -- TODO throwError
         else False <$ (logError $ "Request failed: " <> maybe "(??)" tshow (HTTP2Client.responseStatus response) <> " " <> decodeUtf8 (bodyHead respBody))
   where
     req = HTTP2Client.requestNoBody "GET" path mempty
     path = "/fetch?" <> HTTP.renderSimpleQuery False [("user_id", bshow remoteUserId), ("file_id", bshow remoteFileId)]
 
 -- XXX: extract to Transport.HTTP2 ?
-writeBodyToFile :: (MonadUnliftIO m) => FilePath -> HTTP2Body -> m ()
+writeBodyToFile :: MonadUnliftIO m => FilePath -> HTTP2Body -> m ()
 writeBodyToFile path HTTP2Body {bodyHead, bodySize, bodyPart} = do
   logInfo $ "Receiving " <> tshow bodySize <> " bytes to " <> tshow path
   liftIO . withFile path WriteMode $ \h -> do
@@ -331,7 +352,7 @@ hPutBodyChunks h getChunk = do
     hPut h chunk
     hPutBodyChunks h getChunk
 
-processControllerRequest :: forall m. (ChatMonad m) => (ByteString -> m ChatResponse) -> HTTP2.HTTP2Request -> m ()
+processControllerRequest :: forall m. ChatMonad m => (ByteString -> m ChatResponse) -> HTTP2.HTTP2Request -> m ()
 processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody, sendResponse} = do
   logDebug $ "Remote controller request: " <> tshow (method <> " " <> path)
   res <- tryChatError $ case (method, ps) of
@@ -354,6 +375,7 @@ processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody, s
       chatReadVar remoteCtrlSession >>= \case
         Nothing -> respondWith Status.internalServerError500 "session not active"
         Just rcs -> atomically (readTBQueue $ remoteOutputQ rcs) >>= respondJSON
+    -- TODO liftEither storeFileQuery
     storeFile = case storeFileQuery of
       Left err -> respondWith Status.badRequest400 (Binary.putStringUtf8 err)
       Right fileName -> do
@@ -365,6 +387,7 @@ processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody, s
         respond $ Binary.putStringUtf8 storeRelative
       where
         storeFileQuery = parseField "file_name" $ A.many1 (A.satisfy $ not . isPathSeparator)
+    -- TODO move to ExceptT monad, catch errors in one place, convert errors to responses
     fetchFile = case fetchFileQuery of
       Left err -> respondWith Status.badRequest400 (Binary.putStringUtf8 err)
       Right (userId, fileId) -> do
@@ -372,6 +395,7 @@ processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody, s
         x <- withStore' $ \db -> runExceptT $ do
           user <- getUser db userId
           getRcvFileTransfer db user fileId
+        -- TODO this error handling is very ad-hoc, there is no separation between Chat errors and responses
         case x of
           Right RcvFileTransfer {fileStatus = RFSComplete RcvFileInfo {filePath}} -> do
             baseDir <- fromMaybe "." <$> chatReadVar filesFolder
@@ -399,31 +423,31 @@ processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody, s
 
 -- * ChatRequest handlers
 
-startRemoteCtrl :: (ChatMonad m) => (ByteString -> m ChatResponse) -> m ()
-startRemoteCtrl execChatCommand =
-  chatReadVar remoteCtrlSession >>= \case
-    Just _busy -> throwError $ ChatErrorRemoteCtrl RCEBusy
-    Nothing -> do
-      size <- asks $ tbqSize . config
-      remoteOutputQ <- newTBQueueIO size
-      discovered <- newTVarIO mempty
-      discoverer <- async $ discoverRemoteCtrls discovered
-      accepted <- newEmptyTMVarIO
-      supervisor <- async $ do
-        remoteCtrlId <- atomically (readTMVar accepted)
-        withRemoteCtrl remoteCtrlId $ \rc@RemoteCtrl {fingerprint} -> do
-          source <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure
-          toView $ CRRemoteCtrlConnecting $ remoteCtrlInfo rc False
-          atomically $ writeTVar discovered mempty -- flush unused sources
-          server <- async $ Discovery.connectRevHTTP2 source fingerprint (processControllerRequest execChatCommand)
-          chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
-          toView $ CRRemoteCtrlConnected $ remoteCtrlInfo rc True
-          _ <- waitCatch server
-          chatWriteVar remoteCtrlSession Nothing
-          toView CRRemoteCtrlStopped
-      chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {discoverer, supervisor, hostServer = Nothing, discovered, accepted, remoteOutputQ}
+startRemoteCtrl :: ChatMonad m => (ByteString -> m ChatResponse) -> m ()
+startRemoteCtrl execChatCommand = do
+  checkNoRemoteCtrlSession
+  size <- asks $ tbqSize . config
+  remoteOutputQ <- newTBQueueIO size
+  discovered <- newTVarIO mempty
+  discoverer <- async $ discoverRemoteCtrls discovered
+  accepted <- newEmptyTMVarIO
+  supervisor <- async $ runSupervisor discovered accepted
+  chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {discoverer, supervisor, hostServer = Nothing, discovered, accepted, remoteOutputQ}
+  where
+    runSupervisor discovered accepted = do
+      remoteCtrlId <- atomically (readTMVar accepted)
+      rc@RemoteCtrl {fingerprint} <- withStore (`getRemoteCtrl` remoteCtrlId)
+      source <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure
+      toView $ CRRemoteCtrlConnecting $ remoteCtrlInfo rc False
+      atomically $ writeTVar discovered mempty -- flush unused sources
+      server <- async $ Discovery.connectRevHTTP2 source fingerprint (processControllerRequest execChatCommand)
+      chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
+      toView $ CRRemoteCtrlConnected $ remoteCtrlInfo rc True
+      _ <- waitCatch server
+      chatWriteVar remoteCtrlSession Nothing
+      toView CRRemoteCtrlStopped
 
-discoverRemoteCtrls :: (ChatMonad m) => TM.TMap C.KeyHash TransportHost -> m ()
+discoverRemoteCtrls :: ChatMonad m => TM.TMap C.KeyHash TransportHost -> m ()
 discoverRemoteCtrls discovered = Discovery.withListener go
   where
     go sock =
@@ -450,46 +474,43 @@ discoverRemoteCtrls discovered = Discovery.withListener go
                     Just RemoteCtrlSession {accepted} -> atomically $ void $ tryPutTMVar accepted remoteCtrlId -- previously accepted controller, connect automatically
         _nonV4 -> go sock
 
-listRemoteCtrls :: (ChatMonad m) => m [RemoteCtrlInfo]
+listRemoteCtrls :: ChatMonad m => m [RemoteCtrlInfo]
 listRemoteCtrls = do
   active <-
     chatReadVar remoteCtrlSession
       $>>= \RemoteCtrlSession {accepted} -> atomically $ tryReadTMVar accepted
   map (rcInfo active) <$> withStore' getRemoteCtrls
   where
-    rcInfo active rc@RemoteCtrl {remoteCtrlId} =
-      remoteCtrlInfo rc $ active == Just remoteCtrlId
+    rcInfo activeRcId rc@RemoteCtrl {remoteCtrlId} =
+      remoteCtrlInfo rc $ activeRcId == Just remoteCtrlId
 
 remoteCtrlInfo :: RemoteCtrl -> Bool -> RemoteCtrlInfo
 remoteCtrlInfo RemoteCtrl {remoteCtrlId, displayName, fingerprint, accepted} sessionActive =
   RemoteCtrlInfo {remoteCtrlId, displayName, fingerprint, accepted, sessionActive}
 
-acceptRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> m ()
-acceptRemoteCtrl remoteCtrlId = do
-  withStore' $ \db -> markRemoteCtrlResolution db remoteCtrlId True
-  chatReadVar remoteCtrlSession >>= \case
-    Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
-    Just RemoteCtrlSession {accepted} -> atomically . void $ tryPutTMVar accepted remoteCtrlId -- the remote host can now proceed with connection
+acceptRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m ()
+acceptRemoteCtrl rcId = do
+  -- TODO check it exists, check the ID is the same as in session
+  RemoteCtrlSession {accepted} <- getRemoteCtrlSession
+  withStore' $ \db -> markRemoteCtrlResolution db rcId True
+  atomically . void $ tryPutTMVar accepted rcId -- the remote host can now proceed with connection
 
-rejectRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> m ()
-rejectRemoteCtrl remoteCtrlId = do
-  withStore' $ \db -> markRemoteCtrlResolution db remoteCtrlId False
-  chatReadVar remoteCtrlSession >>= \case
-    Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
-    Just RemoteCtrlSession {discoverer, supervisor} -> do
-      cancel discoverer
-      cancel supervisor
+rejectRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m ()
+rejectRemoteCtrl rcId = do
+  withStore' $ \db -> markRemoteCtrlResolution db rcId False
+  RemoteCtrlSession {discoverer, supervisor} <- getRemoteCtrlSession
+  cancel discoverer
+  cancel supervisor
 
-stopRemoteCtrl :: (ChatMonad m) => m ()
-stopRemoteCtrl =
-  chatReadVar remoteCtrlSession >>= \case
-    Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
-    Just rcs -> cancelRemoteCtrlSession rcs $ chatWriteVar remoteCtrlSession Nothing
+stopRemoteCtrl :: ChatMonad m => m ()
+stopRemoteCtrl = do
+  rcs <- getRemoteCtrlSession
+  cancelRemoteCtrlSession rcs $ chatWriteVar remoteCtrlSession Nothing
 
-cancelRemoteCtrlSession_ :: (MonadUnliftIO m) => RemoteCtrlSession -> m ()
+cancelRemoteCtrlSession_ :: MonadUnliftIO m => RemoteCtrlSession -> m ()
 cancelRemoteCtrlSession_ rcs = cancelRemoteCtrlSession rcs $ pure ()
 
-cancelRemoteCtrlSession :: (MonadUnliftIO m) => RemoteCtrlSession -> m () -> m ()
+cancelRemoteCtrlSession :: MonadUnliftIO m => RemoteCtrlSession -> m () -> m ()
 cancelRemoteCtrlSession RemoteCtrlSession {discoverer, supervisor, hostServer} cleanup = do
   cancel discoverer -- may be gone by now
   case hostServer of
@@ -498,17 +519,19 @@ cancelRemoteCtrlSession RemoteCtrlSession {discoverer, supervisor, hostServer} c
       cancel supervisor -- supervisor is blocked until session progresses
       cleanup
 
-deleteRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> m ()
-deleteRemoteCtrl remoteCtrlId =
-  chatReadVar remoteCtrlSession >>= \case
-    Nothing -> withStore' $ \db -> deleteRemoteCtrlRecord db remoteCtrlId
-    Just _ -> throwError $ ChatErrorRemoteCtrl RCEBusy
+deleteRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m ()
+deleteRemoteCtrl rcId = do
+  checkNoRemoteCtrlSession
+  -- TODO check it exists
+  withStore' (`deleteRemoteCtrlRecord` rcId)
 
-withRemoteCtrl :: (ChatMonad m) => RemoteCtrlId -> (RemoteCtrl -> m a) -> m a
-withRemoteCtrl remoteCtrlId action =
-  withStore' (`getRemoteCtrl` remoteCtrlId) >>= \case
-    Nothing -> throwError $ ChatErrorRemoteCtrl RCEMissing {remoteCtrlId}
-    Just rc -> action rc
+getRemoteCtrlSession :: ChatMonad m => m RemoteCtrlSession
+getRemoteCtrlSession =
+  chatReadVar remoteCtrlSession >>= maybe (throwError $ ChatErrorRemoteCtrl RCEInactive) pure
+
+checkNoRemoteCtrlSession :: ChatMonad m => m ()
+checkNoRemoteCtrlSession =
+  chatReadVar remoteCtrlSession >>= maybe (pure ()) (\_ -> throwError $ ChatErrorRemoteCtrl RCEBusy)
 
 utf8String :: [Char] -> ByteString
 utf8String = encodeUtf8 . T.pack

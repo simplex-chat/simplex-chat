@@ -4,14 +4,15 @@
 
 module Simplex.Chat.Store.Remote where
 
+import Control.Monad.Except
 import Data.Int (Int64)
 import Data.Text (Text)
 import Database.SQLite.Simple (Only (..))
 import qualified Database.SQLite.Simple as SQL
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Chat.Store.Shared (insertedRowId)
+import Simplex.Chat.Store.Shared
 import Simplex.Chat.Remote.Types
-import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow)
+import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Crypto as C
 
 insertRemoteHost :: DB.Connection -> FilePath -> Text -> C.APrivateSignKey -> C.SignedCertificate -> IO RemoteHostId
@@ -23,9 +24,9 @@ getRemoteHosts :: DB.Connection -> IO [RemoteHost]
 getRemoteHosts db =
   map toRemoteHost <$> DB.query_ db remoteHostQuery
 
-getRemoteHost :: DB.Connection -> RemoteHostId -> IO (Maybe RemoteHost)
+getRemoteHost :: DB.Connection -> RemoteHostId -> ExceptT StoreError IO RemoteHost
 getRemoteHost db remoteHostId =
-  maybeFirstRow toRemoteHost $
+  ExceptT . firstRow toRemoteHost (SERemoteHostNotFound remoteHostId) $
     DB.query db (remoteHostQuery <> " WHERE remote_host_id = ?") (Only remoteHostId)
 
 remoteHostQuery :: SQL.Query
@@ -48,9 +49,9 @@ getRemoteCtrls :: DB.Connection -> IO [RemoteCtrl]
 getRemoteCtrls db =
   map toRemoteCtrl <$> DB.query_ db remoteCtrlQuery
 
-getRemoteCtrl :: DB.Connection -> RemoteCtrlId -> IO (Maybe RemoteCtrl)
+getRemoteCtrl :: DB.Connection -> RemoteCtrlId -> ExceptT StoreError IO RemoteCtrl
 getRemoteCtrl db remoteCtrlId =
-  maybeFirstRow toRemoteCtrl $
+  ExceptT . firstRow toRemoteCtrl (SERemoteCtrlNotFound remoteCtrlId) $
     DB.query db (remoteCtrlQuery <> " WHERE remote_controller_id = ?") (Only remoteCtrlId)
 
 getRemoteCtrlByFingerprint :: DB.Connection -> C.KeyHash -> IO (Maybe RemoteCtrl)

@@ -1158,8 +1158,7 @@ instance ToJSON RemoteHostError where
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteCtrlError
-  = RCEMissing {remoteCtrlId :: RemoteCtrlId} -- ^ No remote session matches this identifier
-  | RCEInactive -- ^ No session is running
+  = RCEInactive -- ^ No session is running
   | RCEBusy -- ^ A session is already running
   | RCETimeout -- ^ Remote operation timed out
   | RCEDisconnected {remoteCtrlId :: RemoteCtrlId, reason :: Text} -- ^ A session disconnected by a controller
@@ -1199,7 +1198,7 @@ data RemoteHostSession
       }
 
 data RemoteCtrlSession = RemoteCtrlSession
-  { -- | Server side of transport to process remote commands and forward notifications
+  { -- | Host (mobile) side of transport to process remote commands and forward notifications
     discoverer :: Async (),
     supervisor :: Async (),
     hostServer :: Maybe (Async ()),

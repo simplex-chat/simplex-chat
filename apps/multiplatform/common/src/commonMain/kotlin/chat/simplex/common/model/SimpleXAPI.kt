@@ -4521,7 +4521,6 @@ sealed class RemoteHostError {
 @Serializable
 sealed class RemoteCtrlError {
   val string: String get() = when (this) {
-    is Missing -> "missing"
     is Inactive -> "inactive"
     is Busy -> "busy"
     is Timeout -> "timeout"
@@ -4531,7 +4530,6 @@ sealed class RemoteCtrlError {
     is CertificateUntrusted -> "certificateUntrusted"
     is BadFingerprint -> "badFingerprint"
   }
-  @Serializable @SerialName("missing") class Missing(val remoteCtrlId: Long): RemoteCtrlError()
   @Serializable @SerialName("inactive") object Inactive: RemoteCtrlError()
   @Serializable @SerialName("busy") object Busy: RemoteCtrlError()
   @Serializable @SerialName("timeout") object Timeout: RemoteCtrlError()
