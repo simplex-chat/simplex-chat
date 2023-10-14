@@ -205,6 +205,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   sndFiles <- newTVarIO M.empty
   rcvFiles <- newTVarIO M.empty
   currentCalls <- atomically TM.empty
+  localDeviceName <- newTVarIO "" -- TODO set in config
   remoteHostSessions <- atomically TM.empty
   remoteCtrlSession <- newTVarIO Nothing
   filesFolder <- newTVarIO optFilesFolder
@@ -236,6 +237,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
         sndFiles,
         rcvFiles,
         currentCalls,
+        localDeviceName,
         remoteHostSessions,
         remoteCtrlSession,
         config,
@@ -1891,16 +1893,17 @@ processChatCommand = \case
     let pref = uncurry TimedMessagesGroupPreference $ maybe (FEOff, Just 86400) (\ttl -> (FEOn, Just ttl)) ttl_
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
-  CreateRemoteHost -> uncurry CRRemoteHostCreated <$> createRemoteHost
+  SetLocalDeviceName name -> withUser $ \_ -> chatWriteVar localDeviceName name >> ok_
+  CreateRemoteHost -> CRRemoteHostCreated <$> createRemoteHost
   ListRemoteHosts -> CRRemoteHostList <$> listRemoteHosts
   StartRemoteHost rh -> startRemoteHost rh >> ok_
   StopRemoteHost rh -> closeRemoteHostSession rh >> ok_
   DeleteRemoteHost rh -> deleteRemoteHost rh >> ok_
   StartRemoteCtrl -> startRemoteCtrl (execChatCommand Nothing) >> ok_
+  RegisterRemoteCtrl oob -> CRRemoteCtrlRegistered <$> registerRemoteCtrl oob
   AcceptRemoteCtrl rc -> acceptRemoteCtrl rc >> ok_
   RejectRemoteCtrl rc -> rejectRemoteCtrl rc >> ok_
   StopRemoteCtrl -> stopRemoteCtrl >> ok_
-  RegisterRemoteCtrl oob -> CRRemoteCtrlRegistered <$> registerRemoteCtrl oob
   ListRemoteCtrls -> CRRemoteCtrlList <$> listRemoteCtrls
   DeleteRemoteCtrl rc -> deleteRemoteCtrl rc >> ok_
   QuitChat -> liftIO exitSuccess
@@ -5810,14 +5813,15 @@ chatCommandP =
       "/set disappear @" *> (SetContactTimedMessages <$> displayName <*> optional (A.space *> timedMessagesEnabledP)),
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,
+      "/set device name " *> (SetLocalDeviceName <$> textP),
       "/create remote host" $> CreateRemoteHost,
       "/list remote hosts" $> ListRemoteHosts,
       "/start remote host " *> (StartRemoteHost <$> A.decimal),
       "/stop remote host " *> (StopRemoteHost <$> A.decimal),
       "/delete remote host " *> (DeleteRemoteHost <$> A.decimal),
       "/start remote ctrl" $> StartRemoteCtrl,
-      -- TODO *** you need to pass multiple parameters here
-      "/register remote ctrl " *> (RegisterRemoteCtrl <$> (RemoteCtrlOOB <$> strP)),
+      "/register remote ctrl " *> (RegisterRemoteCtrl <$> (RemoteCtrlOOB <$> strP <* A.space <*> textP)),
+      "/_register remote ctrl " *> (RegisterRemoteCtrl <$> jsonP),
       "/list remote ctrls" $> ListRemoteCtrls,
       "/accept remote ctrl " *> (AcceptRemoteCtrl <$> A.decimal),
       "/reject remote ctrl " *> (RejectRemoteCtrl <$> A.decimal),
