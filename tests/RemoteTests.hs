@@ -33,7 +33,7 @@ import UnliftIO
 import UnliftIO.Directory
 
 remoteTests :: SpecWith FilePath
-remoteTests = fdescribe "Handshake" $ do
+remoteTests = describe "Handshake" $ do
   it "generates usable credentials" genCredentialsTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
   it "connects desktop and mobile" remoteHandshakeTest

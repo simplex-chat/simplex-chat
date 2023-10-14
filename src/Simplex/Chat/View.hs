@@ -325,8 +325,8 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
       | otherwise = prependFirst ("[" <> mconcat prefix <> "] ") ss
       where
         prefix = intersperse ", " $ remotePrefix <> userPrefix
-        remotePrefix = if outputRH == currentRH then [] else [maybe "local" (("remote: " <>) . highlight . show) outputRH]
-        userPrefix = if Just userId == currentUserId then [] else ["user: " <> highlight u]
+        remotePrefix = [maybe "local" (("remote: " <>) . highlight . show) outputRH | outputRH /= currentRH]
+        userPrefix = ["user: " <> highlight u | Just userId /= currentUserId]
         currentUserId = (\User {userId = uId} -> uId) <$> user_
     ttyUser' :: Maybe User -> [StyledString] -> [StyledString]
     ttyUser' = maybe id ttyUser
