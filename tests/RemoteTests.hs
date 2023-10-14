@@ -37,7 +37,9 @@ remoteTests = describe "Handshake" $ do
   it "generates usable credentials" genCredentialsTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
   it "connects desktop and mobile" remoteHandshakeTest
-  it "send messages via remote desktop" remoteCommandTest
+  it "sends messages and files via remote desktop" remoteCommandTest
+  it "stops from desktop" shutdownHostTest
+  it "stops from mobile" shutdownCtrlTest
 
 -- * Low-level TLS with ephemeral credentials
 
@@ -154,6 +156,36 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   mobile <## "ok"
   mobile ##> "/list remote ctrls"
   mobile <## "No remote controllers"
+
+shutdownHostTest :: (HasCallStack) => FilePath -> IO ()
+shutdownHostTest = testRemote2 $ \desktop mobile -> do
+  desktop ##> "/stop remote host 1"
+  desktop <## "ok"
+  desktop ##> "/delete remote host 1"
+  desktop <## "ok"
+  desktop ##> "/list remote hosts"
+  desktop <## "No remote hosts"
+
+  mobile <## "remote controller stopped"
+  mobile ##> "/stop remote ctrl"
+  mobile <## "RCEInactive"
+  mobile ##> "/delete remote ctrl 1"
+  mobile <## "ok"
+
+shutdownCtrlTest :: (HasCallStack) => FilePath -> IO ()
+shutdownCtrlTest = testRemote2 $ \desktop mobile -> do
+  mobile ##> "/stop remote ctrl"
+  mobile <## "ok"
+  mobile <## "remote controller stopped"
+  mobile ##> "/delete remote ctrl 1"
+  mobile <## "ok"
+
+  desktop ##> "/stop remote host 1"
+  desktop <## "ok"
+  desktop ##> "/delete remote host 1"
+  desktop <## "ok"
+  desktop ##> "/list remote hosts"
+  desktop <## "No remote hosts"
 
 remoteCommandTest :: (HasCallStack) => FilePath -> IO ()
 remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
@@ -299,3 +331,25 @@ genTestCredentials = do
   caCreds <- liftIO $ genCredentials Nothing (0, 24) "CA"
   sessionCreds <- liftIO $ genCredentials (Just caCreds) (0, 24) "Session"
   pure . tlsCredentials $ sessionCreds :| [caCreds]
+
+testRemote2 :: (HasCallStack) => (TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
+testRemote2 action = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
+  desktop ##> "/create remote host"
+  desktop <## "remote host 1 created"
+  desktop <## "connection code:"
+  fingerprint <- getTermLine desktop
+  desktop ##> "/start remote host 1"
+  desktop <## "ok"
+  mobile ##> "/start remote ctrl"
+  mobile <## "ok"
+  mobile <## "remote controller announced"
+  mobile <## "connection code:"
+  fingerprint' <- getTermLine mobile
+  fingerprint' `shouldBe` fingerprint
+  mobile ##> ("/register remote ctrl " <> fingerprint' <> " " <> "My desktop")
+  mobile <## "remote controller 1 registered"
+  mobile ##> "/accept remote ctrl 1"
+  mobile <## "ok" -- alternative scenario: accepted before controller start
+  mobile <## "remote controller 1 connecting to My desktop"
+  mobile <## "remote controller 1 connected, My desktop"
+  action desktop mobile
