@@ -19,7 +19,7 @@ import Data.Char (isSpace, toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
-import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -211,6 +211,8 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
       (addresses, groupLinks) = partition (\UserContactSubStatus {userContact} -> isNothing . userContactGroupId $ userContact) summary
       addressSS UserContactSubStatus {userContactError} = maybe ("Your address is active! To show: " <> highlight' "/sa") (\e -> "User address error: " <> sShow e <> ", to delete your address: " <> highlight' "/da") userContactError
       (groupLinkErrors, groupLinksSubscribed) = partition (isJust . userContactError) groupLinks
+  CRNetworkStatus status conns -> if testView then [plain $ show (length conns) <> " connections " <> netStatusStr status] else []
+  CRNetworkStatuses u statuses -> if testView then ttyUser' u $ viewNetworkStatuses statuses else []
   CRGroupInvitation u g -> ttyUser u [groupInvitation' g]
   CRReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CRUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
@@ -260,23 +262,17 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRNtfToken _ status mode -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode)]
   CRNtfMessages {} -> []
-  CRRemoteHostCreated rhId oobData -> ("remote host " <> sShow rhId <> " created") : viewRemoteCtrlOOBData oobData
+  CRRemoteHostCreated RemoteHostInfo {remoteHostId, remoteCtrlOOB} -> ("remote host " <> sShow remoteHostId <> " created") : viewRemoteCtrlOOBData remoteCtrlOOB
   CRRemoteHostList hs -> viewRemoteHosts hs
-  CRRemoteHostStarted rhId -> ["remote host " <> sShow rhId <> " started"]
   CRRemoteHostConnected rhId -> ["remote host " <> sShow rhId <> " connected"]
   CRRemoteHostStopped rhId -> ["remote host " <> sShow rhId <> " stopped"]
-  CRRemoteHostDeleted rhId -> ["remote host " <> sShow rhId <> " deleted"]
   CRRemoteCtrlList cs -> viewRemoteCtrls cs
   CRRemoteCtrlRegistered rcId -> ["remote controller " <> sShow rcId <> " registered"]
-  CRRemoteCtrlStarted -> ["remote controller started"]
   CRRemoteCtrlAnnounce fingerprint -> ["remote controller announced", "connection code:", plain $ strEncode fingerprint]
   CRRemoteCtrlFound rc -> ["remote controller found:", viewRemoteCtrl rc]
-  CRRemoteCtrlAccepted rcId -> ["remote controller " <> sShow rcId <> " accepted"]
-  CRRemoteCtrlRejected rcId -> ["remote controller " <> sShow rcId <> " rejected"]
   CRRemoteCtrlConnecting rcId rcName -> ["remote controller " <> sShow rcId <> " connecting to " <> plain rcName]
   CRRemoteCtrlConnected rcId rcName -> ["remote controller " <> sShow rcId <> " connected, " <> plain rcName]
   CRRemoteCtrlStopped -> ["remote controller stopped"]
-  CRRemoteCtrlDeleted rcId -> ["remote controller " <> sShow rcId <> " deleted"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
     let viewQuery SlowSQLQuery {query, queryStats = SlowQueryStats {count, timeMax, timeAvg}} =
@@ -324,14 +320,14 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
       | otherwise = []
     ttyUserPrefix :: User -> [StyledString] -> [StyledString]
     ttyUserPrefix _ [] = []
-    ttyUserPrefix User {userId, localDisplayName = u} ss = prependFirst prefix ss
+    ttyUserPrefix User {userId, localDisplayName = u} ss
+      | null prefix = ss
+      | otherwise = prependFirst ("[" <> mconcat prefix <> "] ") ss
       where
-        prefix = if outputRH /= currentRH then r else userPrefix
-        r = case outputRH of
-          Nothing -> "[local] " <> userPrefix
-          Just rh -> "[remote: ]" <> highlight (show rh) <> "] "
-        userPrefix = if Just userId /= currentUserId then "[user: " <> highlight u <> "] " else ""
-        currentUserId = fmap (\User {userId} -> userId) user_
+        prefix = intersperse ", " $ remotePrefix <> userPrefix
+        remotePrefix = [maybe "local" (("remote: " <>) . highlight . show) outputRH | outputRH /= currentRH]
+        userPrefix = ["user: " <> highlight u | Just userId /= currentUserId]
+        currentUserId = (\User {userId = uId} -> uId) <$> user_
     ttyUser' :: Maybe User -> [StyledString] -> [StyledString]
     ttyUser' = maybe id ttyUser
     ttyUserPrefix' :: Maybe User -> [StyledString] -> [StyledString]
@@ -819,6 +815,12 @@ viewCannotResendInvitation g c =
 viewDirectMessagesProhibited :: MsgDirection -> Contact -> [StyledString]
 viewDirectMessagesProhibited MDSnd c = ["direct messages to indirect contact " <> ttyContact' c <> " are prohibited"]
 viewDirectMessagesProhibited MDRcv c = ["received prohibited direct message from indirect contact " <> ttyContact' c <> " (discarded)"]
+
+viewNetworkStatuses :: [ConnNetworkStatus] -> [StyledString]
+viewNetworkStatuses = map viewStatuses . L.groupBy ((==) `on` netStatus) . sortOn netStatus
+  where
+    netStatus ConnNetworkStatus {networkStatus} = networkStatus
+    viewStatuses ss@(s :| _) = plain $ show (L.length ss) <> " connections " <> netStatusStr (netStatus s)
 
 viewUserJoinedGroup :: GroupInfo -> [StyledString]
 viewUserJoinedGroup g =

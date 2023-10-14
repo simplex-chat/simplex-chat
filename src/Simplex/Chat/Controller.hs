@@ -36,6 +36,7 @@ import Data.Constraint (Dict (..))
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import Data.String
 import Data.Text (Text)
 import Data.Time (NominalDiffTime, UTCTime)
@@ -130,7 +131,8 @@ data ChatConfig = ChatConfig
     initialCleanupManagerDelay :: Int64,
     cleanupManagerInterval :: NominalDiffTime,
     cleanupManagerStepDelay :: Int64,
-    ciExpirationInterval :: Int64 -- microseconds
+    ciExpirationInterval :: Int64, -- microseconds
+    coreApi :: Bool
   }
 
 data DefaultAgentServers = DefaultAgentServers
@@ -171,11 +173,13 @@ data ChatController = ChatController
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, Maybe RemoteHostId, ChatResponse),
+    connNetworkStatuses :: TMap AgentConnId NetworkStatus,
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
     currentCalls :: TMap ContactId Call,
+    localDeviceName :: TVar Text,
     remoteHostSessions :: TMap RemoteHostId RemoteHostSession, -- All the active remote hosts
     remoteCtrlSession :: TVar (Maybe RemoteCtrlSession), -- Supervisor process for hosted controllers
     config :: ChatConfig,
@@ -263,6 +267,7 @@ data ChatCommand
   | APIEndCall ContactId
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
+  | APIGetNetworkStatuses
   | APIUpdateProfile UserId Profile
   | APISetContactPrefs ContactId Preferences
   | APISetContactAlias ContactId LocalAlias
@@ -415,14 +420,15 @@ data ChatCommand
   | SetUserTimedMessages Bool -- UserId (not used in UI)
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)
+  | SetLocalDeviceName Text
   | CreateRemoteHost -- ^ Configure a new remote host
   | ListRemoteHosts
   | StartRemoteHost RemoteHostId -- ^ Start and announce a remote host
   -- | SwitchRemoteHost (Maybe RemoteHostId) -- ^ Switch current remote host
   | StopRemoteHost RemoteHostId -- ^ Shut down a running session
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
-  | RegisterRemoteCtrl RemoteCtrlOOB -- ^ Register OOB data for satellite discovery and handshake
   | StartRemoteCtrl -- ^ Start listening for announcements from all registered controllers
+  | RegisterRemoteCtrl RemoteCtrlOOB -- ^ Register OOB data for satellite discovery and handshake
   | ListRemoteCtrls
   | AcceptRemoteCtrl RemoteCtrlId -- ^ Accept discovered data and store confirmation
   | RejectRemoteCtrl RemoteCtrlId -- ^ Reject and blacklist discovered data
@@ -576,6 +582,8 @@ data ChatResponse
   | CRContactSubError {user :: User, contact :: Contact, chatError :: ChatError}
   | CRContactSubSummary {user :: User, contactSubscriptions :: [ContactSubStatus]}
   | CRUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]}
+  | CRNetworkStatus {networkStatus :: NetworkStatus, connections :: [AgentConnId]}
+  | CRNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]}
   | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRGroupInvitation {user :: User, groupInfo :: GroupInfo}
@@ -623,23 +631,17 @@ data ChatResponse
   | CRNtfMessages {user_ :: Maybe User, connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNewContactConnection {user :: User, connection :: PendingContactConnection}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
-  | CRRemoteHostCreated {remoteHostId :: RemoteHostId, oobData :: RemoteCtrlOOB}
-  | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]} -- XXX: RemoteHostInfo is mostly concerned with session setup
-  | CRRemoteHostStarted {remoteHostId :: RemoteHostId}
-  | CRRemoteHostConnected {remoteHostId :: RemoteHostId}
+  | CRRemoteHostCreated {remoteHost :: RemoteHostInfo}
+  | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
+  | CRRemoteHostConnected {remoteHostId :: RemoteHostId} -- TODO add displayName
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
-  | CRRemoteHostDeleted {remoteHostId :: RemoteHostId}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
   | CRRemoteCtrlRegistered {remoteCtrlId :: RemoteCtrlId}
-  | CRRemoteCtrlStarted
   | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- unregistered fingerprint, needs confirmation
   | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrl} -- registered fingerprint, may connect
-  | CRRemoteCtrlAccepted {remoteCtrlId :: RemoteCtrlId}
-  | CRRemoteCtrlRejected {remoteCtrlId :: RemoteCtrlId}
   | CRRemoteCtrlConnecting {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
   | CRRemoteCtrlConnected {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
   | CRRemoteCtrlStopped
-  | CRRemoteCtrlDeleted {remoteCtrlId :: RemoteCtrlId}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
@@ -661,21 +663,15 @@ allowRemoteEvent :: ChatResponse -> Bool
 allowRemoteEvent = \case
   CRRemoteHostCreated {} -> False
   CRRemoteHostList {} -> False
-  CRRemoteHostStarted {} -> False
   CRRemoteHostConnected {} -> False
   CRRemoteHostStopped {} -> False
-  CRRemoteHostDeleted {} -> False
   CRRemoteCtrlList {} -> False
   CRRemoteCtrlRegistered {} -> False
-  CRRemoteCtrlStarted {} -> False
   CRRemoteCtrlAnnounce {} -> False
   CRRemoteCtrlFound {} -> False
-  CRRemoteCtrlAccepted {} -> False
-  CRRemoteCtrlRejected {} -> False
   CRRemoteCtrlConnecting {} -> False
   CRRemoteCtrlConnected {} -> False
   CRRemoteCtrlStopped {} -> False
-  CRRemoteCtrlDeleted {} -> False
   _ -> True
 
 logResponseToFile :: ChatResponse -> Bool
@@ -698,7 +694,8 @@ logResponseToFile = \case
   _ -> False
 
 data RemoteCtrlOOB = RemoteCtrlOOB
-  { caFingerprint :: C.KeyHash
+  { caFingerprint :: C.KeyHash,
+    displayName :: Text
   }
   deriving (Show, Generic, FromJSON)
 
@@ -708,6 +705,7 @@ data RemoteHostInfo = RemoteHostInfo
   { remoteHostId :: RemoteHostId,
     storePath :: FilePath,
     displayName :: Text,
+    remoteCtrlOOB :: RemoteCtrlOOB,
     sessionActive :: Bool
   }
   deriving (Show, Generic, FromJSON)
@@ -1256,6 +1254,9 @@ chatWriteVar f value = asks f >>= atomically . (`writeTVar` value)
 chatModifyVar :: ChatMonad' m => (ChatController -> TVar a) -> (a -> a) -> m ()
 chatModifyVar f newValue = asks f >>= atomically . (`modifyTVar'` newValue)
 {-# INLINE chatModifyVar #-}
+
+setContactNetworkStatus :: ChatMonad' m => Contact -> NetworkStatus -> m ()
+setContactNetworkStatus ct = chatModifyVar connNetworkStatuses . M.insert (contactAgentConnId ct)
 
 tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
 tryChatError = tryAllErrors mkChatError
