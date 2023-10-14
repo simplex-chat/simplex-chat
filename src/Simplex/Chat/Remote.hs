@@ -8,7 +8,6 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
-
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Remote where
@@ -19,6 +18,7 @@ import Control.Monad.Except
 import Control.Monad.IO.Class
 import Control.Monad.Reader (asks)
 import Control.Monad.STM (retry)
+import qualified Control.Monad.Trans.Resource as R
 import Crypto.Random (getRandomBytes)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
@@ -66,7 +66,6 @@ import Simplex.Messaging.Util (bshow, ifM, tshow, unlessM, ($>>=))
 import System.FilePath (isPathSeparator, takeFileName, (</>))
 import UnliftIO
 import UnliftIO.Directory (createDirectoryIfMissing, getFileSize)
-import qualified Control.Monad.Trans.Resource as R
 
 withRemoteHostSession :: (ChatMonad m) => RemoteHostId -> (RemoteHostSession -> m a) -> m a
 withRemoteHostSession remoteHostId action = do
@@ -85,11 +84,12 @@ startRemoteHost remoteHostId = do
   withRemoteHost remoteHostId $ \rh -> do
     sessions <- asks remoteHostSessions
     region <- R.createInternalState
-    registered <- atomically $
-      ifM
-        (TM.member remoteHostId sessions)
-        (pure False)
-        (True <$ TM.insert remoteHostId RemoteHostSessionStarting {cancelRemoteHostSession = R.closeInternalState region} sessions)
+    registered <-
+      atomically $
+        ifM
+          (TM.member remoteHostId sessions)
+          (pure False)
+          (True <$ TM.insert remoteHostId RemoteHostSessionStarting {cancelRemoteHostSession = R.closeInternalState region} sessions)
     unless registered $ do
       R.closeInternalState region -- discard unused region
       throwError $ ChatErrorRemoteHost remoteHostId RHBusy
@@ -111,11 +111,13 @@ setupRemoteHostSession remoteHostId RemoteHost {storePath, caKey, caCert} = do
       (atomically $ readTMVar tlsStarted)
       (Discovery.runAnnouncer $ strEncode fingerprint)
       (logWarn "TLS server failed to start, not starting announcer")
-  announcerKey <- R.register $ poll announcer >>= \case
-    Nothing -> do
-      logInfo $ "Stopping announcer for " <> tshow fingerprint
-      cancel announcer
-    Just _ -> pure ()
+  announcerKey <-
+    R.register $
+      poll announcer >>= \case
+        Nothing -> do
+          logInfo $ "Stopping announcer for " <> tshow fingerprint
+          cancel announcer
+        Just _ -> pure ()
 
   httpFinished <- newEmptyMVar
   httpClient <- newEmptyMVar
@@ -128,16 +130,16 @@ setupRemoteHostSession remoteHostId RemoteHost {storePath, caKey, caCert} = do
     logInfo $ "Waiting for TLS server for " <> tshow fingerprint
     unlessM (atomically $ readTMVar tlsStarted) $
       error "TLS server failed to start" -- let the setup wrapper unroll
-
     logInfo $ "Waiting for HTTP2 client for " <> tshow fingerprint
-    ctrlClient <- takeMVar httpClient >>= \case
-      Left h2ce -> do
-        logError $ tshow h2ce
-        error "HTTP2 server failed to start"
-      Right h2c -> do
-        logInfo $ "Have HTTP2 client for " <> tshow fingerprint
-        R.release announcerKey
-        pure h2c
+    ctrlClient <-
+      takeMVar httpClient >>= \case
+        Left h2ce -> do
+          logError $ tshow h2ce
+          error "HTTP2 server failed to start"
+        Right h2c -> do
+          logInfo $ "Have HTTP2 client for " <> tshow fingerprint
+          R.release announcerKey
+          pure h2c
 
     sendHello ctrlClient >>= \todo'helloResponse ->
       logInfo $ "Got hello response for " <> tshow fingerprint
@@ -155,52 +157,25 @@ setupRemoteHostSession remoteHostId RemoteHost {storePath, caKey, caCert} = do
     void $ R.register $ cancel recv
 
     sessions <- asks remoteHostSessions
-    registerError <- atomically $ TM.lookup remoteHostId sessions >>= \case
-      Nothing -> pure . Just $ "remote session gone before background setup finished for " <> show fingerprint
-      Just RemoteHostSessionConnected {} -> pure . Just $ "remote session already connected for " <> show fingerprint
-      Just RemoteHostSessionStarting {cancelRemoteHostSession} ->
-        Nothing <$ TM.insert remoteHostId RemoteHostSessionConnected {cancelRemoteHostSession, ctrlClient, storePath} sessions
+    registerError <-
+      atomically $
+        TM.lookup remoteHostId sessions >>= \case
+          Nothing -> pure . Just $ "remote session gone before background setup finished for " <> show fingerprint
+          Just RemoteHostSessionConnected {} -> pure . Just $ "remote session already connected for " <> show fingerprint
+          Just RemoteHostSessionStarting {cancelRemoteHostSession} ->
+            Nothing <$ TM.insert remoteHostId RemoteHostSessionConnected {cancelRemoteHostSession, ctrlClient, storePath} sessions
     forM_ registerError $ \err -> do
       toView . CRChatError Nothing . ChatError $ CEInternalError err
       error err -- TODO: is it possible to recover?
     chatWriteVar currentRemoteHost $ Just remoteHostId -- XXX: this can be done on UI (needs the SwitchRemoteHost command), as a rection to the HostConnected message
     toView CRRemoteHostConnected {remoteHostId}
 
-  void . R.register $ poll backgroundSetup >>= \case
-    Nothing -> do
-      logInfo $ "Interrupting setup for " <> tshow fingerprint
-      cancel backgroundSetup
-    Just _finished -> pure ()
-
-    -- cleanup finished = do
-    --   logInfo "Remote host http2 client fininshed"
-    --   atomically $ writeTVar finished True
-    --   closeRemoteHostSession remoteHostId >>= toView
-
-
-      -- Discovery.announceRevHTTP2 (cleanup finished) fingerprint credentials >>= \case
-      --   Left h2ce -> do
-      --     logError $ "Failed to set up remote host connection: " <> tshow h2ce
-      --     cleanup finished
-      --   Right ctrlClient -> do
-      --     chatModifyVar remoteHostSessions $ M.insert remoteHostId RemoteHostSessionStarted {storePath, ctrlClient}
-      --     chatWriteVar currentRemoteHost $ Just remoteHostId
-      --     sendHello ctrlClient >>= \case
-      --       Left h2ce -> do
-      --         logError $ "Failed to send initial remote host request: " <> tshow h2ce
-      --         cleanup finished
-      --       Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
-      --         logDebug $ "Got initial from remote host: " <> tshow bodyHead
-      --         oq <- asks outputQ
-      --         let toViewRemote = atomically . writeTBQueue oq . (Nothing,Just remoteHostId,)
-      --         void . async $ pollRemote finished ctrlClient "/recv" $ \chatResponse -> do
-      --           case chatResponse of
-      --             CRRcvFileComplete {user = ru, chatItem = AChatItem c d@SMDRcv i ci@ChatItem {file = Just ciFile}} -> do
-      --               handleRcvFileComplete ctrlClient storePath ru ciFile >>= \case
-      --                 Nothing -> toViewRemote chatResponse
-      --                 Just localFile -> toViewRemote CRRcvFileComplete {user = ru, chatItem = AChatItem c d i ci {file = Just localFile}}
-      --             _ -> toViewRemote chatResponse
-      --         toView CRRemoteHostConnected {remoteHostId}
+  void . R.register $
+    poll backgroundSetup >>= \case
+      Nothing -> do
+        logInfo $ "Interrupting setup for " <> tshow fingerprint
+        cancel backgroundSetup
+      Just _finished -> pure ()
 
 sendHello :: (ChatMonad' m) => HTTP2Client -> m HTTP2Body
 sendHello http = liftIO (HTTP2.sendRequestDirect http req Nothing) >>= either handleHttpError getOkResponseBody
@@ -212,7 +187,7 @@ handleHttpError :: HTTP2.HTTP2ClientError -> m a
 handleHttpError = error . show
 
 -- TODO: use correct error types
-getOkResponseBody :: Monad m => HTTP2.HTTP2Response -> m HTTP2Body
+getOkResponseBody :: (Monad m) => HTTP2.HTTP2Response -> m HTTP2Body
 getOkResponseBody HTTP2.HTTP2Response {response, respBody} =
   if status == Just Status.ok200
     then pure respBody
@@ -224,7 +199,8 @@ pollRemote :: (ChatMonad' m, J.FromJSON a) => HTTP2Client -> ByteString -> (a ->
 pollRemote http path action = forever $ do
   liftIO (HTTP2.sendRequestDirect http req Nothing) >>= \case
     Left e -> logError $ "pollRemote: " <> tshow (path, e)
-    Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do -- TODO: checkHttpStatus
+    Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
+      -- TODO: checkHttpStatus
       logDebug $ "Got /recv response: " <> decodeUtf8 bodyHead
       case J.eitherDecodeStrict' bodyHead of
         Left e -> logError $ "pollRemote/decode: " <> tshow (path, e)
@@ -240,12 +216,9 @@ closeRemoteHostSession remoteHostId = withRemoteHostSession remoteHostId $ \sess
   chatModifyVar remoteHostSessions $ M.delete remoteHostId
 
 closeHTTP2Client :: HTTP2.HTTP2Client -> IO ()
-closeHTTP2Client HTTP2.HTTP2Client {action, client_ = HTTP2.HClient{disconnected}} = do
-  logNote $ "closeHTTP2Client: cancelling"
+closeHTTP2Client HTTP2.HTTP2Client {action, client_ = HTTP2.HClient {disconnected}} = do
   mapM_ uninterruptibleCancel action
-  logNote $ "closeHTTP2Client: disconnected"
   disconnected
-  logNote $ "closeHTTP2Client: fin"
 
 createRemoteHost :: (ChatMonad m) => m RemoteHostInfo
 createRemoteHost = do
@@ -399,7 +372,7 @@ fetchRemoteFile http User {userId = remoteUserId} remoteFileId localPath = do
     Right HTTP2.HTTP2Response {response, respBody} ->
       if HTTP2Client.responseStatus response == Just Status.ok200
         then True <$ writeBodyToFile localPath respBody
-        else False <$ (logError $ "Request failed: " <> maybe "(??)" tshow (HTTP2Client.responseStatus response) <> " " <> decodeUtf8 (bodyHead respBody))
+        else False <$ logError ("Request failed: " <> maybe "(??)" tshow (HTTP2Client.responseStatus response) <> " " <> decodeUtf8 (bodyHead respBody))
   where
     req = HTTP2Client.requestNoBody "GET" path mempty
     path = "/fetch?" <> HTTP.renderSimpleQuery False [("user_id", bshow remoteUserId), ("file_id", bshow remoteFileId)]
@@ -539,9 +512,7 @@ discoverRemoteCtrls discovered = Discovery.withListener go
         _nonV4 -> go sock
 
 registerRemoteCtrl :: (ChatMonad m) => RemoteCtrlOOB -> m RemoteCtrlId
-registerRemoteCtrl RemoteCtrlOOB {caFingerprint, displayName} = do
-  remoteCtrlId <- withStore' $ \db -> insertRemoteCtrl db displayName caFingerprint
-  pure remoteCtrlId
+registerRemoteCtrl RemoteCtrlOOB {caFingerprint, displayName} = withStore' $ \db -> insertRemoteCtrl db displayName caFingerprint
 
 listRemoteCtrls :: (ChatMonad m) => m [RemoteCtrlInfo]
 listRemoteCtrls = do
