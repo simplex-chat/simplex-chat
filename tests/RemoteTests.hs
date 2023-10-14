@@ -120,15 +120,15 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   fingerprint' `shouldBe` fingerprint
   mobile ##> "/list remote ctrls"
   mobile <## "No remote controllers"
-  mobile ##> ("/register remote ctrl " <> fingerprint')
+  mobile ##> ("/register remote ctrl " <> fingerprint' <> " " <> "My desktop")
   mobile <## "remote controller 1 registered"
   mobile ##> "/list remote ctrls"
   mobile <## "Remote controllers:"
-  mobile <## "1. TODO"
+  mobile <## "1. My desktop"
   mobile ##> "/accept remote ctrl 1"
   mobile <## "ok" -- alternative scenario: accepted before controller start
-  mobile <## "remote controller 1 connecting to TODO"
-  mobile <## "remote controller 1 connected, TODO"
+  mobile <## "remote controller 1 connecting to My desktop"
+  mobile <## "remote controller 1 connected, My desktop"
 
   traceM "    - Session active"
   desktop ##> "/list remote hosts"
@@ -136,7 +136,7 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   desktop <## "1. TODO (active)"
   mobile ##> "/list remote ctrls"
   mobile <## "Remote controllers:"
-  mobile <## "1. TODO (active)"
+  mobile <## "1. My desktop (active)"
 
   traceM "    - Shutting desktop"
   desktop ##> "/stop remote host 1"
@@ -181,12 +181,12 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   mobile <## "connection code:"
   fingerprint' <- getTermLine mobile
   fingerprint' `shouldBe` fingerprint
-  mobile ##> ("/register remote ctrl " <> fingerprint')
+  mobile ##> ("/register remote ctrl " <> fingerprint' <> " " <> "My desktop")
   mobile <## "remote controller 1 registered"
   mobile ##> "/accept remote ctrl 1"
   mobile <## "ok" -- alternative scenario: accepted before controller start
-  mobile <## "remote controller 1 connecting to TODO"
-  mobile <## "remote controller 1 connected, TODO"
+  mobile <## "remote controller 1 connecting to My desktop"
+  mobile <## "remote controller 1 connected, My desktop"
   desktop <## "remote host 1 connected"
 
   traceM "    - exchanging contacts"

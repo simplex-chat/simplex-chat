@@ -262,7 +262,7 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRNtfToken _ status mode -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode)]
   CRNtfMessages {} -> []
-  CRRemoteHostCreated rhId oobData -> ("remote host " <> sShow rhId <> " created") : viewRemoteCtrlOOBData oobData
+  CRRemoteHostCreated RemoteHostInfo {remoteHostId, remoteCtrlOOB} -> ("remote host " <> sShow remoteHostId <> " created") : viewRemoteCtrlOOBData remoteCtrlOOB
   CRRemoteHostList hs -> viewRemoteHosts hs
   CRRemoteHostConnected rhId -> ["remote host " <> sShow rhId <> " connected"]
   CRRemoteHostStopped rhId -> ["remote host " <> sShow rhId <> " stopped"]
@@ -320,14 +320,14 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
       | otherwise = []
     ttyUserPrefix :: User -> [StyledString] -> [StyledString]
     ttyUserPrefix _ [] = []
-    ttyUserPrefix User {userId, localDisplayName = u} ss = prependFirst prefix ss
+    ttyUserPrefix User {userId, localDisplayName = u} ss
+      | null prefix = ss
+      | otherwise = prependFirst ("[" <> mconcat prefix <> "] ") ss
       where
-        prefix = if outputRH /= currentRH then r else userPrefix
-        r = case outputRH of
-          Nothing -> "[local] " <> userPrefix
-          Just rh -> "[remote: ]" <> highlight (show rh) <> "] "
-        userPrefix = if Just userId /= currentUserId then "[user: " <> highlight u <> "] " else ""
-        currentUserId = fmap (\User {userId} -> userId) user_
+        prefix = intersperse ", " $ remotePrefix <> userPrefix
+        remotePrefix = [maybe "local" (("remote: " <>) . highlight . show) outputRH | outputRH /= currentRH]
+        userPrefix = ["user: " <> highlight u | Just userId /= currentUserId]
+        currentUserId = (\User {userId = uId} -> uId) <$> user_
     ttyUser' :: Maybe User -> [StyledString] -> [StyledString]
     ttyUser' = maybe id ttyUser
     ttyUserPrefix' :: Maybe User -> [StyledString] -> [StyledString]
