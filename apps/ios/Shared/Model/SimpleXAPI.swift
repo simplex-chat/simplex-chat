@@ -257,6 +257,12 @@ func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
     throw r
 }
 
+func apiSetEncryptLocalFiles(_ enable: Boolean) throws {
+    let r = chatSendCmdSync(.apiSetEncryptLocalFiles(enable: enable))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func apiExportArchive(config: ArchiveConfig) async throws {
     try await sendCommandOkResp(.apiExportArchive(config: config))
 }
@@ -1152,6 +1158,7 @@ func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool 
     try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
     try setXFTPConfig(getXFTPCfg())
+    // try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
     if m.currentUser == nil {

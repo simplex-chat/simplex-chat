@@ -338,6 +338,7 @@ object ChatController {
       apiSetTempFolder(coreTmpDir.absolutePath)
       apiSetFilesFolder(appFilesDir.absolutePath)
       apiSetXFTPConfig(getXFTPCfg())
+//      apiSetEncryptLocalFiles(appPrefs.privacyEncryptLocalFiles.get())
       val justStarted = apiStartChat()
       val users = listUsers()
       chatModel.users.clear()
@@ -558,6 +559,8 @@ object ChatController {
     if (r is CR.CmdOk) return
     throw Error("apiSetXFTPConfig bad response: ${r.responseType} ${r.details}")
   }
+
+  suspend fun apiSetEncryptLocalFiles(enable: Boolean) = sendCommandOkResp(CC.ApiSetEncryptLocalFiles(enable))
 
   suspend fun apiExportArchive(config: ArchiveConfig) {
     val r = sendCmd(CC.ApiExportArchive(config))
@@ -1327,6 +1330,13 @@ object ChatController {
     }
   }
 
+  private suspend fun sendCommandOkResp(cmd: CC): Boolean {
+    val r = sendCmd(cmd)
+    val ok = r is CR.CmdOk
+    if (!ok) apiErrorAlert(cmd.cmdType, generalGetString(MR.strings.error), r)
+    return ok
+  }
+
   suspend fun apiGetVersion(): CoreVersionInfo? {
     val r = sendCmd(CC.ShowVersion())
     return if (r is CR.VersionInfo) {
@@ -1858,6 +1868,7 @@ sealed class CC {
   class SetTempFolder(val tempFolder: String): CC()
   class SetFilesFolder(val filesFolder: String): CC()
   class ApiSetXFTPConfig(val config: XFTPFileConfig?): CC()
+  class ApiSetEncryptLocalFiles(val enable: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
   class ApiDeleteStorage: CC()
@@ -1931,7 +1942,7 @@ sealed class CC {
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
   class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
-  class ReceiveFile(val fileId: Long, val encrypted: Boolean, val inline: Boolean?): CC()
+  class ReceiveFile(val fileId: Long, val encrypt: Boolean?, val inline: Boolean?): CC()
   class CancelFile(val fileId: Long): CC()
   class ShowVersion(): CC()
 
@@ -1963,6 +1974,7 @@ sealed class CC {
     is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
     is ApiSetXFTPConfig -> if (config != null) "/_xftp on ${json.encodeToString(config)}" else "/_xftp off"
+    is ApiSetEncryptLocalFiles -> "/_files_encrypt ${onOff(enable)}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
     is ApiDeleteStorage -> "/_db delete"
@@ -2039,7 +2051,10 @@ sealed class CC {
     is ApiGetNetworkStatuses -> "/_network_statuses"
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
     is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}"
-    is ReceiveFile -> "/freceive $fileId encrypt=${onOff(encrypted)}" + (if (inline == null) "" else " inline=${onOff(inline)}")
+    is ReceiveFile ->
+      "/freceive $fileId" +
+          (if (encrypt == null) "" else " encrypt=${onOff(encrypt)}") +
+          (if (inline == null) "" else " inline=${onOff(inline)}")
     is CancelFile -> "/fcancel $fileId"
     is ShowVersion -> "/version"
   }
@@ -2063,6 +2078,7 @@ sealed class CC {
     is SetTempFolder -> "setTempFolder"
     is SetFilesFolder -> "setFilesFolder"
     is ApiSetXFTPConfig -> "apiSetXFTPConfig"
+    is ApiSetEncryptLocalFiles -> "apiSetEncryptLocalFiles"
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
     is ApiDeleteStorage -> "apiDeleteStorage"
