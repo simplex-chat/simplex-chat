@@ -215,30 +215,21 @@ processRemoteCommand RemoteHostSessionStarted {ctrlClient} (s, cmd) =
       _ -> pure s
 
 relayCommand :: ChatMonad m => HTTP2Client -> ByteString -> m ChatResponse
-relayCommand http s =
+relayCommand http s = do
   -- TODO ExceptT
-  postBytestring Nothing http "/send" mempty s >>= \case
-    Left e -> err $ "relayCommand/post: " <> show e
-    Right HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
-      logDebug $ "Got /send response: " <> decodeUtf8 bodyHead
-      -- TODO liftEither
-      remoteChatResponse <- case J.eitherDecodeStrict bodyHead of -- XXX: large JSONs can overflow into buffered chunks
-        Left e -> err $ "relayCommand/decodeValue: " <> show e
-        Right json -> case J.fromJSON $ toTaggedJSON json of
-          J.Error e -> err $ "relayCommand/fromJSON: " <> show e
-          J.Success cr -> pure cr
-      case remoteChatResponse of
-        -- TODO: intercept file responses and fetch files when needed
-        -- XXX: is that even possible, to have a file response to a command?
-        _ -> pure remoteChatResponse
+  let timeout' = Nothing
+  HTTP2Response {respBody = HTTP2Body {bodyHead}} <-
+    liftHTTP2 $ HTTP2.sendRequestDirect http req timeout'
+  -- TODO: large JSONs can overflow into buffered chunks
+  json <- liftEitherWith (ChatErrorRemoteCtrl . RCEInvalidResponse) $ J.eitherDecodeStrict' bodyHead
+  case J.fromJSON $ toTaggedJSON json of
+    J.Error e -> err $ show e
+    J.Success cr -> pure cr  
   where
-    err = pure . CRChatError Nothing . ChatError . CEInternalError
+    err = pure . CRChatError Nothing . ChatErrorRemoteCtrl . RCEInvalidResponse
     toTaggedJSON :: J.Value -> J.Value
     toTaggedJSON = id -- owsf2tagged TODO: get from RemoteHost
-    -- XXX: extract to http2 transport
-    postBytestring timeout' c path hs body = liftIO $ HTTP2.sendRequestDirect c req timeout'
-      where
-        req = HC.requestBuilder "POST" path hs (Binary.fromByteString body)
+    req = HC.requestBuilder "POST" "/send" mempty (Binary.fromByteString s)
 
 -- TODO fileName is just metadata that does not determine the actual file location for UI, or whether it is encrypted or not
 -- fileSource is the actual file location (with information whether it is locally encrypted)
