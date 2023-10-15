@@ -166,7 +166,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRRcvFileDescrReady _ _ -> []
   CRRcvFileDescrNotReady _ _ -> []
   CRRcvFileProgressXFTP {} -> []
-  CRRcvFileAccepted u ci -> ttyUser u $ savingFile' testView ci
+  CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndFileCancelled u _ ftm fts -> ttyUser u $ viewSndFileCancelled ftm fts
   CRRcvFileCancelled u _ ft -> ttyUser u $ receivingFile_ "cancelled" ft
@@ -178,10 +178,10 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
   CRContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
   CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
-  CRRcvFileStart u ci -> ttyUser u $ receivingFile_' "started" ci
-  CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' "completed" ci
+  CRRcvFileStart u ci -> ttyUser u $ receivingFile_' testView "started" ci
+  CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' testView "completed" ci
   CRRcvFileSndCancelled u _ ft -> ttyUser u $ viewRcvFileSndCancelled ft
-  CRRcvFileError u ci e -> ttyUser u $ receivingFile_' "error" ci <> [sShow e]
+  CRRcvFileError u ci e -> ttyUser u $ receivingFile_' testView "error" ci <> [sShow e]
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
   CRSndFileStartXFTP {} -> []
@@ -1449,27 +1449,28 @@ humanReadableSize size
     mB = kB * 1024
     gB = mB * 1024
 
-savingFile' :: Bool -> AChatItem -> [StyledString]
-savingFile' testView (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileSource = Just (CryptoFile filePath cfArgs_)}, chatDir}) =
-  let from = case (chat, chatDir) of
-        (DirectChat Contact {localDisplayName = c}, CIDirectRcv) -> " from " <> ttyContact c
-        (_, CIGroupRcv GroupMember {localDisplayName = m}) -> " from " <> ttyContact m
-        _ -> ""
-   in ["saving file " <> sShow fileId <> from <> " to " <> plain filePath] <> cfArgsStr
-  where
-    cfArgsStr = case cfArgs_ of
-      Just cfArgs@(CFArgs key nonce)
-        | testView -> [plain $ LB.unpack $ J.encode cfArgs]
-        | otherwise -> [plain $ "encryption key: " <> strEncode key <> ", nonce: " <> strEncode nonce]
-      _ -> []
-savingFile' _ _ = ["saving file"] -- shouldn't happen
+savingFile' :: AChatItem -> [StyledString]
+savingFile' (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileSource = Just (CryptoFile filePath _)}, chatDir}) =
+  ["saving file " <> sShow fileId <> fileFrom chat chatDir <> " to " <> plain filePath]
+savingFile' _ = ["saving file"] -- shouldn't happen
 
-receivingFile_' :: StyledString -> AChatItem -> [StyledString]
-receivingFile_' status (AChatItem _ _ (DirectChat c) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectRcv}) =
-  [status <> " receiving " <> fileTransferStr fileId fileName <> " from " <> ttyContact' c]
-receivingFile_' status (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupRcv m}) =
-  [status <> " receiving " <> fileTransferStr fileId fileName <> " from " <> ttyMember m]
-receivingFile_' status _ = [status <> " receiving file"] -- shouldn't happen
+receivingFile_' :: Bool -> String -> AChatItem -> [StyledString]
+receivingFile_' testView status (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileName, fileSource = Just (CryptoFile _ cfArgs_)}, chatDir}) =
+  [plain status <> " receiving " <> fileTransferStr fileId fileName <> fileFrom chat chatDir] <> cfArgsStr cfArgs_
+  where
+    cfArgsStr (Just cfArgs@(CFArgs key nonce)) = [plain s | status == "completed"]
+      where
+      s =
+        if testView
+          then LB.toStrict $ J.encode cfArgs
+          else "encryption key: " <> strEncode key <> ", nonce: " <> strEncode nonce
+    cfArgsStr _ = []
+receivingFile_' _ status _ = [plain status <> " receiving file"] -- shouldn't happen
+
+fileFrom :: ChatInfo c -> CIDirection c d -> StyledString
+fileFrom (DirectChat ct) CIDirectRcv = " from " <> ttyContact' ct
+fileFrom _ (CIGroupRcv m) = " from " <> ttyMember m
+fileFrom _ _ = ""
 
 receivingFile_ :: StyledString -> RcvFileTransfer -> [StyledString]
 receivingFile_ status ft@RcvFileTransfer {senderDisplayName = c} =
