@@ -66,6 +66,9 @@ struct PrivacySettings: View {
                 Section {
                     settingsRow("lock.doc") {
                         Toggle("Encrypt local files", isOn: $encryptLocalFiles)
+                            .onChange(of: encryptLocalFiles) {
+                                setEncryptLocalFiles($0)
+                            }
                     }
                     settingsRow("photo") {
                         Toggle("Auto-accept images", isOn: $autoAcceptImages)
@@ -180,6 +183,16 @@ struct PrivacySettings: View {
             case let .error(title, error):
                 return Alert(title: Text(title), message: Text(error))
             }
+        }
+    }
+
+    private func setEncryptLocalFiles(_ enable: Bool) {
+        do {
+            try apiSetEncryptLocalFiles(enable)
+        } catch let error {
+            let err = responseError(error)
+            logger.error("apiSetEncryptLocalFiles \(err)")
+            alert = .error(title: "Error", error: "\(err)")
         }
     }
 
