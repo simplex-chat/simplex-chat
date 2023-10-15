@@ -397,7 +397,7 @@ execChatCommand_ :: ChatMonad' m => Maybe User -> ChatCommand -> m ChatResponse
 execChatCommand_ u cmd = either (CRChatCmdError u) id <$> runExceptT (processChatCommand cmd)
 
 execRemoteCommand :: ChatMonad' m => Maybe User -> RemoteHostId -> (ByteString, ChatCommand) -> m ChatResponse
-execRemoteCommand u rh scmd = either (CRChatCmdError u) id <$> runExceptT (withRemoteHostSession rh $ \rhs -> processRemoteCommand rhs scmd)
+execRemoteCommand u rhId scmd = either (CRChatCmdError u) id <$> runExceptT (getRemoteHostSession rhId >>= (`processRemoteCommand` scmd))
 
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
@@ -5153,9 +5153,6 @@ closeFileHandle fileId files = do
   fs <- asks files
   h_ <- atomically . stateTVar fs $ \m -> (M.lookup fileId m, M.delete fileId m)
   liftIO $ mapM_ hClose h_ `catchAll_` pure ()
-
-throwChatError :: ChatMonad m => ChatErrorType -> m a
-throwChatError = throwError . ChatError
 
 deleteMembersConnections :: ChatMonad m => User -> [GroupMember] -> m ()
 deleteMembersConnections user members = do

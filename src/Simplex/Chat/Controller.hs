@@ -1158,8 +1158,7 @@ instance ToJSON RemoteHostError where
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteCtrlError
-  = RCEMissing {remoteCtrlId :: RemoteCtrlId} -- ^ No remote session matches this identifier
-  | RCEInactive -- ^ No session is running
+  = RCEInactive -- ^ No session is running
   | RCEBusy -- ^ A session is already running
   | RCETimeout -- ^ Remote operation timed out
   | RCEDisconnected {remoteCtrlId :: RemoteCtrlId, reason :: Text} -- ^ A session disconnected by a controller
@@ -1167,6 +1166,9 @@ data RemoteCtrlError
   | RCECertificateExpired {remoteCtrlId :: RemoteCtrlId} -- ^ A connection or CA certificate in a chain have bad validity period
   | RCECertificateUntrusted {remoteCtrlId :: RemoteCtrlId} -- ^ TLS is unable to validate certificate chain presented for a connection
   | RCEBadFingerprint -- ^ Bad fingerprint data provided in OOB
+  | RCEHTTP2Error {http2Error :: String}
+  | RCEHTTP2RespStatus {statusCode :: Maybe Int} -- TODO remove
+  | RCEInvalidResponse {responseError :: String}
   deriving (Show, Exception, Generic)
 
 instance FromJSON RemoteCtrlError where
@@ -1199,7 +1201,7 @@ data RemoteHostSession
       }
 
 data RemoteCtrlSession = RemoteCtrlSession
-  { -- | Server side of transport to process remote commands and forward notifications
+  { -- | Host (mobile) side of transport to process remote commands and forward notifications
     discoverer :: Async (),
     supervisor :: Async (),
     hostServer :: Maybe (Async ()),
@@ -1239,12 +1241,19 @@ chatFinally :: ChatMonad m => m a -> m b -> m a
 chatFinally = allFinally mkChatError
 {-# INLINE chatFinally #-}
 
+onChatError :: ChatMonad m => m a -> m b -> m a
+a `onChatError` onErr = a `catchChatError` \e -> onErr >> throwError e
+{-# INLINE onChatError #-}
+
 mkChatError :: SomeException -> ChatError
 mkChatError = ChatError . CEException . show
 {-# INLINE mkChatError #-}
 
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError
+
+throwChatError :: ChatMonad m => ChatErrorType -> m a
+throwChatError = throwError . ChatError
 
 -- | Emit local events.
 toView :: ChatMonad' m => ChatResponse -> m ()
