@@ -209,6 +209,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   cleanupManagerAsync <- newTVarIO Nothing
   timedItemThreads <- atomically TM.empty
   showLiveItems <- newTVarIO False
+  encryptLocalFiles <- newTVarIO False
   userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
   tempDirectory <- newTVarIO tempDir
   contactMergeEnabled <- newTVarIO True
@@ -236,6 +237,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
         cleanupManagerAsync,
         timedItemThreads,
         showLiveItems,
+        encryptLocalFiles,
         userXFTPFileConfig,
         tempDirectory,
         logFilePath = logFile,
@@ -515,6 +517,7 @@ processChatCommand = \case
   APISetXFTPConfig cfg -> do
     asks userXFTPFileConfig >>= atomically . (`writeTVar` cfg)
     ok_
+  APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
   SetContactMergeEnabled onOff -> do
     asks contactMergeEnabled >>= atomically . (`writeTVar` onOff)
     ok_
@@ -1773,19 +1776,16 @@ processChatCommand = \case
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
   SendFileDescription _chatName _f -> pure $ chatCmdError Nothing "TODO"
-  ReceiveFile fileId encrypted rcvInline_ filePath_ -> withUser $ \_ ->
+  ReceiveFile fileId encrypted_ rcvInline_ filePath_ -> withUser $ \_ ->
     withChatLock "receiveFile" . procCmd $ do
       (user, ft) <- withStore (`getRcvFileTransferById` fileId)
-      ft' <- if encrypted then encryptLocalFile ft else pure ft
+      encrypt <- (`fromMaybe` encrypted_) <$> chatReadVar encryptLocalFiles
+      ft' <- (if encrypt then setFileToEncrypt else pure) ft
       receiveFile' user ft' rcvInline_ filePath_
-    where
-      encryptLocalFile ft = do
-        cfArgs <- liftIO $ CF.randomArgs
-        withStore' $ \db -> setFileCryptoArgs db fileId cfArgs
-        pure (ft :: RcvFileTransfer) {cryptoArgs = Just cfArgs}
-  SetFileToReceive fileId encrypted -> withUser $ \_ -> do
+  SetFileToReceive fileId encrypted_ -> withUser $ \_ -> do
     withChatLock "setFileToReceive" . procCmd $ do
-      cfArgs <- if encrypted then Just <$> liftIO CF.randomArgs else pure Nothing
+      encrypt <- (`fromMaybe` encrypted_) <$> chatReadVar encryptLocalFiles
+      cfArgs <- if encrypt then Just <$> liftIO CF.randomArgs else pure Nothing
       withStore' $ \db -> setRcvFileToReceive db fileId cfArgs
       ok_
   CancelFile fileId -> withUser $ \user@User {userId} ->
@@ -2409,6 +2409,12 @@ callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
 toFSFilePath :: ChatMonad' m => FilePath -> m FilePath
 toFSFilePath f =
   maybe f (</> f) <$> (readTVarIO =<< asks filesFolder)
+
+setFileToEncrypt :: ChatMonad m => RcvFileTransfer -> m RcvFileTransfer
+setFileToEncrypt ft@RcvFileTransfer {fileId} = do
+  cfArgs <- liftIO CF.randomArgs
+  withStore' $ \db -> setFileCryptoArgs db fileId cfArgs
+  pure (ft :: RcvFileTransfer) {cryptoArgs = Just cfArgs}
 
 receiveFile' :: ChatMonad m => User -> RcvFileTransfer -> Maybe Bool -> Maybe FilePath -> m ChatResponse
 receiveFile' user ft rcvInline_ filePath_ = do
@@ -3931,14 +3937,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       inline <- receiveInlineMode fInv (Just mc) fileChunkSize
       ft@RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvFT db fInv inline fileChunkSize
       let fileProtocol = if isJust xftpRcvFile then FPXFTP else FPSMP
-      (filePath, fileStatus) <- case inline of
+      (filePath, fileStatus, ft') <- case inline of
         Just IFMSent -> do
+          encrypt <- chatReadVar encryptLocalFiles
+          ft' <- (if encrypt then setFileToEncrypt else pure) ft
           fPath <- getRcvFilePath fileId Nothing fileName True
-          withStore' $ \db -> startRcvInlineFT db user ft fPath inline
-          pure (Just fPath, CIFSRcvAccepted)
-        _ -> pure (Nothing, CIFSRcvInvitation)
-      let fileSource = CF.plain <$> filePath
-      pure (ft, CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol})
+          withStore' $ \db -> startRcvInlineFT db user ft' fPath inline
+          pure (Just fPath, CIFSRcvAccepted, ft')
+        _ -> pure (Nothing, CIFSRcvInvitation, ft)
+      let RcvFileTransfer {cryptoArgs} = ft'
+          fileSource = (`CryptoFile` cryptoArgs) <$> filePath
+      pure (ft', CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol})
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> Maybe Int -> Maybe Bool -> m ()
     messageUpdate ct@Contact {contactId} sharedMsgId mc msg@RcvMessage {msgId} msgMeta ttl live_ = do
@@ -5567,6 +5576,7 @@ chatCommandP =
       ("/_files_folder " <|> "/files_folder ") *> (SetFilesFolder <$> filePath),
       "/_xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> jsonP) <|> ("off" $> Nothing))),
       "/xftp " *> (APISetXFTPConfig <$> ("on" *> (Just <$> xftpCfgP) <|> ("off" $> Nothing))),
+      "/_files_encrypt " *> (APISetEncryptLocalFiles <$> onOffP),
       "/contact_merge " *> (SetContactMergeEnabled <$> onOffP),
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/db export" $> ExportArchive,
@@ -5743,8 +5753,8 @@ chatCommandP =
       ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal),
       ("/image_forward " <|> "/imgf ") *> (ForwardImage <$> chatNameP' <* A.space <*> A.decimal),
       ("/fdescription " <|> "/fd") *> (SendFileDescription <$> chatNameP' <* A.space <*> filePath),
-      ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> (" encrypt=" *> onOffP <|> pure False) <*> optional (" inline=" *> onOffP) <*> optional (A.space *> filePath)),
-      "/_set_file_to_receive " *> (SetFileToReceive <$> A.decimal <*> (" encrypt=" *> onOffP <|> pure False)),
+      ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (" encrypt=" *> onOffP) <*> optional (" inline=" *> onOffP) <*> optional (A.space *> filePath)),
+      "/_set_file_to_receive " *> (SetFileToReceive <$> A.decimal <*> optional (" encrypt=" *> onOffP)),
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
       "/simplex" *> (ConnectSimplex <$> incognitoP),

@@ -32,6 +32,7 @@ public enum ChatCommand {
     case setTempFolder(tempFolder: String)
     case setFilesFolder(filesFolder: String)
     case apiSetXFTPConfig(config: XFTPFileConfig?)
+    case apiSetEncryptLocalFiles(enable: Bool)
     case apiExportArchive(config: ArchiveConfig)
     case apiImportArchive(config: ArchiveConfig)
     case apiDeleteStorage
@@ -114,8 +115,8 @@ public enum ChatCommand {
     case apiGetNetworkStatuses
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
-    case receiveFile(fileId: Int64, encrypted: Bool, inline: Bool?)
-    case setFileToReceive(fileId: Int64, encrypted: Bool)
+    case receiveFile(fileId: Int64, encrypted: Bool?, inline: Bool?)
+    case setFileToReceive(fileId: Int64, encrypted: Bool?)
     case cancelFile(fileId: Int64)
     case showVersion
     case string(String)
@@ -152,6 +153,7 @@ public enum ChatCommand {
             } else {
                 return "/_xftp off"
             }
+            case let .apiSetEncryptLocalFiles(enable): return "/_files_encrypt \(onOff(enable))"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
             case .apiDeleteStorage: return "/_db delete"
@@ -247,13 +249,8 @@ public enum ChatCommand {
             case .apiGetNetworkStatuses: return "/_network_statuses"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
-            case let .receiveFile(fileId, encrypted, inline):
-                let s = "/freceive \(fileId) encrypt=\(onOff(encrypted))"
-                if let inline = inline {
-                    return s + " inline=\(onOff(inline))"
-                }
-                return s
-            case let .setFileToReceive(fileId, encrypted): return "/_set_file_to_receive \(fileId) encrypt=\(onOff(encrypted))"
+            case let .receiveFile(fileId, encrypt, inline): return "/freceive \(fileId)\(onOffParam("encrypt", encrypt))\(onOffParam("inline", inline))"
+            case let .setFileToReceive(fileId, encrypt): return "/_set_file_to_receive \(fileId)\(onOffParam("encrypt", encrypt))"
             case let .cancelFile(fileId): return "/fcancel \(fileId)"
             case .showVersion: return "/version"
             case let .string(str): return str
@@ -283,6 +280,7 @@ public enum ChatCommand {
             case .setTempFolder: return "setTempFolder"
             case .setFilesFolder: return "setFilesFolder"
             case .apiSetXFTPConfig: return "apiSetXFTPConfig"
+            case .apiSetEncryptLocalFiles: return "apiSetEncryptLocalFiles"
             case .apiExportArchive: return "apiExportArchive"
             case .apiImportArchive: return "apiImportArchive"
             case .apiDeleteStorage: return "apiDeleteStorage"
@@ -418,6 +416,13 @@ public enum ChatCommand {
 
     private func onOff(_ b: Bool) -> String {
         b ? "on" : "off"
+    }
+
+    private func onOffParam(_ param: String, _ b: Bool?) -> String {
+        if let b = b {
+            return " \(param)=\(onOff(b))"
+        }
+        return ""
     }
 
     private func maybePwd(_ pwd: String?) -> String {
