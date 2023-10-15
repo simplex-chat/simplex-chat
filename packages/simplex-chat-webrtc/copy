@@ -21,5 +21,4 @@ cp ./src/desktop/images/* ../../apps/multiplatform/common/src/commonMain/resourc
 
 cp ./dist/desktop/ui.js ../../apps/multiplatform/common/src/commonMain/resources/assets/www/desktop/ui.js
 cp ./dist/call.js ../../apps/multiplatform/common/src/commonMain/resources/assets/www/call.js
-cp ./dist/ui.js ../../apps/multiplatform/common/src/commonMain/resources/assets/www/ui.js
 cp ./node_modules/lz-string/libs/lz-string.min.js ../../apps/multiplatform/common/src/commonMain/resources/assets/www/lz-string.min.js

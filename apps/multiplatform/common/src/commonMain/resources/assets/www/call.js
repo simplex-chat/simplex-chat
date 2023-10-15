@@ -38,9 +38,9 @@ const processCommand = (function () {
                 iceTransportPolicy: relay ? "relay" : "all",
             },
             iceCandidates: {
-                delay: 3000,
-                extrasInterval: 2000,
-                extrasTimeout: 8000,
+                delay: 750,
+                extrasInterval: 1500,
+                extrasTimeout: 12000,
             },
         };
     }
