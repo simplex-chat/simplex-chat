@@ -38,8 +38,8 @@ import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
 import qualified Network.HTTP.Types as HTTP
 import qualified Network.HTTP.Types.Status as Status
-import qualified Network.HTTP2.Client as HTTP2Client
-import qualified Network.HTTP2.Server as HTTP2Server
+import qualified Network.HTTP2.Client as HC
+import qualified Network.HTTP2.Server as HS
 import Network.Socket (SockAddr (..), hostAddressToTuple)
 import Simplex.Chat.Controller
 import Simplex.Chat.Messages (AChatItem (..), CIFile (..), CIFileStatus (..), ChatItem (..), chatNameStr)
@@ -60,10 +60,10 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), defaultHTTP2BufferSize)
-import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
+import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError, HTTP2Response (..))
 import qualified Simplex.Messaging.Transport.HTTP2.Client as HTTP2
 import qualified Simplex.Messaging.Transport.HTTP2.Server as HTTP2
-import Simplex.Messaging.Util (bshow, ifM, tshow, ($>>=))
+import Simplex.Messaging.Util (bshow, ifM, liftEitherError, tshow, ($>>=))
 import System.FilePath (isPathSeparator, takeFileName, (</>))
 import UnliftIO
 import UnliftIO.Directory (createDirectoryIfMissing, getFileSize)
@@ -110,7 +110,7 @@ startRemoteHost rhId = do
             Left h2ce -> do
               logError $ "Failed to send initial remote host request: " <> tshow h2ce
               cleanup finished
-            Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
+            Right HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
               logDebug $ "Got initial from remote host: " <> tshow bodyHead
               oq <- asks outputQ
               let toViewRemote = atomically . writeTBQueue oq . (Nothing,Just rhId,)
@@ -126,10 +126,10 @@ startRemoteHost rhId = do
               -- TODO what sets session active?
               toView CRRemoteHostConnected {remoteHost = remoteHostInfo rh True rcName}
 
-sendHello :: ChatMonad m => HTTP2Client -> m (Either HTTP2.HTTP2ClientError HTTP2.HTTP2Response)
+sendHello :: ChatMonad m => HTTP2Client -> m (Either HTTP2ClientError HTTP2Response)
 sendHello http = liftIO (HTTP2.sendRequestDirect http req Nothing)
   where
-    req = HTTP2Client.requestNoBody "GET" "/" mempty
+    req = HC.requestNoBody "GET" "/" mempty
 
 pollRemote :: (ChatMonad m, J.FromJSON a) => TVar Bool -> HTTP2Client -> ByteString -> (a -> m ()) -> m ()
 pollRemote finished http path action = loop
@@ -138,7 +138,7 @@ pollRemote finished http path action = loop
       -- TODO ExceptT
       liftIO (HTTP2.sendRequestDirect http req Nothing) >>= \case
         Left e -> logError $ "pollRemote: " <> tshow (path, e)
-        Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
+        Right HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
           logDebug $ "Got /recv response: " <> decodeUtf8 bodyHead
           -- TODO ExceptT (liftEither)
           case J.eitherDecodeStrict' bodyHead of
@@ -146,7 +146,7 @@ pollRemote finished http path action = loop
             Left e -> logError $ "pollRemote/decode: " <> tshow (path, e)
             Right o -> action o
       readTVarIO finished >>= (`unless` loop)
-    req = HTTP2Client.requestNoBody "GET" path mempty
+    req = HC.requestNoBody "GET" path mempty
 
 closeRemoteHostSession :: ChatMonad m => RemoteHostId -> m ()
 closeRemoteHostSession remoteHostId = do
@@ -200,38 +200,34 @@ deleteRemoteHost rhId = do
   withStore' (`deleteRemoteHostRecord` rhId)
 
 processRemoteCommand :: ChatMonad m => RemoteHostSession -> (ByteString, ChatCommand) -> m ChatResponse
-processRemoteCommand RemoteHostSessionStarting {} _ = pure . CRChatError Nothing . ChatError $ CEInternalError "sending remote commands before session started"
-processRemoteCommand RemoteHostSessionStarted {ctrlClient} (s, cmd) = do
-  logDebug $ "processRemoteCommand: " <> tshow (s, cmd)
-  case cmd of
-    SendFile cn ctrlPath -> do
-      -- TODO this would look likg this:
-      -- hostPath <- storeRemoteFile ctrlClient ctrlPath
-      -- relayCommand ctrlClient $ utf8String $ "/file " <> chatNameStr cn <> " " <> hostPath
-      storeRemoteFile ctrlClient ctrlPath >>= \case
-        -- TODO: There are file specific errors, they are not internal, should be thrown in storeRemoteFile
-        Nothing -> pure . CRChatError Nothing . ChatError $ CEInternalError "failed to store file on remote host"
-        Just hostPath -> relayCommand ctrlClient $ utf8String $ "/file " <> chatNameStr cn <> " " <> hostPath
-    SendImage cn ctrlPath -> do
-      storeRemoteFile ctrlClient ctrlPath >>= \case
-        Nothing -> pure . CRChatError Nothing . ChatError $ CEInternalError "failed to store image on remote host"
-        Just hostPath -> relayCommand ctrlClient $ utf8String $ "/image " <> chatNameStr cn <> " " <> hostPath
-    APISendMessage {composedMessage = cm@ComposedMessage {fileSource = Just CryptoFile {filePath = ctrlPath, cryptoArgs}}} -> do
-      storeRemoteFile ctrlClient ctrlPath >>= \case
-        Nothing -> pure . CRChatError Nothing . ChatError $ CEInternalError "failed to store file on remote host"
-        Just hostPath -> do
-          -- TODO something is wrong here. What if file encryption is disabled?
-          let cm' = cm {fileSource = Just CryptoFile {filePath = hostPath, cryptoArgs}} :: ComposedMessage
-          -- TODO we shouldn't manipulate JSON like that
-          relayCommand ctrlClient $ B.takeWhile (/= '{') s <> B.toStrict (J.encode cm')
-    _ -> relayCommand ctrlClient s
+processRemoteCommand RemoteHostSessionStarting {} _ = pure $ chatCmdError Nothing "remote command sent before session started"
+processRemoteCommand RemoteHostSessionStarted {ctrlClient} (s, cmd) =
+  uploadFile cmd >>= relayCommand ctrlClient
+  where
+    fileCmd cmdPfx cn hostPath = utf8String $ unwords [cmdPfx, chatNameStr cn, hostPath]
+    uploadFile = \case
+      SendFile cn ctrlPath -> fileCmd "/file" cn <$> storeRemoteFile ctrlClient ctrlPath
+      SendImage cn ctrlPath -> fileCmd "/image" cn <$> storeRemoteFile ctrlClient ctrlPath
+      -- TODO APISendMessage should only be used with host path already, and UI has to upload file first.
+      -- The problem is that we cannot have different file names in host and controller, because it simply won't be able to show files.
+      -- So we need to ask the host to store files BEFORE storing them in the app storage and use host names in the command and to store the file locally if it has to be shown,
+      -- or don't even store it if it's not image/video.
+      -- The current approach won't work.
+      -- It also does not account for local file encryption.
+      -- Also, local file encryption setting should be tracked in the controller, as otherwise host won't be able to decide what to do having received the upload command.
+      APISendMessage {composedMessage = cm@ComposedMessage {fileSource = Just CryptoFile {filePath = ctrlPath, cryptoArgs}}} -> do
+        hostPath <- storeRemoteFile ctrlClient ctrlPath
+        let cm' = cm {fileSource = Just CryptoFile {filePath = hostPath, cryptoArgs}} :: ComposedMessage
+        -- TODO we shouldn't manipulate JSON like that
+        pure $ B.takeWhile (/= '{') s <> B.toStrict (J.encode cm')
+      _ -> pure s
 
 relayCommand :: ChatMonad m => HTTP2Client -> ByteString -> m ChatResponse
 relayCommand http s =
   -- TODO ExceptT
   postBytestring Nothing http "/send" mempty s >>= \case
     Left e -> err $ "relayCommand/post: " <> show e
-    Right HTTP2.HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
+    Right HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
       logDebug $ "Got /send response: " <> decodeUtf8 bodyHead
       -- TODO liftEither
       remoteChatResponse <- case J.eitherDecodeStrict bodyHead of -- XXX: large JSONs can overflow into buffered chunks
@@ -250,7 +246,7 @@ relayCommand http s =
     -- XXX: extract to http2 transport
     postBytestring timeout' c path hs body = liftIO $ HTTP2.sendRequestDirect c req timeout'
       where
-        req = HTTP2Client.requestBuilder "POST" path hs (Binary.fromByteString body)
+        req = HC.requestBuilder "POST" path hs (Binary.fromByteString body)
 
 handleRcvFileComplete :: ChatMonad m => HTTP2Client -> FilePath -> User -> CIFile 'MDRcv -> m (Maybe (CIFile 'MDRcv))
 handleRcvFileComplete http storePath remoteUser cif@CIFile {fileId, fileName, fileStatus} = case fileStatus of
@@ -303,24 +299,23 @@ owsf2tagged = fst . convert
 pattern OwsfTag :: (JK.Key, J.Value)
 pattern OwsfTag = (SingleFieldJSONTag, J.Bool True)
 
--- TODO storeRemoteFile :: ChatMonad m => HTTP2Client -> FilePath -> m FilePath
-storeRemoteFile :: MonadUnliftIO m => HTTP2Client -> FilePath -> m (Maybe FilePath)
+storeRemoteFile :: ChatMonad m => HTTP2Client -> FilePath -> m FilePath
 storeRemoteFile http localFile = do
-  -- TODO use ExceptT / ChatMonad m
-  putFile Nothing http uri mempty localFile >>= \case
-    Left h2ce -> Nothing <$ logError (tshow h2ce)
-    Right HTTP2.HTTP2Response {response, respBody = HTTP2Body {bodyHead}} ->
-      case HTTP.statusCode <$> HTTP2Client.responseStatus response of
-        Just 200 -> pure . Just $ B.unpack bodyHead
-        -- TODO errors should be sent to view, this logging won't help debugging on devices
-        notOk -> Nothing <$ logError ("Bad response status: " <> tshow notOk)
+  fileSize <- liftIO $ fromIntegral <$> getFileSize localFile
+  -- TODO configure timeout
+  let timeout' = Nothing
+  HTTP2Response {response, respBody = HTTP2Body {bodyHead}} <-
+    liftHTTP2 $ HTTP2.sendRequestDirect http (req fileSize) timeout'
+  case HTTP.statusCode <$> HC.responseStatus response of
+    Just 200 -> pure $ B.unpack bodyHead
+    notOk -> throwError $ ChatErrorRemoteCtrl $ RCEHTTP2RespStatus notOk
   where
+    -- TODO local file encryption?
     uri = "/store?" <> HTTP.renderSimpleQuery False [("file_name", utf8String $ takeFileName localFile)]
-    putFile timeout' c path hs file = liftIO $ do
-      fileSize <- fromIntegral <$> getFileSize file
-      HTTP2.sendRequestDirect c (req fileSize) timeout'
-      where
-        req size = HTTP2Client.requestFile "PUT" path hs (HTTP2Client.FileSpec file 0 size)
+    req size = HC.requestFile "PUT" uri mempty (HC.FileSpec localFile 0 size)
+
+liftHTTP2 :: ChatMonad m => IO (Either HTTP2ClientError a) -> m a
+liftHTTP2 = liftEitherError $ ChatErrorRemoteCtrl . RCEHTTP2Error . show
 
 -- TODO fetchRemoteFile :: ChatMonad m => HTTP2Client -> User -> Int64 -> FilePath -> m ()
 fetchRemoteFile :: MonadUnliftIO m => HTTP2Client -> User -> Int64 -> FilePath -> m Bool
@@ -328,13 +323,13 @@ fetchRemoteFile http User {userId = remoteUserId} remoteFileId localPath = do
   -- TODO use ExceptT / ChatMonad m
   liftIO (HTTP2.sendRequestDirect http req Nothing) >>= \case
     Left h2ce -> False <$ logError (tshow h2ce)
-    Right HTTP2.HTTP2Response {response, respBody} ->
-      if HTTP2Client.responseStatus response == Just Status.ok200
+    Right HTTP2Response {response, respBody} ->
+      if HC.responseStatus response == Just Status.ok200
         then True <$ writeBodyToFile localPath respBody
         -- TODO throwError
-        else False <$ (logError $ "Request failed: " <> maybe "(??)" tshow (HTTP2Client.responseStatus response) <> " " <> decodeUtf8 (bodyHead respBody))
+        else False <$ (logError $ "Request failed: " <> maybe "(??)" tshow (HC.responseStatus response) <> " " <> decodeUtf8 (bodyHead respBody))
   where
-    req = HTTP2Client.requestNoBody "GET" path mempty
+    req = HC.requestNoBody "GET" path mempty
     path = "/fetch?" <> HTTP.renderSimpleQuery False [("user_id", bshow remoteUserId), ("file_id", bshow remoteFileId)]
 
 -- XXX: extract to Transport.HTTP2 ?
@@ -352,6 +347,7 @@ hPutBodyChunks h getChunk = do
     hPut h chunk
     hPutBodyChunks h getChunk
 
+-- TODO command/response pattern, remove REST conventions
 processControllerRequest :: forall m. ChatMonad m => (ByteString -> m ChatResponse) -> HTTP2.HTTP2Request -> m ()
 processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody, sendResponse} = do
   logDebug $ "Remote controller request: " <> tshow (method <> " " <> path)
@@ -366,8 +362,8 @@ processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody, s
     Left e -> logError $ "Error handling remote controller request: (" <> tshow (method <> " " <> path) <> "): " <> tshow e
     Right () -> logDebug $ "Remote controller request: " <> tshow (method <> " " <> path) <> " OK"
   where
-    method = fromMaybe "" $ HTTP2Server.requestMethod request
-    path = fromMaybe "/" $ HTTP2Server.requestPath request
+    method = fromMaybe "" $ HS.requestMethod request
+    path = fromMaybe "/" $ HS.requestPath request
     (ps, query) = HTTP.decodePath path
     getHello = respond "OK"
     sendCommand = execChatCommand (bodyHead reqBody) >>= respondJSON
@@ -401,7 +397,7 @@ processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody, s
             baseDir <- fromMaybe "." <$> chatReadVar filesFolder
             let fullPath = baseDir </> filePath
             size <- fromInteger <$> getFileSize fullPath
-            liftIO . sendResponse . HTTP2Server.responseFile Status.ok200 mempty $ HTTP2Server.FileSpec fullPath 0 size
+            liftIO . sendResponse . HS.responseFile Status.ok200 mempty $ HS.FileSpec fullPath 0 size
           Right _ -> respondWith Status.internalServerError500 "The requested file is not complete"
           Left SEUserNotFound {} -> respondWith Status.notFound404 "User not found"
           Left SERcvFileNotFound {} -> respondWith Status.notFound404 "File not found"
@@ -419,7 +415,7 @@ processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody, s
     respondJSON = respond . Binary.fromLazyByteString . J.encode
 
     respond = respondWith Status.ok200
-    respondWith status = liftIO . sendResponse . HTTP2Server.responseBuilder status []
+    respondWith status = liftIO . sendResponse . HS.responseBuilder status []
 
 -- * ChatRequest handlers
 

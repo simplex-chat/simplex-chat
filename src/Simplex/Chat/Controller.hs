@@ -1166,6 +1166,8 @@ data RemoteCtrlError
   | RCECertificateExpired {remoteCtrlId :: RemoteCtrlId} -- ^ A connection or CA certificate in a chain have bad validity period
   | RCECertificateUntrusted {remoteCtrlId :: RemoteCtrlId} -- ^ TLS is unable to validate certificate chain presented for a connection
   | RCEBadFingerprint -- ^ Bad fingerprint data provided in OOB
+  | RCEHTTP2Error {http2Error :: String}
+  | RCEHTTP2RespStatus {statusCode :: Maybe Int} -- TODO remove
   deriving (Show, Exception, Generic)
 
 instance FromJSON RemoteCtrlError where
@@ -1244,6 +1246,9 @@ mkChatError = ChatError . CEException . show
 
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError
+
+throwChatError :: ChatMonad m => ChatErrorType -> m a
+throwChatError = throwError . ChatError
 
 -- | Emit local events.
 toView :: ChatMonad' m => ChatResponse -> m ()

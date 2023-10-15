@@ -5154,9 +5154,6 @@ closeFileHandle fileId files = do
   h_ <- atomically . stateTVar fs $ \m -> (M.lookup fileId m, M.delete fileId m)
   liftIO $ mapM_ hClose h_ `catchAll_` pure ()
 
-throwChatError :: ChatMonad m => ChatErrorType -> m a
-throwChatError = throwError . ChatError
-
 deleteMembersConnections :: ChatMonad m => User -> [GroupMember] -> m ()
 deleteMembersConnections user members = do
   let memberConns =
