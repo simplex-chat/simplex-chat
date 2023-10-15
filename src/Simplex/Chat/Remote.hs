@@ -447,32 +447,40 @@ startRemoteCtrl execChatCommand = do
       chatWriteVar remoteCtrlSession Nothing
       toView CRRemoteCtrlStopped
 
+-- TODO the problem with this code was that it wasn't clear where the recursion can happen,
+-- by splitting receiving and processing to two functions it becomes clear
 discoverRemoteCtrls :: ChatMonad m => TM.TMap C.KeyHash TransportHost -> m ()
-discoverRemoteCtrls discovered = Discovery.withListener go
+discoverRemoteCtrls discovered = Discovery.withListener $ receive >=> process
   where
-    go sock =
+    -- TODO how would it receive more than one fingerprint?
+    receive sock =
       Discovery.recvAnnounce sock >>= \case
         (SockAddrInet _sockPort sockAddr, invite) -> case strDecode invite of
-          Left _ -> go sock -- ignore malformed datagrams
-          Right fingerprint -> do
-            let addr = THIPv4 (hostAddressToTuple sockAddr)
-            ifM
-              (atomically $ TM.member fingerprint discovered)
-              (logDebug $ "Fingerprint announce already knwon: " <> tshow (addr, invite))
-              ( do
-                  logInfo $ "New fingerprint announce: " <> tshow (addr, invite)
-                  atomically $ TM.insert fingerprint addr discovered
-              )
-            withStore' (`getRemoteCtrlByFingerprint` fingerprint) >>= \case
-              Nothing -> toView $ CRRemoteCtrlAnnounce fingerprint -- unknown controller, ui "register" action required
-              Just found@RemoteCtrl {remoteCtrlId, accepted = storedChoice} -> case storedChoice of
-                Nothing -> toView $ CRRemoteCtrlFound $ remoteCtrlInfo found False -- first-time controller, ui "accept" action required
-                Just False -> pure () -- skipping a rejected item
-                Just True ->
-                  chatReadVar remoteCtrlSession >>= \case
-                    Nothing -> toView . CRChatError Nothing . ChatError $ CEInternalError "Remote host found without running a session"
-                    Just RemoteCtrlSession {accepted} -> atomically $ void $ tryPutTMVar accepted remoteCtrlId -- previously accepted controller, connect automatically
-        _nonV4 -> go sock
+          -- TODO it is probably better to report errors to view here
+          Left _ -> receive sock
+          Right fingerprint -> pure (sockAddr, fingerprint)
+        _nonV4 -> receive sock
+    process (sockAddr, fingerprint) = do
+      let addr = THIPv4 (hostAddressToTuple sockAddr)
+      ifM
+        (atomically $ TM.member fingerprint discovered)
+        (logDebug $ "Fingerprint already known: " <> tshow (addr, fingerprint))
+        ( do
+            logInfo $ "New fingerprint announced: " <> tshow (addr, fingerprint)
+            atomically $ TM.insert fingerprint addr discovered
+        )
+      -- TODO we check fingerprint for duplicate where id doesn't matter - to prevent re-insert - and don't check to prevent duplicate events,
+      -- so UI now will have to check for duplicates again
+      withStore' (`getRemoteCtrlByFingerprint` fingerprint) >>= \case
+        Nothing -> toView $ CRRemoteCtrlAnnounce fingerprint -- unknown controller, ui "register" action required
+        -- TODO Maybe Bool is very confusing - the intent is very unclear here
+        Just found@RemoteCtrl {remoteCtrlId, accepted = storedChoice} -> case storedChoice of
+          Nothing -> toView $ CRRemoteCtrlFound $ remoteCtrlInfo found False -- first-time controller, ui "accept" action required
+          Just False -> pure () -- skipping a rejected item
+          Just True ->
+            chatReadVar remoteCtrlSession >>= \case
+              Nothing -> toView . CRChatError Nothing . ChatError $ CEInternalError "Remote host found without running a session"
+              Just RemoteCtrlSession {accepted} -> atomically $ void $ tryPutTMVar accepted remoteCtrlId -- previously accepted controller, connect automatically
 
 listRemoteCtrls :: ChatMonad m => m [RemoteCtrlInfo]
 listRemoteCtrls = do
