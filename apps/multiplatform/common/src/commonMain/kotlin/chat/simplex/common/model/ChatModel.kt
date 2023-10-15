@@ -105,6 +105,11 @@ object ChatModel {
 
   var updatingChatsMutex: Mutex = Mutex()
 
+  // remote controller
+  val remoteHosts = mutableStateListOf<RemoteHostInfo>()
+  val connectingRemoteHost = mutableStateOf<RemoteHostInfo?>(null)
+  val currentRemoteHost = mutableStateOf<RemoteHostInfo?>(null)
+
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value
   } else {

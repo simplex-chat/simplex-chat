@@ -53,6 +53,7 @@ let DEFAULT_WHATS_NEW_VERSION = "defaultWhatsNewVersion"
 let DEFAULT_ONBOARDING_STAGE = "onboardingStage"
 let DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME = "customDisappearingMessageTime"
 let DEFAULT_SHOW_UNREAD_AND_FAVORITES = "showUnreadAndFavorites"
+let DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS = "deviceNameForRemoteAccess"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -85,7 +86,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_SHOW_MUTE_PROFILE_ALERT: true,
     DEFAULT_ONBOARDING_STAGE: OnboardingStage.onboardingComplete.rawValue,
     DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME: 300,
-    DEFAULT_SHOW_UNREAD_AND_FAVORITES: false
+    DEFAULT_SHOW_UNREAD_AND_FAVORITES: false,
 ]
 
 enum SimpleXLinkMode: String, Identifiable {
@@ -177,6 +178,13 @@ struct SettingsView: View {
                             .navigationTitle("Your preferences")
                     } label: {
                         settingsRow("switch.2") { Text("Chat preferences") }
+                    }
+
+                    NavigationLink {
+                        ConnectDesktopView()
+                            .navigationTitle("Connect desktop")
+                    } label: {
+                        settingsRow("desktopcomputer") { Text("Use from desktop") }
                     }
                 }
                 .disabled(chatModel.chatRunning != true)
@@ -362,7 +370,9 @@ struct SettingsView: View {
 
 func settingsRow<Content : View>(_ icon: String, color: Color = .secondary, content: @escaping () -> Content) -> some View {
     ZStack(alignment: .leading) {
-        Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(color)
+        Image(systemName: icon).frame(maxWidth: 24, maxHeight: 24, alignment: .center)
+            .symbolRenderingMode(.monochrome)
+            .foregroundColor(color)
         content().padding(.leading, indent)
     }
 }

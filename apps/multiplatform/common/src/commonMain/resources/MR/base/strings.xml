@@ -1596,6 +1596,13 @@
   <string name="you_can_enable_delivery_receipts_later_alert">You can enable them later via app Privacy &amp; Security settings.</string>
   <string name="error_enabling_delivery_receipts">Error enabling delivery receipts!</string>
 
+  <!-- Remote access -->
+  <string name="add_mobile_device">Add mobile device</string>
+  <string name="this_device_name">This device name</string>
+  <string name="enter_this_device_name">Enter this device name…</string>
+  <string name="this_device_name_shared_with_mobile">The device name will be shared with the connected mobile client.</string>
+  <string name="error">Error</string>
+
   <!-- Under development -->
   <string name="in_developing_title">Coming soon!</string>
   <string name="in_developing_desc">This feature is not yet supported. Try the next release.</string>
