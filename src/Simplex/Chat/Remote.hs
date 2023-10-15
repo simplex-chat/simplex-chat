@@ -258,10 +258,10 @@ handleRcvFileComplete http storePath remoteUser cif@CIFile {fileId, fileName, fi
         -- TODO the problem here is that the name may turn out to be different and nothing will work
         -- file processing seems to work "accidentally", not "by design"
         localPath <- uniqueCombine hostStore fileName
-        ok <- fetchRemoteFile http remoteUser fileId localPath
-        if ok
-          then pure $ Just (cif {fileName = localPath} :: CIFile 'MDRcv)
-          else Nothing <$ logError "fetchRemoteFile failed"
+        fetchRemoteFile http remoteUser fileId localPath
+        pure $ Just (cif {fileName = localPath} :: CIFile 'MDRcv)
+      -- TODO below will not work with CLI, it should store file to download folder when not specified
+      -- It should not load all files when received, instead it should only load files received with /fr commands
       Nothing -> Nothing <$ logError "Local file store not available while fetching remote file"
   _ -> Nothing <$ logDebug ("Ingoring invalid file notification for file (" <> tshow fileId <> ") " <> tshow fileName)
 
@@ -304,11 +304,12 @@ storeRemoteFile http localFile = do
   fileSize <- liftIO $ fromIntegral <$> getFileSize localFile
   -- TODO configure timeout
   let timeout' = Nothing
-  HTTP2Response {response, respBody = HTTP2Body {bodyHead}} <-
+  r@HTTP2Response {respBody = HTTP2Body {bodyHead}} <-
     liftHTTP2 $ HTTP2.sendRequestDirect http (req fileSize) timeout'
-  case HTTP.statusCode <$> HC.responseStatus response of
-    Just 200 -> pure $ B.unpack bodyHead
-    notOk -> throwError $ ChatErrorRemoteCtrl $ RCEHTTP2RespStatus notOk
+  responseStatusOK r
+  -- TODO what if response doesn't fit in the head?
+  -- it'll be solved when processing moved to POST with Command/Response types
+  pure $ B.unpack bodyHead
   where
     -- TODO local file encryption?
     uri = "/store?" <> HTTP.renderSimpleQuery False [("file_name", utf8String $ takeFileName localFile)]
@@ -317,17 +318,17 @@ storeRemoteFile http localFile = do
 liftHTTP2 :: ChatMonad m => IO (Either HTTP2ClientError a) -> m a
 liftHTTP2 = liftEitherError $ ChatErrorRemoteCtrl . RCEHTTP2Error . show
 
--- TODO fetchRemoteFile :: ChatMonad m => HTTP2Client -> User -> Int64 -> FilePath -> m ()
-fetchRemoteFile :: MonadUnliftIO m => HTTP2Client -> User -> Int64 -> FilePath -> m Bool
+responseStatusOK :: ChatMonad m => HTTP2Response -> m ()
+responseStatusOK HTTP2Response {response} = do
+  let s = HC.responseStatus response
+  unless (s == Just Status.ok200) $
+    throwError $ ChatErrorRemoteCtrl $ RCEHTTP2RespStatus $ Status.statusCode <$> s
+
+fetchRemoteFile :: ChatMonad m => HTTP2Client -> User -> Int64 -> FilePath -> m ()
 fetchRemoteFile http User {userId = remoteUserId} remoteFileId localPath = do
-  -- TODO use ExceptT / ChatMonad m
-  liftIO (HTTP2.sendRequestDirect http req Nothing) >>= \case
-    Left h2ce -> False <$ logError (tshow h2ce)
-    Right HTTP2Response {response, respBody} ->
-      if HC.responseStatus response == Just Status.ok200
-        then True <$ writeBodyToFile localPath respBody
-        -- TODO throwError
-        else False <$ (logError $ "Request failed: " <> maybe "(??)" tshow (HC.responseStatus response) <> " " <> decodeUtf8 (bodyHead respBody))
+  r@HTTP2Response {respBody} <- liftHTTP2 $ HTTP2.sendRequestDirect http req Nothing
+  responseStatusOK r
+  writeBodyToFile localPath respBody
   where
     req = HC.requestNoBody "GET" path mempty
     path = "/fetch?" <> HTTP.renderSimpleQuery False [("user_id", bshow remoteUserId), ("file_id", bshow remoteFileId)]
