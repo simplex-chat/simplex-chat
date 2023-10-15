@@ -53,8 +53,8 @@ pattern BROADCAST_PORT = "5226"
 -- | Announce tls server, wait for connection and attach http2 client to it.
 --
 -- Announcer is started when TLS server is started and stopped when a connection is made.
-announceRevHTTP2 :: (StrEncoding invite, MonadUnliftIO m) => m () -> invite -> TLS.Credentials -> m (Either HTTP2ClientError HTTP2Client)
-announceRevHTTP2 finishAction invite credentials = do
+announceRevHTTP2 :: StrEncoding a => a -> TLS.Credentials -> IO () -> IO (Either HTTP2ClientError HTTP2Client)
+announceRevHTTP2 invite credentials finishAction = do
   httpClient <- newEmptyMVar
   started <- newEmptyTMVarIO
   finished <- newEmptyMVar
@@ -77,6 +77,8 @@ runAnnouncer inviteBS = do
       UDP.send sock inviteBS
       threadDelay 1000000
 
+-- TODO what prevents second client from connecting to the same server?
+-- Do we need to start multiple TLS servers for different mobile hosts?
 startTLSServer :: (MonadUnliftIO m) => TMVar Bool -> TLS.Credentials -> (Transport.TLS -> IO ()) -> m (Async ())
 startTLSServer started credentials = async . liftIO . runTransportServer started BROADCAST_PORT serverParams defaultTransportServerConfig
   where

@@ -1168,6 +1168,7 @@ data RemoteCtrlError
   | RCEBadFingerprint -- ^ Bad fingerprint data provided in OOB
   | RCEHTTP2Error {http2Error :: String}
   | RCEHTTP2RespStatus {statusCode :: Maybe Int} -- TODO remove
+  | RCEInvalidResponse {responseError :: String}
   deriving (Show, Exception, Generic)
 
 instance FromJSON RemoteCtrlError where
@@ -1239,6 +1240,10 @@ catchChatError = catchAllErrors mkChatError
 chatFinally :: ChatMonad m => m a -> m b -> m a
 chatFinally = allFinally mkChatError
 {-# INLINE chatFinally #-}
+
+onChatError :: ChatMonad m => m a -> m b -> m a
+a `onChatError` onErr = a `catchChatError` \e -> onErr >> throwError e
+{-# INLINE onChatError #-}
 
 mkChatError :: SomeException -> ChatError
 mkChatError = ChatError . CEException . show

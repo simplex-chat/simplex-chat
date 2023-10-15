@@ -63,7 +63,7 @@ import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), defaultHTTP2BufferSize
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError, HTTP2Response (..))
 import qualified Simplex.Messaging.Transport.HTTP2.Client as HTTP2
 import qualified Simplex.Messaging.Transport.HTTP2.Server as HTTP2
-import Simplex.Messaging.Util (bshow, ifM, liftEitherError, tshow, ($>>=))
+import Simplex.Messaging.Util (bshow, ifM, liftEitherError, liftEitherWith, tshow, ($>>=))
 import System.FilePath (isPathSeparator, takeFileName, (</>))
 import UnliftIO
 import UnliftIO.Directory (createDirectoryIfMissing, getFileSize)
@@ -82,7 +82,10 @@ startRemoteHost :: ChatMonad m => RemoteHostId -> m ()
 startRemoteHost rhId = do
   checkNoRemoteHostSession rhId
   rh <- withStore (`getRemoteHost` rhId)
-  announcer <- async $ run rh
+  announcer <- async $ do
+    finished <- newTVarIO False
+    http <- start rh finished `onChatError` cleanup finished
+    run rh finished http
   chatModifyVar remoteHostSessions $ M.insert rhId RemoteHostSessionStarting {announcer}
   where
     cleanup finished = do
@@ -92,59 +95,48 @@ startRemoteHost rhId = do
       M.lookup rhId <$> chatReadVar remoteHostSessions >>= \case
         Nothing -> logInfo $ "Session already closed for remote host " <> tshow rhId
         Just _ -> closeRemoteHostSession rhId >> toView (CRRemoteHostStopped rhId)
-    run rh@RemoteHost {storePath, caKey, caCert} = do
-      finished <- newTVarIO False
+    start rh@RemoteHost {storePath, caKey, caCert} finished = do
       let parent = (C.signatureKeyPair caKey, caCert)
       sessionCreds <- liftIO $ genCredentials (Just parent) (0, 24) "Session"
       let (fingerprint, credentials) = tlsCredentials $ sessionCreds :| [parent]
-      -- TODO ExceptT
-      Discovery.announceRevHTTP2 (cleanup finished) fingerprint credentials >>= \case
-        Left h2ce -> do
-          logError $ "Failed to set up remote host connection: " <> tshow h2ce
-          cleanup finished
-        Right ctrlClient -> do
-          chatModifyVar remoteHostSessions $ M.insert rhId RemoteHostSessionStarted {storePath, ctrlClient}
-          chatWriteVar currentRemoteHost $ Just rhId
-          -- TODO ExceptT
-          sendHello ctrlClient >>= \case
-            Left h2ce -> do
-              logError $ "Failed to send initial remote host request: " <> tshow h2ce
-              cleanup finished
-            Right HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
-              logDebug $ "Got initial from remote host: " <> tshow bodyHead
-              oq <- asks outputQ
-              let toViewRemote = atomically . writeTBQueue oq . (Nothing,Just rhId,)
-              void . async $ pollRemote finished ctrlClient "/recv" $ \chatResponse -> do
-                -- TODO move to view / terminal
-                case chatResponse of
-                  CRRcvFileComplete {user = ru, chatItem = AChatItem c d@SMDRcv i ci@ChatItem {file = Just ciFile}} -> do
-                    handleRcvFileComplete ctrlClient storePath ru ciFile >>= \case
-                      Nothing -> toViewRemote chatResponse
-                      Just localFile -> toViewRemote CRRcvFileComplete {user = ru, chatItem = AChatItem c d i ci {file = Just localFile}}
-                  _ -> toViewRemote chatResponse
-              rcName <- chatReadVar localDeviceName
-              -- TODO what sets session active?
-              toView CRRemoteHostConnected {remoteHost = remoteHostInfo rh True rcName}
+      u <- askUnliftIO
+      ctrlClient <- liftHTTP2 $ Discovery.announceRevHTTP2 fingerprint credentials $ unliftIO u (cleanup finished) -- >>= \case
+      chatModifyVar remoteHostSessions $ M.insert rhId RemoteHostSessionStarted {storePath, ctrlClient}
+      chatWriteVar currentRemoteHost $ Just rhId
+      HTTP2Response {respBody = HTTP2Body {bodyHead}} <- sendHello ctrlClient
+      rcName <- chatReadVar localDeviceName
+      -- TODO what sets session active?
+      toView CRRemoteHostConnected {remoteHost = remoteHostInfo rh True rcName}
+      pure ctrlClient
+    run RemoteHost {storePath} finished ctrlClient = do
+      oq <- asks outputQ
+      let toViewRemote = atomically . writeTBQueue oq . (Nothing,Just rhId,)
+      -- TODO remove REST
+      void . async $ pollRemote finished ctrlClient "/recv" $ handleFile >=> toViewRemote
+      where
+        -- TODO move to view / terminal
+        handleFile = \case
+          cr@CRRcvFileComplete {user, chatItem = AChatItem c SMDRcv i ci@ChatItem {file = Just ciFile@CIFile {fileStatus = CIFSRcvComplete}}} -> do
+            maybe cr update <$> handleRcvFileComplete ctrlClient storePath user ciFile
+            where
+              update localFile = cr {chatItem = AChatItem c SMDRcv i ci {file = Just localFile}}
+          cr -> pure cr
 
-sendHello :: ChatMonad m => HTTP2Client -> m (Either HTTP2ClientError HTTP2Response)
-sendHello http = liftIO (HTTP2.sendRequestDirect http req Nothing)
+sendHello :: ChatMonad m => HTTP2Client -> m HTTP2Response
+sendHello http = liftHTTP2 $ HTTP2.sendRequestDirect http req Nothing
   where
     req = HC.requestNoBody "GET" "/" mempty
 
-pollRemote :: (ChatMonad m, J.FromJSON a) => TVar Bool -> HTTP2Client -> ByteString -> (a -> m ()) -> m ()
-pollRemote finished http path action = loop
+-- TODO how (on what condition) it would stop polling?
+-- TODO add JSON translation
+pollRemote :: ChatMonad m => TVar Bool -> HTTP2Client -> ByteString -> (ChatResponse -> m ()) -> m ()
+pollRemote finished http path action = loop `catchChatError` \e -> action (CRChatError Nothing e) >> loop
   where
     loop = do
-      -- TODO ExceptT
-      liftIO (HTTP2.sendRequestDirect http req Nothing) >>= \case
-        Left e -> logError $ "pollRemote: " <> tshow (path, e)
-        Right HTTP2Response {respBody = HTTP2Body {bodyHead}} -> do
-          logDebug $ "Got /recv response: " <> decodeUtf8 bodyHead
-          -- TODO ExceptT (liftEither)
-          case J.eitherDecodeStrict' bodyHead of
-            -- send error toView
-            Left e -> logError $ "pollRemote/decode: " <> tshow (path, e)
-            Right o -> action o
+      -- TODO this will never load full body
+      HTTP2Response {respBody = HTTP2Body {bodyHead}} <- liftHTTP2 $ HTTP2.sendRequestDirect http req Nothing
+      json <- liftEitherWith (ChatErrorRemoteCtrl . RCEInvalidResponse) $ J.eitherDecodeStrict' bodyHead -- of
+      action json
       readTVarIO finished >>= (`unless` loop)
     req = HC.requestNoBody "GET" path mempty
 
@@ -248,22 +240,22 @@ relayCommand http s =
       where
         req = HC.requestBuilder "POST" path hs (Binary.fromByteString body)
 
+-- TODO fileName is just metadata that does not determine the actual file location for UI, or whether it is encrypted or not
+-- fileSource is the actual file location (with information whether it is locally encrypted)
 handleRcvFileComplete :: ChatMonad m => HTTP2Client -> FilePath -> User -> CIFile 'MDRcv -> m (Maybe (CIFile 'MDRcv))
-handleRcvFileComplete http storePath remoteUser cif@CIFile {fileId, fileName, fileStatus} = case fileStatus of
-  CIFSRcvComplete ->
-    chatReadVar filesFolder >>= \case
-      Just baseDir -> do
-        let hostStore = baseDir </> storePath
-        createDirectoryIfMissing True hostStore
-        -- TODO the problem here is that the name may turn out to be different and nothing will work
-        -- file processing seems to work "accidentally", not "by design"
-        localPath <- uniqueCombine hostStore fileName
-        fetchRemoteFile http remoteUser fileId localPath
-        pure $ Just (cif {fileName = localPath} :: CIFile 'MDRcv)
-      -- TODO below will not work with CLI, it should store file to download folder when not specified
-      -- It should not load all files when received, instead it should only load files received with /fr commands
-      Nothing -> Nothing <$ logError "Local file store not available while fetching remote file"
-  _ -> Nothing <$ logDebug ("Ingoring invalid file notification for file (" <> tshow fileId <> ") " <> tshow fileName)
+handleRcvFileComplete http storePath remoteUser f@CIFile {fileId, fileName} =
+  chatReadVar filesFolder >>= \case
+    Just baseDir -> do
+      let hostStore = baseDir </> storePath
+      createDirectoryIfMissing True hostStore
+      -- TODO the problem here is that the name may turn out to be different and nothing will work
+      -- file processing seems to work "accidentally", not "by design"
+      localPath <- uniqueCombine hostStore fileName
+      fetchRemoteFile http remoteUser fileId localPath
+      pure $ Just (f {fileName = localPath} :: CIFile 'MDRcv)
+    -- TODO below will not work with CLI, it should store file to download folder when not specified
+    -- It should not load all files when received, instead it should only load files received with /fr commands
+    Nothing -> Nothing <$ logError "Local file store not available while fetching remote file"
 
 -- | Convert swift single-field sum encoding into tagged/discriminator-field
 owsf2tagged :: J.Value -> J.Value
