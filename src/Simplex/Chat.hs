@@ -139,7 +139,8 @@ defaultChatConfig =
       initialCleanupManagerDelay = 30 * 1000000, -- 30 seconds
       cleanupManagerInterval = 30 * 60, -- 30 minutes
       cleanupManagerStepDelay = 3 * 1000000, -- 3 seconds
-      ciExpirationInterval = 30 * 60 * 1000000 -- 30 minutes
+      ciExpirationInterval = 30 * 60 * 1000000, -- 30 minutes
+      coreApi = False
     }
 
 _defaultSMPServers :: NonEmpty SMPServerWithAuth
@@ -191,6 +192,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   idsDrg <- newTVarIO =<< liftIO drgNew
   inputQ <- newTBQueueIO tbqSize
   outputQ <- newTBQueueIO tbqSize
+  connNetworkStatuses <- atomically TM.empty
   subscriptionMode <- newTVarIO SMSubscribe
   chatLock <- newEmptyTMVarIO
   sndFiles <- newTVarIO M.empty
@@ -203,6 +205,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   cleanupManagerAsync <- newTVarIO Nothing
   timedItemThreads <- atomically TM.empty
   showLiveItems <- newTVarIO False
+  encryptLocalFiles <- newTVarIO False
   userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
   tempDirectory <- newTVarIO tempDir
   contactMergeEnabled <- newTVarIO True
@@ -217,6 +220,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
         idsDrg,
         inputQ,
         outputQ,
+        connNetworkStatuses,
         subscriptionMode,
         chatLock,
         sndFiles,
@@ -229,6 +233,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
         cleanupManagerAsync,
         timedItemThreads,
         showLiveItems,
+        encryptLocalFiles,
         userXFTPFileConfig,
         tempDirectory,
         logFilePath = logFile,
@@ -508,6 +513,7 @@ processChatCommand = \case
   APISetXFTPConfig cfg -> do
     asks userXFTPFileConfig >>= atomically . (`writeTVar` cfg)
     ok_
+  APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
   SetContactMergeEnabled onOff -> do
     asks contactMergeEnabled >>= atomically . (`writeTVar` onOff)
     ok_
@@ -1080,6 +1086,8 @@ processChatCommand = \case
         user <- getUserByContactId db contactId
         contact <- getContact db user contactId
         pure RcvCallInvitation {user, contact, callType = peerCallType, sharedKey, callTs}
+  APIGetNetworkStatuses -> withUser $ \_ ->
+    CRNetworkStatuses Nothing . map (uncurry ConnNetworkStatus) . M.toList <$> chatReadVar connNetworkStatuses
   APICallStatus contactId receivedStatus ->
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
@@ -1680,6 +1688,8 @@ processChatCommand = \case
         (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing subMode
         -- [incognito] reuse membership incognito profile
         ct <- withStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
+        -- TODO not sure it is correct to set connections status here?
+        setContactNetworkStatus ct NSConnected
         pure $ CRNewMemberContact user ct g m
       _ -> throwChatError CEGroupMemberNotActive
   APISendMemberContactInvitation contactId msgContent_ -> withUser $ \user -> do
@@ -1758,19 +1768,16 @@ processChatCommand = \case
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
   SendFileDescription _chatName _f -> pure $ chatCmdError Nothing "TODO"
-  ReceiveFile fileId encrypted rcvInline_ filePath_ -> withUser $ \_ ->
+  ReceiveFile fileId encrypted_ rcvInline_ filePath_ -> withUser $ \_ ->
     withChatLock "receiveFile" . procCmd $ do
       (user, ft) <- withStore (`getRcvFileTransferById` fileId)
-      ft' <- if encrypted then encryptLocalFile ft else pure ft
+      encrypt <- (`fromMaybe` encrypted_) <$> chatReadVar encryptLocalFiles
+      ft' <- (if encrypt then setFileToEncrypt else pure) ft
       receiveFile' user ft' rcvInline_ filePath_
-    where
-      encryptLocalFile ft = do
-        cfArgs <- liftIO $ CF.randomArgs
-        withStore' $ \db -> setFileCryptoArgs db fileId cfArgs
-        pure (ft :: RcvFileTransfer) {cryptoArgs = Just cfArgs}
-  SetFileToReceive fileId encrypted -> withUser $ \_ -> do
+  SetFileToReceive fileId encrypted_ -> withUser $ \_ -> do
     withChatLock "setFileToReceive" . procCmd $ do
-      cfArgs <- if encrypted then Just <$> liftIO CF.randomArgs else pure Nothing
+      encrypt <- (`fromMaybe` encrypted_) <$> chatReadVar encryptLocalFiles
+      cfArgs <- if encrypt then Just <$> liftIO CF.randomArgs else pure Nothing
       withStore' $ \db -> setRcvFileToReceive db fileId cfArgs
       ok_
   CancelFile fileId -> withUser $ \user@User {userId} ->
@@ -2395,6 +2402,12 @@ toFSFilePath :: ChatMonad' m => FilePath -> m FilePath
 toFSFilePath f =
   maybe f (</> f) <$> (readTVarIO =<< asks filesFolder)
 
+setFileToEncrypt :: ChatMonad m => RcvFileTransfer -> m RcvFileTransfer
+setFileToEncrypt ft@RcvFileTransfer {fileId} = do
+  cfArgs <- liftIO CF.randomArgs
+  withStore' $ \db -> setFileCryptoArgs db fileId cfArgs
+  pure (ft :: RcvFileTransfer) {cryptoArgs = Just cfArgs}
+
 receiveFile' :: ChatMonad m => User -> RcvFileTransfer -> Maybe Bool -> Maybe FilePath -> m ChatResponse
 receiveFile' user ft rcvInline_ filePath_ = do
   (CRRcvFileAccepted user <$> acceptFileReceive user ft rcvInline_ filePath_) `catchChatError` processError
@@ -2619,6 +2632,7 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
   rs <- withAgent $ \a -> agentBatchSubscribe a conns
   -- send connection events to view
   contactSubsToView rs cts ce
+-- TODO possibly, we could either disable these events or replace with less noisy for API
   contactLinkSubsToView rs ucs
   groupSubsToView rs gs ms ce
   sndFileSubsToView rs sfts
@@ -2679,12 +2693,30 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
       let connIds = map aConnId' pcs
       pure (connIds, M.fromList $ zip connIds pcs)
     contactSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId Contact -> Bool -> m ()
-    contactSubsToView rs cts ce = do
-      toView . CRContactSubSummary user $ map (uncurry ContactSubStatus) cRs
-      when ce $ mapM_ (toView . uncurry (CRContactSubError user)) cErrors
+    contactSubsToView rs cts ce = ifM (asks $ coreApi . config) notifyAPI notifyCLI
       where
-        cRs = resultsFor rs cts
-        cErrors = sortOn (\(Contact {localDisplayName = n}, _) -> n) $ filterErrors cRs
+        notifyCLI = do
+          let cRs = resultsFor rs cts
+              cErrors = sortOn (\(Contact {localDisplayName = n}, _) -> n) $ filterErrors cRs
+          toView . CRContactSubSummary user $ map (uncurry ContactSubStatus) cRs
+          when ce $ mapM_ (toView . uncurry (CRContactSubError user)) cErrors
+        notifyAPI = do
+          let statuses = M.foldrWithKey' addStatus [] cts
+          chatModifyVar connNetworkStatuses $ M.union (M.fromList statuses)
+          toView $ CRNetworkStatuses (Just user) $ map (uncurry ConnNetworkStatus) statuses
+          where
+            addStatus :: ConnId -> Contact -> [(AgentConnId, NetworkStatus)] -> [(AgentConnId, NetworkStatus)]
+            addStatus connId ct =
+              let ns = (contactAgentConnId ct, netStatus $ resultErr connId rs)
+              in (ns :)
+            netStatus :: Maybe ChatError -> NetworkStatus
+            netStatus = maybe NSConnected $ NSError . errorNetworkStatus
+            errorNetworkStatus :: ChatError -> String
+            errorNetworkStatus = \case
+              ChatErrorAgent (BROKER _ NETWORK) _ -> "network"
+              ChatErrorAgent (SMP SMP.AUTH) _ -> "contact deleted"
+              e -> show e
+-- TODO possibly below could be replaced with less noisy events for API
     contactLinkSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId UserContact -> m ()
     contactLinkSubsToView rs = toView . CRUserContactSubSummary user . map (uncurry UserContactSubStatus) . resultsFor rs
     groupSubsToView :: Map ConnId (Either AgentErrorType ()) -> [Group] -> Map ConnId GroupMember -> Bool -> m ()
@@ -2734,12 +2766,12 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
     resultsFor rs = M.foldrWithKey' addResult []
       where
         addResult :: ConnId -> a -> [(a, Maybe ChatError)] -> [(a, Maybe ChatError)]
-        addResult connId = (:) . (,err)
-          where
-            err = case M.lookup connId rs of
-              Just (Left e) -> Just $ ChatErrorAgent e Nothing
-              Just _ -> Nothing
-              _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
+        addResult connId = (:) . (,resultErr connId rs)
+    resultErr :: ConnId -> Map ConnId (Either AgentErrorType ()) -> Maybe ChatError
+    resultErr connId rs = case M.lookup connId rs of
+      Just (Left e) -> Just $ ChatErrorAgent e Nothing
+      Just _ -> Nothing
+      _ -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
 cleanupManager :: forall m. ChatMonad m => m ()
 cleanupManager = do
@@ -2884,16 +2916,22 @@ processAgentMessageNoConn :: forall m. ChatMonad m => ACommand 'Agent 'AENone ->
 processAgentMessageNoConn = \case
   CONNECT p h -> hostEvent $ CRHostConnected p h
   DISCONNECT p h -> hostEvent $ CRHostDisconnected p h
-  DOWN srv conns -> serverEvent srv conns CRContactsDisconnected
-  UP srv conns -> serverEvent srv conns CRContactsSubscribed
+  DOWN srv conns -> serverEvent srv conns NSDisconnected CRContactsDisconnected
+  UP srv conns -> serverEvent srv conns NSConnected CRContactsSubscribed
   SUSPENDED -> toView CRChatSuspended
   DEL_USER agentUserId -> toView $ CRAgentUserDeleted agentUserId
   where
     hostEvent :: ChatResponse -> m ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
-    serverEvent srv conns event = do
-      cs <- withStore' (`getConnectionsContacts` conns)
-      toView $ event srv cs
+    serverEvent srv conns nsStatus event = ifM (asks $ coreApi . config) notifyAPI notifyCLI
+      where
+        notifyAPI = do
+          let connIds = map AgentConnId conns
+          chatModifyVar connNetworkStatuses $ \m -> foldl' (\m' cId -> M.insert cId nsStatus m') m connIds
+          toView $ CRNetworkStatus nsStatus connIds
+        notifyCLI = do
+          cs <- withStore' (`getConnectionsContacts` conns)
+          toView $ event srv cs
 
 processAgentMsgSndFile :: forall m. ChatMonad m => ACorrId -> SndFileId -> ACommand 'Agent 'AESndFile -> m ()
 processAgentMsgSndFile _corrId aFileId msg =
@@ -3180,6 +3218,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             Nothing -> do
               -- [incognito] print incognito profile used for this contact
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
+              setContactNetworkStatus ct NSConnected
               toView $ CRContactConnected user ct (fmap fromLocalProfile incognitoProfile)
               when (directOrUsed ct) $ createFeatureEnabledItems ct
               when (contactConnInitiated conn) $ do
@@ -3753,6 +3792,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     notifyMemberConnected :: GroupInfo -> GroupMember -> Maybe Contact -> m ()
     notifyMemberConnected gInfo m ct_ = do
       memberConnectedChatItem gInfo m
+      mapM_ (`setContactNetworkStatus` NSConnected) ct_
       toView $ CRConnectedToGroupMember user gInfo m ct_
 
     probeMatchingContactsAndMembers :: Contact -> IncognitoEnabled -> Bool -> m ()
@@ -3888,14 +3928,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       inline <- receiveInlineMode fInv (Just mc) fileChunkSize
       ft@RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvFT db fInv inline fileChunkSize
       let fileProtocol = if isJust xftpRcvFile then FPXFTP else FPSMP
-      (filePath, fileStatus) <- case inline of
+      (filePath, fileStatus, ft') <- case inline of
         Just IFMSent -> do
+          encrypt <- chatReadVar encryptLocalFiles
+          ft' <- (if encrypt then setFileToEncrypt else pure) ft
           fPath <- getRcvFilePath fileId Nothing fileName True
-          withStore' $ \db -> startRcvInlineFT db user ft fPath inline
-          pure (Just fPath, CIFSRcvAccepted)
-        _ -> pure (Nothing, CIFSRcvInvitation)
-      let fileSource = CF.plain <$> filePath
-      pure (ft, CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol})
+          withStore' $ \db -> startRcvInlineFT db user ft' fPath inline
+          pure (Just fPath, CIFSRcvAccepted, ft')
+        _ -> pure (Nothing, CIFSRcvInvitation, ft)
+      let RcvFileTransfer {cryptoArgs} = ft'
+          fileSource = (`CryptoFile` cryptoArgs) <$> filePath
+      pure (ft', CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol})
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> Maybe Int -> Maybe Bool -> m ()
     messageUpdate ct@Contact {contactId} sharedMsgId mc msg@RcvMessage {msgId} msgMeta ttl live_ = do
@@ -5524,6 +5567,7 @@ chatCommandP =
       ("/_files_folder " <|> "/files_folder ") *> (SetFilesFolder <$> filePath),
       "/_xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> jsonP) <|> ("off" $> Nothing))),
       "/xftp " *> (APISetXFTPConfig <$> ("on" *> (Just <$> xftpCfgP) <|> ("off" $> Nothing))),
+      "/_files_encrypt " *> (APISetEncryptLocalFiles <$> onOffP),
       "/contact_merge " *> (SetContactMergeEnabled <$> onOffP),
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/db export" $> ExportArchive,
@@ -5560,6 +5604,7 @@ chatCommandP =
       "/_call end @" *> (APIEndCall <$> A.decimal),
       "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP),
       "/_call get" $> APIGetCallInvitations,
+      "/_network_statuses" $> APIGetNetworkStatuses,
       "/_profile " *> (APIUpdateProfile <$> A.decimal <* A.space <*> jsonP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias :" *> (APISetConnectionAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
@@ -5699,8 +5744,8 @@ chatCommandP =
       ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal),
       ("/image_forward " <|> "/imgf ") *> (ForwardImage <$> chatNameP' <* A.space <*> A.decimal),
       ("/fdescription " <|> "/fd") *> (SendFileDescription <$> chatNameP' <* A.space <*> filePath),
-      ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> (" encrypt=" *> onOffP <|> pure False) <*> optional (" inline=" *> onOffP) <*> optional (A.space *> filePath)),
-      "/_set_file_to_receive " *> (SetFileToReceive <$> A.decimal <*> (" encrypt=" *> onOffP <|> pure False)),
+      ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (" encrypt=" *> onOffP) <*> optional (" inline=" *> onOffP) <*> optional (A.space *> filePath)),
+      "/_set_file_to_receive " *> (SetFileToReceive <$> A.decimal <*> optional (" encrypt=" *> onOffP)),
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
       "/simplex" *> (ConnectSimplex <$> incognitoP),

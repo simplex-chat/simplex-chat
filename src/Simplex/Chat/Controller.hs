@@ -32,6 +32,7 @@ import Data.Char (ord)
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import Data.String
 import Data.Text (Text)
 import Data.Time (NominalDiffTime, UTCTime)
@@ -124,7 +125,8 @@ data ChatConfig = ChatConfig
     initialCleanupManagerDelay :: Int64,
     cleanupManagerInterval :: NominalDiffTime,
     cleanupManagerStepDelay :: Int64,
-    ciExpirationInterval :: Int64 -- microseconds
+    ciExpirationInterval :: Int64, -- microseconds
+    coreApi :: Bool
   }
 
 data DefaultAgentServers = DefaultAgentServers
@@ -164,6 +166,7 @@ data ChatController = ChatController
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, ChatResponse),
+    connNetworkStatuses :: TMap AgentConnId NetworkStatus,
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
     sndFiles :: TVar (Map Int64 Handle),
@@ -176,6 +179,7 @@ data ChatController = ChatController
     cleanupManagerAsync :: TVar (Maybe (Async ())),
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
+    encryptLocalFiles :: TVar Bool,
     userXFTPFileConfig :: TVar (Maybe XFTPFileConfig),
     tempDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
@@ -218,6 +222,7 @@ data ChatCommand
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
   | APISetXFTPConfig (Maybe XFTPFileConfig)
+  | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
   | APIExportArchive ArchiveConfig
   | ExportArchive
@@ -251,6 +256,7 @@ data ChatCommand
   | APIEndCall ContactId
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
+  | APIGetNetworkStatuses
   | APIUpdateProfile UserId Profile
   | APISetContactPrefs ContactId Preferences
   | APISetContactAlias ContactId LocalAlias
@@ -389,8 +395,8 @@ data ChatCommand
   | ForwardFile ChatName FileTransferId
   | ForwardImage ChatName FileTransferId
   | SendFileDescription ChatName FilePath
-  | ReceiveFile {fileId :: FileTransferId, storeEncrypted :: Bool, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
-  | SetFileToReceive {fileId :: FileTransferId, storeEncrypted :: Bool}
+  | ReceiveFile {fileId :: FileTransferId, storeEncrypted :: Maybe Bool, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
+  | SetFileToReceive {fileId :: FileTransferId, storeEncrypted :: Maybe Bool}
   | CancelFile FileTransferId
   | FileStatus FileTransferId
   | ShowProfile -- UserId (not used in UI)
@@ -528,6 +534,8 @@ data ChatResponse
   | CRContactSubError {user :: User, contact :: Contact, chatError :: ChatError}
   | CRContactSubSummary {user :: User, contactSubscriptions :: [ContactSubStatus]}
   | CRUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]}
+  | CRNetworkStatus {networkStatus :: NetworkStatus, connections :: [AgentConnId]}
+  | CRNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]}
   | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRGroupInvitation {user :: User, groupInfo :: GroupInfo}
@@ -1043,6 +1051,13 @@ chatReadVar f = asks f >>= readTVarIO
 chatWriteVar :: ChatMonad' m => (ChatController -> TVar a) -> a -> m ()
 chatWriteVar f value = asks f >>= atomically . (`writeTVar` value)
 {-# INLINE chatWriteVar #-}
+
+chatModifyVar :: ChatMonad' m => (ChatController -> TVar a) -> (a -> a) -> m ()
+chatModifyVar f newValue = asks f >>= atomically . (`modifyTVar'` newValue)
+{-# INLINE chatModifyVar #-}
+
+setContactNetworkStatus :: ChatMonad' m => Contact -> NetworkStatus -> m ()
+setContactNetworkStatus ct = chatModifyVar connNetworkStatuses . M.insert (contactAgentConnId ct)
 
 tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
 tryChatError = tryAllErrors mkChatError

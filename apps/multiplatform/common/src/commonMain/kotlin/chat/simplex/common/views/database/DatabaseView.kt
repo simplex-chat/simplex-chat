@@ -20,11 +20,13 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.updatingChatsMutex
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.*
 import java.io.*
 import java.net.URI
@@ -620,8 +622,10 @@ private fun afterSetCiTTL(
   appFilesCountAndSize.value = directoryFileCountAndSize(appFilesDir.absolutePath)
   withApi {
     try {
-      val chats = m.controller.apiGetChats()
-      m.updateChats(chats)
+      updatingChatsMutex.withLock {
+        val chats = m.controller.apiGetChats()
+        m.updateChats(chats)
+      }
     } catch (e: Exception) {
       Log.e(TAG, "apiGetChats error: ${e.message}")
     }
