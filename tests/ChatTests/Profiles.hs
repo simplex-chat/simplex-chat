@@ -650,8 +650,10 @@ testPlanAddressConnecting tmp = do
     alice ##> "/ad"
     getContactLink alice True
   withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    threadDelay 100000
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
+    threadDelay 100000
   withTestChat tmp "alice" $ \alice -> do
     alice <## "Your address is active! To show: /sa"
     alice <## "bob (Bob) wants to connect to you!"

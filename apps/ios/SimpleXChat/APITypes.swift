@@ -32,6 +32,7 @@ public enum ChatCommand {
     case setTempFolder(tempFolder: String)
     case setFilesFolder(filesFolder: String)
     case apiSetXFTPConfig(config: XFTPFileConfig?)
+    case apiSetEncryptLocalFiles(enable: Bool)
     case apiExportArchive(config: ArchiveConfig)
     case apiImportArchive(config: ArchiveConfig)
     case apiDeleteStorage
@@ -86,6 +87,7 @@ public enum ChatCommand {
     case apiVerifyGroupMember(groupId: Int64, groupMemberId: Int64, connectionCode: String?)
     case apiAddContact(userId: Int64, incognito: Bool)
     case apiSetConnectionIncognito(connId: Int64, incognito: Bool)
+    case apiConnectPlan(userId: Int64, connReq: String)
     case apiConnect(userId: Int64, incognito: Bool, connReq: String)
     case apiDeleteChat(type: ChatType, id: Int64)
     case apiClearChat(type: ChatType, id: Int64)
@@ -110,10 +112,11 @@ public enum ChatCommand {
     case apiEndCall(contact: Contact)
     case apiGetCallInvitations
     case apiCallStatus(contact: Contact, callStatus: WebRTCCallStatus)
+    case apiGetNetworkStatuses
     case apiChatRead(type: ChatType, id: Int64, itemRange: (Int64, Int64))
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
-    case receiveFile(fileId: Int64, encrypted: Bool, inline: Bool?)
-    case setFileToReceive(fileId: Int64, encrypted: Bool)
+    case receiveFile(fileId: Int64, encrypted: Bool?, inline: Bool?)
+    case setFileToReceive(fileId: Int64, encrypted: Bool?)
     case cancelFile(fileId: Int64)
     case showVersion
     case string(String)
@@ -150,6 +153,7 @@ public enum ChatCommand {
             } else {
                 return "/_xftp off"
             }
+            case let .apiSetEncryptLocalFiles(enable): return "/_files_encrypt \(onOff(enable))"
             case let .apiExportArchive(cfg): return "/_db export \(encodeJSON(cfg))"
             case let .apiImportArchive(cfg): return "/_db import \(encodeJSON(cfg))"
             case .apiDeleteStorage: return "/_db delete"
@@ -218,6 +222,7 @@ public enum ChatCommand {
             case let .apiVerifyGroupMember(groupId, groupMemberId, .none): return "/_verify code #\(groupId) \(groupMemberId)"
             case let .apiAddContact(userId, incognito): return "/_connect \(userId) incognito=\(onOff(incognito))"
             case let .apiSetConnectionIncognito(connId, incognito): return "/_set incognito :\(connId) \(onOff(incognito))"
+            case let .apiConnectPlan(userId, connReq): return "/_connect plan \(userId) \(connReq)"
             case let .apiConnect(userId, incognito, connReq): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connReq)"
             case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
@@ -241,15 +246,11 @@ public enum ChatCommand {
             case let .apiEndCall(contact): return "/_call end @\(contact.apiId)"
             case .apiGetCallInvitations: return "/_call get"
             case let .apiCallStatus(contact, callStatus): return "/_call status @\(contact.apiId) \(callStatus.rawValue)"
+            case .apiGetNetworkStatuses: return "/_network_statuses"
             case let .apiChatRead(type, id, itemRange: (from, to)): return "/_read chat \(ref(type, id)) from=\(from) to=\(to)"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id)) \(onOff(unreadChat))"
-            case let .receiveFile(fileId, encrypted, inline):
-                let s = "/freceive \(fileId) encrypt=\(onOff(encrypted))"
-                if let inline = inline {
-                    return s + " inline=\(onOff(inline))"
-                }
-                return s
-            case let .setFileToReceive(fileId, encrypted): return "/_set_file_to_receive \(fileId) encrypt=\(onOff(encrypted))"
+            case let .receiveFile(fileId, encrypt, inline): return "/freceive \(fileId)\(onOffParam("encrypt", encrypt))\(onOffParam("inline", inline))"
+            case let .setFileToReceive(fileId, encrypt): return "/_set_file_to_receive \(fileId)\(onOffParam("encrypt", encrypt))"
             case let .cancelFile(fileId): return "/fcancel \(fileId)"
             case .showVersion: return "/version"
             case let .string(str): return str
@@ -279,6 +280,7 @@ public enum ChatCommand {
             case .setTempFolder: return "setTempFolder"
             case .setFilesFolder: return "setFilesFolder"
             case .apiSetXFTPConfig: return "apiSetXFTPConfig"
+            case .apiSetEncryptLocalFiles: return "apiSetEncryptLocalFiles"
             case .apiExportArchive: return "apiExportArchive"
             case .apiImportArchive: return "apiImportArchive"
             case .apiDeleteStorage: return "apiDeleteStorage"
@@ -333,6 +335,7 @@ public enum ChatCommand {
             case .apiVerifyGroupMember: return "apiVerifyGroupMember"
             case .apiAddContact: return "apiAddContact"
             case .apiSetConnectionIncognito: return "apiSetConnectionIncognito"
+            case .apiConnectPlan: return "apiConnectPlan"
             case .apiConnect: return "apiConnect"
             case .apiDeleteChat: return "apiDeleteChat"
             case .apiClearChat: return "apiClearChat"
@@ -356,6 +359,7 @@ public enum ChatCommand {
             case .apiEndCall: return "apiEndCall"
             case .apiGetCallInvitations: return "apiGetCallInvitations"
             case .apiCallStatus: return "apiCallStatus"
+            case .apiGetNetworkStatuses: return "apiGetNetworkStatuses"
             case .apiChatRead: return "apiChatRead"
             case .apiChatUnread: return "apiChatUnread"
             case .receiveFile: return "receiveFile"
@@ -414,6 +418,13 @@ public enum ChatCommand {
         b ? "on" : "off"
     }
 
+    private func onOffParam(_ param: String, _ b: Bool?) -> String {
+        if let b = b {
+            return " \(param)=\(onOff(b))"
+        }
+        return ""
+    }
+
     private func maybePwd(_ pwd: String?) -> String {
         pwd == "" || pwd == nil ? "" : " " + encodeJSON(pwd)
     }
@@ -457,6 +468,7 @@ public enum ChatResponse: Decodable, Error {
     case connectionVerified(user: UserRef, verified: Bool, expectedCode: String)
     case invitation(user: UserRef, connReqInvitation: String, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
+    case connectionPlan(user: UserRef, connectionPlan: ConnectionPlan)
     case sentConfirmation(user: UserRef)
     case sentInvitation(user: UserRef)
     case contactAlreadyExists(user: UserRef, contact: Contact)
@@ -480,11 +492,14 @@ public enum ChatResponse: Decodable, Error {
     case acceptingContactRequest(user: UserRef, contact: Contact)
     case contactRequestRejected(user: UserRef)
     case contactUpdated(user: UserRef, toContact: Contact)
+    // TODO remove events below
     case contactsSubscribed(server: String, contactRefs: [ContactRef])
     case contactsDisconnected(server: String, contactRefs: [ContactRef])
-    case contactSubError(user: UserRef, contact: Contact, chatError: ChatError)
     case contactSubSummary(user: UserRef, contactSubscriptions: [ContactSubStatus])
-    case groupSubscribed(user: UserRef, groupInfo: GroupInfo)
+    // TODO remove events above
+    case networkStatus(networkStatus: NetworkStatus, connections: [String])
+    case networkStatuses(user_: UserRef?, networkStatuses: [ConnNetworkStatus])
+    case groupSubscribed(user: UserRef, groupInfo: GroupRef)
     case memberSubErrors(user: UserRef, memberSubErrors: [MemberSubError])
     case groupEmpty(user: UserRef, groupInfo: GroupInfo)
     case userContactLinkSubscribed
@@ -595,6 +610,7 @@ public enum ChatResponse: Decodable, Error {
             case .connectionVerified: return "connectionVerified"
             case .invitation: return "invitation"
             case .connectionIncognitoUpdated: return "connectionIncognitoUpdated"
+            case .connectionPlan: return "connectionPlan"
             case .sentConfirmation: return "sentConfirmation"
             case .sentInvitation: return "sentInvitation"
             case .contactAlreadyExists: return "contactAlreadyExists"
@@ -620,8 +636,9 @@ public enum ChatResponse: Decodable, Error {
             case .contactUpdated: return "contactUpdated"
             case .contactsSubscribed: return "contactsSubscribed"
             case .contactsDisconnected: return "contactsDisconnected"
-            case .contactSubError: return "contactSubError"
             case .contactSubSummary: return "contactSubSummary"
+            case .networkStatus: return "networkStatus"
+            case .networkStatuses: return "networkStatuses"
             case .groupSubscribed: return "groupSubscribed"
             case .memberSubErrors: return "memberSubErrors"
             case .groupEmpty: return "groupEmpty"
@@ -732,6 +749,7 @@ public enum ChatResponse: Decodable, Error {
             case let .connectionVerified(u, verified, expectedCode): return withUser(u, "verified: \(verified)\nconnectionCode: \(expectedCode)")
             case let .invitation(u, connReqInvitation, _): return withUser(u, connReqInvitation)
             case let .connectionIncognitoUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
+            case let .connectionPlan(u, connectionPlan): return withUser(u, String(describing: connectionPlan))
             case .sentConfirmation: return noDetails
             case .sentInvitation: return noDetails
             case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
@@ -757,8 +775,9 @@ public enum ChatResponse: Decodable, Error {
             case let .contactUpdated(u, toContact): return withUser(u, String(describing: toContact))
             case let .contactsSubscribed(server, contactRefs): return "server: \(server)\ncontacts:\n\(String(describing: contactRefs))"
             case let .contactsDisconnected(server, contactRefs): return "server: \(server)\ncontacts:\n\(String(describing: contactRefs))"
-            case let .contactSubError(u, contact, chatError): return withUser(u, "contact:\n\(String(describing: contact))\nerror:\n\(String(describing: chatError))")
             case let .contactSubSummary(u, contactSubscriptions): return withUser(u, String(describing: contactSubscriptions))
+            case let .networkStatus(status, conns): return "networkStatus: \(String(describing: status))\nconnections: \(String(describing: conns))"
+            case let .networkStatuses(u, statuses): return withUser(u, String(describing: statuses))
             case let .groupSubscribed(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .memberSubErrors(u, memberSubErrors): return withUser(u, String(describing: memberSubErrors))
             case let .groupEmpty(u, groupInfo): return withUser(u, String(describing: groupInfo))
@@ -849,6 +868,33 @@ public func chatError(_ chatResponse: ChatResponse) -> ChatErrorType? {
     case let .chatError(_, .error(error)): return error
     default: return nil
     }
+}
+
+public enum ConnectionPlan: Decodable {
+    case invitationLink(invitationLinkPlan: InvitationLinkPlan)
+    case contactAddress(contactAddressPlan: ContactAddressPlan)
+    case groupLink(groupLinkPlan: GroupLinkPlan)
+}
+
+public enum InvitationLinkPlan: Decodable {
+    case ok
+    case ownLink
+    case connecting(contact_: Contact?)
+    case known(contact: Contact)
+}
+
+public enum ContactAddressPlan: Decodable {
+    case ok
+    case ownLink
+    case connecting(contact: Contact)
+    case known(contact: Contact)
+}
+
+public enum GroupLinkPlan: Decodable {
+    case ok
+    case ownLink(groupInfo: GroupInfo)
+    case connecting(groupInfo_: GroupInfo?)
+    case known(groupInfo: GroupInfo)
 }
 
 struct NewUser: Encodable {
@@ -1181,18 +1227,67 @@ public struct KeepAliveOpts: Codable, Equatable {
     public static let defaults: KeepAliveOpts = KeepAliveOpts(keepIdle: 30, keepIntvl: 15, keepCnt: 4)
 }
 
+public enum NetworkStatus: Decodable, Equatable {
+    case unknown
+    case connected
+    case disconnected
+    case error(connectionError: String)
+
+    public var statusString: LocalizedStringKey {
+        get {
+            switch self {
+            case .connected: return "connected"
+            case .error: return "error"
+            default: return "connecting"
+            }
+        }
+    }
+
+    public var statusExplanation: LocalizedStringKey {
+        get {
+            switch self {
+            case .connected: return "You are connected to the server used to receive messages from this contact."
+            case let .error(err): return "Trying to connect to the server used to receive messages from this contact (error: \(err))."
+            default: return "Trying to connect to the server used to receive messages from this contact."
+            }
+        }
+    }
+
+    public var imageName: String {
+        get {
+            switch self {
+            case .unknown: return "circle.dotted"
+            case .connected: return "circle.fill"
+            case .disconnected: return "ellipsis.circle.fill"
+            case .error: return "exclamationmark.circle.fill"
+            }
+        }
+    }
+}
+
+public struct ConnNetworkStatus: Decodable {
+    public var agentConnId: String
+    public var networkStatus: NetworkStatus
+}
+
 public struct ChatSettings: Codable {
-    public var enableNtfs: Bool
+    public var enableNtfs: MsgFilter
     public var sendRcpts: Bool?
     public var favorite: Bool
 
-    public init(enableNtfs: Bool, sendRcpts: Bool?, favorite: Bool) {
+    public init(enableNtfs: MsgFilter, sendRcpts: Bool?, favorite: Bool) {
         self.enableNtfs = enableNtfs
         self.sendRcpts = sendRcpts
         self.favorite = favorite
     }
 
-    public static let defaults: ChatSettings = ChatSettings(enableNtfs: true, sendRcpts: nil, favorite: false)
+    public static let defaults: ChatSettings = ChatSettings(enableNtfs: .all, sendRcpts: nil, favorite: false)
+}
+
+public enum MsgFilter: String, Codable {
+    case none
+    case all
+    case mentions
 }
 
 public struct UserMsgReceiptSettings: Codable {
@@ -1420,6 +1515,7 @@ public enum ChatErrorType: Decodable {
     case chatNotStarted
     case chatNotStopped
     case chatStoreChanged
+    case connectionPlan(connectionPlan: ConnectionPlan)
     case invalidConnReq
     case invalidChatMessage(connection: Connection, message: String)
     case contactNotReady(contact: Contact)

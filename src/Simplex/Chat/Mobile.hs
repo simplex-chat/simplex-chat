@@ -169,7 +169,8 @@ defaultMobileConfig :: ChatConfig
 defaultMobileConfig =
   defaultChatConfig
     { confirmMigrations = MCYesUp,
-      logLevel = CLLError
+      logLevel = CLLError,
+      coreApi = True
     }
 
 getActiveUser_ :: SQLiteStore -> IO (Maybe User)

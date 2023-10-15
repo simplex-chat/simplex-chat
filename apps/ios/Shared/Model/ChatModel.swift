@@ -152,6 +152,16 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func getGroupChat(_ groupId: Int64) -> Chat? {
+        chats.first { chat in
+            if case let .group(groupInfo) = chat.chatInfo {
+                return groupInfo.groupId == groupId
+            } else {
+                return false
+            }
+        }
+    }
+
     private func getChatIndex(_ id: String) -> Int? {
         chats.firstIndex(where: { $0.id == id })
     }
@@ -687,42 +697,4 @@ final class Chat: ObservableObject, Identifiable {
     var viewId: String { get { "\(chatInfo.id) \(created.timeIntervalSince1970)" } }
 
     public static var sampleData: Chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
-}
-
-enum NetworkStatus: Decodable, Equatable {
-    case unknown
-    case connected
-    case disconnected
-    case error(String)
-
-    var statusString: LocalizedStringKey {
-        get {
-            switch self {
-            case .connected: return "connected"
-            case .error: return "error"
-            default: return "connecting"
-            }
-        }
-    }
-
-    var statusExplanation: LocalizedStringKey {
-        get {
-            switch self {
-            case .connected: return "You are connected to the server used to receive messages from this contact."
-            case let .error(err): return "Trying to connect to the server used to receive messages from this contact (error: \(err))."
-            default: return "Trying to connect to the server used to receive messages from this contact."
-            }
-        }
-    }
-
-    var imageName: String {
-        get {
-            switch self {
-            case .unknown: return "circle.dotted"
-            case .connected: return "circle.fill"
-            case .disconnected: return "ellipsis.circle.fill"
-            case .error: return "exclamationmark.circle.fill"
-            }
-        }
-    }
 }
