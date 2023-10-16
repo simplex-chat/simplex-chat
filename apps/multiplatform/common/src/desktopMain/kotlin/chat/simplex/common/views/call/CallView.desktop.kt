@@ -1,6 +1,5 @@
 package chat.simplex.common.views.call
 
-import SectionItemView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,8 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
@@ -22,6 +19,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.delay
+import kotlinx.datetime.Clock
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import org.nanohttpd.protocols.http.IHTTPSession
@@ -70,6 +68,7 @@ actual fun ActiveCallView() {
             val callStatus = json.decodeFromString<WebRTCCallStatus>("\"${r.state.connectionState}\"")
             if (callStatus == WebRTCCallStatus.Connected) {
               chatModel.activeCall.value = call.copy(callState = CallState.Connected)
+              chatModel.activeCall.value?.connectedAt = Clock.System.now()
             }
             withApi { chatModel.controller.apiCallStatus(call.contact, callStatus) }
           } catch (e: Error) {
@@ -115,7 +114,6 @@ actual fun ActiveCallView() {
   if (call?.callState == CallState.Connected) ActiveCallOverlayLayout(call, endCall)
 //  if (call != null) ActiveCallOverlayLayout(call, endCall)
 
-  ShowCallAlert(endCall)
   SendStateUpdates()
   DisposableEffect(Unit) {
     chatModel.activeCallViewIsVisible.value = true
@@ -139,39 +137,6 @@ private fun SendStateUpdates() {
       val connInfoText = if (connInfo == null) ""  else " (${connInfo.text})"
       val description = call.encryptionStatus + connInfoText
       chatModel.callCommand.add(WCallCommand.Description(state, description))
-    }
-  }
-}
-
-@Composable
-private fun ShowCallAlert(endCall: () -> Unit) {
-  DisposableEffect(Unit) {
-    AlertManager.shared.showAlertDialogButtonsColumn(
-      title = chatModel.activeCall.value?.contact?.chatViewName ?: "",
-      text = null,
-      onDismissRequest = endCall,
-      buttons = {
-        val call = remember { chatModel.activeCall }.value
-        Column {
-          if (call != null) {
-            CallInfoView(call)
-          }
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            endCall()
-          }) {
-            Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-          }
-        }
-      }
-    )
-    onDispose {
-      AlertManager.shared.hideAlert()
-    }
-  }
-  LaunchedEffect(chatModel.activeCall.value?.callState) {
-    if (chatModel.activeCall.value?.callState == CallState.Connected) {
-      AlertManager.shared.hideAlert()
     }
   }
 }
@@ -210,23 +175,7 @@ private fun ActiveCallOverlayLayout(
 }
 
 @Composable
-private fun CallInfoView(call: Call) {
-  @Composable fun InfoText(text: String, style: TextStyle = MaterialTheme.typography.body2) =
-    Text(text, color = Color(0xFFFFFFD8), style = style)
-  Column(Modifier.sizeIn(minWidth = 180.dp, minHeight = 70.dp).padding(DEFAULT_PADDING), horizontalAlignment = Alignment.CenterHorizontally) {
-    InfoText(call.callState.text)
-
-    val connInfo = call.connectionInfo
-    //    val connInfoText = if (connInfo == null) ""  else " (${connInfo.text}, ${connInfo.protocolText})"
-    val connInfoText = if (connInfo == null) ""  else " (${connInfo.text})"
-    if ((call.encryptionStatus + connInfoText).isNotEmpty()) {
-      InfoText(call.encryptionStatus + connInfoText)
-    }
-  }
-}
-
-@Composable
-fun WebRTCController(callCommand: SnapshotStateList<WCallCommand?>, onResponse: (WVAPIMessage) -> Unit) {
+fun WebRTCController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIMessage) -> Unit) {
   val uriHandler = LocalUriHandler.current
   val server = remember {
     uriHandler.openUri("http://${SERVER_HOST}:$SERVER_PORT/simplex/call/")

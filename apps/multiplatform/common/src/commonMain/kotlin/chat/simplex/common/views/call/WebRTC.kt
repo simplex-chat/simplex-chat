@@ -1,7 +1,5 @@
 package chat.simplex.common.views.call
 
-import androidx.compose.runtime.Composable
-import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.model.*
 import chat.simplex.res.MR
@@ -36,6 +34,7 @@ data class Call(
   }
 
   val hasMedia: Boolean get() = callState == CallState.OfferSent || callState == CallState.Negotiated || callState == CallState.Connected
+  var connectedAt: Instant? = null
 }
 
 enum class CallState {

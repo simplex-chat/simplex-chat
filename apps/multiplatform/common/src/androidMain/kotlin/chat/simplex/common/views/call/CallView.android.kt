@@ -44,6 +44,8 @@ import chat.simplex.res.MR
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 
@@ -134,6 +136,7 @@ actual fun ActiveCallView() {
               val callStatus = json.decodeFromString<WebRTCCallStatus>("\"${r.state.connectionState}\"")
               if (callStatus == WebRTCCallStatus.Connected) {
                 chatModel.activeCall.value = call.copy(callState = CallState.Connected)
+                chatModel.activeCall.value?.connectedAt = Clock.System.now()
                 setCallSound(call.soundSpeaker, audioViaBluetooth)
               }
               withApi { chatModel.controller.apiCallStatus(call.contact, callStatus) }
@@ -446,7 +449,7 @@ private fun DisabledBackgroundCallsButton() {
 //}
 
 @Composable
-fun WebRTCView(callCommand: SnapshotStateList<WCallCommand?>, onResponse: (WVAPIMessage) -> Unit) {
+fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIMessage) -> Unit) {
   val scope = rememberCoroutineScope()
   val webView = remember { mutableStateOf<WebView?>(null) }
   val permissionsState = rememberMultiplePermissionsState(

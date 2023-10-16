@@ -282,11 +282,15 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           }
         }
       },
+      endCall = {
+        val call = chatModel.activeCall.value
+        if (call != null) withApi { chatModel.callManager.endCall(call) }
+      },
       acceptCall = { contact ->
         hideKeyboard(view)
         val invitation = chatModel.callInvitations.remove(contact.id)
         if (invitation == null) {
-          AlertManager.shared.showAlertMsg("Call already ended!")
+          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.call_already_ended))
         } else {
           chatModel.callManager.acceptIncomingCall(invitation = invitation)
         }
@@ -429,6 +433,7 @@ fun ChatLayout(
   cancelFile: (Long) -> Unit,
   joinGroup: (Long) -> Unit,
   startCall: (CallMediaType) -> Unit,
+  endCall: () -> Unit,
   acceptCall: (Contact) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
   openDirectChat: (Long) -> Unit,
@@ -487,7 +492,7 @@ fun ChatLayout(
         }
 
         Scaffold(
-          topBar = { ChatInfoToolbar(chat, back, info, startCall, addMembers, changeNtfsState, onSearchValueChanged) },
+          topBar = { ChatInfoToolbar(chat, back, info, startCall, endCall, addMembers, changeNtfsState, onSearchValueChanged) },
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = { floatingButton.value() },
@@ -516,6 +521,7 @@ fun ChatInfoToolbar(
   back: () -> Unit,
   info: () -> Unit,
   startCall: (CallMediaType) -> Unit,
+  endCall: () -> Unit,
   addMembers: (GroupInfo) -> Unit,
   changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
@@ -536,6 +542,7 @@ fun ChatInfoToolbar(
   }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val menuItems = arrayListOf<@Composable () -> Unit>()
+  val activeCall by remember { chatModel.activeCall }
   menuItems.add {
     ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
       showMenu.value = false
@@ -544,20 +551,51 @@ fun ChatInfoToolbar(
   }
 
   if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.allowsFeature(ChatFeature.Calls)) {
-    barButtons.add {
-      IconButton({
-        showMenu.value = false
-        startCall(CallMediaType.Audio)
-      },
-      enabled = chat.chatInfo.contact.ready && chat.chatInfo.contact.active) {
-        Icon(
-          painterResource(MR.images.ic_call_500),
-          stringResource(MR.strings.icon_descr_more_button),
-          tint = if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
-        )
+    if (activeCall == null) {
+      barButtons.add {
+        IconButton(
+          {
+            showMenu.value = false
+            startCall(CallMediaType.Audio)
+          },
+          enabled = chat.chatInfo.contact.ready && chat.chatInfo.contact.active
+        ) {
+          Icon(
+            painterResource(MR.images.ic_call_500),
+            stringResource(MR.strings.icon_descr_more_button),
+            tint = if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+          )
+        }
+      }
+    } else if (activeCall?.contact?.id == chat.id) {
+      barButtons.add {
+        val call = chatModel.activeCall.value
+        val connectedAt = call?.connectedAt
+        if (connectedAt != null) {
+          val time = remember { mutableStateOf(durationText(0)) }
+          LaunchedEffect(connectedAt) {
+            while (true) {
+              time.value = durationText((Clock.System.now() - connectedAt).inWholeSeconds.toInt())
+              delay(250)
+            }
+          }
+          Text(time.value)
+        }
+      }
+      barButtons.add {
+        IconButton({
+          showMenu.value = false
+          endCall()
+        }) {
+          Icon(
+            painterResource(MR.images.ic_call_end_filled),
+            null,
+            tint = MaterialTheme.colors.error
+          )
+        }
       }
     }
-    if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active) {
+    if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active && activeCall == null) {
       menuItems.add {
         ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(MR.images.ic_videocam), onClick = {
           showMenu.value = false
@@ -1286,6 +1324,7 @@ fun PreviewChatLayout() {
       cancelFile = {},
       joinGroup = {},
       startCall = {},
+      endCall = {},
       acceptCall = { _ -> },
       acceptFeature = { _, _, _ -> },
       openDirectChat = { _ -> },
@@ -1355,6 +1394,7 @@ fun PreviewGroupChatLayout() {
       cancelFile = {},
       joinGroup = {},
       startCall = {},
+      endCall = {},
       acceptCall = { _ -> },
       acceptFeature = { _, _, _ -> },
       openDirectChat = { _ -> },
