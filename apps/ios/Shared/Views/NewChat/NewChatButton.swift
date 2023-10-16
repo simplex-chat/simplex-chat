@@ -62,7 +62,9 @@ enum PlanAndConnectAlert: Identifiable {
     case ownInvitationLinkConfirmConnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool)
     case invitationLinkConnecting(connectionLink: String)
     case ownContactAddressConfirmConnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool)
+    case contactAddressConnectingConfirmReconnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool)
     case groupLinkConfirmConnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool)
+    case groupLinkConnectingConfirmReconnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool)
     case groupLinkConnecting(connectionLink: String, groupInfo: GroupInfo?)
 
     var id: String {
@@ -70,7 +72,9 @@ enum PlanAndConnectAlert: Identifiable {
         case let .ownInvitationLinkConfirmConnect(connectionLink, _, _): return "ownInvitationLinkConfirmConnect \(connectionLink)"
         case let .invitationLinkConnecting(connectionLink): return "invitationLinkConnecting \(connectionLink)"
         case let .ownContactAddressConfirmConnect(connectionLink, _, _): return "ownContactAddressConfirmConnect \(connectionLink)"
+        case let .contactAddressConnectingConfirmReconnect(connectionLink, _, _): return "contactAddressConnectingConfirmReconnect \(connectionLink)"
         case let .groupLinkConfirmConnect(connectionLink, _, _): return "groupLinkConfirmConnect \(connectionLink)"
+        case let .groupLinkConnectingConfirmReconnect(connectionLink, _, _): return "groupLinkConnectingConfirmReconnect \(connectionLink)"
         case let .groupLinkConnecting(connectionLink, _): return "groupLinkConnecting \(connectionLink)"
         }
     }
@@ -103,11 +107,31 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool) -> Alert {
             ),
             secondaryButton: .cancel()
         )
+    case let .contactAddressConnectingConfirmReconnect(connectionLink, connectionPlan, incognito):
+        return Alert(
+            title: Text("Repeat connection request?"),
+            message: Text("You have already requested connection via this address!"),
+            primaryButton: .destructive(
+                Text(incognito ? "Connect incognito" : "Connect"),
+                action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) }
+            ),
+            secondaryButton: .cancel()
+        )
     case let .groupLinkConfirmConnect(connectionLink, connectionPlan, incognito):
         return Alert(
             title: Text("Join group?"),
             message: Text("You will connect to all group members."),
             primaryButton: .default(
+                Text(incognito ? "Join incognito" : "Join"),
+                action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) }
+            ),
+            secondaryButton: .cancel()
+        )
+    case let .groupLinkConnectingConfirmReconnect(connectionLink, connectionPlan, incognito):
+        return Alert(
+            title: Text("Repeat join request?"),
+            message: Text("You are already joining the group via this link!"),
+            primaryButton: .destructive(
                 Text(incognito ? "Join incognito" : "Join"),
                 action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) }
             ),
@@ -130,13 +154,13 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool) -> Alert {
 
 enum PlanAndConnectActionSheet: Identifiable {
     case askCurrentOrIncognitoProfile(connectionLink: String, connectionPlan: ConnectionPlan?, title: LocalizedStringKey)
-    case ownLinkAskCurrentOrIncognitoProfile(connectionLink: String, connectionPlan: ConnectionPlan, title: LocalizedStringKey)
+    case askCurrentOrIncognitoProfileDestructive(connectionLink: String, connectionPlan: ConnectionPlan, title: LocalizedStringKey)
     case ownGroupLinkConfirmConnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool?, groupInfo: GroupInfo)
 
     var id: String {
         switch self {
         case let .askCurrentOrIncognitoProfile(connectionLink, _, _): return "askCurrentOrIncognitoProfile \(connectionLink)"
-        case let .ownLinkAskCurrentOrIncognitoProfile(connectionLink, _, _): return "ownLinkAskCurrentOrIncognitoProfile \(connectionLink)"
+        case let .askCurrentOrIncognitoProfileDestructive(connectionLink, _, _): return "askCurrentOrIncognitoProfileDestructive \(connectionLink)"
         case let .ownGroupLinkConfirmConnect(connectionLink, _, _, _): return "ownGroupLinkConfirmConnect \(connectionLink)"
         }
     }
@@ -153,7 +177,7 @@ func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: Bool
                 .cancel()
             ]
         )
-    case let .ownLinkAskCurrentOrIncognitoProfile(connectionLink, connectionPlan, title):
+    case let .askCurrentOrIncognitoProfileDestructive(connectionLink, connectionPlan, title):
         return ActionSheet(
             title: Text(title),
             buttons: [
@@ -211,7 +235,7 @@ func planAndConnect(
                     if let incognito = incognito {
                         showAlert(.ownInvitationLinkConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
                     } else {
-                        showActionSheet(.ownLinkAskCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "Connect to yourself?\nThis is your own one-time link!"))
+                        showActionSheet(.askCurrentOrIncognitoProfileDestructive(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "Connect to yourself?\nThis is your own one-time link!"))
                     }
                 case let .connecting(contact_):
                     logger.debug("planAndConnect, .invitationLink, .connecting, incognito=\(incognito?.description ?? "nil")")
@@ -238,10 +262,17 @@ func planAndConnect(
                     if let incognito = incognito {
                         showAlert(.ownContactAddressConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
                     } else {
-                        showActionSheet(.ownLinkAskCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "Connect to yourself?\nThis is your own SimpleX address!"))
+                        showActionSheet(.askCurrentOrIncognitoProfileDestructive(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "Connect to yourself?\nThis is your own SimpleX address!"))
                     }
-                case let .connecting(contact):
-                    logger.debug("planAndConnect, .contactAddress, .connecting, incognito=\(incognito?.description ?? "nil")")
+                case .connectingConfirmReconnect:
+                    logger.debug("planAndConnect, .contactAddress, .connectingConfirmReconnect, incognito=\(incognito?.description ?? "nil")")
+                    if let incognito = incognito {
+                        showAlert(.contactAddressConnectingConfirmReconnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
+                    } else {
+                        showActionSheet(.askCurrentOrIncognitoProfileDestructive(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "You have already requested connection!\nRepeat connection request?"))
+                    }
+                case let .connectingProhibit(contact):
+                    logger.debug("planAndConnect, .contactAddress, .connectingProhibit, incognito=\(incognito?.description ?? "nil")")
                     openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyConnectingAlert(contact)) }
                 case let .known(contact):
                     logger.debug("planAndConnect, .contactAddress, .known, incognito=\(incognito?.description ?? "nil")")
@@ -258,8 +289,15 @@ func planAndConnect(
                 case let .ownLink(groupInfo):
                     logger.debug("planAndConnect, .groupLink, .ownLink, incognito=\(incognito?.description ?? "nil")")
                     showActionSheet(.ownGroupLinkConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito, groupInfo: groupInfo))
-                case let .connecting(groupInfo_):
-                    logger.debug("planAndConnect, .groupLink, .connecting, incognito=\(incognito?.description ?? "nil")")
+                case .connectingConfirmReconnect:
+                    logger.debug("planAndConnect, .groupLink, .connectingConfirmReconnect, incognito=\(incognito?.description ?? "nil")")
+                    if let incognito = incognito {
+                        showAlert(.groupLinkConnectingConfirmReconnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
+                    } else {
+                        showActionSheet(.askCurrentOrIncognitoProfileDestructive(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "You are already joining the group!\nRepeat join request?"))
+                    }
+                case let .connectingProhibit(groupInfo_):
+                    logger.debug("planAndConnect, .groupLink, .connectingProhibit, incognito=\(incognito?.description ?? "nil")")
                     showAlert(.groupLinkConnecting(connectionLink: connectionLink, groupInfo: groupInfo_))
                 case let .known(groupInfo):
                     logger.debug("planAndConnect, .groupLink, .known, incognito=\(incognito?.description ?? "nil")")
