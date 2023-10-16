@@ -1147,6 +1147,7 @@ data RemoteHostError
   | RHTimeout -- ^ A discovery or a remote operation has timed out
   | RHDisconnected {reason :: Text} -- ^ A session disconnected by a host
   | RHConnectionLost {reason :: Text} -- ^ A session disconnected due to transport issues
+  | RHClientError RemoteError
   deriving (Show, Exception, Generic)
 
 instance FromJSON RemoteHostError where
@@ -1155,6 +1156,22 @@ instance FromJSON RemoteHostError where
 instance ToJSON RemoteHostError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RH"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RH"
+
+data RemoteError
+  = REInvalid -- ^ failed to parse RemoteCommand or RemoteResponse
+  | REUnexpected -- ^ unexpected response
+  -- | RENoChatResponse -- returned on timeout, the client would re-send the request
+  -- RE: doesn't look like an exceptional situation/error, but also distorts consumer into sorting through exceptions pattern where a traversal would work
+  | RENoFile
+  | REHTTP2 String
+  deriving (Show, Exception, Generic)
+
+instance FromJSON RemoteError where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RE"
+
+instance ToJSON RemoteError where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RE"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RE"
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteCtrlError
@@ -1191,14 +1208,20 @@ instance ToJSON ArchiveError where
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "AE"
 
 data RemoteHostSession
-  = RemoteHostSessionStarting
-      { announcer :: Async ()
+  = RemoteHostSessionConnecting
+      { setupAsync :: Async ()
       }
   | RemoteHostSessionStarted
-      { -- | Path for local resources to be synchronized with host
-        storePath :: FilePath,
-        ctrlClient :: HTTP2Client
+      { remoteHostClient :: RemoteHostClient
       }
+
+data RemoteHostClient = RemoteHostClient
+  { remoteHostId :: RemoteHostId,
+    encoding :: PlatformEncoding,
+    deviceName :: Text,
+    storePath :: FilePath,
+    httpClient :: HTTP2Client
+  }
 
 data RemoteCtrlSession = RemoteCtrlSession
   { -- | Host (mobile) side of transport to process remote commands and forward notifications

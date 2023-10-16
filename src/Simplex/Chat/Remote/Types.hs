@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -65,3 +66,16 @@ data RemoteCtrlInfo = RemoteCtrlInfo
   deriving (Show)
 
 $(J.deriveJSON J.defaultOptions {J.omitNothingFields = True} ''RemoteCtrlInfo)
+
+-- TODO: put into a proper place
+data PlatformEncoding
+  = PESwift
+  | PEKotlin
+  deriving (Show)
+
+localEncoding :: PlatformEncoding
+#if defined(darwin_HOST_OS) && defined(swiftJSON)
+localEncoding = PESwift
+#else
+localEncoding = PEKotlin
+#endif

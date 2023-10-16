@@ -207,7 +207,7 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   withXFTPServer $ do
     rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
     desktopStore <- case M.lookup 1 rhs of
-      Just Controller.RemoteHostSessionStarted {storePath} -> pure storePath
+      Just Controller.RemoteHostSessionStarted {remoteHostClient = Controller.RemoteHostClient {storePath}} -> pure storePath
       _ -> fail "Host session 1 should be started"
 
     doesFileExist "./tests/tmp/mobile_files/test.pdf" `shouldReturn` False
