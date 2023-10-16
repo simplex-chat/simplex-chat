@@ -55,14 +55,12 @@ interface IWCallResponse {
 interface WCCapabilities extends IWCallCommand {
   type: "capabilities"
   media?: CallMediaType
-  useWorker?: boolean
 }
 
 interface WCStartCall extends IWCallCommand {
   type: "start"
   media: CallMediaType
   aesKey?: string
-  useWorker?: boolean
   iceServers?: RTCIceServer[]
   relay?: boolean
 }
@@ -77,7 +75,6 @@ interface WCAcceptOffer extends IWCallCommand {
   iceCandidates: string // JSON strings for RTCIceCandidateInit
   media: CallMediaType
   aesKey?: string
-  useWorker?: boolean
   iceServers?: RTCIceServer[]
   relay?: boolean
 }
@@ -190,13 +187,13 @@ interface Call {
   localStream: MediaStream
   remoteStream: MediaStream
   aesKey?: string
-  useWorker?: boolean
   worker?: Worker
   key?: CryptoKey
 }
 
 let activeCall: Call | undefined
 let answerTimeout = 30_000
+var useWorker = false
 
 const processCommand = (function () {
   type RTCRtpSenderWithEncryption = RTCRtpSender & {
@@ -293,13 +290,13 @@ const processCommand = (function () {
     })
   }
 
-  async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesKey?: string, useWorker?: boolean): Promise<Call> {
+  async function initializeCall(config: CallConfig, mediaType: CallMediaType, aesKey?: string): Promise<Call> {
     const pc = new RTCPeerConnection(config.peerConnectionConfig)
     const remoteStream = new MediaStream()
     const localCamera = VideoCamera.User
     const localStream = await getLocalMediaStream(mediaType, localCamera)
     const iceCandidates = getIceCandidates(pc, config)
-    const call = {connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, useWorker}
+    const call = {connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey}
     await setupMediaStreams(call)
     let connectionTimeout: number | undefined = setTimeout(connectionHandler, answerTimeout)
     pc.addEventListener("connectionstatechange", connectionStateChange)
@@ -379,16 +376,16 @@ const processCommand = (function () {
           if (activeCall) endCall()
           // This request for local media stream is made to prompt for camera/mic permissions on call start
           if (command.media) await getLocalMediaStream(command.media, VideoCamera.User)
-          const encryption = supportsInsertableStreams(command.useWorker)
+          const encryption = supportsInsertableStreams(useWorker)
           resp = {type: "capabilities", capabilities: {encryption}}
           break
         case "start": {
           console.log("starting incoming call - create webrtc session")
           if (activeCall) endCall()
-          const {media, useWorker, iceServers, relay} = command
+          const {media, iceServers, relay} = command
           const encryption = supportsInsertableStreams(useWorker)
           const aesKey = encryption ? command.aesKey : undefined
-          activeCall = await initializeCall(getCallConfig(encryption && !!aesKey, iceServers, relay), media, aesKey, useWorker)
+          activeCall = await initializeCall(getCallConfig(encryption && !!aesKey, iceServers, relay), media, aesKey)
           const pc = activeCall.connection
           const offer = await pc.createOffer()
           await pc.setLocalDescription(offer)
@@ -402,7 +399,6 @@ const processCommand = (function () {
           //   iceServers,
           //   relay,
           //   aesKey,
-          //   useWorker,
           // }
           resp = {
             type: "offer",
@@ -415,13 +411,13 @@ const processCommand = (function () {
         case "offer":
           if (activeCall) {
             resp = {type: "error", message: "accept: call already started"}
-          } else if (!supportsInsertableStreams(command.useWorker) && command.aesKey) {
+          } else if (!supportsInsertableStreams(useWorker) && command.aesKey) {
             resp = {type: "error", message: "accept: encryption is not supported"}
           } else {
             const offer: RTCSessionDescriptionInit = parse(command.offer)
             const remoteIceCandidates: RTCIceCandidateInit[] = parse(command.iceCandidates)
-            const {media, aesKey, useWorker, iceServers, relay} = command
-            activeCall = await initializeCall(getCallConfig(!!aesKey, iceServers, relay), media, aesKey, useWorker)
+            const {media, aesKey, iceServers, relay} = command
+            activeCall = await initializeCall(getCallConfig(!!aesKey, iceServers, relay), media, aesKey)
             const pc = activeCall.connection
             await pc.setRemoteDescription(new RTCSessionDescription(offer))
             const answer = await pc.createAnswer()
@@ -526,7 +522,7 @@ const processCommand = (function () {
   async function setupEncryptionWorker(call: Call) {
     if (call.aesKey) {
       if (!call.key) call.key = await callCrypto.decodeAesKey(call.aesKey)
-      if (call.useWorker && !call.worker) {
+      if (useWorker && !call.worker) {
         const workerCode = `const callCrypto = (${callCryptoFunction.toString()})(); (${workerFunction.toString()})()`
         call.worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})))
         call.worker.onerror = ({error, filename, lineno, message}: ErrorEvent) =>

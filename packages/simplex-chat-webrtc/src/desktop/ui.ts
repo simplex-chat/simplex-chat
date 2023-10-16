@@ -1,3 +1,6 @@
+// Override defaults to enable worker on Chrome and Safari
+useWorker = (window as any).safari !== undefined || navigator.userAgent.indexOf("Chrome") != -1
+
 // Create WebSocket connection.
 const socket = new WebSocket(`ws://${location.host}`)
 
