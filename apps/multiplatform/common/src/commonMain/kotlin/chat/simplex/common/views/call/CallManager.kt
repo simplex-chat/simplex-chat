@@ -52,12 +52,12 @@ class CallManager(val chatModel: ChatModel) {
       val useRelay = controller.appPrefs.webrtcPolicyRelay.get()
       val iceServers = getIceServers()
       Log.d(TAG, "answerIncomingCall iceServers: $iceServers")
-      callCommand.value = WCallCommand.Start(
+      callCommand.add(WCallCommand.Start(
         media = invitation.callType.media,
         aesKey = invitation.sharedKey,
         iceServers = iceServers,
         relay = useRelay
-      )
+      ))
       callInvitations.remove(invitation.contact.id)
       if (invitation.contact.id == activeCallInvitation.value?.contact?.id) {
         activeCallInvitation.value = null
@@ -74,7 +74,7 @@ class CallManager(val chatModel: ChatModel) {
         showCallView.value = false
       } else {
         Log.d(TAG, "CallManager.endCall: ending call...")
-        callCommand.value = WCallCommand.End
+        callCommand.add(WCallCommand.End)
         showCallView.value = false
         controller.apiEndCall(call.contact)
         activeCall.value = null

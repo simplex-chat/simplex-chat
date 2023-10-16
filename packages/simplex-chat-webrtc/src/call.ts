@@ -15,6 +15,7 @@ type WCallCommand =
   | WCallIceCandidates
   | WCEnableMedia
   | WCToggleCamera
+  | WCDescription
   | WCEndCall
 
 type WCallResponse =
@@ -30,7 +31,7 @@ type WCallResponse =
   | WRError
   | WCAcceptOffer
 
-type WCallCommandTag = "capabilities" | "start" | "offer" | "answer" | "ice" | "media" | "camera" | "end"
+type WCallCommandTag = "capabilities" | "start" | "offer" | "answer" | "ice" | "media" | "camera" | "description" | "end"
 
 type WCallResponseTag = "capabilities" | "offer" | "answer" | "ice" | "connection" | "connected" | "end" | "ended" | "ok" | "error"
 
@@ -106,6 +107,12 @@ interface WCEnableMedia extends IWCallCommand {
 interface WCToggleCamera extends IWCallCommand {
   type: "camera"
   camera: VideoCamera
+}
+
+interface WCDescription extends IWCallCommand {
+  type: "description"
+  state: string
+  description: string
 }
 
 interface WRCapabilities extends IWCallResponse {
@@ -194,6 +201,8 @@ interface Call {
 let activeCall: Call | undefined
 let answerTimeout = 30_000
 var useWorker = false
+var localizedState = ""
+var localizedDescription = ""
 
 const processCommand = (function () {
   type RTCRtpSenderWithEncryption = RTCRtpSender & {
@@ -472,6 +481,11 @@ const processCommand = (function () {
             await replaceMedia(activeCall, command.camera)
             resp = {type: "ok"}
           }
+          break
+        case "description":
+          localizedState = command.state
+          localizedDescription = command.description
+          resp = {type: "ok"}
           break
         case "end":
           endCall()

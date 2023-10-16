@@ -278,7 +278,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           if (cInfo is ChatInfo.Direct) {
             chatModel.activeCall.value = Call(contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
             chatModel.showCallView.value = true
-            chatModel.callCommand.value = WCallCommand.Capabilities
+            chatModel.callCommand.add(WCallCommand.Capabilities)
           }
         }
       },

@@ -71,5 +71,14 @@ function reactOnMessageFromServer(msg: WVApiMessage) {
       if (msg.command.media == "video") {
         document.getElementById("toggle-video")!!.style.display = "inline-block"
       }
+      break
+    case "description":
+      updateCallInfoView(msg.command.state, msg.command.description)
+      break
   }
+}
+
+function updateCallInfoView(state: string, description: string) {
+  document.getElementById("state")!!.innerText = state
+  document.getElementById("description")!!.innerText = description
 }

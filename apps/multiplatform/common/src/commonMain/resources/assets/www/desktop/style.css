@@ -14,8 +14,8 @@ body {
 
 #local-video-stream {
   position: absolute;
-  width: 30%;
-  max-width: 30%;
+  width: 20%;
+  max-width: 20%;
   object-fit: cover;
   margin: 16px;
   border-radius: 16px;
@@ -64,12 +64,11 @@ body {
   top: 50%;
   margin-left: -52px;
   margin-top: -52px;
-  border: 2px solid #f3f3f3;
   border-radius: 50%;
-  border-top: 2px solid #023789;
-  border-right: 2px solid #01cbff;
-  border-bottom: 2px solid #0863d0;
-  border-left: 2px solid #d952a4;
+  border-top: 5px solid white;
+  border-right: 5px solid white;
+  border-bottom: 5px solid white;
+  border-left: 5px solid black;
   width: 100px;
   height: 100px;
   -webkit-animation: spin 2s linear infinite;
@@ -92,4 +91,16 @@ body {
   100% {
     transform: rotate(360deg);
   }
+}
+
+#info-block {
+  position: absolute;
+  margin-left: -100px;
+  left: 50%;
+  top: 50%;
+  text-align: center;
+  margin-top: 100px;
+  width: 200px;
+  color: white;
+  line-height: 10px;
 }

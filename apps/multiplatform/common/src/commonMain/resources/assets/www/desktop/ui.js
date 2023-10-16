@@ -63,6 +63,14 @@ function reactOnMessageFromServer(msg) {
             if (msg.command.media == "video") {
                 document.getElementById("toggle-video").style.display = "inline-block";
             }
+            break;
+        case "description":
+            updateCallInfoView(msg.command.state, msg.command.description);
+            break;
     }
+}
+function updateCallInfoView(state, description) {
+    document.getElementById("state").innerText = state;
+    document.getElementById("description").innerText = description;
 }
 //# sourceMappingURL=ui.js.map

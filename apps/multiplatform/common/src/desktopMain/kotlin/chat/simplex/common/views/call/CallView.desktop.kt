@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -97,7 +98,7 @@ actual fun ActiveCallView() {
           is WCallCommand.Camera -> {
             chatModel.activeCall.value = call.copy(localCamera = cmd.camera)
             if (!call.audioEnabled) {
-              chatModel.callCommand.value = WCallCommand.Media(CallMediaType.Audio, enable = false)
+              chatModel.callCommand.add(WCallCommand.Media(CallMediaType.Audio, enable = false))
             }
           }
           is WCallCommand.End ->
@@ -115,10 +116,29 @@ actual fun ActiveCallView() {
 //  if (call != null) ActiveCallOverlayLayout(call, endCall)
 
   ShowCallAlert(endCall)
+  SendStateUpdates()
   DisposableEffect(Unit) {
     chatModel.activeCallViewIsVisible.value = true
+    // After the first call, End command gets added to the list which prevents making another calls
+    chatModel.callCommand.removeAll { it is WCallCommand.End }
     onDispose {
       chatModel.activeCallViewIsVisible.value = false
+      chatModel.callCommand.clear()
+    }
+  }
+}
+
+@Composable
+private fun SendStateUpdates() {
+  LaunchedEffect(chatModel.activeCall.value) {
+    val call = chatModel.activeCall.value
+    if (call != null) {
+      val state = call.callState.text
+      val connInfo = call.connectionInfo
+      //    val connInfoText = if (connInfo == null) ""  else " (${connInfo.text}, ${connInfo.protocolText})"
+      val connInfoText = if (connInfo == null) ""  else " (${connInfo.text})"
+      val description = call.encryptionStatus + connInfoText
+      chatModel.callCommand.add(WCallCommand.Description(state, description))
     }
   }
 }
@@ -206,7 +226,7 @@ private fun CallInfoView(call: Call) {
 }
 
 @Composable
-fun WebRTCController(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessage) -> Unit) {
+fun WebRTCController(callCommand: SnapshotStateList<WCallCommand?>, onResponse: (WVAPIMessage) -> Unit) {
   val uriHandler = LocalUriHandler.current
   val server = remember {
     uriHandler.openUri("http://${SERVER_HOST}:$SERVER_PORT/simplex/call/")
@@ -230,16 +250,14 @@ fun WebRTCController(callCommand: MutableState<WCallCommand?>, onResponse: (WVAP
       connections.clear()
     }
   }
-  LaunchedEffect(callCommand.value) {
+  LaunchedEffect(callCommand.firstOrNull()) {
     while (connections.isEmpty()) {
       delay(100)
     }
-    val cmd = callCommand.value
-    delay(3000)
+    val cmd = callCommand.removeFirstOrNull()
     if (cmd != null) {
       Log.d(TAG, "WebRTCController LaunchedEffect executing $cmd")
       processCommand(cmd)
-      callCommand.value = null
     }
   }
 }

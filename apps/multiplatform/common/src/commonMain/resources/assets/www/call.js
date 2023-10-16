@@ -24,6 +24,8 @@ var TransformOperation;
 let activeCall;
 let answerTimeout = 30000;
 var useWorker = false;
+var localizedState = "";
+var localizedDescription = "";
 const processCommand = (function () {
     const defaultIceServers = [
         { urls: ["stun:stun.simplex.im:443"] },
@@ -285,6 +287,11 @@ const processCommand = (function () {
                         await replaceMedia(activeCall, command.camera);
                         resp = { type: "ok" };
                     }
+                    break;
+                case "description":
+                    localizedState = command.state;
+                    localizedDescription = command.description;
+                    resp = { type: "ok" };
                     break;
                 case "end":
                     endCall();

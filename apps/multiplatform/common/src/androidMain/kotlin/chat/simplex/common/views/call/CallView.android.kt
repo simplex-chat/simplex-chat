@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -165,7 +166,7 @@ actual fun ActiveCallView() {
             is WCallCommand.Camera -> {
               chatModel.activeCall.value = call.copy(localCamera = cmd.camera)
               if (!call.audioEnabled) {
-                chatModel.callCommand.value = WCallCommand.Media(CallMediaType.Audio, enable = false)
+                chatModel.callCommand.add(WCallCommand.Media(CallMediaType.Audio, enable = false))
               }
             }
             is WCallCommand.End ->
@@ -190,11 +191,14 @@ actual fun ActiveCallView() {
     // Lock orientation to portrait in order to have good experience with calls
     activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
     chatModel.activeCallViewIsVisible.value = true
+    // After the first call, End command gets added to the list which prevents making another calls
+    chatModel.callCommand.removeAll { it is WCallCommand.End }
     onDispose {
       activity.volumeControlStream = prevVolumeControlStream
       // Unlock orientation
       activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
       chatModel.activeCallViewIsVisible.value = false
+      chatModel.callCommand.clear()
     }
   }
 }
@@ -205,8 +209,8 @@ private fun ActiveCallOverlay(call: Call, chatModel: ChatModel, audioViaBluetoot
     call = call,
     speakerCanBeEnabled = !audioViaBluetooth.value,
     dismiss = { withApi { chatModel.callManager.endCall(call) } },
-    toggleAudio = { chatModel.callCommand.value = WCallCommand.Media(CallMediaType.Audio, enable = !call.audioEnabled) },
-    toggleVideo = { chatModel.callCommand.value = WCallCommand.Media(CallMediaType.Video, enable = !call.videoEnabled) },
+    toggleAudio = { chatModel.callCommand.add(WCallCommand.Media(CallMediaType.Audio, enable = !call.audioEnabled)) },
+    toggleVideo = { chatModel.callCommand.add(WCallCommand.Media(CallMediaType.Video, enable = !call.videoEnabled)) },
     toggleSound = {
       var call = chatModel.activeCall.value
       if (call != null) {
@@ -215,7 +219,7 @@ private fun ActiveCallOverlay(call: Call, chatModel: ChatModel, audioViaBluetoot
         setCallSound(call.soundSpeaker, audioViaBluetooth)
       }
     },
-    flipCamera = { chatModel.callCommand.value = WCallCommand.Camera(call.localCamera.flipped) }
+    flipCamera = { chatModel.callCommand.add(WCallCommand.Camera(call.localCamera.flipped)) }
   )
 }
 
@@ -442,7 +446,7 @@ private fun DisabledBackgroundCallsButton() {
 //}
 
 @Composable
-fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessage) -> Unit) {
+fun WebRTCView(callCommand: SnapshotStateList<WCallCommand?>, onResponse: (WVAPIMessage) -> Unit) {
   val scope = rememberCoroutineScope()
   val webView = remember { mutableStateOf<WebView?>(null) }
   val permissionsState = rememberMultiplePermissionsState(
@@ -473,13 +477,12 @@ fun WebRTCView(callCommand: MutableState<WCallCommand?>, onResponse: (WVAPIMessa
       webView.value = null
     }
   }
-  LaunchedEffect(callCommand.value, webView.value) {
-    val cmd = callCommand.value
+  LaunchedEffect(callCommand.firstOrNull(), webView.value) {
+    val cmd = callCommand.removeFirstOrNull()
     val wv = webView.value
     if (cmd != null && wv != null) {
       Log.d(TAG, "WebRTCView LaunchedEffect executing $cmd")
       processCommand(wv, cmd)
-      callCommand.value = null
     }
   }
   val assetLoader = WebViewAssetLoader.Builder()
