@@ -144,6 +144,7 @@ data RemoteResponse
 
 data RemoteError
   = REInvalid -- failed to parse RemoteCommand or RemoteResponse
+  | REUnexpected -- unexpected response
   | RENoChatResponse -- returned on timeout, the client would re-send the request
   | RENoFile
   | REHTTP2 String
