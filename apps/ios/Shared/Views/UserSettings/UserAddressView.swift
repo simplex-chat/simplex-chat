@@ -190,7 +190,7 @@ struct UserAddressView: View {
 
     @ViewBuilder private func existingAddressView(_ userAddress: UserContactLink) -> some View {
         Section {
-            MutableQRCode(uri: Binding.constant(userAddress.connReqContact))
+            MutableQRCode(uri: Binding.constant(simplexChatLink(userAddress.connReqContact)))
             shareQRCodeButton(userAddress)
             if MFMailComposeViewController.canSendMail() {
                 shareViaEmailButton(userAddress)

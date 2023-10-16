@@ -31,7 +31,7 @@ struct CreateSimpleXAddress: View {
                         Spacer()
 
                         if let userAddress = m.userAddress {
-                            QRCode(uri: userAddress.connReqContact)
+                            SimpleXLinkQRCode(uri: userAddress.connReqContact)
                                 .frame(maxHeight: g.size.width)
                             shareQRCodeButton(userAddress)
                                 .frame(maxWidth: .infinity)

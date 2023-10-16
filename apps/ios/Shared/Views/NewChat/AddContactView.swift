@@ -21,7 +21,7 @@ struct AddContactView: View {
             List {
                 Section {
                     if connReqInvitation != "" {
-                        QRCode(uri: connReqInvitation)
+                        SimpleXLinkQRCode(uri: connReqInvitation)
                     } else {
                         ProgressView()
                             .progressViewStyle(.circular)

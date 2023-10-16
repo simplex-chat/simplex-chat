@@ -61,7 +61,7 @@ struct ContactConnectionInfo: View {
 
                     if contactConnection.initiated,
                        let connReqInv = contactConnection.connReqInv {
-                        QRCode(uri: connReqInv)
+                        SimpleXLinkQRCode(uri: connReqInv)
                         incognitoEnabled()
                         shareLinkButton(connReqInv)
                         oneTimeLinkLearnMoreButton()

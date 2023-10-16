@@ -168,7 +168,7 @@ struct ChatInfoView: View {
 
                 if let contactLink = contact.contactLink {
                     Section {
-                        QRCode(uri: contactLink)
+                        SimpleXLinkQRCode(uri: contactLink)
                         Button {
                             showShareSheet(items: [contactLink])
                         } label: {
