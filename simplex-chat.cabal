@@ -127,6 +127,7 @@ library
       Simplex.Chat.Protocol
       Simplex.Chat.Remote
       Simplex.Chat.Remote.Discovery
+      Simplex.Chat.Remote.Protocol
       Simplex.Chat.Remote.Types
       Simplex.Chat.Store
       Simplex.Chat.Store.Connections

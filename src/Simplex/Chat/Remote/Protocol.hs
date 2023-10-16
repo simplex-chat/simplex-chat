@@ -3,67 +3,73 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Simplex.Chat.Remote.Protocol where
 
-import Control.Monad.Except (ExceptT)
-import Data.Aeson (FromJSON, ToJSON)
+import Control.Monad.Except
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
-import Data.Int (Int64)
+import qualified Data.ByteString.Char8 as B
 import Data.Text (Text)
-import GHC.Generics (Generic)
-import Simplex.Chat.Controller (ChatResponse, RemoteHostError)
-import Simplex.Chat.Remote.Types (RemoteHostId)
-import Simplex.Chat.Store.Remote (getRemoteHost)
+import Data.Word (Word32)
+import Simplex.Chat.Controller (ChatResponse)
+import Simplex.Chat.Remote.Types (RemoteHost (..), RemoteHostId)
+import Simplex.Messaging.Crypto.File (CryptoFile)
+import Simplex.Messaging.Parsers (dropPrefix, enumJSON)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError)
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Messaging.Util (liftEitherError)
 
 data RemoteHostClient = RemoteHostClient
-  { remoteHostId :: RemoteHostId
-  , storePath :: FilePath
-  , http :: HTTP2Client
-  , transcodeSwift :: J.Value -> J.Value
+  { remoteHostId :: RemoteHostId,
+    encoding :: PlatformEncoding,
+    deviceName :: Text,
+    storePath :: FilePath,
+    httpClient :: HTTP2Client
   }
 
-createRemoteHostClient :: RemoteHostId -> ExceptT RemoteHostError m RemoteHostClient
-createRemoteHostClient remoteHostId = do
-  rh <- withStore' $ \db -> getRemoteHost db remoteHostId
-  ourName <- getDeviceName
-  http <- connectHttpClient rh
-  theirHello <- sendHello http RemoteHello{encoding = localEncoding, displayName = ourName}
-  pure
-    RemoteHostClient
-      { remoteHostId
-      , storePath = rh.storePath
-      , http = http
-      , transcodeSwift = shouldConvert localEncoding (encoding theirHello)
-      }
+createRemoteHostClient :: RemoteHost -> Text -> ExceptT RemoteError IO RemoteHostClient
+createRemoteHostClient rh@RemoteHost {remoteHostId, storePath} localDeviceName = do
+  c <- connectRemoteClient
+  -- TODO this should fail if remote encoding is Kotlin and local is Swift
+  RemoteHello {encoding, deviceName} <- sendHello c localDeviceName
+  pure (c :: RemoteHostClient) {encoding, deviceName}
+  where
+    connectRemoteClient :: ExceptT RemoteError IO RemoteHostClient
+    connectRemoteClient = do
+      -- httpClient <- _
+      pure
+        RemoteHostClient
+          { remoteHostId,
+            encoding = localEncoding,
+            deviceName = "",
+            storePath,
+            httpClient = undefined
+          }
 
-convertHttp2RHError :: RemoteHostError -> ExceptT HTTP2ClientError m RemoteHello -> ExceptT RemoteHostError m RemoteHello
-convertHttp2RHError tag = _
+liftHTTP2 :: IO (Either HTTP2ClientError a) -> ExceptT RemoteError IO a
+liftHTTP2 = liftEitherError $ REHTTP2 . show
 
-getDeviceName :: ExceptT RemoteHostError m Text
-getDeviceName = _
-
-shouldConvert :: PlatformEncoding -> PlatformEncoding -> J.Value -> J.Value
-shouldConvert PEKotlin PEKotlin = id
-shouldConvert PESwift PESwift = id
-shouldConvert PESwift PEKotlin = owsf2tagged
-shouldConvert PEKotlin PESwift = _
+convertJSON :: PlatformEncoding -> PlatformEncoding -> J.Value -> J.Value
+convertJSON _remote@PEKotlin _local@PEKotlin = id
+convertJSON PESwift PESwift = id
+convertJSON PESwift PEKotlin = undefined -- owsf2tagged move here?
+convertJSON PEKotlin PESwift = undefined -- unsupported
 
 -- Initial query to coordinate codec etc.
-sendHello :: HTTP2Client -> RemoteHello -> ExceptT HTTP2ClientError m RemoteHello
-sendHello http ours = convertHttp2RHError "Hello" $ httpRequest http ours
+sendHello :: RemoteHostClient -> Text -> ExceptT RemoteError IO RemoteHello
+sendHello c localDeviceName = undefined -- sendRemoteCommand c RCHello Nothing
 
-remoteSend :: RemoteHostClient -> ByteString -> ExceptT RemoteHostError m ChatResponse
-remoteSend RemoteHostClient{http} cmd = convertHttp2RHError "Send" . httpRequest http $ RReqSend (safeDecodeUtf8 cmd)
+remoteSend :: RemoteHostClient -> ByteString -> ExceptT RemoteError IO ChatResponse
+remoteSend c cmd = undefined -- sendRemoteCommand c (RCSend $ B.unpack cmd) Nothing
 
-remoteRecv :: RemoteHostClient -> ExceptT RemoteHostError m ChatResponse
-remoteRecv RemoteHostClient{http} = convertHttp2RHError "Recv" . httpRequest http RReqRecv
+remoteRecv :: RemoteHostClient -> Int -> ExceptT RemoteError IO ChatResponse
+remoteRecv c wait = undefined -- sendRemoteCommand c (RCRecv wait) Nothing
 
-httpRequest :: (J.ToJSON req, J.FromJSON res) => HTTP2Client -> req -> ExceptT HTTP2ClientError m res
-httpRequest = _
+sendRemoteCommand :: RemoteHostClient -> RemoteCommand -> Maybe FilePath -> ExceptT RemoteError IO (RemoteResponse, Maybe FilePath)
+sendRemoteCommand RemoteHostClient {httpClient} cmd filePath_ = liftHTTP2 $ undefined
 
 {- TODO:
 \* Encode request
@@ -71,8 +77,8 @@ httpRequest = _
 \* Stream body into a JSON parser (parsing errors)
 -}
 
-remoteStoreFile :: RemoteHostClient -> FilePath -> ExceptT RemoteHostError m ()
-remoteStoreFile = _
+remoteStoreFile :: RemoteHostClient -> FilePath -> Maybe Bool -> ExceptT RemoteError IO CryptoFile
+remoteStoreFile c localPath encrypt = undefined
 
 {- TODO:
 \* Get necessary info from FS
@@ -80,8 +86,13 @@ remoteStoreFile = _
 \* Stream body as `len(json) <> json <> fileBody`
 -}
 
-remoteFetchFile :: RemoteHostClient -> UserId -> FileId -> ExceptT RemoteHostError m ()
-remoteFetchFile = _
+-- TODO this should work differently for CLI and UI clients
+-- CLI - potentially, create new unique names and report them as created
+-- UI - always use the same names and report error if file already exists
+-- alternatively, CLI should also use a fixed folder for remote session
+-- Possibly, path in the database should be optional and CLI commands should allow configuring it per session or use temp or download folder
+remoteGetFile :: RemoteHostClient -> FilePath -> ExceptT RemoteError IO (Maybe FilePath)
+remoteGetFile c remotePath = undefined
 
 {- TODO:
   * Encode request to locate the file
@@ -95,16 +106,16 @@ Can't be a part of the 'RemoteRequest' sum as the sum encoding types needs to be
 Also, must be used exactly once.
 -}
 data RemoteHello = RemoteHello
-  { encoding :: PlatformEncoding
-  , displayName :: Text
+  { encoding :: PlatformEncoding,
+    deviceName :: Text
   }
-  deriving (Show, Generic, FromJSON, ToJSON)
+  deriving (Show)
 
 -- TODO: put into a proper place
 data PlatformEncoding
   = PESwift
   | PEKotlin
-  deriving (Show, Generic, FromJSON, ToJSON) -- XXX: Not an UI type, no platform codecs needed
+  deriving (Show)
 
 localEncoding :: PlatformEncoding
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -115,23 +126,28 @@ localEncoding = PEKotlin
 
 -- * Transport-level wrappers
 
-data RemoteRequest
-  = RReqSend Text
-  | RReqRecv
-  | RReqStore RemoteStoreFile
-  | RReqFetch RemoteFetchFile
-  deriving (Show, Generic, FromJSON, ToJSON)
+data RemoteCommand
+  = RCHello {deviceName :: Text}
+  | RCSend {command :: String} -- TODO maybe ChatCommand here?
+  | RCRecv {wait :: Int} -- this wait should be less than HTTP timeout
+  -- local file encryption is determined by the host, but can be overridden for videos
+  | RCStoreFile {encrypt :: Maybe Bool}
+  | RCGetFile {filePath :: FilePath}
+  deriving (Show)
 
-data RemoteFetchFile = RemoteFetchFile
-  { userId :: Int64
-  , fileId :: Int64
-  }
-  deriving (Show, Generic, FromJSON, ToJSON)
+data RemoteResponse
+  = RRHello {encoding :: PlatformEncoding, deviceName :: Text}
+  | RRChatResponse {chatResponse :: ChatResponse}
+  | RRFileStored {fileSource :: CryptoFile}
+  | RRFile {fileSize :: Word32}
+  | RRError {error :: RemoteError}
 
-data RemoteStoreFile = RemoteStoreFile
-  { todo'fileMetadata :: FilePath
-  }
-  deriving (Show, Generic, FromJSON, ToJSON)
+data RemoteError
+  = REInvalid -- failed to parse RemoteCommand or RemoteResponse
+  | RENoChatResponse -- returned on timeout, the client would re-send the request
+  | RENoFile
+  | REHTTP2 String
 
--- XXX: No need for a separate sum wrapper for response.
--- Response are all generic types and their parser is known at the request call site (`remoteSend` etc.)
+$(JQ.deriveJSON (enumJSON $ dropPrefix "PE") ''PlatformEncoding)
+
+$(JQ.deriveJSON J.defaultOptions ''RemoteHello)
