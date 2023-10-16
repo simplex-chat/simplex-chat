@@ -99,7 +99,7 @@ func sharedProfileInfo(_ incognito: Bool) -> Text {
 
 func shareLinkButton(_ connReqInvitation: String) -> some View {
     Button {
-        showShareSheet(items: [connReqInvitation])
+        showShareSheet(items: [simplexChatLink(connReqInvitation)])
     } label: {
         settingsRow("square.and.arrow.up") {
             Text("Share 1-time link")

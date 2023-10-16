@@ -170,7 +170,7 @@ struct ChatInfoView: View {
                     Section {
                         SimpleXLinkQRCode(uri: contactLink)
                         Button {
-                            showShareSheet(items: [contactLink])
+                            showShareSheet(items: [simplexChatLink(contactLink)])
                         } label: {
                             Label("Share address", systemImage: "square.and.arrow.up")
                         }

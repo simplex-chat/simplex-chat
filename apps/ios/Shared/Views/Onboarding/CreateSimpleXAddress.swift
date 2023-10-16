@@ -126,7 +126,7 @@ struct CreateSimpleXAddress: View {
 
     private func shareQRCodeButton(_ userAddress: UserContactLink) -> some View {
         Button {
-            showShareSheet(items: [userAddress.connReqContact])
+            showShareSheet(items: [simplexChatLink(userAddress.connReqContact)])
         } label: {
             Label("Share", systemImage: "square.and.arrow.up")
         }

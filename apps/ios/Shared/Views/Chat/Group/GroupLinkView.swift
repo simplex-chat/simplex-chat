@@ -43,7 +43,7 @@ struct GroupLinkView: View {
                     .frame(height: 36)
                     SimpleXLinkQRCode(uri: groupLink)
                     Button {
-                        showShareSheet(items: [groupLink])
+                        showShareSheet(items: [simplexChatLink(groupLink)])
                     } label: {
                         Label("Share link", systemImage: "square.and.arrow.up")
                     }
