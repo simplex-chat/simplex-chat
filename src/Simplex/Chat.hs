@@ -5745,11 +5745,11 @@ chatCommandP =
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* char_ '@' <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
-      "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> simplexCReqUriP),
-      "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> ((Just <$> simplexCReqUriP) <|> A.takeByteString $> Nothing)),
+      "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> strP),
+      "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
       "/_connect " *> (APIAddContact <$> A.decimal <*> incognitoOnOffP),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
-      ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> simplexCReqUriP) <|> A.takeByteString $> Nothing)),
+      ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       SendMessage <$> chatNameP <* A.space <*> msgTextP,
       "@#" *> (SendMemberContactMessage <$> displayName <* A.space <* char_ '@' <*> displayName <* A.space <*> msgTextP),
@@ -5933,18 +5933,10 @@ chatCommandP =
     srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
     toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
     char_ = optional . A.char
-    simplexCReqUriP :: Parser AConnectionRequestUri
-    simplexCReqUriP = do
-      cReqUri <- strP
-      case cReqUri of
-        ACR SCMInvitation (CRInvitationUri crData e2e) ->
-          pure $ ACR SCMInvitation (CRInvitationUri crData {crScheme = CRSSimplex} e2e)
-        ACR SCMContact (CRContactUri crData) ->
-          pure $ ACR SCMContact (CRContactUri crData {crScheme = CRSSimplex})
 
 adminContactReq :: ConnReqContact
 adminContactReq =
-  either error id $ strDecode "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
+  either error id $ strDecode "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
 
 timeItToView :: ChatMonad' m => String -> m a -> m a
 timeItToView s action = do
