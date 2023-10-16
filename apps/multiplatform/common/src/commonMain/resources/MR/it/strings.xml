@@ -820,7 +820,7 @@
     <string name="network_option_protocol_timeout">Scadenza del protocollo</string>
     <string name="receiving_via">Ricezione via</string>
     <string name="network_options_reset_to_defaults">Ripristina i predefiniti</string>
-    <string name="network_options_revert">Annulla</string>
+    <string name="network_options_revert">Ripristina</string>
     <string name="network_options_save">Salva</string>
     <string name="save_group_profile">Salva il profilo del gruppo</string>
     <string name="network_option_seconds_label">sec</string>
