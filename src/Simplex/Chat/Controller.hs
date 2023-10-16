@@ -72,7 +72,6 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), Cor
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, liftEitherError, tryAllErrors, (<$$>))
 import Simplex.Messaging.Version
 import System.IO (Handle)
@@ -1147,7 +1146,7 @@ data RemoteHostError
   | RHTimeout -- ^ A discovery or a remote operation has timed out
   | RHDisconnected {reason :: Text} -- ^ A session disconnected by a host
   | RHConnectionLost {reason :: Text} -- ^ A session disconnected due to transport issues
-  | RHClientError RemoteError
+  | RHClientError RemoteClientError
   deriving (Show, Exception, Generic)
 
 instance FromJSON RemoteHostError where
@@ -1156,22 +1155,6 @@ instance FromJSON RemoteHostError where
 instance ToJSON RemoteHostError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RH"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RH"
-
-data RemoteError
-  = REInvalid -- ^ failed to parse RemoteCommand or RemoteResponse
-  | REUnexpected -- ^ unexpected response
-  -- | RENoChatResponse -- returned on timeout, the client would re-send the request
-  -- RE: doesn't look like an exceptional situation/error, but also distorts consumer into sorting through exceptions pattern where a traversal would work
-  | RENoFile
-  | REHTTP2 String
-  deriving (Show, Exception, Generic)
-
-instance FromJSON RemoteError where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RE"
-
-instance ToJSON RemoteError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RE"
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteCtrlError
@@ -1206,22 +1189,6 @@ instance FromJSON ArchiveError where
 instance ToJSON ArchiveError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "AE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "AE"
-
-data RemoteHostSession
-  = RemoteHostSessionConnecting
-      { setupAsync :: Async ()
-      }
-  | RemoteHostSessionStarted
-      { remoteHostClient :: RemoteHostClient
-      }
-
-data RemoteHostClient = RemoteHostClient
-  { remoteHostId :: RemoteHostId,
-    encoding :: PlatformEncoding,
-    deviceName :: Text,
-    storePath :: FilePath,
-    httpClient :: HTTP2Client
-  }
 
 data RemoteCtrlSession = RemoteCtrlSession
   { -- | Host (mobile) side of transport to process remote commands and forward notifications

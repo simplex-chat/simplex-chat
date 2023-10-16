@@ -387,7 +387,7 @@ execChatCommand rh s = do
   case parseChatCommand s of
     Left e -> pure $ chatCmdError u e
     Right cmd -> case rh of
-      Just remoteHostId | allowRemoteCommand cmd -> execRemoteCommand u remoteHostId (s, cmd)
+      Just remoteHostId | allowRemoteCommand cmd -> execRemoteCommand u remoteHostId s
       _ -> execChatCommand_ u cmd
 
 execChatCommand' :: ChatMonad' m => ChatCommand -> m ChatResponse
@@ -396,8 +396,8 @@ execChatCommand' cmd = asks currentUser >>= readTVarIO >>= (`execChatCommand_` c
 execChatCommand_ :: ChatMonad' m => Maybe User -> ChatCommand -> m ChatResponse
 execChatCommand_ u cmd = either (CRChatCmdError u) id <$> runExceptT (processChatCommand cmd)
 
-execRemoteCommand :: ChatMonad' m => Maybe User -> RemoteHostId -> (ByteString, ChatCommand) -> m ChatResponse
-execRemoteCommand u rhId scmd = either (CRChatCmdError u) id <$> runExceptT (getRemoteHostSession rhId >>= (`processRemoteCommand` scmd))
+execRemoteCommand :: ChatMonad' m => Maybe User -> RemoteHostId -> ByteString -> m ChatResponse
+execRemoteCommand u rhId s = either (CRChatCmdError u) id <$> runExceptT (getRemoteHostSession rhId >>= \rh -> processRemoteCommand rhId rh s)
 
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace

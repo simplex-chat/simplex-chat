@@ -76,22 +76,31 @@ startRemoteHost rhId = do
         Just _ -> closeRemoteHostSession rhId >> toView (CRRemoteHostStopped rhId)
     run :: ChatMonad m => RemoteHost -> TVar Bool -> m ()
     run rh finished  = do
+      credentials <- genSessionCredentials rh
+      httpClient <- liftHTTP2 $ Discovery.announceRevHTTP2 fingerprint credentials $ unliftIO u (cleanup finished)
       -- block until some client is connected or an error happens
       rcName <- chatReadVar localDeviceName
-      remoteHostClient <- liftRemoteHostError rhId $ createRemoteHostClient rh rcName
+      remoteHostClient <- liftRH rhId $ createRemoteHostClient rh rcName
       -- update session state
       chatModifyVar remoteHostSessions $ M.insert rhId RemoteHostSessionStarted {remoteHostClient}
       chatWriteVar currentRemoteHost $ Just rhId
       -- set up message polling
       oq <- asks outputQ
       let toViewRemote = atomically . writeTBQueue oq . (Nothing,Just rhId,)
-      pollRemote finished remoteHostClient $ handleFileResponse remoteHostClient >=> toViewRemote
+      pollRemote rhId finished remoteHostClient $ handleFileResponse remoteHostClient >=> toViewRemote
 
-pollRemote :: ChatMonad m => TVar Bool -> RemoteHostClient -> (ChatResponse -> m ()) -> m ()
-pollRemote finished rhc action = loop `catchChatError` \e -> action (CRChatError Nothing e) >> loop
+genSessionCredentials :: RemoteHost -> IO TLS.Credentials
+genSessionCredentials RemoteHost {caKey, caCert} = do
+  sessionCreds <- genCredentials (Just parent) (0, 24) "Session"
+  pure . tlsCredentials $ sessionCreds :| [parent]
+  where
+    parent = (C.signatureKeyPair caKey, caCert)
+
+pollRemote :: ChatMonad m => RemoteHostId -> TVar Bool -> RemoteHostClient -> (ChatResponse -> m ()) -> m ()
+pollRemote rhId finished rhc action = loop `catchChatError` \e -> action (CRChatError Nothing e) >> loop
   where
     loop = do
-      liftRemoteHostError rhc.remoteHostId (remoteRecv rhc pollTimeout) >>= mapM_ action
+      liftRH rhId (remoteRecv rhc pollTimeout) >>= mapM_ action
       readTVarIO finished >>= (`unless` loop)
     pollTimeout = 1000000
 
@@ -111,7 +120,7 @@ handleRcvFileComplete rhc remoteUser f@CIFile {fileId} =
     Nothing -> pure Nothing -- do not autoload files unless a store is available
     Just baseDir -> do
       let remoteFileId = (remoteUser, fileId) -- XXX: matching CRRcvFileComplete, for now
-      localPath <- liftRemoteHostError rhc.remoteHostId $ remoteGetFile rhc baseDir remoteFileId
+      localPath <- liftRH rhId $ remoteGetFile rhc baseDir remoteFileId
       pure $ Just (f :: CIFile 'MDRcv) {fileName = localPath}
 
 closeRemoteHostSession :: ChatMonad m => RemoteHostId -> m ()
@@ -166,10 +175,10 @@ deleteRemoteHost rhId = do
     Nothing -> logWarn "Local file store not available while deleting remote host"
   withStore' (`deleteRemoteHostRecord` rhId)
 
-processRemoteCommand :: ChatMonad m => RemoteHostSession -> (ByteString, ChatCommand) -> m ChatResponse
-processRemoteCommand RemoteHostSessionConnecting {} _ = pure $ chatCmdError Nothing "remote command sent before session started"
-processRemoteCommand RemoteHostSessionStarted {remoteHostClient=rhc@RemoteHostClient {remoteHostId}} (s, cmd) =
-  liftRemoteHostError remoteHostId $ uploadFile cmd >>= remoteSend rhc
+processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostSession -> (ByteString, ChatCommand) -> m ChatResponse
+processRemoteCommand _ RemoteHostSessionConnecting {} _ = pure $ chatCmdError Nothing "remote command sent before session started"
+processRemoteCommand remoteHostId RemoteHostSessionStarted {remoteHostClient = rhc} (s, cmd) =
+  liftRH remoteHostId $ uploadFile cmd >>= remoteSend rhc
   where
     uploadFile = \case
       -- TODO APISendMessage should only be used with host path already, and UI has to upload file first.
@@ -190,8 +199,8 @@ processRemoteCommand RemoteHostSessionStarted {remoteHostClient=rhc@RemoteHostCl
       _ -> pure s
     -- fileCmd cmdPfx cn hostPath = utf8String $ unwords [cmdPfx, chatNameStr cn, hostPath]
 
-liftRemoteHostError :: (MonadIO m, MonadError ChatError m) => RemoteHostId -> ExceptT RemoteError IO a -> m a
-liftRemoteHostError rhId = liftError (ChatErrorRemoteHost rhId . RHClientError)
+liftRH :: (MonadIO m, MonadError ChatError m) => RemoteHostId -> ExceptT RemoteClientError IO a -> m a
+liftRH rhId = liftError (ChatErrorRemoteHost rhId . RHClientError)
 
 -- -- TODO command/response pattern, remove REST conventions
 -- processControllerRequest :: forall m. ChatMonad m => (ByteString -> m ChatResponse) -> HTTP2.HTTP2Request -> m ()

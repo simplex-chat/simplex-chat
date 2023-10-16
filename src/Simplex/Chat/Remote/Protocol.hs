@@ -19,8 +19,8 @@ import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
 import Data.Text (Text)
 import Data.Word (Word32)
-import Simplex.Chat.Controller (ChatResponse, RemoteError (..), RemoteHostClient (..))
-import Simplex.Chat.Remote.Types (PlatformEncoding (..), RemoteHost (..), RemoteHostId, localEncoding)
+import Simplex.Chat.Controller (ChatResponse)
+import Simplex.Chat.Remote.Types
 import Simplex.Messaging.Crypto.File (CryptoFile)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError, closeHTTP2Client)
@@ -29,37 +29,17 @@ import Simplex.Messaging.Util (catchAllErrors, liftEitherError)
 import Simplex.Chat.Types (User)
 import UnliftIO
 
-createRemoteHostClient :: RemoteHost -> Text -> ExceptT RemoteError IO RemoteHostClient
-createRemoteHostClient RemoteHost {remoteHostId, storePath} localDeviceName = do
-  c <- connectRemoteClient
+createRemoteHostClient :: HTTP2Client -> Text -> ExceptT RemoteClientError IO RemoteHostClient
+createRemoteHostClient httpClient localDeviceName = do
   -- TODO this should fail if remote encoding is Kotlin and local is Swift
-  RemoteHello {encoding, deviceName} <- sendHello c localDeviceName
-  pure (c :: RemoteHostClient) {encoding, deviceName}
-  where
-    connectRemoteClient :: ExceptT RemoteError IO RemoteHostClient
-    connectRemoteClient = do
-      -- httpClient <- _
-      pure
-        RemoteHostClient
-          { remoteHostId,
-            encoding = localEncoding,
-            deviceName = "",
-            storePath,
-            httpClient = undefined
-          }
-
--- genSessionCredentials :: RemoteHost -> IO TLS.Credentials
--- genSessionCredentials RemoteHost {caKey, caCert} = do
---   sessionCreds <- genCredentials (Just parent) (0, 24) "Session"
---   pure . tlsCredentials $ sessionCreds :| [parent]
---   where
---     parent = (C.signatureKeyPair caKey, caCert)
+  RemoteHello {encoding, deviceName} <- sendHello httpClient localDeviceName
+  pure RemoteHostClient {encoding, remoteDeviceName = deviceName, httpClient}
 
 closeRemoteHostClient :: MonadIO m => RemoteHostClient -> m ()
 closeRemoteHostClient RemoteHostClient {httpClient} = liftIO $ closeHTTP2Client httpClient
 
-liftHTTP2 :: IO (Either HTTP2ClientError a) -> ExceptT RemoteError IO a
-liftHTTP2 = liftEitherError $ REHTTP2 . show
+liftHTTP2 :: IO (Either HTTP2ClientError a) -> ExceptT RemoteClientError IO a
+liftHTTP2 = liftEitherError $ RCEHTTP2 . show
 
 convertJSON :: PlatformEncoding -> PlatformEncoding -> J.Value -> J.Value
 convertJSON _remote@PEKotlin _local@PEKotlin = id
@@ -68,16 +48,16 @@ convertJSON PESwift PEKotlin = undefined -- owsf2tagged move here?
 convertJSON PEKotlin PESwift = undefined -- unsupported
 
 -- Initial query to coordinate codec etc.
-sendHello :: RemoteHostClient -> Text -> ExceptT RemoteError IO RemoteHello
+sendHello :: HTTP2Client -> Text -> ExceptT RemoteClientError IO RemoteHello
 sendHello c localDeviceName = undefined -- sendRemoteCommand c RCHello {deviceName = localDeviceName} Nothing
 
-remoteSend :: RemoteHostClient -> ByteString -> ExceptT RemoteError IO ChatResponse
+remoteSend :: RemoteHostClient -> ByteString -> ExceptT RemoteClientError IO ChatResponse
 remoteSend c cmd = undefined -- sendRemoteCommand c RCSend {command = decodeUtf8 cmd} Nothing
 
-remoteRecv :: RemoteHostClient -> Int -> ExceptT RemoteError IO (Maybe ChatResponse)
+remoteRecv :: RemoteHostClient -> Int -> ExceptT RemoteClientError IO (Maybe ChatResponse)
 remoteRecv c wait = undefined -- sendRemoteCommand c RCRecv {wait} Nothing
 
-sendRemoteCommand :: RemoteHostClient -> RemoteCommand -> Maybe FilePath -> ExceptT RemoteError IO (RemoteResponse, Maybe FilePath)
+sendRemoteCommand :: RemoteHostClient -> RemoteCommand -> Maybe FilePath -> ExceptT RemoteClientError IO (RemoteResponse, Maybe FilePath)
 sendRemoteCommand RemoteHostClient {httpClient} cmd filePath_ = liftHTTP2 $ undefined
 
 {- TODO:
@@ -86,7 +66,7 @@ sendRemoteCommand RemoteHostClient {httpClient} cmd filePath_ = liftHTTP2 $ unde
 \* Stream body into a JSON parser (parsing errors)
 -}
 
-remoteStoreFile :: RemoteHostClient -> FilePath -> Maybe Bool -> ExceptT RemoteError IO CryptoFile
+remoteStoreFile :: RemoteHostClient -> FilePath -> Maybe Bool -> ExceptT RemoteClientError IO CryptoFile
 remoteStoreFile c localPath encrypt = undefined -- sendRemoteCommand c RCStoreFile {encrypt} (Just localPath)
 
 {- TODO:
@@ -100,10 +80,8 @@ remoteStoreFile c localPath encrypt = undefined -- sendRemoteCommand c RCStoreFi
 -- UI - always use the same names and report error if file already exists
 -- alternatively, CLI should also use a fixed folder for remote session
 -- Possibly, path in the database should be optional and CLI commands should allow configuring it per session or use temp or download folder
-remoteGetFile :: RemoteHostClient -> FilePath -> RemoteFileId -> ExceptT RemoteError IO FilePath
-remoteGetFile c baseDir rfId = undefined
-
-type RemoteFileId = (User, Int64) -- XXX: matching CRRcvFileComplete, for now
+remoteGetFile :: RemoteHostClient -> FilePath -> ExceptT RemoteClientError IO FilePath
+remoteGetFile c baseDir = undefined
 
 -- processControllerRequest :: forall m. ChatMonad m => (ByteString -> m ChatResponse) -> HTTP2.HTTP2Request -> m ()
 processControllerRequest execChatCommand HTTP2Request {request, reqBody, sendResponse} = undefined
@@ -133,8 +111,7 @@ data RemoteHello = RemoteHello
 -- * Transport-level wrappers
 
 data RemoteCommand
-  = RCHello {deviceName :: Text}
-  | RCSend {command :: Text} -- TODO maybe ChatCommand here?
+  = RCSend {command :: Text} -- TODO maybe ChatCommand here?
   | RCRecv {wait :: Int} -- this wait should be less than HTTP timeout
   -- local file encryption is determined by the host, but can be overridden for videos
   | RCStoreFile {encrypt :: Maybe Bool}
@@ -142,11 +119,12 @@ data RemoteCommand
   deriving (Show)
 
 data RemoteResponse
-  = RRHello {encoding :: PlatformEncoding, deviceName :: Text}
-  | RRChatResponse {chatResponse :: ChatResponse}
+  = RRChatResponse {chatResponse :: ChatResponse}
   | RRFileStored {fileSource :: CryptoFile}
   | RRFile {fileSize :: Word32}
-  -- | RRError {error :: RemoteError} -- XXX: part of ExceptT already
+  | RRError {error :: RemoteServerError} -- XXX: part of ExceptT already
+
+data RemoteServerError = RemoteServerError
 
 -- XXX: extract to Transport.HTTP2 ?
 -- writeBodyToFile :: MonadUnliftIO m => FilePath -> HTTP2Body -> m ()
@@ -196,7 +174,5 @@ owsf2tagged = fst . convert
 
 pattern OwsfTag :: (JK.Key, J.Value)
 pattern OwsfTag = (SingleFieldJSONTag, J.Bool True)
-
-$(JQ.deriveJSON (enumJSON $ dropPrefix "PE") ''PlatformEncoding)
 
 $(JQ.deriveJSON J.defaultOptions ''RemoteHello)
