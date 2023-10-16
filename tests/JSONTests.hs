@@ -26,7 +26,7 @@ owsf2TaggedJSONTest = do
   activeUserExistsSwift `to` activeUserExistsTagged
   activeUserSwift `to` activeUserTagged
   chatStartedSwift `to` chatStartedTagged
-  contactSubSummarySwift `to` contactSubSummaryTagged
+  networkStatusesSwift `to` networkStatusesTagged
   memberSubSummarySwift `to` memberSubSummaryTagged
   userContactSubSummarySwift `to` userContactSubSummaryTagged
   pendingSubSummarySwift `to` pendingSubSummaryTagged

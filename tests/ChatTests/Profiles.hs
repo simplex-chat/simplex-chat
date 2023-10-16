@@ -599,6 +599,11 @@ testPlanAddressOkKnown =
       bob <## "contact address: known contact alice"
       bob <## "use @alice <message> to send messages"
 
+      let cLinkSchema2 = linkAnotherSchema cLink
+      bob ##> ("/_connect plan 1 " <> cLinkSchema2)
+      bob <## "contact address: known contact alice"
+      bob <## "use @alice <message> to send messages"
+
       bob ##> ("/c " <> cLink)
       bob <## "contact address: known contact alice"
       bob <## "use @alice <message> to send messages"
@@ -612,11 +617,15 @@ testPlanAddressOwn tmp =
     alice ##> ("/_connect plan 1 " <> cLink)
     alice <## "contact address: own address"
 
+    let cLinkSchema2 = linkAnotherSchema cLink
+    alice ##> ("/_connect plan 1 " <> cLinkSchema2)
+    alice <## "contact address: own address"
+
     alice ##> ("/c " <> cLink)
     alice <## "connection request sent!"
     alice <## "alice_1 (Alice) wants to connect to you!"
     alice <## "to accept: /ac alice_1"
-    alice <## ("to reject: /rc alice_1 (the sender will NOT be notified)")
+    alice <## "to reject: /rc alice_1 (the sender will NOT be notified)"
     alice @@@ [("<@alice_1", ""), (":2","")]
     alice ##> "/ac alice_1"
     alice <## "alice_1 (Alice): accepting contact request..."
@@ -651,8 +660,17 @@ testPlanAddressConnecting tmp = do
     getContactLink alice True
   withNewTestChat tmp "bob" bobProfile $ \bob -> do
     threadDelay 100000
+
     bob ##> ("/c " <> cLink)
     bob <## "connection request sent!"
+
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: connecting, allowed to reconnect"
+
+    let cLinkSchema2 = linkAnotherSchema cLink
+    bob ##> ("/_connect plan 1 " <> cLinkSchema2)
+    bob <## "contact address: connecting, allowed to reconnect"
+
     threadDelay 100000
   withTestChat tmp "alice" $ \alice -> do
     alice <## "Your address is active! To show: /sa"
@@ -665,6 +683,10 @@ testPlanAddressConnecting tmp = do
     threadDelay 500000
     bob @@@ [("@alice", "")]
     bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: connecting to contact alice"
+
+    let cLinkSchema2 = linkAnotherSchema cLink
+    bob ##> ("/_connect plan 1 " <> cLinkSchema2)
     bob <## "contact address: connecting to contact alice"
 
     bob ##> ("/c " <> cLink)
@@ -701,6 +723,10 @@ testPlanAddressContactDeletedReconnected =
       bob ##> ("/_connect plan 1 " <> cLink)
       bob <## "contact address: ok to connect"
 
+      let cLinkSchema2 = linkAnotherSchema cLink
+      bob ##> ("/_connect plan 1 " <> cLinkSchema2)
+      bob <## "contact address: ok to connect"
+
       bob ##> ("/c " <> cLink)
       bob <## "connection request sent!"
       alice <## "bob (Bob) wants to connect to you!"
@@ -718,6 +744,10 @@ testPlanAddressContactDeletedReconnected =
       alice <# "bob> hey"
 
       bob ##> ("/_connect plan 1 " <> cLink)
+      bob <## "contact address: known contact alice_1"
+      bob <## "use @alice_1 <message> to send messages"
+
+      bob ##> ("/_connect plan 1 " <> cLinkSchema2)
       bob <## "contact address: known contact alice_1"
       bob <## "use @alice_1 <message> to send messages"
 

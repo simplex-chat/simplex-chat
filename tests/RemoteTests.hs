@@ -30,14 +30,13 @@ import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import System.FilePath (makeRelative, (</>))
 import Test.Hspec
 import UnliftIO
-import UnliftIO.Concurrent (threadDelay)
 import UnliftIO.Directory
 
 remoteTests :: SpecWith FilePath
-remoteTests = describe "Handshake" $ do
+remoteTests = fdescribe "Handshake" $ do
   it "generates usable credentials" genCredentialsTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
-  xit "connects desktop and mobile" remoteHandshakeTest
+  it "connects desktop and mobile" remoteHandshakeTest
   it "send messages via remote desktop" remoteCommandTest
 
 -- * Low-level TLS with ephemeral credentials
@@ -71,7 +70,7 @@ announceDiscoverHttp2Test _tmp = do
   controller <- async $ do
     traceM "    - Controller: starting"
     bracket
-      (Discovery.announceRevHTTP2 (putMVar finished ()) fingerprint credentials >>= either (fail . show) pure)
+      (Discovery.announceRevHTTP2 fingerprint credentials (putMVar finished ()) >>= either (fail . show) pure)
       closeHTTP2Client
       ( \http -> do
           traceM "    - Controller: got client"
@@ -111,39 +110,50 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   desktop <## "Remote hosts:"
   desktop <## "1. TODO" -- TODO host name probably should be Maybe, as when host is created there is no name yet
   desktop ##> "/start remote host 1"
-  desktop <## "remote host 1 started"
+  desktop <## "ok"
 
   mobile ##> "/start remote ctrl"
-  mobile <## "remote controller started"
+  mobile <## "ok"
   mobile <## "remote controller announced"
   mobile <## "connection code:"
   fingerprint' <- getTermLine mobile
   fingerprint' `shouldBe` fingerprint
   mobile ##> "/list remote ctrls"
   mobile <## "No remote controllers"
-  mobile ##> ("/register remote ctrl " <> fingerprint')
+  mobile ##> ("/register remote ctrl " <> fingerprint' <> " " <> "My desktop")
   mobile <## "remote controller 1 registered"
   mobile ##> "/list remote ctrls"
   mobile <## "Remote controllers:"
-  mobile <## "1. TODO"
+  mobile <## "1. My desktop"
   mobile ##> "/accept remote ctrl 1"
-  mobile <## "remote controller 1 accepted" -- alternative scenario: accepted before controller start
-  mobile <## "remote controller 1 connecting to TODO"
-  mobile <## "remote controller 1 connected, TODO"
+  mobile <## "ok" -- alternative scenario: accepted before controller start
+  mobile <## "remote controller 1 connecting to My desktop"
+  mobile <## "remote controller 1 connected, My desktop"
+
+  traceM "    - Session active"
+  desktop ##> "/list remote hosts"
+  desktop <## "Remote hosts:"
+  desktop <## "1. TODO (active)"
+  mobile ##> "/list remote ctrls"
+  mobile <## "Remote controllers:"
+  mobile <## "1. My desktop (active)"
+
+  traceM "    - Shutting desktop"
+  desktop ##> "/stop remote host 1"
+  desktop <## "ok"
+  desktop ##> "/delete remote host 1"
+  desktop <## "ok"
+  desktop ##> "/list remote hosts"
+  desktop <## "No remote hosts"
+
+  traceM "    - Shutting mobile"
   mobile ##> "/stop remote ctrl"
   mobile <## "ok"
   mobile <## "remote controller stopped"
   mobile ##> "/delete remote ctrl 1"
-  mobile <## "remote controller 1 deleted"
+  mobile <## "ok"
   mobile ##> "/list remote ctrls"
   mobile <## "No remote controllers"
-
-  desktop ##> "/stop remote host 1"
-  desktop <## "remote host 1 stopped"
-  desktop ##> "/delete remote host 1"
-  desktop <## "remote host 1 deleted"
-  desktop ##> "/list remote hosts"
-  desktop <## "No remote hosts"
 
 remoteCommandTest :: (HasCallStack) => FilePath -> IO ()
 remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
@@ -163,20 +173,20 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   fingerprint <- getTermLine desktop
 
   desktop ##> "/start remote host 1"
-  desktop <## "remote host 1 started"
+  desktop <## "ok"
 
   mobile ##> "/start remote ctrl"
-  mobile <## "remote controller started"
+  mobile <## "ok"
   mobile <## "remote controller announced"
   mobile <## "connection code:"
   fingerprint' <- getTermLine mobile
   fingerprint' `shouldBe` fingerprint
-  mobile ##> ("/register remote ctrl " <> fingerprint')
+  mobile ##> ("/register remote ctrl " <> fingerprint' <> " " <> "My desktop")
   mobile <## "remote controller 1 registered"
   mobile ##> "/accept remote ctrl 1"
-  mobile <## "remote controller 1 accepted" -- alternative scenario: accepted before controller start
-  mobile <## "remote controller 1 connecting to TODO"
-  mobile <## "remote controller 1 connected, TODO"
+  mobile <## "ok" -- alternative scenario: accepted before controller start
+  mobile <## "remote controller 1 connecting to My desktop"
+  mobile <## "remote controller 1 connected, My desktop"
   desktop <## "remote host 1 connected"
 
   traceM "    - exchanging contacts"

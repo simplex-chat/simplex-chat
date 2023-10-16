@@ -9,12 +9,14 @@ import chat.simplex.common.helpers.APPLICATION_ID
 import chat.simplex.common.helpers.requiresIgnoringBattery
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
+import chat.simplex.common.model.ChatModel.updatingChatsMutex
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.call.RcvCallInvitation
 import com.jakewharton.processphoenix.ProcessPhoenix
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.withLock
 import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -52,21 +54,23 @@ class SimplexApp: Application(), LifecycleEventObserver {
         Lifecycle.Event.ON_START -> {
           isAppOnForeground = true
           if (chatModel.chatRunning.value == true) {
-            kotlin.runCatching {
-              val currentUserId = chatModel.currentUser.value?.userId
-              val chats = ArrayList(chatController.apiGetChats())
-              /** Active user can be changed in background while [ChatController.apiGetChats] is executing */
-              if (chatModel.currentUser.value?.userId == currentUserId) {
-                val currentChatId = chatModel.chatId.value
-                val oldStats = if (currentChatId != null) chatModel.getChat(currentChatId)?.chatStats else null
-                if (oldStats != null) {
-                  val indexOfCurrentChat = chats.indexOfFirst { it.id == currentChatId }
-                  /** Pass old chatStats because unreadCounter can be changed already while [ChatController.apiGetChats] is executing */
-                  if (indexOfCurrentChat >= 0) chats[indexOfCurrentChat] = chats[indexOfCurrentChat].copy(chatStats = oldStats)
+            updatingChatsMutex.withLock {
+              kotlin.runCatching {
+                val currentUserId = chatModel.currentUser.value?.userId
+                val chats = ArrayList(chatController.apiGetChats())
+                /** Active user can be changed in background while [ChatController.apiGetChats] is executing */
+                if (chatModel.currentUser.value?.userId == currentUserId) {
+                  val currentChatId = chatModel.chatId.value
+                  val oldStats = if (currentChatId != null) chatModel.getChat(currentChatId)?.chatStats else null
+                  if (oldStats != null) {
+                    val indexOfCurrentChat = chats.indexOfFirst { it.id == currentChatId }
+                    /** Pass old chatStats because unreadCounter can be changed already while [ChatController.apiGetChats] is executing */
+                    if (indexOfCurrentChat >= 0) chats[indexOfCurrentChat] = chats[indexOfCurrentChat].copy(chatStats = oldStats)
+                  }
+                  chatModel.updateChats(chats)
                 }
-                chatModel.updateChats(chats)
-              }
-            }.onFailure { Log.e(TAG, it.stackTraceToString()) }
+              }.onFailure { Log.e(TAG, it.stackTraceToString()) }
+            }
           }
         }
         Lifecycle.Event.ON_RESUME -> {

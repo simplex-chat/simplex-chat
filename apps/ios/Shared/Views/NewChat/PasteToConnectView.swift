@@ -14,6 +14,8 @@ struct PasteToConnectView: View {
     @State private var connectionLink: String = ""
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
     @FocusState private var linkEditorFocused: Bool
+    @State private var alert: PlanAndConnectAlert?
+    @State private var sheet: PlanAndConnectActionSheet?
 
     var body: some View {
         List {
@@ -57,6 +59,8 @@ struct PasteToConnectView: View {
                 + Text("You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button.")
             }
         }
+        .alert(item: $alert) { a in planAndConnectAlert(a, dismiss: true) }
+        .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: true) }
     }
 
     private func linkEditor() -> some View {
@@ -83,13 +87,13 @@ struct PasteToConnectView: View {
 
     private func connect() {
         let link = connectionLink.trimmingCharacters(in: .whitespaces)
-        if let crData = parseLinkQueryData(link),
-           checkCRDataGroup(crData) {
-            dismiss()
-            AlertManager.shared.showAlert(groupLinkAlert(link, incognito: incognitoDefault))
-        } else {
-            connectViaLink(link, dismiss: dismiss, incognito: incognitoDefault)
-        }
+        planAndConnect(
+            link,
+            showAlert: { alert = $0 },
+            showActionSheet: { sheet = $0 },
+            dismiss: true,
+            incognito: incognitoDefault
+        )
     }
 }
 

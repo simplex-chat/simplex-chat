@@ -36,6 +36,7 @@ import Data.Constraint (Dict (..))
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty)
 import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import Data.String
 import Data.Text (Text)
 import Data.Time (NominalDiffTime, UTCTime)
@@ -130,7 +131,8 @@ data ChatConfig = ChatConfig
     initialCleanupManagerDelay :: Int64,
     cleanupManagerInterval :: NominalDiffTime,
     cleanupManagerStepDelay :: Int64,
-    ciExpirationInterval :: Int64 -- microseconds
+    ciExpirationInterval :: Int64, -- microseconds
+    coreApi :: Bool
   }
 
 data DefaultAgentServers = DefaultAgentServers
@@ -171,11 +173,13 @@ data ChatController = ChatController
     idsDrg :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, Maybe RemoteHostId, ChatResponse),
+    connNetworkStatuses :: TMap AgentConnId NetworkStatus,
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
     sndFiles :: TVar (Map Int64 Handle),
     rcvFiles :: TVar (Map Int64 Handle),
     currentCalls :: TMap ContactId Call,
+    localDeviceName :: TVar Text,
     remoteHostSessions :: TMap RemoteHostId RemoteHostSession, -- All the active remote hosts
     remoteCtrlSession :: TVar (Maybe RemoteCtrlSession), -- Supervisor process for hosted controllers
     config :: ChatConfig,
@@ -185,6 +189,7 @@ data ChatController = ChatController
     cleanupManagerAsync :: TVar (Maybe (Async ())),
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
+    encryptLocalFiles :: TVar Bool,
     userXFTPFileConfig :: TVar (Maybe XFTPFileConfig),
     tempDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
@@ -230,6 +235,7 @@ data ChatCommand
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
   | APISetXFTPConfig (Maybe XFTPFileConfig)
+  | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
   | APIExportArchive ArchiveConfig
   | ExportArchive
@@ -263,6 +269,7 @@ data ChatCommand
   | APIEndCall ContactId
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
+  | APIGetNetworkStatuses
   | APIUpdateProfile UserId Profile
   | APISetContactPrefs ContactId Preferences
   | APISetContactAlias ContactId LocalAlias
@@ -401,8 +408,8 @@ data ChatCommand
   | ForwardFile ChatName FileTransferId
   | ForwardImage ChatName FileTransferId
   | SendFileDescription ChatName FilePath
-  | ReceiveFile {fileId :: FileTransferId, storeEncrypted :: Bool, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
-  | SetFileToReceive {fileId :: FileTransferId, storeEncrypted :: Bool}
+  | ReceiveFile {fileId :: FileTransferId, storeEncrypted :: Maybe Bool, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
+  | SetFileToReceive {fileId :: FileTransferId, storeEncrypted :: Maybe Bool}
   | CancelFile FileTransferId
   | FileStatus FileTransferId
   | ShowProfile -- UserId (not used in UI)
@@ -415,14 +422,15 @@ data ChatCommand
   | SetUserTimedMessages Bool -- UserId (not used in UI)
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)
+  | SetLocalDeviceName Text
   | CreateRemoteHost -- ^ Configure a new remote host
   | ListRemoteHosts
   | StartRemoteHost RemoteHostId -- ^ Start and announce a remote host
   -- | SwitchRemoteHost (Maybe RemoteHostId) -- ^ Switch current remote host
   | StopRemoteHost RemoteHostId -- ^ Shut down a running session
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
-  | RegisterRemoteCtrl RemoteCtrlOOB -- ^ Register OOB data for satellite discovery and handshake
   | StartRemoteCtrl -- ^ Start listening for announcements from all registered controllers
+  | RegisterRemoteCtrl RemoteCtrlOOB -- ^ Register OOB data for satellite discovery and handshake
   | ListRemoteCtrls
   | AcceptRemoteCtrl RemoteCtrlId -- ^ Accept discovered data and store confirmation
   | RejectRemoteCtrl RemoteCtrlId -- ^ Reject and blacklist discovered data
@@ -576,6 +584,8 @@ data ChatResponse
   | CRContactSubError {user :: User, contact :: Contact, chatError :: ChatError}
   | CRContactSubSummary {user :: User, contactSubscriptions :: [ContactSubStatus]}
   | CRUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]}
+  | CRNetworkStatus {networkStatus :: NetworkStatus, connections :: [AgentConnId]}
+  | CRNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]}
   | CRHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CRGroupInvitation {user :: User, groupInfo :: GroupInfo}
@@ -623,23 +633,17 @@ data ChatResponse
   | CRNtfMessages {user_ :: Maybe User, connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNewContactConnection {user :: User, connection :: PendingContactConnection}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
-  | CRRemoteHostCreated {remoteHostId :: RemoteHostId, oobData :: RemoteCtrlOOB}
-  | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]} -- XXX: RemoteHostInfo is mostly concerned with session setup
-  | CRRemoteHostStarted {remoteHostId :: RemoteHostId}
-  | CRRemoteHostConnected {remoteHostId :: RemoteHostId}
+  | CRRemoteHostCreated {remoteHost :: RemoteHostInfo}
+  | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
+  | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
-  | CRRemoteHostDeleted {remoteHostId :: RemoteHostId}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
-  | CRRemoteCtrlRegistered {remoteCtrlId :: RemoteCtrlId}
-  | CRRemoteCtrlStarted
+  | CRRemoteCtrlRegistered {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- unregistered fingerprint, needs confirmation
-  | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrl} -- registered fingerprint, may connect
-  | CRRemoteCtrlAccepted {remoteCtrlId :: RemoteCtrlId}
-  | CRRemoteCtrlRejected {remoteCtrlId :: RemoteCtrlId}
-  | CRRemoteCtrlConnecting {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
-  | CRRemoteCtrlConnected {remoteCtrlId :: RemoteCtrlId, displayName :: Text}
+  | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo} -- registered fingerprint, may connect
+  | CRRemoteCtrlConnecting {remoteCtrl :: RemoteCtrlInfo}
+  | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlStopped
-  | CRRemoteCtrlDeleted {remoteCtrlId :: RemoteCtrlId}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
@@ -661,21 +665,15 @@ allowRemoteEvent :: ChatResponse -> Bool
 allowRemoteEvent = \case
   CRRemoteHostCreated {} -> False
   CRRemoteHostList {} -> False
-  CRRemoteHostStarted {} -> False
   CRRemoteHostConnected {} -> False
   CRRemoteHostStopped {} -> False
-  CRRemoteHostDeleted {} -> False
   CRRemoteCtrlList {} -> False
   CRRemoteCtrlRegistered {} -> False
-  CRRemoteCtrlStarted {} -> False
   CRRemoteCtrlAnnounce {} -> False
   CRRemoteCtrlFound {} -> False
-  CRRemoteCtrlAccepted {} -> False
-  CRRemoteCtrlRejected {} -> False
   CRRemoteCtrlConnecting {} -> False
   CRRemoteCtrlConnected {} -> False
   CRRemoteCtrlStopped {} -> False
-  CRRemoteCtrlDeleted {} -> False
   _ -> True
 
 logResponseToFile :: ChatResponse -> Bool
@@ -696,32 +694,6 @@ logResponseToFile = \case
   CRChatError {} -> True
   CRMessageError {} -> True
   _ -> False
-
-data RemoteCtrlOOB = RemoteCtrlOOB
-  { caFingerprint :: C.KeyHash
-  }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON RemoteCtrlOOB where toEncoding = J.genericToEncoding J.defaultOptions
-
-data RemoteHostInfo = RemoteHostInfo
-  { remoteHostId :: RemoteHostId,
-    storePath :: FilePath,
-    displayName :: Text,
-    sessionActive :: Bool
-  }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON RemoteHostInfo where toEncoding = J.genericToEncoding J.defaultOptions
-
-data RemoteCtrlInfo = RemoteCtrlInfo
-  { remoteCtrlId :: RemoteCtrlId,
-    displayName :: Text,
-    sessionActive :: Bool
-  }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON RemoteCtrlInfo where toEncoding = J.genericToEncoding J.defaultOptions
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
@@ -753,7 +725,8 @@ instance ToJSON InvitationLinkPlan where
 data ContactAddressPlan
   = CAPOk
   | CAPOwnLink
-  | CAPConnecting {contact :: Contact}
+  | CAPConnectingConfirmReconnect
+  | CAPConnectingProhibit {contact :: Contact}
   | CAPKnown {contact :: Contact}
   deriving (Show, Generic)
 
@@ -767,7 +740,8 @@ instance ToJSON ContactAddressPlan where
 data GroupLinkPlan
   = GLPOk
   | GLPOwnLink {groupInfo :: GroupInfo}
-  | GLPConnecting {groupInfo_ :: Maybe GroupInfo}
+  | GLPConnectingConfirmReconnect
+  | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
   | GLPKnown {groupInfo :: GroupInfo}
   deriving (Show, Generic)
 
@@ -778,8 +752,8 @@ instance ToJSON GroupLinkPlan where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "GLP"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "GLP"
 
-connectionPlanOk :: ConnectionPlan -> Bool
-connectionPlanOk = \case
+connectionPlanProceed :: ConnectionPlan -> Bool
+connectionPlanProceed = \case
   CPInvitationLink ilp -> case ilp of
     ILPOk -> True
     ILPOwnLink -> True
@@ -787,10 +761,12 @@ connectionPlanOk = \case
   CPContactAddress cap -> case cap of
     CAPOk -> True
     CAPOwnLink -> True
+    CAPConnectingConfirmReconnect -> True
     _ -> False
   CPGroupLink glp -> case glp of
     GLPOk -> True
     GLPOwnLink _ -> True
+    GLPConnectingConfirmReconnect -> True
     _ -> False
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
@@ -1188,8 +1164,7 @@ instance ToJSON RemoteHostError where
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteCtrlError
-  = RCEMissing {remoteCtrlId :: RemoteCtrlId} -- ^ No remote session matches this identifier
-  | RCEInactive -- ^ No session is running
+  = RCEInactive -- ^ No session is running
   | RCEBusy -- ^ A session is already running
   | RCETimeout -- ^ Remote operation timed out
   | RCEDisconnected {remoteCtrlId :: RemoteCtrlId, reason :: Text} -- ^ A session disconnected by a controller
@@ -1197,6 +1172,9 @@ data RemoteCtrlError
   | RCECertificateExpired {remoteCtrlId :: RemoteCtrlId} -- ^ A connection or CA certificate in a chain have bad validity period
   | RCECertificateUntrusted {remoteCtrlId :: RemoteCtrlId} -- ^ TLS is unable to validate certificate chain presented for a connection
   | RCEBadFingerprint -- ^ Bad fingerprint data provided in OOB
+  | RCEHTTP2Error {http2Error :: String}
+  | RCEHTTP2RespStatus {statusCode :: Maybe Int} -- TODO remove
+  | RCEInvalidResponse {responseError :: String}
   deriving (Show, Exception, Generic)
 
 instance FromJSON RemoteCtrlError where
@@ -1229,7 +1207,7 @@ data RemoteHostSession
       }
 
 data RemoteCtrlSession = RemoteCtrlSession
-  { -- | Server side of transport to process remote commands and forward notifications
+  { -- | Host (mobile) side of transport to process remote commands and forward notifications
     discoverer :: Async (),
     supervisor :: Async (),
     hostServer :: Maybe (Async ()),
@@ -1254,6 +1232,9 @@ chatModifyVar :: ChatMonad' m => (ChatController -> TVar a) -> (a -> a) -> m ()
 chatModifyVar f newValue = asks f >>= atomically . (`modifyTVar'` newValue)
 {-# INLINE chatModifyVar #-}
 
+setContactNetworkStatus :: ChatMonad' m => Contact -> NetworkStatus -> m ()
+setContactNetworkStatus ct = chatModifyVar connNetworkStatuses . M.insert (contactAgentConnId ct)
+
 tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
 tryChatError = tryAllErrors mkChatError
 {-# INLINE tryChatError #-}
@@ -1266,12 +1247,19 @@ chatFinally :: ChatMonad m => m a -> m b -> m a
 chatFinally = allFinally mkChatError
 {-# INLINE chatFinally #-}
 
+onChatError :: ChatMonad m => m a -> m b -> m a
+a `onChatError` onErr = a `catchChatError` \e -> onErr >> throwError e
+{-# INLINE onChatError #-}
+
 mkChatError :: SomeException -> ChatError
 mkChatError = ChatError . CEException . show
 {-# INLINE mkChatError #-}
 
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError
+
+throwChatError :: ChatMonad m => ChatErrorType -> m a
+throwChatError = throwError . ChatError
 
 -- | Emit local events.
 toView :: ChatMonad' m => ChatResponse -> m ()

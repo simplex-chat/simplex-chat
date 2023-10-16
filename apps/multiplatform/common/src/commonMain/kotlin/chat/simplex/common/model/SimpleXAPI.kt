@@ -4,6 +4,7 @@ import chat.simplex.common.views.helpers.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import chat.simplex.common.model.ChatModel.updatingChatsMutex
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -16,6 +17,7 @@ import com.charleskorn.kaml.YamlConfiguration
 import chat.simplex.res.MR
 import com.russhwolf.settings.Settings
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlinx.serialization.*
@@ -164,6 +166,7 @@ class AppPreferences {
   val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)
   val lastMigratedVersionCode = mkIntPreference(SHARED_PREFS_LAST_MIGRATED_VERSION_CODE, 0)
   val customDisappearingMessageTime = mkIntPreference(SHARED_PREFS_CUSTOM_DISAPPEARING_MESSAGE_TIME, 300)
+  val deviceNameForRemoteAccess = mkStrPreference(SHARED_PREFS_DEVICE_NAME_FOR_REMOTE_ACCESS, "Desktop")
 
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
@@ -304,6 +307,7 @@ class AppPreferences {
     private const val SHARED_PREFS_WHATS_NEW_VERSION = "WhatsNewVersion"
     private const val SHARED_PREFS_LAST_MIGRATED_VERSION_CODE = "LastMigratedVersionCode"
     private const val SHARED_PREFS_CUSTOM_DISAPPEARING_MESSAGE_TIME = "CustomDisappearingMessageTime"
+    private const val SHARED_PREFS_DEVICE_NAME_FOR_REMOTE_ACCESS = "DeviceNameForRemoteAccess"
   }
 }
 
@@ -336,10 +340,16 @@ object ChatController {
       apiSetTempFolder(coreTmpDir.absolutePath)
       apiSetFilesFolder(appFilesDir.absolutePath)
       apiSetXFTPConfig(getXFTPCfg())
+      apiSetEncryptLocalFiles(appPrefs.privacyEncryptLocalFiles.get())
       val justStarted = apiStartChat()
       val users = listUsers()
       chatModel.users.clear()
       chatModel.users.addAll(users)
+      val remoteHosts = listRemoteHosts()
+      if (remoteHosts != null) {
+        chatModel.remoteHosts.clear()
+        chatModel.remoteHosts.addAll(remoteHosts)
+      }
       if (justStarted) {
         chatModel.currentUser.value = user
         chatModel.userCreated.value = true
@@ -349,8 +359,10 @@ object ChatController {
         startReceiver()
         Log.d(TAG, "startChat: started")
       } else {
-        val chats = apiGetChats()
-        chatModel.updateChats(chats)
+        updatingChatsMutex.withLock {
+          val chats = apiGetChats()
+          chatModel.updateChats(chats)
+        }
         Log.d(TAG, "startChat: running")
       }
     } catch (e: Error) {
@@ -384,8 +396,10 @@ object ChatController {
   suspend fun getUserChatData() {
     chatModel.userAddress.value = apiGetUserAddress()
     chatModel.chatItemTTL.value = getChatItemTTL()
-    val chats = apiGetChats()
-    chatModel.updateChats(chats)
+    updatingChatsMutex.withLock {
+      val chats = apiGetChats()
+      chatModel.updateChats(chats)
+    }
   }
 
   private fun startReceiver() {
@@ -426,15 +440,16 @@ object ChatController {
     }
   }
 
-  private fun recvMsg(ctrl: ChatCtrl): CR? {
+  private fun recvMsg(ctrl: ChatCtrl): APIResponse? {
     val json = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
     return if (json == "") {
       null
     } else {
-      val r = APIResponse.decodeStr(json).resp
+      val apiResp = APIResponse.decodeStr(json)
+      val r = apiResp.resp
       Log.d(TAG, "chatRecvMsg: ${r.responseType}")
       if (r is CR.Response || r is CR.Invalid) Log.d(TAG, "chatRecvMsg json: $json")
-      r
+      apiResp
     }
   }
 
@@ -552,6 +567,8 @@ object ChatController {
     if (r is CR.CmdOk) return
     throw Error("apiSetXFTPConfig bad response: ${r.responseType} ${r.details}")
   }
+
+  suspend fun apiSetEncryptLocalFiles(enable: Boolean) = sendCommandOkResp(CC.ApiSetEncryptLocalFiles(enable))
 
   suspend fun apiExportArchive(config: ArchiveConfig) {
     val r = sendCmd(CC.ApiExportArchive(config))
@@ -1076,6 +1093,13 @@ object ChatController {
     return r is CR.CmdOk
   }
 
+  suspend fun apiGetNetworkStatuses(): List<ConnNetworkStatus>? {
+    val r = sendCmd(CC.ApiGetNetworkStatuses())
+    if (r is CR.NetworkStatuses) return r.networkStatuses
+    Log.e(TAG, "apiGetNetworkStatuses bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiChatRead(type: ChatType, id: Long, range: CC.ItemRange): Boolean {
     val r = sendCmd(CC.ApiChatRead(type, id, range))
     if (r is CR.CmdOk) return true
@@ -1314,6 +1338,59 @@ object ChatController {
     }
   }
 
+  suspend fun setLocalDeviceName(displayName: String): Boolean = sendCommandOkResp(CC.SetLocalDeviceName(displayName))
+
+  suspend fun createRemoteHost(): RemoteHostInfo? {
+    val r = sendCmd(CC.CreateRemoteHost())
+    if (r is CR.RemoteHostCreated) return r.remoteHost
+    apiErrorAlert("createRemoteHost", generalGetString(MR.strings.error), r)
+    return null
+  }
+
+  suspend fun listRemoteHosts(): List<RemoteHostInfo>? {
+    val r = sendCmd(CC.ListRemoteHosts())
+    if (r is CR.RemoteHostList) return r.remoteHosts
+    apiErrorAlert("listRemoteHosts", generalGetString(MR.strings.error), r)
+    return null
+  }
+
+  suspend fun startRemoteHost(rhId: Long): Boolean = sendCommandOkResp(CC.StartRemoteHost(rhId))
+
+  suspend fun registerRemoteCtrl(oob: RemoteCtrlOOB): RemoteCtrlInfo? {
+    val r = sendCmd(CC.RegisterRemoteCtrl(oob))
+    if (r is CR.RemoteCtrlRegistered) return r.remoteCtrl
+    apiErrorAlert("registerRemoteCtrl", generalGetString(MR.strings.error), r)
+    return null
+  }
+
+  suspend fun listRemoteCtrls(): List<RemoteCtrlInfo>? {
+    val r = sendCmd(CC.ListRemoteCtrls())
+    if (r is CR.RemoteCtrlList) return r.remoteCtrls
+    apiErrorAlert("listRemoteCtrls", generalGetString(MR.strings.error), r)
+    return null
+  }
+
+  suspend fun stopRemoteHost(rhId: Long): Boolean = sendCommandOkResp(CC.StopRemoteHost(rhId))
+
+  suspend fun deleteRemoteHost(rhId: Long): Boolean = sendCommandOkResp(CC.DeleteRemoteHost(rhId))
+
+  suspend fun startRemoteCtrl(): Boolean = sendCommandOkResp(CC.StartRemoteCtrl())
+
+  suspend fun acceptRemoteCtrl(rcId: Long): Boolean = sendCommandOkResp(CC.AcceptRemoteCtrl(rcId))
+
+  suspend fun rejectRemoteCtrl(rcId: Long): Boolean = sendCommandOkResp(CC.RejectRemoteCtrl(rcId))
+
+  suspend fun stopRemoteCtrl(): Boolean = sendCommandOkResp(CC.StopRemoteCtrl())
+
+  suspend fun deleteRemoteCtrl(rcId: Long): Boolean = sendCommandOkResp(CC.DeleteRemoteCtrl(rcId))
+
+  private suspend fun sendCommandOkResp(cmd: CC): Boolean {
+    val r = sendCmd(cmd)
+    val ok = r is CR.CmdOk
+    if (!ok) apiErrorAlert(cmd.cmdType, generalGetString(MR.strings.error_alert_title), r)
+    return ok
+  }
+
   suspend fun apiGetVersion(): CoreVersionInfo? {
     val r = sendCmd(CC.ShowVersion())
     return if (r is CR.VersionInfo) {
@@ -1348,14 +1425,15 @@ object ChatController {
     }
   }
 
-  fun apiErrorAlert(method: String, title: String, r: CR) {
+  private fun apiErrorAlert(method: String, title: String, r: CR) {
     val errMsg = "${r.responseType}: ${r.details}"
     Log.e(TAG, "$method bad response: $errMsg")
     AlertManager.shared.showAlertMsg(title, errMsg)
   }
 
-  suspend fun processReceivedMsg(r: CR) {
+  private suspend fun processReceivedMsg(apiResp: APIResponse) {
     lastMsgReceivedTimestamp = System.currentTimeMillis()
+    val r = apiResp.resp
     chatModel.addTerminalItem(TerminalItem.resp(r))
     when (r) {
       is CR.NewContactConnection -> {
@@ -1419,12 +1497,6 @@ object ChatController {
       }
       is CR.ContactsSubscribed -> updateContactsStatus(r.contactRefs, NetworkStatus.Connected())
       is CR.ContactsDisconnected -> updateContactsStatus(r.contactRefs, NetworkStatus.Disconnected())
-      is CR.ContactSubError -> {
-        if (active(r.user)) {
-          chatModel.updateContact(r.contact)
-        }
-        processContactSubError(r.contact, r.chatError)
-      }
       is CR.ContactSubSummary -> {
         for (sub in r.contactSubscriptions) {
           if (active(r.user)) {
@@ -1436,6 +1508,16 @@ object ChatController {
           } else {
             processContactSubError(sub.contact, sub.contactError)
           }
+        }
+      }
+      is CR.NetworkStatusResp -> {
+        for (cId in r.connections) {
+          chatModel.networkStatuses[cId] = r.networkStatus
+        }
+      }
+      is CR.NetworkStatuses -> {
+        for (s in r.networkStatuses) {
+          chatModel.networkStatuses[s.agentConnId] = s.networkStatus
         }
       }
       is CR.NewChatItem -> {
@@ -1657,6 +1739,13 @@ object ChatController {
         chatModel.updateContactConnectionStats(r.contact, r.ratchetSyncProgress.connectionStats)
       is CR.GroupMemberRatchetSync ->
         chatModel.updateGroupMemberConnectionStats(r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
+      is CR.RemoteHostConnected -> {
+        // update
+        chatModel.connectingRemoteHost.value = r.remoteHost
+      }
+      is CR.RemoteHostStopped -> {
+        //
+      }
       else ->
         Log.d(TAG , "unsupported event: ${r.responseType}")
     }
@@ -1841,6 +1930,7 @@ sealed class CC {
   class SetTempFolder(val tempFolder: String): CC()
   class SetFilesFolder(val filesFolder: String): CC()
   class ApiSetXFTPConfig(val config: XFTPFileConfig?): CC()
+  class ApiSetEncryptLocalFiles(val enable: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
   class ApiImportArchive(val config: ArchiveConfig): CC()
   class ApiDeleteStorage: CC()
@@ -1909,19 +1999,21 @@ sealed class CC {
   class ApiSendCallExtraInfo(val contact: Contact, val extraInfo: WebRTCExtraInfo): CC()
   class ApiEndCall(val contact: Contact): CC()
   class ApiCallStatus(val contact: Contact, val callStatus: WebRTCCallStatus): CC()
+  class ApiGetNetworkStatuses(): CC()
   class ApiAcceptContact(val incognito: Boolean, val contactReqId: Long): CC()
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
   class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
-  class ReceiveFile(val fileId: Long, val encrypted: Boolean, val inline: Boolean?): CC()
+  class ReceiveFile(val fileId: Long, val encrypt: Boolean, val inline: Boolean?): CC()
   class CancelFile(val fileId: Long): CC()
+  class SetLocalDeviceName(val displayName: String): CC()
   class CreateRemoteHost(): CC()
   class ListRemoteHosts(): CC()
   class StartRemoteHost(val remoteHostId: Long): CC()
   class StopRemoteHost(val remoteHostId: Long): CC()
   class DeleteRemoteHost(val remoteHostId: Long): CC()
-  class RegisterRemoteCtrl(val remoteCtrlOOB: RemoteCtrlOOB): CC()
   class StartRemoteCtrl(): CC()
+  class RegisterRemoteCtrl(val remoteCtrlOOB: RemoteCtrlOOB): CC()
   class ListRemoteCtrls(): CC()
   class AcceptRemoteCtrl(val remoteCtrlId: Long): CC()
   class RejectRemoteCtrl(val remoteCtrlId: Long): CC()
@@ -1957,6 +2049,7 @@ sealed class CC {
     is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
     is ApiSetXFTPConfig -> if (config != null) "/_xftp on ${json.encodeToString(config)}" else "/_xftp off"
+    is ApiSetEncryptLocalFiles -> "/_files_encrypt ${onOff(enable)}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
     is ApiImportArchive -> "/_db import ${json.encodeToString(config)}"
     is ApiDeleteStorage -> "/_db delete"
@@ -2030,17 +2123,22 @@ sealed class CC {
     is ApiSendCallExtraInfo -> "/_call extra @${contact.apiId} ${json.encodeToString(extraInfo)}"
     is ApiEndCall -> "/_call end @${contact.apiId}"
     is ApiCallStatus -> "/_call status @${contact.apiId} ${callStatus.value}"
+    is ApiGetNetworkStatuses -> "/_network_statuses"
     is ApiChatRead -> "/_read chat ${chatRef(type, id)} from=${range.from} to=${range.to}"
     is ApiChatUnread -> "/_unread chat ${chatRef(type, id)} ${onOff(unreadChat)}"
-    is ReceiveFile -> "/freceive $fileId encrypt=${onOff(encrypted)}" + (if (inline == null) "" else " inline=${onOff(inline)}")
+    is ReceiveFile ->
+      "/freceive $fileId" +
+          (if (encrypt == null) "" else " encrypt=${onOff(encrypt)}") +
+          (if (inline == null) "" else " inline=${onOff(inline)}")
     is CancelFile -> "/fcancel $fileId"
+    is SetLocalDeviceName -> "/set device name $displayName"
     is CreateRemoteHost -> "/create remote host"
     is ListRemoteHosts -> "/list remote hosts"
     is StartRemoteHost -> "/start remote host $remoteHostId"
     is StopRemoteHost -> "/stop remote host $remoteHostId"
     is DeleteRemoteHost -> "/delete remote host $remoteHostId"
     is StartRemoteCtrl -> "/start remote ctrl"
-    is RegisterRemoteCtrl -> "/register remote ctrl ${remoteCtrlOOB.caFingerprint}"
+    is RegisterRemoteCtrl -> "/register remote ctrl ${remoteCtrlOOB.fingerprint}"
     is AcceptRemoteCtrl -> "/accept remote ctrl $remoteCtrlId"
     is RejectRemoteCtrl -> "/reject remote ctrl $remoteCtrlId"
     is ListRemoteCtrls -> "/list remote ctrls"
@@ -2068,6 +2166,7 @@ sealed class CC {
     is SetTempFolder -> "setTempFolder"
     is SetFilesFolder -> "setFilesFolder"
     is ApiSetXFTPConfig -> "apiSetXFTPConfig"
+    is ApiSetEncryptLocalFiles -> "apiSetEncryptLocalFiles"
     is ApiExportArchive -> "apiExportArchive"
     is ApiImportArchive -> "apiImportArchive"
     is ApiDeleteStorage -> "apiDeleteStorage"
@@ -2138,17 +2237,19 @@ sealed class CC {
     is ApiSendCallExtraInfo -> "apiSendCallExtraInfo"
     is ApiEndCall -> "apiEndCall"
     is ApiCallStatus -> "apiCallStatus"
+    is ApiGetNetworkStatuses -> "apiGetNetworkStatuses"
     is ApiChatRead -> "apiChatRead"
     is ApiChatUnread -> "apiChatUnread"
     is ReceiveFile -> "receiveFile"
     is CancelFile -> "cancelFile"
+    is SetLocalDeviceName -> "setLocalDeviceName"
     is CreateRemoteHost -> "createRemoteHost"
     is ListRemoteHosts -> "listRemoteHosts"
     is StartRemoteHost -> "startRemoteHost"
     is StopRemoteHost -> "stopRemoteHost"
     is DeleteRemoteHost -> "deleteRemoteHost"
-    is RegisterRemoteCtrl -> "registerRemoteCtrl"
     is StartRemoteCtrl -> "startRemoteCtrl"
+    is RegisterRemoteCtrl -> "registerRemoteCtrl"
     is ListRemoteCtrls -> "listRemoteCtrls"
     is AcceptRemoteCtrl -> "acceptRemoteCtrl"
     is RejectRemoteCtrl -> "rejectRemoteCtrl"
@@ -3226,7 +3327,8 @@ data class RemoteCtrl (
 
 @Serializable
 data class RemoteCtrlOOB (
-  val caFingerprint: String
+  val fingerprint: String,
+  val displayName: String
 )
 
 @Serializable
@@ -3241,6 +3343,7 @@ data class RemoteHostInfo (
   val remoteHostId: Long,
   val storePath: String,
   val displayName: String,
+  val remoteCtrlOOB: RemoteCtrlOOB,
   val sessionActive: Boolean
 )
 
@@ -3257,7 +3360,7 @@ val yaml = Yaml(configuration = YamlConfiguration(
 ))
 
 @Serializable
-class APIResponse(val resp: CR, val corr: String? = null) {
+class APIResponse(val resp: CR, val remoteHostId: Long?, val corr: String? = null) {
   companion object {
     fun decodeStr(str: String): APIResponse {
       return try {
@@ -3267,48 +3370,35 @@ class APIResponse(val resp: CR, val corr: String? = null) {
           Log.d(TAG, e.localizedMessage ?: "")
           val data = json.parseToJsonElement(str).jsonObject
           val resp = data["resp"]!!.jsonObject
-          val type = resp["type"]?.jsonPrimitive?.content ?: "invalid"
+          val type = resp["type"]?.jsonPrimitive?.contentOrNull ?: "invalid"
+          val corr = data["corr"]?.toString()
+          val remoteHostId = data["remoteHostId"]?.jsonPrimitive?.longOrNull
           try {
             if (type == "apiChats") {
               val user: UserRef = json.decodeFromJsonElement(resp["user"]!!.jsonObject)
               val chats: List<Chat> = resp["chats"]!!.jsonArray.map {
                 parseChatData(it)
               }
-              return APIResponse(
-                resp = CR.ApiChats(user, chats),
-                corr = data["corr"]?.toString()
-              )
+              return APIResponse(CR.ApiChats(user, chats), remoteHostId, corr)
             } else if (type == "apiChat") {
               val user: UserRef = json.decodeFromJsonElement(resp["user"]!!.jsonObject)
               val chat = parseChatData(resp["chat"]!!)
-              return APIResponse(
-                resp = CR.ApiChat(user, chat),
-                corr = data["corr"]?.toString()
-              )
+              return APIResponse(CR.ApiChat(user, chat), remoteHostId, corr)
             } else if (type == "chatCmdError") {
               val userObject = resp["user_"]?.jsonObject
               val user = runCatching<UserRef?> { json.decodeFromJsonElement(userObject!!) }.getOrNull()
-              return APIResponse(
-                resp = CR.ChatCmdError(user, ChatError.ChatErrorInvalidJSON(json.encodeToString(resp["chatError"]))),
-                corr = data["corr"]?.toString()
-              )
+              return APIResponse(CR.ChatCmdError(user, ChatError.ChatErrorInvalidJSON(json.encodeToString(resp["chatError"]))), remoteHostId, corr)
             } else if (type == "chatError") {
               val userObject = resp["user_"]?.jsonObject
               val user = runCatching<UserRef?> { json.decodeFromJsonElement(userObject!!) }.getOrNull()
-              return APIResponse(
-                resp = CR.ChatRespError(user, ChatError.ChatErrorInvalidJSON(json.encodeToString(resp["chatError"]))),
-                corr = data["corr"]?.toString()
-              )
+              return APIResponse(CR.ChatRespError(user, ChatError.ChatErrorInvalidJSON(json.encodeToString(resp["chatError"]))), remoteHostId, corr)
             }
           } catch (e: Exception) {
             Log.e(TAG, "Error while parsing chat(s): " + e.stackTraceToString())
           }
-          APIResponse(
-            resp = CR.Response(type, json.encodeToString(data)),
-            corr = data["corr"]?.toString()
-          )
+          APIResponse(CR.Response(type, json.encodeToString(data)), remoteHostId, corr)
         } catch(e: Exception) {
-          APIResponse(CR.Invalid(str))
+          APIResponse(CR.Invalid(str), remoteHostId = null)
         }
       }
     }
@@ -3391,11 +3481,14 @@ sealed class CR {
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected(val user: UserRef): CR()
   @Serializable @SerialName("contactUpdated") class ContactUpdated(val user: UserRef, val toContact: Contact): CR()
+  // TODO remove below
   @Serializable @SerialName("contactsSubscribed") class ContactsSubscribed(val server: String, val contactRefs: List<ContactRef>): CR()
   @Serializable @SerialName("contactsDisconnected") class ContactsDisconnected(val server: String, val contactRefs: List<ContactRef>): CR()
-  @Serializable @SerialName("contactSubError") class ContactSubError(val user: UserRef, val contact: Contact, val chatError: ChatError): CR()
   @Serializable @SerialName("contactSubSummary") class ContactSubSummary(val user: UserRef, val contactSubscriptions: List<ContactSubStatus>): CR()
-  @Serializable @SerialName("groupSubscribed") class GroupSubscribed(val user: UserRef, val group: GroupInfo): CR()
+  // TODO remove above
+  @Serializable @SerialName("networkStatus") class NetworkStatusResp(val networkStatus: NetworkStatus, val connections: List<String>): CR()
+  @Serializable @SerialName("networkStatuses") class NetworkStatuses(val user_: UserRef?, val networkStatuses: List<ConnNetworkStatus>): CR()
+  @Serializable @SerialName("groupSubscribed") class GroupSubscribed(val user: UserRef, val group: GroupRef): CR()
   @Serializable @SerialName("memberSubErrors") class MemberSubErrors(val user: UserRef, val memberSubErrors: List<MemberSubError>): CR()
   @Serializable @SerialName("groupEmpty") class GroupEmpty(val user: UserRef, val group: GroupInfo): CR()
   @Serializable @SerialName("userContactLinkSubscribed") class UserContactLinkSubscribed: CR()
@@ -3460,30 +3553,24 @@ sealed class CR {
   @Serializable @SerialName("callEnded") class CallEnded(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("newContactConnection") class NewContactConnection(val user: UserRef, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val user: UserRef, val connection: PendingContactConnection): CR()
+  // remote events (desktop)
+  @Serializable @SerialName("remoteHostCreated") class RemoteHostCreated(val remoteHost: RemoteHostInfo): CR()
+  @Serializable @SerialName("remoteHostList") class RemoteHostList(val remoteHosts: List<RemoteHostInfo>): CR()
+  @Serializable @SerialName("remoteHostConnected") class RemoteHostConnected(val remoteHost: RemoteHostInfo): CR()
+  @Serializable @SerialName("remoteHostStopped") class RemoteHostStopped(val remoteHostId: Long): CR()
+  // remote events (mobile)
+  @Serializable @SerialName("remoteCtrlList") class RemoteCtrlList(val remoteCtrls: List<RemoteCtrlInfo>): CR()
+  @Serializable @SerialName("remoteCtrlRegistered") class RemoteCtrlRegistered(val remoteCtrl: RemoteCtrlInfo): CR()
+  @Serializable @SerialName("remoteCtrlAnnounce") class RemoteCtrlAnnounce(val fingerprint: String): CR()
+  @Serializable @SerialName("remoteCtrlFound") class RemoteCtrlFound(val remoteCtrl: RemoteCtrlInfo): CR()
+  @Serializable @SerialName("remoteCtrlConnecting") class RemoteCtrlConnecting(val remoteCtrl: RemoteCtrlInfo): CR()
+  @Serializable @SerialName("remoteCtrlConnected") class RemoteCtrlConnected(val remoteCtrl: RemoteCtrlInfo): CR()
+  @Serializable @SerialName("remoteCtrlStopped") class RemoteCtrlStopped(): CR()
   @Serializable @SerialName("versionInfo") class VersionInfo(val versionInfo: CoreVersionInfo, val chatMigrations: List<UpMigration>, val agentMigrations: List<UpMigration>): CR()
   @Serializable @SerialName("cmdOk") class CmdOk(val user: UserRef?): CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val user_: UserRef?, val chatError: ChatError): CR()
   @Serializable @SerialName("chatError") class ChatRespError(val user_: UserRef?, val chatError: ChatError): CR()
   @Serializable @SerialName("archiveImported") class ArchiveImported(val archiveErrors: List<ArchiveError>): CR()
-  // remote events (desktop)
-  @Serializable @SerialName("remoteHostCreated") class RemoteHostCreated(val remoteHostId: Long, val oobData: RemoteCtrlOOB): CR()
-  @Serializable @SerialName("remoteHostList") class RemoteHostList(val remoteHosts: List<RemoteHostInfo>): CR()
-  @Serializable @SerialName("remoteHostStarted") class RemoteHostStarted(val remoteHostId: Long): CR()
-  @Serializable @SerialName("remoteHostConnected") class RemoteHostConnected(val remoteHostId: Long): CR()
-  @Serializable @SerialName("remoteHostStopped") class RemoteHostStopped(val remoteHostId: Long): CR()
-  @Serializable @SerialName("remoteHostDeleted") class RemoteHostDeleted(val remoteHostId: Long): CR()
-  // remote events (mobile)
-  @Serializable @SerialName("remoteCtrlList") class RemoteCtrlList(val remoteCtrls: List<RemoteCtrlInfo>): CR()
-  @Serializable @SerialName("remoteCtrlRegistered") class RemoteCtrlRegistered(val remoteCtrlId: Long): CR()
-  @Serializable @SerialName("remoteCtrlStarted") class RemoteCtrlStarted(): CR()
-  @Serializable @SerialName("remoteCtrlAnnounce") class RemoteCtrlAnnounce(val fingerprint: String): CR()
-  @Serializable @SerialName("remoteCtrlFound") class RemoteCtrlFound(val remoteCtrl: RemoteCtrl): CR()
-  @Serializable @SerialName("remoteCtrlAccepted") class RemoteCtrlAccepted(val remoteCtrlId: Long): CR()
-  @Serializable @SerialName("remoteCtrlRejected") class RemoteCtrlRejected(val remoteCtrlId: Long): CR()
-  @Serializable @SerialName("remoteCtrlConnecting") class RemoteCtrlConnecting(val remoteCtrlId: Long, val displayName: String): CR()
-  @Serializable @SerialName("remoteCtrlConnected") class RemoteCtrlConnected(val remoteCtrlId: Long, val displayName: String): CR()
-  @Serializable @SerialName("remoteCtrlStopped") class RemoteCtrlStopped(): CR()
-  @Serializable @SerialName("remoteCtrlDeleted") class RemoteCtrlDeleted(val remoteCtrlId: Long): CR()
   // general
   @Serializable class Response(val type: String, val json: String): CR()
   @Serializable class Invalid(val str: String): CR()
@@ -3545,8 +3632,9 @@ sealed class CR {
     is ContactUpdated -> "contactUpdated"
     is ContactsSubscribed -> "contactsSubscribed"
     is ContactsDisconnected -> "contactsDisconnected"
-    is ContactSubError -> "contactSubError"
     is ContactSubSummary -> "contactSubSummary"
+    is NetworkStatusResp -> "networkStatus"
+    is NetworkStatuses -> "networkStatuses"
     is GroupSubscribed -> "groupSubscribed"
     is MemberSubErrors -> "memberSubErrors"
     is GroupEmpty -> "groupEmpty"
@@ -3608,28 +3696,22 @@ sealed class CR {
     is CallEnded -> "callEnded"
     is NewContactConnection -> "newContactConnection"
     is ContactConnectionDeleted -> "contactConnectionDeleted"
+    is RemoteHostCreated -> "remoteHostCreated"
+    is RemoteHostList -> "remoteHostList"
+    is RemoteHostConnected -> "remoteHostConnected"
+    is RemoteHostStopped -> "remoteHostStopped"
+    is RemoteCtrlList -> "remoteCtrlList"
+    is RemoteCtrlRegistered -> "remoteCtrlRegistered"
+    is RemoteCtrlAnnounce -> "remoteCtrlAnnounce"
+    is RemoteCtrlFound -> "remoteCtrlFound"
+    is RemoteCtrlConnecting -> "remoteCtrlConnecting"
+    is RemoteCtrlConnected -> "remoteCtrlConnected"
+    is RemoteCtrlStopped -> "remoteCtrlStopped"
     is VersionInfo -> "versionInfo"
     is CmdOk -> "cmdOk"
     is ChatCmdError -> "chatCmdError"
     is ChatRespError -> "chatError"
     is ArchiveImported -> "archiveImported"
-    is RemoteHostCreated -> "remoteHostCreated"
-    is RemoteHostList -> "remoteHostList"
-    is RemoteHostStarted -> "remoteHostStarted"
-    is RemoteHostConnected -> "remoteHostConnected"
-    is RemoteHostStopped -> "remoteHostStopped"
-    is RemoteHostDeleted -> "remoteHostDeleted"
-    is RemoteCtrlList -> "remoteCtrlList"
-    is RemoteCtrlRegistered -> "remoteCtrlRegistered"
-    is RemoteCtrlStarted -> "remoteCtrlStarted"
-    is RemoteCtrlAnnounce -> "remoteCtrlAnnounce"
-    is RemoteCtrlFound -> "remoteCtrlFound"
-    is RemoteCtrlAccepted -> "remoteCtrlAccepted"
-    is RemoteCtrlRejected -> "remoteCtrlRejected"
-    is RemoteCtrlConnecting -> "remoteCtrlConnecting"
-    is RemoteCtrlConnected -> "remoteCtrlConnected"
-    is RemoteCtrlStopped -> "remoteCtrlStopped"
-    is RemoteCtrlDeleted -> "remoteCtrlDeleted"
     is Response -> "* $type"
     is Invalid -> "* invalid json"
   }
@@ -3691,8 +3773,9 @@ sealed class CR {
     is ContactUpdated -> withUser(user, json.encodeToString(toContact))
     is ContactsSubscribed -> "server: $server\ncontacts:\n${json.encodeToString(contactRefs)}"
     is ContactsDisconnected -> "server: $server\ncontacts:\n${json.encodeToString(contactRefs)}"
-    is ContactSubError -> withUser(user, "error:\n${chatError.string}\ncontact:\n${json.encodeToString(contact)}")
     is ContactSubSummary -> withUser(user, json.encodeToString(contactSubscriptions))
+    is NetworkStatusResp -> "networkStatus $networkStatus\nconnections: $connections"
+    is NetworkStatuses -> withUser(user_, json.encodeToString(networkStatuses))
     is GroupSubscribed -> withUser(user, json.encodeToString(group))
     is MemberSubErrors -> withUser(user, json.encodeToString(memberSubErrors))
     is GroupEmpty -> withUser(user, json.encodeToString(group))
@@ -3754,6 +3837,17 @@ sealed class CR {
     is CallEnded -> withUser(user, "contact: ${contact.id}")
     is NewContactConnection -> withUser(user, json.encodeToString(connection))
     is ContactConnectionDeleted -> withUser(user, json.encodeToString(connection))
+    is RemoteHostCreated -> json.encodeToString(remoteHost)
+    is RemoteHostList -> json.encodeToString(remoteHosts)
+    is RemoteHostConnected -> json.encodeToString(remoteHost)
+    is RemoteHostStopped -> "remote host ID: $remoteHostId"
+    is RemoteCtrlList -> json.encodeToString(remoteCtrls)
+    is RemoteCtrlRegistered -> json.encodeToString(remoteCtrl)
+    is RemoteCtrlAnnounce -> "fingerprint: $fingerprint"
+    is RemoteCtrlFound -> json.encodeToString(remoteCtrl)
+    is RemoteCtrlConnecting -> json.encodeToString(remoteCtrl)
+    is RemoteCtrlConnected -> json.encodeToString(remoteCtrl)
+    is RemoteCtrlStopped -> noDetails()
     is VersionInfo -> "version ${json.encodeToString(versionInfo)}\n\n" +
         "chat migrations: ${json.encodeToString(chatMigrations.map { it.upName })}\n\n" +
         "agent migrations: ${json.encodeToString(agentMigrations.map { it.upName })}"
@@ -3761,23 +3855,6 @@ sealed class CR {
     is ChatCmdError -> withUser(user_, chatError.string)
     is ChatRespError -> withUser(user_, chatError.string)
     is ArchiveImported -> "${archiveErrors.map { it.string } }"
-    is RemoteHostCreated -> "remote host ID: $remoteHostId\noobData ${json.encodeToString(oobData)}"
-    is RemoteHostList -> "remote hosts: ${json.encodeToString(remoteHosts)}"
-    is RemoteHostStarted -> "remote host $remoteHostId"
-    is RemoteHostConnected -> "remote host ID: $remoteHostId"
-    is RemoteHostStopped -> "remote host ID: $remoteHostId"
-    is RemoteHostDeleted -> "remote host ID: $remoteHostId"
-    is RemoteCtrlList -> json.encodeToString(remoteCtrls)
-    is RemoteCtrlRegistered -> "remote ctrl ID: $remoteCtrlId"
-    is RemoteCtrlStarted -> ""
-    is RemoteCtrlAnnounce -> "fingerprint: $fingerprint"
-    is RemoteCtrlFound -> "remote ctrl: ${json.encodeToString(remoteCtrl)}"
-    is RemoteCtrlAccepted -> "remote ctrl ID: $remoteCtrlId"
-    is RemoteCtrlRejected -> "remote ctrl ID: $remoteCtrlId"
-    is RemoteCtrlConnecting -> "remote ctrl ID: $remoteCtrlId\nhost displayName: $displayName"
-    is RemoteCtrlConnected -> "remote ctrl ID: $remoteCtrlId\nhost displayName: $displayName"
-    is RemoteCtrlStopped -> ""
-    is RemoteCtrlDeleted -> "remote ctrl ID: $remoteCtrlId"
     is Response -> json
     is Invalid -> str
   }
@@ -3923,16 +4000,16 @@ sealed class ChatError {
     is ChatErrorAgent -> "agent ${agentError.string}"
     is ChatErrorStore -> "store ${storeError.string}"
     is ChatErrorDatabase -> "database ${databaseError.string}"
-    is ChatErrorRemoteCtrl -> "remoteCtrl ${remoteCtrlError.string}"
     is ChatErrorRemoteHost -> "remoteHost ${remoteHostError.string}"
+    is ChatErrorRemoteCtrl -> "remoteCtrl ${remoteCtrlError.string}"
     is ChatErrorInvalidJSON -> "invalid json ${json}"
   }
   @Serializable @SerialName("error") class ChatErrorChat(val errorType: ChatErrorType): ChatError()
   @Serializable @SerialName("errorAgent") class ChatErrorAgent(val agentError: AgentErrorType): ChatError()
   @Serializable @SerialName("errorStore") class ChatErrorStore(val storeError: StoreError): ChatError()
   @Serializable @SerialName("errorDatabase") class ChatErrorDatabase(val databaseError: DatabaseError): ChatError()
-  @Serializable @SerialName("errorRemoteCtrl") class ChatErrorRemoteCtrl(val remoteCtrlError: RemoteCtrlError): ChatError()
   @Serializable @SerialName("errorRemoteHost") class ChatErrorRemoteHost(val remoteHostError: RemoteHostError): ChatError()
+  @Serializable @SerialName("errorRemoteCtrl") class ChatErrorRemoteCtrl(val remoteCtrlError: RemoteCtrlError): ChatError()
   @Serializable @SerialName("invalidJSON") class ChatErrorInvalidJSON(val json: String): ChatError()
 }
 
@@ -4453,7 +4530,6 @@ sealed class RemoteHostError {
 @Serializable
 sealed class RemoteCtrlError {
   val string: String get() = when (this) {
-    is Missing -> "missing"
     is Inactive -> "inactive"
     is Busy -> "busy"
     is Timeout -> "timeout"
@@ -4463,7 +4539,6 @@ sealed class RemoteCtrlError {
     is CertificateUntrusted -> "certificateUntrusted"
     is BadFingerprint -> "badFingerprint"
   }
-  @Serializable @SerialName("missing") class Missing(val remoteCtrlId: Long): RemoteCtrlError()
   @Serializable @SerialName("inactive") object Inactive: RemoteCtrlError()
   @Serializable @SerialName("busy") object Busy: RemoteCtrlError()
   @Serializable @SerialName("timeout") object Timeout: RemoteCtrlError()
