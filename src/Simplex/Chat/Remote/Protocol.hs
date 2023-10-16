@@ -10,23 +10,22 @@
 module Simplex.Chat.Remote.Protocol where
 
 import Control.Monad.Except
-import Data.Int (Int64)
 import Data.Aeson ((.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Key as JK
 import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
+import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Word (Word32)
 import Simplex.Chat.Controller (ChatResponse)
 import Simplex.Chat.Remote.Types
 import Simplex.Messaging.Crypto.File (CryptoFile)
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
+import Simplex.Messaging.Parsers (pattern SingleFieldJSONTag, pattern TaggedObjectJSONTag, pattern TaggedObjectJSONData)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError, closeHTTP2Client)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
-import Simplex.Messaging.Util (catchAllErrors, liftEitherError)
-import Simplex.Chat.Types (User)
+import Simplex.Messaging.Util (liftEitherError, tshow)
 import UnliftIO
 
 createRemoteHostClient :: HTTP2Client -> Text -> ExceptT RemoteClientError IO RemoteHostClient
@@ -37,9 +36,6 @@ createRemoteHostClient httpClient localDeviceName = do
 
 closeRemoteHostClient :: MonadIO m => RemoteHostClient -> m ()
 closeRemoteHostClient RemoteHostClient {httpClient} = liftIO $ closeHTTP2Client httpClient
-
-liftHTTP2 :: IO (Either HTTP2ClientError a) -> ExceptT RemoteClientError IO a
-liftHTTP2 = liftEitherError $ RCEHTTP2 . show
 
 convertJSON :: PlatformEncoding -> PlatformEncoding -> J.Value -> J.Value
 convertJSON _remote@PEKotlin _local@PEKotlin = id
@@ -58,7 +54,7 @@ remoteRecv :: RemoteHostClient -> Int -> ExceptT RemoteClientError IO (Maybe Cha
 remoteRecv c wait = undefined -- sendRemoteCommand c RCRecv {wait} Nothing
 
 sendRemoteCommand :: RemoteHostClient -> RemoteCommand -> Maybe FilePath -> ExceptT RemoteClientError IO (RemoteResponse, Maybe FilePath)
-sendRemoteCommand RemoteHostClient {httpClient} cmd filePath_ = liftHTTP2 $ undefined
+sendRemoteCommand RemoteHostClient {httpClient} cmd filePath_ = liftEitherError (RCEHTTP2 . tshow) (undefined :: IO (Either HTTP2ClientError (RemoteResponse, Maybe FilePath)))
 
 {- TODO:
 \* Encode request

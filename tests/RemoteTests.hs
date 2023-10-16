@@ -19,6 +19,7 @@ import qualified Network.HTTP2.Server as S
 import qualified Network.Socket as N
 import qualified Network.TLS as TLS
 import qualified Simplex.Chat.Controller as Controller
+import Simplex.Chat.Remote.Types (RemoteHostSession (..))
 import qualified Simplex.Chat.Remote.Discovery as Discovery
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
@@ -207,7 +208,7 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   withXFTPServer $ do
     rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
     desktopStore <- case M.lookup 1 rhs of
-      Just Controller.RemoteHostSessionStarted {remoteHostClient = Controller.RemoteHostClient {storePath}} -> pure storePath
+      Just RemoteHostSessionStarted {remoteHostClient, storePath} -> pure storePath
       _ -> fail "Host session 1 should be started"
 
     doesFileExist "./tests/tmp/mobile_files/test.pdf" `shouldReturn` False

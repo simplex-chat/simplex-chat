@@ -4,7 +4,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
@@ -20,29 +19,25 @@ import Control.Monad.IO.Class
 import Control.Monad.Reader (asks)
 import Control.Monad.STM (retry)
 import Crypto.Random (getRandomBytes)
-import qualified Data.Aeson as J
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Char8 as B
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Network.Socket (SockAddr (..), hostAddressToTuple)
 import Simplex.Chat.Controller
-import Simplex.Chat.Messages (AChatItem (..), CIFile (..), CIFileStatus (..), ChatItem (..))
-import Simplex.Chat.Messages.CIContent (MsgDirection (..), SMsgDirection (..))
 import qualified Simplex.Chat.Remote.Discovery as Discovery
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store.Remote
-import Simplex.Chat.Types
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import Simplex.Messaging.Transport.Credentials (genCredentials)
-import Simplex.Messaging.Util (ifM, tshow, ($>>=), liftError)
+import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
+import Simplex.Messaging.Util (ifM, tshow, ($>>=), liftError, liftEitherError)
 import System.FilePath ((</>))
 import UnliftIO
 import Simplex.Chat.Remote.Protocol
@@ -75,26 +70,26 @@ startRemoteHost rhId = do
         Nothing -> logInfo $ "Session already closed for remote host " <> tshow rhId
         Just _ -> closeRemoteHostSession rhId >> toView (CRRemoteHostStopped rhId)
     run :: ChatMonad m => RemoteHost -> TVar Bool -> m ()
-    run rh finished  = do
-      credentials <- genSessionCredentials rh
-      httpClient <- liftHTTP2 $ Discovery.announceRevHTTP2 fingerprint credentials $ unliftIO u (cleanup finished)
+    run rh@RemoteHost {storePath} finished  = do
+      (fingerprint, credentials) <- liftIO $ genSessionCredentials rh
+      u <- askUnliftIO
+      httpClient <- liftEitherError (ChatErrorRemoteCtrl . RCEHTTP2Error . show) $ Discovery.announceRevHTTP2 fingerprint credentials $ unliftIO u (cleanup finished)
       -- block until some client is connected or an error happens
       rcName <- chatReadVar localDeviceName
-      remoteHostClient <- liftRH rhId $ createRemoteHostClient rh rcName
+      remoteHostClient <- liftRH rhId $ createRemoteHostClient httpClient rcName
       -- update session state
-      chatModifyVar remoteHostSessions $ M.insert rhId RemoteHostSessionStarted {remoteHostClient}
+      chatModifyVar remoteHostSessions $ M.insert rhId RemoteHostSessionStarted {remoteHostClient, storePath}
       chatWriteVar currentRemoteHost $ Just rhId
       -- set up message polling
       oq <- asks outputQ
       let toViewRemote = atomically . writeTBQueue oq . (Nothing,Just rhId,)
-      pollRemote rhId finished remoteHostClient $ handleFileResponse remoteHostClient >=> toViewRemote
+      pollRemote rhId finished remoteHostClient toViewRemote -- $ handleFileResponse remoteHostClient >=> toViewRemote
 
-genSessionCredentials :: RemoteHost -> IO TLS.Credentials
-genSessionCredentials RemoteHost {caKey, caCert} = do
-  sessionCreds <- genCredentials (Just parent) (0, 24) "Session"
-  pure . tlsCredentials $ sessionCreds :| [parent]
-  where
-    parent = (C.signatureKeyPair caKey, caCert)
+    genSessionCredentials RemoteHost {caKey, caCert} = do
+      sessionCreds <- genCredentials (Just parent) (0, 24) "Session"
+      pure . tlsCredentials $ sessionCreds :| [parent]
+      where
+        parent = (C.signatureKeyPair caKey, caCert)
 
 pollRemote :: ChatMonad m => RemoteHostId -> TVar Bool -> RemoteHostClient -> (ChatResponse -> m ()) -> m ()
 pollRemote rhId finished rhc action = loop `catchChatError` \e -> action (CRChatError Nothing e) >> loop
@@ -103,25 +98,6 @@ pollRemote rhId finished rhc action = loop `catchChatError` \e -> action (CRChat
       liftRH rhId (remoteRecv rhc pollTimeout) >>= mapM_ action
       readTVarIO finished >>= (`unless` loop)
     pollTimeout = 1000000
-
-handleFileResponse :: ChatMonad m => RemoteHostClient -> ChatResponse -> m ChatResponse
-handleFileResponse rhc = \case
-  cr@CRRcvFileComplete {user, chatItem = AChatItem c SMDRcv i ci@ChatItem {file = Just ciFile@CIFile {fileStatus = CIFSRcvComplete}}} -> do
-    maybe cr update <$> handleRcvFileComplete rhc user ciFile
-    where
-      update localFile = cr {chatItem = AChatItem c SMDRcv i ci {file = Just localFile}}
-  cr -> pure cr
-
--- TODO fileName is just metadata that does not determine the actual file location for UI, or whether it is encrypted or not
--- fileSource is the actual file location (with information whether it is locally encrypted)
-handleRcvFileComplete :: ChatMonad m => RemoteHostClient -> User -> CIFile 'MDRcv -> m (Maybe (CIFile 'MDRcv))
-handleRcvFileComplete rhc remoteUser f@CIFile {fileId} =
-  chatReadVar filesFolder >>= \case
-    Nothing -> pure Nothing -- do not autoload files unless a store is available
-    Just baseDir -> do
-      let remoteFileId = (remoteUser, fileId) -- XXX: matching CRRcvFileComplete, for now
-      localPath <- liftRH rhId $ remoteGetFile rhc baseDir remoteFileId
-      pure $ Just (f :: CIFile 'MDRcv) {fileName = localPath}
 
 closeRemoteHostSession :: ChatMonad m => RemoteHostId -> m ()
 closeRemoteHostSession remoteHostId = do
@@ -175,29 +151,29 @@ deleteRemoteHost rhId = do
     Nothing -> logWarn "Local file store not available while deleting remote host"
   withStore' (`deleteRemoteHostRecord` rhId)
 
-processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostSession -> (ByteString, ChatCommand) -> m ChatResponse
+processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostSession -> ByteString -> m ChatResponse
 processRemoteCommand _ RemoteHostSessionConnecting {} _ = pure $ chatCmdError Nothing "remote command sent before session started"
-processRemoteCommand remoteHostId RemoteHostSessionStarted {remoteHostClient = rhc} (s, cmd) =
-  liftRH remoteHostId $ uploadFile cmd >>= remoteSend rhc
-  where
-    uploadFile = \case
-      -- TODO APISendMessage should only be used with host path already, and UI has to upload file first.
-      -- The problem is that we cannot have different file names in host and controller, because it simply won't be able to show files.
-      -- So we need to ask the host to store files BEFORE storing them in the app storage and use host names in the command and to store the file locally if it has to be shown,
-      -- or don't even store it if it's not image/video.
-      -- The current approach won't work.
-      -- It also does not account for local file encryption.
-      -- Also, local file encryption setting should be tracked in the controller, as otherwise host won't be able to decide what to do having received the upload command.
-      APISendMessage {composedMessage = cm@ComposedMessage {fileSource = Just CryptoFile {filePath = localPath}}} -> do
-        let encrypt = Nothing -- TODO
-        source <- remoteStoreFile rhc localPath encrypt
-        let cm' = cm {fileSource = Just source} :: ComposedMessage
-        -- TODO we shouldn't manipulate commands like that
-        pure $ B.takeWhile (/= '{') s <> B.toStrict (J.encode cm')
-      -- SendFile cn ctrlPath -> fileCmd "/file" cn <$> remoteStoreFile remoteHostClient ctrlPath
-      -- SendImage cn ctrlPath -> fileCmd "/image" cn <$> remoteStoreFile remoteHostClient ctrlPath
-      _ -> pure s
-    -- fileCmd cmdPfx cn hostPath = utf8String $ unwords [cmdPfx, chatNameStr cn, hostPath]
+processRemoteCommand remoteHostId RemoteHostSessionStarted {remoteHostClient = rhc} s = liftRH remoteHostId $ remoteSend rhc s
+  -- liftRH remoteHostId $ uploadFile cmd >>= remoteSend rhc
+  -- where
+  --   uploadFile = \case
+  --     -- TODO APISendMessage should only be used with host path already, and UI has to upload file first.
+  --     -- The problem is that we cannot have different file names in host and controller, because it simply won't be able to show files.
+  --     -- So we need to ask the host to store files BEFORE storing them in the app storage and use host names in the command and to store the file locally if it has to be shown,
+  --     -- or don't even store it if it's not image/video.
+  --     -- The current approach won't work.
+  --     -- It also does not account for local file encryption.
+  --     -- Also, local file encryption setting should be tracked in the controller, as otherwise host won't be able to decide what to do having received the upload command.
+  --     APISendMessage {composedMessage = cm@ComposedMessage {fileSource = Just CryptoFile {filePath = localPath}}} -> do
+  --       let encrypt = Nothing -- TODO
+  --       source <- remoteStoreFile rhc localPath encrypt
+  --       let cm' = cm {fileSource = Just source} :: ComposedMessage
+  --       -- TODO we shouldn't manipulate commands like that
+  --       pure $ B.takeWhile (/= '{') s <> B.toStrict (J.encode cm')
+  --     -- SendFile cn ctrlPath -> fileCmd "/file" cn <$> remoteStoreFile remoteHostClient ctrlPath
+  --     -- SendImage cn ctrlPath -> fileCmd "/image" cn <$> remoteStoreFile remoteHostClient ctrlPath
+  --     _ -> pure s
+  --   -- fileCmd cmdPfx cn hostPath = utf8String $ unwords [cmdPfx, chatNameStr cn, hostPath]
 
 liftRH :: (MonadIO m, MonadError ChatError m) => RemoteHostId -> ExceptT RemoteClientError IO a -> m a
 liftRH rhId = liftError (ChatErrorRemoteHost rhId . RHClientError)

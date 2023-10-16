@@ -23,7 +23,7 @@ data RemoteHostClient = RemoteHostClient
 
 data RemoteHostSession
   = RemoteHostSessionConnecting {setupAsync :: Async ()}
-  | RemoteHostSessionStarted {remoteHostClient :: RemoteHostClient}
+  | RemoteHostSessionStarted {remoteHostClient :: RemoteHostClient, storePath :: FilePath}
 
 data RemoteClientError
   = RCEInvalid -- ^ failed to parse RemoteCommand or RemoteResponse
@@ -31,7 +31,7 @@ data RemoteClientError
   -- | RCENoChatResponse -- returned on timeout, the client would re-send the request
   -- RCE: doesn't look like an exceptional situation/error, but also distorts consumer into sorting through exceptions pattern where a traversal would work
   | RCENoFile
-  | RCEHTTP2 String
+  | RCEHTTP2 Text
   deriving (Show, Exception)
 
 type RemoteHostId = Int64
