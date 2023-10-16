@@ -154,18 +154,18 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
         userContact_ [(cReq, groupId)] = Right UserContact {userContactLinkId, connReqContact = cReq, groupId}
         userContact_ _ = Left SEUserContactLinkNotFound
 
-getConnectionEntityByConnReq :: DB.Connection -> User -> ConnReqInvitation -> IO (Maybe ConnectionEntity)
-getConnectionEntityByConnReq db user cReq = do
+getConnectionEntityByConnReq :: DB.Connection -> User -> (ConnReqInvitation, ConnReqInvitation) -> IO (Maybe ConnectionEntity)
+getConnectionEntityByConnReq db user (cReqSchema1, cReqSchema2) = do
   connId_ <- maybeFirstRow fromOnly $
-    DB.query db "SELECT agent_conn_id FROM connections WHERE conn_req_inv = ? LIMIT 1" (Only cReq)
+    DB.query db "SELECT agent_conn_id FROM connections WHERE conn_req_inv IN (?,?) LIMIT 1" (cReqSchema1, cReqSchema2)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db user) connId_
 
 -- search connection for connection plan:
 -- multiple connections can have same via_contact_uri_hash if request was repeated;
 -- this function searches for latest connection with contact so that "known contact" plan would be chosen;
 -- deleted connections are filtered out to allow re-connecting via same contact address
-getContactConnEntityByConnReqHash :: DB.Connection -> User -> ConnReqUriHash -> IO (Maybe ConnectionEntity)
-getContactConnEntityByConnReqHash db user cReqHash = do
+getContactConnEntityByConnReqHash :: DB.Connection -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe ConnectionEntity)
+getContactConnEntityByConnReqHash db user (cReqHash1, cReqHash2) = do
   connId_ <- maybeFirstRow fromOnly $
     DB.query
       db
@@ -175,12 +175,12 @@ getContactConnEntityByConnReqHash db user cReqHash = do
             agent_conn_id,
             (CASE WHEN contact_id IS NOT NULL THEN 1 ELSE 0 END) AS conn_ord
           FROM connections
-          WHERE via_contact_uri_hash = ? AND conn_status != ?
+          WHERE via_contact_uri_hash IN (?,?) AND conn_status != ?
           ORDER BY conn_ord DESC, created_at DESC
           LIMIT 1
         )
       |]
-      (cReqHash, ConnDeleted)
+      (cReqHash1, cReqHash2, ConnDeleted)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db user) connId_
 
 getConnectionsToSubscribe :: DB.Connection -> IO ([ConnId], [ConnectionEntity])
