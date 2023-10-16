@@ -2245,7 +2245,7 @@ processChatCommand = \case
             Just _ -> pure $ CPContactAddress CAPOwnLink
             Nothing -> do
               let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-              withStore' (\db -> getConnectionEntityByConnReqHash db user cReqHash) >>= \case
+              withStore' (\db -> getContactConnEntityByConnReqHash db user cReqHash) >>= \case
                 Nothing -> pure $ CPContactAddress CAPOk
                 Just (RcvDirectMsgConnection _conn Nothing) -> pure $ CPContactAddress CAPConnectingConfirmReconnect
                 Just (RcvDirectMsgConnection _ (Just ct))
@@ -2259,7 +2259,7 @@ processChatCommand = \case
             Just g -> pure $ CPGroupLink (GLPOwnLink g)
             Nothing -> do
               let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-              connEnt_ <- withStore' $ \db -> getConnectionEntityByConnReqHash db user cReqHash
+              connEnt_ <- withStore' $ \db -> getContactConnEntityByConnReqHash db user cReqHash
               gInfo_ <- withStore' $ \db -> getGroupInfoByGroupLinkHash db user cReqHash
               case (gInfo_, connEnt_) of
                 (Nothing, Nothing) -> pure $ CPGroupLink GLPOk

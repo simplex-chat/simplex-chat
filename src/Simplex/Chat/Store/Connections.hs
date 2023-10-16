@@ -10,7 +10,7 @@
 module Simplex.Chat.Store.Connections
   ( getConnectionEntity,
     getConnectionEntityByConnReq,
-    getConnectionEntityByConnReqHash,
+    getContactConnEntityByConnReqHash,
     getConnectionsToSubscribe,
     unsetConnectionToSubscribe,
   )
@@ -160,11 +160,27 @@ getConnectionEntityByConnReq db user cReq = do
     DB.query db "SELECT agent_conn_id FROM connections WHERE conn_req_inv = ? LIMIT 1" (Only cReq)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db user) connId_
 
--- TODO repeat getGroupInfoByGroupLinkHash logic
-getConnectionEntityByConnReqHash :: DB.Connection -> User -> ConnReqUriHash -> IO (Maybe ConnectionEntity)
-getConnectionEntityByConnReqHash db user cReqHash = do
+-- search connection for connection plan:
+-- multiple connections can have same via_contact_uri_hash if request was repeated;
+-- this function searches for latest connection with contact so that "known contact" plan would be chosen;
+-- deleted connections are filtered out to allow re-connecting via same contact address
+getContactConnEntityByConnReqHash :: DB.Connection -> User -> ConnReqUriHash -> IO (Maybe ConnectionEntity)
+getContactConnEntityByConnReqHash db user cReqHash = do
   connId_ <- maybeFirstRow fromOnly $
-    DB.query db "SELECT agent_conn_id FROM connections WHERE via_contact_uri_hash = ? LIMIT 1" (Only cReqHash)
+    DB.query
+      db
+      [sql|
+        SELECT agent_conn_id FROM (
+          SELECT
+            agent_conn_id,
+            (CASE WHEN contact_id IS NOT NULL THEN 1 ELSE 0 END) AS conn_ord
+          FROM connections
+          WHERE via_contact_uri_hash = ? AND conn_status != ?
+          ORDER BY conn_ord DESC, created_at DESC
+          LIMIT 1
+        )
+      |]
+      (cReqHash, ConnDeleted)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db user) connId_
 
 getConnectionsToSubscribe :: DB.Connection -> IO ([ConnId], [ConnectionEntity])
