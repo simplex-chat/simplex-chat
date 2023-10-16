@@ -1116,21 +1116,21 @@ getGroupInfo db User {userId, userContactId} groupId =
       |]
       (groupId, userId, userContactId)
 
-getGroupInfoByUserContactLinkConnReq :: DB.Connection -> User -> ConnReqContact -> IO (Maybe GroupInfo)
-getGroupInfoByUserContactLinkConnReq db user cReq = do
+getGroupInfoByUserContactLinkConnReq :: DB.Connection -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
+getGroupInfoByUserContactLinkConnReq db user (cReqSchema1, cReqSchema2) = do
   groupId_ <- maybeFirstRow fromOnly $
     DB.query
       db
       [sql|
         SELECT group_id
         FROM user_contact_links
-        WHERE conn_req_contact = ?
+        WHERE conn_req_contact IN (?,?)
       |]
-      (Only cReq)
+      (cReqSchema1, cReqSchema2)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupInfo db user) groupId_
 
-getGroupInfoByGroupLinkHash :: DB.Connection -> User -> ConnReqUriHash -> IO (Maybe GroupInfo)
-getGroupInfoByGroupLinkHash db user@User {userId, userContactId} groupLinkHash = do
+getGroupInfoByGroupLinkHash :: DB.Connection -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe GroupInfo)
+getGroupInfoByGroupLinkHash db user@User {userId, userContactId} (groupLinkHash1, groupLinkHash2) = do
   groupId_ <- maybeFirstRow fromOnly $
     DB.query
       db
@@ -1138,11 +1138,11 @@ getGroupInfoByGroupLinkHash db user@User {userId, userContactId} groupLinkHash =
         SELECT g.group_id
         FROM groups g
         JOIN group_members mu ON mu.group_id = g.group_id
-        WHERE g.user_id = ? AND g.via_group_link_uri_hash = ?
+        WHERE g.user_id = ? AND g.via_group_link_uri_hash IN (?,?)
           AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?)
         LIMIT 1
       |]
-      (userId, groupLinkHash, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
+      (userId, groupLinkHash1, groupLinkHash2, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupInfo db user) groupId_
 
 getGroupIdByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO GroupId

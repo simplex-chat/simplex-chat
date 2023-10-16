@@ -338,7 +338,7 @@ object ChatController {
       apiSetTempFolder(coreTmpDir.absolutePath)
       apiSetFilesFolder(appFilesDir.absolutePath)
       apiSetXFTPConfig(getXFTPCfg())
-//      apiSetEncryptLocalFiles(appPrefs.privacyEncryptLocalFiles.get())
+      apiSetEncryptLocalFiles(appPrefs.privacyEncryptLocalFiles.get())
       val justStarted = apiStartChat()
       val users = listUsers()
       chatModel.users.clear()
@@ -1333,7 +1333,7 @@ object ChatController {
   private suspend fun sendCommandOkResp(cmd: CC): Boolean {
     val r = sendCmd(cmd)
     val ok = r is CR.CmdOk
-    if (!ok) apiErrorAlert(cmd.cmdType, generalGetString(MR.strings.error), r)
+    if (!ok) apiErrorAlert(cmd.cmdType, generalGetString(MR.strings.error_alert_title), r)
     return ok
   }
 
@@ -1942,7 +1942,7 @@ sealed class CC {
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val range: ItemRange): CC()
   class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
-  class ReceiveFile(val fileId: Long, val encrypt: Boolean?, val inline: Boolean?): CC()
+  class ReceiveFile(val fileId: Long, val encrypt: Boolean, val inline: Boolean?): CC()
   class CancelFile(val fileId: Long): CC()
   class ShowVersion(): CC()
 
