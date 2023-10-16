@@ -113,6 +113,7 @@
   <string name="error_xftp_test_server_auth">Server requires authorization to upload, check password</string>
   <string name="error_smp_test_certificate">Possibly, certificate fingerprint in server address is incorrect</string>
   <string name="error_setting_address">Error setting address</string>
+  <string name="error_alert_title">Error</string>
   <string name="smp_server_test_connect">Connect</string>
   <string name="smp_server_test_disconnect">Disconnect</string>
   <string name="smp_server_test_create_queue">Create queue</string>

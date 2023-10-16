@@ -31,6 +31,7 @@ import Database.SQLite.Simple.QQ (sql)
 import GHC.Generics (Generic)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
+import Simplex.Chat.Remote.Types
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, UserId)
@@ -100,6 +101,8 @@ data StoreError
   | SEHostMemberIdNotFound {groupId :: Int64}
   | SEContactNotFoundByFileId {fileId :: FileTransferId}
   | SENoGroupSndStatus {itemId :: ChatItemId, groupMemberId :: GroupMemberId}
+  | SERemoteHostNotFound {remoteHostId :: RemoteHostId}
+  | SERemoteCtrlNotFound {remoteCtrlId :: RemoteCtrlId}
   deriving (Show, Exception, Generic)
 
 instance FromJSON StoreError where

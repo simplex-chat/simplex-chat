@@ -33,7 +33,7 @@ import UnliftIO
 import UnliftIO.Directory
 
 remoteTests :: SpecWith FilePath
-remoteTests = describe "Handshake" $ do
+remoteTests = fdescribe "Handshake" $ do
   it "generates usable credentials" genCredentialsTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
   it "connects desktop and mobile" remoteHandshakeTest
@@ -70,7 +70,7 @@ announceDiscoverHttp2Test _tmp = do
   controller <- async $ do
     traceM "    - Controller: starting"
     bracket
-      (Discovery.announceRevHTTP2 (putMVar finished ()) fingerprint credentials >>= either (fail . show) pure)
+      (Discovery.announceRevHTTP2 fingerprint credentials (putMVar finished ()) >>= either (fail . show) pure)
       closeHTTP2Client
       ( \http -> do
           traceM "    - Controller: got client"

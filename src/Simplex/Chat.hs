@@ -216,6 +216,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   cleanupManagerAsync <- newTVarIO Nothing
   timedItemThreads <- atomically TM.empty
   showLiveItems <- newTVarIO False
+  encryptLocalFiles <- newTVarIO False
   userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
   tempDirectory <- newTVarIO tempDir
   contactMergeEnabled <- newTVarIO True
@@ -248,6 +249,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
         cleanupManagerAsync,
         timedItemThreads,
         showLiveItems,
+        encryptLocalFiles,
         userXFTPFileConfig,
         tempDirectory,
         logFilePath = logFile,
@@ -397,7 +399,7 @@ execChatCommand_ :: ChatMonad' m => Maybe User -> ChatCommand -> m ChatResponse
 execChatCommand_ u cmd = either (CRChatCmdError u) id <$> runExceptT (processChatCommand cmd)
 
 execRemoteCommand :: ChatMonad' m => Maybe User -> RemoteHostId -> (ByteString, ChatCommand) -> m ChatResponse
-execRemoteCommand u rh scmd = either (CRChatCmdError u) id <$> runExceptT (withRemoteHostSession rh $ \rhs -> processRemoteCommand rhs scmd)
+execRemoteCommand u rhId scmd = either (CRChatCmdError u) id <$> runExceptT (getRemoteHostSession rhId >>= (`processRemoteCommand` scmd))
 
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
@@ -535,6 +537,7 @@ processChatCommand = \case
   APISetXFTPConfig cfg -> do
     asks userXFTPFileConfig >>= atomically . (`writeTVar` cfg)
     ok_
+  APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
   SetContactMergeEnabled onOff -> do
     asks contactMergeEnabled >>= atomically . (`writeTVar` onOff)
     ok_
@@ -1381,13 +1384,13 @@ processChatCommand = \case
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito aCReqUri@(Just cReqUri) -> withUser $ \user@User {userId} -> do
     plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILPOk)
-    unless (connectionPlanOk plan) $ throwChatError (CEConnectionPlan plan)
+    unless (connectionPlanProceed plan) $ throwChatError (CEConnectionPlan plan)
     processChatCommand $ APIConnect userId incognito aCReqUri
   Connect _ Nothing -> throwChatError CEInvalidConnReq
   ConnectSimplex incognito -> withUser $ \user@User {userId} -> do
     let cReqUri = ACR SCMContact adminContactReq
     plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILPOk)
-    unless (connectionPlanOk plan) $ throwChatError (CEConnectionPlan plan)
+    unless (connectionPlanProceed plan) $ throwChatError (CEConnectionPlan plan)
     processChatCommand $ APIConnect userId incognito (Just cReqUri)
   DeleteContact cName -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId) True
   ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CTDirect
@@ -1793,19 +1796,16 @@ processChatCommand = \case
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
   SendFileDescription _chatName _f -> pure $ chatCmdError Nothing "TODO"
-  ReceiveFile fileId encrypted rcvInline_ filePath_ -> withUser $ \_ ->
+  ReceiveFile fileId encrypted_ rcvInline_ filePath_ -> withUser $ \_ ->
     withChatLock "receiveFile" . procCmd $ do
       (user, ft) <- withStore (`getRcvFileTransferById` fileId)
-      ft' <- if encrypted then encryptLocalFile ft else pure ft
+      encrypt <- (`fromMaybe` encrypted_) <$> chatReadVar encryptLocalFiles
+      ft' <- (if encrypt then setFileToEncrypt else pure) ft
       receiveFile' user ft' rcvInline_ filePath_
-    where
-      encryptLocalFile ft = do
-        cfArgs <- liftIO $ CF.randomArgs
-        withStore' $ \db -> setFileCryptoArgs db fileId cfArgs
-        pure (ft :: RcvFileTransfer) {cryptoArgs = Just cfArgs}
-  SetFileToReceive fileId encrypted -> withUser $ \_ -> do
+  SetFileToReceive fileId encrypted_ -> withUser $ \_ -> do
     withChatLock "setFileToReceive" . procCmd $ do
-      cfArgs <- if encrypted then Just <$> liftIO CF.randomArgs else pure Nothing
+      encrypt <- (`fromMaybe` encrypted_) <$> chatReadVar encryptLocalFiles
+      cfArgs <- if encrypt then Just <$> liftIO CF.randomArgs else pure Nothing
       withStore' $ \db -> setRcvFileToReceive db fileId cfArgs
       ok_
   CancelFile fileId -> withUser $ \user@User {userId} ->
@@ -2255,7 +2255,7 @@ processChatCommand = \case
       processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ updateSettings chatSettings
     connectPlan :: User -> AConnectionRequestUri -> m ConnectionPlan
     connectPlan user (ACR SCMInvitation cReq) = do
-      withStore' (\db -> getConnectionEntityByConnReq db user cReq) >>= \case
+      withStore' (\db -> getConnectionEntityByConnReq db user cReqSchemas) >>= \case
         Nothing -> pure $ CPInvitationLink ILPOk
         Just (RcvDirectMsgConnection conn ct_) -> do
           let Connection {connStatus, contactConnInitiated} = conn
@@ -2268,39 +2268,59 @@ processChatCommand = \case
                   Just ct -> pure $ CPInvitationLink (ILPKnown ct)
                   Nothing -> throwChatError $ CEInternalError "ready RcvDirectMsgConnection connection should have associated contact"
         Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
+      where
+        cReqSchemas :: (ConnReqInvitation, ConnReqInvitation)
+        cReqSchemas = case cReq of
+          (CRInvitationUri crData e2e) ->
+            ( CRInvitationUri crData {crScheme = CRSSimplex} e2e,
+              CRInvitationUri crData {crScheme = simplexChat} e2e
+            )
     connectPlan user (ACR SCMContact cReq) = do
       let CRContactUri ConnReqUriData {crClientData} = cReq
           groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
       case groupLinkId of
         -- contact address
         Nothing ->
-          withStore' (`getUserContactLinkByConnReq` cReq) >>= \case
+          withStore' (`getUserContactLinkByConnReq` cReqSchemas) >>= \case
             Just _ -> pure $ CPContactAddress CAPOwnLink
             Nothing -> do
-              let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-              withStore' (\db -> getContactByConnReqHash db user cReqHash) >>= \case
+              withStore' (\db -> getContactConnEntityByConnReqHash db user cReqHashes) >>= \case
                 Nothing -> pure $ CPContactAddress CAPOk
-                Just ct
-                  | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CAPConnecting ct)
+                Just (RcvDirectMsgConnection _conn Nothing) -> pure $ CPContactAddress CAPConnectingConfirmReconnect
+                Just (RcvDirectMsgConnection _ (Just ct))
+                  | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CAPConnectingProhibit ct)
+                  | contactDeleted ct -> pure $ CPContactAddress CAPOk
                   | otherwise -> pure $ CPContactAddress (CAPKnown ct)
+                Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
         -- group link
         Just _ ->
-          withStore' (\db -> getGroupInfoByUserContactLinkConnReq db user cReq) >>= \case
+          withStore' (\db -> getGroupInfoByUserContactLinkConnReq db user cReqSchemas) >>= \case
             Just g -> pure $ CPGroupLink (GLPOwnLink g)
             Nothing -> do
-              let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-              ct_ <- withStore' $ \db -> getContactByConnReqHash db user cReqHash
-              gInfo_ <- withStore' $ \db -> getGroupInfoByGroupLinkHash db user cReqHash
-              case (gInfo_, ct_) of
+              connEnt_ <- withStore' $ \db -> getContactConnEntityByConnReqHash db user cReqHashes
+              gInfo_ <- withStore' $ \db -> getGroupInfoByGroupLinkHash db user cReqHashes
+              case (gInfo_, connEnt_) of
                 (Nothing, Nothing) -> pure $ CPGroupLink GLPOk
-                (Nothing, Just ct)
-                  | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLPConnecting gInfo_)
+                (Nothing, Just (RcvDirectMsgConnection _conn Nothing)) -> pure $ CPGroupLink GLPConnectingConfirmReconnect
+                (Nothing, Just (RcvDirectMsgConnection _ (Just ct)))
+                  | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
                   | otherwise -> pure $ CPGroupLink GLPOk
+                (Nothing, Just _) -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
                 (Just gInfo@GroupInfo {membership}, _)
                   | not (memberActive membership) && not (memberRemoved membership) ->
-                      pure $ CPGroupLink (GLPConnecting gInfo_)
+                      pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
                   | memberActive membership -> pure $ CPGroupLink (GLPKnown gInfo)
                   | otherwise -> pure $ CPGroupLink GLPOk
+      where
+        cReqSchemas :: (ConnReqContact, ConnReqContact)
+        cReqSchemas = case cReq of
+          (CRContactUri crData) ->
+            ( CRContactUri crData {crScheme = CRSSimplex},
+              CRContactUri crData {crScheme = simplexChat}
+            )
+        cReqHashes :: (ConnReqUriHash, ConnReqUriHash)
+        cReqHashes = bimap hash hash cReqSchemas
+        hash = ConnReqUriHash . C.sha256Hash . strEncode
 
 assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =
@@ -2442,6 +2462,12 @@ callStatusItemContent user Contact {contactId} chatItemId receivedStatus = do
 toFSFilePath :: ChatMonad' m => FilePath -> m FilePath
 toFSFilePath f =
   maybe f (</> f) <$> (readTVarIO =<< asks filesFolder)
+
+setFileToEncrypt :: ChatMonad m => RcvFileTransfer -> m RcvFileTransfer
+setFileToEncrypt ft@RcvFileTransfer {fileId} = do
+  cfArgs <- liftIO CF.randomArgs
+  withStore' $ \db -> setFileCryptoArgs db fileId cfArgs
+  pure (ft :: RcvFileTransfer) {cryptoArgs = Just cfArgs}
 
 receiveFile' :: ChatMonad m => User -> RcvFileTransfer -> Maybe Bool -> Maybe FilePath -> m ChatResponse
 receiveFile' user ft rcvInline_ filePath_ = do
@@ -3964,14 +3990,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       inline <- receiveInlineMode fInv (Just mc) fileChunkSize
       ft@RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvFT db fInv inline fileChunkSize
       let fileProtocol = if isJust xftpRcvFile then FPXFTP else FPSMP
-      (filePath, fileStatus) <- case inline of
+      (filePath, fileStatus, ft') <- case inline of
         Just IFMSent -> do
+          encrypt <- chatReadVar encryptLocalFiles
+          ft' <- (if encrypt then setFileToEncrypt else pure) ft
           fPath <- getRcvFilePath fileId Nothing fileName True
-          withStore' $ \db -> startRcvInlineFT db user ft fPath inline
-          pure (Just fPath, CIFSRcvAccepted)
-        _ -> pure (Nothing, CIFSRcvInvitation)
-      let fileSource = CF.plain <$> filePath
-      pure (ft, CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol})
+          withStore' $ \db -> startRcvInlineFT db user ft' fPath inline
+          pure (Just fPath, CIFSRcvAccepted, ft')
+        _ -> pure (Nothing, CIFSRcvInvitation, ft)
+      let RcvFileTransfer {cryptoArgs} = ft'
+          fileSource = (`CryptoFile` cryptoArgs) <$> filePath
+      pure (ft', CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol})
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> Maybe Int -> Maybe Bool -> m ()
     messageUpdate ct@Contact {contactId} sharedMsgId mc msg@RcvMessage {msgId} msgMeta ttl live_ = do
@@ -5154,9 +5183,6 @@ closeFileHandle fileId files = do
   h_ <- atomically . stateTVar fs $ \m -> (M.lookup fileId m, M.delete fileId m)
   liftIO $ mapM_ hClose h_ `catchAll_` pure ()
 
-throwChatError :: ChatMonad m => ChatErrorType -> m a
-throwChatError = throwError . ChatError
-
 deleteMembersConnections :: ChatMonad m => User -> [GroupMember] -> m ()
 deleteMembersConnections user members = do
   let memberConns =
@@ -5600,6 +5626,7 @@ chatCommandP =
       ("/_files_folder " <|> "/files_folder ") *> (SetFilesFolder <$> filePath),
       "/_xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> jsonP) <|> ("off" $> Nothing))),
       "/xftp " *> (APISetXFTPConfig <$> ("on" *> (Just <$> xftpCfgP) <|> ("off" $> Nothing))),
+      "/_files_encrypt " *> (APISetEncryptLocalFiles <$> onOffP),
       "/contact_merge " *> (SetContactMergeEnabled <$> onOffP),
       "/_db export " *> (APIExportArchive <$> jsonP),
       "/db export" $> ExportArchive,
@@ -5776,8 +5803,8 @@ chatCommandP =
       ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal),
       ("/image_forward " <|> "/imgf ") *> (ForwardImage <$> chatNameP' <* A.space <*> A.decimal),
       ("/fdescription " <|> "/fd") *> (SendFileDescription <$> chatNameP' <* A.space <*> filePath),
-      ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> (" encrypt=" *> onOffP <|> pure False) <*> optional (" inline=" *> onOffP) <*> optional (A.space *> filePath)),
-      "/_set_file_to_receive " *> (SetFileToReceive <$> A.decimal <*> (" encrypt=" *> onOffP <|> pure False)),
+      ("/freceive " <|> "/fr ") *> (ReceiveFile <$> A.decimal <*> optional (" encrypt=" *> onOffP) <*> optional (" inline=" *> onOffP) <*> optional (A.space *> filePath)),
+      "/_set_file_to_receive " *> (SetFileToReceive <$> A.decimal <*> optional (" encrypt=" *> onOffP)),
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
       "/simplex" *> (ConnectSimplex <$> incognitoP),
@@ -5953,7 +5980,7 @@ chatCommandP =
 
 adminContactReq :: ConnReqContact
 adminContactReq =
-  either error id $ strDecode "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
+  either error id $ strDecode "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
 
 timeItToView :: ChatMonad' m => String -> m a -> m a
 timeItToView s action = do

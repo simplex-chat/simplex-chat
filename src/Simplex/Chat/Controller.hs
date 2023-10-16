@@ -189,6 +189,7 @@ data ChatController = ChatController
     cleanupManagerAsync :: TVar (Maybe (Async ())),
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
+    encryptLocalFiles :: TVar Bool,
     userXFTPFileConfig :: TVar (Maybe XFTPFileConfig),
     tempDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
@@ -234,6 +235,7 @@ data ChatCommand
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
   | APISetXFTPConfig (Maybe XFTPFileConfig)
+  | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
   | APIExportArchive ArchiveConfig
   | ExportArchive
@@ -406,8 +408,8 @@ data ChatCommand
   | ForwardFile ChatName FileTransferId
   | ForwardImage ChatName FileTransferId
   | SendFileDescription ChatName FilePath
-  | ReceiveFile {fileId :: FileTransferId, storeEncrypted :: Bool, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
-  | SetFileToReceive {fileId :: FileTransferId, storeEncrypted :: Bool}
+  | ReceiveFile {fileId :: FileTransferId, storeEncrypted :: Maybe Bool, fileInline :: Maybe Bool, filePath :: Maybe FilePath}
+  | SetFileToReceive {fileId :: FileTransferId, storeEncrypted :: Maybe Bool}
   | CancelFile FileTransferId
   | FileStatus FileTransferId
   | ShowProfile -- UserId (not used in UI)
@@ -723,7 +725,8 @@ instance ToJSON InvitationLinkPlan where
 data ContactAddressPlan
   = CAPOk
   | CAPOwnLink
-  | CAPConnecting {contact :: Contact}
+  | CAPConnectingConfirmReconnect
+  | CAPConnectingProhibit {contact :: Contact}
   | CAPKnown {contact :: Contact}
   deriving (Show, Generic)
 
@@ -737,7 +740,8 @@ instance ToJSON ContactAddressPlan where
 data GroupLinkPlan
   = GLPOk
   | GLPOwnLink {groupInfo :: GroupInfo}
-  | GLPConnecting {groupInfo_ :: Maybe GroupInfo}
+  | GLPConnectingConfirmReconnect
+  | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
   | GLPKnown {groupInfo :: GroupInfo}
   deriving (Show, Generic)
 
@@ -748,8 +752,8 @@ instance ToJSON GroupLinkPlan where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "GLP"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "GLP"
 
-connectionPlanOk :: ConnectionPlan -> Bool
-connectionPlanOk = \case
+connectionPlanProceed :: ConnectionPlan -> Bool
+connectionPlanProceed = \case
   CPInvitationLink ilp -> case ilp of
     ILPOk -> True
     ILPOwnLink -> True
@@ -757,10 +761,12 @@ connectionPlanOk = \case
   CPContactAddress cap -> case cap of
     CAPOk -> True
     CAPOwnLink -> True
+    CAPConnectingConfirmReconnect -> True
     _ -> False
   CPGroupLink glp -> case glp of
     GLPOk -> True
     GLPOwnLink _ -> True
+    GLPConnectingConfirmReconnect -> True
     _ -> False
 
 newtype UserPwd = UserPwd {unUserPwd :: Text}
@@ -1158,8 +1164,7 @@ instance ToJSON RemoteHostError where
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteCtrlError
-  = RCEMissing {remoteCtrlId :: RemoteCtrlId} -- ^ No remote session matches this identifier
-  | RCEInactive -- ^ No session is running
+  = RCEInactive -- ^ No session is running
   | RCEBusy -- ^ A session is already running
   | RCETimeout -- ^ Remote operation timed out
   | RCEDisconnected {remoteCtrlId :: RemoteCtrlId, reason :: Text} -- ^ A session disconnected by a controller
@@ -1167,6 +1172,9 @@ data RemoteCtrlError
   | RCECertificateExpired {remoteCtrlId :: RemoteCtrlId} -- ^ A connection or CA certificate in a chain have bad validity period
   | RCECertificateUntrusted {remoteCtrlId :: RemoteCtrlId} -- ^ TLS is unable to validate certificate chain presented for a connection
   | RCEBadFingerprint -- ^ Bad fingerprint data provided in OOB
+  | RCEHTTP2Error {http2Error :: String}
+  | RCEHTTP2RespStatus {statusCode :: Maybe Int} -- TODO remove
+  | RCEInvalidResponse {responseError :: String}
   deriving (Show, Exception, Generic)
 
 instance FromJSON RemoteCtrlError where
@@ -1199,7 +1207,7 @@ data RemoteHostSession
       }
 
 data RemoteCtrlSession = RemoteCtrlSession
-  { -- | Server side of transport to process remote commands and forward notifications
+  { -- | Host (mobile) side of transport to process remote commands and forward notifications
     discoverer :: Async (),
     supervisor :: Async (),
     hostServer :: Maybe (Async ()),
@@ -1239,12 +1247,19 @@ chatFinally :: ChatMonad m => m a -> m b -> m a
 chatFinally = allFinally mkChatError
 {-# INLINE chatFinally #-}
 
+onChatError :: ChatMonad m => m a -> m b -> m a
+a `onChatError` onErr = a `catchChatError` \e -> onErr >> throwError e
+{-# INLINE onChatError #-}
+
 mkChatError :: SomeException -> ChatError
 mkChatError = ChatError . CEException . show
 {-# INLINE mkChatError #-}
 
 chatCmdError :: Maybe User -> String -> ChatResponse
 chatCmdError user = CRChatCmdError user . ChatError . CECommandError
+
+throwChatError :: ChatMonad m => ChatErrorType -> m a
+throwChatError = throwError . ChatError
 
 -- | Emit local events.
 toView :: ChatMonad' m => ChatResponse -> m ()

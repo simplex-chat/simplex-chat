@@ -562,3 +562,11 @@ currentChatVRangeInfo =
 
 vRangeStr :: VersionRange -> String
 vRangeStr (VersionRange minVer maxVer) = "(" <> show minVer <> ", " <> show maxVer <> ")"
+
+linkAnotherSchema :: String -> String
+linkAnotherSchema link
+  | "https://simplex.chat/" `isPrefixOf` link =
+    T.unpack $ T.replace "https://simplex.chat/" "simplex:/" $ T.pack link
+  | "simplex:/" `isPrefixOf` link =
+    T.unpack $ T.replace "simplex:/" "https://simplex.chat/" $ T.pack link
+  | otherwise = error "link starts with neither https://simplex.chat/ nor simplex:/"
