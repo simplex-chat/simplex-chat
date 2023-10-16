@@ -1364,13 +1364,13 @@ processChatCommand = \case
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito aCReqUri@(Just cReqUri) -> withUser $ \user@User {userId} -> do
     plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILPOk)
-    unless (connectionPlanOk plan) $ throwChatError (CEConnectionPlan plan)
+    unless (connectionPlanProceed plan) $ throwChatError (CEConnectionPlan plan)
     processChatCommand $ APIConnect userId incognito aCReqUri
   Connect _ Nothing -> throwChatError CEInvalidConnReq
   ConnectSimplex incognito -> withUser $ \user@User {userId} -> do
     let cReqUri = ACR SCMContact adminContactReq
     plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILPOk)
-    unless (connectionPlanOk plan) $ throwChatError (CEConnectionPlan plan)
+    unless (connectionPlanProceed plan) $ throwChatError (CEConnectionPlan plan)
     processChatCommand $ APIConnect userId incognito (Just cReqUri)
   DeleteContact cName -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId) True
   ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CTDirect
@@ -2245,27 +2245,32 @@ processChatCommand = \case
             Just _ -> pure $ CPContactAddress CAPOwnLink
             Nothing -> do
               let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-              withStore' (\db -> getContactByConnReqHash db user cReqHash) >>= \case
+              withStore' (\db -> getContactConnEntityByConnReqHash db user cReqHash) >>= \case
                 Nothing -> pure $ CPContactAddress CAPOk
-                Just ct
-                  | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CAPConnecting ct)
+                Just (RcvDirectMsgConnection _conn Nothing) -> pure $ CPContactAddress CAPConnectingConfirmReconnect
+                Just (RcvDirectMsgConnection _ (Just ct))
+                  | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CAPConnectingProhibit ct)
+                  | contactDeleted ct -> pure $ CPContactAddress CAPOk
                   | otherwise -> pure $ CPContactAddress (CAPKnown ct)
+                Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
         -- group link
         Just _ ->
           withStore' (\db -> getGroupInfoByUserContactLinkConnReq db user cReq) >>= \case
             Just g -> pure $ CPGroupLink (GLPOwnLink g)
             Nothing -> do
               let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-              ct_ <- withStore' $ \db -> getContactByConnReqHash db user cReqHash
+              connEnt_ <- withStore' $ \db -> getContactConnEntityByConnReqHash db user cReqHash
               gInfo_ <- withStore' $ \db -> getGroupInfoByGroupLinkHash db user cReqHash
-              case (gInfo_, ct_) of
+              case (gInfo_, connEnt_) of
                 (Nothing, Nothing) -> pure $ CPGroupLink GLPOk
-                (Nothing, Just ct)
-                  | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLPConnecting gInfo_)
+                (Nothing, Just (RcvDirectMsgConnection _conn Nothing)) -> pure $ CPGroupLink GLPConnectingConfirmReconnect
+                (Nothing, Just (RcvDirectMsgConnection _ (Just ct)))
+                  | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
                   | otherwise -> pure $ CPGroupLink GLPOk
+                (Nothing, Just _) -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
                 (Just gInfo@GroupInfo {membership}, _)
                   | not (memberActive membership) && not (memberRemoved membership) ->
-                      pure $ CPGroupLink (GLPConnecting gInfo_)
+                      pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
                   | memberActive membership -> pure $ CPGroupLink (GLPKnown gInfo)
                   | otherwise -> pure $ CPGroupLink GLPOk
 
