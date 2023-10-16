@@ -2290,6 +2290,11 @@ testPlanGroupLinkOkKnown =
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
 
+      let gLinkSchema2 = linkAnotherSchema gLink
+      bob ##> ("/_connect plan 1 " <> gLinkSchema2)
+      bob <## "group link: known group #team"
+      bob <## "use #team <message> to send messages"
+
       bob ##> ("/c " <> gLink)
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
@@ -2331,6 +2336,11 @@ testPlanHostContactDeletedGroupLinkKnown =
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
 
+      let gLinkSchema2 = linkAnotherSchema gLink
+      bob ##> ("/_connect plan 1 " <> gLinkSchema2)
+      bob <## "group link: known group #team"
+      bob <## "use #team <message> to send messages"
+
       bob ##> ("/c " <> gLink)
       bob <## "group link: known group #team"
       bob <## "use #team <message> to send messages"
@@ -2345,6 +2355,10 @@ testPlanGroupLinkOwn tmp =
     gLink <- getGroupLink alice "team" GRMember True
 
     alice ##> ("/_connect plan 1 " <> gLink)
+    alice <## "group link: own link for group #team"
+
+    let gLinkSchema2 = linkAnotherSchema gLink
+    alice ##> ("/_connect plan 1 " <> gLinkSchema2)
     alice <## "group link: own link for group #team"
 
     alice ##> ("/c " <> gLink)
@@ -2371,6 +2385,9 @@ testPlanGroupLinkOwn tmp =
            ]
 
     alice ##> ("/_connect plan 1 " <> gLink)
+    alice <## "group link: own link for group #team"
+
+    alice ##> ("/_connect plan 1 " <> gLinkSchema2)
     alice <## "group link: own link for group #team"
 
     -- group works if merged contact is deleted
@@ -2405,6 +2422,10 @@ testPlanGroupLinkConnecting tmp = do
     bob ##> ("/_connect plan 1 " <> gLink)
     bob <## "group link: connecting, allowed to reconnect"
 
+    let gLinkSchema2 = linkAnotherSchema gLink
+    bob ##> ("/_connect plan 1 " <> gLinkSchema2)
+    bob <## "group link: connecting, allowed to reconnect"
+
     threadDelay 100000
   withTestChat tmp "alice" $ \alice -> do
     alice
@@ -2415,6 +2436,10 @@ testPlanGroupLinkConnecting tmp = do
   withTestChat tmp "bob" $ \bob -> do
     threadDelay 500000
     bob ##> ("/_connect plan 1 " <> gLink)
+    bob <## "group link: connecting"
+
+    let gLinkSchema2 = linkAnotherSchema gLink
+    bob ##> ("/_connect plan 1 " <> gLinkSchema2)
     bob <## "group link: connecting"
 
     bob ##> ("/c " <> gLink)
@@ -2462,6 +2487,10 @@ testPlanGroupLinkLeaveRejoin =
       bob ##> ("/_connect plan 1 " <> gLink)
       bob <## "group link: ok to connect"
 
+      let gLinkSchema2 = linkAnotherSchema gLink
+      bob ##> ("/_connect plan 1 " <> gLinkSchema2)
+      bob <## "group link: ok to connect"
+
       bob ##> ("/c " <> gLink)
       bob <## "connection request sent!"
       alice <## "bob_1 (Bob): accepting request to join group #team..."
@@ -2487,6 +2516,10 @@ testPlanGroupLinkLeaveRejoin =
       alice <# "#team bob> hey"
 
       bob ##> ("/_connect plan 1 " <> gLink)
+      bob <## "group link: known group #team_1"
+      bob <## "use #team_1 <message> to send messages"
+
+      bob ##> ("/_connect plan 1 " <> gLinkSchema2)
       bob <## "group link: known group #team_1"
       bob <## "use #team_1 <message> to send messages"
 

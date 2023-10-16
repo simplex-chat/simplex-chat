@@ -2222,7 +2222,7 @@ processChatCommand = \case
       processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ updateSettings chatSettings
     connectPlan :: User -> AConnectionRequestUri -> m ConnectionPlan
     connectPlan user (ACR SCMInvitation cReq) = do
-      withStore' (\db -> getConnectionEntityByConnReq db user cReq) >>= \case
+      withStore' (\db -> getConnectionEntityByConnReq db user cReqSchemas) >>= \case
         Nothing -> pure $ CPInvitationLink ILPOk
         Just (RcvDirectMsgConnection conn ct_) -> do
           let Connection {connStatus, contactConnInitiated} = conn
@@ -2235,17 +2235,23 @@ processChatCommand = \case
                   Just ct -> pure $ CPInvitationLink (ILPKnown ct)
                   Nothing -> throwChatError $ CEInternalError "ready RcvDirectMsgConnection connection should have associated contact"
         Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
+      where
+        cReqSchemas :: (ConnReqInvitation, ConnReqInvitation)
+        cReqSchemas = case cReq of
+          (CRInvitationUri crData e2e) ->
+            ( CRInvitationUri crData {crScheme = CRSSimplex} e2e,
+              CRInvitationUri crData {crScheme = simplexChat} e2e
+            )
     connectPlan user (ACR SCMContact cReq) = do
       let CRContactUri ConnReqUriData {crClientData} = cReq
           groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
       case groupLinkId of
         -- contact address
         Nothing ->
-          withStore' (`getUserContactLinkByConnReq` cReq) >>= \case
+          withStore' (`getUserContactLinkByConnReq` cReqSchemas) >>= \case
             Just _ -> pure $ CPContactAddress CAPOwnLink
             Nothing -> do
-              let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-              withStore' (\db -> getContactConnEntityByConnReqHash db user cReqHash) >>= \case
+              withStore' (\db -> getContactConnEntityByConnReqHash db user cReqHashes) >>= \case
                 Nothing -> pure $ CPContactAddress CAPOk
                 Just (RcvDirectMsgConnection _conn Nothing) -> pure $ CPContactAddress CAPConnectingConfirmReconnect
                 Just (RcvDirectMsgConnection _ (Just ct))
@@ -2255,12 +2261,11 @@ processChatCommand = \case
                 Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
         -- group link
         Just _ ->
-          withStore' (\db -> getGroupInfoByUserContactLinkConnReq db user cReq) >>= \case
+          withStore' (\db -> getGroupInfoByUserContactLinkConnReq db user cReqSchemas) >>= \case
             Just g -> pure $ CPGroupLink (GLPOwnLink g)
             Nothing -> do
-              let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-              connEnt_ <- withStore' $ \db -> getContactConnEntityByConnReqHash db user cReqHash
-              gInfo_ <- withStore' $ \db -> getGroupInfoByGroupLinkHash db user cReqHash
+              connEnt_ <- withStore' $ \db -> getContactConnEntityByConnReqHash db user cReqHashes
+              gInfo_ <- withStore' $ \db -> getGroupInfoByGroupLinkHash db user cReqHashes
               case (gInfo_, connEnt_) of
                 (Nothing, Nothing) -> pure $ CPGroupLink GLPOk
                 (Nothing, Just (RcvDirectMsgConnection _conn Nothing)) -> pure $ CPGroupLink GLPConnectingConfirmReconnect
@@ -2273,6 +2278,16 @@ processChatCommand = \case
                       pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
                   | memberActive membership -> pure $ CPGroupLink (GLPKnown gInfo)
                   | otherwise -> pure $ CPGroupLink GLPOk
+      where
+        cReqSchemas :: (ConnReqContact, ConnReqContact)
+        cReqSchemas = case cReq of
+          (CRContactUri crData) ->
+            ( CRContactUri crData {crScheme = CRSSimplex},
+              CRContactUri crData {crScheme = simplexChat}
+            )
+        cReqHashes :: (ConnReqUriHash, ConnReqUriHash)
+        cReqHashes = bimap hash hash cReqSchemas
+        hash = ConnReqUriHash . C.sha256Hash . strEncode
 
 assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =
