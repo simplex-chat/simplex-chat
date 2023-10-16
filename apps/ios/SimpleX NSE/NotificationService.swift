@@ -216,7 +216,7 @@ func startChat() -> DBMigrationResult? {
             try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
             try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
             try setXFTPConfig(xftpConfig)
-            // try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
+            try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
             let justStarted = try apiStartChat()
             chatStarted = true
             if justStarted {
@@ -352,8 +352,8 @@ func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
     throw r
 }
 
-func apiSetEncryptLocalFiles(_ enable: Boolean) throws {
-    let r = chatSendCmdSync(.apiSetEncryptLocalFiles(enable: enable))
+func apiSetEncryptLocalFiles(_ enable: Bool) throws {
+    let r = sendSimpleXCmd(.apiSetEncryptLocalFiles(enable: enable))
     if case .cmdOk = r { return }
     throw r
 }
