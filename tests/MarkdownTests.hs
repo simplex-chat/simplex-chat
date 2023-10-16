@@ -150,7 +150,7 @@ textWithUri = describe "text with Uri" do
   it "ignored as markdown" do
     parseMarkdown "_https://simplex.chat" `shouldBe` "_https://simplex.chat"
     parseMarkdown "this is _https://simplex.chat" `shouldBe` "this is _https://simplex.chat"
-  fit "SimpleX links" do
+  it "SimpleX links" do
     let inv = "/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D1-2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D"
     parseMarkdown ("https://simplex.chat" <> inv) `shouldBe` simplexLink XLInvitation ("simplex:" <> inv) True ["smp.simplex.im"] ("https://simplex.chat" <> inv)
     parseMarkdown ("simplex:" <> inv) `shouldBe` simplexLink XLInvitation ("simplex:" <> inv) True ["smp.simplex.im"] ("simplex:" <> inv)

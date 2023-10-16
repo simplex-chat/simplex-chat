@@ -5933,6 +5933,7 @@ chatCommandP =
     srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
     toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
     char_ = optional . A.char
+    simplexCReqUriP :: Parser AConnectionRequestUri
     simplexCReqUriP = do
       cReqUri <- strP
       case cReqUri of
