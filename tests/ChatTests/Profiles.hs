@@ -747,7 +747,6 @@ testPlanAddressContactDeletedReconnected =
       bob <## "contact address: known contact alice_1"
       bob <## "use @alice_1 <message> to send messages"
 
-      let cLinkSchema2 = linkAnotherSchema cLink
       bob ##> ("/_connect plan 1 " <> cLinkSchema2)
       bob <## "contact address: known contact alice_1"
       bob <## "use @alice_1 <message> to send messages"

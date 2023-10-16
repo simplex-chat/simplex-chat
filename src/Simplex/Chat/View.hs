@@ -693,10 +693,13 @@ viewConnReqInvitation :: ConnReqInvitation -> [StyledString]
 viewConnReqInvitation cReq =
   [ "pass this invitation link to your contact (via another channel): ",
     "",
-    (plain . strEncode) cReq,
+    (plain . strEncode) (simplexChatInvitation cReq),
     "",
     "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
+
+simplexChatInvitation :: ConnReqInvitation -> ConnReqInvitation
+simplexChatInvitation (CRInvitationUri crData e2e) = CRInvitationUri crData {crScheme = simplexChat} e2e
 
 viewContactNotFound :: ContactName -> Maybe (GroupInfo, GroupMember) -> [StyledString]
 viewContactNotFound cName suspectedMember =
@@ -736,13 +739,16 @@ connReqContact_ :: StyledString -> ConnReqContact -> [StyledString]
 connReqContact_ intro cReq =
   [ intro,
     "",
-    (plain . strEncode) cReq,
+    (plain . strEncode) (simplexChatContact cReq),
     "",
     "Anybody can send you contact requests with: " <> highlight' "/c <contact_link_above>",
     "to show it again: " <> highlight' "/sa",
     "to share with your contacts: " <> highlight' "/profile_address on",
     "to delete it: " <> highlight' "/da" <> " (accepted contacts will remain connected)"
   ]
+
+simplexChatContact :: ConnReqContact -> ConnReqContact
+simplexChatContact (CRContactUri crData) = CRContactUri crData {crScheme = simplexChat}
 
 autoAcceptStatus_ :: Maybe AutoAccept -> [StyledString]
 autoAcceptStatus_ = \case
@@ -755,7 +761,7 @@ groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> GroupMemberRole -> 
 groupLink_ intro g cReq mRole =
   [ intro,
     "",
-    (plain . strEncode) cReq,
+    (plain . strEncode) (simplexChatContact cReq),
     "",
     "Anybody can connect to you and join group as " <> showRole mRole <> " with: " <> highlight' "/c <group_link_above>",
     "to show it again: " <> highlight ("/show link #" <> viewGroupName g),
