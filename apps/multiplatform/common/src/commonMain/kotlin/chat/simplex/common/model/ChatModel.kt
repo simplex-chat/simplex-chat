@@ -135,6 +135,7 @@ object ChatModel {
   fun hasChat(id: String): Boolean = chats.toList().firstOrNull { it.id == id } != null
   fun getChat(id: String): Chat? = chats.toList().firstOrNull { it.id == id }
   fun getContactChat(contactId: Long): Chat? = chats.toList().firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
+  fun getGroupChat(groupId: Long): Chat? = chats.toList().firstOrNull { it.chatInfo is ChatInfo.Group && it.chatInfo.apiId == groupId }
   private fun getChatIndex(id: String): Int = chats.toList().indexOfFirst { it.id == id }
   fun addChat(chat: Chat) = chats.add(index = 0, chat)
 

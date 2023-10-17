@@ -855,6 +855,14 @@ object ChatController {
     return null
   }
 
+  suspend fun apiConnectPlan(connReq: String): ConnectionPlan? {
+    val userId = kotlin.runCatching { currentUserId("apiConnectPlan") }.getOrElse { return null }
+    val r = sendCmd(CC.APIConnectPlan(userId, connReq))
+    if (r is CR.CRConnectionPlan) return r.connectionPlan
+    Log.e(TAG, "apiConnectPlan bad response: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiConnect(incognito: Boolean, connReq: String): Boolean  {
     val userId = chatModel.currentUser.value?.userId ?: run {
       Log.e(TAG, "apiConnect: no current user")
@@ -1917,6 +1925,7 @@ sealed class CC {
   class APIVerifyGroupMember(val groupId: Long, val groupMemberId: Long, val connectionCode: String?): CC()
   class APIAddContact(val userId: Long, val incognito: Boolean): CC()
   class ApiSetConnectionIncognito(val connId: Long, val incognito: Boolean): CC()
+  class APIConnectPlan(val userId: Long, val connReq: String): CC()
   class APIConnect(val userId: Long, val incognito: Boolean, val connReq: String): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long): CC()
   class ApiClearChat(val type: ChatType, val id: Long): CC()
@@ -2026,6 +2035,7 @@ sealed class CC {
     is APIVerifyGroupMember -> "/_verify code #$groupId $groupMemberId" + if (connectionCode != null) " $connectionCode" else ""
     is APIAddContact -> "/_connect $userId incognito=${onOff(incognito)}"
     is ApiSetConnectionIncognito -> "/_set incognito :$connId ${onOff(incognito)}"
+    is APIConnectPlan -> "/_connect plan $userId $connReq"
     is APIConnect -> "/_connect $userId incognito=${onOff(incognito)} $connReq"
     is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
     is ApiClearChat -> "/_clear chat ${chatRef(type, id)}"
@@ -2127,6 +2137,7 @@ sealed class CC {
     is APIVerifyGroupMember -> "apiVerifyGroupMember"
     is APIAddContact -> "apiAddContact"
     is ApiSetConnectionIncognito -> "apiSetConnectionIncognito"
+    is APIConnectPlan -> "apiConnectPlan"
     is APIConnect -> "apiConnect"
     is ApiDeleteChat -> "apiDeleteChat"
     is ApiClearChat -> "apiClearChat"
@@ -3340,6 +3351,7 @@ sealed class CR {
   @Serializable @SerialName("connectionVerified") class ConnectionVerified(val user: UserRef, val verified: Boolean, val expectedCode: String): CR()
   @Serializable @SerialName("invitation") class Invitation(val user: UserRef, val connReqInvitation: String, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionIncognitoUpdated") class ConnectionIncognitoUpdated(val user: UserRef, val toConnection: PendingContactConnection): CR()
+  @Serializable @SerialName("connectionPlan") class CRConnectionPlan(val user: UserRef, val connectionPlan: ConnectionPlan): CR()
   @Serializable @SerialName("sentConfirmation") class SentConfirmation(val user: UserRef): CR()
   @Serializable @SerialName("sentInvitation") class SentInvitation(val user: UserRef): CR()
   @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val user: UserRef, val contact: Contact): CR()
@@ -3475,6 +3487,7 @@ sealed class CR {
     is ConnectionVerified -> "connectionVerified"
     is Invitation -> "invitation"
     is ConnectionIncognitoUpdated -> "connectionIncognitoUpdated"
+    is CRConnectionPlan -> "connectionPlan"
     is SentConfirmation -> "sentConfirmation"
     is SentInvitation -> "sentInvitation"
     is ContactAlreadyExists -> "contactAlreadyExists"
@@ -3605,6 +3618,7 @@ sealed class CR {
     is ConnectionVerified -> withUser(user, "verified: $verified\nconnectionCode: $expectedCode")
     is Invitation -> withUser(user, connReqInvitation)
     is ConnectionIncognitoUpdated -> withUser(user, json.encodeToString(toConnection))
+    is CRConnectionPlan -> withUser(user, json.encodeToString(connectionPlan))
     is SentConfirmation -> withUser(user, noDetails())
     is SentInvitation -> withUser(user, noDetails())
     is ContactAlreadyExists -> withUser(user, json.encodeToString(contact))
@@ -3716,6 +3730,39 @@ fun chatError(r: CR): ChatErrorType? {
       else if (r is CR.ChatRespError && r.chatError is ChatError.ChatErrorChat) r.chatError.errorType
       else null
       )
+}
+
+@Serializable
+sealed class ConnectionPlan {
+  @Serializable @SerialName("invitationLink") class InvitationLink(val invitationLinkPlan: InvitationLinkPlan): ConnectionPlan()
+  @Serializable @SerialName("contactAddress") class ContactAddress(val contactAddressPlan: ContactAddressPlan): ConnectionPlan()
+  @Serializable @SerialName("groupLink") class GroupLink(val groupLinkPlan: GroupLinkPlan): ConnectionPlan()
+}
+
+@Serializable
+sealed class InvitationLinkPlan {
+  @Serializable @SerialName("ok") object Ok: InvitationLinkPlan()
+  @Serializable @SerialName("ownLink") object OwnLink: InvitationLinkPlan()
+  @Serializable @SerialName("connecting") class Connecting(val contact_: Contact? = null): InvitationLinkPlan()
+  @Serializable @SerialName("known") class Known(val contact: Contact): InvitationLinkPlan()
+}
+
+@Serializable
+sealed class ContactAddressPlan {
+  @Serializable @SerialName("ok") object Ok: ContactAddressPlan()
+  @Serializable @SerialName("ownLink") object OwnLink: ContactAddressPlan()
+  @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: ContactAddressPlan()
+  @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val contact: Contact): ContactAddressPlan()
+  @Serializable @SerialName("known") class Known(val contact: Contact): ContactAddressPlan()
+}
+
+@Serializable
+sealed class GroupLinkPlan {
+  @Serializable @SerialName("ok") object Ok: GroupLinkPlan()
+  @Serializable @SerialName("ownLink") class OwnLink(val groupInfo: GroupInfo): GroupLinkPlan()
+  @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: GroupLinkPlan()
+  @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val groupInfo_: GroupInfo? = null): GroupLinkPlan()
+  @Serializable @SerialName("known") class Known(val groupInfo: GroupInfo): GroupLinkPlan()
 }
 
 abstract class TerminalItem {
@@ -3877,6 +3924,7 @@ sealed class ChatErrorType {
       is ChatNotStarted -> "chatNotStarted"
       is ChatNotStopped -> "chatNotStopped"
       is ChatStoreChanged -> "chatStoreChanged"
+      is ConnectionPlanChatError -> "connectionPlan"
       is InvalidConnReq -> "invalidConnReq"
       is InvalidChatMessage -> "invalidChatMessage"
       is ContactNotReady -> "contactNotReady"
@@ -3953,6 +4001,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("chatNotStarted") object ChatNotStarted: ChatErrorType()
   @Serializable @SerialName("chatNotStopped") object ChatNotStopped: ChatErrorType()
   @Serializable @SerialName("chatStoreChanged") object ChatStoreChanged: ChatErrorType()
+  @Serializable @SerialName("connectionPlan") class ConnectionPlanChatError(val connectionPlan: ConnectionPlan): ChatErrorType()
   @Serializable @SerialName("invalidConnReq") object InvalidConnReq: ChatErrorType()
   @Serializable @SerialName("invalidChatMessage") class InvalidChatMessage(val connection: Connection, val message: String): ChatErrorType()
   @Serializable @SerialName("contactNotReady") class ContactNotReady(val contact: Contact): ChatErrorType()

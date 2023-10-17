@@ -53,28 +53,10 @@ fun PasteToConnectLayout(
   fun connectViaLink(connReqUri: String) {
     try {
       val uri = URI(connReqUri)
-      withUriAction(uri) { linkType ->
-        val action = suspend {
-          Log.d(TAG, "connectViaUri: connecting")
-          if (connectViaUri(chatModel, linkType, uri, incognito = incognito.value)) {
-            close()
-          }
-        }
-        if (linkType == ConnectionLinkType.GROUP) {
-          AlertManager.shared.showAlertDialog(
-            title = generalGetString(MR.strings.connect_via_group_link),
-            text = generalGetString(MR.strings.you_will_join_group),
-            confirmText = if (incognito.value) generalGetString(MR.strings.connect_via_link_incognito) else generalGetString(MR.strings.connect_via_link_verb),
-            onConfirm = { withApi { action() } }
-          )
-        } else action()
+      withApi {
+        planAndConnect(chatModel, uri, incognito = incognito.value, close)
       }
     } catch (e: RuntimeException) {
-      AlertManager.shared.showAlertMsg(
-        title = generalGetString(MR.strings.invalid_connection_link),
-        text = generalGetString(MR.strings.this_string_is_not_a_connection_link)
-      )
-    } catch (e: URISyntaxException) {
       AlertManager.shared.showAlertMsg(
         title = generalGetString(MR.strings.invalid_connection_link),
         text = generalGetString(MR.strings.this_string_is_not_a_connection_link)
