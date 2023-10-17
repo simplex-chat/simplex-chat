@@ -278,7 +278,7 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
+    func upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem, insert: Bool = true) -> Bool {
         // update previews
         var res: Bool
         if let chat = getChat(cInfo.id) {
@@ -295,20 +295,22 @@ final class ChatModel: ObservableObject {
             res = true
         }
         // update current chat
-        return chatId == cInfo.id ? _upsertChatItem(cInfo, cItem) : res
+        return chatId == cInfo.id ? _upsertChatItem(cInfo, cItem, insert: insert) : res
     }
 
-    private func _upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) -> Bool {
+    private func _upsertChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem, insert: Bool = true) -> Bool {
         if let i = getChatItemIndex(cItem) {
             withAnimation {
                 _updateChatItem(at: i, with: cItem)
             }
             return false
-        } else {
+        } else if insert {
             withAnimation(itemAnimation()) {
                 reversedChatItems.insert(cItem, at: hasLiveDummy ? 1 : 0)
             }
             return true
+        } else {
+            return false
         }
 
         func itemAnimation() -> Animation? {

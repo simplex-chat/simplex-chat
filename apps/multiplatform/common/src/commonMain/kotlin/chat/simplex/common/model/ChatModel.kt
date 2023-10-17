@@ -242,7 +242,7 @@ object ChatModel {
     }
   }
 
-  suspend fun upsertChatItem(cInfo: ChatInfo, cItem: ChatItem): Boolean  = updatingChatsMutex.withLock {
+  suspend fun upsertChatItem(cInfo: ChatInfo, cItem: ChatItem, insert: Boolean = true): Boolean  = updatingChatsMutex.withLock {
     // update previews
     val i = getChatIndex(cInfo.id)
     val chat: Chat
@@ -271,10 +271,12 @@ object ChatModel {
           chatItems[itemIndex] = cItem
           Log.d(TAG, "TODOCHAT: upsertChatItem: updated in chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           false
-        } else {
+        } else if (insert) {
           chatItems.add(cItem)
           Log.d(TAG, "TODOCHAT: upsertChatItem: added to chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           true
+        } else {
+          false
         }
       } else {
         res

@@ -1490,7 +1490,8 @@ object ChatController {
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         if (!cItem.isDeletedContent) {
-          val added = if (active(r.user)) chatModel.upsertChatItem(cInfo, cItem) else true
+          val insert = cItem.meta.itemStatus is CIStatus.SndSent
+          val added = if (active(r.user)) chatModel.upsertChatItem(cInfo, cItem, insert) else false
           if (added && cItem.showNotification) {
             ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
           }
