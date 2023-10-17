@@ -44,11 +44,14 @@ import UnliftIO.Concurrent
 pattern BROADCAST_ADDR_V4 :: (IsString a, Eq a) => a
 pattern BROADCAST_ADDR_V4 = "0.0.0.0"
 
+pattern MULTICAST_ADDR_V4 :: (IsString a, Eq a) => a
+pattern MULTICAST_ADDR_V4 = "224.0.0.251" -- same as mDNS, but we're on a different port
+
 pattern ANY_ADDR_V4 :: (IsString a, Eq a) => a
 pattern ANY_ADDR_V4 = "0.0.0.0"
 
-pattern BROADCAST_PORT :: (IsString a, Eq a) => a
-pattern BROADCAST_PORT = "5226"
+pattern DISCOVERY_PORT :: (IsString a, Eq a) => a
+pattern DISCOVERY_PORT = "5226"
 
 -- | Announce tls server, wait for connection and attach http2 client to it.
 --
@@ -70,7 +73,7 @@ announceRevHTTP2 invite credentials finishAction = do
 -- | Broadcast invite with link-local datagrams
 runAnnouncer :: ByteString -> IO ()
 runAnnouncer inviteBS = do
-  bracket (UDP.clientSocket BROADCAST_ADDR_V4 BROADCAST_PORT False) UDP.close $ \sock -> do
+  bracket (UDP.clientSocket MULTICAST_ADDR_V4 DISCOVERY_PORT False) UDP.close $ \sock -> do
     N.setSocketOption (UDP.udpSocket sock) N.Broadcast 1
     N.setSocketOption (UDP.udpSocket sock) N.ReuseAddr 1
     forever $ do
@@ -80,7 +83,7 @@ runAnnouncer inviteBS = do
 -- TODO what prevents second client from connecting to the same server?
 -- Do we need to start multiple TLS servers for different mobile hosts?
 startTLSServer :: (MonadUnliftIO m) => TMVar Bool -> TLS.Credentials -> (Transport.TLS -> IO ()) -> m (Async ())
-startTLSServer started credentials = async . liftIO . runTransportServer started BROADCAST_PORT serverParams defaultTransportServerConfig
+startTLSServer started credentials = async . liftIO . runTransportServer started DISCOVERY_PORT serverParams defaultTransportServerConfig
   where
     serverParams =
       def
@@ -93,7 +96,7 @@ startTLSServer started credentials = async . liftIO . runTransportServer started
 -- | Attach HTTP2 client and hold the TLS until the attached client finishes.
 runHTTP2Client :: MVar () -> MVar (Either HTTP2ClientError HTTP2Client) -> Transport.TLS -> IO ()
 runHTTP2Client finishedVar clientVar tls = do
-  attachHTTP2Client config ANY_ADDR_V4 BROADCAST_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls >>= putMVar clientVar
+  attachHTTP2Client config ANY_ADDR_V4 DISCOVERY_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls >>= putMVar clientVar
   readMVar finishedVar
   where
     config = defaultHTTP2ClientConfig { connTimeout = 86400000000 }
@@ -103,7 +106,7 @@ withListener = bracket openListener (liftIO . UDP.stop)
 
 openListener :: (MonadIO m) => m UDP.ListenSocket
 openListener = liftIO $ do
-  sock <- UDP.serverSocket (ANY_ADDR_V4, read BROADCAST_PORT)
+  sock <- UDP.serverSocket (MULTICAST_ADDR_V4, read DISCOVERY_PORT)
   N.setSocketOption (UDP.listenSocket sock) N.Broadcast 1
   pure sock
 
@@ -116,7 +119,7 @@ connectRevHTTP2 :: (MonadUnliftIO m) => TransportHost -> C.KeyHash -> (HTTP2Requ
 connectRevHTTP2 host fingerprint = connectTLSClient host fingerprint . attachHTTP2Server
 
 connectTLSClient :: (MonadUnliftIO m) => TransportHost -> C.KeyHash -> (Transport.TLS -> m a) -> m a
-connectTLSClient host caFingerprint = runTransportClient defaultTransportClientConfig Nothing host BROADCAST_PORT (Just caFingerprint)
+connectTLSClient host caFingerprint = runTransportClient defaultTransportClientConfig Nothing host DISCOVERY_PORT (Just caFingerprint)
 
 attachHTTP2Server :: (MonadUnliftIO m) => (HTTP2Request -> m ()) -> Transport.TLS -> m ()
 attachHTTP2Server processRequest tls = do
