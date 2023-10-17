@@ -888,6 +888,10 @@ func apiCancelFile(fileId: Int64) async -> AChatItem? {
     }
 }
 
+func setLocalDeviceName(_ displayName: String) throws {
+    try sendCommandOkRespSync(.setLocalDeviceName(displayName: displayName))
+}
+
 func startRemoteCtrl() async throws {
     try await sendCommandOkResp(.startRemoteCtrl)
 }
@@ -1044,6 +1048,12 @@ func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
 
 private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     let r = await chatSendCmd(cmd)
+    if case .cmdOk = r { return }
+    throw r
+}
+
+private func sendCommandOkRespSync(_ cmd: ChatCommand) throws {
+    let r = chatSendCmdSync(cmd)
     if case .cmdOk = r { return }
     throw r
 }
