@@ -292,10 +292,7 @@ struct ContentView: View {
                 var path = url.path
                 if (path == "/contact" || path == "/invitation") {
                     path.removeFirst()
-                    // TODO normalize in backend; revert
-                    // let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
-                    var link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
-                    link = link.starts(with: "simplex:/") ? link.replacingOccurrences(of: "simplex:/", with: "https://simplex.chat/") : link
+                    let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
                     planAndConnect(
                         link,
                         showAlert: showPlanAndConnectAlert,

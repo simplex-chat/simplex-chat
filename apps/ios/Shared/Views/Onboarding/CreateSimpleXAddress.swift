@@ -31,7 +31,7 @@ struct CreateSimpleXAddress: View {
                         Spacer()
 
                         if let userAddress = m.userAddress {
-                            QRCode(uri: userAddress.connReqContact)
+                            SimpleXLinkQRCode(uri: userAddress.connReqContact)
                                 .frame(maxHeight: g.size.width)
                             shareQRCodeButton(userAddress)
                                 .frame(maxWidth: .infinity)
@@ -126,7 +126,7 @@ struct CreateSimpleXAddress: View {
 
     private func shareQRCodeButton(_ userAddress: UserContactLink) -> some View {
         Button {
-            showShareSheet(items: [userAddress.connReqContact])
+            showShareSheet(items: [simplexChatLink(userAddress.connReqContact)])
         } label: {
             Label("Share", systemImage: "square.and.arrow.up")
         }
