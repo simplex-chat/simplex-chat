@@ -197,8 +197,9 @@
         <target>%lld minuuttia</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld new interface languages" xml:space="preserve">
+      <trans-unit id="%lld new interface languages" xml:space="preserve" approved="no">
         <source>%lld new interface languages</source>
+        <target state="translated">%lld uutta käyttöliittymän kieltä</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld second(s)" xml:space="preserve">
@@ -1249,8 +1250,9 @@
         <target>Luo linkki</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve">
+      <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve" approved="no">
         <source>Create new profile in [desktop app](https://simplex.chat/downloads/). 💻</source>
+        <target state="translated">Luo uusi profiili [työpöytäsovelluksessa](https://simplex.chat/downloads/). 💻</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create one-time invitation link" xml:space="preserve">
@@ -1706,8 +1708,9 @@
         <target>Katkaise</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Discover and join groups" xml:space="preserve">
+      <trans-unit id="Discover and join groups" xml:space="preserve" approved="no">
         <source>Discover and join groups</source>
+        <target state="translated">Löydä ryhmiä ja liity niihin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Display name" xml:space="preserve">
