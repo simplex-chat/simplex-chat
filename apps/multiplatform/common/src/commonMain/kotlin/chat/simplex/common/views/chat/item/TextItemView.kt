@@ -136,12 +136,8 @@ fun MarkdownText (
             val link = ft.link(linkMode)
             if (link != null) {
               hasLinks = true
-              val ftStyle = if (ft.format is Format.SimplexLink && !ft.format.trustedUri && linkMode == SimplexLinkMode.BROWSER) {
-                SpanStyle(color = Color.Red, textDecoration = TextDecoration.Underline)
-              } else {
-                ft.format.style
-              }
-              withAnnotation(tag = if (ft.format is Format.SimplexLink && linkMode != SimplexLinkMode.BROWSER) "SIMPLEX_URL" else "URL", annotation = link) {
+              val ftStyle = ft.format.style
+              withAnnotation(tag = if (ft.format is Format.SimplexLink) "SIMPLEX_URL" else "URL", annotation = link) {
                 withStyle(ftStyle) { append(ft.viewText(linkMode)) }
               }
             } else {
