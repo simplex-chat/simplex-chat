@@ -1389,4 +1389,9 @@
     <string name="settings_is_storing_in_clear_text">Tunnuslause on tallennettu asetuksiin selkokielisenä.</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b> Huomioi </b>: Viesti- ja tiedostovälittimet yhdistetään SOCKS-proxyn kautta. Puhelut ja linkin esikatselut käyttävät suoraa yhteyttä.]]></string>
     <string name="encrypt_local_files">Salaa paikalliset tiedostot</string>
+    <string name="rcv_group_event_open_chat">Avaa</string>
+    <string name="v5_3_new_desktop_app">Uusi työpöytäsovellus!</string>
+    <string name="v5_3_new_interface_languages">6 uutta käyttöliittymän kieltä</string>
+    <string name="v5_3_discover_join_groups">Löydä ryhmiä ja liity niihin</string>
+    <string name="v5_3_new_desktop_app_descr">Luo uusi profiili työpöytäsovelluksessa. 💻</string>
 </resources>
