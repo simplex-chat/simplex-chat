@@ -481,11 +481,13 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
     }
   }
   LaunchedEffect(callCommand.firstOrNull(), webView.value) {
-    val cmd = callCommand.removeFirstOrNull()
     val wv = webView.value
-    if (cmd != null && wv != null) {
-      Log.d(TAG, "WebRTCView LaunchedEffect executing $cmd")
-      processCommand(wv, cmd)
+    if (wv != null) {
+      val cmd = callCommand.removeFirstOrNull()
+      if (cmd != null) {
+        Log.d(TAG, "WebRTCView LaunchedEffect executing $cmd")
+        processCommand(wv, cmd)
+      }
     }
   }
   val assetLoader = WebViewAssetLoader.Builder()
