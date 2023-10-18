@@ -33,16 +33,14 @@ import Simplex.Chat.Remote.Types
 import Simplex.Messaging.Crypto.File (CryptoFile)
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON, pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), HTTP2BodyChunk, getBodyChunk, defaultHTTP2BufferSize)
-import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError, HTTP2Response (..), closeHTTP2Client, sendRequestDirect)
-import Simplex.Messaging.Transport.HTTP2.File
+import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2Response (..), closeHTTP2Client, sendRequestDirect)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
-import Simplex.Messaging.Util (liftEitherError, liftEitherWith, tshow, liftIOEither)
+import Simplex.Messaging.Util (liftEitherError, liftEitherWith, tshow)
 import UnliftIO
 import Simplex.Messaging.Transport.Buffer (getBuffered)
 import Data.Binary.Get (getInt64le, runGetOrFail)
 import Data.Maybe (isNothing)
-import UnliftIO.Concurrent (threadDelay)
-import Data.Text.Encoding (encodeUtf8, decodeUtf8)
+import Data.Text.Encoding (decodeUtf8)
 
 data RemoteCommand
   = RCSend {command :: Text} -- TODO maybe ChatCommand here?

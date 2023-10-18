@@ -43,8 +43,6 @@ import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Util (ifM, liftEitherError, liftError, liftIOEither, tshow, ($>>=))
 import System.FilePath ((</>))
 import UnliftIO
-import Debug.Trace (traceShowId)
-import UnliftIO.Concurrent (threadDelay)
 
 -- * Desktop side
 
