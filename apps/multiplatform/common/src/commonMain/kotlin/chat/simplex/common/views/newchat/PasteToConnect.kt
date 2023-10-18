@@ -97,6 +97,7 @@ fun PasteToConnectLayout(
       painterResource(MR.images.ic_link),
       stringResource(MR.strings.connect_button),
       click = { connectViaLink(connectionLink.value) },
+      disabled = connectionLink.value.isEmpty() || connectionLink.value.trim().contains(" ")
     )
 
     IncognitoToggle(incognitoPref, incognito) { ModalManager.start.showModal { IncognitoView() } }
