@@ -671,18 +671,18 @@ private func connectionErrorAlert(_ r: ChatResponse) -> Alert {
     }
 }
 
-func apiDeleteChat(type: ChatType, id: Int64) async throws {
-    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id), bgTask: false)
+func apiDeleteChat(type: ChatType, id: Int64, notify: Bool? = nil) async throws {
+    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id, notify: notify), bgTask: false)
     if case .direct = type, case .contactDeleted = r { return }
     if case .contactConnection = type, case .contactConnectionDeleted = r { return }
     if case .group = type, case .groupDeletedUser = r { return }
     throw r
 }
 
-func deleteChat(_ chat: Chat) async {
+func deleteChat(_ chat: Chat, notify: Bool? = nil) async {
     do {
         let cInfo = chat.chatInfo
-        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId)
+        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId, notify: notify)
         DispatchQueue.main.async { ChatModel.shared.removeChat(cInfo.id) }
     } catch let error {
         logger.error("deleteChat apiDeleteChat error: \(responseError(error))")

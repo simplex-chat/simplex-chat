@@ -32,6 +32,7 @@ struct ChatListNavLink: View {
     @State private var showJoinGroupDialog = false
     @State private var showContactConnectionInfo = false
     @State private var showInvalidJSON = false
+    @State private var showDeleteContactActionSheet = false
 
     var body: some View {
         switch chat.chatInfo {
@@ -64,17 +65,27 @@ struct ChatListNavLink: View {
                 clearChatButton()
             }
             Button {
-                AlertManager.shared.showAlert(
-                    contact.ready || !contact.active
-                    ? deleteContactAlert(chat.chatInfo)
-                    : deletePendingContactAlert(chat, contact)
-                )
+                if contact.ready || !contact.active {
+                    showDeleteContactActionSheet = true
+                } else {
+                    AlertManager.shared.showAlert(deletePendingContactAlert(chat, contact))
+                }
             } label: {
                 Label("Delete", systemImage: "trash")
             }
             .tint(.red)
         }
         .frame(height: rowHeights[dynamicTypeSize])
+        .actionSheet(isPresented: $showDeleteContactActionSheet) {
+            ActionSheet(
+                title: Text("Delete contact?\nThis cannot be undone!"),
+                buttons: [
+                    .destructive(Text("Delete and notify contact")) { Task { await deleteChat(chat, notify: true) } },
+                    .destructive(Text("Delete, don't notify")) { Task { await deleteChat(chat, notify: false) } },
+                    .cancel()
+                ]
+            )
+        }
     }
 
     @ViewBuilder private func groupNavLink(_ groupInfo: GroupInfo) -> some View {
@@ -267,17 +278,6 @@ struct ChatListNavLink: View {
         .onTapGesture {
             showContactConnectionInfo = true
         }
-    }
-
-    private func deleteContactAlert(_ chatInfo: ChatInfo) -> Alert {
-        Alert(
-            title: Text("Delete contact?"),
-            message: Text("Contact and all messages will be deleted - this cannot be undone!"),
-            primaryButton: .destructive(Text("Delete")) {
-                Task { await deleteChat(chat) }
-            },
-            secondaryButton: .cancel()
-        )
     }
 
     private func deleteGroupAlert(_ groupInfo: GroupInfo) -> Alert {
