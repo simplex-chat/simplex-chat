@@ -1421,11 +1421,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
     case let .chatItemStatusUpdated(user, aChatItem):
         let cInfo = aChatItem.chatInfo
         let cItem = aChatItem.chatItem
-        if !cItem.isDeletedContent {
-            let added = active(user) ? await MainActor.run { m.upsertChatItem(cInfo, cItem) } : true
-            if added && cItem.showNotification {
-                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
-            }
+        if !cItem.isDeletedContent && active(user) {
+            await MainActor.run { m.updateChatItem(cInfo, cItem, status: cItem.meta.itemStatus) }
         }
         if let endTask = m.messageDelivery[cItem.id] {
             switch cItem.meta.itemStatus {

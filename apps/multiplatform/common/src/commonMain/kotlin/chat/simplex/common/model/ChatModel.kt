@@ -53,6 +53,7 @@ object ChatModel {
   // current chat
   val chatId = mutableStateOf<String?>(null)
   val chatItems = mutableStateListOf<ChatItem>()
+  val chatItemStatuses = mutableStateMapOf<Long, CIStatus>()
   val groupMembers = mutableStateListOf<GroupMember>()
 
   val terminalItems = mutableStateListOf<TerminalItem>()
@@ -272,7 +273,13 @@ object ChatModel {
           Log.d(TAG, "TODOCHAT: upsertChatItem: updated in chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           false
         } else {
-          chatItems.add(cItem)
+          val status = chatItemStatuses.remove(cItem.id)
+          val ci = if (status != null && cItem.meta.itemStatus is CIStatus.SndNew) {
+            cItem.copy(meta = cItem.meta.copy(itemStatus = status))
+          } else {
+            cItem
+          }
+          chatItems.add(ci)
           Log.d(TAG, "TODOCHAT: upsertChatItem: added to chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           true
         }
@@ -282,13 +289,15 @@ object ChatModel {
     }
   }
 
-  suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem) {
+  suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null) {
     withContext(Dispatchers.Main) {
       if (chatId.value == cInfo.id) {
         val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
         if (itemIndex >= 0) {
           chatItems[itemIndex] = cItem
         }
+      } else if (status != null) {
+        chatItemStatuses[cItem.id] = status
       }
     }
   }

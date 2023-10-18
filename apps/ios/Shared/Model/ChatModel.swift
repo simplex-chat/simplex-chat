@@ -62,6 +62,7 @@ final class ChatModel: ObservableObject {
     // current chat
     @Published var chatId: String?
     @Published var reversedChatItems: [ChatItem] = []
+    @Published var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
     @Published var chatToTop: String?
     @Published var groupMembers: [GroupMember] = []
     // items in the terminal view
@@ -306,7 +307,11 @@ final class ChatModel: ObservableObject {
             return false
         } else {
             withAnimation(itemAnimation()) {
-                reversedChatItems.insert(cItem, at: hasLiveDummy ? 1 : 0)
+                var ci = cItem
+                if let status = chatItemStatuses.removeValue(forKey: ci.id), case .sndNew = ci.meta.itemStatus {
+                    ci.meta.itemStatus = status
+                }
+                reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
             }
             return true
         }
@@ -319,11 +324,13 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func updateChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+    func updateChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem, status: CIStatus? = nil) {
         if chatId == cInfo.id, let i = getChatItemIndex(cItem) {
             withAnimation {
                 _updateChatItem(at: i, with: cItem)
             }
+        } else if let status = status {
+            chatItemStatuses.updateValue(status, forKey: cItem.id)
         }
     }
 
