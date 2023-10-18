@@ -226,9 +226,19 @@ struct GroupChatInfoView: View {
                     .foregroundColor(.secondary)
             }
         }
-        .swipeActions(edge: .leading) {
-            let show = !member.memberSettings.showMessages
-            if show {
+
+        if user {
+            v
+        } else if member.canBeRemoved(groupInfo: groupInfo) {
+            removeSwipe(member, blockSwipe(member, v))
+        } else {
+            blockSwipe(member, v)
+        }
+    }
+
+    private func blockSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
+        v.swipeActions(edge: .leading) {
+            if member.memberSettings.showMessages {
                 Button {
                     alert = .unblockMemberAlert(mem: member)
                 } label: {
@@ -242,18 +252,16 @@ struct GroupChatInfoView: View {
                 }
             }
         }
+    }
 
-        if member.canBeRemoved(groupInfo: groupInfo) {
-            v.swipeActions(edge: .trailing) {
-                Button(role: .destructive) {
-                    alert = .removeMemberAlert(mem: member)
-                } label: {
-                    Label("Remove member", systemImage: "trash")
-                        .foregroundColor(Color.red)
-                }
+    private func removeSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
+        v.swipeActions(edge: .trailing) {
+            Button(role: .destructive) {
+                alert = .removeMemberAlert(mem: member)
+            } label: {
+                Label("Remove member", systemImage: "trash")
+                    .foregroundColor(Color.red)
             }
-        } else {
-            v
         }
     }
 

@@ -528,7 +528,7 @@ func unblockMemberAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
     Alert(
         title: Text("Unblock member?"),
         message: Text("The messages from \(mem.chatViewName) will be shown!"),
-        primaryButton: .default(Text("Un block")) {
+        primaryButton: .default(Text("Unblock")) {
             toggleShowMemberMessages(gInfo, mem, true)
         },
         secondaryButton: .cancel()

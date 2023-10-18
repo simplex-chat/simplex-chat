@@ -2508,11 +2508,13 @@ public enum SndCIStatusProgress: String, Decodable {
 
 public enum CIDeleted: Decodable {
     case deleted(deletedTs: Date?)
+    case blocked(deletedTs: Date?)
     case moderated(deletedTs: Date?, byGroupMember: GroupMember)
 
     var id: String {
         switch self {
         case .deleted: return  "deleted"
+        case .blocked: return  "blocked"
         case .moderated: return "moderated"
         }
     }
