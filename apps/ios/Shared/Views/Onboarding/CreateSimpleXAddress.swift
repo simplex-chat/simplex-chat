@@ -194,7 +194,7 @@ struct SendAddressMailView: View {
         let messageBody = String(format: NSLocalizedString("""
             <p>Hi!</p>
             <p><a href="%@">Connect to me via SimpleX Chat</a></p>
-            """, comment: "email text"), userAddress.connReqContact)
+            """, comment: "email text"), simplexChatLink(userAddress.connReqContact))
         MailView(
             isShowing: self.$showMailView,
             result: $mailViewResult,
