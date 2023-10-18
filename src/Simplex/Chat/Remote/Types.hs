@@ -6,7 +6,6 @@
 
 module Simplex.Chat.Remote.Types where
 
-import Control.Concurrent.Async (Async)
 import Control.Exception
 import qualified Data.Aeson.TH as J
 import Data.Int (Int64)
@@ -14,6 +13,7 @@ import Data.Text (Text)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
+import UnliftIO
 
 data RemoteHostClient = RemoteHostClient
   { encoding :: PlatformEncoding,
@@ -22,8 +22,9 @@ data RemoteHostClient = RemoteHostClient
   }
 
 data RemoteHostSession
-  = RemoteHostSessionConnecting {setupAsync :: Async ()}
-  | RemoteHostSessionStarted {remoteHostClient :: RemoteHostClient, storePath :: FilePath}
+  = RemoteHostSessionStarting {remoteHostTasks :: TVar [Async ()]}
+  | RemoteHostSessionConnecting {remoteHostTasks :: TVar [Async ()]}
+  | RemoteHostSessionStarted {remoteHostTasks :: TVar [Async ()], remoteHostClient :: RemoteHostClient, storePath :: FilePath}
 
 data RemoteClientError
   = RCEInvalid -- ^ failed to parse RemoteCommand or RemoteResponse
@@ -94,6 +95,17 @@ localEncoding = PESwift
 #else
 localEncoding = PEKotlin
 #endif
+
+type Tasks = TVar [Async ()]
+
+asyncRegistered :: MonadIO m => Tasks -> m (Async ()) -> m ()
+asyncRegistered tasks action = action >>= registerAsync tasks
+
+registerAsync :: MonadIO m => Tasks -> Async () -> m ()
+registerAsync tasks = atomically . modifyTVar tasks . (:)
+
+cancelTasks :: (MonadIO m) => Tasks -> m ()
+cancelTasks tasks = readTVarIO tasks >>= mapM_ cancel
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "RCE") ''RemoteClientError)
 

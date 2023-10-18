@@ -79,7 +79,7 @@ remoteStoreFile c localPath encrypt = undefined -- sendRemoteCommand c RCStoreFi
 remoteGetFile :: RemoteHostClient -> FilePath -> ExceptT RemoteClientError IO FilePath
 remoteGetFile c baseDir = undefined
 
--- processControllerRequest :: forall m. ChatMonad m => (ByteString -> m ChatResponse) -> HTTP2.HTTP2Request -> m ()
+processControllerRequest :: p -> HTTP2Request -> a
 processControllerRequest execChatCommand HTTP2Request {request, reqBody, sendResponse} = undefined
 {- TODO:
 \* Get full chat command body

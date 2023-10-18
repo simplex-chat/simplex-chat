@@ -1,4 +1,6 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
@@ -20,6 +22,7 @@ module Simplex.Chat.Remote.Discovery
   )
 where
 
+import Control.Logger.Simple
 import Control.Monad
 import Data.ByteString (ByteString)
 import Data.Default (def)
@@ -27,16 +30,17 @@ import Data.String (IsString)
 import qualified Network.Socket as N
 import qualified Network.TLS as TLS
 import qualified Network.UDP as UDP
+import Simplex.Chat.Remote.Types (Tasks, registerAsync)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Transport (supportedParameters)
 import qualified Simplex.Messaging.Transport as Transport
 import Simplex.Messaging.Transport.Client (TransportHost (..), defaultTransportClientConfig, runTransportClient)
 import Simplex.Messaging.Transport.HTTP2 (defaultHTTP2BufferSize, getHTTP2Body)
-import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError, attachHTTP2Client, connTimeout, defaultHTTP2ClientConfig)
+import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError (..), attachHTTP2Client, connTimeout, defaultHTTP2ClientConfig)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..), runHTTP2ServerWith)
 import Simplex.Messaging.Transport.Server (defaultTransportServerConfig, runTransportServer)
-import Simplex.Messaging.Util (whenM)
+import Simplex.Messaging.Util (ifM, tshow, whenM)
 import UnliftIO
 import UnliftIO.Concurrent
 
@@ -53,18 +57,33 @@ pattern BROADCAST_PORT = "5226"
 -- | Announce tls server, wait for connection and attach http2 client to it.
 --
 -- Announcer is started when TLS server is started and stopped when a connection is made.
-announceRevHTTP2 :: StrEncoding a => a -> TLS.Credentials -> IO () -> IO (Either HTTP2ClientError HTTP2Client)
-announceRevHTTP2 invite credentials finishAction = do
+announceRevHTTP2 :: StrEncoding a => Tasks -> a -> TLS.Credentials -> IO () -> IO (Either HTTP2ClientError HTTP2Client)
+announceRevHTTP2 tasks invite credentials finishAction = do
   httpClient <- newEmptyMVar
   started <- newEmptyTMVarIO
   finished <- newEmptyMVar
-  announcer <- async . liftIO . whenM (atomically $ takeTMVar started) $ runAnnouncer (strEncode invite)
-  tlsServer <- startTLSServer started credentials $ \tls -> cancel announcer >> runHTTP2Client finished httpClient tls
-  _ <- forkIO $ do
-    readMVar finished
+  _ <- forkIO $ readMVar finished >> finishAction -- attach external cleanup action to session lock
+  announcer <- async . liftIO . whenM (atomically $ takeTMVar started) $ do
+    logInfo $ "Starting announcer for " <> tshow (strEncode invite)
+    runAnnouncer (strEncode invite)
+  tasks `registerAsync` announcer
+  tlsServer <- startTLSServer started credentials $ \tls -> do
+    logInfo $ "Incoming connection for " <> tshow (strEncode invite)
     cancel announcer
-    cancel tlsServer
-    finishAction
+    runHTTP2Client finished httpClient tls `onException` logError "oops"
+    logInfo $ "Client finished for " <> tshow (strEncode invite)
+  -- BUG: this should be handled in HTTP2Client wrapper
+  _ <- forkIO $ do
+    waitCatch tlsServer >>= \case
+      Left err | fromException err == Just AsyncCancelled -> logDebug "tlsServer cancelled"
+      Left err -> do
+        logError $ "tlsServer failed to start: " <> tshow err
+        void $ tryPutMVar httpClient $ Left HCNetworkError
+        void . atomically $ tryPutTMVar started False
+      Right () -> pure ()
+    void $ tryPutMVar finished ()
+  tasks `registerAsync` tlsServer
+  logInfo $ "Waiting for client for " <> tshow (strEncode invite)
   readMVar httpClient
 
 -- | Broadcast invite with link-local datagrams
@@ -92,11 +111,15 @@ startTLSServer started credentials = async . liftIO . runTransportServer started
 
 -- | Attach HTTP2 client and hold the TLS until the attached client finishes.
 runHTTP2Client :: MVar () -> MVar (Either HTTP2ClientError HTTP2Client) -> Transport.TLS -> IO ()
-runHTTP2Client finishedVar clientVar tls = do
-  attachHTTP2Client config ANY_ADDR_V4 BROADCAST_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls >>= putMVar clientVar
-  readMVar finishedVar
+runHTTP2Client finishedVar clientVar tls =
+  ifM (isEmptyMVar clientVar)
+    do
+      attachHTTP2Client config ANY_ADDR_V4 BROADCAST_PORT (putMVar finishedVar () ) defaultHTTP2BufferSize tls >>= putMVar clientVar
+      readMVar finishedVar
+    do
+      logError "HTTP2 session already started on this listener"
   where
-    config = defaultHTTP2ClientConfig { connTimeout = 86400000000 }
+    config = defaultHTTP2ClientConfig { connTimeout = maxBound }
 
 withListener :: (MonadUnliftIO m) => (UDP.ListenSocket -> m a) -> m a
 withListener = bracket openListener (liftIO . UDP.stop)

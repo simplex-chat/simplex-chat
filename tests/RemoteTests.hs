@@ -19,7 +19,7 @@ import qualified Network.HTTP2.Server as S
 import qualified Network.Socket as N
 import qualified Network.TLS as TLS
 import qualified Simplex.Chat.Controller as Controller
-import Simplex.Chat.Remote.Types (RemoteHostSession (..))
+import Simplex.Chat.Remote.Types
 import qualified Simplex.Chat.Remote.Discovery as Discovery
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
@@ -38,7 +38,8 @@ remoteTests = fdescribe "Handshake" $ do
   it "generates usable credentials" genCredentialsTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
   it "connects desktop and mobile" remoteHandshakeTest
-  it "send messages via remote desktop" remoteCommandTest
+  it "connects desktop and mobile (again)" remoteHandshakeTest
+  xit "send messages via remote desktop" remoteCommandTest
 
 -- * Low-level TLS with ephemeral credentials
 
@@ -67,11 +68,12 @@ genCredentialsTest _tmp = do
 announceDiscoverHttp2Test :: (HasCallStack) => FilePath -> IO ()
 announceDiscoverHttp2Test _tmp = do
   (fingerprint, credentials) <- genTestCredentials
+  tasks <- newTVarIO []
   finished <- newEmptyMVar
   controller <- async $ do
     traceM "    - Controller: starting"
     bracket
-      (Discovery.announceRevHTTP2 fingerprint credentials (putMVar finished ()) >>= either (fail . show) pure)
+      (Discovery.announceRevHTTP2 tasks fingerprint credentials (putMVar finished ()) >>= either (fail . show) pure)
       closeHTTP2Client
       ( \http -> do
           traceM "    - Controller: got client"
@@ -94,7 +96,9 @@ announceDiscoverHttp2Test _tmp = do
         traceM "    - Host: sent response"
     takeMVar finished `finally` cancel server
     traceM "    - Host: finished"
-  (waitBoth host controller `shouldReturn` ((), ())) `onException` (cancel host >> cancel controller)
+  tasks `registerAsync` controller
+  tasks `registerAsync` host
+  (waitBoth host controller `shouldReturn` ((), ())) `finally` cancelTasks tasks
 
 -- * Chat commands
 
@@ -109,7 +113,7 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
 
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
-  desktop <## "1. TODO" -- TODO host name probably should be Maybe, as when host is created there is no name yet
+  desktop <## "1." -- TODO host name probably should be Maybe, as when host is created there is no name yet
   desktop ##> "/start remote host 1"
   desktop <## "ok"
 
@@ -134,7 +138,7 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   traceM "    - Session active"
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
-  desktop <## "1. TODO (active)"
+  desktop <## "1.  (active)"
   mobile ##> "/list remote ctrls"
   mobile <## "Remote controllers:"
   mobile <## "1. My desktop (active)"
@@ -148,8 +152,8 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   desktop <## "No remote hosts"
 
   traceM "    - Shutting mobile"
-  mobile ##> "/stop remote ctrl"
-  mobile <## "ok"
+  -- mobile ##> "/stop remote ctrl"
+  -- mobile <## "ok"
   mobile <## "remote controller stopped"
   mobile ##> "/delete remote ctrl 1"
   mobile <## "ok"

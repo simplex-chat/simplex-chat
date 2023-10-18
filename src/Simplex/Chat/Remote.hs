@@ -1,3 +1,4 @@
+{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -24,12 +25,14 @@ import qualified Data.ByteString.Base64.URL as B64U
 import qualified Data.ByteString.Char8 as B
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Network.Socket (SockAddr (..), hostAddressToTuple)
 import Simplex.Chat.Controller
 import qualified Simplex.Chat.Remote.Discovery as Discovery
+import Simplex.Chat.Remote.Protocol
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store.Remote
 import qualified Simplex.Messaging.Crypto as C
@@ -37,53 +40,76 @@ import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
-import Simplex.Messaging.Util (ifM, tshow, ($>>=), liftError, liftEitherError)
+import Simplex.Messaging.Util (ifM, liftEitherError, liftError, liftIOEither, tshow, ($>>=))
 import System.FilePath ((</>))
 import UnliftIO
-import Simplex.Chat.Remote.Protocol
+
+-- * Desktop side
 
 getRemoteHostSession :: ChatMonad m => RemoteHostId -> m RemoteHostSession
-getRemoteHostSession rhId = chatReadVar remoteHostSessions >>= maybe err pure . M.lookup rhId
-  where
-    err = throwError $ ChatErrorRemoteHost rhId RHMissing
+getRemoteHostSession rhId = withRemoteHostSession rhId $ \_ s -> pure $ Right s
 
--- BUG: must be atomic with update or doesn't mean a thing
-checkNoRemoteHostSession :: ChatMonad m => RemoteHostId -> m ()
-checkNoRemoteHostSession rhId = chatReadVar remoteHostSessions >>= maybe (pure ()) err . M.lookup rhId
+withRemoteHostSession :: ChatMonad m => RemoteHostId -> (TM.TMap RemoteHostId RemoteHostSession -> RemoteHostSession -> STM (Either ChatError a)) -> m a
+withRemoteHostSession rhId = withRemoteHostSession_ rhId missing
   where
-    err _ = throwError $ ChatErrorRemoteHost rhId RHBusy
+    missing _ = pure . Left $ ChatErrorRemoteHost rhId RHMissing
+
+withNoRemoteHostSession :: ChatMonad m => RemoteHostId -> (TM.TMap RemoteHostId RemoteHostSession -> STM (Either ChatError a)) -> m a
+withNoRemoteHostSession rhId action = withRemoteHostSession_ rhId action busy
+  where
+    busy _ _ = pure . Left $ ChatErrorRemoteHost rhId RHBusy
+
+-- | Atomically process controller state wrt. specific remote host session
+withRemoteHostSession_ :: ChatMonad m => RemoteHostId -> (TM.TMap RemoteHostId RemoteHostSession -> STM (Either ChatError a)) -> (TM.TMap RemoteHostId RemoteHostSession -> RemoteHostSession -> STM (Either ChatError a)) -> m a
+withRemoteHostSession_ rhId missing present = do
+  sessions <- asks remoteHostSessions
+  liftIOEither . atomically $ TM.lookup rhId sessions >>= maybe (missing sessions) (present sessions)
 
 startRemoteHost :: ChatMonad m => RemoteHostId -> m ()
 startRemoteHost rhId = do
-  checkNoRemoteHostSession rhId
+  tasks <- startRemoteHostSession rhId
   rh <- withStore (`getRemoteHost` rhId)
-  setupAsync <- async $ do
-    finished <- newTVarIO False
-    run rh finished `onException` cleanup finished
-  chatModifyVar remoteHostSessions $ M.insert rhId RemoteHostSessionConnecting {setupAsync}
+  logInfo $ "Remote host session starting for " <> tshow rhId
+  asyncRegistered tasks . async $ run rh tasks `catchAny` \err -> do
+    logError $ "Remote host session startup failed for " <> tshow rhId <> ": " <> tshow err
+    cancelTasks tasks
+    chatModifyVar remoteHostSessions $ M.delete rhId
+    throwError $ fromMaybe (mkChatError err) $ fromException err
+  -- logInfo $ "Remote host session starting for " <> tshow rhId
   where
-    cleanup :: ChatMonad m => TVar Bool -> m ()
-    cleanup finished = do
-      atomically $ writeTVar finished True -- signal looped asyncs to stop
-      -- TODO why this is not an error?
-      M.lookup rhId <$> chatReadVar remoteHostSessions >>= \case
-        Nothing -> logInfo $ "Session already closed for remote host " <> tshow rhId
-        Just _ -> closeRemoteHostSession rhId >> toView (CRRemoteHostStopped rhId)
-    run :: ChatMonad m => RemoteHost -> TVar Bool -> m ()
-    run rh@RemoteHost {storePath} finished  = do
+    -- guarded by 'startRemoteHostSession' until 'run' crashes, 'cleanupIO' fires, or 'closeRemoteHostSession' invoked
+    step :: ChatMonad m => RemoteHostSession -> m ()
+    step = chatModifyVar remoteHostSessions . M.insert rhId
+
+    run :: ChatMonad m => RemoteHost -> Tasks -> m ()
+    run rh@RemoteHost {storePath} tasks = do
       (fingerprint, credentials) <- liftIO $ genSessionCredentials rh
-      u <- askUnliftIO
-      httpClient <- liftEitherError (ChatErrorRemoteCtrl . RCEHTTP2Error . show) $ Discovery.announceRevHTTP2 fingerprint credentials $ unliftIO u (cleanup finished)
+      cleanupIO <- toIO $ do
+        logInfo $ "Remote host session stopping for " <> tshow rhId
+        cancelTasks tasks -- cancel our tasks anyway
+        sessions <- asks remoteHostSessions
+        liftIOEither . atomically $ -- carefully unregister session
+          ifM
+            (TM.member rhId sessions)
+            (Right <$> TM.delete rhId sessions)
+            (pure . Left $ ChatErrorRemoteHost rhId RHMissing)
+        toView (CRRemoteHostStopped rhId) -- only signal "stopped" when the session is unregistered cleanly
       -- block until some client is connected or an error happens
+      logInfo $ "Remote host session connecting for " <> tshow rhId
+      step RemoteHostSessionConnecting {remoteHostTasks = tasks}
+      httpClient <- liftEitherError (ChatErrorRemoteCtrl . RCEHTTP2Error . show) $ Discovery.announceRevHTTP2 tasks fingerprint credentials cleanupIO
+      logInfo $ "Remote host session connected for " <> tshow rhId
       rcName <- chatReadVar localDeviceName
+      -- test connection and establish a protocol layer
       remoteHostClient <- liftRH rhId $ createRemoteHostClient httpClient rcName
-      -- update session state
-      chatModifyVar remoteHostSessions $ M.insert rhId RemoteHostSessionStarted {remoteHostClient, storePath}
-      chatWriteVar currentRemoteHost $ Just rhId
       -- set up message polling
       oq <- asks outputQ
-      let toViewRemote = atomically . writeTBQueue oq . (Nothing,Just rhId,)
-      pollRemote rhId finished remoteHostClient toViewRemote -- $ handleFileResponse remoteHostClient >=> toViewRemote
+      asyncRegistered tasks . forever $ do
+        liftRH rhId (remoteRecv remoteHostClient 1000000) >>= mapM_ (atomically . writeTBQueue oq . (Nothing,Just rhId,))
+      -- update session state
+      logInfo $ "Remote host session started for " <> tshow rhId
+      step RemoteHostSessionStarted {remoteHostTasks = tasks, remoteHostClient, storePath}
+      chatWriteVar currentRemoteHost $ Just rhId
 
     genSessionCredentials RemoteHost {caKey, caCert} = do
       sessionCreds <- genCredentials (Just parent) (0, 24) "Session"
@@ -91,27 +117,28 @@ startRemoteHost rhId = do
       where
         parent = (C.signatureKeyPair caKey, caCert)
 
-pollRemote :: ChatMonad m => RemoteHostId -> TVar Bool -> RemoteHostClient -> (ChatResponse -> m ()) -> m ()
-pollRemote rhId finished rhc action = loop `catchChatError` \e -> action (CRChatError Nothing e) >> loop
-  where
-    loop = do
-      liftRH rhId (remoteRecv rhc pollTimeout) >>= mapM_ action
-      readTVarIO finished >>= (`unless` loop)
-    pollTimeout = 1000000
+-- | Atomically check/register session and prepare its task list
+startRemoteHostSession :: ChatMonad m => RemoteHostId -> m Tasks
+startRemoteHostSession rhId = withNoRemoteHostSession rhId $ \sessions -> do
+  remoteHostTasks <- newTVar []
+  TM.insert rhId RemoteHostSessionStarting {remoteHostTasks} sessions
+  pure $ Right remoteHostTasks
 
 closeRemoteHostSession :: ChatMonad m => RemoteHostId -> m ()
-closeRemoteHostSession remoteHostId = do
-  session <- getRemoteHostSession remoteHostId
-  logInfo $ "Closing remote host session for " <> tshow remoteHostId
-  liftIO $ cancelRemoteHostSession session
-  chatWriteVar currentRemoteHost Nothing
-  chatModifyVar remoteHostSessions $ M.delete remoteHostId
+closeRemoteHostSession rhId = do
+  logInfo $ "Closing remote host session for " <> tshow rhId
+  currentRH <- asks currentRemoteHost
+  session <- withRemoteHostSession rhId $ \sessions rhs -> do
+    TM.delete rhId sessions
+    modifyTVar' currentRH $ \cur -> if cur == Just rhId then Nothing else cur -- only wipe the closing RH
+    pure $ Right rhs
+  cancelRemoteHostSession session
 
 cancelRemoteHostSession :: MonadUnliftIO m => RemoteHostSession -> m ()
 cancelRemoteHostSession = \case
-  -- TODO: RemoteHostSessionStarting -> pure ()
-  RemoteHostSessionConnecting {setupAsync} -> cancel setupAsync
-  RemoteHostSessionStarted {remoteHostClient} -> closeRemoteHostClient remoteHostClient
+  RemoteHostSessionStarting {remoteHostTasks} -> cancelTasks remoteHostTasks
+  RemoteHostSessionConnecting {remoteHostTasks} -> cancelTasks remoteHostTasks
+  RemoteHostSessionStarted {remoteHostTasks, remoteHostClient} -> cancelTasks remoteHostTasks >> closeRemoteHostClient remoteHostClient
 
 createRemoteHost :: ChatMonad m => m RemoteHostInfo
 createRemoteHost = do
@@ -152,106 +179,17 @@ deleteRemoteHost rhId = do
   withStore' (`deleteRemoteHostRecord` rhId)
 
 processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostSession -> ByteString -> m ChatResponse
-processRemoteCommand _ RemoteHostSessionConnecting {} _ = pure $ chatCmdError Nothing "remote command sent before session started"
 processRemoteCommand remoteHostId RemoteHostSessionStarted {remoteHostClient = rhc} s = liftRH remoteHostId $ remoteSend rhc s
-  -- liftRH remoteHostId $ uploadFile cmd >>= remoteSend rhc
-  -- where
-  --   uploadFile = \case
-  --     -- TODO APISendMessage should only be used with host path already, and UI has to upload file first.
-  --     -- The problem is that we cannot have different file names in host and controller, because it simply won't be able to show files.
-  --     -- So we need to ask the host to store files BEFORE storing them in the app storage and use host names in the command and to store the file locally if it has to be shown,
-  --     -- or don't even store it if it's not image/video.
-  --     -- The current approach won't work.
-  --     -- It also does not account for local file encryption.
-  --     -- Also, local file encryption setting should be tracked in the controller, as otherwise host won't be able to decide what to do having received the upload command.
-  --     APISendMessage {composedMessage = cm@ComposedMessage {fileSource = Just CryptoFile {filePath = localPath}}} -> do
-  --       let encrypt = Nothing -- TODO
-  --       source <- remoteStoreFile rhc localPath encrypt
-  --       let cm' = cm {fileSource = Just source} :: ComposedMessage
-  --       -- TODO we shouldn't manipulate commands like that
-  --       pure $ B.takeWhile (/= '{') s <> B.toStrict (J.encode cm')
-  --     -- SendFile cn ctrlPath -> fileCmd "/file" cn <$> remoteStoreFile remoteHostClient ctrlPath
-  --     -- SendImage cn ctrlPath -> fileCmd "/image" cn <$> remoteStoreFile remoteHostClient ctrlPath
-  --     _ -> pure s
-  --   -- fileCmd cmdPfx cn hostPath = utf8String $ unwords [cmdPfx, chatNameStr cn, hostPath]
+processRemoteCommand _ _ _ = pure $ chatCmdError Nothing "remote command sent before session started"
 
 liftRH :: (MonadIO m, MonadError ChatError m) => RemoteHostId -> ExceptT RemoteClientError IO a -> m a
 liftRH rhId = liftError (ChatErrorRemoteHost rhId . RHClientError)
 
--- -- TODO command/response pattern, remove REST conventions
--- processControllerRequest :: forall m. ChatMonad m => (ByteString -> m ChatResponse) -> HTTP2.HTTP2Request -> m ()
--- processControllerRequest execChatCommand HTTP2.HTTP2Request {request, reqBody, sendResponse} = do
---   logDebug $ "Remote controller request: " <> tshow (method <> " " <> path)
---   res <- tryChatError $ case (method, ps) of
---     ("GET", []) -> getHello
---     ("POST", ["send"]) -> sendCommand
---     ("GET", ["recv"]) -> recvMessage
---     ("PUT", ["store"]) -> storeFile
---     ("GET", ["fetch"]) -> fetchFile
---     unexpected -> respondWith Status.badRequest400 $ "unexpected method/path: " <> Binary.putStringUtf8 (show unexpected)
---   case res of
---     Left e -> logError $ "Error handling remote controller request: (" <> tshow (method <> " " <> path) <> "): " <> tshow e
---     Right () -> logDebug $ "Remote controller request: " <> tshow (method <> " " <> path) <> " OK"
---   where
---     method = fromMaybe "" $ HS.requestMethod request
---     path = fromMaybe "/" $ HS.requestPath request
---     (ps, query) = HTTP.decodePath path
---     getHello = respond "OK"
---     sendCommand = execChatCommand (bodyHead reqBody) >>= respondJSON
---     recvMessage =
---       chatReadVar remoteCtrlSession >>= \case
---         Nothing -> respondWith Status.internalServerError500 "session not active"
---         Just rcs -> atomically (readTBQueue $ remoteOutputQ rcs) >>= respondJSON
---     -- TODO liftEither storeFileQuery
---     storeFile = case storeFileQuery of
---       Left err -> respondWith Status.badRequest400 (Binary.putStringUtf8 err)
---       Right fileName -> do
---         baseDir <- fromMaybe "." <$> chatReadVar filesFolder
---         localPath <- uniqueCombine baseDir fileName
---         logDebug $ "Storing controller file to " <> tshow (baseDir, localPath)
---         writeBodyToFile localPath reqBody
---         let storeRelative = takeFileName localPath
---         respond $ Binary.putStringUtf8 storeRelative
---       where
---         storeFileQuery = parseField "file_name" $ A.many1 (A.satisfy $ not . isPathSeparator)
---     -- TODO move to ExceptT monad, catch errors in one place, convert errors to responses
---     fetchFile = case fetchFileQuery of
---       Left err -> respondWith Status.badRequest400 (Binary.putStringUtf8 err)
---       Right (userId, fileId) -> do
---         logInfo $ "Fetching file " <> tshow fileId <> " from user " <> tshow userId
---         x <- withStore' $ \db -> runExceptT $ do
---           user <- getUser db userId
---           getRcvFileTransfer db user fileId
---         -- TODO this error handling is very ad-hoc, there is no separation between Chat errors and responses
---         case x of
---           Right RcvFileTransfer {fileStatus = RFSComplete RcvFileInfo {filePath}} -> do
---             baseDir <- fromMaybe "." <$> chatReadVar filesFolder
---             let fullPath = baseDir </> filePath
---             size <- fromInteger <$> getFileSize fullPath
---             liftIO . sendResponse . HS.responseFile Status.ok200 mempty $ HS.FileSpec fullPath 0 size
---           Right _ -> respondWith Status.internalServerError500 "The requested file is not complete"
---           Left SEUserNotFound {} -> respondWith Status.notFound404 "User not found"
---           Left SERcvFileNotFound {} -> respondWith Status.notFound404 "File not found"
---           _ -> respondWith Status.internalServerError500 "Store error"
---       where
---         fetchFileQuery =
---           (,)
---             <$> parseField "user_id" A.decimal
---             <*> parseField "file_id" A.decimal
-
---     parseField :: ByteString -> A.Parser a -> Either String a
---     parseField field p = maybe (Left $ "missing " <> B.unpack field) (A.parseOnly $ p <* A.endOfInput) (join $ lookup field query)
-
---     respondJSON :: (J.ToJSON a) => a -> m ()
---     respondJSON = respond . Binary.fromLazyByteString . J.encode
-
---     respond = respondWith Status.ok200
---     respondWith status = liftIO . sendResponse . HS.responseBuilder status []
-
--- * ChatRequest handlers
+-- * Mobile side
 
 startRemoteCtrl :: ChatMonad m => (ByteString -> m ChatResponse) -> m ()
 startRemoteCtrl execChatCommand = do
+  logInfo "Starting remote host"
   checkNoRemoteCtrlSession
   size <- asks $ tbqSize . config
   remoteOutputQ <- newTBQueueIO size
