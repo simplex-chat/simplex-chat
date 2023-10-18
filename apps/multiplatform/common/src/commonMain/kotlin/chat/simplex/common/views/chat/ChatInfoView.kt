@@ -225,16 +225,6 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> 
       }
     }
   )
-
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.delete_contact_question),
-    text = generalGetString(MR.strings.delete_contact_all_messages_deleted_cannot_undo_warning),
-    confirmText = generalGetString(MR.strings.delete_verb),
-    onConfirm = {
-      deleteContact(chatInfo, chatModel, close, notify = true)
-    },
-    destructive = true,
-  )
 }
 
 fun deleteContact(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)?, notify: Boolean) {
