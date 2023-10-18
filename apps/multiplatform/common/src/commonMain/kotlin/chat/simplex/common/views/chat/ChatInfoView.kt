@@ -31,10 +31,10 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.newchat.QRCode
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chatlist.updateChatSettings
+import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -309,9 +309,9 @@ fun ChatInfoLayout(
 
     if (contact.contactLink != null) {
       SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
-        QRCode(contact.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+        SimpleXLinkQRCode(contact.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
         val clipboard = LocalClipboardManager.current
-        ShareAddressButton { clipboard.shareText(contact.contactLink) }
+        ShareAddressButton { clipboard.shareText(simplexChatLink(contact.contactLink)) }
         SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
       }
       SectionDividerSpaced()
