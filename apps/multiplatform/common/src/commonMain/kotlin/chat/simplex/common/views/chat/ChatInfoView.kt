@@ -196,26 +196,60 @@ sealed class SendReceipts {
 }
 
 fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.delete_contact_question),
+    text = AnnotatedString(generalGetString(MR.strings.delete_contact_all_messages_deleted_cannot_undo_warning)),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          withApi {
+            deleteContact(chatInfo, chatModel, close, notify = true)
+          }
+        }) {
+          Text(generalGetString(MR.strings.delete_and_notify_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          withApi {
+            deleteContact(chatInfo, chatModel, close, notify = false)
+          }
+        }) {
+          Text(generalGetString(MR.strings.delete_dont_notify_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+    }
+  )
+
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.delete_contact_question),
     text = generalGetString(MR.strings.delete_contact_all_messages_deleted_cannot_undo_warning),
     confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = {
-      withApi {
-        val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
-        if (r) {
-          chatModel.removeChat(chatInfo.id)
-          if (chatModel.chatId.value == chatInfo.id) {
-            chatModel.chatId.value = null
-            ModalManager.end.closeModals()
-          }
-          ntfManager.cancelNotificationsForChat(chatInfo.id)
-          close?.invoke()
-        }
-      }
+      deleteContact(chatInfo, chatModel, close, notify = true)
     },
     destructive = true,
   )
+}
+
+fun deleteContact(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)?, notify: Boolean) {
+  withApi {
+    val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId, notify)
+    if (r) {
+      chatModel.removeChat(chatInfo.id)
+      if (chatModel.chatId.value == chatInfo.id) {
+        chatModel.chatId.value = null
+        ModalManager.end.closeModals()
+      }
+      ntfManager.cancelNotificationsForChat(chatInfo.id)
+      close?.invoke()
+    }
+  }
 }
 
 fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
