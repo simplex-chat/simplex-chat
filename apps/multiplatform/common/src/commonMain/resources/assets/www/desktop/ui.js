@@ -6,15 +6,14 @@ const socket = new WebSocket(`ws://${location.host}`);
 socket.addEventListener("open", (_event) => {
     console.log("Opened socket");
     sendMessageToNative = (msg) => {
-        reactOnMessageToServer(msg);
         console.log("Message to server: ", msg);
         socket.send(JSON.stringify(msg));
     };
 });
 socket.addEventListener("message", (event) => {
     const parsed = JSON.parse(event.data);
-    processCommand(parsed);
     reactOnMessageFromServer(parsed);
+    processCommand(parsed);
     console.log("Message from server: ", event.data);
 });
 socket.addEventListener("close", (_event) => {
@@ -48,14 +47,12 @@ function toggleVideoManually() {
             : '<img src="/desktop/images/ic_videocam_off.svg" />';
     }
 }
-function reactOnMessageToServer(msg) {
-    if (msg.resp.type == "connection" && msg.resp.state.connectionState == "connected") {
-        document.getElementById("progress").style.display = "none";
-    }
-}
 function reactOnMessageFromServer(msg) {
     var _a;
     switch ((_a = msg.command) === null || _a === void 0 ? void 0 : _a.type) {
+        case "capabilities":
+            document.getElementById("info-block").className = msg.command.media;
+            break;
         case "offer":
         case "start":
             document.getElementById("toggle-audio").style.display = "inline-block";
@@ -63,9 +60,16 @@ function reactOnMessageFromServer(msg) {
             if (msg.command.media == "video") {
                 document.getElementById("toggle-video").style.display = "inline-block";
             }
+            document.getElementById("info-block").className = msg.command.media;
             break;
         case "description":
             updateCallInfoView(msg.command.state, msg.command.description);
+            if ((activeCall === null || activeCall === void 0 ? void 0 : activeCall.connection.connectionState) == "connected") {
+                document.getElementById("progress").style.display = "none";
+                if (document.getElementById("info-block").className == CallMediaType.Audio) {
+                    document.getElementById("audio-call-icon").style.display = "block";
+                }
+            }
             break;
     }
 }

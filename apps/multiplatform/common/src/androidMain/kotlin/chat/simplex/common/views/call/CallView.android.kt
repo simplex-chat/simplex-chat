@@ -44,8 +44,9 @@ import chat.simplex.res.MR
 import com.google.accompanist.permissions.rememberMultiplePermissionsState
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 
@@ -55,7 +56,7 @@ actual fun ActiveCallView() {
   val chatModel = ChatModel
   BackHandler(onBack = {
     val call = chatModel.activeCall.value
-    if (call != null) withApi { chatModel.callManager.endCall(call) }
+    if (call != null) withBGApi { chatModel.callManager.endCall(call) }
   })
   val audioViaBluetooth = rememberSaveable { mutableStateOf(false) }
   val ntfModeService = remember { chatModel.controller.appPrefs.notificationsMode.get() == NotificationsMode.SERVICE }
@@ -115,31 +116,30 @@ actual fun ActiveCallView() {
       if (call != null) {
         Log.d(TAG, "has active call $call")
         when (val r = apiMsg.resp) {
-          is WCallResponse.Capabilities -> withApi {
+          is WCallResponse.Capabilities -> withBGApi {
             val callType = CallType(call.localMedia, r.capabilities)
             chatModel.controller.apiSendCallInvitation(call.contact, callType)
             chatModel.activeCall.value = call.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities)
           }
-          is WCallResponse.Offer -> withApi {
+          is WCallResponse.Offer -> withBGApi {
             chatModel.controller.apiSendCallOffer(call.contact, r.offer, r.iceCandidates, call.localMedia, r.capabilities)
             chatModel.activeCall.value = call.copy(callState = CallState.OfferSent, localCapabilities = r.capabilities)
           }
-          is WCallResponse.Answer -> withApi {
+          is WCallResponse.Answer -> withBGApi {
             chatModel.controller.apiSendCallAnswer(call.contact, r.answer, r.iceCandidates)
             chatModel.activeCall.value = call.copy(callState = CallState.Negotiated)
           }
-          is WCallResponse.Ice -> withApi {
+          is WCallResponse.Ice -> withBGApi {
             chatModel.controller.apiSendCallExtraInfo(call.contact, r.iceCandidates)
           }
           is WCallResponse.Connection ->
             try {
               val callStatus = json.decodeFromString<WebRTCCallStatus>("\"${r.state.connectionState}\"")
               if (callStatus == WebRTCCallStatus.Connected) {
-                chatModel.activeCall.value = call.copy(callState = CallState.Connected)
-                chatModel.activeCall.value?.connectedAt = Clock.System.now()
+                chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectedAt = Clock.System.now())
                 setCallSound(call.soundSpeaker, audioViaBluetooth)
               }
-              withApi { chatModel.controller.apiCallStatus(call.contact, callStatus) }
+              withBGApi { chatModel.controller.apiCallStatus(call.contact, callStatus) }
             } catch (e: Error) {
               Log.d(TAG,"call status ${r.state.connectionState} not used")
             }
@@ -150,11 +150,11 @@ actual fun ActiveCallView() {
             }
           }
           is WCallResponse.End -> {
-            withApi { chatModel.callManager.endCall(call) }
+            withBGApi { chatModel.callManager.endCall(call) }
           }
           is WCallResponse.Ended -> {
             chatModel.activeCall.value = call.copy(callState = CallState.Ended)
-            withApi { chatModel.callManager.endCall(call) }
+            withBGApi { chatModel.callManager.endCall(call) }
             chatModel.showCallView.value = false
           }
           is WCallResponse.Ok -> when (val cmd = apiMsg.command) {
@@ -211,7 +211,7 @@ private fun ActiveCallOverlay(call: Call, chatModel: ChatModel, audioViaBluetoot
   ActiveCallOverlayLayout(
     call = call,
     speakerCanBeEnabled = !audioViaBluetooth.value,
-    dismiss = { withApi { chatModel.callManager.endCall(call) } },
+    dismiss = { withBGApi { chatModel.callManager.endCall(call) } },
     toggleAudio = { chatModel.callCommand.add(WCallCommand.Media(CallMediaType.Audio, enable = !call.audioEnabled)) },
     toggleVideo = { chatModel.callCommand.add(WCallCommand.Media(CallMediaType.Video, enable = !call.videoEnabled)) },
     toggleSound = {
@@ -480,14 +480,19 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
       webView.value = null
     }
   }
-  LaunchedEffect(callCommand.firstOrNull(), webView.value) {
-    val wv = webView.value
-    if (wv != null) {
-      val cmd = callCommand.removeFirstOrNull()
-      if (cmd != null) {
-        Log.d(TAG, "WebRTCView LaunchedEffect executing $cmd")
-        processCommand(wv, cmd)
-      }
+  val wv = webView.value
+  if (wv != null) {
+    LaunchedEffect(Unit) {
+      snapshotFlow { callCommand.firstOrNull() }
+        .distinctUntilChanged()
+        .filterNotNull()
+        .collect {
+          while (callCommand.isNotEmpty()) {
+            val cmd = callCommand.removeFirst()
+            Log.d(TAG, "WebRTCView LaunchedEffect executing $cmd")
+            processCommand(wv, cmd)
+          }
+        }
     }
   }
   val assetLoader = WebViewAssetLoader.Builder()
@@ -513,7 +518,7 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
                 }
               }
             }
-            this.webViewClient = LocalContentWebViewClient(assetLoader)
+            this.webViewClient = LocalContentWebViewClient(webView, assetLoader)
             this.clearHistory()
             this.clearCache(true)
             this.addJavascriptInterface(WebRTCInterface(onResponse), "WebRTCInterface")
@@ -526,16 +531,7 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
             this.loadUrl("file:android_asset/www/android/call.html")
           }
         }
-      ) { wv ->
-        Log.d(TAG, "WebRTCView: webview ready")
-        // for debugging
-        // wv.evaluateJavascript("sendMessageToNative = ({resp}) => WebRTCInterface.postMessage(JSON.stringify({command: resp}))", null)
-        scope.launch {
-          delay(2000L)
-          wv.evaluateJavascript("sendMessageToNative = (msg) => WebRTCInterface.postMessage(JSON.stringify(msg))", null)
-          webView.value = wv
-        }
-      }
+      ) { /* WebView */ }
     }
   }
 }
@@ -550,18 +546,27 @@ class WebRTCInterface(private val onResponse: (WVAPIMessage) -> Unit) {
       // for debugging
       // onResponse(message)
       onResponse(json.decodeFromString(message))
-    } catch (e: Error) {
+    } catch (e: Exception) {
       Log.e(TAG, "failed parsing WebView message: $message")
     }
   }
 }
 
-private class LocalContentWebViewClient(private val assetLoader: WebViewAssetLoader) : WebViewClientCompat() {
+private class LocalContentWebViewClient(val webView: MutableState<WebView?>, private val assetLoader: WebViewAssetLoader) : WebViewClientCompat() {
   override fun shouldInterceptRequest(
     view: WebView,
     request: WebResourceRequest
   ): WebResourceResponse? {
     return assetLoader.shouldInterceptRequest(request.url)
+  }
+
+  override fun onPageFinished(view: WebView, url: String) {
+    super.onPageFinished(view, url)
+    view.evaluateJavascript("sendMessageToNative = (msg) => WebRTCInterface.postMessage(JSON.stringify(msg))", null)
+    webView.value = view
+    Log.d(TAG, "WebRTCView: webview ready")
+    // for debugging
+    // view.evaluateJavascript("sendMessageToNative = ({resp}) => WebRTCInterface.postMessage(JSON.stringify({command: resp}))", null)
   }
 }
 

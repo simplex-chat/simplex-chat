@@ -21,7 +21,8 @@ data class Call(
   val videoEnabled: Boolean = localMedia == CallMediaType.Video,
   val soundSpeaker: Boolean = localMedia == CallMediaType.Video,
   var localCamera: VideoCamera = VideoCamera.User,
-  val connectionInfo: ConnectionInfo? = null
+  val connectionInfo: ConnectionInfo? = null,
+  var connectedAt: Instant? = null
 ) {
   val encrypted: Boolean get() = localEncrypted && sharedKey != null
   val localEncrypted: Boolean get() = localCapabilities?.encryption ?: false
@@ -34,7 +35,6 @@ data class Call(
   }
 
   val hasMedia: Boolean get() = callState == CallState.OfferSent || callState == CallState.Negotiated || callState == CallState.Connected
-  var connectedAt: Instant? = null
 }
 
 enum class CallState {
@@ -66,7 +66,7 @@ enum class CallState {
 
 @Serializable
 sealed class WCallCommand {
-  @Serializable @SerialName("capabilities") object Capabilities: WCallCommand()
+  @Serializable @SerialName("capabilities") data class Capabilities(val media: CallMediaType): WCallCommand()
   @Serializable @SerialName("start") data class Start(val media: CallMediaType, val aesKey: String? = null, val iceServers: List<RTCIceServer>? = null, val relay: Boolean? = null): WCallCommand()
   @Serializable @SerialName("offer") data class Offer(val offer: String, val iceCandidates: String, val media: CallMediaType, val aesKey: String? = null, val iceServers: List<RTCIceServer>? = null, val relay: Boolean? = null): WCallCommand()
   @Serializable @SerialName("answer") data class Answer (val answer: String, val iceCandidates: String): WCallCommand()

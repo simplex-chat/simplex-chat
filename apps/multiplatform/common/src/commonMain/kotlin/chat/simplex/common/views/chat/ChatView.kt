@@ -278,7 +278,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           if (cInfo is ChatInfo.Direct) {
             chatModel.activeCall.value = Call(contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
             chatModel.showCallView.value = true
-            chatModel.callCommand.add(WCallCommand.Capabilities)
+            chatModel.callCommand.add(WCallCommand.Capabilities(media))
           }
         }
       },
@@ -569,17 +569,18 @@ fun ChatInfoToolbar(
       }
     } else if (activeCall?.contact?.id == chat.id) {
       barButtons.add {
-        val call = chatModel.activeCall.value
+        val call = remember { chatModel.activeCall }.value
         val connectedAt = call?.connectedAt
         if (connectedAt != null) {
           val time = remember { mutableStateOf(durationText(0)) }
-          LaunchedEffect(connectedAt) {
+          LaunchedEffect(Unit) {
             while (true) {
               time.value = durationText((Clock.System.now() - connectedAt).inWholeSeconds.toInt())
               delay(250)
             }
           }
-          Text(time.value)
+          val sp50 = with(LocalDensity.current) { 50.sp.toDp() }
+          Text(time.value, Modifier.widthIn(min = sp50))
         }
       }
       barButtons.add {

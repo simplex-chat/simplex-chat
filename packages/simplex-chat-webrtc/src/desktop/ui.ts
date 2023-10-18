@@ -7,7 +7,6 @@ const socket = new WebSocket(`ws://${location.host}`)
 socket.addEventListener("open", (_event) => {
   console.log("Opened socket")
   sendMessageToNative = (msg: WVApiMessage) => {
-    reactOnMessageToServer(msg)
     console.log("Message to server: ", msg)
     socket.send(JSON.stringify(msg))
   }
@@ -15,8 +14,8 @@ socket.addEventListener("open", (_event) => {
 
 socket.addEventListener("message", (event) => {
   const parsed = JSON.parse(event.data)
-  processCommand(parsed)
   reactOnMessageFromServer(parsed)
+  processCommand(parsed)
   console.log("Message from server: ", event.data)
 })
 
@@ -56,14 +55,11 @@ function toggleVideoManually() {
   }
 }
 
-function reactOnMessageToServer(msg: WVApiMessage) {
-  if (msg.resp.type == "connection" && msg.resp.state.connectionState == "connected") {
-    document.getElementById("progress")!.style.display = "none"
-  }
-}
-
 function reactOnMessageFromServer(msg: WVApiMessage) {
   switch (msg.command?.type) {
+    case "capabilities":
+      document.getElementById("info-block")!!.className = msg.command.media
+      break
     case "offer":
     case "start":
       document.getElementById("toggle-audio")!!.style.display = "inline-block"
@@ -71,9 +67,16 @@ function reactOnMessageFromServer(msg: WVApiMessage) {
       if (msg.command.media == "video") {
         document.getElementById("toggle-video")!!.style.display = "inline-block"
       }
+      document.getElementById("info-block")!!.className = msg.command.media
       break
     case "description":
       updateCallInfoView(msg.command.state, msg.command.description)
+      if (activeCall?.connection.connectionState == "connected") {
+        document.getElementById("progress")!.style.display = "none"
+        if (document.getElementById("info-block")!!.className == CallMediaType.Audio) {
+          document.getElementById("audio-call-icon")!.style.display = "block"
+        }
+      }
       break
   }
 }

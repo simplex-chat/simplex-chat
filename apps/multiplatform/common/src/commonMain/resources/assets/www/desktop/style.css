@@ -95,12 +95,33 @@ body {
 
 #info-block {
   position: absolute;
-  margin-left: -100px;
-  left: 50%;
-  top: 50%;
-  text-align: center;
-  margin-top: 100px;
-  width: 200px;
   color: white;
   line-height: 10px;
+  opacity: 0.8;
+  width: 200px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#info-block.audio {
+  text-align: center;
+  left: 50%;
+  top: 50%;
+  margin-left: -100px;
+  margin-top: 100px;
+}
+
+#info-block.video {
+  left: 16px;
+  top: 2px;
+}
+
+#audio-call-icon {
+  position: absolute;
+  display: none;
+  left: 50%;
+  top: 50%;
+  margin-left: -50px;
+  margin-top: -44px;
+  width: 100px;
+  height: 100px;
 }

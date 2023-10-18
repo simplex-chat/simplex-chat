@@ -1,6 +1,6 @@
 package chat.simplex.common.views.call
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -8,17 +8,21 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.*
 import kotlinx.datetime.Clock
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -38,7 +42,7 @@ val connections = ArrayList<WebSocket>()
 actual fun ActiveCallView() {
   val endCall = {
     val call = chatModel.activeCall.value
-    if (call != null) withApi { chatModel.callManager.endCall(call) }
+    if (call != null) withBGApi { chatModel.callManager.endCall(call) }
   }
   BackHandler(onBack = endCall)
   WebRTCController(chatModel.callCommand) { apiMsg ->
@@ -47,30 +51,29 @@ actual fun ActiveCallView() {
     if (call != null) {
       Log.d(TAG, "has active call $call")
       when (val r = apiMsg.resp) {
-        is WCallResponse.Capabilities -> withApi {
+        is WCallResponse.Capabilities -> withBGApi {
           val callType = CallType(call.localMedia, r.capabilities)
           chatModel.controller.apiSendCallInvitation(call.contact, callType)
           chatModel.activeCall.value = call.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities)
         }
-        is WCallResponse.Offer -> withApi {
+        is WCallResponse.Offer -> withBGApi {
           chatModel.controller.apiSendCallOffer(call.contact, r.offer, r.iceCandidates, call.localMedia, r.capabilities)
           chatModel.activeCall.value = call.copy(callState = CallState.OfferSent, localCapabilities = r.capabilities)
         }
-        is WCallResponse.Answer -> withApi {
+        is WCallResponse.Answer -> withBGApi {
           chatModel.controller.apiSendCallAnswer(call.contact, r.answer, r.iceCandidates)
           chatModel.activeCall.value = call.copy(callState = CallState.Negotiated)
         }
-        is WCallResponse.Ice -> withApi {
+        is WCallResponse.Ice -> withBGApi {
           chatModel.controller.apiSendCallExtraInfo(call.contact, r.iceCandidates)
         }
         is WCallResponse.Connection ->
           try {
             val callStatus = json.decodeFromString<WebRTCCallStatus>("\"${r.state.connectionState}\"")
             if (callStatus == WebRTCCallStatus.Connected) {
-              chatModel.activeCall.value = call.copy(callState = CallState.Connected)
-              chatModel.activeCall.value?.connectedAt = Clock.System.now()
+              chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectedAt = Clock.System.now())
             }
-            withApi { chatModel.controller.apiCallStatus(call.contact, callStatus) }
+            withBGApi { chatModel.controller.apiCallStatus(call.contact, callStatus) }
           } catch (e: Error) {
             Log.d(TAG, "call status ${r.state.connectionState} not used")
           }
@@ -78,11 +81,11 @@ actual fun ActiveCallView() {
           chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectionInfo = r.connectionInfo)
         }
         is WCallResponse.End -> {
-          withApi { chatModel.callManager.endCall(call) }
+          withBGApi { chatModel.callManager.endCall(call) }
         }
         is WCallResponse.Ended -> {
           chatModel.activeCall.value = call.copy(callState = CallState.Ended)
-          withApi { chatModel.callManager.endCall(call) }
+          withBGApi { chatModel.callManager.endCall(call) }
           chatModel.showCallView.value = false
         }
         is WCallResponse.Ok -> when (val cmd = apiMsg.command) {
@@ -110,9 +113,6 @@ actual fun ActiveCallView() {
       }
     }
   }
-  val call = chatModel.activeCall.value
-  if (call?.callState == CallState.Connected) ActiveCallOverlayLayout(call, endCall)
-//  if (call != null) ActiveCallOverlayLayout(call, endCall)
 
   SendStateUpdates()
   DisposableEffect(Unit) {
@@ -128,49 +128,18 @@ actual fun ActiveCallView() {
 
 @Composable
 private fun SendStateUpdates() {
-  LaunchedEffect(chatModel.activeCall.value) {
-    val call = chatModel.activeCall.value
-    if (call != null) {
-      val state = call.callState.text
-      val connInfo = call.connectionInfo
-      //    val connInfoText = if (connInfo == null) ""  else " (${connInfo.text}, ${connInfo.protocolText})"
-      val connInfoText = if (connInfo == null) ""  else " (${connInfo.text})"
-      val description = call.encryptionStatus + connInfoText
-      chatModel.callCommand.add(WCallCommand.Description(state, description))
-    }
-  }
-}
-
-@Composable
-private fun ActiveCallOverlayLayout(
-  call: Call,
-  endCall: () -> Unit,
-) {
-  Column(Modifier.padding(DEFAULT_PADDING)) {
-    val media = call.peerMedia ?: call.localMedia
-    Spacer(Modifier.fillMaxHeight().weight(1f))
-    Row(
-      Modifier
-        .background(
-          MaterialTheme.colors.primary.mixWith(MaterialTheme.colors.background, 0.5f),
-          RoundedCornerShape(50)
-        )
-        .padding(start = DEFAULT_PADDING_HALF),
-      verticalAlignment = Alignment.CenterVertically,
-      horizontalArrangement = Arrangement.Center
-    ) {
-      Box(contentAlignment = Alignment.BottomEnd) {
-        ProfileImage(size = 30.dp, image = call.contact.profile.image)
-        if (media == CallMediaType.Video) {
-          Icon(painterResource(MR.images.ic_videocam_filled), stringResource(MR.strings.icon_descr_video_call), Modifier.size(10.dp), tint = SimplexGreen)
-        } else {
-          Icon(painterResource(MR.images.ic_call_filled), stringResource(MR.strings.icon_descr_audio_call), Modifier.size(10.dp), tint = SimplexGreen)
-        }
+  LaunchedEffect(Unit) {
+    snapshotFlow { chatModel.activeCall.value }
+      .distinctUntilChanged()
+      .filterNotNull()
+      .collect { call ->
+        val state = call.callState.text
+        val connInfo = call.connectionInfo
+        //    val connInfoText = if (connInfo == null) ""  else " (${connInfo.text}, ${connInfo.protocolText})"
+        val connInfoText = if (connInfo == null) ""  else " (${connInfo.text})"
+        val description = call.encryptionStatus + connInfoText
+        chatModel.callCommand.add(WCallCommand.Description(state, description))
       }
-      IconButton(onClick = endCall) {
-        Icon(painterResource(MR.images.ic_call_end_filled), stringResource(MR.strings.icon_descr_hang_up), tint = Color.Red, modifier = Modifier.size(24.dp))
-      }
-    }
   }
 }
 
@@ -199,15 +168,20 @@ fun WebRTCController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (
       connections.clear()
     }
   }
-  LaunchedEffect(callCommand.firstOrNull()) {
-    while (connections.isEmpty()) {
-      delay(100)
-    }
-    val cmd = callCommand.removeFirstOrNull()
-    if (cmd != null) {
-      Log.d(TAG, "WebRTCController LaunchedEffect executing $cmd")
-      processCommand(cmd)
-    }
+  LaunchedEffect(Unit) {
+    snapshotFlow { callCommand.firstOrNull() }
+      .distinctUntilChanged()
+      .filterNotNull()
+      .collect {
+        while (connections.isEmpty()) {
+          delay(100)
+        }
+        while (callCommand.isNotEmpty()) {
+          val cmd = callCommand.removeFirst()
+          Log.d(TAG, "WebRTCController LaunchedEffect executing $cmd")
+          processCommand(cmd)
+        }
+      }
   }
 }
 
