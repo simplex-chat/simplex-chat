@@ -15,10 +15,10 @@ struct MarkedDeletedItemView: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
-            if case let .moderated(_, byGroupMember) = chatItem.meta.itemDeleted {
-                markedDeletedText("moderated by \(byGroupMember.chatViewName)")
-            } else {
-                markedDeletedText("marked deleted")
+            switch chatItem.meta.itemDeleted {
+            case let .moderated(_, byGroupMember): markedDeletedText("moderated by \(byGroupMember.chatViewName)")
+            case .blocked: markedDeletedText("blocked")
+            default: markedDeletedText("marked deleted")
             }
             CIMetaView(chatItem: chatItem)
                 .padding(.horizontal, 12)
