@@ -43,6 +43,8 @@ import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Util (ifM, liftEitherError, liftError, liftIOEither, tshow, ($>>=))
 import System.FilePath ((</>))
 import UnliftIO
+import Debug.Trace (traceShowId)
+import UnliftIO.Concurrent (threadDelay)
 
 -- * Desktop side
 
@@ -182,12 +184,12 @@ processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostSession -> Byte
 processRemoteCommand remoteHostId RemoteHostSessionStarted {remoteHostClient = rhc} s = liftRH remoteHostId $ remoteSend rhc s
 processRemoteCommand _ _ _ = pure $ chatCmdError Nothing "remote command sent before session started"
 
-liftRH :: (MonadIO m, MonadError ChatError m) => RemoteHostId -> ExceptT RemoteClientError IO a -> m a
-liftRH rhId = liftError (ChatErrorRemoteHost rhId . RHClientError)
+liftRH :: (MonadIO m, MonadError ChatError m) => RemoteHostId -> ExceptT RemoteProtocolError IO a -> m a
+liftRH rhId = liftError (ChatErrorRemoteHost rhId . RHProtocolError)
 
 -- * Mobile side
 
-startRemoteCtrl :: ChatMonad m => (ByteString -> m ChatResponse) -> m ()
+startRemoteCtrl :: forall m . ChatMonad m => (ByteString -> m ChatResponse) -> m ()
 startRemoteCtrl execChatCommand = do
   logInfo "Starting remote host"
   checkNoRemoteCtrlSession
@@ -196,16 +198,35 @@ startRemoteCtrl execChatCommand = do
   discovered <- newTVarIO mempty
   discoverer <- async $ discoverRemoteCtrls discovered
   accepted <- newEmptyTMVarIO
-  supervisor <- async $ runSupervisor discovered accepted
+  supervisor <- async $ runHost discovered accepted remoteOutputQ
   chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {discoverer, supervisor, hostServer = Nothing, discovered, accepted, remoteOutputQ}
   where
-    runSupervisor discovered accepted = do
+    runHost :: TM.TMap C.KeyHash TransportHost -> TMVar RemoteCtrlId -> TBQueue ChatResponse -> m ()
+    runHost discovered accepted events = do
       remoteCtrlId <- atomically (readTMVar accepted)
       rc@RemoteCtrl {fingerprint} <- withStore (`getRemoteCtrl` remoteCtrlId)
       source <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure
       toView $ CRRemoteCtrlConnecting $ remoteCtrlInfo rc False
       atomically $ writeTVar discovered mempty -- flush unused sources
-      server <- async $ Discovery.connectRevHTTP2 source fingerprint (processControllerRequest execChatCommand)
+      gotHello <- newIORef False
+      server <- async $ Discovery.connectRevHTTP2 source fingerprint $ \req -> do
+        ifM
+          (readIORef gotHello)
+          do
+            (respond, cmd) <- liftError (ChatErrorRemoteCtrl . RCEProtocolError) $ getControllerCommand req
+            result <- tryAny case cmd of -- use exceptions as the 'respond' MUST be called
+              (Nothing, RCSend {command}) -> RRChatResponse <$> execChatCommand (encodeUtf8 command)
+              (Nothing, RCRecv {wait=ms}) -> RRChatEvent <$> (timeout ms . atomically $ readTBQueue events)
+              (Nothing, gf@RCGetFile {}) -> error "TODO" <$ logError ("TODO: " <> tshow gf)
+              (Nothing, RCStoreFile{}) -> throwIO RPENoFile -- BUG: fails to send 0-length files
+              (Just todo'attachment, sf@RCStoreFile {}) -> error "TODO" <$ logError ("TODO: " <> tshow sf)
+              (Just _, _) -> throwIO RPEUnexpectedFile
+            liftIO case result of
+              Left err -> respond $ RRException (tshow err)
+              Right ok -> respond ok
+          do
+            liftError (ChatErrorRemoteCtrl . RCEProtocolError) $ processControllerHello req
+            atomicWriteIORef gotHello True
       chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
       toView $ CRRemoteCtrlConnected $ remoteCtrlInfo rc True
       _ <- waitCatch server

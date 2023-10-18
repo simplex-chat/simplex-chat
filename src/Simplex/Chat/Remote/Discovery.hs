@@ -70,7 +70,7 @@ announceRevHTTP2 tasks invite credentials finishAction = do
   tlsServer <- startTLSServer started credentials $ \tls -> do
     logInfo $ "Incoming connection for " <> tshow (strEncode invite)
     cancel announcer
-    runHTTP2Client finished httpClient tls `onException` logError "oops"
+    runHTTP2Client finished httpClient tls `catchAny` (logError . tshow)
     logInfo $ "Client finished for " <> tshow (strEncode invite)
   -- BUG: this should be handled in HTTP2Client wrapper
   _ <- forkIO $ do

@@ -1146,7 +1146,7 @@ data RemoteHostError
   | RHTimeout -- ^ A discovery or a remote operation has timed out
   | RHDisconnected {reason :: Text} -- ^ A session disconnected by a host
   | RHConnectionLost {reason :: Text} -- ^ A session disconnected due to transport issues
-  | RHClientError RemoteClientError
+  | RHProtocolError RemoteProtocolError
   deriving (Show, Exception, Generic)
 
 instance FromJSON RemoteHostError where
@@ -1169,6 +1169,7 @@ data RemoteCtrlError
   | RCEHTTP2Error {http2Error :: String}
   | RCEHTTP2RespStatus {statusCode :: Maybe Int} -- TODO remove
   | RCEInvalidResponse {responseError :: String}
+  | RCEProtocolError {protocolError :: RemoteProtocolError}
   deriving (Show, Exception, Generic)
 
 instance FromJSON RemoteCtrlError where

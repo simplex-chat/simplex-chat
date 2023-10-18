@@ -15,8 +15,19 @@ import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import UnliftIO
 
-data RemoteHostClient = RemoteHostClient
+{- | Session initiation message.
+
+Can't be a part of the 'RemoteRequest' sum as the sum encoding types needs to be coordinated first.
+Also, must be used exactly once.
+-}
+data RemoteHello = RemoteHello
   { encoding :: PlatformEncoding,
+    deviceName :: Text
+  }
+  deriving (Show)
+
+data RemoteHostClient = RemoteHostClient
+  { remoteEncoding :: PlatformEncoding,
     remoteDeviceName :: Text,
     httpClient :: HTTP2Client
   }
@@ -26,13 +37,13 @@ data RemoteHostSession
   | RemoteHostSessionConnecting {remoteHostTasks :: TVar [Async ()]}
   | RemoteHostSessionStarted {remoteHostTasks :: TVar [Async ()], remoteHostClient :: RemoteHostClient, storePath :: FilePath}
 
-data RemoteClientError
-  = RCEInvalid -- ^ failed to parse RemoteCommand or RemoteResponse
-  | RCEUnexpected -- ^ unexpected response
-  -- | RCENoChatResponse -- returned on timeout, the client would re-send the request
-  -- RCE: doesn't look like an exceptional situation/error, but also distorts consumer into sorting through exceptions pattern where a traversal would work
-  | RCENoFile
-  | RCEHTTP2 Text
+data RemoteProtocolError
+  = RPEInvalidSize -- ^ size prefix is malformed
+  | RPEInvalidJSON Text -- ^ failed to parse RemoteCommand or RemoteResponse
+  | RPEIncompatibleEncoding
+  | RPEUnexpectedFile
+  | RPENoFile
+  | RPEHTTP2 Text
   deriving (Show, Exception)
 
 type RemoteHostId = Int64
@@ -87,7 +98,7 @@ data RemoteCtrlInfo = RemoteCtrlInfo
 data PlatformEncoding
   = PESwift
   | PEKotlin
-  deriving (Show)
+  deriving (Show, Eq)
 
 localEncoding :: PlatformEncoding
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -107,9 +118,11 @@ registerAsync tasks = atomically . modifyTVar tasks . (:)
 cancelTasks :: (MonadIO m) => Tasks -> m ()
 cancelTasks tasks = readTVarIO tasks >>= mapM_ cancel
 
-$(J.deriveJSON (sumTypeJSON $ dropPrefix "RCE") ''RemoteClientError)
+$(J.deriveJSON (sumTypeJSON $ dropPrefix "RPE") ''RemoteProtocolError)
 
 $(J.deriveJSON (enumJSON $ dropPrefix "PE") ''PlatformEncoding)
+
+$(J.deriveJSON J.defaultOptions ''RemoteHello)
 
 $(J.deriveJSON J.defaultOptions ''RemoteCtrlOOB)
 
