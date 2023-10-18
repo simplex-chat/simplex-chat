@@ -39,7 +39,7 @@ remoteTests = fdescribe "Handshake" $ do
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
   it "connects desktop and mobile" remoteHandshakeTest
   it "connects desktop and mobile (again)" remoteHandshakeTest
-  fit "send messages via remote desktop" remoteCommandTest
+  it "send messages via remote desktop" remoteCommandTest
 
 -- * Low-level TLS with ephemeral credentials
 
@@ -134,6 +134,7 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   mobile <## "ok" -- alternative scenario: accepted before controller start
   mobile <## "remote controller 1 connecting to My desktop"
   mobile <## "remote controller 1 connected, My desktop"
+  desktop <## "remote host 1 connected"
 
   traceM "    - Session active"
   desktop ##> "/list remote hosts"

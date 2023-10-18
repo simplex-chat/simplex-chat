@@ -42,7 +42,7 @@ import Simplex.Messaging.Transport.Buffer (getBuffered)
 import Data.Binary.Get (getInt64le, runGetOrFail)
 import Data.Maybe (isNothing)
 import UnliftIO.Concurrent (threadDelay)
-import Data.Text.Encoding (encodeUtf8)
+import Data.Text.Encoding (encodeUtf8, decodeUtf8)
 
 data RemoteCommand
   = RCSend {command :: Text} -- TODO maybe ChatCommand here?
@@ -66,7 +66,8 @@ $(deriveJSON (sumTypeJSON $ dropPrefix "RR") ''RemoteResponse)
 
 createRemoteHostClient :: HTTP2Client -> Text -> ExceptT RemoteProtocolError IO RemoteHostClient
 createRemoteHostClient httpClient localDeviceName = do
-  RemoteHello {encoding, deviceName} <- sendHello httpClient localDeviceName
+  rh@RemoteHello {encoding, deviceName} <- sendHello httpClient localDeviceName
+  logInfo $ tshow rh
   when (encoding == PEKotlin && localEncoding == PESwift) $ throwError RPEIncompatibleEncoding
   pure RemoteHostClient {remoteEncoding = encoding, remoteDeviceName = deviceName, httpClient}
 
@@ -79,7 +80,7 @@ convertJSON PESwift PESwift = id
 convertJSON PESwift PEKotlin = owsf2tagged
 convertJSON PEKotlin PESwift = error "unsupported convertJSON: K/S" -- guarded by createRemoteHostClient
 
--- Initial query to coordinate codec etc.
+-- | Initial query to coordinate codec etc.
 sendHello :: HTTP2Client -> Text -> ExceptT RemoteProtocolError IO RemoteHello
 sendHello c localDeviceName = do
   logInfo "Sending initial hello"
@@ -87,15 +88,18 @@ sendHello c localDeviceName = do
   unless (isNothing attachment_) $ throwError RPEUnexpectedFile
   pure hello
 
+-- | Send chat command an
 remoteSend :: RemoteHostClient -> ByteString -> ExceptT RemoteProtocolError IO ChatResponse
-remoteSend c cmd = error "remoteSend" -- sendRemoteCommand c RCSend {command = decodeUtf8 cmd} Nothing
+remoteSend RemoteHostClient {httpClient} cmd = sendRemoteJSON httpClient RCSend {command = decodeUtf8 cmd} >>= \case
+  (Nothing, RRChatResponse cr) -> pure cr
+  (Just _, RRChatEvent{}) -> throwError RPEUnexpectedFile
+  (_, _) -> throwError RPEBadResponse
 
 remoteRecv :: RemoteHostClient -> Int -> ExceptT RemoteProtocolError IO (Maybe ChatResponse)
-remoteRecv c wait = error "remoteRecv" -- sendRemoteCommand c RCRecv {wait} Nothing
-
-sendRemoteCommand :: RemoteHostClient -> Maybe FilePath -> RemoteCommand -> ExceptT RemoteProtocolError IO (RemoteResponse, Maybe FilePath)
-sendRemoteCommand RemoteHostClient {httpClient} filePath_ cmd = do
-  Prelude.error "TODO: sendRemoteCommand"
+remoteRecv RemoteHostClient {httpClient} ms = sendRemoteJSON httpClient RCRecv {wait=ms} >>= \case
+  (Nothing, RRChatEvent cr_) -> pure cr_
+  (Just _, RRChatEvent{}) -> throwError RPEUnexpectedFile
+  (_, _) -> throwError RPEBadResponse
 
 -- TODO: file attachments
 sendRemoteJSON :: (J.ToJSON a, J.FromJSON b) => HTTP2Client -> a -> ExceptT RemoteProtocolError IO (Maybe BL.ByteString, b)
@@ -105,9 +109,11 @@ sendRemoteJSON http req = do
   where
     httpRequest = H.requestBuilder N.methodPost "/" mempty $  sizePrefixedEncode req
 
+jsonBody :: (HTTP2BodyChunk a, J.FromJSON b) => a -> HTTP2Body -> ExceptT RemoteProtocolError IO (Maybe BL.ByteString, b)
 jsonBody r body = do
   chunks <- liftIO (getHTTP2BodyChunks r body)
   (json, attachment) <- withExceptT (const RPEInvalidSize) $ sizedChunk chunks
+  -- logDebug $ decodeUtf8 $ B.toStrict json
   res <- liftEitherWith (RPEInvalidJSON . fromString) $ J.eitherDecode' json
   pure (if BL.null attachment then Nothing else Just attachment, res)
 

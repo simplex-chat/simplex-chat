@@ -72,7 +72,7 @@ startRemoteHost rhId = do
   tasks <- startRemoteHostSession rhId
   rh <- withStore (`getRemoteHost` rhId)
   logInfo $ "Remote host session starting for " <> tshow rhId
-  asyncRegistered tasks . async $ run rh tasks `catchAny` \err -> do
+  asyncRegistered tasks $ run rh tasks `catchAny` \err -> do
     logError $ "Remote host session startup failed for " <> tshow rhId <> ": " <> tshow err
     cancelTasks tasks
     chatModifyVar remoteHostSessions $ M.delete rhId
@@ -112,6 +112,13 @@ startRemoteHost rhId = do
       logInfo $ "Remote host session started for " <> tshow rhId
       step RemoteHostSessionStarted {remoteHostTasks = tasks, remoteHostClient, storePath}
       chatWriteVar currentRemoteHost $ Just rhId
+      toView $ CRRemoteHostConnected RemoteHostInfo
+        { remoteHostId = rhId,
+          storePath = storePath,
+          displayName = remoteDeviceName remoteHostClient,
+          remoteCtrlOOB = RemoteCtrlOOB {fingerprint, displayName=rcName},
+          sessionActive = True
+        }
 
     genSessionCredentials RemoteHost {caKey, caCert} = do
       sessionCreds <- genCredentials (Just parent) (0, 24) "Session"

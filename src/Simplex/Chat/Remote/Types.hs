@@ -43,6 +43,7 @@ data RemoteProtocolError
   | RPEIncompatibleEncoding
   | RPEUnexpectedFile
   | RPENoFile
+  | RPEBadResponse -- ^ Wrong response received for the command sent
   | RPEHTTP2 Text
   deriving (Show, Exception)
 
@@ -109,8 +110,8 @@ localEncoding = PEKotlin
 
 type Tasks = TVar [Async ()]
 
-asyncRegistered :: MonadIO m => Tasks -> m (Async ()) -> m ()
-asyncRegistered tasks action = action >>= registerAsync tasks
+asyncRegistered :: MonadUnliftIO m => Tasks -> m () -> m ()
+asyncRegistered tasks action = async action >>= registerAsync tasks
 
 registerAsync :: MonadIO m => Tasks -> Async () -> m ()
 registerAsync tasks = atomically . modifyTVar tasks . (:)
