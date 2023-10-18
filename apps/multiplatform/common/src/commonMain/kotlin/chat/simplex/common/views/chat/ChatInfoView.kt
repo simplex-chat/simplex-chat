@@ -201,22 +201,37 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> 
     text = AnnotatedString(generalGetString(MR.strings.delete_contact_all_messages_deleted_cannot_undo_warning)),
     buttons = {
       Column {
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          withApi {
-            deleteContact(chatInfo, chatModel, close, notify = true)
+        if (chatInfo is ChatInfo.Direct && chatInfo.contact.ready && chatInfo.contact.active) {
+          // Delete and notify contact
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            withApi {
+              deleteContact(chatInfo, chatModel, close, notify = true)
+            }
+          }) {
+            Text(generalGetString(MR.strings.delete_and_notify_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
           }
-        }) {
-          Text(generalGetString(MR.strings.delete_and_notify_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
-        }
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          withApi {
-            deleteContact(chatInfo, chatModel, close, notify = false)
+          // Delete, don't notify
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            withApi {
+              deleteContact(chatInfo, chatModel, close, notify = false)
+            }
+          }) {
+            Text(generalGetString(MR.strings.delete_dont_notify_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
           }
-        }) {
-          Text(generalGetString(MR.strings.delete_dont_notify_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+        } else {
+          // Delete
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            withApi {
+              deleteContact(chatInfo, chatModel, close)
+            }
+          }) {
+            Text(generalGetString(MR.strings.delete_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+          }
         }
+        // Cancel
         SectionItemView({
           AlertManager.shared.hideAlert()
         }) {
@@ -227,7 +242,7 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> 
   )
 }
 
-fun deleteContact(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)?, notify: Boolean) {
+fun deleteContact(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)?, notify: Boolean? = null) {
   withApi {
     val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId, notify)
     if (r) {
