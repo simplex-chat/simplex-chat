@@ -93,7 +93,7 @@ enum SimpleXLinkMode: String, Identifiable {
     case full
     case browser
 
-    static var values: [SimpleXLinkMode] = [.description, .full, .browser]
+    static var values: [SimpleXLinkMode] = [.description, .full]
 
     public var id: Self { self }
 
