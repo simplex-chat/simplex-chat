@@ -1365,10 +1365,12 @@ getGroupCIWithReactions db user g@GroupInfo {groupId} itemId = do
   liftIO . groupCIWithReactions db g =<< getGroupChatItem db user groupId itemId
 
 groupCIWithReactions :: DB.Connection -> GroupInfo -> CChatItem 'CTGroup -> IO (CChatItem 'CTGroup)
-groupCIWithReactions db g (CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId}}) = do
-  let GroupMember {memberId} = chatItemMember g ci
-  reactions <- maybe (pure []) (getGroupCIReactions db g memberId) itemSharedMsgId
-  pure $ CChatItem md ci {reactions}
+groupCIWithReactions db g cci@(CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId}}) = case itemSharedMsgId of
+  Just sharedMsgId -> do
+    let GroupMember {memberId} = chatItemMember g ci
+    reactions <- getGroupCIReactions db g memberId sharedMsgId
+    pure $ CChatItem md ci {reactions}
+  Nothing -> pure cci
 
 updateGroupChatItem :: MsgDirectionI d => DB.Connection -> User -> Int64 -> ChatItem 'CTGroup d -> CIContent d -> Bool -> Maybe MessageId -> IO (ChatItem 'CTGroup d)
 updateGroupChatItem db user groupId ci newContent live msgId_ = do
@@ -1684,9 +1686,11 @@ getDirectChatReactions_ db ct c@Chat {chatItems} = do
   pure c {chatItems = chatItems'}
 
 directCIWithReactions :: DB.Connection -> Contact -> CChatItem 'CTDirect -> IO (CChatItem 'CTDirect)
-directCIWithReactions db ct (CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId}}) = do
-  reactions <- maybe (pure []) (getDirectCIReactions db ct) itemSharedMsgId
-  pure $ CChatItem md ci {reactions}
+directCIWithReactions db ct cci@(CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId}}) = case itemSharedMsgId of
+  Just sharedMsgId -> do
+    reactions <- getDirectCIReactions db ct sharedMsgId
+    pure $ CChatItem md ci {reactions}
+  Nothing -> pure cci
 
 getDirectCIReactions :: DB.Connection -> Contact -> SharedMsgId -> IO [CIReactionCount]
 getDirectCIReactions db Contact {contactId} itemSharedMsgId =
