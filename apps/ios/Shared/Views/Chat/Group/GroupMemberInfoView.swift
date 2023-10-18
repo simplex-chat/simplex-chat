@@ -25,6 +25,8 @@ struct GroupMemberInfoView: View {
     @State private var progressIndicator = false
 
     enum GroupMemberInfoViewAlert: Identifiable {
+        case blockMemberAlert(mem: GroupMember)
+        case unblockMemberAlert(mem: GroupMember)
         case removeMemberAlert(mem: GroupMember)
         case changeMemberRoleAlert(mem: GroupMember, role: GroupMemberRole)
         case switchAddressAlert
@@ -35,8 +37,10 @@ struct GroupMemberInfoView: View {
 
         var id: String {
             switch self {
-            case .removeMemberAlert: return "removeMemberAlert"
-            case let .changeMemberRoleAlert(_, role): return "changeMemberRoleAlert \(role.rawValue)"
+            case let .blockMemberAlert(m): return "blockMemberAlert \(m.id)"
+            case let .unblockMemberAlert(m): return "unblockMemberAlert \(m.id)"
+            case let .removeMemberAlert(m): return "removeMemberAlert \(m.id)"
+            case let .changeMemberRoleAlert(m, role): return "changeMemberRoleAlert \(m.id) \(role.rawValue)"
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
@@ -159,9 +163,14 @@ struct GroupMemberInfoView: View {
                         }
                     }
 
-                    if member.canBeRemoved(groupInfo: groupInfo) {
-                        Section {
-                            removeMemberButton(member)
+                    Section {
+                        if member.memberSettings.showMessages {
+                            blockMemberButton(member)
+                        } else {
+                            unblockMemberButton(member)
+                        }
+                        if member.canBeRemoved(groupInfo: groupInfo) {
+                                removeMemberButton(member)
                         }
                     }
 
@@ -199,6 +208,8 @@ struct GroupMemberInfoView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .alert(item: $alert) { alertItem in
                 switch(alertItem) {
+                case let .blockMemberAlert(mem): return blockMemberAlert(groupInfo, mem)
+                case let .unblockMemberAlert(mem): return unblockMemberAlert(groupInfo, mem)
                 case let .removeMemberAlert(mem): return removeMemberAlert(mem)
                 case let .changeMemberRoleAlert(mem, _): return changeMemberRoleAlert(mem)
                 case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
@@ -368,6 +379,24 @@ struct GroupMemberInfoView: View {
         }
     }
 
+    private func blockMemberButton(_ mem: GroupMember) -> some View {
+        Button(role: .destructive) {
+            alert = .blockMemberAlert(mem: mem)
+        } label: {
+            Label("Block member", systemImage: "person.slash")
+                .foregroundColor(Color.red)
+        }
+    }
+
+    private func unblockMemberButton(_ mem: GroupMember) -> some View {
+        Button {
+            alert = .unblockMemberAlert(mem: mem)
+        } label: {
+            Label("Unblock member", systemImage: "person.wave.2")
+                .foregroundColor(Color.red)
+        }
+    }
+
     private func removeMemberButton(_ mem: GroupMember) -> some View {
         Button(role: .destructive) {
             alert = .removeMemberAlert(mem: mem)
@@ -480,6 +509,49 @@ struct GroupMemberInfoView: View {
                     alert = .error(title: a.title, error: a.message)
                 }
             }
+        }
+    }
+}
+
+func blockMemberAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
+    Alert(
+        title: Text("Block member?"),
+        message: Text("All messages from \(mem.chatViewName) will be hidden!"),
+        primaryButton: .destructive(Text("Block")) {
+            toggleShowMemberMessages(gInfo, mem, false)
+        },
+        secondaryButton: .cancel()
+    )
+}
+
+func unblockMemberAlert(_ gInfo: GroupInfo, _ mem: GroupMember) -> Alert {
+    Alert(
+        title: Text("Unblock member?"),
+        message: Text("The messages from \(mem.chatViewName) will be shown!"),
+        primaryButton: .default(Text("Un block")) {
+            toggleShowMemberMessages(gInfo, mem, true)
+        },
+        secondaryButton: .cancel()
+    )
+}
+
+func toggleShowMemberMessages(_ gInfo: GroupInfo, _ member: GroupMember, _ showMessages: Bool) {
+    var memberSettings = member.memberSettings
+    memberSettings.showMessages = showMessages
+    updateMemberSettings(gInfo, member, memberSettings)
+}
+
+func updateMemberSettings(_ gInfo: GroupInfo, _ member: GroupMember, _ memberSettings: GroupMemberSettings) {
+    Task {
+        do {
+            try await apiSetMemberSettings(gInfo.groupId, member.groupMemberId, memberSettings)
+            await MainActor.run {
+                var mem = member
+                mem.memberSettings = memberSettings
+                _ = ChatModel.shared.upsertGroupMember(gInfo, mem)
+            }
+        } catch let error {
+            logger.error("apiSetMemberSettings error \(responseError(error))")
         }
     }
 }

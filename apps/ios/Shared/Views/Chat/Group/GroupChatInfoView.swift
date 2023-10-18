@@ -35,8 +35,24 @@ struct GroupChatInfoView: View {
         case leaveGroupAlert
         case cantInviteIncognitoAlert
         case largeGroupReceiptsDisabled
+        case blockMemberAlert(mem: GroupMember)
+        case unblockMemberAlert(mem: GroupMember)
+        case removeMemberAlert(mem: GroupMember)
+        case error(title: LocalizedStringKey, error: LocalizedStringKey)
 
-        var id: GroupChatInfoViewAlert { get { self } }
+        var id: String {
+            switch self {
+            case .deleteGroupAlert: return "deleteGroupAlert"
+            case .clearChatAlert: return "clearChatAlert"
+            case .leaveGroupAlert: return "leaveGroupAlert"
+            case .cantInviteIncognitoAlert: return "cantInviteIncognitoAlert"
+            case .largeGroupReceiptsDisabled: return "largeGroupReceiptsDisabled"
+            case let .blockMemberAlert(mem): return "blockMemberAlert \(mem.id)"
+            case let .unblockMemberAlert(mem): return "unblockMemberAlert \(mem.id)"
+            case let .removeMemberAlert(mem): return "removeMemberAlert \(mem.id)"
+            case let .error(title, _): return "error \(title)"
+            }
+        }
     }
 
     var body: some View {
@@ -126,6 +142,10 @@ struct GroupChatInfoView: View {
             case .leaveGroupAlert: return leaveGroupAlert()
             case .cantInviteIncognitoAlert: return cantInviteIncognitoAlert()
             case .largeGroupReceiptsDisabled: return largeGroupReceiptsDisabledAlert()
+            case let .blockMemberAlert(mem): return blockMemberAlert(groupInfo, mem)
+            case let .unblockMemberAlert(mem): return unblockMemberAlert(groupInfo, mem)
+            case let .removeMemberAlert(mem): return removeMemberAlert(mem)
+            case let .error(title, error): return Alert(title: Text(title), message: Text(error))
             }
         }
         .onAppear {
@@ -183,8 +203,8 @@ struct GroupChatInfoView: View {
         }
     }
 
-    private func memberView(_ member: GroupMember, user: Bool = false) -> some View {
-        HStack{
+    @ViewBuilder private func memberView(_ member: GroupMember, user: Bool = false) -> some View {
+        let v = HStack{
             ProfileImage(imageStr: member.image)
                 .frame(width: 38, height: 38)
                 .padding(.trailing, 2)
@@ -205,6 +225,35 @@ struct GroupChatInfoView: View {
                 Text(member.memberRole.text)
                     .foregroundColor(.secondary)
             }
+        }
+        .swipeActions(edge: .leading) {
+            let show = !member.memberSettings.showMessages
+            if show {
+                Button {
+                    alert = .unblockMemberAlert(mem: member)
+                } label: {
+                    Label("Unblock member", systemImage: "person.wave.2").foregroundColor(.accentColor)
+                }
+            } else {
+                Button {
+                    alert = .unblockMemberAlert(mem: member)
+                } label: {
+                    Label("Block member", systemImage: "person.slash").foregroundColor(.secondary)
+                }
+            }
+        }
+
+        if member.canBeRemoved(groupInfo: groupInfo) {
+            v.swipeActions(edge: .trailing) {
+                Button(role: .destructive) {
+                    alert = .removeMemberAlert(mem: member)
+                } label: {
+                    Label("Remove member", systemImage: "trash")
+                        .foregroundColor(Color.red)
+                }
+            }
+        } else {
+            v
         }
     }
 
@@ -374,6 +423,28 @@ struct GroupChatInfoView: View {
         .onTapGesture {
             alert = .largeGroupReceiptsDisabled
         }
+    }
+
+    private func removeMemberAlert(_ mem: GroupMember) -> Alert {
+        Alert(
+            title: Text("Remove member?"),
+            message: Text("Member will be removed from group - this cannot be undone!"),
+            primaryButton: .destructive(Text("Remove")) {
+                Task {
+                    do {
+                        let updatedMember = try await apiRemoveMember(groupInfo.groupId, mem.groupMemberId)
+                        await MainActor.run {
+                            _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
+                        }
+                    } catch let error {
+                        logger.error("apiRemoveMember error: \(responseError(error))")
+                        let a = getErrorAlert(error, "Error removing member")
+                        alert = .error(title: a.title, error: a.message)
+                    }
+                }
+            },
+            secondaryButton: .cancel()
+        )
     }
 }
 

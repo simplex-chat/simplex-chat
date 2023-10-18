@@ -1867,8 +1867,8 @@ public struct GroupMember: Identifiable, Decodable {
     )
 }
 
-public struct GroupMemberSettings: Decodable {
-    var showMessages: Bool
+public struct GroupMemberSettings: Codable {
+    public var showMessages: Bool
 }
 
 public struct GroupMemberRef: Decodable {
