@@ -762,7 +762,8 @@ processChatCommand = \case
     CTDirect -> do
       ct@Contact {contactId} <- withStore $ \db -> getContact db user chatId
       assertDirectAllowed user MDSnd ct XMsgUpdate_
-      withStore (\db -> getDirectCIWithReactions db user ct itemId) >>= \case
+      cci <- withStore $ \db -> getDirectCIWithReactions db user ct itemId
+      case cci of
         CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId, editable) of
             (CISndMsgContent oldMC, Just itemSharedMId, True) -> do
