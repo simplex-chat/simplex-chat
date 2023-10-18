@@ -53,6 +53,7 @@ object ChatModel {
   // current chat
   val chatId = mutableStateOf<String?>(null)
   val chatItems = mutableStateListOf<ChatItem>()
+  val chatItemStatuses = mutableMapOf<Long, CIStatus>()
   val groupMembers = mutableStateListOf<GroupMember>()
 
   val terminalItems = mutableStateListOf<TerminalItem>()
@@ -135,6 +136,7 @@ object ChatModel {
   fun hasChat(id: String): Boolean = chats.toList().firstOrNull { it.id == id } != null
   fun getChat(id: String): Chat? = chats.toList().firstOrNull { it.id == id }
   fun getContactChat(contactId: Long): Chat? = chats.toList().firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
+  fun getGroupChat(groupId: Long): Chat? = chats.toList().firstOrNull { it.chatInfo is ChatInfo.Group && it.chatInfo.apiId == groupId }
   private fun getChatIndex(id: String): Int = chats.toList().indexOfFirst { it.id == id }
   fun addChat(chat: Chat) = chats.add(index = 0, chat)
 
@@ -272,7 +274,13 @@ object ChatModel {
           Log.d(TAG, "TODOCHAT: upsertChatItem: updated in chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           false
         } else {
-          chatItems.add(cItem)
+          val status = chatItemStatuses.remove(cItem.id)
+          val ci = if (status != null && cItem.meta.itemStatus is CIStatus.SndNew) {
+            cItem.copy(meta = cItem.meta.copy(itemStatus = status))
+          } else {
+            cItem
+          }
+          chatItems.add(ci)
           Log.d(TAG, "TODOCHAT: upsertChatItem: added to chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           true
         }
@@ -282,13 +290,15 @@ object ChatModel {
     }
   }
 
-  suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem) {
+  suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null) {
     withContext(Dispatchers.Main) {
       if (chatId.value == cInfo.id) {
         val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
         if (itemIndex >= 0) {
           chatItems[itemIndex] = cItem
         }
+      } else if (status != null) {
+        chatItemStatuses[cItem.id] = status
       }
     }
   }
@@ -326,6 +336,7 @@ object ChatModel {
     }
     // clear current chat
     if (chatId.value == cInfo.id) {
+      chatItemStatuses.clear()
       chatItems.clear()
     }
   }

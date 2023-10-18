@@ -19,7 +19,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.shareText
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.newchat.QRCode
+import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 
 @Composable
@@ -44,14 +44,12 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
       createLink()
     }
   }
-  val clipboard = LocalClipboardManager.current
   GroupLinkLayout(
     groupLink = groupLink,
     groupInfo,
     groupLinkMemberRole,
     creatingLink,
     createLink = ::createLink,
-    share = { clipboard.shareText(groupLink ?: return@GroupLinkLayout) },
     updateLink = {
       val role = groupLinkMemberRole.value
       if (role != null) {
@@ -95,7 +93,6 @@ fun GroupLinkLayout(
   groupLinkMemberRole: MutableState<GroupMemberRole?>,
   creatingLink: Boolean,
   createLink: () -> Unit,
-  share: () -> Unit,
   updateLink: () -> Unit,
   deleteLink: () -> Unit
 ) {
@@ -125,16 +122,17 @@ fun GroupLinkLayout(
           }
           initialLaunch = false
         }
-        QRCode(groupLink, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
+        SimpleXLinkQRCode(groupLink, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,
           modifier = Modifier.padding(horizontal = DEFAULT_PADDING, vertical = 10.dp)
         ) {
+          val clipboard = LocalClipboardManager.current
           SimpleButton(
             stringResource(MR.strings.share_link),
             icon = painterResource(MR.images.ic_share),
-            click = share
+            click = { clipboard.shareText(simplexChatLink(groupLink)) }
           )
           SimpleButton(
             stringResource(MR.strings.delete_link),
