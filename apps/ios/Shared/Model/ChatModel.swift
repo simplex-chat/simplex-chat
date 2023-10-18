@@ -335,14 +335,8 @@ final class ChatModel: ObservableObject {
     }
 
     private func _updateChatItem(at i: Int, with cItem: ChatItem) {
-        let ci = reversedChatItems[i]
         reversedChatItems[i] = cItem
         reversedChatItems[i].viewTimestamp = .now
-        // on some occasions the confirmation of message being accepted by the server (tick)
-        // arrives earlier than the response from API, and item remains without tick
-        if case .sndNew = cItem.meta.itemStatus {
-            reversedChatItems[i].meta.itemStatus = ci.meta.itemStatus
-        }
     }
 
     private func getChatItemIndex(_ cItem: ChatItem) -> Int? {
