@@ -53,7 +53,7 @@ object ChatModel {
   // current chat
   val chatId = mutableStateOf<String?>(null)
   val chatItems = mutableStateListOf<ChatItem>()
-  val chatItemStatuses = mutableStateMapOf<Long, CIStatus>()
+  val chatItemStatuses = mutableMapOf<Long, CIStatus>()
   val groupMembers = mutableStateListOf<GroupMember>()
 
   val terminalItems = mutableStateListOf<TerminalItem>()

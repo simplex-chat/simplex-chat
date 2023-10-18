@@ -62,7 +62,7 @@ final class ChatModel: ObservableObject {
     // current chat
     @Published var chatId: String?
     @Published var reversedChatItems: [ChatItem] = []
-    @Published var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
+    var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
     @Published var chatToTop: String?
     @Published var groupMembers: [GroupMember] = []
     // items in the terminal view
