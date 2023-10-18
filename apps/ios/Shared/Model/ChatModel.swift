@@ -481,6 +481,7 @@ final class ChatModel: ObservableObject {
         }
         // clear current chat
         if chatId == cInfo.id {
+            chatItemStatuses = [:]
             reversedChatItems = []
         }
     }

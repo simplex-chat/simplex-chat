@@ -141,6 +141,7 @@ suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
 
 suspend fun openChat(chat: Chat, chatModel: ChatModel) {
   chatModel.chatItems.clear()
+  chatModel.chatItemStatuses.clear()
   chatModel.chatItems.addAll(chat.chatItems)
   chatModel.chatId.value = chat.chatInfo.id
 }

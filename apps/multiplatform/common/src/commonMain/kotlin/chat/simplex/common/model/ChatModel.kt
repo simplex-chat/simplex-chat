@@ -335,6 +335,7 @@ object ChatModel {
     }
     // clear current chat
     if (chatId.value == cInfo.id) {
+      chatItemStatuses.clear()
       chatItems.clear()
     }
   }
