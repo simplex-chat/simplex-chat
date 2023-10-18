@@ -27,6 +27,7 @@ import Data.String (IsString)
 import qualified Network.Socket as N
 import qualified Network.TLS as TLS
 import qualified Network.UDP as UDP
+import Simplex.Chat.Remote.Multicast (setMembership)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Transport (supportedParameters)
@@ -40,12 +41,9 @@ import Simplex.Messaging.Util (whenM)
 import UnliftIO
 import UnliftIO.Concurrent
 
--- | Link-local broadcast address.
-pattern BROADCAST_ADDR_V4 :: (IsString a, Eq a) => a
-pattern BROADCAST_ADDR_V4 = "0.0.0.0"
-
+-- | mDNS multicast group
 pattern MULTICAST_ADDR_V4 :: (IsString a, Eq a) => a
-pattern MULTICAST_ADDR_V4 = "224.0.0.251" -- same as mDNS, but we're on a different port
+pattern MULTICAST_ADDR_V4 = "224.0.0.251"
 
 pattern ANY_ADDR_V4 :: (IsString a, Eq a) => a
 pattern ANY_ADDR_V4 = "0.0.0.0"
@@ -74,8 +72,10 @@ announceRevHTTP2 invite credentials finishAction = do
 runAnnouncer :: ByteString -> IO ()
 runAnnouncer inviteBS = do
   bracket (UDP.clientSocket MULTICAST_ADDR_V4 DISCOVERY_PORT False) UDP.close $ \sock -> do
-    N.setSocketOption (UDP.udpSocket sock) N.Broadcast 1
-    N.setSocketOption (UDP.udpSocket sock) N.ReuseAddr 1
+    let raw = UDP.udpSocket sock
+    N.setSocketOption raw N.Broadcast 1
+    N.setSocketOption raw N.ReuseAddr 1
+    void $ setMembership raw (N.tupleToHostAddress (224, 0, 0, 251)) True
     forever $ do
       UDP.send sock inviteBS
       threadDelay 1000000
