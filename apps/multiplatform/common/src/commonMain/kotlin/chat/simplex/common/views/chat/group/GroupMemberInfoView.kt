@@ -73,6 +73,7 @@ fun GroupMemberInfoView(
               chatModel.addChat(c)
             }
             chatModel.chatItems.clear()
+            chatModel.chatItemStatuses.clear()
             chatModel.chatItems.addAll(c.chatItems)
             chatModel.chatId.value = c.id
             closeAll()
