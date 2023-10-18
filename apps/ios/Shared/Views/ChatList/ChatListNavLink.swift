@@ -77,14 +77,24 @@ struct ChatListNavLink: View {
         }
         .frame(height: rowHeights[dynamicTypeSize])
         .actionSheet(isPresented: $showDeleteContactActionSheet) {
-            ActionSheet(
-                title: Text("Delete contact?\nThis cannot be undone!"),
-                buttons: [
-                    .destructive(Text("Delete and notify contact")) { Task { await deleteChat(chat, notify: true) } },
-                    .destructive(Text("Delete, don't notify")) { Task { await deleteChat(chat, notify: false) } },
-                    .cancel()
-                ]
-            )
+            if contact.ready && contact.active {
+                ActionSheet(
+                    title: Text("Delete contact?\nThis cannot be undone!"),
+                    buttons: [
+                        .destructive(Text("Delete and notify contact")) { Task { await deleteChat(chat, notify: true) } },
+                        .destructive(Text("Delete, don't notify")) { Task { await deleteChat(chat, notify: false) } },
+                        .cancel()
+                    ]
+                )
+            } else {
+                ActionSheet(
+                    title: Text("Delete contact?\nThis cannot be undone!"),
+                    buttons: [
+                        .destructive(Text("Delete")) { Task { await deleteChat(chat) } },
+                        .cancel()
+                    ]
+                )
+            }
         }
     }
 

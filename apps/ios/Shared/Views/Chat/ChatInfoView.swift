@@ -241,14 +241,24 @@ struct ChatInfoView: View {
             }
         }
         .actionSheet(isPresented: $showDeleteContactActionSheet) {
-            ActionSheet(
-                title: Text("Delete contact?\nThis cannot be undone!"),
-                buttons: [
-                    .destructive(Text("Delete and notify contact")) { deleteContact(notify: true) },
-                    .destructive(Text("Delete, don't notify")) { deleteContact(notify: false) },
-                    .cancel()
-                ]
-            )
+            if contact.ready && contact.active {
+                ActionSheet(
+                    title: Text("Delete contact?\nThis cannot be undone!"),
+                    buttons: [
+                        .destructive(Text("Delete and notify contact")) { deleteContact(notify: true) },
+                        .destructive(Text("Delete, don't notify")) { deleteContact(notify: false) },
+                        .cancel()
+                    ]
+                )
+            } else {
+                ActionSheet(
+                    title: Text("Delete contact?\nThis cannot be undone!"),
+                    buttons: [
+                        .destructive(Text("Delete")) { deleteContact() },
+                        .cancel()
+                    ]
+                )
+            }
         }
     }
 
@@ -438,7 +448,7 @@ struct ChatInfoView: View {
         }
     }
 
-    private func deleteContact(notify: Bool) {
+    private func deleteContact(notify: Bool? = nil) {
         Task {
             do {
                 try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, notify: notify)
