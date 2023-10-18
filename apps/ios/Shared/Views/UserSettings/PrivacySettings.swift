@@ -93,7 +93,9 @@ struct PrivacySettings: View {
                     }
                     settingsRow("link") {
                         Picker("SimpleX links", selection: $simplexLinkMode) {
-                            ForEach(SimpleXLinkMode.values) { mode in
+                            ForEach(
+                                SimpleXLinkMode.values + (SimpleXLinkMode.values.contains(simplexLinkMode) ? [] : [simplexLinkMode])
+                            ) { mode in
                                 Text(mode.text)
                             }
                         }
@@ -104,10 +106,6 @@ struct PrivacySettings: View {
                     }
                 } header: {
                     Text("Chats")
-                } footer: {
-                    if case .browser = simplexLinkMode {
-                        Text("Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.")
-                    }
                 }
 
                 Section {
