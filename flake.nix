@@ -1,5 +1,13 @@
 {
   description = "nix flake for simplex-chat";
+  nixConfig = {
+    extra-substituters = [
+      "https://cache.zw3rk.com"
+    ];
+    extra-trusted-public-keys = [
+      "loony-tools:pr9m4BkM/5/eSTZlkQyRt57Jz7OMBxNSUiMC4FkcNfk="
+    ];
+  };
   inputs.nixpkgs.url = "github:angerman/nixpkgs/release-22.11";
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix/armv7a";
   inputs.haskellNix.inputs.nixpkgs.follows = "nixpkgs";
