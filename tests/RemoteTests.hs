@@ -294,6 +294,12 @@ remoteCommandTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   mobile ##> "/contacts"
   mobile <## "bob (Bob)"
 
+  bob ##> "/contacts"
+  bob <## "alice (Alice)"
+
+  desktop ##> "/contacts"
+  desktop ##> "/contacts" -- "no contacts"
+
   traceM "    - done"
 
 -- * Utils

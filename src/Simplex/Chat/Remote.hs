@@ -85,14 +85,10 @@ startRemoteHost rhId = do
     run rh@RemoteHost {storePath} tasks = do
       (fingerprint, credentials) <- liftIO $ genSessionCredentials rh
       cleanupIO <- toIO $ do
-        logInfo $ "Remote host session stopping for " <> tshow rhId
+        logNote $ "Remote host session stopping for " <> tshow rhId
         cancelTasks tasks -- cancel our tasks anyway
-        sessions <- asks remoteHostSessions
-        liftIOEither . atomically $ -- carefully unregister session
-          ifM
-            (TM.member rhId sessions)
-            (Right <$> TM.delete rhId sessions)
-            (pure . Left $ ChatErrorRemoteHost rhId RHMissing)
+        chatModifyVar currentRemoteHost $ \cur -> if cur == Just rhId then Nothing else cur -- only wipe the closing RH
+        withRemoteHostSession rhId $ \sessions _ -> Right <$> TM.delete rhId sessions
         toView (CRRemoteHostStopped rhId) -- only signal "stopped" when the session is unregistered cleanly
       -- block until some client is connected or an error happens
       logInfo $ "Remote host session connecting for " <> tshow rhId
@@ -133,12 +129,9 @@ startRemoteHostSession rhId = withNoRemoteHostSession rhId $ \sessions -> do
 
 closeRemoteHostSession :: ChatMonad m => RemoteHostId -> m ()
 closeRemoteHostSession rhId = do
-  logInfo $ "Closing remote host session for " <> tshow rhId
-  currentRH <- asks currentRemoteHost
-  session <- withRemoteHostSession rhId $ \sessions rhs -> do
-    TM.delete rhId sessions
-    modifyTVar' currentRH $ \cur -> if cur == Just rhId then Nothing else cur -- only wipe the closing RH
-    pure $ Right rhs
+  logNote $ "Closing remote host session for " <> tshow rhId
+  chatModifyVar currentRemoteHost $ \cur -> if cur == Just rhId then Nothing else cur -- only wipe the closing RH
+  session <- withRemoteHostSession rhId $ \sessions rhs -> Right rhs <$ TM.delete rhId sessions
   cancelRemoteHostSession session
 
 cancelRemoteHostSession :: MonadUnliftIO m => RemoteHostSession -> m ()
