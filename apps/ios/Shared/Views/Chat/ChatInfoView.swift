@@ -246,7 +246,7 @@ struct ChatInfoView: View {
                     title: Text("Delete contact?\nThis cannot be undone!"),
                     buttons: [
                         .destructive(Text("Delete and notify contact")) { deleteContact(notify: true) },
-                        .destructive(Text("Delete, don't notify")) { deleteContact(notify: false) },
+                        .destructive(Text("Delete")) { deleteContact(notify: false) },
                         .cancel()
                     ]
                 )
