@@ -206,31 +206,35 @@ startRemoteCtrl execChatCommand = do
       source <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure
       toView $ CRRemoteCtrlConnecting $ remoteCtrlInfo rc False
       atomically $ writeTVar discovered mempty -- flush unused sources
-      gotHello <- newIORef False
-      server <- async $ Discovery.connectRevHTTP2 source fingerprint $ \req -> do
-        ifM
-          (readIORef gotHello)
-          do
-            (respond, cmd) <- liftError (ChatErrorRemoteCtrl . RCEProtocolError) $ getControllerCommand req
-            result <- tryAny case cmd of -- use exceptions as the 'respond' MUST be called
-              (Nothing, RCSend {command}) -> RRChatResponse <$> execChatCommand (encodeUtf8 command)
-              (Nothing, RCRecv {wait=ms}) -> RRChatEvent <$> (timeout ms . atomically $ readTBQueue events)
-              (Nothing, gf@RCGetFile {}) -> error "TODO" <$ logError ("TODO: " <> tshow gf)
-              (Nothing, RCStoreFile{}) -> throwIO RPENoFile -- BUG: fails to send 0-length files
-              (Just todo'attachment, sf@RCStoreFile {}) -> error "TODO" <$ logError ("TODO: " <> tshow sf)
-              (Just _, _) -> throwIO RPEUnexpectedFile
+      gotHello <- newIORef Nothing
+      server <- async $ Discovery.connectRevHTTP2 source fingerprint $ \req ->
+        readIORef gotHello >>= \case
+          Nothing -> do
+            hostName <- chatReadVar localDeviceName
+            remoteHello <- liftError (ChatErrorRemoteCtrl . RCEProtocolError) $ processControllerHello hostName req
+            atomicWriteIORef gotHello $ Just remoteHello
+          Just RemoteHello{encoding = remoteEncoding} -> do
+            (respond, cmd) <- liftError (ChatErrorRemoteCtrl . RCEProtocolError) $ getControllerCommand remoteEncoding req
+            result <- tryAny $ handleCommand execChatCommand events cmd
             liftIO case result of
               Left err -> respond $ RRException (tshow err)
               Right ok -> respond ok
-          do
-            hostName <- chatReadVar localDeviceName
-            liftError (ChatErrorRemoteCtrl . RCEProtocolError) $ processControllerHello hostName req
-            atomicWriteIORef gotHello True
+
       chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
       toView $ CRRemoteCtrlConnected $ remoteCtrlInfo rc True
       _ <- waitCatch server
       chatWriteVar remoteCtrlSession Nothing
       toView CRRemoteCtrlStopped
+
+handleCommand :: ChatMonad m => (ByteString -> m ChatResponse) -> TBQueue ChatResponse -> (Maybe a, RemoteCommand) -> m RemoteResponse
+handleCommand execChatCommand events = \case
+  (Nothing, RCSend {command}) -> RRChatResponse <$> execChatCommand (encodeUtf8 command)
+  (Nothing, RCRecv {wait=ms}) -> RRChatEvent <$> (timeout ms . atomically $ readTBQueue events)
+  (Nothing, gf@RCGetFile {}) -> error "TODO" <$ logError ("TODO: " <> tshow gf)
+  (Nothing, sf@RCStoreFile{fileSize=0}) -> error "TODO" <$ logError ("TODO: " <> tshow sf)
+  (Nothing, RCStoreFile{}) -> throwIO RPENoFile
+  (Just todo'attachment, sf@RCStoreFile {}) -> error "TODO" <$ logError ("TODO: " <> tshow sf)
+  (Just _, _) -> throwIO RPEUnexpectedFile
 
 -- TODO the problem with this code was that it wasn't clear where the recursion can happen,
 -- by splitting receiving and processing to two functions it becomes clear
