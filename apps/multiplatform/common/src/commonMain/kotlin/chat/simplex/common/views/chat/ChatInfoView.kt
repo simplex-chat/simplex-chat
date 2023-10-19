@@ -211,14 +211,14 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> 
           }) {
             Text(generalGetString(MR.strings.delete_and_notify_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
           }
-          // Delete, don't notify
+          // Delete
           SectionItemView({
             AlertManager.shared.hideAlert()
             withApi {
               deleteContact(chatInfo, chatModel, close, notify = false)
             }
           }) {
-            Text(generalGetString(MR.strings.delete_dont_notify_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+            Text(generalGetString(MR.strings.delete_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
           }
         } else {
           // Delete
