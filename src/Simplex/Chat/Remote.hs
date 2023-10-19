@@ -223,7 +223,8 @@ startRemoteCtrl execChatCommand = do
               Left err -> respond $ RRException (tshow err)
               Right ok -> respond ok
           do
-            liftError (ChatErrorRemoteCtrl . RCEProtocolError) $ processControllerHello req
+            hostName <- chatReadVar localDeviceName
+            liftError (ChatErrorRemoteCtrl . RCEProtocolError) $ processControllerHello hostName req
             atomicWriteIORef gotHello True
       chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
       toView $ CRRemoteCtrlConnected $ remoteCtrlInfo rc True
