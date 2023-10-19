@@ -242,13 +242,13 @@ struct GroupChatInfoView: View {
                 Button {
                     alert = .blockMemberAlert(mem: member)
                 } label: {
-                    Label("Block member", systemImage: "person.slash").foregroundColor(.secondary)
+                    Label("Block member", systemImage: "hand.raised").foregroundColor(.secondary)
                 }
             } else {
                 Button {
                     alert = .unblockMemberAlert(mem: member)
                 } label: {
-                    Label("Unblock member", systemImage: "person.wave.2").foregroundColor(.accentColor)
+                    Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
                 }
             }
         }

@@ -383,7 +383,7 @@ struct GroupMemberInfoView: View {
         Button(role: .destructive) {
             alert = .blockMemberAlert(mem: mem)
         } label: {
-            Label("Block member", systemImage: "person.slash")
+            Label("Block member", systemImage: "hand.raised")
                 .foregroundColor(Color.red)
         }
     }
@@ -392,7 +392,7 @@ struct GroupMemberInfoView: View {
         Button {
             alert = .unblockMemberAlert(mem: mem)
         } label: {
-            Label("Unblock member", systemImage: "person.wave.2")
+            Label("Unblock member", systemImage: "hand.raised.slash")
                 .foregroundColor(Color.red)
         }
     }
