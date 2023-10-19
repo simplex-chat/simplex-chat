@@ -21,7 +21,7 @@ struct MarkedDeletedItemView: View {
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .italic()
-                .lineLimit(2)
+                .lineLimit(1)
             CIMetaView(chatItem: chatItem)
                 .padding(.horizontal, 12)
         }

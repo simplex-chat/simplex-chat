@@ -39,7 +39,7 @@ struct FramedItemView: View {
                     case let .moderated(_, byGroupMember):
                         framedItemHeader(icon: "flag", caption: Text("moderated by \(byGroupMember.chatViewName)").italic())
                     case .blocked:
-                        framedItemHeader(icon: "person.slash", caption: Text("blocked").italic())
+                        framedItemHeader(icon: "hand.raised", caption: Text("blocked").italic())
                     default:
                         framedItemHeader(icon: "trash", caption: Text("marked deleted").italic())
                     }

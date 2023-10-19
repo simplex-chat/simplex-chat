@@ -498,11 +498,7 @@ struct ChatView: View {
                     let range = currIndex...prevHidden
                     let items = Array(zip(Array(range), m.reversedChatItems[range]))
                     ForEach(items, id: \.1.viewId) { (i, ci) in
-                        if i == prevHidden {
-                            chatItemView(ci, i, nil, nil)
-                        } else {
-                            chatItemView(ci, i, i + 1, m.reversedChatItems[i + 1])
-                        }
+                        chatItemView(ci, i, nil, nil)
                     }
                 } else {
                     chatItemView(chatItem, currIndex, prevHidden, prevItem)

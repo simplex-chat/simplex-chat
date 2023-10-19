@@ -2090,7 +2090,7 @@ public struct ChatItem: Identifiable, Decodable {
 
     public var memberConnected: GroupMember? {
         switch chatDir {
-        case .groupRcv(let groupMember):
+        case let .groupRcv(groupMember):
             switch content {
             case .rcvGroupEvent(rcvGroupEvent: .memberConnected): return groupMember
             default: return nil
@@ -2101,9 +2101,9 @@ public struct ChatItem: Identifiable, Decodable {
 
     public var mergeCategory: CIMergeCategory? {
         if memberConnected != nil {
-            CIMergeCategory.memberConnected
+            .memberConnected
         } else if meta.itemDeleted != nil {
-            CIMergeCategory.itemDeleted
+            chatDir.sent ? .sndItemDeleted : .rcvItemDeleted
         } else {
             nil
         }
@@ -2342,7 +2342,8 @@ public struct ChatItem: Identifiable, Decodable {
 
 public enum CIMergeCategory {
     case memberConnected
-    case itemDeleted
+    case sndItemDeleted
+    case rcvItemDeleted
 }
 
 public enum CIDirection: Decodable {
