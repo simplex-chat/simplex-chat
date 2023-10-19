@@ -2099,6 +2099,16 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
+    public var mergeCategory: CIMergeCategory? {
+        if memberConnected != nil {
+            CIMergeCategory.memberConnected
+        } else if meta.itemDeleted != nil {
+            CIMergeCategory.itemDeleted
+        } else {
+            nil
+        }
+    }
+
     private var showNtfDir: Bool {
         return !chatDir.sent
     }
@@ -2328,6 +2338,11 @@ public struct ChatItem: Identifiable, Decodable {
             file: nil
         )
     }
+}
+
+public enum CIMergeCategory {
+    case memberConnected
+    case itemDeleted
 }
 
 public enum CIDirection: Decodable {

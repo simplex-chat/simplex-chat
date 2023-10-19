@@ -240,15 +240,15 @@ struct GroupChatInfoView: View {
         v.swipeActions(edge: .leading) {
             if member.memberSettings.showMessages {
                 Button {
-                    alert = .unblockMemberAlert(mem: member)
+                    alert = .blockMemberAlert(mem: member)
                 } label: {
-                    Label("Unblock member", systemImage: "person.wave.2").foregroundColor(.accentColor)
+                    Label("Block member", systemImage: "person.slash").foregroundColor(.secondary)
                 }
             } else {
                 Button {
                     alert = .unblockMemberAlert(mem: member)
                 } label: {
-                    Label("Block member", systemImage: "person.slash").foregroundColor(.secondary)
+                    Label("Unblock member", systemImage: "person.wave.2").foregroundColor(.accentColor)
                 }
             }
         }

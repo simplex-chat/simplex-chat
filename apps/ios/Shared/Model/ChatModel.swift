@@ -538,15 +538,27 @@ final class ChatModel: ObservableObject {
         return ns
     }
 
-    func getChatItemNeighbors(_ ci: ChatItem) -> (ChatItem?, ChatItem?) {
-        if let i = getChatItemIndex(ci)  {
-            return (
-                i + 1 < reversedChatItems.count ? reversedChatItems[i + 1] : nil,
-                i - 1 >= 0 ? reversedChatItems[i - 1] : nil
-            )
+    func getNextChatItem(_ ci: ChatItem) -> (Int?, ChatItem?) {
+        if let i = getChatItemIndex(ci) {
+            (i, i > 0 ? reversedChatItems[i - 1] : nil)
         } else {
-            return (nil, nil)
+            (nil, nil)
         }
+    }
+
+    func getPrevShownChatItem(_ ciIndex: Int?, _ ciCategory: CIMergeCategory?) -> (Int?, ChatItem?) {
+        if var i = ciIndex {
+            let fst = reversedChatItems.count - 1
+            while i < fst {
+                i = i + 1
+                let ci = reversedChatItems[i]
+                if ciCategory == nil || ciCategory != ci.mergeCategory {
+                    return (i - 1, ci)
+                }
+            }
+            return (i - 1, nil)
+        }
+        return (nil, nil)
     }
 
     func popChat(_ id: String) {

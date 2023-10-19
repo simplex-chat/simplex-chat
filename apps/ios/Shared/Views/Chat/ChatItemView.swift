@@ -12,6 +12,8 @@ import SimpleXChat
 struct ChatItemView: View {
     var chatInfo: ChatInfo
     var chatItem: ChatItem
+    var currIndex: Int?
+    var prevHidden: Int?
     var maxWidth: CGFloat = .infinity
     @State var scrollProxy: ScrollViewProxy? = nil
     @Binding var revealed: Bool
@@ -19,9 +21,24 @@ struct ChatItemView: View {
     @Binding var audioPlayer: AudioPlayer?
     @Binding var playbackState: VoiceMessagePlaybackState
     @Binding var playbackTime: TimeInterval?
-    init(chatInfo: ChatInfo, chatItem: ChatItem, showMember: Bool = false, maxWidth: CGFloat = .infinity, scrollProxy: ScrollViewProxy? = nil, revealed: Binding<Bool>, allowMenu: Binding<Bool> = .constant(false), audioPlayer: Binding<AudioPlayer?> = .constant(nil), playbackState: Binding<VoiceMessagePlaybackState> = .constant(.noPlayback), playbackTime: Binding<TimeInterval?> = .constant(nil)) {
+    init(
+        chatInfo: ChatInfo,
+        chatItem: ChatItem,
+        currIndex: Int? = nil,
+        prevHidden: Int? = nil,
+        showMember: Bool = false,
+        maxWidth: CGFloat = .infinity,
+        scrollProxy: ScrollViewProxy? = nil,
+        revealed: Binding<Bool>,
+        allowMenu: Binding<Bool> = .constant(false),
+        audioPlayer: Binding<AudioPlayer?> = .constant(nil),
+        playbackState: Binding<VoiceMessagePlaybackState> = .constant(.noPlayback),
+        playbackTime: Binding<TimeInterval?> = .constant(nil)
+    ) {
         self.chatInfo = chatInfo
         self.chatItem = chatItem
+        self.currIndex = currIndex
+        self.prevHidden = prevHidden
         self.maxWidth = maxWidth
         _scrollProxy = .init(initialValue: scrollProxy)
         _revealed = revealed
@@ -34,7 +51,7 @@ struct ChatItemView: View {
     var body: some View {
         let ci = chatItem
         if chatItem.meta.itemDeleted != nil && !revealed {
-            MarkedDeletedItemView(chatItem: chatItem)
+            MarkedDeletedItemView(chatItem: chatItem, currIndex: currIndex, prevHidden: prevHidden)
         } else if ci.quotedItem == nil && ci.meta.itemDeleted == nil && !ci.meta.isLive {
             if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
                 EmojiItemView(chatItem: ci)

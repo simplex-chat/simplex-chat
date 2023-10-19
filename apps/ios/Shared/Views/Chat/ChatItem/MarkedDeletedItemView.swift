@@ -12,14 +12,16 @@ import SimpleXChat
 struct MarkedDeletedItemView: View {
     @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
+    var currIndex: Int?
+    var prevHidden: Int?
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
-            switch chatItem.meta.itemDeleted {
-            case let .moderated(_, byGroupMember): markedDeletedText("moderated by \(byGroupMember.chatViewName)")
-            case .blocked: markedDeletedText("blocked")
-            default: markedDeletedText("marked deleted")
-            }
+            Text(markedDeletedText)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .italic()
+                .lineLimit(2)
             CIMetaView(chatItem: chatItem)
                 .padding(.horizontal, 12)
         }
@@ -30,12 +32,37 @@ struct MarkedDeletedItemView: View {
         .textSelection(.disabled)
     }
 
-    func markedDeletedText(_ s: LocalizedStringKey) -> some View {
-        Text(s)
-            .font(.caption)
-            .foregroundColor(.secondary)
-            .italic()
-            .lineLimit(1)
+    var markedDeletedText: LocalizedStringKey {
+        logger.debug("currIndex \(String(describing: currIndex))")
+        logger.debug("prevHidden \(String(describing: prevHidden))")
+        if let currIndex = currIndex, let prevHidden = prevHidden, prevHidden > currIndex {
+            var moderated = 0
+            var blocked = 0
+            var deleted = 0
+            var moderatedBy: [String] = []
+            for i in currIndex...prevHidden {
+                let ci = ChatModel.shared.reversedChatItems[i]
+                switch ci.meta.itemDeleted {
+                case let .moderated(_, byGroupMember):
+                    moderated += 1
+                    moderatedBy.append(byGroupMember.chatViewName)
+                case .blocked: blocked += 1
+                default: deleted += 1
+                }
+            }
+            let total = moderated + blocked + deleted
+            return total == moderated
+                    ? "\(total) messages moderated by \(moderatedBy.joined(separator: ", "))"
+                    : total == blocked
+                    ? "\(total) messages blocked"
+                    : "\(total) messages marked deleted"
+        } else {
+            return switch chatItem.meta.itemDeleted {
+            case let .moderated(_, byGroupMember): "moderated by \(byGroupMember.chatViewName)"
+            case .blocked: "blocked"
+            default: "marked deleted"
+            }
+        }
     }
 }
 
