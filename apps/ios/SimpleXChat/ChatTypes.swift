@@ -2104,8 +2104,20 @@ public struct ChatItem: Identifiable, Decodable {
             .memberConnected
         } else if meta.itemDeleted != nil {
             chatDir.sent ? .sndItemDeleted : .rcvItemDeleted
+        } else if isChatFeature {
+            .chatFeature
         } else {
             nil
+        }
+    }
+
+    public var isChatFeature: Bool {
+        switch content {
+        case .rcvChatFeature: true
+        case .sndChatFeature: true
+        case .rcvGroupFeature: true
+        case .sndGroupFeature: true
+        default: false
         }
     }
 
@@ -2344,6 +2356,7 @@ public enum CIMergeCategory {
     case memberConnected
     case sndItemDeleted
     case rcvItemDeleted
+    case chatFeature
 }
 
 public enum CIDirection: Decodable {

@@ -12,8 +12,7 @@ import SimpleXChat
 struct MarkedDeletedItemView: View {
     @Environment(\.colorScheme) var colorScheme
     var chatItem: ChatItem
-    var currIndex: Int?
-    var prevHidden: Int?
+    var mergedRange: CIMergedRange?
 
     var body: some View {
         HStack(alignment: .bottom, spacing: 0) {
@@ -33,14 +32,12 @@ struct MarkedDeletedItemView: View {
     }
 
     var markedDeletedText: LocalizedStringKey {
-        logger.debug("currIndex \(String(describing: currIndex))")
-        logger.debug("prevHidden \(String(describing: prevHidden))")
-        if let currIndex = currIndex, let prevHidden = prevHidden, prevHidden > currIndex {
+        if let merged = mergedRange, merged.many {
             var moderated = 0
             var blocked = 0
             var deleted = 0
             var moderatedBy: [String] = []
-            for i in currIndex...prevHidden {
+            for i in merged.range {
                 let ci = ChatModel.shared.reversedChatItems[i]
                 switch ci.meta.itemDeleted {
                 case let .moderated(_, byGroupMember):

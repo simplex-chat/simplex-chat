@@ -490,23 +490,21 @@ struct ChatView: View {
                 // memberConnected events and deleted items are aggregated at the last chat item in a row, see ChatItemView
                 ZStack {} // scroll doesn't work if it's EmptyView()
             } else {
-                let (prevHidden, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
-                if revealed,
-                   let currIndex = currIndex,
-                   let prevHidden = prevHidden,
-                   prevHidden > currIndex {
-                    let range = currIndex...prevHidden
+                let (mergedRange, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
+                if revealed, let merged = mergedRange, merged.many {
+                    let range = merged.range
                     let items = Array(zip(Array(range), m.reversedChatItems[range]))
                     ForEach(items, id: \.1.viewId) { (i, ci) in
-                        chatItemView(ci, i, nil, nil)
+                        let prev = i == merged.prevMerged ? prevItem : m.reversedChatItems[i + 1]
+                        chatItemView(ci, CIMergedRange(currIndex: i), prev)
                     }
                 } else {
-                    chatItemView(chatItem, currIndex, prevHidden, prevItem)
+                    chatItemView(chatItem, mergedRange, prevItem)
                 }
             }
         }
 
-        @ViewBuilder func chatItemView(_ ci: ChatItem, _ currIndex: Int?, _ prevHidden: Int?, _ prevItem: ChatItem?) -> some View {
+        @ViewBuilder func chatItemView(_ ci: ChatItem, _ mergedRange: CIMergedRange?, _ prevItem: ChatItem?) -> some View {
             if case let .groupRcv(member) = ci.chatDir,
                case let .group(groupInfo) = chat.chatInfo {
                 if prevItem == nil || showMemberImage(member, prevItem) {
@@ -525,26 +523,26 @@ struct ChatView: View {
                                 .appSheet(item: $selectedMember) { member in
                                     GroupMemberInfoView(groupInfo: groupInfo, member: member, navigation: true)
                                 }
-                            chatItemWithMenu(ci, currIndex, prevHidden, maxWidth)
+                            chatItemWithMenu(ci, mergedRange, maxWidth)
                         }
                     }
                     .padding(.top, 5)
                     .padding(.trailing)
                     .padding(.leading, 12)
                 } else {
-                    chatItemWithMenu(ci, currIndex, prevHidden, maxWidth)
+                    chatItemWithMenu(ci, mergedRange, maxWidth)
                         .padding(.top, 5)
                         .padding(.trailing)
                         .padding(.leading, memberImageSize + 8 + 12)
                 }
             } else {
-                chatItemWithMenu(ci, nil, nil, maxWidth)
+                chatItemWithMenu(ci, mergedRange, maxWidth)
                     .padding(.horizontal)
                     .padding(.top, 5)
             }
         }
 
-        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ currIndex: Int?, _ prevHidden: Int?, _ maxWidth: CGFloat) -> some View {
+        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ mergedRange: CIMergedRange?, _ maxWidth: CGFloat) -> some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
             let uiMenu: Binding<UIMenu> = Binding(
                 get: { UIMenu(title: "", children: menu(ci, live: composeState.liveMessage != nil)) },
@@ -555,8 +553,7 @@ struct ChatView: View {
                 ChatItemView(
                     chatInfo: chat.chatInfo,
                     chatItem: ci,
-                    currIndex: currIndex,
-                    prevHidden: prevHidden,
+                    mergedRange: mergedRange,
                     maxWidth: maxWidth,
                     scrollProxy: scrollProxy,
                     revealed: $revealed,
@@ -698,6 +695,8 @@ struct ChatView: View {
             } else if ci.isDeletedContent {
                 menu.append(viewInfoUIAction(ci))
                 menu.append(deleteUIAction(ci))
+            } else if ci.isChatFeature {
+                menu.append(revealed ? shrinkUIAction() : expandUIAction())
             }
             return menu
         }
@@ -927,7 +926,29 @@ struct ChatView: View {
                 }
             }
         }
-        
+
+        private func expandUIAction() -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Expand", comment: "chat item action"),
+                image: UIImage(systemName: "arrow.up.and.line.horizontal.and.arrow.down")
+            ) { _ in
+                withAnimation {
+                    revealed = true
+                }
+            }
+        }
+
+        private func shrinkUIAction() -> UIAction {
+            UIAction(
+                title: NSLocalizedString("Hide", comment: "chat item action"),
+                image: UIImage(systemName: "arrow.down.and.line.horizontal.and.arrow.up")
+            ) { _ in
+                withAnimation {
+                    revealed = false
+                }
+            }
+        }
+
         private var broadcastDeleteButtonText: LocalizedStringKey {
             chat.chatInfo.featureEnabled(.fullDelete) ? "Delete for everyone" : "Mark deleted for everyone"
         }

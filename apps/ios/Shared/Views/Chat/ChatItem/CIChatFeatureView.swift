@@ -14,16 +14,46 @@ struct CIChatFeatureView: View {
     var feature: Feature
     var icon: String? = nil
     var iconColor: Color
+    var mergedRange: CIMergedRange?
 
     var body: some View {
+        if let merged = mergedRange, merged.many {
+            let m = ChatModel.shared
+            HStack {
+                ForEach(m.reversedChatItems[merged.range], id: \.viewId, content: featureView)
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 6)
+        } else {
+            fullFeatureView
+        }
+    }
+
+    @ViewBuilder private func featureView(_ ci: ChatItem) -> some View {
+        switch ci.content {
+        case let .rcvChatFeature(feature, enabled, _): featureIconView(feature, enabled.iconColor)
+        case let .sndChatFeature(feature, enabled, _): featureIconView(feature, enabled.iconColor)
+        case let .rcvGroupFeature(feature, preference, _): featureIconView(feature, preference.enable.iconColor)
+        case let .sndGroupFeature(feature, preference, _): featureIconView(feature, preference.enable.iconColor)
+        default: EmptyView()
+        }
+    }
+
+    private func featureIconView(_ f: Feature, _ color: Color) -> some View {
+        Image(systemName: f.iconFilled)
+            .foregroundColor(color)
+            .scaleEffect(f.iconScale)
+    }
+
+    private var fullFeatureView: some View {
         HStack(alignment: .bottom, spacing: 4) {
             Image(systemName: icon ?? feature.iconFilled)
                 .foregroundColor(iconColor)
                 .scaleEffect(feature.iconScale)
             chatEventText(chatItem)
         }
-        .padding(.leading, 6)
-        .padding(.bottom, 6)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
         .textSelection(.disabled)
     }
 }

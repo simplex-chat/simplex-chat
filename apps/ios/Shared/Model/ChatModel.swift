@@ -546,17 +546,20 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func getPrevShownChatItem(_ ciIndex: Int?, _ ciCategory: CIMergeCategory?) -> (Int?, ChatItem?) {
-        if var i = ciIndex {
+    func getPrevShownChatItem(_ ciIndex: Int?, _ ciCategory: CIMergeCategory?) -> (CIMergedRange?, ChatItem?) {
+        if let ciIndex = ciIndex {
+            var i = ciIndex
             let fst = reversedChatItems.count - 1
+            var prevItem: ChatItem? = nil
             while i < fst {
                 i = i + 1
                 let ci = reversedChatItems[i]
                 if ciCategory == nil || ciCategory != ci.mergeCategory {
-                    return (i - 1, ci)
+                    prevItem = ci
+                    break
                 }
             }
-            return (i - 1, nil)
+            return (CIMergedRange(currIndex: ciIndex, prevMerged: i - 1), prevItem)
         }
         return (nil, nil)
     }
@@ -659,6 +662,24 @@ struct NTFContactRequest {
 struct UnreadChatItemCounts {
     var totalBelow: Int
     var unreadBelow: Int
+}
+
+struct CIMergedRange {
+    var currIndex: Int
+    var prevMerged: Int
+
+    init(currIndex: Int, prevMerged: Int? = nil) {
+        self.currIndex = currIndex
+        self.prevMerged = prevMerged ?? currIndex
+    }
+
+    var many: Bool {
+        currIndex < prevMerged
+    }
+
+    var range: ClosedRange<Int> {
+        currIndex...prevMerged
+    }
 }
 
 final class Chat: ObservableObject, Identifiable {

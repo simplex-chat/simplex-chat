@@ -12,8 +12,7 @@ import SimpleXChat
 struct ChatItemView: View {
     var chatInfo: ChatInfo
     var chatItem: ChatItem
-    var currIndex: Int?
-    var prevHidden: Int?
+    var mergedRange: CIMergedRange?
     var maxWidth: CGFloat = .infinity
     @State var scrollProxy: ScrollViewProxy? = nil
     @Binding var revealed: Bool
@@ -24,8 +23,7 @@ struct ChatItemView: View {
     init(
         chatInfo: ChatInfo,
         chatItem: ChatItem,
-        currIndex: Int? = nil,
-        prevHidden: Int? = nil,
+        mergedRange: CIMergedRange? = nil,
         showMember: Bool = false,
         maxWidth: CGFloat = .infinity,
         scrollProxy: ScrollViewProxy? = nil,
@@ -37,8 +35,7 @@ struct ChatItemView: View {
     ) {
         self.chatInfo = chatInfo
         self.chatItem = chatItem
-        self.currIndex = currIndex
-        self.prevHidden = prevHidden
+        self.mergedRange = mergedRange
         self.maxWidth = maxWidth
         _scrollProxy = .init(initialValue: scrollProxy)
         _revealed = revealed
@@ -51,14 +48,14 @@ struct ChatItemView: View {
     var body: some View {
         let ci = chatItem
         if chatItem.meta.itemDeleted != nil && !revealed {
-            MarkedDeletedItemView(chatItem: chatItem, currIndex: currIndex, prevHidden: prevHidden)
+            MarkedDeletedItemView(chatItem: chatItem, mergedRange: mergedRange)
         } else if ci.quotedItem == nil && ci.meta.itemDeleted == nil && !ci.meta.isLive {
             if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {
                 EmojiItemView(chatItem: ci)
             } else if ci.content.text.isEmpty, case let .voice(_, duration) = ci.content.msgContent {
                 CIVoiceView(chatItem: ci, recordingFile: ci.file, duration: duration, audioPlayer: $audioPlayer, playbackState: $playbackState, playbackTime: $playbackTime, allowMenu: $allowMenu)
             } else if ci.content.msgContent == nil {
-                ChatItemContentView(chatInfo: chatInfo, chatItem: chatItem, msgContentView: { Text(ci.text) }) // msgContent is unreachable branch in this case
+                ChatItemContentView(chatInfo: chatInfo, chatItem: chatItem, mergedRange: mergedRange, msgContentView: { Text(ci.text) }) // msgContent is unreachable branch in this case
             } else {
                 framedItemView()
             }
@@ -76,6 +73,7 @@ struct ChatItemContentView<Content: View>: View {
     @EnvironmentObject var chatModel: ChatModel
     var chatInfo: ChatInfo
     var chatItem: ChatItem
+    var mergedRange: CIMergedRange?
     var msgContentView: () -> Content
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
@@ -148,7 +146,7 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func chatFeatureView(_ feature: Feature, _ iconColor: Color) -> some View {
-        CIChatFeatureView(chatItem: chatItem, feature: feature, iconColor: iconColor)
+        CIChatFeatureView(chatItem: chatItem, feature: feature, iconColor: iconColor, mergedRange: mergedRange)
     }
 
     private var membersConnectedItemText: Text {
