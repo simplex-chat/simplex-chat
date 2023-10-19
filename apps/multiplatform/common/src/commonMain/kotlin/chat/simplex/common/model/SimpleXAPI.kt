@@ -904,8 +904,8 @@ object ChatController {
     }
   }
 
-  suspend fun apiDeleteChat(type: ChatType, id: Long): Boolean {
-    val r = sendCmd(CC.ApiDeleteChat(type, id))
+  suspend fun apiDeleteChat(type: ChatType, id: Long, notify: Boolean? = null): Boolean {
+    val r = sendCmd(CC.ApiDeleteChat(type, id, notify))
     when {
       r is CR.ContactDeleted && type == ChatType.Direct -> return true
       r is CR.ContactConnectionDeleted && type == ChatType.ContactConnection -> return true
@@ -1924,7 +1924,7 @@ sealed class CC {
   class ApiSetConnectionIncognito(val connId: Long, val incognito: Boolean): CC()
   class APIConnectPlan(val userId: Long, val connReq: String): CC()
   class APIConnect(val userId: Long, val incognito: Boolean, val connReq: String): CC()
-  class ApiDeleteChat(val type: ChatType, val id: Long): CC()
+  class ApiDeleteChat(val type: ChatType, val id: Long, val notify: Boolean?): CC()
   class ApiClearChat(val type: ChatType, val id: Long): CC()
   class ApiListContacts(val userId: Long): CC()
   class ApiUpdateProfile(val userId: Long, val profile: Profile): CC()
@@ -2034,7 +2034,11 @@ sealed class CC {
     is ApiSetConnectionIncognito -> "/_set incognito :$connId ${onOff(incognito)}"
     is APIConnectPlan -> "/_connect plan $userId $connReq"
     is APIConnect -> "/_connect $userId incognito=${onOff(incognito)} $connReq"
-    is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
+    is ApiDeleteChat -> if (notify != null) {
+      "/_delete ${chatRef(type, id)} notify=${onOff(notify)}"
+    } else {
+      "/_delete ${chatRef(type, id)}"
+    }
     is ApiClearChat -> "/_clear chat ${chatRef(type, id)}"
     is ApiListContacts -> "/_contacts $userId"
     is ApiUpdateProfile -> "/_profile $userId ${json.encodeToString(profile)}"
