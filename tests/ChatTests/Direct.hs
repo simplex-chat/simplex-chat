@@ -270,6 +270,10 @@ testPlanInvitationLinkOwn tmp =
     alice ##> ("/_connect plan 1 " <> inv)
     alice <## "invitation link: own link"
 
+    let invSchema2 = linkAnotherSchema inv
+    alice ##> ("/_connect plan 1 " <> invSchema2)
+    alice <## "invitation link: own link"
+
     alice ##> ("/c " <> inv)
     alice <## "confirmation sent!"
     alice
@@ -303,6 +307,10 @@ testPlanInvitationLinkConnecting tmp = do
     bob <## "confirmation sent!"
 
     bob ##> ("/_connect plan 1 " <> inv)
+    bob <## "invitation link: connecting"
+
+    let invSchema2 = linkAnotherSchema inv
+    bob ##> ("/_connect plan 1 " <> invSchema2)
     bob <## "invitation link: connecting"
 
 testContactClear :: HasCallStack => FilePath -> IO ()

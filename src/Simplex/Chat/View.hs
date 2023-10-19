@@ -167,7 +167,7 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
   CRRcvFileDescrReady _ _ -> []
   CRRcvFileDescrNotReady _ _ -> []
   CRRcvFileProgressXFTP {} -> []
-  CRRcvFileAccepted u ci -> ttyUser u $ savingFile' testView ci
+  CRRcvFileAccepted u ci -> ttyUser u $ savingFile' ci
   CRRcvFileAcceptedSndCancelled u ft -> ttyUser u $ viewRcvFileSndCancelled ft
   CRSndFileCancelled u _ ftm fts -> ttyUser u $ viewSndFileCancelled ftm fts
   CRRcvFileCancelled u _ ft -> ttyUser u $ receivingFile_ "cancelled" ft
@@ -179,10 +179,10 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
   CRContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
   CRContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
   CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
-  CRRcvFileStart u ci -> ttyUser u $ receivingFile_' "started" ci
-  CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' "completed" ci
+  CRRcvFileStart u ci -> ttyUser u $ receivingFile_' testView "started" ci
+  CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' testView "completed" ci
   CRRcvFileSndCancelled u _ ft -> ttyUser u $ viewRcvFileSndCancelled ft
-  CRRcvFileError u ci e -> ttyUser u $ receivingFile_' "error" ci <> [sShow e]
+  CRRcvFileError u ci e -> ttyUser u $ receivingFile_' testView "error" ci <> [sShow e]
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
   CRSndFileStartXFTP {} -> []
@@ -707,10 +707,13 @@ viewConnReqInvitation :: ConnReqInvitation -> [StyledString]
 viewConnReqInvitation cReq =
   [ "pass this invitation link to your contact (via another channel): ",
     "",
-    (plain . strEncode) cReq,
+    (plain . strEncode) (simplexChatInvitation cReq),
     "",
     "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
+
+simplexChatInvitation :: ConnReqInvitation -> ConnReqInvitation
+simplexChatInvitation (CRInvitationUri crData e2e) = CRInvitationUri crData {crScheme = simplexChat} e2e
 
 viewContactNotFound :: ContactName -> Maybe (GroupInfo, GroupMember) -> [StyledString]
 viewContactNotFound cName suspectedMember =
@@ -750,13 +753,16 @@ connReqContact_ :: StyledString -> ConnReqContact -> [StyledString]
 connReqContact_ intro cReq =
   [ intro,
     "",
-    (plain . strEncode) cReq,
+    (plain . strEncode) (simplexChatContact cReq),
     "",
     "Anybody can send you contact requests with: " <> highlight' "/c <contact_link_above>",
     "to show it again: " <> highlight' "/sa",
     "to share with your contacts: " <> highlight' "/profile_address on",
     "to delete it: " <> highlight' "/da" <> " (accepted contacts will remain connected)"
   ]
+
+simplexChatContact :: ConnReqContact -> ConnReqContact
+simplexChatContact (CRContactUri crData) = CRContactUri crData {crScheme = simplexChat}
 
 autoAcceptStatus_ :: Maybe AutoAccept -> [StyledString]
 autoAcceptStatus_ = \case
@@ -769,7 +775,7 @@ groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> GroupMemberRole -> 
 groupLink_ intro g cReq mRole =
   [ intro,
     "",
-    (plain . strEncode) cReq,
+    (plain . strEncode) (simplexChatContact cReq),
     "",
     "Anybody can connect to you and join group as " <> showRole mRole <> " with: " <> highlight' "/c <group_link_above>",
     "to show it again: " <> highlight ("/show link #" <> viewGroupName g),
@@ -1036,7 +1042,7 @@ viewContactInfo :: Contact -> ConnectionStats -> Maybe Profile -> [StyledString]
 viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}, activeConn} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> viewConnectionStats stats
-    <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) l]) contactLink
+    <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact l)]) contactLink
     <> maybe
       ["you've shared main profile with this contact"]
       (\p -> ["you've shared incognito profile with this contact: " <> incognitoProfile' p])
@@ -1295,7 +1301,8 @@ viewConnectionPlan = \case
   CPContactAddress cap -> case cap of
     CAPOk -> [ctAddr "ok to connect"]
     CAPOwnLink -> [ctAddr "own address"]
-    CAPConnecting ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
+    CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
+    CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
     CAPKnown ct ->
       [ ctAddr ("known contact " <> ttyContact' ct),
         "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
@@ -1305,8 +1312,9 @@ viewConnectionPlan = \case
   CPGroupLink glp -> case glp of
     GLPOk -> [grpLink "ok to connect"]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
-    GLPConnecting Nothing -> [grpLink "connecting"]
-    GLPConnecting (Just g) -> [grpLink ("connecting to group " <> ttyGroup' g)]
+    GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
+    GLPConnectingProhibit Nothing -> [grpLink "connecting"]
+    GLPConnectingProhibit (Just g) -> [grpLink ("connecting to group " <> ttyGroup' g)]
     GLPKnown g ->
       [ grpLink ("known group " <> ttyGroup' g),
         "use " <> ttyToGroup g <> highlight' "<message>" <> " to send messages"
@@ -1463,27 +1471,28 @@ humanReadableSize size
     mB = kB * 1024
     gB = mB * 1024
 
-savingFile' :: Bool -> AChatItem -> [StyledString]
-savingFile' testView (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileSource = Just (CryptoFile filePath cfArgs_)}, chatDir}) =
-  let from = case (chat, chatDir) of
-        (DirectChat Contact {localDisplayName = c}, CIDirectRcv) -> " from " <> ttyContact c
-        (_, CIGroupRcv GroupMember {localDisplayName = m}) -> " from " <> ttyContact m
-        _ -> ""
-   in ["saving file " <> sShow fileId <> from <> " to " <> plain filePath] <> cfArgsStr
-  where
-    cfArgsStr = case cfArgs_ of
-      Just cfArgs@(CFArgs key nonce)
-        | testView -> [plain $ LB.unpack $ J.encode cfArgs]
-        | otherwise -> [plain $ "encryption key: " <> strEncode key <> ", nonce: " <> strEncode nonce]
-      _ -> []
-savingFile' _ _ = ["saving file"] -- shouldn't happen
+savingFile' :: AChatItem -> [StyledString]
+savingFile' (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileSource = Just (CryptoFile filePath _)}, chatDir}) =
+  ["saving file " <> sShow fileId <> fileFrom chat chatDir <> " to " <> plain filePath]
+savingFile' _ = ["saving file"] -- shouldn't happen
 
-receivingFile_' :: StyledString -> AChatItem -> [StyledString]
-receivingFile_' status (AChatItem _ _ (DirectChat c) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectRcv}) =
-  [status <> " receiving " <> fileTransferStr fileId fileName <> " from " <> ttyContact' c]
-receivingFile_' status (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupRcv m}) =
-  [status <> " receiving " <> fileTransferStr fileId fileName <> " from " <> ttyMember m]
-receivingFile_' status _ = [status <> " receiving file"] -- shouldn't happen
+receivingFile_' :: Bool -> String -> AChatItem -> [StyledString]
+receivingFile_' testView status (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileName, fileSource = Just (CryptoFile _ cfArgs_)}, chatDir}) =
+  [plain status <> " receiving " <> fileTransferStr fileId fileName <> fileFrom chat chatDir] <> cfArgsStr cfArgs_
+  where
+    cfArgsStr (Just cfArgs@(CFArgs key nonce)) = [plain s | status == "completed"]
+      where
+      s =
+        if testView
+          then LB.toStrict $ J.encode cfArgs
+          else "encryption key: " <> strEncode key <> ", nonce: " <> strEncode nonce
+    cfArgsStr _ = []
+receivingFile_' _ status _ = [plain status <> " receiving file"] -- shouldn't happen
+
+fileFrom :: ChatInfo c -> CIDirection c d -> StyledString
+fileFrom (DirectChat ct) CIDirectRcv = " from " <> ttyContact' ct
+fileFrom _ (CIGroupRcv m) = " from " <> ttyMember m
+fileFrom _ _ = ""
 
 receivingFile_ :: StyledString -> RcvFileTransfer -> [StyledString]
 receivingFile_ status ft@RcvFileTransfer {senderDisplayName = c} =
