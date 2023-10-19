@@ -5,7 +5,7 @@
     <string name="allow_to_send_voice">Hlasové zprávy povoleny.</string>
     <string name="v4_2_group_links_desc">Správci mohou vytvářet odkazy pro připojení ke skupinám.</string>
     <string name="accept_contact_button">Přijmout</string>
-    <string name="smp_servers_preset_add">Přidejte přednastavené servery</string>
+    <string name="smp_servers_preset_add">Přidat přednastavené servery</string>
     <string name="network_settings">Pokročilá nastavení sítě</string>
     <string name="accept">Přijmout</string>
     <string name="smp_servers_add">Přidat server…</string>
@@ -24,7 +24,7 @@
     <string name="users_add">Přidat profil</string>
     <string name="users_delete_all_chats_deleted">Všechny chaty a zprávy budou smazány – tuto akci nelze vrátit zpět!</string>
     <string name="allow_disappearing_messages_only_if">Povolte mizící zprávy, pouze pokud to váš kontakt povolí.</string>
-    <string name="v4_3_improved_server_configuration_desc">Přidejte servery skenováním QR kódů.</string>
+    <string name="v4_3_improved_server_configuration_desc">Přidat servery skenováním QR kódů.</string>
     <string name="chat_item_ttl_month">1 měsíci</string>
     <string name="chat_item_ttl_week">1 týdnu</string>
     <string name="callstatus_accepted">přijatý hovor</string>
