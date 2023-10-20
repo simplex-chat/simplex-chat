@@ -523,7 +523,7 @@ struct ChatView: View {
                                 .padding(.top, 7)
                         }
                         HStack(alignment: .top, spacing: 8) {
-                            memberProfileImages(member, prevMember)
+                            ProfileImage(imageStr: member.memberProfile.image)
                                 .frame(width: memberImageSize, height: memberImageSize)
                                 .onTapGesture { selectedMember = member }
                                 .appSheet(item: $selectedMember) { member in
@@ -548,33 +548,14 @@ struct ChatView: View {
             }
         }
 
-        private func memberNames(_ member: GroupMember, _ prevMember: GroupMember?, _ memCount: Int) -> String {
-            let name = member.chatViewName
-            return if let prevName = prevMember?.chatViewName {
+        private func memberNames(_ member: GroupMember, _ prevMember: GroupMember?, _ memCount: Int) -> LocalizedStringKey {
+            let name = member.displayName
+            return if let prevName = prevMember?.displayName {
                 memCount > 2
                 ? "\(name), \(prevName) and \(memCount - 2) members"
                 : "\(name) and \(prevName)"
             } else {
-                name
-            }
-        }
-
-        @ViewBuilder private func memberProfileImages(_ member: GroupMember, _ prevMember: GroupMember?) -> some View {
-            if let prevMember = prevMember {
-                let size = memberImageSize * 0.92
-                ZStack(alignment: .center) {
-                    ProfileImage(imageStr: prevMember.memberProfile.image)
-                        .frame(width: size, height: size)
-                        .padding(.leading, -6)
-                        .padding(.top, 3)
-                    ProfileImage(imageStr: member.memberProfile.image)
-                        .background(.background)
-                        .clipShape(Circle())
-                        .frame(width: size, height: size)
-                        .padding(.leading, 6)
-                }
-            } else {
-                ProfileImage(imageStr: member.memberProfile.image)
+                "\(name)"
             }
         }
 
@@ -731,7 +712,7 @@ struct ChatView: View {
             } else if ci.isDeletedContent {
                 menu.append(viewInfoUIAction(ci))
                 menu.append(deleteUIAction(ci))
-            } else if ci.isChatFeature {
+            } else if ci.mergeCategory != nil {
                 menu.append(revealed ? shrinkUIAction() : expandUIAction())
             }
             return menu

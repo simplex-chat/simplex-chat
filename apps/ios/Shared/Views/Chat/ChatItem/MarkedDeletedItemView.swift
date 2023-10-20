@@ -43,7 +43,7 @@ struct MarkedDeletedItemView: View {
                 switch ci.meta.itemDeleted {
                 case let .moderated(_, byGroupMember):
                     moderated += 1
-                    moderatedBy.append(byGroupMember.chatViewName)
+                    moderatedBy.append(byGroupMember.displayName)
                 case .blocked: blocked += 1
                 default: deleted += 1
                 }
@@ -56,7 +56,7 @@ struct MarkedDeletedItemView: View {
                     : "\(total) messages marked deleted"
         } else {
             return switch chatItem.meta.itemDeleted {
-            case let .moderated(_, byGroupMember): "moderated by \(byGroupMember.chatViewName)"
+            case let .moderated(_, byGroupMember): "moderated by \(byGroupMember.displayName)"
             case .blocked: "blocked"
             default: "marked deleted"
             }

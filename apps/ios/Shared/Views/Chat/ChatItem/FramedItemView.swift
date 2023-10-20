@@ -37,7 +37,7 @@ struct FramedItemView: View {
                 if let di = chatItem.meta.itemDeleted {
                     switch di {
                     case let .moderated(_, byGroupMember):
-                        framedItemHeader(icon: "flag", caption: Text("moderated by \(byGroupMember.chatViewName)").italic())
+                        framedItemHeader(icon: "flag", caption: Text("moderated by \(byGroupMember.displayName)").italic())
                     case .blocked:
                         framedItemHeader(icon: "hand.raised", caption: Text("blocked").italic())
                     default:

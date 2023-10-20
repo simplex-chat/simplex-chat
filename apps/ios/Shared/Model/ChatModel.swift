@@ -528,14 +528,17 @@ final class ChatModel: ObservableObject {
             users.filter { !$0.user.activeUser }.reduce(0, { unread, next -> Int in unread + next.unreadCount })
     }
 
-    func getConnectedMemberNames(_ ci: ChatItem) -> [String] {
-        guard var i = getChatItemIndex(ci) else { return [] }
+    func getConnectedMemberNames(_ ci: ChatItem, _ mergedRange: CIMergedRange?) -> (Int, [String])? {
+        var count = 0
         var ns: [String] = []
-        while i < reversedChatItems.count, let m = reversedChatItems[i].memberConnected {
-            ns.append(m.chatViewName)
-            i += 1
+        guard let merged = mergedRange else { return nil }
+        for i in merged.itemsRange {
+            if let m = reversedChatItems[i].memberConnected {
+                count += 1
+                if ns.count <= 3 { ns.append(m.displayName) }
+            }
         }
-        return ns
+        return (count, ns)
     }
 
     func getNextChatItem(_ ci: ChatItem) -> (Int?, ChatItem?) {
@@ -570,7 +573,7 @@ final class ChatModel: ObservableObject {
         for i in merged.itemsRange {
             if case let .groupRcv(m) = reversedChatItems[i].chatDir {
                 if prevMember == nil && m.id != member.id { prevMember = m }
-                names.insert(m.chatViewName)
+                names.insert(m.displayName)
             }
         }
         return (prevMember, names.count)
@@ -687,6 +690,10 @@ struct CIMergedRange {
 
     var many: Bool {
         currIndex < prevMerged
+    }
+
+    var count: Int {
+        prevMerged - currIndex + 1
     }
 
     var itemsRange: ClosedRange<Int> {

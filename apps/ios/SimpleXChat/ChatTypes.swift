@@ -2100,26 +2100,46 @@ public struct ChatItem: Identifiable, Decodable {
     }
 
     public var mergeCategory: CIMergeCategory? {
-        if memberConnected != nil {
-            .memberConnected
-        } else if meta.itemDeleted != nil {
-            chatDir.sent ? .sndItemDeleted : .rcvItemDeleted
-        } else if isChatFeature {
-            .chatFeature
-        } else {
-            nil
+        switch content {
+        case .rcvChatFeature: .chatFeature
+        case .sndChatFeature: .chatFeature
+        case .rcvGroupFeature: .chatFeature
+        case .sndGroupFeature: .chatFeature
+        case .rcvGroupEvent(.memberCreatedContact): nil
+        case .rcvGroupEvent: .rcvGroupEvent
+        case .sndGroupEvent: .sndGroupEvent
+        default:
+            if meta.itemDeleted == nil {
+                nil
+            } else {
+                chatDir.sent ? .sndItemDeleted : .rcvItemDeleted
+            }
         }
     }
 
-    public var isChatFeature: Bool {
-        switch content {
-        case .rcvChatFeature: true
-        case .sndChatFeature: true
-        case .rcvGroupFeature: true
-        case .sndGroupFeature: true
-        default: false
-        }
-    }
+//        if memberConnected != nil {
+//            .memberConnected
+//        } else if meta.itemDeleted != nil {
+//            chatDir.sent ? .sndItemDeleted : .rcvItemDeleted
+//        } else if case .rcvGroupEvent = content {
+//            .rcvGroupEvent
+//        } else if case .sndGroupEvent = content {
+//            .sndGroupEvent
+//        } else if isChatFeature {
+//            .chatFeature
+//        } else {
+//            nil
+//        }
+
+//    public var isChatFeature: Bool {
+//        switch content {
+//        case .rcvChatFeature: true
+//        case .sndChatFeature: true
+//        case .rcvGroupFeature: true
+//        case .sndGroupFeature: true
+//        default: false
+//        }
+//    }
 
     private var showNtfDir: Bool {
         return !chatDir.sent
@@ -2198,7 +2218,7 @@ public struct ChatItem: Identifiable, Decodable {
     public var memberDisplayName: String? {
         get {
             if case let .groupRcv(groupMember) = chatDir {
-                return groupMember.displayName
+                return groupMember.chatViewName
             } else {
                 return nil
             }
@@ -2354,6 +2374,8 @@ public struct ChatItem: Identifiable, Decodable {
 
 public enum CIMergeCategory {
     case memberConnected
+    case rcvGroupEvent
+    case sndGroupEvent
     case sndItemDeleted
     case rcvItemDeleted
     case chatFeature

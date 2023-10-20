@@ -95,7 +95,7 @@ struct ChatItemContentView<Content: View>: View {
         case let .rcvGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case let .sndGroupInvitation(groupInvitation, memberRole): groupInvitationItemView(groupInvitation, memberRole)
         case .rcvDirectEvent: eventItemView()
-        case .rcvGroupEvent(.memberConnected): CIEventView(eventText: membersConnectedItemText)
+//        case .rcvGroupEvent(.memberConnected): CIEventView(eventText: membersConnectedItemText)
         case .rcvGroupEvent(.memberCreatedContact): CIMemberCreatedContactView(chatItem: chatItem)
         case .rcvGroupEvent: eventItemView()
         case .sndGroupEvent: eventItemView()
@@ -134,7 +134,17 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func eventItemViewText() -> Text {
-        if let member = chatItem.memberDisplayName {
+        if let merged = mergedRange, merged.many {
+            if let (count, text) = membersConnectedText {
+                var t = Text(text)
+                if merged.count > count {
+                    t = t + Text(" ") + Text("and \(merged.count - count) other events")
+                }
+                return chatEventText(t + Text(" ") + chatItem.timestampText)
+            } else {
+                return chatEventText("\(merged.count) group events", chatItem.timestampText)
+            }
+        } else if let member = chatItem.memberDisplayName {
             return Text(member + " ")
                     .font(.caption)
                     .foregroundColor(.secondary)
@@ -149,23 +159,16 @@ struct ChatItemContentView<Content: View>: View {
         CIChatFeatureView(chatItem: chatItem, feature: feature, iconColor: iconColor, mergedRange: mergedRange)
     }
 
-    private var membersConnectedItemText: Text {
-        if let t = membersConnectedText {
-            return chatEventText(t, chatItem.timestampText)
-        } else {
-            return eventItemViewText()
-        }
-    }
-
-    private var membersConnectedText: LocalizedStringKey? {
-        let ns = chatModel.getConnectedMemberNames(chatItem)
-        return ns.count > 3
-            ? "\(ns[0]), \(ns[1]) and \(ns.count - 2) other members connected"
+    private var membersConnectedText: (Int, LocalizedStringKey)? {
+        guard let (count, ns) = chatModel.getConnectedMemberNames(chatItem, mergedRange) else { return nil }
+        let text: LocalizedStringKey? = count > 3 && ns.count >= 2
+            ? "\(ns[0]), \(ns[1]) and \(count - 2) other members connected"
             : ns.count == 3
             ? "\(ns[0] + ", " + ns[1]) and \(ns[2]) connected"
             : ns.count == 2
             ? "\(ns[0]) and \(ns[1]) connected"
             : nil
+        return if let text = text { (ns.count, text) } else { nil }
     }
 }
 
