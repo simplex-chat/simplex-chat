@@ -32,7 +32,7 @@ import Data.Text.Encoding (decodeUtf8)
 import Data.Word (Word32)
 import qualified Network.HTTP.Types as N
 import qualified Network.HTTP2.Client as H
-import Network.HTTP2.Server (responseBuilder)
+import Network.HTTP2.Server (responseStreaming)
 import Simplex.Chat.Controller (ChatResponse)
 import Simplex.Chat.Remote.Types
 import Simplex.Messaging.Crypto.File (CryptoFile)
@@ -40,8 +40,9 @@ import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON, pattern SingleFi
 import Simplex.Messaging.Transport.Buffer (getBuffered)
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), HTTP2BodyChunk, defaultHTTP2BufferSize, getBodyChunk)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2Response (..), closeHTTP2Client, sendRequestDirect)
+import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
-import Simplex.Messaging.Util (liftEitherError, liftEitherWith, liftIOEither, tshow, whenM)
+import Simplex.Messaging.Util (liftEitherError, liftEitherWith, tshow, whenM)
 import System.FilePath ((</>))
 import System.IO.Unsafe (unsafeInterleaveIO)
 import UnliftIO
@@ -51,8 +52,8 @@ data RemoteCommand
   = RCHello {deviceName :: Text}
   | RCSend {command :: Text} -- TODO maybe ChatCommand here?
   | RCRecv {wait :: Int} -- this wait should be less than HTTP timeout
-  -- local file encryption is determined by the host, but can be overridden for videos
-  | RCStoreFile {fileSize :: Word32, encrypt :: Maybe Bool} -- requires attachment
+  | -- local file encryption is determined by the host, but can be overridden for videos
+    RCStoreFile {fileSize :: Word32, encrypt :: Maybe Bool} -- requires attachment
   | RCGetFile {filePath :: FilePath}
   deriving (Show)
 
@@ -70,11 +71,13 @@ data RemoteResponse
 $(deriveJSON (taggedObjectJSON $ dropPrefix "RC") ''RemoteCommand)
 $(deriveJSON (taggedObjectJSON $ dropPrefix "RR") ''RemoteResponse)
 
+-- * Client side / desktop
+
 createRemoteHostClient :: HTTP2Client -> Text -> ExceptT RemoteProtocolError IO RemoteHostClient
 createRemoteHostClient httpClient desktopName = do
   logInfo "Sending initial hello"
   let dummyRemoteEncoding = localEncoding
-  sendRemoteJSON httpClient dummyRemoteEncoding RCHello {deviceName = desktopName} >>= \case
+  sendRemoteCommand httpClient dummyRemoteEncoding Nothing RCHello {deviceName = desktopName} >>= \case
     (Nothing, rrh@RRHello {encoding, deviceName = mobileName}) -> do
       logInfo $ "Got initial hello: " <> tshow rrh
       when (encoding == PEKotlin && localEncoding == PESwift) $ throwError RPEIncompatibleEncoding
@@ -85,93 +88,39 @@ createRemoteHostClient httpClient desktopName = do
 closeRemoteHostClient :: MonadIO m => RemoteHostClient -> m ()
 closeRemoteHostClient RemoteHostClient {httpClient} = liftIO $ closeHTTP2Client httpClient
 
--- | Send chat command an
+-- ** Commands
+
 remoteSend :: RemoteHostClient -> ByteString -> ExceptT RemoteProtocolError IO ChatResponse
-remoteSend RemoteHostClient {httpClient, remoteEncoding} cmd = sendRemoteJSON httpClient remoteEncoding RCSend {command = decodeUtf8 cmd} >>= \case
+remoteSend RemoteHostClient {httpClient, remoteEncoding} cmd = sendRemoteCommand httpClient remoteEncoding Nothing RCSend {command = decodeUtf8 cmd} >>= \case
   (Nothing, RRChatResponse cr) -> pure cr
   (Just _, RRChatEvent{}) -> throwError RPEUnexpectedFile
   (_, _) -> throwError RPEBadResponse
 
 remoteRecv :: RemoteHostClient -> Int -> ExceptT RemoteProtocolError IO (Maybe ChatResponse)
-remoteRecv RemoteHostClient {httpClient, remoteEncoding} ms = sendRemoteJSON httpClient remoteEncoding RCRecv {wait=ms} >>= \case
+remoteRecv RemoteHostClient {httpClient, remoteEncoding} ms = sendRemoteCommand httpClient remoteEncoding Nothing RCRecv {wait=ms} >>= \case
   (Nothing, RRChatEvent cr_) -> pure cr_
   (Just _, RRChatEvent{}) -> throwError RPEUnexpectedFile
   (_, _) -> throwError RPEBadResponse
 
-sendRemoteJSON :: HTTP2Client -> PlatformEncoding -> RemoteCommand -> ExceptT RemoteProtocolError IO (Maybe BL.ByteString, RemoteResponse)
-sendRemoteJSON http remoteEncoding req = do
-  HTTP2Response{response, respBody} <- liftEitherError (RPEHTTP2 . tshow) $ sendRequestDirect http (httpRequest $ sizePrefixedEncode req) (Just 1000000)
-  jsonBody remoteEncoding response respBody
-
-sendRemoteJSONFile :: HTTP2Client -> PlatformEncoding -> FilePath -> (Integer -> RemoteCommand) -> ExceptT RemoteProtocolError IO (Maybe BL.ByteString, RemoteResponse)
-sendRemoteJSONFile http remoteEncoding filePath toReq = do
-  fileSize <- withExceptT (RPEIOError . tshow) . liftIOEither . tryAny $ getFileSize filePath
-  fileStream <- withExceptT (RPEIOError . tshow) . liftIOEither . tryAny $ BL.readFile filePath
-  -- the file will remain open until the request body is fully sent
-  let req = sizePrefixedEncode (toReq fileSize) <> lazyByteString fileStream
-  HTTP2Response{response, respBody} <- liftEitherError (RPEHTTP2 . tshow) $ sendRequestDirect http (httpRequest req) (Just 1000000)
-  jsonBody remoteEncoding response respBody
-
-httpRequest :: Builder -> H.Request
-httpRequest = H.requestBuilder N.methodPost "/" mempty
-
--- | Get size-prefixed JSON and decode, performing platform transcoding if needed.
--- The remains are returned as lazy bytestring and don't get streamed until requested.
-jsonBody :: (HTTP2BodyChunk a, J.FromJSON b) => PlatformEncoding -> a -> HTTP2Body -> ExceptT RemoteProtocolError IO (Maybe BL.ByteString, b)
-jsonBody remoteEncoding r body = do
-  chunks <- liftIO (getHTTP2BodyChunks r body)
-  (json, attachment) <- withExceptT (const RPEInvalidSize) $ sizedChunk chunks
-  -- logDebug $ decodeUtf8 $ B.toStrict json
-  res <- liftEitherWith (RPEInvalidJSON . fromString) $ J.eitherDecode json >>= JT.parseEither J.parseJSON . convertJSON remoteEncoding localEncoding
-  pure (if BL.null attachment then Nothing else Just attachment, res)
-
-sizePrefixedEncode :: J.ToJSON a => a -> Builder
-sizePrefixedEncode value = int64LE size <> lazyByteString json
+sendRemoteCommand :: HTTP2Client -> PlatformEncoding -> Maybe (Handle, Word32) -> RemoteCommand -> ExceptT RemoteProtocolError IO (Maybe BL.ByteString, RemoteResponse)
+sendRemoteCommand http remoteEncoding attachment_ rc = do
+  HTTP2Response{response, respBody} <- liftEitherError (RPEHTTP2 . tshow) $ sendRequestDirect http httpRequest Nothing
+  jsonBody (convertJSON remoteEncoding localEncoding) response respBody
   where
-    size = BL.length json
-    json = J.encode value
-
-sizedChunk :: BL.ByteString -> ExceptT () IO (BL.ByteString, BL.ByteString)
-sizedChunk chunks = do
-  (next, _offset, headerSize) <- liftEitherWith (const ()) $ runGetOrFail getInt64le chunks
-  when (headerSize > BL.length next) $ throwError ()
-  pure $ BL.splitAt headerSize next
-
-getHTTP2BodyChunks :: HTTP2BodyChunk a => a -> HTTP2Body -> IO BL.ByteString
-getHTTP2BodyChunks r HTTP2Body {bodyHead, bodyBuffer} =
-  if B.null bodyHead
-    then lazyGet -- skip head chunk
-    else BLI.Chunk bodyHead <$> lazyGet -- attach head as a first chunk
-  where
-    getNext :: IO ByteString
-    getNext = getBuffered bodyBuffer defaultHTTP2BufferSize Nothing (getBodyChunk r)
-
-    -- | Delay IO effect until it is demanded
-    --
-    -- cf. https://hackage.haskell.org/package/bytestring-0.12.0.2/docs/src/Data.ByteString.Lazy.html#hGetContentsN
-    lazyGet :: IO BL.ByteString
-    lazyGet = unsafeInterleaveIO next
-
-    next :: IO BL.ByteString
-    next = do
-      chunk <- getNext
-      if B.null chunk
-        then pure BLI.Empty -- done, terminate with a "nil" chunk
-        else BLI.Chunk chunk <$> lazyGet -- produce a chunk with an on-demand body
+    httpRequest = H.requestStreaming N.methodPost "/" mempty $ \send flush -> do
+      send $ sizePrefixedEncode rc
+      case attachment_ of
+        Nothing -> pure ()
+        Just (h, sz) -> hSendFile h send sz
+      flush
 
 remoteStoreFile :: RemoteHostClient -> FilePath -> Maybe Bool -> ExceptT RemoteProtocolError IO CryptoFile
 remoteStoreFile RemoteHostClient {httpClient, remoteEncoding} localPath encrypt = do
-  (attachment_, reply) <- sendRemoteJSONFile httpClient remoteEncoding localPath $ \size -> RCStoreFile {encrypt, fileSize = fromInteger size}
+  (attachment_, reply) <- withFileHSize localPath $ \h fileSize -> sendRemoteCommand httpClient remoteEncoding (Just (h, fileSize)) RCStoreFile {encrypt, fileSize}
   unless (isNothing attachment_) $ throwError RPEUnexpectedFile
   case reply of
     RRFileStored {fileSource} -> pure fileSource
     _ -> throwError RPEBadResponse
-
-{- TODO:
-\* Get necessary info from FS
-\* Encode request with a file metadata
-\* Stream body as `len(json) <> json <> fileBody`
--}
 
 -- TODO this should work differently for CLI and UI clients
 -- CLI - potentially, create new unique names and report them as created
@@ -180,7 +129,7 @@ remoteStoreFile RemoteHostClient {httpClient, remoteEncoding} localPath encrypt 
 -- Possibly, path in the database should be optional and CLI commands should allow configuring it per session or use temp or download folder
 remoteGetFile :: RemoteHostClient -> FilePath -> FilePath -> ExceptT RemoteProtocolError IO FilePath
 remoteGetFile RemoteHostClient {httpClient, remoteEncoding} baseDir filePath = do
-  (attachment_, reply) <- sendRemoteJSON httpClient remoteEncoding RCGetFile {filePath}
+  (attachment_, reply) <- sendRemoteCommand httpClient remoteEncoding Nothing RCGetFile {filePath}
   -- XXX: this should use the body-to-file writer, but header/JSON
   expectedSize <- case reply of
     RRFile {fileSize} -> pure fileSize
@@ -192,31 +141,29 @@ remoteGetFile RemoteHostClient {httpClient, remoteEncoding} baseDir filePath = d
   where
     localFile = baseDir </> filePath
 
+-- * Server side / mobile
+
 handleRemoteCommand :: MonadUnliftIO m => ((Maybe BL.ByteString, RemoteCommand) -> m RemoteResponse) -> HTTP2Request -> m ()
 handleRemoteCommand handler HTTP2Request{request, reqBody, sendResponse} = do
   logDebug "handleRemoteCommand"
   result <- tryAny $ -- prevent exception leaking out to the HTTP2 so the client can skip checking status
     withRunInIO $ \io -> runExceptT $ do -- discard parent context and run remote protocol
-      acmd <- jsonBody localEncoding request reqBody
+      acmd <- jsonBody id request reqBody
       ExceptT . try . io $ handler acmd -- return to handler context, intercepting RemoteProtocolError thrown as exceptions
-  respond $ case result of
-    Left err -> RRException (tshow err)
-    Right (Left rpe) -> RRServerError rpe
-    Right (Right rr) -> rr
-  where
-    respond = liftIO . sendResponse . responseBuilder N.status200 [] . sizePrefixedEncode
+  liftIO . sendResponse . responseStreaming N.status200 [] $ \send flush -> do
+    send $ sizePrefixedEncode $ case result of
+      Left err -> RRException (tshow err)
+      Right (Left rpe) -> RRServerError rpe
+      Right (Right ok) -> ok
+    -- todo'unhandled <- runExceptT . withFileHSize "localPath" $ \h fileSize -> liftIO $ hSendFile h send fileSize
+    flush
 
-{- TODO:
-\* Get full chat command body
-\* Run handler in a host controller context
-\* Stream ChatResponse JSON with sendResponse (responseBuilder)
--}
-
-{- TODO:
-  * Encode request to locate the file
-  * Stream body into a local file
-    - Alternatively: receive length-prefixed json with metadata, then stream remaining data into a file
-  -}
+withFileHSize :: (MonadUnliftIO m, MonadError RemoteProtocolError m) => FilePath -> (Handle -> Word32 -> m a) -> m a
+withFileHSize path action =
+  withFile path ReadMode $ \h -> do
+    fileSize' <- hFileSize h
+    when (fileSize' > toInteger (maxBound :: Word32)) $ throwError RPEFileTooLarge
+    action h (fromInteger fileSize')
 
 -- * Transport-level wrappers
 
@@ -259,3 +206,48 @@ owsf2tagged = fst . convert
 
 pattern OwsfTag :: (JK.Key, J.Value)
 pattern OwsfTag = (SingleFieldJSONTag, J.Bool True)
+
+-- | Get size-prefixed JSON and decode, performing platform transcoding if needed.
+-- The remains are returned as lazy bytestring and don't get streamed until requested.
+jsonBody :: (HTTP2BodyChunk a, J.FromJSON b) => (J.Value -> J.Value) -> a -> HTTP2Body -> ExceptT RemoteProtocolError IO (Maybe BL.ByteString, b)
+jsonBody transcode r body = do
+  chunks <- liftIO (getHTTP2BodyChunks r body)
+  (json, attachment) <- withExceptT (const RPEInvalidSize) $ sizedChunk chunks
+  -- logDebug $ decodeUtf8 $ B.toStrict json
+  res <- liftEitherWith (RPEInvalidJSON . fromString) $ J.eitherDecode json >>= JT.parseEither J.parseJSON . transcode
+  pure (if BL.null attachment then Nothing else Just attachment, res)
+
+-- | Convert a command or a response into 'Builder'
+sizePrefixedEncode :: J.ToJSON a => a -> Builder
+sizePrefixedEncode value = int64LE size <> lazyByteString json
+  where
+    size = BL.length json
+    json = J.encode value
+
+sizedChunk :: BL.ByteString -> ExceptT () IO (BL.ByteString, BL.ByteString)
+sizedChunk chunks = do
+  (next, _offset, headerSize) <- liftEitherWith (const ()) $ runGetOrFail getInt64le chunks
+  when (headerSize > BL.length next) $ throwError ()
+  pure $ BL.splitAt headerSize next
+
+getHTTP2BodyChunks :: HTTP2BodyChunk a => a -> HTTP2Body -> IO BL.ByteString
+getHTTP2BodyChunks r HTTP2Body {bodyHead, bodyBuffer} =
+  if B.null bodyHead
+    then lazyGet -- skip head chunk
+    else BLI.Chunk bodyHead <$> lazyGet -- attach head as a first chunk
+  where
+    getNext :: IO ByteString
+    getNext = getBuffered bodyBuffer defaultHTTP2BufferSize Nothing (getBodyChunk r)
+
+    -- | Delay IO effect until it is demanded
+    --
+    -- cf. https://hackage.haskell.org/package/bytestring-0.12.0.2/docs/src/Data.ByteString.Lazy.html#hGetContentsN
+    lazyGet :: IO BL.ByteString
+    lazyGet = unsafeInterleaveIO next
+
+    next :: IO BL.ByteString
+    next = do
+      chunk <- getNext
+      if B.null chunk
+        then pure BLI.Empty -- done, terminate with a "nil" chunk
+        else BLI.Chunk chunk <$> lazyGet -- produce a chunk with an on-demand body

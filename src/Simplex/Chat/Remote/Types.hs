@@ -33,6 +33,7 @@ data RemoteProtocolError
   | RPEIncompatibleEncoding
   | RPEUnexpectedFile
   | RPENoFile
+  | RPEFileTooLarge
   | RPEBadResponse -- ^ Wrong response received for the command sent
   | RPEStoredFileExists -- ^ A file already exists in the destination position
   | RPEHTTP2 Text
