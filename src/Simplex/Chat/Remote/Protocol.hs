@@ -59,7 +59,7 @@ data RemoteResponse
   | RRChatEvent {chatEvent :: Maybe ChatResponse} -- ^ 'Nothing' on poll timeout
   | RRFileStored {fileSource :: CryptoFile}
   | RRFile {fileSize :: Word32} -- provides attachment
-  | RRServerError {serverError :: RemoteProtocolError} -- ^ The protocol error happened on the server side
+  | RRProtocolError {remoteProcotolError :: RemoteProtocolError} -- ^ The protocol error happened on the server side
   | RRException {someException :: Text} -- ^ Handler crashed
   deriving (Show)
 
@@ -102,8 +102,12 @@ remoteRecv RemoteHostClient {httpClient, remoteEncoding} ms = do
 
 remoteStoreFile :: RemoteHostClient -> FilePath -> Maybe Bool -> ExceptT RemoteProtocolError IO CryptoFile
 remoteStoreFile RemoteHostClient {httpClient, remoteEncoding} localPath encrypt = do
-  (_getNext, reply) <- withFileHSize localPath $ \h fileSize -> sendRemoteCommand httpClient remoteEncoding (Just (h, fileSize)) RCStoreFile {encrypt, fileSize}
-  case reply of
+  (_getNext, rr) <- withFile localPath ReadMode $ \h -> do
+    fileSize' <- hFileSize h
+    when (fileSize' > toInteger (maxBound :: Word32)) $ throwError RPEFileTooLarge
+    let fileSize = fromInteger fileSize'
+    sendRemoteCommand httpClient remoteEncoding (Just (h, fileSize)) RCStoreFile {encrypt, fileSize}
+  case rr of
     RRFileStored {fileSource} -> pure fileSource
     _ -> throwError RPEBadResponse
 
@@ -142,22 +146,33 @@ sendRemoteCommand http remoteEncoding attachment_ rc = do
 
 -- * Server side / mobile
 
-handleRemoteCommand :: MonadUnliftIO m => ((Int -> IO ByteString) -> RemoteCommand -> m RemoteResponse) -> HTTP2Request -> m ()
+type SendChunk = Builder -> IO ()
+
+handleRemoteCommand :: MonadUnliftIO m => ((Int -> IO ByteString)  -> (RemoteResponse -> (SendChunk -> IO ()) -> m ()) -> RemoteCommand -> m ()) -> HTTP2Request -> m ()
 handleRemoteCommand handler HTTP2Request{request, reqBody, sendResponse} = do
   logDebug "handleRemoteCommand"
-  result <- tryAny $ -- prevent exception leaking out to the HTTP2 so the client can skip checking status
-    withRunInIO $ \io -> runExceptT $ do -- discard parent context and run remote protocol
-      (header, getNext) <- bodyParts request reqBody
-      cmd <- liftEitherWith (RPEInvalidJSON . fromString) $ J.eitherDecodeStrict' header
-      ExceptT . try . io $ handler getNext cmd -- return to handler context, intercepting RemoteProtocolError thrown as exceptions
-  liftIO . sendResponse . responseStreaming N.status200 [] $ \send flush -> do
-    case result of
-      Left err -> send $ sizePrefixedEncode $ RRException (tshow err)
-      Right (Left rpe) -> send $ sizePrefixedEncode $ RRServerError rpe
-      Right (Right rr) -> do
+  withFallback $ do
+    (header, getNext) <- liftIO (runExceptT $ bodyParts request reqBody) >>= either throwIO pure
+    rc <- either (throwIO . RPEInvalidJSON . fromString) pure $ J.eitherDecodeStrict' header
+    handler getNext replyWith rc
+  where
+    replyWith :: MonadUnliftIO m => RemoteResponse -> (SendChunk -> IO ()) -> m ()
+    replyWith rr attach =
+      liftIO . sendResponse . responseStreaming N.status200 [] $ \send flush -> do
         send $ sizePrefixedEncode rr
-        -- todo'unhandled <- runExceptT . withFileHSize "localPath" $ \h fileSize -> liftIO $ hSendFile h send fileSize
-    flush
+        attach send
+        flush
+
+    withFallback :: MonadUnliftIO m => m () -> m ()
+    withFallback action = catches action
+      [ Handler $ \remoteProcotolError -> do
+          logError $ "handleRemoteCommand: " <> tshow remoteProcotolError
+          replyWith RRProtocolError {remoteProcotolError} (\_ -> pure ())
+      , Handler $ \(SomeException e) -> do
+          let someException = tshow e
+          logError $ "handleRemoteCommand: " <> someException
+          replyWith RRException {someException} (\_ -> pure ())
+      ]
 
 -- * Transport-level wrappers
 
@@ -220,10 +235,3 @@ bodyParts r HTTP2Body{bodyBuffer} = do
   pure (header, getNext)
   where
     getNext sz = getBuffered bodyBuffer sz Nothing $ getBodyChunk r
-
-withFileHSize :: (MonadUnliftIO m, MonadError RemoteProtocolError m) => FilePath -> (Handle -> Word32 -> m a) -> m a
-withFileHSize path action =
-  withFile path ReadMode $ \h -> do
-    fileSize' <- hFileSize h
-    when (fileSize' > toInteger (maxBound :: Word32)) $ throwError RPEFileTooLarge
-    action h (fromInteger fileSize')

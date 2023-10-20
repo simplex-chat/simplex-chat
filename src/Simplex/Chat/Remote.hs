@@ -41,6 +41,7 @@ import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
+import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
 import Simplex.Messaging.Util (ifM, liftEitherError, liftError, liftIOEither, tshow, ($>>=))
 import System.FilePath ((</>))
 import UnliftIO
@@ -201,23 +202,19 @@ startRemoteCtrl execChatCommand = do
       source <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure
       toView $ CRRemoteCtrlConnecting $ remoteCtrlInfo rc False
       atomically $ writeTVar discovered mempty -- flush unused sources
-      server <- async $ Discovery.connectRevHTTP2 source fingerprint $ handleRemoteCommand \getNext -> \case
-        RCHello {deviceName = desktopName} -> handleHello desktopName
-        RCSend {command} -> handleSend execChatCommand command
-        RCRecv {wait = time} -> handleRecv time events
-        RCGetFile {filePath} -> handleGetFile filePath -- XXX: needs to send file
-        RCStoreFile {fileSize, encrypt} -> handleStoreFile fileSize encrypt getNext
+      server <- async $ Discovery.connectRevHTTP2 source fingerprint $ handleRemoteCommand \getNext reply rcmd ->
+        let reply_ rr = reply rr (\_ -> pure ())
+        in case rcmd of
+            RCHello {deviceName = desktopName} -> handleHello desktopName >>= reply_
+            RCSend {command} -> handleSend execChatCommand command >>= reply_
+            RCRecv {wait = time} -> handleRecv time events >>= reply_
+            RCStoreFile {fileSize, encrypt} -> handleStoreFile fileSize encrypt getNext >>= reply_
+            RCGetFile {filePath} -> handleGetFile filePath reply
       chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
       toView $ CRRemoteCtrlConnected $ remoteCtrlInfo rc True
       _ <- waitCatch server
       chatWriteVar remoteCtrlSession Nothing
       toView CRRemoteCtrlStopped
-
-handleStoreFile :: ChatMonad m => Word32 -> Maybe Bool -> (Int -> IO ByteString) -> m RemoteResponse
-handleStoreFile fileSize encrypt getNext = error "TODO" <$ logError "TODO: handleStoreFile"
-
-handleGetFile :: ChatMonad m => FilePath -> m RemoteResponse
-handleGetFile filePath = error "TODO" <$ logError "TODO: handleGetFile"
 
 handleHello :: ChatMonad m => Text -> m RemoteResponse
 handleHello desktopName = do
@@ -236,6 +233,18 @@ handleRecv :: MonadUnliftIO m => Int -> TBQueue ChatResponse -> m RemoteResponse
 handleRecv time events = do
   logDebug $ "Recv: " <> tshow time
   RRChatEvent <$> (timeout time . atomically $ readTBQueue events)
+
+handleStoreFile :: ChatMonad m => Word32 -> Maybe Bool -> (Int -> IO ByteString) -> m RemoteResponse
+handleStoreFile fileSize encrypt getNext = error "TODO" <$ logError "TODO: handleStoreFile"
+
+handleGetFile :: ChatMonad m => FilePath -> (RemoteResponse -> (SendChunk -> IO ()) -> m ()) -> m ()
+handleGetFile path reply = do
+  logDebug $ "GetFile: " <> tshow path
+  withFile path ReadMode $ \h -> do
+    fileSize' <- hFileSize h
+    when (fileSize' > toInteger (maxBound :: Word32)) $ throwIO RPEFileTooLarge
+    let fileSize = fromInteger fileSize'
+    reply RRFile {fileSize} $ \send -> hSendFile h send fileSize
 
 -- TODO the problem with this code was that it wasn't clear where the recursion can happen,
 -- by splitting receiving and processing to two functions it becomes clear
