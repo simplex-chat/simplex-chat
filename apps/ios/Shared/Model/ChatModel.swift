@@ -567,7 +567,7 @@ final class ChatModel: ObservableObject {
     func getPrevHiddenMember(_ member: GroupMember, _ merged: CIMergedRange) -> (GroupMember?, Int) {
         var prevMember: GroupMember? = nil
         var names: Set<String> = []
-        for i in merged.range {
+        for i in merged.itemsRange {
             if case let .groupRcv(m) = reversedChatItems[i].chatDir {
                 if prevMember == nil && m.id != member.id { prevMember = m }
                 names.insert(m.chatViewName)
@@ -689,8 +689,9 @@ struct CIMergedRange {
         currIndex < prevMerged
     }
 
-    var range: ClosedRange<Int> {
-        currIndex...prevMerged
+    var itemsRange: ClosedRange<Int> {
+        let maxIx = ChatModel.shared.reversedChatItems.count - 1
+        return min(currIndex, maxIx)...min(prevMerged, maxIx)
     }
 }
 

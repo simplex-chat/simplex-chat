@@ -37,8 +37,9 @@ struct MarkedDeletedItemView: View {
             var blocked = 0
             var deleted = 0
             var moderatedBy: [String] = []
-            for i in merged.range {
-                let ci = ChatModel.shared.reversedChatItems[i]
+            let m = ChatModel.shared
+            for i in merged.itemsRange {
+                let ci = m.reversedChatItems[i]
                 switch ci.meta.itemDeleted {
                 case let .moderated(_, byGroupMember):
                     moderated += 1

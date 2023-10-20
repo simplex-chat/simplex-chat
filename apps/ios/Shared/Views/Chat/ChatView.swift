@@ -492,7 +492,7 @@ struct ChatView: View {
             } else {
                 let (mergedRange, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
                 if revealed, let merged = mergedRange, merged.many {
-                    let range = merged.range
+                    let range = merged.itemsRange
                     let items = Array(zip(Array(range), m.reversedChatItems[range]))
                     ForEach(items, id: \.1.viewId) { (i, ci) in
                         let prev = i == merged.prevMerged ? prevItem : m.reversedChatItems[i + 1]
