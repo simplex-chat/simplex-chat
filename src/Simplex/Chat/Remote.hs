@@ -29,6 +29,7 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Data.Word (Word32)
 import Network.Socket (SockAddr (..), hostAddressToTuple)
 import Simplex.Chat.Controller
 import qualified Simplex.Chat.Remote.Discovery as Discovery
@@ -200,21 +201,23 @@ startRemoteCtrl execChatCommand = do
       source <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure
       toView $ CRRemoteCtrlConnecting $ remoteCtrlInfo rc False
       atomically $ writeTVar discovered mempty -- flush unused sources
-      server <- async $ Discovery.connectRevHTTP2 source fingerprint $ handleRemoteCommand \case
-        (Nothing, RCHello {deviceName=desktopName}) -> handleHello desktopName
-        (Nothing, RCSend {command}) -> handleSend execChatCommand command
-        (Nothing, RCRecv {wait=time}) -> handleRecv time events
-        -- TODO
-        (Nothing, gf@RCGetFile {}) -> error "TODO" <$ logError ("TODO: " <> tshow gf)
-        (Nothing, sf@RCStoreFile{fileSize=0}) -> error "TODO" <$ logError ("TODO: " <> tshow sf)
-        (Nothing, RCStoreFile{}) -> throwIO RPENoFile
-        (Just todo'attachment, sf@RCStoreFile {}) -> error "TODO" <$ logError ("TODO: " <> tshow sf)
-        (Just _, _) -> throwIO RPEUnexpectedFile
+      server <- async $ Discovery.connectRevHTTP2 source fingerprint $ handleRemoteCommand \getNext -> \case
+        RCHello {deviceName = desktopName} -> handleHello desktopName
+        RCSend {command} -> handleSend execChatCommand command
+        RCRecv {wait = time} -> handleRecv time events
+        RCGetFile {filePath} -> handleGetFile filePath -- XXX: needs to send file
+        RCStoreFile {fileSize, encrypt} -> handleStoreFile fileSize encrypt getNext
       chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
       toView $ CRRemoteCtrlConnected $ remoteCtrlInfo rc True
       _ <- waitCatch server
       chatWriteVar remoteCtrlSession Nothing
       toView CRRemoteCtrlStopped
+
+handleStoreFile :: ChatMonad m => Word32 -> Maybe Bool -> (Int -> IO ByteString) -> m RemoteResponse
+handleStoreFile fileSize encrypt getNext = error "TODO" <$ logError "TODO: handleStoreFile"
+
+handleGetFile :: ChatMonad m => FilePath -> m RemoteResponse
+handleGetFile filePath = error "TODO" <$ logError "TODO: handleGetFile"
 
 handleHello :: ChatMonad m => Text -> m RemoteResponse
 handleHello desktopName = do

@@ -37,7 +37,7 @@ import Simplex.Messaging.Transport (supportedParameters)
 import qualified Simplex.Messaging.Transport as Transport
 import Simplex.Messaging.Transport.Client (TransportHost (..), defaultTransportClientConfig, runTransportClient)
 import Simplex.Messaging.Transport.HTTP2 (defaultHTTP2BufferSize, getHTTP2Body)
-import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError (..), attachHTTP2Client, connTimeout, defaultHTTP2ClientConfig)
+import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError (..), attachHTTP2Client, bodyHeadSize, connTimeout, defaultHTTP2ClientConfig)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..), runHTTP2ServerWith)
 import Simplex.Messaging.Transport.Server (defaultTransportServerConfig, runTransportServer)
 import Simplex.Messaging.Util (ifM, tshow, whenM)
@@ -118,7 +118,7 @@ runHTTP2Client finishedVar clientVar tls =
     do
       logError "HTTP2 session already started on this listener"
   where
-    config = defaultHTTP2ClientConfig { connTimeout = maxBound }
+    config = defaultHTTP2ClientConfig { bodyHeadSize = doNotPrefetchHead, connTimeout = maxBound }
 
 withListener :: (MonadUnliftIO m) => (UDP.ListenSocket -> m a) -> m a
 withListener = bracket openListener (liftIO . UDP.stop)
@@ -144,5 +144,9 @@ attachHTTP2Server :: (MonadUnliftIO m) => (HTTP2Request -> m ()) -> Transport.TL
 attachHTTP2Server processRequest tls = do
   withRunInIO $ \unlift ->
     runHTTP2ServerWith defaultHTTP2BufferSize ($ tls) $ \sessionId r sendResponse -> do
-      reqBody <- getHTTP2Body r defaultHTTP2BufferSize
+      reqBody <- getHTTP2Body r doNotPrefetchHead
       unlift $ processRequest HTTP2Request {sessionId, request = r, reqBody, sendResponse}
+
+-- | Suppress storing initial chunk in bodyHead, forcing clients and servers to stream chunks
+doNotPrefetchHead :: Int
+doNotPrefetchHead = 0
