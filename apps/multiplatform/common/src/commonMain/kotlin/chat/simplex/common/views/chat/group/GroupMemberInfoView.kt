@@ -3,7 +3,6 @@ package chat.simplex.common.views.chat.group
 import InfoRow
 import SectionBottomSpacer
 import SectionDividerSpaced
-import SectionItemView
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -35,7 +34,7 @@ import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chatlist.openLoadedChatChat
+import chat.simplex.common.views.chatlist.openLoadedChat
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
@@ -87,7 +86,7 @@ fun GroupMemberInfoView(
           if (memberContact != null) {
             val memberChat = Chat(ChatInfo.Direct(memberContact), chatItems = arrayListOf())
             chatModel.addChat(memberChat)
-            openLoadedChatChat(memberChat, chatModel)
+            openLoadedChat(memberChat, chatModel)
             closeAll()
             chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())
           }

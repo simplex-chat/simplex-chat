@@ -121,14 +121,14 @@ fun groupChatAction(groupInfo: GroupInfo, chatModel: ChatModel) {
 suspend fun openDirectChat(contactId: Long, chatModel: ChatModel) {
   val chat = chatModel.controller.apiGetChat(ChatType.Direct, contactId)
   if (chat != null) {
-    openLoadedChatChat(chat, chatModel)
+    openLoadedChat(chat, chatModel)
   }
 }
 
 suspend fun openGroupChat(groupId: Long, chatModel: ChatModel) {
   val chat = chatModel.controller.apiGetChat(ChatType.Group, groupId)
   if (chat != null) {
-    openChat(chat, chatModel)
+    openLoadedChat(chat, chatModel)
   }
 }
 
@@ -136,12 +136,12 @@ suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
   Log.d(TAG, "TODOCHAT: openChat: opening ${chatInfo.id}, current chatId ${ChatModel.chatId.value}, size ${ChatModel.chatItems.size}")
   val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId)
   if (chat != null) {
-    openLoadedChatChat(chat, chatModel)
+    openLoadedChat(chat, chatModel)
     Log.d(TAG, "TODOCHAT: openChat: opened ${chatInfo.id}, current chatId ${ChatModel.chatId.value}, size ${ChatModel.chatItems.size}")
   }
 }
 
-fun openLoadedChatChat(chat: Chat, chatModel: ChatModel) {
+fun openLoadedChat(chat: Chat, chatModel: ChatModel) {
   chatModel.chatItems.clear()
   chatModel.chatItemStatuses.clear()
   chatModel.chatItems.addAll(chat.chatItems)
