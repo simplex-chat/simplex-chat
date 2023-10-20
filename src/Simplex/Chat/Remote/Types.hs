@@ -37,7 +37,6 @@ data RemoteProtocolError
   | RPEBadResponse -- ^ Wrong response received for the command sent
   | RPEStoredFileExists -- ^ A file already exists in the destination position
   | RPEHTTP2 Text
-  | RPEIOError Text
   deriving (Show, Exception)
 
 type RemoteHostId = Int64

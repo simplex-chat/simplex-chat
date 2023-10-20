@@ -204,7 +204,7 @@ startRemoteCtrl execChatCommand = do
       atomically $ writeTVar discovered mempty -- flush unused sources
       server <- async $ Discovery.connectRevHTTP2 source fingerprint $ handleRemoteCommand \getNext reply rcmd ->
         let reply_ rr = reply rr (\_ -> pure ())
-        in case rcmd of
+        in handleError (reply_ . RRChatError . tshow) $ case rcmd of
             RCHello {deviceName = desktopName} -> handleHello desktopName >>= reply_
             RCSend {command} -> handleSend execChatCommand command >>= reply_
             RCRecv {wait = time} -> handleRecv time events >>= reply_
@@ -234,10 +234,10 @@ handleRecv time events = do
   logDebug $ "Recv: " <> tshow time
   RRChatEvent <$> (timeout time . atomically $ readTBQueue events)
 
-handleStoreFile :: ChatMonad m => Word32 -> Maybe Bool -> (Int -> IO ByteString) -> m RemoteResponse
+handleStoreFile :: ChatMonad m => Word32 -> Maybe Bool -> GetChunk -> m RemoteResponse
 handleStoreFile fileSize encrypt getNext = error "TODO" <$ logError "TODO: handleStoreFile"
 
-handleGetFile :: ChatMonad m => FilePath -> (RemoteResponse -> (SendChunk -> IO ()) -> m ()) -> m ()
+handleGetFile :: ChatMonad m => FilePath -> Respond m -> m ()
 handleGetFile path reply = do
   logDebug $ "GetFile: " <> tshow path
   withFile path ReadMode $ \h -> do

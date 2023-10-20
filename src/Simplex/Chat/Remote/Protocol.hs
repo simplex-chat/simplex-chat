@@ -60,6 +60,7 @@ data RemoteResponse
   | RRFileStored {fileSource :: CryptoFile}
   | RRFile {fileSize :: Word32} -- provides attachment
   | RRProtocolError {remoteProcotolError :: RemoteProtocolError} -- ^ The protocol error happened on the server side
+  | RRChatError {chatError :: Text} -- ^ Chat controller thrown an error while handling a command
   | RRException {someException :: Text} -- ^ Handler crashed
   deriving (Show)
 
@@ -146,9 +147,11 @@ sendRemoteCommand http remoteEncoding attachment_ rc = do
 
 -- * Server side / mobile
 
+type GetChunk = Int -> IO ByteString
 type SendChunk = Builder -> IO ()
+type Respond m = RemoteResponse -> (SendChunk -> IO ()) -> m ()
 
-handleRemoteCommand :: MonadUnliftIO m => ((Int -> IO ByteString)  -> (RemoteResponse -> (SendChunk -> IO ()) -> m ()) -> RemoteCommand -> m ()) -> HTTP2Request -> m ()
+handleRemoteCommand :: MonadUnliftIO m => (GetChunk -> Respond m -> RemoteCommand -> m ()) -> HTTP2Request -> m ()
 handleRemoteCommand handler HTTP2Request{request, reqBody, sendResponse} = do
   logDebug "handleRemoteCommand"
   withFallback $ do
@@ -156,7 +159,7 @@ handleRemoteCommand handler HTTP2Request{request, reqBody, sendResponse} = do
     rc <- either (throwIO . RPEInvalidJSON . fromString) pure $ J.eitherDecodeStrict' header
     handler getNext replyWith rc
   where
-    replyWith :: MonadUnliftIO m => RemoteResponse -> (SendChunk -> IO ()) -> m ()
+    replyWith :: MonadUnliftIO m => Respond m
     replyWith rr attach =
       liftIO . sendResponse . responseStreaming N.status200 [] $ \send flush -> do
         send $ sizePrefixedEncode rr
