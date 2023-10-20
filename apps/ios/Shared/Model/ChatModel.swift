@@ -532,7 +532,7 @@ final class ChatModel: ObservableObject {
         guard var i = getChatItemIndex(ci) else { return [] }
         var ns: [String] = []
         while i < reversedChatItems.count, let m = reversedChatItems[i].memberConnected {
-            ns.append(m.displayName)
+            ns.append(m.chatViewName)
             i += 1
         }
         return ns
@@ -562,6 +562,18 @@ final class ChatModel: ObservableObject {
             return (CIMergedRange(currIndex: ciIndex, prevMerged: i - 1), prevItem)
         }
         return (nil, nil)
+    }
+
+    func getPrevHiddenMember(_ member: GroupMember, _ merged: CIMergedRange) -> (GroupMember?, Int) {
+        var prevMember: GroupMember? = nil
+        var names: Set<String> = []
+        for i in merged.range {
+            if case let .groupRcv(m) = reversedChatItems[i].chatDir {
+                if prevMember == nil && m.id != member.id { prevMember = m }
+                names.insert(m.chatViewName)
+            }
+        }
+        return (prevMember, names.count)
     }
 
     func popChat(_ id: String) {

@@ -422,8 +422,8 @@ public enum CustomTimeUnit {
 
 
 public func timeText(_ seconds: Int?) -> String {
-    guard let seconds = seconds else { return "off" }
-    if seconds == 0 { return "0 sec" }
+    guard let seconds = seconds else { return NSLocalizedString("off", comment: "time to disappear") }
+    if seconds == 0 { return NSLocalizedString("0 sec", comment: "time to disappear") }
     return CustomTimeUnit.toText(seconds: seconds)
 }
 

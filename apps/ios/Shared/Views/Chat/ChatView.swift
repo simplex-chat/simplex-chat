@@ -507,17 +507,23 @@ struct ChatView: View {
         @ViewBuilder func chatItemView(_ ci: ChatItem, _ mergedRange: CIMergedRange?, _ prevItem: ChatItem?) -> some View {
             if case let .groupRcv(member) = ci.chatDir,
                case let .group(groupInfo) = chat.chatInfo {
-                if prevItem == nil || showMemberImage(member, prevItem) {
+                let (prevMember, memCount): (GroupMember?, Int) =
+                    if let range = mergedRange, range.many {
+                        ChatModel.shared.getPrevHiddenMember(member, range)
+                    } else {
+                        (nil, 1)
+                    }
+                if prevItem == nil || showMemberImage(member, prevItem) || prevMember != nil {
                     VStack(alignment: .leading, spacing: 4) {
                         if ci.content.showMemberName {
-                            Text(member.displayName)
+                            Text(memberNames(member, prevMember, memCount))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .padding(.leading, memberImageSize + 14)
                                 .padding(.top, 7)
                         }
                         HStack(alignment: .top, spacing: 8) {
-                            ProfileImage(imageStr: member.memberProfile.image)
+                            memberProfileImages(member, prevMember)
                                 .frame(width: memberImageSize, height: memberImageSize)
                                 .onTapGesture { selectedMember = member }
                                 .appSheet(item: $selectedMember) { member in
@@ -539,6 +545,36 @@ struct ChatView: View {
                 chatItemWithMenu(ci, mergedRange, maxWidth)
                     .padding(.horizontal)
                     .padding(.top, 5)
+            }
+        }
+
+        private func memberNames(_ member: GroupMember, _ prevMember: GroupMember?, _ memCount: Int) -> String {
+            let name = member.chatViewName
+            return if let prevName = prevMember?.chatViewName {
+                memCount > 2
+                ? "\(name), \(prevName) and \(memCount - 2) members"
+                : "\(name) and \(prevName)"
+            } else {
+                name
+            }
+        }
+
+        @ViewBuilder private func memberProfileImages(_ member: GroupMember, _ prevMember: GroupMember?) -> some View {
+            if let prevMember = prevMember {
+                let size = memberImageSize * 0.92
+                ZStack(alignment: .center) {
+                    ProfileImage(imageStr: prevMember.memberProfile.image)
+                        .frame(width: size, height: size)
+                        .padding(.leading, -6)
+                        .padding(.top, 3)
+                    ProfileImage(imageStr: member.memberProfile.image)
+                        .background(.background)
+                        .clipShape(Circle())
+                        .frame(width: size, height: size)
+                        .padding(.leading, 6)
+                }
+            } else {
+                ProfileImage(imageStr: member.memberProfile.image)
             }
         }
 

@@ -169,11 +169,15 @@ struct ChatItemContentView<Content: View>: View {
     }
 }
 
-func chatEventText(_ eventText: LocalizedStringKey, _ ts: Text) -> Text {
-    (Text(eventText) + Text(" ") + ts)
+func chatEventText(_ text: Text) -> Text {
+    text
         .font(.caption)
         .foregroundColor(.secondary)
         .fontWeight(.light)
+}
+
+func chatEventText(_ eventText: LocalizedStringKey, _ ts: Text) -> Text {
+    chatEventText(Text(eventText) + Text(" ") + ts)
 }
 
 func chatEventText(_ ci: ChatItem) -> Text {
