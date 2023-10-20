@@ -89,7 +89,7 @@ public enum ChatCommand {
     case apiSetConnectionIncognito(connId: Int64, incognito: Bool)
     case apiConnectPlan(userId: Int64, connReq: String)
     case apiConnect(userId: Int64, incognito: Bool, connReq: String)
-    case apiDeleteChat(type: ChatType, id: Int64)
+    case apiDeleteChat(type: ChatType, id: Int64, notify: Bool?)
     case apiClearChat(type: ChatType, id: Int64)
     case apiListContacts(userId: Int64)
     case apiUpdateProfile(userId: Int64, profile: Profile)
@@ -224,7 +224,11 @@ public enum ChatCommand {
             case let .apiSetConnectionIncognito(connId, incognito): return "/_set incognito :\(connId) \(onOff(incognito))"
             case let .apiConnectPlan(userId, connReq): return "/_connect plan \(userId) \(connReq)"
             case let .apiConnect(userId, incognito, connReq): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connReq)"
-            case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
+            case let .apiDeleteChat(type, id, notify): if let notify = notify {
+                return "/_delete \(ref(type, id)) notify=\(onOff(notify))"
+            } else {
+                return "/_delete \(ref(type, id))"
+            }
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
             case let .apiListContacts(userId): return "/_contacts \(userId)"
             case let .apiUpdateProfile(userId, profile): return "/_profile \(userId) \(encodeJSON(profile))"
@@ -886,14 +890,16 @@ public enum InvitationLinkPlan: Decodable {
 public enum ContactAddressPlan: Decodable {
     case ok
     case ownLink
-    case connecting(contact: Contact)
+    case connectingConfirmReconnect
+    case connectingProhibit(contact: Contact)
     case known(contact: Contact)
 }
 
 public enum GroupLinkPlan: Decodable {
     case ok
     case ownLink(groupInfo: GroupInfo)
-    case connecting(groupInfo_: GroupInfo?)
+    case connectingConfirmReconnect
+    case connectingProhibit(groupInfo_: GroupInfo?)
     case known(groupInfo: GroupInfo)
 }
 

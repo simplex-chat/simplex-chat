@@ -693,10 +693,13 @@ viewConnReqInvitation :: ConnReqInvitation -> [StyledString]
 viewConnReqInvitation cReq =
   [ "pass this invitation link to your contact (via another channel): ",
     "",
-    (plain . strEncode) cReq,
+    (plain . strEncode) (simplexChatInvitation cReq),
     "",
     "and ask them to connect: " <> highlight' "/c <invitation_link_above>"
   ]
+
+simplexChatInvitation :: ConnReqInvitation -> ConnReqInvitation
+simplexChatInvitation (CRInvitationUri crData e2e) = CRInvitationUri crData {crScheme = simplexChat} e2e
 
 viewContactNotFound :: ContactName -> Maybe (GroupInfo, GroupMember) -> [StyledString]
 viewContactNotFound cName suspectedMember =
@@ -736,13 +739,16 @@ connReqContact_ :: StyledString -> ConnReqContact -> [StyledString]
 connReqContact_ intro cReq =
   [ intro,
     "",
-    (plain . strEncode) cReq,
+    (plain . strEncode) (simplexChatContact cReq),
     "",
     "Anybody can send you contact requests with: " <> highlight' "/c <contact_link_above>",
     "to show it again: " <> highlight' "/sa",
     "to share with your contacts: " <> highlight' "/profile_address on",
     "to delete it: " <> highlight' "/da" <> " (accepted contacts will remain connected)"
   ]
+
+simplexChatContact :: ConnReqContact -> ConnReqContact
+simplexChatContact (CRContactUri crData) = CRContactUri crData {crScheme = simplexChat}
 
 autoAcceptStatus_ :: Maybe AutoAccept -> [StyledString]
 autoAcceptStatus_ = \case
@@ -755,7 +761,7 @@ groupLink_ :: StyledString -> GroupInfo -> ConnReqContact -> GroupMemberRole -> 
 groupLink_ intro g cReq mRole =
   [ intro,
     "",
-    (plain . strEncode) cReq,
+    (plain . strEncode) (simplexChatContact cReq),
     "",
     "Anybody can connect to you and join group as " <> showRole mRole <> " with: " <> highlight' "/c <group_link_above>",
     "to show it again: " <> highlight ("/show link #" <> viewGroupName g),
@@ -1022,7 +1028,7 @@ viewContactInfo :: Contact -> ConnectionStats -> Maybe Profile -> [StyledString]
 viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}, activeConn} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
     <> viewConnectionStats stats
-    <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) l]) contactLink
+    <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact l)]) contactLink
     <> maybe
       ["you've shared main profile with this contact"]
       (\p -> ["you've shared incognito profile with this contact: " <> incognitoProfile' p])
@@ -1281,7 +1287,8 @@ viewConnectionPlan = \case
   CPContactAddress cap -> case cap of
     CAPOk -> [ctAddr "ok to connect"]
     CAPOwnLink -> [ctAddr "own address"]
-    CAPConnecting ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
+    CAPConnectingConfirmReconnect -> [ctAddr "connecting, allowed to reconnect"]
+    CAPConnectingProhibit ct -> [ctAddr ("connecting to contact " <> ttyContact' ct)]
     CAPKnown ct ->
       [ ctAddr ("known contact " <> ttyContact' ct),
         "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
@@ -1291,8 +1298,9 @@ viewConnectionPlan = \case
   CPGroupLink glp -> case glp of
     GLPOk -> [grpLink "ok to connect"]
     GLPOwnLink g -> [grpLink "own link for group " <> ttyGroup' g]
-    GLPConnecting Nothing -> [grpLink "connecting"]
-    GLPConnecting (Just g) -> [grpLink ("connecting to group " <> ttyGroup' g)]
+    GLPConnectingConfirmReconnect -> [grpLink "connecting, allowed to reconnect"]
+    GLPConnectingProhibit Nothing -> [grpLink "connecting"]
+    GLPConnectingProhibit (Just g) -> [grpLink ("connecting to group " <> ttyGroup' g)]
     GLPKnown g ->
       [ grpLink ("known group " <> ttyGroup' g),
         "use " <> ttyToGroup g <> highlight' "<message>" <> " to send messages"

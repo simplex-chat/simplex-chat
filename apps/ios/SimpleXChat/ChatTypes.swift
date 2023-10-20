@@ -3068,7 +3068,7 @@ public enum Format: Decodable, Equatable {
     case secret
     case colored(color: FormatColor)
     case uri
-    case simplexLink(linkType: SimplexLinkType, simplexUri: String, trustedUri: Bool, smpHosts: [String])
+    case simplexLink(linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
     case email
     case phone
 }

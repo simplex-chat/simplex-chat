@@ -4,13 +4,13 @@
   <string name="thousand_abbreviation">k</string>
 
   <!-- Connect via Link - MainActivity.kt -->
-  <string name="connect_via_contact_link">Connect via contact link?</string>
-  <string name="connect_via_invitation_link">Connect via invitation link?</string>
-  <string name="connect_via_group_link">Connect via group link?</string>
+  <string name="connect_via_contact_link">Connect via contact address?</string>
+  <string name="connect_via_invitation_link">Connect via one-time link?</string>
+  <string name="connect_via_group_link">Join group?</string>
   <string name="connect_use_current_profile">Use current profile</string>
   <string name="connect_use_new_incognito_profile">Use new incognito profile</string>
   <string name="profile_will_be_sent_to_contact_sending_link">Your profile will be sent to the contact that you received this link from.</string>
-  <string name="you_will_join_group">You will join a group this link refers to and connect to its group members.</string>
+  <string name="you_will_join_group">You will connect to all group members.</string>
   <string name="connect_via_link_verb">Connect</string>
   <string name="connect_via_link_incognito">Connect incognito</string>
 
@@ -350,6 +350,7 @@
   <!-- Chat Info Actions - ChatInfoView.kt -->
   <string name="delete_contact_question">Delete contact?</string>
   <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>
+  <string name="delete_and_notify_contact">Delete and notify contact</string>
   <string name="button_delete_contact">Delete contact</string>
   <string name="text_field_set_contact_placeholder">Set contact name…</string>
   <string name="icon_descr_server_status_connected">Connected</string>
@@ -1600,4 +1601,25 @@
   <!-- Under development -->
   <string name="in_developing_title">Coming soon!</string>
   <string name="in_developing_desc">This feature is not yet supported. Try the next release.</string>
+
+  <!-- Connection plan -->
+  <string name="connect_plan_connect_to_yourself">Connect to yourself?</string>
+  <string name="connect_plan_this_is_your_own_one_time_link">This is your own one-time link!</string>
+  <string name="connect_plan_you_are_already_connecting_to_vName">You are already connecting to %1$s.</string>
+  <string name="connect_plan_already_connecting">Already connecting!</string>
+  <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">You are already connecting via this one-time link!</string>
+  <string name="connect_plan_this_is_your_own_simplex_address">This is your own SimpleX address!</string>
+  <string name="connect_plan_repeat_connection_request">Repeat connection request?</string>
+  <string name="connect_plan_you_have_already_requested_connection_via_this_address">You have already requested connection via this address!</string>
+  <string name="connect_plan_join_your_group">Join your group?</string>
+  <string name="connect_plan_this_is_your_link_for_group_vName">This is your link for group %1$s!</string>
+  <string name="connect_plan_open_group">Open group</string>
+  <string name="connect_plan_repeat_join_request">Repeat join request?</string>
+  <string name="connect_plan_you_are_already_joining_the_group_via_this_link">You are already joining the group via this link!</string>
+  <string name="connect_plan_group_already_exists">Group already exists!</string>
+  <string name="connect_plan_you_are_already_joining_the_group_vName">You are already joining the group %1$s.</string>
+  <string name="connect_plan_already_joining_the_group">Already joining the group!</string>
+  <string name="connect_plan_you_are_already_joining_the_group_via_this_link">You are already joining the group via this link.</string>
+  <string name="connect_plan_you_are_already_in_group_vName">You are already in group %1$s.</string>
+  <string name="connect_plan_connect_via_link">Connect via link?</string>
 </resources>

@@ -312,6 +312,7 @@ func loadChat(chat: Chat, search: String = "") {
     do {
         let cInfo = chat.chatInfo
         let m = ChatModel.shared
+        m.chatItemStatuses = [:]
         m.reversedChatItems = []
         let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
         m.updateChatInfo(chat.chatInfo)
@@ -593,7 +594,6 @@ func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> P
 }
 
 func apiConnectPlan(connReq: String) async throws -> ConnectionPlan {
-    logger.error("apiConnectPlan connReq: \(connReq)")
     let userId = try currentUserId("apiConnectPlan")
     let r = await chatSendCmd(.apiConnectPlan(userId: userId, connReq: connReq))
     if case let .connectionPlan(_, connectionPlan) = r { return connectionPlan }
@@ -671,18 +671,18 @@ private func connectionErrorAlert(_ r: ChatResponse) -> Alert {
     }
 }
 
-func apiDeleteChat(type: ChatType, id: Int64) async throws {
-    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id), bgTask: false)
+func apiDeleteChat(type: ChatType, id: Int64, notify: Bool? = nil) async throws {
+    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id, notify: notify), bgTask: false)
     if case .direct = type, case .contactDeleted = r { return }
     if case .contactConnection = type, case .contactConnectionDeleted = r { return }
     if case .group = type, case .groupDeletedUser = r { return }
     throw r
 }
 
-func deleteChat(_ chat: Chat) async {
+func deleteChat(_ chat: Chat, notify: Bool? = nil) async {
     do {
         let cInfo = chat.chatInfo
-        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId)
+        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId, notify: notify)
         DispatchQueue.main.async { ChatModel.shared.removeChat(cInfo.id) }
     } catch let error {
         logger.error("deleteChat apiDeleteChat error: \(responseError(error))")
@@ -1421,11 +1421,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
     case let .chatItemStatusUpdated(user, aChatItem):
         let cInfo = aChatItem.chatInfo
         let cItem = aChatItem.chatItem
-        if !cItem.isDeletedContent {
-            let added = active(user) ? await MainActor.run { m.upsertChatItem(cInfo, cItem) } : true
-            if added && cItem.showNotification {
-                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
-            }
+        if !cItem.isDeletedContent && active(user) {
+            await MainActor.run { m.updateChatItem(cInfo, cItem, status: cItem.meta.itemStatus) }
         }
         if let endTask = m.messageDelivery[cItem.id] {
             switch cItem.meta.itemStatus {

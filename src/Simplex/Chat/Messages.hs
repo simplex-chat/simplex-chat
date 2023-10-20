@@ -933,7 +933,7 @@ instance ToJSON (CIDeleted d) where
 
 data JSONCIDeleted
   = JCIDDeleted {deletedTs :: Maybe UTCTime}
-  | JCIBlocked {deletedTs :: Maybe UTCTime}
+  | JCIDBlocked {deletedTs :: Maybe UTCTime}
   | JCIDModerated {deletedTs :: Maybe UTCTime, byGroupMember :: GroupMember}
   deriving (Show, Generic)
 
@@ -944,7 +944,7 @@ instance ToJSON JSONCIDeleted where
 jsonCIDeleted :: CIDeleted d -> JSONCIDeleted
 jsonCIDeleted = \case
   CIDeleted ts -> JCIDDeleted ts
-  CIBlocked ts -> JCIBlocked ts
+  CIBlocked ts -> JCIDBlocked ts
   CIModerated ts m -> JCIDModerated ts m
 
 itemDeletedTs :: CIDeleted d -> Maybe UTCTime

@@ -94,9 +94,9 @@ struct GroupMemberInfoView: View {
 
                     if let contactLink = member.contactLink {
                         Section {
-                            QRCode(uri: contactLink)
+                            SimpleXLinkQRCode(uri: contactLink)
                             Button {
-                                showShareSheet(items: [contactLink])
+                                showShareSheet(items: [simplexChatLink(contactLink)])
                             } label: {
                                 Label("Share address", systemImage: "square.and.arrow.up")
                             }

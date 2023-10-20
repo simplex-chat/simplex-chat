@@ -41,6 +41,7 @@ fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
         if (groupInfo != null) {
           chatModel.addChat(Chat(chatInfo = ChatInfo.Group(groupInfo), chatItems = listOf()))
           chatModel.chatItems.clear()
+          chatModel.chatItemStatuses.clear()
           chatModel.chatId.value = groupInfo.id
           setGroupMembers(groupInfo, chatModel)
           close.invoke()

@@ -219,6 +219,9 @@ contactReady Contact {activeConn} = connReady activeConn
 contactActive :: Contact -> Bool
 contactActive Contact {contactStatus} = contactStatus == CSActive
 
+contactDeleted :: Contact -> Bool
+contactDeleted Contact {contactStatus} = contactStatus == CSDeleted
+
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode activeConn
 

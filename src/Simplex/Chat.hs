@@ -584,11 +584,11 @@ processChatCommand = \case
           timed_ <- sndContactCITimed live ct itemTTL
           (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_
           (msg@SndMessage {sharedMsgId}, _) <- sendDirectContactMessage ct (XMsgNew msgContainer)
+          ci <- saveSndChatItem' user (CDDirectSnd ct) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
           case ft_ of
             Just ft@FileTransferMeta {fileInline = Just IFMSent} ->
               sendDirectFileInline ct ft sharedMsgId
             _ -> pure ()
-          ci <- saveSndChatItem' user (CDDirectSnd ct) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
           forM_ (timed_ >>= timedDeleteAt') $
             startProximateTimedItemThread user (ChatRef CTDirect contactId, chatItemId' ci)
           pure $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
@@ -649,11 +649,11 @@ processChatCommand = \case
             timed_ <- sndGroupCITimed live gInfo itemTTL
             (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_ membership
             (msg@SndMessage {sharedMsgId}, sentToMembers) <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
-            mapM_ (sendGroupFileInline ms sharedMsgId) ft_
             ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
             withStore' $ \db ->
               forM_ sentToMembers $ \GroupMember {groupMemberId} ->
                 createGroupSndStatus db (chatItemId' ci) groupMemberId CISSndNew
+            mapM_ (sendGroupFileInline ms sharedMsgId) ft_
             forM_ (timed_ >>= timedDeleteAt') $
               startProximateTimedItemThread user (ChatRef CTGroup groupId, chatItemId' ci)
             pure $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
@@ -760,8 +760,9 @@ processChatCommand = \case
       unzipMaybe3 _ = (Nothing, Nothing, Nothing)
   APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> withChatLock "updateChatItem" $ case cType of
     CTDirect -> do
-      (ct@Contact {contactId}, cci) <- withStore $ \db -> (,) <$> getContact db user chatId <*> getDirectChatItem db user chatId itemId
+      ct@Contact {contactId} <- withStore $ \db -> getContact db user chatId
       assertDirectAllowed user MDSnd ct XMsgUpdate_
+      cci <- withStore $ \db -> getDirectCIWithReactions db user ct itemId
       case cci of
         CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId, editable) of
@@ -783,7 +784,7 @@ processChatCommand = \case
     CTGroup -> do
       Group gInfo@GroupInfo {groupId} ms <- withStore $ \db -> getGroup db user chatId
       assertUserGroupRole gInfo GRAuthor
-      cci <- withStore $ \db -> getGroupChatItem db user chatId itemId
+      cci <- withStore $ \db -> getGroupCIWithReactions db user gInfo itemId
       case cci of
         CChatItem SMDSnd ci@ChatItem {meta = CIMeta {itemSharedMsgId, itemTimed, itemLive, editable}, content = ciContent} -> do
           case (ciContent, itemSharedMsgId, editable) of
@@ -1364,13 +1365,13 @@ processChatCommand = \case
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito aCReqUri@(Just cReqUri) -> withUser $ \user@User {userId} -> do
     plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILPOk)
-    unless (connectionPlanOk plan) $ throwChatError (CEConnectionPlan plan)
+    unless (connectionPlanProceed plan) $ throwChatError (CEConnectionPlan plan)
     processChatCommand $ APIConnect userId incognito aCReqUri
   Connect _ Nothing -> throwChatError CEInvalidConnReq
   ConnectSimplex incognito -> withUser $ \user@User {userId} -> do
     let cReqUri = ACR SCMContact adminContactReq
     plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILPOk)
-    unless (connectionPlanOk plan) $ throwChatError (CEConnectionPlan plan)
+    unless (connectionPlanProceed plan) $ throwChatError (CEConnectionPlan plan)
     processChatCommand $ APIConnect userId incognito (Just cReqUri)
   DeleteContact cName -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId) True
   ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CTDirect
@@ -2222,7 +2223,7 @@ processChatCommand = \case
       processChatCommand $ APISetChatSettings (ChatRef cType chatId) $ updateSettings chatSettings
     connectPlan :: User -> AConnectionRequestUri -> m ConnectionPlan
     connectPlan user (ACR SCMInvitation cReq) = do
-      withStore' (\db -> getConnectionEntityByConnReq db user cReq) >>= \case
+      withStore' (\db -> getConnectionEntityByConnReq db user cReqSchemas) >>= \case
         Nothing -> pure $ CPInvitationLink ILPOk
         Just (RcvDirectMsgConnection conn ct_) -> do
           let Connection {connStatus, contactConnInitiated} = conn
@@ -2235,39 +2236,59 @@ processChatCommand = \case
                   Just ct -> pure $ CPInvitationLink (ILPKnown ct)
                   Nothing -> throwChatError $ CEInternalError "ready RcvDirectMsgConnection connection should have associated contact"
         Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
+      where
+        cReqSchemas :: (ConnReqInvitation, ConnReqInvitation)
+        cReqSchemas = case cReq of
+          (CRInvitationUri crData e2e) ->
+            ( CRInvitationUri crData {crScheme = CRSSimplex} e2e,
+              CRInvitationUri crData {crScheme = simplexChat} e2e
+            )
     connectPlan user (ACR SCMContact cReq) = do
       let CRContactUri ConnReqUriData {crClientData} = cReq
           groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
       case groupLinkId of
         -- contact address
         Nothing ->
-          withStore' (`getUserContactLinkByConnReq` cReq) >>= \case
+          withStore' (`getUserContactLinkByConnReq` cReqSchemas) >>= \case
             Just _ -> pure $ CPContactAddress CAPOwnLink
             Nothing -> do
-              let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-              withStore' (\db -> getContactByConnReqHash db user cReqHash) >>= \case
+              withStore' (\db -> getContactConnEntityByConnReqHash db user cReqHashes) >>= \case
                 Nothing -> pure $ CPContactAddress CAPOk
-                Just ct
-                  | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CAPConnecting ct)
+                Just (RcvDirectMsgConnection _conn Nothing) -> pure $ CPContactAddress CAPConnectingConfirmReconnect
+                Just (RcvDirectMsgConnection _ (Just ct))
+                  | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CAPConnectingProhibit ct)
+                  | contactDeleted ct -> pure $ CPContactAddress CAPOk
                   | otherwise -> pure $ CPContactAddress (CAPKnown ct)
+                Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
         -- group link
         Just _ ->
-          withStore' (\db -> getGroupInfoByUserContactLinkConnReq db user cReq) >>= \case
+          withStore' (\db -> getGroupInfoByUserContactLinkConnReq db user cReqSchemas) >>= \case
             Just g -> pure $ CPGroupLink (GLPOwnLink g)
             Nothing -> do
-              let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-              ct_ <- withStore' $ \db -> getContactByConnReqHash db user cReqHash
-              gInfo_ <- withStore' $ \db -> getGroupInfoByGroupLinkHash db user cReqHash
-              case (gInfo_, ct_) of
+              connEnt_ <- withStore' $ \db -> getContactConnEntityByConnReqHash db user cReqHashes
+              gInfo_ <- withStore' $ \db -> getGroupInfoByGroupLinkHash db user cReqHashes
+              case (gInfo_, connEnt_) of
                 (Nothing, Nothing) -> pure $ CPGroupLink GLPOk
-                (Nothing, Just ct)
-                  | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLPConnecting gInfo_)
+                (Nothing, Just (RcvDirectMsgConnection _conn Nothing)) -> pure $ CPGroupLink GLPConnectingConfirmReconnect
+                (Nothing, Just (RcvDirectMsgConnection _ (Just ct)))
+                  | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
                   | otherwise -> pure $ CPGroupLink GLPOk
+                (Nothing, Just _) -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
                 (Just gInfo@GroupInfo {membership}, _)
                   | not (memberActive membership) && not (memberRemoved membership) ->
-                      pure $ CPGroupLink (GLPConnecting gInfo_)
+                      pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
                   | memberActive membership -> pure $ CPGroupLink (GLPKnown gInfo)
                   | otherwise -> pure $ CPGroupLink GLPOk
+      where
+        cReqSchemas :: (ConnReqContact, ConnReqContact)
+        cReqSchemas = case cReq of
+          (CRContactUri crData) ->
+            ( CRContactUri crData {crScheme = CRSSimplex},
+              CRContactUri crData {crScheme = simplexChat}
+            )
+        cReqHashes :: (ConnReqUriHash, ConnReqUriHash)
+        cReqHashes = bimap hash hash cReqSchemas
+        hash = ConnReqUriHash . C.sha256Hash . strEncode
 
 assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =
@@ -2370,8 +2391,8 @@ updateCallItemStatus user ct Call {chatItemId} receivedStatus msgId_ = do
   forM_ aciContent_ $ \aciContent -> updateDirectChatItemView user ct chatItemId aciContent False msgId_
 
 updateDirectChatItemView :: ChatMonad m => User -> Contact -> ChatItemId -> ACIContent -> Bool -> Maybe MessageId -> m ()
-updateDirectChatItemView user ct@Contact {contactId} chatItemId (ACIContent msgDir ciContent) live msgId_ = do
-  ci' <- withStore $ \db -> updateDirectChatItem db user contactId chatItemId ciContent live msgId_
+updateDirectChatItemView user ct chatItemId (ACIContent msgDir ciContent) live msgId_ = do
+  ci' <- withStore $ \db -> updateDirectChatItem db user ct chatItemId ciContent live msgId_
   toView $ CRChatItemUpdated user (AChatItem SCTDirect msgDir (DirectChat ct) ci')
 
 callStatusItemContent :: ChatMonad m => User -> Contact -> ChatItemId -> WebRTCCallStatus -> m (Maybe ACIContent)
@@ -3976,7 +3997,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   ci' <- withStore' $ \db -> do
                     when changed $
                       addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
-                    updateDirectChatItem' db user contactId ci content live $ Just msgId
+                    reactions <- getDirectCIReactions db ct sharedMsgId
+                    updateDirectChatItem' db user contactId ci {reactions} content live $ Just msgId
                   toView $ CRChatItemUpdated user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci')
                   startUpdatedTimedItemThread user (ChatRef CTDirect contactId) ci ci'
                 else toView $ CRChatItemNotChanged user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
@@ -4114,7 +4136,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                       ci' <- withStore' $ \db -> do
                         when changed $
                           addInitialAndNewCIVersions db (chatItemId' ci) (chatItemTs' ci, oldMC) (brokerTs, mc)
-                        updateGroupChatItem db user groupId ci content live $ Just msgId
+                        reactions <- getGroupCIReactions db gInfo memberId sharedMsgId
+                        updateGroupChatItem db user groupId ci {reactions} content live $ Just msgId
                       toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
                       startUpdatedTimedItemThread user (ChatRef CTGroup groupId) ci ci'
                     else toView $ CRChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci)
@@ -4919,7 +4942,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemId, itemStatus}})
           | itemStatus == newStatus -> pure ()
           | otherwise -> do
-            chatItem <- withStore $ \db -> updateDirectChatItemStatus db user contactId itemId newStatus
+            chatItem <- withStore $ \db -> updateDirectChatItemStatus db user ct itemId newStatus
             toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
         _ -> pure ()
 
@@ -4942,7 +4965,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             memStatusCounts <- withStore' (`getGroupSndStatusCounts` itemId)
             let newStatus = membersGroupItemStatus memStatusCounts
             when (newStatus /= itemStatus) $ do
-              chatItem <- withStore $ \db -> updateGroupChatItemStatus db user groupId itemId newStatus
+              chatItem <- withStore $ \db -> updateGroupChatItemStatus db user gInfo itemId newStatus
               toView $ CRChatItemStatusUpdated user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) chatItem)
         _ -> pure ()
 
@@ -5185,9 +5208,7 @@ deliverMessage conn@Connection {connId} cmEventTag msgBody msgId = do
   let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
   agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) msgFlags msgBody
   let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
-  withStoreCtx'
-    (Just $ "createSndMsgDelivery, sndMsgDelivery: " <> show sndMsgDelivery <> ", msgId: " <> show msgId <> ", cmEventTag: " <> show cmEventTag <> ", msgDeliveryStatus: MDSSndAgent")
-    $ \db -> createSndMsgDelivery db sndMsgDelivery msgId
+  withStore' $ \db -> createSndMsgDelivery db sndMsgDelivery msgId
 
 sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
 sendGroupMessage user GroupInfo {groupId} members chatMsgEvent =
@@ -5916,7 +5937,7 @@ chatCommandP =
 
 adminContactReq :: ConnReqContact
 adminContactReq =
-  either error id $ strDecode "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
+  either error id $ strDecode "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
 
 timeItToView :: ChatMonad' m => String -> m a -> m a
 timeItToView s action = do

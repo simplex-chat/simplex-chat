@@ -441,17 +441,17 @@ getUserContactLinkById db userId userContactLinkId =
       |]
       (userId, userContactLinkId)
 
-getUserContactLinkByConnReq :: DB.Connection -> ConnReqContact -> IO (Maybe UserContactLink)
-getUserContactLinkByConnReq db cReq =
+getUserContactLinkByConnReq :: DB.Connection -> (ConnReqContact, ConnReqContact) -> IO (Maybe UserContactLink)
+getUserContactLinkByConnReq db (cReqSchema1, cReqSchema2) =
   maybeFirstRow toUserContactLink $
     DB.query
       db
       [sql|
         SELECT conn_req_contact, auto_accept, auto_accept_incognito, auto_reply_msg_content
         FROM user_contact_links
-        WHERE conn_req_contact = ?
+        WHERE conn_req_contact IN (?,?)
       |]
-      (Only cReq)
+      (cReqSchema1, cReqSchema2)
 
 updateUserAddressAutoAccept :: DB.Connection -> User -> Maybe AutoAccept -> ExceptT StoreError IO UserContactLink
 updateUserAddressAutoAccept db user@User {userId} autoAccept = do

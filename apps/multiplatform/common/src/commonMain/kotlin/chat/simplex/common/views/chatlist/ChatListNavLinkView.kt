@@ -125,6 +125,13 @@ suspend fun openDirectChat(contactId: Long, chatModel: ChatModel) {
   }
 }
 
+suspend fun openGroupChat(groupId: Long, chatModel: ChatModel) {
+  val chat = chatModel.controller.apiGetChat(ChatType.Group, groupId)
+  if (chat != null) {
+    openChat(chat, chatModel)
+  }
+}
+
 suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
   Log.d(TAG, "TODOCHAT: openChat: opening ${chatInfo.id}, current chatId ${ChatModel.chatId.value}, size ${ChatModel.chatItems.size}")
   val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId)
@@ -136,6 +143,7 @@ suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
 
 fun openLoadedChatChat(chat: Chat, chatModel: ChatModel) {
   chatModel.chatItems.clear()
+  chatModel.chatItemStatuses.clear()
   chatModel.chatItems.addAll(chat.chatItems)
   chatModel.chatId.value = chat.chatInfo.id
 }
