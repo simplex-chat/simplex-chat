@@ -15,17 +15,6 @@ import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
 import UnliftIO
 
-{- | Session initiation message.
-
-Can't be a part of the 'RemoteRequest' sum as the sum encoding types needs to be coordinated first.
-Also, must be used exactly once.
--}
-data RemoteHello = RemoteHello
-  { encoding :: PlatformEncoding,
-    deviceName :: Text
-  }
-  deriving (Show)
-
 data RemoteHostClient = RemoteHostClient
   { remoteEncoding :: PlatformEncoding,
     remoteDeviceName :: Text,
@@ -125,8 +114,6 @@ cancelTasks tasks = readTVarIO tasks >>= mapM_ cancel
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "RPE") ''RemoteProtocolError)
 
 $(J.deriveJSON (enumJSON $ dropPrefix "PE") ''PlatformEncoding)
-
-$(J.deriveJSON J.defaultOptions ''RemoteHello)
 
 $(J.deriveJSON J.defaultOptions ''RemoteCtrlOOB)
 

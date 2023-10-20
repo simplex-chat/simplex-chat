@@ -200,35 +200,39 @@ startRemoteCtrl execChatCommand = do
       source <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure
       toView $ CRRemoteCtrlConnecting $ remoteCtrlInfo rc False
       atomically $ writeTVar discovered mempty -- flush unused sources
-      gotHello <- newIORef Nothing
-      server <- async $ Discovery.connectRevHTTP2 source fingerprint $ \req ->
-        readIORef gotHello >>= \case
-          Nothing -> do
-            hostName <- chatReadVar localDeviceName
-            remoteHello <- liftError (ChatErrorRemoteCtrl . RCEProtocolError) $ processControllerHello hostName req
-            atomicWriteIORef gotHello $ Just remoteHello
-          Just RemoteHello{encoding = remoteEncoding} -> do
-            (respond, cmd) <- liftError (ChatErrorRemoteCtrl . RCEProtocolError) $ getControllerCommand remoteEncoding req
-            result <- tryAny $ handleCommand execChatCommand events cmd
-            liftIO case result of
-              Left err -> respond $ RRException (tshow err)
-              Right ok -> respond ok
-
+      server <- async $ Discovery.connectRevHTTP2 source fingerprint $ handleRemoteCommand \case
+        (Nothing, RCHello {deviceName=desktopName}) -> handleHello desktopName
+        (Nothing, RCSend {command}) -> handleSend execChatCommand command
+        (Nothing, RCRecv {wait=time}) -> handleRecv time events
+        -- TODO
+        (Nothing, gf@RCGetFile {}) -> error "TODO" <$ logError ("TODO: " <> tshow gf)
+        (Nothing, sf@RCStoreFile{fileSize=0}) -> error "TODO" <$ logError ("TODO: " <> tshow sf)
+        (Nothing, RCStoreFile{}) -> throwIO RPENoFile
+        (Just todo'attachment, sf@RCStoreFile {}) -> error "TODO" <$ logError ("TODO: " <> tshow sf)
+        (Just _, _) -> throwIO RPEUnexpectedFile
       chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
       toView $ CRRemoteCtrlConnected $ remoteCtrlInfo rc True
       _ <- waitCatch server
       chatWriteVar remoteCtrlSession Nothing
       toView CRRemoteCtrlStopped
 
-handleCommand :: ChatMonad m => (ByteString -> m ChatResponse) -> TBQueue ChatResponse -> (Maybe a, RemoteCommand) -> m RemoteResponse
-handleCommand execChatCommand events = \case
-  (Nothing, RCSend {command}) -> RRChatResponse <$> execChatCommand (encodeUtf8 command)
-  (Nothing, RCRecv {wait=ms}) -> RRChatEvent <$> (timeout ms . atomically $ readTBQueue events)
-  (Nothing, gf@RCGetFile {}) -> error "TODO" <$ logError ("TODO: " <> tshow gf)
-  (Nothing, sf@RCStoreFile{fileSize=0}) -> error "TODO" <$ logError ("TODO: " <> tshow sf)
-  (Nothing, RCStoreFile{}) -> throwIO RPENoFile
-  (Just todo'attachment, sf@RCStoreFile {}) -> error "TODO" <$ logError ("TODO: " <> tshow sf)
-  (Just _, _) -> throwIO RPEUnexpectedFile
+handleHello :: ChatMonad m => Text -> m RemoteResponse
+handleHello desktopName = do
+  logInfo $ "Hello from " <> tshow desktopName
+  mobileName <- chatReadVar localDeviceName
+  pure RRHello {encoding = localEncoding, deviceName = mobileName}
+
+handleSend :: ChatMonad m => (ByteString -> m ChatResponse) -> Text -> m RemoteResponse
+handleSend execChatCommand command = do
+  logDebug $ "Send: " <> tshow command
+  -- execChatCommand checks for remote-allowed commands
+  -- convert errors thrown in ChatMonad into error responses to prevent aborting the protocol wrapper
+  RRChatResponse <$> execChatCommand (encodeUtf8 command) `catchError` (pure . CRChatError Nothing)
+
+handleRecv :: MonadUnliftIO m => Int -> TBQueue ChatResponse -> m RemoteResponse
+handleRecv time events = do
+  logDebug $ "Recv: " <> tshow time
+  RRChatEvent <$> (timeout time . atomically $ readTBQueue events)
 
 -- TODO the problem with this code was that it wasn't clear where the recursion can happen,
 -- by splitting receiving and processing to two functions it becomes clear

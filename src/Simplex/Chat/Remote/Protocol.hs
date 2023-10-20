@@ -36,7 +36,7 @@ import Network.HTTP2.Server (responseBuilder)
 import Simplex.Chat.Controller (ChatResponse)
 import Simplex.Chat.Remote.Types
 import Simplex.Messaging.Crypto.File (CryptoFile)
-import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON, pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
+import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON, pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
 import Simplex.Messaging.Transport.Buffer (getBuffered)
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), HTTP2BodyChunk, defaultHTTP2BufferSize, getBodyChunk)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2Response (..), closeHTTP2Client, sendRequestDirect)
@@ -48,7 +48,8 @@ import UnliftIO
 import UnliftIO.Directory (doesFileExist, getFileSize)
 
 data RemoteCommand
-  = RCSend {command :: Text} -- TODO maybe ChatCommand here?
+  = RCHello {deviceName :: Text}
+  | RCSend {command :: Text} -- TODO maybe ChatCommand here?
   | RCRecv {wait :: Int} -- this wait should be less than HTTP timeout
   -- local file encryption is determined by the host, but can be overridden for videos
   | RCStoreFile {fileSize :: Word32, encrypt :: Maybe Bool} -- requires attachment
@@ -56,35 +57,33 @@ data RemoteCommand
   deriving (Show)
 
 data RemoteResponse
-  = RRChatResponse {chatResponse :: ChatResponse}
+  = RRHello {encoding :: PlatformEncoding, deviceName :: Text}
+  | RRChatResponse {chatResponse :: ChatResponse}
   | RRChatEvent {chatEvent :: Maybe ChatResponse} -- ^ 'Nothing' on poll timeout
   | RRFileStored {fileSource :: CryptoFile}
   | RRFile {fileSize :: Word32} -- provides attachment
   | RRServerError {serverError :: RemoteProtocolError} -- ^ The protocol error happened on the server side
   | RRException {someException :: Text} -- ^ Handler crashed
+  deriving (Show)
 
-$(deriveJSON (sumTypeJSON $ dropPrefix "RC") ''RemoteCommand)
-
-$(deriveJSON (sumTypeJSON $ dropPrefix "RR") ''RemoteResponse)
+-- Force platform-independent encoding as the types aren't UI-visible
+$(deriveJSON (taggedObjectJSON $ dropPrefix "RC") ''RemoteCommand)
+$(deriveJSON (taggedObjectJSON $ dropPrefix "RR") ''RemoteResponse)
 
 createRemoteHostClient :: HTTP2Client -> Text -> ExceptT RemoteProtocolError IO RemoteHostClient
 createRemoteHostClient httpClient desktopName = do
-  rh@RemoteHello {encoding, deviceName = mobileName} <- sendHello httpClient desktopName
-  logInfo $ tshow rh
-  when (encoding == PEKotlin && localEncoding == PESwift) $ throwError RPEIncompatibleEncoding
-  pure RemoteHostClient {remoteEncoding = encoding, remoteDeviceName = mobileName, httpClient}
+  logInfo "Sending initial hello"
+  let dummyRemoteEncoding = localEncoding
+  sendRemoteJSON httpClient dummyRemoteEncoding RCHello {deviceName = desktopName} >>= \case
+    (Nothing, rrh@RRHello {encoding, deviceName = mobileName}) -> do
+      logInfo $ "Got initial hello: " <> tshow rrh
+      when (encoding == PEKotlin && localEncoding == PESwift) $ throwError RPEIncompatibleEncoding
+      pure RemoteHostClient {remoteEncoding = encoding, remoteDeviceName = mobileName, httpClient}
+    (Just _, _) -> throwError RPEUnexpectedFile
+    _ -> throwError RPEBadResponse
 
 closeRemoteHostClient :: MonadIO m => RemoteHostClient -> m ()
 closeRemoteHostClient RemoteHostClient {httpClient} = liftIO $ closeHTTP2Client httpClient
-
--- | Initial query to coordinate codec etc.
-sendHello :: HTTP2Client -> Text -> ExceptT RemoteProtocolError IO RemoteHello
-sendHello c localDeviceName = do
-  logInfo "Sending initial hello"
-  let remoteEncoding = localEncoding -- dummy encoding entailing no conversion since we don't know remote encoding yet
-  (attachment_, hello) <- sendRemoteJSON c remoteEncoding RemoteHello {encoding = localEncoding, deviceName = localDeviceName}
-  unless (isNothing attachment_) $ throwError RPEUnexpectedFile
-  pure hello
 
 -- | Send chat command an
 remoteSend :: RemoteHostClient -> ByteString -> ExceptT RemoteProtocolError IO ChatResponse
@@ -99,12 +98,12 @@ remoteRecv RemoteHostClient {httpClient, remoteEncoding} ms = sendRemoteJSON htt
   (Just _, RRChatEvent{}) -> throwError RPEUnexpectedFile
   (_, _) -> throwError RPEBadResponse
 
-sendRemoteJSON :: (J.ToJSON a, J.FromJSON b) => HTTP2Client -> PlatformEncoding -> a -> ExceptT RemoteProtocolError IO (Maybe BL.ByteString, b)
+sendRemoteJSON :: HTTP2Client -> PlatformEncoding -> RemoteCommand -> ExceptT RemoteProtocolError IO (Maybe BL.ByteString, RemoteResponse)
 sendRemoteJSON http remoteEncoding req = do
   HTTP2Response{response, respBody} <- liftEitherError (RPEHTTP2 . tshow) $ sendRequestDirect http (httpRequest $ sizePrefixedEncode req) (Just 1000000)
   jsonBody remoteEncoding response respBody
 
-sendRemoteJSONFile :: (J.ToJSON a, J.FromJSON b) => HTTP2Client -> PlatformEncoding -> FilePath -> (Integer -> a) -> ExceptT RemoteProtocolError IO (Maybe BL.ByteString, b)
+sendRemoteJSONFile :: HTTP2Client -> PlatformEncoding -> FilePath -> (Integer -> RemoteCommand) -> ExceptT RemoteProtocolError IO (Maybe BL.ByteString, RemoteResponse)
 sendRemoteJSONFile http remoteEncoding filePath toReq = do
   fileSize <- withExceptT (RPEIOError . tshow) . liftIOEither . tryAny $ getFileSize filePath
   fileStream <- withExceptT (RPEIOError . tshow) . liftIOEither . tryAny $ BL.readFile filePath
@@ -193,22 +192,20 @@ remoteGetFile RemoteHostClient {httpClient, remoteEncoding} baseDir filePath = d
   where
     localFile = baseDir </> filePath
 
-processControllerHello :: Text -> HTTP2Request -> ExceptT RemoteProtocolError IO RemoteHello
-processControllerHello mobileDeviceName HTTP2Request{request, reqBody, sendResponse} = do
-  logDebug "processControllerRequest"
-  let remoteEncoding = localEncoding -- we don't know remote encoding yet, so process first message with local. The 'RemoteHello' MUST NOT be a sum type.
-  (attachment_, rh@RemoteHello {deviceName=_desktopDeviceName}) <- jsonBody remoteEncoding request reqBody
-  unless (isNothing attachment_) $ throwError RPEUnexpectedFile
-  let reply = RemoteHello {encoding = localEncoding, deviceName = mobileDeviceName}
-  liftIO . sendResponse $ responseBuilder N.status200 [] (sizePrefixedEncode reply)
-  pure rh
+handleRemoteCommand :: MonadUnliftIO m => ((Maybe BL.ByteString, RemoteCommand) -> m RemoteResponse) -> HTTP2Request -> m ()
+handleRemoteCommand handler HTTP2Request{request, reqBody, sendResponse} = do
+  logDebug "handleRemoteCommand"
+  result <- tryAny $ -- prevent exception leaking out to the HTTP2 so the client can skip checking status
+    withRunInIO $ \io -> runExceptT $ do -- discard parent context and run remote protocol
+      acmd <- jsonBody localEncoding request reqBody
+      ExceptT . try . io $ handler acmd -- return to handler context, intercepting RemoteProtocolError thrown as exceptions
+  respond $ case result of
+    Left err -> RRException (tshow err)
+    Right (Left rpe) -> RRServerError rpe
+    Right (Right rr) -> rr
+  where
+    respond = liftIO . sendResponse . responseBuilder N.status200 [] . sizePrefixedEncode
 
-getControllerCommand :: PlatformEncoding -> HTTP2Request -> ExceptT RemoteProtocolError IO (RemoteResponse -> IO (), (Maybe BL.ByteString, RemoteCommand))
-getControllerCommand remoteEncoding HTTP2Request{request, reqBody, sendResponse} = do
-  logDebug "processControllerCommand"
-  cmd <- jsonBody remoteEncoding request reqBody
-  let respond = liftIO . sendResponse . responseBuilder N.status200 [] . sizePrefixedEncode
-  pure (respond, cmd)
 {- TODO:
 \* Get full chat command body
 \* Run handler in a host controller context
