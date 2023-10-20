@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20231020_indexes where
+module Simplex.Chat.Migrations.M20231019_indexes where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20231020_indexes :: Query
-m20231020_indexes =
+m20231019_indexes :: Query
+m20231019_indexes =
   [sql|
 DROP INDEX idx_connections_conn_req_inv;
 CREATE INDEX idx_connections_conn_req_inv ON connections(user_id, conn_req_inv);
@@ -18,8 +18,8 @@ DROP INDEX idx_connections_via_contact_uri_hash;
 CREATE INDEX idx_connections_via_contact_uri_hash ON connections(user_id, via_contact_uri_hash);
 |]
 
-down_m20231020_indexes :: Query
-down_m20231020_indexes =
+down_m20231019_indexes :: Query
+down_m20231019_indexes =
   [sql|
 DROP INDEX idx_connections_conn_req_inv;
 CREATE INDEX idx_connections_conn_req_inv ON connections(conn_req_inv);
