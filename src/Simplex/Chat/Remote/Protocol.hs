@@ -128,7 +128,7 @@ remoteGetFile RemoteHostClient {httpClient, remoteEncoding} baseDir filePath = d
 
 sendRemoteCommand :: HTTP2Client -> PlatformEncoding -> Maybe (Handle, Word32) -> RemoteCommand -> ExceptT RemoteProtocolError IO (Int -> IO ByteString, RemoteResponse)
 sendRemoteCommand http remoteEncoding attachment_ rc = do
-  HTTP2Response{response, respBody} <- liftEitherError (RPEHTTP2 . tshow) $ sendRequestDirect http httpRequest Nothing
+  HTTP2Response {response, respBody} <- liftEitherError (RPEHTTP2 . tshow) $ sendRequestDirect http httpRequest Nothing
   (header, getNext) <- bodyParts response respBody
   rr <- liftEitherWith (RPEInvalidJSON . fromString) $ J.eitherDecodeStrict header >>= JT.parseEither J.parseJSON . convertJSON remoteEncoding localEncoding
   pure (getNext, rr)
