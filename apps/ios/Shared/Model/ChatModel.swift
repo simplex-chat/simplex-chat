@@ -339,7 +339,7 @@ final class ChatModel: ObservableObject {
         reversedChatItems[i].viewTimestamp = .now
     }
 
-    private func getChatItemIndex(_ cItem: ChatItem) -> Int? {
+    func getChatItemIndex(_ cItem: ChatItem) -> Int? {
         reversedChatItems.firstIndex(where: { $0.id == cItem.id })
     }
 
@@ -528,14 +528,19 @@ final class ChatModel: ObservableObject {
             users.filter { !$0.user.activeUser }.reduce(0, { unread, next -> Int in unread + next.unreadCount })
     }
 
-    func getConnectedMemberNames(_ ci: ChatItem, _ mergedRange: CIMergedRange?) -> (Int, [String])? {
+    func getConnectedMemberNames(_ chatItem: ChatItem) -> (Int, [String]) {
         var count = 0
         var ns: [String] = []
-        guard let merged = mergedRange else { return nil }
-        for i in merged.itemsRange {
-            if let m = reversedChatItems[i].memberConnected {
+        if let ciCategory = chatItem.mergeCategory,
+           var i = getChatItemIndex(chatItem) {
+            while i < reversedChatItems.count {
+                let ci = reversedChatItems[i]
+                if ci.mergeCategory != ciCategory { break }
+                if let m = ci.memberConnected {
+                    ns.append(m.displayName)
+                }
                 count += 1
-                if ns.count <= 3 { ns.append(m.displayName) }
+                i += 1
             }
         }
         return (count, ns)
@@ -549,28 +554,23 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func getPrevShownChatItem(_ ciIndex: Int?, _ ciCategory: CIMergeCategory?) -> (CIMergedRange?, ChatItem?) {
-        if let ciIndex = ciIndex {
-            var i = ciIndex
-            let fst = reversedChatItems.count - 1
-            var prevItem: ChatItem? = nil
-            while i < fst {
-                i = i + 1
-                let ci = reversedChatItems[i]
-                if ciCategory == nil || ciCategory != ci.mergeCategory {
-                    prevItem = ci
-                    break
-                }
+    func getPrevShownChatItem(_ ciIndex: Int?, _ ciCategory: CIMergeCategory?) -> (Int?, ChatItem?) {
+        guard var i = ciIndex else { return (nil, nil) }
+        let fst = reversedChatItems.count - 1
+        while i < fst {
+            i = i + 1
+            let ci = reversedChatItems[i]
+            if ciCategory == nil || ciCategory != ci.mergeCategory {
+                return (i - 1, ci)
             }
-            return (CIMergedRange(currIndex: ciIndex, prevMerged: i - 1), prevItem)
         }
-        return (nil, nil)
+        return (i, nil)
     }
 
-    func getPrevHiddenMember(_ member: GroupMember, _ merged: CIMergedRange) -> (GroupMember?, Int) {
+    func getPrevHiddenMember(_ member: GroupMember, _ range: ClosedRange<Int>) -> (GroupMember?, Int) {
         var prevMember: GroupMember? = nil
         var names: Set<String> = []
-        for i in merged.itemsRange {
+        for i in range {
             if case let .groupRcv(m) = reversedChatItems[i].chatDir {
                 if prevMember == nil && m.id != member.id { prevMember = m }
                 names.insert(m.displayName)
@@ -677,29 +677,6 @@ struct NTFContactRequest {
 struct UnreadChatItemCounts {
     var totalBelow: Int
     var unreadBelow: Int
-}
-
-struct CIMergedRange {
-    var currIndex: Int
-    var prevMerged: Int
-
-    init(currIndex: Int, prevMerged: Int? = nil) {
-        self.currIndex = currIndex
-        self.prevMerged = prevMerged ?? currIndex
-    }
-
-    var many: Bool {
-        currIndex < prevMerged
-    }
-
-    var count: Int {
-        prevMerged - currIndex + 1
-    }
-
-    var itemsRange: ClosedRange<Int> {
-        let maxIx = ChatModel.shared.reversedChatItems.count - 1
-        return min(currIndex, maxIx)...min(prevMerged, maxIx)
-    }
 }
 
 final class Chat: ObservableObject, Identifiable {

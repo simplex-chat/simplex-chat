@@ -12,7 +12,8 @@ import SimpleXChat
 let decryptErrorReason: LocalizedStringKey = "It can happen when you or your connection used the old database backup."
 
 struct CIRcvDecryptionError: View {
-    @EnvironmentObject var chat: Chat
+    @EnvironmentObject var m: ChatModel
+    @ObservedObject var chat: Chat
     var msgDecryptError: MsgDecryptError
     var msgCount: UInt32
     var chatItem: ChatItem
@@ -45,7 +46,7 @@ struct CIRcvDecryptionError: View {
                     do {
                         let (member, stats) = try apiGroupMemberInfo(groupInfo.apiId, groupMember.groupMemberId)
                         if let s = stats {
-                            ChatModel.shared.updateGroupMemberConnectionStats(groupInfo, member, s)
+                            m.updateGroupMemberConnectionStats(groupInfo, member, s)
                         }
                     } catch let error {
                         logger.error("apiGroupMemberInfo error: \(responseError(error))")
@@ -79,7 +80,7 @@ struct CIRcvDecryptionError: View {
             }
         } else if case let .group(groupInfo) = chat.chatInfo,
                   case let .groupRcv(groupMember) = chatItem.chatDir,
-                  let modelMember = ChatModel.shared.groupMembers.first(where: { $0.id == groupMember.id }),
+                  let modelMember = m.groupMembers.first(where: { $0.id == groupMember.id }),
                   let memberStats = modelMember.activeConn?.connectionStats {
             if memberStats.ratchetSyncAllowed {
                 decryptionErrorItemFixButton(syncSupported: true) {
@@ -122,7 +123,7 @@ struct CIRcvDecryptionError: View {
                 )
             }
             .padding(.horizontal, 12)
-            CIMetaView(chatItem: chatItem)
+            CIMetaView(chat: chat, chatItem: chatItem)
                 .padding(.horizontal, 12)
         }
         .onTapGesture(perform: { onClick() })
@@ -142,7 +143,7 @@ struct CIRcvDecryptionError: View {
                 + ciMetaText(chatItem.meta, chatTTL: nil, encrypted: nil, transparent: true)
             }
             .padding(.horizontal, 12)
-            CIMetaView(chatItem: chatItem)
+            CIMetaView(chat: chat, chatItem: chatItem)
                 .padding(.horizontal, 12)
         }
         .onTapGesture(perform: { onClick() })
@@ -173,7 +174,7 @@ struct CIRcvDecryptionError: View {
             do {
                 let (mem, stats) = try apiSyncGroupMemberRatchet(groupInfo.apiId, member.groupMemberId, false)
                 await MainActor.run {
-                    ChatModel.shared.updateGroupMemberConnectionStats(groupInfo, mem, stats)
+                    m.updateGroupMemberConnectionStats(groupInfo, mem, stats)
                 }
             } catch let error {
                 logger.error("syncMemberConnection apiSyncGroupMemberRatchet error: \(responseError(error))")
@@ -190,7 +191,7 @@ struct CIRcvDecryptionError: View {
             do {
                 let stats = try apiSyncContactRatchet(contact.apiId, false)
                 await MainActor.run {
-                    ChatModel.shared.updateContactConnectionStats(contact, stats)
+                    m.updateContactConnectionStats(contact, stats)
                 }
             } catch let error {
                 logger.error("syncContactConnection apiSyncContactRatchet error: \(responseError(error))")

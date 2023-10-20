@@ -21,9 +21,7 @@ struct ChatView: View {
     @State private var showChatInfoSheet: Bool = false
     @State private var showAddMembersSheet: Bool = false
     @State private var composeState = ComposeState()
-    @State private var deletingItem: ChatItem? = nil
     @State private var keyboardVisible = false
-    @State private var showDeleteMessage = false
     @State private var connectionStats: ConnectionStats?
     @State private var customUserProfile: Profile?
     @State private var connectionCode: String?
@@ -133,7 +131,7 @@ struct ChatView: View {
                         Task {
                             let groupMembers = await apiListMembers(groupInfo.groupId)
                             await MainActor.run {
-                                ChatModel.shared.groupMembers = groupMembers
+                                chatModel.groupMembers = groupMembers
                                 showChatInfoSheet = true
                             }
                         }
@@ -408,7 +406,7 @@ struct ChatView: View {
                 Task {
                     let groupMembers = await apiListMembers(gInfo.groupId)
                     await MainActor.run {
-                        ChatModel.shared.groupMembers = groupMembers
+                        chatModel.groupMembers = groupMembers
                         showAddMembersSheet = true
                     }
                 }
@@ -448,30 +446,29 @@ struct ChatView: View {
     
     @ViewBuilder private func chatItemView(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
         ChatItemWithMenu(
+            chat: chat,
             chatItem: ci,
             maxWidth: maxWidth,
             scrollProxy: scrollProxy,
-            deleteMessage: deleteMessage,
-            deletingItem: $deletingItem,
             composeState: $composeState,
-            showDeleteMessage: $showDeleteMessage,
             selectedMember: $selectedMember
         )
-        .environmentObject(chat)
     }
 
     private struct ChatItemWithMenu: View {
-        @EnvironmentObject var chat: Chat
+        @EnvironmentObject var m: ChatModel
         @Environment(\.colorScheme) var colorScheme
+        @ObservedObject var chat: Chat
         var chatItem: ChatItem
         var maxWidth: CGFloat
         var scrollProxy: ScrollViewProxy?
-        var deleteMessage: (CIDeleteMode) -> Void
-        @Binding var deletingItem: ChatItem?
         @Binding var composeState: ComposeState
-        @Binding var showDeleteMessage: Bool
         @Binding var selectedMember: GroupMember?
 
+        @State private var deletingItem: ChatItem? = nil
+        @State private var showDeleteMessage = false
+        @State private var deletingItems: [Int64] = []
+        @State private var showDeleteMessages = false
         @State private var revealed = false
         @State private var showChatItemInfoSheet: Bool = false
         @State private var chatItemInfo: ChatItemInfo?
@@ -483,33 +480,32 @@ struct ChatView: View {
         @State private var playbackTime: TimeInterval?
 
         var body: some View {
-            let m = ChatModel.shared
             let (currIndex, nextItem) = m.getNextChatItem(chatItem)
             let ciCategory = chatItem.mergeCategory
             if (ciCategory != nil && ciCategory == nextItem?.mergeCategory) {
                 // memberConnected events and deleted items are aggregated at the last chat item in a row, see ChatItemView
                 ZStack {} // scroll doesn't work if it's EmptyView()
             } else {
-                let (mergedRange, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
-                if revealed, let merged = mergedRange, merged.many {
-                    let range = merged.itemsRange
+                let (prevHidden, prevItem) = m.getPrevShownChatItem(currIndex, ciCategory)
+                let range = itemsRange(currIndex, prevHidden)
+                if revealed, let range = range {
                     let items = Array(zip(Array(range), m.reversedChatItems[range]))
                     ForEach(items, id: \.1.viewId) { (i, ci) in
-                        let prev = i == merged.prevMerged ? prevItem : m.reversedChatItems[i + 1]
-                        chatItemView(ci, CIMergedRange(currIndex: i), prev)
+                        let prev = i == prevHidden ? prevItem : m.reversedChatItems[i + 1]
+                        chatItemView(ci, nil, prev)
                     }
                 } else {
-                    chatItemView(chatItem, mergedRange, prevItem)
+                    chatItemView(chatItem, range, prevItem)
                 }
             }
         }
 
-        @ViewBuilder func chatItemView(_ ci: ChatItem, _ mergedRange: CIMergedRange?, _ prevItem: ChatItem?) -> some View {
+        @ViewBuilder func chatItemView(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ prevItem: ChatItem?) -> some View {
             if case let .groupRcv(member) = ci.chatDir,
                case let .group(groupInfo) = chat.chatInfo {
                 let (prevMember, memCount): (GroupMember?, Int) =
-                    if let range = mergedRange, range.many {
-                        ChatModel.shared.getPrevHiddenMember(member, range)
+                    if let range = range {
+                        m.getPrevHiddenMember(member, range)
                     } else {
                         (nil, 1)
                     }
@@ -529,20 +525,20 @@ struct ChatView: View {
                                 .appSheet(item: $selectedMember) { member in
                                     GroupMemberInfoView(groupInfo: groupInfo, member: member, navigation: true)
                                 }
-                            chatItemWithMenu(ci, mergedRange, maxWidth)
+                            chatItemWithMenu(ci, maxWidth)
                         }
                     }
                     .padding(.top, 5)
                     .padding(.trailing)
                     .padding(.leading, 12)
                 } else {
-                    chatItemWithMenu(ci, mergedRange, maxWidth)
+                    chatItemWithMenu(ci, maxWidth)
                         .padding(.top, 5)
                         .padding(.trailing)
                         .padding(.leading, memberImageSize + 8 + 12)
                 }
             } else {
-                chatItemWithMenu(ci, mergedRange, maxWidth)
+                chatItemWithMenu(ci, maxWidth)
                     .padding(.horizontal)
                     .padding(.top, 5)
             }
@@ -559,7 +555,7 @@ struct ChatView: View {
             }
         }
 
-        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ mergedRange: CIMergedRange?, _ maxWidth: CGFloat) -> some View {
+        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
             let uiMenu: Binding<UIMenu> = Binding(
                 get: { UIMenu(title: "", children: menu(ci, live: composeState.liveMessage != nil)) },
@@ -568,9 +564,8 @@ struct ChatView: View {
             
             VStack(alignment: alignment.horizontal, spacing: 3) {
                 ChatItemView(
-                    chatInfo: chat.chatInfo,
+                    chat: chat,
                     chatItem: ci,
-                    mergedRange: mergedRange,
                     maxWidth: maxWidth,
                     scrollProxy: scrollProxy,
                     revealed: $revealed,
@@ -594,6 +589,11 @@ struct ChatView: View {
                         Button(broadcastDeleteButtonText, role: .destructive) {
                             deleteMessage(.cidmBroadcast)
                         }
+                    }
+                }
+                .confirmationDialog(deleteMessagesTitle, isPresented: $showDeleteMessages, titleVisibility: .visible) {
+                    Button("Delete for me", role: .destructive) {
+                        deleteMessages()
                     }
                 }
                 .frame(maxWidth: maxWidth, maxHeight: .infinity, alignment: alignment)
@@ -777,7 +777,7 @@ struct ChatView: View {
                         reaction: reaction
                     )
                     await MainActor.run {
-                        ChatModel.shared.updateChatItem(chat.chatInfo, chatItem)
+                        m.updateChatItem(chat.chatInfo, chatItem)
                     }
                 } catch let error {
                     logger.error("apiChatItemReaction error: \(responseError(error))")
@@ -857,7 +857,7 @@ struct ChatView: View {
                         if case let .group(gInfo) = chat.chatInfo {
                             let groupMembers = await apiListMembers(gInfo.groupId)
                             await MainActor.run {
-                                ChatModel.shared.groupMembers = groupMembers
+                                m.groupMembers = groupMembers
                             }
                         }
                     } catch let error {
@@ -879,7 +879,7 @@ struct ChatView: View {
                     message: Text(cancelAction.alert.message),
                     primaryButton: .destructive(Text(cancelAction.alert.confirm)) {
                         Task {
-                            if let user = ChatModel.shared.currentUser {
+                            if let user = m.currentUser {
                                 await cancelFile(user: user, fileId: fileId)
                             }
                         }
@@ -906,8 +906,35 @@ struct ChatView: View {
                 image: UIImage(systemName: "trash"),
                 attributes: [.destructive]
             ) { _ in
-                showDeleteMessage = true
-                deletingItem = ci
+                if !revealed && ci.meta.itemDeleted != nil,
+                   let currIndex = m.getChatItemIndex(ci),
+                   let ciCategory = ci.mergeCategory {
+                    let (prevHidden, _) = m.getPrevShownChatItem(currIndex, ciCategory)
+                    if let range = itemsRange(currIndex, prevHidden) {
+                        var itemIds: [Int64] = []
+                        for i in range {
+                            itemIds.append(m.reversedChatItems[i].id)
+                        }
+                        showDeleteMessages = true
+                        deletingItems = itemIds
+                    } else {
+                        showDeleteMessage = true
+                        deletingItem = ci
+                    }
+                } else {
+                    showDeleteMessage = true
+                    deletingItem = ci
+                }
+            }
+        }
+
+        private func itemsRange(_ currIndex: Int?, _ prevHidden: Int?) -> ClosedRange<Int>? {
+            if let currIndex = currIndex,
+               let prevHidden = prevHidden,
+               prevHidden > currIndex {
+                currIndex...prevHidden
+            } else {
+                nil
             }
         }
 
@@ -969,6 +996,77 @@ struct ChatView: View {
         private var broadcastDeleteButtonText: LocalizedStringKey {
             chat.chatInfo.featureEnabled(.fullDelete) ? "Delete for everyone" : "Mark deleted for everyone"
         }
+
+        var deleteMessagesTitle: LocalizedStringKey {
+            let n = deletingItems.count
+            return n == 1 ? "Delete message?" : "Delete \(n) messages?"
+        }
+
+        private func deleteMessages() {
+            let itemIds = deletingItems
+            if itemIds.count > 0 {
+                let chatInfo = chat.chatInfo
+                Task {
+                    var deletedItems: [ChatItem] = []
+                    for itemId in itemIds {
+                        do {
+                            let (di, _) = try await apiDeleteChatItem(
+                                type: chatInfo.chatType,
+                                id: chatInfo.apiId,
+                                itemId: itemId,
+                                mode: .cidmInternal
+                            )
+                            deletedItems.append(di)
+                        } catch {
+                            logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")
+                        }
+                    }
+                    await MainActor.run {
+                        for di in deletedItems {
+                            m.removeChatItem(chatInfo, di)
+                        }
+                    }
+                }
+            }
+        }
+
+        private func deleteMessage(_ mode: CIDeleteMode) {
+            logger.debug("ChatView deleteMessage")
+            Task {
+                logger.debug("ChatView deleteMessage: in Task")
+                do {
+                    if let di = deletingItem {
+                        var deletedItem: ChatItem
+                        var toItem: ChatItem?
+                        if case .cidmBroadcast = mode,
+                           let (groupInfo, groupMember) = di.memberToModerate(chat.chatInfo) {
+                            (deletedItem, toItem) = try await apiDeleteMemberChatItem(
+                                groupId: groupInfo.apiId,
+                                groupMemberId: groupMember.groupMemberId,
+                                itemId: di.id
+                            )
+                        } else {
+                            (deletedItem, toItem) = try await apiDeleteChatItem(
+                                type: chat.chatInfo.chatType,
+                                id: chat.chatInfo.apiId,
+                                itemId: di.id,
+                                mode: mode
+                            )
+                        }
+                        DispatchQueue.main.async {
+                            deletingItem = nil
+                            if let toItem = toItem {
+                                _ = m.upsertChatItem(chat.chatInfo, toItem)
+                            } else {
+                                m.removeChatItem(chat.chatInfo, deletedItem)
+                            }
+                        }
+                    }
+                } catch {
+                    logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")
+                }
+            }
+        }
     }
 
     private func scrollToBottom(_ proxy: ScrollViewProxy) {
@@ -980,44 +1078,6 @@ struct ChatView: View {
     private func scrollUp(_ proxy: ScrollViewProxy) {
         if let ci = chatModel.topItemInView(itemsInView: itemsInView) {
             withAnimation { proxy.scrollTo(ci.viewId, anchor: .top) }
-        }
-    }
-    
-    private func deleteMessage(_ mode: CIDeleteMode) {
-        logger.debug("ChatView deleteMessage")
-        Task {
-            logger.debug("ChatView deleteMessage: in Task")
-            do {
-                if let di = deletingItem {
-                    var deletedItem: ChatItem
-                    var toItem: ChatItem?
-                    if case .cidmBroadcast = mode,
-                       let (groupInfo, groupMember) = di.memberToModerate(chat.chatInfo) {
-                        (deletedItem, toItem) = try await apiDeleteMemberChatItem(
-                            groupId: groupInfo.apiId,
-                            groupMemberId: groupMember.groupMemberId,
-                            itemId: di.id
-                        )
-                    } else {
-                        (deletedItem, toItem) = try await apiDeleteChatItem(
-                            type: chat.chatInfo.chatType,
-                            id: chat.chatInfo.apiId,
-                            itemId: di.id,
-                            mode: mode
-                        )
-                    }
-                    DispatchQueue.main.async {
-                        deletingItem = nil
-                        if let toItem = toItem {
-                            _ = chatModel.upsertChatItem(chat.chatInfo, toItem)
-                        } else {
-                            chatModel.removeChatItem(chat.chatInfo, deletedItem)
-                        }
-                    }
-                }
-            } catch {
-                logger.error("ChatView.deleteMessage error: \(error.localizedDescription)")
-            }
         }
     }
 }

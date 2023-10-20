@@ -10,24 +10,20 @@ import SwiftUI
 import SimpleXChat
 
 struct CIChatFeatureView: View {
+    @EnvironmentObject var m: ChatModel
     var chatItem: ChatItem
+    @Binding var revealed: Bool
     var feature: Feature
     var icon: String? = nil
     var iconColor: Color
-    var mergedRange: CIMergedRange?
 
     var body: some View {
-        if let merged = mergedRange, merged.many {
-            let fs = mergedFeautures(merged)
-            if fs.count > 1 {
-                HStack {
-                    ForEach(fs, content: featureIconView)
-                }
-                .padding(.horizontal, 6)
-                .padding(.vertical, 6)
-            } else {
-                fullFeatureView
+        if !revealed, let fs = mergedFeautures() {
+            HStack {
+                ForEach(fs, content: featureIconView)
             }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 6)
         } else {
             fullFeatureView
         }
@@ -51,21 +47,20 @@ struct CIChatFeatureView: View {
         }
     }
 
-    private func mergedFeautures(_ merged: CIMergedRange) -> [FeatureInfo] {
+    private func mergedFeautures() -> [FeatureInfo]? {
         var fs: [FeatureInfo] = []
-        var i = merged.prevMerged
-        let m = ChatModel.shared
-        while i >= merged.currIndex {
-            if i < m.reversedChatItems.count,
-               let f = featureInfo(m.reversedChatItems[i]) {
-                if let j = fs.firstIndex(where: { $0.icon == f.icon }) {
-                    fs.remove(at: j)
+        var icons: Set<String> = []
+        if var i = m.getChatItemIndex(chatItem) {
+            while i < m.reversedChatItems.count,
+                  let f = featureInfo(m.reversedChatItems[i]) {
+                if !icons.contains(f.icon) {
+                    fs.insert(f, at: 0)
+                    icons.insert(f.icon)
                 }
-                fs.insert(f, at: 0)
+                i += 1
             }
-            i -= 1
         }
-        return fs
+        return fs.count > 1 ? fs : nil
     }
 
     private func featureInfo(_ ci: ChatItem) -> FeatureInfo? {
@@ -108,6 +103,6 @@ struct CIChatFeatureView: View {
 struct CIChatFeatureView_Previews: PreviewProvider {
     static var previews: some View {
         let enabled = FeatureEnabled(forUser: false, forContact: false)
-        CIChatFeatureView(chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), feature: ChatFeature.fullDelete, iconColor: enabled.iconColor)
+        CIChatFeatureView(chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), revealed: Binding.constant(true), feature: ChatFeature.fullDelete, iconColor: enabled.iconColor)
     }
 }
