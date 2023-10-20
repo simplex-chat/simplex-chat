@@ -177,7 +177,7 @@ remoteFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile
 
   rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
   desktopStore <- case M.lookup 1 rhs of
-    Just RemoteHostSessionStarted {remoteHostClient, storePath} -> pure storePath
+    Just RemoteHostSession {storePath} -> pure storePath
     _ -> fail "Host session 1 should be started"
 
   doesFileExist "./tests/tmp/mobile_files/test.pdf" `shouldReturn` False

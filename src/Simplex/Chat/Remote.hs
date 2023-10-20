@@ -67,8 +67,8 @@ withRemoteHostSession_ rhId missing present = do
 
 startRemoteHost :: ChatMonad m => RemoteHostId -> m ()
 startRemoteHost rhId = do
-  tasks <- startRemoteHostSession rhId
   rh <- withStore (`getRemoteHost` rhId)
+  tasks <- startRemoteHostSession rh
   logInfo $ "Remote host session starting for " <> tshow rhId
   asyncRegistered tasks $ run rh tasks `catchAny` \err -> do
     logError $ "Remote host session startup failed for " <> tshow rhId <> ": " <> tshow err
@@ -77,10 +77,6 @@ startRemoteHost rhId = do
     throwError $ fromMaybe (mkChatError err) $ fromException err
   -- logInfo $ "Remote host session starting for " <> tshow rhId
   where
-    -- guarded by 'startRemoteHostSession' until 'run' crashes, 'cleanupIO' fires, or 'closeRemoteHostSession' invoked
-    step :: ChatMonad m => RemoteHostSession -> m ()
-    step = chatModifyVar remoteHostSessions . M.insert rhId
-
     run :: ChatMonad m => RemoteHost -> Tasks -> m ()
     run rh@RemoteHost {storePath} tasks = do
       (fingerprint, credentials) <- liftIO $ genSessionCredentials rh
@@ -92,7 +88,6 @@ startRemoteHost rhId = do
         toView (CRRemoteHostStopped rhId) -- only signal "stopped" when the session is unregistered cleanly
       -- block until some client is connected or an error happens
       logInfo $ "Remote host session connecting for " <> tshow rhId
-      step RemoteHostSessionConnecting {remoteHostTasks = tasks}
       httpClient <- liftEitherError (ChatErrorRemoteCtrl . RCEHTTP2Error . show) $ Discovery.announceRevHTTP2 tasks fingerprint credentials cleanupIO
       logInfo $ "Remote host session connected for " <> tshow rhId
       rcName <- chatReadVar localDeviceName
@@ -104,7 +99,7 @@ startRemoteHost rhId = do
         liftRH rhId (remoteRecv remoteHostClient 1000000) >>= mapM_ (atomically . writeTBQueue oq . (Nothing,Just rhId,))
       -- update session state
       logInfo $ "Remote host session started for " <> tshow rhId
-      step RemoteHostSessionStarted {remoteHostTasks = tasks, remoteHostClient, storePath}
+      chatModifyVar remoteHostSessions $ M.adjust (\rhs -> rhs {remoteHostClient = Just remoteHostClient}) rhId
       chatWriteVar currentRemoteHost $ Just rhId
       toView $ CRRemoteHostConnected RemoteHostInfo
         { remoteHostId = rhId,
@@ -121,10 +116,10 @@ startRemoteHost rhId = do
         parent = (C.signatureKeyPair caKey, caCert)
 
 -- | Atomically check/register session and prepare its task list
-startRemoteHostSession :: ChatMonad m => RemoteHostId -> m Tasks
-startRemoteHostSession rhId = withNoRemoteHostSession rhId $ \sessions -> do
+startRemoteHostSession :: ChatMonad m => RemoteHost -> m Tasks
+startRemoteHostSession RemoteHost {remoteHostId, storePath} = withNoRemoteHostSession remoteHostId $ \sessions -> do
   remoteHostTasks <- newTVar []
-  TM.insert rhId RemoteHostSessionStarting {remoteHostTasks} sessions
+  TM.insert remoteHostId RemoteHostSession {remoteHostTasks, storePath, remoteHostClient = Nothing} sessions
   pure $ Right remoteHostTasks
 
 closeRemoteHostSession :: ChatMonad m => RemoteHostId -> m ()
@@ -135,10 +130,9 @@ closeRemoteHostSession rhId = do
   cancelRemoteHostSession session
 
 cancelRemoteHostSession :: MonadUnliftIO m => RemoteHostSession -> m ()
-cancelRemoteHostSession = \case
-  RemoteHostSessionStarting {remoteHostTasks} -> cancelTasks remoteHostTasks
-  RemoteHostSessionConnecting {remoteHostTasks} -> cancelTasks remoteHostTasks
-  RemoteHostSessionStarted {remoteHostTasks, remoteHostClient} -> cancelTasks remoteHostTasks >> closeRemoteHostClient remoteHostClient
+cancelRemoteHostSession RemoteHostSession {remoteHostTasks, remoteHostClient} = do
+  cancelTasks remoteHostTasks
+  mapM_ closeRemoteHostClient remoteHostClient
 
 createRemoteHost :: ChatMonad m => m RemoteHostInfo
 createRemoteHost = do
@@ -179,7 +173,7 @@ deleteRemoteHost rhId = do
   withStore' (`deleteRemoteHostRecord` rhId)
 
 processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostSession -> ByteString -> m ChatResponse
-processRemoteCommand remoteHostId RemoteHostSessionStarted {remoteHostClient = rhc} s = liftRH remoteHostId $ remoteSend rhc s
+processRemoteCommand remoteHostId RemoteHostSession {remoteHostClient = Just rhc} s = liftRH remoteHostId $ remoteSend rhc s
 processRemoteCommand _ _ _ = pure $ chatCmdError Nothing "remote command sent before session started"
 
 liftRH :: (MonadIO m, MonadError ChatError m) => RemoteHostId -> ExceptT RemoteProtocolError IO a -> m a

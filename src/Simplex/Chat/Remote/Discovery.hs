@@ -96,8 +96,7 @@ runAnnouncer inviteBS = do
       UDP.send sock inviteBS
       threadDelay 1000000
 
--- TODO what prevents second client from connecting to the same server?
--- Do we need to start multiple TLS servers for different mobile hosts?
+-- XXX: Do we need to start multiple TLS servers for different mobile hosts?
 startTLSServer :: (MonadUnliftIO m) => TMVar Bool -> TLS.Credentials -> (Transport.TLS -> IO ()) -> m (Async ())
 startTLSServer started credentials = async . liftIO . runTransportServer started BROADCAST_PORT serverParams defaultTransportServerConfig
   where

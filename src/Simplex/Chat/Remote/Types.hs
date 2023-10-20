@@ -32,10 +32,11 @@ data RemoteHostClient = RemoteHostClient
     httpClient :: HTTP2Client
   }
 
-data RemoteHostSession
-  = RemoteHostSessionStarting {remoteHostTasks :: TVar [Async ()]}
-  | RemoteHostSessionConnecting {remoteHostTasks :: TVar [Async ()]}
-  | RemoteHostSessionStarted {remoteHostTasks :: TVar [Async ()], remoteHostClient :: RemoteHostClient, storePath :: FilePath}
+data RemoteHostSession = RemoteHostSession
+  { remoteHostTasks :: Tasks,
+    remoteHostClient :: Maybe RemoteHostClient,
+    storePath :: FilePath
+  }
 
 data RemoteProtocolError
   = RPEInvalidSize -- ^ size prefix is malformed
