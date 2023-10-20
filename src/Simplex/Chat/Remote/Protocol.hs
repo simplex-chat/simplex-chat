@@ -151,28 +151,15 @@ handleRemoteCommand handler HTTP2Request{request, reqBody, sendResponse} = do
       cmd <- liftEitherWith (RPEInvalidJSON . fromString) $ J.eitherDecodeStrict' header
       ExceptT . try . io $ handler getNext cmd -- return to handler context, intercepting RemoteProtocolError thrown as exceptions
   liftIO . sendResponse . responseStreaming N.status200 [] $ \send flush -> do
-    send $ sizePrefixedEncode $ case result of
-      Left err -> RRException (tshow err)
-      Right (Left rpe) -> RRServerError rpe
-      Right (Right ok) -> ok
-    -- todo'unhandled <- runExceptT . withFileHSize "localPath" $ \h fileSize -> liftIO $ hSendFile h send fileSize
+    case result of
+      Left err -> send $ sizePrefixedEncode $ RRException (tshow err)
+      Right (Left rpe) -> send $ sizePrefixedEncode $ RRServerError rpe
+      Right (Right rr) -> do
+        send $ sizePrefixedEncode rr
+        -- todo'unhandled <- runExceptT . withFileHSize "localPath" $ \h fileSize -> liftIO $ hSendFile h send fileSize
     flush
 
-withFileHSize :: (MonadUnliftIO m, MonadError RemoteProtocolError m) => FilePath -> (Handle -> Word32 -> m a) -> m a
-withFileHSize path action =
-  withFile path ReadMode $ \h -> do
-    fileSize' <- hFileSize h
-    when (fileSize' > toInteger (maxBound :: Word32)) $ throwError RPEFileTooLarge
-    action h (fromInteger fileSize')
-
 -- * Transport-level wrappers
-
--- | Convert a command or a response into 'Builder'
-sizePrefixedEncode :: J.ToJSON a => a -> Builder
-sizePrefixedEncode value = int64LE size <> lazyByteString json
-  where
-    size = BL.length json
-    json = J.encode value
 
 convertJSON :: PlatformEncoding -> PlatformEncoding -> J.Value -> J.Value
 convertJSON _remote@PEKotlin _local@PEKotlin = id
@@ -214,13 +201,29 @@ owsf2tagged = fst . convert
 pattern OwsfTag :: (JK.Key, J.Value)
 pattern OwsfTag = (SingleFieldJSONTag, J.Bool True)
 
-bodyParts :: (HTTP2BodyChunk a) => a -> HTTP2Body -> ExceptT RemoteProtocolError IO (ByteString, Int -> IO ByteString)
+-- | Convert a command or a response into 'Builder'.
+sizePrefixedEncode :: J.ToJSON a => a -> Builder
+sizePrefixedEncode value = int64LE (BL.length json) <> lazyByteString json
+  where
+    json = J.encode value
+
+-- | Process HTTP request or response to a size-prefixed chunk and a function to read more.
+bodyParts :: HTTP2BodyChunk a => a -> HTTP2Body -> ExceptT RemoteProtocolError IO (ByteString, Int -> IO ByteString)
 bodyParts r HTTP2Body{bodyBuffer} = do
-  sizePrefix <- liftIO $ getBuffered bodyBuffer 8 Nothing (getBodyChunk r)
+  sizePrefix <- liftIO $ getNext 8
   headerSize64 <- case runGetOrFail getInt64le (BL.fromStrict sizePrefix) of
     Right (nothing, 8, headerSize) | BL.null nothing -> pure headerSize
     _ -> throwError RPEInvalidSize
   when (headerSize64 > fromIntegral (maxBound :: Int)) $ throwError RPEInvalidSize
   let headerSize = fromIntegral headerSize64
-  header <- liftIO $ getBuffered bodyBuffer headerSize Nothing (getBodyChunk r)
-  pure (header, \sz -> getBuffered bodyBuffer sz Nothing $ getBodyChunk r)
+  header <- liftIO $ getNext headerSize
+  pure (header, getNext)
+  where
+    getNext sz = getBuffered bodyBuffer sz Nothing $ getBodyChunk r
+
+withFileHSize :: (MonadUnliftIO m, MonadError RemoteProtocolError m) => FilePath -> (Handle -> Word32 -> m a) -> m a
+withFileHSize path action =
+  withFile path ReadMode $ \h -> do
+    fileSize' <- hFileSize h
+    when (fileSize' > toInteger (maxBound :: Word32)) $ throwError RPEFileTooLarge
+    action h (fromInteger fileSize')
