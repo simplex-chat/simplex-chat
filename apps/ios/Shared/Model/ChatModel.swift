@@ -163,6 +163,10 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func getGroupMember(_ groupMemberId: Int64) -> GMember? {
+        groupMembers.first { $0.groupMemberId == groupMemberId }
+    }
+
     private func getChatIndex(_ id: String) -> Int? {
         chats.firstIndex(where: { $0.id == id })
     }

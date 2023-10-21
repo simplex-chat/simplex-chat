@@ -80,7 +80,7 @@ struct CIRcvDecryptionError: View {
             }
         } else if case let .group(groupInfo) = chat.chatInfo,
                   case let .groupRcv(groupMember) = chatItem.chatDir,
-                  let mem = m.groupMembers.first(where: { $0.groupMemberId == groupMember.groupMemberId }),
+                  let mem = m.getGroupMember(groupMember.groupMemberId),
                   let memberStats = mem.wrapped.activeConn?.connectionStats {
             if memberStats.ratchetSyncAllowed {
                 decryptionErrorItemFixButton(syncSupported: true) {

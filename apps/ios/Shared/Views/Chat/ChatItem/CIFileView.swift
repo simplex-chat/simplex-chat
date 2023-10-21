@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct CIFileView: View {
+    @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
     let file: CIFile?
     let edited: Bool
@@ -83,7 +84,7 @@ struct CIFileView: View {
                 if fileSizeValid() {
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, in Task")
-                        if let user = ChatModel.shared.currentUser {
+                        if let user = m.currentUser {
                             let encrypted = privacyEncryptLocalFilesGroupDefault.get()
                             await receiveFile(user: user, fileId: file.fileId, encrypted: encrypted)
                         }

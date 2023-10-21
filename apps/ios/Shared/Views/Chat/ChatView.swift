@@ -93,6 +93,7 @@ struct ChatView: View {
                         chatModel.chatItemStatuses = [:]
                         chatModel.reversedChatItems = []
                         chatModel.groupMembers = []
+                        membersLoaded = false
                     }
                 }
             }
@@ -130,13 +131,7 @@ struct ChatView: View {
                     }
                 } else if case let .group(groupInfo) = cInfo {
                     Button {
-                        Task {
-                            let groupMembers = await apiListMembers(groupInfo.groupId)
-                            await MainActor.run {
-                                chatModel.groupMembers = groupMembers.map { GMember.init($0) }
-                                showChatInfoSheet = true
-                            }
-                        }
+                        Task { await loadGroupMembers(groupInfo) { showChatInfoSheet = true } }
                     } label: {
                         ChatInfoToolbar(chat: chat)
                     }
@@ -203,6 +198,15 @@ struct ChatView: View {
                     EmptyView()
                 }
             }
+        }
+    }
+
+    private func loadGroupMembers(_ groupInfo: GroupInfo, updateView: @escaping () -> Void = {}) async {
+        let groupMembers = await apiListMembers(groupInfo.groupId)
+        await MainActor.run {
+            chatModel.groupMembers = groupMembers.map { GMember.init($0) }
+            membersLoaded = true
+            updateView()
         }
     }
 
@@ -414,13 +418,7 @@ struct ChatView: View {
     private func addMembersButton() -> some View {
         Button {
             if case let .group(gInfo) = chat.chatInfo {
-                Task {
-                    let groupMembers = await apiListMembers(gInfo.groupId)
-                    await MainActor.run {
-                        chatModel.groupMembers = groupMembers.map { GMember.init($0) }
-                        showAddMembersSheet = true
-                    }
-                }
+                Task { await loadGroupMembers(gInfo) { showAddMembersSheet = true } }
             }
         } label: {
             Image(systemName: "person.crop.circle.badge.plus")
@@ -460,10 +458,9 @@ struct ChatView: View {
             chat: chat,
             chatItem: ci,
             maxWidth: maxWidth,
-            scrollProxy: scrollProxy,
             composeState: $composeState,
-            membersLoaded: $membersLoaded,
-            selectedMember: $selectedMember
+            selectedMember: $selectedMember,
+            chatView: self
         )
     }
 
@@ -473,10 +470,9 @@ struct ChatView: View {
         @ObservedObject var chat: Chat
         var chatItem: ChatItem
         var maxWidth: CGFloat
-        var scrollProxy: ScrollViewProxy?
         @Binding var composeState: ComposeState
-        @Binding var membersLoaded: Bool
         @Binding var selectedMember: GMember?
+        var chatView: ChatView
 
         @State private var deletingItem: ChatItem? = nil
         @State private var showDeleteMessage = false
@@ -535,19 +531,10 @@ struct ChatView: View {
                             ProfileImage(imageStr: member.memberProfile.image)
                                 .frame(width: memberImageSize, height: memberImageSize)
                                 .onTapGesture {
-                                    Task {
-                                        // TODO this can be optimized to load only one member in case the list is not loaded
-                                        if !membersLoaded {
-                                            let groupMembers = await apiListMembers(groupInfo.groupId)
-                                            await MainActor.run {
-                                                m.groupMembers = groupMembers.map { GMember.init($0) }
-                                                membersLoaded = true
-                                            }
-                                        }
-                                        await MainActor.run {
-                                            selectedMember = m.groupMembers.first(where: { $0.groupMemberId == member.groupMemberId })
-                                        }
-                                    }
+                                    selectedMember =
+                                        chatView.membersLoaded
+                                        ? m.getGroupMember(member.groupMemberId)
+                                        : GMember(member)
                                 }
                                 .appSheet(item: $selectedMember) { member in
                                     GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
@@ -594,7 +581,7 @@ struct ChatView: View {
                     chat: chat,
                     chatItem: ci,
                     maxWidth: maxWidth,
-                    scrollProxy: scrollProxy,
+                    scrollProxy: chatView.scrollProxy,
                     revealed: $revealed,
                     allowMenu: $allowMenu,
                     audioPlayer: $audioPlayer,
@@ -880,10 +867,7 @@ struct ChatView: View {
                             chatItemInfo = ciInfo
                         }
                         if case let .group(gInfo) = chat.chatInfo {
-                            let groupMembers = await apiListMembers(gInfo.groupId)
-                            await MainActor.run {
-                                m.groupMembers = groupMembers.map { GMember.init($0) }
-                            }
+                            await chatView.loadGroupMembers(gInfo)
                         }
                     } catch let error {
                         logger.error("apiGetChatItemInfo error: \(responseError(error))")

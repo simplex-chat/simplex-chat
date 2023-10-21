@@ -291,7 +291,7 @@ struct ChatItemInfoView: View {
 
     private func membersStatuses(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> [(GroupMember, CIStatus)] {
         memberDeliveryStatuses.compactMap({ mds in
-            if let mem = chatModel.groupMembers.first(where: { $0.groupMemberId == mds.groupMemberId }) {
+            if let mem = chatModel.getGroupMember(mds.groupMemberId) {
                 return (mem.wrapped, mds.memberDeliveryStatus)
             } else {
                 return nil

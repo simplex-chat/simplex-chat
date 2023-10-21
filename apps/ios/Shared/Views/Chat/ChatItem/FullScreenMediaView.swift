@@ -150,7 +150,7 @@ struct FullScreenMediaView: View {
 
     private func startPlayerAndNotify() {
         if let player = player {
-            ChatModel.shared.stopPreviousRecPlay = url
+            m.stopPreviousRecPlay = url
             player.play()
         }
     }
