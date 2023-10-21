@@ -524,9 +524,6 @@ CREATE INDEX contact_profiles_index ON contact_profiles(
   full_name
 );
 CREATE INDEX idx_groups_inv_queue_info ON groups(inv_queue_info);
-CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
-  via_contact_uri_hash
-);
 CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(xcontact_id);
 CREATE INDEX idx_contacts_xcontact_id ON contacts(xcontact_id);
 CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
@@ -738,7 +735,15 @@ CREATE INDEX idx_received_probes_probe_hash ON received_probes(probe_hash);
 CREATE INDEX idx_sent_probes_created_at ON sent_probes(created_at);
 CREATE INDEX idx_sent_probe_hashes_created_at ON sent_probe_hashes(created_at);
 CREATE INDEX idx_received_probes_created_at ON received_probes(created_at);
-CREATE INDEX idx_connections_conn_req_inv ON connections(conn_req_inv);
+CREATE INDEX idx_connections_conn_req_inv ON connections(
+  user_id,
+  conn_req_inv
+);
 CREATE INDEX idx_groups_via_group_link_uri_hash ON groups(
+  user_id,
   via_group_link_uri_hash
+);
+CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
+  user_id,
+  via_contact_uri_hash
 );

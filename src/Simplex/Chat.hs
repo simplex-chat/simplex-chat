@@ -2249,7 +2249,7 @@ processChatCommand = \case
       case groupLinkId of
         -- contact address
         Nothing ->
-          withStore' (`getUserContactLinkByConnReq` cReqSchemas) >>= \case
+          withStore' (\db -> getUserContactLinkByConnReq db user cReqSchemas) >>= \case
             Just _ -> pure $ CPContactAddress CAPOwnLink
             Nothing -> do
               withStore' (\db -> getContactConnEntityByConnReqHash db user cReqHashes) >>= \case
