@@ -17,16 +17,10 @@ struct MarkedDeletedItemView: View {
     @Binding var revealed: Bool
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 0) {
-            Text(mergedMarkedDeletedText)
-                .font(.caption)
-                .foregroundColor(.secondary)
-                .italic()
-                .lineLimit(1)
-            CIMetaView(chat: chat, chatItem: chatItem)
-                .padding(.horizontal, 12)
-        }
-        .padding(.leading, 12)
+        (Text(mergedMarkedDeletedText).italic() + Text(" ") + chatItem.timestampText)
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(chatItemFrameColor(chatItem, colorScheme))
         .cornerRadius(18)
@@ -38,13 +32,13 @@ struct MarkedDeletedItemView: View {
             var moderated = 0
             var blocked = 0
             var deleted = 0
-            var moderatedBy: [String] = []
+            var moderatedBy: Set<String> = []
             while i < m.reversedChatItems.count,
                   let itemDeleted = m.reversedChatItems[i].meta.itemDeleted {
                 switch itemDeleted {
                 case let .moderated(_, byGroupMember):
                     moderated += 1
-                    moderatedBy.append(byGroupMember.displayName)
+                    moderatedBy.insert(byGroupMember.displayName)
                 case .blocked: blocked += 1
                 case .deleted: deleted += 1
                 }

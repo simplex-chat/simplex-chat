@@ -2570,8 +2570,8 @@ protocol ItemContent {
 public enum CIContent: Decodable, ItemContent {
     case sndMsgContent(msgContent: MsgContent)
     case rcvMsgContent(msgContent: MsgContent)
-    case sndDeleted(deleteMode: CIDeleteMode)
-    case rcvDeleted(deleteMode: CIDeleteMode)
+    case sndDeleted(deleteMode: CIDeleteMode) // legacy - since v4.3.0 itemDeleted field is used
+    case rcvDeleted(deleteMode: CIDeleteMode) // legacy - since v4.3.0 itemDeleted field is used
     case sndCall(status: CICallStatus, duration: Int)
     case rcvCall(status: CICallStatus, duration: Int)
     case rcvIntegrityError(msgError: MsgErrorType)

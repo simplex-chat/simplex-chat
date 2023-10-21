@@ -44,7 +44,7 @@ struct ChatItemView: View {
 
     var body: some View {
         let ci = chatItem
-        if chatItem.meta.itemDeleted != nil && !revealed {
+        if chatItem.meta.itemDeleted != nil && (!revealed || chatItem.isDeletedContent) {
             MarkedDeletedItemView(chat: chat, chatItem: chatItem, revealed: $revealed)
         } else if ci.quotedItem == nil && ci.meta.itemDeleted == nil && !ci.meta.isLive {
             if let mc = ci.content.msgContent, mc.isText && isShortEmoji(ci.content.text) {

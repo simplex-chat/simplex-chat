@@ -616,9 +616,8 @@ final class ChatModel: ObservableObject {
         if chatId == groupInfo.id {
             if let i = groupMembers.firstIndex(where: { $0.groupMemberId == member.groupMemberId }) {
                 withAnimation(.default) {
-                    let mem = self.groupMembers[i]
-                    mem.wrapped = member
-                    mem.created = Date.now
+                    self.groupMembers[i].wrapped = member
+                    self.groupMembers[i].created = Date.now
                 }
                 return false
             } else {

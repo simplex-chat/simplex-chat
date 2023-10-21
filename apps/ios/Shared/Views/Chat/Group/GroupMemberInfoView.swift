@@ -388,7 +388,7 @@ struct GroupMemberInfoView: View {
             alert = .blockMemberAlert(mem: mem)
         } label: {
             Label("Block member", systemImage: "hand.raised")
-                .foregroundColor(Color.red)
+                .foregroundColor(.red)
         }
     }
 
@@ -397,7 +397,6 @@ struct GroupMemberInfoView: View {
             alert = .unblockMemberAlert(mem: mem)
         } label: {
             Label("Unblock member", systemImage: "hand.raised.slash")
-                .foregroundColor(Color.red)
         }
     }
 
@@ -406,7 +405,7 @@ struct GroupMemberInfoView: View {
             alert = .removeMemberAlert(mem: mem)
         } label: {
             Label("Remove member", systemImage: "trash")
-                .foregroundColor(Color.red)
+                .foregroundColor(.red)
         }
     }
 

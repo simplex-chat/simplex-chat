@@ -15,7 +15,7 @@ struct GroupChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
-    @State var groupInfo: GroupInfo
+    @Binding var groupInfo: GroupInfo
     @ObservedObject private var alertManager = AlertManager.shared
     @State private var alert: GroupChatInfoViewAlert? = nil
     @State private var groupLink: String?
@@ -101,7 +101,7 @@ struct GroupChatInfoView: View {
                     }
                     let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
                     let filteredMembers = s == "" ? members : members.filter { $0.wrapped.chatViewName.localizedLowercase.contains(s) }
-                    memberView(groupInfo.membership, user: true)
+                    MemberRowView(groupInfo: groupInfo, groupMember: GMember(groupInfo.membership), user: true, alert: $alert)
                     ForEach(filteredMembers) { member in
                         ZStack {
                             NavigationLink {
@@ -110,7 +110,7 @@ struct GroupChatInfoView: View {
                                 EmptyView()
                             }
                             .opacity(0)
-                            memberView(member.wrapped)
+                            MemberRowView(groupInfo: groupInfo, groupMember: member, alert: $alert)
                         }
                     }
                 }
@@ -203,77 +203,77 @@ struct GroupChatInfoView: View {
         }
     }
 
-    @ViewBuilder private func memberView(_ member: GroupMember, user: Bool = false) -> some View {
-        let v = HStack{
-            ProfileImage(imageStr: member.image)
-                .frame(width: 38, height: 38)
-                .padding(.trailing, 2)
-            // TODO server connection status
-            VStack(alignment: .leading) {
-                let t = Text(member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : .primary)
-                (member.verified ? memberVerifiedShield + t : t)
-                    .lineLimit(1)
-                let s = Text(member.memberStatus.shortText)
-                (user ? Text ("you: ") + s : s)
-                    .lineLimit(1)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-            }
-            Spacer()
-            let role = member.memberRole
-            if role == .owner || role == .admin {
-                Text(member.memberRole.text)
-                    .foregroundColor(.secondary)
-            }
-        }
+    private struct MemberRowView: View {
+        var groupInfo: GroupInfo
+        @ObservedObject var groupMember: GMember
+        var user: Bool = false
+        @Binding var alert: GroupChatInfoViewAlert?
 
-        if user {
-            v
-        } else if member.canBeRemoved(groupInfo: groupInfo) {
-            removeSwipe(member, blockSwipe(member, v))
-        } else {
-            blockSwipe(member, v)
-        }
-    }
-
-    private func blockSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
-        v.swipeActions(edge: .leading) {
-            if member.memberSettings.showMessages {
-                Button {
-                    alert = .blockMemberAlert(mem: member)
-                } label: {
-                    Label("Block member", systemImage: "hand.raised").foregroundColor(.secondary)
+        var body: some View {
+            let member = groupMember.wrapped
+            let v = HStack{
+                ProfileImage(imageStr: member.image)
+                    .frame(width: 38, height: 38)
+                    .padding(.trailing, 2)
+                // TODO server connection status
+                VStack(alignment: .leading) {
+                    let t = Text(member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : .primary)
+                    (member.verified ? memberVerifiedShield + t : t)
+                        .lineLimit(1)
+                    let s = Text(member.memberStatus.shortText)
+                    (user ? Text ("you: ") + s : s)
+                        .lineLimit(1)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 }
+                Spacer()
+                let role = member.memberRole
+                if role == .owner || role == .admin {
+                    Text(member.memberRole.text)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            if user {
+                v
+            } else if member.canBeRemoved(groupInfo: groupInfo) {
+                removeSwipe(member, blockSwipe(member, v))
             } else {
-                Button {
-                    alert = .unblockMemberAlert(mem: member)
+                blockSwipe(member, v)
+            }
+        }
+
+        private func blockSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
+            v.swipeActions(edge: .leading) {
+                if member.memberSettings.showMessages {
+                    Button {
+                        alert = .blockMemberAlert(mem: member)
+                    } label: {
+                        Label("Block member", systemImage: "hand.raised").foregroundColor(.secondary)
+                    }
+                } else {
+                    Button {
+                        alert = .unblockMemberAlert(mem: member)
+                    } label: {
+                        Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
+                    }
+                }
+            }
+        }
+
+        private func removeSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
+            v.swipeActions(edge: .trailing) {
+                Button(role: .destructive) {
+                    alert = .removeMemberAlert(mem: member)
                 } label: {
-                    Label("Unblock member", systemImage: "hand.raised.slash").foregroundColor(.accentColor)
+                    Label("Remove member", systemImage: "trash")
+                        .foregroundColor(Color.red)
                 }
             }
         }
     }
 
-    private func removeSwipe<V: View>(_ member: GroupMember, _ v: V) -> some View {
-        v.swipeActions(edge: .trailing) {
-            Button(role: .destructive) {
-                alert = .removeMemberAlert(mem: member)
-            } label: {
-                Label("Remove member", systemImage: "trash")
-                    .foregroundColor(Color.red)
-            }
-        }
-    }
-
-    private var memberVerifiedShield: Text {
-        (Text(Image(systemName: "checkmark.shield")) + Text(" "))
-            .font(.caption)
-            .baselineOffset(2)
-            .kerning(-2)
-            .foregroundColor(.secondary)
-    }
-
-    @ViewBuilder private func memberInfoView(_ groupMember: GMember) -> some View {
+    private func memberInfoView(_ groupMember: GMember) -> some View {
         GroupMemberInfoView(groupInfo: groupInfo, groupMember: groupMember)
             .navigationBarHidden(false)
     }
@@ -473,6 +473,14 @@ func groupPreferencesButton(_ groupInfo: Binding<GroupInfo>, _ creatingGroup: Bo
     }
 }
 
+private var memberVerifiedShield: Text {
+    (Text(Image(systemName: "checkmark.shield")) + Text(" "))
+        .font(.caption)
+        .baselineOffset(2)
+        .kerning(-2)
+        .foregroundColor(.secondary)
+}
+
 func cantInviteIncognitoAlert() -> Alert {
     Alert(
         title: Text("Can't invite contacts!"),
@@ -489,6 +497,9 @@ func largeGroupReceiptsDisabledAlert() -> Alert {
 
 struct GroupChatInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupChatInfoView(chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []), groupInfo: GroupInfo.sampleData)
+        GroupChatInfoView(
+            chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []),
+            groupInfo: Binding.constant(GroupInfo.sampleData)
+        )
     }
 }

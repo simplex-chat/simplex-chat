@@ -139,7 +139,16 @@ struct ChatView: View {
                         ChatInfoToolbar(chat: chat)
                     }
                     .appSheet(isPresented: $showChatInfoSheet) {
-                        GroupChatInfoView(chat: chat, groupInfo: groupInfo)
+                        GroupChatInfoView(
+                            chat: chat,
+                            groupInfo: Binding(
+                                get: { groupInfo },
+                                set: { gInfo in
+                                    chat.chatInfo = .group(groupInfo: gInfo)
+                                    chat.created = Date.now
+                                }
+                            )
+                        )
                     }
                 }
             }
@@ -704,9 +713,7 @@ struct ChatView: View {
                     menu.append(moderateUIAction(ci, groupInfo))
                 }
             } else if ci.meta.itemDeleted != nil {
-                if !ci.isDeletedContent {
-                    menu.append(revealUIAction())
-                }
+                menu.append(revealed ? hideUIAction() : ci.isDeletedContent ? expandUIAction() : revealUIAction())
                 menu.append(viewInfoUIAction(ci))
                 menu.append(deleteUIAction(ci))
             } else if ci.isDeletedContent {
