@@ -1,4 +1,3 @@
-{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -112,12 +111,13 @@ startTLSServer started credentials = async . liftIO . runTransportServer started
 runHTTP2Client :: MVar () -> MVar (Either HTTP2ClientError HTTP2Client) -> Transport.TLS -> IO ()
 runHTTP2Client finishedVar clientVar tls =
   ifM (isEmptyMVar clientVar)
-    do
-      attachHTTP2Client config ANY_ADDR_V4 BROADCAST_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls >>= putMVar clientVar
-      readMVar finishedVar
-    do
-      logError "HTTP2 session already started on this listener"
+    attachClient
+    (logError "HTTP2 session already started on this listener")
   where
+    attachClient = do
+      client <- attachHTTP2Client config ANY_ADDR_V4 BROADCAST_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls
+      putMVar clientVar client
+      readMVar finishedVar
     -- TODO connection timeout
     config = defaultHTTP2ClientConfig {bodyHeadSize = doNotPrefetchHead, connTimeout = maxBound}
 

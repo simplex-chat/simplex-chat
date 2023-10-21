@@ -1,4 +1,3 @@
-{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -191,15 +190,14 @@ remoteFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile
   desktop <# "bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
   desktop <## "use /fr 1 [<dir>/ | <path>] to receive it"
   desktop ##> "/fr 1"
-  concurrently_
-    do
-      bob <## "started sending file 1 (test.pdf) to alice"
-      bob <## "completed sending file 1 (test.pdf) to alice"
-
-    do
-      desktop <## "saving file 1 from bob to test.pdf"
-      desktop <## "started receiving file 1 (test.pdf) from bob"
-
+  concurrentlyN_
+    [ do
+        bob <## "started sending file 1 (test.pdf) to alice"
+        bob <## "completed sending file 1 (test.pdf) to alice",
+      do
+        desktop <## "saving file 1 from bob to test.pdf"
+        desktop <## "started receiving file 1 (test.pdf) from bob"
+    ]
   let desktopReceived = desktopFiles </> desktopStore </> "test.pdf"
   -- desktop <## ("completed receiving file 1 (" <> desktopReceived <> ") from bob")
   desktop <## "completed receiving file 1 (test.pdf) from bob"
@@ -229,16 +227,17 @@ remoteFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile
   bob <# "alice> sends file logo.jpg (31.3 KiB / 32080 bytes)"
   bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
   bob ##> "/fr 2"
-  concurrently_
-    do
-      bob <## "saving file 2 from alice to logo.jpg"
-      bob <## "started receiving file 2 (logo.jpg) from alice"
-      bob <## "completed receiving file 2 (logo.jpg) from alice"
-      bob ##> "/fs 2"
-      bob <## "receiving file 2 (logo.jpg) complete, path: logo.jpg"
-    do
-      desktop <## "started sending file 2 (logo.jpg) to bob"
-      desktop <## "completed sending file 2 (logo.jpg) to bob"
+  concurrentlyN_
+    [ do
+        bob <## "saving file 2 from alice to logo.jpg"
+        bob <## "started receiving file 2 (logo.jpg) from alice"
+        bob <## "completed receiving file 2 (logo.jpg) from alice"
+        bob ##> "/fs 2"
+        bob <## "receiving file 2 (logo.jpg) complete, path: logo.jpg",
+      do
+        desktop <## "started sending file 2 (logo.jpg) to bob"
+        desktop <## "completed sending file 2 (logo.jpg) to bob"
+    ]
   desktopFileSize <- getFileSize desktopFile
   getFileSize (bobFiles </> "logo.jpg") `shouldReturn` desktopFileSize
   getFileSize (mobileFiles </> "logo.jpg") `shouldReturn` desktopFileSize

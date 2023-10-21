@@ -28,7 +28,6 @@ import Data.Text.Encoding (decodeUtf8)
 import Data.Word (Word32)
 import qualified Network.HTTP.Types as N
 import qualified Network.HTTP2.Client as H
-import Network.HTTP2.Server (responseStreaming)
 import Network.Transport.Internal (decodeWord32)
 import Simplex.Chat.Controller (ChatResponse)
 import Simplex.Chat.Remote.Types
@@ -38,7 +37,6 @@ import Simplex.Messaging.Transport.Buffer (getBuffered)
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), HTTP2BodyChunk, getBodyChunk)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2Response (..), closeHTTP2Client, sendRequestDirect)
 import Simplex.Messaging.Transport.HTTP2.File (hReceiveFile, hSendFile)
-import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Simplex.Messaging.Util (liftEitherError, liftEitherWith, tshow, whenM)
 import System.FilePath ((</>))
 import UnliftIO
@@ -143,38 +141,6 @@ sendRemoteCommand http remoteEncoding attachment_ rc = do
         Nothing -> pure ()
         Just (h, sz) -> hSendFile h send sz
       flush
-
--- * Server side / mobile
-
-type GetChunk = Int -> IO ByteString
-type SendChunk = Builder -> IO ()
-type Respond m = RemoteResponse -> (SendChunk -> IO ()) -> m ()
-
-handleRemoteCommand :: MonadUnliftIO m => (GetChunk -> Respond m -> RemoteCommand -> m ()) -> HTTP2Request -> m ()
-handleRemoteCommand handler HTTP2Request{request, reqBody, sendResponse} = do
-  logDebug "handleRemoteCommand"
-  withFallback $ do
-    (header, getNext) <- liftIO (runExceptT $ parseHTTP2Body request reqBody) >>= either throwIO pure
-    rc <- either (throwIO . RPEInvalidJSON . fromString) pure $ J.eitherDecodeStrict' header
-    handler getNext replyWith rc
-  where
-    replyWith :: MonadUnliftIO m => Respond m
-    replyWith rr attach =
-      liftIO . sendResponse . responseStreaming N.status200 [] $ \send flush -> do
-        send $ sizePrefixedEncode rr
-        attach send
-        flush
-
-    withFallback :: MonadUnliftIO m => m () -> m ()
-    withFallback action = catches action
-      [ Handler $ \remoteProcotolError -> do
-          logError $ "handleRemoteCommand: " <> tshow remoteProcotolError
-          replyWith RRProtocolError {remoteProcotolError} (\_ -> pure ())
-      , Handler $ \(SomeException e) -> do
-          let someException = tshow e
-          logError $ "handleRemoteCommand: " <> someException
-          replyWith RRException {someException} (\_ -> pure ())
-      ]
 
 -- * Transport-level wrappers
 

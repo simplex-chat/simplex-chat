@@ -1,4 +1,3 @@
-{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -20,8 +19,10 @@ import Control.Monad.IO.Class
 import Control.Monad.Reader (asks)
 import Control.Monad.STM (retry)
 import Crypto.Random (getRandomBytes)
+import qualified Data.Aeson as J
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
+import Data.ByteString.Builder (Builder)
 import qualified Data.ByteString.Char8 as B
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
@@ -30,6 +31,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word32)
+import Network.HTTP2.Server (responseStreaming)
+import qualified Network.HTTP.Types as N
 import Network.Socket (SockAddr (..), hostAddressToTuple)
 import Simplex.Chat.Controller
 import qualified Simplex.Chat.Remote.Discovery as Discovery
@@ -38,6 +41,7 @@ import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store.Remote
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
+import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
@@ -196,25 +200,58 @@ startRemoteCtrl execChatCommand = do
   chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {discoverer, supervisor, hostServer = Nothing, discovered, accepted, remoteOutputQ}
   where
     runHost :: TM.TMap C.KeyHash TransportHost -> TMVar RemoteCtrlId -> TBQueue ChatResponse -> m ()
-    runHost discovered accepted events = do
+    runHost discovered accepted remoteOutputQ = do
       remoteCtrlId <- atomically (readTMVar accepted)
       rc@RemoteCtrl {fingerprint} <- withStore (`getRemoteCtrl` remoteCtrlId)
       source <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure
       toView $ CRRemoteCtrlConnecting $ remoteCtrlInfo rc False
       atomically $ writeTVar discovered mempty -- flush unused sources
-      server <- async $ Discovery.connectRevHTTP2 source fingerprint $ handleRemoteCommand \getNext reply rcmd ->
-        let reply_ rr = reply rr (\_ -> pure ())
-        in handleError (reply_ . RRChatError . tshow) $ case rcmd of
-            RCHello {deviceName = desktopName} -> handleHello desktopName >>= reply_
-            RCSend {command} -> handleSend execChatCommand command >>= reply_
-            RCRecv {wait = time} -> handleRecv time events >>= reply_
-            RCStoreFile {fileSize, encrypt} -> handleStoreFile fileSize encrypt getNext >>= reply_
-            RCGetFile {filePath} -> handleGetFile filePath reply
+      server <- async $ Discovery.connectRevHTTP2 source fingerprint handleRemoteCommand
       chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
       toView $ CRRemoteCtrlConnected $ remoteCtrlInfo rc True
       _ <- waitCatch server
       chatWriteVar remoteCtrlSession Nothing
       toView CRRemoteCtrlStopped
+      where
+        handleRemoteCommand :: HTTP2Request -> m ()
+        handleRemoteCommand HTTP2Request {request, reqBody, sendResponse} = do
+          logDebug "handleRemoteCommand"
+          withFallback $ do
+            (header, getNext) <- liftIO (runExceptT $ parseHTTP2Body request reqBody) >>= either throwIO pure
+            rc <- either (throwIO . RPEInvalidJSON . T.pack) pure $ J.eitherDecodeStrict' header
+            processCommand getNext rc `catchChatError` (reply_ . RRChatError . tshow)
+          where
+            processCommand :: GetChunk -> RemoteCommand -> m ()
+            processCommand getNext = \case
+              RCHello {deviceName = desktopName} -> handleHello desktopName >>= reply_
+              RCSend {command} -> handleSend execChatCommand command >>= reply_
+              RCRecv {wait = time} -> handleRecv time remoteOutputQ >>= reply_
+              RCStoreFile {fileSize, encrypt} -> handleStoreFile fileSize encrypt getNext >>= reply_
+              RCGetFile {filePath} -> handleGetFile filePath replyWith
+            reply_ :: RemoteResponse -> m ()
+            reply_ = (`replyWith` \_ -> pure ())
+            replyWith :: Respond m
+            replyWith rr attach =
+              liftIO . sendResponse . responseStreaming N.status200 [] $ \send flush -> do
+                send $ sizePrefixedEncode rr
+                attach send
+                flush
+            withFallback :: m () -> m ()
+            withFallback action = catches action
+              [ Handler $ \remoteProcotolError -> do
+                  logError $ "handleRemoteCommand: " <> tshow remoteProcotolError
+                  replyWith RRProtocolError {remoteProcotolError} (\_ -> pure ()),
+                Handler $ \(SomeException e) -> do
+                  let someException = tshow e
+                  logError $ "handleRemoteCommand: " <> someException
+                  replyWith RRException {someException} (\_ -> pure ())
+              ]
+
+type GetChunk = Int -> IO ByteString
+
+type SendChunk = Builder -> IO ()
+
+type Respond m = RemoteResponse -> (SendChunk -> IO ()) -> m ()
 
 handleHello :: ChatMonad m => Text -> m RemoteResponse
 handleHello desktopName = do
