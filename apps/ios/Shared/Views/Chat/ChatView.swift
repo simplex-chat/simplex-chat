@@ -34,6 +34,7 @@ struct ChatView: View {
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
     // opening GroupMemberInfoView on member icon
+    @State private var membersLoaded = false
     @State private var selectedMember: GMember? = nil
 
     var body: some View {
@@ -91,6 +92,7 @@ struct ChatView: View {
                     if chatModel.chatId == nil {
                         chatModel.chatItemStatuses = [:]
                         chatModel.reversedChatItems = []
+                        chatModel.groupMembers = []
                     }
                 }
             }
@@ -460,6 +462,7 @@ struct ChatView: View {
             maxWidth: maxWidth,
             scrollProxy: scrollProxy,
             composeState: $composeState,
+            membersLoaded: $membersLoaded,
             selectedMember: $selectedMember
         )
     }
@@ -472,6 +475,7 @@ struct ChatView: View {
         var maxWidth: CGFloat
         var scrollProxy: ScrollViewProxy?
         @Binding var composeState: ComposeState
+        @Binding var membersLoaded: Bool
         @Binding var selectedMember: GMember?
 
         @State private var deletingItem: ChatItem? = nil
@@ -530,7 +534,21 @@ struct ChatView: View {
                         HStack(alignment: .top, spacing: 8) {
                             ProfileImage(imageStr: member.memberProfile.image)
                                 .frame(width: memberImageSize, height: memberImageSize)
-                                .onTapGesture { selectedMember = m.groupMembers.first(where: { $0.groupMemberId == member.groupMemberId }) }
+                                .onTapGesture {
+                                    Task {
+                                        // TODO this can be optimized to load only one member in case the list is not loaded
+                                        if !membersLoaded {
+                                            let groupMembers = await apiListMembers(groupInfo.groupId)
+                                            await MainActor.run {
+                                                m.groupMembers = groupMembers.map { GMember.init($0) }
+                                                membersLoaded = true
+                                            }
+                                        }
+                                        await MainActor.run {
+                                            selectedMember = m.groupMembers.first(where: { $0.groupMemberId == member.groupMemberId })
+                                        }
+                                    }
+                                }
                                 .appSheet(item: $selectedMember) { member in
                                     GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
                                 }

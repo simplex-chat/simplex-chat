@@ -1541,9 +1541,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo)
-                if m.chatId == groupInfo.id {
-                    _ = m.upsertGroupMember(groupInfo, member)
-                }
+                _ = m.upsertGroupMember(groupInfo, member)
             }
         }
     case let .newMemberContactReceivedInv(user, contact, _, _):
