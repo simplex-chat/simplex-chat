@@ -539,20 +539,20 @@ struct ChatView: View {
                                 .appSheet(item: $selectedMember) { member in
                                     GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
                                 }
-                            chatItemWithMenu(ci, maxWidth)
+                            chatItemWithMenu(ci, range, maxWidth)
                         }
                     }
                     .padding(.top, 5)
                     .padding(.trailing)
                     .padding(.leading, 12)
                 } else {
-                    chatItemWithMenu(ci, maxWidth)
+                    chatItemWithMenu(ci, range, maxWidth)
                         .padding(.top, 5)
                         .padding(.trailing)
                         .padding(.leading, memberImageSize + 8 + 12)
                 }
             } else {
-                chatItemWithMenu(ci, maxWidth)
+                chatItemWithMenu(ci, range, maxWidth)
                     .padding(.horizontal)
                     .padding(.top, 5)
             }
@@ -569,10 +569,10 @@ struct ChatView: View {
             }
         }
 
-        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ maxWidth: CGFloat) -> some View {
+        @ViewBuilder func chatItemWithMenu(_ ci: ChatItem, _ range: ClosedRange<Int>?, _ maxWidth: CGFloat) -> some View {
             let alignment: Alignment = ci.chatDir.sent ? .trailing : .leading
             let uiMenu: Binding<UIMenu> = Binding(
-                get: { UIMenu(title: "", children: menu(ci, live: composeState.liveMessage != nil)) },
+                get: { UIMenu(title: "", children: menu(ci, range, live: composeState.liveMessage != nil)) },
                 set: { _ in }
             )
             
@@ -664,7 +664,7 @@ struct ChatView: View {
             }
         }
 
-        private func menu(_ ci: ChatItem, live: Bool) -> [UIMenuElement] {
+        private func menu(_ ci: ChatItem, _ range: ClosedRange<Int>?, live: Bool) -> [UIMenuElement] {
             var menu: [UIMenuElement] = []
             if let mc = ci.content.msgContent, ci.meta.itemDeleted == nil || revealed {
                 let rs = allReactions(ci)
@@ -718,7 +718,13 @@ struct ChatView: View {
                     menu.append(moderateUIAction(ci, groupInfo))
                 }
             } else if ci.meta.itemDeleted != nil {
-                menu.append(revealed ? hideUIAction() : ci.isDeletedContent ? expandUIAction() : revealUIAction())
+                if revealed {
+                    menu.append(hideUIAction())
+                } else if !ci.isDeletedContent {
+                    menu.append(revealUIAction())
+                } else if range != nil {
+                    menu.append(expandUIAction())
+                }
                 menu.append(viewInfoUIAction(ci))
                 menu.append(deleteUIAction(ci))
             } else if ci.isDeletedContent {
