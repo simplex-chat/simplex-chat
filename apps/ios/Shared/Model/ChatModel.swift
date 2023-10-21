@@ -533,6 +533,7 @@ final class ChatModel: ObservableObject {
             users.filter { !$0.user.activeUser }.reduce(0, { unread, next -> Int in unread + next.unreadCount })
     }
 
+    // this function analyses "connected" events and assumes that each member will be there only once
     func getConnectedMemberNames(_ chatItem: ChatItem) -> (Int, [String]) {
         var count = 0
         var ns: [String] = []
@@ -551,6 +552,7 @@ final class ChatModel: ObservableObject {
         return (count, ns)
     }
 
+    // returns the index of the passed item and the next item (it has smaller index)
     func getNextChatItem(_ ci: ChatItem) -> (Int?, ChatItem?) {
         if let i = getChatItemIndex(ci) {
             (i, i > 0 ? reversedChatItems[i - 1] : nil)
@@ -559,6 +561,8 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    // returns the index of the first item in the same merged group (the first hidden item)
+    // and the previous visible item with another merge category
     func getPrevShownChatItem(_ ciIndex: Int?, _ ciCategory: CIMergeCategory?) -> (Int?, ChatItem?) {
         guard var i = ciIndex else { return (nil, nil) }
         let fst = reversedChatItems.count - 1
@@ -572,6 +576,7 @@ final class ChatModel: ObservableObject {
         return (i, nil)
     }
 
+    // returns the previous member in the same merge group and the count of members in this group
     func getPrevHiddenMember(_ member: GroupMember, _ range: ClosedRange<Int>) -> (GroupMember?, Int) {
         var prevMember: GroupMember? = nil
         var names: Set<String> = []
@@ -748,8 +753,6 @@ final class GMember: ObservableObject, Identifiable {
     var groupId: Int64 { wrapped.groupId }
     var groupMemberId: Int64 { wrapped.groupMemberId }
     var displayName: String { wrapped.displayName }
-//    var memberRole: GroupMemberRole { wrapped.memberRole }
-//    var verified: Bool { wrapped.verified }
     var viewId: String { get { "\(wrapped.id) \(created.timeIntervalSince1970)" } }
     static let sampleData = GMember(GroupMember.sampleData)
 }
