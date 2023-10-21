@@ -47,9 +47,9 @@ struct GroupChatInfoView: View {
             case .leaveGroupAlert: return "leaveGroupAlert"
             case .cantInviteIncognitoAlert: return "cantInviteIncognitoAlert"
             case .largeGroupReceiptsDisabled: return "largeGroupReceiptsDisabled"
-            case let .blockMemberAlert(mem): return "blockMemberAlert \(mem.id)"
-            case let .unblockMemberAlert(mem): return "unblockMemberAlert \(mem.id)"
-            case let .removeMemberAlert(mem): return "removeMemberAlert \(mem.id)"
+            case let .blockMemberAlert(mem): return "blockMemberAlert \(mem.groupMemberId)"
+            case let .unblockMemberAlert(mem): return "unblockMemberAlert \(mem.groupMemberId)"
+            case let .removeMemberAlert(mem): return "removeMemberAlert \(mem.groupMemberId)"
             case let .error(title, _): return "error \(title)"
             }
         }
@@ -58,7 +58,7 @@ struct GroupChatInfoView: View {
     var body: some View {
         NavigationView {
             let members = chatModel.groupMembers
-                .filter { $0.memberStatus != .memLeft && $0.memberStatus != .memRemoved }
+                .filter { m in let status = m.wrapped.memberStatus; return status != .memLeft && status != .memRemoved }
                 .sorted { $0.displayName.lowercased() < $1.displayName.lowercased() }
 
             List {
@@ -73,7 +73,7 @@ struct GroupChatInfoView: View {
                         addOrEditWelcomeMessage()
                     }
                     groupPreferencesButton($groupInfo)
-                    if members.filter({ $0.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
+                    if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
                         sendReceiptsOption()
                     } else {
                         sendReceiptsOptionDisabled()
@@ -100,17 +100,17 @@ struct GroupChatInfoView: View {
                             .padding(.leading, 8)
                     }
                     let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-                    let filteredMembers = s == "" ? members : members.filter { $0.chatViewName.localizedLowercase.contains(s) }
+                    let filteredMembers = s == "" ? members : members.filter { $0.wrapped.chatViewName.localizedLowercase.contains(s) }
                     memberView(groupInfo.membership, user: true)
                     ForEach(filteredMembers) { member in
                         ZStack {
                             NavigationLink {
-                                memberInfoView(member.groupMemberId)
+                                memberInfoView(member)
                             } label: {
                                 EmptyView()
                             }
                             .opacity(0)
-                            memberView(member)
+                            memberView(member.wrapped)
                         }
                     }
                 }
@@ -194,7 +194,7 @@ struct GroupChatInfoView: View {
                     Task {
                         let groupMembers = await apiListMembers(groupInfo.groupId)
                         await MainActor.run {
-                            ChatModel.shared.groupMembers = groupMembers
+                            chatModel.groupMembers = groupMembers.map { GMember.init($0) }
                         }
                     }
                 }
@@ -273,11 +273,9 @@ struct GroupChatInfoView: View {
             .foregroundColor(.secondary)
     }
 
-    @ViewBuilder private func memberInfoView(_ groupMemberId: Int64?) -> some View {
-        if let mId = groupMemberId, let member = chatModel.groupMembers.first(where: { $0.groupMemberId == mId }) {
-            GroupMemberInfoView(groupInfo: groupInfo, member: member)
-                .navigationBarHidden(false)
-        }
+    @ViewBuilder private func memberInfoView(_ groupMember: GMember) -> some View {
+        GroupMemberInfoView(groupInfo: groupInfo, groupMember: groupMember)
+            .navigationBarHidden(false)
     }
 
     private func groupLinkButton() -> some View {

@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct ChatItemInfoView: View {
+    @EnvironmentObject var chatModel: ChatModel
     @Environment(\.colorScheme) var colorScheme
     var ci: ChatItem
     @Binding var chatItemInfo: ChatItemInfo?
@@ -290,8 +291,8 @@ struct ChatItemInfoView: View {
 
     private func membersStatuses(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> [(GroupMember, CIStatus)] {
         memberDeliveryStatuses.compactMap({ mds in
-            if let mem = ChatModel.shared.groupMembers.first(where: { $0.groupMemberId == mds.groupMemberId }) {
-                return (mem, mds.memberDeliveryStatus)
+            if let mem = chatModel.groupMembers.first(where: { $0.groupMemberId == mds.groupMemberId }) {
+                return (mem.wrapped, mds.memberDeliveryStatus)
             } else {
                 return nil
             }

@@ -1082,8 +1082,8 @@ func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
     return []
 }
 
-func filterMembersToAdd(_ ms: [GroupMember]) -> [Contact] {
-    let memberContactIds = ms.compactMap{ m in m.memberCurrent ? m.memberContactId : nil }
+func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {
+    let memberContactIds = ms.compactMap{ m in m.wrapped.memberCurrent ? m.wrapped.memberContactId : nil }
     return ChatModel.shared.chats
         .compactMap{ $0.chatInfo.contact }
         .filter{ !memberContactIds.contains($0.apiId) }
@@ -1537,10 +1537,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.updateGroup(toGroup)
             }
         }
-    case let .memberRole(user, groupInfo, _, _, _, _):
+    case let .memberRole(user, groupInfo, byMember: _, member: member, fromRole: _, toRole: _):
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo)
+                if m.chatId == groupInfo.id {
+                    _ = m.upsertGroupMember(groupInfo, member)
+                }
             }
         }
     case let .newMemberContactReceivedInv(user, contact, _, _):

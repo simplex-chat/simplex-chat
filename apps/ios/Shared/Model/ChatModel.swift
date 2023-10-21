@@ -64,7 +64,7 @@ final class ChatModel: ObservableObject {
     @Published var reversedChatItems: [ChatItem] = []
     var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
     @Published var chatToTop: String?
-    @Published var groupMembers: [GroupMember] = []
+    @Published var groupMembers: [GMember] = []
     // items in the terminal view
     @Published var showingTerminal = false
     @Published var terminalItems: [TerminalItem] = []
@@ -176,6 +176,7 @@ final class ChatModel: ObservableObject {
     func updateChatInfo(_ cInfo: ChatInfo) {
         if let i = getChatIndex(cInfo.id) {
             chats[i].chatInfo = cInfo
+            chats[i].created = Date.now
         }
     }
 
@@ -572,7 +573,7 @@ final class ChatModel: ObservableObject {
         var names: Set<String> = []
         for i in range {
             if case let .groupRcv(m) = reversedChatItems[i].chatDir {
-                if prevMember == nil && m.id != member.id { prevMember = m }
+                if prevMember == nil && m.groupMemberId != member.groupMemberId { prevMember = m }
                 names.insert(m.displayName)
             }
         }
@@ -613,13 +614,15 @@ final class ChatModel: ObservableObject {
         }
         // update current chat
         if chatId == groupInfo.id {
-            if let i = groupMembers.firstIndex(where: { $0.id == member.id }) {
+            if let i = groupMembers.firstIndex(where: { $0.groupMemberId == member.groupMemberId }) {
                 withAnimation(.default) {
-                    self.groupMembers[i] = member
+                    let mem = self.groupMembers[i]
+                    mem.wrapped = member
+                    mem.created = Date.now
                 }
                 return false
             } else {
-                withAnimation { groupMembers.append(member) }
+                withAnimation { groupMembers.append(GMember(member)) }
                 return true
             }
         } else {
@@ -628,11 +631,10 @@ final class ChatModel: ObservableObject {
     }
 
     func updateGroupMemberConnectionStats(_ groupInfo: GroupInfo, _ member: GroupMember, _ connectionStats: ConnectionStats) {
-        if let conn = member.activeConn {
-            var updatedConn = conn
-            updatedConn.connectionStats = connectionStats
+        if var conn = member.activeConn {
+            conn.connectionStats = connectionStats
             var updatedMember = member
-            updatedMember.activeConn = updatedConn
+            updatedMember.activeConn = conn
             _ = upsertGroupMember(groupInfo, updatedMember)
         }
     }
@@ -729,4 +731,22 @@ final class Chat: ObservableObject, Identifiable {
     var viewId: String { get { "\(chatInfo.id) \(created.timeIntervalSince1970)" } }
 
     public static var sampleData: Chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
+}
+
+final class GMember: ObservableObject, Identifiable {
+    @Published var wrapped: GroupMember
+    var created = Date.now
+
+    init(_ member: GroupMember) {
+        self.wrapped = member
+    }
+
+    var id: String { wrapped.id }
+    var groupId: Int64 { wrapped.groupId }
+    var groupMemberId: Int64 { wrapped.groupMemberId }
+    var displayName: String { wrapped.displayName }
+//    var memberRole: GroupMemberRole { wrapped.memberRole }
+//    var verified: Bool { wrapped.verified }
+    var viewId: String { get { "\(wrapped.id) \(created.timeIntervalSince1970)" } }
+    static let sampleData = GMember(GroupMember.sampleData)
 }

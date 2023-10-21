@@ -34,7 +34,7 @@ struct ChatView: View {
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
     // opening GroupMemberInfoView on member icon
-    @State private var selectedMember: GroupMember? = nil
+    @State private var selectedMember: GMember? = nil
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -131,7 +131,7 @@ struct ChatView: View {
                         Task {
                             let groupMembers = await apiListMembers(groupInfo.groupId)
                             await MainActor.run {
-                                chatModel.groupMembers = groupMembers
+                                chatModel.groupMembers = groupMembers.map { GMember.init($0) }
                                 showChatInfoSheet = true
                             }
                         }
@@ -406,7 +406,7 @@ struct ChatView: View {
                 Task {
                     let groupMembers = await apiListMembers(gInfo.groupId)
                     await MainActor.run {
-                        chatModel.groupMembers = groupMembers
+                        chatModel.groupMembers = groupMembers.map { GMember.init($0) }
                         showAddMembersSheet = true
                     }
                 }
@@ -463,7 +463,7 @@ struct ChatView: View {
         var maxWidth: CGFloat
         var scrollProxy: ScrollViewProxy?
         @Binding var composeState: ComposeState
-        @Binding var selectedMember: GroupMember?
+        @Binding var selectedMember: GMember?
 
         @State private var deletingItem: ChatItem? = nil
         @State private var showDeleteMessage = false
@@ -521,9 +521,9 @@ struct ChatView: View {
                         HStack(alignment: .top, spacing: 8) {
                             ProfileImage(imageStr: member.memberProfile.image)
                                 .frame(width: memberImageSize, height: memberImageSize)
-                                .onTapGesture { selectedMember = member }
+                                .onTapGesture { selectedMember = m.groupMembers.first(where: { $0.groupMemberId == member.groupMemberId }) }
                                 .appSheet(item: $selectedMember) { member in
-                                    GroupMemberInfoView(groupInfo: groupInfo, member: member, navigation: true)
+                                    GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
                                 }
                             chatItemWithMenu(ci, maxWidth)
                         }
@@ -857,7 +857,7 @@ struct ChatView: View {
                         if case let .group(gInfo) = chat.chatInfo {
                             let groupMembers = await apiListMembers(gInfo.groupId)
                             await MainActor.run {
-                                m.groupMembers = groupMembers
+                                m.groupMembers = groupMembers.map { GMember.init($0) }
                             }
                         }
                     } catch let error {

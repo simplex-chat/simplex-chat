@@ -2117,30 +2117,6 @@ public struct ChatItem: Identifiable, Decodable {
         }
     }
 
-//        if memberConnected != nil {
-//            .memberConnected
-//        } else if meta.itemDeleted != nil {
-//            chatDir.sent ? .sndItemDeleted : .rcvItemDeleted
-//        } else if case .rcvGroupEvent = content {
-//            .rcvGroupEvent
-//        } else if case .sndGroupEvent = content {
-//            .sndGroupEvent
-//        } else if isChatFeature {
-//            .chatFeature
-//        } else {
-//            nil
-//        }
-
-//    public var isChatFeature: Bool {
-//        switch content {
-//        case .rcvChatFeature: true
-//        case .sndChatFeature: true
-//        case .rcvGroupFeature: true
-//        case .sndGroupFeature: true
-//        default: false
-//        }
-//    }
-
     private var showNtfDir: Bool {
         return !chatDir.sent
     }
