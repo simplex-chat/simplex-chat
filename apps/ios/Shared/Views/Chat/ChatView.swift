@@ -204,9 +204,11 @@ struct ChatView: View {
     private func loadGroupMembers(_ groupInfo: GroupInfo, updateView: @escaping () -> Void = {}) async {
         let groupMembers = await apiListMembers(groupInfo.groupId)
         await MainActor.run {
-            chatModel.groupMembers = groupMembers.map { GMember.init($0) }
-            membersLoaded = true
-            updateView()
+            if chatModel.chatId == groupInfo.id {
+                chatModel.groupMembers = groupMembers.map { GMember.init($0) }
+                membersLoaded = true
+                updateView()
+            }
         }
     }
 
@@ -531,10 +533,15 @@ struct ChatView: View {
                             ProfileImage(imageStr: member.memberProfile.image)
                                 .frame(width: memberImageSize, height: memberImageSize)
                                 .onTapGesture {
-                                    selectedMember =
-                                        chatView.membersLoaded
-                                        ? m.getGroupMember(member.groupMemberId)
-                                        : GMember(member)
+                                    if chatView.membersLoaded {
+                                        selectedMember = m.getGroupMember(member.groupMemberId)
+                                    } else {
+                                        Task {
+                                            await chatView.loadGroupMembers(groupInfo) {
+                                                selectedMember = m.getGroupMember(member.groupMemberId)
+                                            }
+                                        }
+                                    }
                                 }
                                 .appSheet(item: $selectedMember) { member in
                                     GroupMemberInfoView(groupInfo: groupInfo, groupMember: member, navigation: true)
