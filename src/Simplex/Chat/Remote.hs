@@ -7,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
@@ -217,9 +218,8 @@ startRemoteCtrl execChatCommand = do
         handleRemoteCommand HTTP2Request {request, reqBody, sendResponse} = do
           logDebug "handleRemoteCommand"
           liftRC (tryRemoteError parseRequest) >>= \case
-            Right (getNext, rc) ->
-              processCommand getNext rc `catchChatError` (reply_ . RRChatError . tshow)
-            Left e -> reply_ $ RRProtocolError e
+            Right (getNext, rc) -> processCommand getNext rc `catch` (reply . RRProtocolError . RPEException . tshow @SomeException)
+            Left e -> reply $ RRProtocolError e
           where
             parseRequest :: ExceptT RemoteProtocolError IO (GetChunk, RemoteCommand)
             parseRequest = do
@@ -227,13 +227,13 @@ startRemoteCtrl execChatCommand = do
               (getNext,) <$> liftEitherWith (RPEInvalidJSON . T.pack) (J.eitherDecodeStrict' header)
             processCommand :: GetChunk -> RemoteCommand -> m ()
             processCommand getNext = \case
-              RCHello {deviceName = desktopName} -> handleHello desktopName >>= reply_
-              RCSend {command} -> handleSend execChatCommand command >>= reply_
-              RCRecv {wait = time} -> handleRecv time remoteOutputQ >>= reply_
-              RCStoreFile {fileSize, encrypt} -> handleStoreFile fileSize encrypt getNext >>= reply_
+              RCHello {deviceName = desktopName} -> handleHello desktopName >>= reply
+              RCSend {command} -> handleSend execChatCommand command >>= reply
+              RCRecv {wait = time} -> handleRecv time remoteOutputQ >>= reply
+              RCStoreFile {fileSize, encrypt} -> handleStoreFile fileSize encrypt getNext >>= reply
               RCGetFile {filePath} -> handleGetFile filePath replyWith
-            reply_ :: RemoteResponse -> m ()
-            reply_ = (`replyWith` \_ -> pure ())
+            reply :: RemoteResponse -> m ()
+            reply = (`replyWith` \_ -> pure ())
             replyWith :: Respond m
             replyWith rr attach =
               liftIO . sendResponse . responseStreaming N.status200 [] $ \send flush -> do
