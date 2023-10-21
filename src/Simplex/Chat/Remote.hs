@@ -235,7 +235,7 @@ handleRecv time events = do
   RRChatEvent <$> (timeout time . atomically $ readTBQueue events)
 
 handleStoreFile :: ChatMonad m => Word32 -> Maybe Bool -> GetChunk -> m RemoteResponse
-handleStoreFile fileSize encrypt getNext = error "TODO" <$ logError "TODO: handleStoreFile"
+handleStoreFile _fileSize _encrypt _getNext = error "TODO" <$ logError "TODO: handleStoreFile"
 
 handleGetFile :: ChatMonad m => FilePath -> Respond m -> m ()
 handleGetFile path reply = do

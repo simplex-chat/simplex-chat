@@ -113,12 +113,13 @@ runHTTP2Client :: MVar () -> MVar (Either HTTP2ClientError HTTP2Client) -> Trans
 runHTTP2Client finishedVar clientVar tls =
   ifM (isEmptyMVar clientVar)
     do
-      attachHTTP2Client config ANY_ADDR_V4 BROADCAST_PORT (putMVar finishedVar () ) defaultHTTP2BufferSize tls >>= putMVar clientVar
+      attachHTTP2Client config ANY_ADDR_V4 BROADCAST_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls >>= putMVar clientVar
       readMVar finishedVar
     do
       logError "HTTP2 session already started on this listener"
   where
-    config = defaultHTTP2ClientConfig { bodyHeadSize = doNotPrefetchHead, connTimeout = maxBound }
+    -- TODO connection timeout
+    config = defaultHTTP2ClientConfig {bodyHeadSize = doNotPrefetchHead, connTimeout = maxBound}
 
 withListener :: (MonadUnliftIO m) => (UDP.ListenSocket -> m a) -> m a
 withListener = bracket openListener (liftIO . UDP.stop)

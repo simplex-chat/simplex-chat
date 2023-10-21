@@ -29,14 +29,14 @@ data RemoteHostSession = RemoteHostSession
 
 data RemoteProtocolError
   = RPEInvalidSize -- ^ size prefix is malformed
-  | RPEInvalidJSON Text -- ^ failed to parse RemoteCommand or RemoteResponse
+  | RPEInvalidJSON {invalidJSON :: Text} -- ^ failed to parse RemoteCommand or RemoteResponse
   | RPEIncompatibleEncoding
   | RPEUnexpectedFile
   | RPENoFile
   | RPEFileTooLarge
-  | RPEBadResponse -- ^ Wrong response received for the command sent
+  | RPEUnexpectedResponse {response :: Text} -- ^ Wrong response received for the command sent
   | RPEStoredFileExists -- ^ A file already exists in the destination position
-  | RPEHTTP2 Text
+  | RPEHTTP2 {http2Error :: Text}
   deriving (Show, Exception)
 
 type RemoteHostId = Int64

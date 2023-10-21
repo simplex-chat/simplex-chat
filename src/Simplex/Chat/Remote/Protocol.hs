@@ -19,9 +19,8 @@ import qualified Data.Aeson.Key as JK
 import qualified Data.Aeson.KeyMap as JM
 import Data.Aeson.TH (deriveJSON)
 import qualified Data.Aeson.Types as JT
-import Data.Binary.Get (getInt64le, runGetOrFail)
 import Data.ByteString (ByteString)
-import Data.ByteString.Builder (Builder, int64LE, lazyByteString)
+import Data.ByteString.Builder (Builder, word32BE, lazyByteString)
 import qualified Data.ByteString.Lazy as BL
 import Data.String (fromString)
 import Data.Text (Text)
@@ -30,6 +29,7 @@ import Data.Word (Word32)
 import qualified Network.HTTP.Types as N
 import qualified Network.HTTP2.Client as H
 import Network.HTTP2.Server (responseStreaming)
+import Network.Transport.Internal (decodeWord32)
 import Simplex.Chat.Controller (ChatResponse)
 import Simplex.Chat.Remote.Types
 import Simplex.Messaging.Crypto.File (CryptoFile)
@@ -73,14 +73,13 @@ $(deriveJSON (taggedObjectJSON $ dropPrefix "RR") ''RemoteResponse)
 createRemoteHostClient :: HTTP2Client -> Text -> ExceptT RemoteProtocolError IO RemoteHostClient
 createRemoteHostClient httpClient desktopName = do
   logInfo "Sending initial hello"
-  let dummyRemoteEncoding = localEncoding
-  (_getNext, rr) <- sendRemoteCommand httpClient dummyRemoteEncoding Nothing RCHello {deviceName = desktopName}
+  (_getNext, rr) <- sendRemoteCommand httpClient localEncoding Nothing RCHello {deviceName = desktopName}
   case rr of
     rrh@RRHello {encoding, deviceName = mobileName} -> do
       logInfo $ "Got initial hello: " <> tshow rrh
       when (encoding == PEKotlin && localEncoding == PESwift) $ throwError RPEIncompatibleEncoding
       pure RemoteHostClient {remoteEncoding = encoding, remoteDeviceName = mobileName, httpClient}
-    _ -> throwError RPEBadResponse
+    _ -> throwError $ RPEUnexpectedResponse $ tshow rr
 
 closeRemoteHostClient :: MonadIO m => RemoteHostClient -> m ()
 closeRemoteHostClient RemoteHostClient {httpClient} = liftIO $ closeHTTP2Client httpClient
@@ -92,14 +91,14 @@ remoteSend RemoteHostClient {httpClient, remoteEncoding} cmd = do
   (_getNext, rr) <- sendRemoteCommand httpClient remoteEncoding Nothing RCSend {command = decodeUtf8 cmd}
   case rr of
     RRChatResponse cr -> pure cr
-    _ -> throwError RPEBadResponse
+    _ -> throwError $ RPEUnexpectedResponse $ tshow rr
 
 remoteRecv :: RemoteHostClient -> Int -> ExceptT RemoteProtocolError IO (Maybe ChatResponse)
 remoteRecv RemoteHostClient {httpClient, remoteEncoding} ms = do
   (_getNext, rr) <- sendRemoteCommand httpClient remoteEncoding Nothing RCRecv {wait=ms}
   case rr of
     RRChatEvent cr_ -> pure cr_
-    _ -> throwError RPEBadResponse
+    _ -> throwError $ RPEUnexpectedResponse $ tshow rr
 
 remoteStoreFile :: RemoteHostClient -> FilePath -> Maybe Bool -> ExceptT RemoteProtocolError IO CryptoFile
 remoteStoreFile RemoteHostClient {httpClient, remoteEncoding} localPath encrypt = do
@@ -110,7 +109,7 @@ remoteStoreFile RemoteHostClient {httpClient, remoteEncoding} localPath encrypt 
     sendRemoteCommand httpClient remoteEncoding (Just (h, fileSize)) RCStoreFile {encrypt, fileSize}
   case rr of
     RRFileStored {fileSource} -> pure fileSource
-    _ -> throwError RPEBadResponse
+    _ -> throwError $ RPEUnexpectedResponse $ tshow rr
 
 -- TODO this should work differently for CLI and UI clients
 -- CLI - potentially, create new unique names and report them as created
@@ -119,10 +118,10 @@ remoteStoreFile RemoteHostClient {httpClient, remoteEncoding} localPath encrypt 
 -- Possibly, path in the database should be optional and CLI commands should allow configuring it per session or use temp or download folder
 remoteGetFile :: RemoteHostClient -> FilePath -> FilePath -> ExceptT RemoteProtocolError IO FilePath
 remoteGetFile RemoteHostClient {httpClient, remoteEncoding} baseDir filePath = do
-  (getNext, reply) <- sendRemoteCommand httpClient remoteEncoding Nothing RCGetFile {filePath}
-  expectedSize <- case reply of
+  (getNext, rr) <- sendRemoteCommand httpClient remoteEncoding Nothing RCGetFile {filePath}
+  expectedSize <- case rr of
     RRFile {fileSize} -> pure fileSize
-    _ -> throwError RPEBadResponse
+    _ -> throwError $ RPEUnexpectedResponse $ tshow rr
   whenM (liftIO $ doesFileExist localFile) $ throwError RPEStoredFileExists
   rc <- liftIO $ withFile localFile WriteMode $ \h -> hReceiveFile getNext h expectedSize
   when (rc /= 0) $ throwError RPEInvalidSize
@@ -134,7 +133,7 @@ remoteGetFile RemoteHostClient {httpClient, remoteEncoding} baseDir filePath = d
 sendRemoteCommand :: HTTP2Client -> PlatformEncoding -> Maybe (Handle, Word32) -> RemoteCommand -> ExceptT RemoteProtocolError IO (Int -> IO ByteString, RemoteResponse)
 sendRemoteCommand http remoteEncoding attachment_ rc = do
   HTTP2Response {response, respBody} <- liftEitherError (RPEHTTP2 . tshow) $ sendRequestDirect http httpRequest Nothing
-  (header, getNext) <- bodyParts response respBody
+  (header, getNext) <- parseHTTP2Body response respBody
   rr <- liftEitherWith (RPEInvalidJSON . fromString) $ J.eitherDecodeStrict header >>= JT.parseEither J.parseJSON . convertJSON remoteEncoding localEncoding
   pure (getNext, rr)
   where
@@ -155,7 +154,7 @@ handleRemoteCommand :: MonadUnliftIO m => (GetChunk -> Respond m -> RemoteComman
 handleRemoteCommand handler HTTP2Request{request, reqBody, sendResponse} = do
   logDebug "handleRemoteCommand"
   withFallback $ do
-    (header, getNext) <- liftIO (runExceptT $ bodyParts request reqBody) >>= either throwIO pure
+    (header, getNext) <- liftIO (runExceptT $ parseHTTP2Body request reqBody) >>= either throwIO pure
     rc <- either (throwIO . RPEInvalidJSON . fromString) pure $ J.eitherDecodeStrict' header
     handler getNext replyWith rc
   where
@@ -221,20 +220,16 @@ pattern OwsfTag = (SingleFieldJSONTag, J.Bool True)
 
 -- | Convert a command or a response into 'Builder'.
 sizePrefixedEncode :: J.ToJSON a => a -> Builder
-sizePrefixedEncode value = int64LE (BL.length json) <> lazyByteString json
+sizePrefixedEncode value = word32BE (fromIntegral $ BL.length json) <> lazyByteString json
   where
     json = J.encode value
 
--- | Process HTTP request or response to a size-prefixed chunk and a function to read more.
-bodyParts :: HTTP2BodyChunk a => a -> HTTP2Body -> ExceptT RemoteProtocolError IO (ByteString, Int -> IO ByteString)
-bodyParts r HTTP2Body{bodyBuffer} = do
-  sizePrefix <- liftIO $ getNext 8
-  headerSize64 <- case runGetOrFail getInt64le (BL.fromStrict sizePrefix) of
-    Right (nothing, 8, headerSize) | BL.null nothing -> pure headerSize
-    _ -> throwError RPEInvalidSize
-  when (headerSize64 > fromIntegral (maxBound :: Int)) $ throwError RPEInvalidSize
-  let headerSize = fromIntegral headerSize64
-  header <- liftIO $ getNext headerSize
-  pure (header, getNext)
+-- | Parse HTTP request or response to a size-prefixed chunk and a function to read more.
+parseHTTP2Body :: HTTP2BodyChunk a => a -> HTTP2Body -> ExceptT RemoteProtocolError IO (ByteString, Int -> IO ByteString)
+parseHTTP2Body hr HTTP2Body {bodyBuffer} = do
+  rSize <- liftIO $ decodeWord32 <$> getNext 4
+  when (rSize > fromIntegral (maxBound :: Int)) $ throwError RPEInvalidSize
+  r <- liftIO $ getNext $ fromIntegral rSize
+  pure (r, getNext)
   where
-    getNext sz = getBuffered bodyBuffer sz Nothing $ getBodyChunk r
+    getNext sz = getBuffered bodyBuffer sz Nothing $ getBodyChunk hr
