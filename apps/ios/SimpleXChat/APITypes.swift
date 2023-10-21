@@ -931,14 +931,16 @@ public enum InvitationLinkPlan: Decodable {
 public enum ContactAddressPlan: Decodable {
     case ok
     case ownLink
-    case connecting(contact: Contact)
+    case connectingConfirmReconnect
+    case connectingProhibit(contact: Contact)
     case known(contact: Contact)
 }
 
 public enum GroupLinkPlan: Decodable {
     case ok
     case ownLink(groupInfo: GroupInfo)
-    case connecting(groupInfo_: GroupInfo?)
+    case connectingConfirmReconnect
+    case connectingProhibit(groupInfo_: GroupInfo?)
     case known(groupInfo: GroupInfo)
 }
 

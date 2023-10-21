@@ -62,6 +62,7 @@ final class ChatModel: ObservableObject {
     // current chat
     @Published var chatId: String?
     @Published var reversedChatItems: [ChatItem] = []
+    var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
     @Published var chatToTop: String?
     @Published var groupMembers: [GroupMember] = []
     // items in the terminal view
@@ -306,7 +307,11 @@ final class ChatModel: ObservableObject {
             return false
         } else {
             withAnimation(itemAnimation()) {
-                reversedChatItems.insert(cItem, at: hasLiveDummy ? 1 : 0)
+                var ci = cItem
+                if let status = chatItemStatuses.removeValue(forKey: ci.id), case .sndNew = ci.meta.itemStatus {
+                    ci.meta.itemStatus = status
+                }
+                reversedChatItems.insert(ci, at: hasLiveDummy ? 1 : 0)
             }
             return true
         }
@@ -319,23 +324,19 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func updateChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
+    func updateChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem, status: CIStatus? = nil) {
         if chatId == cInfo.id, let i = getChatItemIndex(cItem) {
             withAnimation {
                 _updateChatItem(at: i, with: cItem)
             }
+        } else if let status = status {
+            chatItemStatuses.updateValue(status, forKey: cItem.id)
         }
     }
 
     private func _updateChatItem(at i: Int, with cItem: ChatItem) {
-        let ci = reversedChatItems[i]
         reversedChatItems[i] = cItem
         reversedChatItems[i].viewTimestamp = .now
-        // on some occasions the confirmation of message being accepted by the server (tick)
-        // arrives earlier than the response from API, and item remains without tick
-        if case .sndNew = cItem.meta.itemStatus {
-            reversedChatItems[i].meta.itemStatus = ci.meta.itemStatus
-        }
     }
 
     private func getChatItemIndex(_ cItem: ChatItem) -> Int? {
@@ -474,6 +475,7 @@ final class ChatModel: ObservableObject {
         }
         // clear current chat
         if chatId == cInfo.id {
+            chatItemStatuses = [:]
             reversedChatItems = []
         }
     }
