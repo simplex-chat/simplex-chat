@@ -1090,7 +1090,7 @@ instance ChatTypeI c => ToJSON (CIDeleted c) where
 
 data JSONCIDeleted
   = JCIDDeleted {deletedTs :: Maybe UTCTime, chatType :: ChatType}
-  | JCIBlocked {deletedTs :: Maybe UTCTime}
+  | JCIDBlocked {deletedTs :: Maybe UTCTime}
   | JCIDModerated {deletedTs :: Maybe UTCTime, byGroupMember :: GroupMember}
   deriving (Show, Generic)
 
@@ -1104,13 +1104,13 @@ instance ToJSON JSONCIDeleted where
 jsonCIDeleted :: forall d. ChatTypeI d => CIDeleted d -> JSONCIDeleted
 jsonCIDeleted = \case
   CIDeleted ts -> JCIDDeleted ts (toChatType $ chatTypeI @d)
-  CIBlocked ts -> JCIBlocked ts
+  CIBlocked ts -> JCIDBlocked ts
   CIModerated ts m -> JCIDModerated ts m
 
 jsonACIDeleted :: JSONCIDeleted -> ACIDeleted
 jsonACIDeleted = \case
   JCIDDeleted ts cType -> case aChatType cType of ACT c -> ACIDeleted c $ CIDeleted ts
-  JCIBlocked ts -> ACIDeleted SCTGroup $ CIBlocked ts
+  JCIDBlocked ts -> ACIDeleted SCTGroup $ CIBlocked ts
   JCIDModerated ts m -> ACIDeleted SCTGroup (CIModerated ts m)
 
 itemDeletedTs :: CIDeleted d -> Maybe UTCTime
