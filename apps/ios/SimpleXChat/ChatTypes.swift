@@ -2105,9 +2105,20 @@ public struct ChatItem: Identifiable, Decodable {
         case .sndChatFeature: .chatFeature
         case .rcvGroupFeature: .chatFeature
         case .sndGroupFeature: .chatFeature
-        case .rcvGroupEvent(.memberCreatedContact): nil
-        case .rcvGroupEvent: .rcvGroupEvent
-        case .sndGroupEvent: .sndGroupEvent
+        case let.rcvGroupEvent(event):
+            switch event {
+            case .userRole: nil
+            case .userDeleted: nil
+            case .groupDeleted: nil
+            case .memberCreatedContact: nil
+            default: .rcvGroupEvent
+            }
+        case let .sndGroupEvent(event):
+            switch event {
+            case .userRole: nil
+            case .userLeft: nil
+            default: .sndGroupEvent
+            }
         default:
             if meta.itemDeleted == nil {
                 nil
