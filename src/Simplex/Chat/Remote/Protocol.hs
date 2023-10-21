@@ -59,7 +59,6 @@ data RemoteResponse
   | RRFile {fileSize :: Word32} -- provides attachment
   | RRProtocolError {remoteProcotolError :: RemoteProtocolError} -- ^ The protocol error happened on the server side
   | RRChatError {chatError :: Text} -- ^ Chat controller thrown an error while handling a command
-  | RRException {someException :: Text} -- ^ Handler crashed
   deriving (Show)
 
 -- Force platform-independent encoding as the types aren't UI-visible

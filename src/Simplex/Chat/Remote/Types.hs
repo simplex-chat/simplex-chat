@@ -37,6 +37,7 @@ data RemoteProtocolError
   | RPEUnexpectedResponse {response :: Text} -- ^ Wrong response received for the command sent
   | RPEStoredFileExists -- ^ A file already exists in the destination position
   | RPEHTTP2 {http2Error :: Text}
+  | RPEException {someException :: Text}
   deriving (Show, Exception)
 
 type RemoteHostId = Int64

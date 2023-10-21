@@ -46,7 +46,7 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
-import Simplex.Messaging.Util (ifM, liftEitherError, liftError, liftIOEither, tshow, ($>>=))
+import Simplex.Messaging.Util (ifM, liftEitherError, liftEitherWith, liftError, liftIOEither, tryAllErrors, tshow, ($>>=))
 import System.FilePath ((</>))
 import UnliftIO
 
@@ -182,7 +182,7 @@ processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostSession -> Byte
 processRemoteCommand remoteHostId RemoteHostSession {remoteHostClient = Just rhc} s = liftRH remoteHostId $ remoteSend rhc s
 processRemoteCommand _ _ _ = pure $ chatCmdError Nothing "remote command sent before session started"
 
-liftRH :: (MonadIO m, MonadError ChatError m) => RemoteHostId -> ExceptT RemoteProtocolError IO a -> m a
+liftRH :: ChatMonad m => RemoteHostId -> ExceptT RemoteProtocolError IO a -> m a
 liftRH rhId = liftError (ChatErrorRemoteHost rhId . RHProtocolError)
 
 -- * Mobile side
@@ -216,11 +216,15 @@ startRemoteCtrl execChatCommand = do
         handleRemoteCommand :: HTTP2Request -> m ()
         handleRemoteCommand HTTP2Request {request, reqBody, sendResponse} = do
           logDebug "handleRemoteCommand"
-          withFallback $ do
-            (header, getNext) <- liftIO (runExceptT $ parseHTTP2Body request reqBody) >>= either throwIO pure
-            rc <- either (throwIO . RPEInvalidJSON . T.pack) pure $ J.eitherDecodeStrict' header
-            processCommand getNext rc `catchChatError` (reply_ . RRChatError . tshow)
+          liftRC (tryRemoteError parseRequest) >>= \case
+            Right (getNext, rc) ->
+              processCommand getNext rc `catchChatError` (reply_ . RRChatError . tshow)
+            Left e -> reply_ $ RRProtocolError e
           where
+            parseRequest :: ExceptT RemoteProtocolError IO (GetChunk, RemoteCommand)
+            parseRequest = do
+              (header, getNext) <- parseHTTP2Body request reqBody
+              (getNext,) <$> liftEitherWith (RPEInvalidJSON . T.pack) (J.eitherDecodeStrict' header)
             processCommand :: GetChunk -> RemoteCommand -> m ()
             processCommand getNext = \case
               RCHello {deviceName = desktopName} -> handleHello desktopName >>= reply_
@@ -236,22 +240,19 @@ startRemoteCtrl execChatCommand = do
                 send $ sizePrefixedEncode rr
                 attach send
                 flush
-            withFallback :: m () -> m ()
-            withFallback action = catches action
-              [ Handler $ \remoteProcotolError -> do
-                  logError $ "handleRemoteCommand: " <> tshow remoteProcotolError
-                  replyWith RRProtocolError {remoteProcotolError} (\_ -> pure ()),
-                Handler $ \(SomeException e) -> do
-                  let someException = tshow e
-                  logError $ "handleRemoteCommand: " <> someException
-                  replyWith RRException {someException} (\_ -> pure ())
-              ]
 
 type GetChunk = Int -> IO ByteString
 
 type SendChunk = Builder -> IO ()
 
 type Respond m = RemoteResponse -> (SendChunk -> IO ()) -> m ()
+
+liftRC :: ChatMonad m => ExceptT RemoteProtocolError IO a -> m a
+liftRC = liftError (ChatErrorRemoteCtrl . RCEProtocolError)
+
+tryRemoteError :: ExceptT RemoteProtocolError IO a -> ExceptT RemoteProtocolError IO (Either RemoteProtocolError a)
+tryRemoteError = tryAllErrors (RPEException . tshow)
+{-# INLINE tryRemoteError #-}
 
 handleHello :: ChatMonad m => Text -> m RemoteResponse
 handleHello desktopName = do
