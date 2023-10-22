@@ -71,7 +71,9 @@ skipComparisonForDownMigrations =
     -- on down migration idx_chat_items_timed_delete_at index moves down to the end of the file
     "20230529_indexes",
     -- table and index definitions move down the file, so fields are re-created as not unique
-    "20230914_member_probes"
+    "20230914_member_probes",
+    -- on down migration idx_connections_via_contact_uri_hash index moves down to the end of the file
+    "20231019_indexes"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String
