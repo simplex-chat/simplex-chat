@@ -50,11 +50,12 @@ class AlertManager {
   fun showAlertDialogButtonsColumn(
     title: String,
     text: AnnotatedString? = null,
+    onDismissRequest: (() -> Unit)? = null,
     buttons: @Composable () -> Unit,
   ) {
     showAlert {
       AlertDialog(
-        onDismissRequest = ::hideAlert,
+        onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
         title = {
           Text(
             title,

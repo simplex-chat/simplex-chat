@@ -91,6 +91,7 @@ struct ChatView: View {
                 chatModel.chatId = nil
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     if chatModel.chatId == nil {
+                        chatModel.chatItemStatuses = [:]
                         chatModel.reversedChatItems = []
                     }
                 }
@@ -965,7 +966,7 @@ struct ChatView: View {
 
 func toggleNotifications(_ chat: Chat, enableNtfs: Bool) {
     var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
-    chatSettings.enableNtfs = enableNtfs
+    chatSettings.enableNtfs = enableNtfs ? .all : .none
     updateChatSettings(chat, chatSettings: chatSettings)
 }
 

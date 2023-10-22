@@ -37,7 +37,11 @@ import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
-import Database.SQLite.Simple.FromField (FromField (..))
+import Data.Typeable (Typeable)
+import Database.SQLite.Simple (ResultError (..), SQLData (..))
+import Database.SQLite.Simple.FromField (returnError, FromField(..))
+import Database.SQLite.Simple.Internal (Field (..))
+import Database.SQLite.Simple.Ok
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Types.Preferences
@@ -46,7 +50,7 @@ import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, sumTypeJSON, taggedObjectJSON, enumJSON)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util ((<$?>))
 import Simplex.Messaging.Version
@@ -188,6 +192,9 @@ instance ToJSON Contact where
 contactConn :: Contact -> Connection
 contactConn Contact {activeConn} = activeConn
 
+contactAgentConnId :: Contact -> AgentConnId
+contactAgentConnId Contact {activeConn = Connection {agentConnId}} = agentConnId
+
 contactConnId :: Contact -> ConnId
 contactConnId = aConnId . contactConn
 
@@ -206,8 +213,14 @@ directOrUsed ct@Contact {contactUsed} =
 anyDirectOrUsed :: Contact -> Bool
 anyDirectOrUsed Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed
 
+contactReady :: Contact -> Bool
+contactReady Contact {activeConn} = connReady activeConn
+
 contactActive :: Contact -> Bool
 contactActive Contact {contactStatus} = contactStatus == CSActive
+
+contactDeleted :: Contact -> Bool
+contactDeleted Contact {contactStatus} = contactStatus == CSDeleted
 
 contactSecurityCode :: Contact -> Maybe SecurityCode
 contactSecurityCode Contact {activeConn} = connectionCode activeConn
@@ -244,18 +257,18 @@ data ContactRef = ContactRef
 
 instance ToJSON ContactRef where toEncoding = J.genericToEncoding J.defaultOptions
 
-data ContactOrGroupMember = CGMContact Contact | CGMGroupMember GroupInfo GroupMember
+data ContactOrMember = COMContact Contact | COMGroupMember GroupMember
   deriving (Show)
 
-contactOrGroupMemberIds :: ContactOrGroupMember -> (Maybe ContactId, Maybe GroupMemberId)
-contactOrGroupMemberIds = \case
-  CGMContact Contact {contactId} -> (Just contactId, Nothing)
-  CGMGroupMember _ GroupMember {groupMemberId} -> (Nothing, Just groupMemberId)
+contactOrMemberIds :: ContactOrMember -> (Maybe ContactId, Maybe GroupMemberId)
+contactOrMemberIds = \case
+  COMContact Contact {contactId} -> (Just contactId, Nothing)
+  COMGroupMember GroupMember {groupMemberId} -> (Nothing, Just groupMemberId)
 
-contactOrGroupMemberIncognito :: ContactOrGroupMember -> IncognitoEnabled
-contactOrGroupMemberIncognito = \case
-  CGMContact ct -> contactConnIncognito ct
-  CGMGroupMember _ m -> memberIncognito m
+contactOrMemberIncognito :: ContactOrMember -> IncognitoEnabled
+contactOrMemberIncognito = \case
+  COMContact ct -> contactConnIncognito ct
+  COMGroupMember m -> memberIncognito m
 
 data UserContact = UserContact
   { userContactLinkId :: Int64,
@@ -382,7 +395,7 @@ contactAndGroupIds = \case
 
 -- TODO when more settings are added we should create another type to allow partial setting updates (with all Maybe properties)
 data ChatSettings = ChatSettings
-  { enableNtfs :: Bool,
+  { enableNtfs :: MsgFilter,
     sendRcpts :: Maybe Bool,
     favorite :: Bool
   }
@@ -393,13 +406,48 @@ instance ToJSON ChatSettings where toEncoding = J.genericToEncoding J.defaultOpt
 defaultChatSettings :: ChatSettings
 defaultChatSettings =
   ChatSettings
-    { enableNtfs = True,
+    { enableNtfs = MFAll,
       sendRcpts = Nothing,
       favorite = False
     }
 
-pattern DisableNtfs :: ChatSettings
-pattern DisableNtfs <- ChatSettings {enableNtfs = False}
+chatHasNtfs :: ChatSettings -> Bool
+chatHasNtfs ChatSettings {enableNtfs} = enableNtfs /= MFNone
+
+data MsgFilter = MFNone | MFAll | MFMentions
+  deriving (Eq, Show, Generic)
+
+instance FromJSON MsgFilter where
+  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MF"
+
+instance ToJSON MsgFilter where
+  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "MF"
+  toJSON = J.genericToJSON . enumJSON $ dropPrefix "MF"
+
+instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
+
+instance ToField MsgFilter where toField = toField . msgFilterInt
+
+msgFilterInt :: MsgFilter -> Int
+msgFilterInt = \case
+  MFNone -> 0
+  MFAll -> 1
+  MFMentions -> 2
+
+msgFilterIntP :: Int64 -> Maybe MsgFilter
+msgFilterIntP = \case
+  0 -> Just MFNone
+  1 -> Just MFAll
+  2 -> Just MFMentions
+  _ -> Just MFAll
+
+fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> Field -> Ok a
+fromIntField_ fromInt = \case
+  f@(Field (SQLInteger i) _) ->
+    case fromInt i of
+      Just x -> Ok x
+      _ -> returnError ConversionFailed f ("invalid integer: " <> show i)
+  f -> returnError ConversionFailed f "expecting SQLInteger column type"
 
 featureAllowed :: SChatFeature f -> (PrefEnabled -> Bool) -> Contact -> Bool
 featureAllowed feature forWhom Contact {mergedPreferences} =
@@ -627,6 +675,7 @@ data GroupMember = GroupMember
     memberRole :: GroupMemberRole,
     memberCategory :: GroupMemberCategory,
     memberStatus :: GroupMemberStatus,
+    memberSettings :: GroupMemberSettings,
     invitedBy :: InvitedBy,
     localDisplayName :: ContactName,
     -- for membership, memberProfile can be either user's profile or incognito profile, based on memberIncognito test.
@@ -760,6 +809,16 @@ instance FromJSON GroupMemberRole where
 instance ToJSON GroupMemberRole where
   toJSON = strToJSON
   toEncoding = strToJEncoding
+
+data GroupMemberSettings = GroupMemberSettings
+  { showMessages :: Bool
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON GroupMemberSettings where toEncoding = J.genericToEncoding J.defaultOptions
+
+defaultMemberSettings :: GroupMemberSettings
+defaultMemberSettings = GroupMemberSettings {showMessages = True}
 
 newtype Probe = Probe {unProbe :: ByteString}
   deriving (Eq, Show)
@@ -1087,12 +1146,15 @@ liveRcvFileTransferPath ft = fp <$> liveRcvFileTransferInfo ft
     fp RcvFileInfo {filePath} = filePath
 
 newtype AgentConnId = AgentConnId ConnId
-  deriving (Eq, Show)
+  deriving (Eq, Ord, Show)
 
 instance StrEncoding AgentConnId where
   strEncode (AgentConnId connId) = strEncode connId
   strDecode s = AgentConnId <$> strDecode s
   strP = AgentConnId <$> strP
+
+instance FromJSON AgentConnId where
+  parseJSON = strParseJSON "AgentConnId"
 
 instance ToJSON AgentConnId where
   toJSON = strToJSON
@@ -1235,6 +1297,7 @@ data Connection = Connection
     customUserProfileId :: Maybe Int64,
     connType :: ConnType,
     connStatus :: ConnStatus,
+    contactConnInitiated :: Bool,
     localAlias :: Text,
     entityId :: Maybe Int64, -- contact, group member, file ID or user contact ID
     connectionCode :: Maybe SecurityCode,
@@ -1242,6 +1305,9 @@ data Connection = Connection
     createdAt :: UTCTime
   }
   deriving (Eq, Show, Generic)
+
+connReady :: Connection -> Bool
+connReady Connection {connStatus} = connStatus == ConnReady || connStatus == ConnSndReady
 
 authErrDisableCount :: Int
 authErrDisableCount = 10
@@ -1417,10 +1483,37 @@ serializeIntroStatus = \case
   GMIntroToConnected -> "to-con"
   GMIntroConnected -> "con"
 
-data Notification = Notification {title :: Text, text :: Text}
-
 textParseJSON :: TextEncoding a => String -> J.Value -> JT.Parser a
 textParseJSON name = J.withText name $ maybe (fail $ "bad " <> name) pure . textDecode
+
+data NetworkStatus
+  = NSUnknown
+  | NSConnected
+  | NSDisconnected
+  | NSError {connectionError :: String}
+  deriving (Eq, Ord, Show, Generic)
+
+netStatusStr :: NetworkStatus -> String
+netStatusStr = \case
+  NSUnknown -> "unknown"
+  NSConnected -> "connected"
+  NSDisconnected -> "disconnected"
+  NSError e -> "error: " <> e
+
+instance FromJSON NetworkStatus where
+  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "NS"
+
+instance ToJSON NetworkStatus where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "NS"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "NS"
+
+data ConnNetworkStatus = ConnNetworkStatus
+  { agentConnId :: AgentConnId,
+    networkStatus :: NetworkStatus
+  }
+  deriving (Show, Generic, FromJSON)
+
+instance ToJSON ConnNetworkStatus where toEncoding = J.genericToEncoding J.defaultOptions
 
 type CommandId = Int64
 

@@ -50,6 +50,13 @@ public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: Migratio
     return result
 }
 
+public func chatCloseStore() {
+    let err = fromCString(chat_close_store(getChatCtrl()))
+    if err != "" {
+        logger.error("chatCloseStore error: \(err)")
+    }
+}
+
 public func resetChatCtrl() {
     chatController = nil
     migrationResult = nil
@@ -132,8 +139,11 @@ public func chatResponse(_ s: String) -> ChatResponse {
     var type: String?
     var json: String?
     if let j = try? JSONSerialization.jsonObject(with: d) as? NSDictionary {
-        if let jResp = j["resp"] as? NSDictionary, jResp.count == 1 {
+        if let jResp = j["resp"] as? NSDictionary, jResp.count == 1 || jResp.count == 2 {
             type = jResp.allKeys[0] as? String
+            if jResp.count == 2 && type == "_owsf" {
+                type = jResp.allKeys[1] as? String
+            }
             if type == "apiChats" {
                 if let jApiChats = jResp["apiChats"] as? NSDictionary,
                    let user: UserRef = try? decodeObject(jApiChats["user"] as Any),

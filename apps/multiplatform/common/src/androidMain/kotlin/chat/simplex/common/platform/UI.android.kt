@@ -69,3 +69,5 @@ actual fun hideKeyboard(view: Any?) {
     (androidAppContext.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager).hideSoftInputFromWindow(view.windowToken, 0)
   }
 }
+
+actual fun androidIsFinishingMainActivity(): Boolean = (mainActivity.get()?.isFinishing == true)

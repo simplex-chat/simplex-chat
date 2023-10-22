@@ -1292,7 +1292,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
     }
 
     public var ntfsEnabled: Bool {
-        self.chatSettings?.enableNtfs ?? false
+        self.chatSettings?.enableNtfs == .all
     }
 
     public var chatSettings: ChatSettings? {
@@ -1729,6 +1729,11 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     )
 }
 
+public struct GroupRef: Decodable {
+    public var groupId: Int64
+    var localDisplayName: GroupName
+}
+
 public struct GroupProfile: Codable, NamedChat {
     public init(displayName: String, fullName: String, description: String? = nil, image: String? = nil, groupPreferences: GroupPreferences? = nil) {
         self.displayName = displayName
@@ -1758,6 +1763,7 @@ public struct GroupMember: Identifiable, Decodable {
     public var memberRole: GroupMemberRole
     public var memberCategory: GroupMemberCategory
     public var memberStatus: GroupMemberStatus
+    public var memberSettings: GroupMemberSettings
     public var invitedBy: InvitedBy
     public var localDisplayName: ContactName
     public var memberProfile: LocalProfile
@@ -1851,6 +1857,7 @@ public struct GroupMember: Identifiable, Decodable {
         memberRole: .admin,
         memberCategory: .inviteeMember,
         memberStatus: .memComplete,
+        memberSettings: GroupMemberSettings(showMessages: true),
         invitedBy: .user,
         localDisplayName: "alice",
         memberProfile: LocalProfile.sampleData,
@@ -1860,9 +1867,18 @@ public struct GroupMember: Identifiable, Decodable {
     )
 }
 
+public struct GroupMemberSettings: Decodable {
+    var showMessages: Bool
+}
+
 public struct GroupMemberRef: Decodable {
     var groupMemberId: Int64
     var profile: Profile
+}
+
+public struct GroupMemberIds: Decodable {
+    var groupMemberId: Int64
+    var groupId: Int64
 }
 
 public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Decodable {
@@ -1957,7 +1973,7 @@ public enum InvitedBy: Decodable {
 }
 
 public struct MemberSubError: Decodable {
-    var member: GroupMember
+    var member: GroupMemberIds
     var memberError: ChatError
 }
 
@@ -1983,8 +1999,8 @@ public enum ConnectionEntity: Decodable {
 
     public var ntfsEnabled: Bool {
         switch self {
-        case let .rcvDirectMsgConnection(contact): return contact?.chatSettings.enableNtfs ?? false
-        case let .rcvGroupMsgConnection(groupInfo, _): return groupInfo.chatSettings.enableNtfs
+        case let .rcvDirectMsgConnection(contact): return contact?.chatSettings.enableNtfs == .all
+        case let .rcvGroupMsgConnection(groupInfo, _): return groupInfo.chatSettings.enableNtfs == .all
         case .sndFileConnection: return false
         case .rcvFileConnection: return false
         case let .userContactConnection(userContact): return userContact.groupId == nil
@@ -3052,7 +3068,7 @@ public enum Format: Decodable, Equatable {
     case secret
     case colored(color: FormatColor)
     case uri
-    case simplexLink(linkType: SimplexLinkType, simplexUri: String, trustedUri: Bool, smpHosts: [String])
+    case simplexLink(linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
     case email
     case phone
 }

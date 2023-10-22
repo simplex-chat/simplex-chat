@@ -32,7 +32,7 @@ import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqScheme (..), ConnReqUriData (..), ConnectionRequestUri (..), SMPQueue (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fstToLower, sumTypeJSON)
-import Simplex.Messaging.Protocol (ProtocolServer (..), SrvLoc (..))
+import Simplex.Messaging.Protocol (ProtocolServer (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
@@ -48,7 +48,7 @@ data Format
   | Secret
   | Colored {color :: FormatColor}
   | Uri
-  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, trustedUri :: Bool, smpHosts :: NonEmpty Text}
+  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, smpHosts :: NonEmpty Text}
   | Email
   | Phone
   deriving (Eq, Show, Generic)
@@ -229,15 +229,12 @@ markdownP = mconcat <$> A.many' fragmentP
     simplexUriFormat = \case
       ACR _ (CRContactUri crData) ->
         let uri = safeDecodeUtf8 . strEncode $ CRContactUri crData {crScheme = CRSSimplex}
-         in SimplexLink (linkType' crData) uri (trustedUri' crData) $ uriHosts crData
+         in SimplexLink (linkType' crData) uri $ uriHosts crData
       ACR _ (CRInvitationUri crData e2e) ->
         let uri = safeDecodeUtf8 . strEncode $ CRInvitationUri crData {crScheme = CRSSimplex} e2e
-         in SimplexLink XLInvitation uri (trustedUri' crData) $ uriHosts crData
+         in SimplexLink XLInvitation uri $ uriHosts crData
       where
         uriHosts ConnReqUriData {crSmpQueues} = L.map (safeDecodeUtf8 . strEncode) $ sconcat $ L.map (host . qServer) crSmpQueues
-        trustedUri' ConnReqUriData {crScheme} = case crScheme of
-          CRSSimplex -> True
-          CRSAppServer (SrvLoc host _) -> host == "simplex.chat"
         linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
           Just (CRDataGroup _) -> XLGroup
           Nothing -> XLContact

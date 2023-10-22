@@ -28,6 +28,22 @@ struct MutableQRCode: View {
     }
 }
 
+struct SimpleXLinkQRCode: View {
+    let uri: String
+    var withLogo: Bool = true
+    var tintColor = UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1)
+
+    var body: some View {
+        QRCode(uri: simplexChatLink(uri), withLogo: withLogo, tintColor: tintColor)
+    }
+}
+
+func simplexChatLink(_ uri: String) -> String {
+    uri.starts(with: "simplex:/")
+    ? uri.replacingOccurrences(of: "simplex:/", with: "https://simplex.chat/")
+    : uri
+}
+
 struct QRCode: View {
     let uri: String
     var withLogo: Bool = true

@@ -17,12 +17,14 @@ typedef void* chat_ctrl;
 
 // the last parameter is used to return the pointer to chat controller
 extern char *chat_migrate_init(char *path, char *key, char *confirm, chat_ctrl *ctrl);
+extern char *chat_close_store(chat_ctrl ctl);
 extern char *chat_send_cmd(chat_ctrl ctl, char *cmd);
 extern char *chat_recv_msg(chat_ctrl ctl);
 extern char *chat_recv_msg_wait(chat_ctrl ctl, int wait);
 extern char *chat_parse_markdown(char *str);
 extern char *chat_parse_server(char *str);
 extern char *chat_password_hash(char *pwd, char *salt);
+extern char *chat_valid_name(char *name);
 extern char *chat_encrypt_media(char *key, char *frame, int len);
 extern char *chat_decrypt_media(char *key, char *frame, int len);
 

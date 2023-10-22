@@ -257,6 +257,12 @@ func setXFTPConfig(_ cfg: XFTPFileConfig?) throws {
     throw r
 }
 
+func apiSetEncryptLocalFiles(_ enable: Bool) throws {
+    let r = chatSendCmdSync(.apiSetEncryptLocalFiles(enable: enable))
+    if case .cmdOk = r { return }
+    throw r
+}
+
 func apiExportArchive(config: ArchiveConfig) async throws {
     try await sendCommandOkResp(.apiExportArchive(config: config))
 }
@@ -306,6 +312,7 @@ func loadChat(chat: Chat, search: String = "") {
     do {
         let cInfo = chat.chatInfo
         let m = ChatModel.shared
+        m.chatItemStatuses = [:]
         m.reversedChatItems = []
         let chat = try apiGetChat(type: cInfo.chatType, id: cInfo.apiId, search: search)
         m.updateChatInfo(chat.chatInfo)
@@ -586,6 +593,14 @@ func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> P
     throw r
 }
 
+func apiConnectPlan(connReq: String) async throws -> ConnectionPlan {
+    let userId = try currentUserId("apiConnectPlan")
+    let r = await chatSendCmd(.apiConnectPlan(userId: userId, connReq: connReq))
+    if case let .connectionPlan(_, connectionPlan) = r { return connectionPlan }
+    logger.error("apiConnectPlan error: \(responseError(r))")
+    throw r
+}
+
 func apiConnect(incognito: Bool, connReq: String) async -> ConnReqType? {
     let (connReqType, alert) = await apiConnect_(incognito: incognito, connReq: connReq)
     if let alert = alert {
@@ -610,10 +625,7 @@ func apiConnect_(incognito: Bool, connReq: String) async -> (ConnReqType?, Alert
         if let c = m.getContactChat(contact.contactId) {
             await MainActor.run { m.chatId = c.id }
         }
-        let alert = mkAlert(
-            title: "Contact already exists",
-            message: "You are already connected to \(contact.displayName)."
-        )
+        let alert = contactAlreadyExistsAlert(contact)
         return (nil, alert)
     case .chatCmdError(_, .error(.invalidConnReq)):
         let alert = mkAlert(
@@ -641,6 +653,13 @@ func apiConnect_(incognito: Bool, connReq: String) async -> (ConnReqType?, Alert
     return (nil, alert)
 }
 
+func contactAlreadyExistsAlert(_ contact: Contact) -> Alert {
+    mkAlert(
+        title: "Contact already exists",
+        message: "You are already connected to \(contact.displayName)."
+    )
+}
+
 private func connectionErrorAlert(_ r: ChatResponse) -> Alert {
     if let networkErrorAlert = networkErrorAlert(r) {
         return networkErrorAlert
@@ -652,18 +671,18 @@ private func connectionErrorAlert(_ r: ChatResponse) -> Alert {
     }
 }
 
-func apiDeleteChat(type: ChatType, id: Int64) async throws {
-    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id), bgTask: false)
+func apiDeleteChat(type: ChatType, id: Int64, notify: Bool? = nil) async throws {
+    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id, notify: notify), bgTask: false)
     if case .direct = type, case .contactDeleted = r { return }
     if case .contactConnection = type, case .contactConnectionDeleted = r { return }
     if case .group = type, case .groupDeletedUser = r { return }
     throw r
 }
 
-func deleteChat(_ chat: Chat) async {
+func deleteChat(_ chat: Chat, notify: Bool? = nil) async {
     do {
         let cInfo = chat.chatInfo
-        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId)
+        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId, notify: notify)
         DispatchQueue.main.async { ChatModel.shared.removeChat(cInfo.id) }
     } catch let error {
         logger.error("deleteChat apiDeleteChat error: \(responseError(error))")
@@ -944,6 +963,12 @@ func apiCallStatus(_ contact: Contact, _ status: String) async throws {
     }
 }
 
+func apiGetNetworkStatuses() throws -> [ConnNetworkStatus] {
+    let r = chatSendCmdSync(.apiGetNetworkStatuses)
+    if case let .networkStatuses(_, statuses) = r { return statuses }
+    throw r
+}
+
 func markChatRead(_ chat: Chat, aboveItem: ChatItem? = nil) async {
     do {
         if chat.chatStats.unreadCount > 0 {
@@ -1133,6 +1158,7 @@ func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool 
     try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
     try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
     try setXFTPConfig(getXFTPCfg())
+    try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
     m.chatInitialized = true
     m.currentUser = try apiGetActiveUser()
     if m.currentUser == nil {
@@ -1348,13 +1374,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
         await updateContactsStatus(contactRefs, status: .connected)
     case let .contactsDisconnected(_, contactRefs):
         await updateContactsStatus(contactRefs, status: .disconnected)
-    case let .contactSubError(user, contact, chatError):
-        await MainActor.run {
-            if active(user) {
-                m.updateContact(contact)
-            }
-            processContactSubError(contact, chatError)
-        }
     case let .contactSubSummary(_, contactSubscriptions):
         await MainActor.run {
             for sub in contactSubscriptions {
@@ -1367,6 +1386,18 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 } else {
                     m.setContactNetworkStatus(sub.contact, .connected)
                 }
+            }
+        }
+    case let .networkStatus(status, connections):
+        await MainActor.run {
+            for cId in connections {
+                m.networkStatuses[cId] = status
+            }
+        }
+    case let .networkStatuses(_, statuses): ()
+        await MainActor.run {
+            for s in statuses {
+                m.networkStatuses[s.agentConnId] = s.networkStatus
             }
         }
     case let .newChatItem(user, aChatItem):
@@ -1390,11 +1421,8 @@ func processReceivedMsg(_ res: ChatResponse) async {
     case let .chatItemStatusUpdated(user, aChatItem):
         let cInfo = aChatItem.chatInfo
         let cItem = aChatItem.chatItem
-        if !cItem.isDeletedContent {
-            let added = active(user) ? await MainActor.run { m.upsertChatItem(cInfo, cItem) } : true
-            if added && cItem.showNotification {
-                NtfManager.shared.notifyMessageReceived(user, cInfo, cItem)
-            }
+        if !cItem.isDeletedContent && active(user) {
+            await MainActor.run { m.updateChatItem(cInfo, cItem, status: cItem.meta.itemStatus) }
         }
         if let endTask = m.messageDelivery[cItem.id] {
             switch cItem.meta.itemStatus {
@@ -1649,7 +1677,7 @@ func processContactSubError(_ contact: Contact, _ chatError: ChatError) {
     case .errorAgent(agentError: .SMP(smpErr: .AUTH)): err = "contact deleted"
     default: err = String(describing: chatError)
     }
-    m.setContactNetworkStatus(contact, .error(err))
+    m.setContactNetworkStatus(contact, .error(connectionError: err))
 }
 
 func refreshCallInvitations() throws {

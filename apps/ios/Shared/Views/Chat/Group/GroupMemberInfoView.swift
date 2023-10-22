@@ -19,7 +19,7 @@ struct GroupMemberInfoView: View {
     @State private var connectionCode: String? = nil
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
-    @State private var connectToMemberDialog: Bool = false
+    @State private var sheet: PlanAndConnectActionSheet?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var justOpened = true
     @State private var progressIndicator = false
@@ -30,9 +30,8 @@ struct GroupMemberInfoView: View {
         case switchAddressAlert
         case abortSwitchAddressAlert
         case syncConnectionForceAlert
-        case connRequestSentAlert(type: ConnReqType)
+        case planAndConnectAlert(alert: PlanAndConnectAlert)
         case error(title: LocalizedStringKey, error: LocalizedStringKey)
-        case other(alert: Alert)
 
         var id: String {
             switch self {
@@ -41,9 +40,8 @@ struct GroupMemberInfoView: View {
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
-            case .connRequestSentAlert: return "connRequestSentAlert"
+            case let .planAndConnectAlert(alert): return "planAndConnectAlert \(alert.id)"
             case let .error(title, _): return "error \(title)"
-            case let .other(alert): return "other \(alert)"
             }
         }
     }
@@ -96,9 +94,9 @@ struct GroupMemberInfoView: View {
 
                     if let contactLink = member.contactLink {
                         Section {
-                            QRCode(uri: contactLink)
+                            SimpleXLinkQRCode(uri: contactLink)
                             Button {
-                                showShareSheet(items: [contactLink])
+                                showShareSheet(items: [simplexChatLink(contactLink)])
                             } label: {
                                 Label("Share address", systemImage: "square.and.arrow.up")
                             }
@@ -206,11 +204,11 @@ struct GroupMemberInfoView: View {
                 case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
                 case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchMemberAddress)
                 case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncMemberConnection(force: true) })
-                case let .connRequestSentAlert(type): return connReqSentAlert(type)
+                case let .planAndConnectAlert(alert): return planAndConnectAlert(alert, dismiss: true)
                 case let .error(title, error): return Alert(title: Text(title), message: Text(error))
-                case let .other(alert): return alert
                 }
             }
+            .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: true) }
 
             if progressIndicator {
                 ProgressView().scaleEffect(2)
@@ -220,24 +218,15 @@ struct GroupMemberInfoView: View {
 
     func connectViaAddressButton(_ contactLink: String) -> some View {
         Button {
-            connectToMemberDialog = true
+            planAndConnect(
+                contactLink,
+                showAlert: { alert = .planAndConnectAlert(alert: $0) },
+                showActionSheet: { sheet = $0 },
+                dismiss: true,
+                incognito: nil
+            )
         } label: {
             Label("Connect", systemImage: "link")
-        }
-        .confirmationDialog("Connect directly", isPresented: $connectToMemberDialog, titleVisibility: .visible) {
-            Button("Use current profile") { connectViaAddress(incognito: false, contactLink: contactLink) }
-            Button("Use new incognito profile") { connectViaAddress(incognito: true, contactLink: contactLink) }
-        }
-    }
-
-    func connectViaAddress(incognito: Bool, contactLink: String) {
-        Task {
-            let (connReqType, connectAlert) = await apiConnect_(incognito: incognito, connReq: contactLink)
-            if let connReqType = connReqType {
-                alert = .connRequestSentAlert(type: connReqType)
-            } else if let connectAlert = connectAlert {
-                alert = .other(alert: connectAlert)
-            }
         }
     }
 

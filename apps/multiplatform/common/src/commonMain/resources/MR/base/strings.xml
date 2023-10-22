@@ -4,13 +4,13 @@
   <string name="thousand_abbreviation">k</string>
 
   <!-- Connect via Link - MainActivity.kt -->
-  <string name="connect_via_contact_link">Connect via contact link?</string>
-  <string name="connect_via_invitation_link">Connect via invitation link?</string>
-  <string name="connect_via_group_link">Connect via group link?</string>
+  <string name="connect_via_contact_link">Connect via contact address?</string>
+  <string name="connect_via_invitation_link">Connect via one-time link?</string>
+  <string name="connect_via_group_link">Join group?</string>
   <string name="connect_use_current_profile">Use current profile</string>
   <string name="connect_use_new_incognito_profile">Use new incognito profile</string>
   <string name="profile_will_be_sent_to_contact_sending_link">Your profile will be sent to the contact that you received this link from.</string>
-  <string name="you_will_join_group">You will join a group this link refers to and connect to its group members.</string>
+  <string name="you_will_join_group">You will connect to all group members.</string>
   <string name="connect_via_link_verb">Connect</string>
   <string name="connect_via_link_incognito">Connect incognito</string>
 
@@ -113,6 +113,7 @@
   <string name="error_xftp_test_server_auth">Server requires authorization to upload, check password</string>
   <string name="error_smp_test_certificate">Possibly, certificate fingerprint in server address is incorrect</string>
   <string name="error_setting_address">Error setting address</string>
+  <string name="error_alert_title">Error</string>
   <string name="smp_server_test_connect">Connect</string>
   <string name="smp_server_test_disconnect">Disconnect</string>
   <string name="smp_server_test_create_queue">Create queue</string>
@@ -349,6 +350,7 @@
   <!-- Chat Info Actions - ChatInfoView.kt -->
   <string name="delete_contact_question">Delete contact?</string>
   <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>
+  <string name="delete_and_notify_contact">Delete and notify contact</string>
   <string name="button_delete_contact">Delete contact</string>
   <string name="text_field_set_contact_placeholder">Set contact name…</string>
   <string name="icon_descr_server_status_connected">Connected</string>
@@ -675,7 +677,7 @@
   <string name="your_contacts_will_see_it">Your contacts in SimpleX will see it.\nYou can change it in Settings.</string>
 
   <!-- User profile details - UserProfileView.kt -->
-  <string name="display_name__field">Display name:</string>
+  <string name="display_name__field">Profile name:</string>
   <string name="full_name__field">Full name:</string>
   <string name="your_current_profile">Your current profile</string>
   <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</string>
@@ -703,11 +705,12 @@
   <string name="create_profile">Create profile</string>
   <string name="your_profile_is_stored_on_your_device">Your profile, contacts and delivered messages are stored on your device.</string>
   <string name="profile_is_only_shared_with_your_contacts">The profile is only shared with your contacts.</string>
-  <string name="no_spaces">No spaces!</string>
   <string name="display_name_cannot_contain_whitespace">Display name cannot contain whitespace.</string>
-  <string name="display_name">Display Name</string>
-  <string name="full_name_optional__prompt">Full Name (optional)</string>
+  <string name="display_name">Enter your name:</string>
   <string name="create_profile_button">Create</string>
+  <string name="create_another_profile_button">Create profile</string>
+  <string name="invalid_name">Invalid name!</string>
+  <string name="correct_name_to">Correct name to %s?</string>
   <string name="about_simplex">About SimpleX</string>
 
   <!-- markdown demo - MarkdownHelpView.kt -->
@@ -1290,7 +1293,7 @@
   <!-- AddGroupView.kt -->
   <string name="create_secret_group_title">Create secret group</string>
   <string name="group_is_decentralized">The group is fully decentralized – it is visible only to the members.</string>
-  <string name="group_display_name_field">Group display name:</string>
+  <string name="group_display_name_field">Enter group name:</string>
   <string name="group_full_name_field">Group full name:</string>
   <string name="group_main_profile_sent">Your chat profile will be sent to group members</string>
 
@@ -1598,4 +1601,25 @@
   <!-- Under development -->
   <string name="in_developing_title">Coming soon!</string>
   <string name="in_developing_desc">This feature is not yet supported. Try the next release.</string>
+
+  <!-- Connection plan -->
+  <string name="connect_plan_connect_to_yourself">Connect to yourself?</string>
+  <string name="connect_plan_this_is_your_own_one_time_link">This is your own one-time link!</string>
+  <string name="connect_plan_you_are_already_connecting_to_vName">You are already connecting to %1$s.</string>
+  <string name="connect_plan_already_connecting">Already connecting!</string>
+  <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">You are already connecting via this one-time link!</string>
+  <string name="connect_plan_this_is_your_own_simplex_address">This is your own SimpleX address!</string>
+  <string name="connect_plan_repeat_connection_request">Repeat connection request?</string>
+  <string name="connect_plan_you_have_already_requested_connection_via_this_address">You have already requested connection via this address!</string>
+  <string name="connect_plan_join_your_group">Join your group?</string>
+  <string name="connect_plan_this_is_your_link_for_group_vName">This is your link for group %1$s!</string>
+  <string name="connect_plan_open_group">Open group</string>
+  <string name="connect_plan_repeat_join_request">Repeat join request?</string>
+  <string name="connect_plan_you_are_already_joining_the_group_via_this_link">You are already joining the group via this link!</string>
+  <string name="connect_plan_group_already_exists">Group already exists!</string>
+  <string name="connect_plan_you_are_already_joining_the_group_vName">You are already joining the group %1$s.</string>
+  <string name="connect_plan_already_joining_the_group">Already joining the group!</string>
+  <string name="connect_plan_you_are_already_joining_the_group_via_this_link">You are already joining the group via this link.</string>
+  <string name="connect_plan_you_are_already_in_group_vName">You are already in group %1$s.</string>
+  <string name="connect_plan_connect_via_link">Connect via link?</string>
 </resources>

@@ -24,10 +24,10 @@ import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.ShareAddressButton
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.newchat.QRCode
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.MsgContent
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 
 @Composable
@@ -100,7 +100,7 @@ fun UserAddressView(
       sendEmail = { userAddress ->
         uriHandler.sendEmail(
           generalGetString(MR.strings.email_invite_subject),
-          generalGetString(MR.strings.email_invite_body).format(userAddress.connReqContact)
+          generalGetString(MR.strings.email_invite_body).format(simplexChatLink( userAddress.connReqContact))
         )
       },
       setProfileAddress = ::setProfileAddress,
@@ -201,8 +201,8 @@ private fun UserAddressLayout(
         val autoAcceptState = remember { mutableStateOf(AutoAcceptState(userAddress)) }
         val autoAcceptStateSaved = remember { mutableStateOf(autoAcceptState.value) }
         SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
-          QRCode(userAddress.connReqContact, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
-          ShareAddressButton { share(userAddress.connReqContact) }
+          SimpleXLinkQRCode(userAddress.connReqContact, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+          ShareAddressButton { share(simplexChatLink(userAddress.connReqContact)) }
           ShareViaEmailButton { sendEmail(userAddress) }
           ShareWithContactsButton(shareViaProfile, setProfileAddress)
           AutoAcceptToggle(autoAcceptState) { saveAas(autoAcceptState.value, autoAcceptStateSaved) }

@@ -3,8 +3,6 @@ package chat.simplex.common.views.call
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.withApi
-import chat.simplex.common.views.helpers.withBGApi
-import chat.simplex.common.views.usersettings.showInDevelopingAlert
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.minutes
 
@@ -26,10 +24,6 @@ class CallManager(val chatModel: ChatModel) {
   }
 
   fun acceptIncomingCall(invitation: RcvCallInvitation) {
-    if (appPlatform.isDesktop) {
-      return showInDevelopingAlert()
-    }
-
     val call = chatModel.activeCall.value
     if (call == null) {
       justAcceptIncomingCall(invitation = invitation)
@@ -58,12 +52,12 @@ class CallManager(val chatModel: ChatModel) {
       val useRelay = controller.appPrefs.webrtcPolicyRelay.get()
       val iceServers = getIceServers()
       Log.d(TAG, "answerIncomingCall iceServers: $iceServers")
-      callCommand.value = WCallCommand.Start(
+      callCommand.add(WCallCommand.Start(
         media = invitation.callType.media,
         aesKey = invitation.sharedKey,
         iceServers = iceServers,
         relay = useRelay
-      )
+      ))
       callInvitations.remove(invitation.contact.id)
       if (invitation.contact.id == activeCallInvitation.value?.contact?.id) {
         activeCallInvitation.value = null
@@ -80,7 +74,7 @@ class CallManager(val chatModel: ChatModel) {
         showCallView.value = false
       } else {
         Log.d(TAG, "CallManager.endCall: ending call...")
-        callCommand.value = WCallCommand.End
+        callCommand.add(WCallCommand.End)
         showCallView.value = false
         controller.apiEndCall(call.contact)
         activeCall.value = null

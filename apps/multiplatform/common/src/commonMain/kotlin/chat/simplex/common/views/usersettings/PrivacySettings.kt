@@ -64,7 +64,9 @@ fun PrivacySettingsView(
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_chats)) {
-      SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.encrypt_local_files), chatModel.controller.appPrefs.privacyEncryptLocalFiles)
+      SettingsPreferenceItem(painterResource(MR.images.ic_lock), stringResource(MR.strings.encrypt_local_files), chatModel.controller.appPrefs.privacyEncryptLocalFiles, onChange = { enable ->
+        withBGApi { chatModel.controller.apiSetEncryptLocalFiles(enable) }
+      })
       SettingsPreferenceItem(painterResource(MR.images.ic_image), stringResource(MR.strings.auto_accept_images), chatModel.controller.appPrefs.privacyAcceptImages)
       SettingsPreferenceItem(painterResource(MR.images.ic_travel_explore), stringResource(MR.strings.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
       SettingsPreferenceItem(
@@ -89,9 +91,6 @@ fun PrivacySettingsView(
         simplexLinkMode.set(it)
         chatModel.simplexLinkMode.value = it
       })
-    }
-    if (chatModel.simplexLinkMode.value == SimplexLinkMode.BROWSER) {
-      SectionTextFooter(stringResource(MR.strings.simplex_link_mode_browser_warning))
     }
     SectionDividerSpaced()
 
@@ -183,8 +182,10 @@ fun PrivacySettingsView(
 
 @Composable
 private fun SimpleXLinkOptions(simplexLinkModeState: State<SimplexLinkMode>, onSelected: (SimplexLinkMode) -> Unit) {
+  val modeValues = listOf(SimplexLinkMode.DESCRIPTION, SimplexLinkMode.FULL)
+  val pickerValues = modeValues + if (modeValues.contains(simplexLinkModeState.value)) emptyList() else listOf(simplexLinkModeState.value)
   val values = remember {
-    SimplexLinkMode.values().map {
+    pickerValues.map {
       when (it) {
         SimplexLinkMode.DESCRIPTION -> it to generalGetString(MR.strings.simplex_link_mode_description)
         SimplexLinkMode.FULL -> it to generalGetString(MR.strings.simplex_link_mode_full)
@@ -316,7 +317,7 @@ private fun showUserGroupsReceiptsAlert(
   )
 }
 
-private val laDelays = listOf(10, 30, 60, 180, 0)
+private val laDelays = listOf(10, 30, 60, 180, 600, 0)
 
 @Composable
 fun SimplexLockView(

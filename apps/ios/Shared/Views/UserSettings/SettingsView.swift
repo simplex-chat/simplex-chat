@@ -93,7 +93,7 @@ enum SimpleXLinkMode: String, Identifiable {
     case full
     case browser
 
-    static var values: [SimpleXLinkMode] = [.description, .full, .browser]
+    static var values: [SimpleXLinkMode] = [.description, .full]
 
     public var id: Self { self }
 
@@ -381,7 +381,9 @@ struct ProfilePreview: View {
                 Text(profileOf.displayName)
                     .fontWeight(.bold)
                     .font(.title2)
-                Text(profileOf.fullName)
+                if profileOf.fullName != "" && profileOf.fullName != profileOf.displayName {
+                    Text(profileOf.fullName)
+                }
             }
         }
     }

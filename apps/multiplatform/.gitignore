@@ -11,7 +11,6 @@
 local.properties
 common/src/commonMain/cpp/android/libs/
 common/src/commonMain/cpp/desktop/libs/
-desktop/src/jvmMain/resources/libs/
 android/build
 android/release
 common/build
