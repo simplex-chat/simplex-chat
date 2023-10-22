@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.helpers.*
 
-private object NoIndication : Indication {
+object NoIndication : Indication {
   private object NoIndicationInstance : IndicationInstance {
     override fun ContentDrawScope.drawIndication() {
       drawContent()
