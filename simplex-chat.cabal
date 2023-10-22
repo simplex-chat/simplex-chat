@@ -127,6 +127,7 @@ library
       Simplex.Chat.Protocol
       Simplex.Chat.Remote
       Simplex.Chat.Remote.Discovery
+      Simplex.Chat.Remote.Protocol
       Simplex.Chat.Remote.Types
       Simplex.Chat.Store
       Simplex.Chat.Store.Connections
@@ -160,7 +161,6 @@ library
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , binary ==0.8.*
     , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
@@ -177,6 +177,7 @@ library
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
+    , network-transport ==0.5.6
     , network-udp ==0.0.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
@@ -213,7 +214,6 @@ executable simplex-bot
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , binary ==0.8.*
     , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
@@ -230,6 +230,7 @@ executable simplex-bot
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
+    , network-transport ==0.5.6
     , network-udp ==0.0.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
@@ -267,7 +268,6 @@ executable simplex-bot-advanced
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , binary ==0.8.*
     , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
@@ -284,6 +284,7 @@ executable simplex-bot-advanced
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
+    , network-transport ==0.5.6
     , network-udp ==0.0.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
@@ -323,7 +324,6 @@ executable simplex-broadcast-bot
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , binary ==0.8.*
     , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
@@ -340,6 +340,7 @@ executable simplex-broadcast-bot
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
+    , network-transport ==0.5.6
     , network-udp ==0.0.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
@@ -378,7 +379,6 @@ executable simplex-chat
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , binary ==0.8.*
     , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
@@ -395,6 +395,7 @@ executable simplex-chat
     , memory ==0.18.*
     , mtl ==2.3.*
     , network ==3.1.*
+    , network-transport ==0.5.6
     , network-udp ==0.0.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
@@ -437,7 +438,6 @@ executable simplex-directory-service
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , binary ==0.8.*
     , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
@@ -454,6 +454,7 @@ executable simplex-directory-service
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
+    , network-transport ==0.5.6
     , network-udp ==0.0.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
@@ -519,7 +520,6 @@ test-suite simplex-chat-test
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , binary ==0.8.*
     , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
@@ -539,6 +539,7 @@ test-suite simplex-chat-test
     , memory ==0.18.*
     , mtl ==2.3.*
     , network ==3.1.*
+    , network-transport ==0.5.6
     , network-udp ==0.0.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
