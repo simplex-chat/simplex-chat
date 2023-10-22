@@ -7,7 +7,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
-{-# LANGUAGE TypeApplications #-}
 
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
@@ -191,55 +190,56 @@ liftRH rhId = liftError (ChatErrorRemoteHost rhId . RHProtocolError)
 startRemoteCtrl :: forall m . ChatMonad m => (ByteString -> m ChatResponse) -> m ()
 startRemoteCtrl execChatCommand = do
   logInfo "Starting remote host"
-  checkNoRemoteCtrlSession
+  checkNoRemoteCtrlSession -- tiny race with the final @chatWriteVar@ until the setup finishes and supervisor spawned
+  discovered <- newTVarIO mempty
+  discoverer <- async $ discoverRemoteCtrls discovered -- TODO extract to a controller service singleton
   size <- asks $ tbqSize . config
   remoteOutputQ <- newTBQueueIO size
-  discovered <- newTVarIO mempty
-  discoverer <- async $ discoverRemoteCtrls discovered
   accepted <- newEmptyTMVarIO
-  supervisor <- async $ runHost discovered accepted remoteOutputQ
+  supervisor <- async $ runHost discovered accepted $ handleRemoteCommand execChatCommand remoteOutputQ
   chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {discoverer, supervisor, hostServer = Nothing, discovered, accepted, remoteOutputQ}
+
+-- | Track remote host lifecycle in controller session state and signal UI on its progress
+runHost :: ChatMonad m => TM.TMap C.KeyHash TransportHost -> TMVar RemoteCtrlId -> (HTTP2Request -> m ()) -> m ()
+runHost discovered accepted handleHttp = do
+  remoteCtrlId <- atomically (readTMVar accepted) -- wait for ???
+  rc@RemoteCtrl {fingerprint} <- withStore (`getRemoteCtrl` remoteCtrlId)
+  source <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure -- wait for location of the matching fingerprint
+  toView $ CRRemoteCtrlConnecting $ remoteCtrlInfo rc False
+  atomically $ writeTVar discovered mempty -- flush unused sources
+  server <- async $ Discovery.connectRevHTTP2 source fingerprint handleHttp -- spawn server for remote protocol commands
+  chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
+  toView $ CRRemoteCtrlConnected $ remoteCtrlInfo rc True
+  _ <- waitCatch server -- wait for the server to finish
+  chatWriteVar remoteCtrlSession Nothing
+  toView CRRemoteCtrlStopped
+
+handleRemoteCommand :: forall m . ChatMonad m => (ByteString -> m ChatResponse) -> TBQueue ChatResponse -> HTTP2Request -> m ()
+handleRemoteCommand execChatCommand remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do
+  logDebug "handleRemoteCommand"
+  liftRC (tryRemoteError parseRequest) >>= \case
+    Right (getNext, rc) -> processCommand getNext rc `catchAny` (reply . RRProtocolError . RPEException . tshow)
+    Left e -> reply $ RRProtocolError e
   where
-    runHost :: TM.TMap C.KeyHash TransportHost -> TMVar RemoteCtrlId -> TBQueue ChatResponse -> m ()
-    runHost discovered accepted remoteOutputQ = do
-      remoteCtrlId <- atomically (readTMVar accepted)
-      rc@RemoteCtrl {fingerprint} <- withStore (`getRemoteCtrl` remoteCtrlId)
-      source <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure
-      toView $ CRRemoteCtrlConnecting $ remoteCtrlInfo rc False
-      atomically $ writeTVar discovered mempty -- flush unused sources
-      server <- async $ Discovery.connectRevHTTP2 source fingerprint handleRemoteCommand
-      chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
-      toView $ CRRemoteCtrlConnected $ remoteCtrlInfo rc True
-      _ <- waitCatch server
-      chatWriteVar remoteCtrlSession Nothing
-      toView CRRemoteCtrlStopped
-      where
-        handleRemoteCommand :: HTTP2Request -> m ()
-        handleRemoteCommand HTTP2Request {request, reqBody, sendResponse} = do
-          logDebug "handleRemoteCommand"
-          liftRC (tryRemoteError parseRequest) >>= \case
-            Right (getNext, rc) -> processCommand getNext rc `catch` (reply . RRProtocolError . RPEException . tshow @SomeException)
-            Left e -> reply $ RRProtocolError e
-          where
-            parseRequest :: ExceptT RemoteProtocolError IO (GetChunk, RemoteCommand)
-            parseRequest = do
-              (header, getNext) <- parseHTTP2Body request reqBody
-              (getNext,) <$> liftEitherWith (RPEInvalidJSON . T.pack) (J.eitherDecodeStrict' header)
-            processCommand :: GetChunk -> RemoteCommand -> m ()
-            processCommand getNext = \case
-              RCHello {deviceName = desktopName} -> handleHello desktopName >>= reply
-              RCSend {command} -> handleSend execChatCommand command >>= reply
-              RCRecv {wait = time} -> handleRecv time remoteOutputQ >>= reply
-              RCStoreFile {fileSize, encrypt} -> handleStoreFile fileSize encrypt getNext >>= reply
-              RCGetFile {filePath} -> handleGetFile filePath replyWith
-            reply :: RemoteResponse -> m ()
-            reply = (`replyWith` \_ -> pure ())
-            replyWith :: Respond m
-            replyWith rr attach =
-              liftIO . sendResponse . responseStreaming N.status200 [] $ \send flush -> do
-                send $ sizePrefixedEncode rr
-                attach send
-                flush
+    parseRequest :: ExceptT RemoteProtocolError IO (GetChunk, RemoteCommand)
+    parseRequest = do
+      (header, getNext) <- parseHTTP2Body request reqBody
+      (getNext,) <$> liftEitherWith (RPEInvalidJSON . T.pack) (J.eitherDecodeStrict' header)
+    processCommand :: GetChunk -> RemoteCommand -> m ()
+    processCommand getNext = \case
+      RCHello {deviceName = desktopName} -> handleHello desktopName >>= reply
+      RCSend {command} -> handleSend execChatCommand command >>= reply
+      RCRecv {wait = time} -> handleRecv time remoteOutputQ >>= reply
+      RCStoreFile {fileSize, encrypt} -> handleStoreFile fileSize encrypt getNext >>= reply
+      RCGetFile {filePath} -> handleGetFile filePath replyWith
+    reply :: RemoteResponse -> m ()
+    reply = (`replyWith` \_ -> pure ())
+    replyWith :: Respond m
+    replyWith rr attach =
+      liftIO . sendResponse . responseStreaming N.status200 [] $ \send flush -> do
+        send $ sizePrefixedEncode rr
+        attach send
+        flush
 
 type GetChunk = Int -> IO ByteString
 
