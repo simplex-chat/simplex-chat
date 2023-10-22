@@ -93,7 +93,6 @@ runAnnouncer inviteBS = do
     let raw = UDP.udpSocket sock
     N.setSocketOption raw N.Broadcast 1
     N.setSocketOption raw N.ReuseAddr 1
-    void $ setMembership raw (N.tupleToHostAddress (224, 0, 0, 251)) True
     forever $ do
       UDP.send sock inviteBS
       threadDelay 1000000
@@ -125,13 +124,26 @@ runHTTP2Client finishedVar clientVar tls =
     config = defaultHTTP2ClientConfig {bodyHeadSize = doNotPrefetchHead, connTimeout = maxBound}
 
 withListener :: (MonadUnliftIO m) => (UDP.ListenSocket -> m a) -> m a
-withListener = bracket openListener (liftIO . UDP.stop)
+withListener = bracket openListener closeListener
 
 openListener :: (MonadIO m) => m UDP.ListenSocket
 openListener = liftIO $ do
   sock <- UDP.serverSocket (MULTICAST_ADDR_V4, read DISCOVERY_PORT)
-  N.setSocketOption (UDP.listenSocket sock) N.Broadcast 1
+  logDebug $ "Discovery listener socket: " <> tshow sock
+  let raw = UDP.listenSocket sock
+  N.setSocketOption raw N.Broadcast 1
+  void $ setMembership raw (listenerHostAddr4 sock) True
   pure sock
+
+closeListener :: MonadIO m => UDP.ListenSocket -> m ()
+closeListener sock = liftIO $ do
+  UDP.stop sock
+  void $ setMembership (UDP.listenSocket sock) (listenerHostAddr4 sock) False
+
+listenerHostAddr4 :: UDP.ListenSocket -> N.HostAddress
+listenerHostAddr4 sock = case UDP.mySockAddr sock of
+  N.SockAddrInet _port host -> host
+  _ -> error "MULTICAST_ADDR_V4 is V4"
 
 recvAnnounce :: (MonadIO m) => UDP.ListenSocket -> m (N.SockAddr, ByteString)
 recvAnnounce sock = liftIO $ do
