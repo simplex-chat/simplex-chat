@@ -131,13 +131,13 @@ private fun ContactConnectionInfoLayout(
 
     SectionView {
       if (!connReq.isNullOrEmpty() && contactConnection.initiated) {
-        QRCode(
+        SimpleXLinkQRCode(
           connReq, Modifier
             .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)
             .aspectRatio(1f)
         )
         incognitoEnabled()
-        ShareLinkButton(share)
+        ShareLinkButton(connReq)
         OneTimeLinkLearnMoreButton(learnMore)
       } else {
         incognitoEnabled()
