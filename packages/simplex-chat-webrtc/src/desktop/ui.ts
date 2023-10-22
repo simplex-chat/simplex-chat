@@ -1,5 +1,5 @@
 // Override defaults to enable worker on Chrome and Safari
-useWorker = (window as any).safari !== undefined || navigator.userAgent.indexOf("Chrome") != -1
+useWorker = typeof window.Worker !== "undefined"
 
 // Create WebSocket connection.
 const socket = new WebSocket(`ws://${location.host}`)
@@ -7,7 +7,7 @@ const socket = new WebSocket(`ws://${location.host}`)
 socket.addEventListener("open", (_event) => {
   console.log("Opened socket")
   sendMessageToNative = (msg: WVApiMessage) => {
-    console.log("Message to server: ", msg)
+    console.log("Message to server")
     socket.send(JSON.stringify(msg))
   }
 })
@@ -16,7 +16,7 @@ socket.addEventListener("message", (event) => {
   const parsed = JSON.parse(event.data)
   reactOnMessageFromServer(parsed)
   processCommand(parsed)
-  console.log("Message from server: ", event.data)
+  console.log("Message from server")
 })
 
 socket.addEventListener("close", (_event) => {
