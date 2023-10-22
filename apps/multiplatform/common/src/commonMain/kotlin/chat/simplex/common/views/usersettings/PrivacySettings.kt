@@ -317,7 +317,7 @@ private fun showUserGroupsReceiptsAlert(
   )
 }
 
-private val laDelays = listOf(10, 30, 60, 180, 0)
+private val laDelays = listOf(10, 30, 60, 180, 600, 0)
 
 @Composable
 fun SimplexLockView(
