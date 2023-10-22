@@ -285,7 +285,8 @@ const processCommand = (function () {
       function resolveIceCandidates() {
         if (delay) clearTimeout(delay)
         resolved = true
-        console.log("LALAL resolveIceCandidates", JSON.stringify(candidates))
+        // console.log("resolveIceCandidates", JSON.stringify(candidates))
+        console.log("resolveIceCandidates")
         const iceCandidates = serialize(candidates)
         candidates = []
         resolve(iceCandidates)
@@ -293,7 +294,8 @@ const processCommand = (function () {
 
       function sendIceCandidates() {
         if (candidates.length === 0) return
-        console.log("LALAL sendIceCandidates", JSON.stringify(candidates))
+        // console.log("sendIceCandidates", JSON.stringify(candidates))
+        console.log("sendIceCandidates")
         const iceCandidates = serialize(candidates)
         candidates = []
         sendMessageToNative({resp: {type: "ice", iceCandidates}})
@@ -417,7 +419,7 @@ const processCommand = (function () {
             iceCandidates: await activeCall.iceCandidates,
             capabilities: {encryption},
           }
-          console.log("LALALs", JSON.stringify(resp))
+          // console.log("offer response", JSON.stringify(resp))
           break
         }
         case "offer":
@@ -431,7 +433,7 @@ const processCommand = (function () {
             const {media, aesKey, iceServers, relay} = command
             activeCall = await initializeCall(getCallConfig(!!aesKey, iceServers, relay), media, aesKey)
             const pc = activeCall.connection
-            console.log("LALALo", JSON.stringify(remoteIceCandidates))
+            // console.log("offer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
             await pc.setRemoteDescription(new RTCSessionDescription(offer))
             const answer = await pc.createAnswer()
             await pc.setLocalDescription(answer)
@@ -443,7 +445,7 @@ const processCommand = (function () {
               iceCandidates: await activeCall.iceCandidates,
             }
           }
-          console.log("LALALo", JSON.stringify(resp))
+          // console.log("answer response", JSON.stringify(resp))
           break
         case "answer":
           if (!pc) {
@@ -455,7 +457,7 @@ const processCommand = (function () {
           } else {
             const answer: RTCSessionDescriptionInit = parse(command.answer)
             const remoteIceCandidates: RTCIceCandidateInit[] = parse(command.iceCandidates)
-            console.log("LALALa", JSON.stringify(remoteIceCandidates))
+            // console.log("answer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
             await pc.setRemoteDescription(new RTCSessionDescription(answer))
             addIceCandidates(pc, remoteIceCandidates)
             resp = {type: "ok"}
@@ -523,7 +525,7 @@ const processCommand = (function () {
   function addIceCandidates(conn: RTCPeerConnection, iceCandidates: RTCIceCandidateInit[]) {
     for (const c of iceCandidates) {
       conn.addIceCandidate(new RTCIceCandidate(c))
-      console.log("LALAL addIceCandidates", JSON.stringify(c))
+      // console.log("addIceCandidates", JSON.stringify(c))
     }
   }
 
@@ -546,9 +548,8 @@ const processCommand = (function () {
       if (useWorker && !call.worker) {
         const workerCode = `const callCrypto = (${callCryptoFunction.toString()})(); (${workerFunction.toString()})()`
         call.worker = new Worker(URL.createObjectURL(new Blob([workerCode], {type: "text/javascript"})))
-        call.worker.onerror = ({error, filename, lineno, message}: ErrorEvent) =>
-          console.log(JSON.stringify({error, filename, lineno, message}))
-        call.worker.onmessage = ({data}) => console.log(JSON.stringify({message: data}))
+        call.worker.onerror = ({error, filename, lineno, message}: ErrorEvent) => console.log({error, filename, lineno, message})
+        // call.worker.onmessage = ({data}) => console.log(JSON.stringify({message: data}))
       }
     }
   }
