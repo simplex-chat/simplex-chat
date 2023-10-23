@@ -167,7 +167,7 @@ getContactByConnReqHash db user@User {userId} cReqHash =
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
         JOIN connections c ON c.contact_id = ct.contact_id
-        WHERE ct.user_id = ? AND c.via_contact_uri_hash = ? AND ct.contact_status = ? AND ct.deleted = 0
+        WHERE c.user_id = ? AND c.via_contact_uri_hash = ? AND ct.contact_status = ? AND ct.deleted = 0
         ORDER BY c.created_at DESC
         LIMIT 1
       |]

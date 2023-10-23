@@ -912,8 +912,8 @@ object ChatController {
     }
   }
 
-  suspend fun apiDeleteChat(type: ChatType, id: Long): Boolean {
-    val r = sendCmd(CC.ApiDeleteChat(type, id))
+  suspend fun apiDeleteChat(type: ChatType, id: Long, notify: Boolean? = null): Boolean {
+    val r = sendCmd(CC.ApiDeleteChat(type, id, notify))
     when {
       r is CR.ContactDeleted && type == ChatType.Direct -> return true
       r is CR.ContactConnectionDeleted && type == ChatType.ContactConnection -> return true
@@ -1702,25 +1702,25 @@ object ChatController {
           val useRelay = appPrefs.webrtcPolicyRelay.get()
           val iceServers = getIceServers()
           Log.d(TAG, ".callOffer iceServers $iceServers")
-          chatModel.callCommand.value = WCallCommand.Offer(
+          chatModel.callCommand.add(WCallCommand.Offer(
             offer = r.offer.rtcSession,
             iceCandidates = r.offer.rtcIceCandidates,
             media = r.callType.media,
             aesKey = r.sharedKey,
             iceServers = iceServers,
             relay = useRelay
-          )
+          ))
         }
       }
       is CR.CallAnswer -> {
         withCall(r, r.contact) { call ->
           chatModel.activeCall.value = call.copy(callState = CallState.AnswerReceived)
-          chatModel.callCommand.value = WCallCommand.Answer(answer = r.answer.rtcSession, iceCandidates = r.answer.rtcIceCandidates)
+          chatModel.callCommand.add(WCallCommand.Answer(answer = r.answer.rtcSession, iceCandidates = r.answer.rtcIceCandidates))
         }
       }
       is CR.CallExtraInfo -> {
         withCall(r, r.contact) { _ ->
-          chatModel.callCommand.value = WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates)
+          chatModel.callCommand.add(WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates))
         }
       }
       is CR.CallEnded -> {
@@ -1729,7 +1729,7 @@ object ChatController {
           chatModel.callManager.reportCallRemoteEnded(invitation = invitation)
         }
         withCall(r, r.contact) { _ ->
-          chatModel.callCommand.value = WCallCommand.End
+          chatModel.callCommand.add(WCallCommand.End)
           withApi {
             chatModel.activeCall.value = null
             chatModel.showCallView.value = false
@@ -1986,7 +1986,7 @@ sealed class CC {
   class ApiSetConnectionIncognito(val connId: Long, val incognito: Boolean): CC()
   class APIConnectPlan(val userId: Long, val connReq: String): CC()
   class APIConnect(val userId: Long, val incognito: Boolean, val connReq: String): CC()
-  class ApiDeleteChat(val type: ChatType, val id: Long): CC()
+  class ApiDeleteChat(val type: ChatType, val id: Long, val notify: Boolean?): CC()
   class ApiClearChat(val type: ChatType, val id: Long): CC()
   class ApiListContacts(val userId: Long): CC()
   class ApiUpdateProfile(val userId: Long, val profile: Profile): CC()
@@ -2109,7 +2109,11 @@ sealed class CC {
     is ApiSetConnectionIncognito -> "/_set incognito :$connId ${onOff(incognito)}"
     is APIConnectPlan -> "/_connect plan $userId $connReq"
     is APIConnect -> "/_connect $userId incognito=${onOff(incognito)} $connReq"
-    is ApiDeleteChat -> "/_delete ${chatRef(type, id)}"
+    is ApiDeleteChat -> if (notify != null) {
+      "/_delete ${chatRef(type, id)} notify=${onOff(notify)}"
+    } else {
+      "/_delete ${chatRef(type, id)}"
+    }
     is ApiClearChat -> "/_clear chat ${chatRef(type, id)}"
     is ApiListContacts -> "/_contacts $userId"
     is ApiUpdateProfile -> "/_profile $userId ${json.encodeToString(profile)}"
