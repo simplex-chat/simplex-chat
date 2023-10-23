@@ -16,6 +16,8 @@
 
   <!-- MainActivity.kt -->
   <string name="opening_database">Opening database…</string>
+  <string name="non_content_uri_alert_title">Wrong file path</string>
+  <string name="non_content_uri_alert_text">The app you\'re sharing from specified at least one path incorrectly. You may tell its developers to use Content URI instead to allow SimpleX to read shared files</string>
 
   <!-- Server info - ChatModel.kt -->
   <string name="server_connected">connected</string>
