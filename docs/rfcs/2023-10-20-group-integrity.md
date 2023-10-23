@@ -26,6 +26,7 @@ data MsgParent = MsgParent
     msgHash :: ByteString,
     msgBody :: String?            -- recipient can use to display message in case parent wasn't yet received;
                                   -- sender can pack as many parents as fits into block
+    stored :: Bool                -- whether sender has message stored, and it can be requested
   }
 
 data MsgIds = MsgIds              -- include into chat event
@@ -122,35 +123,38 @@ def classifyEvent(e: Event) -> ClassifiedEvent? =
 -- # owner events
 
 def processOwnerEvent(oe: OwnerEvent) =
-  addOwnerDagEvent(oe)
-  applyOwnerDagEvent(oe)
+  process every owner event after owners reach consensus
 
-def addOwnerDagEvent(oe: OwnerEvent) =
-  if (any parent of oe not in dag):
-    buffer until all parents are in ownerDag
-  else
-    add oe to ownerDag
-
-def applyOwnerDagEvent(oe: OwnerEvent) =
-  case oe of
-    -- process XGrpMemNew, XGrpMemRole, XGrpMemDel same as for admin dag (see below), or should vote for all events?
-    XGrpMemNew -> ...
-    XGrpMemRole -> ...
-    XGrpMemDel -> ...
-    -- how to vote - to depend on action (group - manual, update - automatic?);
-    -- wait for voting always, or if event has unknown parents? (gaps in dag)
-    -- how to treat delayed integrity violation - owner sending message to select members
-    XGrpDel ->
-      -- create "pending group deletion", wait for confirmation from majority of owners?
-      -- new protocol requiring user action from other owners?
-    XGrpInfo ->
-      -- create "unconfirmed group profile update", remember prev group profile
-      -- remove from "unconfirmed group profile update" when this event is in dag and not a leaf?
-      -- if another group profile update event is received, revert "unconfirmed" event, don't apply new
-      -- so if more than one update is received while dag is not merged to single vertice, all updates are not applied
-      --   - this would likely lock out owners from any future updates
-      --   - merge to new starting point after some time passes?
-      --   - mark parents that are never received and so always block graph merging as special type?
+// def processOwnerEvent(oe: OwnerEvent) =
+//   addOwnerDagEvent(oe)
+//   applyOwnerDagEvent(oe)
+// 
+// def addOwnerDagEvent(oe: OwnerEvent) =
+//   if (any parent of oe not in dag):
+//     buffer until all parents are in ownerDag
+//   else
+//     add oe to ownerDag
+// 
+// def applyOwnerDagEvent(oe: OwnerEvent) =
+//   case oe of
+//     -- process XGrpMemNew, XGrpMemRole, XGrpMemDel same as for admin dag (see below), or should vote for all events?
+//     XGrpMemNew -> ...
+//     XGrpMemRole -> ...
+//     XGrpMemDel -> ...
+//     -- how to vote - to depend on action (group - manual, update - automatic?);
+//     -- wait for voting always, or if event has unknown parents? (gaps in dag)
+//     -- how to treat delayed integrity violation - owner sending message to select members
+//     XGrpDel ->
+//       -- create "pending group deletion", wait for confirmation from majority of owners?
+//       -- new protocol requiring user action from other owners?
+//     XGrpInfo ->
+//       -- create "unconfirmed group profile update", remember prev group profile
+//       -- remove from "unconfirmed group profile update" when this event is in dag and not a leaf?
+//       -- if another group profile update event is received, revert "unconfirmed" event, don't apply new
+//       -- so if more than one update is received while dag is not merged to single vertice, all updates are not applied
+//       --   - this would likely lock out owners from any future updates
+//       --   - merge to new starting point after some time passes?
+//       --   - mark parents that are never received and so always block graph merging as special type?
 
 -- # admin events
 
@@ -192,7 +196,7 @@ def applyAdminDagEvent(ae: AdminEvent) =
 
 def processMsgEvent(me: MsgEvent) =
   lookup points in owner and admin dag?
-  - does member has permission to send event? (role changed/removed)
+  - does member have permission to send event? (role changed/removed)
   addMsgDagEvent(me)
   applyMsgEvent(me)
 
@@ -219,3 +223,7 @@ def applyMsgEvent(me: MsgEvent) =
                        -- member may try to maliciously remove connections selectively
                        -- wait for integrity check
 ```
+
+# Admin blockchain
+
+Suppose admin DAG is replaced with blockchain, with a conflict resolution protocol to provide consistency of membership changes. Take Simplex (not to confuse with SimpleX chat) protocol (https://simplex.blog/). To reach BFT consensus and make progress, 2n/3 votes on block proposals are required, and it's assumed `f < n/3` where f is number of malicious actors. In a highly asynchronous setting of decentralized groups operated by mobile devices, progress seems unlikely or very slow. Should "admin participation" be hosted?
