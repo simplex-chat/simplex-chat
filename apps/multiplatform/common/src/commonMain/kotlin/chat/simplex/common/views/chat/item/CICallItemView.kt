@@ -68,7 +68,7 @@ fun AcceptCallButton(cInfo: ChatInfo, acceptCall: (Contact) -> Unit) {
 //        sharedKey: invitation.sharedKey
 //        )
 //        m.showCallView = true
-//        m.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey, useWorker: true)
+//        m.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey: true)
 //      } else {
 //        AlertManager.shared.showAlertMsg(title: "Call already ended!")
 //      }
@@ -141,7 +141,7 @@ fun AcceptCallButton(cInfo: ChatInfo, acceptCall: (Contact) -> Unit) {
 //        sharedKey: invitation.sharedKey
 //        )
 //        m.showCallView = true
-//        m.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey, useWorker: true)
+//        m.callCommand = .start(media: invitation.peerMedia, aesKey: invitation.sharedKey: true)
 //      } else {
 //        AlertManager.shared.showAlertMsg(title: "Call already ended!")
 //      }

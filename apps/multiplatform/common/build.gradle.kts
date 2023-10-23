@@ -98,6 +98,8 @@ kotlin {
         implementation("com.sshtools:two-slices:0.9.0-SNAPSHOT")
         implementation("org.slf4j:slf4j-simple:2.0.7")
         implementation("uk.co.caprica:vlcj:4.7.3")
+        implementation("com.github.NanoHttpd.nanohttpd:nanohttpd:efb2ebf85a")
+        implementation("com.github.NanoHttpd.nanohttpd:nanohttpd-websocket:efb2ebf85a")
       }
     }
     val desktopTest by getting
