@@ -39,6 +39,7 @@
 		5C36027327F47AD5009F19D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C36027227F47AD5009F19D9 /* AppDelegate.swift */; };
 		5C3A88CE27DF50170060F1C2 /* DetermineWidth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3A88CD27DF50170060F1C2 /* DetermineWidth.swift */; };
 		5C3A88D127DF57800060F1C2 /* FramedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3A88D027DF57800060F1C2 /* FramedItemView.swift */; };
+		5C3CCFCC2AE6BD3100C3F0C3 /* ConnectDesktopView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3CCFCB2AE6BD3100C3F0C3 /* ConnectDesktopView.swift */; };
 		5C3F1D562842B68D00EC8A82 /* IntegrityErrorItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3F1D552842B68D00EC8A82 /* IntegrityErrorItemView.swift */; };
 		5C3F1D58284363C400EC8A82 /* PrivacySettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3F1D57284363C400EC8A82 /* PrivacySettings.swift */; };
 		5C4B3B0A285FB130003915F2 /* DatabaseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C4B3B09285FB130003915F2 /* DatabaseView.swift */; };
@@ -282,6 +283,7 @@
 		5C36027227F47AD5009F19D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		5C3A88CD27DF50170060F1C2 /* DetermineWidth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetermineWidth.swift; sourceTree = "<group>"; };
 		5C3A88D027DF57800060F1C2 /* FramedItemView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FramedItemView.swift; sourceTree = "<group>"; };
+		5C3CCFCB2AE6BD3100C3F0C3 /* ConnectDesktopView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ConnectDesktopView.swift; sourceTree = "<group>"; };
 		5C3F1D552842B68D00EC8A82 /* IntegrityErrorItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntegrityErrorItemView.swift; sourceTree = "<group>"; };
 		5C3F1D57284363C400EC8A82 /* PrivacySettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrivacySettings.swift; sourceTree = "<group>"; };
 		5C422A7C27A9A6FA0097A1E1 /* SimpleX (iOS).entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "SimpleX (iOS).entitlements"; sourceTree = "<group>"; };
@@ -688,7 +690,7 @@
 		5CA8D01B2AD9B076001FD661 /* RemoteAccess */ = {
 			isa = PBXGroup;
 			children = (
-				5CA8D01C2AD9B0A6001FD661 /* ConnectDesktopView.swift */,
+				5C3CCFCB2AE6BD3100C3F0C3 /* ConnectDesktopView.swift */,
 			);
 			path = RemoteAccess;
 			sourceTree = "<group>";
@@ -1179,7 +1181,7 @@
 				6454036F2822A9750090DDFF /* ComposeFileView.swift in Sources */,
 				5C5DB70E289ABDD200730FFF /* AppearanceSettings.swift in Sources */,
 				5C5F2B6D27EBC3FE006A9D5F /* ImagePicker.swift in Sources */,
-				5CA8D01D2AD9B0A6001FD661 /* ConnectDesktopView.swift in Sources */,
+				5C3CCFCC2AE6BD3100C3F0C3 /* ConnectDesktopView.swift in Sources */,
 				5C9C2DA92899DA6F00CC63B1 /* NetworkAndServers.swift in Sources */,
 				5C6BA667289BD954009B8ECC /* DismissSheets.swift in Sources */,
 				5C577F7D27C83AA10006112D /* MarkdownHelp.swift in Sources */,
