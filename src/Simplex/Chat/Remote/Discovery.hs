@@ -29,6 +29,7 @@ import Data.String (IsString)
 import qualified Network.Socket as N
 import qualified Network.TLS as TLS
 import qualified Network.UDP as UDP
+import Simplex.Chat.Remote.Multicast (setMembership)
 import Simplex.Chat.Remote.Types (Tasks, registerAsync)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
@@ -43,15 +44,15 @@ import Simplex.Messaging.Util (ifM, tshow, whenM)
 import UnliftIO
 import UnliftIO.Concurrent
 
--- | Link-local broadcast address.
-pattern BROADCAST_ADDR_V4 :: (IsString a, Eq a) => a
-pattern BROADCAST_ADDR_V4 = "0.0.0.0"
+-- | mDNS multicast group
+pattern MULTICAST_ADDR_V4 :: (IsString a, Eq a) => a
+pattern MULTICAST_ADDR_V4 = "224.0.0.251"
 
 pattern ANY_ADDR_V4 :: (IsString a, Eq a) => a
 pattern ANY_ADDR_V4 = "0.0.0.0"
 
-pattern BROADCAST_PORT :: (IsString a, Eq a) => a
-pattern BROADCAST_PORT = "5226"
+pattern DISCOVERY_PORT :: (IsString a, Eq a) => a
+pattern DISCOVERY_PORT = "5226"
 
 -- | Announce tls server, wait for connection and attach http2 client to it.
 --
@@ -88,16 +89,17 @@ announceRevHTTP2 tasks invite credentials finishAction = do
 -- | Broadcast invite with link-local datagrams
 runAnnouncer :: ByteString -> IO ()
 runAnnouncer inviteBS = do
-  bracket (UDP.clientSocket BROADCAST_ADDR_V4 BROADCAST_PORT False) UDP.close $ \sock -> do
-    N.setSocketOption (UDP.udpSocket sock) N.Broadcast 1
-    N.setSocketOption (UDP.udpSocket sock) N.ReuseAddr 1
+  bracket (UDP.clientSocket MULTICAST_ADDR_V4 DISCOVERY_PORT False) UDP.close $ \sock -> do
+    let raw = UDP.udpSocket sock
+    N.setSocketOption raw N.Broadcast 1
+    N.setSocketOption raw N.ReuseAddr 1
     forever $ do
       UDP.send sock inviteBS
       threadDelay 1000000
 
 -- XXX: Do we need to start multiple TLS servers for different mobile hosts?
 startTLSServer :: (MonadUnliftIO m) => TMVar Bool -> TLS.Credentials -> (Transport.TLS -> IO ()) -> m (Async ())
-startTLSServer started credentials = async . liftIO . runTransportServer started BROADCAST_PORT serverParams defaultTransportServerConfig
+startTLSServer started credentials = async . liftIO . runTransportServer started DISCOVERY_PORT serverParams defaultTransportServerConfig
   where
     serverParams =
       def
@@ -115,20 +117,33 @@ runHTTP2Client finishedVar clientVar tls =
     (logError "HTTP2 session already started on this listener")
   where
     attachClient = do
-      client <- attachHTTP2Client config ANY_ADDR_V4 BROADCAST_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls
+      client <- attachHTTP2Client config ANY_ADDR_V4 DISCOVERY_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls
       putMVar clientVar client
       readMVar finishedVar
     -- TODO connection timeout
     config = defaultHTTP2ClientConfig {bodyHeadSize = doNotPrefetchHead, connTimeout = maxBound}
 
 withListener :: (MonadUnliftIO m) => (UDP.ListenSocket -> m a) -> m a
-withListener = bracket openListener (liftIO . UDP.stop)
+withListener = bracket openListener closeListener
 
 openListener :: (MonadIO m) => m UDP.ListenSocket
 openListener = liftIO $ do
-  sock <- UDP.serverSocket (ANY_ADDR_V4, read BROADCAST_PORT)
-  N.setSocketOption (UDP.listenSocket sock) N.Broadcast 1
+  sock <- UDP.serverSocket (MULTICAST_ADDR_V4, read DISCOVERY_PORT)
+  logDebug $ "Discovery listener socket: " <> tshow sock
+  let raw = UDP.listenSocket sock
+  N.setSocketOption raw N.Broadcast 1
+  void $ setMembership raw (listenerHostAddr4 sock) True
   pure sock
+
+closeListener :: MonadIO m => UDP.ListenSocket -> m ()
+closeListener sock = liftIO $ do
+  UDP.stop sock
+  void $ setMembership (UDP.listenSocket sock) (listenerHostAddr4 sock) False
+
+listenerHostAddr4 :: UDP.ListenSocket -> N.HostAddress
+listenerHostAddr4 sock = case UDP.mySockAddr sock of
+  N.SockAddrInet _port host -> host
+  _ -> error "MULTICAST_ADDR_V4 is V4"
 
 recvAnnounce :: (MonadIO m) => UDP.ListenSocket -> m (N.SockAddr, ByteString)
 recvAnnounce sock = liftIO $ do
@@ -139,7 +154,7 @@ connectRevHTTP2 :: (MonadUnliftIO m) => TransportHost -> C.KeyHash -> (HTTP2Requ
 connectRevHTTP2 host fingerprint = connectTLSClient host fingerprint . attachHTTP2Server
 
 connectTLSClient :: (MonadUnliftIO m) => TransportHost -> C.KeyHash -> (Transport.TLS -> m a) -> m a
-connectTLSClient host caFingerprint = runTransportClient defaultTransportClientConfig Nothing host BROADCAST_PORT (Just caFingerprint)
+connectTLSClient host caFingerprint = runTransportClient defaultTransportClientConfig Nothing host DISCOVERY_PORT (Just caFingerprint)
 
 attachHTTP2Server :: (MonadUnliftIO m) => (HTTP2Request -> m ()) -> Transport.TLS -> m ()
 attachHTTP2Server processRequest tls = do
