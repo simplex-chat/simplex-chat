@@ -99,6 +99,7 @@ startRemoteHost rhId = do
       rcName <- chatReadVar localDeviceName
       -- test connection and establish a protocol layer
       remoteHostClient <- liftRH rhId $ createRemoteHostClient httpClient rcName
+      withStore' $ \db -> setRemoteHostName db rhId (remoteDeviceName remoteHostClient)
       -- set up message polling
       oq <- asks outputQ
       asyncRegistered tasks . forever $ do
@@ -257,6 +258,8 @@ tryRemoteError = tryAllErrors (RPEException . tshow)
 handleHello :: ChatMonad m => Text -> m RemoteResponse
 handleHello desktopName = do
   logInfo $ "Hello from " <> tshow desktopName
+  ctrlId <- getRemoteCtrlSessionId
+  withStore' $ \db -> setRemoteCtrlName db ctrlId desktopName
   mobileName <- chatReadVar localDeviceName
   pure RRHello {encoding = localEncoding, deviceName = mobileName}
 
@@ -373,6 +376,11 @@ deleteRemoteCtrl rcId = do
 getRemoteCtrlSession :: ChatMonad m => m RemoteCtrlSession
 getRemoteCtrlSession =
   chatReadVar remoteCtrlSession >>= maybe (throwError $ ChatErrorRemoteCtrl RCEInactive) pure
+
+getRemoteCtrlSessionId :: ChatMonad m => m RemoteCtrlId
+getRemoteCtrlSessionId = do
+  RemoteCtrlSession {accepted} <- getRemoteCtrlSession
+  atomically (tryReadTMVar accepted) >>= maybe (throwError $ ChatErrorRemoteCtrl RCEInactive) pure
 
 checkNoRemoteCtrlSession :: ChatMonad m => m ()
 checkNoRemoteCtrlSession =

@@ -36,6 +36,10 @@ toRemoteHost :: (Int64, FilePath, Text, C.APrivateSignKey, C.SignedObject C.Cert
 toRemoteHost (remoteHostId, storePath, displayName, caKey, C.SignedObject caCert, contacted) =
   RemoteHost {remoteHostId, storePath, displayName, caKey, caCert, contacted}
 
+setRemoteHostName :: DB.Connection -> RemoteHostId -> Text -> IO ()
+setRemoteHostName db remoteHostId displayName =
+  DB.execute db "UPDATE remote_hosts SET display_name = ? WHERE remote_host_id = ?" (displayName, remoteHostId)
+
 deleteRemoteHostRecord :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (Only remoteHostId)
 
@@ -69,6 +73,10 @@ toRemoteCtrl (remoteCtrlId, displayName, fingerprint, accepted) =
 markRemoteCtrlResolution :: DB.Connection -> RemoteCtrlId -> Bool -> IO ()
 markRemoteCtrlResolution db remoteCtrlId accepted =
   DB.execute db "UPDATE remote_controllers SET accepted = ? WHERE remote_controller_id = ? AND accepted IS NULL" (accepted, remoteCtrlId)
+
+setRemoteCtrlName :: DB.Connection -> RemoteCtrlId -> Text -> IO ()
+setRemoteCtrlName db remoteCtrlId displayName =
+  DB.execute db "UPDATE remote_controllers SET display_name = ? WHERE remote_controller_id = ?" (displayName, remoteCtrlId)
 
 deleteRemoteCtrlRecord :: DB.Connection -> RemoteCtrlId -> IO ()
 deleteRemoteCtrlRecord db remoteCtrlId =

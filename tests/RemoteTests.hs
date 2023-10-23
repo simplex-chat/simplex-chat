@@ -115,10 +115,10 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
 
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
-  desktop <## "1.  (active)"
+  desktop <## "1. Mobile (active)"
   mobile ##> "/list remote ctrls"
   mobile <## "Remote controllers:"
-  mobile <## "1. My desktop (active)"
+  mobile <## "1. Desktop (active)"
 
   stopMobile mobile desktop `catchAny` (logError . tshow)
   -- TODO: add a case for 'stopDesktop'
@@ -254,6 +254,8 @@ remoteFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile
 
 startRemote :: TestCC -> TestCC -> IO ()
 startRemote mobile desktop = do
+  desktop ##> "/set device name Desktop"
+  desktop <## "ok"
   desktop ##> "/create remote host"
   desktop <## "remote host 1 created"
   desktop <## "connection code:"
@@ -262,18 +264,21 @@ startRemote mobile desktop = do
   desktop ##> "/start remote host 1"
   desktop <## "ok"
 
+  mobile ##> "/set device name Mobile"
+  mobile <## "ok"
   mobile ##> "/start remote ctrl"
   mobile <## "ok"
   mobile <## "remote controller announced"
   mobile <## "connection code:"
   fingerprint' <- getTermLine mobile
   fingerprint' `shouldBe` fingerprint
-  mobile ##> ("/register remote ctrl " <> fingerprint' <> " " <> "My desktop")
+  let desktopName = "Desktop" -- TODO: get from OOB
+  mobile ##> ("/register remote ctrl " <> fingerprint' <> " " <> desktopName)
   mobile <## "remote controller 1 registered"
   mobile ##> "/accept remote ctrl 1"
   mobile <## "ok" -- alternative scenario: accepted before controller start
-  mobile <## "remote controller 1 connecting to My desktop"
-  mobile <## "remote controller 1 connected, My desktop"
+  mobile <## ("remote controller 1 connecting to " <> desktopName)
+  mobile <## ("remote controller 1 connected, " <> desktopName)
   desktop <## "remote host 1 connected"
 
 contactBob :: TestCC -> TestCC -> IO ()
