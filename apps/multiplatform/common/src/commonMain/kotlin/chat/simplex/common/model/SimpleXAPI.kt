@@ -1351,14 +1351,14 @@ object ChatController {
   suspend fun createRemoteHost(): RemoteHostInfo? {
     val r = sendCmd(CC.CreateRemoteHost())
     if (r is CR.RemoteHostCreated) return r.remoteHost
-    apiErrorAlert("createRemoteHost", generalGetString(MR.strings.error), r)
+    apiErrorAlert("createRemoteHost", generalGetString(MR.strings.error_alert_title), r)
     return null
   }
 
   suspend fun listRemoteHosts(): List<RemoteHostInfo>? {
     val r = sendCmd(CC.ListRemoteHosts())
     if (r is CR.RemoteHostList) return r.remoteHosts
-    apiErrorAlert("listRemoteHosts", generalGetString(MR.strings.error), r)
+    apiErrorAlert("listRemoteHosts", generalGetString(MR.strings.error_alert_title), r)
     return null
   }
 
@@ -1367,14 +1367,14 @@ object ChatController {
   suspend fun registerRemoteCtrl(oob: RemoteCtrlOOB): RemoteCtrlInfo? {
     val r = sendCmd(CC.RegisterRemoteCtrl(oob))
     if (r is CR.RemoteCtrlRegistered) return r.remoteCtrl
-    apiErrorAlert("registerRemoteCtrl", generalGetString(MR.strings.error), r)
+    apiErrorAlert("registerRemoteCtrl", generalGetString(MR.strings.error_alert_title), r)
     return null
   }
 
   suspend fun listRemoteCtrls(): List<RemoteCtrlInfo>? {
     val r = sendCmd(CC.ListRemoteCtrls())
     if (r is CR.RemoteCtrlList) return r.remoteCtrls
-    apiErrorAlert("listRemoteCtrls", generalGetString(MR.strings.error), r)
+    apiErrorAlert("listRemoteCtrls", generalGetString(MR.strings.error_alert_title), r)
     return null
   }
 
@@ -1746,7 +1746,7 @@ object ChatController {
         chatModel.updateGroupMemberConnectionStats(r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
       is CR.RemoteHostConnected -> {
         // update
-        chatModel.connectingRemoteHost.value = r.remoteHost
+        //chatModel.connectingRemoteHost.value = r.remoteHost
       }
       is CR.RemoteHostStopped -> {
         //

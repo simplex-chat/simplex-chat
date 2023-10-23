@@ -42,6 +42,7 @@ object ChatModel {
   val currentUser = mutableStateOf<User?>(null)
   val users = mutableStateListOf<UserInfo>()
   val userCreated = mutableStateOf<Boolean?>(null)
+  val remoteHosts = mutableStateListOf<RemoteHostInfo>()
   val chatRunning = mutableStateOf<Boolean?>(null)
   val chatDbChanged = mutableStateOf<Boolean>(false)
   val chatDbEncrypted = mutableStateOf<Boolean?>(false)
