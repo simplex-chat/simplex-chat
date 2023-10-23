@@ -81,6 +81,35 @@ fun ProfileImage(
   }
 }
 
+/** [AccountCircleFilled] has its inner padding which leads to visible border if there is background underneath.
+ * This is workaround
+ * */
+@Composable
+fun ProfileImageForActiveCall(
+  size: Dp,
+  image: String? = null,
+  color: Color = MaterialTheme.colors.secondaryVariant,
+) {
+  if (image == null) {
+    Box(Modifier.requiredSize(size).clip(CircleShape)) {
+      Icon(
+        AccountCircleFilled,
+        contentDescription = stringResource(MR.strings.icon_descr_profile_image_placeholder),
+        tint = color,
+        modifier = Modifier.requiredSize(size + 14.dp)
+      )
+    }
+  } else {
+    val imageBitmap = base64ToBitmap(image)
+    Image(
+      imageBitmap,
+      stringResource(MR.strings.image_descr_profile_image),
+      contentScale = ContentScale.Crop,
+      modifier = Modifier.size(size).clip(CircleShape)
+    )
+  }
+}
+
 
 @Preview
 @Composable

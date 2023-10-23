@@ -31,10 +31,10 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.newchat.QRCode
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chatlist.updateChatSettings
+import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
@@ -196,26 +196,65 @@ sealed class SendReceipts {
 }
 
 fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
-  AlertManager.shared.showAlertDialog(
+  AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.delete_contact_question),
-    text = generalGetString(MR.strings.delete_contact_all_messages_deleted_cannot_undo_warning),
-    confirmText = generalGetString(MR.strings.delete_verb),
-    onConfirm = {
-      withApi {
-        val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
-        if (r) {
-          chatModel.removeChat(chatInfo.id)
-          if (chatModel.chatId.value == chatInfo.id) {
-            chatModel.chatId.value = null
-            ModalManager.end.closeModals()
+    text = AnnotatedString(generalGetString(MR.strings.delete_contact_all_messages_deleted_cannot_undo_warning)),
+    buttons = {
+      Column {
+        if (chatInfo is ChatInfo.Direct && chatInfo.contact.ready && chatInfo.contact.active) {
+          // Delete and notify contact
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            withApi {
+              deleteContact(chatInfo, chatModel, close, notify = true)
+            }
+          }) {
+            Text(generalGetString(MR.strings.delete_and_notify_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
           }
-          ntfManager.cancelNotificationsForChat(chatInfo.id)
-          close?.invoke()
+          // Delete
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            withApi {
+              deleteContact(chatInfo, chatModel, close, notify = false)
+            }
+          }) {
+            Text(generalGetString(MR.strings.delete_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+          }
+        } else {
+          // Delete
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            withApi {
+              deleteContact(chatInfo, chatModel, close)
+            }
+          }) {
+            Text(generalGetString(MR.strings.delete_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+          }
+        }
+        // Cancel
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
       }
-    },
-    destructive = true,
+    }
   )
+}
+
+fun deleteContact(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)?, notify: Boolean? = null) {
+  withApi {
+    val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId, notify)
+    if (r) {
+      chatModel.removeChat(chatInfo.id)
+      if (chatModel.chatId.value == chatInfo.id) {
+        chatModel.chatId.value = null
+        ModalManager.end.closeModals()
+      }
+      ntfManager.cancelNotificationsForChat(chatInfo.id)
+      close?.invoke()
+    }
+  }
 }
 
 fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
@@ -309,9 +348,9 @@ fun ChatInfoLayout(
 
     if (contact.contactLink != null) {
       SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
-        QRCode(contact.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+        SimpleXLinkQRCode(contact.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
         val clipboard = LocalClipboardManager.current
-        ShareAddressButton { clipboard.shareText(contact.contactLink) }
+        ShareAddressButton { clipboard.shareText(simplexChatLink(contact.contactLink)) }
         SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))
       }
       SectionDividerSpaced()

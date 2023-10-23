@@ -12,6 +12,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
@@ -29,6 +30,9 @@ import chat.simplex.common.views.onboarding.shouldShowWhatsNew
 import chat.simplex.common.views.usersettings.SettingsView
 import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.call.Call
+import chat.simplex.common.views.call.CallMediaType
+import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
@@ -121,6 +125,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     }
   }
   if (searchInList.isEmpty()) {
+    DesktopActiveCallOverlayLayout(newChatSheetState)
     NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
   }
   if (appPlatform.isAndroid) {
@@ -311,51 +316,16 @@ private fun ProgressIndicator() {
   )
 }
 
+@Composable
+expect fun DesktopActiveCallOverlayLayout(newChatSheetState: MutableStateFlow<AnimatedViewState>)
+
 fun connectIfOpenedViaUri(uri: URI, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
     chatModel.appOpenUrl.value = uri
   } else {
-    withUriAction(uri) { linkType ->
-      val title = when (linkType) {
-        ConnectionLinkType.CONTACT -> generalGetString(MR.strings.connect_via_contact_link)
-        ConnectionLinkType.INVITATION -> generalGetString(MR.strings.connect_via_invitation_link)
-        ConnectionLinkType.GROUP -> generalGetString(MR.strings.connect_via_group_link)
-      }
-      AlertManager.shared.showAlertDialogButtonsColumn(
-        title = title,
-        text = if (linkType == ConnectionLinkType.GROUP)
-          AnnotatedString(generalGetString(MR.strings.you_will_join_group))
-        else
-          AnnotatedString(generalGetString(MR.strings.profile_will_be_sent_to_contact_sending_link)),
-        buttons = {
-          Column {
-            SectionItemView({
-              AlertManager.shared.hideAlert()
-              withApi {
-                Log.d(TAG, "connectIfOpenedViaUri: connecting")
-                connectViaUri(chatModel, linkType, uri, incognito = false)
-              }
-            }) {
-              Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-            }
-            SectionItemView({
-              AlertManager.shared.hideAlert()
-              withApi {
-                Log.d(TAG, "connectIfOpenedViaUri: connecting incognito")
-                connectViaUri(chatModel, linkType, uri, incognito = true)
-              }
-            }) {
-              Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-            }
-            SectionItemView({
-              AlertManager.shared.hideAlert()
-            }) {
-              Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-            }
-          }
-        }
-      )
+    withApi {
+      planAndConnect(chatModel, uri, incognito = null, close = null)
     }
   }
 }

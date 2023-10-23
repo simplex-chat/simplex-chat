@@ -103,12 +103,11 @@ private fun GroupPreferencesLayout(
     FeatureSection(GroupFeature.Voice, allowVoice, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(voice = GroupPreference(enable = it)))
     }
-//    TODO uncomment in 5.3
-//    SectionDividerSpaced(true, maxBottomPadding = false)
-//    val allowFiles = remember(preferences) { mutableStateOf(preferences.files.enable) }
-//    FeatureSection(GroupFeature.Files, allowFiles, groupInfo, preferences, onTTLUpdated) {
-//      applyPrefs(preferences.copy(files = GroupPreference(enable = it)))
-//    }
+    SectionDividerSpaced(true, maxBottomPadding = false)
+    val allowFiles = remember(preferences) { mutableStateOf(preferences.files.enable) }
+    FeatureSection(GroupFeature.Files, allowFiles, groupInfo, preferences, onTTLUpdated) {
+      applyPrefs(preferences.copy(files = GroupPreference(enable = it)))
+    }
     if (groupInfo.canEdit) {
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
       ResetSaveButtons(

@@ -93,7 +93,9 @@ struct PrivacySettings: View {
                     }
                     settingsRow("link") {
                         Picker("SimpleX links", selection: $simplexLinkMode) {
-                            ForEach(SimpleXLinkMode.values) { mode in
+                            ForEach(
+                                SimpleXLinkMode.values + (SimpleXLinkMode.values.contains(simplexLinkMode) ? [] : [simplexLinkMode])
+                            ) { mode in
                                 Text(mode.text)
                             }
                         }
@@ -104,10 +106,6 @@ struct PrivacySettings: View {
                     }
                 } header: {
                     Text("Chats")
-                } footer: {
-                    if case .browser = simplexLinkMode {
-                        Text("Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red.")
-                    }
                 }
 
                 Section {
@@ -358,7 +356,7 @@ struct SimplexLockView: View {
         var id: Self { self }
     }
 
-    let laDelays: [Int] = [10, 30, 60, 180, 0]
+    let laDelays: [Int] = [10, 30, 60, 180, 600, 0]
 
     func laDelayText(_ t: Int) -> LocalizedStringKey {
         let m = t / 60
@@ -380,6 +378,7 @@ struct SimplexLockView: View {
                             Text(mode.text)
                         }
                     }
+                    .frame(height: 36)
                     if performLA {
                         Picker("Lock after", selection: $laLockDelay) {
                             let delays = laDelays.contains(laLockDelay) ? laDelays : [laLockDelay] + laDelays
@@ -387,6 +386,7 @@ struct SimplexLockView: View {
                                 Text(laDelayText(t))
                             }
                         }
+                        .frame(height: 36)
                         if showChangePassword && laMode == .passcode {
                             Button("Change passcode") {
                                 changeLAPassword()

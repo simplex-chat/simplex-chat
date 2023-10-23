@@ -92,9 +92,6 @@ fun PrivacySettingsView(
         chatModel.simplexLinkMode.value = it
       })
     }
-    if (chatModel.simplexLinkMode.value == SimplexLinkMode.BROWSER) {
-      SectionTextFooter(stringResource(MR.strings.simplex_link_mode_browser_warning))
-    }
     SectionDividerSpaced()
 
     val currentUser = chatModel.currentUser.value
@@ -185,8 +182,10 @@ fun PrivacySettingsView(
 
 @Composable
 private fun SimpleXLinkOptions(simplexLinkModeState: State<SimplexLinkMode>, onSelected: (SimplexLinkMode) -> Unit) {
+  val modeValues = listOf(SimplexLinkMode.DESCRIPTION, SimplexLinkMode.FULL)
+  val pickerValues = modeValues + if (modeValues.contains(simplexLinkModeState.value)) emptyList() else listOf(simplexLinkModeState.value)
   val values = remember {
-    SimplexLinkMode.values().map {
+    pickerValues.map {
       when (it) {
         SimplexLinkMode.DESCRIPTION -> it to generalGetString(MR.strings.simplex_link_mode_description)
         SimplexLinkMode.FULL -> it to generalGetString(MR.strings.simplex_link_mode_full)
@@ -318,7 +317,7 @@ private fun showUserGroupsReceiptsAlert(
   )
 }
 
-private val laDelays = listOf(10, 30, 60, 180, 0)
+private val laDelays = listOf(10, 30, 60, 180, 600, 0)
 
 @Composable
 fun SimplexLockView(

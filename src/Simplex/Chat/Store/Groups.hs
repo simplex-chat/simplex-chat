@@ -1122,16 +1122,16 @@ getGroupInfo db User {userId, userContactId} groupId =
       (groupId, userId, userContactId)
 
 getGroupInfoByUserContactLinkConnReq :: DB.Connection -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
-getGroupInfoByUserContactLinkConnReq db user (cReqSchema1, cReqSchema2) = do
+getGroupInfoByUserContactLinkConnReq db user@User {userId} (cReqSchema1, cReqSchema2) = do
   groupId_ <- maybeFirstRow fromOnly $
     DB.query
       db
       [sql|
         SELECT group_id
         FROM user_contact_links
-        WHERE conn_req_contact IN (?,?)
+        WHERE user_id = ? AND conn_req_contact IN (?,?)
       |]
-      (cReqSchema1, cReqSchema2)
+      (userId, cReqSchema1, cReqSchema2)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupInfo db user) groupId_
 
 getGroupInfoByGroupLinkHash :: DB.Connection -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe GroupInfo)

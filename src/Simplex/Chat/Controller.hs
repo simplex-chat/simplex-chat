@@ -72,7 +72,6 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), Cor
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, liftEitherError, tryAllErrors, (<$$>))
 import Simplex.Messaging.Version
 import System.IO (Handle)
@@ -1153,6 +1152,7 @@ data RemoteHostError
   | RHTimeout -- ^ A discovery or a remote operation has timed out
   | RHDisconnected {reason :: Text} -- ^ A session disconnected by a host
   | RHConnectionLost {reason :: Text} -- ^ A session disconnected due to transport issues
+  | RHProtocolError RemoteProtocolError
   deriving (Show, Exception, Generic)
 
 instance FromJSON RemoteHostError where
@@ -1175,6 +1175,7 @@ data RemoteCtrlError
   | RCEHTTP2Error {http2Error :: String}
   | RCEHTTP2RespStatus {statusCode :: Maybe Int} -- TODO remove
   | RCEInvalidResponse {responseError :: String}
+  | RCEProtocolError {protocolError :: RemoteProtocolError}
   deriving (Show, Exception, Generic)
 
 instance FromJSON RemoteCtrlError where
@@ -1195,16 +1196,6 @@ instance FromJSON ArchiveError where
 instance ToJSON ArchiveError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "AE"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "AE"
-
-data RemoteHostSession
-  = RemoteHostSessionStarting
-      { announcer :: Async ()
-      }
-  | RemoteHostSessionStarted
-      { -- | Path for local resources to be synchronized with host
-        storePath :: FilePath,
-        ctrlClient :: HTTP2Client
-      }
 
 data RemoteCtrlSession = RemoteCtrlSession
   { -- | Host (mobile) side of transport to process remote commands and forward notifications

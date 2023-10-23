@@ -4,7 +4,6 @@ import SectionItemView
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
@@ -13,10 +12,6 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.InteractionSource
-import androidx.compose.ui.graphics.drawscope.ContentDrawScope
-import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -126,7 +121,14 @@ fun groupChatAction(groupInfo: GroupInfo, chatModel: ChatModel) {
 suspend fun openDirectChat(contactId: Long, chatModel: ChatModel) {
   val chat = chatModel.controller.apiGetChat(ChatType.Direct, contactId)
   if (chat != null) {
-    openChat(chat, chatModel)
+    openLoadedChat(chat, chatModel)
+  }
+}
+
+suspend fun openGroupChat(groupId: Long, chatModel: ChatModel) {
+  val chat = chatModel.controller.apiGetChat(ChatType.Group, groupId)
+  if (chat != null) {
+    openLoadedChat(chat, chatModel)
   }
 }
 
@@ -134,13 +136,14 @@ suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
   Log.d(TAG, "TODOCHAT: openChat: opening ${chatInfo.id}, current chatId ${ChatModel.chatId.value}, size ${ChatModel.chatItems.size}")
   val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId)
   if (chat != null) {
-    openChat(chat, chatModel)
+    openLoadedChat(chat, chatModel)
     Log.d(TAG, "TODOCHAT: openChat: opened ${chatInfo.id}, current chatId ${ChatModel.chatId.value}, size ${ChatModel.chatItems.size}")
   }
 }
 
-suspend fun openChat(chat: Chat, chatModel: ChatModel) {
+fun openLoadedChat(chat: Chat, chatModel: ChatModel) {
   chatModel.chatItems.clear()
+  chatModel.chatItemStatuses.clear()
   chatModel.chatItems.addAll(chat.chatItems)
   chatModel.chatId.value = chat.chatInfo.id
 }
