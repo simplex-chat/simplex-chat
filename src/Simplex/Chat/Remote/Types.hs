@@ -1,6 +1,5 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE TemplateHaskell #-}
 
@@ -12,7 +11,7 @@ import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
 import UnliftIO
 
 data RemoteHostClient = RemoteHostClient
@@ -116,10 +115,10 @@ $(J.deriveJSON (sumTypeJSON $ dropPrefix "RPE") ''RemoteProtocolError)
 
 $(J.deriveJSON (enumJSON $ dropPrefix "PE") ''PlatformEncoding)
 
-$(J.deriveJSON J.defaultOptions ''RemoteCtrlOOB)
+$(J.deriveJSON defaultJSON ''RemoteCtrlOOB)
 
-$(J.deriveJSON J.defaultOptions ''RemoteHostInfo)
+$(J.deriveJSON defaultJSON ''RemoteHostInfo)
 
-$(J.deriveJSON J.defaultOptions {J.omitNothingFields = True} ''RemoteCtrl)
+$(J.deriveJSON defaultJSON ''RemoteCtrl)
 
-$(J.deriveJSON J.defaultOptions {J.omitNothingFields = True} ''RemoteCtrlInfo)
+$(J.deriveJSON defaultJSON ''RemoteCtrlInfo)

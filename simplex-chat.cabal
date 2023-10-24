@@ -36,6 +36,9 @@ library
       Simplex.Chat.Markdown
       Simplex.Chat.Messages
       Simplex.Chat.Messages.CIContent
+      Simplex.Chat.Messages.CIContent.Events
+      Simplex.Chat.Messages.CIContent.Events.DB
+      Simplex.Chat.Messages.CIContent.Events.Prefix
       Simplex.Chat.Migrations.M20220101_initial
       Simplex.Chat.Migrations.M20220122_v1_1
       Simplex.Chat.Migrations.M20220205_chat_item_status
