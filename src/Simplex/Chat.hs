@@ -1513,7 +1513,7 @@ processChatCommand = \case
   APINewGroup userId incognito gProfile@GroupProfile {displayName} -> withUserId userId $ \user -> do
     checkValidName displayName
     gVar <- asks idsDrg
-    -- [incognito] generate incognito profile for group
+    -- [incognito] generate incognito profile for group membership
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     groupInfo <- withStore $ \db -> createNewGroup db gVar user gProfile incognitoProfile
     pure $ CRGroupCreated user groupInfo
