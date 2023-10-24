@@ -23,6 +23,9 @@ var TransformOperation;
 })(TransformOperation || (TransformOperation = {}));
 let activeCall;
 let answerTimeout = 30000;
+var useWorker = false;
+var localizedState = "";
+var localizedDescription = "";
 const processCommand = (function () {
     const defaultIceServers = [
         { urls: ["stun:stun.simplex.im:443"] },
@@ -38,9 +41,9 @@ const processCommand = (function () {
                 iceTransportPolicy: relay ? "relay" : "all",
             },
             iceCandidates: {
-                delay: 3000,
-                extrasInterval: 2000,
-                extrasTimeout: 8000,
+                delay: 750,
+                extrasInterval: 1500,
+                extrasTimeout: 12000,
             },
         };
     }
@@ -81,6 +84,8 @@ const processCommand = (function () {
                 if (delay)
                     clearTimeout(delay);
                 resolved = true;
+                // console.log("resolveIceCandidates", JSON.stringify(candidates))
+                console.log("resolveIceCandidates");
                 const iceCandidates = serialize(candidates);
                 candidates = [];
                 resolve(iceCandidates);
@@ -88,19 +93,21 @@ const processCommand = (function () {
             function sendIceCandidates() {
                 if (candidates.length === 0)
                     return;
+                // console.log("sendIceCandidates", JSON.stringify(candidates))
+                console.log("sendIceCandidates");
                 const iceCandidates = serialize(candidates);
                 candidates = [];
                 sendMessageToNative({ resp: { type: "ice", iceCandidates } });
             }
         });
     }
-    async function initializeCall(config, mediaType, aesKey, useWorker) {
+    async function initializeCall(config, mediaType, aesKey) {
         const pc = new RTCPeerConnection(config.peerConnectionConfig);
         const remoteStream = new MediaStream();
         const localCamera = VideoCamera.User;
         const localStream = await getLocalMediaStream(mediaType, localCamera);
         const iceCandidates = getIceCandidates(pc, config);
-        const call = { connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, useWorker };
+        const call = { connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey };
         await setupMediaStreams(call);
         let connectionTimeout = setTimeout(connectionHandler, answerTimeout);
         pc.addEventListener("connectionstatechange", connectionStateChange);
@@ -178,17 +185,17 @@ const processCommand = (function () {
                     // This request for local media stream is made to prompt for camera/mic permissions on call start
                     if (command.media)
                         await getLocalMediaStream(command.media, VideoCamera.User);
-                    const encryption = supportsInsertableStreams(command.useWorker);
+                    const encryption = supportsInsertableStreams(useWorker);
                     resp = { type: "capabilities", capabilities: { encryption } };
                     break;
                 case "start": {
                     console.log("starting incoming call - create webrtc session");
                     if (activeCall)
                         endCall();
-                    const { media, useWorker, iceServers, relay } = command;
+                    const { media, iceServers, relay } = command;
                     const encryption = supportsInsertableStreams(useWorker);
                     const aesKey = encryption ? command.aesKey : undefined;
-                    activeCall = await initializeCall(getCallConfig(encryption && !!aesKey, iceServers, relay), media, aesKey, useWorker);
+                    activeCall = await initializeCall(getCallConfig(encryption && !!aesKey, iceServers, relay), media, aesKey);
                     const pc = activeCall.connection;
                     const offer = await pc.createOffer();
                     await pc.setLocalDescription(offer);
@@ -202,7 +209,6 @@ const processCommand = (function () {
                     //   iceServers,
                     //   relay,
                     //   aesKey,
-                    //   useWorker,
                     // }
                     resp = {
                         type: "offer",
@@ -210,21 +216,23 @@ const processCommand = (function () {
                         iceCandidates: await activeCall.iceCandidates,
                         capabilities: { encryption },
                     };
+                    // console.log("offer response", JSON.stringify(resp))
                     break;
                 }
                 case "offer":
                     if (activeCall) {
                         resp = { type: "error", message: "accept: call already started" };
                     }
-                    else if (!supportsInsertableStreams(command.useWorker) && command.aesKey) {
+                    else if (!supportsInsertableStreams(useWorker) && command.aesKey) {
                         resp = { type: "error", message: "accept: encryption is not supported" };
                     }
                     else {
                         const offer = parse(command.offer);
                         const remoteIceCandidates = parse(command.iceCandidates);
-                        const { media, aesKey, useWorker, iceServers, relay } = command;
-                        activeCall = await initializeCall(getCallConfig(!!aesKey, iceServers, relay), media, aesKey, useWorker);
+                        const { media, aesKey, iceServers, relay } = command;
+                        activeCall = await initializeCall(getCallConfig(!!aesKey, iceServers, relay), media, aesKey);
                         const pc = activeCall.connection;
+                        // console.log("offer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
                         await pc.setRemoteDescription(new RTCSessionDescription(offer));
                         const answer = await pc.createAnswer();
                         await pc.setLocalDescription(answer);
@@ -236,6 +244,7 @@ const processCommand = (function () {
                             iceCandidates: await activeCall.iceCandidates,
                         };
                     }
+                    // console.log("answer response", JSON.stringify(resp))
                     break;
                 case "answer":
                     if (!pc) {
@@ -250,6 +259,7 @@ const processCommand = (function () {
                     else {
                         const answer = parse(command.answer);
                         const remoteIceCandidates = parse(command.iceCandidates);
+                        // console.log("answer remoteIceCandidates", JSON.stringify(remoteIceCandidates))
                         await pc.setRemoteDescription(new RTCSessionDescription(answer));
                         addIceCandidates(pc, remoteIceCandidates);
                         resp = { type: "ok" };
@@ -286,6 +296,11 @@ const processCommand = (function () {
                         resp = { type: "ok" };
                     }
                     break;
+                case "description":
+                    localizedState = command.state;
+                    localizedDescription = command.description;
+                    resp = { type: "ok" };
+                    break;
                 case "end":
                     endCall();
                     resp = { type: "ok" };
@@ -310,12 +325,14 @@ const processCommand = (function () {
         catch (e) {
             console.log(e);
         }
+        shutdownCameraAndMic();
         activeCall = undefined;
         resetVideoElements();
     }
     function addIceCandidates(conn, iceCandidates) {
         for (const c of iceCandidates) {
             conn.addIceCandidate(new RTCIceCandidate(c));
+            // console.log("addIceCandidates", JSON.stringify(c))
         }
     }
     async function setupMediaStreams(call) {
@@ -335,11 +352,11 @@ const processCommand = (function () {
         if (call.aesKey) {
             if (!call.key)
                 call.key = await callCrypto.decodeAesKey(call.aesKey);
-            if (call.useWorker && !call.worker) {
+            if (useWorker && !call.worker) {
                 const workerCode = `const callCrypto = (${callCryptoFunction.toString()})(); (${workerFunction.toString()})()`;
                 call.worker = new Worker(URL.createObjectURL(new Blob([workerCode], { type: "text/javascript" })));
-                call.worker.onerror = ({ error, filename, lineno, message }) => console.log(JSON.stringify({ error, filename, lineno, message }));
-                call.worker.onmessage = ({ data }) => console.log(JSON.stringify({ message: data }));
+                call.worker.onerror = ({ error, filename, lineno, message }) => console.log({ error, filename, lineno, message });
+                // call.worker.onmessage = ({data}) => console.log(JSON.stringify({message: data}))
             }
         }
     }
@@ -479,6 +496,11 @@ const processCommand = (function () {
         return (("createEncodedStreams" in RTCRtpSender.prototype && "createEncodedStreams" in RTCRtpReceiver.prototype) ||
             (!!useWorker && "RTCRtpScriptTransform" in window));
     }
+    function shutdownCameraAndMic() {
+        if (activeCall === null || activeCall === void 0 ? void 0 : activeCall.localStream) {
+            activeCall.localStream.getTracks().forEach((track) => track.stop());
+        }
+    }
     function resetVideoElements() {
         const videos = getVideoElements();
         if (!videos)
@@ -507,6 +529,15 @@ const processCommand = (function () {
     }
     return processCommand;
 })();
+function toggleMedia(s, media) {
+    let res = false;
+    const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks();
+    for (const t of tracks) {
+        t.enabled = !t.enabled;
+        res = t.enabled;
+    }
+    return res;
+}
 // Cryptography function - it is loaded both in the main window and in worker context (if the worker is used)
 function callCryptoFunction() {
     const initialPlainTextRequired = {
