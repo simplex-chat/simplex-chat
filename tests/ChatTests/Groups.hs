@@ -23,6 +23,7 @@ chatGroupTests = do
   describe "chat groups" $ do
     it "add contacts, create group and send/receive messages" testGroup
     it "add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
+    it "create group with incognito membership" testNewGroupIncognito
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
     it "create group with the same displayName" testGroupSameName
@@ -276,6 +277,56 @@ testGroupShared alice bob cath checkMessages = do
       cath #$> ("/_read chat #1", id, "ok")
       alice #$> ("/_unread chat #1 on", id, "ok")
       alice #$> ("/_unread chat #1 off", id, "ok")
+
+testNewGroupIncognito :: HasCallStack => FilePath -> IO ()
+testNewGroupIncognito =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      -- alice creates group with incognito membership
+      alice ##> "/g i team"
+      aliceIncognito <- getTermLine alice
+      alice <## ("group #team is created, your incognito profile for this group is " <> aliceIncognito)
+      alice <## "to add members use /create link #team"
+
+      -- alice invites bob
+      alice ##> "/a team bob"
+      alice <## "you are using an incognito profile for this group - prohibited to invite contacts"
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob_1 (Bob): accepting request to join group #team..."
+      _ <- getTermLine alice
+      concurrentlyN_
+        [ do
+            alice <## ("bob_1 (Bob): contact is connected, your incognito profile for this contact is " <> aliceIncognito)
+            alice <## "use /i bob_1 to print out this incognito profile again"
+            alice <## "bob_1 invited to group #team via your group link"
+            alice <## "#team: bob_1 joined the group",
+          do
+            bob <## (aliceIncognito <> ": contact is connected")
+            bob <## "#team: you joined the group"
+        ]
+
+      alice <##> bob
+
+      alice ?#> "@bob_1 hi, I'm incognito"
+      bob <# (aliceIncognito <> "> hi, I'm incognito")
+      bob #> ("@" <> aliceIncognito <> " hey, I'm bob")
+      alice ?<# "bob_1> hey, I'm bob"
+
+      alice ?#> "#team hello"
+      bob <# ("#team " <> aliceIncognito <> "> hello")
+      bob #> "#team hi there"
+      alice ?<# "#team bob_1> hi there"
+
+      alice ##> "/gs"
+      alice <## "i #team (2 members)"
+      bob ##> "/gs"
+      bob <## "#team (2 members)"
 
 testGroup2 :: HasCallStack => FilePath -> IO ()
 testGroup2 =
