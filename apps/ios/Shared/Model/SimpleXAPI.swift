@@ -722,6 +722,9 @@ func apiUpdateProfile(profile: Profile) async throws -> (Profile, [Contact])? {
     switch r {
     case .userProfileNoChange: return nil
     case let .userProfileUpdated(_, _, toProfile, updateSummary): return (toProfile, updateSummary.changedContacts)
+    case .chatCmdError(_, .errorStore(.duplicateName)):
+        AlertManager.shared.showAlert(userProfileAlert(.duplicateUserError, Binding.constant(profile.displayName)));
+        return nil;
     default: throw r
     }
 }

@@ -174,11 +174,11 @@ struct UserProfile: View {
                         chatModel.updateCurrentUser(newProfile)
                         profile = newProfile
                     }
+                    editProfile = false
                 }
             } catch {
                 logger.error("UserProfile apiUpdateProfile error: \(responseError(error))")
             }
-            editProfile = false
         }
     }
 }
