@@ -183,6 +183,17 @@ createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange 
   where
     ent ct = if connType == ct then entityId else Nothing
 
+createIncognitoProfile_ :: DB.Connection -> UserId -> UTCTime -> Profile -> IO Int64
+createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, image} = do
+  DB.execute
+    db
+    [sql|
+      INSERT INTO contact_profiles (display_name, full_name, image, user_id, incognito, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?)
+    |]
+    (displayName, fullName, image, userId, Just True, createdAt, createdAt)
+  insertedRowId db
+
 setPeerChatVRange :: DB.Connection -> Int64 -> VersionRange -> IO ()
 setPeerChatVRange db connId (VersionRange minVer maxVer) =
   DB.execute

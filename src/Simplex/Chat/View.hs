@@ -139,7 +139,7 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
   CRUserContactLink u UserContactLink {connReqContact, autoAccept} -> ttyUser u $ connReqContact_ "Your chat address:" connReqContact <> autoAcceptStatus_ autoAccept
   CRUserContactLinkUpdated u UserContactLink {autoAccept} -> ttyUser u $ autoAcceptStatus_ autoAccept
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} -> ttyUser u [ttyContact c <> ": contact request rejected"]
-  CRGroupCreated u g -> ttyUser u $ viewGroupCreated g
+  CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRGroupsList u gs -> ttyUser u $ viewGroupsList gs
   CRSentGroupInvitation u g c _ ->
@@ -812,11 +812,22 @@ viewReceivedContactRequest c Profile {fullName} =
     "to reject: " <> highlight ("/rc " <> viewName c) <> " (the sender will NOT be notified)"
   ]
 
-viewGroupCreated :: GroupInfo -> [StyledString]
-viewGroupCreated g =
-  [ "group " <> ttyFullGroup g <> " is created",
-    "to add members use " <> highlight ("/a " <> viewGroupName g <> " <name>") <> " or " <> highlight ("/create link #" <> viewGroupName g)
-  ]
+viewGroupCreated :: GroupInfo -> Bool -> [StyledString]
+viewGroupCreated g testView =
+  case incognitoMembershipProfile g of
+    Just localProfile
+      | testView -> incognitoProfile' profile : message
+      | otherwise -> message
+      where
+        profile = fromLocalProfile localProfile
+        message =
+          [ "group " <> ttyFullGroup g <> " is created, your incognito profile for this group is " <> incognitoProfile' profile,
+            "to add members use " <> highlight ("/create link #" <> viewGroupName g)
+          ]
+    Nothing ->
+      [ "group " <> ttyFullGroup g <> " is created",
+        "to add members use " <> highlight ("/a " <> viewGroupName g <> " <name>") <> " or " <> highlight ("/create link #" <> viewGroupName g)
+      ]
 
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
 viewCannotResendInvitation g c =
@@ -1707,7 +1718,7 @@ viewChatError logLevel = \case
         _ -> ": you have insufficient permissions for this action, the required role is " <> plain (strEncode role)
     CEGroupMemberInitialRole g role -> [ttyGroup' g <> ": initial role for group member cannot be " <> plain (strEncode role) <> ", use member or observer"]
     CEContactIncognitoCantInvite -> ["you're using your main profile for this group - prohibited to invite contacts to whom you are connected incognito"]
-    CEGroupIncognitoCantInvite -> ["you've connected to this group using an incognito profile - prohibited to invite contacts"]
+    CEGroupIncognitoCantInvite -> ["you are using an incognito profile for this group - prohibited to invite contacts"]
     CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]
     CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> viewGroupName g)]
     CEGroupMemberNotActive -> ["your group connection is not active yet, try later"]

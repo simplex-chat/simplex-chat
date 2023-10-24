@@ -1085,7 +1085,7 @@ testJoinGroupIncognito =
         ]
       -- cath cannot invite to the group because her membership is incognito
       cath ##> "/a secret_club dan"
-      cath <## "you've connected to this group using an incognito profile - prohibited to invite contacts"
+      cath <## "you are using an incognito profile for this group - prohibited to invite contacts"
       -- alice invites dan
       alice ##> "/a secret_club dan admin"
       concurrentlyN_
