@@ -242,7 +242,7 @@ struct ChatInfoView: View {
         }
         .actionSheet(isPresented: $showDeleteContactActionSheet) {
             if contact.ready && contact.active {
-                ActionSheet(
+                return ActionSheet(
                     title: Text("Delete contact?\nThis cannot be undone!"),
                     buttons: [
                         .destructive(Text("Delete and notify contact")) { deleteContact(notify: true) },
@@ -251,7 +251,7 @@ struct ChatInfoView: View {
                     ]
                 )
             } else {
-                ActionSheet(
+                return ActionSheet(
                     title: Text("Delete contact?\nThis cannot be undone!"),
                     buttons: [
                         .destructive(Text("Delete")) { deleteContact() },

@@ -375,8 +375,8 @@ data ChatCommand
   | EditMessage {chatName :: ChatName, editedMsg :: Text, message :: Text}
   | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: Text}
   | ReactToMessage {add :: Bool, reaction :: MsgReaction, chatName :: ChatName, reactToMessage :: Text}
-  | APINewGroup UserId GroupProfile
-  | NewGroup GroupProfile
+  | APINewGroup UserId IncognitoEnabled GroupProfile
+  | NewGroup IncognitoEnabled GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
   | MemberRole GroupName ContactName GroupMemberRole
