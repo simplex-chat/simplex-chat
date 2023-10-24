@@ -193,17 +193,6 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
-createIncognitoProfile_ :: DB.Connection -> UserId -> UTCTime -> Profile -> IO Int64
-createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, image} = do
-  DB.execute
-    db
-    [sql|
-      INSERT INTO contact_profiles (display_name, full_name, image, user_id, incognito, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?)
-    |]
-    (displayName, fullName, image, userId, Just True, createdAt, createdAt)
-  insertedRowId db
-
 createDirectContact :: DB.Connection -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
 createDirectContact db user@User {userId} activeConn@Connection {connId, localAlias} p@Profile {preferences} = do
   createdAt <- liftIO getCurrentTime

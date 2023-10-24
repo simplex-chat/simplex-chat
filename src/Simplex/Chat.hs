@@ -1510,13 +1510,15 @@ processChatCommand = \case
     chatRef <- getChatRef user chatName
     chatItemId <- getChatItemIdByText user chatRef msg
     processChatCommand $ APIChatItemReaction chatRef chatItemId add reaction
-  APINewGroup userId gProfile@GroupProfile {displayName} -> withUserId userId $ \user -> do
+  APINewGroup userId incognito gProfile@GroupProfile {displayName} -> withUserId userId $ \user -> do
     checkValidName displayName
     gVar <- asks idsDrg
-    groupInfo <- withStore $ \db -> createNewGroup db gVar user gProfile
+    -- [incognito] generate incognito profile for group membership
+    incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+    groupInfo <- withStore $ \db -> createNewGroup db gVar user gProfile incognitoProfile
     pure $ CRGroupCreated user groupInfo
-  NewGroup gProfile -> withUser $ \User {userId} ->
-    processChatCommand $ APINewGroup userId gProfile
+  NewGroup incognito gProfile -> withUser $ \User {userId} ->
+    processChatCommand $ APINewGroup userId incognito gProfile
   APIAddMember groupId contactId memRole -> withUser $ \user -> withChatLock "addMember" $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withStore $ \db -> (,) <$> getGroup db user groupId <*> getContact db user contactId
@@ -1547,12 +1549,12 @@ processChatCommand = \case
             Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo cName
         | otherwise -> throwChatError $ CEGroupDuplicateMember cName
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
-    (invitation, ct) <- withStore $ \db -> do
-      inv@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db user groupId
-      (inv,) <$> getContactViaMember db user fromMember
-    let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} = invitation
-        Contact {activeConn = Connection {peerChatVRange}} = ct
     withChatLock "joinGroup" . procCmd $ do
+      (invitation, ct) <- withStore $ \db -> do
+        inv@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db user groupId
+        (inv,) <$> getContactViaMember db user fromMember
+      let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} = invitation
+          Contact {activeConn = Connection {peerChatVRange}} = ct
       subMode <- chatReadVar subscriptionMode
       dm <- directMessage $ XGrpAcpt membership.memberId
       agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm subMode
@@ -5714,8 +5716,8 @@ chatCommandP =
       ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
       ("/help db" <|> "/hd") $> ChatHelp HSDatabase,
       ("/help" <|> "/h") $> ChatHelp HSMain,
-      ("/group " <|> "/g ") *> char_ '#' *> (NewGroup <$> groupProfile),
-      "/_group " *> (APINewGroup <$> A.decimal <* A.space <*> jsonP),
+      ("/group" <|> "/g") *> (NewGroup <$> incognitoP <* A.space <* char_ '#' <*> groupProfile),
+      "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <* A.space <*> jsonP),
       ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> (memberRole <|> pure GRMember)),
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayName),
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayName <* A.space <* char_ '@' <*> displayName <*> memberRole),

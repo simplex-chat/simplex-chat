@@ -324,8 +324,26 @@ fun ComposeView(
   }
 
   fun deleteUnusedFiles() {
-    chatModel.filesToDelete.forEach { it.delete() }
-    chatModel.filesToDelete.clear()
+    val shared = chatModel.sharedContent.value
+    if (shared == null) {
+      chatModel.filesToDelete.forEach { it.delete() }
+      chatModel.filesToDelete.clear()
+    } else {
+      val sharedPaths = when (shared) {
+        is SharedContent.Media -> shared.uris.map { it.toString() }
+        is SharedContent.File -> listOf(shared.uri.toString())
+        is SharedContent.Text -> emptyList()
+      }
+      // When sharing a file and pasting it in SimpleX itself, the file shouldn't be deleted before sending or before leaving the chat after sharing
+      chatModel.filesToDelete.removeAll { file ->
+        if (sharedPaths.any { it.endsWith(file.name) }) {
+          false
+        } else {
+          file.delete()
+          true
+        }
+      }
+    }
   }
 
   suspend fun send(cInfo: ChatInfo, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?): ChatItem? {
