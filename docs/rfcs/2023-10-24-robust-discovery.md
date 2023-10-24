@@ -25,44 +25,73 @@ We still want to avoid system interface enumeration due to guesswork involved in
 
 ### Datagram
 
-- `[8]` Nonce (*TBD* timestamp or random). Used to prevent replay attacks (together with the counter).
+- `[4]` System tag "SXC1"
+- `[4]` Version range encoding
+- `[8]` systemSeconds of SystemTime encoding - does not change within session.
 - `[2]` Announce counter.
 - `[6]` Service address (host and port).
-- `[8]` Service tag. Used to filter announcements by service type and/or version. *TBD*: something like `REMPROF1` may be used to mark the remote profile connections.
-- `[32]` SHA256 fingerprint of CA key used to issue per-session TLS certificates. *TBD*: other site-local services may use something else.
-- `[32]` Datagram authentication tag.
+- `[1 + 32]` SHA256 fingerprint of CA certificate used to issue per-session TLS certificates.
+- `[1 + ?]` X25519 DH key encoding to agree for per-session encryption inside TLS (hello received in response to hello from controller will contain host DH key).
+- `[1 + ?]` Ed25519 public key used to sign datagram (the host also will receive it in the QR code, it should match this one).
+- `[1 + ?]` Ed25519 signature signing the previous bytes.
 
-That gives 64+24 bytes that is well under typical MTU of ~1500.
+"Encoding" here means Encoding class.
 
-A site-local multicast group `224.0.0.251` is used to announce services on port `5226`.
+That gives ~250 bytes (TBC) that is well under typical MTU of ~1500.
 
-> The same group is used in mDNS (AKA bonjour/avahi/dns-sd/zeroconf) so we expect it to run with most home/SOHO access points without further configuration.
-> The port is different though, not to interfere with the real mDNS activities, so this may thwart the effort.
-> A future versions may include configuration options to use different group and/or port.
+A site-local multicast group `224.0.0.251` is used to announce services on port `5353`.
+
+> The same group and port are used in mDNS (AKA bonjour/avahi/dns-sd/zeroconf) so we expect it to run with most home/SOHO access points without further configuration.
 
 ### OOB data
 
-Announcer MUST include the public key used to sign announce datagrams in its OOB link/QR code.
-
-Announcer SHOULD include its device name for better initial contact UX.
-
-Announcer MAY include the same key fingerprint that would be announced to pre-register remote controller.
+Announcer MUST include:
+- ED25519 public key used to sign announce datagrams in its OOB link/QR code (also included in datagram, so they can be validated before scanning QR code).
+- the CA certificate fingerprint (also included in datagram).
+- device name for better initial contact UX.
 
 ### Discovery announcer
 
-> TBD: announcer may function as a singleton service or be spawned per-service and function independently.
+> announcer is run before the controller service.
 >
-> A singleton service will maintain a list of active services, with a registry-like API.
-> It automatically starts to send datagrams when there's anything to announce.
->
-> An independent announcer will be started and stopped directly by a service that wants to be discovered.
 > Multiple announcers can send to the same group/port simultaneously.
 
 A typical announce interval is 1 second to balance UI responsiveness with network traffic.
 
-Announcer MUST first discover its own address.
+Announcer MUST first discover its own address and validate with the list of local network interfaces.
+
+To discover it's address it will send a datagram with this format:
+
+- `[4]` System tag "SXC0"
+- `[4]` Version range encoding
+- `[1 + 32]` Random number.
 
 Announcer MUST NOT announce a service for a different host.
+
+### Implementation
+
+```
+ChatController {
+    ...
+    multicastSubscribers :: TMVar Int
+    ...
+}
+```
+
+Controller/host connection steps:
+
+1. take multicastSubscribers, if 0 subscribe to multicast group
+2. increase counter and put it back.
+3. send SXC0 datagrams to discover own address.
+4. when received, match address to network interfaces, fail if no match after a few datagrams.
+5. get free port for TCP session.
+6. generate DH key for session.
+7. prepare and start sending signed SXC1 datagrams.
+8. when host connects to the address in the announcement, stop sending datagrams.
+9. take multicastSubscribers, if 1 unsubscribe from multicast group
+10. put back min(0, cnt - 1).
+11. send Hello to host.
+12. get Hello from host with DH key, compute shared secret to be used for remaining  commands and responses.
 
 ### Service (TCP server)
 
@@ -80,9 +109,17 @@ An active listener service receives datagrams and maintains a discovery table ma
 A service key is derived from the payload, which MAY be used as-is.
 Source address contains both host and port.
 
-Listener MUST verify datagram signature against the key it got OOB.
+Listener MUST verify datagram signature against the key it got in datagram.
 
-Listener MUST check that source address matches the announce.
+Listener MUST verify that the address in the announcement matches the source address of the datagram.
+
+During the first connection to the new controller:
+
+OOB must have the same:
+- Ed25519 key used to sign datagrams.
+- CA cert fingerprint.
+
+During the subsequent connections, these keys and CA cert fingerprint in the datagram mush match the record.
 
 ### Service (TCP client)
 
@@ -97,5 +134,4 @@ E.g. a remote host on a mobile will wait for the remote profile service with a k
 An host with a multicast entitlement may use it to find its own address.
 Receiving your own datagram would reveal source address just as it is used in (unauthenticated) discovery tests.
 
-A different site-local multicast group `224.0.0.151` is used to send "mirror" datagrams on port `6226`.
-This is to prevent changing discovery group membership of the process.
+The same multicast group `224.0.0.251` is used to send "mirror" datagrams on port `5353`.
