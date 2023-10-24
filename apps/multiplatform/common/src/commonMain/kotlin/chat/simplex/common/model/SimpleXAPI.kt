@@ -1647,25 +1647,25 @@ object ChatController {
           val useRelay = appPrefs.webrtcPolicyRelay.get()
           val iceServers = getIceServers()
           Log.d(TAG, ".callOffer iceServers $iceServers")
-          chatModel.callCommand.value = WCallCommand.Offer(
+          chatModel.callCommand.add(WCallCommand.Offer(
             offer = r.offer.rtcSession,
             iceCandidates = r.offer.rtcIceCandidates,
             media = r.callType.media,
             aesKey = r.sharedKey,
             iceServers = iceServers,
             relay = useRelay
-          )
+          ))
         }
       }
       is CR.CallAnswer -> {
         withCall(r, r.contact) { call ->
           chatModel.activeCall.value = call.copy(callState = CallState.AnswerReceived)
-          chatModel.callCommand.value = WCallCommand.Answer(answer = r.answer.rtcSession, iceCandidates = r.answer.rtcIceCandidates)
+          chatModel.callCommand.add(WCallCommand.Answer(answer = r.answer.rtcSession, iceCandidates = r.answer.rtcIceCandidates))
         }
       }
       is CR.CallExtraInfo -> {
         withCall(r, r.contact) { _ ->
-          chatModel.callCommand.value = WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates)
+          chatModel.callCommand.add(WCallCommand.Ice(iceCandidates = r.extraInfo.rtcIceCandidates))
         }
       }
       is CR.CallEnded -> {
@@ -1674,7 +1674,7 @@ object ChatController {
           chatModel.callManager.reportCallRemoteEnded(invitation = invitation)
         }
         withCall(r, r.contact) { _ ->
-          chatModel.callCommand.value = WCallCommand.End
+          chatModel.callCommand.add(WCallCommand.End)
           withApi {
             chatModel.activeCall.value = null
             chatModel.showCallView.value = false
