@@ -18,11 +18,15 @@ module Simplex.Chat.Remote.Discovery
     recvAnnounce,
     connectTLSClient,
     attachHTTP2Server,
+
+    -- * Reflection,
+    myHostAddress,
   )
 where
 
 import Control.Logger.Simple
 import Control.Monad
+import Crypto.Random (getRandomBytes)
 import Data.ByteString (ByteString)
 import Data.Default (def)
 import Data.String (IsString)
@@ -44,15 +48,33 @@ import Simplex.Messaging.Util (ifM, tshow, whenM)
 import UnliftIO
 import UnliftIO.Concurrent
 
--- | mDNS multicast group
-pattern MULTICAST_ADDR_V4 :: (IsString a, Eq a) => a
-pattern MULTICAST_ADDR_V4 = "224.0.0.251"
-
 pattern ANY_ADDR_V4 :: (IsString a, Eq a) => a
 pattern ANY_ADDR_V4 = "0.0.0.0"
 
-pattern DISCOVERY_PORT :: (IsString a, Eq a) => a
-pattern DISCOVERY_PORT = "5226"
+-- | mDNS multicast group.
+--
+-- A site-local group that is presumed to be allowed by default on home routers.
+pattern DISCOVERY_GROUP_V4 :: (IsString a, Eq a) => a
+pattern DISCOVERY_GROUP_V4 = "224.0.0.251"
+
+-- | Port for remote controller protocol announcements.
+pattern REMOTE_PROTOCOL_PORT :: (IsString a, Eq a) => a
+pattern REMOTE_PROTOCOL_PORT = "5226"
+
+-- | IANA-unassigned multicast group used to probe local device address.
+--
+-- The group is site-local, so the scope and interfaces should match those used by the discovery group.
+--
+-- A different group is needed so the membership changes wouldn't affect discovery protocol.
+-- This way the address reflection may be used at any time, particularly in response to "network changed" system events.
+--
+-- Whenever this group is configured is irrelevant, since a host is both sending and receiving datagrams.
+pattern MIRROR_GROUP_V4 :: (IsString a, Eq a) => a
+pattern MIRROR_GROUP_V4 = "224.0.0.151"
+
+-- | Port for discovering a local address of this device
+pattern MIRROR_PORT :: (IsString a, Eq a) => a
+pattern MIRROR_PORT = "6226"
 
 -- | Announce tls server, wait for connection and attach http2 client to it.
 --
@@ -89,7 +111,7 @@ announceRevHTTP2 tasks invite credentials finishAction = do
 -- | Broadcast invite with link-local datagrams
 runAnnouncer :: ByteString -> IO ()
 runAnnouncer inviteBS = do
-  bracket (UDP.clientSocket MULTICAST_ADDR_V4 DISCOVERY_PORT False) UDP.close $ \sock -> do
+  bracket (UDP.clientSocket DISCOVERY_GROUP_V4 REMOTE_PROTOCOL_PORT False) UDP.close $ \sock -> do
     let raw = UDP.udpSocket sock
     N.setSocketOption raw N.Broadcast 1
     N.setSocketOption raw N.ReuseAddr 1
@@ -99,7 +121,7 @@ runAnnouncer inviteBS = do
 
 -- XXX: Do we need to start multiple TLS servers for different mobile hosts?
 startTLSServer :: (MonadUnliftIO m) => TMVar Bool -> TLS.Credentials -> (Transport.TLS -> IO ()) -> m (Async ())
-startTLSServer started credentials = async . liftIO . runTransportServer started DISCOVERY_PORT serverParams defaultTransportServerConfig
+startTLSServer started credentials = async . liftIO . runTransportServer started REMOTE_PROTOCOL_PORT serverParams defaultTransportServerConfig
   where
     serverParams =
       def
@@ -117,7 +139,7 @@ runHTTP2Client finishedVar clientVar tls =
     (logError "HTTP2 session already started on this listener")
   where
     attachClient = do
-      client <- attachHTTP2Client config ANY_ADDR_V4 DISCOVERY_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls
+      client <- attachHTTP2Client config ANY_ADDR_V4 REMOTE_PROTOCOL_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls
       putMVar clientVar client
       readMVar finishedVar
     -- TODO connection timeout
@@ -128,7 +150,7 @@ withListener = bracket openListener closeListener
 
 openListener :: (MonadIO m) => m UDP.ListenSocket
 openListener = liftIO $ do
-  sock <- UDP.serverSocket (MULTICAST_ADDR_V4, read DISCOVERY_PORT)
+  sock <- UDP.serverSocket (DISCOVERY_GROUP_V4, read REMOTE_PROTOCOL_PORT)
   logDebug $ "Discovery listener socket: " <> tshow sock
   let raw = UDP.listenSocket sock
   N.setSocketOption raw N.Broadcast 1
@@ -137,13 +159,13 @@ openListener = liftIO $ do
 
 closeListener :: MonadIO m => UDP.ListenSocket -> m ()
 closeListener sock = liftIO $ do
-  UDP.stop sock
   void $ setMembership (UDP.listenSocket sock) (listenerHostAddr4 sock) False
+  UDP.stop sock
 
 listenerHostAddr4 :: UDP.ListenSocket -> N.HostAddress
 listenerHostAddr4 sock = case UDP.mySockAddr sock of
   N.SockAddrInet _port host -> host
-  _ -> error "MULTICAST_ADDR_V4 is V4"
+  _ -> error "DISCOVERY_GROUP_V4 is V4"
 
 recvAnnounce :: (MonadIO m) => UDP.ListenSocket -> m (N.SockAddr, ByteString)
 recvAnnounce sock = liftIO $ do
@@ -154,7 +176,7 @@ connectRevHTTP2 :: (MonadUnliftIO m) => TransportHost -> C.KeyHash -> (HTTP2Requ
 connectRevHTTP2 host fingerprint = connectTLSClient host fingerprint . attachHTTP2Server
 
 connectTLSClient :: (MonadUnliftIO m) => TransportHost -> C.KeyHash -> (Transport.TLS -> m a) -> m a
-connectTLSClient host caFingerprint = runTransportClient defaultTransportClientConfig Nothing host DISCOVERY_PORT (Just caFingerprint)
+connectTLSClient host caFingerprint = runTransportClient defaultTransportClientConfig Nothing host REMOTE_PROTOCOL_PORT (Just caFingerprint)
 
 attachHTTP2Server :: (MonadUnliftIO m) => (HTTP2Request -> m ()) -> Transport.TLS -> m ()
 attachHTTP2Server processRequest tls = do
@@ -166,3 +188,30 @@ attachHTTP2Server processRequest tls = do
 -- | Suppress storing initial chunk in bodyHead, forcing clients and servers to stream chunks
 doNotPrefetchHead :: Int
 doNotPrefetchHead = 0
+
+-- | Get own LAN IPv4 address by sending datagram to a multicast address then receiving it.
+--
+-- The sender socket will have @0.0.0.0:random@ address which gives no information.
+-- The receiver socket will have @group:port@ address that it got created with.
+-- However, receiving a datagram from a multicast group would reveal its LAN-routable address even on the same host.
+--
+-- This assumes that a system is configured to send datagrams from ADDR_ANY-bound sockets to its first connected multicast-capable interface that has an IPv4 address.
+myHostAddress :: IO N.HostAddress
+myHostAddress =
+  bracket (UDP.clientSocket MIRROR_GROUP_V4 MIRROR_PORT False) UDP.close $ \sender ->
+    bracket (UDP.serverSocket (MIRROR_GROUP_V4, read MIRROR_PORT)) UDP.stop $ \receiver -> do
+      let rawReceiver = UDP.listenSocket receiver
+      bracket_
+        (setMembership rawReceiver (listenerHostAddr4 receiver) True)
+        (setMembership rawReceiver (listenerHostAddr4 receiver) False)
+        (run sender receiver)
+  where
+    run sender receiver = do
+      sNonce <- getRandomBytes 16
+      UDP.send sender sNonce
+      let expect =
+            UDP.recvFrom receiver >>= \case
+              (rNonce, _) | rNonce /= sNonce -> expect -- soneone else is running the mirror nearby at the same time, or the group is flooded
+              (_, UDP.ClientSockAddr (N.SockAddrInet _port addr) _cmsg) -> pure addr
+              _ -> error "myHostAddress: got non-IPv4 address for IPv4 socket"
+      expect
