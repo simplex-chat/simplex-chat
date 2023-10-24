@@ -37,6 +37,7 @@ import UnliftIO.Directory
 remoteTests :: SpecWith FilePath
 remoteTests = describe "Remote" $ do
   it "generates usable credentials" genCredentialsTest
+  it "discovers own address" myHostAddressTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
   it "performs protocol handshake" remoteHandshakeTest
   it "performs protocol handshake (again)" remoteHandshakeTest -- leaking servers regression check
@@ -65,7 +66,12 @@ genCredentialsTest _tmp = do
       logNote "Reading from client"
       Transport.getLn clientTls `shouldReturn` "hi client"
 
--- * UDP discovery and rever HTTP2
+-- * UDP discovery and reverse HTTP2
+
+myHostAddressTest :: (HasCallStack) => FilePath -> IO ()
+myHostAddressTest _tmp = do
+  ha <- Discovery.myHostAddress
+  logNote $ "Host LAN address: " <> tshow (N.hostAddressToTuple ha)
 
 announceDiscoverHttp2Test :: (HasCallStack) => FilePath -> IO ()
 announceDiscoverHttp2Test _tmp = do
