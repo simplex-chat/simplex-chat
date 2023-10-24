@@ -1,16 +1,15 @@
 package chat.simplex.common.platform
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import chat.simplex.common.model.*
-import chat.simplex.common.views.helpers.AlertManager
-import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.State
 import uk.co.caprica.vlcj.player.component.AudioPlayerComponent
 import java.io.File
+import java.util.*
 import kotlin.math.max
 
 actual class RecorderNative: RecorderInterface {
@@ -38,7 +37,7 @@ actual object AudioPlayer: AudioPlayerInterface {
 
   // Returns real duration of the track
   private fun start(fileSource: CryptoFile, seek: Int? = null, onProgressUpdate: (position: Int?, state: TrackState) -> Unit): Int? {
-    val absoluteFilePath = getAppFilePath(fileSource.filePath)
+    val absoluteFilePath = if (fileSource.isAbsolutePath) fileSource.filePath else  getAppFilePath(fileSource.filePath)
     if (!File(absoluteFilePath).exists()) {
       Log.e(TAG, "No such file: ${fileSource.filePath}")
       return null
@@ -208,6 +207,25 @@ val MediaPlayer.duration: Int
   get() = media().info().duration().toInt()
 
 actual object SoundPlayer: SoundPlayerInterface {
-  override fun start(scope: CoroutineScope, sound: Boolean) { /*LALAL*/ }
-  override fun stop() { /*LALAL*/ }
+  var playing = false
+
+  override fun start(scope: CoroutineScope, sound: Boolean) {
+    withBGApi {
+      val tmpFile = File(tmpDir, UUID.randomUUID().toString())
+      tmpFile.deleteOnExit()
+      SoundPlayer::class.java.getResource("/media/ring_once.mp3").openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
+      playing = true
+      while (playing) {
+        if (sound) {
+          AudioPlayer.play(CryptoFile.plain(tmpFile.absolutePath), mutableStateOf(true), mutableStateOf(0), mutableStateOf(0), true)
+        }
+        delay(3500)
+      }
+    }
+  }
+
+  override fun stop() {
+    playing = false
+    AudioPlayer.stop()
+  }
 }
