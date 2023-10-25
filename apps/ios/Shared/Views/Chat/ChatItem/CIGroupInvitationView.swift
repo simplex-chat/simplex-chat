@@ -17,35 +17,45 @@ struct CIGroupInvitationView: View {
     var memberRole: GroupMemberRole
     var chatIncognito: Bool = false
     @State private var frameWidth: CGFloat = 0
-    @State private var progressIndicator = false
+    @State private var inProgress = false
+    @State private var progressByTimeout = false
 
     var body: some View {
-        let action = !chatItem.chatDir.sent && groupInvitation.status == .pending && !progressIndicator
+        let action = !chatItem.chatDir.sent && groupInvitation.status == .pending
         let v = ZStack(alignment: .bottomTrailing) {
-            VStack(alignment: .leading) {
-                groupInfoView(action)
-                .padding(.horizontal, 2)
-                .padding(.top, 8)
-                .padding(.bottom, 6)
-                .overlay(DetermineWidth())
+            ZStack {
+                VStack(alignment: .leading) {
+                    groupInfoView(action)
+                        .padding(.horizontal, 2)
+                        .padding(.top, 8)
+                        .padding(.bottom, 6)
+                        .overlay(DetermineWidth())
 
-                Divider().frame(width: frameWidth)
+                    Divider().frame(width: frameWidth)
 
-                if action {
-                    groupInvitationText()
-                        .overlay(DetermineWidth())
-                    Text(chatIncognito ? "Tap to join incognito" : "Tap to join")
-                        .foregroundColor(chatIncognito ? .indigo : .accentColor)
-                        .font(.callout)
-                        .padding(.trailing, 60)
-                        .overlay(DetermineWidth())
-                } else {
-                    groupInvitationText()
-                        .padding(.trailing, 60)
-                        .overlay(DetermineWidth())
+                    if action {
+                        VStack(alignment: .leading, spacing: 2) {
+                            groupInvitationText()
+                                .overlay(DetermineWidth())
+                            Text(chatIncognito ? "Tap to join incognito" : "Tap to join")
+                                .foregroundColor(inProgress ? .secondary : chatIncognito ? .indigo : .accentColor)
+                                .font(.callout)
+                                .padding(.trailing, 60)
+                                .overlay(DetermineWidth())
+                        }
+                    } else {
+                        groupInvitationText()
+                            .padding(.trailing, 60)
+                            .overlay(DetermineWidth())
+                    }
+                }
+                .padding(.bottom, 2)
+
+                if progressByTimeout {
+                    ProgressView().scaleEffect(2)
                 }
             }
-            .padding(.bottom, 2)
+
             chatItem.timestampText
                 .font(.caption)
                 .foregroundColor(.secondary)
@@ -56,14 +66,24 @@ struct CIGroupInvitationView: View {
         .cornerRadius(18)
         .textSelection(.disabled)
         .onPreferenceChange(DetermineWidth.Key.self) { frameWidth = $0 }
+        .onChange(of: inProgress) { inProgress in
+            if inProgress {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    progressByTimeout = inProgress
+                }
+            } else {
+                progressByTimeout = false
+            }
+        }
 
         if action {
             v.onTapGesture {
-                progressIndicator = true
+                inProgress = true
                 joinGroup(groupInvitation.groupId) {
-                    await MainActor.run { progressIndicator = false }
+                    await MainActor.run { inProgress = false }
                 }
             }
+            .disabled(inProgress)
         } else {
             v
         }
@@ -71,23 +91,17 @@ struct CIGroupInvitationView: View {
 
     private func groupInfoView(_ action: Bool) -> some View {
         var color: Color
-        if action {
+        if action && !inProgress {
             color = chatIncognito ? .indigo : .accentColor
         } else {
             color = Color(uiColor: .tertiaryLabel)
         }
         return HStack(alignment: .top) {
-            ZStack {
-                if progressIndicator {
-                    ProgressView().scaleEffect(2)
-                } else {
-                    ProfileImage(
-                        imageStr: groupInvitation.groupProfile.image,
-                        iconName: "person.2.circle.fill",
-                        color: color
-                    )
-                }
-            }
+            ProfileImage(
+                imageStr: groupInvitation.groupProfile.image,
+                iconName: "person.2.circle.fill",
+                color: color
+            )
             .frame(width: 44, height: 44)
             .padding(.trailing, 4)
             VStack(alignment: .leading) {

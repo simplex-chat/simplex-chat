@@ -16,7 +16,6 @@ struct ChatListView: View {
     @State private var showAddChat = false
     @State private var userPickerVisible = false
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
-    @State private var progressIndicator = false
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -139,7 +138,7 @@ struct ChatListView: View {
         ZStack {
             List {
                 ForEach(cs, id: \.viewId) { chat in
-                    ChatListNavLink(chat: chat, progressIndicator: $progressIndicator)
+                    ChatListNavLink(chat: chat)
                         .padding(.trailing, -16)
                         .disabled(chatModel.chatRunning != true)
                 }
@@ -152,10 +151,6 @@ struct ChatListView: View {
             }
             if cs.isEmpty && !chatModel.chats.isEmpty {
                 Text("No filtered chats").foregroundColor(.secondary)
-            }
-
-            if progressIndicator {
-                ProgressView().scaleEffect(2)
             }
         }
     }
