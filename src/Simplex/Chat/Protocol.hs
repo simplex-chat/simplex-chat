@@ -99,8 +99,6 @@ instance MsgEncodingI 'Binary where encoding = SBinary
 
 instance MsgEncodingI 'Json where encoding = SJson
 
-data ACMEventTag = forall e. MsgEncodingI e => ACMEventTag (SMsgEncoding e) (CMEventTag e)
-
 instance TestEquality SMsgEncoding where
   testEquality SBinary SBinary = Just Refl
   testEquality SJson SJson = Just Refl
@@ -157,6 +155,8 @@ instance ToJSON SharedMsgId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+$(JQ.deriveJSON defaultJSON ''AppMessageJson)
+
 data MsgRef = MsgRef
   { msgId :: Maybe SharedMsgId,
     sentAt :: UTCTime,
@@ -164,6 +164,33 @@ data MsgRef = MsgRef
     memberId :: Maybe MemberId -- must be present in all group message references, both referencing sent and received
   }
   deriving (Eq, Show)
+
+$(JQ.deriveJSON defaultJSON ''MsgRef)
+
+data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData, content :: Maybe LinkContent}
+  deriving (Eq, Show)
+
+data LinkContent = LCPage | LCImage | LCVideo {duration :: Maybe Int} | LCUnknown {tag :: Text, json :: J.Object}
+  deriving (Eq, Show)
+
+$(pure [])
+
+instance FromJSON LinkContent where
+  parseJSON v@(J.Object j) =
+    $(JQ.mkParseJSON (taggedObjectJSON $ dropPrefix "LC") ''LinkContent) v
+      <|> LCUnknown <$> j .: "type" <*> pure j
+  parseJSON invalid =
+    JT.prependFailure "bad LinkContent, " (JT.typeMismatch "Object" invalid)
+
+instance ToJSON LinkContent where
+  toJSON = \case
+    LCUnknown _ j -> J.Object j
+    v -> $(JQ.mkToJSON (taggedObjectJSON $ dropPrefix "LC") ''LinkContent) v
+  toEncoding = \case
+    LCUnknown _ j -> JE.value $ J.Object j
+    v -> $(JQ.mkToEncoding (taggedObjectJSON $ dropPrefix "LC") ''LinkContent) v
+
+$(JQ.deriveJSON defaultJSON ''LinkPreview)
 
 data ChatMessage e = ChatMessage
   { chatVRange :: VersionRange,
@@ -352,12 +379,6 @@ isQuote = \case
   MCQuote {} -> True
   _ -> False
 
-data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData, content :: Maybe LinkContent}
-  deriving (Eq, Show)
-
-data LinkContent = LCPage | LCImage | LCVideo {duration :: Maybe Int} | LCUnknown {tag :: Text, json :: J.Object}
-  deriving (Eq, Show)
-
 data MsgContent
   = MCText Text
   | MCLink {text :: Text, preview :: LinkPreview}
@@ -410,6 +431,29 @@ msgContentTag = \case
 data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: Maybe FileInvitation, ttl :: Maybe Int, live :: Maybe Bool}
   deriving (Eq, Show)
 
+$(JQ.deriveJSON defaultJSON ''QuotedMsg)
+
+instance MsgEncodingI e => StrEncoding (ChatMessage e) where
+  strEncode msg = case chatToAppMessage msg of
+    AMJson m -> LB.toStrict $ J.encode m
+    AMBinary m -> strEncode m
+  strP = (\(ACMsg _ m) -> checkEncoding m) <$?> strP
+
+instance StrEncoding AChatMessage where
+  strEncode (ACMsg _ m) = strEncode m
+  strP =
+    A.peekChar' >>= \case
+      '{' -> ACMsg SJson <$> ((appJsonToCM <=< J.eitherDecodeStrict') <$?> A.takeByteString)
+      _ -> ACMsg SBinary <$> (appBinaryToCM <$?> strP)
+
+parseMsgContainer :: J.Object -> JT.Parser MsgContainer
+parseMsgContainer v =
+  MCQuote <$> v .: "quote" <*> mc
+    <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
+    <|> MCSimple <$> mc
+  where
+    mc = ExtMsgContent <$> v .: "content" <*> v .:? "file" <*> v .:? "ttl" <*> v .:? "live"
+
 extMsgContent :: MsgContent -> Maybe FileInvitation -> ExtMsgContent
 extMsgContent mc file = ExtMsgContent mc file Nothing Nothing
 
@@ -417,8 +461,71 @@ justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
 justTrue False = Nothing
 
+instance FromJSON MsgContent where
+  parseJSON (J.Object v) =
+    v .: "type" >>= \case
+      MCText_ -> MCText <$> v .: "text"
+      MCLink_ -> do
+        text <- v .: "text"
+        preview <- v .: "preview"
+        pure MCLink {text, preview}
+      MCImage_ -> do
+        text <- v .: "text"
+        image <- v .: "image"
+        pure MCImage {text, image}
+      MCVideo_ -> do
+        text <- v .: "text"
+        image <- v .: "image"
+        duration <- v .: "duration"
+        pure MCVideo {text, image, duration}
+      MCVoice_ -> do
+        text <- v .: "text"
+        duration <- v .: "duration"
+        pure MCVoice {text, duration}
+      MCFile_ -> MCFile <$> v .: "text"
+      MCUnknown_ tag -> do
+        text <- fromMaybe unknownMsgType <$> v .:? "text"
+        pure MCUnknown {tag, text, json = v}
+  parseJSON invalid =
+    JT.prependFailure "bad MsgContent, " (JT.typeMismatch "Object" invalid)
+
 unknownMsgType :: Text
 unknownMsgType = "unknown message type"
+
+msgContainerJSON :: MsgContainer -> J.Object
+msgContainerJSON = \case
+  MCQuote qm mc -> o $ ("quote" .= qm) : msgContent mc
+  MCForward mc -> o $ ("forward" .= True) : msgContent mc
+  MCSimple mc -> o $ msgContent mc
+  where
+    o = JM.fromList
+    msgContent (ExtMsgContent c file ttl live) = ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) ["content" .= c]
+
+instance ToJSON MsgContent where
+  toJSON = \case
+    MCUnknown {json} -> J.Object json
+    MCText t -> J.object ["type" .= MCText_, "text" .= t]
+    MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
+    MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
+    MCVideo {text, image, duration} -> J.object ["type" .= MCVideo_, "text" .= text, "image" .= image, "duration" .= duration]
+    MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
+    MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
+  toEncoding = \case
+    MCUnknown {json} -> JE.value $ J.Object json
+    MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
+    MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
+    MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
+    MCVideo {text, image, duration} -> J.pairs $ "type" .= MCVideo_ <> "text" .= text <> "image" .= image <> "duration" .= duration
+    MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
+    MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
+
+instance ToField MsgContent where
+  toField = toField . encodeJSON
+
+instance FromField MsgContent where
+  fromField = fromTextField_ decodeJSON
+
+data ACMEventTag = forall e. MsgEncodingI e => ACMEventTag (SMsgEncoding e) (CMEventTag e)
 
 data CMEventTag (e :: MsgEncoding) where
   XMsgNew_ :: CMEventTag 'Json
@@ -635,99 +742,6 @@ hasDeliveryReceipt = \case
   XCallInv_ -> True
   _ -> False
 
-(.=?) :: ToJSON v => JT.Key -> Maybe v -> [(J.Key, J.Value)] -> [(J.Key, J.Value)]
-key .=? value = maybe id ((:) . (key .=)) value
-
-$(JQ.deriveJSON defaultJSON ''MsgRef)
-
-instance FromJSON LinkContent where
-  parseJSON v@(J.Object j) =
-    $(JQ.mkParseJSON (taggedObjectJSON $ dropPrefix "LC") ''LinkContent) v
-      <|> LCUnknown <$> j .: "type" <*> pure j
-  parseJSON invalid =
-    JT.prependFailure "bad LinkContent, " (JT.typeMismatch "Object" invalid)
-
-instance ToJSON LinkContent where
-  toJSON = \case
-    LCUnknown _ j -> J.Object j
-    v -> $(JQ.mkToJSON (taggedObjectJSON $ dropPrefix "LC") ''LinkContent) v
-  toEncoding = \case
-    LCUnknown _ j -> JE.value $ J.Object j
-    v -> $(JQ.mkToEncoding (taggedObjectJSON $ dropPrefix "LC") ''LinkContent) v
-
-$(JQ.deriveJSON defaultJSON ''LinkPreview)
-
-instance ToJSON MsgContent where
-  toJSON = \case
-    MCUnknown {json} -> J.Object json
-    MCText t -> J.object ["type" .= MCText_, "text" .= t]
-    MCLink {text, preview} -> J.object ["type" .= MCLink_, "text" .= text, "preview" .= preview]
-    MCImage {text, image} -> J.object ["type" .= MCImage_, "text" .= text, "image" .= image]
-    MCVideo {text, image, duration} -> J.object ["type" .= MCVideo_, "text" .= text, "image" .= image, "duration" .= duration]
-    MCVoice {text, duration} -> J.object ["type" .= MCVoice_, "text" .= text, "duration" .= duration]
-    MCFile t -> J.object ["type" .= MCFile_, "text" .= t]
-  toEncoding = \case
-    MCUnknown {json} -> JE.value $ J.Object json
-    MCText t -> J.pairs $ "type" .= MCText_ <> "text" .= t
-    MCLink {text, preview} -> J.pairs $ "type" .= MCLink_ <> "text" .= text <> "preview" .= preview
-    MCImage {text, image} -> J.pairs $ "type" .= MCImage_ <> "text" .= text <> "image" .= image
-    MCVideo {text, image, duration} -> J.pairs $ "type" .= MCVideo_ <> "text" .= text <> "image" .= image <> "duration" .= duration
-    MCVoice {text, duration} -> J.pairs $ "type" .= MCVoice_ <> "text" .= text <> "duration" .= duration
-    MCFile t -> J.pairs $ "type" .= MCFile_ <> "text" .= t
-
-instance FromJSON MsgContent where
-  parseJSON (J.Object v) =
-    v .: "type" >>= \case
-      MCText_ -> MCText <$> v .: "text"
-      MCLink_ -> do
-        text <- v .: "text"
-        preview <- v .: "preview"
-        pure MCLink {text, preview}
-      MCImage_ -> do
-        text <- v .: "text"
-        image <- v .: "image"
-        pure MCImage {text, image}
-      MCVideo_ -> do
-        text <- v .: "text"
-        image <- v .: "image"
-        duration <- v .: "duration"
-        pure MCVideo {text, image, duration}
-      MCVoice_ -> do
-        text <- v .: "text"
-        duration <- v .: "duration"
-        pure MCVoice {text, duration}
-      MCFile_ -> MCFile <$> v .: "text"
-      MCUnknown_ tag -> do
-        text <- fromMaybe unknownMsgType <$> v .:? "text"
-        pure MCUnknown {tag, text, json = v}
-  parseJSON invalid =
-    JT.prependFailure "bad MsgContent, " (JT.typeMismatch "Object" invalid)
-
-instance ToField MsgContent where
-  toField = toField . encodeJSON
-
-instance FromField MsgContent where
-  fromField = fromTextField_ decodeJSON
-
-$(JQ.deriveJSON defaultJSON ''QuotedMsg)
-
-msgContainerJSON :: MsgContainer -> J.Object
-msgContainerJSON = \case
-  MCQuote qm mc -> o $ ("quote" .= qm) : msgContent mc
-  MCForward mc -> o $ ("forward" .= True) : msgContent mc
-  MCSimple mc -> o $ msgContent mc
-  where
-    o = JM.fromList
-    msgContent (ExtMsgContent c file ttl live) = ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) ["content" .= c]
-
-parseMsgContainer :: J.Object -> JT.Parser MsgContainer
-parseMsgContainer v =
-  MCQuote <$> v .: "quote" <*> mc
-    <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
-    <|> MCSimple <$> mc
-  where
-    mc = ExtMsgContent <$> v .: "content" <*> v .:? "file" <*> v .:? "ttl" <*> v .:? "live"
-
 appBinaryToCM :: AppMessageBinary -> Either String (ChatMessage 'Binary)
 appBinaryToCM AppMessageBinary {msgId, tag, body} = do
   eventTag <- strDecode $ B.singleton tag
@@ -790,6 +804,9 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XOk_ -> pure XOk
       XUnknown_ t -> pure $ XUnknown t params
 
+(.=?) :: ToJSON v => JT.Key -> Maybe v -> [(J.Key, J.Value)] -> [(J.Key, J.Value)]
+key .=? value = maybe id ((:) . (key .=)) value
+
 chatToAppMessage :: forall e. MsgEncodingI e => ChatMessage e -> AppMessage e
 chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @e of
   SBinary ->
@@ -844,18 +861,3 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XCallEnd callId -> o ["callId" .= callId]
       XOk -> JM.empty
       XUnknown _ ps -> ps
-
-$(JQ.deriveJSON defaultJSON ''AppMessageJson)
-
-instance MsgEncodingI e => StrEncoding (ChatMessage e) where
-  strEncode msg = case chatToAppMessage msg of
-    AMJson m -> LB.toStrict $ J.encode m
-    AMBinary m -> strEncode m
-  strP = (\(ACMsg _ m) -> checkEncoding m) <$?> strP
-
-instance StrEncoding AChatMessage where
-  strEncode (ACMsg _ m) = strEncode m
-  strP =
-    A.peekChar' >>= \case
-      '{' -> ACMsg SJson <$> ((appJsonToCM <=< J.eitherDecodeStrict') <$?> A.takeByteString)
-      _ -> ACMsg SBinary <$> (appBinaryToCM <$?> strP)
