@@ -25,8 +25,8 @@ We still want to avoid system interface enumeration due to guesswork involved in
 
 ### Datagram
 
-- `[4]` System tag "SXC1"
 - `[4]` Version range encoding
+- `[1]` 'A' (Announce)
 - `[8]` systemSeconds of SystemTime encoding - does not change within session.
 - `[2]` Announce counter.
 - `[6]` Service address (host and port).
@@ -62,8 +62,8 @@ Announcer MUST first discover its own address and validate with the list of loca
 
 To discover it's address it will send a datagram with this format:
 
-- `[4]` System tag "SXC0"
 - `[4]` Version range encoding
+- `[1]` 'I' (Identify)
 - `[1 + 32]` Random number.
 
 Announcer MUST NOT announce a service for a different host.
