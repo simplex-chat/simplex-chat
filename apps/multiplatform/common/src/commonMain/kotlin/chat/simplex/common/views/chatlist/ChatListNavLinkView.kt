@@ -31,7 +31,7 @@ import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
 
 @Composable
-fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
+fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel, progressIndicator: MutableState<Boolean>) {
   val showMenu = remember { mutableStateOf(false) }
   val showMarkRead = remember(chat.chatStats.unreadCount, chat.chatStats.unreadChat) {
     chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
@@ -59,8 +59,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, stopped, linkMode) },
-        click = { groupChatAction(chat.chatInfo.groupInfo, chatModel) },
-        dropdownMenuItems = { GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, showMarkRead) },
+        click = { groupChatAction(chat.chatInfo.groupInfo, chatModel, progressIndicator) },
+        dropdownMenuItems = { GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, progressIndicator, showMarkRead) },
         showMenu,
         stopped,
         selectedChat
@@ -110,9 +110,9 @@ fun directChatAction(chatInfo: ChatInfo, chatModel: ChatModel) {
   withBGApi { openChat(chatInfo, chatModel) }
 }
 
-fun groupChatAction(groupInfo: GroupInfo, chatModel: ChatModel) {
+fun groupChatAction(groupInfo: GroupInfo, chatModel: ChatModel, progressIndicator: MutableState<Boolean>? = null) {
   when (groupInfo.membership.memberStatus) {
-    GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(groupInfo, chatModel)
+    GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(groupInfo, chatModel, progressIndicator)
     GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert()
     else -> withBGApi { openChat(ChatInfo.Group(groupInfo), chatModel) }
   }
@@ -193,10 +193,17 @@ fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Bo
 }
 
 @Composable
-fun GroupMenuItems(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
+fun GroupMenuItems(
+  chat: Chat,
+  groupInfo: GroupInfo,
+  chatModel: ChatModel,
+  showMenu: MutableState<Boolean>,
+  progressIndicator: MutableState<Boolean>,
+  showMarkRead: Boolean
+) {
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> {
-      JoinGroupAction(chat, groupInfo, chatModel, showMenu)
+      JoinGroupAction(chat, groupInfo, chatModel, showMenu, progressIndicator)
       if (groupInfo.canDelete) {
         DeleteGroupAction(chat, groupInfo, chatModel, showMenu)
       }
@@ -317,8 +324,20 @@ fun DeleteGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, sh
 }
 
 @Composable
-fun JoinGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
-  val joinGroup: () -> Unit = { withApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) } }
+fun JoinGroupAction(
+  chat: Chat,
+  groupInfo: GroupInfo,
+  chatModel: ChatModel,
+  showMenu: MutableState<Boolean>,
+  progressIndicator: MutableState<Boolean>
+) {
+  val joinGroup: () -> Unit = {
+    withApi {
+      progressIndicator.value = true
+      chatModel.controller.apiJoinGroup(groupInfo.groupId)
+      progressIndicator.value = false
+    }
+  }
   ItemAction(
     if (chat.chatInfo.incognito) stringResource(MR.strings.join_group_incognito_button) else stringResource(MR.strings.join_group_button),
     if (chat.chatInfo.incognito) painterResource(MR.images.ic_theater_comedy_filled) else painterResource(MR.images.ic_login),
@@ -558,12 +577,18 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
   )
 }
 
-fun acceptGroupInvitationAlertDialog(groupInfo: GroupInfo, chatModel: ChatModel) {
+fun acceptGroupInvitationAlertDialog(groupInfo: GroupInfo, chatModel: ChatModel, progressIndicator: MutableState<Boolean>? = null) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.join_group_question),
     text = generalGetString(MR.strings.you_are_invited_to_group_join_to_connect_with_group_members),
     confirmText = if (groupInfo.membership.memberIncognito) generalGetString(MR.strings.join_group_incognito_button) else generalGetString(MR.strings.join_group_button),
-    onConfirm = { withApi { chatModel.controller.apiJoinGroup(groupInfo.groupId) } },
+    onConfirm = {
+      withApi {
+        progressIndicator?.value = true
+        chatModel.controller.apiJoinGroup(groupInfo.groupId)
+        progressIndicator?.value = false
+      }
+    },
     dismissText = generalGetString(MR.strings.delete_verb),
     onDismiss = { deleteGroup(groupInfo, chatModel) }
   )

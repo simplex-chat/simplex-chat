@@ -24,10 +24,11 @@ fun CIGroupInvitationView(
   groupInvitation: CIGroupInvitation,
   memberRole: GroupMemberRole,
   chatIncognito: Boolean = false,
-  joinGroup: (Long) -> Unit
+  joinGroup: (Long, MutableState<Boolean>) -> Unit
 ) {
+  val progressIndicator = remember { mutableStateOf(false) }
   val sent = ci.chatDir.sent
-  val action = !sent && groupInvitation.status == CIGroupInvitationStatus.Pending
+  val action = !sent && groupInvitation.status == CIGroupInvitationStatus.Pending && !progressIndicator.value
 
   @Composable
   fun groupInfoView() {
@@ -42,7 +43,20 @@ fun CIGroupInvitationView(
         .padding(vertical = 4.dp)
         .padding(end = 2.dp)
     ) {
-      ProfileImage(size = 60.dp, image = groupInvitation.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled, color = iconColor)
+      Box(
+        Modifier.size(60.dp),
+        contentAlignment = Alignment.Center
+      ) {
+        if (progressIndicator.value) {
+          CircularProgressIndicator(
+            Modifier.size(32.dp),
+            color = if (isInDarkTheme()) FileDark else FileLight,
+            strokeWidth = 3.dp
+          )
+        } else {
+          ProfileImage(size = 60.dp, image = groupInvitation.groupProfile.image, icon = MR.images.ic_supervised_user_circle_filled, color = iconColor)
+        }
+      }
       Spacer(Modifier.padding(horizontal = 3.dp))
       Column(
         Modifier.defaultMinSize(minHeight = 60.dp),
@@ -71,7 +85,7 @@ fun CIGroupInvitationView(
   val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
   Surface(
     modifier = if (action) Modifier.clickable(onClick = {
-      joinGroup(groupInvitation.groupId)
+      joinGroup(groupInvitation.groupId, progressIndicator)
     }) else Modifier,
     shape = RoundedCornerShape(18.dp),
     color = if (sent) sentColor else receivedColor,
@@ -124,7 +138,7 @@ fun PendingCIGroupInvitationViewPreview() {
       ci = ChatItem.getGroupInvitationSample(),
       groupInvitation = CIGroupInvitation.getSample(),
       memberRole = GroupMemberRole.Admin,
-      joinGroup = {}
+      joinGroup = { _, _ -> }
     )
   }
 }
@@ -140,7 +154,7 @@ fun CIGroupInvitationViewAcceptedPreview() {
       ci = ChatItem.getGroupInvitationSample(),
       groupInvitation = CIGroupInvitation.getSample(status = CIGroupInvitationStatus.Accepted),
       memberRole = GroupMemberRole.Admin,
-      joinGroup = {}
+      joinGroup = { _, _ -> }
     )
   }
 }
@@ -156,7 +170,7 @@ fun CIGroupInvitationViewLongNamePreview() {
         status = CIGroupInvitationStatus.Accepted
       ),
       memberRole = GroupMemberRole.Admin,
-      joinGroup = {}
+      joinGroup = { _, _ -> }
     )
   }
 }

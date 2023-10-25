@@ -106,13 +106,15 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       }
     }
   ) {
+    val progressIndicator = remember { mutableStateOf(false) }
+
     Box(Modifier.padding(it).padding(end = endPadding)) {
       Column(
         modifier = Modifier
           .fillMaxSize()
       ) {
         if (chatModel.chats.isNotEmpty()) {
-          ChatList(chatModel, search = searchInList)
+          ChatList(chatModel, search = searchInList, progressIndicator = progressIndicator)
         } else if (!switchingUsers.value) {
           Box(Modifier.fillMaxSize()) {
             if (!stopped && !newChatSheetState.collectAsState().value.isVisible()) {
@@ -120,6 +122,15 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
             }
             Text(stringResource(MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
           }
+        }
+      }
+
+      if (progressIndicator.value) {
+        Box(
+          Modifier.fillMaxSize(),
+          contentAlignment = Alignment.Center
+        ) {
+          ProgressIndicator()
         }
       }
     }
@@ -333,7 +344,7 @@ fun connectIfOpenedViaUri(uri: URI, chatModel: ChatModel) {
 private var lazyListState = 0 to 0
 
 @Composable
-private fun ChatList(chatModel: ChatModel, search: String) {
+private fun ChatList(chatModel: ChatModel, search: String, progressIndicator: MutableState<Boolean>) {
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   DisposableEffect(Unit) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
@@ -349,7 +360,7 @@ private fun ChatList(chatModel: ChatModel, search: String) {
     listState
   ) {
     items(chats) { chat ->
-      ChatListNavLinkView(chat, chatModel)
+      ChatListNavLinkView(chat, chatModel, progressIndicator)
     }
   }
   if (chats.isEmpty() && !chatModel.chats.isEmpty()) {
