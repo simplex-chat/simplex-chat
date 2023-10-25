@@ -83,9 +83,9 @@ public enum AppState: String {
 
     public var canSuspend: Bool {
         switch self {
-        case .active: true
-        case .bgRefresh: true
-        default: false
+        case .active: return true
+        case .bgRefresh: return true
+        default: return false
         }
     }
 }
