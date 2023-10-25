@@ -403,9 +403,7 @@ struct SendMessageView: View {
     private func updateFont(_ text: String) {
         DispatchQueue.main.async {
             teFont = isShortEmoji(text)
-            ? text.count < 4
-            ? largeEmojiFont
-            : mediumEmojiFont
+            ? (text.count < 4 ? largeEmojiFont : mediumEmojiFont)
             : .body
         }
     }

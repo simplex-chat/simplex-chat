@@ -74,9 +74,7 @@ struct NativeTextEditor: UIViewRepresentable {
 
     private func updateFont(_ field: UITextView) {
         field.font = isShortEmoji(field.text)
-        ? field.text.count < 4
-        ? largeEmojiUIFont
-        : mediumEmojiUIFont
+        ? (field.text.count < 4 ? largeEmojiUIFont : mediumEmojiUIFont)
         : UIFont.preferredFont(forTextStyle: .body)
     }
 }
@@ -97,7 +95,7 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     }
 
     // This func here needed because using frame.size.height in intrinsicContentSize while loading a screen with text (for example. when you have a draft),
-    // produce incorrect height because at that point intrinsicContentSize has old value of frame.size.height even if it was set to new value right before the call
+    // produces incorrect height because at that point intrinsicContentSize has old value of frame.size.height even if it was set to new value right before the call
     // (who knows why...)
     func invalidateIntrinsicContentHeight(_ newHeight: CGFloat) {
         self.newHeight = newHeight
@@ -202,13 +200,14 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
 
 struct NativeTextEditor_Previews: PreviewProvider{
     static var previews: some View {
-        return NativeTextEditor(
+        NativeTextEditor(
             text: Binding.constant("Hello, world!"),
             disableEditing: Binding.constant(false),
             height: Binding.constant(100),
             focused: Binding.constant(false),
             alignment: TextAlignment.leading,
             onImagesAdded: { _ in }
-        ).fixedSize(horizontal: false, vertical: true)
+        )
+        .fixedSize(horizontal: false, vertical: true)
     }
 }
