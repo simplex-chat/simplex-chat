@@ -4,11 +4,11 @@
 
 module Simplex.Chat.Messages.CIContent.Events where
 
+import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson.TH as J
-import Simplex.Chat.Messages.CIContent.Events.Prefix
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (RatchetSyncState (..), SwitchPhase (..))
-import Simplex.Messaging.Parsers (sumTypeJSON)
+import Simplex.Messaging.Parsers (dropPrefix, singleFieldJSON, sumTypeJSON)
 
 data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
@@ -51,12 +51,66 @@ data RcvDirectEvent =
   RDEContactDeleted
   deriving (Show)
 
-$(J.deriveJSON (sumTypeJSON dropPrefixRGE) ''RcvGroupEvent)
+-- platform-specific JSON encoding (used in API)
+$(J.deriveJSON (sumTypeJSON $ dropPrefix "RGE") ''RcvGroupEvent)
 
-$(J.deriveJSON (sumTypeJSON dropPrefixSGE) ''SndGroupEvent)
+-- platform-independent JSON encoding (stored in DB)
+newtype DBRcvGroupEvent = RGE RcvGroupEvent
 
-$(J.deriveJSON (sumTypeJSON dropPrefixRCE) ''RcvConnEvent)
+instance FromJSON DBRcvGroupEvent where
+  parseJSON v = RGE <$> $(J.mkParseJSON (singleFieldJSON $ dropPrefix "RGE") ''RcvGroupEvent) v
 
-$(J.deriveJSON (sumTypeJSON dropPrefixSCE) ''SndConnEvent)
+instance ToJSON DBRcvGroupEvent where
+  toJSON (RGE v) = $(J.mkToJSON (singleFieldJSON $ dropPrefix "RGE") ''RcvGroupEvent) v
+  toEncoding (RGE v) = $(J.mkToEncoding (singleFieldJSON $ dropPrefix "RGE") ''RcvGroupEvent) v
 
-$(J.deriveJSON (sumTypeJSON dropPrefixRDE) ''RcvDirectEvent)
+-- platform-specific JSON encoding (used in API)
+$(J.deriveJSON (sumTypeJSON $ dropPrefix "SGE") ''SndGroupEvent)
+
+-- platform-independent JSON encoding (stored in DB)
+newtype DBSndGroupEvent = SGE SndGroupEvent
+
+instance FromJSON DBSndGroupEvent where
+  parseJSON v = SGE <$> $(J.mkParseJSON (singleFieldJSON $ dropPrefix "SGE") ''SndGroupEvent) v
+
+instance ToJSON DBSndGroupEvent where
+  toJSON (SGE v) = $(J.mkToJSON (singleFieldJSON $ dropPrefix "SGE") ''SndGroupEvent) v
+  toEncoding (SGE v) = $(J.mkToEncoding (singleFieldJSON $ dropPrefix "SGE") ''SndGroupEvent) v
+
+-- platform-specific JSON encoding (used in API)
+$(J.deriveJSON (sumTypeJSON $ dropPrefix "RCE") ''RcvConnEvent)
+
+-- platform-independent JSON encoding (stored in DB)
+newtype DBRcvConnEvent = RCE RcvConnEvent
+
+instance FromJSON DBRcvConnEvent where
+  parseJSON v = RCE <$> $(J.mkParseJSON (singleFieldJSON $ dropPrefix "RCE") ''RcvConnEvent) v
+
+instance ToJSON DBRcvConnEvent where
+  toJSON (RCE v) = $(J.mkToJSON (singleFieldJSON $ dropPrefix "RCE") ''RcvConnEvent) v
+  toEncoding (RCE v) = $(J.mkToEncoding (singleFieldJSON $ dropPrefix "RCE") ''RcvConnEvent) v
+
+-- platform-specific JSON encoding (used in API)
+$(J.deriveJSON (sumTypeJSON $ dropPrefix "SCE") ''SndConnEvent)
+
+-- platform-independent JSON encoding (stored in DB)
+newtype DBSndConnEvent = SCE SndConnEvent
+
+instance FromJSON DBSndConnEvent where
+  parseJSON v = SCE <$> $(J.mkParseJSON (singleFieldJSON $ dropPrefix "SCE") ''SndConnEvent) v
+
+instance ToJSON DBSndConnEvent where
+  toJSON (SCE v) = $(J.mkToJSON (singleFieldJSON $ dropPrefix "SCE") ''SndConnEvent) v
+  toEncoding (SCE v) = $(J.mkToEncoding (singleFieldJSON $ dropPrefix "SCE") ''SndConnEvent) v
+
+$(J.deriveJSON (sumTypeJSON $ dropPrefix "RDE") ''RcvDirectEvent)
+
+-- platform-independent JSON encoding (stored in DB)
+newtype DBRcvDirectEvent = RDE RcvDirectEvent
+
+instance FromJSON DBRcvDirectEvent where
+  parseJSON v = RDE <$> $(J.mkParseJSON (singleFieldJSON $ dropPrefix "RDE") ''RcvDirectEvent) v
+
+instance ToJSON DBRcvDirectEvent where
+  toJSON (RDE v) = $(J.mkToJSON (singleFieldJSON $ dropPrefix "RDE") ''RcvDirectEvent) v
+  toEncoding (RDE v) = $(J.mkToEncoding (singleFieldJSON $ dropPrefix "RDE") ''RcvDirectEvent) v

@@ -24,7 +24,6 @@ import Data.Word (Word32)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import Simplex.Chat.Messages.CIContent.Events
-import Simplex.Chat.Messages.CIContent.Events.DB
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
