@@ -132,7 +132,7 @@ struct ChatListNavLink: View {
                     }
                     Button("Delete invitation", role: .destructive) { Task { await deleteChat(chat) } }
                 }
-                .disabled(progressByTimeout)
+                .disabled(inProgress)
         case .memAccepted:
             ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
                 .frame(height: rowHeights[dynamicTypeSize])
