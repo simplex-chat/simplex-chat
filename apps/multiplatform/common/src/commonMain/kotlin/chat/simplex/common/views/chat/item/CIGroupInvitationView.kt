@@ -34,7 +34,7 @@ fun CIGroupInvitationView(
   var progressByTimeout by rememberSaveable { mutableStateOf(false) }
   LaunchedEffect(inProgress.value) {
     progressByTimeout = if (inProgress.value) {
-      delay(500)
+      delay(1000)
       inProgress.value
     } else {
       false
