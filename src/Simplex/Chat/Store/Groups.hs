@@ -278,11 +278,12 @@ getGroupAndMember db User {userId, userContactId} groupMemberId =
        in (groupInfo, (member :: GroupMember) {activeConn = toMaybeConnection connRow})
 
 -- | creates completely new group with a single member - the current user
-createNewGroup :: DB.Connection -> TVar ChaChaDRG -> User -> GroupProfile -> ExceptT StoreError IO GroupInfo
-createNewGroup db gVar user@User {userId} groupProfile = ExceptT $ do
+createNewGroup :: DB.Connection -> TVar ChaChaDRG -> User -> GroupProfile -> Maybe Profile -> ExceptT StoreError IO GroupInfo
+createNewGroup db gVar user@User {userId} groupProfile incognitoProfile = ExceptT $ do
   let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
       fullGroupPreferences = mergeGroupPreferences groupPreferences
   currentTs <- getCurrentTime
+  customUserProfileId <- mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
   withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
     groupId <- liftIO $ do
       DB.execute
@@ -296,7 +297,7 @@ createNewGroup db gVar user@User {userId} groupProfile = ExceptT $ do
         (ldn, userId, profileId, True, currentTs, currentTs, currentTs)
       insertedRowId db
     memberId <- liftIO $ encodedRandomBytes gVar 12
-    membership <- createContactMemberInv_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing currentTs
+    membership <- createContactMemberInv_ db user groupId user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser customUserProfileId currentTs
     let chatSettings = ChatSettings {enableNtfs = MFAll, sendRcpts = Nothing, favorite = False}
     pure GroupInfo {groupId, localDisplayName = ldn, groupProfile, fullGroupPreferences, membership, hostConnCustomUserProfileId = Nothing, chatSettings, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs}
 
