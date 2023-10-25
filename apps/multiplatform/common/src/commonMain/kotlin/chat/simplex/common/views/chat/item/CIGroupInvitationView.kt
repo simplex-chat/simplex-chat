@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.stringResource
@@ -17,6 +18,7 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.delay
 
 @Composable
 fun CIGroupInvitationView(
@@ -24,16 +26,26 @@ fun CIGroupInvitationView(
   groupInvitation: CIGroupInvitation,
   memberRole: GroupMemberRole,
   chatIncognito: Boolean = false,
-  joinGroup: (Long) -> Unit
+  joinGroup: (Long, () -> Unit) -> Unit
 ) {
   val sent = ci.chatDir.sent
   val action = !sent && groupInvitation.status == CIGroupInvitationStatus.Pending
+  val inProgress = remember { mutableStateOf(false) }
+  var progressByTimeout by rememberSaveable { mutableStateOf(false) }
+  LaunchedEffect(inProgress.value) {
+    progressByTimeout = if (inProgress.value) {
+      delay(500)
+      inProgress.value
+    } else {
+      false
+    }
+  }
 
   @Composable
   fun groupInfoView() {
     val p = groupInvitation.groupProfile
     val iconColor =
-      if (action) if (chatIncognito) Indigo else MaterialTheme.colors.primary
+      if (action && !inProgress.value) if (chatIncognito) Indigo else MaterialTheme.colors.primary
       else if (isInDarkTheme()) FileDark else FileLight
 
     Row(
@@ -70,8 +82,9 @@ fun CIGroupInvitationView(
   val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
   val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
   Surface(
-    modifier = if (action) Modifier.clickable(onClick = {
-      joinGroup(groupInvitation.groupId)
+    modifier = if (action && !inProgress.value) Modifier.clickable(onClick = {
+      inProgress.value = true
+      joinGroup(groupInvitation.groupId) { inProgress.value = false }
     }) else Modifier,
     shape = RoundedCornerShape(18.dp),
     color = if (sent) sentColor else receivedColor,
@@ -83,26 +96,45 @@ fun CIGroupInvitationView(
         .padding(start = 8.dp, end = 12.dp),
       contentAlignment = Alignment.BottomEnd
     ) {
-      Column(
-        Modifier
-          .defaultMinSize(minWidth = 220.dp)
-          .padding(bottom = 4.dp),
+      Box(
+        contentAlignment = Alignment.Center
       ) {
-        groupInfoView()
-        Column(Modifier.padding(top = 2.dp, start = 5.dp)) {
-          Divider(Modifier.fillMaxWidth().padding(bottom = 4.dp))
-          if (action) {
-            groupInvitationText()
-            Text(stringResource(
-              if (chatIncognito) MR.strings.group_invitation_tap_to_join_incognito else  MR.strings.group_invitation_tap_to_join),
-              color = if (chatIncognito) Indigo else MaterialTheme.colors.primary)
-          } else {
-            Box(Modifier.padding(end = 48.dp)) {
+        Column(
+          Modifier
+            .defaultMinSize(minWidth = 220.dp)
+            .padding(bottom = 4.dp),
+        ) {
+          groupInfoView()
+          Column(Modifier.padding(top = 2.dp, start = 5.dp)) {
+            Divider(Modifier.fillMaxWidth().padding(bottom = 4.dp))
+            if (action) {
               groupInvitationText()
+              Text(
+                stringResource(
+                  if (chatIncognito) MR.strings.group_invitation_tap_to_join_incognito else MR.strings.group_invitation_tap_to_join
+                ),
+                color = if (inProgress.value)
+                  MaterialTheme.colors.secondary
+                else
+                  if (chatIncognito) Indigo else MaterialTheme.colors.primary
+              )
+            } else {
+              Box(Modifier.padding(end = 48.dp)) {
+                groupInvitationText()
+              }
             }
           }
         }
+
+        if (progressByTimeout) {
+          CircularProgressIndicator(
+            Modifier.size(32.dp),
+            color = if (isInDarkTheme()) FileDark else FileLight,
+            strokeWidth = 3.dp
+          )
+        }
       }
+
       Text(
         ci.timestampText,
         color = MaterialTheme.colors.secondary,
@@ -124,7 +156,7 @@ fun PendingCIGroupInvitationViewPreview() {
       ci = ChatItem.getGroupInvitationSample(),
       groupInvitation = CIGroupInvitation.getSample(),
       memberRole = GroupMemberRole.Admin,
-      joinGroup = {}
+      joinGroup = { _, _ -> }
     )
   }
 }
@@ -140,7 +172,7 @@ fun CIGroupInvitationViewAcceptedPreview() {
       ci = ChatItem.getGroupInvitationSample(),
       groupInvitation = CIGroupInvitation.getSample(status = CIGroupInvitationStatus.Accepted),
       memberRole = GroupMemberRole.Admin,
-      joinGroup = {}
+      joinGroup = { _, _ -> }
     )
   }
 }
@@ -156,7 +188,7 @@ fun CIGroupInvitationViewLongNamePreview() {
         status = CIGroupInvitationStatus.Accepted
       ),
       memberRole = GroupMemberRole.Admin,
-      joinGroup = {}
+      joinGroup = { _, _ -> }
     )
   }
 }
