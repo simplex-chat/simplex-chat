@@ -211,6 +211,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   rcvFiles <- newTVarIO M.empty
   currentCalls <- atomically TM.empty
   localDeviceName <- newTVarIO "" -- TODO set in config
+  multicastSubscribers <- newTMVarIO 0
   remoteHostSessions <- atomically TM.empty
   remoteCtrlSession <- newTVarIO Nothing
   filesFolder <- newTVarIO optFilesFolder
@@ -244,6 +245,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
         rcvFiles,
         currentCalls,
         localDeviceName,
+        multicastSubscribers,
         remoteHostSessions,
         remoteCtrlSession,
         config,
@@ -5858,8 +5860,8 @@ chatCommandP =
       "/stop remote host " *> (StopRemoteHost <$> A.decimal),
       "/delete remote host " *> (DeleteRemoteHost <$> A.decimal),
       "/start remote ctrl" $> StartRemoteCtrl,
-      "/register remote ctrl " *> (RegisterRemoteCtrl <$> (RemoteCtrlOOB <$> strP <* A.space <*> textP)),
-      "/_register remote ctrl " *> (RegisterRemoteCtrl <$> jsonP),
+      "/register remote ctrl " *> (RegisterRemoteCtrl <$> strP),
+      -- "/_register remote ctrl " *> (RegisterRemoteCtrl <$> jsonP),
       "/list remote ctrls" $> ListRemoteCtrls,
       "/accept remote ctrl " *> (AcceptRemoteCtrl <$> A.decimal),
       "/reject remote ctrl " *> (RejectRemoteCtrl <$> A.decimal),

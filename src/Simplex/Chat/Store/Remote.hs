@@ -6,13 +6,14 @@ module Simplex.Chat.Store.Remote where
 
 import Control.Monad.Except
 import Data.Int (Int64)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Database.SQLite.Simple (Only (..))
 import qualified Database.SQLite.Simple as SQL
-import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
-import Simplex.Chat.Store.Shared
 import Simplex.Chat.Remote.Types
+import Simplex.Chat.Store.Shared
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 
 insertRemoteHost :: DB.Connection -> FilePath -> Text -> C.APrivateSignKey -> C.SignedCertificate -> IO RemoteHostId
@@ -39,8 +40,9 @@ toRemoteHost (remoteHostId, storePath, displayName, caKey, C.SignedObject caCert
 deleteRemoteHostRecord :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (Only remoteHostId)
 
-insertRemoteCtrl :: DB.Connection -> RemoteCtrlOOB -> IO RemoteCtrlInfo
-insertRemoteCtrl db RemoteCtrlOOB {fingerprint, displayName} = do
+insertRemoteCtrl :: DB.Connection -> SignedOOB -> IO RemoteCtrlInfo
+insertRemoteCtrl db (SignedOOB OOB {deviceName, caFingerprint = fingerprint} _) = do
+  let displayName = fromMaybe "" deviceName
   DB.execute db "INSERT INTO remote_controllers (display_name, fingerprint) VALUES (?,?)" (displayName, fingerprint)
   remoteCtrlId <- insertedRowId db
   pure RemoteCtrlInfo {remoteCtrlId, displayName, fingerprint, accepted = Nothing, sessionActive = False}

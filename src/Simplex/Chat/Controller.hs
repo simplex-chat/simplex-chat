@@ -26,7 +26,7 @@ import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.:?))
 import qualified Data.Aeson as J
-import qualified Data.Aeson.TH  as JQ
+import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
@@ -41,6 +41,7 @@ import Data.String
 import Data.Text (Text)
 import Data.Time (NominalDiffTime, UTCTime)
 import Data.Version (showVersion)
+import Data.Word (Word16)
 import GHC.Generics (Generic)
 import Language.Haskell.TH (Exp, Q, runIO)
 import Numeric.Natural
@@ -179,6 +180,7 @@ data ChatController = ChatController
     rcvFiles :: TVar (Map Int64 Handle),
     currentCalls :: TMap ContactId Call,
     localDeviceName :: TVar Text,
+    multicastSubscribers :: TMVar Int,
     remoteHostSessions :: TMap RemoteHostId RemoteHostSession, -- All the active remote hosts
     remoteCtrlSession :: TVar (Maybe RemoteCtrlSession), -- Supervisor process for hosted controllers
     config :: ChatConfig,
@@ -429,12 +431,12 @@ data ChatCommand
   | StopRemoteHost RemoteHostId -- ^ Shut down a running session
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
   | StartRemoteCtrl -- ^ Start listening for announcements from all registered controllers
-  | RegisterRemoteCtrl RemoteCtrlOOB -- ^ Register OOB data for satellite discovery and handshake
+  | RegisterRemoteCtrl SignedOOB -- ^ Register OOB data for remote controller discovery and handshake
   | ListRemoteCtrls
   | AcceptRemoteCtrl RemoteCtrlId -- ^ Accept discovered data and store confirmation
   | RejectRemoteCtrl RemoteCtrlId -- ^ Reject and blacklist discovered data
   | StopRemoteCtrl -- ^ Stop listening for announcements or terminate an active session
-  | DeleteRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a satellite session
+  | DeleteRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a remote controller session
   | QuitChat
   | ShowVersion
   | DebugLocks
@@ -634,6 +636,7 @@ data ChatResponse
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostCreated {remoteHost :: RemoteHostInfo}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
+  | CRRemoteHostStarted {remoteHost :: RemoteHostInfo, sessionOOB :: Text}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
@@ -1202,7 +1205,7 @@ data RemoteCtrlSession = RemoteCtrlSession
     discoverer :: Async (),
     supervisor :: Async (),
     hostServer :: Maybe (Async ()),
-    discovered :: TMap C.KeyHash TransportHost,
+    discovered :: TMap C.KeyHash (TransportHost, Word16),
     accepted :: TMVar RemoteCtrlId,
     remoteOutputQ :: TBQueue ChatResponse
   }

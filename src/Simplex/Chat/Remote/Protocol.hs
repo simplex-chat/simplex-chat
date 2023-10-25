@@ -66,8 +66,8 @@ $(deriveJSON (taggedObjectJSON $ dropPrefix "RR") ''RemoteResponse)
 
 -- * Client side / desktop
 
-createRemoteHostClient :: HTTP2Client -> Text -> ExceptT RemoteProtocolError IO RemoteHostClient
-createRemoteHostClient httpClient desktopName = do
+createRemoteHostClient :: HTTP2Client -> dh -> Text -> ExceptT RemoteProtocolError IO RemoteHostClient
+createRemoteHostClient httpClient todo'dhKey desktopName = do
   logInfo "Sending initial hello"
   (_getNext, rr) <- sendRemoteCommand httpClient localEncoding Nothing RCHello {deviceName = desktopName}
   case rr of
