@@ -17,9 +17,10 @@ struct CIGroupInvitationView: View {
     var memberRole: GroupMemberRole
     var chatIncognito: Bool = false
     @State private var frameWidth: CGFloat = 0
+    @State private var progressIndicator = false
 
     var body: some View {
-        let action = !chatItem.chatDir.sent && groupInvitation.status == .pending
+        let action = !chatItem.chatDir.sent && groupInvitation.status == .pending && !progressIndicator
         let v = ZStack(alignment: .bottomTrailing) {
             VStack(alignment: .leading) {
                 groupInfoView(action)
@@ -58,7 +59,10 @@ struct CIGroupInvitationView: View {
 
         if action {
             v.onTapGesture {
-                joinGroup(groupInvitation.groupId)
+                progressIndicator = true
+                joinGroup(groupInvitation.groupId) {
+                    await MainActor.run { progressIndicator = false }
+                }
             }
         } else {
             v
@@ -73,11 +77,17 @@ struct CIGroupInvitationView: View {
             color = Color(uiColor: .tertiaryLabel)
         }
         return HStack(alignment: .top) {
-            ProfileImage(
-                imageStr: groupInvitation.groupProfile.image,
-                iconName: "person.2.circle.fill",
-                color: color
-            )
+            ZStack {
+                if progressIndicator {
+                    ProgressView().scaleEffect(2)
+                } else {
+                    ProfileImage(
+                        imageStr: groupInvitation.groupProfile.image,
+                        iconName: "person.2.circle.fill",
+                        color: color
+                    )
+                }
+            }
             .frame(width: 44, height: 44)
             .padding(.trailing, 4)
             VStack(alignment: .leading) {

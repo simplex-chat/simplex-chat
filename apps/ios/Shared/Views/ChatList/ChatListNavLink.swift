@@ -28,6 +28,7 @@ struct ChatListNavLink: View {
     @EnvironmentObject var chatModel: ChatModel
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ObservedObject var chat: Chat
+    @Binding var progressIndicator: Bool
     @State private var showContactRequestDialog = false
     @State private var showJoinGroupDialog = false
     @State private var showContactConnectionInfo = false
@@ -112,7 +113,10 @@ struct ChatListNavLink: View {
                 .onTapGesture { showJoinGroupDialog = true }
                 .confirmationDialog("Group invitation", isPresented: $showJoinGroupDialog, titleVisibility: .visible) {
                     Button(chat.chatInfo.incognito ? "Join incognito" : "Join group") {
-                        joinGroup(groupInfo.groupId)
+                        progressIndicator = true
+                        joinGroup(groupInfo.groupId) {
+                            await MainActor.run { progressIndicator = false }
+                        }
                     }
                     Button("Delete invitation", role: .destructive) { Task { await deleteChat(chat) } }
                 }
@@ -159,7 +163,10 @@ struct ChatListNavLink: View {
 
     private func joinGroupButton() -> some View {
         Button {
-            joinGroup(chat.chatInfo.apiId)
+            progressIndicator = true
+            joinGroup(chat.chatInfo.apiId) {
+                await MainActor.run { progressIndicator = false }
+            }
         } label: {
             Label("Join", systemImage: chat.chatInfo.incognito ? "theatermasks" : "ipad.and.arrow.forward")
         }
@@ -419,7 +426,7 @@ func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection,
     )
 }
 
-func joinGroup(_ groupId: Int64) {
+func joinGroup(_ groupId: Int64, _ onComplete: @escaping () async -> Void) {
     Task {
         logger.debug("joinGroup")
         do {
@@ -434,7 +441,9 @@ func joinGroup(_ groupId: Int64) {
                 AlertManager.shared.showAlertMsg(title: "No group!", message: "This group no longer exists.")
                 await deleteGroup()
             }
+            await onComplete()
         } catch let error {
+            await onComplete()
             let a = getErrorAlert(error, "Error joining group")
             AlertManager.shared.showAlertMsg(title: a.title, message: a.message)
         }
@@ -471,18 +480,27 @@ struct ChatListNavLink_Previews: PreviewProvider {
     static var previews: some View {
         @State var chatId: String? = "@1"
         return Group {
-            ChatListNavLink(chat: Chat(
-                chatInfo: ChatInfo.sampleData.direct,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ))
-            ChatListNavLink(chat: Chat(
-                chatInfo: ChatInfo.sampleData.direct,
-                chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
-            ))
-            ChatListNavLink(chat: Chat(
-                chatInfo: ChatInfo.sampleData.contactRequest,
-                chatItems: []
-            ))
+            ChatListNavLink(
+                chat: Chat(
+                    chatInfo: ChatInfo.sampleData.direct,
+                    chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
+                ),
+                progressIndicator: Binding.constant(false)
+            )
+            ChatListNavLink(
+                chat: Chat(
+                    chatInfo: ChatInfo.sampleData.direct,
+                    chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello")]
+                ),
+                progressIndicator: Binding.constant(false)
+            )
+            ChatListNavLink(
+                chat: Chat(
+                    chatInfo: ChatInfo.sampleData.contactRequest,
+                    chatItems: []
+                ),
+                progressIndicator: Binding.constant(false)
+            )
         }
         .previewLayout(.fixed(width: 360, height: 82))
     }
