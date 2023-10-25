@@ -991,7 +991,7 @@ instance (Typeable d, MsgDirectionI d) => FromField (CIStatus d) where fromField
 
 instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
-(JQ.deriveJSON defaultJSON ''MemberDeliveryStatus)
+$(JQ.deriveJSON defaultJSON ''MemberDeliveryStatus)
 
 $(JQ.deriveJSON defaultJSON ''ChatItemVersion)
 
