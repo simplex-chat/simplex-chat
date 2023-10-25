@@ -39,9 +39,9 @@ We still want to avoid system interface enumeration due to guesswork involved in
 
 That gives ~250 bytes (TBC) that is well under typical MTU of ~1500.
 
-A site-local multicast group `224.0.0.251` is used to announce services on port `5353`.
+A site-local multicast group `224.0.0.251` is used to announce services on port `5227`.
 
-> The same group and port are used in mDNS (AKA bonjour/avahi/dns-sd/zeroconf) so we expect it to run with most home/SOHO access points without further configuration.
+> The same group and port are used in mDNS (AKA bonjour/avahi/dns-sd/zeroconf) so we expect it to run with most home/SOHO access points without further configuration, although using a different port can make it ineffective.
 
 ### OOB data
 
@@ -134,4 +134,4 @@ E.g. a remote host on a mobile will wait for the remote profile service with a k
 An host with a multicast entitlement may use it to find its own address.
 Receiving your own datagram would reveal source address just as it is used in (unauthenticated) discovery tests.
 
-The same multicast group `224.0.0.251` is used to send "mirror" datagrams on port `5353`.
+The same multicast group `224.0.0.251` is used to send "mirror" datagrams on port `5227`.
