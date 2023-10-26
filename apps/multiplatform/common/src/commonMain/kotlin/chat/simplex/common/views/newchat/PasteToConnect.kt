@@ -3,7 +3,6 @@ package chat.simplex.common.views.newchat
 import SectionBottomSpacer
 import SectionTextFooter
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import chat.simplex.common.platform.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -14,7 +13,6 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.platform.TAG
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.SharedPreference
 import chat.simplex.common.ui.theme.*
@@ -23,7 +21,6 @@ import chat.simplex.common.views.usersettings.IncognitoView
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
 import java.net.URI
-import java.net.URISyntaxException
 
 @Composable
 fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
