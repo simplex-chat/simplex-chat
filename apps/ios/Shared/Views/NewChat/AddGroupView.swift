@@ -12,6 +12,7 @@ import SimpleXChat
 struct AddGroupView: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
+    @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
     @State private var chat: Chat?
     @State private var groupInfo: GroupInfo?
     @State private var profile = GroupProfile(displayName: "", fullName: "")
@@ -21,18 +22,35 @@ struct AddGroupView: View {
     @State private var showTakePhoto = false
     @State private var chosenImage: UIImage? = nil
     @State private var showInvalidNameAlert = false
+    @State private var groupLink: String?
+    @State private var groupLinkMemberRole: GroupMemberRole = .member
 
     var body: some View {
         if let chat = chat, let groupInfo = groupInfo {
-            AddGroupMembersViewCommon(
-                chat: chat,
-                groupInfo: groupInfo,
-                creatingGroup: true,
-                showFooterCounter: false
-            ) { _ in
-                dismiss()
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    m.chatId = groupInfo.id
+            if !groupInfo.membership.memberIncognito {
+                AddGroupMembersViewCommon(
+                    chat: chat,
+                    groupInfo: groupInfo,
+                    creatingGroup: true,
+                    showFooterCounter: false
+                ) { _ in
+                    dismiss()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        m.chatId = groupInfo.id
+                    }
+                }
+            } else {
+                GroupLinkView(
+                    groupId: groupInfo.groupId,
+                    groupLink: $groupLink,
+                    groupLinkMemberRole: $groupLinkMemberRole,
+                    showTitle: true,
+                    creatingGroup: true
+                ) {
+                    dismiss()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                        m.chatId = groupInfo.id
+                    }
                 }
             }
         } else {
@@ -41,77 +59,63 @@ struct AddGroupView: View {
     }
 
     func createGroupView() -> some View {
-        VStack(alignment: .leading) {
-            Text("Create secret group")
-                .font(.largeTitle)
-                .padding(.vertical, 4)
-            Text("The group is fully decentralized – it is visible only to the members.")
-                .padding(.bottom, 4)
+        List {
+            Group {
+                Text("Create secret group")
+                    .font(.largeTitle)
+                    .bold()
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.bottom)
+                    .onTapGesture { hideKeyboard() }
 
-            HStack {
-                Image(systemName: "info.circle").foregroundColor(.secondary).font(.footnote)
-                Spacer().frame(width: 8)
-                Text("Your chat profile will be sent to group members").font(.footnote)
-            }
-            .padding(.bottom)
-
-            ZStack(alignment: .center) {
-                ZStack(alignment: .topTrailing) {
-                    profileImageView(profile.image)
-                    if profile.image != nil {
-                        Button {
-                            profile.image = nil
-                        } label: {
-                            Image(systemName: "multiply")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 12)
+                ZStack(alignment: .center) {
+                    ZStack(alignment: .topTrailing) {
+                        ProfileImage(imageStr: profile.image, color: Color(uiColor: .secondarySystemGroupedBackground))
+                            .aspectRatio(1, contentMode: .fit)
+                            .frame(maxWidth: 128, maxHeight: 128)
+                        if profile.image != nil {
+                            Button {
+                                profile.image = nil
+                            } label: {
+                                Image(systemName: "multiply")
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fit)
+                                    .frame(width: 12)
+                            }
                         }
                     }
+
+                    editImageButton { showChooseSource = true }
                 }
-
-                editImageButton { showChooseSource = true }
+                .frame(maxWidth: .infinity, alignment: .center)
             }
-            .frame(maxWidth: .infinity, alignment: .center)
-            .padding(.bottom, 4)
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
 
-            ZStack(alignment: .topLeading) {
-                let name = profile.displayName.trimmingCharacters(in: .whitespaces)
-                if name != mkValidName(name) {
-                    Button {
-                        showInvalidNameAlert = true
-                    } label: {
-                        Image(systemName: "exclamationmark.circle").foregroundColor(.red)
-                    }
-                } else {
-                    Image(systemName: "exclamationmark.circle").foregroundColor(.clear)
+            Section {
+                groupNameTextField()
+                Button {
+                    createGroup()
+                } label: {
+                    settingsRow("checkmark") { Text("Create") }
                 }
-                textField("Enter group name…", text: $profile.displayName)
-                    .focused($focusDisplayName)
-                    .submitLabel(.go)
-                    .onSubmit {
-                        if canCreateProfile() { createGroup() }
-                    }
+                .disabled(!canCreateProfile())
+                IncognitoToggle(incognitoEnabled: $incognitoDefault)
+            } footer: {
+                Group {
+                    sharedGroupProfileInfo(incognitoDefault)
+                    + Text(String("\n\n"))
+                    + Text("The group is fully decentralized – it is visible only to the members.")
+                }
+                .onTapGesture { hideKeyboard() }
             }
-            .padding(.bottom)
-
-            Spacer()
-
-            Button {
-                createGroup()
-            } label: {
-                Text("Create")
-                Image(systemName: "greaterthan")
-            }
-            .disabled(!canCreateProfile())
-            .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .onAppear() {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 focusDisplayName = true
             }
         }
-        .padding()
         .confirmationDialog("Group image", isPresented: $showChooseSource, titleVisibility: .visible) {
             Button("Take picture") {
                 showTakePhoto = true
@@ -141,8 +145,27 @@ struct AddGroupView: View {
                 profile.image = nil
             }
         }
-        .contentShape(Rectangle())
-        .onTapGesture { hideKeyboard() }
+    }
+
+    func groupNameTextField() -> some View {
+        ZStack(alignment: .leading) {
+            let name = profile.displayName.trimmingCharacters(in: .whitespaces)
+            if name != mkValidName(name) {
+                Button {
+                    showInvalidNameAlert = true
+                } label: {
+                    Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                }
+            } else {
+                Image(systemName: "pencil").foregroundColor(.secondary)
+            }
+            textField("Enter group name…", text: $profile.displayName)
+                .focused($focusDisplayName)
+                .submitLabel(.go)
+                .onSubmit {
+                    if canCreateProfile() { createGroup() }
+                }
+        }
     }
 
     func textField(_ placeholder: LocalizedStringKey, text: Binding<String>) -> some View {
@@ -150,11 +173,20 @@ struct AddGroupView: View {
             .padding(.leading, 32)
     }
 
+    func sharedGroupProfileInfo(_ incognito: Bool) -> Text {
+        let name = ChatModel.shared.currentUser?.displayName ?? ""
+        return Text(
+            incognito
+            ? "A new random profile will be shared with group members."
+            : "Your profile **\(name)** will be shared with group members."
+        )
+    }
+
     func createGroup() {
         hideKeyboard()
         do {
             profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
-            let gInfo = try apiNewGroup(profile)
+            let gInfo = try apiNewGroup(incognito: incognitoDefault, groupProfile: profile)
             Task {
                 let groupMembers = await apiListMembers(gInfo.groupId)
                 await MainActor.run {
