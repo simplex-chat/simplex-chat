@@ -1,11 +1,11 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Simplex.Chat.Store.Shared where
@@ -16,8 +16,7 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG, randomBytesGenerate)
-import Data.Aeson (FromJSON, ToJSON)
-import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as J
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
@@ -28,7 +27,6 @@ import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query, SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as SQL
 import Database.SQLite.Simple.QQ (sql)
-import GHC.Generics (Generic)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.Types
@@ -103,14 +101,9 @@ data StoreError
   | SENoGroupSndStatus {itemId :: ChatItemId, groupMemberId :: GroupMemberId}
   | SERemoteHostNotFound {remoteHostId :: RemoteHostId}
   | SERemoteCtrlNotFound {remoteCtrlId :: RemoteCtrlId}
-  deriving (Show, Exception, Generic)
+  deriving (Show, Exception)
 
-instance FromJSON StoreError where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "SE"
-
-instance ToJSON StoreError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SE"
+$(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)
 
 insertedRowId :: DB.Connection -> IO Int64
 insertedRowId db = fromOnly . head <$> DB.query_ db "SELECT last_insert_rowid()"
@@ -189,6 +182,17 @@ createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange 
   pure Connection {connId, agentConnId = AgentConnId acId, peerChatVRange = JVersionRange peerChatVRange, connType, contactConnInitiated = False, entityId, viaContact, viaUserContactLink, viaGroupLink, groupLinkId = Nothing, customUserProfileId, connLevel, connStatus = ConnNew, localAlias = "", createdAt = currentTs, connectionCode = Nothing, authErrCounter = 0}
   where
     ent ct = if connType == ct then entityId else Nothing
+
+createIncognitoProfile_ :: DB.Connection -> UserId -> UTCTime -> Profile -> IO Int64
+createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, image} = do
+  DB.execute
+    db
+    [sql|
+      INSERT INTO contact_profiles (display_name, full_name, image, user_id, incognito, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?)
+    |]
+    (displayName, fullName, image, userId, Just True, createdAt, createdAt)
+  insertedRowId db
 
 setPeerChatVRange :: DB.Connection -> Int64 -> VersionRange -> IO ()
 setPeerChatVRange db connId (VersionRange minVer maxVer) =

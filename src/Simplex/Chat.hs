@@ -58,6 +58,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
+import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Options
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
@@ -1534,13 +1535,15 @@ processChatCommand = \case
     chatRef <- getChatRef user chatName
     chatItemId <- getChatItemIdByText user chatRef msg
     processChatCommand $ APIChatItemReaction chatRef chatItemId add reaction
-  APINewGroup userId gProfile@GroupProfile {displayName} -> withUserId userId $ \user -> do
+  APINewGroup userId incognito gProfile@GroupProfile {displayName} -> withUserId userId $ \user -> do
     checkValidName displayName
     gVar <- asks idsDrg
-    groupInfo <- withStore $ \db -> createNewGroup db gVar user gProfile
+    -- [incognito] generate incognito profile for group membership
+    incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+    groupInfo <- withStore $ \db -> createNewGroup db gVar user gProfile incognitoProfile
     pure $ CRGroupCreated user groupInfo
-  NewGroup gProfile -> withUser $ \User {userId} ->
-    processChatCommand $ APINewGroup userId gProfile
+  NewGroup incognito gProfile -> withUser $ \User {userId} ->
+    processChatCommand $ APINewGroup userId incognito gProfile
   APIAddMember groupId contactId memRole -> withUser $ \user -> withChatLock "addMember" $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withStore $ \db -> (,) <$> getGroup db user groupId <*> getContact db user contactId
@@ -1571,12 +1574,12 @@ processChatCommand = \case
             Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo cName
         | otherwise -> throwChatError $ CEGroupDuplicateMember cName
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
-    (invitation, ct) <- withStore $ \db -> do
-      inv@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db user groupId
-      (inv,) <$> getContactViaMember db user fromMember
-    let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} = invitation
-        Contact {activeConn = Connection {peerChatVRange}} = ct
     withChatLock "joinGroup" . procCmd $ do
+      (invitation, ct) <- withStore $ \db -> do
+        inv@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db user groupId
+        (inv,) <$> getContactViaMember db user fromMember
+      let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} = invitation
+          Contact {activeConn = Connection {peerChatVRange}} = ct
       subMode <- chatReadVar subscriptionMode
       dm <- directMessage $ XGrpAcpt membership.memberId
       agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm subMode
@@ -5748,8 +5751,8 @@ chatCommandP =
       ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
       ("/help db" <|> "/hd") $> ChatHelp HSDatabase,
       ("/help" <|> "/h") $> ChatHelp HSMain,
-      ("/group " <|> "/g ") *> char_ '#' *> (NewGroup <$> groupProfile),
-      "/_group " *> (APINewGroup <$> A.decimal <* A.space <*> jsonP),
+      ("/group" <|> "/g") *> (NewGroup <$> incognitoP <* A.space <* char_ '#' <*> groupProfile),
+      "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <* A.space <*> jsonP),
       ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> (memberRole <|> pure GRMember)),
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayName),
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayName <* A.space <* char_ '@' <*> displayName <*> memberRole),
@@ -5885,7 +5888,7 @@ chatCommandP =
     mcTextP = MCText . safeDecodeUtf8 <$> A.takeByteString
     msgContentP = "text " *> mcTextP <|> "json " *> jsonP
     ciDeleteMode = "broadcast" $> CIDMBroadcast <|> "internal" $> CIDMInternal
-    displayName = safeDecodeUtf8 <$> (quoted "'\"" <|> takeNameTill isSpace)
+    displayName = safeDecodeUtf8 <$> (quoted "'" <|> takeNameTill isSpace)
       where
         takeNameTill p =
           A.peekChar' >>= \c ->
@@ -6000,14 +6003,20 @@ timeItToView s action = do
   pure a
 
 mkValidName :: String -> String
-mkValidName = reverse . dropWhile isSpace . fst . foldl' addChar ("", '\NUL')
+mkValidName = reverse . dropWhile isSpace . fst3 . foldl' addChar ("", '\NUL', 0 :: Int)
   where
-    addChar (r, prev) c = if notProhibited && validChar then (c' : r, c') else (r, prev)
+    fst3 (x, _, _) = x
+    addChar (r, prev, punct) c = if validChar then (c' : r, c', punct') else (r, prev, punct)
       where
       c' = if isSpace c then ' ' else c
+      punct'
+        | isPunctuation c = punct + 1
+        | isSpace c = punct
+        | otherwise = 0
       validChar
-        | prev == '\NUL' || isSpace prev = validFirstChar
-        | isPunctuation prev = validFirstChar || isSpace c
+        | c == '\'' = False
+        | prev == '\NUL' = c > ' ' && c /= '#' && c /= '@' && validFirstChar
+        | isSpace prev = validFirstChar || (punct == 0 && isPunctuation c)
+        | isPunctuation prev = validFirstChar || isSpace c || (punct < 3 && isPunctuation c)
         | otherwise = validFirstChar || isSpace c || isMark c || isPunctuation c
       validFirstChar = isLetter c || isNumber c || isSymbol c
-      notProhibited = c `notElem` ("@#'\"`" :: String)

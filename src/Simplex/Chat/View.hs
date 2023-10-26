@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -7,12 +6,13 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.View where
 
-import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace, toUpper)
@@ -31,7 +31,6 @@ import Data.Time (LocalTime (..), TimeOfDay (..), TimeZone (..), utcToLocalTime)
 import Data.Time.Calendar (addDays)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
-import GHC.Generics (Generic)
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
 import Simplex.Chat (defaultChatConfig, maxImageSize)
@@ -65,6 +64,13 @@ import Simplex.Messaging.Version hiding (version)
 import System.Console.ANSI.Types
 
 type CurrentTime = UTCTime
+
+data WCallCommand
+  = WCCallStart {media :: CallMedia, aesKey :: Maybe String, useWorker :: Bool}
+  | WCCallOffer {offer :: Text, iceCandidates :: Text, media :: CallMedia, aesKey :: Maybe String, useWorker :: Bool}
+  | WCCallAnswer {answer :: Text, iceCandidates :: Text}
+
+$(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "WCCall") ''WCallCommand)
 
 serializeChatResponse :: (Maybe RemoteHostId, Maybe User) -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> String
 serializeChatResponse user_ ts tz remoteHost_ = unlines . map unStyle . responseToView user_ defaultChatConfig False ts tz remoteHost_
@@ -133,7 +139,7 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
   CRUserContactLink u UserContactLink {connReqContact, autoAccept} -> ttyUser u $ connReqContact_ "Your chat address:" connReqContact <> autoAcceptStatus_ autoAccept
   CRUserContactLinkUpdated u UserContactLink {autoAccept} -> ttyUser u $ autoAcceptStatus_ autoAccept
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} -> ttyUser u [ttyContact c <> ": contact request rejected"]
-  CRGroupCreated u g -> ttyUser u $ viewGroupCreated g
+  CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRGroupsList u gs -> ttyUser u $ viewGroupsList gs
   CRSentGroupInvitation u g c _ ->
@@ -806,11 +812,22 @@ viewReceivedContactRequest c Profile {fullName} =
     "to reject: " <> highlight ("/rc " <> viewName c) <> " (the sender will NOT be notified)"
   ]
 
-viewGroupCreated :: GroupInfo -> [StyledString]
-viewGroupCreated g =
-  [ "group " <> ttyFullGroup g <> " is created",
-    "to add members use " <> highlight ("/a " <> viewGroupName g <> " <name>") <> " or " <> highlight ("/create link #" <> viewGroupName g)
-  ]
+viewGroupCreated :: GroupInfo -> Bool -> [StyledString]
+viewGroupCreated g testView =
+  case incognitoMembershipProfile g of
+    Just localProfile
+      | testView -> incognitoProfile' profile : message
+      | otherwise -> message
+      where
+        profile = fromLocalProfile localProfile
+        message =
+          [ "group " <> ttyFullGroup g <> " is created, your incognito profile for this group is " <> incognitoProfile' profile,
+            "to add members use " <> highlight ("/create link #" <> viewGroupName g)
+          ]
+    Nothing ->
+      [ "group " <> ttyFullGroup g <> " is created",
+        "to add members use " <> highlight ("/a " <> viewGroupName g <> " <name>") <> " or " <> highlight ("/create link #" <> viewGroupName g)
+      ]
 
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
 viewCannotResendInvitation g c =
@@ -1622,16 +1639,6 @@ supporedBrowsers callType
   | encryptedCall callType = " (only Chrome and Safari support e2e encryption for WebRTC, Safari may require enabling WebRTC insertable streams)"
   | otherwise = ""
 
-data WCallCommand
-  = WCCallStart {media :: CallMedia, aesKey :: Maybe String, useWorker :: Bool}
-  | WCCallOffer {offer :: Text, iceCandidates :: Text, media :: CallMedia, aesKey :: Maybe String, useWorker :: Bool}
-  | WCCallAnswer {answer :: Text, iceCandidates :: Text}
-  deriving (Generic)
-
-instance ToJSON WCallCommand where
-  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "WCCall"
-  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "WCCall"
-
 viewVersionInfo :: ChatLogLevel -> CoreVersionInfo -> [StyledString]
 viewVersionInfo logLevel CoreVersionInfo {version, simplexmqVersion, simplexmqCommit} =
   map plain $
@@ -1711,7 +1718,7 @@ viewChatError logLevel = \case
         _ -> ": you have insufficient permissions for this action, the required role is " <> plain (strEncode role)
     CEGroupMemberInitialRole g role -> [ttyGroup' g <> ": initial role for group member cannot be " <> plain (strEncode role) <> ", use member or observer"]
     CEContactIncognitoCantInvite -> ["you're using your main profile for this group - prohibited to invite contacts to whom you are connected incognito"]
-    CEGroupIncognitoCantInvite -> ["you've connected to this group using an incognito profile - prohibited to invite contacts"]
+    CEGroupIncognitoCantInvite -> ["you are using an incognito profile for this group - prohibited to invite contacts"]
     CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]
     CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> viewGroupName g)]
     CEGroupMemberNotActive -> ["your group connection is not active yet, try later"]

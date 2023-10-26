@@ -42,8 +42,8 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
             val (newProfile, _) = updated
             chatModel.updateCurrentUser(newProfile)
             profile = newProfile
+            close()
           }
-          close()
         }
       }
     )
