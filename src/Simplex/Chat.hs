@@ -58,6 +58,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
+import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Options
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol

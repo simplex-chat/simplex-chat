@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
@@ -7,12 +6,13 @@
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.View where
 
-import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace, toUpper)
@@ -31,7 +31,6 @@ import Data.Time (LocalTime (..), TimeOfDay (..), TimeZone (..), utcToLocalTime)
 import Data.Time.Calendar (addDays)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
-import GHC.Generics (Generic)
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
 import Simplex.Chat (defaultChatConfig, maxImageSize)
@@ -65,6 +64,13 @@ import Simplex.Messaging.Version hiding (version)
 import System.Console.ANSI.Types
 
 type CurrentTime = UTCTime
+
+data WCallCommand
+  = WCCallStart {media :: CallMedia, aesKey :: Maybe String, useWorker :: Bool}
+  | WCCallOffer {offer :: Text, iceCandidates :: Text, media :: CallMedia, aesKey :: Maybe String, useWorker :: Bool}
+  | WCCallAnswer {answer :: Text, iceCandidates :: Text}
+
+$(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "WCCall") ''WCallCommand)
 
 serializeChatResponse :: (Maybe RemoteHostId, Maybe User) -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> String
 serializeChatResponse user_ ts tz remoteHost_ = unlines . map unStyle . responseToView user_ defaultChatConfig False ts tz remoteHost_
@@ -1632,16 +1638,6 @@ supporedBrowsers :: CallType -> StyledString
 supporedBrowsers callType
   | encryptedCall callType = " (only Chrome and Safari support e2e encryption for WebRTC, Safari may require enabling WebRTC insertable streams)"
   | otherwise = ""
-
-data WCallCommand
-  = WCCallStart {media :: CallMedia, aesKey :: Maybe String, useWorker :: Bool}
-  | WCCallOffer {offer :: Text, iceCandidates :: Text, media :: CallMedia, aesKey :: Maybe String, useWorker :: Bool}
-  | WCCallAnswer {answer :: Text, iceCandidates :: Text}
-  deriving (Generic)
-
-instance ToJSON WCallCommand where
-  toEncoding = J.genericToEncoding . taggedObjectJSON $ dropPrefix "WCCall"
-  toJSON = J.genericToJSON . taggedObjectJSON $ dropPrefix "WCCall"
 
 viewVersionInfo :: ChatLogLevel -> CoreVersionInfo -> [StyledString]
 viewVersionInfo logLevel CoreVersionInfo {version, simplexmqVersion, simplexmqCommit} =
