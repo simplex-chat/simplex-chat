@@ -86,6 +86,7 @@ struct AddGroupView: View {
                     }
 
                     editImageButton { showChooseSource = true }
+                        .buttonStyle(BorderlessButtonStyle()) // otherwise whole "list row" is clickable
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
             }
