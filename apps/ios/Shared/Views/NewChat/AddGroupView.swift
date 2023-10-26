@@ -170,7 +170,7 @@ struct AddGroupView: View {
 
     func textField(_ placeholder: LocalizedStringKey, text: Binding<String>) -> some View {
         TextField(placeholder, text: text)
-            .padding(.leading, 32)
+            .padding(.leading, 36)
     }
 
     func sharedGroupProfileInfo(_ incognito: Bool) -> Text {
