@@ -96,15 +96,15 @@ struct AddGroupView: View {
 
             Section {
                 groupNameTextField()
-                IncognitoToggle(incognitoEnabled: $incognitoDefault)
                 Button(action: createGroup) {
                     settingsRow("checkmark", color: .accentColor) { Text("Create group") }
                 }
                 .disabled(!canCreateProfile())
+                IncognitoToggle(incognitoEnabled: $incognitoDefault)
             } footer: {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("Fully decentralized – visible only to members!")
                     sharedGroupProfileInfo(incognitoDefault)
+                    Text("Fully decentralized – visible only to members.")
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .onTapGesture(perform: hideKeyboard)
