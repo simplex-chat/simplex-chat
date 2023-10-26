@@ -65,8 +65,8 @@ struct AddGroupView: View {
                     .font(.largeTitle)
                     .bold()
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.bottom)
-                    .onTapGesture { hideKeyboard() }
+                    .padding(.bottom, 24)
+                    .onTapGesture(perform: hideKeyboard)
 
                 ZStack(alignment: .center) {
                     ZStack(alignment: .topTrailing) {
@@ -96,20 +96,18 @@ struct AddGroupView: View {
 
             Section {
                 groupNameTextField()
-                Button {
-                    createGroup()
-                } label: {
-                    settingsRow("checkmark") { Text("Create") }
+                IncognitoToggle(incognitoEnabled: $incognitoDefault)
+                Button(action: createGroup) {
+                    settingsRow("checkmark", color: .accentColor) { Text("Create group") }
                 }
                 .disabled(!canCreateProfile())
-                IncognitoToggle(incognitoEnabled: $incognitoDefault)
             } footer: {
-                Group {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Fully decentralized – visible only to members!")
                     sharedGroupProfileInfo(incognitoDefault)
-                    + Text(String("\n\n"))
-                    + Text("The group is fully decentralized – it is visible only to the members.")
                 }
-                .onTapGesture { hideKeyboard() }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .onTapGesture(perform: hideKeyboard)
             }
         }
         .onAppear() {
@@ -162,7 +160,7 @@ struct AddGroupView: View {
             }
             textField("Enter group name…", text: $profile.displayName)
                 .focused($focusDisplayName)
-                .submitLabel(.go)
+                .submitLabel(.continue)
                 .onSubmit {
                     if canCreateProfile() { createGroup() }
                 }
@@ -178,8 +176,8 @@ struct AddGroupView: View {
         let name = ChatModel.shared.currentUser?.displayName ?? ""
         return Text(
             incognito
-            ? "A new random profile will be shared with group members."
-            : "Your profile **\(name)** will be shared with group members."
+            ? "A new random profile will be shared."
+            : "Your profile **\(name)** will be shared."
         )
     }
 
