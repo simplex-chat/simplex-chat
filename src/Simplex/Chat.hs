@@ -3124,7 +3124,6 @@ processAgentMessageConn user _ agentConnId END =
     entity -> toView $ CRSubscriptionEnd user entity
 processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
   entity <- withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= updateConnStatus
-  -- liftIO $ print $ "processAgentMessageConn " <> show agentMessage <> " " <> show entity
   case entity of
     RcvDirectMsgConnection conn contact_ ->
       processDirectMessage agentMessage entity conn contact_
