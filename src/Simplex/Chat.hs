@@ -3443,11 +3443,18 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           GCInviteeMember -> do
             memberConnectedChatItem gInfo m
             toView $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected}
+            let Connection {viaUserContactLink} = conn
+            when (isJust viaUserContactLink) sendXInfoWithImage
             intros <- withStore' $ \db -> createIntroductions db members m
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro ->
               processIntro intro `catchChatError` (toView . CRChatError (Just user))
             where
+              sendXInfoWithImage = do
+                let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
+                    profileToSend@Profile {image} = profileToSendOnAccept user profileMode
+                when (isJust image) $ do
+                  void $ sendDirectMessage conn (XInfo profileToSend) (GroupId groupId)
               processIntro intro@GroupMemberIntro {introId} = do
                 void $ sendDirectMessage conn (XGrpMemIntro $ memberInfo (reMember intro)) (GroupId groupId)
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
@@ -3480,6 +3487,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XFile fInv -> processGroupFileInvitation' gInfo m' fInv msg msgMeta
             XFileCancel sharedMsgId -> xFileCancelGroup gInfo m' sharedMsgId msgMeta
             XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInvGroup gInfo m' sharedMsgId fileConnReq_ fName msgMeta
+            XInfo p -> xInfoMember m' p
             XGrpMemNew memInfo -> xGrpMemNew gInfo m' memInfo msg msgMeta
             XGrpMemIntro memInfo -> xGrpMemIntro gInfo m' memInfo
             XGrpMemInv memId introInv -> xGrpMemInv gInfo m' memId introInv
@@ -4423,6 +4431,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c p' = void $ processContactProfileUpdate c p' True
+
+    xInfoMember :: GroupMember -> Profile -> m ()
+    xInfoMember m@GroupMember {memberContactId} p' =
+      case memberContactId of
+        Nothing ->
+          -- updateMemberProfile (see updateContactProfile)
+          pure ()
+        Just ctId -> do
+          -- ct <- get contact
+          -- void $ processContactProfileUpdate ct p' True
+          pure ()
 
     xDirectDel :: Contact -> RcvMessage -> MsgMeta -> m ()
     xDirectDel c msg msgMeta =
