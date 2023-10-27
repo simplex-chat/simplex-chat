@@ -3750,14 +3750,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                         toView $ CRAcceptingContactRequest user ct
                       Just groupId -> do
                         gInfo <- withStore $ \db -> getGroupInfo db user groupId
+                        let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                         if isCompatibleRange chatVRange groupLinkNoContactVRange
                           then do
-                            let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                             mem <- acceptGroupJoinRequestAsync user gInfo cReq gLinkMemRole profileMode
                             createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
                             toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
                           else do
-                            let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                             ct <- acceptContactRequestAsync user cReq profileMode
                             toView $ CRAcceptingGroupJoinRequest user gInfo ct
                     _ -> toView $ CRReceivedContactRequest user cReq
