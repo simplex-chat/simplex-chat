@@ -139,6 +139,8 @@ fun AddGroupLayout(
                 image = profileImage.value
               ))
             },
+            textColor = MaterialTheme.colors.primary,
+            iconColor = MaterialTheme.colors.primary,
             disabled = !canCreateProfile(displayName.value)
           )
 
