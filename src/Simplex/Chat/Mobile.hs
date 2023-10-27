@@ -1,8 +1,8 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
 {-# OPTIONS_GHC -fobject-code #-}
@@ -13,8 +13,8 @@ import Control.Concurrent.STM
 import Control.Exception (catch, SomeException)
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.Aeson (ToJSON (..))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
 import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString)
@@ -32,7 +32,6 @@ import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (poke)
 import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
-import GHC.Generics (Generic)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList)
@@ -50,11 +49,25 @@ import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), Migrati
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..))
 import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
 import System.IO (utf8)
 import System.Timeout (timeout)
+
+data DBMigrationResult
+  = DBMOk
+  | DBMInvalidConfirmation
+  | DBMErrorNotADatabase {dbFile :: String}
+  | DBMErrorMigration {dbFile :: String, migrationError :: MigrationError}
+  | DBMErrorSQL {dbFile :: String, migrationSQLError :: String}
+  deriving (Show)
+
+$(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "DBM") ''DBMigrationResult)
+
+data APIResponse = APIResponse {corr :: Maybe CorrId, remoteHostId :: Maybe RemoteHostId, resp :: ChatResponse}
+
+$(JQ.deriveToJSON defaultJSON ''APIResponse)
 
 foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
 
@@ -189,18 +202,6 @@ defaultMobileConfig =
 getActiveUser_ :: SQLiteStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 
-data DBMigrationResult
-  = DBMOk
-  | DBMInvalidConfirmation
-  | DBMErrorNotADatabase {dbFile :: String}
-  | DBMErrorMigration {dbFile :: String, migrationError :: MigrationError}
-  | DBMErrorSQL {dbFile :: String, migrationSQLError :: String}
-  deriving (Show, Generic)
-
-instance ToJSON DBMigrationResult where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "DBM"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "DBM"
-
 chatMigrateInit :: String -> String -> String -> IO (Either DBMigrationResult ChatController)
 chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
   confirmMigrations <- liftEitherWith (const DBMInvalidConfirmation) $ strDecode $ B.pack confirm
@@ -264,10 +265,3 @@ chatPasswordHash pwd salt = either (const "") passwordHash salt'
   where
     salt' = U.decode salt
     passwordHash = U.encode . C.sha512Hash . (pwd <>)
-
-data APIResponse = APIResponse {corr :: Maybe CorrId, remoteHostId :: Maybe RemoteHostId, resp :: ChatResponse}
-  deriving (Generic)
-
-instance ToJSON APIResponse where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}

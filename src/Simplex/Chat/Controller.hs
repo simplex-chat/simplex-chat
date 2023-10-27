@@ -2,7 +2,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
@@ -42,7 +41,6 @@ import Data.Text (Text)
 import Data.Time (NominalDiffTime, UTCTime)
 import Data.Version (showVersion)
 import Data.Word (Word16)
-import GHC.Generics (Generic)
 import Language.Haskell.TH (Exp, Q, runIO)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
@@ -68,7 +66,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServerWithAuth, userProtocol)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (simplexMQVersion)
@@ -198,14 +196,7 @@ data ChatController = ChatController
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSSettings | HSDatabase
-  deriving (Show, Generic)
-
-instance FromJSON HelpSection where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "HS"
-
-instance ToJSON HelpSection where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "HS"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "HS"
+  deriving (Show)
 
 data ChatCommand
   = ShowActiveUser
@@ -701,28 +692,14 @@ data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
   | CPContactAddress {contactAddressPlan :: ContactAddressPlan}
   | CPGroupLink {groupLinkPlan :: GroupLinkPlan}
-  deriving (Show, Generic)
-
-instance FromJSON ConnectionPlan where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "CP"
-
-instance ToJSON ConnectionPlan where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CP"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CP"
+  deriving (Show)
 
 data InvitationLinkPlan
   = ILPOk
   | ILPOwnLink
   | ILPConnecting {contact_ :: Maybe Contact}
   | ILPKnown {contact :: Contact}
-  deriving (Show, Generic)
-
-instance FromJSON InvitationLinkPlan where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "ILP"
-
-instance ToJSON InvitationLinkPlan where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "ILP"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "ILP"
+  deriving (Show)
 
 data ContactAddressPlan
   = CAPOk
@@ -730,14 +707,7 @@ data ContactAddressPlan
   | CAPConnectingConfirmReconnect
   | CAPConnectingProhibit {contact :: Contact}
   | CAPKnown {contact :: Contact}
-  deriving (Show, Generic)
-
-instance FromJSON ContactAddressPlan where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "CAP"
-
-instance ToJSON ContactAddressPlan where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CAP"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CAP"
+  deriving (Show)
 
 data GroupLinkPlan
   = GLPOk
@@ -745,14 +715,7 @@ data GroupLinkPlan
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
   | GLPKnown {groupInfo :: GroupInfo}
-  deriving (Show, Generic)
-
-instance FromJSON GroupLinkPlan where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "GLP"
-
-instance ToJSON GroupLinkPlan where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "GLP"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "GLP"
+  deriving (Show)
 
 connectionPlanProceed :: ConnectionPlan -> Bool
 connectionPlanProceed = \case
@@ -797,7 +760,7 @@ instance ToJSON AgentQueueId where
   toEncoding = strToJEncoding
 
 data ProtoServersConfig p = ProtoServersConfig {servers :: [ServerCfg p]}
-  deriving (Show, Generic, FromJSON)
+  deriving (Show)
 
 data AProtoServersConfig = forall p. ProtocolTypeI p => APSC (SProtocolType p) (ProtoServersConfig p)
 
@@ -808,36 +771,17 @@ data UserProtoServers p = UserProtoServers
     protoServers :: NonEmpty (ServerCfg p),
     presetServers :: NonEmpty (ProtoServerWithAuth p)
   }
-  deriving (Show, Generic)
-
-instance ProtocolTypeI p => FromJSON (UserProtoServers p) where
-  parseJSON = J.genericParseJSON J.defaultOptions
-
-instance ProtocolTypeI p => ToJSON (UserProtoServers p) where
-  toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show)
 
 data AUserProtoServers = forall p. (ProtocolTypeI p, UserProtocol p) => AUPS (UserProtoServers p)
-
-instance FromJSON AUserProtoServers where
-  parseJSON v = J.withObject "AUserProtoServers" parse v
-    where
-      parse o = do
-        AProtocolType (p :: SProtocolType p) <- o .: "serverProtocol"
-        case userProtocol p of
-          Just Dict -> AUPS <$> J.parseJSON @(UserProtoServers p) v
-          Nothing -> fail $ "AUserProtoServers: unsupported protocol " <> show p
-
-instance ToJSON AUserProtoServers where
-  toJSON (AUPS s) = J.genericToJSON J.defaultOptions s
-  toEncoding (AUPS s) = J.genericToEncoding J.defaultOptions s
 
 deriving instance Show AUserProtoServers
 
 data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool, parentTempDirectory :: Maybe FilePath}
-  deriving (Show, Generic, FromJSON)
+  deriving (Show)
 
 data DBEncryptionConfig = DBEncryptionConfig {currentKey :: DBEncryptionKey, newKey :: DBEncryptionKey}
-  deriving (Show, Generic, FromJSON)
+  deriving (Show)
 
 newtype DBEncryptionKey = DBEncryptionKey String
   deriving (Show)
@@ -855,41 +799,25 @@ data ContactSubStatus = ContactSubStatus
   { contact :: Contact,
     contactError :: Maybe ChatError
   }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON ContactSubStatus where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Show)
 
 data MemberSubStatus = MemberSubStatus
   { member :: GroupMember,
     memberError :: Maybe ChatError
   }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON MemberSubStatus where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Show)
 
 data UserContactSubStatus = UserContactSubStatus
   { userContact :: UserContact,
     userContactError :: Maybe ChatError
   }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON UserContactSubStatus where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Show)
 
 data PendingSubStatus = PendingSubStatus
   { connection :: PendingContactConnection,
     connError :: Maybe ChatError
   }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON PendingSubStatus where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Show)
 
 data UserProfileUpdateSummary = UserProfileUpdateSummary
   { notChanged :: Int,
@@ -897,16 +825,14 @@ data UserProfileUpdateSummary = UserProfileUpdateSummary
     updateFailures :: Int,
     changedContacts :: [Contact]
   }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON UserProfileUpdateSummary where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show)
 
 data ComposedMessage = ComposedMessage
   { fileSource :: Maybe CryptoFile,
     quotedItemId :: Maybe ChatItemId,
     msgContent :: MsgContent
   }
-  deriving (Show, Generic)
+  deriving (Show)
 
 -- This instance is needed for backward compatibility, can be removed in v6.0
 instance FromJSON ComposedMessage where
@@ -921,24 +847,16 @@ instance FromJSON ComposedMessage where
   parseJSON invalid =
     JT.prependFailure "bad ComposedMessage, " (JT.typeMismatch "Object" invalid)
 
-instance ToJSON ComposedMessage where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
-
 data XFTPFileConfig = XFTPFileConfig
   { minFileSize :: Integer
   }
-  deriving (Show, Generic, FromJSON)
+  deriving (Show)
 
 defaultXFTPFileConfig :: XFTPFileConfig
 defaultXFTPFileConfig = XFTPFileConfig {minFileSize = 0}
 
-instance ToJSON XFTPFileConfig where toEncoding = J.genericToEncoding J.defaultOptions
-
 data NtfMsgInfo = NtfMsgInfo {msgTs :: UTCTime, msgFlags :: MsgFlags}
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON NtfMsgInfo where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show)
 
 crNtfToken :: (DeviceToken, NtfTknStatus, NotificationsMode) -> ChatResponse
 crNtfToken (token, status, ntfMode) = CRNtfToken {token, status, ntfMode}
@@ -948,25 +866,19 @@ data SwitchProgress = SwitchProgress
     switchPhase :: SwitchPhase,
     connectionStats :: ConnectionStats
   }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON SwitchProgress where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show)
 
 data RatchetSyncProgress = RatchetSyncProgress
   { ratchetSyncStatus :: RatchetSyncState,
     connectionStats :: ConnectionStats
   }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON RatchetSyncProgress where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show)
 
 data ParsedServerAddress = ParsedServerAddress
   { serverAddress :: Maybe ServerAddress,
     parseError :: String
   }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON ParsedServerAddress where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show)
 
 data ServerAddress = ServerAddress
   { serverProtocol :: AProtocolType,
@@ -975,9 +887,7 @@ data ServerAddress = ServerAddress
     keyHash :: String,
     basicAuth :: String
   }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON ServerAddress where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show)
 
 data TimedMessagesEnabled
   = TMEEnableSetTTL Int
@@ -999,22 +909,18 @@ data CoreVersionInfo = CoreVersionInfo
     simplexmqVersion :: String,
     simplexmqCommit :: String
   }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON CoreVersionInfo where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show)
 
 data SendFileMode
   = SendFileSMP (Maybe InlineFileMode)
   | SendFileXFTP
-  deriving (Show, Generic)
+  deriving (Show)
 
 data SlowSQLQuery = SlowSQLQuery
   { query :: Text,
     queryStats :: SlowQueryStats
   }
-  deriving (Show, Generic, FromJSON)
-
-instance ToJSON SlowSQLQuery where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show)
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}
@@ -1023,14 +929,7 @@ data ChatError
   | ChatErrorDatabase {databaseError :: DatabaseError}
   | ChatErrorRemoteCtrl {remoteCtrlError :: RemoteCtrlError}
   | ChatErrorRemoteHost {remoteHostId :: RemoteHostId, remoteHostError :: RemoteHostError}
-  deriving (Show, Exception, Generic)
-
-instance FromJSON ChatError where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "Chat"
-
-instance ToJSON ChatError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "Chat"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "Chat"
+  deriving (Show, Exception)
 
 data ChatErrorType
   = CENoActiveUser
@@ -1110,14 +1009,7 @@ data ChatErrorType
   | CEPeerChatVRangeIncompatible
   | CEInternalError {message :: String}
   | CEException {message :: String}
-  deriving (Show, Exception, Generic)
-
-instance FromJSON ChatErrorType where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "CE"
-
-instance ToJSON ChatErrorType where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CE"
+  deriving (Show, Exception)
 
 data DatabaseError
   = DBErrorEncrypted
@@ -1125,24 +1017,10 @@ data DatabaseError
   | DBErrorNoFile {dbFile :: String}
   | DBErrorExport {sqliteError :: SQLiteError}
   | DBErrorOpen {sqliteError :: SQLiteError}
-  deriving (Show, Exception, Generic)
-
-instance FromJSON DatabaseError where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "DB"
-
-instance ToJSON DatabaseError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "DB"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "DB"
+  deriving (Show, Exception)
 
 data SQLiteError = SQLiteErrorNotADatabase | SQLiteError String
-  deriving (Show, Exception, Generic)
-
-instance FromJSON SQLiteError where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "SQLite"
-
-instance ToJSON SQLiteError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SQLite"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SQLite"
+  deriving (Show, Exception)
 
 throwDBError :: ChatMonad m => DatabaseError -> m ()
 throwDBError = throwError . ChatErrorDatabase
@@ -1156,14 +1034,7 @@ data RemoteHostError
   | RHDisconnected {reason :: Text} -- ^ A session disconnected by a host
   | RHConnectionLost {reason :: Text} -- ^ A session disconnected due to transport issues
   | RHProtocolError RemoteProtocolError
-  deriving (Show, Exception, Generic)
-
-instance FromJSON RemoteHostError where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RH"
-
-instance ToJSON RemoteHostError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RH"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RH"
+  deriving (Show, Exception)
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteCtrlError
@@ -1179,26 +1050,12 @@ data RemoteCtrlError
   | RCEHTTP2RespStatus {statusCode :: Maybe Int} -- TODO remove
   | RCEInvalidResponse {responseError :: String}
   | RCEProtocolError {protocolError :: RemoteProtocolError}
-  deriving (Show, Exception, Generic)
-
-instance FromJSON RemoteCtrlError where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RCE"
-
-instance ToJSON RemoteCtrlError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RCE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RCE"
+  deriving (Show, Exception)
 
 data ArchiveError
   = AEImport {chatError :: ChatError}
   | AEImportFile {file :: String, chatError :: ChatError}
-  deriving (Show, Exception, Generic)
-
-instance FromJSON ArchiveError where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "AE"
-
-instance ToJSON ArchiveError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "AE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "AE"
+  deriving (Show, Exception)
 
 data RemoteCtrlSession = RemoteCtrlSession
   { -- | Host (mobile) side of transport to process remote commands and forward notifications
@@ -1298,4 +1155,83 @@ withStoreCtx ctx_ action = do
     handleInternal :: String -> SomeException -> IO (Either StoreError a)
     handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
 
+$(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "ILP") ''InvitationLinkPlan)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CAP") ''ContactAddressPlan)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CP") ''ConnectionPlan)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CE") ''ChatErrorType)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RH") ''RemoteHostError)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCE") ''RemoteCtrlError)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "SQLite") ''SQLiteError)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "DB") ''DatabaseError)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "Chat") ''ChatError)
+
+$(JQ.deriveJSON defaultJSON ''ContactSubStatus)
+
+$(JQ.deriveJSON defaultJSON ''MemberSubStatus)
+
+$(JQ.deriveJSON defaultJSON ''UserContactSubStatus)
+
+$(JQ.deriveJSON defaultJSON ''PendingSubStatus)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "AE") ''ArchiveError)
+
+$(JQ.deriveJSON defaultJSON ''UserProfileUpdateSummary)
+
+$(JQ.deriveJSON defaultJSON ''NtfMsgInfo)
+
+$(JQ.deriveJSON defaultJSON ''SwitchProgress)
+
+$(JQ.deriveJSON defaultJSON ''RatchetSyncProgress)
+
+$(JQ.deriveJSON defaultJSON ''ServerAddress)
+
+$(JQ.deriveJSON defaultJSON ''ParsedServerAddress)
+
+$(JQ.deriveJSON defaultJSON ''CoreVersionInfo)
+
+$(JQ.deriveJSON defaultJSON ''SlowSQLQuery)
+
+instance ProtocolTypeI p => FromJSON (ProtoServersConfig p) where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''ProtoServersConfig)
+
+instance ProtocolTypeI p => FromJSON (UserProtoServers p) where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''UserProtoServers)
+
+instance ProtocolTypeI p => ToJSON (UserProtoServers p) where
+  toJSON = $(JQ.mkToJSON defaultJSON ''UserProtoServers)
+  toEncoding = $(JQ.mkToEncoding defaultJSON ''UserProtoServers)
+
+instance FromJSON AUserProtoServers where
+  parseJSON v = J.withObject "AUserProtoServers" parse v
+    where
+      parse o = do
+        AProtocolType (p :: SProtocolType p) <- o .: "serverProtocol"
+        case userProtocol p of
+          Just Dict -> AUPS <$> J.parseJSON @(UserProtoServers p) v
+          Nothing -> fail $ "AUserProtoServers: unsupported protocol " <> show p
+
+instance ToJSON AUserProtoServers where
+  toJSON (AUPS s) = $(JQ.mkToJSON defaultJSON ''UserProtoServers) s
+  toEncoding (AUPS s) = $(JQ.mkToEncoding defaultJSON ''UserProtoServers) s
+
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
+
+$(JQ.deriveFromJSON defaultJSON ''ArchiveConfig)
+
+$(JQ.deriveFromJSON defaultJSON ''DBEncryptionConfig)
+
+$(JQ.deriveJSON defaultJSON ''XFTPFileConfig)
+
+$(JQ.deriveToJSON defaultJSON ''ComposedMessage)

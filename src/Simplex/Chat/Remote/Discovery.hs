@@ -35,7 +35,7 @@ import Simplex.Messaging.Transport.Client (TransportHost (..), defaultTransportC
 import Simplex.Messaging.Transport.HTTP2 (defaultHTTP2BufferSize, getHTTP2Body)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError (..), attachHTTP2Client, bodyHeadSize, connTimeout, defaultHTTP2ClientConfig)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..), runHTTP2ServerWith)
-import Simplex.Messaging.Transport.Server (defaultTransportServerConfig, runTransportServerWith, startTCPServer)
+import Simplex.Messaging.Transport.Server (defaultTransportServerConfig, runTransportServerSocket, startTCPServer)
 import Simplex.Messaging.Util (ifM, tshow)
 import Simplex.Messaging.Version (mkVersionRange)
 import UnliftIO
@@ -148,7 +148,7 @@ startTLSServer started credentials server = async . liftIO $ do
         port <- N.socketPort socket
         logInfo $ "System-assigned port: " <> tshow port
         atomically $ putTMVar started (Just port)
-        runTransportServerWith (pure socket) startedOk "RCP TLS" serverParams defaultTransportServerConfig server
+        runTransportServerSocket startedOk (pure socket) "RCP TLS" serverParams defaultTransportServerConfig server
       (void . atomically $ tryPutTMVar started Nothing)
   where
     serverParams =
