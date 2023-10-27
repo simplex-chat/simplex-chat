@@ -36,6 +36,7 @@ import Data.Word (Word32)
 import Network.HTTP2.Server (responseStreaming)
 import qualified Network.HTTP.Types as N
 import Network.Socket (SockAddr (..), hostAddressToTuple)
+import Simplex.Chat.Archive (archiveFilesFolder)
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import qualified Simplex.Chat.Remote.Discovery as Discovery
@@ -57,7 +58,7 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (ifM, liftEitherError, liftEitherWith, liftError, liftIOEither, tryAllErrors, tshow, ($>>=), (<$$>))
 import System.FilePath ((</>), takeFileName)
 import UnliftIO
-import UnliftIO.Directory (renameFile)
+import UnliftIO.Directory (copyFile, createDirectoryIfMissing, renameFile)
 
 -- * Desktop side
 
@@ -189,22 +190,20 @@ deleteRemoteHost rhId = do
 
 storeRemoteFile :: forall m. ChatMonad m => RemoteHostId -> Maybe Bool -> FilePath -> m CryptoFile
 storeRemoteFile rhId encrypted_ localPath = do
-  liftIO $ print $ "storeRemoteFile " <> show rhId
   RemoteHostSession {remoteHostClient, storePath} <- getRemoteHostSession rhId
-  liftIO $ print "has session"
   case remoteHostClient of
     Nothing -> throwError $ ChatErrorRemoteHost rhId RHMissing
     Just c@RemoteHostClient {encryptHostFiles} -> do
       let encrypt = fromMaybe encryptHostFiles encrypted_
       cf@CryptoFile {filePath} <- if encrypt then encryptLocalFile else pure $ CF.plain localPath
-      liftIO $ print "storeRemoteFile after encryptLocalFile"
-      liftIO $ print filePath
       filePath' <- liftRH rhId $ remoteStoreFile c filePath (takeFileName localPath)
-      liftIO $ print "stored"
-      liftIO $ print filePath'
-      let remotePath = storePath </> takeFileName filePath'
-      liftIO $ renameFile filePath remotePath
-      pure (cf :: CryptoFile) {filePath = remotePath}
+      hf_ <- chatReadVar remoteHostsFolder
+      forM_ hf_ $ \hf -> do
+        let rhf = hf </> storePath </> archiveFilesFolder
+            hPath = rhf </> takeFileName filePath'
+        createDirectoryIfMissing True rhf
+        (if encrypt then renameFile else copyFile) filePath hPath
+      pure (cf :: CryptoFile) {filePath = filePath'}
   where
     encryptLocalFile :: m CryptoFile
     encryptLocalFile = do

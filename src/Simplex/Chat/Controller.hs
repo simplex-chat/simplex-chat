@@ -178,6 +178,7 @@ data ChatController = ChatController
     currentCalls :: TMap ContactId Call,
     localDeviceName :: TVar Text,
     remoteHostSessions :: TMap RemoteHostId RemoteHostSession, -- All the active remote hosts
+    remoteHostsFolder :: TVar (Maybe FilePath), -- folder for remote hosts data
     remoteCtrlSession :: TVar (Maybe RemoteCtrlSession), -- Supervisor process for hosted controllers
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
@@ -224,6 +225,7 @@ data ChatCommand
   | ResubscribeAllConnections
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
+  | SetRemoteHostsFolder FilePath
   | APISetXFTPConfig (Maybe XFTPFileConfig)
   | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
@@ -449,6 +451,8 @@ allowRemoteCommand = \case
   ListRemoteHosts -> False
   StartRemoteHost {} -> False
   -- SwitchRemoteHost {} -> False
+  StoreRemoteFile {} -> False
+  GetRemoteFile {} -> False
   StopRemoteHost {} -> False
   DeleteRemoteHost {} -> False
   RegisterRemoteCtrl {} -> False
@@ -629,7 +633,7 @@ data ChatResponse
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
-  | CRRemoteFileStored {remoteHostId :: RemoteHostId, fileSource :: CryptoFile}
+  | CRRemoteFileStored {remoteHostId :: RemoteHostId, remoteFileSource :: CryptoFile}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
   | CRRemoteCtrlRegistered {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- unregistered fingerprint, needs confirmation

@@ -214,6 +214,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   currentCalls <- atomically TM.empty
   localDeviceName <- newTVarIO "" -- TODO set in config
   remoteHostSessions <- atomically TM.empty
+  remoteHostsFolder <- newTVarIO Nothing
   remoteCtrlSession <- newTVarIO Nothing
   filesFolder <- newTVarIO optFilesFolder
   chatStoreChanged <- newTVarIO False
@@ -247,6 +248,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
         currentCalls,
         localDeviceName,
         remoteHostSessions,
+        remoteHostsFolder,
         remoteCtrlSession,
         config,
         filesFolder,
@@ -542,6 +544,10 @@ processChatCommand = \case
   SetFilesFolder ff -> do
     createDirectoryIfMissing True ff
     asks filesFolder >>= atomically . (`writeTVar` Just ff)
+    ok_
+  SetRemoteHostsFolder rf -> do
+    createDirectoryIfMissing True rf
+    chatWriteVar remoteHostsFolder $ Just rf
     ok_
   APISetXFTPConfig cfg -> do
     asks userXFTPFileConfig >>= atomically . (`writeTVar` cfg)
@@ -5625,6 +5631,7 @@ chatCommandP =
       "/_resubscribe all" $> ResubscribeAllConnections,
       "/_temp_folder " *> (SetTempFolder <$> filePath),
       ("/_files_folder " <|> "/files_folder ") *> (SetFilesFolder <$> filePath),
+      "/remote_hosts_folder " *> (SetRemoteHostsFolder <$> filePath),
       "/_xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> jsonP) <|> ("off" $> Nothing))),
       "/xftp " *> (APISetXFTPConfig <$> ("on" *> (Just <$> xftpCfgP) <|> ("off" $> Nothing))),
       "/_files_encrypt " *> (APISetEncryptLocalFiles <$> onOffP),

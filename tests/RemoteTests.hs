@@ -9,7 +9,9 @@ import ChatClient
 import ChatTests.Utils
 import Control.Logger.Simple
 import Control.Monad
+import qualified Data.Aeson as J
 import qualified Data.ByteString as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
 import Network.HTTP.Types (ok200)
@@ -17,10 +19,13 @@ import qualified Network.HTTP2.Client as C
 import qualified Network.HTTP2.Server as S
 import qualified Network.Socket as N
 import qualified Network.TLS as TLS
+import Simplex.Chat.Archive (archiveFilesFolder)
 import qualified Simplex.Chat.Controller as Controller
+import Simplex.Chat.Mobile.File
 import Simplex.Chat.Remote.Types
 import qualified Simplex.Chat.Remote.Discovery as Discovery
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import qualified Simplex.Messaging.Transport as Transport
 import Simplex.Messaging.Transport.Client (TransportHost (..))
@@ -169,17 +174,33 @@ remoteStoreFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \m
   let desktopFiles = "./tests/tmp/desktop_files"
   desktop ##> ("/_files_folder " <> desktopFiles)
   desktop <## "ok"
+  let desktopHostFiles = "./tests/tmp/remote_hosts_data"
+  desktop ##> ("/remote_hosts_folder " <> desktopHostFiles)
+  desktop <## "ok"
   let bobFiles = "./tests/tmp/bob_files"
   bob ##> ("/_files_folder " <> bobFiles)
   bob <## "ok"
   startRemote mobile desktop
   contactBob desktop bob
   rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
-  desktopStore <- case M.lookup 1 rhs of
-    Just RemoteHostSession {storePath} -> pure storePath
+  desktopHostStore <- case M.lookup 1 rhs of
+    Just RemoteHostSession {storePath} -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
     _ -> fail "Host session 1 should be started"
   desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
-  desktop <## "ok"
+  desktop <## "file test.pdf stored on remote host 1"
+  src <- B.readFile "tests/fixtures/test.pdf"
+  B.readFile (mobileFiles </> "test.pdf") `shouldReturn` src
+  B.readFile (desktopHostStore </> "test.pdf") `shouldReturn` src
+  desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
+  desktop <## "file test_1.pdf stored on remote host 1"
+  B.readFile (mobileFiles </> "test_1.pdf") `shouldReturn` src
+  B.readFile (desktopHostStore </> "test_1.pdf") `shouldReturn` src
+  desktop ##> "/store remote file 1 encrypt=on tests/fixtures/test.pdf"
+  desktop <## "file test_2.pdf stored on remote host 1"
+  Just (CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine desktop
+  chatReadFile (mobileFiles </> "test_2.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
+  chatReadFile (desktopHostStore </> "test_2.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
+  stopMobile mobile desktop
 
 remoteFileTest :: (HasCallStack) => FilePath -> IO ()
 remoteFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
