@@ -24,7 +24,6 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
 import Data.ByteString.Builder (Builder)
 import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
@@ -41,18 +40,18 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import qualified Simplex.Chat.Remote.Discovery as Discovery
 import Simplex.Chat.Remote.Protocol
+import Simplex.Chat.Remote.Transport
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store.Remote
 import Simplex.Chat.Util (encryptFile)
 import Simplex.FileTransfer.Description (FileDigest (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
-import Simplex.Messaging.Crypto.Lazy as LC
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
-import Simplex.Messaging.Transport.HTTP2.File (hReceiveFile, hSendFile)
+import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (ifM, liftEitherError, liftEitherWith, liftError, liftIOEither, tryAllErrors, tshow, ($>>=), (<$$>))
@@ -213,7 +212,13 @@ storeRemoteFile rhId encrypted_ localPath = do
       pure $ CryptoFile tmpFile $ Just cfArgs
 
 getRemoteFile :: ChatMonad m => RemoteHostId -> Int64 -> FilePath -> m ()
-getRemoteFile _rh _fileId _remotePath = undefined
+getRemoteFile rhId fileId remotePath = do
+  RemoteHostSession {remoteHostClient, storePath} <- getRemoteHostSession rhId
+  case remoteHostClient of
+    Nothing -> throwError $ ChatErrorRemoteHost rhId RHMissing
+    Just c -> do
+      dir <- (</> storePath </> archiveFilesFolder) <$> (maybe getDefaultFilesFolder pure =<< chatReadVar remoteHostsFolder)
+      liftRH rhId $ remoteGetFile c dir fileId remotePath
 
 processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostSession -> ByteString -> m ChatResponse
 processRemoteCommand remoteHostId RemoteHostSession {remoteHostClient = Just rhc} s = liftRH remoteHostId $ remoteSend rhc s
@@ -321,10 +326,7 @@ handleStoreFile fileName fileSize fileDigest getChunk =
     storeFileTo :: FilePath -> m (Either RemoteProtocolError FilePath)
     storeFileTo dir = liftRC . tryRemoteError $ do
       filePath <- dir `uniqueCombine` fileName
-      diff <- withFile filePath WriteMode $ \h -> liftIO $ hReceiveFile getChunk h fileSize
-      unless (diff == 0) $ throwError RPEFileSize
-      digest <- liftIO $ LC.sha512Hash <$> LB.readFile filePath
-      when (FileDigest digest /= fileDigest) $ throwError RPEFileDigest
+      receiveRemoteFile getChunk fileSize fileDigest filePath
       pure filePath
 
 handleGetFile :: ChatMonad m => FilePath -> Respond m -> m ()
@@ -334,7 +336,8 @@ handleGetFile path reply = do
     fileSize' <- hFileSize h
     when (fileSize' > toInteger (maxBound :: Word32)) $ throwIO RPEFileSize
     let fileSize = fromInteger fileSize'
-    reply RRFile {fileSize} $ \send -> hSendFile h send fileSize
+    fileDigest <- liftIO $ FileDigest . LC.sha512Hash <$> LB.readFile toPath
+    reply RRFile {fileSize, fileDigest} $ \send -> hSendFile h send fileSize
 
 -- TODO the problem with this code was that it wasn't clear where the recursion can happen,
 -- by splitting receiving and processing to two functions it becomes clear

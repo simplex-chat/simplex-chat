@@ -21,6 +21,7 @@ import qualified Data.Aeson.Types as JT
 import Data.ByteString (ByteString)
 import Data.ByteString.Builder (Builder, word32BE, lazyByteString)
 import qualified Data.ByteString.Lazy as LB
+import Data.Int (Int64)
 import Data.String (fromString)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)
@@ -29,6 +30,7 @@ import qualified Network.HTTP.Types as N
 import qualified Network.HTTP2.Client as H
 import Network.Transport.Internal (decodeWord32)
 import Simplex.Chat.Controller
+import Simplex.Chat.Remote.Transport
 import Simplex.Chat.Remote.Types
 import Simplex.FileTransfer.Description (FileDigest (..))
 import Simplex.Messaging.Crypto.Lazy as LC
@@ -36,11 +38,10 @@ import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON, pattern SingleFi
 import Simplex.Messaging.Transport.Buffer (getBuffered)
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), HTTP2BodyChunk, getBodyChunk)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2Response (..), closeHTTP2Client, sendRequestDirect)
-import Simplex.Messaging.Transport.HTTP2.File (hReceiveFile, hSendFile)
-import Simplex.Messaging.Util (liftEitherError, liftEitherWith, tshow, whenM)
-import System.FilePath ((</>))
+import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
+import Simplex.Messaging.Util (liftEitherError, liftEitherWith, tshow)
+import System.FilePath ((</>), takeFileName)
 import UnliftIO
-import UnliftIO.Directory (doesFileExist, getFileSize)
 
 data RemoteCommand
   = RCHello {deviceName :: Text}
@@ -48,7 +49,7 @@ data RemoteCommand
   | RCRecv {wait :: Int} -- this wait should be less than HTTP timeout
   | -- local file encryption is determined by the host, but can be overridden for videos
     RCStoreFile {fileName :: String, fileSize :: Word32, fileDigest :: FileDigest} -- requires attachment
-  | RCGetFile {filePath :: FilePath}
+  | RCGetFile {fileId :: Int64, filePath :: FilePath}
   deriving (Show)
 
 data RemoteResponse
@@ -56,7 +57,7 @@ data RemoteResponse
   | RRChatResponse {chatResponse :: ChatResponse}
   | RRChatEvent {chatEvent :: Maybe ChatResponse} -- ^ 'Nothing' on poll timeout
   | RRFileStored {filePath :: String}
-  | RRFile {fileSize :: Word32} -- provides attachment , fileDigest :: FileDigest
+  | RRFile {fileSize :: Word32, fileDigest :: FileDigest} -- provides attachment , fileDigest :: FileDigest
   | RRProtocolError {remoteProcotolError :: RemoteProtocolError} -- ^ The protocol error happened on the server side
   deriving (Show)
 
@@ -101,7 +102,7 @@ remoteRecv RemoteHostClient {httpClient, hostEncoding} ms = do
 remoteStoreFile :: RemoteHostClient -> FilePath -> FilePath -> ExceptT RemoteProtocolError IO FilePath
 remoteStoreFile RemoteHostClient {httpClient, hostEncoding} localPath fileName = do
   fileDigest <- liftIO $ FileDigest . LC.sha512Hash <$> LB.readFile localPath
-  (_getNext, rr) <- withFile localPath ReadMode $ \h -> do
+  (_, rr) <- withFile localPath ReadMode $ \h -> do
     fileSize' <- hFileSize h
     when (fileSize' > toInteger (maxBound :: Word32)) $ throwError RPEFileSize
     let fileSize = fromInteger fileSize'
@@ -116,19 +117,17 @@ remoteStoreFile RemoteHostClient {httpClient, hostEncoding} localPath fileName =
 -- UI - always use the same names and report error if file already exists
 -- alternatively, CLI should also use a fixed folder for remote session
 -- Possibly, path in the database should be optional and CLI commands should allow configuring it per session or use temp or download folder
-remoteGetFile :: RemoteHostClient -> FilePath -> FilePath -> ExceptT RemoteProtocolError IO FilePath
-remoteGetFile RemoteHostClient {httpClient, hostEncoding} baseDir filePath = do
-  (getNext, rr) <- sendRemoteCommand httpClient hostEncoding Nothing RCGetFile {filePath}
-  expectedSize <- case rr of
-    RRFile {fileSize} -> pure fileSize
+remoteGetFile :: RemoteHostClient -> FilePath -> Int64 -> FilePath -> ExceptT RemoteProtocolError IO ()
+remoteGetFile RemoteHostClient {httpClient, hostEncoding} destDir fileId remotePath = do
+  (getChunk, rr) <- sendRemoteCommand httpClient hostEncoding Nothing RCGetFile {fileId, filePath = remotePath}
+  case rr of
+    RRFile {fileSize, fileDigest} -> do
+      -- TODO we could optimize by checking size and hash before receiving the file
+      -- whenM (liftIO $ doesFileExist localFile) $ throwError RPEStoredFileExists
+      let localPath = destDir </> takeFileName remotePath
+      receiveRemoteFile getChunk fileSize fileDigest localPath
+    RRProtocolError e -> throwError e
     _ -> throwError $ RPEUnexpectedResponse $ tshow rr
-  whenM (liftIO $ doesFileExist localFile) $ throwError RPEStoredFileExists
-  rc <- liftIO $ withFile localFile WriteMode $ \h -> hReceiveFile getNext h expectedSize
-  when (rc /= 0) $ throwError RPEInvalidSize
-  whenM ((== expectedSize) . fromIntegral <$> getFileSize localFile) $ throwError RPEInvalidSize
-  pure localFile
-  where
-    localFile = baseDir </> filePath
 
 sendRemoteCommand :: HTTP2Client -> PlatformEncoding -> Maybe (Handle, Word32) -> RemoteCommand -> ExceptT RemoteProtocolError IO (Int -> IO ByteString, RemoteResponse)
 sendRemoteCommand http remoteEncoding attachment_ rc = do
