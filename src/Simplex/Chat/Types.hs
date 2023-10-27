@@ -621,6 +621,18 @@ instance ToJSON GroupInvitation where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+data GroupLinkInvitation = GroupLinkInvitation
+  { fromMember :: MemberIdRole,
+    fromMemberProfile :: Profile,
+    invitedMember :: MemberIdRole,
+    groupProfile :: GroupProfile
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON GroupLinkInvitation where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
+
 data MemberIdRole = MemberIdRole
   { memberId :: MemberId,
     memberRole :: GroupMemberRole

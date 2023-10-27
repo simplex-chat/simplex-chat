@@ -51,7 +51,7 @@ import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
 
 currentChatVersion :: Version
-currentChatVersion = 2
+currentChatVersion = 3
 
 supportedChatVRange :: VersionRange
 supportedChatVRange = mkVersionRange 1 currentChatVersion
@@ -63,6 +63,10 @@ groupNoDirectVRange = mkVersionRange 2 currentChatVersion
 -- version range that supports establishing direct connection via x.grp.direct.inv with a group member
 xGrpDirectInvVRange :: VersionRange
 xGrpDirectInvVRange = mkVersionRange 2 currentChatVersion
+
+-- version range that supports joining group via group link without creating direct contact
+groupLinkNoContactVRange :: VersionRange
+groupLinkNoContactVRange = mkVersionRange 3 currentChatVersion
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -218,6 +222,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
+  XGrpLinkInv :: GroupLinkInvitation -> ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> ChatMsgEvent 'Json
   XGrpMemIntro :: MemberInfo -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
@@ -559,6 +564,7 @@ data CMEventTag (e :: MsgEncoding) where
   XDirectDel_ :: CMEventTag 'Json
   XGrpInv_ :: CMEventTag 'Json
   XGrpAcpt_ :: CMEventTag 'Json
+  XGrpLinkInv_ :: CMEventTag 'Json
   XGrpMemNew_ :: CMEventTag 'Json
   XGrpMemIntro_ :: CMEventTag 'Json
   XGrpMemInv_ :: CMEventTag 'Json
@@ -606,6 +612,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XDirectDel_ -> "x.direct.del"
     XGrpInv_ -> "x.grp.inv"
     XGrpAcpt_ -> "x.grp.acpt"
+    XGrpLinkInv_ -> "x.grp.link.inv"
     XGrpMemNew_ -> "x.grp.mem.new"
     XGrpMemIntro_ -> "x.grp.mem.intro"
     XGrpMemInv_ -> "x.grp.mem.inv"
@@ -654,6 +661,7 @@ instance StrEncoding ACMEventTag where
         "x.direct.del" -> XDirectDel_
         "x.grp.inv" -> XGrpInv_
         "x.grp.acpt" -> XGrpAcpt_
+        "x.grp.link.inv" -> XGrpLinkInv_
         "x.grp.mem.new" -> XGrpMemNew_
         "x.grp.mem.intro" -> XGrpMemIntro_
         "x.grp.mem.inv" -> XGrpMemInv_
@@ -698,6 +706,7 @@ toCMEventTag msg = case msg of
   XDirectDel -> XDirectDel_
   XGrpInv _ -> XGrpInv_
   XGrpAcpt _ -> XGrpAcpt_
+  XGrpLinkInv _ -> XGrpLinkInv_
   XGrpMemNew _ -> XGrpMemNew_
   XGrpMemIntro _ -> XGrpMemIntro_
   XGrpMemInv _ _ -> XGrpMemInv_
@@ -795,6 +804,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XDirectDel_ -> pure XDirectDel
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
+      XGrpLinkInv_ -> XGrpLinkInv <$> p "groupLinkInvitation"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo"
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
@@ -853,6 +863,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XDirectDel -> JM.empty
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
+      XGrpLinkInv groupLinkInv -> o ["groupLinkInvitation" .= groupLinkInv]
       XGrpMemNew memInfo -> o ["memberInfo" .= memInfo]
       XGrpMemIntro memInfo -> o ["memberInfo" .= memInfo]
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]

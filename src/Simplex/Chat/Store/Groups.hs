@@ -31,6 +31,7 @@ module Simplex.Chat.Store.Groups
     getGroupAndMember,
     createNewGroup,
     createGroupInvitation,
+    createGroupInvitedViaLink,
     setViaGroupLinkHash,
     setGroupInvitationChatItemId,
     getGroup,
@@ -59,6 +60,8 @@ module Simplex.Chat.Store.Groups
     getGroupInvitation,
     createNewContactMember,
     createNewContactMemberAsync,
+    createAcceptedMember,
+    createAcceptedMemberConnection,
     getContactViaMember,
     setNewContactMemberConnRequest,
     getMemberInvitation,
@@ -412,6 +415,54 @@ createContactMemberInv_ db User {userId, userContactId} groupId userOrContact Me
           )
         pure $ Right incognitoLdn
 
+createGroupInvitedViaLink :: DB.Connection -> User -> Connection -> GroupLinkInvitation -> ExceptT StoreError IO GroupInfo
+createGroupInvitedViaLink
+  db
+  user@User {userId, userContactId}
+  Connection {connId, customUserProfileId}
+  GroupLinkInvitation {fromMember, fromMemberProfile, invitedMember, groupProfile} = do
+    currentTs <- liftIO getCurrentTime
+    groupId <- insertGroup_ currentTs
+    hostMemberId <- insertHost_ currentTs groupId
+    liftIO $ DB.execute db "UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ? WHERE connection_id = ?" (ConnMember, hostMemberId, currentTs, connId)
+    -- using IBUnknown since host is created without contact
+    void $ createContactMemberInv_ db user groupId user invitedMember GCUserMember GSMemAccepted IBUnknown customUserProfileId currentTs
+    liftIO $ setViaGroupLinkHash db groupId connId
+    getGroupInfo db user groupId
+  where
+    insertGroup_ currentTs = ExceptT $ do
+      let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile
+      withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
+        liftIO $ do
+          DB.execute
+            db
+            "INSERT INTO group_profiles (display_name, full_name, description, image, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
+            (displayName, fullName, description, image, userId, groupPreferences, currentTs, currentTs)
+          profileId <- insertedRowId db
+          DB.execute
+            db
+            "INSERT INTO groups (group_profile_id, local_display_name, host_conn_custom_user_profile_id, user_id, enable_ntfs, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?,?)"
+            (profileId, localDisplayName, customUserProfileId, userId, True, currentTs, currentTs, currentTs)
+          insertedRowId db
+    insertHost_ currentTs groupId = ExceptT $ do
+      let Profile {displayName} = fromMemberProfile
+      withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
+        (_, profileId) <- createNewMemberProfile_ db user fromMemberProfile currentTs
+        let MemberIdRole {memberId, memberRole} = fromMember
+        liftIO $ do
+          DB.execute
+            db
+            [sql|
+              INSERT INTO group_members
+                ( group_id, member_id, member_role, member_category, member_status, invited_by,
+                  user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+            |]
+            ( (groupId, memberId, memberRole, GCHostMember, GSMemAccepted, fromInvitedBy userContactId IBUnknown)
+                :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
+            )
+          insertedRowId db
+
 setViaGroupLinkHash :: DB.Connection -> GroupId -> Int64 -> IO ()
 setViaGroupLinkHash db groupId connId =
   DB.execute
@@ -713,6 +764,47 @@ createNewContactMemberAsync db gVar user@User {userId, userContactId} groupId Co
             :. (userId, localDisplayName, contactId, localProfileId profile, createdAt, createdAt)
         )
 
+createAcceptedMember :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> UserContactRequest -> GroupMemberRole -> ExceptT StoreError IO (GroupMemberId, MemberId)
+createAcceptedMember
+  db
+  gVar
+  User {userId, userContactId}
+  GroupInfo {groupId}
+  UserContactRequest {localDisplayName, profileId}
+  memberRole = do
+    liftIO $
+      DB.execute db "DELETE FROM contact_requests WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
+    createWithRandomId gVar $ \memId -> do
+      createdAt <- liftIO getCurrentTime
+      insertMember_ (MemberId memId) createdAt
+      groupMemberId <- liftIO $ insertedRowId db
+      pure (groupMemberId, MemberId memId)
+  where
+    insertMember_ memberId createdAt =
+      DB.execute
+        db
+        [sql|
+          INSERT INTO group_members
+            ( group_id, member_id, member_role, member_category, member_status, invited_by,
+              user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+        |]
+        ( (groupId, memberId, memberRole, GCInviteeMember, GSMemAccepted, fromInvitedBy userContactId IBUser)
+            :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, createdAt, createdAt)
+        )
+
+createAcceptedMemberConnection :: DB.Connection -> User -> (CommandId, ConnId) -> UserContactRequest -> GroupMemberId -> SubscriptionMode -> IO ()
+createAcceptedMemberConnection
+  db
+  user@User {userId}
+  (cmdId, agentConnId)
+  UserContactRequest {cReqChatVRange, userContactLinkId}
+  groupMemberId
+  subMode = do
+    createdAt <- liftIO getCurrentTime
+    Connection {connId} <- createConnection_ db userId ConnMember (Just groupMemberId) agentConnId (fromJVersionRange cReqChatVRange) Nothing (Just userContactLinkId) Nothing 0 createdAt subMode
+    setCommandConnId db user cmdId connId
+
 getContactViaMember :: DB.Connection -> User -> GroupMember -> ExceptT StoreError IO Contact
 getContactViaMember db user@User {userId} GroupMember {groupMemberId} = do
   contactId <-
@@ -768,9 +860,9 @@ updateGroupMemberStatusById db userId groupMemberId memStatus = do
 
 -- | add new member with profile
 createNewGroupMember :: DB.Connection -> User -> GroupInfo -> MemberInfo -> GroupMemberCategory -> GroupMemberStatus -> ExceptT StoreError IO GroupMember
-createNewGroupMember db user gInfo memInfo memCategory memStatus = do
+createNewGroupMember db user gInfo memInfo@MemberInfo {profile} memCategory memStatus = do
   currentTs <- liftIO getCurrentTime
-  (localDisplayName, memProfileId) <- createNewMemberProfile_ db user memInfo currentTs
+  (localDisplayName, memProfileId) <- createNewMemberProfile_ db user profile currentTs
   let newMember =
         NewGroupMember
           { memInfo,
@@ -783,8 +875,8 @@ createNewGroupMember db user gInfo memInfo memCategory memStatus = do
           }
   liftIO $ createNewMember_ db user gInfo newMember currentTs
 
-createNewMemberProfile_ :: DB.Connection -> User -> MemberInfo -> UTCTime -> ExceptT StoreError IO (Text, ProfileId)
-createNewMemberProfile_ db User {userId} (MemberInfo _ _ _ Profile {displayName, fullName, image, contactLink, preferences}) createdAt =
+createNewMemberProfile_ :: DB.Connection -> User -> Profile -> UTCTime -> ExceptT StoreError IO (Text, ProfileId)
+createNewMemberProfile_ db User {userId} Profile {displayName, fullName, image, contactLink, preferences} createdAt =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     DB.execute
       db
@@ -960,7 +1052,7 @@ createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupM
       (localDisplayName, contactId, memProfileId) <- createContact_ db userId directConnId memberProfile "" (Just groupId) currentTs Nothing
       pure $ NewGroupMember {memInfo, memCategory = GCPreMember, memStatus = GSMemIntroduced, memInvitedBy = IBUnknown, localDisplayName, memContactId = Just contactId, memProfileId}
     Nothing -> do
-      (localDisplayName, memProfileId) <- createNewMemberProfile_ db user memInfo currentTs
+      (localDisplayName, memProfileId) <- createNewMemberProfile_ db user memberProfile currentTs
       pure $ NewGroupMember {memInfo, memCategory = GCPreMember, memStatus = GSMemIntroduced, memInvitedBy = IBUnknown, localDisplayName, memContactId = Nothing, memProfileId}
   liftIO $ do
     member <- createNewMember_ db user gInfo newMember currentTs
