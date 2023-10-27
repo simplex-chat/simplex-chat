@@ -120,11 +120,30 @@ data AppMessage (e :: MsgEncoding) where
 -- chat message is sent as JSON with these properties
 data AppMessageJson = AppMessageJson
   { v :: Maybe ChatVersionRange,
-    msgId :: Maybe SharedMsgId,
+    msgId :: Maybe SharedMsgId, -- maybe it's time we make it required? Or we can make it required inside `dag`
     event :: Text,
-    params :: J.Object
+    params :: J.Object,
+    groupEvent :: Maybe JsonGroupEvent
   }
   deriving (Generic, FromJSON)
+
+data JsonGroupEvent = JsonGroupEvent
+  { sharedHash :: Text, -- this hash must be computed from the shared part of the message that is sent to all members (e.g., including file hash but excluding file description)
+    parents :: [JsonGroupEventParent]
+  }
+  deriving (Generic, FromJSON, ToJSON)
+
+data JsonGroupEventParent = JsonGroupEventParent
+  { msgId :: SharedMsgId,
+    memberId :: MemberId,
+    displayName :: ContactName,
+    groupEvent :: JsonGroupEvent,
+    groupEventData :: JsonGroupEventData
+  }
+  deriving (Generic, FromJSON, ToJSON)
+
+data JsonGroupEventData = JGEData AppMessageJson | JGEAvailable | JGENothing
+  deriving (Generic, FromJSON, ToJSON)
 
 data AppMessageBinary = AppMessageBinary
   { msgId :: Maybe SharedMsgId,
@@ -182,8 +201,27 @@ instance ToJSON MsgRef where
 data ChatMessage e = ChatMessage
   { chatVRange :: VersionRange,
     msgId :: Maybe SharedMsgId,
-    chatMsgEvent :: ChatMsgEvent e
+    chatMsgEvent :: ChatMsgEvent e,
+    groupEvent :: Maybe (GroupEvent e)
   }
+  deriving (Eq, Show)
+
+data GroupEvent e = GroupEvent
+  { sharedHash :: Text, -- this hash must be computed from the shared part of the message that is sent to all members (e.g., including file hash but excluding file description)
+    parents :: [GroupEventParent e]
+  }
+  deriving (Eq, Show)
+
+data GroupEventParent e = GroupEventParent
+  { msgId :: SharedMsgId,
+    memberId :: MemberId,
+    displayName :: ContactName,
+    groupEvent :: GroupEvent e,
+    groupEventData :: GroupEventData e
+  }
+  deriving (Eq, Show)
+
+data GroupEventData e = GEData (ChatMessage e) | GEAvailable | GENothing
   deriving (Eq, Show)
 
 data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMessage e)
@@ -200,6 +238,49 @@ instance StrEncoding AChatMessage where
     A.peekChar' >>= \case
       '{' -> ACMsg SJson <$> ((appJsonToCM <=< J.eitherDecodeStrict') <$?> A.takeByteString)
       _ -> ACMsg SBinary <$> (appBinaryToCM <$?> strP)
+
+sharedGroupMsgEvent :: ChatMsgEvent e -> Maybe (ChatMsgEvent e)
+sharedGroupMsgEvent ev = case ev of
+  XMsgNew _ -> Just ev -- TODO remove file description, include file hash
+  XMsgFileDescr {} -> Nothing
+  XMsgFileCancel _ -> Just ev
+  XMsgUpdate {} -> Just ev
+  XMsgDel {} -> Just ev
+  XMsgDeleted -> Nothing
+  XMsgReact {} -> Just ev
+  XFile _ -> Nothing
+  XFileAcpt _ -> Nothing
+  XFileAcptInv {} -> Nothing
+  XFileCancel _ -> Nothing
+  XInfo _ -> Just ev
+  XContact {} -> Just ev -- ?
+  XDirectDel -> Nothing
+  XGrpInv _ -> Nothing
+  XGrpAcpt _ -> Nothing
+  XGrpMemNew _ -> Just ev
+  XGrpMemIntro _ -> Nothing
+  XGrpMemInv {} -> Nothing
+  XGrpMemFwd {} -> Nothing
+  XGrpMemInfo {} -> Nothing
+  XGrpMemRole {} -> Just ev
+  XGrpMemCon _ -> Nothing -- TODO not implemented
+  XGrpMemConAll _ -> Nothing -- TODO not implemented
+  XGrpMemDel _ -> Just ev
+  XGrpLeave -> Just ev
+  XGrpDel -> Just ev
+  XGrpInfo _ -> Just ev
+  XGrpDirectInv {} -> Nothing
+  XInfoProbe _ -> Nothing
+  XInfoProbeCheck _ -> Nothing
+  XInfoProbeOk _ -> Nothing
+  XCallInv {} -> Nothing
+  XCallOffer {} -> Nothing
+  XCallAnswer {} -> Nothing
+  XCallExtra {} -> Nothing
+  XCallEnd _ -> Nothing
+  XOk -> Nothing
+  XUnknown {} -> Nothing
+  BFileChunk {} -> Nothing
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
@@ -761,7 +842,7 @@ appBinaryToCM :: AppMessageBinary -> Either String (ChatMessage 'Binary)
 appBinaryToCM AppMessageBinary {msgId, tag, body} = do
   eventTag <- strDecode $ B.singleton tag
   chatMsgEvent <- parseAll (msg eventTag) body
-  pure ChatMessage {chatVRange = chatInitialVRange, msgId, chatMsgEvent}
+  pure ChatMessage {chatVRange = chatInitialVRange, msgId, chatMsgEvent, groupEvent = Nothing}
   where
     msg :: CMEventTag 'Binary -> A.Parser (ChatMsgEvent 'Binary)
     msg = \case
@@ -771,7 +852,7 @@ appJsonToCM :: AppMessageJson -> Either String (ChatMessage 'Json)
 appJsonToCM AppMessageJson {v, msgId, event, params} = do
   eventTag <- strDecode $ encodeUtf8 event
   chatMsgEvent <- msg eventTag
-  pure ChatMessage {chatVRange = maybe chatInitialVRange fromChatVRange v, msgId, chatMsgEvent}
+  pure ChatMessage {chatVRange = maybe chatInitialVRange fromChatVRange v, msgId, chatMsgEvent, groupEvent = Nothing}
   where
     p :: FromJSON a => J.Key -> Either String a
     p key = JT.parseEither (.: key) params
@@ -827,7 +908,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
   SBinary ->
     let (binaryMsgId, body) = toBody chatMsgEvent
      in AMBinary AppMessageBinary {msgId = binaryMsgId, tag = B.head $ strEncode tag, body}
-  SJson -> AMJson AppMessageJson {v = Just $ ChatVersionRange chatVRange, msgId, event = textEncode tag, params = params chatMsgEvent}
+  SJson -> AMJson AppMessageJson {v = Just $ ChatVersionRange chatVRange, msgId, event = textEncode tag, params = params chatMsgEvent, groupEvent = Nothing}
   where
     tag = toCMEventTag chatMsgEvent
     o :: [(J.Key, J.Value)] -> J.Object
