@@ -6,6 +6,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.painterResource
@@ -94,6 +95,8 @@ fun PasteToConnectLayout(
       painterResource(MR.images.ic_link),
       stringResource(MR.strings.connect_button),
       click = { connectViaLink(connectionLink.value) },
+      textColor = MaterialTheme.colors.primary,
+      iconColor = MaterialTheme.colors.primary,
       disabled = connectionLink.value.isEmpty() || connectionLink.value.trim().contains(" ")
     )
 
