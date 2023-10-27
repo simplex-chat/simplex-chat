@@ -35,13 +35,15 @@ import UnliftIO.Concurrent
 import UnliftIO.Directory
 
 remoteTests :: SpecWith FilePath
-remoteTests = describe "Remote" $ do
+remoteTests = fdescribe "Remote" $ do
   it "generates usable credentials" genCredentialsTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
   it "performs protocol handshake" remoteHandshakeTest
   it "performs protocol handshake (again)" remoteHandshakeTest -- leaking servers regression check
   it "sends messages" remoteMessageTest
-  xit "sends files" remoteFileTest
+  describe "remote files" $ do
+    fit "store file" remoteStoreFileTest
+    xit "sends files" remoteFileTest
 
 -- * Low-level TLS with ephemeral credentials
 
@@ -158,6 +160,26 @@ remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
 
   threadDelay 1000000
   logNote "done"
+
+remoteStoreFileTest :: HasCallStack => FilePath -> IO ()
+remoteStoreFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
+  let mobileFiles = "./tests/tmp/mobile_files"
+  mobile ##> ("/_files_folder " <> mobileFiles)
+  mobile <## "ok"
+  let desktopFiles = "./tests/tmp/desktop_files"
+  desktop ##> ("/_files_folder " <> desktopFiles)
+  desktop <## "ok"
+  let bobFiles = "./tests/tmp/bob_files"
+  bob ##> ("/_files_folder " <> bobFiles)
+  bob <## "ok"
+  startRemote mobile desktop
+  contactBob desktop bob
+  rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
+  desktopStore <- case M.lookup 1 rhs of
+    Just RemoteHostSession {storePath} -> pure storePath
+    _ -> fail "Host session 1 should be started"
+  desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
+  desktop <## "ok"
 
 remoteFileTest :: (HasCallStack) => FilePath -> IO ()
 remoteFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do

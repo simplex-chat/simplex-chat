@@ -55,6 +55,7 @@ import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
+import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
@@ -104,7 +105,7 @@ import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
 import System.Exit (exitFailure, exitSuccess)
-import System.FilePath (combine, splitExtensions, takeFileName, (</>))
+import System.FilePath (takeFileName, (</>))
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, stdout)
 import System.Random (randomRIO)
 import Text.Read (readMaybe)
@@ -1911,6 +1912,8 @@ processChatCommand = \case
   StartRemoteHost rh -> startRemoteHost rh >> ok_
   StopRemoteHost rh -> closeRemoteHostSession rh >> ok_
   DeleteRemoteHost rh -> deleteRemoteHost rh >> ok_
+  StoreRemoteFile rh encrypted_ localPath -> CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
+  GetRemoteFile rh fileId remotePath -> getRemoteFile rh fileId remotePath >> ok_
   StartRemoteCtrl -> startRemoteCtrl (execChatCommand Nothing) >> ok_
   RegisterRemoteCtrl oob -> CRRemoteCtrlRegistered <$> withStore' (`insertRemoteCtrl` oob)
   AcceptRemoteCtrl rc -> acceptRemoteCtrl rc >> ok_
@@ -2575,10 +2578,9 @@ startReceivingFile user fileId = do
 getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> String -> Bool -> m FilePath
 getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
   Nothing ->
-    asks filesFolder >>= readTVarIO >>= \case
-      Nothing -> do
-        dir <- (`combine` "Downloads") <$> getHomeDirectory
-        ifM (doesDirectoryExist dir) (pure dir) getChatTempDirectory
+    chatReadVar filesFolder >>= \case
+      Nothing ->
+        getDefaultFilesFolder
           >>= (`uniqueCombine` fn)
           >>= createEmptyFile
       Just filesFolder ->
@@ -2606,18 +2608,6 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
       pure fPath
     getTmpHandle :: FilePath -> m Handle
     getTmpHandle fPath = openFile fPath AppendMode `catchThrow` (ChatError . CEFileInternal . show)
-
-uniqueCombine :: MonadIO m => FilePath -> String -> m FilePath
-uniqueCombine filePath fileName = tryCombine (0 :: Int)
-  where
-    tryCombine n =
-      let (name, ext) = splitExtensions fileName
-          suffix = if n == 0 then "" else "_" <> show n
-          f = filePath `combine` (name <> suffix <> ext)
-       in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
-
-getChatTempDirectory :: ChatMonad m => m FilePath
-getChatTempDirectory = chatReadVar tempDirectory >>= maybe getTemporaryDirectory pure
 
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
 acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId} incognitoProfile = do
@@ -5858,6 +5848,8 @@ chatCommandP =
       "/start remote host " *> (StartRemoteHost <$> A.decimal),
       "/stop remote host " *> (StopRemoteHost <$> A.decimal),
       "/delete remote host " *> (DeleteRemoteHost <$> A.decimal),
+      "/store remote file " *> (StoreRemoteFile <$> A.decimal <*> optional (" encrypt=" *> onOffP) <* A.space <*> filePath),
+      "/get remote file " *> (GetRemoteFile <$> A.decimal <* A.space <*> A.decimal <* A.space <*> filePath),
       "/start remote ctrl" $> StartRemoteCtrl,
       "/register remote ctrl " *> (RegisterRemoteCtrl <$> (RemoteCtrlOOB <$> strP <* A.space <*> textP)),
       "/_register remote ctrl " *> (RegisterRemoteCtrl <$> jsonP),

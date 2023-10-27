@@ -20,7 +20,7 @@ import Data.Aeson.TH (deriveJSON)
 import qualified Data.Aeson.Types as JT
 import Data.ByteString (ByteString)
 import Data.ByteString.Builder (Builder, word32BE, lazyByteString)
-import qualified Data.ByteString.Lazy as BL
+import qualified Data.ByteString.Lazy as LB
 import Data.String (fromString)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)
@@ -28,9 +28,10 @@ import Data.Word (Word32)
 import qualified Network.HTTP.Types as N
 import qualified Network.HTTP2.Client as H
 import Network.Transport.Internal (decodeWord32)
-import Simplex.Chat.Controller (ChatResponse)
+import Simplex.Chat.Controller
 import Simplex.Chat.Remote.Types
-import Simplex.Messaging.Crypto.File (CryptoFile)
+import Simplex.FileTransfer.Description (FileDigest (..))
+import Simplex.Messaging.Crypto.Lazy as LC
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON, pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
 import Simplex.Messaging.Transport.Buffer (getBuffered)
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), HTTP2BodyChunk, getBodyChunk)
@@ -46,16 +47,16 @@ data RemoteCommand
   | RCSend {command :: Text} -- TODO maybe ChatCommand here?
   | RCRecv {wait :: Int} -- this wait should be less than HTTP timeout
   | -- local file encryption is determined by the host, but can be overridden for videos
-    RCStoreFile {fileSize :: Word32, encrypt :: Maybe Bool} -- requires attachment
+    RCStoreFile {fileName :: String, fileSize :: Word32, fileDigest :: FileDigest} -- requires attachment
   | RCGetFile {filePath :: FilePath}
   deriving (Show)
 
 data RemoteResponse
-  = RRHello {encoding :: PlatformEncoding, deviceName :: Text}
+  = RRHello {encoding :: PlatformEncoding, deviceName :: Text, encryptFiles :: Bool}
   | RRChatResponse {chatResponse :: ChatResponse}
   | RRChatEvent {chatEvent :: Maybe ChatResponse} -- ^ 'Nothing' on poll timeout
-  | RRFileStored {fileSource :: CryptoFile}
-  | RRFile {fileSize :: Word32} -- provides attachment
+  | RRFileStored {filePath :: String}
+  | RRFile {fileSize :: Word32} -- provides attachment , fileDigest :: FileDigest
   | RRProtocolError {remoteProcotolError :: RemoteProtocolError} -- ^ The protocol error happened on the server side
   deriving (Show)
 
@@ -70,10 +71,10 @@ createRemoteHostClient httpClient desktopName = do
   logInfo "Sending initial hello"
   (_getNext, rr) <- sendRemoteCommand httpClient localEncoding Nothing RCHello {deviceName = desktopName}
   case rr of
-    rrh@RRHello {encoding, deviceName = mobileName} -> do
+    rrh@RRHello {encoding, deviceName = mobileName, encryptFiles} -> do
       logInfo $ "Got initial hello: " <> tshow rrh
       when (encoding == PEKotlin && localEncoding == PESwift) $ throwError RPEIncompatibleEncoding
-      pure RemoteHostClient {remoteEncoding = encoding, remoteDeviceName = mobileName, httpClient}
+      pure RemoteHostClient {hostEncoding = encoding, hostDeviceName = mobileName, httpClient, encryptHostFiles = encryptFiles}
     _ -> throwError $ RPEUnexpectedResponse $ tshow rr
 
 closeRemoteHostClient :: MonadIO m => RemoteHostClient -> m ()
@@ -82,28 +83,32 @@ closeRemoteHostClient RemoteHostClient {httpClient} = liftIO $ closeHTTP2Client 
 -- ** Commands
 
 remoteSend :: RemoteHostClient -> ByteString -> ExceptT RemoteProtocolError IO ChatResponse
-remoteSend RemoteHostClient {httpClient, remoteEncoding} cmd = do
-  (_getNext, rr) <- sendRemoteCommand httpClient remoteEncoding Nothing RCSend {command = decodeUtf8 cmd}
+remoteSend RemoteHostClient {httpClient, hostEncoding} cmd = do
+  (_getNext, rr) <- sendRemoteCommand httpClient hostEncoding Nothing RCSend {command = decodeUtf8 cmd}
   case rr of
     RRChatResponse cr -> pure cr
+    RRProtocolError e -> throwError e
     _ -> throwError $ RPEUnexpectedResponse $ tshow rr
 
 remoteRecv :: RemoteHostClient -> Int -> ExceptT RemoteProtocolError IO (Maybe ChatResponse)
-remoteRecv RemoteHostClient {httpClient, remoteEncoding} ms = do
-  (_getNext, rr) <- sendRemoteCommand httpClient remoteEncoding Nothing RCRecv {wait=ms}
+remoteRecv RemoteHostClient {httpClient, hostEncoding} ms = do
+  (_getNext, rr) <- sendRemoteCommand httpClient hostEncoding Nothing RCRecv {wait=ms}
   case rr of
     RRChatEvent cr_ -> pure cr_
+    RRProtocolError e -> throwError e
     _ -> throwError $ RPEUnexpectedResponse $ tshow rr
 
-remoteStoreFile :: RemoteHostClient -> FilePath -> Maybe Bool -> ExceptT RemoteProtocolError IO CryptoFile
-remoteStoreFile RemoteHostClient {httpClient, remoteEncoding} localPath encrypt = do
+remoteStoreFile :: RemoteHostClient -> FilePath -> FilePath -> ExceptT RemoteProtocolError IO FilePath
+remoteStoreFile RemoteHostClient {httpClient, hostEncoding} localPath fileName = do
+  fileDigest <- liftIO $ FileDigest . LC.sha512Hash <$> LB.readFile localPath
   (_getNext, rr) <- withFile localPath ReadMode $ \h -> do
     fileSize' <- hFileSize h
-    when (fileSize' > toInteger (maxBound :: Word32)) $ throwError RPEFileTooLarge
+    when (fileSize' > toInteger (maxBound :: Word32)) $ throwError RPEFileSize
     let fileSize = fromInteger fileSize'
-    sendRemoteCommand httpClient remoteEncoding (Just (h, fileSize)) RCStoreFile {encrypt, fileSize}
+    sendRemoteCommand httpClient hostEncoding (Just (h, fileSize)) RCStoreFile {fileName, fileSize, fileDigest}
   case rr of
-    RRFileStored {fileSource} -> pure fileSource
+    RRFileStored {filePath = filePath'} -> pure filePath'
+    RRProtocolError e -> throwError e
     _ -> throwError $ RPEUnexpectedResponse $ tshow rr
 
 -- TODO this should work differently for CLI and UI clients
@@ -112,8 +117,8 @@ remoteStoreFile RemoteHostClient {httpClient, remoteEncoding} localPath encrypt 
 -- alternatively, CLI should also use a fixed folder for remote session
 -- Possibly, path in the database should be optional and CLI commands should allow configuring it per session or use temp or download folder
 remoteGetFile :: RemoteHostClient -> FilePath -> FilePath -> ExceptT RemoteProtocolError IO FilePath
-remoteGetFile RemoteHostClient {httpClient, remoteEncoding} baseDir filePath = do
-  (getNext, rr) <- sendRemoteCommand httpClient remoteEncoding Nothing RCGetFile {filePath}
+remoteGetFile RemoteHostClient {httpClient, hostEncoding} baseDir filePath = do
+  (getNext, rr) <- sendRemoteCommand httpClient hostEncoding Nothing RCGetFile {filePath}
   expectedSize <- case rr of
     RRFile {fileSize} -> pure fileSize
     _ -> throwError $ RPEUnexpectedResponse $ tshow rr
@@ -183,7 +188,7 @@ pattern OwsfTag = (SingleFieldJSONTag, J.Bool True)
 
 -- | Convert a command or a response into 'Builder'.
 sizePrefixedEncode :: J.ToJSON a => a -> Builder
-sizePrefixedEncode value = word32BE (fromIntegral $ BL.length json) <> lazyByteString json
+sizePrefixedEncode value = word32BE (fromIntegral $ LB.length json) <> lazyByteString json
   where
     json = J.encode value
 

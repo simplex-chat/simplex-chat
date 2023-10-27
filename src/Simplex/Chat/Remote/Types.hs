@@ -15,9 +15,10 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON
 import UnliftIO
 
 data RemoteHostClient = RemoteHostClient
-  { remoteEncoding :: PlatformEncoding,
-    remoteDeviceName :: Text,
-    httpClient :: HTTP2Client
+  { hostEncoding :: PlatformEncoding,
+    hostDeviceName :: Text,
+    httpClient :: HTTP2Client,
+    encryptHostFiles :: Bool
   }
 
 data RemoteHostSession = RemoteHostSession
@@ -32,7 +33,8 @@ data RemoteProtocolError
   | RPEIncompatibleEncoding
   | RPEUnexpectedFile
   | RPENoFile
-  | RPEFileTooLarge
+  | RPEFileSize
+  | RPEFileDigest
   | RPEUnexpectedResponse {response :: Text} -- ^ Wrong response received for the command sent
   | RPEStoredFileExists -- ^ A file already exists in the destination position
   | RPEHTTP2 {http2Error :: Text}

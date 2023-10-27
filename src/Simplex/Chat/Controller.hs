@@ -419,6 +419,8 @@ data ChatCommand
   -- | SwitchRemoteHost (Maybe RemoteHostId) -- ^ Switch current remote host
   | StopRemoteHost RemoteHostId -- ^ Shut down a running session
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
+  | StoreRemoteFile {remoteHostId :: RemoteHostId, storeEncrypted :: Maybe Bool, localPath :: FilePath}
+  | GetRemoteFile {remoteHostId :: RemoteHostId, fileId :: FileTransferId, remotePath :: FilePath}
   | StartRemoteCtrl -- ^ Start listening for announcements from all registered controllers
   | RegisterRemoteCtrl RemoteCtrlOOB -- ^ Register OOB data for satellite discovery and handshake
   | ListRemoteCtrls
@@ -627,6 +629,7 @@ data ChatResponse
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
+  | CRRemoteFileStored {remoteHostId :: RemoteHostId, fileSource :: CryptoFile}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
   | CRRemoteCtrlRegistered {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- unregistered fingerprint, needs confirmation
