@@ -206,7 +206,9 @@ storeRemoteFile rhId encrypted_ localPath = do
   where
     encryptLocalFile :: m CryptoFile
     encryptLocalFile = do
-      tmpFile <- getChatTempDirectory >>= (`uniqueCombine` takeFileName localPath)
+      tmpDir <- getChatTempDirectory
+      createDirectoryIfMissing True tmpDir
+      tmpFile <- tmpDir `uniqueCombine` takeFileName localPath
       cfArgs <- liftIO CF.randomArgs
       liftError (ChatError . CEFileWrite tmpFile) $ encryptFile localPath tmpFile cfArgs
       pure $ CryptoFile tmpFile $ Just cfArgs
@@ -218,6 +220,7 @@ getRemoteFile rhId fileId remotePath = do
     Nothing -> throwError $ ChatErrorRemoteHost rhId RHMissing
     Just c -> do
       dir <- (</> storePath </> archiveFilesFolder) <$> (maybe getDefaultFilesFolder pure =<< chatReadVar remoteHostsFolder)
+      createDirectoryIfMissing True dir
       liftRH rhId $ remoteGetFile c dir fileId remotePath
 
 processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostSession -> ByteString -> m ChatResponse
@@ -273,7 +276,7 @@ handleRemoteCommand execChatCommand remoteOutputQ HTTP2Request {request, reqBody
       RCSend {command} -> handleSend execChatCommand command >>= reply
       RCRecv {wait = time} -> handleRecv time remoteOutputQ >>= reply
       RCStoreFile {fileName, fileSize, fileDigest} -> handleStoreFile fileName fileSize fileDigest getNext >>= reply
-      RCGetFile {filePath} -> handleGetFile filePath replyWith
+      RCGetFile {fileId, filePath} -> handleGetFile fileId filePath replyWith
     reply :: RemoteResponse -> m ()
     reply = (`replyWith` \_ -> pure ())
     replyWith :: Respond m
@@ -329,18 +332,17 @@ handleStoreFile fileName fileSize fileDigest getChunk =
       receiveRemoteFile getChunk fileSize fileDigest filePath
       pure filePath
 
-handleGetFile :: ChatMonad m => FilePath -> Respond m -> m ()
-handleGetFile path reply = do
-  logDebug $ "GetFile: " <> tshow path
-  withFile path ReadMode $ \h -> do
-    fileSize' <- hFileSize h
-    when (fileSize' > toInteger (maxBound :: Word32)) $ throwIO RPEFileSize
-    let fileSize = fromInteger fileSize'
-    fileDigest <- liftIO $ FileDigest . LC.sha512Hash <$> LB.readFile toPath
-    reply RRFile {fileSize, fileDigest} $ \send -> hSendFile h send fileSize
+handleGetFile :: ChatMonad m => Int64 -> FilePath -> Respond m -> m ()
+handleGetFile _fileId filePath reply = do
+  logDebug $ "GetFile: " <> tshow filePath
+  path <- maybe filePath (</> filePath) <$> chatReadVar filesFolder
+  liftRC (tryRemoteError $ getFileInfo path) >>= \case
+    Right (fileSize, fileDigest) ->
+      withFile path ReadMode $ \h ->
+        reply RRFile {fileSize, fileDigest} $ \send -> hSendFile h send fileSize
+    Left e ->
+      reply (RRProtocolError e) $ \_ -> pure ()
 
--- TODO the problem with this code was that it wasn't clear where the recursion can happen,
--- by splitting receiving and processing to two functions it becomes clear
 discoverRemoteCtrls :: ChatMonad m => TM.TMap C.KeyHash TransportHost -> m ()
 discoverRemoteCtrls discovered = Discovery.withListener $ receive >=> process
   where

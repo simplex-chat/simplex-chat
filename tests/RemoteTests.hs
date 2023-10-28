@@ -20,6 +20,7 @@ import qualified Network.HTTP2.Server as S
 import qualified Network.Socket as N
 import qualified Network.TLS as TLS
 import Simplex.Chat.Archive (archiveFilesFolder)
+import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..))
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Remote.Types
@@ -47,7 +48,7 @@ remoteTests = fdescribe "Remote" $ do
   it "performs protocol handshake (again)" remoteHandshakeTest -- leaking servers regression check
   it "sends messages" remoteMessageTest
   describe "remote files" $ do
-    fit "store file" remoteStoreFileTest
+    fit "store/get files" remoteStoreFileTest
     xit "sends files" remoteFileTest
 
 -- * Low-level TLS with ephemeral credentials
@@ -167,40 +168,111 @@ remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   logNote "done"
 
 remoteStoreFileTest :: HasCallStack => FilePath -> IO ()
-remoteStoreFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
-  let mobileFiles = "./tests/tmp/mobile_files"
-  mobile ##> ("/_files_folder " <> mobileFiles)
-  mobile <## "ok"
-  let desktopFiles = "./tests/tmp/desktop_files"
-  desktop ##> ("/_files_folder " <> desktopFiles)
-  desktop <## "ok"
-  let desktopHostFiles = "./tests/tmp/remote_hosts_data"
-  desktop ##> ("/remote_hosts_folder " <> desktopHostFiles)
-  desktop <## "ok"
-  let bobFiles = "./tests/tmp/bob_files"
-  bob ##> ("/_files_folder " <> bobFiles)
-  bob <## "ok"
-  startRemote mobile desktop
-  contactBob desktop bob
-  rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
-  desktopHostStore <- case M.lookup 1 rhs of
-    Just RemoteHostSession {storePath} -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
-    _ -> fail "Host session 1 should be started"
-  desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
-  desktop <## "file test.pdf stored on remote host 1"
-  src <- B.readFile "tests/fixtures/test.pdf"
-  B.readFile (mobileFiles </> "test.pdf") `shouldReturn` src
-  B.readFile (desktopHostStore </> "test.pdf") `shouldReturn` src
-  desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
-  desktop <## "file test_1.pdf stored on remote host 1"
-  B.readFile (mobileFiles </> "test_1.pdf") `shouldReturn` src
-  B.readFile (desktopHostStore </> "test_1.pdf") `shouldReturn` src
-  desktop ##> "/store remote file 1 encrypt=on tests/fixtures/test.pdf"
-  desktop <## "file test_2.pdf stored on remote host 1"
-  Just (CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine desktop
-  chatReadFile (mobileFiles </> "test_2.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
-  chatReadFile (desktopHostStore </> "test_2.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
-  stopMobile mobile desktop
+remoteStoreFileTest =
+  testChatCfg3 cfg aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob ->
+    withXFTPServer $ do
+      let mobileFiles = "./tests/tmp/mobile_files"
+      mobile ##> ("/_files_folder " <> mobileFiles)
+      mobile <## "ok"
+      let desktopFiles = "./tests/tmp/desktop_files"
+      desktop ##> ("/_files_folder " <> desktopFiles)
+      desktop <## "ok"
+      let desktopHostFiles = "./tests/tmp/remote_hosts_data"
+      desktop ##> ("/remote_hosts_folder " <> desktopHostFiles)
+      desktop <## "ok"
+      let bobFiles = "./tests/tmp/bob_files"
+      bob ##> ("/_files_folder " <> bobFiles)
+      bob <## "ok"
+      startRemote mobile desktop
+      contactBob desktop bob
+      rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
+      desktopHostStore <- case M.lookup 1 rhs of
+        Just RemoteHostSession {storePath} -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
+        _ -> fail "Host session 1 should be started"
+      desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
+      desktop <## "file test.pdf stored on remote host 1"
+      src <- B.readFile "tests/fixtures/test.pdf"
+      B.readFile (mobileFiles </> "test.pdf") `shouldReturn` src
+      B.readFile (desktopHostStore </> "test.pdf") `shouldReturn` src
+      desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
+      desktop <## "file test_1.pdf stored on remote host 1"
+      B.readFile (mobileFiles </> "test_1.pdf") `shouldReturn` src
+      B.readFile (desktopHostStore </> "test_1.pdf") `shouldReturn` src
+      desktop ##> "/store remote file 1 encrypt=on tests/fixtures/test.pdf"
+      desktop <## "file test_2.pdf stored on remote host 1"
+      Just cfArgs@(CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine desktop
+      chatReadFile (mobileFiles </> "test_2.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
+      chatReadFile (desktopHostStore </> "test_2.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
+
+      removeFile (desktopHostStore </> "test_1.pdf")
+      removeFile (desktopHostStore </> "test_2.pdf")
+
+      -- send file not encrypted locally on mobile host
+      desktop ##> "/_send @2 json {\"filePath\": \"test_1.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"sending a file\"}}"
+      desktop <# "@bob sending a file"
+      desktop <# "/f @bob test_1.pdf" 
+      desktop <## "use /fc 1 to cancel sending"
+      bob <# "alice> sending a file"
+      bob <# "alice> sends file test_1.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 1"
+      concurrentlyN_
+        [ do
+            desktop <## "completed uploading file 1 (test_1.pdf) for bob",
+          do
+            bob <## "saving file 1 from alice to test_1.pdf"
+            bob <## "started receiving file 1 (test_1.pdf) from alice"
+            bob <## "completed receiving file 1 (test_1.pdf) from alice"
+        ]
+      B.readFile (bobFiles </> "test_1.pdf") `shouldReturn` src
+
+      -- send file encrypted locally on mobile host
+      desktop ##> ("/_send @2 json {\"fileSource\": {\"filePath\":\"test_2.pdf\", \"cryptoArgs\": " <> LB.unpack (J.encode cfArgs) <> "}, \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}")
+      desktop <# "/f @bob test_2.pdf" 
+      desktop <## "use /fc 2 to cancel sending"
+      bob <# "alice> sends file test_2.pdf (266.0 KiB / 272376 bytes)"
+      bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+      bob ##> "/fr 2"
+      concurrentlyN_
+        [ do
+            desktop <## "completed uploading file 2 (test_2.pdf) for bob",
+          do
+            bob <## "saving file 2 from alice to test_2.pdf"
+            bob <## "started receiving file 2 (test_2.pdf) from alice"
+            bob <## "completed receiving file 2 (test_2.pdf) from alice"
+        ]
+      B.readFile (bobFiles </> "test_2.pdf") `shouldReturn` src
+
+      -- receive file via remote host
+      copyFile "./tests/fixtures/test.jpg" (bobFiles </> "test.jpg")
+      bob #> "/f @alice test.jpg"
+      bob <## "use /fc 3 to cancel sending"
+      desktop <# "bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      desktop <## "use /fr 3 [<dir>/ | <path>] to receive it"
+      desktop ##> "/_freceive 3 encrypt=on"
+      concurrentlyN_
+        [ do
+            bob <## "completed uploading file 3 (test.jpg) for alice",
+          do
+            desktop <## "saving file 3 from bob to test.jpg"
+            desktop <## "started receiving file 3 (test.jpg) from bob"
+            desktop <## "completed receiving file 3 (test.jpg) from bob"
+        ]
+      Just (CFArgs key' nonce') <- J.decode . LB.pack <$> getTermLine desktop
+      src' <- B.readFile (bobFiles </> "test.jpg")
+      chatReadFile (mobileFiles </> "test.jpg") (strEncode key') (strEncode nonce') `shouldReturn` Right (LB.fromStrict src')
+      doesFileExist (desktopHostStore </> "test.jpg") `shouldReturn` False
+      desktop ##> "/get remote file 1 3 test.jpg"
+      desktop <## "ok"
+      chatReadFile (desktopHostStore </> "test.jpg") (strEncode key') (strEncode nonce') `shouldReturn` Right (LB.fromStrict src')
+
+      --
+      desktop ##> "/get remote file 1 1 test_1.pdf"
+      desktop <## "ok"
+      B.readFile (desktopHostStore </> "test_1.pdf") `shouldReturn` src
+      stopMobile mobile desktop
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp/tmp"}
 
 remoteFileTest :: (HasCallStack) => FilePath -> IO ()
 remoteFileTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do

@@ -33,7 +33,6 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Remote.Transport
 import Simplex.Chat.Remote.Types
 import Simplex.FileTransfer.Description (FileDigest (..))
-import Simplex.Messaging.Crypto.Lazy as LC
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON, pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
 import Simplex.Messaging.Transport.Buffer (getBuffered)
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), HTTP2BodyChunk, getBodyChunk)
@@ -84,50 +83,37 @@ closeRemoteHostClient RemoteHostClient {httpClient} = liftIO $ closeHTTP2Client 
 -- ** Commands
 
 remoteSend :: RemoteHostClient -> ByteString -> ExceptT RemoteProtocolError IO ChatResponse
-remoteSend RemoteHostClient {httpClient, hostEncoding} cmd = do
-  (_getNext, rr) <- sendRemoteCommand httpClient hostEncoding Nothing RCSend {command = decodeUtf8 cmd}
-  case rr of
+remoteSend RemoteHostClient {httpClient, hostEncoding} cmd =
+  sendRemoteCommand' httpClient hostEncoding Nothing RCSend {command = decodeUtf8 cmd} >>= \case
     RRChatResponse cr -> pure cr
-    RRProtocolError e -> throwError e
-    _ -> throwError $ RPEUnexpectedResponse $ tshow rr
+    r -> badResponse r
 
 remoteRecv :: RemoteHostClient -> Int -> ExceptT RemoteProtocolError IO (Maybe ChatResponse)
-remoteRecv RemoteHostClient {httpClient, hostEncoding} ms = do
-  (_getNext, rr) <- sendRemoteCommand httpClient hostEncoding Nothing RCRecv {wait=ms}
-  case rr of
+remoteRecv RemoteHostClient {httpClient, hostEncoding} ms =
+  sendRemoteCommand' httpClient hostEncoding Nothing RCRecv {wait = ms} >>= \case
     RRChatEvent cr_ -> pure cr_
-    RRProtocolError e -> throwError e
-    _ -> throwError $ RPEUnexpectedResponse $ tshow rr
+    r -> badResponse r
 
 remoteStoreFile :: RemoteHostClient -> FilePath -> FilePath -> ExceptT RemoteProtocolError IO FilePath
 remoteStoreFile RemoteHostClient {httpClient, hostEncoding} localPath fileName = do
-  fileDigest <- liftIO $ FileDigest . LC.sha512Hash <$> LB.readFile localPath
-  (_, rr) <- withFile localPath ReadMode $ \h -> do
-    fileSize' <- hFileSize h
-    when (fileSize' > toInteger (maxBound :: Word32)) $ throwError RPEFileSize
-    let fileSize = fromInteger fileSize'
-    sendRemoteCommand httpClient hostEncoding (Just (h, fileSize)) RCStoreFile {fileName, fileSize, fileDigest}
-  case rr of
+  (fileSize, fileDigest) <- getFileInfo localPath
+  let send h = sendRemoteCommand' httpClient hostEncoding (Just (h, fileSize)) RCStoreFile {fileName, fileSize, fileDigest}
+  withFile localPath ReadMode send >>= \case
     RRFileStored {filePath = filePath'} -> pure filePath'
-    RRProtocolError e -> throwError e
-    _ -> throwError $ RPEUnexpectedResponse $ tshow rr
+    r -> badResponse r
 
--- TODO this should work differently for CLI and UI clients
--- CLI - potentially, create new unique names and report them as created
--- UI - always use the same names and report error if file already exists
--- alternatively, CLI should also use a fixed folder for remote session
--- Possibly, path in the database should be optional and CLI commands should allow configuring it per session or use temp or download folder
 remoteGetFile :: RemoteHostClient -> FilePath -> Int64 -> FilePath -> ExceptT RemoteProtocolError IO ()
-remoteGetFile RemoteHostClient {httpClient, hostEncoding} destDir fileId remotePath = do
-  (getChunk, rr) <- sendRemoteCommand httpClient hostEncoding Nothing RCGetFile {fileId, filePath = remotePath}
-  case rr of
-    RRFile {fileSize, fileDigest} -> do
+remoteGetFile RemoteHostClient {httpClient, hostEncoding} destDir fileId remotePath =
+  sendRemoteCommand httpClient hostEncoding Nothing RCGetFile {fileId, filePath = remotePath} >>= \case
+    (getChunk, RRFile {fileSize, fileDigest}) -> do
       -- TODO we could optimize by checking size and hash before receiving the file
-      -- whenM (liftIO $ doesFileExist localFile) $ throwError RPEStoredFileExists
       let localPath = destDir </> takeFileName remotePath
       receiveRemoteFile getChunk fileSize fileDigest localPath
-    RRProtocolError e -> throwError e
-    _ -> throwError $ RPEUnexpectedResponse $ tshow rr
+    (_, r) -> badResponse r
+
+-- TODO validate there is no attachment
+sendRemoteCommand' :: HTTP2Client -> PlatformEncoding -> Maybe (Handle, Word32) -> RemoteCommand -> ExceptT RemoteProtocolError IO RemoteResponse
+sendRemoteCommand' http remoteEncoding attachment_ rc = snd <$> sendRemoteCommand http remoteEncoding attachment_ rc
 
 sendRemoteCommand :: HTTP2Client -> PlatformEncoding -> Maybe (Handle, Word32) -> RemoteCommand -> ExceptT RemoteProtocolError IO (Int -> IO ByteString, RemoteResponse)
 sendRemoteCommand http remoteEncoding attachment_ rc = do
@@ -142,6 +128,11 @@ sendRemoteCommand http remoteEncoding attachment_ rc = do
         Nothing -> pure ()
         Just (h, sz) -> hSendFile h send sz
       flush
+
+badResponse :: RemoteResponse -> ExceptT RemoteProtocolError IO a
+badResponse = \case
+  RRProtocolError e -> throwError e
+  r -> throwError $ RPEUnexpectedResponse $ tshow r
 
 -- * Transport-level wrappers
 
