@@ -24,7 +24,6 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
 import Data.ByteString.Builder (Builder)
 import qualified Data.ByteString.Char8 as B
-import Data.Int (Int64)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
@@ -42,6 +41,7 @@ import qualified Simplex.Chat.Remote.Discovery as Discovery
 import Simplex.Chat.Remote.Protocol
 import Simplex.Chat.Remote.Transport
 import Simplex.Chat.Remote.Types
+import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Remote
 import Simplex.Chat.Util (encryptFile)
 import Simplex.FileTransfer.Description (FileDigest (..))
@@ -213,15 +213,15 @@ storeRemoteFile rhId encrypted_ localPath = do
       liftError (ChatError . CEFileWrite tmpFile) $ encryptFile localPath tmpFile cfArgs
       pure $ CryptoFile tmpFile $ Just cfArgs
 
-getRemoteFile :: ChatMonad m => RemoteHostId -> Int64 -> FilePath -> m ()
-getRemoteFile rhId fileId remotePath = do
+getRemoteFile :: ChatMonad m => RemoteHostId -> RemoteFile -> m ()
+getRemoteFile rhId rf = do
   RemoteHostSession {remoteHostClient, storePath} <- getRemoteHostSession rhId
   case remoteHostClient of
     Nothing -> throwError $ ChatErrorRemoteHost rhId RHMissing
     Just c -> do
       dir <- (</> storePath </> archiveFilesFolder) <$> (maybe getDefaultFilesFolder pure =<< chatReadVar remoteHostsFolder)
       createDirectoryIfMissing True dir
-      liftRH rhId $ remoteGetFile c dir fileId remotePath
+      liftRH rhId $ remoteGetFile c dir rf
 
 processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostSession -> ByteString -> m ChatResponse
 processRemoteCommand remoteHostId RemoteHostSession {remoteHostClient = Just rhc} s = liftRH remoteHostId $ remoteSend rhc s
@@ -263,7 +263,7 @@ handleRemoteCommand :: forall m . ChatMonad m => (ByteString -> m ChatResponse) 
 handleRemoteCommand execChatCommand remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do
   logDebug "handleRemoteCommand"
   liftRC (tryRemoteError parseRequest) >>= \case
-    Right (getNext, rc) -> processCommand getNext rc `catchAny` (reply . RRProtocolError . RPEException . tshow)
+    Right (getNext, rc) -> processCommand getNext rc `catchChatError` (reply . RRChatResponse . CRChatError Nothing)
     Left e -> reply $ RRProtocolError e
   where
     parseRequest :: ExceptT RemoteProtocolError IO (GetChunk, RemoteCommand)
@@ -276,7 +276,7 @@ handleRemoteCommand execChatCommand remoteOutputQ HTTP2Request {request, reqBody
       RCSend {command} -> handleSend execChatCommand command >>= reply
       RCRecv {wait = time} -> handleRecv time remoteOutputQ >>= reply
       RCStoreFile {fileName, fileSize, fileDigest} -> handleStoreFile fileName fileSize fileDigest getNext >>= reply
-      RCGetFile {fileId, filePath} -> handleGetFile fileId filePath replyWith
+      RCGetFile {file} -> handleGetFile file replyWith
     reply :: RemoteResponse -> m ()
     reply = (`replyWith` \_ -> pure ())
     replyWith :: Respond m
@@ -332,16 +332,16 @@ handleStoreFile fileName fileSize fileDigest getChunk =
       receiveRemoteFile getChunk fileSize fileDigest filePath
       pure filePath
 
-handleGetFile :: ChatMonad m => Int64 -> FilePath -> Respond m -> m ()
-handleGetFile _fileId filePath reply = do
+handleGetFile :: ChatMonad m => RemoteFile -> Respond m -> m ()
+handleGetFile rf@RemoteFile{fileSource = CryptoFile {filePath}} reply = do
   logDebug $ "GetFile: " <> tshow filePath
   path <- maybe filePath (</> filePath) <$> chatReadVar filesFolder
+  withStore (`checkLocalFileRecord` rf)
   liftRC (tryRemoteError $ getFileInfo path) >>= \case
+    Left e -> reply (RRProtocolError e) $ \_ -> pure ()
     Right (fileSize, fileDigest) ->
       withFile path ReadMode $ \h ->
         reply RRFile {fileSize, fileDigest} $ \send -> hSendFile h send fileSize
-    Left e ->
-      reply (RRProtocolError e) $ \_ -> pure ()
 
 discoverRemoteCtrls :: ChatMonad m => TM.TMap C.KeyHash TransportHost -> m ()
 discoverRemoteCtrls discovered = Discovery.withListener $ receive >=> process

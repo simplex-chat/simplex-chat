@@ -423,7 +423,7 @@ data ChatCommand
   | StopRemoteHost RemoteHostId -- ^ Shut down a running session
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
   | StoreRemoteFile {remoteHostId :: RemoteHostId, storeEncrypted :: Maybe Bool, localPath :: FilePath}
-  | GetRemoteFile {remoteHostId :: RemoteHostId, fileId :: FileTransferId, remotePath :: FilePath}
+  | GetRemoteFile {remoteHostId :: RemoteHostId, file :: RemoteFile}
   | StartRemoteCtrl -- ^ Start listening for announcements from all registered controllers
   | RegisterRemoteCtrl RemoteCtrlOOB -- ^ Register OOB data for satellite discovery and handshake
   | ListRemoteCtrls
@@ -445,24 +445,27 @@ allowRemoteCommand = \case
   StartChat {} -> False
   APIStopChat -> False
   APIActivateChat -> False
-  APISuspendChat {} -> False
-  SetTempFolder {} -> False
+  APISuspendChat _ -> False
+  SetTempFolder _ -> False
   QuitChat -> False
   CreateRemoteHost -> False
   ListRemoteHosts -> False
-  StartRemoteHost {} -> False
+  StartRemoteHost _ -> False
   -- SwitchRemoteHost {} -> False
   StoreRemoteFile {} -> False
   GetRemoteFile {} -> False
-  StopRemoteHost {} -> False
-  DeleteRemoteHost {} -> False
+  StopRemoteHost _ -> False
+  DeleteRemoteHost _ -> False
   RegisterRemoteCtrl {} -> False
   StartRemoteCtrl -> False
   ListRemoteCtrls -> False
-  AcceptRemoteCtrl {} -> False
-  RejectRemoteCtrl {} -> False
+  AcceptRemoteCtrl _ -> False
+  RejectRemoteCtrl _ -> False
   StopRemoteCtrl -> False
-  DeleteRemoteCtrl {} -> False
+  DeleteRemoteCtrl _ -> False
+  ExecChatStoreSQL _ -> False
+  ExecAgentStoreSQL _ -> False
+  SlowSQLQueries -> False
   _ -> True
 
 data ChatResponse

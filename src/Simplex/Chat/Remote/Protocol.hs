@@ -21,7 +21,6 @@ import qualified Data.Aeson.Types as JT
 import Data.ByteString (ByteString)
 import Data.ByteString.Builder (Builder, word32BE, lazyByteString)
 import qualified Data.ByteString.Lazy as LB
-import Data.Int (Int64)
 import Data.String (fromString)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeUtf8)
@@ -33,6 +32,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Remote.Transport
 import Simplex.Chat.Remote.Types
 import Simplex.FileTransfer.Description (FileDigest (..))
+import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON, pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
 import Simplex.Messaging.Transport.Buffer (getBuffered)
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), HTTP2BodyChunk, getBodyChunk)
@@ -48,7 +48,7 @@ data RemoteCommand
   | RCRecv {wait :: Int} -- this wait should be less than HTTP timeout
   | -- local file encryption is determined by the host, but can be overridden for videos
     RCStoreFile {fileName :: String, fileSize :: Word32, fileDigest :: FileDigest} -- requires attachment
-  | RCGetFile {fileId :: Int64, filePath :: FilePath}
+  | RCGetFile {file :: RemoteFile}
   deriving (Show)
 
 data RemoteResponse
@@ -102,12 +102,12 @@ remoteStoreFile RemoteHostClient {httpClient, hostEncoding} localPath fileName =
     RRFileStored {filePath = filePath'} -> pure filePath'
     r -> badResponse r
 
-remoteGetFile :: RemoteHostClient -> FilePath -> Int64 -> FilePath -> ExceptT RemoteProtocolError IO ()
-remoteGetFile RemoteHostClient {httpClient, hostEncoding} destDir fileId remotePath =
-  sendRemoteCommand httpClient hostEncoding Nothing RCGetFile {fileId, filePath = remotePath} >>= \case
+remoteGetFile :: RemoteHostClient -> FilePath -> RemoteFile -> ExceptT RemoteProtocolError IO ()
+remoteGetFile RemoteHostClient {httpClient, hostEncoding} destDir rf@RemoteFile {fileSource = CryptoFile {filePath}} =
+  sendRemoteCommand httpClient hostEncoding Nothing RCGetFile {file = rf} >>= \case
     (getChunk, RRFile {fileSize, fileDigest}) -> do
       -- TODO we could optimize by checking size and hash before receiving the file
-      let localPath = destDir </> takeFileName remotePath
+      let localPath = destDir </> takeFileName filePath
       receiveRemoteFile getChunk fileSize fileDigest localPath
     (_, r) -> badResponse r
 

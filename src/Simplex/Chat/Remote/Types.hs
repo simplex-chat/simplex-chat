@@ -10,6 +10,7 @@ import qualified Data.Aeson.TH as J
 import Data.Int (Int64)
 import Data.Text (Text)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.File (CryptoFile)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
 import UnliftIO
@@ -89,7 +90,14 @@ data RemoteCtrlInfo = RemoteCtrlInfo
   }
   deriving (Show)
 
--- TODO: put into a proper place
+data RemoteFile = RemoteFile
+  { userId :: Int64,
+    fileId :: Int64,
+    sent :: Bool,
+    fileSource :: CryptoFile
+  }
+  deriving (Show)
+
 data PlatformEncoding
   = PESwift
   | PEKotlin
@@ -124,3 +132,5 @@ $(J.deriveJSON defaultJSON ''RemoteHostInfo)
 $(J.deriveJSON defaultJSON ''RemoteCtrl)
 
 $(J.deriveJSON defaultJSON ''RemoteCtrlInfo)
+
+$(J.deriveJSON defaultJSON ''RemoteFile)

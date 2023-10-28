@@ -1921,7 +1921,7 @@ processChatCommand = \case
   StopRemoteHost rh -> closeRemoteHostSession rh >> ok_
   DeleteRemoteHost rh -> deleteRemoteHost rh >> ok_
   StoreRemoteFile rh encrypted_ localPath -> CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
-  GetRemoteFile rh fileId remotePath -> getRemoteFile rh fileId remotePath >> ok_
+  GetRemoteFile rh rf -> getRemoteFile rh rf >> ok_
   StartRemoteCtrl -> startRemoteCtrl (execChatCommand Nothing) >> ok_
   RegisterRemoteCtrl oob -> CRRemoteCtrlRegistered <$> withStore' (`insertRemoteCtrl` oob)
   AcceptRemoteCtrl rc -> acceptRemoteCtrl rc >> ok_
@@ -5859,7 +5859,7 @@ chatCommandP =
       "/stop remote host " *> (StopRemoteHost <$> A.decimal),
       "/delete remote host " *> (DeleteRemoteHost <$> A.decimal),
       "/store remote file " *> (StoreRemoteFile <$> A.decimal <*> optional (" encrypt=" *> onOffP) <* A.space <*> filePath),
-      "/get remote file " *> (GetRemoteFile <$> A.decimal <* A.space <*> A.decimal <* A.space <*> filePath),
+      "/get remote file " *> (GetRemoteFile <$> A.decimal <* A.space <*> jsonP),
       "/start remote ctrl" $> StartRemoteCtrl,
       "/register remote ctrl " *> (RegisterRemoteCtrl <$> (RemoteCtrlOOB <$> strP <* A.space <*> textP)),
       "/_register remote ctrl " *> (RegisterRemoteCtrl <$> jsonP),

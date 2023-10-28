@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -71,6 +72,7 @@ module Simplex.Chat.Store.Files
     getSndFileTransfer,
     getSndFileTransfers,
     getContactFileInfo,
+    checkLocalFileRecord,
     updateDirectCIFileStatus,
   )
 where
@@ -91,6 +93,7 @@ import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
+import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.Profiles
@@ -602,7 +605,10 @@ getRcvFileTransferById db fileId = do
   (user,) <$> getRcvFileTransfer db user fileId
 
 getRcvFileTransfer :: DB.Connection -> User -> FileTransferId -> ExceptT StoreError IO RcvFileTransfer
-getRcvFileTransfer db User {userId} fileId = do
+getRcvFileTransfer db User {userId} = getRcvFileTransfer_ db userId
+
+getRcvFileTransfer_ :: DB.Connection -> UserId -> FileTransferId -> ExceptT StoreError IO RcvFileTransfer
+getRcvFileTransfer_ db userId fileId = do
   rftRow <-
     ExceptT . firstRow id (SERcvFileNotFound fileId) $
       DB.query
@@ -861,7 +867,10 @@ getSndFileTransfers_ db userId fileId =
         Nothing -> Left $ SESndFileInvalid fileId
 
 getFileTransferMeta :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO FileTransferMeta
-getFileTransferMeta db User {userId} fileId =
+getFileTransferMeta db User {userId} = getFileTransferMeta_ db userId
+
+getFileTransferMeta_ :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO FileTransferMeta
+getFileTransferMeta_ db userId fileId =
   ExceptT . firstRow fileTransferMeta (SEFileNotFound fileId) $
     DB.query
       db
@@ -882,6 +891,23 @@ getContactFileInfo :: DB.Connection -> User -> Contact -> IO [CIFileInfo]
 getContactFileInfo db User {userId} Contact {contactId} =
   map toFileInfo
     <$> DB.query db (fileInfoQuery <> " WHERE i.user_id = ? AND i.contact_id = ?") (userId, contactId)
+
+checkLocalFileRecord :: DB.Connection -> RemoteFile -> ExceptT StoreError IO ()
+checkLocalFileRecord db RemoteFile {userId, fileId, sent, fileSource = CryptoFile filePath' cfArgs'}
+  | sent = do
+      FileTransferMeta {filePath, xftpSndFile} <- getFileTransferMeta_ db userId fileId
+      tryError (getRcvFileTransfer_ db userId fileId) >>= \case
+        Right _ -> throwError $ SEFileNotFound fileId
+        Left _ -> checkSameFile filePath (xftpSndFile >>= \f -> f.cryptoArgs)
+  | otherwise = do
+      RcvFileTransfer {fileStatus, cryptoArgs} <- getRcvFileTransfer_ db userId fileId
+      case fileStatus of
+        RFSComplete RcvFileInfo {filePath} -> checkSameFile filePath cryptoArgs
+        _ -> throwError $ SEFileNotFound fileId
+  where
+    checkSameFile filePath cryptoArgs = 
+      let sameFile = (filePath' == filePath && cfArgs' == cryptoArgs)
+        in unless sameFile $ throwError $ SEFileNotFound fileId
 
 updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
 updateDirectCIFileStatus db user fileId fileStatus = do

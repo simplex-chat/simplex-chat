@@ -207,6 +207,12 @@ remoteStoreFileTest =
       removeFile (desktopHostStore </> "test_1.pdf")
       removeFile (desktopHostStore </> "test_2.pdf")
 
+      -- cannot get file before it is used
+      desktop ##> "/get remote file 1 {\"userId\": 1, \"fileId\": 1, \"sent\": true, \"fileSource\": {\"filePath\": \"test_1.pdf\"}}"
+      r <- getTermLine desktop
+      r `shouldStartWith` "remote host 1 error"
+      r `shouldContain` "SEFileNotFound"
+
       -- send file not encrypted locally on mobile host
       desktop ##> "/_send @2 json {\"filePath\": \"test_1.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"sending a file\"}}"
       desktop <# "@bob sending a file"
@@ -225,6 +231,14 @@ remoteStoreFileTest =
             bob <## "completed receiving file 1 (test_1.pdf) from alice"
         ]
       B.readFile (bobFiles </> "test_1.pdf") `shouldReturn` src
+      -- returns error with incorrect ID
+      desktop ##> "/get remote file 1 {\"userId\": 1, \"fileId\": 2, \"sent\": true, \"fileSource\": {\"filePath\": \"test_1.pdf\"}}"
+      r2 <- getTermLine desktop
+      r2 `shouldStartWith` "remote host 1 error"
+      r2 `shouldContain` "SEFileNotFound"
+      desktop ##> "/get remote file 1 {\"userId\": 1, \"fileId\": 1, \"sent\": true, \"fileSource\": {\"filePath\": \"test_1.pdf\"}}"
+      desktop <## "ok"
+      B.readFile (desktopHostStore </> "test_1.pdf") `shouldReturn` src
 
       -- send file encrypted locally on mobile host
       desktop ##> ("/_send @2 json {\"fileSource\": {\"filePath\":\"test_2.pdf\", \"cryptoArgs\": " <> LB.unpack (J.encode cfArgs) <> "}, \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}")
@@ -258,18 +272,19 @@ remoteStoreFileTest =
             desktop <## "started receiving file 3 (test.jpg) from bob"
             desktop <## "completed receiving file 3 (test.jpg) from bob"
         ]
-      Just (CFArgs key' nonce') <- J.decode . LB.pack <$> getTermLine desktop
+      Just cfArgs'@(CFArgs key' nonce') <- J.decode . LB.pack <$> getTermLine desktop
       src' <- B.readFile (bobFiles </> "test.jpg")
       chatReadFile (mobileFiles </> "test.jpg") (strEncode key') (strEncode nonce') `shouldReturn` Right (LB.fromStrict src')
       doesFileExist (desktopHostStore </> "test.jpg") `shouldReturn` False
-      desktop ##> "/get remote file 1 3 test.jpg"
+      -- returns error with incorrect key
+      desktop ##> ("/get remote file 1 {\"userId\": 1, \"fileId\": 3, \"sent\": false, \"fileSource\": {\"filePath\": \"test.jpg\", \"cryptoArgs\": null}}")
+      r3 <- getTermLine desktop
+      r3 `shouldStartWith` "remote host 1 error"
+      r3 `shouldContain` "SEFileNotFound"
+      desktop ##> ("/get remote file 1 {\"userId\": 1, \"fileId\": 3, \"sent\": false, \"fileSource\": {\"filePath\": \"test.jpg\", \"cryptoArgs\": " <> LB.unpack (J.encode cfArgs') <> "}}")
       desktop <## "ok"
       chatReadFile (desktopHostStore </> "test.jpg") (strEncode key') (strEncode nonce') `shouldReturn` Right (LB.fromStrict src')
 
-      --
-      desktop ##> "/get remote file 1 1 test_1.pdf"
-      desktop <## "ok"
-      B.readFile (desktopHostStore </> "test_1.pdf") `shouldReturn` src
       stopMobile mobile desktop
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp/tmp"}
