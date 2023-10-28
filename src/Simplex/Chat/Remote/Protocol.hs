@@ -68,14 +68,13 @@ $(deriveJSON (taggedObjectJSON $ dropPrefix "RR") ''RemoteResponse)
 
 createRemoteHostClient :: HTTP2Client -> Text -> ExceptT RemoteProtocolError IO RemoteHostClient
 createRemoteHostClient httpClient desktopName = do
-  logInfo "Sending initial hello"
-  (_getNext, rr) <- sendRemoteCommand httpClient localEncoding Nothing RCHello {deviceName = desktopName}
-  case rr of
-    rrh@RRHello {encoding, deviceName = mobileName, encryptFiles} -> do
-      logInfo $ "Got initial hello: " <> tshow rrh
+  logDebug "Sending initial hello"
+  sendRemoteCommand' httpClient localEncoding Nothing RCHello {deviceName = desktopName} >>= \case
+    RRHello {encoding, deviceName = mobileName, encryptFiles} -> do
+      logDebug "Got initial hello"
       when (encoding == PEKotlin && localEncoding == PESwift) $ throwError RPEIncompatibleEncoding
       pure RemoteHostClient {hostEncoding = encoding, hostDeviceName = mobileName, httpClient, encryptHostFiles = encryptFiles}
-    _ -> throwError $ RPEUnexpectedResponse $ tshow rr
+    r -> badResponse r
 
 closeRemoteHostClient :: MonadIO m => RemoteHostClient -> m ()
 closeRemoteHostClient RemoteHostClient {httpClient} = liftIO $ closeHTTP2Client httpClient
@@ -132,6 +131,7 @@ sendRemoteCommand http remoteEncoding attachment_ rc = do
 badResponse :: RemoteResponse -> ExceptT RemoteProtocolError IO a
 badResponse = \case
   RRProtocolError e -> throwError e
+  -- TODO handle chat errors?
   r -> throwError $ RPEUnexpectedResponse $ tshow r
 
 -- * Transport-level wrappers
