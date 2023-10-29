@@ -44,6 +44,7 @@ import Simplex.Chat.Remote.Transport
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Remote
+import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types (User (..))
 import Simplex.Chat.Util (encryptFile)
 import Simplex.FileTransfer.Description (FileDigest (..))
@@ -355,11 +356,13 @@ handleStoreFile fileName fileSize fileDigest getChunk =
       pure filePath
 
 handleGetFile :: ChatMonad m => User -> RemoteFile -> Respond m -> m ()
-handleGetFile User {userId} rf@RemoteFile{userId = commandUserId, fileSource = CryptoFile {filePath}} reply = do
+handleGetFile User {userId} RemoteFile{userId = commandUserId, fileId, sent, fileSource = cf'@CryptoFile {filePath}} reply = do
   logDebug $ "GetFile: " <> tshow filePath
   unless (userId == commandUserId) $ throwChatError $ CEDifferentActiveUser {commandUserId, activeUserId = userId}
   path <- maybe filePath (</> filePath) <$> chatReadVar filesFolder
-  withStore (`checkLocalFileRecord` rf)
+  withStore $ \db -> do
+    cf <- getLocalCryptoFile db commandUserId fileId sent
+    unless (cf == cf') $ throwError $ SEFileNotFound fileId
   liftRC (tryRemoteError $ getFileInfo path) >>= \case
     Left e -> reply (RRProtocolError e) $ \_ -> pure ()
     Right (fileSize, fileDigest) ->
