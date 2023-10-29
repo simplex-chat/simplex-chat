@@ -50,7 +50,7 @@ public enum ChatCommand {
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
     case apiDeleteToken(token: DeviceToken)
     case apiGetNtfMessage(nonce: String, encNtfInfo: String)
-    case apiNewGroup(userId: Int64, groupProfile: GroupProfile)
+    case apiNewGroup(userId: Int64, incognito: Bool, groupProfile: GroupProfile)
     case apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole)
     case apiJoinGroup(groupId: Int64)
     case apiMemberRole(groupId: Int64, memberId: Int64, memberRole: GroupMemberRole)
@@ -183,7 +183,7 @@ public enum ChatCommand {
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
             case let .apiDeleteToken(token): return "/_ntf delete \(token.cmdString)"
             case let .apiGetNtfMessage(nonce, encNtfInfo): return "/_ntf message \(nonce) \(encNtfInfo)"
-            case let .apiNewGroup(userId, groupProfile): return "/_group \(userId) \(encodeJSON(groupProfile))"
+            case let .apiNewGroup(userId, incognito, groupProfile): return "/_group \(userId) incognito=\(onOff(incognito)) \(encodeJSON(groupProfile))"
             case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
             case let .apiJoinGroup(groupId): return "/_join #\(groupId)"
             case let .apiMemberRole(groupId, memberId, memberRole): return "/_member role #\(groupId) \(memberId) \(memberRole.rawValue)"

@@ -38,11 +38,11 @@ struct ScanToConnectView: View {
                     )
                     .padding(.top)
 
-                Group {
+                VStack(alignment: .leading, spacing: 4) {
                     sharedProfileInfo(incognitoDefault)
-                    + Text(String("\n\n"))
-                    + Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
+                    Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .font(.footnote)
                 .foregroundColor(.secondary)
                 .padding(.horizontal)
