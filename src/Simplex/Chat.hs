@@ -5832,7 +5832,7 @@ chatCommandP =
     mcTextP = MCText . safeDecodeUtf8 <$> A.takeByteString
     msgContentP = "text " *> mcTextP <|> "json " *> jsonP
     ciDeleteMode = "broadcast" $> CIDMBroadcast <|> "internal" $> CIDMInternal
-    displayName = safeDecodeUtf8 <$> (quoted "'\"" <|> takeNameTill isSpace)
+    displayName = safeDecodeUtf8 <$> (quoted "'" <|> takeNameTill isSpace)
       where
         takeNameTill p =
           A.peekChar' >>= \c ->
@@ -5947,14 +5947,20 @@ timeItToView s action = do
   pure a
 
 mkValidName :: String -> String
-mkValidName = reverse . dropWhile isSpace . fst . foldl' addChar ("", '\NUL')
+mkValidName = reverse . dropWhile isSpace . fst3 . foldl' addChar ("", '\NUL', 0 :: Int)
   where
-    addChar (r, prev) c = if notProhibited && validChar then (c' : r, c') else (r, prev)
+    fst3 (x, _, _) = x
+    addChar (r, prev, punct) c = if validChar then (c' : r, c', punct') else (r, prev, punct)
       where
       c' = if isSpace c then ' ' else c
+      punct'
+        | isPunctuation c = punct + 1
+        | isSpace c = punct
+        | otherwise = 0
       validChar
-        | prev == '\NUL' || isSpace prev = validFirstChar
-        | isPunctuation prev = validFirstChar || isSpace c
+        | c == '\'' = False
+        | prev == '\NUL' = c > ' ' && c /= '#' && c /= '@' && validFirstChar
+        | isSpace prev = validFirstChar || (punct == 0 && isPunctuation c)
+        | isPunctuation prev = validFirstChar || isSpace c || (punct < 3 && isPunctuation c)
         | otherwise = validFirstChar || isSpace c || isMark c || isPunctuation c
       validFirstChar = isLetter c || isNumber c || isSymbol c
-      notProhibited = c `notElem` ("@#'\"`" :: String)

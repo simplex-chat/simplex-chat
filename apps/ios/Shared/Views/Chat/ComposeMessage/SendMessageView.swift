@@ -32,15 +32,12 @@ struct SendMessageView: View {
     var sendButtonColor = Color.accentColor
     @State private var teHeight: CGFloat = 42
     @State private var teFont: Font = .body
-    @State private var teUiFont: UIFont = UIFont.preferredFont(forTextStyle: .body)
     @State private var sendButtonSize: CGFloat = 29
     @State private var sendButtonOpacity: CGFloat = 1
     @State private var showCustomDisappearingMessageDialogue = false
     @State private var showCustomTimePicker = false
     @State private var selectedDisappearingMessageTime: Int? = customDisappearingMessageTimeDefault.get()
     @State private var progressByTimeout = false
-    var maxHeight: CGFloat = 360
-    var minHeight: CGFloat = 37
     @AppStorage(DEFAULT_LIVE_MESSAGE_ALERT_SHOWN) private var liveMessageAlertShown = false
 
     var body: some View {
@@ -57,30 +54,16 @@ struct SendMessageView: View {
                             .frame(maxWidth: .infinity)
                     } else {
                         let alignment: TextAlignment = isRightToLeft(composeState.message) ? .trailing : .leading
-                        Text(composeState.message)
-                            .lineLimit(10)
-                            .font(teFont)
-                            .multilineTextAlignment(alignment)
-// put text on top (after NativeTextEditor) and set color to precisely align it on changes
-//                            .foregroundColor(.red)
-                            .foregroundColor(.clear)
-                            .padding(.horizontal, 10)
-                            .padding(.top, 8)
-                            .padding(.bottom, 6)
-                            .matchedGeometryEffect(id: "te", in: namespace)
-                            .background(GeometryReader(content: updateHeight))
-
                         NativeTextEditor(
                             text: $composeState.message,
                             disableEditing: $composeState.inProgress,
-                            height: teHeight,
-                            font: teUiFont,
+                            height: $teHeight,
                             focused: $keyboardVisible,
                             alignment: alignment,
                             onImagesAdded: onMediaAdded
                         )
                         .allowsTightening(false)
-                        .frame(height: teHeight)
+                        .fixedSize(horizontal: false, vertical: true)
                     }
                 }
 
@@ -100,11 +83,13 @@ struct SendMessageView: View {
                     .frame(height: teHeight, alignment: .bottom)
                 }
             }
-
+            .padding(.vertical, 1)
+            .overlay(
             RoundedRectangle(cornerSize: CGSize(width: 20, height: 20))
                 .strokeBorder(.secondary, lineWidth: 0.3, antialiased: true)
-                .frame(height: teHeight)
+            )
         }
+        .onChange(of: composeState.message, perform: { text in updateFont(text) })
         .onChange(of: composeState.inProgress) { inProgress in
             if inProgress {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
@@ -415,16 +400,12 @@ struct SendMessageView: View {
         .padding([.bottom, .trailing], 4)
     }
 
-    private func updateHeight(_ g: GeometryProxy) -> Color {
+    private func updateFont(_ text: String) {
         DispatchQueue.main.async {
-            teHeight = min(max(g.frame(in: .local).size.height, minHeight), maxHeight)
-            (teFont, teUiFont) = isShortEmoji(composeState.message)
-                                    ? composeState.message.count < 4
-                                        ? (largeEmojiFont, largeEmojiUIFont)
-                                        : (mediumEmojiFont, mediumEmojiUIFont)
-                                    : (.body, UIFont.preferredFont(forTextStyle: .body))
+            teFont = isShortEmoji(text)
+            ? (text.count < 4 ? largeEmojiFont : mediumEmojiFont)
+            : .body
         }
-        return Color.clear
     }
 }
 
