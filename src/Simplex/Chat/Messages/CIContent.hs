@@ -13,9 +13,9 @@
 
 module Simplex.Chat.Messages.CIContent where
 
+import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
-import Data.Aeson.Types as JT
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
