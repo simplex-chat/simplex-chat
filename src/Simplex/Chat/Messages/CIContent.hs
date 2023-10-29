@@ -9,12 +9,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.Messages.CIContent where
 
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -314,11 +316,11 @@ instance ToJSON DBRcvDirectEvent where
 newtype DBMsgErrorType = DBME MsgErrorType
 
 instance FromJSON DBMsgErrorType where
-  parseJSON v = DBME <$> J.genericParseJSON (singleFieldJSON fstToLower) v
+  parseJSON v = DBME <$> $(JQ.mkParseJSON (singleFieldJSON fstToLower) ''MsgErrorType) v
 
 instance ToJSON DBMsgErrorType where
-  toJSON (DBME v) = J.genericToJSON (singleFieldJSON fstToLower) v
-  toEncoding (DBME v) = J.genericToEncoding (singleFieldJSON fstToLower) v
+  toJSON (DBME v) = $(JQ.mkToJSON (singleFieldJSON fstToLower) ''MsgErrorType) v
+  toEncoding (DBME v) = $(JQ.mkToEncoding (singleFieldJSON fstToLower) ''MsgErrorType) v
 
 data CIGroupInvitation = CIGroupInvitation
   { groupId :: GroupId,
