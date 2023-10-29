@@ -1017,9 +1017,9 @@ private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     throw r
 }
 
-func apiNewGroup(_ p: GroupProfile) throws -> GroupInfo {
+func apiNewGroup(incognito: Bool, groupProfile: GroupProfile) throws -> GroupInfo {
     let userId = try currentUserId("apiNewGroup")
-    let r = chatSendCmdSync(.apiNewGroup(userId: userId, groupProfile: p))
+    let r = chatSendCmdSync(.apiNewGroup(userId: userId, incognito: incognito, groupProfile: groupProfile))
     if case let .groupCreated(_, groupInfo) = r { return groupInfo }
     throw r
 }

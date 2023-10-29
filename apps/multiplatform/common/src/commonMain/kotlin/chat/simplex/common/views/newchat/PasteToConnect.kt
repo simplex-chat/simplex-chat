@@ -3,10 +3,10 @@ package chat.simplex.common.views.newchat
 import SectionBottomSpacer
 import SectionTextFooter
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import chat.simplex.common.platform.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.painterResource
@@ -14,7 +14,6 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.platform.TAG
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.SharedPreference
 import chat.simplex.common.ui.theme.*
@@ -23,7 +22,6 @@ import chat.simplex.common.views.usersettings.IncognitoView
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
 import java.net.URI
-import java.net.URISyntaxException
 
 @Composable
 fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
@@ -97,6 +95,8 @@ fun PasteToConnectLayout(
       painterResource(MR.images.ic_link),
       stringResource(MR.strings.connect_button),
       click = { connectViaLink(connectionLink.value) },
+      textColor = MaterialTheme.colors.primary,
+      iconColor = MaterialTheme.colors.primary,
       disabled = connectionLink.value.isEmpty() || connectionLink.value.trim().contains(" ")
     )
 
