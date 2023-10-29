@@ -12,6 +12,7 @@ import SimpleXChat
 struct ChatPreviewView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
+    @Binding var progressByTimeout: Bool
     @Environment(\.colorScheme) var colorScheme
     var darkGreen = Color(red: 0, green: 0.5, blue: 0)
 
@@ -252,6 +253,12 @@ struct ChatPreviewView: View {
             } else {
                 incognitoIcon(chat.chatInfo.incognito)
             }
+        case .group:
+            if progressByTimeout {
+                ProgressView()
+            } else {
+                incognitoIcon(chat.chatInfo.incognito)
+            }
         default:
             incognitoIcon(chat.chatInfo.incognito)
         }
@@ -280,30 +287,30 @@ struct ChatPreviewView_Previews: PreviewProvider {
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: []
-            ))
+            ), progressByTimeout: Binding.constant(false))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete))]
-            ))
+            ), progressByTimeout: Binding.constant(false))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete))],
                 chatStats: ChatStats(unreadCount: 11, minUnreadItemId: 0)
-            ))
+            ), progressByTimeout: Binding.constant(false))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now))]
-            ))
+            ), progressByTimeout: Binding.constant(false))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.direct,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete))],
                 chatStats: ChatStats(unreadCount: 3, minUnreadItemId: 0)
-            ))
+            ), progressByTimeout: Binding.constant(false))
             ChatPreviewView(chat: Chat(
                 chatInfo: ChatInfo.sampleData.group,
                 chatItems: [ChatItem.getSample(1, .directSnd, .now, "Lorem ipsum dolor sit amet, d. consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.")],
                 chatStats: ChatStats(unreadCount: 11, minUnreadItemId: 0)
-            ))
+            ), progressByTimeout: Binding.constant(false))
         }
         .previewLayout(.fixed(width: 360, height: 78))
     }

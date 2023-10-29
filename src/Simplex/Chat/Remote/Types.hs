@@ -28,6 +28,7 @@ import Network.HTTP.Types (parseSimpleQuery)
 import Network.HTTP.Types.URI (renderSimpleQuery, urlDecode, urlEncode)
 import qualified Network.Socket as N
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.File (CryptoFile)
 import Simplex.Messaging.Encoding (Encoding (..))
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
@@ -36,9 +37,10 @@ import Simplex.Messaging.Version (VersionRange, mkVersionRange)
 import UnliftIO
 
 data RemoteHostClient = RemoteHostClient
-  { remoteEncoding :: PlatformEncoding,
-    remoteDeviceName :: Text,
-    httpClient :: HTTP2Client
+  { hostEncoding :: PlatformEncoding,
+    hostDeviceName :: Text,
+    httpClient :: HTTP2Client,
+    encryptHostFiles :: Bool
   }
 
 data RemoteHostSession = RemoteHostSession
@@ -53,7 +55,8 @@ data RemoteProtocolError
   | RPEIncompatibleEncoding
   | RPEUnexpectedFile
   | RPENoFile
-  | RPEFileTooLarge
+  | RPEFileSize
+  | RPEFileDigest
   | RPEUnexpectedResponse {response :: Text} -- ^ Wrong response received for the command sent
   | RPEStoredFileExists -- ^ A file already exists in the destination position
   | RPEHTTP2 {http2Error :: Text}
@@ -104,6 +107,14 @@ data RemoteCtrlInfo = RemoteCtrlInfo
     fingerprint :: C.KeyHash,
     accepted :: Maybe Bool,
     sessionActive :: Bool
+  }
+  deriving (Show)
+
+data RemoteFile = RemoteFile
+  { userId :: Int64,
+    fileId :: Int64,
+    sent :: Bool,
+    fileSource :: CryptoFile
   }
   deriving (Show)
 
@@ -294,3 +305,5 @@ $(J.deriveJSON defaultJSON ''RemoteHostInfo)
 $(J.deriveJSON defaultJSON ''RemoteCtrl)
 
 $(J.deriveJSON defaultJSON ''RemoteCtrlInfo)
+
+$(J.deriveJSON defaultJSON ''RemoteFile)

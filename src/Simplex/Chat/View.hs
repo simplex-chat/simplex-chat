@@ -14,6 +14,7 @@ module Simplex.Chat.View where
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.ByteString.Char8 as B
+import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace, toUpper)
 import Data.Function (on)
@@ -76,7 +77,7 @@ serializeChatResponse :: (Maybe R.RemoteHostId, Maybe User) -> CurrentTime -> Ti
 serializeChatResponse user_ ts tz remoteHost_ = unlines . map unStyle . responseToView user_ defaultChatConfig False ts tz remoteHost_
 
 responseToView :: (Maybe R.RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe R.RemoteHostId -> ChatResponse -> [StyledString]
-responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz outputRH = \case
+responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz outputRH = \case
   CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
   CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
@@ -185,10 +186,10 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
   CRContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
   CRContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
   CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
-  CRRcvFileStart u ci -> ttyUser u $ receivingFile_' testView "started" ci
-  CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' testView "completed" ci
+  CRRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
+  CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci
   CRRcvFileSndCancelled u _ ft -> ttyUser u $ viewRcvFileSndCancelled ft
-  CRRcvFileError u ci e -> ttyUser u $ receivingFile_' testView "error" ci <> [sShow e]
+  CRRcvFileError u ci e -> ttyUser u $ receivingFile_' hu testView "error" ci <> [sShow e]
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
   CRSndFileStartXFTP {} -> []
@@ -273,6 +274,9 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
   CRRemoteHostStarted {remoteHost = R.RemoteHostInfo {remoteHostId = rhId}, sessionOOB} -> ["remote host " <> sShow rhId <> " started", "connection code:", plain sessionOOB]
   CRRemoteHostConnected R.RemoteHostInfo {remoteHostId = rhId} -> ["remote host " <> sShow rhId <> " connected"]
   CRRemoteHostStopped rhId -> ["remote host " <> sShow rhId <> " stopped"]
+  CRRemoteFileStored rhId (CryptoFile filePath cfArgs_) ->
+    [plain $ "file " <> filePath <> " stored on remote host " <> show rhId]
+      <> maybe [] ((: []) . plain . cryptoFileArgsStr testView) cfArgs_
   CRRemoteCtrlList cs -> viewRemoteCtrls cs
   CRRemoteCtrlRegistered R.RemoteCtrlInfo {remoteCtrlId = rcId} -> ["remote controller " <> sShow rcId <> " registered"]
   CRRemoteCtrlAnnounce fingerprint -> ["remote controller announced", "connection code:", plain $ strEncode fingerprint]
@@ -1494,18 +1498,25 @@ savingFile' (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileSource
   ["saving file " <> sShow fileId <> fileFrom chat chatDir <> " to " <> plain filePath]
 savingFile' _ = ["saving file"] -- shouldn't happen
 
-receivingFile_' :: Bool -> String -> AChatItem -> [StyledString]
-receivingFile_' testView status (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileName, fileSource = Just (CryptoFile _ cfArgs_)}, chatDir}) =
-  [plain status <> " receiving " <> fileTransferStr fileId fileName <> fileFrom chat chatDir] <> cfArgsStr cfArgs_
+receivingFile_' :: (Maybe R.RemoteHostId, Maybe User) -> Bool -> String -> AChatItem -> [StyledString]
+receivingFile_' hu testView status (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileName, fileSource = Just f@(CryptoFile _ cfArgs_)}, chatDir}) =
+  [plain status <> " receiving " <> fileTransferStr fileId fileName <> fileFrom chat chatDir] <> cfArgsStr cfArgs_ <> getRemoteFileStr
   where
-    cfArgsStr (Just cfArgs@(CFArgs key nonce)) = [plain s | status == "completed"]
-      where
-      s =
-        if testView
-          then LB.toStrict $ J.encode cfArgs
-          else "encryption key: " <> strEncode key <> ", nonce: " <> strEncode nonce
+    cfArgsStr (Just cfArgs) = [plain (cryptoFileArgsStr testView cfArgs) | status == "completed"]
     cfArgsStr _ = []
-receivingFile_' _ status _ = [plain status <> " receiving file"] -- shouldn't happen
+    getRemoteFileStr = case hu of
+      (Just rhId, Just User {userId}) | status == "completed" ->
+        [ "File received to connected remote host " <> sShow rhId,
+          "To download to this device use:",
+          highlight ("/get remote file " <> show rhId <> " " <> LB.unpack (J.encode R.RemoteFile {userId, fileId, sent = False, fileSource = f}))
+        ]
+      _ -> []
+receivingFile_' _ _ status _ = [plain status <> " receiving file"] -- shouldn't happen
+
+cryptoFileArgsStr :: Bool -> CryptoFileArgs -> ByteString
+cryptoFileArgsStr testView cfArgs@(CFArgs key nonce)
+  | testView = LB.toStrict $ J.encode cfArgs
+  | otherwise = "encryption key: " <> strEncode key <> ", nonce: " <> strEncode nonce
 
 fileFrom :: ChatInfo c -> CIDirection c d -> StyledString
 fileFrom (DirectChat ct) CIDirectRcv = " from " <> ttyContact' ct
@@ -1815,8 +1826,8 @@ viewChatError logLevel = \case
         Nothing -> ""
       cId :: Connection -> StyledString
       cId conn = sShow conn.connId
-  ChatErrorRemoteCtrl todo'rc -> [sShow todo'rc]
-  ChatErrorRemoteHost remoteHostId todo'rh -> [sShow remoteHostId, sShow todo'rh]
+  ChatErrorRemoteCtrl e -> [plain $ "remote controller error: " <> show e]
+  ChatErrorRemoteHost rhId e -> [plain $ "remote host " <> show rhId <> " error: " <> show e]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
     sqliteError' = \case

@@ -55,6 +55,7 @@ import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
+import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
@@ -104,7 +105,7 @@ import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
 import System.Exit (exitFailure, exitSuccess)
-import System.FilePath (combine, splitExtensions, takeFileName, (</>))
+import System.FilePath (takeFileName, (</>))
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, stdout)
 import System.Random (randomRIO)
 import Text.Read (readMaybe)
@@ -214,6 +215,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   localDeviceName <- newTVarIO "" -- TODO set in config
   multicastSubscribers <- newTMVarIO 0
   remoteHostSessions <- atomically TM.empty
+  remoteHostsFolder <- newTVarIO Nothing
   remoteCtrlSession <- newTVarIO Nothing
   filesFolder <- newTVarIO optFilesFolder
   chatStoreChanged <- newTVarIO False
@@ -248,6 +250,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
         localDeviceName,
         multicastSubscribers,
         remoteHostSessions,
+        remoteHostsFolder,
         remoteCtrlSession,
         config,
         filesFolder,
@@ -396,7 +399,7 @@ execChatCommand rh s = do
   case parseChatCommand s of
     Left e -> pure $ chatCmdError u e
     Right cmd -> case rh of
-      Just remoteHostId | allowRemoteCommand cmd -> execRemoteCommand u remoteHostId s
+      Just remoteHostId | allowRemoteCommand cmd -> execRemoteCommand u remoteHostId cmd s
       _ -> execChatCommand_ u cmd
 
 execChatCommand' :: ChatMonad' m => ChatCommand -> m ChatResponse
@@ -405,8 +408,8 @@ execChatCommand' cmd = asks currentUser >>= readTVarIO >>= (`execChatCommand_` c
 execChatCommand_ :: ChatMonad' m => Maybe User -> ChatCommand -> m ChatResponse
 execChatCommand_ u cmd = handleCommandError u $ processChatCommand cmd
 
-execRemoteCommand :: ChatMonad' m => Maybe User -> RemoteHostId -> ByteString -> m ChatResponse
-execRemoteCommand u rhId s = handleCommandError u $ getRemoteHostSession rhId >>= \rh -> processRemoteCommand rhId rh s
+execRemoteCommand :: ChatMonad' m => Maybe User -> RemoteHostId -> ChatCommand -> ByteString -> m ChatResponse
+execRemoteCommand u rhId cmd s = handleCommandError u $ getRemoteHostSession rhId >>= \rh -> processRemoteCommand rhId rh cmd s
 
 handleCommandError :: ChatMonad' m => Maybe User -> ExceptT ChatError m ChatResponse -> m ChatResponse
 handleCommandError u a = either (CRChatCmdError u) id <$> (runExceptT a `E.catch` (pure . Left . mkChatError))
@@ -543,6 +546,10 @@ processChatCommand = \case
   SetFilesFolder ff -> do
     createDirectoryIfMissing True ff
     asks filesFolder >>= atomically . (`writeTVar` Just ff)
+    ok_
+  SetRemoteHostsFolder rf -> do
+    createDirectoryIfMissing True rf
+    chatWriteVar remoteHostsFolder $ Just rf
     ok_
   APISetXFTPConfig cfg -> do
     asks userXFTPFileConfig >>= atomically . (`writeTVar` cfg)
@@ -1797,15 +1804,15 @@ processChatCommand = \case
     asks showLiveItems >>= atomically . (`writeTVar` on) >> ok_
   SendFile chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage (Just $ CF.plain f) Nothing (MCFile "")
-  SendImage chatName f -> withUser $ \user -> do
+    processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage (Just f) Nothing (MCFile "")
+  SendImage chatName f@(CryptoFile fPath _) -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    filePath <- toFSFilePath f
-    unless (any (`isSuffixOf` map toLower f) imageExtensions) $ throwChatError CEFileImageType {filePath}
+    filePath <- toFSFilePath fPath
+    unless (any (`isSuffixOf` map toLower fPath) imageExtensions) $ throwChatError CEFileImageType {filePath}
     fileSize <- getFileSize filePath
     unless (fileSize <= maxImageSize) $ throwChatError CEFileImageSize {filePath}
     -- TODO include file description for preview
-    processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage (Just $ CF.plain f) Nothing (MCImage "" fixedImagePreview)
+    processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview)
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
   SendFileDescription _chatName _f -> pure $ chatCmdError Nothing "TODO"
@@ -1907,19 +1914,21 @@ processChatCommand = \case
     let pref = uncurry TimedMessagesGroupPreference $ maybe (FEOff, Just 86400) (\ttl -> (FEOn, Just ttl)) ttl_
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
-  SetLocalDeviceName name -> withUser $ \_ -> chatWriteVar localDeviceName name >> ok_
+  SetLocalDeviceName name -> withUser_ $ chatWriteVar localDeviceName name >> ok_
   CreateRemoteHost -> CRRemoteHostCreated <$> createRemoteHost
   ListRemoteHosts -> CRRemoteHostList <$> listRemoteHosts
   StartRemoteHost rh -> startRemoteHost rh >> ok_
   StopRemoteHost rh -> closeRemoteHostSession rh >> ok_
   DeleteRemoteHost rh -> deleteRemoteHost rh >> ok_
-  StartRemoteCtrl -> startRemoteCtrl (execChatCommand Nothing) >> ok_
-  RegisterRemoteCtrl oob -> CRRemoteCtrlRegistered <$> withStore' (`insertRemoteCtrl` oob)
-  AcceptRemoteCtrl rc -> acceptRemoteCtrl rc >> ok_
-  RejectRemoteCtrl rc -> rejectRemoteCtrl rc >> ok_
-  StopRemoteCtrl -> stopRemoteCtrl >> ok_
-  ListRemoteCtrls -> CRRemoteCtrlList <$> listRemoteCtrls
-  DeleteRemoteCtrl rc -> deleteRemoteCtrl rc >> ok_
+  StoreRemoteFile rh encrypted_ localPath -> CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
+  GetRemoteFile rh rf -> getRemoteFile rh rf >> ok_
+  StartRemoteCtrl -> withUser_ $ startRemoteCtrl (execChatCommand Nothing) >> ok_
+  RegisterRemoteCtrl oob -> withUser_ $ CRRemoteCtrlRegistered <$> withStore' (`insertRemoteCtrl` oob)
+  AcceptRemoteCtrl rc -> withUser_ $ acceptRemoteCtrl rc >> ok_
+  RejectRemoteCtrl rc -> withUser_ $ rejectRemoteCtrl rc >> ok_
+  StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
+  ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
+  DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
     let versionInfo = coreVersionInfo $(simplexmqCommitQ)
@@ -2175,14 +2184,14 @@ processChatCommand = \case
     withServerProtocol p action = case userProtocol p of
       Just Dict -> action
       _ -> throwChatError $ CEServerProtocol $ AProtocolType p
-    forwardFile :: ChatName -> FileTransferId -> (ChatName -> FilePath -> ChatCommand) -> m ChatResponse
+    forwardFile :: ChatName -> FileTransferId -> (ChatName -> CryptoFile -> ChatCommand) -> m ChatResponse
     forwardFile chatName fileId sendCommand = withUser $ \user -> do
       withStore (\db -> getFileTransfer db user fileId) >>= \case
-        FTRcv RcvFileTransfer {fileStatus = RFSComplete RcvFileInfo {filePath}} -> forward filePath
-        FTSnd {fileTransferMeta = FileTransferMeta {filePath}} -> forward filePath
+        FTRcv RcvFileTransfer {fileStatus = RFSComplete RcvFileInfo {filePath}, cryptoArgs} -> forward filePath cryptoArgs
+        FTSnd {fileTransferMeta = FileTransferMeta {filePath, xftpSndFile}} -> forward filePath $ xftpSndFile >>= \f -> f.cryptoArgs
         _ -> throwChatError CEFileNotReceived {fileId}
       where
-        forward = processChatCommand . sendCommand chatName
+        forward path cfArgs = processChatCommand . sendCommand chatName $ CryptoFile path cfArgs
     getGroupAndMemberId :: User -> GroupName -> ContactName -> m (GroupId, GroupMemberId)
     getGroupAndMemberId user gName groupMemberName =
       withStore $ \db -> do
@@ -2577,10 +2586,9 @@ startReceivingFile user fileId = do
 getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> String -> Bool -> m FilePath
 getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
   Nothing ->
-    asks filesFolder >>= readTVarIO >>= \case
-      Nothing -> do
-        dir <- (`combine` "Downloads") <$> getHomeDirectory
-        ifM (doesDirectoryExist dir) (pure dir) getChatTempDirectory
+    chatReadVar filesFolder >>= \case
+      Nothing ->
+        getDefaultFilesFolder
           >>= (`uniqueCombine` fn)
           >>= createEmptyFile
       Just filesFolder ->
@@ -2608,18 +2616,6 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
       pure fPath
     getTmpHandle :: FilePath -> m Handle
     getTmpHandle fPath = openFile fPath AppendMode `catchThrow` (ChatError . CEFileInternal . show)
-
-uniqueCombine :: MonadIO m => FilePath -> String -> m FilePath
-uniqueCombine filePath fileName = tryCombine (0 :: Int)
-  where
-    tryCombine n =
-      let (name, ext) = splitExtensions fileName
-          suffix = if n == 0 then "" else "_" <> show n
-          f = filePath `combine` (name <> suffix <> ext)
-       in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
-
-getChatTempDirectory :: ChatMonad m => m FilePath
-getChatTempDirectory = chatReadVar tempDirectory >>= maybe getTemporaryDirectory pure
 
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
 acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId} incognitoProfile = do
@@ -5577,6 +5573,9 @@ withUser :: ChatMonad m => (User -> m ChatResponse) -> m ChatResponse
 withUser action = withUser' $ \user ->
   ifM chatStarted (action user) (throwChatError CEChatNotStarted)
 
+withUser_ :: ChatMonad m => m ChatResponse -> m ChatResponse
+withUser_ = withUser . const
+
 withUserId :: ChatMonad m => UserId -> (User -> m ChatResponse) -> m ChatResponse
 withUserId userId action = withUser $ \user -> do
   checkSameUser userId user
@@ -5637,6 +5636,7 @@ chatCommandP =
       "/_resubscribe all" $> ResubscribeAllConnections,
       "/_temp_folder " *> (SetTempFolder <$> filePath),
       ("/_files_folder " <|> "/files_folder ") *> (SetFilesFolder <$> filePath),
+      "/remote_hosts_folder " *> (SetRemoteHostsFolder <$> filePath),
       "/_xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> jsonP) <|> ("off" $> Nothing))),
       "/xftp " *> (APISetXFTPConfig <$> ("on" *> (Just <$> xftpCfgP) <|> ("off" $> Nothing))),
       "/_files_encrypt " *> (APISetEncryptLocalFiles <$> onOffP),
@@ -5811,8 +5811,8 @@ chatCommandP =
       "/show" *> (ShowLiveItems <$> (A.space *> onOffP <|> pure True)),
       "/show " *> (ShowChatItem . Just <$> A.decimal),
       "/item info " *> (ShowChatItemInfo <$> chatNameP <* A.space <*> msgTextP),
-      ("/file " <|> "/f ") *> (SendFile <$> chatNameP' <* A.space <*> filePath),
-      ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> filePath),
+      ("/file " <|> "/f ") *> (SendFile <$> chatNameP' <* A.space <*> cryptoFileP),
+      ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> cryptoFileP),
       ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal),
       ("/image_forward " <|> "/imgf ") *> (ForwardImage <$> chatNameP' <* A.space <*> A.decimal),
       ("/fdescription " <|> "/fd") *> (SendFileDescription <$> chatNameP' <* A.space <*> filePath),
@@ -5860,6 +5860,8 @@ chatCommandP =
       "/start remote host " *> (StartRemoteHost <$> A.decimal),
       "/stop remote host " *> (StopRemoteHost <$> A.decimal),
       "/delete remote host " *> (DeleteRemoteHost <$> A.decimal),
+      "/store remote file " *> (StoreRemoteFile <$> A.decimal <*> optional (" encrypt=" *> onOffP) <* A.space <*> filePath),
+      "/get remote file " *> (GetRemoteFile <$> A.decimal <* A.space <*> jsonP),
       "/start remote ctrl" $> StartRemoteCtrl,
       "/register remote ctrl " *> (RegisterRemoteCtrl <$> strP),
       -- "/_register remote ctrl " *> (RegisterRemoteCtrl <$> jsonP),
@@ -5934,6 +5936,10 @@ chatCommandP =
     msgTextP = jsonP <|> textP
     stringP = T.unpack . safeDecodeUtf8 <$> A.takeByteString
     filePath = stringP
+    cryptoFileP = do
+      cfArgs <- optional $ CFArgs <$> (" key=" *> strP <* A.space) <*> (" nonce=" *> strP)
+      path <- filePath
+      pure $ CryptoFile path cfArgs
     memberRole =
       A.choice
         [ " owner" $> GROwner,

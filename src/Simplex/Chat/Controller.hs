@@ -180,6 +180,7 @@ data ChatController = ChatController
     localDeviceName :: TVar Text,
     multicastSubscribers :: TMVar Int,
     remoteHostSessions :: TMap RemoteHostId RemoteHostSession, -- All the active remote hosts
+    remoteHostsFolder :: TVar (Maybe FilePath), -- folder for remote hosts data
     remoteCtrlSession :: TVar (Maybe RemoteCtrlSession), -- Supervisor process for hosted controllers
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
@@ -226,6 +227,7 @@ data ChatCommand
   | ResubscribeAllConnections
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
+  | SetRemoteHostsFolder FilePath
   | APISetXFTPConfig (Maybe XFTPFileConfig)
   | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
@@ -395,8 +397,8 @@ data ChatCommand
   | ShowChatItem (Maybe ChatItemId) -- UserId (not used in UI)
   | ShowChatItemInfo ChatName Text
   | ShowLiveItems Bool
-  | SendFile ChatName FilePath
-  | SendImage ChatName FilePath
+  | SendFile ChatName CryptoFile
+  | SendImage ChatName CryptoFile
   | ForwardFile ChatName FileTransferId
   | ForwardImage ChatName FileTransferId
   | SendFileDescription ChatName FilePath
@@ -421,6 +423,8 @@ data ChatCommand
   -- | SwitchRemoteHost (Maybe RemoteHostId) -- ^ Switch current remote host
   | StopRemoteHost RemoteHostId -- ^ Shut down a running session
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
+  | StoreRemoteFile {remoteHostId :: RemoteHostId, storeEncrypted :: Maybe Bool, localPath :: FilePath}
+  | GetRemoteFile {remoteHostId :: RemoteHostId, file :: RemoteFile}
   | StartRemoteCtrl -- ^ Start listening for announcements from all registered controllers
   | RegisterRemoteCtrl SignedOOB -- ^ Register OOB data for remote controller discovery and handshake
   | ListRemoteCtrls
@@ -442,22 +446,27 @@ allowRemoteCommand = \case
   StartChat {} -> False
   APIStopChat -> False
   APIActivateChat -> False
-  APISuspendChat {} -> False
-  SetTempFolder {} -> False
+  APISuspendChat _ -> False
+  SetTempFolder _ -> False
   QuitChat -> False
   CreateRemoteHost -> False
   ListRemoteHosts -> False
-  StartRemoteHost {} -> False
+  StartRemoteHost _ -> False
   -- SwitchRemoteHost {} -> False
-  StopRemoteHost {} -> False
-  DeleteRemoteHost {} -> False
+  StoreRemoteFile {} -> False
+  GetRemoteFile {} -> False
+  StopRemoteHost _ -> False
+  DeleteRemoteHost _ -> False
   RegisterRemoteCtrl {} -> False
   StartRemoteCtrl -> False
   ListRemoteCtrls -> False
-  AcceptRemoteCtrl {} -> False
-  RejectRemoteCtrl {} -> False
+  AcceptRemoteCtrl _ -> False
+  RejectRemoteCtrl _ -> False
   StopRemoteCtrl -> False
-  DeleteRemoteCtrl {} -> False
+  DeleteRemoteCtrl _ -> False
+  ExecChatStoreSQL _ -> False
+  ExecAgentStoreSQL _ -> False
+  SlowSQLQueries -> False
   _ -> True
 
 data ChatResponse
@@ -630,6 +639,7 @@ data ChatResponse
   | CRRemoteHostStarted {remoteHost :: RemoteHostInfo, sessionOOB :: Text}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
+  | CRRemoteFileStored {remoteHostId :: RemoteHostId, remoteFileSource :: CryptoFile}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
   | CRRemoteCtrlRegistered {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- unregistered fingerprint, needs confirmation
