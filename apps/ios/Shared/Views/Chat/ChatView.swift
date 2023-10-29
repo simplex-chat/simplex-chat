@@ -37,6 +37,10 @@ struct ChatView: View {
     @FocusState private var searchFocussed
     // opening GroupMemberInfoView on member icon
     @State private var selectedMember: GroupMember? = nil
+    // opening GroupLinkView on link button (incognito)
+    @State private var showGroupLinkSheet: Bool = false
+    @State private var groupLink: String?
+    @State private var groupLinkMemberRole: GroupMemberRole = .member
 
     var body: some View {
         if #available(iOS 16.0, *) {
@@ -173,9 +177,16 @@ struct ChatView: View {
                     HStack {
                         if groupInfo.canAddMembers {
                             if (chat.chatInfo.incognito) {
-                                Image(systemName: "person.crop.circle.badge.plus")
-                                    .foregroundColor(Color(uiColor: .tertiaryLabel))
-                                    .onTapGesture { AlertManager.shared.showAlert(cantInviteIncognitoAlert()) }
+                                groupLinkButton()
+                                    .appSheet(isPresented: $showGroupLinkSheet) {
+                                        GroupLinkView(
+                                            groupId: groupInfo.groupId,
+                                            groupLink: $groupLink,
+                                            groupLinkMemberRole: $groupLinkMemberRole,
+                                            showTitle: true,
+                                            creatingGroup: false
+                                        )
+                                    }
                             } else {
                                 addMembersButton()
                                     .appSheet(isPresented: $showAddMembersSheet) {
@@ -417,7 +428,26 @@ struct ChatView: View {
             Image(systemName: "person.crop.circle.badge.plus")
         }
     }
-    
+
+    private func groupLinkButton() -> some View {
+        Button {
+            if case let .group(gInfo) = chat.chatInfo {
+                Task {
+                    do {
+                        if let link = try apiGetGroupLink(gInfo.groupId) {
+                            (groupLink, groupLinkMemberRole) = link
+                        }
+                    } catch let error {
+                        logger.error("ChatView apiGetGroupLink: \(responseError(error))")
+                    }
+                    showGroupLinkSheet = true
+                }
+            }
+        } label: {
+            Image(systemName: "link.badge.plus")
+        }
+    }
+
     private func loadChatItems(_ cInfo: ChatInfo, _ ci: ChatItem, _ proxy: ScrollViewProxy) {
         if let firstItem = chatModel.reversedChatItems.last, firstItem.id == ci.id {
             if loadingItems || firstPage { return }

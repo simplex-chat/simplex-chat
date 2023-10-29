@@ -225,9 +225,15 @@ struct GroupChatInfoView: View {
 
     private func groupLinkButton() -> some View {
         NavigationLink {
-            GroupLinkView(groupId: groupInfo.groupId, groupLink: $groupLink, groupLinkMemberRole: $groupLinkMemberRole)
-                .navigationBarTitle("Group link")
-                .navigationBarTitleDisplayMode(.large)
+            GroupLinkView(
+                groupId: groupInfo.groupId,
+                groupLink: $groupLink,
+                groupLinkMemberRole: $groupLinkMemberRole,
+                showTitle: false,
+                creatingGroup: false
+            )
+            .navigationBarTitle("Group link")
+            .navigationBarTitleDisplayMode(.large)
         } label: {
             if groupLink == nil {
                 Label("Create group link", systemImage: "link.badge.plus")
