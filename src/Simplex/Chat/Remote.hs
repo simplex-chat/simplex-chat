@@ -16,7 +16,7 @@ import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
-import Control.Monad.Reader (asks)
+import Control.Monad.Reader
 import Control.Monad.STM (retry)
 import Crypto.Random (getRandomBytes)
 import qualified Data.Aeson as J
@@ -34,21 +34,35 @@ import Data.Word (Word32)
 import Network.HTTP2.Server (responseStreaming)
 import qualified Network.HTTP.Types as N
 import Network.Socket (SockAddr (..), hostAddressToTuple)
+import Simplex.Chat.Archive (archiveFilesFolder)
 import Simplex.Chat.Controller
+import Simplex.Chat.Files
+import Simplex.Chat.Messages (chatNameStr)
 import qualified Simplex.Chat.Remote.Discovery as Discovery
 import Simplex.Chat.Remote.Protocol
+import Simplex.Chat.Remote.Transport
 import Simplex.Chat.Remote.Types
+import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Remote
+import Simplex.Chat.Store.Shared
+import Simplex.Chat.Types (User (..))
+import Simplex.Chat.Util (encryptFile)
+import Simplex.FileTransfer.Description (FileDigest (..))
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
+import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
-import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
-import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
-import Simplex.Messaging.Util (ifM, liftEitherError, liftEitherWith, liftError, liftIOEither, tryAllErrors, tshow, ($>>=))
-import System.FilePath ((</>))
+import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
+import qualified Simplex.Messaging.TMap as TM
+import Simplex.Messaging.Util (ifM, liftEitherError, liftEitherWith, liftError, liftIOEither, tryAllErrors, tshow, ($>>=), (<$$>))
+import System.FilePath ((</>), takeFileName)
 import UnliftIO
+import UnliftIO.Directory (copyFile, createDirectoryIfMissing, renameFile)
+import Data.Functor (($>))
+import Control.Applicative ((<|>))
 
 -- * Desktop side
 
@@ -110,7 +124,7 @@ startRemoteHost rhId = do
       toView $ CRRemoteHostConnected RemoteHostInfo
         { remoteHostId = rhId,
           storePath = storePath,
-          displayName = remoteDeviceName remoteHostClient,
+          displayName = hostDeviceName remoteHostClient,
           remoteCtrlOOB = RemoteCtrlOOB {fingerprint, displayName=rcName},
           sessionActive = True
         }
@@ -178,9 +192,57 @@ deleteRemoteHost rhId = do
     Nothing -> logWarn "Local file store not available while deleting remote host"
   withStore' (`deleteRemoteHostRecord` rhId)
 
-processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostSession -> ByteString -> m ChatResponse
-processRemoteCommand remoteHostId RemoteHostSession {remoteHostClient = Just rhc} s = liftRH remoteHostId $ remoteSend rhc s
-processRemoteCommand _ _ _ = pure $ chatCmdError Nothing "remote command sent before session started"
+storeRemoteFile :: forall m. ChatMonad m => RemoteHostId -> Maybe Bool -> FilePath -> m CryptoFile
+storeRemoteFile rhId encrypted_ localPath = do
+  RemoteHostSession {remoteHostClient, storePath} <- getRemoteHostSession rhId
+  case remoteHostClient of
+    Nothing -> throwError $ ChatErrorRemoteHost rhId RHMissing
+    Just c@RemoteHostClient {encryptHostFiles} -> do
+      let encrypt = fromMaybe encryptHostFiles encrypted_
+      cf@CryptoFile {filePath} <- if encrypt then encryptLocalFile else pure $ CF.plain localPath
+      filePath' <- liftRH rhId $ remoteStoreFile c filePath (takeFileName localPath)
+      hf_ <- chatReadVar remoteHostsFolder
+      forM_ hf_ $ \hf -> do
+        let rhf = hf </> storePath </> archiveFilesFolder
+            hPath = rhf </> takeFileName filePath'
+        createDirectoryIfMissing True rhf
+        (if encrypt then renameFile else copyFile) filePath hPath
+      pure (cf :: CryptoFile) {filePath = filePath'}
+  where
+    encryptLocalFile :: m CryptoFile
+    encryptLocalFile = do
+      tmpDir <- getChatTempDirectory
+      createDirectoryIfMissing True tmpDir
+      tmpFile <- tmpDir `uniqueCombine` takeFileName localPath
+      cfArgs <- liftIO CF.randomArgs
+      liftError (ChatError . CEFileWrite tmpFile) $ encryptFile localPath tmpFile cfArgs
+      pure $ CryptoFile tmpFile $ Just cfArgs
+
+getRemoteFile :: ChatMonad m => RemoteHostId -> RemoteFile -> m ()
+getRemoteFile rhId rf = do
+  RemoteHostSession {remoteHostClient, storePath} <- getRemoteHostSession rhId
+  case remoteHostClient of
+    Nothing -> throwError $ ChatErrorRemoteHost rhId RHMissing
+    Just c -> do
+      dir <- (</> storePath </> archiveFilesFolder) <$> (maybe getDefaultFilesFolder pure =<< chatReadVar remoteHostsFolder)
+      createDirectoryIfMissing True dir
+      liftRH rhId $ remoteGetFile c dir rf
+
+processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostSession -> ChatCommand -> ByteString -> m ChatResponse
+processRemoteCommand remoteHostId RemoteHostSession {remoteHostClient = Just rhc} cmd s = case cmd of
+  SendFile chatName f -> sendFile "/f" chatName f
+  SendImage chatName f -> sendFile "/img" chatName f    
+  _ -> liftRH remoteHostId $ remoteSend rhc s
+  where
+    sendFile cmdName chatName (CryptoFile path cfArgs) = do
+      -- don't encrypt in host if already encrypted locally
+      CryptoFile path' cfArgs' <- storeRemoteFile remoteHostId (cfArgs $> False) path
+      let f = CryptoFile path' (cfArgs <|> cfArgs') -- use local or host encryption
+      liftRH remoteHostId $ remoteSend rhc $ B.unwords [cmdName, B.pack (chatNameStr chatName), cryptoFileStr f]
+    cryptoFileStr CryptoFile {filePath, cryptoArgs} =
+      maybe "" (\(CFArgs key nonce) -> "key=" <> strEncode key <> " nonce=" <> strEncode nonce <> " ") cryptoArgs
+        <> encodeUtf8 (T.pack filePath)
+processRemoteCommand _ _ _ _ = pure $ chatCmdError Nothing "remote command sent before session started"
 
 liftRH :: ChatMonad m => RemoteHostId -> ExceptT RemoteProtocolError IO a -> m a
 liftRH rhId = liftError (ChatErrorRemoteHost rhId . RHProtocolError)
@@ -218,20 +280,24 @@ handleRemoteCommand :: forall m . ChatMonad m => (ByteString -> m ChatResponse) 
 handleRemoteCommand execChatCommand remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do
   logDebug "handleRemoteCommand"
   liftRC (tryRemoteError parseRequest) >>= \case
-    Right (getNext, rc) -> processCommand getNext rc `catchAny` (reply . RRProtocolError . RPEException . tshow)
+    Right (getNext, rc) -> do
+      chatReadVar currentUser >>= \case
+        Nothing -> replyError $ ChatError CENoActiveUser
+        Just user -> processCommand user getNext rc `catchChatError` replyError
     Left e -> reply $ RRProtocolError e
   where
     parseRequest :: ExceptT RemoteProtocolError IO (GetChunk, RemoteCommand)
     parseRequest = do
       (header, getNext) <- parseHTTP2Body request reqBody
       (getNext,) <$> liftEitherWith (RPEInvalidJSON . T.pack) (J.eitherDecodeStrict' header)
-    processCommand :: GetChunk -> RemoteCommand -> m ()
-    processCommand getNext = \case
+    replyError = reply . RRChatResponse . CRChatCmdError Nothing
+    processCommand :: User -> GetChunk -> RemoteCommand -> m ()
+    processCommand user getNext = \case
       RCHello {deviceName = desktopName} -> handleHello desktopName >>= reply
       RCSend {command} -> handleSend execChatCommand command >>= reply
       RCRecv {wait = time} -> handleRecv time remoteOutputQ >>= reply
-      RCStoreFile {fileSize, encrypt} -> handleStoreFile fileSize encrypt getNext >>= reply
-      RCGetFile {filePath} -> handleGetFile filePath replyWith
+      RCStoreFile {fileName, fileSize, fileDigest} -> handleStoreFile fileName fileSize fileDigest getNext >>= reply
+      RCGetFile {file} -> handleGetFile user file replyWith
     reply :: RemoteResponse -> m ()
     reply = (`replyWith` \_ -> pure ())
     replyWith :: Respond m
@@ -258,7 +324,8 @@ handleHello :: ChatMonad m => Text -> m RemoteResponse
 handleHello desktopName = do
   logInfo $ "Hello from " <> tshow desktopName
   mobileName <- chatReadVar localDeviceName
-  pure RRHello {encoding = localEncoding, deviceName = mobileName}
+  encryptFiles <- chatReadVar encryptLocalFiles
+  pure RRHello {encoding = localEncoding, deviceName = mobileName, encryptFiles}
 
 handleSend :: ChatMonad m => (ByteString -> m ChatResponse) -> Text -> m RemoteResponse
 handleSend execChatCommand command = do
@@ -272,20 +339,36 @@ handleRecv time events = do
   logDebug $ "Recv: " <> tshow time
   RRChatEvent <$> (timeout time . atomically $ readTBQueue events)
 
-handleStoreFile :: ChatMonad m => Word32 -> Maybe Bool -> GetChunk -> m RemoteResponse
-handleStoreFile _fileSize _encrypt _getNext = error "TODO" <$ logError "TODO: handleStoreFile"
+-- TODO this command could remember stored files and return IDs to allow removing files that are not needed.
+-- Also, there should be some process removing unused files uploaded to remote host (possibly, all unused files).
+handleStoreFile :: forall m. ChatMonad m => FilePath -> Word32 -> FileDigest -> GetChunk -> m RemoteResponse
+handleStoreFile fileName fileSize fileDigest getChunk =
+  either RRProtocolError RRFileStored <$> (chatReadVar filesFolder >>= storeFile)
+  where
+    storeFile :: Maybe FilePath -> m (Either RemoteProtocolError FilePath)
+    storeFile = \case
+      Just ff -> takeFileName <$$> storeFileTo ff
+      Nothing -> storeFileTo =<< getDefaultFilesFolder
+    storeFileTo :: FilePath -> m (Either RemoteProtocolError FilePath)
+    storeFileTo dir = liftRC . tryRemoteError $ do
+      filePath <- dir `uniqueCombine` fileName
+      receiveRemoteFile getChunk fileSize fileDigest filePath
+      pure filePath
 
-handleGetFile :: ChatMonad m => FilePath -> Respond m -> m ()
-handleGetFile path reply = do
-  logDebug $ "GetFile: " <> tshow path
-  withFile path ReadMode $ \h -> do
-    fileSize' <- hFileSize h
-    when (fileSize' > toInteger (maxBound :: Word32)) $ throwIO RPEFileTooLarge
-    let fileSize = fromInteger fileSize'
-    reply RRFile {fileSize} $ \send -> hSendFile h send fileSize
+handleGetFile :: ChatMonad m => User -> RemoteFile -> Respond m -> m ()
+handleGetFile User {userId} RemoteFile{userId = commandUserId, fileId, sent, fileSource = cf'@CryptoFile {filePath}} reply = do
+  logDebug $ "GetFile: " <> tshow filePath
+  unless (userId == commandUserId) $ throwChatError $ CEDifferentActiveUser {commandUserId, activeUserId = userId}
+  path <- maybe filePath (</> filePath) <$> chatReadVar filesFolder
+  withStore $ \db -> do
+    cf <- getLocalCryptoFile db commandUserId fileId sent
+    unless (cf == cf') $ throwError $ SEFileNotFound fileId
+  liftRC (tryRemoteError $ getFileInfo path) >>= \case
+    Left e -> reply (RRProtocolError e) $ \_ -> pure ()
+    Right (fileSize, fileDigest) ->
+      withFile path ReadMode $ \h ->
+        reply RRFile {fileSize, fileDigest} $ \send -> hSendFile h send fileSize
 
--- TODO the problem with this code was that it wasn't clear where the recursion can happen,
--- by splitting receiving and processing to two functions it becomes clear
 discoverRemoteCtrls :: ChatMonad m => TM.TMap C.KeyHash TransportHost -> m ()
 discoverRemoteCtrls discovered = Discovery.withListener $ receive >=> process
   where

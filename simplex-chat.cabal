@@ -32,6 +32,7 @@ library
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Core
+      Simplex.Chat.Files
       Simplex.Chat.Help
       Simplex.Chat.Markdown
       Simplex.Chat.Messages
@@ -131,6 +132,7 @@ library
       Simplex.Chat.Remote.Discovery
       Simplex.Chat.Remote.Multicast
       Simplex.Chat.Remote.Protocol
+      Simplex.Chat.Remote.Transport
       Simplex.Chat.Remote.Types
       Simplex.Chat.Store
       Simplex.Chat.Store.Connections

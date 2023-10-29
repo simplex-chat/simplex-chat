@@ -99,7 +99,7 @@ chatEncryptFile fromPath toPath =
   either WFError WFResult <$> runCatchExceptT encrypt
   where
     encrypt = do
-      cfArgs <- liftIO $ CF.randomArgs
+      cfArgs <- liftIO CF.randomArgs
       encryptFile fromPath toPath cfArgs
       pure cfArgs
 

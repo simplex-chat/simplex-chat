@@ -24,6 +24,7 @@ import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Char (isSpace)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
@@ -53,7 +54,7 @@ data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
 data ChatName = ChatName {chatType :: ChatType, chatName :: Text}
   deriving (Show)
 
-chatTypeStr :: ChatType -> String
+chatTypeStr :: ChatType -> Text
 chatTypeStr = \case
   CTDirect -> "@"
   CTGroup -> "#"
@@ -61,7 +62,7 @@ chatTypeStr = \case
   CTContactConnection -> ":"
 
 chatNameStr :: ChatName -> String
-chatNameStr (ChatName cType name) = chatTypeStr cType <> T.unpack name
+chatNameStr (ChatName cType name) = T.unpack $ chatTypeStr cType <> if T.any isSpace name then "'" <> name <> "'" else name
 
 data ChatRef = ChatRef ChatType Int64
   deriving (Eq, Show, Ord)
