@@ -146,6 +146,7 @@ CREATE TABLE group_members(
   updated_at TEXT CHECK(updated_at NOT NULL),
   member_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   show_messages INTEGER NOT NULL DEFAULT 1,
+  xgrplinkmem_received INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
