@@ -49,7 +49,7 @@ import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
-import Simplex.Chat.Remote.Types
+import Simplex.Chat.Types.Remote
 import Simplex.Chat.Store (AutoAccept, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -73,6 +73,7 @@ import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, liftEitherError, tryAllErrors, (<$$>))
 import Simplex.Messaging.Version
+import Simplex.RemoteControl.Types
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
 import UnliftIO.STM
@@ -1043,6 +1044,7 @@ data RemoteHostError
   | RHTimeout -- ^ A discovery or a remote operation has timed out
   | RHDisconnected {reason :: Text} -- ^ A session disconnected by a host
   | RHConnectionLost {reason :: Text} -- ^ A session disconnected due to transport issues
+  | RHResponseError {responseError :: Text}
   | RHProtocolError RemoteProtocolError
   deriving (Show, Exception)
 

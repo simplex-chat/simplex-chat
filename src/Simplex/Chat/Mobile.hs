@@ -39,7 +39,7 @@ import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
 import Simplex.Chat.Options
-import Simplex.Chat.Remote.Types
+import Simplex.Chat.Types.Remote
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
@@ -230,7 +230,7 @@ chatCloseStore ChatController {chatStore, smpAgent} = handleErr $ do
 
 handleErr :: IO () -> IO String
 handleErr a = (a $> "") `catch` (pure . show @SomeException)
-  
+
 chatSendCmd :: ChatController -> B.ByteString -> IO JSONByteString
 chatSendCmd cc = chatSendRemoteCmd cc Nothing
 

@@ -42,7 +42,7 @@ import Simplex.Chat.Markdown
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
-import Simplex.Chat.Remote.Types
+import Simplex.Chat.Types.Remote
 import Simplex.Chat.Store (AutoAccept (..), StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
@@ -62,6 +62,7 @@ import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (bshow, tshow)
 import Simplex.Messaging.Version hiding (version)
+import Simplex.RemoteControl.Types
 import System.Console.ANSI.Types
 
 type CurrentTime = UTCTime

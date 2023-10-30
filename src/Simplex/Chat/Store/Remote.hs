@@ -10,11 +10,12 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Database.SQLite.Simple (Only (..))
 import qualified Database.SQLite.Simple as SQL
-import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store.Shared
+import Simplex.Chat.Types.Remote
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.RemoteControl.Types
 
 insertRemoteHost :: DB.Connection -> FilePath -> Text -> C.APrivateSignKey -> C.SignedCertificate -> IO RemoteHostId
 insertRemoteHost db storePath displayName caKey caCert = do

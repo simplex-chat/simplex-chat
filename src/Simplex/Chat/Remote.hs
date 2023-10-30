@@ -40,14 +40,11 @@ import Simplex.Chat.Archive (archiveFilesFolder)
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Messages (chatNameStr)
-import qualified Simplex.Chat.Remote.Discovery as Discovery
-import Simplex.Chat.Remote.Protocol
-import Simplex.Chat.Remote.Transport
-import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Remote
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types (User (..))
+import Simplex.Chat.Types.Remote
 import Simplex.Chat.Util (encryptFile)
 import Simplex.FileTransfer.Description (FileDigest (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -61,6 +58,10 @@ import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Simplex.Messaging.Util (ifM, liftEitherError, liftEitherWith, liftError, liftIOEither, tryAllErrors, tshow, ($>>=), (<$$>))
+import qualified Simplex.RemoteControl.Discovery as Discovery
+import Simplex.RemoteControl.Protocol
+import Simplex.RemoteControl.Transport
+import Simplex.RemoteControl.Types
 import System.FilePath (takeFileName, (</>))
 import UnliftIO
 import UnliftIO.Directory (copyFile, createDirectoryIfMissing, renameFile)
@@ -120,7 +121,8 @@ startRemoteHost rhId = do
       -- set up message polling
       oq <- asks outputQ
       asyncRegistered tasks . forever $ do
-        liftRH rhId (remoteRecv remoteHostClient 1000000) >>= mapM_ (atomically . writeTBQueue oq . (Nothing,Just rhId,))
+        jr <- liftRH rhId (remoteRecv remoteHostClient 1000000)
+        forM_ jr $ \v -> atomically $ writeTBQueue oq (Nothing, Just rhId, toChatResponse rhId v)
       -- update session state
       logInfo $ "Remote host session started for " <> tshow rhId
       chatModifyVar remoteHostSessions $ M.adjust (\rhs -> rhs {remoteHostClient = Just remoteHostClient}) rhId
@@ -137,6 +139,11 @@ startRemoteHost rhId = do
       pure . tlsCredentials $ sessionCreds :| [parent]
       where
         parent = (C.signatureKeyPair caKey, caCert)
+
+toChatResponse :: RemoteHostId -> J.Value -> ChatResponse
+toChatResponse rhId v = case J.fromJSON v of
+  J.Success ok -> ok
+  J.Error e -> CRChatError Nothing . ChatErrorRemoteHost rhId . RHResponseError $ "failed to parse remote ChatResponse: " <> T.pack e
 
 -- | Atomically check/register session and prepare its task list
 startRemoteHostSession :: ChatMonad m => RemoteHost -> m Tasks
@@ -229,11 +236,12 @@ getRemoteFile rhId rf = do
       liftRH rhId $ remoteGetFile c dir rf
 
 processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostSession -> ChatCommand -> ByteString -> m ChatResponse
-processRemoteCommand remoteHostId RemoteHostSession {remoteHostClient = Just rhc} cmd s = case cmd of
-  SendFile chatName f -> sendFile "/f" chatName f
-  SendImage chatName f -> sendFile "/img" chatName f
-  _ -> liftRH remoteHostId $ remoteSend rhc s
+processRemoteCommand remoteHostId RemoteHostSession {remoteHostClient = Just rhc} cmd s = toChatResponse remoteHostId <$> sendCommand
   where
+    sendCommand = case cmd of
+      SendFile chatName f -> sendFile "/f" chatName f
+      SendImage chatName f -> sendFile "/img" chatName f
+      _ -> liftRH remoteHostId $ remoteSend rhc s
     sendFile cmdName chatName (CryptoFile path cfArgs) = do
       -- don't encrypt in host if already encrypted locally
       CryptoFile path' cfArgs' <- storeRemoteFile remoteHostId (cfArgs $> False) path
@@ -290,7 +298,7 @@ handleRemoteCommand execChatCommand remoteOutputQ HTTP2Request {request, reqBody
     parseRequest = do
       (header, getNext) <- parseHTTP2Body request reqBody
       (getNext,) <$> liftEitherWith (RPEInvalidJSON . T.pack) (J.eitherDecodeStrict' header)
-    replyError = reply . RRChatResponse . CRChatCmdError Nothing
+    replyError = reply . RRResponse . J.toJSON . CRChatCmdError Nothing
     processCommand :: User -> GetChunk -> RemoteCommand -> m ()
     processCommand user getNext = \case
       RCHello {deviceName = desktopName} -> handleHello desktopName >>= reply
@@ -332,12 +340,12 @@ handleSend execChatCommand command = do
   logDebug $ "Send: " <> tshow command
   -- execChatCommand checks for remote-allowed commands
   -- convert errors thrown in ChatMonad into error responses to prevent aborting the protocol wrapper
-  RRChatResponse <$> execChatCommand (encodeUtf8 command) `catchError` (pure . CRChatError Nothing)
+  RRResponse . J.toJSON <$> execChatCommand (encodeUtf8 command) `catchError` (pure . CRChatError Nothing)
 
 handleRecv :: MonadUnliftIO m => Int -> TBQueue ChatResponse -> m RemoteResponse
 handleRecv time events = do
   logDebug $ "Recv: " <> tshow time
-  RRChatEvent <$> (timeout time . atomically $ readTBQueue events)
+  RREvent . fmap J.toJSON <$> (timeout time . atomically $ readTBQueue events)
 
 -- TODO this command could remember stored files and return IDs to allow removing files that are not needed.
 -- Also, there should be some process removing unused files uploaded to remote host (possibly, all unused files).

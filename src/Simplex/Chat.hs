@@ -64,7 +64,7 @@ import Simplex.Chat.Options
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote
-import Simplex.Chat.Remote.Types
+import Simplex.Chat.Types.Remote
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Connections
 import Simplex.Chat.Store.Direct

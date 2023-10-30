@@ -26,7 +26,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent (CIContent(..), SMsgDirection (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..), msgContentText)
-import Simplex.Chat.Remote.Types (RemoteHostId)
+import Simplex.Chat.Types.Remote (RemoteHostId)
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Notification (Notification (..), initializeNotifications)
 import Simplex.Chat.Types
