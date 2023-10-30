@@ -96,6 +96,8 @@ fun GroupMemberInfoView(
       connectViaAddress = { connReqUri ->
         connectViaMemberAddressAlert(connReqUri)
       },
+      blockMember = { blockMemberAlert(groupInfo, member) },
+      unblockMember = { unblockMemberAlert(groupInfo, member) },
       removeMember = { removeMemberDialog(groupInfo, member, chatModel, close) },
       onRoleSelected = {
         if (it == newRole.value) return@GroupMemberInfoLayout
@@ -162,7 +164,7 @@ fun GroupMemberInfoView(
       },
       verifyClicked = {
         ModalManager.end.showModalCloseable { close ->
-          remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }.value?.let { mem ->
+          remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
             VerifyCodeView(
               mem.displayName,
               connectionCode,
@@ -224,6 +226,8 @@ fun GroupMemberInfoLayout(
   openDirectChat: (Long) -> Unit,
   createMemberContact: () -> Unit,
   connectViaAddress: (String) -> Unit,
+  blockMember: () -> Unit,
+  unblockMember: () -> Unit,
   removeMember: () -> Unit,
   onRoleSelected: (GroupMemberRole) -> Unit,
   switchMemberAddress: () -> Unit,
@@ -338,9 +342,14 @@ fun GroupMemberInfoLayout(
       }
     }
 
-    if (member.canBeRemoved(groupInfo)) {
-      SectionDividerSpaced(maxBottomPadding = false)
-      SectionView {
+    SectionDividerSpaced(maxBottomPadding = false)
+    SectionView {
+      if (member.memberSettings.showMessages) {
+        BlockMemberButton(blockMember)
+      } else {
+        UnblockMemberButton(unblockMember)
+      }
+      if (member.canBeRemoved(groupInfo)) {
         RemoveMemberButton(removeMember)
       }
     }
@@ -394,6 +403,26 @@ fun GroupMemberInfoHeader(member: GroupMember) {
       )
     }
   }
+}
+
+@Composable
+fun BlockMemberButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_back_hand),
+    stringResource(MR.strings.block_member_button),
+    click = onClick,
+    textColor = Color.Red,
+    iconColor = Color.Red,
+  )
+}
+
+@Composable
+fun UnblockMemberButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_do_not_touch),
+    stringResource(MR.strings.unblock_member_button),
+    click = onClick
+  )
 }
 
 @Composable
@@ -485,6 +514,45 @@ fun connectViaMemberAddressAlert(connReqUri: String) {
   }
 }
 
+fun blockMemberAlert(gInfo: GroupInfo, mem: GroupMember) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.block_member_question),
+    text = generalGetString(MR.strings.block_member_desc).format(mem.chatViewName),
+    confirmText = generalGetString(MR.strings.block_member_confirmation),
+    onConfirm = {
+      toggleShowMemberMessages(gInfo, mem, false)
+    },
+    destructive = true,
+  )
+}
+
+fun unblockMemberAlert(gInfo: GroupInfo, mem: GroupMember) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.unblock_member_question),
+    text = generalGetString(MR.strings.unblock_member_desc).format(mem.chatViewName),
+    confirmText = generalGetString(MR.strings.unblock_member_confirmation),
+    onConfirm = {
+      toggleShowMemberMessages(gInfo, mem, true)
+    },
+  )
+}
+
+fun toggleShowMemberMessages(gInfo: GroupInfo, member: GroupMember, showMessages: Boolean) {
+  val updatedMemberSettings = member.memberSettings.copy(showMessages = showMessages)
+  updateMemberSettings(gInfo, member, updatedMemberSettings)
+}
+
+fun updateMemberSettings(gInfo: GroupInfo, member: GroupMember, memberSettings: GroupMemberSettings) {
+  withBGApi {
+    val success = ChatController.apiSetMemberSettings(gInfo.groupId, member.groupMemberId, memberSettings)
+    if (success) {
+      val mem = member
+      mem.memberSettings = memberSettings
+      ChatModel.upsertGroupMember(gInfo, mem)
+    }
+  }
+}
+
 @Preview
 @Composable
 fun PreviewGroupMemberInfoLayout() {
@@ -500,6 +568,8 @@ fun PreviewGroupMemberInfoLayout() {
       openDirectChat = {},
       createMemberContact = {},
       connectViaAddress = {},
+      blockMember = {},
+      unblockMember = {},
       removeMember = {},
       onRoleSelected = {},
       switchMemberAddress = {},

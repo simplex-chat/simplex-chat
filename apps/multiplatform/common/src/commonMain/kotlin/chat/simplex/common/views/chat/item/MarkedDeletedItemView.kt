@@ -2,25 +2,25 @@ package chat.simplex.common.views.chat.item
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.model.CIDeleted
-import chat.simplex.common.model.ChatItem
+import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.getChatItemIndexOrNull
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.datetime.Clock
 
 @Composable
-fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?) {
+fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: MutableState<Boolean>) {
   val sentColor = CurrentColors.collectAsState().value.appColors.sentMessage
   val receivedColor = CurrentColors.collectAsState().value.appColors.receivedMessage
   Surface(
@@ -32,11 +32,7 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?) {
       verticalAlignment = Alignment.CenterVertically
     ) {
       Box(Modifier.weight(1f, false)) {
-        if (ci.meta.itemDeleted is CIDeleted.Moderated) {
-          MarkedDeletedText(String.format(generalGetString(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName))
-        } else {
-          MarkedDeletedText(generalGetString(MR.strings.marked_deleted_description))
-        }
+        MergedMarkedDeletedText(ci, revealed)
       }
       CIMetaView(ci, timedMessagesTTL)
     }
@@ -44,7 +40,41 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?) {
 }
 
 @Composable
-private fun MarkedDeletedText(text: String) {
+private fun MergedMarkedDeletedText(chatItem: ChatItem, revealed: MutableState<Boolean>) {
+  var i = getChatItemIndexOrNull(chatItem)
+  val ciCategory = chatItem.mergeCategory
+  val text =  if (!revealed.value && ciCategory != null && i != null) {
+    val reversedChatItems = ChatModel.chatItems.asReversed()
+    var moderated = 0
+    var blocked = 0
+    var deleted = 0
+    val moderatedBy: MutableSet<String> = mutableSetOf()
+    while (i < reversedChatItems.size) {
+      val ci = reversedChatItems.getOrNull(i)
+      if (ci?.mergeCategory != ciCategory) break
+      when (val itemDeleted = ci.meta.itemDeleted ?: break) {
+        is CIDeleted.Moderated -> {
+          moderated += 1
+          moderatedBy.add(itemDeleted.byGroupMember.displayName)
+        }
+        is CIDeleted.Blocked -> blocked += 1
+        is CIDeleted.Deleted -> deleted += 1
+      }
+      i++
+    }
+    val total = moderated + blocked + deleted
+    if (total <= 1)
+      markedDeletedText(chatItem.meta)
+    else if (total == moderated)
+      stringResource(MR.strings.moderated_items_description).format(total, moderatedBy.joinToString(", "))
+    else if (total == blocked)
+      stringResource(MR.strings.blocked_items_description).format(total)
+    else
+      stringResource(MR.strings.marked_deleted_items_description).format(total)
+  } else {
+    markedDeletedText(chatItem.meta)
+  }
+
   Text(
     buildAnnotatedString {
       withStyle(SpanStyle(fontSize = 12.sp, fontStyle = FontStyle.Italic, color = MaterialTheme.colors.secondary)) { append(text) }
@@ -55,6 +85,16 @@ private fun MarkedDeletedText(text: String) {
     overflow = TextOverflow.Ellipsis,
   )
 }
+
+private fun markedDeletedText(meta: CIMeta): String =
+  when (meta.itemDeleted) {
+    is CIDeleted.Moderated ->
+      String.format(generalGetString(MR.strings.moderated_item_description), meta.itemDeleted.byGroupMember.displayName)
+    is CIDeleted.Blocked ->
+      generalGetString(MR.strings.blocked_item_description)
+    else ->
+      generalGetString(MR.strings.marked_deleted_description)
+  }
 
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
