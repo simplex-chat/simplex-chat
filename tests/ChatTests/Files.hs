@@ -1393,6 +1393,8 @@ testXFTPMarkToReceive = do
       alice <## "completed uploading file 1 (test.pdf) for bob"
       bob #$> ("/_set_file_to_receive 1", id, "ok")
 
+      threadDelay 100000
+
       bob ##> "/_stop"
       bob <## "chat stopped"
 
