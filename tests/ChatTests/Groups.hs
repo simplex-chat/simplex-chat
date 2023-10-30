@@ -64,12 +64,14 @@ chatGroupTests = do
     it "own group link" testPlanGroupLinkOwn
     it "connecting via group link" testPlanGroupLinkConnecting
     it "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
-  fdescribe "group links without contact" $ do
+  describe "group links without contact" $ do
     it "join via group link without creating contact" testGroupLinkNoContact
-    it "join via group link without creating contact - host incognito" testGroupLinkNoContactHostIncognito
-    it "join via group link without creating contact - invitee incognito" testGroupLinkNoContactInviteeIncognito
-    it "join via group link without creating contact - host profile picture received" testGroupLinkNoContactHostProfilePictureReceived
-  fdescribe "group links without contact connection plan" $ do
+    it "group link member role" testGroupLinkNoContactMemberRole
+    it "host incognito" testGroupLinkNoContactHostIncognito
+    it "invitee incognito" testGroupLinkNoContactInviteeIncognito
+    it "host profile received" testGroupLinkNoContactHostProfileReceived
+    it "existing contact merged" testGroupLinkNoContactExistingContactMerged
+  describe "group links without contact connection plan" $ do
     it "group link without contact - known group" testPlanGroupLinkNoContactKnown
     it "group link without contact - connecting" testPlanGroupLinkNoContactConnecting
   describe "group message errors" $ do
@@ -2620,6 +2622,49 @@ testGroupLinkNoContact =
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
 
+testGroupLinkNoContactMemberRole :: HasCallStack => FilePath -> IO ()
+testGroupLinkNoContactMemberRole =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team observer"
+      gLink <- getGroupLink alice "team" GRObserver True
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+        ]
+
+      threadDelay 100000
+
+      alice ##> "/ms team"
+      alice
+        <### [ "alice (Alice): owner, you, created group",
+               "bob (Bob): observer, invited, connected"
+             ]
+
+      bob ##> "/ms team"
+      bob
+        <### [ "alice (Alice): owner, host, connected",
+               "bob (Bob): observer, you, connected"
+             ]
+
+      bob ##> "#team hi there"
+      bob <## "#team: you don't have permission to send messages"
+
+      alice ##> "/mr #team bob member"
+      alice <## "#team: you changed the role of bob from observer to member"
+      bob <## "#team: alice changed your role from observer to member"
+
+      bob #> "#team hey now"
+      alice <# "#team bob> hey now"
+
 testGroupLinkNoContactHostIncognito :: HasCallStack => FilePath -> IO ()
 testGroupLinkNoContactHostIncognito =
   testChat2 aliceProfile bobProfile $
@@ -2686,8 +2731,8 @@ testGroupLinkNoContactInviteeIncognito =
       bob ?#> "#team hi there"
       alice <# ("#team " <> bobIncognito <> "> hi there")
 
-testGroupLinkNoContactHostProfilePictureReceived :: HasCallStack => FilePath -> IO ()
-testGroupLinkNoContactHostProfilePictureReceived =
+testGroupLinkNoContactHostProfileReceived :: HasCallStack => FilePath -> IO ()
+testGroupLinkNoContactHostProfileReceived =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       let profileImage = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII="
@@ -2713,6 +2758,49 @@ testGroupLinkNoContactHostProfilePictureReceived =
 
       aliceImage <- getProfilePictureByName bob "alice"
       aliceImage `shouldBe` Just profileImage
+
+testGroupLinkNoContactExistingContactMerged :: HasCallStack => FilePath -> IO ()
+testGroupLinkNoContactExistingContactMerged =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob_1 (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ do
+            alice <## "#team: bob_1 joined the group"
+            alice <## "contact and member are merged: bob, #team bob_1"
+            alice <## "use @bob <message> to send messages",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+            bob <## "contact and member are merged: alice, #team alice_1"
+            bob <## "use @alice <message> to send messages"
+        ]
+
+      threadDelay 100000
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
+
+      alice <##> bob
+
+      alice @@@ [("#team", "connected"), ("@bob", "hey")]
+      bob @@@ [("#team", "connected"), ("@alice", "hey")]
+      alice ##> "/contacts"
+      alice <## "bob (Bob)"
+      bob ##> "/contacts"
+      bob <## "alice (Alice)"
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
 
 testPlanGroupLinkNoContactKnown :: HasCallStack => FilePath -> IO ()
 testPlanGroupLinkNoContactKnown =

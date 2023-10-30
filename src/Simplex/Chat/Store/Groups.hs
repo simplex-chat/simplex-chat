@@ -106,6 +106,8 @@ module Simplex.Chat.Store.Groups
     updateMemberContactInvited,
     resetMemberContactFields,
     updateMemberProfile,
+    getXGrpLinkMemReceived,
+    setXGrpLinkMemReceived,
   )
 where
 
@@ -1314,18 +1316,15 @@ getMatchingMembers db user@User {userId} Contact {profile = LocalProfile {displa
           AND p.display_name = ? AND p.full_name = ?
       |]
 
-getMatchingMemberContacts :: DB.Connection -> User -> GroupMember -> Bool -> IO [Contact]
-getMatchingMemberContacts _ _ GroupMember {memberContactId = Just _} _ = pure []
-getMatchingMemberContacts db user@User {userId} GroupMember {memberProfile = LocalProfile {displayName, fullName, image}} compareImage = do
-  contactIds <- map fromOnly <$> getContactIds
+getMatchingMemberContacts :: DB.Connection -> User -> GroupMember -> IO [Contact]
+getMatchingMemberContacts _ _ GroupMember {memberContactId = Just _} = pure []
+getMatchingMemberContacts db user@User {userId} GroupMember {memberProfile = LocalProfile {displayName, fullName, image}} = do
+  contactIds <-
+    map fromOnly <$> case image of
+      Just img -> DB.query db (q <> " AND p.image = ?") (userId, CSActive, displayName, fullName, img)
+      Nothing -> DB.query db (q <> " AND p.image is NULL") (userId, CSActive, displayName, fullName)
   rights <$> mapM (runExceptT . getContact db user) contactIds
   where
-    getContactIds :: IO [Only ContactId]
-    getContactIds
-      | compareImage = DB.query db q (userId, CSActive, displayName, fullName)
-      | otherwise = case image of
-          Just img -> DB.query db (q <> " AND p.image = ?") (userId, CSActive, displayName, fullName, img)
-          Nothing -> DB.query db (q <> " AND p.image is NULL") (userId, CSActive, displayName, fullName)
     q =
       [sql|
         SELECT ct.contact_id
@@ -1853,3 +1852,16 @@ updateMemberProfile db User {userId} m p'
     GroupMember {groupMemberId, localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
     Profile {displayName = newName} = p'
     profile = toLocalProfile profileId p' localAlias
+
+getXGrpLinkMemReceived :: DB.Connection -> GroupMemberId -> ExceptT StoreError IO Bool
+getXGrpLinkMemReceived db mId =
+  ExceptT . firstRow fromOnly (SEGroupMemberNotFound mId) $
+    DB.query db "SELECT xgrplinkmem_received FROM group_members WHERE group_member_id = ?" (Only mId)
+
+setXGrpLinkMemReceived :: DB.Connection -> GroupMemberId -> Bool -> IO ()
+setXGrpLinkMemReceived db mId xGrpLinkMemReceived = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE group_members SET xgrplinkmem_received = ?, updated_at = ? WHERE group_member_id = ?"
+    (xGrpLinkMemReceived, currentTs, mId)
