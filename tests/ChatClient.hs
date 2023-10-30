@@ -143,6 +143,16 @@ mkCfgCreateGroupDirect cfg = cfg {chatVRange = groupCreateDirectVRange}
 groupCreateDirectVRange :: VersionRange
 groupCreateDirectVRange = mkVersionRange 1 1
 
+testCfgGroupLinkViaContact :: ChatConfig
+testCfgGroupLinkViaContact =
+  mkCfgGroupLinkViaContact testCfg
+
+mkCfgGroupLinkViaContact :: ChatConfig -> ChatConfig
+mkCfgGroupLinkViaContact cfg = cfg {chatVRange = groupLinkViaContactVRange}
+
+groupLinkViaContactVRange :: VersionRange
+groupLinkViaContactVRange = mkVersionRange 1 2
+
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
   Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey MCError
