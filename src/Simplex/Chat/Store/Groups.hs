@@ -418,7 +418,7 @@ createContactMemberInv_ db User {userId, userContactId} groupId userOrContact Me
           )
         pure $ Right incognitoLdn
 
-createGroupInvitedViaLink :: DB.Connection -> User -> Connection -> GroupLinkInvitation -> ExceptT StoreError IO GroupInfo
+createGroupInvitedViaLink :: DB.Connection -> User -> Connection -> GroupLinkInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
 createGroupInvitedViaLink
   db
   user@User {userId, userContactId}
@@ -431,7 +431,7 @@ createGroupInvitedViaLink
     -- using IBUnknown since host is created without contact
     void $ createContactMemberInv_ db user groupId user invitedMember GCUserMember GSMemAccepted IBUnknown customUserProfileId currentTs
     liftIO $ setViaGroupLinkHash db groupId connId
-    getGroupInfo db user groupId
+    (,) <$> getGroupInfo db user groupId <*> getGroupMemberById db user hostMemberId
   where
     insertGroup_ currentTs = ExceptT $ do
       let GroupProfile {displayName, fullName, description, image, groupPreferences} = groupProfile

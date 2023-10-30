@@ -4768,8 +4768,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           toView $ CRContactConnecting user ct
           pure conn'
         XGrpLinkInv glInv -> do
-          gInfo <- withStore $ \db -> createGroupInvitedViaLink db user conn' glInv
-          toView $ CRGroupLinkConnecting user gInfo
+          (gInfo, host) <- withStore $ \db -> createGroupInvitedViaLink db user conn' glInv
+          toView $ CRGroupLinkConnecting user gInfo host
           pure conn'
         -- TODO show/log error, other events in SMP confirmation
         _ -> pure conn'
