@@ -1316,11 +1316,11 @@
 
   <!-- AddGroupView.kt -->
   <string name="create_secret_group_title">Create secret group</string>
-  <string name="group_is_decentralized">The group is fully decentralized – it is visible only to the members.</string>
+  <string name="group_is_decentralized">Fully decentralized – visible only to members.</string>
   <string name="group_display_name_field">Enter group name:</string>
   <string name="group_full_name_field">Group full name:</string>
   <string name="group_main_profile_sent">Your chat profile will be sent to group members</string>
-
+  <string name="create_group_button">Create group</string>
 
   <!-- GroupProfileView.kt -->
   <string name="group_profile_is_stored_on_members_devices">Group profile is stored on members\' devices, not on the servers.</string>
