@@ -8,12 +8,12 @@ module RemoteTests where
 import ChatClient
 import ChatTests.Utils
 import Control.Logger.Simple
-import Control.Monad
 import qualified Data.Aeson as J
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
+import Data.String (fromString)
 import Network.HTTP.Types (ok200)
 import qualified Network.HTTP2.Client as C
 import qualified Network.HTTP2.Server as S
@@ -23,11 +23,12 @@ import Simplex.Chat.Archive (archiveFilesFolder)
 import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..))
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
-import Simplex.Chat.Remote.Types
 import qualified Simplex.Chat.Remote.Discovery as Discovery
+import Simplex.Chat.Remote.Types
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
-import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Encoding (smpDecode)
+import Simplex.Messaging.Encoding.String (strDecode, strEncode)
 import qualified Simplex.Messaging.Transport as Transport
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
@@ -44,6 +45,7 @@ remoteTests :: SpecWith FilePath
 remoteTests = describe "Remote" $ do
   it "generates usable credentials" genCredentialsTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
+  it "OOB encoding, decoding, and signatures are correct" oobCodecTest
   it "performs protocol handshake" remoteHandshakeTest
   it "performs protocol handshake (again)" remoteHandshakeTest -- leaking servers regression check
   it "sends messages" remoteMessageTest
@@ -59,8 +61,9 @@ genCredentialsTest _tmp = do
   started <- newEmptyTMVarIO
   bracket (Discovery.startTLSServer started credentials serverHandler) cancel $ \_server -> do
     ok <- atomically (readTMVar started)
-    unless ok $ error "TLS server failed to start"
-    Discovery.connectTLSClient "127.0.0.1" fingerprint clientHandler
+    port <- maybe (error "TLS server failed to start") pure ok
+    logNote $ "Assigned port: " <> tshow port
+    Discovery.connectTLSClient ("127.0.0.1", fromIntegral port) fingerprint clientHandler
   where
     serverHandler serverTls = do
       logNote "Sending from server"
@@ -75,15 +78,28 @@ genCredentialsTest _tmp = do
 
 -- * UDP discovery and rever HTTP2
 
+oobCodecTest :: (HasCallStack) => FilePath -> IO ()
+oobCodecTest _tmp = do
+  subscribers <- newTMVarIO 0
+  localAddr <- Discovery.getLocalAddress subscribers >>= maybe (fail "unable to get local address") pure
+  (fingerprint, _credentials) <- genTestCredentials
+  (_dhKey, _sigKey, _ann, signedOOB@(SignedOOB oob _sig)) <- Discovery.startSession (Just "Desktop") (localAddr, read Discovery.DISCOVERY_PORT) fingerprint
+  verifySignedOOB signedOOB `shouldBe` True
+  strDecode (strEncode oob) `shouldBe` Right oob
+  strDecode (strEncode signedOOB) `shouldBe` Right signedOOB
+
 announceDiscoverHttp2Test :: (HasCallStack) => FilePath -> IO ()
 announceDiscoverHttp2Test _tmp = do
+  subscribers <- newTMVarIO 0
+  localAddr <- Discovery.getLocalAddress subscribers >>= maybe (fail "unable to get local address") pure
   (fingerprint, credentials) <- genTestCredentials
+  (_dhKey, sigKey, ann, _oob) <- Discovery.startSession (Just "Desktop") (localAddr, read Discovery.DISCOVERY_PORT) fingerprint
   tasks <- newTVarIO []
   finished <- newEmptyMVar
   controller <- async $ do
     logNote "Controller: starting"
     bracket
-      (Discovery.announceRevHTTP2 tasks fingerprint credentials (putMVar finished ()) >>= either (fail . show) pure)
+      (Discovery.announceRevHTTP2 tasks (sigKey, ann) credentials (putMVar finished ()) >>= either (fail . show) pure)
       closeHTTP2Client
       ( \http -> do
           logNote "Controller: got client"
@@ -94,11 +110,14 @@ announceDiscoverHttp2Test _tmp = do
             Right HTTP2Response {} ->
               logNote "Controller: got response"
       )
-  host <- async $ Discovery.withListener $ \sock -> do
-    (N.SockAddrInet _port addr, invite) <- Discovery.recvAnnounce sock
-    strDecode invite `shouldBe` Right fingerprint
-    logNote "Host: connecting"
-    server <- async $ Discovery.connectTLSClient (THIPv4 $ N.hostAddressToTuple addr) fingerprint $ \tls -> do
+  host <- async $ Discovery.withListener subscribers $ \sock -> do
+    (N.SockAddrInet _port addr, sigAnn) <- Discovery.recvAnnounce sock
+    SignedAnnounce Announce {caFingerprint, serviceAddress=(hostAddr, port)} _sig <- either fail pure $ smpDecode sigAnn
+    caFingerprint `shouldBe` fingerprint
+    addr `shouldBe` hostAddr
+    let service = (THIPv4 $ N.hostAddressToTuple hostAddr, port)
+    logNote $ "Host: connecting to " <> tshow service
+    server <- async $ Discovery.connectTLSClient service fingerprint $ \tls -> do
       logNote "Host: got tls"
       flip Discovery.attachHTTP2Server tls $ \HTTP2Request {sendResponse} -> do
         logNote "Host: got request"
@@ -213,7 +232,7 @@ remoteStoreFileTest =
       -- send file not encrypted locally on mobile host
       desktop ##> "/_send @2 json {\"filePath\": \"test_1.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"sending a file\"}}"
       desktop <# "@bob sending a file"
-      desktop <# "/f @bob test_1.pdf" 
+      desktop <# "/f @bob test_1.pdf"
       desktop <## "use /fc 1 to cancel sending"
       bob <# "alice> sending a file"
       bob <# "alice> sends file test_1.pdf (266.0 KiB / 272376 bytes)"
@@ -242,7 +261,7 @@ remoteStoreFileTest =
 
       -- send file encrypted locally on mobile host
       desktop ##> ("/_send @2 json {\"fileSource\": {\"filePath\":\"test_2.pdf\", \"cryptoArgs\": " <> LB.unpack (J.encode cfArgs) <> "}, \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}")
-      desktop <# "/f @bob test_2.pdf" 
+      desktop <# "/f @bob test_2.pdf"
       desktop <## "use /fc 2 to cancel sending"
       bob <# "alice> sends file test_2.pdf (266.0 KiB / 272376 bytes)"
       bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
@@ -372,21 +391,30 @@ remoteCLIFileTest = testChatCfg3 cfg aliceProfile aliceDesktopProfile bobProfile
 
 startRemote :: TestCC -> TestCC -> IO ()
 startRemote mobile desktop = do
+  desktop ##> "/set device name My desktop"
+  desktop <## "ok"
   desktop ##> "/create remote host"
   desktop <## "remote host 1 created"
-  desktop <## "connection code:"
-  fingerprint <- getTermLine desktop
-
+  -- A new host is started [automatically] by UI
   desktop ##> "/start remote host 1"
   desktop <## "ok"
+  desktop <## "remote host 1 started"
+  desktop <## "connection code:"
+  oobLink <- getTermLine desktop
+  OOB {caFingerprint = oobFingerprint} <- either (fail . mappend "OOB link failed: ") pure $ decodeOOBLink (fromString oobLink)
+  -- Desktop displays OOB QR code
 
+  mobile ##> "/set device name Mobile"
+  mobile <## "ok"
   mobile ##> "/start remote ctrl"
   mobile <## "ok"
   mobile <## "remote controller announced"
   mobile <## "connection code:"
-  fingerprint' <- getTermLine mobile
-  fingerprint' `shouldBe` fingerprint
-  mobile ##> ("/register remote ctrl " <> fingerprint' <> " " <> "My desktop")
+  annFingerprint <- getTermLine mobile
+  -- The user scans OOB QR code and confirms it matches the announced stuff
+  fromString annFingerprint `shouldBe` strEncode oobFingerprint
+
+  mobile ##> ("/register remote ctrl " <> oobLink)
   mobile <## "remote controller 1 registered"
   mobile ##> "/accept remote ctrl 1"
   mobile <## "ok" -- alternative scenario: accepted before controller start

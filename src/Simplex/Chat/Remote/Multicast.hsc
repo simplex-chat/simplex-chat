@@ -10,12 +10,15 @@ import Network.Socket
 
 NB: Group membership is per-host, not per-process. A socket is only used to access system interface for groups.
 -}
-setMembership :: Socket -> HostAddress -> Bool -> IO Bool
+setMembership :: Socket -> HostAddress -> Bool -> IO (Either CInt ())
 setMembership sock group membership = allocaBytes #{size struct ip_mreq} $ \mReqPtr -> do
   #{poke struct ip_mreq, imr_multiaddr} mReqPtr group
   #{poke struct ip_mreq, imr_interface} mReqPtr (0 :: HostAddress) -- attempt to contact the group on ANY interface
-  withFdSocket sock $ \fd ->
-    (/= 0) <$> c_setsockopt fd c_IPPROTO_IP flag (castPtr mReqPtr) (#{size struct ip_mreq})
+  withFdSocket sock $ \fd -> do
+    rc <- c_setsockopt fd c_IPPROTO_IP flag (castPtr mReqPtr) (#{size struct ip_mreq})
+    if rc == 0
+      then pure $ Right ()
+      else pure $ Left rc
   where
     flag = if membership then c_IP_ADD_MEMBERSHIP else c_IP_DROP_MEMBERSHIP
 

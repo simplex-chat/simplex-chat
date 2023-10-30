@@ -12,6 +12,7 @@
 
 module Simplex.Chat.Remote where
 
+import Control.Applicative ((<|>))
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
@@ -24,15 +25,16 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
 import Data.ByteString.Builder (Builder)
 import qualified Data.ByteString.Char8 as B
+import Data.Functor (($>))
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
-import Data.Word (Word32)
-import Network.HTTP2.Server (responseStreaming)
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Data.Word (Word16, Word32)
 import qualified Network.HTTP.Types as N
+import Network.HTTP2.Server (responseStreaming)
 import Network.Socket (SockAddr (..), hostAddressToTuple)
 import Simplex.Chat.Archive (archiveFilesFolder)
 import Simplex.Chat.Controller
@@ -51,18 +53,17 @@ import Simplex.FileTransfer.Description (FileDigest (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
+import Simplex.Messaging.Encoding (smpDecode)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
-import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (ifM, liftEitherError, liftEitherWith, liftError, liftIOEither, tryAllErrors, tshow, ($>>=), (<$$>))
-import System.FilePath ((</>), takeFileName)
+import System.FilePath (takeFileName, (</>))
 import UnliftIO
 import UnliftIO.Directory (copyFile, createDirectoryIfMissing, renameFile)
-import Data.Functor (($>))
-import Control.Applicative ((<|>))
 
 -- * Desktop side
 
@@ -108,11 +109,14 @@ startRemoteHost rhId = do
         toView (CRRemoteHostStopped rhId) -- only signal "stopped" when the session is unregistered cleanly
       -- block until some client is connected or an error happens
       logInfo $ "Remote host session connecting for " <> tshow rhId
-      httpClient <- liftEitherError (ChatErrorRemoteCtrl . RCEHTTP2Error . show) $ Discovery.announceRevHTTP2 tasks fingerprint credentials cleanupIO
-      logInfo $ "Remote host session connected for " <> tshow rhId
       rcName <- chatReadVar localDeviceName
+      localAddr <- asks multicastSubscribers >>= Discovery.getLocalAddress >>= maybe (throwError . ChatError $ CEInternalError "unable to get local address") pure
+      (dhKey, sigKey, ann, oob) <- Discovery.startSession (if rcName == "" then Nothing else Just rcName) (localAddr, read Discovery.DISCOVERY_PORT) fingerprint
+      toView CRRemoteHostStarted {remoteHost = remoteHostInfo rh True, sessionOOB = decodeUtf8 $ strEncode oob}
+      httpClient <- liftEitherError (ChatErrorRemoteCtrl . RCEHTTP2Error . show) $ Discovery.announceRevHTTP2 tasks (sigKey, ann) credentials cleanupIO
+      logInfo $ "Remote host session connected for " <> tshow rhId
       -- test connection and establish a protocol layer
-      remoteHostClient <- liftRH rhId $ createRemoteHostClient httpClient rcName
+      remoteHostClient <- liftRH rhId $ createRemoteHostClient httpClient dhKey rcName
       -- set up message polling
       oq <- asks outputQ
       asyncRegistered tasks . forever $ do
@@ -125,7 +129,6 @@ startRemoteHost rhId = do
         { remoteHostId = rhId,
           storePath = storePath,
           displayName = hostDeviceName remoteHostClient,
-          remoteCtrlOOB = RemoteCtrlOOB {fingerprint, displayName=rcName},
           sessionActive = True
         }
 
@@ -159,10 +162,9 @@ createRemoteHost = do
   ((_, caKey), caCert) <- liftIO $ genCredentials Nothing (-25, 24 * 365) "Host"
   storePath <- liftIO randomStorePath
   let remoteName = "" -- will be passed from remote host in hello
-  remoteHostId <- withStore' $ \db -> insertRemoteHost db storePath remoteName caKey caCert
-  localName <- chatReadVar localDeviceName
-  let remoteCtrlOOB = RemoteCtrlOOB {fingerprint = C.certificateFingerprint caCert, displayName = localName}
-  pure RemoteHostInfo {remoteHostId, storePath, displayName = remoteName, remoteCtrlOOB, sessionActive = False}
+  rhId <- withStore' $ \db -> insertRemoteHost db storePath remoteName caKey caCert
+  rh <- withStore $ \db -> getRemoteHost db rhId
+  pure $ remoteHostInfo rh False
 
 -- | Generate a random 16-char filepath without / in it by using base64url encoding.
 randomStorePath :: IO FilePath
@@ -171,16 +173,14 @@ randomStorePath = B.unpack . B64U.encode <$> getRandomBytes 12
 listRemoteHosts :: ChatMonad m => m [RemoteHostInfo]
 listRemoteHosts = do
   active <- chatReadVar remoteHostSessions
-  rcName <- chatReadVar localDeviceName
-  map (rhInfo active rcName) <$> withStore' getRemoteHosts
+  map (rhInfo active) <$> withStore' getRemoteHosts
   where
-    rhInfo active rcName rh@RemoteHost {remoteHostId} =
-      remoteHostInfo rh (M.member remoteHostId active) rcName
+    rhInfo active rh@RemoteHost {remoteHostId} =
+      remoteHostInfo rh (M.member remoteHostId active)
 
-remoteHostInfo :: RemoteHost -> Bool -> Text -> RemoteHostInfo
-remoteHostInfo RemoteHost {remoteHostId, storePath, displayName, caCert} sessionActive rcName =
-  let remoteCtrlOOB = RemoteCtrlOOB {fingerprint = C.certificateFingerprint caCert, displayName = rcName}
-   in RemoteHostInfo {remoteHostId, storePath, displayName, remoteCtrlOOB, sessionActive}
+remoteHostInfo :: RemoteHost -> Bool -> RemoteHostInfo
+remoteHostInfo RemoteHost {remoteHostId, storePath, displayName} sessionActive =
+  RemoteHostInfo {remoteHostId, storePath, displayName, sessionActive}
 
 deleteRemoteHost :: ChatMonad m => RemoteHostId -> m ()
 deleteRemoteHost rhId = do
@@ -231,7 +231,7 @@ getRemoteFile rhId rf = do
 processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostSession -> ChatCommand -> ByteString -> m ChatResponse
 processRemoteCommand remoteHostId RemoteHostSession {remoteHostClient = Just rhc} cmd s = case cmd of
   SendFile chatName f -> sendFile "/f" chatName f
-  SendImage chatName f -> sendFile "/img" chatName f    
+  SendImage chatName f -> sendFile "/img" chatName f
   _ -> liftRH remoteHostId $ remoteSend rhc s
   where
     sendFile cmdName chatName (CryptoFile path cfArgs) = do
@@ -262,14 +262,14 @@ startRemoteCtrl execChatCommand = do
   chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {discoverer, supervisor, hostServer = Nothing, discovered, accepted, remoteOutputQ}
 
 -- | Track remote host lifecycle in controller session state and signal UI on its progress
-runHost :: ChatMonad m => TM.TMap C.KeyHash TransportHost -> TMVar RemoteCtrlId -> (HTTP2Request -> m ()) -> m ()
+runHost :: ChatMonad m => TM.TMap C.KeyHash (TransportHost, Word16) -> TMVar RemoteCtrlId -> (HTTP2Request -> m ()) -> m ()
 runHost discovered accepted handleHttp = do
   remoteCtrlId <- atomically (readTMVar accepted) -- wait for ???
   rc@RemoteCtrl {fingerprint} <- withStore (`getRemoteCtrl` remoteCtrlId)
-  source <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure -- wait for location of the matching fingerprint
+  serviceAddress <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure -- wait for location of the matching fingerprint
   toView $ CRRemoteCtrlConnecting $ remoteCtrlInfo rc False
   atomically $ writeTVar discovered mempty -- flush unused sources
-  server <- async $ Discovery.connectRevHTTP2 source fingerprint handleHttp -- spawn server for remote protocol commands
+  server <- async $ Discovery.connectRevHTTP2 serviceAddress fingerprint handleHttp -- spawn server for remote protocol commands
   chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
   toView $ CRRemoteCtrlConnected $ remoteCtrlInfo rc True
   _ <- waitCatch server -- wait for the server to finish
@@ -369,34 +369,38 @@ handleGetFile User {userId} RemoteFile{userId = commandUserId, fileId, sent, fil
       withFile path ReadMode $ \h ->
         reply RRFile {fileSize, fileDigest} $ \send -> hSendFile h send fileSize
 
-discoverRemoteCtrls :: ChatMonad m => TM.TMap C.KeyHash TransportHost -> m ()
-discoverRemoteCtrls discovered = Discovery.withListener $ receive >=> process
+discoverRemoteCtrls :: ChatMonad m => TM.TMap C.KeyHash (TransportHost, Word16) -> m ()
+discoverRemoteCtrls discovered = do
+  subscribers <- asks multicastSubscribers
+  Discovery.withListener subscribers run
   where
-    -- TODO how would it receive more than one fingerprint?
+    run sock = receive sock >>= process sock
+
     receive sock =
       Discovery.recvAnnounce sock >>= \case
-        (SockAddrInet _sockPort sockAddr, invite) -> case strDecode invite of
-          -- TODO it is probably better to report errors to view here
-          Left _ -> receive sock
-          Right fingerprint -> pure (sockAddr, fingerprint)
+        (SockAddrInet _sockPort sockAddr, sigAnnBytes) -> case smpDecode sigAnnBytes of
+          Right (SignedAnnounce ann _sig) -> pure (sockAddr, ann)
+          Left _ -> receive sock -- TODO it is probably better to report errors to view here
         _nonV4 -> receive sock
-    process (sockAddr, fingerprint) = do
+
+    process sock (sockAddr, Announce {caFingerprint, serviceAddress=(annAddr, port)}) = do
+      unless (annAddr == sockAddr) $ logError "Announced address doesn't match socket address"
       let addr = THIPv4 (hostAddressToTuple sockAddr)
       ifM
-        (atomically $ TM.member fingerprint discovered)
-        (logDebug $ "Fingerprint already known: " <> tshow (addr, fingerprint))
+        (atomically $ TM.member caFingerprint discovered)
+        (logDebug $ "Fingerprint already known: " <> tshow (addr, caFingerprint))
         ( do
-            logInfo $ "New fingerprint announced: " <> tshow (addr, fingerprint)
-            atomically $ TM.insert fingerprint addr discovered
+            logInfo $ "New fingerprint announced: " <> tshow (addr, caFingerprint)
+            atomically $ TM.insert caFingerprint (addr, port) discovered
         )
       -- TODO we check fingerprint for duplicate where id doesn't matter - to prevent re-insert - and don't check to prevent duplicate events,
       -- so UI now will have to check for duplicates again
-      withStore' (`getRemoteCtrlByFingerprint` fingerprint) >>= \case
-        Nothing -> toView $ CRRemoteCtrlAnnounce fingerprint -- unknown controller, ui "register" action required
+      withStore' (`getRemoteCtrlByFingerprint` caFingerprint) >>= \case
+        Nothing -> toView $ CRRemoteCtrlAnnounce caFingerprint -- unknown controller, ui "register" action required
         -- TODO Maybe Bool is very confusing - the intent is very unclear here
         Just found@RemoteCtrl {remoteCtrlId, accepted = storedChoice} -> case storedChoice of
           Nothing -> toView $ CRRemoteCtrlFound $ remoteCtrlInfo found False -- first-time controller, ui "accept" action required
-          Just False -> pure () -- skipping a rejected item
+          Just False -> run sock -- restart, skipping a rejected item
           Just True ->
             chatReadVar remoteCtrlSession >>= \case
               Nothing -> toView . CRChatError Nothing . ChatError $ CEInternalError "Remote host found without running a session"

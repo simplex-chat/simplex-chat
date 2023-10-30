@@ -269,8 +269,9 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRNtfToken _ status mode -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode)]
   CRNtfMessages {} -> []
-  CRRemoteHostCreated RemoteHostInfo {remoteHostId, remoteCtrlOOB} -> ("remote host " <> sShow remoteHostId <> " created") : viewRemoteCtrlOOBData remoteCtrlOOB
+  CRRemoteHostCreated RemoteHostInfo {remoteHostId} -> ["remote host " <> sShow remoteHostId <> " created"]
   CRRemoteHostList hs -> viewRemoteHosts hs
+  CRRemoteHostStarted {remoteHost = RemoteHostInfo {remoteHostId = rhId}, sessionOOB} -> ["remote host " <> sShow rhId <> " started", "connection code:", plain sessionOOB]
   CRRemoteHostConnected RemoteHostInfo {remoteHostId = rhId} -> ["remote host " <> sShow rhId <> " connected"]
   CRRemoteHostStopped rhId -> ["remote host " <> sShow rhId <> " stopped"]
   CRRemoteFileStored rhId (CryptoFile filePath cfArgs_) ->
@@ -447,7 +448,7 @@ viewGroupSubscribed :: GroupInfo -> [StyledString]
 viewGroupSubscribed g = [membershipIncognito g <> ttyFullGroup g <> ": connected to server(s)"]
 
 showSMPServer :: SMPServer -> String
-showSMPServer = B.unpack . strEncode . host
+showSMPServer srv = B.unpack $ strEncode srv.host
 
 viewHostEvent :: AProtocolType -> TransportHost -> String
 viewHostEvent p h = map toUpper (B.unpack $ strEncode p) <> " host " <> B.unpack (strEncode h)
@@ -1658,10 +1659,6 @@ viewVersionInfo logLevel CoreVersionInfo {version, simplexmqVersion, simplexmqCo
       else [versionString version, updateStr]
   where
     parens s = " (" <> s <> ")"
-
-viewRemoteCtrlOOBData :: RemoteCtrlOOB -> [StyledString]
-viewRemoteCtrlOOBData RemoteCtrlOOB {fingerprint} =
-  ["connection code:", plain $ strEncode fingerprint]
 
 viewRemoteHosts :: [RemoteHostInfo] -> [StyledString]
 viewRemoteHosts = \case
