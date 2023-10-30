@@ -105,6 +105,7 @@ module Simplex.Chat.Store.Groups
     createMemberContactInvited,
     updateMemberContactInvited,
     resetMemberContactFields,
+    updateMemberProfile,
   )
 where
 
@@ -1313,15 +1314,18 @@ getMatchingMembers db user@User {userId} Contact {profile = LocalProfile {displa
           AND p.display_name = ? AND p.full_name = ?
       |]
 
-getMatchingMemberContacts :: DB.Connection -> User -> GroupMember -> IO [Contact]
-getMatchingMemberContacts _ _ GroupMember {memberContactId = Just _} = pure []
-getMatchingMemberContacts db user@User {userId} GroupMember {memberProfile = LocalProfile {displayName, fullName, image}} = do
-  contactIds <-
-    map fromOnly <$> case image of
-      Just img -> DB.query db (q <> " AND p.image = ?") (userId, CSActive, displayName, fullName, img)
-      Nothing -> DB.query db (q <> " AND p.image is NULL") (userId, CSActive, displayName, fullName)
+getMatchingMemberContacts :: DB.Connection -> User -> GroupMember -> Bool -> IO [Contact]
+getMatchingMemberContacts _ _ GroupMember {memberContactId = Just _} _ = pure []
+getMatchingMemberContacts db user@User {userId} GroupMember {memberProfile = LocalProfile {displayName, fullName, image}} compareImage = do
+  contactIds <- map fromOnly <$> getContactIds
   rights <$> mapM (runExceptT . getContact db user) contactIds
   where
+    getContactIds :: IO [Only ContactId]
+    getContactIds
+      | compareImage = DB.query db q (userId, CSActive, displayName, fullName)
+      | otherwise = case image of
+          Just img -> DB.query db (q <> " AND p.image = ?") (userId, CSActive, displayName, fullName, img)
+          Nothing -> DB.query db (q <> " AND p.image is NULL") (userId, CSActive, displayName, fullName)
     q =
       [sql|
         SELECT ct.contact_id
@@ -1829,3 +1833,23 @@ createMemberContactConn_
     connId <- insertedRowId db
     setCommandConnId db user cmdId connId
     pure Connection {connId, agentConnId = AgentConnId acId, peerChatVRange, connType = ConnContact, contactConnInitiated = False, entityId = Just contactId, viaContact = Nothing, viaUserContactLink = Nothing, viaGroupLink = False, groupLinkId = Nothing, customUserProfileId, connLevel, connStatus = ConnJoined, localAlias = "", createdAt = currentTs, connectionCode = Nothing, authErrCounter = 0}
+
+updateMemberProfile :: DB.Connection -> User -> GroupMember -> Profile -> ExceptT StoreError IO GroupMember
+updateMemberProfile db User {userId} m p'
+  | displayName == newName = do
+    liftIO $ updateContactProfile_ db userId profileId p'
+    pure m {memberProfile = profile}
+  | otherwise =
+    ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
+      currentTs <- getCurrentTime
+      updateContactProfile_' db userId profileId p' currentTs
+      DB.execute
+        db
+        "UPDATE group_members SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_member_id = ?"
+        (ldn, currentTs, userId, groupMemberId)
+      DB.execute db "DELETE FROM display_names WHERE local_display_name = ? AND user_id = ?" (localDisplayName, userId)
+      pure $ Right m {localDisplayName = ldn, memberProfile = profile}
+  where
+    GroupMember {groupMemberId, localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
+    Profile {displayName = newName} = p'
+    profile = toLocalProfile profileId p' localAlias

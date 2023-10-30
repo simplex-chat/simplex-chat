@@ -3440,11 +3440,15 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
             memberConnectedChatItem gInfo m
             forM_ description $ groupDescriptionChatItem gInfo m
+            let Connection {viaGroupLink} = conn
+                connectedIncognito = memberIncognito membership
+            when (viaGroupLink && isNothing (memberContactId m)) $
+              probeMatchingMemberContact m connectedIncognito False
           GCInviteeMember -> do
             memberConnectedChatItem gInfo m
             toView $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected}
             let Connection {viaUserContactLink} = conn
-            when (isJust viaUserContactLink) sendXInfoWithImage
+            when (isJust viaUserContactLink && isNothing (memberContactId m)) sendXInfoWithImage
             intros <- withStore' $ \db -> createIntroductions db members m
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro ->
@@ -3464,7 +3468,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               Nothing -> do
                 notifyMemberConnected gInfo m Nothing
                 let connectedIncognito = memberIncognito membership
-                when (memberCategory m == GCPreMember) $ probeMatchingMemberContact m connectedIncognito
+                when (memberCategory m == GCPreMember) $ probeMatchingMemberContact m connectedIncognito True
               Just ct@Contact {activeConn = Connection {connStatus}} ->
                 when (connStatus == ConnReady) $ do
                   notifyMemberConnected gInfo m $ Just ct
@@ -3885,16 +3889,16 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         sendProbe :: Probe -> m ()
         sendProbe probe = void . sendDirectContactMessage ct $ XInfoProbe probe
 
-    probeMatchingMemberContact :: GroupMember -> IncognitoEnabled -> m ()
-    probeMatchingMemberContact GroupMember {activeConn = Nothing} _ = pure ()
-    probeMatchingMemberContact m@GroupMember {groupId, activeConn = Just conn} connectedIncognito = do
+    probeMatchingMemberContact :: GroupMember -> IncognitoEnabled -> Bool -> m ()
+    probeMatchingMemberContact GroupMember {activeConn = Nothing} _ _ = pure ()
+    probeMatchingMemberContact m@GroupMember {groupId, activeConn = Just conn} connectedIncognito compareImage = do
       gVar <- asks idsDrg
       contactMerge <- readTVarIO =<< asks contactMergeEnabled
       if contactMerge && not connectedIncognito
         then do
           (probe, probeId) <- withStore $ \db -> createSentProbe db gVar userId $ COMGroupMember m
           sendProbe probe
-          cs <- map COMContact <$> withStore' (\db -> getMatchingMemberContacts db user m)
+          cs <- map COMContact <$> withStore' (\db -> getMatchingMemberContacts db user m compareImage)
           sendProbeHashes cs probe probeId
         else sendProbe . Probe =<< liftIO (encodedRandomBytes gVar 32)
       where
@@ -4436,12 +4440,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     xInfoMember m@GroupMember {memberContactId} p' =
       case memberContactId of
         Nothing ->
-          -- updateMemberProfile (see updateContactProfile)
-          pure ()
-        Just ctId -> do
-          -- ct <- get contact
-          -- void $ processContactProfileUpdate ct p' True
-          pure ()
+          void $ withStore $ \db -> updateMemberProfile db user m p'
+        Just mContactId -> do
+          mCt <- withStore $ \db -> getContact db user mContactId
+          void $ processContactProfileUpdate mCt p' True
 
     xDirectDel :: Contact -> RcvMessage -> MsgMeta -> m ()
     xDirectDel c msg msgMeta =
