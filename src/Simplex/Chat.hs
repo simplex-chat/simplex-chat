@@ -4503,7 +4503,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           pure m'
         Just mContactId -> do
           mCt <- withStore $ \db -> getContact db user mContactId
-          -- TODO events for all members?
           Contact {profile} <- processContactProfileUpdate mCt p' True
           pure m {memberProfile = profile}
 
