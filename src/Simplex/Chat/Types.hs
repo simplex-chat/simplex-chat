@@ -472,6 +472,10 @@ data Profile = Profile
   }
   deriving (Eq, Show)
 
+profileFromName :: ContactName -> Profile
+profileFromName displayName =
+  Profile {displayName, fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
+
 -- check if profiles match ignoring preferences
 profilesMatch :: LocalProfile -> LocalProfile -> Bool
 profilesMatch
@@ -555,6 +559,14 @@ data GroupInvitation = GroupInvitation
     connRequest :: ConnReqInvitation,
     groupProfile :: GroupProfile,
     groupLinkId :: Maybe GroupLinkId
+  }
+  deriving (Eq, Show)
+
+data GroupLinkInvitation = GroupLinkInvitation
+  { fromMember :: MemberIdRole,
+    fromMemberName :: ContactName,
+    invitedMember :: MemberIdRole,
+    groupProfile :: GroupProfile
   }
   deriving (Eq, Show)
 
@@ -1575,6 +1587,8 @@ $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "CRData") ''CReqClientData)
 $(JQ.deriveJSON defaultJSON ''MemberIdRole)
 
 $(JQ.deriveJSON defaultJSON ''GroupInvitation)
+
+$(JQ.deriveJSON defaultJSON ''GroupLinkInvitation)
 
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 
