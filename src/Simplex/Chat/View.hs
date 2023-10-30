@@ -42,7 +42,7 @@ import Simplex.Chat.Markdown
 import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
-import qualified Simplex.Chat.Remote.Types as R
+import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store (AutoAccept (..), StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
@@ -73,10 +73,10 @@ data WCallCommand
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "WCCall") ''WCallCommand)
 
-serializeChatResponse :: (Maybe R.RemoteHostId, Maybe User) -> CurrentTime -> TimeZone -> Maybe R.RemoteHostId -> ChatResponse -> String
+serializeChatResponse :: (Maybe RemoteHostId, Maybe User) -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> String
 serializeChatResponse user_ ts tz remoteHost_ = unlines . map unStyle . responseToView user_ defaultChatConfig False ts tz remoteHost_
 
-responseToView :: (Maybe R.RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe R.RemoteHostId -> ChatResponse -> [StyledString]
+responseToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> [StyledString]
 responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz outputRH = \case
   CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
   CRUsersList users -> viewUsersList users
@@ -269,20 +269,20 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRNtfToken _ status mode -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode)]
   CRNtfMessages {} -> []
-  CRRemoteHostCreated R.RemoteHostInfo {remoteHostId} -> ["remote host " <> sShow remoteHostId <> " created"]
+  CRRemoteHostCreated RemoteHostInfo {remoteHostId} -> ["remote host " <> sShow remoteHostId <> " created"]
   CRRemoteHostList hs -> viewRemoteHosts hs
-  CRRemoteHostStarted {remoteHost = R.RemoteHostInfo {remoteHostId = rhId}, sessionOOB} -> ["remote host " <> sShow rhId <> " started", "connection code:", plain sessionOOB]
-  CRRemoteHostConnected R.RemoteHostInfo {remoteHostId = rhId} -> ["remote host " <> sShow rhId <> " connected"]
+  CRRemoteHostStarted {remoteHost = RemoteHostInfo {remoteHostId = rhId}, sessionOOB} -> ["remote host " <> sShow rhId <> " started", "connection code:", plain sessionOOB]
+  CRRemoteHostConnected RemoteHostInfo {remoteHostId = rhId} -> ["remote host " <> sShow rhId <> " connected"]
   CRRemoteHostStopped rhId -> ["remote host " <> sShow rhId <> " stopped"]
   CRRemoteFileStored rhId (CryptoFile filePath cfArgs_) ->
     [plain $ "file " <> filePath <> " stored on remote host " <> show rhId]
       <> maybe [] ((: []) . plain . cryptoFileArgsStr testView) cfArgs_
   CRRemoteCtrlList cs -> viewRemoteCtrls cs
-  CRRemoteCtrlRegistered R.RemoteCtrlInfo {remoteCtrlId = rcId} -> ["remote controller " <> sShow rcId <> " registered"]
+  CRRemoteCtrlRegistered RemoteCtrlInfo {remoteCtrlId = rcId} -> ["remote controller " <> sShow rcId <> " registered"]
   CRRemoteCtrlAnnounce fingerprint -> ["remote controller announced", "connection code:", plain $ strEncode fingerprint]
   CRRemoteCtrlFound rc -> ["remote controller found:", viewRemoteCtrl rc]
-  CRRemoteCtrlConnecting R.RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} -> ["remote controller " <> sShow rcId <> " connecting to " <> plain rcName]
-  CRRemoteCtrlConnected R.RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} -> ["remote controller " <> sShow rcId <> " connected, " <> plain rcName]
+  CRRemoteCtrlConnecting RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} -> ["remote controller " <> sShow rcId <> " connecting to " <> plain rcName]
+  CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} -> ["remote controller " <> sShow rcId <> " connected, " <> plain rcName]
   CRRemoteCtrlStopped -> ["remote controller stopped"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
@@ -448,7 +448,7 @@ viewGroupSubscribed :: GroupInfo -> [StyledString]
 viewGroupSubscribed g = [membershipIncognito g <> ttyFullGroup g <> ": connected to server(s)"]
 
 showSMPServer :: SMPServer -> String
-showSMPServer = B.unpack . strEncode . host
+showSMPServer srv = B.unpack $ strEncode srv.host
 
 viewHostEvent :: AProtocolType -> TransportHost -> String
 viewHostEvent p h = map toUpper (B.unpack $ strEncode p) <> " host " <> B.unpack (strEncode h)
@@ -1498,7 +1498,7 @@ savingFile' (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileSource
   ["saving file " <> sShow fileId <> fileFrom chat chatDir <> " to " <> plain filePath]
 savingFile' _ = ["saving file"] -- shouldn't happen
 
-receivingFile_' :: (Maybe R.RemoteHostId, Maybe User) -> Bool -> String -> AChatItem -> [StyledString]
+receivingFile_' :: (Maybe RemoteHostId, Maybe User) -> Bool -> String -> AChatItem -> [StyledString]
 receivingFile_' hu testView status (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileName, fileSource = Just f@(CryptoFile _ cfArgs_)}, chatDir}) =
   [plain status <> " receiving " <> fileTransferStr fileId fileName <> fileFrom chat chatDir] <> cfArgsStr cfArgs_ <> getRemoteFileStr
   where
@@ -1508,7 +1508,7 @@ receivingFile_' hu testView status (AChatItem _ _ chat ChatItem {file = Just CIF
       (Just rhId, Just User {userId}) | status == "completed" ->
         [ "File received to connected remote host " <> sShow rhId,
           "To download to this device use:",
-          highlight ("/get remote file " <> show rhId <> " " <> LB.unpack (J.encode R.RemoteFile {userId, fileId, sent = False, fileSource = f}))
+          highlight ("/get remote file " <> show rhId <> " " <> LB.unpack (J.encode RemoteFile {userId, fileId, sent = False, fileSource = f}))
         ]
       _ -> []
 receivingFile_' _ _ status _ = [plain status <> " receiving file"] -- shouldn't happen
@@ -1660,25 +1660,25 @@ viewVersionInfo logLevel CoreVersionInfo {version, simplexmqVersion, simplexmqCo
   where
     parens s = " (" <> s <> ")"
 
-viewRemoteHosts :: [R.RemoteHostInfo] -> [StyledString]
+viewRemoteHosts :: [RemoteHostInfo] -> [StyledString]
 viewRemoteHosts = \case
   [] -> ["No remote hosts"]
   hs -> "Remote hosts: " : map viewRemoteHostInfo hs
   where
-    viewRemoteHostInfo R.RemoteHostInfo {remoteHostId, displayName, sessionActive} =
+    viewRemoteHostInfo RemoteHostInfo {remoteHostId, displayName, sessionActive} =
       plain $ tshow remoteHostId <> ". " <> displayName <> if sessionActive then " (active)" else ""
 
-viewRemoteCtrls :: [R.RemoteCtrlInfo] -> [StyledString]
+viewRemoteCtrls :: [RemoteCtrlInfo] -> [StyledString]
 viewRemoteCtrls = \case
   [] -> ["No remote controllers"]
   hs -> "Remote controllers: " : map viewRemoteCtrlInfo hs
   where
-    viewRemoteCtrlInfo R.RemoteCtrlInfo {remoteCtrlId, displayName, sessionActive} =
+    viewRemoteCtrlInfo RemoteCtrlInfo {remoteCtrlId, displayName, sessionActive} =
       plain $ tshow remoteCtrlId <> ". " <> displayName <> if sessionActive then " (active)" else ""
 
 -- TODO fingerprint, accepted?
-viewRemoteCtrl :: R.RemoteCtrlInfo -> StyledString
-viewRemoteCtrl R.RemoteCtrlInfo {remoteCtrlId, displayName} =
+viewRemoteCtrl :: RemoteCtrlInfo -> StyledString
+viewRemoteCtrl RemoteCtrlInfo {remoteCtrlId, displayName} =
   plain $ tshow remoteCtrlId <> ". " <> displayName
 
 viewChatError :: ChatLogLevel -> ChatError -> [StyledString]
