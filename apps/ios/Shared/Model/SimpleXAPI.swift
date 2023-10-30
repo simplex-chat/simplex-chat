@@ -1362,6 +1362,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.updateChatInfo(cInfo)
             }
         }
+    case let .groupMemberUpdated(user, groupInfo, _, toMember):
+        if active(user) {
+            await MainActor.run {
+                _ = m.upsertGroupMember(groupInfo, toMember)
+            }
+        }
     case let .contactsMerged(user, intoContact, mergedContact):
         if active(user) && m.hasChat(mergedContact.id) {
             await MainActor.run {
@@ -1473,6 +1479,16 @@ func processReceivedMsg(_ res: ChatResponse) async {
             if let hostContact = hostContact {
                 m.dismissConnReqView(hostContact.activeConn.id)
                 m.removeChat(hostContact.activeConn.id)
+            }
+        }
+    case let .groupLinkConnecting(user, groupInfo, hostMember):
+        if !active(user) { return }
+        
+        await MainActor.run {
+            m.updateGroup(groupInfo)
+            if let hostConn = hostMember.activeConn {
+                m.dismissConnReqView(hostConn.id)
+                m.removeChat(hostConn.id)
             }
         }
     case let .joinedGroupMemberConnecting(user, groupInfo, _, member):
