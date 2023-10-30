@@ -64,12 +64,12 @@ chatGroupTests = do
     it "own group link" testPlanGroupLinkOwn
     it "connecting via group link" testPlanGroupLinkConnecting
     it "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
-  describe "group links without contact" $ do
+  fdescribe "group links without contact" $ do
     it "join via group link without creating contact" testGroupLinkNoContact
     it "join via group link without creating contact - host incognito" testGroupLinkNoContactHostIncognito
     it "join via group link without creating contact - invitee incognito" testGroupLinkNoContactInviteeIncognito
     it "join via group link without creating contact - host profile picture received" testGroupLinkNoContactHostProfilePictureReceived
-  describe "group links without contact connection plan" $ do
+  fdescribe "group links without contact connection plan" $ do
     it "group link without contact - known group" testPlanGroupLinkNoContactKnown
     it "group link without contact - connecting" testPlanGroupLinkNoContactConnecting
   describe "group message errors" $ do

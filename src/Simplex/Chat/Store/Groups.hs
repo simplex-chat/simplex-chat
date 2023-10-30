@@ -421,7 +421,7 @@ createGroupInvitedViaLink
   db
   user@User {userId, userContactId}
   Connection {connId, customUserProfileId}
-  GroupLinkInvitation {fromMember, fromMemberProfile, invitedMember, groupProfile} = do
+  GroupLinkInvitation {fromMember, fromMemberName, invitedMember, groupProfile} = do
     currentTs <- liftIO getCurrentTime
     groupId <- insertGroup_ currentTs
     hostMemberId <- insertHost_ currentTs groupId
@@ -446,8 +446,8 @@ createGroupInvitedViaLink
             (profileId, localDisplayName, customUserProfileId, userId, True, currentTs, currentTs, currentTs)
           insertedRowId db
     insertHost_ currentTs groupId = ExceptT $ do
-      let Profile {displayName} = fromMemberProfile
-      withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
+      let fromMemberProfile = profileFromName fromMemberName
+      withLocalDisplayName db userId fromMemberName $ \localDisplayName -> runExceptT $ do
         (_, profileId) <- createNewMemberProfile_ db user fromMemberProfile currentTs
         let MemberIdRole {memberId, memberRole} = fromMember
         liftIO $ do

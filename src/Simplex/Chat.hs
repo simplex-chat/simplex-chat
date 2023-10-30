@@ -2608,9 +2608,9 @@ acceptGroupJoinRequestAsync
   incognitoProfile = do
     gVar <- asks idsDrg
     (groupMemberId, memberId) <- withStore $ \db -> createAcceptedMember db gVar user gInfo ucr gLinkMemRole
-    let profileToSend = (profileToSendOnAccept user incognitoProfile :: Profile) {image = Nothing}
+    let Profile {displayName} = profileToSendOnAccept user incognitoProfile
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
-        msg = XGrpLinkInv $ GroupLinkInvitation (MemberIdRole userMemberId userRole) profileToSend (MemberIdRole memberId gLinkMemRole) groupProfile
+        msg = XGrpLinkInv $ GroupLinkInvitation (MemberIdRole userMemberId userRole) displayName (MemberIdRole memberId gLinkMemRole) groupProfile
     subMode <- chatReadVar subscriptionMode
     connIds <- agentAcceptContactAsync user True invId msg subMode
     withStore $ \db -> do
@@ -5538,7 +5538,7 @@ getCreateActiveUser st testView = do
       where
         loop = do
           displayName <- getContactName
-          withTransaction st (\db -> runExceptT $ createUserRecord db (AgentUserId 1) Profile {displayName, fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing} True) >>= \case
+          withTransaction st (\db -> runExceptT $ createUserRecord db (AgentUserId 1) (profileFromName displayName) True) >>= \case
             Left SEDuplicateName -> do
               putStrLn "chosen display name is already used by another profile on this device, choose another one"
               loop
