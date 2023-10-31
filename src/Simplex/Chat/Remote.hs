@@ -40,8 +40,8 @@ import Simplex.Chat.Archive (archiveFilesFolder)
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Messages (chatNameStr)
-import qualified Simplex.Chat.Remote.Discovery as Discovery
 import Simplex.Chat.Remote.Protocol
+import Simplex.Chat.Remote.RevHTTP (announceRevHTTP2, connectRevHTTP2)
 import Simplex.Chat.Remote.Transport
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store.Files
@@ -61,6 +61,8 @@ import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Simplex.Messaging.Util (ifM, liftEitherError, liftEitherWith, liftError, liftIOEither, tryAllErrors, tshow, ($>>=), (<$$>))
+import qualified Simplex.RemoteControl.Discovery as Discovery
+import Simplex.RemoteControl.Types
 import System.FilePath (takeFileName, (</>))
 import UnliftIO
 import UnliftIO.Directory (copyFile, createDirectoryIfMissing, renameFile)
@@ -113,7 +115,7 @@ startRemoteHost rhId = do
       localAddr <- asks multicastSubscribers >>= Discovery.getLocalAddress >>= maybe (throwError . ChatError $ CEInternalError "unable to get local address") pure
       (dhKey, sigKey, ann, oob) <- Discovery.startSession (if rcName == "" then Nothing else Just rcName) (localAddr, read Discovery.DISCOVERY_PORT) fingerprint
       toView CRRemoteHostStarted {remoteHost = remoteHostInfo rh True, sessionOOB = decodeUtf8 $ strEncode oob}
-      httpClient <- liftEitherError (ChatErrorRemoteCtrl . RCEHTTP2Error . show) $ Discovery.announceRevHTTP2 tasks (sigKey, ann) credentials cleanupIO
+      httpClient <- liftEitherError (ChatErrorRemoteCtrl . RCEHTTP2Error . show) $ announceRevHTTP2 tasks (sigKey, ann) credentials cleanupIO
       logInfo $ "Remote host session connected for " <> tshow rhId
       -- test connection and establish a protocol layer
       remoteHostClient <- liftRH rhId $ createRemoteHostClient httpClient dhKey rcName
@@ -269,7 +271,7 @@ runHost discovered accepted handleHttp = do
   serviceAddress <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure -- wait for location of the matching fingerprint
   toView $ CRRemoteCtrlConnecting $ remoteCtrlInfo rc False
   atomically $ writeTVar discovered mempty -- flush unused sources
-  server <- async $ Discovery.connectRevHTTP2 serviceAddress fingerprint handleHttp -- spawn server for remote protocol commands
+  server <- async $ connectRevHTTP2 serviceAddress fingerprint handleHttp -- spawn server for remote protocol commands
   chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
   toView $ CRRemoteCtrlConnected $ remoteCtrlInfo rc True
   _ <- waitCatch server -- wait for the server to finish
