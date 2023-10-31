@@ -48,15 +48,23 @@ fun CIChatFeatureView(
 }
 
 private data class FeatureInfo(
-  val icon: Painter,
+  val icon: PainterBox,
   val color: Color,
   val param: String?
 )
 
+private class PainterBox(
+  val featureName: String,
+  val icon: Painter,
+) {
+  override fun hashCode(): Int = featureName.hashCode()
+  override fun equals(other: Any?): Boolean = other is PainterBox && featureName == other.featureName
+}
+
 @Composable
-private fun Feature.toFeatureInfo(color: Color, param: Int?): FeatureInfo =
+private fun Feature.toFeatureInfo(color: Color, param: Int?, type: String): FeatureInfo =
   FeatureInfo(
-    icon = iconFilled(),
+    icon = PainterBox(type, iconFilled()),
     color = color,
     param = if (this.hasParam && param != null) timeText(param) else null
   )
@@ -65,17 +73,17 @@ private fun Feature.toFeatureInfo(color: Color, param: Int?): FeatureInfo =
 private fun mergedFeatures(chatItem: ChatItem): List<FeatureInfo>? {
   val m = ChatModel
   val fs: ArrayList<FeatureInfo> = arrayListOf()
-  val icons: MutableSet<Painter> = mutableSetOf()
+  val icons: MutableSet<PainterBox> = mutableSetOf()
   var i = getChatItemIndexOrNull(chatItem)
-  val reversedChatItems = m.chatItems.asReversed()
   if (i != null) {
+    val reversedChatItems = m.chatItems.asReversed()
     while (i < reversedChatItems.size) {
       val f = featureInfo(reversedChatItems[i]) ?: break
       if (!icons.contains(f.icon)) {
         fs.add(0, f)
         icons.add(f.icon)
       }
-      i += 1
+      i++
     }
   }
   return if (fs.size > 1) fs else null
@@ -84,18 +92,18 @@ private fun mergedFeatures(chatItem: ChatItem): List<FeatureInfo>? {
 @Composable
 private fun featureInfo(ci: ChatItem): FeatureInfo? =
   when (ci.content) {
-    is CIContent.RcvChatFeature -> ci.content.feature.toFeatureInfo(ci.content.enabled.iconColor, ci.content.param)
-    is CIContent.SndChatFeature -> ci.content.feature.toFeatureInfo(ci.content.enabled.iconColor, ci.content.param)
-    is CIContent.RcvGroupFeature -> ci.content.groupFeature.toFeatureInfo(ci.content.preference.enable.iconColor, ci.content.param)
-    is CIContent.SndGroupFeature -> ci.content.groupFeature.toFeatureInfo(ci.content.preference.enable.iconColor, ci.content.param)
+    is CIContent.RcvChatFeature -> ci.content.feature.toFeatureInfo(ci.content.enabled.iconColor, ci.content.param, ci.content.feature.name)
+    is CIContent.SndChatFeature -> ci.content.feature.toFeatureInfo(ci.content.enabled.iconColor, ci.content.param, ci.content.feature.name)
+    is CIContent.RcvGroupFeature -> ci.content.groupFeature.toFeatureInfo(ci.content.preference.enable.iconColor, ci.content.param, ci.content.groupFeature.name)
+    is CIContent.SndGroupFeature -> ci.content.groupFeature.toFeatureInfo(ci.content.preference.enable.iconColor, ci.content.param, ci.content.groupFeature.name)
     else -> null
   }
 
 @Composable
 private fun FeatureIconView(f: FeatureInfo) {
-  val icon = @Composable { Icon(f.icon, null, tint = f.color) }
+  val icon = @Composable { Icon(f.icon.icon, null, Modifier.size(20.dp), tint = f.color) }
   if (f.param != null) {
-    Row {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
       icon()
       Text(chatEventText(f.param, ""), maxLines = 1)
     }
@@ -116,7 +124,7 @@ private fun FullFeatureView(
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.spacedBy(4.dp)
   ) {
-    Icon(icon ?: feature.iconFilled(), feature.text, Modifier.size(18.dp), tint = iconColor)
+    Icon(icon ?: feature.iconFilled(), feature.text, Modifier.size(20.dp), tint = iconColor)
     Text(
       chatEventText(chatItem),
       Modifier,
