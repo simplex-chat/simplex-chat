@@ -406,7 +406,7 @@ startRemote mobile desktop = do
 
   mobile ##> "/set device name Mobile"
   mobile <## "ok"
-  mobile ##> "/start remote ctrl"
+  mobile ##> "/find remote ctrl"
   mobile <## "ok"
   mobile <## "remote controller announced"
   mobile <## "connection code:"
@@ -414,9 +414,9 @@ startRemote mobile desktop = do
   -- The user scans OOB QR code and confirms it matches the announced stuff
   fromString annFingerprint `shouldBe` strEncode oobFingerprint
 
-  mobile ##> ("/register remote ctrl " <> oobLink)
+  mobile ##> ("/connect remote ctrl " <> oobLink)
   mobile <## "remote controller 1 registered"
-  mobile ##> "/accept remote ctrl 1"
+  mobile ##> "/confirm remote ctrl 1"
   mobile <## "ok" -- alternative scenario: accepted before controller start
   mobile <## "remote controller 1 connecting to My desktop"
   mobile <## "remote controller 1 connected, My desktop"

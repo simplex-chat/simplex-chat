@@ -425,11 +425,11 @@ data ChatCommand
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
   | StoreRemoteFile {remoteHostId :: RemoteHostId, storeEncrypted :: Maybe Bool, localPath :: FilePath}
   | GetRemoteFile {remoteHostId :: RemoteHostId, file :: RemoteFile}
-  | StartRemoteCtrl -- ^ Start listening for announcements from all registered controllers
-  | RegisterRemoteCtrl SignedOOB -- ^ Register OOB data for remote controller discovery and handshake
+  | ConnectRemoteCtrl SignedOOB -- ^ Connect new or existing controller via OOB data
+  | FindKnownRemoteCtrl -- ^ Start listening for announcements from all existing controllers
+  | ConfirmRemoteCtrl RemoteCtrlId -- ^ Confirm the connection with found controller
+  | VerifyRemoteCtrlSession RemoteCtrlId Text -- ^ Verify remote controller session
   | ListRemoteCtrls
-  | AcceptRemoteCtrl RemoteCtrlId -- ^ Accept discovered data and store confirmation
-  | RejectRemoteCtrl RemoteCtrlId -- ^ Reject and blacklist discovered data
   | StopRemoteCtrl -- ^ Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a remote controller session
   | QuitChat
@@ -457,11 +457,11 @@ allowRemoteCommand = \case
   GetRemoteFile {} -> False
   StopRemoteHost _ -> False
   DeleteRemoteHost _ -> False
-  RegisterRemoteCtrl {} -> False
-  StartRemoteCtrl -> False
+  ConnectRemoteCtrl {} -> False
+  FindKnownRemoteCtrl -> False
+  ConfirmRemoteCtrl _ -> False
+  VerifyRemoteCtrlSession {} -> False
   ListRemoteCtrls -> False
-  AcceptRemoteCtrl _ -> False
-  RejectRemoteCtrl _ -> False
   StopRemoteCtrl -> False
   DeleteRemoteCtrl _ -> False
   ExecChatStoreSQL _ -> False
@@ -640,14 +640,16 @@ data ChatResponse
   | CRRemoteHostCreated {remoteHost :: RemoteHostInfo}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRRemoteHostStarted {remoteHost :: RemoteHostInfo, sessionOOB :: Text}
+  | CRRemoteHostSessionCode {remoteHost :: RemoteHostInfo, sessionCode :: Text}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
   | CRRemoteFileStored {remoteHostId :: RemoteHostId, remoteFileSource :: CryptoFile}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
-  | CRRemoteCtrlRegistered {remoteCtrl :: RemoteCtrlInfo}
-  | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- unregistered fingerprint, needs confirmation
+  | CRRemoteCtrlRegistered {remoteCtrl :: RemoteCtrlInfo} -- TODO remove
+  | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- TODO remove, unregistered fingerprint, needs confirmation -- TODO is it needed?
   | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo} -- registered fingerprint, may connect
-  | CRRemoteCtrlConnecting {remoteCtrl :: RemoteCtrlInfo}
+  | CRRemoteCtrlConnecting {remoteCtrl :: RemoteCtrlInfo} -- TODO is remove
+  | CRRemoteCtrlSessionCode {remoteCtrl :: RemoteCtrlInfo, sessionCode :: Text, newCtrl :: Bool}
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlStopped
   | CRSQLResult {rows :: [Text]}

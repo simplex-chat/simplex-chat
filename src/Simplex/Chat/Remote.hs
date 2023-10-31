@@ -249,8 +249,8 @@ liftRH rhId = liftError (ChatErrorRemoteHost rhId . RHProtocolError)
 
 -- * Mobile side
 
-startRemoteCtrl :: forall m . ChatMonad m => (ByteString -> m ChatResponse) -> m ()
-startRemoteCtrl execChatCommand = do
+findKnownRemoteCtrl :: forall m . ChatMonad m => (ByteString -> m ChatResponse) -> m ()
+findKnownRemoteCtrl execChatCommand = do
   logInfo "Starting remote host"
   checkNoRemoteCtrlSession -- tiny race with the final @chatWriteVar@ until the setup finishes and supervisor spawned
   discovered <- newTVarIO mempty
@@ -420,12 +420,15 @@ remoteCtrlInfo :: RemoteCtrl -> Bool -> RemoteCtrlInfo
 remoteCtrlInfo RemoteCtrl {remoteCtrlId, displayName, fingerprint, accepted} sessionActive =
   RemoteCtrlInfo {remoteCtrlId, displayName, fingerprint, accepted, sessionActive}
 
-acceptRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m ()
-acceptRemoteCtrl rcId = do
+confirmRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m ()
+confirmRemoteCtrl rcId = do
   -- TODO check it exists, check the ID is the same as in session
   RemoteCtrlSession {accepted} <- getRemoteCtrlSession
   withStore' $ \db -> markRemoteCtrlResolution db rcId True
   atomically . void $ tryPutTMVar accepted rcId -- the remote host can now proceed with connection
+
+verifyRemoteCtrlSession :: ChatMonad m => RemoteCtrlId -> Text -> m ()
+verifyRemoteCtrlSession _rcId _sessId = pure ()
 
 rejectRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m ()
 rejectRemoteCtrl rcId = do
