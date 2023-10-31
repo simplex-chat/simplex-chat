@@ -579,14 +579,14 @@ final class ChatModel: ObservableObject {
     // returns the previous member in the same merge group and the count of members in this group
     func getPrevHiddenMember(_ member: GroupMember, _ range: ClosedRange<Int>) -> (GroupMember?, Int) {
         var prevMember: GroupMember? = nil
-        var names: Set<String> = []
+        var memberIds: Set<Int64> = []
         for i in range {
             if case let .groupRcv(m) = reversedChatItems[i].chatDir {
                 if prevMember == nil && m.groupMemberId != member.groupMemberId { prevMember = m }
-                names.insert(m.displayName)
+                memberIds.insert(m.groupMemberId)
             }
         }
-        return (prevMember, names.count)
+        return (prevMember, memberIds.count)
     }
 
     func popChat(_ id: String) {
