@@ -28,7 +28,6 @@ import Data.Word (Word32)
 import qualified Network.HTTP.Types as N
 import qualified Network.HTTP2.Client as H
 import Network.Transport.Internal (decodeWord32)
-import Simplex.Chat.Controller
 import Simplex.Chat.Remote.Transport
 import Simplex.Chat.Remote.Types
 import Simplex.FileTransfer.Description (FileDigest (..))
@@ -53,8 +52,8 @@ data RemoteCommand
 
 data RemoteResponse
   = RRHello {encoding :: PlatformEncoding, deviceName :: Text, encryptFiles :: Bool}
-  | RRChatResponse {chatResponse :: ChatResponse}
-  | RRChatEvent {chatEvent :: Maybe ChatResponse} -- ^ 'Nothing' on poll timeout
+  | RRChatResponse {chatResponse :: J.Value}
+  | RRChatEvent {chatEvent :: Maybe J.Value} -- ^ 'Nothing' on poll timeout
   | RRFileStored {filePath :: String}
   | RRFile {fileSize :: Word32, fileDigest :: FileDigest} -- provides attachment , fileDigest :: FileDigest
   | RRProtocolError {remoteProcotolError :: RemoteProtocolError} -- ^ The protocol error happened on the server side
@@ -81,13 +80,13 @@ closeRemoteHostClient RemoteHostClient {httpClient} = liftIO $ closeHTTP2Client 
 
 -- ** Commands
 
-remoteSend :: RemoteHostClient -> ByteString -> ExceptT RemoteProtocolError IO ChatResponse
+remoteSend :: RemoteHostClient -> ByteString -> ExceptT RemoteProtocolError IO J.Value
 remoteSend RemoteHostClient {httpClient, hostEncoding} cmd =
   sendRemoteCommand' httpClient hostEncoding Nothing RCSend {command = decodeUtf8 cmd} >>= \case
     RRChatResponse cr -> pure cr
     r -> badResponse r
 
-remoteRecv :: RemoteHostClient -> Int -> ExceptT RemoteProtocolError IO (Maybe ChatResponse)
+remoteRecv :: RemoteHostClient -> Int -> ExceptT RemoteProtocolError IO (Maybe J.Value)
 remoteRecv RemoteHostClient {httpClient, hostEncoding} ms =
   sendRemoteCommand' httpClient hostEncoding Nothing RCRecv {wait = ms} >>= \case
     RRChatEvent cr_ -> pure cr_
