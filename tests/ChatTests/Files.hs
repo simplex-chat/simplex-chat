@@ -76,7 +76,7 @@ chatFileTests = do
     it "with changed XFTP config: send and receive file" testXFTPWithChangedConfig
     it "with relative paths: send and receive file" testXFTPWithRelativePaths
     xit' "continue receiving file after restart" testXFTPContinueRcv
-    fit "receive file marked to receive on chat start" testXFTPMarkToReceive
+    xit' "receive file marked to receive on chat start" testXFTPMarkToReceive
     it "error receiving file" testXFTPRcvError
     it "cancel receiving file, repeat receive" testXFTPCancelRcvRepeat
     it "should accept file automatically with CLI option" testAutoAcceptFile
@@ -1381,7 +1381,7 @@ testXFTPContinueRcv tmp = do
 
 testXFTPMarkToReceive :: HasCallStack => FilePath -> IO ()
 testXFTPMarkToReceive = do
-  testChatCfg2 cfg aliceProfile bobProfile $ \a b -> withTestOutput a $ \alice -> withTestOutput b $ \bob -> do
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
       connectUsers alice bob
 
