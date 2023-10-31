@@ -132,7 +132,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRUserContactLink u UserContactLink {connReqContact, autoAccept} -> ttyUser u $ connReqContact_ "Your chat address:" connReqContact <> autoAcceptStatus_ autoAccept
   CRUserContactLinkUpdated u UserContactLink {autoAccept} -> ttyUser u $ autoAcceptStatus_ autoAccept
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} -> ttyUser u [ttyContact c <> ": contact request rejected"]
-  CRGroupCreated u g -> ttyUser u $ viewGroupCreated g
+  CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRGroupsList u gs -> ttyUser u $ viewGroupsList gs
   CRSentGroupInvitation u g c _ ->
@@ -160,6 +160,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRUserContactLinkCreated u cReq -> ttyUser u $ connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted u -> ttyUser u viewUserContactLinkDeleted
   CRUserAcceptedGroupSent u _g _ -> ttyUser u [] -- [ttyGroup' g <> ": joining the group..."]
+  CRGroupLinkConnecting u g _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
   CRUserDeletedMember u g m -> ttyUser u [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser u g -> ttyUser u [ttyGroup' g <> ": you deleted the group"]
@@ -176,6 +177,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRContactAliasUpdated u c -> ttyUser u $ viewContactAliasUpdated c
   CRConnectionAliasUpdated u c -> ttyUser u $ viewConnectionAliasUpdated c
   CRContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
+  CRGroupMemberUpdated {} -> []
   CRContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
   CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
   CRRcvFileStart u ci -> ttyUser u $ receivingFile_' testView "started" ci
@@ -235,6 +237,7 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRGroupLink u g cReq mRole -> ttyUser u $ groupLink_ "Group link:" g cReq mRole
   CRGroupLinkDeleted u g -> ttyUser u $ viewGroupLinkDeleted g
   CRAcceptingGroupJoinRequest _ g c -> [ttyFullContact c <> ": accepting request to join group " <> ttyGroup' g <> "..."]
+  CRAcceptingGroupJoinRequestMember _ g m -> [ttyFullMember m <> ": accepting request to join group " <> ttyGroup' g <> "..."]
   CRNoMemberContactCreating u g m -> ttyUser u ["member " <> ttyGroup' g <> " " <> ttyMember m <> " does not have direct connection, creating"]
   CRNewMemberContact u _ g m -> ttyUser u ["contact for member " <> ttyGroup' g <> " " <> ttyMember m <> " is created"]
   CRNewMemberContactSentInv u _ct g m -> ttyUser u ["sent invitation to connect directly to member " <> ttyGroup' g <> " " <> ttyMember m]
@@ -792,11 +795,22 @@ viewReceivedContactRequest c Profile {fullName} =
     "to reject: " <> highlight ("/rc " <> viewName c) <> " (the sender will NOT be notified)"
   ]
 
-viewGroupCreated :: GroupInfo -> [StyledString]
-viewGroupCreated g =
-  [ "group " <> ttyFullGroup g <> " is created",
-    "to add members use " <> highlight ("/a " <> viewGroupName g <> " <name>") <> " or " <> highlight ("/create link #" <> viewGroupName g)
-  ]
+viewGroupCreated :: GroupInfo -> Bool -> [StyledString]
+viewGroupCreated g testView =
+  case incognitoMembershipProfile g of
+    Just localProfile
+      | testView -> incognitoProfile' profile : message
+      | otherwise -> message
+      where
+        profile = fromLocalProfile localProfile
+        message =
+          [ "group " <> ttyFullGroup g <> " is created, your incognito profile for this group is " <> incognitoProfile' profile,
+            "to add members use " <> highlight ("/create link #" <> viewGroupName g)
+          ]
+    Nothing ->
+      [ "group " <> ttyFullGroup g <> " is created",
+        "to add members use " <> highlight ("/a " <> viewGroupName g <> " <name>") <> " or " <> highlight ("/create link #" <> viewGroupName g)
+      ]
 
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
 viewCannotResendInvitation g c =
@@ -1672,7 +1686,7 @@ viewChatError logLevel = \case
         _ -> ": you have insufficient permissions for this action, the required role is " <> plain (strEncode role)
     CEGroupMemberInitialRole g role -> [ttyGroup' g <> ": initial role for group member cannot be " <> plain (strEncode role) <> ", use member or observer"]
     CEContactIncognitoCantInvite -> ["you're using your main profile for this group - prohibited to invite contacts to whom you are connected incognito"]
-    CEGroupIncognitoCantInvite -> ["you've connected to this group using an incognito profile - prohibited to invite contacts"]
+    CEGroupIncognitoCantInvite -> ["you are using an incognito profile for this group - prohibited to invite contacts"]
     CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]
     CEGroupNotJoined g -> ["you did not join this group, use " <> highlight ("/join #" <> viewGroupName g)]
     CEGroupMemberNotActive -> ["your group connection is not active yet, try later"]

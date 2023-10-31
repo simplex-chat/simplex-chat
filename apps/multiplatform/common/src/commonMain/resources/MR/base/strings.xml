@@ -16,6 +16,8 @@
 
   <!-- MainActivity.kt -->
   <string name="opening_database">Opening database…</string>
+  <string name="non_content_uri_alert_title">Invalid file path</string>
+  <string name="non_content_uri_alert_text">You shared an invalid file path. Report the issue to the app developers.</string>
 
   <!-- Server info - ChatModel.kt -->
   <string name="server_connected">connected</string>
@@ -350,6 +352,7 @@
   <!-- Chat Info Actions - ChatInfoView.kt -->
   <string name="delete_contact_question">Delete contact?</string>
   <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Contact and all messages will be deleted - this cannot be undone!</string>
+  <string name="delete_and_notify_contact">Delete and notify contact</string>
   <string name="button_delete_contact">Delete contact</string>
   <string name="text_field_set_contact_placeholder">Set contact name…</string>
   <string name="icon_descr_server_status_connected">Connected</string>
@@ -1291,11 +1294,11 @@
 
   <!-- AddGroupView.kt -->
   <string name="create_secret_group_title">Create secret group</string>
-  <string name="group_is_decentralized">The group is fully decentralized – it is visible only to the members.</string>
+  <string name="group_is_decentralized">Fully decentralized – visible only to members.</string>
   <string name="group_display_name_field">Enter group name:</string>
   <string name="group_full_name_field">Group full name:</string>
   <string name="group_main_profile_sent">Your chat profile will be sent to group members</string>
-
+  <string name="create_group_button">Create group</string>
 
   <!-- GroupProfileView.kt -->
   <string name="group_profile_is_stored_on_members_devices">Group profile is stored on members\' devices, not on the servers.</string>

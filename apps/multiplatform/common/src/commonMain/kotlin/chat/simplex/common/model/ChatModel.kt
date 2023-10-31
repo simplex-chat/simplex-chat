@@ -88,7 +88,7 @@ object ChatModel {
   val activeCallInvitation = mutableStateOf<RcvCallInvitation?>(null)
   val activeCall = mutableStateOf<Call?>(null)
   val activeCallViewIsVisible = mutableStateOf<Boolean>(false)
-  val callCommand = mutableStateOf<WCallCommand?>(null)
+  val callCommand = mutableStateListOf<WCallCommand>()
   val showCallView = mutableStateOf(false)
   val switchingCall = mutableStateOf(false)
 

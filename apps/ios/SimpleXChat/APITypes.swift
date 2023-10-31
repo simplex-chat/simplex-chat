@@ -50,7 +50,7 @@ public enum ChatCommand {
     case apiVerifyToken(token: DeviceToken, nonce: String, code: String)
     case apiDeleteToken(token: DeviceToken)
     case apiGetNtfMessage(nonce: String, encNtfInfo: String)
-    case apiNewGroup(userId: Int64, groupProfile: GroupProfile)
+    case apiNewGroup(userId: Int64, incognito: Bool, groupProfile: GroupProfile)
     case apiAddMember(groupId: Int64, contactId: Int64, memberRole: GroupMemberRole)
     case apiJoinGroup(groupId: Int64)
     case apiMemberRole(groupId: Int64, memberId: Int64, memberRole: GroupMemberRole)
@@ -90,7 +90,7 @@ public enum ChatCommand {
     case apiSetConnectionIncognito(connId: Int64, incognito: Bool)
     case apiConnectPlan(userId: Int64, connReq: String)
     case apiConnect(userId: Int64, incognito: Bool, connReq: String)
-    case apiDeleteChat(type: ChatType, id: Int64)
+    case apiDeleteChat(type: ChatType, id: Int64, notify: Bool?)
     case apiClearChat(type: ChatType, id: Int64)
     case apiListContacts(userId: Int64)
     case apiUpdateProfile(userId: Int64, profile: Profile)
@@ -176,7 +176,7 @@ public enum ChatCommand {
             case let .apiVerifyToken(token, nonce, code): return "/_ntf verify \(token.cmdString) \(nonce) \(code)"
             case let .apiDeleteToken(token): return "/_ntf delete \(token.cmdString)"
             case let .apiGetNtfMessage(nonce, encNtfInfo): return "/_ntf message \(nonce) \(encNtfInfo)"
-            case let .apiNewGroup(userId, groupProfile): return "/_group \(userId) \(encodeJSON(groupProfile))"
+            case let .apiNewGroup(userId, incognito, groupProfile): return "/_group \(userId) incognito=\(onOff(incognito)) \(encodeJSON(groupProfile))"
             case let .apiAddMember(groupId, contactId, memberRole): return "/_add #\(groupId) \(contactId) \(memberRole)"
             case let .apiJoinGroup(groupId): return "/_join #\(groupId)"
             case let .apiMemberRole(groupId, memberId, memberRole): return "/_member role #\(groupId) \(memberId) \(memberRole.rawValue)"
@@ -226,7 +226,11 @@ public enum ChatCommand {
             case let .apiSetConnectionIncognito(connId, incognito): return "/_set incognito :\(connId) \(onOff(incognito))"
             case let .apiConnectPlan(userId, connReq): return "/_connect plan \(userId) \(connReq)"
             case let .apiConnect(userId, incognito, connReq): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connReq)"
-            case let .apiDeleteChat(type, id): return "/_delete \(ref(type, id))"
+            case let .apiDeleteChat(type, id, notify): if let notify = notify {
+                return "/_delete \(ref(type, id)) notify=\(onOff(notify))"
+            } else {
+                return "/_delete \(ref(type, id))"
+            }
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
             case let .apiListContacts(userId): return "/_contacts \(userId)"
             case let .apiUpdateProfile(userId, profile): return "/_profile \(userId) \(encodeJSON(profile))"
@@ -495,6 +499,7 @@ public enum ChatResponse: Decodable, Error {
     case acceptingContactRequest(user: UserRef, contact: Contact)
     case contactRequestRejected(user: UserRef)
     case contactUpdated(user: UserRef, toContact: Contact)
+    case groupMemberUpdated(user: UserRef, groupInfo: GroupInfo, fromMember: GroupMember, toMember: GroupMember)
     // TODO remove events below
     case contactsSubscribed(server: String, contactRefs: [ContactRef])
     case contactsDisconnected(server: String, contactRefs: [ContactRef])
@@ -517,6 +522,7 @@ public enum ChatResponse: Decodable, Error {
     case groupCreated(user: UserRef, groupInfo: GroupInfo)
     case sentGroupInvitation(user: UserRef, groupInfo: GroupInfo, contact: Contact, member: GroupMember)
     case userAcceptedGroupSent(user: UserRef, groupInfo: GroupInfo, hostContact: Contact?)
+    case groupLinkConnecting(user: UserRef, groupInfo: GroupInfo, hostMember: GroupMember)
     case userDeletedMember(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
     case leftMemberUser(user: UserRef, groupInfo: GroupInfo)
     case groupMembers(user: UserRef, group: Group)
@@ -637,6 +643,7 @@ public enum ChatResponse: Decodable, Error {
             case .acceptingContactRequest: return "acceptingContactRequest"
             case .contactRequestRejected: return "contactRequestRejected"
             case .contactUpdated: return "contactUpdated"
+            case .groupMemberUpdated: return "groupMemberUpdated"
             case .contactsSubscribed: return "contactsSubscribed"
             case .contactsDisconnected: return "contactsDisconnected"
             case .contactSubSummary: return "contactSubSummary"
@@ -656,6 +663,7 @@ public enum ChatResponse: Decodable, Error {
             case .groupCreated: return "groupCreated"
             case .sentGroupInvitation: return "sentGroupInvitation"
             case .userAcceptedGroupSent: return "userAcceptedGroupSent"
+            case .groupLinkConnecting: return "groupLinkConnecting"
             case .userDeletedMember: return "userDeletedMember"
             case .leftMemberUser: return "leftMemberUser"
             case .groupMembers: return "groupMembers"
@@ -776,6 +784,7 @@ public enum ChatResponse: Decodable, Error {
             case let .acceptingContactRequest(u, contact): return withUser(u, String(describing: contact))
             case .contactRequestRejected: return noDetails
             case let .contactUpdated(u, toContact): return withUser(u, String(describing: toContact))
+            case let .groupMemberUpdated(u, groupInfo, fromMember, toMember): return withUser(u, "groupInfo: \(groupInfo)\nfromMember: \(fromMember)\ntoMember: \(toMember)")
             case let .contactsSubscribed(server, contactRefs): return "server: \(server)\ncontacts:\n\(String(describing: contactRefs))"
             case let .contactsDisconnected(server, contactRefs): return "server: \(server)\ncontacts:\n\(String(describing: contactRefs))"
             case let .contactSubSummary(u, contactSubscriptions): return withUser(u, String(describing: contactSubscriptions))
@@ -795,6 +804,7 @@ public enum ChatResponse: Decodable, Error {
             case let .groupCreated(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .sentGroupInvitation(u, groupInfo, contact, member): return withUser(u, "groupInfo: \(groupInfo)\ncontact: \(contact)\nmember: \(member)")
             case let .userAcceptedGroupSent(u, groupInfo, hostContact): return withUser(u, "groupInfo: \(groupInfo)\nhostContact: \(String(describing: hostContact))")
+            case let .groupLinkConnecting(u, groupInfo, hostMember): return withUser(u, "groupInfo: \(groupInfo)\nhostMember: \(String(describing: hostMember))")
             case let .userDeletedMember(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
             case let .leftMemberUser(u, groupInfo): return withUser(u, String(describing: groupInfo))
             case let .groupMembers(u, group): return withUser(u, String(describing: group))

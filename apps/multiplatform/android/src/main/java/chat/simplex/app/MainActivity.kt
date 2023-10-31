@@ -143,6 +143,7 @@ fun processExternalIntent(intent: Intent?) {
           val text = intent.getStringExtra(Intent.EXTRA_TEXT)
           val uri = intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
           if (uri != null) {
+            if (uri.scheme != "content") return showNonContentUriAlert()
             // Shared file that contains plain text, like `*.log` file
             chatModel.sharedContent.value = SharedContent.File(text ?: "", uri.toURI())
           } else if (text != null) {
@@ -153,12 +154,14 @@ fun processExternalIntent(intent: Intent?) {
         isMediaIntent(intent) -> {
           val uri = intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
           if (uri != null) {
+            if (uri.scheme != "content") return showNonContentUriAlert()
             chatModel.sharedContent.value = SharedContent.Media(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", listOf(uri.toURI()))
           } // All other mime types
         }
         else -> {
           val uri = intent.getParcelableExtra<Parcelable>(Intent.EXTRA_STREAM) as? Uri
           if (uri != null) {
+            if (uri.scheme != "content") return showNonContentUriAlert()
             chatModel.sharedContent.value = SharedContent.File(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", uri.toURI())
           }
         }
@@ -173,6 +176,7 @@ fun processExternalIntent(intent: Intent?) {
         isMediaIntent(intent) -> {
           val uris = intent.getParcelableArrayListExtra<Parcelable>(Intent.EXTRA_STREAM) as? List<Uri>
           if (uris != null) {
+            if (uris.any { it.scheme != "content" }) return showNonContentUriAlert()
             chatModel.sharedContent.value = SharedContent.Media(intent.getStringExtra(Intent.EXTRA_TEXT) ?: "", uris.map { it.toURI() })
           } // All other mime types
         }
@@ -184,6 +188,13 @@ fun processExternalIntent(intent: Intent?) {
 
 fun isMediaIntent(intent: Intent): Boolean =
   intent.type?.startsWith("image/") == true || intent.type?.startsWith("video/") == true
+
+private fun showNonContentUriAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.non_content_uri_alert_title),
+    text = generalGetString(MR.strings.non_content_uri_alert_text)
+  )
+}
 
 //fun testJson() {
 //  val str: String = """

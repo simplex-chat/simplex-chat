@@ -167,7 +167,7 @@ getContactByConnReqHash db user@User {userId} cReqHash =
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
         JOIN connections c ON c.contact_id = ct.contact_id
-        WHERE ct.user_id = ? AND c.via_contact_uri_hash = ? AND ct.contact_status = ? AND ct.deleted = 0
+        WHERE c.user_id = ? AND c.via_contact_uri_hash = ? AND ct.contact_status = ? AND ct.deleted = 0
         ORDER BY c.created_at DESC
         LIMIT 1
       |]
@@ -192,17 +192,6 @@ createIncognitoProfile :: DB.Connection -> User -> Profile -> IO Int64
 createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
-
-createIncognitoProfile_ :: DB.Connection -> UserId -> UTCTime -> Profile -> IO Int64
-createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, image} = do
-  DB.execute
-    db
-    [sql|
-      INSERT INTO contact_profiles (display_name, full_name, image, user_id, incognito, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?)
-    |]
-    (displayName, fullName, image, userId, Just True, createdAt, createdAt)
-  insertedRowId db
 
 createDirectContact :: DB.Connection -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
 createDirectContact db user@User {userId} activeConn@Connection {connId, localAlias} p@Profile {preferences} = do

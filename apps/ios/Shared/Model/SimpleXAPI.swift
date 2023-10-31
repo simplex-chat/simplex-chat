@@ -675,18 +675,18 @@ private func connectionErrorAlert(_ r: ChatResponse) -> Alert {
     }
 }
 
-func apiDeleteChat(type: ChatType, id: Int64) async throws {
-    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id), bgTask: false)
+func apiDeleteChat(type: ChatType, id: Int64, notify: Bool? = nil) async throws {
+    let r = await chatSendCmd(.apiDeleteChat(type: type, id: id, notify: notify), bgTask: false)
     if case .direct = type, case .contactDeleted = r { return }
     if case .contactConnection = type, case .contactConnectionDeleted = r { return }
     if case .group = type, case .groupDeletedUser = r { return }
     throw r
 }
 
-func deleteChat(_ chat: Chat) async {
+func deleteChat(_ chat: Chat, notify: Bool? = nil) async {
     do {
         let cInfo = chat.chatInfo
-        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId)
+        try await apiDeleteChat(type: cInfo.chatType, id: cInfo.apiId, notify: notify)
         DispatchQueue.main.async { ChatModel.shared.removeChat(cInfo.id) }
     } catch let error {
         logger.error("deleteChat apiDeleteChat error: \(responseError(error))")
@@ -724,8 +724,9 @@ func apiUpdateProfile(profile: Profile) async throws -> (Profile, [Contact])? {
     let userId = try currentUserId("apiUpdateProfile")
     let r = await chatSendCmd(.apiUpdateProfile(userId: userId, profile: profile))
     switch r {
-    case .userProfileNoChange: return nil
+    case .userProfileNoChange: return (profile, [])
     case let .userProfileUpdated(_, _, toProfile, updateSummary): return (toProfile, updateSummary.changedContacts)
+    case .chatCmdError(_, .errorStore(.duplicateName)): return nil;
     default: throw r
     }
 }
@@ -1020,9 +1021,9 @@ private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     throw r
 }
 
-func apiNewGroup(_ p: GroupProfile) throws -> GroupInfo {
+func apiNewGroup(incognito: Bool, groupProfile: GroupProfile) throws -> GroupInfo {
     let userId = try currentUserId("apiNewGroup")
-    let r = chatSendCmdSync(.apiNewGroup(userId: userId, groupProfile: p))
+    let r = chatSendCmdSync(.apiNewGroup(userId: userId, incognito: incognito, groupProfile: groupProfile))
     if case let .groupCreated(_, groupInfo) = r { return groupInfo }
     throw r
 }
@@ -1365,6 +1366,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.updateChatInfo(cInfo)
             }
         }
+    case let .groupMemberUpdated(user, groupInfo, _, toMember):
+        if active(user) {
+            await MainActor.run {
+                _ = m.upsertGroupMember(groupInfo, toMember)
+            }
+        }
     case let .contactsMerged(user, intoContact, mergedContact):
         if active(user) && m.hasChat(mergedContact.id) {
             await MainActor.run {
@@ -1476,6 +1483,16 @@ func processReceivedMsg(_ res: ChatResponse) async {
             if let hostContact = hostContact {
                 m.dismissConnReqView(hostContact.activeConn.id)
                 m.removeChat(hostContact.activeConn.id)
+            }
+        }
+    case let .groupLinkConnecting(user, groupInfo, hostMember):
+        if !active(user) { return }
+        
+        await MainActor.run {
+            m.updateGroup(groupInfo)
+            if let hostConn = hostMember.activeConn {
+                m.dismissConnReqView(hostConn.id)
+                m.removeChat(hostConn.id)
             }
         }
     case let .joinedGroupMemberConnecting(user, groupInfo, _, member):

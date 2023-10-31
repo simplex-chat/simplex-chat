@@ -195,10 +195,10 @@ testSuspendResume tmp =
 
 testJoinGroup :: HasCallStack => FilePath -> IO ()
 testJoinGroup tmp =
-  withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
-      withNewTestChat tmp "cath" cathProfile $ \cath ->
-        withNewTestChat tmp "dan" danProfile $ \dan -> do
+  withDirectoryServiceCfg tmp testCfgGroupLinkViaContact $ \superUser dsLink ->
+    withNewTestChatCfg tmp testCfgGroupLinkViaContact "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg tmp testCfgGroupLinkViaContact "cath" cathProfile $ \cath ->
+        withNewTestChatCfg tmp testCfgGroupLinkViaContact "dan" danProfile $ \dan -> do
           bob `connectVia` dsLink
           registerGroup superUser bob "privacy" "Privacy"
           cath `connectVia` dsLink

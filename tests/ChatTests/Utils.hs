@@ -17,12 +17,14 @@ import Data.List (isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
+import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
-import Simplex.Messaging.Agent.Store.SQLite (withTransaction)
+import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
@@ -432,6 +434,12 @@ getContactProfiles cc = do
     Just user -> do
       profiles <- withTransaction (chatStore $ chatController cc) $ \db -> getUserContactProfiles db user
       pure $ map (\Profile {displayName} -> displayName) profiles
+
+getProfilePictureByName :: TestCC -> String -> IO (Maybe String)
+getProfilePictureByName cc displayName =
+  withTransaction (chatStore $ chatController cc) $ \db ->
+    maybeFirstRow fromOnly $
+      DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName)
 
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do

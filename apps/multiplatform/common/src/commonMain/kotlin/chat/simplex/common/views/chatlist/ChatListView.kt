@@ -12,6 +12,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
@@ -29,6 +30,9 @@ import chat.simplex.common.views.onboarding.shouldShowWhatsNew
 import chat.simplex.common.views.usersettings.SettingsView
 import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.call.Call
+import chat.simplex.common.views.call.CallMediaType
+import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
@@ -121,6 +125,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     }
   }
   if (searchInList.isEmpty()) {
+    DesktopActiveCallOverlayLayout(newChatSheetState)
     NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
   }
   if (appPlatform.isAndroid) {
@@ -310,6 +315,9 @@ private fun ProgressIndicator() {
     strokeWidth = 2.5.dp
   )
 }
+
+@Composable
+expect fun DesktopActiveCallOverlayLayout(newChatSheetState: MutableStateFlow<AnimatedViewState>)
 
 fun connectIfOpenedViaUri(uri: URI, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")

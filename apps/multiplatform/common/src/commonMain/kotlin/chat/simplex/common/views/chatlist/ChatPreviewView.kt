@@ -37,7 +37,9 @@ fun ChatPreviewView(
   currentUserProfileDisplayName: String?,
   contactNetworkStatus: NetworkStatus?,
   stopped: Boolean,
-  linkMode: SimplexLinkMode
+  linkMode: SimplexLinkMode,
+  inProgress: Boolean,
+  progressByTimeout: Boolean
 ) {
   val cInfo = chat.chatInfo
 
@@ -135,7 +137,12 @@ fun ChatPreviewView(
         }
       is ChatInfo.Group ->
         when (cInfo.groupInfo.membership.memberStatus) {
-          GroupMemberStatus.MemInvited -> chatPreviewTitleText(if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.primary)
+          GroupMemberStatus.MemInvited -> chatPreviewTitleText(
+            if (inProgress)
+              MaterialTheme.colors.secondary
+            else
+              if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.primary
+          )
           GroupMemberStatus.MemAccepted -> chatPreviewTitleText(MaterialTheme.colors.secondary)
           else -> chatPreviewTitleText()
         }
@@ -195,6 +202,17 @@ fun ChatPreviewView(
   }
 
   @Composable
+  fun progressView() {
+    CircularProgressIndicator(
+      Modifier
+        .padding(horizontal = 2.dp)
+        .size(15.dp),
+      color = MaterialTheme.colors.secondary,
+      strokeWidth = 1.5.dp
+    )
+  }
+
+  @Composable
   fun chatStatusImage() {
     if (cInfo is ChatInfo.Direct) {
       if (cInfo.contact.active) {
@@ -213,14 +231,14 @@ fun ChatPreviewView(
             )
 
           else ->
-            CircularProgressIndicator(
-              Modifier
-                .padding(horizontal = 2.dp)
-                .size(15.dp),
-              color = MaterialTheme.colors.secondary,
-              strokeWidth = 1.5.dp
-            )
+            progressView()
         }
+      } else {
+        IncognitoIcon(chat.chatInfo.incognito)
+      }
+    } else if (cInfo is ChatInfo.Group) {
+      if (progressByTimeout) {
+        progressView()
       } else {
         IncognitoIcon(chat.chatInfo.incognito)
       }
@@ -351,6 +369,6 @@ fun unreadCountStr(n: Int): String {
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData, true, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), stopped = false, linkMode = SimplexLinkMode.DESCRIPTION)
+    ChatPreviewView(Chat.sampleData, true, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), stopped = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false)
   }
 }

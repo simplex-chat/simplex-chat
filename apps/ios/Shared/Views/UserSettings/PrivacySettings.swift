@@ -356,7 +356,7 @@ struct SimplexLockView: View {
         var id: Self { self }
     }
 
-    let laDelays: [Int] = [10, 30, 60, 180, 0]
+    let laDelays: [Int] = [10, 30, 60, 180, 600, 0]
 
     func laDelayText(_ t: Int) -> LocalizedStringKey {
         let m = t / 60
@@ -378,6 +378,7 @@ struct SimplexLockView: View {
                             Text(mode.text)
                         }
                     }
+                    .frame(height: 36)
                     if performLA {
                         Picker("Lock after", selection: $laLockDelay) {
                             let delays = laDelays.contains(laLockDelay) ? laDelays : [laLockDelay] + laDelays
@@ -385,6 +386,7 @@ struct SimplexLockView: View {
                                 Text(laDelayText(t))
                             }
                         }
+                        .frame(height: 36)
                         if showChangePassword && laMode == .passcode {
                             Button("Change passcode") {
                                 changeLAPassword()

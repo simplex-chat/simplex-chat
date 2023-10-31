@@ -150,7 +150,10 @@ defaultChatConfig =
 _defaultSMPServers :: NonEmpty SMPServerWithAuth
 _defaultSMPServers =
   L.fromList
-    [ "smp://h--vW7ZSkXPeOUpfxlFGgauQmXNFOzGoizak7Ult7cw=@smp15.simplex.im,oauu4bgijybyhczbnxtlggo6hiubahmeutaqineuyy23aojpih3dajad.onion",
+    [ "smp://1OwYGt-yqOfe2IyVHhxz3ohqo3aCCMjtB-8wn4X_aoY=@smp11.simplex.im,6ioorbm6i3yxmuoezrhjk6f6qgkc4syabh7m3so74xunb5nzr4pwgfqd.onion",
+      "smp://UkMFNAXLXeAAe0beCa4w6X_zp18PwxSaSjY17BKUGXQ=@smp12.simplex.im,ie42b5weq7zdkghocs3mgxdjeuycheeqqmksntj57rmejagmg4eor5yd.onion",
+      "smp://enEkec4hlR3UtKx2NMpOUK_K4ZuDxjWBO1d9Y4YXVaA=@smp14.simplex.im,aspkyu2sopsnizbyfabtsicikr2s4r3ti35jogbcekhm3fsoeyjvgrid.onion",
+      "smp://h--vW7ZSkXPeOUpfxlFGgauQmXNFOzGoizak7Ult7cw=@smp15.simplex.im,oauu4bgijybyhczbnxtlggo6hiubahmeutaqineuyy23aojpih3dajad.onion",
       "smp://hejn2gVIqNU6xjtGM3OwQeuk8ZEbDXVJXAlnSBJBWUA=@smp16.simplex.im,p3ktngodzi6qrf7w64mmde3syuzrv57y55hxabqcq3l5p6oi7yzze6qd.onion",
       "smp://ZKe4uxF4Z_aLJJOEsC-Y6hSkXgQS5-oc442JQGkyP8M=@smp17.simplex.im,ogtwfxyi3h2h5weftjjpjmxclhb5ugufa5rcyrmg7j4xlch7qsr5nuqd.onion",
       "smp://PtsqghzQKU83kYTlQ1VKg996dW4Cw4x_bvpKmiv8uns=@smp18.simplex.im,lyqpnwbs2zqfr45jqkncwpywpbtq7jrhxnib5qddtr6npjyezuwd3nqd.onion",
@@ -1507,13 +1510,15 @@ processChatCommand = \case
     chatRef <- getChatRef user chatName
     chatItemId <- getChatItemIdByText user chatRef msg
     processChatCommand $ APIChatItemReaction chatRef chatItemId add reaction
-  APINewGroup userId gProfile@GroupProfile {displayName} -> withUserId userId $ \user -> do
+  APINewGroup userId incognito gProfile@GroupProfile {displayName} -> withUserId userId $ \user -> do
     checkValidName displayName
     gVar <- asks idsDrg
-    groupInfo <- withStore $ \db -> createNewGroup db gVar user gProfile
+    -- [incognito] generate incognito profile for group membership
+    incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+    groupInfo <- withStore $ \db -> createNewGroup db gVar user gProfile incognitoProfile
     pure $ CRGroupCreated user groupInfo
-  NewGroup gProfile -> withUser $ \User {userId} ->
-    processChatCommand $ APINewGroup userId gProfile
+  NewGroup incognito gProfile -> withUser $ \User {userId} ->
+    processChatCommand $ APINewGroup userId incognito gProfile
   APIAddMember groupId contactId memRole -> withUser $ \user -> withChatLock "addMember" $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withStore $ \db -> (,) <$> getGroup db user groupId <*> getContact db user contactId
@@ -1544,12 +1549,12 @@ processChatCommand = \case
             Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo cName
         | otherwise -> throwChatError $ CEGroupDuplicateMember cName
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
-    (invitation, ct) <- withStore $ \db -> do
-      inv@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db user groupId
-      (inv,) <$> getContactViaMember db user fromMember
-    let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} = invitation
-        Contact {activeConn = Connection {peerChatVRange}} = ct
     withChatLock "joinGroup" . procCmd $ do
+      (invitation, ct) <- withStore $ \db -> do
+        inv@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db user groupId
+        (inv,) <$> getContactViaMember db user fromMember
+      let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} = invitation
+          Contact {activeConn = Connection {peerChatVRange}} = ct
       subMode <- chatReadVar subscriptionMode
       dm <- directMessage $ XGrpAcpt membership.memberId
       agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm subMode
@@ -2249,7 +2254,7 @@ processChatCommand = \case
       case groupLinkId of
         -- contact address
         Nothing ->
-          withStore' (`getUserContactLinkByConnReq` cReqSchemas) >>= \case
+          withStore' (\db -> getUserContactLinkByConnReq db user cReqSchemas) >>= \case
             Just _ -> pure $ CPContactAddress CAPOwnLink
             Nothing -> do
               withStore' (\db -> getContactConnEntityByConnReqHash db user cReqHashes) >>= \case
@@ -2593,6 +2598,24 @@ acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvI
     ct@Contact {activeConn = Connection {connId}} <- createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId p userContactLinkId xContactId incognitoProfile subMode
     setCommandConnId db user cmdId connId
     pure ct
+
+acceptGroupJoinRequestAsync :: ChatMonad m => User -> GroupInfo -> UserContactRequest -> GroupMemberRole -> Maybe IncognitoProfile -> m GroupMember
+acceptGroupJoinRequestAsync
+  user
+  gInfo@GroupInfo {groupProfile, membership}
+  ucr@UserContactRequest {agentInvitationId = AgentInvId invId}
+  gLinkMemRole
+  incognitoProfile = do
+    gVar <- asks idsDrg
+    (groupMemberId, memberId) <- withStore $ \db -> createAcceptedMember db gVar user gInfo ucr gLinkMemRole
+    let Profile {displayName} = profileToSendOnAccept user incognitoProfile
+        GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+        msg = XGrpLinkInv $ GroupLinkInvitation (MemberIdRole userMemberId userRole) displayName (MemberIdRole memberId gLinkMemRole) groupProfile
+    subMode <- chatReadVar subscriptionMode
+    connIds <- agentAcceptContactAsync user True invId msg subMode
+    withStore $ \db -> do
+      liftIO $ createAcceptedMemberConnection db user connIds ucr groupMemberId subMode
+      getGroupMemberById db user groupMemberId
 
 profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Profile
 profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> ip) Nothing
@@ -3397,8 +3420,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- TODO update member profile
               pure ()
             | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
+          XInfo _ -> pure () -- sent when connecting via group link
           XOk -> pure ()
-          _ -> messageError "INFO from member must have x.grp.mem.info"
+          _ -> messageError "INFO from member must have x.grp.mem.info, x.info or x.ok"
         pure ()
       CON -> do
         members <- withStore' $ \db -> getGroupMembers db user gInfo
@@ -3419,11 +3443,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           GCInviteeMember -> do
             memberConnectedChatItem gInfo m
             toView $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected}
+            let Connection {viaUserContactLink} = conn
+            when (isJust viaUserContactLink && isNothing (memberContactId m)) sendXGrpLinkMem
             intros <- withStore' $ \db -> createIntroductions db members m
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro ->
               processIntro intro `catchChatError` (toView . CRChatError (Just user))
             where
+              sendXGrpLinkMem = do
+                let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
+                    profileToSend = profileToSendOnAccept user profileMode
+                void $ sendDirectMessage conn (XGrpLinkMem profileToSend) (GroupId groupId)
               processIntro intro@GroupMemberIntro {introId} = do
                 void $ sendDirectMessage conn (XGrpMemIntro $ memberInfo (reMember intro)) (GroupId groupId)
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
@@ -3456,6 +3486,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XFile fInv -> processGroupFileInvitation' gInfo m' fInv msg msgMeta
             XFileCancel sharedMsgId -> xFileCancelGroup gInfo m' sharedMsgId msgMeta
             XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInvGroup gInfo m' sharedMsgId fileConnReq_ fName msgMeta
+            -- XInfo p -> xInfoMember gInfo m' p -- TODO use for member profile update
+            XGrpLinkMem p -> xGrpLinkMem gInfo m' conn' p
             XGrpMemNew memInfo -> xGrpMemNew gInfo m' memInfo msg msgMeta
             XGrpMemIntro memInfo -> xGrpMemIntro gInfo m' memInfo
             XGrpMemInv memId introInv -> xGrpMemInv gInfo m' memId introInv
@@ -3716,7 +3748,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted user contact
             CORRequest cReq -> do
               withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                Just (UserContactLink {autoAccept}, groupId_, _) ->
+                Just (UserContactLink {autoAccept}, groupId_, gLinkMemRole) ->
                   case autoAccept of
                     Just AutoAccept {acceptIncognito} -> case groupId_ of
                       Nothing -> do
@@ -3727,8 +3759,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                       Just groupId -> do
                         gInfo <- withStore $ \db -> getGroupInfo db user groupId
                         let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                        ct <- acceptContactRequestAsync user cReq profileMode
-                        toView $ CRAcceptingGroupJoinRequest user gInfo ct
+                        if isCompatibleRange chatVRange groupLinkNoContactVRange
+                          then do
+                            mem <- acceptGroupJoinRequestAsync user gInfo cReq gLinkMemRole profileMode
+                            createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
+                            toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
+                          else do
+                            ct <- acceptContactRequestAsync user cReq profileMode
+                            toView $ CRAcceptingGroupJoinRequest user gInfo ct
                     _ -> toView $ CRReceivedContactRequest user cReq
                 _ -> pure ()
 
@@ -4441,6 +4479,33 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   | otherwise -> Nothing
            in setPreference_ SCFTimedMessages ctUserTMPref' ctUserPrefs
 
+    -- TODO use for member profile update
+    -- xInfoMember :: GroupInfo -> GroupMember -> Profile -> m ()
+    -- xInfoMember gInfo m p' = void $ processMemberProfileUpdate gInfo m p'
+
+    xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> m ()
+    xGrpLinkMem gInfo@GroupInfo {membership} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' = do
+      xGrpLinkMemReceived <- withStore $ \db -> getXGrpLinkMemReceived db groupMemberId
+      if viaGroupLink && isNothing (memberContactId m) && memberCategory == GCHostMember && not xGrpLinkMemReceived
+        then do
+          m' <- processMemberProfileUpdate gInfo m p'
+          withStore' $ \db -> setXGrpLinkMemReceived db groupMemberId True
+          let connectedIncognito = memberIncognito membership
+          probeMatchingMemberContact m' connectedIncognito
+        else messageError "x.grp.link.mem error: invalid group link host profile update"
+
+    processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> m GroupMember
+    processMemberProfileUpdate gInfo m@GroupMember {memberContactId} p' =
+      case memberContactId of
+        Nothing -> do
+          m' <- withStore $ \db -> updateMemberProfile db user m p'
+          toView $ CRGroupMemberUpdated user gInfo m m'
+          pure m'
+        Just mContactId -> do
+          mCt <- withStore $ \db -> getContact db user mContactId
+          Contact {profile} <- processContactProfileUpdate mCt p' True
+          pure m {memberProfile = profile}
+
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
       forM_ allChatFeatures $ \(ACF f) -> do
@@ -4701,6 +4766,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         XInfo p -> do
           ct <- withStore $ \db -> createDirectContact db user conn' p
           toView $ CRContactConnecting user ct
+          pure conn'
+        XGrpLinkInv glInv -> do
+          (gInfo, host) <- withStore $ \db -> createGroupInvitedViaLink db user conn' glInv
+          toView $ CRGroupLinkConnecting user gInfo host
           pure conn'
         -- TODO show/log error, other events in SMP confirmation
         _ -> pure conn'
@@ -5483,7 +5552,7 @@ getCreateActiveUser st testView = do
       where
         loop = do
           displayName <- getContactName
-          withTransaction st (\db -> runExceptT $ createUserRecord db (AgentUserId 1) Profile {displayName, fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing} True) >>= \case
+          withTransaction st (\db -> runExceptT $ createUserRecord db (AgentUserId 1) (profileFromName displayName) True) >>= \case
             Left SEDuplicateName -> do
               putStrLn "chosen display name is already used by another profile on this device, choose another one"
               loop
@@ -5711,8 +5780,8 @@ chatCommandP =
       ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
       ("/help db" <|> "/hd") $> ChatHelp HSDatabase,
       ("/help" <|> "/h") $> ChatHelp HSMain,
-      ("/group " <|> "/g ") *> char_ '#' *> (NewGroup <$> groupProfile),
-      "/_group " *> (APINewGroup <$> A.decimal <* A.space <*> jsonP),
+      ("/group" <|> "/g") *> (NewGroup <$> incognitoP <* A.space <* char_ '#' <*> groupProfile),
+      "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <* A.space <*> jsonP),
       ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> (memberRole <|> pure GRMember)),
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayName),
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayName <* A.space <* char_ '@' <*> displayName <*> memberRole),
@@ -5834,7 +5903,7 @@ chatCommandP =
     mcTextP = MCText . safeDecodeUtf8 <$> A.takeByteString
     msgContentP = "text " *> mcTextP <|> "json " *> jsonP
     ciDeleteMode = "broadcast" $> CIDMBroadcast <|> "internal" $> CIDMInternal
-    displayName = safeDecodeUtf8 <$> (quoted "'\"" <|> takeNameTill isSpace)
+    displayName = safeDecodeUtf8 <$> (quoted "'" <|> takeNameTill isSpace)
       where
         takeNameTill p =
           A.peekChar' >>= \c ->
@@ -5949,14 +6018,20 @@ timeItToView s action = do
   pure a
 
 mkValidName :: String -> String
-mkValidName = reverse . dropWhile isSpace . fst . foldl' addChar ("", '\NUL')
+mkValidName = reverse . dropWhile isSpace . fst3 . foldl' addChar ("", '\NUL', 0 :: Int)
   where
-    addChar (r, prev) c = if notProhibited && validChar then (c' : r, c') else (r, prev)
+    fst3 (x, _, _) = x
+    addChar (r, prev, punct) c = if validChar then (c' : r, c', punct') else (r, prev, punct)
       where
       c' = if isSpace c then ' ' else c
+      punct'
+        | isPunctuation c = punct + 1
+        | isSpace c = punct
+        | otherwise = 0
       validChar
-        | prev == '\NUL' || isSpace prev = validFirstChar
-        | isPunctuation prev = validFirstChar || isSpace c
+        | c == '\'' = False
+        | prev == '\NUL' = c > ' ' && c /= '#' && c /= '@' && validFirstChar
+        | isSpace prev = validFirstChar || (punct == 0 && isPunctuation c)
+        | isPunctuation prev = validFirstChar || isSpace c || (punct < 3 && isPunctuation c)
         | otherwise = validFirstChar || isSpace c || isMark c || isPunctuation c
       validFirstChar = isLetter c || isNumber c || isSymbol c
-      notProhibited = c `notElem` ("@#'\"`" :: String)
