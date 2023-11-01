@@ -36,6 +36,7 @@ import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages.CIContent
+import Simplex.Chat.Messages.Events
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -341,8 +342,8 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
     editable :: Bool,
-    -- receivedFromAuthor :: Bool,
-    -- groupDagError :: [GroupEventIntegrityError],
+    -- Nothing for direct chat items and for group chat items without recorded group events (legacy)
+    groupIntegrityStatus :: Maybe GroupIntegrityStatus,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -353,9 +354,21 @@ mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted item
   let editable = case itemContent of
         CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, createdAt, updatedAt}
+      groupIntegrityStatus = Nothing
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, groupIntegrityStatus, createdAt, updatedAt}
 
 instance ToJSON (CIMeta c d) where toEncoding = J.genericToEncoding J.defaultOptions
+
+data GroupIntegrityStatus
+  = GISOk                                      -- sent event; or received event with all parents known
+  | GISIntegrityError GroupEventIntegrityError -- received event has integrity error (if many, order and choose one?)
+  | GISConfirmedParent GroupMemberRole         -- received event that was confirmed by a GroupMemberRole member;
+                                               -- higher role is preferred; search graph children to some depth?
+  deriving (Show, Generic)
+
+instance ToJSON GroupIntegrityStatus where
+  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "GIS"
+  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "GIS"
 
 data CITimed = CITimed
   { ttl :: Int, -- seconds

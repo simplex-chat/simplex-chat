@@ -36,6 +36,7 @@ CREATE TABLE group_events (
 
 CREATE INDEX idx_group_events_user_id ON group_events(user_id);
 CREATE INDEX idx_group_events_chat_item_id ON group_events(chat_item_id);
+CREATE INDEX idx_group_events_shared_msg_id ON group_events(shared_msg_id);
 CREATE INDEX idx_group_events_rcvd_author_group_member_id ON group_events(rcvd_author_group_member_id);
 CREATE INDEX idx_group_events_rcvd_author_contact_profile_id ON group_events(rcvd_author_contact_profile_id);
 CREATE INDEX idx_group_events_rcvd_from_group_member_id ON group_events(rcvd_from_group_member_id);
@@ -93,6 +94,7 @@ DROP TABLE group_events_availabilities;
 
 DROP INDEX idx_group_events_user_id;
 DROP INDEX idx_group_events_chat_item_id;
+DROP INDEX idx_group_events_shared_msg_id;
 DROP INDEX idx_group_events_rcvd_author_group_member_id;
 DROP INDEX idx_group_events_rcvd_author_contact_profile_id;
 DROP INDEX idx_group_events_rcvd_from_group_member_id;
