@@ -546,9 +546,7 @@ fun updateMemberSettings(gInfo: GroupInfo, member: GroupMember, memberSettings: 
   withBGApi {
     val success = ChatController.apiSetMemberSettings(gInfo.groupId, member.groupMemberId, memberSettings)
     if (success) {
-      val mem = member
-      mem.memberSettings = memberSettings
-      ChatModel.upsertGroupMember(gInfo, mem)
+      ChatModel.upsertGroupMember(gInfo, member.copy(memberSettings = memberSettings))
     }
   }
 }

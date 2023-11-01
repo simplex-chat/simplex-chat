@@ -115,7 +115,11 @@ fun SectionItemViewLongClickable(
     .fillMaxWidth()
     .sizeIn(minHeight = minHeight)
   Row(
-    if (disabled) modifier.padding(padding) else modifier.combinedClickable(onClick = click, onLongClick = longClick).padding(padding),
+    if (disabled) {
+      modifier.padding(padding)
+    } else {
+      modifier.combinedClickable(onClick = click, onLongClick = longClick).onRightClick(longClick).padding(padding)
+    },
     verticalAlignment = Alignment.CenterVertically
   ) {
     content()
