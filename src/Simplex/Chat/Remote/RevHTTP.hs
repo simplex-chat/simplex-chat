@@ -19,8 +19,9 @@ import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError (
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..), runHTTP2ServerWith)
 import Simplex.Messaging.Util (ifM)
 import UnliftIO
+import Network.Socket (PortNumber)
 
-announceRevHTTP2 :: MonadUnliftIO m => Tasks -> (C.PrivateKeyEd25519, Announce) -> TLS.Credentials -> m () -> m (Either HTTP2ClientError HTTP2Client)
+announceRevHTTP2 :: MonadUnliftIO m => Tasks -> TMVar (Maybe PortNumber) -> (C.PrivateKeyEd25519, Announce) -> TLS.Credentials -> m () -> m (Either HTTP2ClientError HTTP2Client)
 announceRevHTTP2 = announceCtrl runHTTP2Client
 
 -- | Attach HTTP2 client and hold the TLS until the attached client finishes.
@@ -31,7 +32,7 @@ runHTTP2Client finishedVar clientVar tls =
     (logError "HTTP2 session already started on this listener")
   where
     attachClient = do
-      client <- attachHTTP2Client config ANY_ADDR_V4 DISCOVERY_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls
+      client <- attachHTTP2Client config ANY_ADDR_V4 "0" (putMVar finishedVar ()) defaultHTTP2BufferSize tls
       putMVar clientVar client
       readMVar finishedVar
     -- TODO connection timeout

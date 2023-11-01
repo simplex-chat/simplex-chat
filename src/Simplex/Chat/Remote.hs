@@ -117,9 +117,10 @@ startRemoteHost rhId = do
       logInfo $ "Remote host session connecting for " <> tshow rhId
       rcName <- chatReadVar localDeviceName
       localAddr <- asks multicastSubscribers >>= Discovery.getLocalAddress >>= maybe (throwError . ChatError $ CEInternalError "unable to get local address") pure
-      (dhKey, sigKey, ann, oob) <- Discovery.startSession (if rcName == "" then Nothing else Just rcName) (localAddr, read Discovery.DISCOVERY_PORT) fingerprint
+      started <- newEmptyTMVarIO -- XXX: should contain service port to be published
+      (dhKey, sigKey, ann, oob) <- Discovery.startSession (if rcName == "" then Nothing else Just rcName) (localAddr, 0) fingerprint
       toView CRRemoteHostStarted {remoteHost = remoteHostInfo rh True, sessionOOB = decodeUtf8 $ strEncode oob}
-      httpClient <- liftEitherError (ChatErrorRemoteCtrl . RCEHTTP2Error . show) $ announceRevHTTP2 tasks (sigKey, ann) credentials cleanupIO
+      httpClient <- liftEitherError (ChatErrorRemoteCtrl . RCEHTTP2Error . show) $ announceRevHTTP2 tasks started (sigKey, ann) credentials cleanupIO
       logInfo $ "Remote host session connected for " <> tshow rhId
       -- test connection and establish a protocol layer
       remoteHostClient <- liftRH rhId $ createRemoteHostClient httpClient dhKey rcName
@@ -257,18 +258,40 @@ liftRH rhId = liftError (ChatErrorRemoteHost rhId . RHProtocolError)
 
 -- * Mobile side
 
-findKnownRemoteCtrl :: forall m. ChatMonad m => (ByteString -> m ChatResponse) -> m ()
+findKnownRemoteCtrl :: ChatMonad m => (ByteString -> m ChatResponse) -> m ()
 findKnownRemoteCtrl execChatCommand = do
-  logInfo "Starting remote host"
   checkNoRemoteCtrlSession -- tiny race with the final @chatWriteVar@ until the setup finishes and supervisor spawned
+  -- TODO: fetch known controllers from DB and pass to discoverRemoteCtrls
   discovered <- newTVarIO mempty
   discoverer <- async $ discoverRemoteCtrls discovered -- TODO extract to a controller service singleton
-  size <- asks $ tbqSize . config
-  remoteOutputQ <- newTBQueueIO size
   confirmed <- newEmptyTMVarIO
   verified <- newEmptyTMVarIO
+  startHost execChatCommand discoverer discovered confirmed verified
+
+-- | Use provided OOB link as an annouce
+connectRemoteCtrl :: ChatMonad m => (ByteString -> m ChatResponse) -> SignedOOB -> m ()
+connectRemoteCtrl execChatCommand so@(SignedOOB OOB {caFingerprint, host, port} _) = do
+  transportHost <- liftEitherWith (ChatError . CEInternalError) $ strDecode (encodeUtf8 host)
+  checkNoRemoteCtrlSession -- a more significant race with @chatWriteVar@ due to db ops
+  RemoteCtrlInfo{remoteCtrlId} <- withStore' $ \db ->
+    getRemoteCtrlByFingerprint db caFingerprint >>= \case
+      Just rc -> pure $ remoteCtrlInfo rc False
+      Nothing -> insertRemoteCtrl db so
+  -- do not run discover, we have the data in OOB
+  discovered <- newTVarIO $ M.singleton caFingerprint (transportHost, port)
+  discoverer <- async $ pure ()
+  -- OOB is also a direct confirmation by a user
+  confirmed <- newTMVarIO remoteCtrlId
+  -- Session verification is still required
+  verified <- newEmptyTMVarIO
+  startHost execChatCommand discoverer discovered confirmed verified
+
+startHost :: ChatMonad m => (ByteString -> m ChatResponse) -> Async () -> TM.TMap C.KeyHash (TransportHost, Word16) -> TMVar RemoteCtrlId -> TMVar (RemoteCtrlId, Text) -> m ()
+startHost execChatCommand discoverer discovered confirmed verified = do
+  remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
   supervisor <- async $ do
     threadDelay 500000 -- give chat controller a chance to reply with "ok" to prevent flaking tests
+    logInfo "Starting remote host"
     runHost discovered confirmed verified $ handleRemoteCommand execChatCommand remoteOutputQ
   chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {discoverer, supervisor, hostServer = Nothing, discovered, confirmed, verified, remoteOutputQ}
 
@@ -278,6 +301,7 @@ runHost discovered confirmed verified handleHttp = do
   remoteCtrlId <- atomically (readTMVar confirmed) -- wait for discoverRemoteCtrls.process or confirmRemoteCtrl to confirm fingerprint as a known RC
   rc@RemoteCtrl {fingerprint} <- withStore (`getRemoteCtrl` remoteCtrlId)
   serviceAddress <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure -- wait for location of the matching fingerprint
+  -- XXX: the part above is only needed for discovery, can be streamlined
   toView $ CRRemoteCtrlConnecting $ remoteCtrlInfo rc False
   atomically $ writeTVar discovered mempty -- flush unused sources
   server <- async $
@@ -294,7 +318,7 @@ runHost discovered confirmed verified handleHttp = do
           toView $ CRChatCmdError Nothing $ ChatErrorRemoteCtrl RCEBadVerificationCode
           -- the server doesn't enter its loop and waitCatch below falls through
   chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
-  _ <- waitCatch server -- wait for the server to finish
+  waitCatch server >>= either (logDebug . tshow) pure -- wait for the server to finish
   chatWriteVar remoteCtrlSession Nothing
   toView CRRemoteCtrlStopped
 

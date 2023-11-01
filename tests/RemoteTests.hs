@@ -95,13 +95,14 @@ announceDiscoverHttp2Test _tmp = do
   subscribers <- newTMVarIO 0
   localAddr <- Discovery.getLocalAddress subscribers >>= maybe (fail "unable to get local address") pure
   (fingerprint, credentials) <- genTestCredentials
-  (_dhKey, sigKey, ann, _oob) <- Discovery.startSession (Just "Desktop") (localAddr, read Discovery.DISCOVERY_PORT) fingerprint
+  started <- newEmptyTMVarIO
+  (_dhKey, sigKey, ann, _oob) <- Discovery.startSession (Just "Desktop") (localAddr, 0) fingerprint
   tasks <- newTVarIO []
   finished <- newEmptyMVar
   controller <- async $ do
     logNote "Controller: starting"
     bracket
-      (announceRevHTTP2 tasks (sigKey, ann) credentials (putMVar finished ()) >>= either (fail . show) pure)
+      (announceRevHTTP2 tasks started (sigKey, ann) credentials (putMVar finished ()) >>= either (fail . show) pure)
       closeHTTP2Client
       ( \http -> do
           logNote "Controller: got client"
@@ -403,25 +404,26 @@ startRemote mobile desktop = do
   desktop <## "remote host 1 started"
   desktop <## "connection code:"
   oobLink <- getTermLine desktop
-  OOB {caFingerprint = oobFingerprint} <- either (fail . mappend "OOB link failed: ") pure $ decodeOOBLink (fromString oobLink)
+  -- OOB {caFingerprint = oobFingerprint} <- either (fail . mappend "OOB link failed: ") pure $ decodeOOBLink (fromString oobLink)
   -- Desktop displays OOB QR code
 
   mobile ##> "/set device name Mobile"
   mobile <## "ok"
-  mobile ##> "/find remote ctrl"
-  mobile <## "ok"
-  mobile <## "remote controller announced"
-  mobile <## "connection code:"
-  annFingerprint <- getTermLine mobile
-  -- The user scans OOB QR code and confirms it matches the announced stuff
-  fromString annFingerprint `shouldBe` strEncode oobFingerprint
+  -- mobile ##> "/find remote ctrl"
+  -- mobile <## "ok"
+  -- mobile <## "remote controller announced"
+  -- mobile <## "connection code:"
+  -- annFingerprint <- getTermLine mobile
+  -- -- The user scans OOB QR code and confirms it matches the announced stuff
+  -- fromString annFingerprint `shouldBe` strEncode oobFingerprint
 
   mobile ##> ("/connect remote ctrl " <> oobLink)
-  mobile <## "remote controller 1 registered"
-  mobile ##> "/confirm remote ctrl 1"
+  -- mobile <## "remote controller 1 registered"
   mobile <## "ok"
+  -- mobile ##> "/confirm remote ctrl 1"
+  -- mobile <## "ok"
   mobile <## "remote controller 1 connecting to My desktop"
-  -- TODO: rework tls connection prelude
+
   mobile <## "remote controller 1 connected to My desktop"
   mobile <## "Compare session code with controller and use:"
   verifyCmd <- getTermLine mobile
