@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    compileSdkVersion(33)
+    compileSdkVersion(34)
 
     defaultConfig {
         applicationId = "chat.simplex.app"
@@ -144,7 +144,7 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.3")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.4.0")
     //androidTestImplementation("androidx.compose.ui:ui-test-junit4:$compose_version")
-    debugImplementation("androidx.compose.ui:ui-tooling:${rootProject.extra["compose.version"] as String}")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.4.3")
 }
 
 tasks {
