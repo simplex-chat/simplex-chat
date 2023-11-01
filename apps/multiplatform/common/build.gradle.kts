@@ -138,6 +138,7 @@ buildConfig {
     buildConfigField("String", "ANDROID_VERSION_NAME", "\"${extra["android.version_name"]}\"")
     buildConfigField("int", "ANDROID_VERSION_CODE", "${extra["android.version_code"]}")
     buildConfigField("String", "DESKTOP_VERSION_NAME", "\"${extra["desktop.version_name"]}\"")
+    buildConfigField("int", "DESKTOP_VERSION_CODE", "${extra["desktop.version_code"]}")
   }
 }
 
