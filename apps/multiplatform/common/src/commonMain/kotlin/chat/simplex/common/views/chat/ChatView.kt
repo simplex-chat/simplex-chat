@@ -1251,7 +1251,7 @@ private fun memberNames(member: GroupMember, prevMember: GroupMember?, memCount:
     if (memCount > 2) {
       stringResource(MR.strings.group_members_n).format(name, prevName, memCount - 2)
     } else {
-      stringResource(MR.strings.group_members_n).format(name, prevName)
+      stringResource(MR.strings.group_members_2).format(name, prevName)
     }
   } else {
     name
