@@ -420,7 +420,8 @@ private fun DropDownMenuForMember(member: GroupMember, groupInfo: GroupInfo, sho
         removeMemberAlert(groupInfo, member)
         showMenu.value = false
       })
-    } else if (member.memberSettings.showMessages) {
+    }
+    if (member.memberSettings.showMessages) {
       ItemAction(stringResource(MR.strings.block_member_button), painterResource(MR.images.ic_do_not_touch), color = MaterialTheme.colors.secondary, onClick = {
         blockMemberAlert(groupInfo, member)
         showMenu.value = false
