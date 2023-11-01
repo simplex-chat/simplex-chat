@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct DeletedItemView: View {
     @Environment(\.colorScheme) var colorScheme
+    @ObservedObject var chat: Chat
     var chatItem: ChatItem
 
     var body: some View {
@@ -18,7 +19,7 @@ struct DeletedItemView: View {
             Text(chatItem.content.text)
                 .foregroundColor(.secondary)
                 .italic()
-            CIMetaView(chatItem: chatItem)
+            CIMetaView(chat: chat, chatItem: chatItem)
                 .padding(.horizontal, 12)
         }
         .padding(.leading, 12)
@@ -32,8 +33,8 @@ struct DeletedItemView: View {
 struct DeletedItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            DeletedItemView(chatItem: ChatItem.getDeletedContentSample())
-            DeletedItemView(chatItem: ChatItem.getDeletedContentSample(dir: .groupRcv(groupMember: GroupMember.sampleData)))
+            DeletedItemView(chat: Chat.sampleData, chatItem: ChatItem.getDeletedContentSample())
+            DeletedItemView(chat: Chat.sampleData, chatItem: ChatItem.getDeletedContentSample(dir: .groupRcv(groupMember: GroupMember.sampleData)))
         }
         .previewLayout(.fixed(width: 360, height: 200))
     }

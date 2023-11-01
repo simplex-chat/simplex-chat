@@ -16,7 +16,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
-import Data.Char (isDigit)
+import Data.Char (isDigit, isPunctuation)
 import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.List (intercalate, foldl')
@@ -214,11 +214,15 @@ markdownP = mconcat <$> A.many' fragmentP
     wordMD :: Text -> Markdown
     wordMD s
       | T.null s = unmarked s
-      | isUri s = case strDecode $ encodeUtf8 s of
-        Right cReq -> markdown (simplexUriFormat cReq) s
-        _ -> markdown Uri s
+      | isUri s =
+        let t = T.takeWhileEnd isPunctuation s
+            uri = uriMarkdown $ T.dropWhileEnd isPunctuation s
+         in if T.null t then uri else uri :|: unmarked t
       | isEmail s = markdown Email s
       | otherwise = unmarked s
+    uriMarkdown s = case strDecode $ encodeUtf8 s of
+      Right cReq -> markdown (simplexUriFormat cReq) s
+      _ -> markdown Uri s
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked
