@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct CIMemberCreatedContactView: View {
+    @EnvironmentObject var m: ChatModel
     var chatItem: ChatItem
     
     var body: some View {
@@ -21,7 +22,7 @@ struct CIMemberCreatedContactView: View {
                         .onTapGesture {
                             dismissAllSheets(animated: true)
                             DispatchQueue.main.async {
-                                ChatModel.shared.chatId = "@\(contactId)"
+                                m.chatId = "@\(contactId)"
                             }
                         }
                 } else {

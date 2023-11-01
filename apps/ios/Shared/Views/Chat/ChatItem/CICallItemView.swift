@@ -11,7 +11,7 @@ import SimpleXChat
 
 struct CICallItemView: View {
     @EnvironmentObject var m: ChatModel
-    var chatInfo: ChatInfo
+    @ObservedObject var chat: Chat
     var chatItem: ChatItem
     var status: CICallStatus
     var duration: Int
@@ -60,7 +60,7 @@ struct CICallItemView: View {
 
 
     @ViewBuilder private func acceptCallButton() -> some View {
-        if case let .direct(contact) = chatInfo {
+        if case let .direct(contact) = chat.chatInfo {
             Button {
                 if let invitation = m.callInvitations[contact.id] {
                     CallController.shared.answerCall(invitation: invitation)
