@@ -341,6 +341,8 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
     editable :: Bool,
+    -- receivedFromAuthor :: Bool,
+    -- groupDagError :: [GroupEventIntegrityError],
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
