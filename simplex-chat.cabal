@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -130,9 +130,9 @@ library
       Simplex.Chat.ProfileGenerator
       Simplex.Chat.Protocol
       Simplex.Chat.Remote
-      Simplex.Chat.Remote.Discovery
       Simplex.Chat.Remote.Multicast
       Simplex.Chat.Remote.Protocol
+      Simplex.Chat.Remote.RevHTTP
       Simplex.Chat.Remote.Transport
       Simplex.Chat.Remote.Types
       Simplex.Chat.Store
@@ -184,7 +184,6 @@ library
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
     , network-transport ==0.5.6
-    , network-udp ==0.0.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -237,7 +236,6 @@ executable simplex-bot
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
     , network-transport ==0.5.6
-    , network-udp ==0.0.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -291,7 +289,6 @@ executable simplex-bot-advanced
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
     , network-transport ==0.5.6
-    , network-udp ==0.0.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -347,7 +344,6 @@ executable simplex-broadcast-bot
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
     , network-transport ==0.5.6
-    , network-udp ==0.0.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -402,7 +398,6 @@ executable simplex-chat
     , mtl ==2.3.*
     , network ==3.1.*
     , network-transport ==0.5.6
-    , network-udp ==0.0.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -461,7 +456,6 @@ executable simplex-directory-service
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
     , network-transport ==0.5.6
-    , network-udp ==0.0.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -546,7 +540,6 @@ test-suite simplex-chat-test
     , mtl ==2.3.*
     , network ==3.1.*
     , network-transport ==0.5.6
-    , network-udp ==0.0.*
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
