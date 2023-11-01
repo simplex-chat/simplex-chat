@@ -389,6 +389,16 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           }
         }
       },
+      openGroupLink = { groupInfo ->
+        hideKeyboard(view)
+        withApi {
+          val link = chatModel.controller.apiGetGroupLink(groupInfo.groupId)
+          ModalManager.end.closeModals()
+          ModalManager.end.showModalCloseable(true) {
+            GroupLinkView(chatModel, groupInfo, link?.first, link?.second, onGroupLinkUpdated = null)
+          }
+        }
+      },
       markRead = { range, unreadCountAfter ->
         chatModel.markChatItemsRead(chat.chatInfo, range, unreadCountAfter)
         ntfManager.cancelNotificationsForChat(chat.id)
@@ -449,6 +459,7 @@ fun ChatLayout(
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
   addMembers: (GroupInfo) -> Unit,
+  openGroupLink: (GroupInfo) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
@@ -495,7 +506,7 @@ fun ChatLayout(
         }
 
         Scaffold(
-          topBar = { ChatInfoToolbar(chat, back, info, startCall, endCall, addMembers, changeNtfsState, onSearchValueChanged) },
+          topBar = { ChatInfoToolbar(chat, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged) },
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = { floatingButton.value() },
@@ -526,6 +537,7 @@ fun ChatInfoToolbar(
   startCall: (CallMediaType) -> Unit,
   endCall: () -> Unit,
   addMembers: (GroupInfo) -> Unit,
+  openGroupLink: (GroupInfo) -> Unit,
   changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
 ) {
@@ -607,13 +619,24 @@ fun ChatInfoToolbar(
         })
       }
     }
-  } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.canAddMembers && !chat.chatInfo.incognito) {
-    barButtons.add {
-      IconButton({
-        showMenu.value = false
-        addMembers(chat.chatInfo.groupInfo)
-      }) {
-        Icon(painterResource(MR.images.ic_person_add_500), stringResource(MR.strings.icon_descr_add_members), tint = MaterialTheme.colors.primary)
+  } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.canAddMembers) {
+    if (!chat.chatInfo.incognito) {
+      barButtons.add {
+        IconButton({
+          showMenu.value = false
+          addMembers(chat.chatInfo.groupInfo)
+        }) {
+          Icon(painterResource(MR.images.ic_person_add_500), stringResource(MR.strings.icon_descr_add_members), tint = MaterialTheme.colors.primary)
+        }
+      }
+    } else {
+      barButtons.add {
+        IconButton({
+          showMenu.value = false
+          openGroupLink(chat.chatInfo.groupInfo)
+        }) {
+          Icon(painterResource(MR.images.ic_add_link), stringResource(MR.strings.group_link), tint = MaterialTheme.colors.primary)
+        }
       }
     }
   }
@@ -1341,6 +1364,7 @@ fun PreviewChatLayout() {
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
       addMembers = { _ -> },
+      openGroupLink = {},
       markRead = { _, _ -> },
       changeNtfsState = { _, _ -> },
       onSearchValueChanged = {},
@@ -1411,6 +1435,7 @@ fun PreviewGroupChatLayout() {
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
       addMembers = { _ -> },
+      openGroupLink = {},
       markRead = { _, _ -> },
       changeNtfsState = { _, _ -> },
       onSearchValueChanged = {},

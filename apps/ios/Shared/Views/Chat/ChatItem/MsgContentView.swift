@@ -25,7 +25,7 @@ private func typing(_ w: Font.Weight = .light) -> Text {
 }
 
 struct MsgContentView: View {
-    @EnvironmentObject var chat: Chat
+    @ObservedObject var chat: Chat
     var text: String
     var formattedText: [FormattedText]? = nil
     var sender: String? = nil
@@ -152,6 +152,7 @@ struct MsgContentView_Previews: PreviewProvider {
     static var previews: some View {
         let chatItem = ChatItem.getSample(1, .directSnd, .now, "hello")
         return MsgContentView(
+            chat: Chat.sampleData,
             text: chatItem.text,
             formattedText: chatItem.formattedText,
             sender: chatItem.memberDisplayName,

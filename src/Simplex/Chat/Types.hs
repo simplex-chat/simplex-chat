@@ -515,6 +515,10 @@ instance ToJSON Profile where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
+profileFromName :: ContactName -> Profile
+profileFromName displayName =
+  Profile {displayName, fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
+
 -- check if profiles match ignoring preferences
 profilesMatch :: LocalProfile -> LocalProfile -> Bool
 profilesMatch
@@ -620,6 +624,18 @@ data GroupInvitation = GroupInvitation
 instance ToJSON GroupInvitation where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+
+data GroupLinkInvitation = GroupLinkInvitation
+  { fromMember :: MemberIdRole,
+    fromMemberName :: ContactName,
+    invitedMember :: MemberIdRole,
+    groupProfile :: GroupProfile
+  }
+  deriving (Eq, Show, Generic, FromJSON)
+
+instance ToJSON GroupLinkInvitation where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
 
 data MemberIdRole = MemberIdRole
   { memberId :: MemberId,
