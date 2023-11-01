@@ -422,12 +422,12 @@ private fun DropDownMenuForMember(member: GroupMember, groupInfo: GroupInfo, sho
       })
     }
     if (member.memberSettings.showMessages) {
-      ItemAction(stringResource(MR.strings.block_member_button), painterResource(MR.images.ic_do_not_touch), onClick = {
+      ItemAction(stringResource(MR.strings.block_member_button), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, onClick = {
         blockMemberAlert(groupInfo, member)
         showMenu.value = false
       })
     } else {
-      ItemAction(stringResource(MR.strings.unblock_member_button), painterResource(MR.images.ic_back_hand), onClick = {
+      ItemAction(stringResource(MR.strings.unblock_member_button), painterResource(MR.images.ic_do_not_touch), onClick = {
         unblockMemberAlert(groupInfo, member)
         showMenu.value = false
       })
