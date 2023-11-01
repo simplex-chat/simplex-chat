@@ -426,11 +426,11 @@ data ChatCommand
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
   | StoreRemoteFile {remoteHostId :: RemoteHostId, storeEncrypted :: Maybe Bool, localPath :: FilePath}
   | GetRemoteFile {remoteHostId :: RemoteHostId, file :: RemoteFile}
-  | StartRemoteCtrl -- ^ Start listening for announcements from all registered controllers
-  | RegisterRemoteCtrl SignedOOB -- ^ Register OOB data for remote controller discovery and handshake
+  | ConnectRemoteCtrl SignedOOB -- ^ Connect new or existing controller via OOB data
+  | FindKnownRemoteCtrl -- ^ Start listening for announcements from all existing controllers
+  | ConfirmRemoteCtrl RemoteCtrlId -- ^ Confirm the connection with found controller
+  | VerifyRemoteCtrlSession RemoteCtrlId Text -- ^ Verify remote controller session
   | ListRemoteCtrls
-  | AcceptRemoteCtrl RemoteCtrlId -- ^ Accept discovered data and store confirmation
-  | RejectRemoteCtrl RemoteCtrlId -- ^ Reject and blacklist discovered data
   | StopRemoteCtrl -- ^ Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a remote controller session
   | QuitChat
@@ -458,11 +458,11 @@ allowRemoteCommand = \case
   GetRemoteFile {} -> False
   StopRemoteHost _ -> False
   DeleteRemoteHost _ -> False
-  RegisterRemoteCtrl {} -> False
-  StartRemoteCtrl -> False
+  ConnectRemoteCtrl {} -> False
+  FindKnownRemoteCtrl -> False
+  ConfirmRemoteCtrl _ -> False
+  VerifyRemoteCtrlSession {} -> False
   ListRemoteCtrls -> False
-  AcceptRemoteCtrl _ -> False
-  RejectRemoteCtrl _ -> False
   StopRemoteCtrl -> False
   DeleteRemoteCtrl _ -> False
   ExecChatStoreSQL _ -> False
@@ -641,14 +641,16 @@ data ChatResponse
   | CRRemoteHostCreated {remoteHost :: RemoteHostInfo}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRRemoteHostStarted {remoteHost :: RemoteHostInfo, sessionOOB :: Text}
+  | CRRemoteHostSessionCode {remoteHost :: RemoteHostInfo, sessionCode :: Text}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
   | CRRemoteFileStored {remoteHostId :: RemoteHostId, remoteFileSource :: CryptoFile}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
-  | CRRemoteCtrlRegistered {remoteCtrl :: RemoteCtrlInfo}
-  | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- unregistered fingerprint, needs confirmation
+  | CRRemoteCtrlRegistered {remoteCtrl :: RemoteCtrlInfo} -- TODO remove
+  | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- TODO remove, unregistered fingerprint, needs confirmation -- TODO is it needed?
   | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo} -- registered fingerprint, may connect
-  | CRRemoteCtrlConnecting {remoteCtrl :: RemoteCtrlInfo}
+  | CRRemoteCtrlConnecting {remoteCtrl :: RemoteCtrlInfo} -- TODO is remove
+  | CRRemoteCtrlSessionCode {remoteCtrl :: RemoteCtrlInfo, sessionCode :: Text, newCtrl :: Bool}
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlStopped
   | CRSQLResult {rows :: [Text]}
@@ -679,8 +681,9 @@ allowRemoteEvent = \case
   CRRemoteCtrlAnnounce {} -> False
   CRRemoteCtrlFound {} -> False
   CRRemoteCtrlConnecting {} -> False
+  CRRemoteCtrlSessionCode {} -> False
   CRRemoteCtrlConnected {} -> False
-  CRRemoteCtrlStopped {} -> False
+  CRRemoteCtrlStopped -> False
   _ -> True
 
 logResponseToFile :: ChatResponse -> Bool
@@ -1060,6 +1063,7 @@ data RemoteCtrlError
   | RCECertificateExpired {remoteCtrlId :: RemoteCtrlId} -- ^ A connection or CA certificate in a chain have bad validity period
   | RCECertificateUntrusted {remoteCtrlId :: RemoteCtrlId} -- ^ TLS is unable to validate certificate chain presented for a connection
   | RCEBadFingerprint -- ^ Bad fingerprint data provided in OOB
+  | RCEBadVerificationCode -- ^ The code submitted doesn't match session TLSunique
   | RCEHTTP2Error {http2Error :: String}
   | RCEHTTP2RespStatus {statusCode :: Maybe Int} -- TODO remove
   | RCEInvalidResponse {responseError :: String}
@@ -1071,13 +1075,14 @@ data ArchiveError
   | AEImportFile {file :: String, chatError :: ChatError}
   deriving (Show, Exception)
 
+-- | Host (mobile) side of transport to process remote commands and forward notifications
 data RemoteCtrlSession = RemoteCtrlSession
-  { -- | Host (mobile) side of transport to process remote commands and forward notifications
-    discoverer :: Async (),
-    supervisor :: Async (),
-    hostServer :: Maybe (Async ()),
-    discovered :: TMap C.KeyHash (TransportHost, Word16),
-    accepted :: TMVar RemoteCtrlId,
+  { discoverer :: Async (), -- multicast listener
+    supervisor :: Async (), -- session state/subprocess supervisor
+    hostServer :: Maybe (Async ()), -- a running session
+    discovered :: TMap C.KeyHash (TransportHost, Word16), -- multicast-announced services
+    confirmed :: TMVar RemoteCtrlId, -- connection fingerprint found/stored in DB
+    verified :: TMVar (RemoteCtrlId, Text), -- user confirmed the session
     remoteOutputQ :: TBQueue ChatResponse
   }
 

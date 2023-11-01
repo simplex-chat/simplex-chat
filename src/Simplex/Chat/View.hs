@@ -275,17 +275,26 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRRemoteHostCreated RemoteHostInfo {remoteHostId} -> ["remote host " <> sShow remoteHostId <> " created"]
   CRRemoteHostList hs -> viewRemoteHosts hs
   CRRemoteHostStarted {remoteHost = RemoteHostInfo {remoteHostId = rhId}, sessionOOB} -> ["remote host " <> sShow rhId <> " started", "connection code:", plain sessionOOB]
+  CRRemoteHostSessionCode {remoteHost = RemoteHostInfo {remoteHostId = rhId}, sessionCode} ->
+    ["remote host " <> sShow rhId <> " is connecting", "Compare session code with host:", plain sessionCode]
   CRRemoteHostConnected RemoteHostInfo {remoteHostId = rhId} -> ["remote host " <> sShow rhId <> " connected"]
   CRRemoteHostStopped rhId -> ["remote host " <> sShow rhId <> " stopped"]
   CRRemoteFileStored rhId (CryptoFile filePath cfArgs_) ->
     [plain $ "file " <> filePath <> " stored on remote host " <> show rhId]
       <> maybe [] ((: []) . plain . cryptoFileArgsStr testView) cfArgs_
   CRRemoteCtrlList cs -> viewRemoteCtrls cs
-  CRRemoteCtrlRegistered RemoteCtrlInfo {remoteCtrlId = rcId} -> ["remote controller " <> sShow rcId <> " registered"]
-  CRRemoteCtrlAnnounce fingerprint -> ["remote controller announced", "connection code:", plain $ strEncode fingerprint]
-  CRRemoteCtrlFound rc -> ["remote controller found:", viewRemoteCtrl rc]
-  CRRemoteCtrlConnecting RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} -> ["remote controller " <> sShow rcId <> " connecting to " <> plain rcName]
-  CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} -> ["remote controller " <> sShow rcId <> " connected, " <> plain rcName]
+  CRRemoteCtrlRegistered RemoteCtrlInfo {remoteCtrlId = rcId} ->
+    ["remote controller " <> sShow rcId <> " registered"]
+  CRRemoteCtrlAnnounce fingerprint ->
+    ["remote controller announced", "connection code:", plain $ strEncode fingerprint]
+  CRRemoteCtrlFound rc ->
+    ["remote controller found:", viewRemoteCtrl rc]
+  CRRemoteCtrlConnecting RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} ->
+    ["remote controller " <> sShow rcId <> " connecting to " <> plain rcName]
+  CRRemoteCtrlSessionCode {remoteCtrl = RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName}, sessionCode} ->
+    ["remote controller " <> sShow rcId <> " connected to " <> plain rcName, "Compare session code with controller and use:", "/verify remote ctrl " <> sShow rcId <> " " <> plain sessionCode]
+  CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} ->
+    ["remote controller " <> sShow rcId <> " session started with " <> plain rcName]
   CRRemoteCtrlStopped -> ["remote controller stopped"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->

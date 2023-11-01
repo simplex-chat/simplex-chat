@@ -1922,10 +1922,10 @@ processChatCommand = \case
   DeleteRemoteHost rh -> deleteRemoteHost rh >> ok_
   StoreRemoteFile rh encrypted_ localPath -> CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
   GetRemoteFile rh rf -> getRemoteFile rh rf >> ok_
-  StartRemoteCtrl -> withUser_ $ startRemoteCtrl (execChatCommand Nothing) >> ok_
-  RegisterRemoteCtrl oob -> withUser_ $ CRRemoteCtrlRegistered <$> withStore' (`insertRemoteCtrl` oob)
-  AcceptRemoteCtrl rc -> withUser_ $ acceptRemoteCtrl rc >> ok_
-  RejectRemoteCtrl rc -> withUser_ $ rejectRemoteCtrl rc >> ok_
+  ConnectRemoteCtrl oob -> withUser_ $ CRRemoteCtrlRegistered <$> withStore' (`insertRemoteCtrl` oob)
+  FindKnownRemoteCtrl -> withUser_ $ findKnownRemoteCtrl (execChatCommand Nothing) >> ok_
+  ConfirmRemoteCtrl rc -> withUser_ $ confirmRemoteCtrl rc >> ok_
+  VerifyRemoteCtrlSession rc sessId -> withUser_ $ verifyRemoteCtrlSession rc sessId >> ok_
   StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
   ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
@@ -5798,14 +5798,14 @@ chatCommandP =
       "/sync " *> char_ '@' *> (SyncContactRatchet <$> displayName <*> (" force=on" $> True <|> pure False)),
       "/_get code @" *> (APIGetContactCode <$> A.decimal),
       "/_get code #" *> (APIGetGroupMemberCode <$> A.decimal <* A.space <*> A.decimal),
-      "/_verify code @" *> (APIVerifyContact <$> A.decimal <*> optional (A.space *> textP)),
-      "/_verify code #" *> (APIVerifyGroupMember <$> A.decimal <* A.space <*> A.decimal <*> optional (A.space *> textP)),
+      "/_verify code @" *> (APIVerifyContact <$> A.decimal <*> optional (A.space *> verifyCodeP)),
+      "/_verify code #" *> (APIVerifyGroupMember <$> A.decimal <* A.space <*> A.decimal <*> optional (A.space *> verifyCodeP)),
       "/_enable @" *> (APIEnableContact <$> A.decimal),
       "/_enable #" *> (APIEnableGroupMember <$> A.decimal <* A.space <*> A.decimal),
       "/code " *> char_ '@' *> (GetContactCode <$> displayName),
       "/code #" *> (GetGroupMemberCode <$> displayName <* A.space <* char_ '@' <*> displayName),
-      "/verify " *> char_ '@' *> (VerifyContact <$> displayName <*> optional (A.space *> textP)),
-      "/verify #" *> (VerifyGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> optional (A.space *> textP)),
+      "/verify " *> char_ '@' *> (VerifyContact <$> displayName <*> optional (A.space *> verifyCodeP)),
+      "/verify #" *> (VerifyGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> optional (A.space *> verifyCodeP)),
       "/enable " *> char_ '@' *> (EnableContact <$> displayName),
       "/enable #" *> (EnableGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
@@ -5856,7 +5856,7 @@ chatCommandP =
       "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
       "/_connect " *> (APIAddContact <$> A.decimal <*> incognitoOnOffP),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
-      ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
+      ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       SendMessage <$> chatNameP <* A.space <*> msgTextP,
       "@#" *> (SendMemberContactMessage <$> displayName <* A.space <* char_ '@' <*> displayName <* A.space <*> msgTextP),
@@ -5926,12 +5926,11 @@ chatCommandP =
       "/delete remote host " *> (DeleteRemoteHost <$> A.decimal),
       "/store remote file " *> (StoreRemoteFile <$> A.decimal <*> optional (" encrypt=" *> onOffP) <* A.space <*> filePath),
       "/get remote file " *> (GetRemoteFile <$> A.decimal <* A.space <*> jsonP),
-      "/start remote ctrl" $> StartRemoteCtrl,
-      "/register remote ctrl " *> (RegisterRemoteCtrl <$> strP),
-      -- "/_register remote ctrl " *> (RegisterRemoteCtrl <$> jsonP),
+      "/connect remote ctrl " *> (ConnectRemoteCtrl <$> strP),
+      "/find remote ctrl" $> FindKnownRemoteCtrl,
+      "/confirm remote ctrl " *> (ConfirmRemoteCtrl <$> A.decimal),
+      "/verify remote ctrl " *> (VerifyRemoteCtrlSession <$> A.decimal <* A.space <*> textP),
       "/list remote ctrls" $> ListRemoteCtrls,
-      "/accept remote ctrl " *> (AcceptRemoteCtrl <$> A.decimal),
-      "/reject remote ctrl " *> (RejectRemoteCtrl <$> A.decimal),
       "/stop remote ctrl" $> StopRemoteCtrl,
       "/delete remote ctrl " *> (DeleteRemoteCtrl <$> A.decimal),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
@@ -5997,6 +5996,7 @@ chatCommandP =
     fullNameP = A.space *> textP <|> pure ""
     textP = safeDecodeUtf8 <$> A.takeByteString
     pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))
+    verifyCodeP = safeDecodeUtf8 <$> A.takeWhile (\c -> isDigit c || c == ' ')
     msgTextP = jsonP <|> textP
     stringP = T.unpack . safeDecodeUtf8 <$> A.takeByteString
     filePath = stringP
