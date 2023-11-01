@@ -30,7 +30,7 @@ import Simplex.Chat.Remote.Types
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding (smpDecode)
-import Simplex.Messaging.Encoding.String (strDecode, strEncode)
+import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Response (..), closeHTTP2Client, sendRequest)
@@ -419,10 +419,17 @@ startRemote mobile desktop = do
   mobile ##> ("/connect remote ctrl " <> oobLink)
   mobile <## "remote controller 1 registered"
   mobile ##> "/confirm remote ctrl 1"
-  mobile <## "ok" -- alternative scenario: accepted before controller start
+  mobile <## "ok"
   mobile <## "remote controller 1 connecting to My desktop"
-  mobile <## "remote controller 1 connected, My desktop"
-  desktop <## "remote host 1 connected"
+  -- TODO: rework tls connection prelude
+  mobile <## "remote controller 1 connected to My desktop"
+  mobile <## "Compare session code with controller and use:"
+  verifyCmd <- getTermLine mobile
+  mobile ##> verifyCmd
+  mobile <## "ok"
+  concurrently_
+    (mobile <## "remote controller 1 session started with My desktop")
+    (desktop <## "remote host 1 connected")
 
 contactBob :: TestCC -> TestCC -> IO ()
 contactBob desktop bob = do

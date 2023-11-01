@@ -1926,7 +1926,6 @@ processChatCommand = \case
   FindKnownRemoteCtrl -> withUser_ $ findKnownRemoteCtrl (execChatCommand Nothing) >> ok_
   ConfirmRemoteCtrl rc -> withUser_ $ confirmRemoteCtrl rc >> ok_
   VerifyRemoteCtrlSession rc sessId -> withUser_ $ verifyRemoteCtrlSession rc sessId >> ok_
-  -- RejectRemoteCtrl rc -> withUser_ $ rejectRemoteCtrl rc >> ok_
   StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
   ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
@@ -5803,11 +5802,11 @@ chatCommandP =
       "/_verify code #" *> (APIVerifyGroupMember <$> A.decimal <* A.space <*> A.decimal <*> optional (A.space *> textP)),
       "/_enable @" *> (APIEnableContact <$> A.decimal),
       "/_enable #" *> (APIEnableGroupMember <$> A.decimal <* A.space <*> A.decimal),
-      "/code " *> char_ '@' *> (GetContactCode <$> displayName),
+      "/code @" *> (GetContactCode <$> displayName),
       "/code #" *> (GetGroupMemberCode <$> displayName <* A.space <* char_ '@' <*> displayName),
-      "/verify " *> char_ '@' *> (VerifyContact <$> displayName <*> optional (A.space *> textP)),
+      "/verify @" *> (VerifyContact <$> displayName <*> optional (A.space *> textP)),
       "/verify #" *> (VerifyGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> optional (A.space *> textP)),
-      "/enable " *> char_ '@' *> (EnableContact <$> displayName),
+      "/enable @" *> (EnableContact <$> displayName),
       "/enable #" *> (EnableGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
       ("/help groups" <|> "/help group" <|> "/hg") $> ChatHelp HSGroups,

@@ -681,8 +681,9 @@ allowRemoteEvent = \case
   CRRemoteCtrlAnnounce {} -> False
   CRRemoteCtrlFound {} -> False
   CRRemoteCtrlConnecting {} -> False
+  CRRemoteCtrlSessionCode {} -> False
   CRRemoteCtrlConnected {} -> False
-  CRRemoteCtrlStopped {} -> False
+  CRRemoteCtrlStopped -> False
   _ -> True
 
 logResponseToFile :: ChatResponse -> Bool
@@ -1062,6 +1063,7 @@ data RemoteCtrlError
   | RCECertificateExpired {remoteCtrlId :: RemoteCtrlId} -- ^ A connection or CA certificate in a chain have bad validity period
   | RCECertificateUntrusted {remoteCtrlId :: RemoteCtrlId} -- ^ TLS is unable to validate certificate chain presented for a connection
   | RCEBadFingerprint -- ^ Bad fingerprint data provided in OOB
+  | RCEBadVerificationCode -- ^ The code submitted doesn't match session TLSunique
   | RCEHTTP2Error {http2Error :: String}
   | RCEHTTP2RespStatus {statusCode :: Maybe Int} -- TODO remove
   | RCEInvalidResponse {responseError :: String}
@@ -1073,13 +1075,14 @@ data ArchiveError
   | AEImportFile {file :: String, chatError :: ChatError}
   deriving (Show, Exception)
 
+-- | Host (mobile) side of transport to process remote commands and forward notifications
 data RemoteCtrlSession = RemoteCtrlSession
-  { -- | Host (mobile) side of transport to process remote commands and forward notifications
-    discoverer :: Async (),
-    supervisor :: Async (),
-    hostServer :: Maybe (Async ()),
-    discovered :: TMap C.KeyHash (TransportHost, Word16),
-    accepted :: TMVar RemoteCtrlId,
+  { discoverer :: Async (), -- multicast listener
+    supervisor :: Async (), -- session state/subprocess supervisor
+    hostServer :: Maybe (Async ()), -- a running session
+    discovered :: TMap C.KeyHash (TransportHost, Word16), -- multicast-announced services
+    confirmed :: TMVar RemoteCtrlId, -- connection fingerprint found/stored in DB
+    verified :: TMVar (RemoteCtrlId, Text), -- user confirmed the session
     remoteOutputQ :: TBQueue ChatResponse
   }
 
