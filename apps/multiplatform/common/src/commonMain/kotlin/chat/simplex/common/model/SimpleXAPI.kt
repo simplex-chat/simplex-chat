@@ -745,6 +745,9 @@ object ChatController {
     }
   }
 
+  suspend fun apiSetMemberSettings(groupId: Long, groupMemberId: Long, memberSettings: GroupMemberSettings): Boolean =
+    sendCommandOkResp(CC.ApiSetMemberSettings(groupId, groupMemberId, memberSettings))
+
   suspend fun apiContactInfo(contactId: Long): Pair<ConnectionStats, Profile?>? {
     val r = sendCmd(CC.APIContactInfo(contactId))
     if (r is CR.ContactInfo) return r.connectionStats to r.customUserProfile
@@ -1926,6 +1929,7 @@ sealed class CC {
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
   class APIGetNetworkConfig: CC()
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
+  class ApiSetMemberSettings(val groupId: Long, val groupMemberId: Long, val memberSettings: GroupMemberSettings): CC()
   class APIContactInfo(val contactId: Long): CC()
   class APIGroupMemberInfo(val groupId: Long, val groupMemberId: Long): CC()
   class APISwitchContact(val contactId: Long): CC()
@@ -2036,6 +2040,7 @@ sealed class CC {
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
     is APIGetNetworkConfig -> "/network"
     is APISetChatSettings -> "/_settings ${chatRef(type, id)} ${json.encodeToString(chatSettings)}"
+    is ApiSetMemberSettings -> "/_member settings #$groupId $groupMemberId ${json.encodeToString(memberSettings)}"
     is APIContactInfo -> "/_info @$contactId"
     is APIGroupMemberInfo -> "/_info #$groupId $groupMemberId"
     is APISwitchContact -> "/_switch @$contactId"
@@ -2139,9 +2144,10 @@ sealed class CC {
     is APITestProtoServer -> "testProtoServer"
     is APISetChatItemTTL -> "apiSetChatItemTTL"
     is APIGetChatItemTTL -> "apiGetChatItemTTL"
-    is APISetNetworkConfig -> "/apiSetNetworkConfig"
-    is APIGetNetworkConfig -> "/apiGetNetworkConfig"
-    is APISetChatSettings -> "/apiSetChatSettings"
+    is APISetNetworkConfig -> "apiSetNetworkConfig"
+    is APIGetNetworkConfig -> "apiGetNetworkConfig"
+    is APISetChatSettings -> "apiSetChatSettings"
+    is ApiSetMemberSettings -> "apiSetMemberSettings"
     is APIContactInfo -> "apiContactInfo"
     is APIGroupMemberInfo -> "apiGroupMemberInfo"
     is APISwitchContact -> "apiSwitchContact"

@@ -383,7 +383,7 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
 
 private fun membersStatuses(chatModel: ChatModel, memberDeliveryStatuses: List<MemberDeliveryStatus>): List<Pair<GroupMember, CIStatus>> {
   return memberDeliveryStatuses.mapNotNull { mds ->
-    chatModel.groupMembers.firstOrNull { it.groupMemberId == mds.groupMemberId }?.let { mem ->
+    chatModel.getGroupMember(mds.groupMemberId)?.let { mem ->
       mem to mds.memberDeliveryStatus
     }
   }
