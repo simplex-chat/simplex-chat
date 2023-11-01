@@ -5,6 +5,9 @@
 
 module RemoteTests where
 
+import Simplex.Chat.Remote.RevHTTP
+import qualified Simplex.RemoteControl.Discovery as Discovery
+import Simplex.RemoteControl.Types
 import ChatClient
 import ChatTests.Utils
 import Control.Logger.Simple
@@ -23,13 +26,11 @@ import Simplex.Chat.Archive (archiveFilesFolder)
 import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..))
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
-import qualified Simplex.Chat.Remote.Discovery as Discovery
 import Simplex.Chat.Remote.Types
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding (smpDecode)
 import Simplex.Messaging.Encoding.String (strDecode, strEncode)
-import qualified Simplex.Messaging.Transport as Transport
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Response (..), closeHTTP2Client, sendRequest)
@@ -43,9 +44,9 @@ import UnliftIO.Directory
 
 remoteTests :: SpecWith FilePath
 remoteTests = describe "Remote" $ do
-  it "generates usable credentials" genCredentialsTest
+  -- it "generates usable credentials" genCredentialsTest
+  -- it "OOB encoding, decoding, and signatures are correct" oobCodecTest
   it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
-  it "OOB encoding, decoding, and signatures are correct" oobCodecTest
   it "performs protocol handshake" remoteHandshakeTest
   it "performs protocol handshake (again)" remoteHandshakeTest -- leaking servers regression check
   it "sends messages" remoteMessageTest
@@ -55,38 +56,39 @@ remoteTests = describe "Remote" $ do
 
 -- * Low-level TLS with ephemeral credentials
 
-genCredentialsTest :: (HasCallStack) => FilePath -> IO ()
-genCredentialsTest _tmp = do
-  (fingerprint, credentials) <- genTestCredentials
-  started <- newEmptyTMVarIO
-  bracket (Discovery.startTLSServer started credentials serverHandler) cancel $ \_server -> do
-    ok <- atomically (readTMVar started)
-    port <- maybe (error "TLS server failed to start") pure ok
-    logNote $ "Assigned port: " <> tshow port
-    Discovery.connectTLSClient ("127.0.0.1", fromIntegral port) fingerprint clientHandler
-  where
-    serverHandler serverTls = do
-      logNote "Sending from server"
-      Transport.putLn serverTls "hi client"
-      logNote "Reading from server"
-      Transport.getLn serverTls `shouldReturn` "hi server"
-    clientHandler clientTls = do
-      logNote "Sending from client"
-      Transport.putLn clientTls "hi server"
-      logNote "Reading from client"
-      Transport.getLn clientTls `shouldReturn` "hi client"
+-- -- XXX: extract
+-- genCredentialsTest :: (HasCallStack) => FilePath -> IO ()
+-- genCredentialsTest _tmp = do
+--   (fingerprint, credentials) <- genTestCredentials
+--   started <- newEmptyTMVarIO
+--   bracket (startTLSServer started credentials serverHandler) cancel $ \_server -> do
+--     ok <- atomically (readTMVar started)
+--     port <- maybe (error "TLS server failed to start") pure ok
+--     logNote $ "Assigned port: " <> tshow port
+--     connectTLSClient ("127.0.0.1", fromIntegral port) fingerprint clientHandler
+--   where
+--     serverHandler serverTls = do
+--       logNote "Sending from server"
+--       Transport.putLn serverTls "hi client"
+--       logNote "Reading from server"
+--       Transport.getLn serverTls `shouldReturn` "hi server"
+--     clientHandler clientTls = do
+--       logNote "Sending from client"
+--       Transport.putLn clientTls "hi server"
+--       logNote "Reading from client"
+--       Transport.getLn clientTls `shouldReturn` "hi client"
 
 -- * UDP discovery and rever HTTP2
 
-oobCodecTest :: (HasCallStack) => FilePath -> IO ()
-oobCodecTest _tmp = do
-  subscribers <- newTMVarIO 0
-  localAddr <- Discovery.getLocalAddress subscribers >>= maybe (fail "unable to get local address") pure
-  (fingerprint, _credentials) <- genTestCredentials
-  (_dhKey, _sigKey, _ann, signedOOB@(SignedOOB oob _sig)) <- Discovery.startSession (Just "Desktop") (localAddr, read Discovery.DISCOVERY_PORT) fingerprint
-  verifySignedOOB signedOOB `shouldBe` True
-  strDecode (strEncode oob) `shouldBe` Right oob
-  strDecode (strEncode signedOOB) `shouldBe` Right signedOOB
+-- oobCodecTest :: (HasCallStack) => FilePath -> IO ()
+-- oobCodecTest _tmp = do
+--   subscribers <- newTMVarIO 0
+--   localAddr <- Discovery.getLocalAddress subscribers >>= maybe (fail "unable to get local address") pure
+--   (fingerprint, _credentials) <- genTestCredentials
+--   (_dhKey, _sigKey, _ann, signedOOB@(SignedOOB oob _sig)) <- Discovery.startSession (Just "Desktop") (localAddr, read Discovery.DISCOVERY_PORT) fingerprint
+--   verifySignedOOB signedOOB `shouldBe` True
+--   strDecode (strEncode oob) `shouldBe` Right oob
+--   strDecode (strEncode signedOOB) `shouldBe` Right signedOOB
 
 announceDiscoverHttp2Test :: (HasCallStack) => FilePath -> IO ()
 announceDiscoverHttp2Test _tmp = do
@@ -99,7 +101,7 @@ announceDiscoverHttp2Test _tmp = do
   controller <- async $ do
     logNote "Controller: starting"
     bracket
-      (Discovery.announceRevHTTP2 tasks (sigKey, ann) credentials (putMVar finished ()) >>= either (fail . show) pure)
+      (announceRevHTTP2 tasks (sigKey, ann) credentials (putMVar finished ()) >>= either (fail . show) pure)
       closeHTTP2Client
       ( \http -> do
           logNote "Controller: got client"
@@ -119,7 +121,7 @@ announceDiscoverHttp2Test _tmp = do
     logNote $ "Host: connecting to " <> tshow service
     server <- async $ Discovery.connectTLSClient service fingerprint $ \tls -> do
       logNote "Host: got tls"
-      flip Discovery.attachHTTP2Server tls $ \HTTP2Request {sendResponse} -> do
+      flip attachHTTP2Server tls $ \HTTP2Request {sendResponse} -> do
         logNote "Host: got request"
         sendResponse $ S.responseNoBody ok200 []
         logNote "Host: sent response"

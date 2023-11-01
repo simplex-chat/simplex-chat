@@ -15,6 +15,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.RemoteControl.Types
 
 insertRemoteHost :: DB.Connection -> FilePath -> Text -> C.APrivateSignKey -> C.SignedCertificate -> IO RemoteHostId
 insertRemoteHost db storePath displayName caKey caCert = do
