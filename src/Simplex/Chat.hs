@@ -5798,14 +5798,14 @@ chatCommandP =
       "/sync " *> char_ '@' *> (SyncContactRatchet <$> displayName <*> (" force=on" $> True <|> pure False)),
       "/_get code @" *> (APIGetContactCode <$> A.decimal),
       "/_get code #" *> (APIGetGroupMemberCode <$> A.decimal <* A.space <*> A.decimal),
-      "/_verify code @" *> (APIVerifyContact <$> A.decimal <*> optional (A.space *> textP)),
-      "/_verify code #" *> (APIVerifyGroupMember <$> A.decimal <* A.space <*> A.decimal <*> optional (A.space *> textP)),
+      "/_verify code @" *> (APIVerifyContact <$> A.decimal <*> optional (A.space *> verifyCodeP)),
+      "/_verify code #" *> (APIVerifyGroupMember <$> A.decimal <* A.space <*> A.decimal <*> optional (A.space *> verifyCodeP)),
       "/_enable @" *> (APIEnableContact <$> A.decimal),
       "/_enable #" *> (APIEnableGroupMember <$> A.decimal <* A.space <*> A.decimal),
       "/code " *> char_ '@' *> (GetContactCode <$> displayName),
       "/code #" *> (GetGroupMemberCode <$> displayName <* A.space <* char_ '@' <*> displayName),
-      "/verify " *> char_ '@' *> (VerifyContact <$> displayName <*> optional (A.space *> (safeDecodeUtf8 <$> A.takeTill isSpace))),
-      "/verify #" *> (VerifyGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> optional (A.space *> textP)),
+      "/verify " *> char_ '@' *> (VerifyContact <$> displayName <*> optional (A.space *> verifyCodeP)),
+      "/verify #" *> (VerifyGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> optional (A.space *> verifyCodeP)),
       "/enable " *> char_ '@' *> (EnableContact <$> displayName),
       "/enable #" *> (EnableGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
@@ -5996,6 +5996,7 @@ chatCommandP =
     fullNameP = A.space *> textP <|> pure ""
     textP = safeDecodeUtf8 <$> A.takeByteString
     pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))
+    verifyCodeP = safeDecodeUtf8 <$> A.takeWhile (\c -> isDigit c || c == ' ')
     msgTextP = jsonP <|> textP
     stringP = T.unpack . safeDecodeUtf8 <$> A.takeByteString
     filePath = stringP
