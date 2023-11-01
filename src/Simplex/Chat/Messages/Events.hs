@@ -15,7 +15,7 @@ data StoredGroupEvent d = StoredGroupEvent
   { chatVRange :: VersionRange,
     msgId :: SharedMsgId,
     eventData :: StoredGroupEventData,
-    dagErrors :: [IntegrityError],
+    dagErrors :: [GroupEventIntegrityError],
     sharedHash :: ByteString,
     eventDir :: GEDirection d,
     parents :: [AStoredGroupEvent]
@@ -23,7 +23,10 @@ data StoredGroupEvent d = StoredGroupEvent
 
 data AStoredGroupEvent = forall d. MsgDirectionI d => AStoredGroupEvent (StoredGroupEvent d)
 
-data IntegrityError = IntegrityError -- TODO
+data GroupEventIntegrityError
+  = GEErrInvalidHash
+  | GEErrMissingParent SharedMsgId
+  | GEErrParentHashMismatch SharedMsgId
 
 data GEDirection (d :: MsgDirection) where
   GESent :: GEDirection 'MDSnd
