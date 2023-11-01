@@ -202,10 +202,16 @@ fun FramedItemView(
       Column(Modifier.width(IntrinsicSize.Max)) {
         PriorityLayout(Modifier, CHAT_IMAGE_LAYOUT_ID) {
           if (ci.meta.itemDeleted != null) {
-            if (ci.meta.itemDeleted is CIDeleted.Moderated) {
-              FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(MR.images.ic_flag))
-            } else {
-              FramedItemHeader(stringResource(MR.strings.marked_deleted_description), true, painterResource(MR.images.ic_delete))
+            when (ci.meta.itemDeleted) {
+              is CIDeleted.Moderated -> {
+                FramedItemHeader(String.format(stringResource(MR.strings.moderated_item_description), ci.meta.itemDeleted.byGroupMember.chatViewName), true, painterResource(MR.images.ic_flag))
+              }
+              is CIDeleted.Blocked -> {
+                FramedItemHeader(stringResource(MR.strings.blocked_item_description), true, painterResource(MR.images.ic_back_hand))
+              }
+              else -> {
+                FramedItemHeader(stringResource(MR.strings.marked_deleted_description), true, painterResource(MR.images.ic_delete))
+              }
             }
           } else if (ci.meta.isLive) {
             FramedItemHeader(stringResource(MR.strings.live), false)

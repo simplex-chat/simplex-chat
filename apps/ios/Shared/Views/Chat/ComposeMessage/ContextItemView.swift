@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct ContextItemView: View {
     @Environment(\.colorScheme) var colorScheme
+    @ObservedObject var chat: Chat
     let contextItem: ChatItem
     let contextIcon: String
     let cancelContextItem: () -> Void
@@ -48,6 +49,7 @@ struct ContextItemView: View {
 
     private func msgContentView(lines: Int) -> some View {
         MsgContentView(
+            chat: chat,
             text: contextItem.text,
             formattedText: contextItem.formattedText
         )
@@ -59,6 +61,6 @@ struct ContextItemView: View {
 struct ContextItemView_Previews: PreviewProvider {
     static var previews: some View {
         let contextItem: ChatItem = ChatItem.getSample(1, .directSnd, .now, "hello")
-        return ContextItemView(contextItem: contextItem, contextIcon: "pencil.circle", cancelContextItem: {})
+        return ContextItemView(chat: Chat.sampleData, contextItem: contextItem, contextIcon: "pencil.circle", cancelContextItem: {})
     }
 }

@@ -753,6 +753,9 @@ object ChatController {
     }
   }
 
+  suspend fun apiSetMemberSettings(groupId: Long, groupMemberId: Long, memberSettings: GroupMemberSettings): Boolean =
+    sendCommandOkResp(CC.ApiSetMemberSettings(groupId, groupMemberId, memberSettings))
+
   suspend fun apiContactInfo(contactId: Long): Pair<ConnectionStats, Profile?>? {
     val r = sendCmd(CC.APIContactInfo(contactId))
     if (r is CR.ContactInfo) return r.connectionStats to r.customUserProfile
@@ -1498,6 +1501,11 @@ object ChatController {
           chatModel.updateChatInfo(cInfo)
         }
       }
+      is CR.GroupMemberUpdated -> {
+        if (active(r.user)) {
+          chatModel.upsertGroupMember(r.groupInfo, r.toMember)
+        }
+      }
       is CR.ContactsMerged -> {
         if (active(r.user) && chatModel.hasChat(r.mergedContact.id)) {
           if (chatModel.chatId.value == r.mergedContact.id) {
@@ -1606,6 +1614,16 @@ object ChatController {
         if (r.hostContact != null) {
           chatModel.dismissConnReqView(r.hostContact.activeConn.id)
           chatModel.removeChat(r.hostContact.activeConn.id)
+        }
+      }
+      is CR.GroupLinkConnecting -> {
+        if (!active(r.user)) return
+
+        chatModel.updateGroup(r.groupInfo)
+        val hostConn = r.hostMember.activeConn
+        if (hostConn != null) {
+          chatModel.dismissConnReqView(hostConn.id)
+          chatModel.removeChat(hostConn.id)
         }
       }
       is CR.JoinedGroupMemberConnecting ->
@@ -1973,6 +1991,7 @@ sealed class CC {
   class APISetNetworkConfig(val networkConfig: NetCfg): CC()
   class APIGetNetworkConfig: CC()
   class APISetChatSettings(val type: ChatType, val id: Long, val chatSettings: ChatSettings): CC()
+  class ApiSetMemberSettings(val groupId: Long, val groupMemberId: Long, val memberSettings: GroupMemberSettings): CC()
   class APIContactInfo(val contactId: Long): CC()
   class APIGroupMemberInfo(val groupId: Long, val groupMemberId: Long): CC()
   class APISwitchContact(val contactId: Long): CC()
@@ -2096,6 +2115,7 @@ sealed class CC {
     is APISetNetworkConfig -> "/_network ${json.encodeToString(networkConfig)}"
     is APIGetNetworkConfig -> "/network"
     is APISetChatSettings -> "/_settings ${chatRef(type, id)} ${json.encodeToString(chatSettings)}"
+    is ApiSetMemberSettings -> "/_member settings #$groupId $groupMemberId ${json.encodeToString(memberSettings)}"
     is APIContactInfo -> "/_info @$contactId"
     is APIGroupMemberInfo -> "/_info #$groupId $groupMemberId"
     is APISwitchContact -> "/_switch @$contactId"
@@ -2212,9 +2232,10 @@ sealed class CC {
     is APITestProtoServer -> "testProtoServer"
     is APISetChatItemTTL -> "apiSetChatItemTTL"
     is APIGetChatItemTTL -> "apiGetChatItemTTL"
-    is APISetNetworkConfig -> "/apiSetNetworkConfig"
-    is APIGetNetworkConfig -> "/apiGetNetworkConfig"
-    is APISetChatSettings -> "/apiSetChatSettings"
+    is APISetNetworkConfig -> "apiSetNetworkConfig"
+    is APIGetNetworkConfig -> "apiGetNetworkConfig"
+    is APISetChatSettings -> "apiSetChatSettings"
+    is ApiSetMemberSettings -> "apiSetMemberSettings"
     is APIContactInfo -> "apiContactInfo"
     is APIGroupMemberInfo -> "apiGroupMemberInfo"
     is APISwitchContact -> "apiSwitchContact"
@@ -3497,6 +3518,7 @@ sealed class CR {
   @Serializable @SerialName("acceptingContactRequest") class AcceptingContactRequest(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected(val user: UserRef): CR()
   @Serializable @SerialName("contactUpdated") class ContactUpdated(val user: UserRef, val toContact: Contact): CR()
+  @Serializable @SerialName("groupMemberUpdated") class GroupMemberUpdated(val user: UserRef, val groupInfo: GroupInfo, val fromMember: GroupMember, val toMember: GroupMember): CR()
   // TODO remove below
   @Serializable @SerialName("contactsSubscribed") class ContactsSubscribed(val server: String, val contactRefs: List<ContactRef>): CR()
   @Serializable @SerialName("contactsDisconnected") class ContactsDisconnected(val server: String, val contactRefs: List<ContactRef>): CR()
@@ -3519,6 +3541,7 @@ sealed class CR {
   @Serializable @SerialName("groupCreated") class GroupCreated(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("sentGroupInvitation") class SentGroupInvitation(val user: UserRef, val groupInfo: GroupInfo, val contact: Contact, val member: GroupMember): CR()
   @Serializable @SerialName("userAcceptedGroupSent") class UserAcceptedGroupSent (val user: UserRef, val groupInfo: GroupInfo, val hostContact: Contact? = null): CR()
+  @Serializable @SerialName("groupLinkConnecting") class GroupLinkConnecting (val user: UserRef, val groupInfo: GroupInfo, val hostMember: GroupMember): CR()
   @Serializable @SerialName("userDeletedMember") class UserDeletedMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("leftMemberUser") class LeftMemberUser(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("groupMembers") class GroupMembers(val user: UserRef, val group: Group): CR()
@@ -3647,6 +3670,7 @@ sealed class CR {
     is AcceptingContactRequest -> "acceptingContactRequest"
     is ContactRequestRejected -> "contactRequestRejected"
     is ContactUpdated -> "contactUpdated"
+    is GroupMemberUpdated -> "groupMemberUpdated"
     is ContactsSubscribed -> "contactsSubscribed"
     is ContactsDisconnected -> "contactsDisconnected"
     is ContactSubSummary -> "contactSubSummary"
@@ -3666,6 +3690,7 @@ sealed class CR {
     is GroupCreated -> "groupCreated"
     is SentGroupInvitation -> "sentGroupInvitation"
     is UserAcceptedGroupSent -> "userAcceptedGroupSent"
+    is GroupLinkConnecting -> "groupLinkConnecting"
     is UserDeletedMember -> "userDeletedMember"
     is LeftMemberUser -> "leftMemberUser"
     is GroupMembers -> "groupMembers"
@@ -3789,6 +3814,7 @@ sealed class CR {
     is AcceptingContactRequest -> withUser(user, json.encodeToString(contact))
     is ContactRequestRejected -> withUser(user, noDetails())
     is ContactUpdated -> withUser(user, json.encodeToString(toContact))
+    is GroupMemberUpdated -> withUser(user, "groupInfo: $groupInfo\nfromMember: $fromMember\ntoMember: $toMember")
     is ContactsSubscribed -> "server: $server\ncontacts:\n${json.encodeToString(contactRefs)}"
     is ContactsDisconnected -> "server: $server\ncontacts:\n${json.encodeToString(contactRefs)}"
     is ContactSubSummary -> withUser(user, json.encodeToString(contactSubscriptions))
@@ -3808,6 +3834,7 @@ sealed class CR {
     is GroupCreated -> withUser(user, json.encodeToString(groupInfo))
     is SentGroupInvitation -> withUser(user, "groupInfo: $groupInfo\ncontact: $contact\nmember: $member")
     is UserAcceptedGroupSent -> json.encodeToString(groupInfo)
+    is GroupLinkConnecting -> withUser(user, "groupInfo: $groupInfo\nhostMember: $hostMember")
     is UserDeletedMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is LeftMemberUser -> withUser(user, json.encodeToString(groupInfo))
     is GroupMembers -> withUser(user, json.encodeToString(group))

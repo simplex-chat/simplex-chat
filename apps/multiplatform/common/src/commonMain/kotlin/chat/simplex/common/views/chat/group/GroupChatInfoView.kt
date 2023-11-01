@@ -4,10 +4,12 @@ import InfoRow
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
+import SectionItemViewLongClickable
 import SectionSpacer
 import SectionTextFooter
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
@@ -31,6 +33,7 @@ import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
+import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.launch
@@ -82,7 +85,7 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberR
             member to null
           }
           ModalManager.end.showModalCloseable(true) { closeCurrent ->
-            remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }.value?.let { mem ->
+            remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
               GroupMemberInfoView(groupInfo, mem, stats, code, chatModel, closeCurrent) {
                 closeCurrent()
                 close()
@@ -151,6 +154,23 @@ fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> U
       withApi {
         chatModel.controller.leaveGroup(groupInfo.groupId)
         close?.invoke()
+      }
+    },
+    destructive = true,
+  )
+}
+
+private fun removeMemberAlert(groupInfo: GroupInfo, mem: GroupMember) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.button_remove_member_question),
+    text = generalGetString(MR.strings.member_will_be_removed_from_group_cannot_be_undone),
+    confirmText = generalGetString(MR.strings.remove_member_confirmation),
+    onConfirm = {
+      withApi {
+        val updatedMember = chatModel.controller.apiRemoveMember(groupInfo.groupId, mem.groupMemberId)
+        if (updatedMember != null) {
+          chatModel.upsertGroupMember(groupInfo, updatedMember)
+        }
       }
     },
     destructive = true,
@@ -238,8 +258,10 @@ fun GroupChatInfoLayout(
     }
     items(filteredMembers.value) { member ->
       Divider()
-      SectionItemView({ showMemberInfo(member) }, minHeight = 54.dp) {
-        MemberRow(member)
+      val showMenu = remember { mutableStateOf(false) }
+      SectionItemViewLongClickable({ showMemberInfo(member) }, { showMenu.value = true }, minHeight = 54.dp) {
+        DropDownMenuForMember(member, groupInfo, showMenu)
+        MemberRow(member, onClick = { showMemberInfo(member) })
       }
     }
     item {
@@ -344,7 +366,7 @@ private fun AddMembersButton(tint: Color = MaterialTheme.colors.primary, onClick
 }
 
 @Composable
-private fun MemberRow(member: GroupMember, user: Boolean = false) {
+private fun MemberRow(member: GroupMember, user: Boolean = false, onClick: (() -> Unit)? = null) {
   Row(
     Modifier.fillMaxWidth(),
     horizontalArrangement = Arrangement.SpaceBetween,
@@ -388,6 +410,29 @@ private fun MemberRow(member: GroupMember, user: Boolean = false) {
 @Composable
 private fun MemberVerifiedShield() {
   Icon(painterResource(MR.images.ic_verified_user), null, Modifier.padding(end = 3.dp).size(16.dp), tint = MaterialTheme.colors.secondary)
+}
+
+@Composable
+private fun DropDownMenuForMember(member: GroupMember, groupInfo: GroupInfo, showMenu: MutableState<Boolean>) {
+  DefaultDropdownMenu(showMenu) {
+    if (member.canBeRemoved(groupInfo)) {
+      ItemAction(stringResource(MR.strings.remove_member_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
+        removeMemberAlert(groupInfo, member)
+        showMenu.value = false
+      })
+    }
+    if (member.memberSettings.showMessages) {
+      ItemAction(stringResource(MR.strings.block_member_button), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, onClick = {
+        blockMemberAlert(groupInfo, member)
+        showMenu.value = false
+      })
+    } else {
+      ItemAction(stringResource(MR.strings.unblock_member_button), painterResource(MR.images.ic_do_not_touch), onClick = {
+        unblockMemberAlert(groupInfo, member)
+        showMenu.value = false
+      })
+    }
+  }
 }
 
 @Composable
