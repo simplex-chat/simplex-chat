@@ -796,6 +796,7 @@ CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
 );
 CREATE INDEX idx_group_events_user_id ON group_events(user_id);
 CREATE INDEX idx_group_events_chat_item_id ON group_events(chat_item_id);
+CREATE INDEX idx_group_events_shared_msg_id ON group_events(shared_msg_id);
 CREATE INDEX idx_group_events_rcvd_author_group_member_id ON group_events(
   rcvd_author_group_member_id
 );
