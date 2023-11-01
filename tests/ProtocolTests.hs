@@ -76,10 +76,10 @@ s ##==## msg = do
   s ==## msg
 
 (==#) :: MsgEncodingI e => ByteString -> ChatMsgEvent e -> Expectation
-s ==# msg = s ==## ChatMessage chatInitialVRange Nothing msg
+s ==# msg = s ==## ChatMessage chatInitialVRange Nothing msg Nothing
 
 (#==) :: MsgEncodingI e => ByteString -> ChatMsgEvent e -> Expectation
-s #== msg = s ##== ChatMessage chatInitialVRange Nothing msg
+s #== msg = s ##== ChatMessage chatInitialVRange Nothing msg Nothing
 
 (#==#) :: MsgEncodingI e => ByteString -> ChatMsgEvent e -> Expectation
 s #==# msg = do
@@ -120,37 +120,40 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
       #==# XMsgNew (MCSimple (extMsgContent (MCImage "here's an image" $ ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=") Nothing))
   it "x.msg.new chat message" $
     "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
-      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (MCSimple (extMsgContent (MCText "hello") Nothing)))
+      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (MCSimple (extMsgContent (MCText "hello") Nothing))) Nothing
   it "x.msg.new chat message with chat version range" $
     "{\"v\":\"1-2\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
-      ##==## ChatMessage supportedChatVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (MCSimple (extMsgContent (MCText "hello") Nothing)))
+      ##==## ChatMessage supportedChatVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (MCSimple (extMsgContent (MCText "hello") Nothing))) Nothing
   it "x.msg.new quote" $
     "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}}}}"
       ##==## ChatMessage
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")
         (XMsgNew (MCQuote quotedMsg (extMsgContent (MCText "hello to you too") Nothing)))
+        Nothing
   it "x.msg.new quote - timed message TTL" $
     "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}},\"ttl\":3600}}"
       ##==## ChatMessage
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")
         (XMsgNew (MCQuote quotedMsg (ExtMsgContent (MCText "hello to you too") Nothing (Just 3600) Nothing)))
+        Nothing
   it "x.msg.new quote - live message" $
     "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello to you too\",\"type\":\"text\"},\"quote\":{\"content\":{\"text\":\"hello there!\",\"type\":\"text\"},\"msgRef\":{\"msgId\":\"BQYHCA==\",\"sent\":true,\"sentAt\":\"1970-01-01T00:00:01.000000001Z\"}},\"live\":true}}"
       ##==## ChatMessage
         chatInitialVRange
         (Just $ SharedMsgId "\1\2\3\4")
         (XMsgNew (MCQuote quotedMsg (ExtMsgContent (MCText "hello to you too") Nothing Nothing (Just True))))
+        Nothing
   it "x.msg.new forward" $
     "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true}}"
-      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (extMsgContent (MCText "hello") Nothing))
+      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (extMsgContent (MCText "hello") Nothing)) Nothing
   it "x.msg.new forward - timed message TTL" $
     "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"ttl\":3600}}"
-      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (ExtMsgContent (MCText "hello") Nothing (Just 3600) Nothing))
+      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (ExtMsgContent (MCText "hello") Nothing (Just 3600) Nothing)) Nothing
   it "x.msg.new forward - live message" $
     "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"live\":true}}"
-      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (ExtMsgContent (MCText "hello") Nothing Nothing (Just True)))
+      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (ExtMsgContent (MCText "hello") Nothing Nothing (Just True))) Nothing
   it "x.msg.new simple text with file" $
     "{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
       #==# XMsgNew (MCSimple (extMsgContent (MCText "hello") (Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing})))
@@ -171,9 +174,10 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
                 )
             )
         )
+        Nothing
   it "x.msg.new forward with file" $
     "{\"v\":\"1\",\"msgId\":\"AQIDBA==\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"},\"forward\":true,\"file\":{\"fileSize\":12345,\"fileName\":\"photo.jpg\"}}}"
-      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (extMsgContent (MCText "hello") (Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing})))
+      ##==## ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew $ MCForward (extMsgContent (MCText "hello") (Just FileInvitation {fileName = "photo.jpg", fileSize = 12345, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}))) Nothing
   it "x.msg.update" $
     "{\"v\":\"1\",\"event\":\"x.msg.update\",\"params\":{\"msgId\":\"AQIDBA==\", \"content\":{\"text\":\"hello\",\"type\":\"text\"}}}"
       #==# XMsgUpdate (SharedMsgId "\1\2\3\4") (MCText "hello") Nothing Nothing
