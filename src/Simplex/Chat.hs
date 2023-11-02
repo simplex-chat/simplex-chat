@@ -55,6 +55,7 @@ import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
+import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
@@ -104,7 +105,7 @@ import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
 import System.Exit (exitFailure, exitSuccess)
-import System.FilePath (combine, splitExtensions, takeFileName, (</>))
+import System.FilePath (takeFileName, (</>))
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, stdout)
 import System.Random (randomRIO)
 import Text.Read (readMaybe)
@@ -212,7 +213,9 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   rcvFiles <- newTVarIO M.empty
   currentCalls <- atomically TM.empty
   localDeviceName <- newTVarIO "" -- TODO set in config
+  multicastSubscribers <- newTMVarIO 0
   remoteHostSessions <- atomically TM.empty
+  remoteHostsFolder <- newTVarIO Nothing
   remoteCtrlSession <- newTVarIO Nothing
   filesFolder <- newTVarIO optFilesFolder
   chatStoreChanged <- newTVarIO False
@@ -245,7 +248,9 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
         rcvFiles,
         currentCalls,
         localDeviceName,
+        multicastSubscribers,
         remoteHostSessions,
+        remoteHostsFolder,
         remoteCtrlSession,
         config,
         filesFolder,
@@ -394,7 +399,7 @@ execChatCommand rh s = do
   case parseChatCommand s of
     Left e -> pure $ chatCmdError u e
     Right cmd -> case rh of
-      Just remoteHostId | allowRemoteCommand cmd -> execRemoteCommand u remoteHostId s
+      Just remoteHostId | allowRemoteCommand cmd -> execRemoteCommand u remoteHostId cmd s
       _ -> execChatCommand_ u cmd
 
 execChatCommand' :: ChatMonad' m => ChatCommand -> m ChatResponse
@@ -403,8 +408,8 @@ execChatCommand' cmd = asks currentUser >>= readTVarIO >>= (`execChatCommand_` c
 execChatCommand_ :: ChatMonad' m => Maybe User -> ChatCommand -> m ChatResponse
 execChatCommand_ u cmd = handleCommandError u $ processChatCommand cmd
 
-execRemoteCommand :: ChatMonad' m => Maybe User -> RemoteHostId -> ByteString -> m ChatResponse
-execRemoteCommand u rhId s = handleCommandError u $ getRemoteHostSession rhId >>= \rh -> processRemoteCommand rhId rh s
+execRemoteCommand :: ChatMonad' m => Maybe User -> RemoteHostId -> ChatCommand -> ByteString -> m ChatResponse
+execRemoteCommand u rhId cmd s = handleCommandError u $ getRemoteHostSession rhId >>= \rh -> processRemoteCommand rhId rh cmd s
 
 handleCommandError :: ChatMonad' m => Maybe User -> ExceptT ChatError m ChatResponse -> m ChatResponse
 handleCommandError u a = either (CRChatCmdError u) id <$> (runExceptT a `E.catch` (pure . Left . mkChatError))
@@ -541,6 +546,10 @@ processChatCommand = \case
   SetFilesFolder ff -> do
     createDirectoryIfMissing True ff
     asks filesFolder >>= atomically . (`writeTVar` Just ff)
+    ok_
+  SetRemoteHostsFolder rf -> do
+    createDirectoryIfMissing True rf
+    chatWriteVar remoteHostsFolder $ Just rf
     ok_
   APISetXFTPConfig cfg -> do
     asks userXFTPFileConfig >>= atomically . (`writeTVar` cfg)
@@ -1795,15 +1804,15 @@ processChatCommand = \case
     asks showLiveItems >>= atomically . (`writeTVar` on) >> ok_
   SendFile chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage (Just $ CF.plain f) Nothing (MCFile "")
-  SendImage chatName f -> withUser $ \user -> do
+    processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage (Just f) Nothing (MCFile "")
+  SendImage chatName f@(CryptoFile fPath _) -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    filePath <- toFSFilePath f
-    unless (any (`isSuffixOf` map toLower f) imageExtensions) $ throwChatError CEFileImageType {filePath}
+    filePath <- toFSFilePath fPath
+    unless (any (`isSuffixOf` map toLower fPath) imageExtensions) $ throwChatError CEFileImageType {filePath}
     fileSize <- getFileSize filePath
     unless (fileSize <= maxImageSize) $ throwChatError CEFileImageSize {filePath}
     -- TODO include file description for preview
-    processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage (Just $ CF.plain f) Nothing (MCImage "" fixedImagePreview)
+    processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage (Just f) Nothing (MCImage "" fixedImagePreview)
   ForwardFile chatName fileId -> forwardFile chatName fileId SendFile
   ForwardImage chatName fileId -> forwardFile chatName fileId SendImage
   SendFileDescription _chatName _f -> pure $ chatCmdError Nothing "TODO"
@@ -1905,19 +1914,21 @@ processChatCommand = \case
     let pref = uncurry TimedMessagesGroupPreference $ maybe (FEOff, Just 86400) (\ttl -> (FEOn, Just ttl)) ttl_
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
-  SetLocalDeviceName name -> withUser $ \_ -> chatWriteVar localDeviceName name >> ok_
+  SetLocalDeviceName name -> withUser_ $ chatWriteVar localDeviceName name >> ok_
   CreateRemoteHost -> CRRemoteHostCreated <$> createRemoteHost
   ListRemoteHosts -> CRRemoteHostList <$> listRemoteHosts
   StartRemoteHost rh -> startRemoteHost rh >> ok_
   StopRemoteHost rh -> closeRemoteHostSession rh >> ok_
   DeleteRemoteHost rh -> deleteRemoteHost rh >> ok_
-  StartRemoteCtrl -> startRemoteCtrl (execChatCommand Nothing) >> ok_
-  RegisterRemoteCtrl oob -> CRRemoteCtrlRegistered <$> withStore' (`insertRemoteCtrl` oob)
-  AcceptRemoteCtrl rc -> acceptRemoteCtrl rc >> ok_
-  RejectRemoteCtrl rc -> rejectRemoteCtrl rc >> ok_
-  StopRemoteCtrl -> stopRemoteCtrl >> ok_
-  ListRemoteCtrls -> CRRemoteCtrlList <$> listRemoteCtrls
-  DeleteRemoteCtrl rc -> deleteRemoteCtrl rc >> ok_
+  StoreRemoteFile rh encrypted_ localPath -> CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
+  GetRemoteFile rh rf -> getRemoteFile rh rf >> ok_
+  ConnectRemoteCtrl oob -> withUser_ $ CRRemoteCtrlRegistered <$> withStore' (`insertRemoteCtrl` oob)
+  FindKnownRemoteCtrl -> withUser_ $ findKnownRemoteCtrl (execChatCommand Nothing) >> ok_
+  ConfirmRemoteCtrl rc -> withUser_ $ confirmRemoteCtrl rc >> ok_
+  VerifyRemoteCtrlSession rc sessId -> withUser_ $ verifyRemoteCtrlSession rc sessId >> ok_
+  StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
+  ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
+  DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
     let versionInfo = coreVersionInfo $(simplexmqCommitQ)
@@ -2173,14 +2184,14 @@ processChatCommand = \case
     withServerProtocol p action = case userProtocol p of
       Just Dict -> action
       _ -> throwChatError $ CEServerProtocol $ AProtocolType p
-    forwardFile :: ChatName -> FileTransferId -> (ChatName -> FilePath -> ChatCommand) -> m ChatResponse
+    forwardFile :: ChatName -> FileTransferId -> (ChatName -> CryptoFile -> ChatCommand) -> m ChatResponse
     forwardFile chatName fileId sendCommand = withUser $ \user -> do
       withStore (\db -> getFileTransfer db user fileId) >>= \case
-        FTRcv RcvFileTransfer {fileStatus = RFSComplete RcvFileInfo {filePath}} -> forward filePath
-        FTSnd {fileTransferMeta = FileTransferMeta {filePath}} -> forward filePath
+        FTRcv RcvFileTransfer {fileStatus = RFSComplete RcvFileInfo {filePath}, cryptoArgs} -> forward filePath cryptoArgs
+        FTSnd {fileTransferMeta = FileTransferMeta {filePath, xftpSndFile}} -> forward filePath $ xftpSndFile >>= \f -> f.cryptoArgs
         _ -> throwChatError CEFileNotReceived {fileId}
       where
-        forward = processChatCommand . sendCommand chatName
+        forward path cfArgs = processChatCommand . sendCommand chatName $ CryptoFile path cfArgs
     getGroupAndMemberId :: User -> GroupName -> ContactName -> m (GroupId, GroupMemberId)
     getGroupAndMemberId user gName groupMemberName =
       withStore $ \db -> do
@@ -2575,10 +2586,9 @@ startReceivingFile user fileId = do
 getRcvFilePath :: forall m. ChatMonad m => FileTransferId -> Maybe FilePath -> String -> Bool -> m FilePath
 getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
   Nothing ->
-    asks filesFolder >>= readTVarIO >>= \case
-      Nothing -> do
-        dir <- (`combine` "Downloads") <$> getHomeDirectory
-        ifM (doesDirectoryExist dir) (pure dir) getChatTempDirectory
+    chatReadVar filesFolder >>= \case
+      Nothing ->
+        getDefaultFilesFolder
           >>= (`uniqueCombine` fn)
           >>= createEmptyFile
       Just filesFolder ->
@@ -2607,18 +2617,6 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
     getTmpHandle :: FilePath -> m Handle
     getTmpHandle fPath = openFile fPath AppendMode `catchThrow` (ChatError . CEFileInternal . show)
 
-uniqueCombine :: MonadIO m => FilePath -> String -> m FilePath
-uniqueCombine filePath fileName = tryCombine (0 :: Int)
-  where
-    tryCombine n =
-      let (name, ext) = splitExtensions fileName
-          suffix = if n == 0 then "" else "_" <> show n
-          f = filePath `combine` (name <> suffix <> ext)
-       in ifM (doesFileExist f) (tryCombine $ n + 1) (pure f)
-
-getChatTempDirectory :: ChatMonad m => m FilePath
-getChatTempDirectory = chatReadVar tempDirectory >>= maybe getTemporaryDirectory pure
-
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
 acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId} incognitoProfile = do
   subMode <- chatReadVar subscriptionMode
@@ -2636,6 +2634,24 @@ acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvI
     ct@Contact {activeConn = Connection {connId}} <- createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId p userContactLinkId xContactId incognitoProfile subMode
     setCommandConnId db user cmdId connId
     pure ct
+
+acceptGroupJoinRequestAsync :: ChatMonad m => User -> GroupInfo -> UserContactRequest -> GroupMemberRole -> Maybe IncognitoProfile -> m GroupMember
+acceptGroupJoinRequestAsync
+  user
+  gInfo@GroupInfo {groupProfile, membership}
+  ucr@UserContactRequest {agentInvitationId = AgentInvId invId}
+  gLinkMemRole
+  incognitoProfile = do
+    gVar <- asks idsDrg
+    (groupMemberId, memberId) <- withStore $ \db -> createAcceptedMember db gVar user gInfo ucr gLinkMemRole
+    let Profile {displayName} = profileToSendOnAccept user incognitoProfile
+        GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+        msg = XGrpLinkInv $ GroupLinkInvitation (MemberIdRole userMemberId userRole) displayName (MemberIdRole memberId gLinkMemRole) groupProfile
+    subMode <- chatReadVar subscriptionMode
+    connIds <- agentAcceptContactAsync user True invId msg subMode
+    withStore $ \db -> do
+      liftIO $ createAcceptedMemberConnection db user connIds ucr groupMemberId subMode
+      getGroupMemberById db user groupMemberId
 
 profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Profile
 profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> ip) Nothing
@@ -3440,8 +3456,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- TODO update member profile
               pure ()
             | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
+          XInfo _ -> pure () -- sent when connecting via group link
           XOk -> pure ()
-          _ -> messageError "INFO from member must have x.grp.mem.info"
+          _ -> messageError "INFO from member must have x.grp.mem.info, x.info or x.ok"
         pure ()
       CON -> do
         members <- withStore' $ \db -> getGroupMembers db user gInfo
@@ -3462,11 +3479,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           GCInviteeMember -> do
             memberConnectedChatItem gInfo m
             toView $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected}
+            let Connection {viaUserContactLink} = conn
+            when (isJust viaUserContactLink && isNothing (memberContactId m)) sendXGrpLinkMem
             intros <- withStore' $ \db -> createIntroductions db members m
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro ->
               processIntro intro `catchChatError` (toView . CRChatError (Just user))
             where
+              sendXGrpLinkMem = do
+                let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
+                    profileToSend = profileToSendOnAccept user profileMode
+                void $ sendDirectMessage conn (XGrpLinkMem profileToSend) (GroupId groupId)
               processIntro intro@GroupMemberIntro {introId} = do
                 void $ sendDirectMessage conn (XGrpMemIntro $ memberInfo (reMember intro)) (GroupId groupId)
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
@@ -3499,6 +3522,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XFile fInv -> processGroupFileInvitation' gInfo m' fInv msg msgMeta
             XFileCancel sharedMsgId -> xFileCancelGroup gInfo m' sharedMsgId msgMeta
             XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInvGroup gInfo m' sharedMsgId fileConnReq_ fName msgMeta
+            -- XInfo p -> xInfoMember gInfo m' p -- TODO use for member profile update
+            XGrpLinkMem p -> xGrpLinkMem gInfo m' conn' p
             XGrpMemNew memInfo -> xGrpMemNew gInfo m' memInfo msg msgMeta
             XGrpMemIntro memInfo -> xGrpMemIntro gInfo m' memInfo
             XGrpMemInv memId introInv -> xGrpMemInv gInfo m' memId introInv
@@ -3759,7 +3784,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted user contact
             CORRequest cReq -> do
               withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                Just (UserContactLink {autoAccept}, groupId_, _) ->
+                Just (UserContactLink {autoAccept}, groupId_, gLinkMemRole) ->
                   case autoAccept of
                     Just AutoAccept {acceptIncognito} -> case groupId_ of
                       Nothing -> do
@@ -3770,8 +3795,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                       Just groupId -> do
                         gInfo <- withStore $ \db -> getGroupInfo db user groupId
                         let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                        ct <- acceptContactRequestAsync user cReq profileMode
-                        toView $ CRAcceptingGroupJoinRequest user gInfo ct
+                        if isCompatibleRange chatVRange groupLinkNoContactVRange
+                          then do
+                            mem <- acceptGroupJoinRequestAsync user gInfo cReq gLinkMemRole profileMode
+                            createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
+                            toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
+                          else do
+                            ct <- acceptContactRequestAsync user cReq profileMode
+                            toView $ CRAcceptingGroupJoinRequest user gInfo ct
                     _ -> toView $ CRReceivedContactRequest user cReq
                 _ -> pure ()
 
@@ -4484,6 +4515,33 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   | otherwise -> Nothing
            in setPreference_ SCFTimedMessages ctUserTMPref' ctUserPrefs
 
+    -- TODO use for member profile update
+    -- xInfoMember :: GroupInfo -> GroupMember -> Profile -> m ()
+    -- xInfoMember gInfo m p' = void $ processMemberProfileUpdate gInfo m p'
+
+    xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> m ()
+    xGrpLinkMem gInfo@GroupInfo {membership} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' = do
+      xGrpLinkMemReceived <- withStore $ \db -> getXGrpLinkMemReceived db groupMemberId
+      if viaGroupLink && isNothing (memberContactId m) && memberCategory == GCHostMember && not xGrpLinkMemReceived
+        then do
+          m' <- processMemberProfileUpdate gInfo m p'
+          withStore' $ \db -> setXGrpLinkMemReceived db groupMemberId True
+          let connectedIncognito = memberIncognito membership
+          probeMatchingMemberContact m' connectedIncognito
+        else messageError "x.grp.link.mem error: invalid group link host profile update"
+
+    processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> m GroupMember
+    processMemberProfileUpdate gInfo m@GroupMember {memberContactId} p' =
+      case memberContactId of
+        Nothing -> do
+          m' <- withStore $ \db -> updateMemberProfile db user m p'
+          toView $ CRGroupMemberUpdated user gInfo m m'
+          pure m'
+        Just mContactId -> do
+          mCt <- withStore $ \db -> getContact db user mContactId
+          Contact {profile} <- processContactProfileUpdate mCt p' True
+          pure m {memberProfile = profile}
+
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
       forM_ allChatFeatures $ \(ACF f) -> do
@@ -4744,6 +4802,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         XInfo p -> do
           ct <- withStore $ \db -> createDirectContact db user conn' p
           toView $ CRContactConnecting user ct
+          pure conn'
+        XGrpLinkInv glInv -> do
+          (gInfo, host) <- withStore $ \db -> createGroupInvitedViaLink db user conn' glInv
+          toView $ CRGroupLinkConnecting user gInfo host
           pure conn'
         -- TODO show/log error, other events in SMP confirmation
         _ -> pure conn'
@@ -5523,7 +5585,7 @@ getCreateActiveUser st testView = do
       where
         loop = do
           displayName <- getContactName
-          withTransaction st (\db -> runExceptT $ createUserRecord db (AgentUserId 1) Profile {displayName, fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing} True) >>= \case
+          withTransaction st (\db -> runExceptT $ createUserRecord db (AgentUserId 1) (profileFromName displayName) True) >>= \case
             Left SEDuplicateName -> do
               putStrLn "chosen display name is already used by another profile on this device, choose another one"
               loop
@@ -5574,6 +5636,9 @@ withUser' action =
 withUser :: ChatMonad m => (User -> m ChatResponse) -> m ChatResponse
 withUser action = withUser' $ \user ->
   ifM chatStarted (action user) (throwChatError CEChatNotStarted)
+
+withUser_ :: ChatMonad m => m ChatResponse -> m ChatResponse
+withUser_ = withUser . const
 
 withUserId :: ChatMonad m => UserId -> (User -> m ChatResponse) -> m ChatResponse
 withUserId userId action = withUser $ \user -> do
@@ -5635,6 +5700,7 @@ chatCommandP =
       "/_resubscribe all" $> ResubscribeAllConnections,
       "/_temp_folder " *> (SetTempFolder <$> filePath),
       ("/_files_folder " <|> "/files_folder ") *> (SetFilesFolder <$> filePath),
+      "/remote_hosts_folder " *> (SetRemoteHostsFolder <$> filePath),
       "/_xftp " *> (APISetXFTPConfig <$> ("on " *> (Just <$> jsonP) <|> ("off" $> Nothing))),
       "/xftp " *> (APISetXFTPConfig <$> ("on" *> (Just <$> xftpCfgP) <|> ("off" $> Nothing))),
       "/_files_encrypt " *> (APISetEncryptLocalFiles <$> onOffP),
@@ -5732,14 +5798,14 @@ chatCommandP =
       "/sync " *> char_ '@' *> (SyncContactRatchet <$> displayName <*> (" force=on" $> True <|> pure False)),
       "/_get code @" *> (APIGetContactCode <$> A.decimal),
       "/_get code #" *> (APIGetGroupMemberCode <$> A.decimal <* A.space <*> A.decimal),
-      "/_verify code @" *> (APIVerifyContact <$> A.decimal <*> optional (A.space *> textP)),
-      "/_verify code #" *> (APIVerifyGroupMember <$> A.decimal <* A.space <*> A.decimal <*> optional (A.space *> textP)),
+      "/_verify code @" *> (APIVerifyContact <$> A.decimal <*> optional (A.space *> verifyCodeP)),
+      "/_verify code #" *> (APIVerifyGroupMember <$> A.decimal <* A.space <*> A.decimal <*> optional (A.space *> verifyCodeP)),
       "/_enable @" *> (APIEnableContact <$> A.decimal),
       "/_enable #" *> (APIEnableGroupMember <$> A.decimal <* A.space <*> A.decimal),
       "/code " *> char_ '@' *> (GetContactCode <$> displayName),
       "/code #" *> (GetGroupMemberCode <$> displayName <* A.space <* char_ '@' <*> displayName),
-      "/verify " *> char_ '@' *> (VerifyContact <$> displayName <*> optional (A.space *> textP)),
-      "/verify #" *> (VerifyGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> optional (A.space *> textP)),
+      "/verify " *> char_ '@' *> (VerifyContact <$> displayName <*> optional (A.space *> verifyCodeP)),
+      "/verify #" *> (VerifyGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> optional (A.space *> verifyCodeP)),
       "/enable " *> char_ '@' *> (EnableContact <$> displayName),
       "/enable #" *> (EnableGroupMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       ("/help files" <|> "/help file" <|> "/hf") $> ChatHelp HSFiles,
@@ -5790,7 +5856,7 @@ chatCommandP =
       "/_connect " *> (APIConnect <$> A.decimal <*> incognitoOnOffP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
       "/_connect " *> (APIAddContact <$> A.decimal <*> incognitoOnOffP),
       "/_set incognito :" *> (APISetConnectionIncognito <$> A.decimal <* A.space <*> onOffP),
-      ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeByteString $> Nothing)),
+      ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       SendMessage <$> chatNameP <* A.space <*> msgTextP,
       "@#" *> (SendMemberContactMessage <$> displayName <* A.space <* char_ '@' <*> displayName <* A.space <*> msgTextP),
@@ -5809,8 +5875,8 @@ chatCommandP =
       "/show" *> (ShowLiveItems <$> (A.space *> onOffP <|> pure True)),
       "/show " *> (ShowChatItem . Just <$> A.decimal),
       "/item info " *> (ShowChatItemInfo <$> chatNameP <* A.space <*> msgTextP),
-      ("/file " <|> "/f ") *> (SendFile <$> chatNameP' <* A.space <*> filePath),
-      ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> filePath),
+      ("/file " <|> "/f ") *> (SendFile <$> chatNameP' <* A.space <*> cryptoFileP),
+      ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> cryptoFileP),
       ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal),
       ("/image_forward " <|> "/imgf ") *> (ForwardImage <$> chatNameP' <* A.space <*> A.decimal),
       ("/fdescription " <|> "/fd") *> (SendFileDescription <$> chatNameP' <* A.space <*> filePath),
@@ -5858,12 +5924,13 @@ chatCommandP =
       "/start remote host " *> (StartRemoteHost <$> A.decimal),
       "/stop remote host " *> (StopRemoteHost <$> A.decimal),
       "/delete remote host " *> (DeleteRemoteHost <$> A.decimal),
-      "/start remote ctrl" $> StartRemoteCtrl,
-      "/register remote ctrl " *> (RegisterRemoteCtrl <$> (RemoteCtrlOOB <$> strP <* A.space <*> textP)),
-      "/_register remote ctrl " *> (RegisterRemoteCtrl <$> jsonP),
+      "/store remote file " *> (StoreRemoteFile <$> A.decimal <*> optional (" encrypt=" *> onOffP) <* A.space <*> filePath),
+      "/get remote file " *> (GetRemoteFile <$> A.decimal <* A.space <*> jsonP),
+      "/connect remote ctrl " *> (ConnectRemoteCtrl <$> strP),
+      "/find remote ctrl" $> FindKnownRemoteCtrl,
+      "/confirm remote ctrl " *> (ConfirmRemoteCtrl <$> A.decimal),
+      "/verify remote ctrl " *> (VerifyRemoteCtrlSession <$> A.decimal <* A.space <*> textP),
       "/list remote ctrls" $> ListRemoteCtrls,
-      "/accept remote ctrl " *> (AcceptRemoteCtrl <$> A.decimal),
-      "/reject remote ctrl " *> (RejectRemoteCtrl <$> A.decimal),
       "/stop remote ctrl" $> StopRemoteCtrl,
       "/delete remote ctrl " *> (DeleteRemoteCtrl <$> A.decimal),
       ("/quit" <|> "/q" <|> "/exit") $> QuitChat,
@@ -5929,9 +5996,14 @@ chatCommandP =
     fullNameP = A.space *> textP <|> pure ""
     textP = safeDecodeUtf8 <$> A.takeByteString
     pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))
+    verifyCodeP = safeDecodeUtf8 <$> A.takeWhile (\c -> isDigit c || c == ' ')
     msgTextP = jsonP <|> textP
     stringP = T.unpack . safeDecodeUtf8 <$> A.takeByteString
     filePath = stringP
+    cryptoFileP = do
+      cfArgs <- optional $ CFArgs <$> (" key=" *> strP <* A.space) <*> (" nonce=" *> strP)
+      path <- filePath
+      pure $ CryptoFile path cfArgs
     memberRole =
       A.choice
         [ " owner" $> GROwner,

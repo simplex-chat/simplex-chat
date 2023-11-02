@@ -142,6 +142,7 @@ object ChatModel {
   fun getChat(id: String): Chat? = chats.toList().firstOrNull { it.id == id }
   fun getContactChat(contactId: Long): Chat? = chats.toList().firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
   fun getGroupChat(groupId: Long): Chat? = chats.toList().firstOrNull { it.chatInfo is ChatInfo.Group && it.chatInfo.apiId == groupId }
+  fun getGroupMember(groupMemberId: Long): GroupMember? = groupMembers.firstOrNull { it.groupMemberId == groupMemberId }
   private fun getChatIndex(id: String): Int = chats.toList().indexOfFirst { it.id == id }
   fun addChat(chat: Chat) = chats.add(index = 0, chat)
 
@@ -447,6 +448,78 @@ object ChatModel {
     }
   }
 
+  fun getChatItemIndexOrNull(cItem: ChatItem): Int? {
+    val reversedChatItems = chatItems.asReversed()
+    val index = reversedChatItems.indexOfFirst { it.id == cItem.id }
+    return if (index != -1) index else null
+  }
+
+  // this function analyses "connected" events and assumes that each member will be there only once
+  fun getConnectedMemberNames(cItem: ChatItem): Pair<Int, List<String>> {
+    var count = 0
+    val ns = mutableListOf<String>()
+    var idx = getChatItemIndexOrNull(cItem)
+    if (cItem.mergeCategory != null && idx != null) {
+      val reversedChatItems = chatItems.asReversed()
+      while (idx < reversedChatItems.size) {
+        val ci = reversedChatItems[idx]
+        if (ci.mergeCategory != cItem.mergeCategory) break
+        val m = ci.memberConnected
+        if (m != null) {
+          ns.add(m.displayName)
+        }
+        count++
+        idx++
+      }
+    }
+    return count to ns
+  }
+
+  // returns the index of the passed item and the next item (it has smaller index)
+  fun getNextChatItem(ci: ChatItem): Pair<Int?, ChatItem?> {
+    val i = getChatItemIndexOrNull(ci)
+    return if (i != null) {
+      val reversedChatItems = chatItems.asReversed()
+      i to if (i > 0) reversedChatItems[i - 1] else null
+    } else {
+      null to null
+    }
+  }
+
+  // returns the index of the first item in the same merged group (the first hidden item)
+  // and the previous visible item with another merge category
+  fun getPrevShownChatItem(ciIndex: Int?, ciCategory: CIMergeCategory?): Pair<Int?, ChatItem?> {
+    var i = ciIndex ?: return null to null
+    val reversedChatItems = chatItems.asReversed()
+    val fst = reversedChatItems.lastIndex
+    while (i < fst) {
+      i++
+      val ci = reversedChatItems[i]
+      if (ciCategory == null || ciCategory != ci.mergeCategory) {
+        return i - 1 to ci
+      }
+    }
+    return i to null
+  }
+
+  // returns the previous member in the same merge group and the count of members in this group
+  fun getPrevHiddenMember(member: GroupMember, range: IntRange): Pair<GroupMember?, Int> {
+    val reversedChatItems = chatItems.asReversed()
+    var prevMember: GroupMember? = null
+    val names: MutableSet<Long> = mutableSetOf()
+    for (i in range) {
+      val dir = reversedChatItems[i].chatDir
+      if (dir is CIDirection.GroupRcv) {
+        val m = dir.groupMember
+        if (prevMember == null && m.groupMemberId != member.groupMemberId) {
+          prevMember = m
+        }
+        names.add(m.groupMemberId)
+      }
+    }
+    return prevMember to names.size
+  }
+
 //  func popChat(_ id: String) {
 //    if let i = getChatIndex(id) {
 //      popChat_(i)
@@ -479,7 +552,7 @@ object ChatModel {
     }
     // update current chat
     return if (chatId.value == groupInfo.id) {
-      val memberIndex = groupMembers.indexOfFirst { it.id == member.id }
+      val memberIndex = groupMembers.indexOfFirst { it.groupMemberId == member.groupMemberId }
       if (memberIndex >= 0) {
         groupMembers[memberIndex] = member
         false
@@ -1095,11 +1168,11 @@ data class GroupMember (
   val groupMemberId: Long,
   val groupId: Long,
   val memberId: String,
-  var memberRole: GroupMemberRole,
-  var memberCategory: GroupMemberCategory,
-  var memberStatus: GroupMemberStatus,
-  var memberSettings: GroupMemberSettings,
-  var invitedBy: InvitedBy,
+  val memberRole: GroupMemberRole,
+  val memberCategory: GroupMemberCategory,
+  val memberStatus: GroupMemberStatus,
+  val memberSettings: GroupMemberSettings,
+  val invitedBy: InvitedBy,
   val localDisplayName: String,
   val memberProfile: LocalProfile,
   val memberContactId: Long? = null,
@@ -1472,7 +1545,7 @@ data class ChatItem (
         chatController.appPrefs.privacyEncryptLocalFiles.get()
 
   val memberDisplayName: String? get() =
-    if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.displayName
+    if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.chatViewName
     else null
 
   val isDeletedContent: Boolean get() =
@@ -1494,6 +1567,29 @@ data class ChatItem (
         else -> null
       }
       else -> null
+    }
+
+  val mergeCategory: CIMergeCategory?
+    get() = when (content) {
+      is CIContent.RcvChatFeature,
+      is CIContent.SndChatFeature,
+      is CIContent.RcvGroupFeature,
+      is CIContent.SndGroupFeature -> CIMergeCategory.ChatFeature
+      is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
+        is RcvGroupEvent.UserRole, is RcvGroupEvent.UserDeleted, is RcvGroupEvent.GroupDeleted, is RcvGroupEvent.MemberCreatedContact -> null
+        else -> CIMergeCategory.RcvGroupEvent
+      }
+      is CIContent.SndGroupEventContent -> when (content.sndGroupEvent) {
+        is SndGroupEvent.UserRole, is SndGroupEvent.UserLeft -> null
+        else -> CIMergeCategory.SndGroupEvent
+      }
+      else -> {
+        if (meta.itemDeleted == null) {
+          null
+        } else {
+          if (chatDir.sent) CIMergeCategory.SndItemDeleted else CIMergeCategory.RcvItemDeleted
+        }
+      }
     }
 
   fun memberToModerate(chatInfo: ChatInfo): Pair<GroupInfo, GroupMember>? {
@@ -1700,6 +1796,15 @@ data class ChatItem (
   }
 }
 
+enum class CIMergeCategory {
+  MemberConnected,
+  RcvGroupEvent,
+  SndGroupEvent,
+  SndItemDeleted,
+  RcvItemDeleted,
+  ChatFeature,
+}
+
 @Serializable
 sealed class CIDirection {
   @Serializable @SerialName("directSnd") class DirectSnd: CIDirection()
@@ -1900,7 +2005,9 @@ sealed class CIContent: ItemContent {
 
   @Serializable @SerialName("sndMsgContent") class SndMsgContent(override val msgContent: MsgContent): CIContent()
   @Serializable @SerialName("rcvMsgContent") class RcvMsgContent(override val msgContent: MsgContent): CIContent()
+  // legacy - since v4.3.0 itemDeleted field is used
   @Serializable @SerialName("sndDeleted") class SndDeleted(val deleteMode: CIDeleteMode): CIContent() { override val msgContent: MsgContent? get() = null }
+  // legacy - since v4.3.0 itemDeleted field is used
   @Serializable @SerialName("rcvDeleted")  class RcvDeleted(val deleteMode: CIDeleteMode): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndCall") class SndCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvCall") class RcvCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }

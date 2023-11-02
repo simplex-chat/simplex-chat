@@ -25,7 +25,7 @@ import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
 import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.:?))
 import qualified Data.Aeson as J
-import qualified Data.Aeson.TH  as JQ
+import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
@@ -40,6 +40,7 @@ import Data.String
 import Data.Text (Text)
 import Data.Time (NominalDiffTime, UTCTime)
 import Data.Version (showVersion)
+import Data.Word (Word16)
 import Language.Haskell.TH (Exp, Q, runIO)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
@@ -72,6 +73,7 @@ import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, liftEitherError, tryAllErrors, (<$$>))
 import Simplex.Messaging.Version
+import Simplex.RemoteControl.Types
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
 import UnliftIO.STM
@@ -177,7 +179,9 @@ data ChatController = ChatController
     rcvFiles :: TVar (Map Int64 Handle),
     currentCalls :: TMap ContactId Call,
     localDeviceName :: TVar Text,
+    multicastSubscribers :: TMVar Int,
     remoteHostSessions :: TMap RemoteHostId RemoteHostSession, -- All the active remote hosts
+    remoteHostsFolder :: TVar (Maybe FilePath), -- folder for remote hosts data
     remoteCtrlSession :: TVar (Maybe RemoteCtrlSession), -- Supervisor process for hosted controllers
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
@@ -224,6 +228,7 @@ data ChatCommand
   | ResubscribeAllConnections
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
+  | SetRemoteHostsFolder FilePath
   | APISetXFTPConfig (Maybe XFTPFileConfig)
   | APISetEncryptLocalFiles Bool
   | SetContactMergeEnabled Bool
@@ -393,8 +398,8 @@ data ChatCommand
   | ShowChatItem (Maybe ChatItemId) -- UserId (not used in UI)
   | ShowChatItemInfo ChatName Text
   | ShowLiveItems Bool
-  | SendFile ChatName FilePath
-  | SendImage ChatName FilePath
+  | SendFile ChatName CryptoFile
+  | SendImage ChatName CryptoFile
   | ForwardFile ChatName FileTransferId
   | ForwardImage ChatName FileTransferId
   | SendFileDescription ChatName FilePath
@@ -419,13 +424,15 @@ data ChatCommand
   -- | SwitchRemoteHost (Maybe RemoteHostId) -- ^ Switch current remote host
   | StopRemoteHost RemoteHostId -- ^ Shut down a running session
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
-  | StartRemoteCtrl -- ^ Start listening for announcements from all registered controllers
-  | RegisterRemoteCtrl RemoteCtrlOOB -- ^ Register OOB data for satellite discovery and handshake
+  | StoreRemoteFile {remoteHostId :: RemoteHostId, storeEncrypted :: Maybe Bool, localPath :: FilePath}
+  | GetRemoteFile {remoteHostId :: RemoteHostId, file :: RemoteFile}
+  | ConnectRemoteCtrl SignedOOB -- ^ Connect new or existing controller via OOB data
+  | FindKnownRemoteCtrl -- ^ Start listening for announcements from all existing controllers
+  | ConfirmRemoteCtrl RemoteCtrlId -- ^ Confirm the connection with found controller
+  | VerifyRemoteCtrlSession RemoteCtrlId Text -- ^ Verify remote controller session
   | ListRemoteCtrls
-  | AcceptRemoteCtrl RemoteCtrlId -- ^ Accept discovered data and store confirmation
-  | RejectRemoteCtrl RemoteCtrlId -- ^ Reject and blacklist discovered data
   | StopRemoteCtrl -- ^ Stop listening for announcements or terminate an active session
-  | DeleteRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a satellite session
+  | DeleteRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a remote controller session
   | QuitChat
   | ShowVersion
   | DebugLocks
@@ -440,22 +447,27 @@ allowRemoteCommand = \case
   StartChat {} -> False
   APIStopChat -> False
   APIActivateChat -> False
-  APISuspendChat {} -> False
-  SetTempFolder {} -> False
+  APISuspendChat _ -> False
+  SetTempFolder _ -> False
   QuitChat -> False
   CreateRemoteHost -> False
   ListRemoteHosts -> False
-  StartRemoteHost {} -> False
+  StartRemoteHost _ -> False
   -- SwitchRemoteHost {} -> False
-  StopRemoteHost {} -> False
-  DeleteRemoteHost {} -> False
-  RegisterRemoteCtrl {} -> False
-  StartRemoteCtrl -> False
+  StoreRemoteFile {} -> False
+  GetRemoteFile {} -> False
+  StopRemoteHost _ -> False
+  DeleteRemoteHost _ -> False
+  ConnectRemoteCtrl {} -> False
+  FindKnownRemoteCtrl -> False
+  ConfirmRemoteCtrl _ -> False
+  VerifyRemoteCtrlSession {} -> False
   ListRemoteCtrls -> False
-  AcceptRemoteCtrl {} -> False
-  RejectRemoteCtrl {} -> False
   StopRemoteCtrl -> False
-  DeleteRemoteCtrl {} -> False
+  DeleteRemoteCtrl _ -> False
+  ExecChatStoreSQL _ -> False
+  ExecAgentStoreSQL _ -> False
+  SlowSQLQueries -> False
   _ -> True
 
 data ChatResponse
@@ -514,6 +526,7 @@ data ChatResponse
   | CRUserContactLinkUpdated {user :: User, contactLink :: UserContactLink}
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
+  | CRGroupLinkConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
   | CRUserDeletedMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {user :: User, groups :: [(GroupInfo, GroupSummary)]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
@@ -529,6 +542,7 @@ data ChatResponse
   | CRSentConfirmation {user :: User}
   | CRSentInvitation {user :: User, customUserProfile :: Maybe Profile}
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
+  | CRGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | CRContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact, updatedContact :: Contact}
   | CRContactDeleted {user :: User, contact :: Contact}
   | CRContactDeletedByContact {user :: User, contact :: Contact}
@@ -599,6 +613,7 @@ data ChatResponse
   | CRGroupLink {user :: User, groupInfo :: GroupInfo, connReqContact :: ConnReqContact, memberRole :: GroupMemberRole}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
   | CRAcceptingGroupJoinRequest {user :: User, groupInfo :: GroupInfo, contact :: Contact}
+  | CRAcceptingGroupJoinRequestMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRNoMemberContactCreating {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- only used in CLI
   | CRNewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | CRNewMemberContactSentInv {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
@@ -625,13 +640,17 @@ data ChatResponse
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostCreated {remoteHost :: RemoteHostInfo}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
+  | CRRemoteHostStarted {remoteHost :: RemoteHostInfo, sessionOOB :: Text}
+  | CRRemoteHostSessionCode {remoteHost :: RemoteHostInfo, sessionCode :: Text}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
+  | CRRemoteFileStored {remoteHostId :: RemoteHostId, remoteFileSource :: CryptoFile}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
-  | CRRemoteCtrlRegistered {remoteCtrl :: RemoteCtrlInfo}
-  | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- unregistered fingerprint, needs confirmation
+  | CRRemoteCtrlRegistered {remoteCtrl :: RemoteCtrlInfo} -- TODO remove
+  | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- TODO remove, unregistered fingerprint, needs confirmation -- TODO is it needed?
   | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo} -- registered fingerprint, may connect
-  | CRRemoteCtrlConnecting {remoteCtrl :: RemoteCtrlInfo}
+  | CRRemoteCtrlConnecting {remoteCtrl :: RemoteCtrlInfo} -- TODO is remove
+  | CRRemoteCtrlSessionCode {remoteCtrl :: RemoteCtrlInfo, sessionCode :: Text, newCtrl :: Bool}
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlStopped
   | CRSQLResult {rows :: [Text]}
@@ -662,8 +681,9 @@ allowRemoteEvent = \case
   CRRemoteCtrlAnnounce {} -> False
   CRRemoteCtrlFound {} -> False
   CRRemoteCtrlConnecting {} -> False
+  CRRemoteCtrlSessionCode {} -> False
   CRRemoteCtrlConnected {} -> False
-  CRRemoteCtrlStopped {} -> False
+  CRRemoteCtrlStopped -> False
   _ -> True
 
 logResponseToFile :: ChatResponse -> Bool
@@ -1043,6 +1063,7 @@ data RemoteCtrlError
   | RCECertificateExpired {remoteCtrlId :: RemoteCtrlId} -- ^ A connection or CA certificate in a chain have bad validity period
   | RCECertificateUntrusted {remoteCtrlId :: RemoteCtrlId} -- ^ TLS is unable to validate certificate chain presented for a connection
   | RCEBadFingerprint -- ^ Bad fingerprint data provided in OOB
+  | RCEBadVerificationCode -- ^ The code submitted doesn't match session TLSunique
   | RCEHTTP2Error {http2Error :: String}
   | RCEHTTP2RespStatus {statusCode :: Maybe Int} -- TODO remove
   | RCEInvalidResponse {responseError :: String}
@@ -1054,13 +1075,14 @@ data ArchiveError
   | AEImportFile {file :: String, chatError :: ChatError}
   deriving (Show, Exception)
 
+-- | Host (mobile) side of transport to process remote commands and forward notifications
 data RemoteCtrlSession = RemoteCtrlSession
-  { -- | Host (mobile) side of transport to process remote commands and forward notifications
-    discoverer :: Async (),
-    supervisor :: Async (),
-    hostServer :: Maybe (Async ()),
-    discovered :: TMap C.KeyHash TransportHost,
-    accepted :: TMVar RemoteCtrlId,
+  { discoverer :: Async (), -- multicast listener
+    supervisor :: Async (), -- session state/subprocess supervisor
+    hostServer :: Maybe (Async ()), -- a running session
+    discovered :: TMap C.KeyHash (TransportHost, Word16), -- multicast-announced services
+    confirmed :: TMVar RemoteCtrlId, -- connection fingerprint found/stored in DB
+    verified :: TMVar (RemoteCtrlId, Text), -- user confirmed the session
     remoteOutputQ :: TBQueue ChatResponse
   }
 

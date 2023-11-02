@@ -14,6 +14,7 @@ module Simplex.Chat.View where
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.ByteString.Char8 as B
+import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace, toUpper)
 import Data.Function (on)
@@ -76,7 +77,7 @@ serializeChatResponse :: (Maybe RemoteHostId, Maybe User) -> CurrentTime -> Time
 serializeChatResponse user_ ts tz remoteHost_ = unlines . map unStyle . responseToView user_ defaultChatConfig False ts tz remoteHost_
 
 responseToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatResponse -> [StyledString]
-responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz outputRH = \case
+responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz outputRH = \case
   CRActiveUser User {profile} -> viewUserProfile $ fromLocalProfile profile
   CRUsersList users -> viewUsersList users
   CRChatStarted -> ["chat started"]
@@ -167,6 +168,7 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
   CRUserContactLinkCreated u cReq -> ttyUser u $ connReqContact_ "Your new chat address is created!" cReq
   CRUserContactLinkDeleted u -> ttyUser u viewUserContactLinkDeleted
   CRUserAcceptedGroupSent u _g _ -> ttyUser u [] -- [ttyGroup' g <> ": joining the group..."]
+  CRGroupLinkConnecting u g _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
   CRUserDeletedMember u g m -> ttyUser u [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
   CRGroupDeletedUser u g -> ttyUser u [ttyGroup' g <> ": you deleted the group"]
@@ -183,12 +185,13 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
   CRContactAliasUpdated u c -> ttyUser u $ viewContactAliasUpdated c
   CRConnectionAliasUpdated u c -> ttyUser u $ viewConnectionAliasUpdated c
   CRContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
+  CRGroupMemberUpdated {} -> []
   CRContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
   CRReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} -> ttyUser u $ viewReceivedContactRequest c profile
-  CRRcvFileStart u ci -> ttyUser u $ receivingFile_' testView "started" ci
-  CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' testView "completed" ci
+  CRRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
+  CRRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci
   CRRcvFileSndCancelled u _ ft -> ttyUser u $ viewRcvFileSndCancelled ft
-  CRRcvFileError u ci e -> ttyUser u $ receivingFile_' testView "error" ci <> [sShow e]
+  CRRcvFileError u ci e -> ttyUser u $ receivingFile_' hu testView "error" ci <> [sShow e]
   CRSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CRSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
   CRSndFileStartXFTP {} -> []
@@ -242,6 +245,7 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
   CRGroupLink u g cReq mRole -> ttyUser u $ groupLink_ "Group link:" g cReq mRole
   CRGroupLinkDeleted u g -> ttyUser u $ viewGroupLinkDeleted g
   CRAcceptingGroupJoinRequest _ g c -> [ttyFullContact c <> ": accepting request to join group " <> ttyGroup' g <> "..."]
+  CRAcceptingGroupJoinRequestMember _ g m -> [ttyFullMember m <> ": accepting request to join group " <> ttyGroup' g <> "..."]
   CRNoMemberContactCreating u g m -> ttyUser u ["member " <> ttyGroup' g <> " " <> ttyMember m <> " does not have direct connection, creating"]
   CRNewMemberContact u _ g m -> ttyUser u ["contact for member " <> ttyGroup' g <> " " <> ttyMember m <> " is created"]
   CRNewMemberContactSentInv u _ct g m -> ttyUser u ["sent invitation to connect directly to member " <> ttyGroup' g <> " " <> ttyMember m]
@@ -268,16 +272,29 @@ responseToView (currentRH, user_) ChatConfig {logLevel, showReactions, showRecei
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRNtfToken _ status mode -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode)]
   CRNtfMessages {} -> []
-  CRRemoteHostCreated RemoteHostInfo {remoteHostId, remoteCtrlOOB} -> ("remote host " <> sShow remoteHostId <> " created") : viewRemoteCtrlOOBData remoteCtrlOOB
+  CRRemoteHostCreated RemoteHostInfo {remoteHostId} -> ["remote host " <> sShow remoteHostId <> " created"]
   CRRemoteHostList hs -> viewRemoteHosts hs
+  CRRemoteHostStarted {remoteHost = RemoteHostInfo {remoteHostId = rhId}, sessionOOB} -> ["remote host " <> sShow rhId <> " started", "connection code:", plain sessionOOB]
+  CRRemoteHostSessionCode {remoteHost = RemoteHostInfo {remoteHostId = rhId}, sessionCode} ->
+    ["remote host " <> sShow rhId <> " is connecting", "Compare session code with host:", plain sessionCode]
   CRRemoteHostConnected RemoteHostInfo {remoteHostId = rhId} -> ["remote host " <> sShow rhId <> " connected"]
   CRRemoteHostStopped rhId -> ["remote host " <> sShow rhId <> " stopped"]
+  CRRemoteFileStored rhId (CryptoFile filePath cfArgs_) ->
+    [plain $ "file " <> filePath <> " stored on remote host " <> show rhId]
+      <> maybe [] ((: []) . plain . cryptoFileArgsStr testView) cfArgs_
   CRRemoteCtrlList cs -> viewRemoteCtrls cs
-  CRRemoteCtrlRegistered RemoteCtrlInfo {remoteCtrlId = rcId} -> ["remote controller " <> sShow rcId <> " registered"]
-  CRRemoteCtrlAnnounce fingerprint -> ["remote controller announced", "connection code:", plain $ strEncode fingerprint]
-  CRRemoteCtrlFound rc -> ["remote controller found:", viewRemoteCtrl rc]
-  CRRemoteCtrlConnecting RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} -> ["remote controller " <> sShow rcId <> " connecting to " <> plain rcName]
-  CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} -> ["remote controller " <> sShow rcId <> " connected, " <> plain rcName]
+  CRRemoteCtrlRegistered RemoteCtrlInfo {remoteCtrlId = rcId} ->
+    ["remote controller " <> sShow rcId <> " registered"]
+  CRRemoteCtrlAnnounce fingerprint ->
+    ["remote controller announced", "connection code:", plain $ strEncode fingerprint]
+  CRRemoteCtrlFound rc ->
+    ["remote controller found:", viewRemoteCtrl rc]
+  CRRemoteCtrlConnecting RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} ->
+    ["remote controller " <> sShow rcId <> " connecting to " <> plain rcName]
+  CRRemoteCtrlSessionCode {remoteCtrl = RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName}, sessionCode} ->
+    ["remote controller " <> sShow rcId <> " connected to " <> plain rcName, "Compare session code with controller and use:", "/verify remote ctrl " <> sShow rcId <> " " <> plain sessionCode]
+  CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} ->
+    ["remote controller " <> sShow rcId <> " session started with " <> plain rcName]
   CRRemoteCtrlStopped -> ["remote controller stopped"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
@@ -443,7 +460,7 @@ viewGroupSubscribed :: GroupInfo -> [StyledString]
 viewGroupSubscribed g = [membershipIncognito g <> ttyFullGroup g <> ": connected to server(s)"]
 
 showSMPServer :: SMPServer -> String
-showSMPServer = B.unpack . strEncode . host
+showSMPServer srv = B.unpack $ strEncode srv.host
 
 viewHostEvent :: AProtocolType -> TransportHost -> String
 viewHostEvent p h = map toUpper (B.unpack $ strEncode p) <> " host " <> B.unpack (strEncode h)
@@ -1493,18 +1510,25 @@ savingFile' (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileSource
   ["saving file " <> sShow fileId <> fileFrom chat chatDir <> " to " <> plain filePath]
 savingFile' _ = ["saving file"] -- shouldn't happen
 
-receivingFile_' :: Bool -> String -> AChatItem -> [StyledString]
-receivingFile_' testView status (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileName, fileSource = Just (CryptoFile _ cfArgs_)}, chatDir}) =
-  [plain status <> " receiving " <> fileTransferStr fileId fileName <> fileFrom chat chatDir] <> cfArgsStr cfArgs_
+receivingFile_' :: (Maybe RemoteHostId, Maybe User) -> Bool -> String -> AChatItem -> [StyledString]
+receivingFile_' hu testView status (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileName, fileSource = Just f@(CryptoFile _ cfArgs_)}, chatDir}) =
+  [plain status <> " receiving " <> fileTransferStr fileId fileName <> fileFrom chat chatDir] <> cfArgsStr cfArgs_ <> getRemoteFileStr
   where
-    cfArgsStr (Just cfArgs@(CFArgs key nonce)) = [plain s | status == "completed"]
-      where
-      s =
-        if testView
-          then LB.toStrict $ J.encode cfArgs
-          else "encryption key: " <> strEncode key <> ", nonce: " <> strEncode nonce
+    cfArgsStr (Just cfArgs) = [plain (cryptoFileArgsStr testView cfArgs) | status == "completed"]
     cfArgsStr _ = []
-receivingFile_' _ status _ = [plain status <> " receiving file"] -- shouldn't happen
+    getRemoteFileStr = case hu of
+      (Just rhId, Just User {userId}) | status == "completed" ->
+        [ "File received to connected remote host " <> sShow rhId,
+          "To download to this device use:",
+          highlight ("/get remote file " <> show rhId <> " " <> LB.unpack (J.encode RemoteFile {userId, fileId, sent = False, fileSource = f}))
+        ]
+      _ -> []
+receivingFile_' _ _ status _ = [plain status <> " receiving file"] -- shouldn't happen
+
+cryptoFileArgsStr :: Bool -> CryptoFileArgs -> ByteString
+cryptoFileArgsStr testView cfArgs@(CFArgs key nonce)
+  | testView = LB.toStrict $ J.encode cfArgs
+  | otherwise = "encryption key: " <> strEncode key <> ", nonce: " <> strEncode nonce
 
 fileFrom :: ChatInfo c -> CIDirection c d -> StyledString
 fileFrom (DirectChat ct) CIDirectRcv = " from " <> ttyContact' ct
@@ -1647,10 +1671,6 @@ viewVersionInfo logLevel CoreVersionInfo {version, simplexmqVersion, simplexmqCo
       else [versionString version, updateStr]
   where
     parens s = " (" <> s <> ")"
-
-viewRemoteCtrlOOBData :: RemoteCtrlOOB -> [StyledString]
-viewRemoteCtrlOOBData RemoteCtrlOOB {fingerprint} =
-  ["connection code:", plain $ strEncode fingerprint]
 
 viewRemoteHosts :: [RemoteHostInfo] -> [StyledString]
 viewRemoteHosts = \case
@@ -1818,8 +1838,8 @@ viewChatError logLevel = \case
         Nothing -> ""
       cId :: Connection -> StyledString
       cId conn = sShow conn.connId
-  ChatErrorRemoteCtrl todo'rc -> [sShow todo'rc]
-  ChatErrorRemoteHost remoteHostId todo'rh -> [sShow remoteHostId, sShow todo'rh]
+  ChatErrorRemoteCtrl e -> [plain $ "remote controller error: " <> show e]
+  ChatErrorRemoteHost rhId e -> [plain $ "remote host " <> show rhId <> " error: " <> show e]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
     sqliteError' = \case

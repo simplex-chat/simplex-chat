@@ -54,9 +54,11 @@ struct PasteToConnectView: View {
                 
                 IncognitoToggle(incognitoEnabled: $incognitoDefault)
             } footer: {
-                sharedProfileInfo(incognitoDefault)
-                + Text(String("\n\n"))
-                + Text("You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button.")
+                VStack(alignment: .leading, spacing: 4) {
+                    sharedProfileInfo(incognitoDefault)
+                    Text("You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button.")
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .alert(item: $alert) { a in planAndConnectAlert(a, dismiss: true) }

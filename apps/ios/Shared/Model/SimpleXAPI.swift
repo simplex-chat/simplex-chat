@@ -502,6 +502,10 @@ func apiSetChatSettings(type: ChatType, id: Int64, chatSettings: ChatSettings) a
     try await sendCommandOkResp(.apiSetChatSettings(type: type, id: id, chatSettings: chatSettings))
 }
 
+func apiSetMemberSettings(_ groupId: Int64, _ groupMemberId: Int64, _ memberSettings: GroupMemberSettings) async throws {
+    try await sendCommandOkResp(.apiSetMemberSettings(groupId: groupId, groupMemberId: groupMemberId, memberSettings: memberSettings))
+}
+
 func apiContactInfo(_ contactId: Int64) async throws -> (ConnectionStats?, Profile?) {
     let r = await chatSendCmd(.apiContactInfo(contactId: contactId))
     if case let .contactInfo(_, _, connStats, customUserProfile) = r { return (connStats, customUserProfile) }
@@ -1059,9 +1063,9 @@ private func sendCommandOkRespSync(_ cmd: ChatCommand) throws {
     throw r
 }
 
-func apiNewGroup(_ p: GroupProfile) throws -> GroupInfo {
+func apiNewGroup(incognito: Bool, groupProfile: GroupProfile) throws -> GroupInfo {
     let userId = try currentUserId("apiNewGroup")
-    let r = chatSendCmdSync(.apiNewGroup(userId: userId, groupProfile: p))
+    let r = chatSendCmdSync(.apiNewGroup(userId: userId, incognito: incognito, groupProfile: groupProfile))
     if case let .groupCreated(_, groupInfo) = r { return groupInfo }
     throw r
 }
@@ -1121,8 +1125,8 @@ func apiListMembers(_ groupId: Int64) async -> [GroupMember] {
     return []
 }
 
-func filterMembersToAdd(_ ms: [GroupMember]) -> [Contact] {
-    let memberContactIds = ms.compactMap{ m in m.memberCurrent ? m.memberContactId : nil }
+func filterMembersToAdd(_ ms: [GMember]) -> [Contact] {
+    let memberContactIds = ms.compactMap{ m in m.wrapped.memberCurrent ? m.wrapped.memberContactId : nil }
     return ChatModel.shared.chats
         .compactMap{ $0.chatInfo.contact }
         .filter{ !memberContactIds.contains($0.apiId) }
@@ -1404,6 +1408,12 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.updateChatInfo(cInfo)
             }
         }
+    case let .groupMemberUpdated(user, groupInfo, _, toMember):
+        if active(user) {
+            await MainActor.run {
+                _ = m.upsertGroupMember(groupInfo, toMember)
+            }
+        }
     case let .contactsMerged(user, intoContact, mergedContact):
         if active(user) && m.hasChat(mergedContact.id) {
             await MainActor.run {
@@ -1517,6 +1527,16 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.removeChat(hostContact.activeConn.id)
             }
         }
+    case let .groupLinkConnecting(user, groupInfo, hostMember):
+        if !active(user) { return }
+        
+        await MainActor.run {
+            m.updateGroup(groupInfo)
+            if let hostConn = hostMember.activeConn {
+                m.dismissConnReqView(hostConn.id)
+                m.removeChat(hostConn.id)
+            }
+        }
     case let .joinedGroupMemberConnecting(user, groupInfo, _, member):
         if active(user) {
             await MainActor.run {
@@ -1576,10 +1596,11 @@ func processReceivedMsg(_ res: ChatResponse) async {
                 m.updateGroup(toGroup)
             }
         }
-    case let .memberRole(user, groupInfo, _, _, _, _):
+    case let .memberRole(user, groupInfo, byMember: _, member: member, fromRole: _, toRole: _):
         if active(user) {
             await MainActor.run {
                 m.updateGroup(groupInfo)
+                _ = m.upsertGroupMember(groupInfo, member)
             }
         }
     case let .newMemberContactReceivedInv(user, contact, _, _):

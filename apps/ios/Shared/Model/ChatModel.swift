@@ -64,7 +64,7 @@ final class ChatModel: ObservableObject {
     @Published var reversedChatItems: [ChatItem] = []
     var chatItemStatuses: Dictionary<Int64, CIStatus> = [:]
     @Published var chatToTop: String?
-    @Published var groupMembers: [GroupMember] = []
+    @Published var groupMembers: [GMember] = []
     // items in the terminal view
     @Published var showingTerminal = false
     @Published var terminalItems: [TerminalItem] = []
@@ -165,6 +165,10 @@ final class ChatModel: ObservableObject {
         }
     }
 
+    func getGroupMember(_ groupMemberId: Int64) -> GMember? {
+        groupMembers.first { $0.groupMemberId == groupMemberId }
+    }
+
     private func getChatIndex(_ id: String) -> Int? {
         chats.firstIndex(where: { $0.id == id })
     }
@@ -178,6 +182,7 @@ final class ChatModel: ObservableObject {
     func updateChatInfo(_ cInfo: ChatInfo) {
         if let i = getChatIndex(cInfo.id) {
             chats[i].chatInfo = cInfo
+            chats[i].created = Date.now
         }
     }
 
@@ -341,7 +346,7 @@ final class ChatModel: ObservableObject {
         reversedChatItems[i].viewTimestamp = .now
     }
 
-    private func getChatItemIndex(_ cItem: ChatItem) -> Int? {
+    func getChatItemIndex(_ cItem: ChatItem) -> Int? {
         reversedChatItems.firstIndex(where: { $0.id == cItem.id })
     }
 
@@ -530,25 +535,60 @@ final class ChatModel: ObservableObject {
             users.filter { !$0.user.activeUser }.reduce(0, { unread, next -> Int in unread + next.unreadCount })
     }
 
-    func getConnectedMemberNames(_ ci: ChatItem) -> [String] {
-        guard var i = getChatItemIndex(ci) else { return [] }
+    // this function analyses "connected" events and assumes that each member will be there only once
+    func getConnectedMemberNames(_ chatItem: ChatItem) -> (Int, [String]) {
+        var count = 0
         var ns: [String] = []
-        while i < reversedChatItems.count, let m = reversedChatItems[i].memberConnected {
-            ns.append(m.displayName)
-            i += 1
+        if let ciCategory = chatItem.mergeCategory,
+           var i = getChatItemIndex(chatItem) {
+            while i < reversedChatItems.count {
+                let ci = reversedChatItems[i]
+                if ci.mergeCategory != ciCategory { break }
+                if let m = ci.memberConnected {
+                    ns.append(m.displayName)
+                }
+                count += 1
+                i += 1
+            }
         }
-        return ns
+        return (count, ns)
     }
 
-    func getChatItemNeighbors(_ ci: ChatItem) -> (ChatItem?, ChatItem?) {
-        if let i = getChatItemIndex(ci)  {
-            return (
-                i + 1 < reversedChatItems.count ? reversedChatItems[i + 1] : nil,
-                i - 1 >= 0 ? reversedChatItems[i - 1] : nil
-            )
+    // returns the index of the passed item and the next item (it has smaller index)
+    func getNextChatItem(_ ci: ChatItem) -> (Int?, ChatItem?) {
+        if let i = getChatItemIndex(ci) {
+            (i, i > 0 ? reversedChatItems[i - 1] : nil)
         } else {
-            return (nil, nil)
+            (nil, nil)
         }
+    }
+
+    // returns the index of the first item in the same merged group (the first hidden item)
+    // and the previous visible item with another merge category
+    func getPrevShownChatItem(_ ciIndex: Int?, _ ciCategory: CIMergeCategory?) -> (Int?, ChatItem?) {
+        guard var i = ciIndex else { return (nil, nil) }
+        let fst = reversedChatItems.count - 1
+        while i < fst {
+            i = i + 1
+            let ci = reversedChatItems[i]
+            if ciCategory == nil || ciCategory != ci.mergeCategory {
+                return (i - 1, ci)
+            }
+        }
+        return (i, nil)
+    }
+
+    // returns the previous member in the same merge group and the count of members in this group
+    func getPrevHiddenMember(_ member: GroupMember, _ range: ClosedRange<Int>) -> (GroupMember?, Int) {
+        var prevMember: GroupMember? = nil
+        var memberIds: Set<Int64> = []
+        for i in range {
+            if case let .groupRcv(m) = reversedChatItems[i].chatDir {
+                if prevMember == nil && m.groupMemberId != member.groupMemberId { prevMember = m }
+                memberIds.insert(m.groupMemberId)
+            }
+        }
+        return (prevMember, memberIds.count)
     }
 
     func popChat(_ id: String) {
@@ -585,13 +625,14 @@ final class ChatModel: ObservableObject {
         }
         // update current chat
         if chatId == groupInfo.id {
-            if let i = groupMembers.firstIndex(where: { $0.id == member.id }) {
+            if let i = groupMembers.firstIndex(where: { $0.groupMemberId == member.groupMemberId }) {
                 withAnimation(.default) {
-                    self.groupMembers[i] = member
+                    self.groupMembers[i].wrapped = member
+                    self.groupMembers[i].created = Date.now
                 }
                 return false
             } else {
-                withAnimation { groupMembers.append(member) }
+                withAnimation { groupMembers.append(GMember(member)) }
                 return true
             }
         } else {
@@ -600,11 +641,10 @@ final class ChatModel: ObservableObject {
     }
 
     func updateGroupMemberConnectionStats(_ groupInfo: GroupInfo, _ member: GroupMember, _ connectionStats: ConnectionStats) {
-        if let conn = member.activeConn {
-            var updatedConn = conn
-            updatedConn.connectionStats = connectionStats
+        if var conn = member.activeConn {
+            conn.connectionStats = connectionStats
             var updatedMember = member
-            updatedMember.activeConn = updatedConn
+            updatedMember.activeConn = conn
             _ = upsertGroupMember(groupInfo, updatedMember)
         }
     }
@@ -701,4 +741,20 @@ final class Chat: ObservableObject, Identifiable {
     var viewId: String { get { "\(chatInfo.id) \(created.timeIntervalSince1970)" } }
 
     public static var sampleData: Chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
+}
+
+final class GMember: ObservableObject, Identifiable {
+    @Published var wrapped: GroupMember
+    var created = Date.now
+
+    init(_ member: GroupMember) {
+        self.wrapped = member
+    }
+
+    var id: String { wrapped.id }
+    var groupId: Int64 { wrapped.groupId }
+    var groupMemberId: Int64 { wrapped.groupMemberId }
+    var displayName: String { wrapped.displayName }
+    var viewId: String { get { "\(wrapped.id) \(created.timeIntervalSince1970)" } }
+    static let sampleData = GMember(GroupMember.sampleData)
 }

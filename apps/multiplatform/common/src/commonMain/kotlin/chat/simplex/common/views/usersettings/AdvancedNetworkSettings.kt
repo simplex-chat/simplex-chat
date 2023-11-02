@@ -254,7 +254,7 @@ fun IntSettingRow(title: String, selection: MutableState<Int>, values: List<Int>
 
     Text(title)
 
-    DefaultExposedDropdownMenuBox(
+    ExposedDropdownMenuBox(
       expanded = expanded.value,
       onExpandedChange = {
         expanded.value = !expanded.value
@@ -313,7 +313,7 @@ fun TimeoutSettingRow(title: String, selection: MutableState<Long>, values: List
 
     Text(title)
 
-    DefaultExposedDropdownMenuBox(
+    ExposedDropdownMenuBox(
       expanded = expanded.value,
       onExpandedChange = {
         expanded.value = !expanded.value

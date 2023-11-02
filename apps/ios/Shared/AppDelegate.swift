@@ -55,7 +55,6 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                      didReceiveRemoteNotification userInfo: [AnyHashable : Any],
                      fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         logger.debug("AppDelegate: didReceiveRemoteNotification")
-        print("*** userInfo", userInfo)
         let m = ChatModel.shared
         if let ntfData = userInfo["notificationData"] as? [AnyHashable : Any],
            m.notificationMode != .off {
