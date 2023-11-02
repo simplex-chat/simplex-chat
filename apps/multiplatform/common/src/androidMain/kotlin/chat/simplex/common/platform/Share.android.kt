@@ -36,7 +36,7 @@ actual fun shareFile(text: String, fileSource: CryptoFile) {
     tmpFile.deleteOnExit()
     ChatModel.filesToDelete.add(tmpFile)
     decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs, tmpFile.absolutePath)
-    FileProvider.getUriForFile(androidAppContext, "$APPLICATION_ID.provider", File(tmpFile.absolutePath)).toURI()
+    getAppFileUri(tmpFile.absolutePath)
   } else {
     getAppFileUri(fileSource.filePath)
   }
