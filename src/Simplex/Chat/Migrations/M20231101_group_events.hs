@@ -21,14 +21,14 @@ CREATE TABLE group_events (
   -- ReceivedEventInfo fields:
   rcvd_author_member_id BLOB,                   -- authorMemberId :: MemberId
   rcvd_author_member_name TEXT,                 -- authorMemberName :: ContactName
-  -- authorMember :: GroupMemberRef; can be null even for received event
+  -- authorMember :: GroupMemberRef
   rcvd_author_group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
   rcvd_author_contact_profile_id INTEGER REFERENCES contact_profiles ON DELETE CASCADE,
-  rcvd_author_role TEXT,                        -- authorMemberRole :: Maybe GroupMemberRole; store in case it changes? null if member is unknown, or new "Unknown" role
+  rcvd_author_role TEXT,
   -- receivedFrom :: GroupMemberRef
   rcvd_from_group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
   rcvd_from_contact_profile_id INTEGER REFERENCES contact_profiles ON DELETE CASCADE,
-  rcvd_from_role TEXT NULL,                     -- receivedFromRole :: GroupMemberRole; store in case it changes?
+  rcvd_from_role TEXT,
   -- ReceivedEventInfo processing :: EventProcessing
   rcvd_processed_at TEXT,                       -- EPProcessed UTCTime
   rcvd_scheduled_at TEXT,                       -- EPScheduled UTCTime; both this and rcvd_processed_at are null -> EPPendingConfirmation

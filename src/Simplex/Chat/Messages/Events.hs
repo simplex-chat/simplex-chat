@@ -75,10 +75,8 @@ data StoredGroupEventData = SGEData (ChatMsgEvent 'Json) | SGEAvailable [GroupMe
 data ReceivedEventInfo = ReceivedEventInfo
   { authorMemberId :: MemberId,
     authorMemberName :: ContactName,
-    authorMember :: GroupMemberRef, -- why is it Maybe? if member is unknown pending member w/t connection should be created
-    authorMemberRole :: GroupMemberRole,
-    receivedFrom :: GroupMemberRef, -- should this be Maybe too? it's nullable in schema
-    receivedFromRole :: GroupMemberRole,
+    authorMember :: GroupMemberRef,
+    receivedFrom :: GroupMemberRef,
     processing :: EventProcessing
   }
 

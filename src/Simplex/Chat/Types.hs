@@ -710,14 +710,14 @@ instance ToJSON GroupMember where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-data GroupMemberRef = GroupMemberRef {groupMemberId :: Int64, profile :: Profile}
+data GroupMemberRef = GroupMemberRef {groupMemberId :: Int64, role :: GroupMemberRole, profile :: Profile}
   deriving (Eq, Show, Generic, FromJSON)
 
 instance ToJSON GroupMemberRef where toEncoding = J.genericToEncoding J.defaultOptions
 
 groupMemberRef :: GroupMember -> GroupMemberRef
-groupMemberRef GroupMember {groupMemberId, memberProfile = p} =
-  GroupMemberRef {groupMemberId, profile = fromLocalProfile p}
+groupMemberRef GroupMember {groupMemberId, memberRole, memberProfile = p} =
+  GroupMemberRef {groupMemberId, role = memberRole, profile = fromLocalProfile p}
 
 memberConn :: GroupMember -> Maybe Connection
 memberConn GroupMember{activeConn} = activeConn
@@ -791,6 +791,8 @@ fromInvitedBy userCtId = \case
   IBContact ctId -> Just ctId
   IBUser -> Just userCtId
 
+-- add:
+-- | GRUnknown -- used for unconfirmed members (learnt through group event parent)
 data GroupMemberRole
   = GRObserver -- connects to all group members and receives all messages, can't send messages
   | GRAuthor -- reserved, unused
@@ -897,6 +899,8 @@ instance TextEncoding GroupMemberCategory where
     GCPreMember -> "pre"
     GCPostMember -> "post"
 
+-- add:
+-- | GSMemUnconfirmed -- used for unconfirmed members (learnt through group event parent)
 data GroupMemberStatus
   = GSMemRemoved -- member who was removed from the group
   | GSMemLeft -- member who left the group
