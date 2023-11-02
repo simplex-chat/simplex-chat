@@ -20,3 +20,5 @@ expect fun Modifier.desktopOnExternalDrag(
   onImage: (Painter) -> Unit = {},
   onText: (String) -> Unit = {}
 ): Modifier
+
+expect fun Modifier.onRightClick(action: () -> Unit): Modifier

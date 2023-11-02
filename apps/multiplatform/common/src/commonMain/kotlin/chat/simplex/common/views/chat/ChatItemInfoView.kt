@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*

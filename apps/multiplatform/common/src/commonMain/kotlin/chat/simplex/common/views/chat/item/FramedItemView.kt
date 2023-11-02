@@ -20,10 +20,9 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.platform.base64ToBitmap
 import chat.simplex.common.views.chat.MEMBER_IMAGE_SIZE
 import chat.simplex.res.MR
 import kotlin.math.min
