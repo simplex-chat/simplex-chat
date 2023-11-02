@@ -21,11 +21,12 @@ import Simplex.RemoteControl.Discovery
 import Simplex.RemoteControl.Types
 import UnliftIO
 
-announceRevHTTP2 :: MonadUnliftIO m => Tasks -> TMVar (Maybe PortNumber) -> (C.PrivateKeyEd25519, Announce) -> TLS.Credentials -> m () -> m (Either HTTP2ClientError HTTP2Client)
+-- announceRevHTTP2 :: MonadUnliftIO m => Tasks -> TMVar (Maybe PortNumber) -> TLS.Credentials -> m () -> m (Either HTTP2ClientError HTTP2Client)
+announceRevHTTP2 :: MonadUnliftIO m => Tasks -> TMVar (Maybe PortNumber) -> Maybe (Text, VersionRange) -> Maybe Text -> C.PrivateKeyEd25519 -> CtrlSessionKeys -> TransportHost -> a -> m (Either HTTP2ClientError HTTP2Client)
 announceRevHTTP2 = announceCtrl runHTTP2Client
 
 -- | Attach HTTP2 client and hold the TLS until the attached client finishes.
-runHTTP2Client :: MVar () -> MVar (Either HTTP2ClientError HTTP2Client) -> CtrlCryptoHandle -> Transport.TLS -> IO ()
+runHTTP2Client :: MVar (Either HTTP2ClientError HTTP2Client) -> MVar () -> CtrlCryptoHandle -> Transport.TLS -> IO ()
 runHTTP2Client started finished cryptoHandle tls =
   ifM
     (isEmptyMVar started)
@@ -39,8 +40,8 @@ runHTTP2Client started finished cryptoHandle tls =
     -- TODO connection timeout
     config = defaultHTTP2ClientConfig {bodyHeadSize = doNotPrefetchHead, connTimeout = maxBound}
 
-attachHTTP2Server :: MonadUnliftIO m => (HTTP2Request -> m ()) -> Transport.TLS -> m ()
-attachHTTP2Server processRequest tls = do
+attachHTTP2Server :: MonadUnliftIO m => (HTTP2Request -> m ()) -> HostCryptoHandle -> Transport.TLS -> m ()
+attachHTTP2Server processRequest cryptoHandle tls = do
   withRunInIO $ \unlift ->
     runHTTP2ServerWith defaultHTTP2BufferSize ($ tls) $ \sessionId r sendResponse -> do
       reqBody <- getHTTP2Body r doNotPrefetchHead

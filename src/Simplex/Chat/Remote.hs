@@ -273,7 +273,7 @@ connectRemoteCtrl :: ChatMonad m => (ByteString -> m ChatResponse) -> SignedOOB 
 connectRemoteCtrl execChatCommand so@(SignedOOB OOB {caFingerprint, host, port} _) = do
   transportHost <- liftEitherWith (ChatError . CEInternalError) $ strDecode (encodeUtf8 host)
   checkNoRemoteCtrlSession -- a more significant race with @chatWriteVar@ due to db ops
-  RemoteCtrlInfo{remoteCtrlId} <- withStore' $ \db ->
+  RemoteCtrlInfo {remoteCtrlId} <- withStore' $ \db ->
     getRemoteCtrlByFingerprint db caFingerprint >>= \case
       Just rc -> pure $ remoteCtrlInfo rc False
       Nothing -> insertRemoteCtrl db so
@@ -304,9 +304,10 @@ runHost discovered confirmed verified handleHttp = do
   -- XXX: the part above is only needed for discovery, can be streamlined
   toView $ CRRemoteCtrlConnecting $ remoteCtrlInfo rc False
   atomically $ writeTVar discovered mempty -- flush unused sources
-  server <- async $
+  server <- async $ do
+    let hsk = HostSessionKeys {ca = fingerprint}
     -- spawn server for remote protocol commands
-    Discovery.connectTLSClient serviceAddress fingerprint $ \tls -> do
+    Discovery.connectTLSClient serviceAddress hsk $ \HostCryptoHandle tls -> do
       let sessionCode = decodeUtf8 . strEncode $ tlsUniq tls
       toView $ CRRemoteCtrlSessionCode {remoteCtrl = remoteCtrlInfo rc True, sessionCode, newCtrl = False}
       userInfo <- atomically $ readTMVar verified
