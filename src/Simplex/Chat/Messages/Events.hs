@@ -1,20 +1,18 @@
 {-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module Simplex.Chat.Messages.Events where
 
-import Data.Aeson (ToJSON)
-import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.ByteString.Char8 (ByteString)
 import Data.Time.Clock (UTCTime)
-import GHC.Generics (Generic)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
-import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Version
 
 data StoredGroupEvent d = StoredGroupEvent
@@ -35,32 +33,20 @@ data GroupEventIntegrityError = GroupEventIntegrityError
     memberRole :: GroupMemberRole,
     error :: GroupEventError
   }
-  deriving (Show, Generic)
-
-instance ToJSON GroupEventIntegrityError where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show)
 
 data GroupEventError
   = GEErrInvalidHash                    -- content hash mismatch
   | GEErrUnconfirmedParent SharedMsgId  -- referenced parent wasn't previously received from author or admin
   | GEErrParentHashMismatch SharedMsgId -- referenced parent has different hash
   | GEErrChildHashMismatch SharedMsgId  -- child referencing this event has different hash (mirrors GEErrParentHashMismatch)
-  deriving (Show, Generic)
-
-instance ToJSON GroupEventError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "GEErr"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "GEErr"
+  deriving (Show)
 
 data GroupEventIntegrityConfirmation = GroupEventIntegrityConfirmation
   { groupMemberId :: GroupMemberId,
     memberRole :: GroupMemberRole
   }
-  deriving (Show, Generic)
-
-instance ToJSON GroupEventIntegrityConfirmation where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show)
 
 -- data GroupEventMemberIntegrity = GroupEventMemberIntegrity
 --   { groupMemberId :: GroupMemberId,
@@ -89,8 +75,8 @@ data StoredGroupEventData = SGEData (ChatMsgEvent 'Json) | SGEAvailable [GroupMe
 data ReceivedEventInfo = ReceivedEventInfo
   { authorMemberId :: MemberId,
     authorMemberName :: ContactName,
-    authorMember :: Maybe GroupMemberRef, -- why is it Maybe? if member is unknown pending member w/t connection should be created
-    authorMemberRole :: Maybe GroupMemberRole,
+    authorMember :: GroupMemberRef, -- why is it Maybe? if member is unknown pending member w/t connection should be created
+    authorMemberRole :: GroupMemberRole,
     receivedFrom :: GroupMemberRef, -- should this be Maybe too? it's nullable in schema
     receivedFromRole :: GroupMemberRole,
     processing :: EventProcessing
@@ -105,3 +91,10 @@ data EventProcessing
   = EPProcessed UTCTime
   | EPScheduled UTCTime
   | EPPendingConfirmation -- e.g. till it's received from author or member with the same or higher privileges (depending on the event)
+
+-- platform-specific JSON encoding (used in API)
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GEErr") ''GroupEventError)
+
+$(JQ.deriveJSON defaultJSON ''GroupEventIntegrityError)
+
+$(JQ.deriveJSON defaultJSON ''GroupEventIntegrityConfirmation)
