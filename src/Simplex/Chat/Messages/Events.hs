@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 
@@ -29,14 +30,25 @@ data StoredGroupEvent d = StoredGroupEvent
 
 data AStoredGroupEvent = forall d. MsgDirectionI d => AStoredGroupEvent (StoredGroupEvent d)
 
-data GroupEventIntegrityError
-  = GEErrInvalidHash                                  -- content hash mismatch
-  | GEErrUnconfirmedParent GroupMemberId SharedMsgId  -- referenced parent wasn't previously received from author or admin
-  | GEErrParentHashMismatch GroupMemberId SharedMsgId -- referenced parent has different hash
-  | GEErrChildHashMismatch GroupMemberId SharedMsgId  -- child referencing this event has different hash (mirrors GEErrParentHashMismatch)
+data GroupEventIntegrityError = GroupEventIntegrityError
+  { groupMemberId :: GroupMemberId,
+    memberRole :: GroupMemberRole,
+    error :: GroupEventError
+  }
   deriving (Show, Generic)
 
 instance ToJSON GroupEventIntegrityError where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
+
+data GroupEventError
+  = GEErrInvalidHash                    -- content hash mismatch
+  | GEErrUnconfirmedParent SharedMsgId  -- referenced parent wasn't previously received from author or admin
+  | GEErrParentHashMismatch SharedMsgId -- referenced parent has different hash
+  | GEErrChildHashMismatch SharedMsgId  -- child referencing this event has different hash (mirrors GEErrParentHashMismatch)
+  deriving (Show, Generic)
+
+instance ToJSON GroupEventError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "GEErr"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "GEErr"
 
@@ -44,6 +56,11 @@ data GroupEventIntegrityConfirmation = GroupEventIntegrityConfirmation
   { groupMemberId :: GroupMemberId,
     memberRole :: GroupMemberRole
   }
+  deriving (Show, Generic)
+
+instance ToJSON GroupEventIntegrityConfirmation where
+  toJSON = J.genericToJSON J.defaultOptions
+  toEncoding = J.genericToEncoding J.defaultOptions
 
 -- data GroupEventMemberIntegrity = GroupEventMemberIntegrity
 --   { groupMemberId :: GroupMemberId,

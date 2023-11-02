@@ -557,13 +557,17 @@ CREATE TABLE group_events_availabilities(
 CREATE TABLE group_events_errors(
   group_event_dag_error_id INTEGER PRIMARY KEY,
   group_event_id INTEGER NOT NULL REFERENCES group_events ON DELETE CASCADE,
-  dag_error TEXT NOT NULL,
+  referred_group_event_id INTEGER REFERENCES group_events ON DELETE SET NULL,
+  referred_group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  referred_group_member_role TEXT NOT NULL,
+  error TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 CREATE TABLE group_events_confirmations(
   group_event_confirmation_id INTEGER PRIMARY KEY,
   group_event_id INTEGER NOT NULL REFERENCES group_events ON DELETE CASCADE,
+  confirming_group_event_id INTEGER REFERENCES group_events ON DELETE SET NULL,
   confirmed_by_group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
   confirmed_by_group_member_role TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
@@ -828,8 +832,17 @@ CREATE INDEX idx_group_events_availabilities_available_at_group_member_id ON gro
 CREATE INDEX idx_group_events_errors_group_event_id ON group_events_errors(
   group_event_id
 );
+CREATE INDEX idx_group_events_errors_referred_group_event_id ON group_events_errors(
+  referred_group_event_id
+);
+CREATE INDEX idx_group_events_errors_referred_group_member_id ON group_events_errors(
+  referred_group_member_id
+);
 CREATE INDEX idx_group_events_confirmations_group_event_id ON group_events_confirmations(
   group_event_id
+);
+CREATE INDEX idx_group_events_confirmations_confirming_group_event_id ON group_events_confirmations(
+  confirming_group_event_id
 );
 CREATE INDEX idx_group_events_confirmations_confirmed_by_group_member_id ON group_events_confirmations(
   confirmed_by_group_member_id

@@ -360,10 +360,9 @@ mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted item
 instance ToJSON (CIMeta c d) where toEncoding = J.genericToEncoding J.defaultOptions
 
 data GroupIntegrityStatus
-  = GISOk                                      -- sent event; or received event with all parents known
-  | GISIntegrityError GroupEventIntegrityError -- received event has integrity error (if many, order and choose one?)
-  | GISConfirmedParent GroupMemberRole         -- received event that was confirmed by a GroupMemberRole member;
-                                               -- higher role is preferred; search graph children to some depth?
+  = GISOk                                              -- sent event; or received event with all parents known
+  | GISIntegrityError GroupEventIntegrityError         -- received event has integrity error (if many, order and choose one?)
+  | GISConfirmedParent GroupEventIntegrityConfirmation -- received event has no errors and was confirmed by other member, higher role is preferred
   deriving (Show, Generic)
 
 instance ToJSON GroupIntegrityStatus where
