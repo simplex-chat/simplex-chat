@@ -1,0 +1,56 @@
+{
+  "metadata": {
+    "description": "JTD schema for SimpleX Remote Control protocol commands"
+  },
+  "definitions": {
+    "base64url": {
+      "type": "string",
+      "metadata": {
+        "format": "base64url encoded string"
+      }
+    }
+  },
+  "discriminator": "type",
+  "mapping": {
+    "hello": {
+      "properties": {
+        "deviceName": {"type": "string"},
+        "dhKey": {"ref": "base64url"}
+      }
+    },
+    "send": {
+      "properties": {
+        "command": {}
+      },
+      "metadata": {
+        "description": "application specific command; expected response is 'response'"
+      }
+    },
+    "recv": {
+      "properties": {
+        "wait": {"type": "uint16"}
+      },
+      "metadata": {
+        "description": "poll application-specific events; expected response is 'event'"
+      }
+    },
+    "storeFile": {
+      "properties": {
+        "fileName": {"type": "string"},
+        "fileSize": {"type": "uint32"},
+        "fileHash": {"ref": "base64url"}
+      },
+      "metadata": {
+        "description": "store file for host application processing; expected response is 'fileStored'"
+      }
+    },
+    "getFile": {
+      "properties": {
+        "filePath": {"type": "string"}
+      },
+      "metadata": {
+        "description": "get file from host application; expected response is 'file'"
+      }
+    }
+  }
+}
