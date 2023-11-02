@@ -48,24 +48,6 @@ data GroupEventIntegrityConfirmation = GroupEventIntegrityConfirmation
   }
   deriving (Show)
 
--- data GroupEventMemberIntegrity = GroupEventMemberIntegrity
---   { groupMemberId :: GroupMemberId,
---     memberRole :: GroupMemberRole,
---     eventStatus :: GroupEventIntegrityStatus
---   }
-
--- data GroupEventIntegrityStatus
---   = GISOk                                  -- sent event; or received event status for sender with all parents known
---   | GISUnconfirmedParent SharedMsgId       -- unconfirmed parent for parent sender
---   | GISConfirmedParent SharedMsgId         -- 
---   | GISErrorParentHashMismatch SharedMsgId
---   | GISErrorChildHashMismatch SharedMsgId
---   | GISErrorInvalidHash
-
--- -- data GroupIntegrityStatusProgress
--- --   = GIPPartial
--- --   | GIPComplete
-
 data GEDirection (d :: MsgDirection) where
   GESent :: GEDirection 'MDSnd
   GEReceived :: ReceivedEventInfo -> GEDirection 'MDRcv
