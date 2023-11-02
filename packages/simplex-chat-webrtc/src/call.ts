@@ -165,6 +165,7 @@ interface ConnectionInfo {
 // for debugging
 // var sendMessageToNative = ({resp}: WVApiMessage) => console.log(JSON.stringify({command: resp}))
 var sendMessageToNative = (msg: WVApiMessage) => console.log(JSON.stringify(msg))
+var toggleScreenShare = async () => {}
 
 // Global object with cryptrographic/encoding functions
 const callCrypto = callCryptoFunction()
@@ -193,6 +194,7 @@ interface Call {
   localCamera: VideoCamera
   localStream: MediaStream
   remoteStream: MediaStream
+  screenShare: boolean
   aesKey?: string
   worker?: Worker
   key?: CryptoKey
@@ -309,7 +311,7 @@ const processCommand = (function () {
     const localCamera = VideoCamera.User
     const localStream = await getLocalMediaStream(mediaType, localCamera)
     const iceCandidates = getIceCandidates(pc, config)
-    const call = {connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey}
+    const call = {connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, screenShare: false}
     await setupMediaStreams(call)
     let connectionTimeout: number | undefined = setTimeout(connectionHandler, answerTimeout)
     pc.addEventListener("connectionstatechange", connectionStateChange)
@@ -626,11 +628,33 @@ const processCommand = (function () {
     const videos = getVideoElements()
     if (!videos) throw Error("no video elements")
     const pc = call.connection
+    const oldAudioTracks = call.localStream.getAudioTracks()
+    const oldVideoTracks = call.localStream.getVideoTracks()
+    const audioWasEnabled = oldAudioTracks.some((elem) => elem.enabled)
+    const videoWasEnabled = oldVideoTracks.some((elem) => elem.enabled)
+    let localStream: MediaStream
+    try {
+      localStream = call.screenShare ? await getLocalScreenCaptureStream() : await getLocalMediaStream(call.localMedia, camera)
+    } catch (e: any) {
+      if (call.screenShare) {
+        call.screenShare = false
+      }
+      return
+    }
     for (const t of call.localStream.getTracks()) t.stop()
     call.localCamera = camera
-    const localStream = await getLocalMediaStream(call.localMedia, camera)
-    replaceTracks(pc, localStream.getVideoTracks())
-    replaceTracks(pc, localStream.getAudioTracks())
+
+    const audioTracks = localStream.getAudioTracks()
+    const videoTracks = localStream.getVideoTracks()
+    if (!audioWasEnabled && oldAudioTracks.length > 0) {
+      audioTracks.forEach((elem) => (elem.enabled = false))
+    }
+    if (!videoWasEnabled && oldVideoTracks.length > 0) {
+      videoTracks.forEach((elem) => (elem.enabled = false))
+    }
+
+    replaceTracks(pc, audioTracks)
+    replaceTracks(pc, videoTracks)
     call.localStream = localStream
     videos.local.srcObject = localStream
   }
@@ -669,6 +693,22 @@ const processCommand = (function () {
   function getLocalMediaStream(mediaType: CallMediaType, facingMode: VideoCamera): Promise<MediaStream> {
     const constraints = callMediaConstraints(mediaType, facingMode)
     return navigator.mediaDevices.getUserMedia(constraints)
+  }
+
+  function getLocalScreenCaptureStream(): Promise<MediaStream> {
+    const constraints: any /* DisplayMediaStreamConstraints */ = {
+      video: {
+        frameRate: 24,
+        //width: {
+        //min: 480,
+        //ideal: 720,
+        //max: 1280,
+        //},
+        //aspectRatio: 1.33,
+      },
+      audio: true,
+    }
+    return navigator.mediaDevices.getDisplayMedia(constraints)
   }
 
   function callMediaConstraints(mediaType: CallMediaType, facingMode: VideoCamera): MediaStreamConstraints {
@@ -736,6 +776,14 @@ const processCommand = (function () {
     const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks()
     for (const t of tracks) t.enabled = enable
   }
+
+  toggleScreenShare = async function () {
+    const call = activeCall
+    if (!call) return
+    call.screenShare = !call.screenShare
+    await replaceMedia(call, call.localCamera)
+  }
+
   return processCommand
 })()
 

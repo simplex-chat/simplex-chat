@@ -14,6 +14,7 @@ var VideoCamera;
 // for debugging
 // var sendMessageToNative = ({resp}: WVApiMessage) => console.log(JSON.stringify({command: resp}))
 var sendMessageToNative = (msg) => console.log(JSON.stringify(msg));
+var toggleScreenShare = async () => { };
 // Global object with cryptrographic/encoding functions
 const callCrypto = callCryptoFunction();
 var TransformOperation;
@@ -107,7 +108,7 @@ const processCommand = (function () {
         const localCamera = VideoCamera.User;
         const localStream = await getLocalMediaStream(mediaType, localCamera);
         const iceCandidates = getIceCandidates(pc, config);
-        const call = { connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey };
+        const call = { connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, screenShare: false };
         await setupMediaStreams(call);
         let connectionTimeout = setTimeout(connectionHandler, answerTimeout);
         pc.addEventListener("connectionstatechange", connectionStateChange);
@@ -430,12 +431,33 @@ const processCommand = (function () {
         if (!videos)
             throw Error("no video elements");
         const pc = call.connection;
+        const oldAudioTracks = call.localStream.getAudioTracks();
+        const oldVideoTracks = call.localStream.getVideoTracks();
+        const audioWasEnabled = oldAudioTracks.some((elem) => elem.enabled);
+        const videoWasEnabled = oldVideoTracks.some((elem) => elem.enabled);
+        let localStream;
+        try {
+            localStream = call.screenShare ? await getLocalScreenCaptureStream() : await getLocalMediaStream(call.localMedia, camera);
+        }
+        catch (e) {
+            if (call.screenShare) {
+                call.screenShare = false;
+            }
+            return;
+        }
         for (const t of call.localStream.getTracks())
             t.stop();
         call.localCamera = camera;
-        const localStream = await getLocalMediaStream(call.localMedia, camera);
-        replaceTracks(pc, localStream.getVideoTracks());
-        replaceTracks(pc, localStream.getAudioTracks());
+        const audioTracks = localStream.getAudioTracks();
+        const videoTracks = localStream.getVideoTracks();
+        if (!audioWasEnabled && oldAudioTracks.length > 0) {
+            audioTracks.forEach((elem) => (elem.enabled = false));
+        }
+        if (!videoWasEnabled && oldVideoTracks.length > 0) {
+            videoTracks.forEach((elem) => (elem.enabled = false));
+        }
+        replaceTracks(pc, audioTracks);
+        replaceTracks(pc, videoTracks);
         call.localStream = localStream;
         videos.local.srcObject = localStream;
     }
@@ -471,6 +493,21 @@ const processCommand = (function () {
     function getLocalMediaStream(mediaType, facingMode) {
         const constraints = callMediaConstraints(mediaType, facingMode);
         return navigator.mediaDevices.getUserMedia(constraints);
+    }
+    function getLocalScreenCaptureStream() {
+        const constraints /* DisplayMediaStreamConstraints */ = {
+            video: {
+                frameRate: 24,
+                //width: {
+                //min: 480,
+                //ideal: 720,
+                //max: 1280,
+                //},
+                //aspectRatio: 1.33,
+            },
+            audio: true,
+        };
+        return navigator.mediaDevices.getDisplayMedia(constraints);
     }
     function callMediaConstraints(mediaType, facingMode) {
         switch (mediaType) {
@@ -527,6 +564,13 @@ const processCommand = (function () {
         for (const t of tracks)
             t.enabled = enable;
     }
+    toggleScreenShare = async function () {
+        const call = activeCall;
+        if (!call)
+            return;
+        call.screenShare = !call.screenShare;
+        await replaceMedia(call, call.localCamera);
+    };
     return processCommand;
 })();
 function toggleMedia(s, media) {

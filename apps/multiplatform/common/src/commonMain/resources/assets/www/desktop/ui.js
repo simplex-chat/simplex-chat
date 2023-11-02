@@ -47,6 +47,16 @@ function toggleVideoManually() {
             : '<img src="/desktop/images/ic_videocam_off.svg" />';
     }
 }
+function toggleScreenManually() {
+    const was = activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShare;
+    toggleScreenShare().then(function () {
+        if (was != (activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShare)) {
+            document.getElementById("toggle-screen").innerHTML = (activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShare)
+                ? '<img src="/desktop/images/ic_stop_screen_share.svg" />'
+                : '<img src="/desktop/images/ic_screen_share.svg" />';
+        }
+    });
+}
 function reactOnMessageFromServer(msg) {
     var _a;
     switch ((_a = msg.command) === null || _a === void 0 ? void 0 : _a.type) {
@@ -59,6 +69,7 @@ function reactOnMessageFromServer(msg) {
             document.getElementById("toggle-speaker").style.display = "inline-block";
             if (msg.command.media == "video") {
                 document.getElementById("toggle-video").style.display = "inline-block";
+                document.getElementById("toggle-screen").style.display = "inline-block";
             }
             document.getElementById("info-block").className = msg.command.media;
             break;
