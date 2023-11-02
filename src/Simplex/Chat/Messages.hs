@@ -342,8 +342,7 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
     editable :: Bool,
-    -- Nothing for direct chat items and for group chat items without recorded group events (legacy)
-    groupIntegrityStatus :: Maybe GroupIntegrityStatus,
+    groupIntegrityStatus :: GroupIntegrityStatus,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
@@ -354,7 +353,7 @@ mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted item
   let editable = case itemContent of
         CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
-      groupIntegrityStatus = Nothing
+      groupIntegrityStatus = GISNoEvent
    in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, groupIntegrityStatus, createdAt, updatedAt}
 
 instance ToJSON (CIMeta c d) where toEncoding = J.genericToEncoding J.defaultOptions
@@ -363,6 +362,7 @@ data GroupIntegrityStatus
   = GISOk                                              -- sent event; or received event with all parents known
   | GISIntegrityError GroupEventIntegrityError         -- received event has integrity error (if many, order and choose one?)
   | GISConfirmedParent GroupEventIntegrityConfirmation -- received event has no errors and was confirmed by other member, higher role is preferred
+  | GISNoEvent                                         -- direct chat items and group chat items without recorded group events (legacy)
   deriving (Show, Generic)
 
 instance ToJSON GroupIntegrityStatus where
