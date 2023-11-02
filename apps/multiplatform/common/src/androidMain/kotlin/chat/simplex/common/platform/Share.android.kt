@@ -48,7 +48,7 @@ actual fun shareFile(text: String, fileSource: CryptoFile) {
       putExtra(Intent.EXTRA_TEXT, text)
     }*/
     putExtra(Intent.EXTRA_STREAM, uri.toUri())
-    type = mimeType.replace("image/jpeg", "image/jpg")
+    type = mimeType
     flags = Intent.FLAG_ACTIVITY_NEW_TASK
   }
   val shareIntent = Intent.createChooser(sendIntent, null)
