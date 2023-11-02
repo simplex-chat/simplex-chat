@@ -36,7 +36,7 @@ actual fun shareFile(text: String, fileSource: CryptoFile) {
     tmpFile.deleteOnExit()
     ChatModel.filesToDelete.add(tmpFile)
     decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs, tmpFile.absolutePath)
-    FileProvider.getUriForFile(androidAppContext, "$APPLICATION_ID.provider", File(tmpFile.absolutePath)).toURI()
+    getAppFileUri(tmpFile.absolutePath)
   } else {
     getAppFileUri(fileSource.filePath)
   }
@@ -48,7 +48,7 @@ actual fun shareFile(text: String, fileSource: CryptoFile) {
       putExtra(Intent.EXTRA_TEXT, text)
     }*/
     putExtra(Intent.EXTRA_STREAM, uri.toUri())
-    type = mimeType
+    type = mimeType.replace("image/jpeg", "image/jpg")
     flags = Intent.FLAG_ACTIVITY_NEW_TASK
   }
   val shareIntent = Intent.createChooser(sendIntent, null)
