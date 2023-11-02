@@ -147,6 +147,16 @@ mkCfgCreateGroupDirect cfg = cfg {chatVRange = groupCreateDirectVRange}
 groupCreateDirectVRange :: VersionRange
 groupCreateDirectVRange = mkVersionRange 1 1
 
+testCfgGroupLinkViaContact :: ChatConfig
+testCfgGroupLinkViaContact =
+  mkCfgGroupLinkViaContact testCfg
+
+mkCfgGroupLinkViaContact :: ChatConfig -> ChatConfig
+mkCfgGroupLinkViaContact cfg = cfg {chatVRange = groupLinkViaContactVRange}
+
+groupLinkViaContactVRange :: VersionRange
+groupLinkViaContactVRange = mkVersionRange 1 2
+
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
   Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey MCError
@@ -162,8 +172,8 @@ startTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefi
 startTestChat_ :: ChatDatabase -> ChatConfig -> ChatOpts -> User -> IO TestCC
 startTestChat_ db cfg opts user = do
   t <- withVirtualTerminal termSettings pure
-  ct <- newChatTerminal t
-  cc <- newChatController db (Just user) cfg opts Nothing -- no notifications
+  ct <- newChatTerminal t opts
+  cc <- newChatController db (Just user) cfg opts
   chatAsync <- async . runSimplexChat opts user cc . const $ runChatTerminal ct
   atomically . unless (maintenance opts) $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
@@ -212,6 +222,8 @@ withTestChatOpts tmp = withTestChatCfgOpts tmp testCfg
 withTestChatCfgOpts :: HasCallStack => FilePath -> ChatConfig -> ChatOpts -> String -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestChatCfgOpts tmp cfg opts dbPrefix = bracket (startTestChat tmp cfg opts dbPrefix) (\cc -> cc <// 100000 >> stopTestChat cc)
 
+-- enable output for specific chat controller, use like this:
+-- withNewTestChat tmp "alice" aliceProfile $ \a -> withTestOutput a $ \alice -> do ...
 withTestOutput :: HasCallStack => TestCC -> (HasCallStack => TestCC -> IO a) -> IO a
 withTestOutput cc runTest = runTest cc {printOutput = True}
 

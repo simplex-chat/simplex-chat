@@ -117,7 +117,8 @@ CREATE TABLE groups(
   unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL),
   chat_ts TEXT,
   favorite INTEGER NOT NULL DEFAULT 0,
-  send_rcpts INTEGER, -- received
+  send_rcpts INTEGER,
+  via_group_link_uri_hash BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -144,6 +145,8 @@ CREATE TABLE group_members(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   member_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
+  show_messages INTEGER NOT NULL DEFAULT 1,
+  xgrplinkmem_received INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -264,6 +267,7 @@ CREATE TABLE connections(
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   to_subscribe INTEGER DEFAULT 0 NOT NULL,
+  contact_conn_initiated INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -521,9 +525,6 @@ CREATE INDEX contact_profiles_index ON contact_profiles(
   full_name
 );
 CREATE INDEX idx_groups_inv_queue_info ON groups(inv_queue_info);
-CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
-  via_contact_uri_hash
-);
 CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(xcontact_id);
 CREATE INDEX idx_contacts_xcontact_id ON contacts(xcontact_id);
 CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
@@ -732,3 +733,18 @@ CREATE INDEX idx_received_probes_user_id ON received_probes(user_id);
 CREATE INDEX idx_received_probes_contact_id ON received_probes(contact_id);
 CREATE INDEX idx_received_probes_probe ON received_probes(probe);
 CREATE INDEX idx_received_probes_probe_hash ON received_probes(probe_hash);
+CREATE INDEX idx_sent_probes_created_at ON sent_probes(created_at);
+CREATE INDEX idx_sent_probe_hashes_created_at ON sent_probe_hashes(created_at);
+CREATE INDEX idx_received_probes_created_at ON received_probes(created_at);
+CREATE INDEX idx_connections_conn_req_inv ON connections(
+  user_id,
+  conn_req_inv
+);
+CREATE INDEX idx_groups_via_group_link_uri_hash ON groups(
+  user_id,
+  via_group_link_uri_hash
+);
+CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
+  user_id,
+  via_contact_uri_hash
+);

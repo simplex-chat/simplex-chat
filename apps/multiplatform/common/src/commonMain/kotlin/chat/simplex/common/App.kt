@@ -150,7 +150,7 @@ fun MainScreen() {
       LaunchedEffect(Unit) {
         // With these constrains when user presses back button while on ChatList, activity destroys and shows auth request
         // while the screen moves to a launcher. Detect it and prevent showing the auth
-        if (!(AppLock.destroyedAfterBackPress.value && chatModel.controller.appPrefs.laMode.get() == LAMode.SYSTEM)) {
+        if (!(androidIsFinishingMainActivity() && chatModel.controller.appPrefs.laMode.get() == LAMode.SYSTEM)) {
           AppLock.runAuthenticate()
         }
       }

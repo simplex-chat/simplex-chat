@@ -80,6 +80,14 @@ public enum AppState: String {
         default: return false
         }
     }
+
+    public var canSuspend: Bool {
+        switch self {
+        case .active: return true
+        case .bgRefresh: return true
+        default: return false
+        }
+    }
 }
 
 public enum DBContainer: String {

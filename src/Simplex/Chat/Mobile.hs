@@ -177,7 +177,8 @@ defaultMobileConfig :: ChatConfig
 defaultMobileConfig =
   defaultChatConfig
     { confirmMigrations = MCYesUp,
-      logLevel = CLLError
+      logLevel = CLLError,
+      coreApi = True
     }
 
 getActiveUser_ :: SQLiteStore -> IO (Maybe User)
@@ -204,7 +205,7 @@ chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
   where
     initialize st db = do
       user_ <- getActiveUser_ st
-      newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix dbKey) Nothing
+      newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix dbKey)
     migrate createStore dbFile confirmMigrations =
       ExceptT $
         (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey confirmMigrations)

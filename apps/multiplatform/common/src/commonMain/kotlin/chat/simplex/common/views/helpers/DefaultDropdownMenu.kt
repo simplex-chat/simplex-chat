@@ -11,26 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 
-expect fun Modifier.onRightClick(action: () -> Unit): Modifier
-
-expect interface DefaultExposedDropdownMenuBoxScope {
-  @Composable
-  open fun DefaultExposedDropdownMenu(
-    expanded: Boolean,
-    onDismissRequest: () -> Unit,
-    modifier: Modifier = Modifier,
-    content: @Composable ColumnScope.() -> Unit
-  )
-}
-
-@Composable
-expect fun DefaultExposedDropdownMenuBox(
-  expanded: Boolean,
-  onExpandedChange: (Boolean) -> Unit,
-  modifier: Modifier = Modifier,
-  content: @Composable DefaultExposedDropdownMenuBoxScope.() -> Unit
-)
-
 @Composable
 fun DefaultDropdownMenu(
   showMenu: MutableState<Boolean>,
@@ -55,7 +35,7 @@ fun DefaultDropdownMenu(
 }
 
 @Composable
-fun DefaultExposedDropdownMenuBoxScope.DefaultExposedDropdownMenu(
+fun ExposedDropdownMenuBoxScope.DefaultExposedDropdownMenu(
   expanded: MutableState<Boolean>,
   modifier: Modifier = Modifier,
   dropdownMenuItems: (@Composable () -> Unit)?
@@ -63,7 +43,7 @@ fun DefaultExposedDropdownMenuBoxScope.DefaultExposedDropdownMenu(
   MaterialTheme(
     shapes = MaterialTheme.shapes.copy(medium = RoundedCornerShape(corner = CornerSize(25.dp)))
   ) {
-    DefaultExposedDropdownMenu(
+    ExposedDropdownMenu(
       modifier = Modifier
         .widthIn(min = 200.dp)
         .background(MaterialTheme.colors.surface)

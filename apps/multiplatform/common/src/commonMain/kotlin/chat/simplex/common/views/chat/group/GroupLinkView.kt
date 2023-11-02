@@ -19,11 +19,19 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.shareText
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.newchat.QRCode
+import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 
 @Composable
-fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: String?, memberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit) {
+fun GroupLinkView(
+  chatModel: ChatModel,
+  groupInfo: GroupInfo,
+  connReqContact: String?,
+  memberRole: GroupMemberRole?,
+  onGroupLinkUpdated: ((Pair<String, GroupMemberRole>?) -> Unit)?,
+  creatingGroup: Boolean = false,
+  close: (() -> Unit)? = null
+) {
   var groupLink by rememberSaveable { mutableStateOf(connReqContact) }
   val groupLinkMemberRole = rememberSaveable { mutableStateOf(memberRole) }
   var creatingLink by rememberSaveable { mutableStateOf(false) }
@@ -34,7 +42,7 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
       if (link != null) {
         groupLink = link.first
         groupLinkMemberRole.value = link.second
-        onGroupLinkUpdated(link)
+        onGroupLinkUpdated?.invoke(link)
       }
       creatingLink = false
     }
@@ -44,14 +52,12 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
       createLink()
     }
   }
-  val clipboard = LocalClipboardManager.current
   GroupLinkLayout(
     groupLink = groupLink,
     groupInfo,
     groupLinkMemberRole,
     creatingLink,
     createLink = ::createLink,
-    share = { clipboard.shareText(groupLink ?: return@GroupLinkLayout) },
     updateLink = {
       val role = groupLinkMemberRole.value
       if (role != null) {
@@ -60,7 +66,7 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
           if (link != null) {
             groupLink = link.first
             groupLinkMemberRole.value = link.second
-            onGroupLinkUpdated(link)
+            onGroupLinkUpdated?.invoke(link)
           }
         }
       }
@@ -75,13 +81,15 @@ fun GroupLinkView(chatModel: ChatModel, groupInfo: GroupInfo, connReqContact: St
             val r = chatModel.controller.apiDeleteGroupLink(groupInfo.groupId)
             if (r) {
               groupLink = null
-              onGroupLinkUpdated(null)
+              onGroupLinkUpdated?.invoke(null)
             }
           }
         },
         destructive = true,
       )
-    }
+    },
+    creatingGroup = creatingGroup,
+    close = close
   )
   if (creatingLink) {
     ProgressIndicator()
@@ -95,10 +103,20 @@ fun GroupLinkLayout(
   groupLinkMemberRole: MutableState<GroupMemberRole?>,
   creatingLink: Boolean,
   createLink: () -> Unit,
-  share: () -> Unit,
   updateLink: () -> Unit,
-  deleteLink: () -> Unit
+  deleteLink: () -> Unit,
+  creatingGroup: Boolean = false,
+  close: (() -> Unit)? = null
 ) {
+  @Composable
+  fun ContinueButton(close: () -> Unit) {
+    SimpleButton(
+      stringResource(MR.strings.continue_to_next_step),
+      icon = painterResource(MR.images.ic_check),
+      click = close
+    )
+  }
+
   Column(
     Modifier
       .verticalScroll(rememberScrollState()),
@@ -115,7 +133,16 @@ fun GroupLinkLayout(
       verticalArrangement = Arrangement.SpaceEvenly
     ) {
       if (groupLink == null) {
-        SimpleButton(stringResource(MR.strings.button_create_group_link), icon = painterResource(MR.images.ic_add_link), disabled = creatingLink, click = createLink)
+        Row(
+          horizontalArrangement = Arrangement.spacedBy(10.dp),
+          verticalAlignment = Alignment.CenterVertically,
+          modifier = Modifier.padding(horizontal = DEFAULT_PADDING, vertical = 10.dp)
+        ) {
+          SimpleButton(stringResource(MR.strings.button_create_group_link), icon = painterResource(MR.images.ic_add_link), disabled = creatingLink, click = createLink)
+          if (creatingGroup && close != null) {
+            ContinueButton(close)
+          }
+        }
       } else {
         RoleSelectionRow(groupInfo, groupLinkMemberRole)
         var initialLaunch by remember { mutableStateOf(true) }
@@ -125,23 +152,28 @@ fun GroupLinkLayout(
           }
           initialLaunch = false
         }
-        QRCode(groupLink, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
+        SimpleXLinkQRCode(groupLink, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,
           modifier = Modifier.padding(horizontal = DEFAULT_PADDING, vertical = 10.dp)
         ) {
+          val clipboard = LocalClipboardManager.current
           SimpleButton(
             stringResource(MR.strings.share_link),
             icon = painterResource(MR.images.ic_share),
-            click = share
+            click = { clipboard.shareText(simplexChatLink(groupLink)) }
           )
-          SimpleButton(
-            stringResource(MR.strings.delete_link),
-            icon = painterResource(MR.images.ic_delete),
-            color = Color.Red,
-            click = deleteLink
-          )
+          if (creatingGroup && close != null) {
+            ContinueButton(close)
+          } else {
+            SimpleButton(
+              stringResource(MR.strings.delete_link),
+              icon = painterResource(MR.images.ic_delete),
+              color = Color.Red,
+              click = deleteLink
+            )
+          }
         }
       }
     }

@@ -3,7 +3,6 @@ package chat.simplex.common.views.chat.group
 import InfoRow
 import SectionBottomSpacer
 import SectionDividerSpaced
-import SectionItemView
 import SectionSpacer
 import SectionTextFooter
 import SectionView
@@ -35,7 +34,7 @@ import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chatlist.openChat
+import chat.simplex.common.views.chatlist.openLoadedChat
 import chat.simplex.res.MR
 import kotlinx.datetime.Clock
 
@@ -73,6 +72,7 @@ fun GroupMemberInfoView(
               chatModel.addChat(c)
             }
             chatModel.chatItems.clear()
+            chatModel.chatItemStatuses.clear()
             chatModel.chatItems.addAll(c.chatItems)
             chatModel.chatId.value = c.id
             closeAll()
@@ -86,7 +86,7 @@ fun GroupMemberInfoView(
           if (memberContact != null) {
             val memberChat = Chat(ChatInfo.Direct(memberContact), chatItems = arrayListOf())
             chatModel.addChat(memberChat)
-            openChat(memberChat, chatModel)
+            openLoadedChat(memberChat, chatModel)
             closeAll()
             chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())
           }
@@ -96,6 +96,8 @@ fun GroupMemberInfoView(
       connectViaAddress = { connReqUri ->
         connectViaMemberAddressAlert(connReqUri)
       },
+      blockMember = { blockMemberAlert(groupInfo, member) },
+      unblockMember = { unblockMemberAlert(groupInfo, member) },
       removeMember = { removeMemberDialog(groupInfo, member, chatModel, close) },
       onRoleSelected = {
         if (it == newRole.value) return@GroupMemberInfoLayout
@@ -162,7 +164,7 @@ fun GroupMemberInfoView(
       },
       verifyClicked = {
         ModalManager.end.showModalCloseable { close ->
-          remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }.value?.let { mem ->
+          remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
             VerifyCodeView(
               mem.displayName,
               connectionCode,
@@ -224,6 +226,8 @@ fun GroupMemberInfoLayout(
   openDirectChat: (Long) -> Unit,
   createMemberContact: () -> Unit,
   connectViaAddress: (String) -> Unit,
+  blockMember: () -> Unit,
+  unblockMember: () -> Unit,
   removeMember: () -> Unit,
   onRoleSelected: (GroupMemberRole) -> Unit,
   switchMemberAddress: () -> Unit,
@@ -283,9 +287,9 @@ fun GroupMemberInfoLayout(
 
     if (member.contactLink != null) {
       SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
-        QRCode(member.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+        SimpleXLinkQRCode(member.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
         val clipboard = LocalClipboardManager.current
-        ShareAddressButton { clipboard.shareText(member.contactLink) }
+        ShareAddressButton { clipboard.shareText(simplexChatLink(member.contactLink)) }
         if (contactId != null) {
           if (knownDirectChat(contactId) == null && !groupInfo.fullGroupPreferences.directMessages.on) {
             ConnectViaAddressButton(onClick = { connectViaAddress(member.contactLink) })
@@ -338,9 +342,14 @@ fun GroupMemberInfoLayout(
       }
     }
 
-    if (member.canBeRemoved(groupInfo)) {
-      SectionDividerSpaced(maxBottomPadding = false)
-      SectionView {
+    SectionDividerSpaced(maxBottomPadding = false)
+    SectionView {
+      if (member.memberSettings.showMessages) {
+        BlockMemberButton(blockMember)
+      } else {
+        UnblockMemberButton(unblockMember)
+      }
+      if (member.canBeRemoved(groupInfo)) {
         RemoveMemberButton(removeMember)
       }
     }
@@ -394,6 +403,26 @@ fun GroupMemberInfoHeader(member: GroupMember) {
       )
     }
   }
+}
+
+@Composable
+fun BlockMemberButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_back_hand),
+    stringResource(MR.strings.block_member_button),
+    click = onClick,
+    textColor = Color.Red,
+    iconColor = Color.Red,
+  )
+}
+
+@Composable
+fun UnblockMemberButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_do_not_touch),
+    stringResource(MR.strings.unblock_member_button),
+    click = onClick
+  )
 }
 
 @Composable
@@ -472,43 +501,54 @@ private fun updateMemberRoleDialog(
 }
 
 fun connectViaMemberAddressAlert(connReqUri: String) {
-  AlertManager.shared.showAlertDialogButtonsColumn(
-    title = generalGetString(MR.strings.connect_via_member_address_alert_title),
-    text = AnnotatedString(generalGetString(MR.strings.connect_via_member_address_alert_desc)),
-    buttons = {
-      Column {
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          val uri = URI(connReqUri)
-          withUriAction(uri) { linkType ->
-            withApi {
-              Log.d(TAG, "connectViaUri: connecting")
-              connectViaUri(chatModel, linkType, uri, incognito = false)
-            }
-          }
-        }) {
-          Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          val uri = URI(connReqUri)
-          withUriAction(uri) { linkType ->
-            withApi {
-              Log.d(TAG, "connectViaUri: connecting incognito")
-              connectViaUri(chatModel, linkType, uri, incognito = true)
-            }
-          }
-        }) {
-          Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-        }) {
-          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-      }
+  try {
+    val uri = URI(connReqUri)
+    withApi {
+      planAndConnect(chatModel, uri, incognito = null, close = { ModalManager.closeAllModalsEverywhere() })
     }
+  } catch (e: RuntimeException) {
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(MR.strings.invalid_connection_link),
+      text = generalGetString(MR.strings.this_string_is_not_a_connection_link)
+    )
+  }
+}
+
+fun blockMemberAlert(gInfo: GroupInfo, mem: GroupMember) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.block_member_question),
+    text = generalGetString(MR.strings.block_member_desc).format(mem.chatViewName),
+    confirmText = generalGetString(MR.strings.block_member_confirmation),
+    onConfirm = {
+      toggleShowMemberMessages(gInfo, mem, false)
+    },
+    destructive = true,
   )
+}
+
+fun unblockMemberAlert(gInfo: GroupInfo, mem: GroupMember) {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.unblock_member_question),
+    text = generalGetString(MR.strings.unblock_member_desc).format(mem.chatViewName),
+    confirmText = generalGetString(MR.strings.unblock_member_confirmation),
+    onConfirm = {
+      toggleShowMemberMessages(gInfo, mem, true)
+    },
+  )
+}
+
+fun toggleShowMemberMessages(gInfo: GroupInfo, member: GroupMember, showMessages: Boolean) {
+  val updatedMemberSettings = member.memberSettings.copy(showMessages = showMessages)
+  updateMemberSettings(gInfo, member, updatedMemberSettings)
+}
+
+fun updateMemberSettings(gInfo: GroupInfo, member: GroupMember, memberSettings: GroupMemberSettings) {
+  withBGApi {
+    val success = ChatController.apiSetMemberSettings(gInfo.groupId, member.groupMemberId, memberSettings)
+    if (success) {
+      ChatModel.upsertGroupMember(gInfo, member.copy(memberSettings = memberSettings))
+    }
+  }
 }
 
 @Preview
@@ -526,6 +566,8 @@ fun PreviewGroupMemberInfoLayout() {
       openDirectChat = {},
       createMemberContact = {},
       connectViaAddress = {},
+      blockMember = {},
+      unblockMember = {},
       removeMember = {},
       onRoleSelected = {},
       switchMemberAddress = {},

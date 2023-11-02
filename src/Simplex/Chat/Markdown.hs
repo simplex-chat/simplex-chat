@@ -14,7 +14,7 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
-import Data.Char (isDigit)
+import Data.Char (isDigit, isPunctuation)
 import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.List (intercalate, foldl')
@@ -32,7 +32,7 @@ import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqScheme (..), ConnReqUriData (..), ConnectionRequestUri (..), SMPQueue (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fstToLower, sumTypeJSON)
-import Simplex.Messaging.Protocol (ProtocolServer (..), SrvLoc (..))
+import Simplex.Messaging.Protocol (ProtocolServer (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
@@ -48,7 +48,7 @@ data Format
   | Secret
   | Colored {color :: FormatColor}
   | Uri
-  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, trustedUri :: Bool, smpHosts :: NonEmpty Text}
+  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, smpHosts :: NonEmpty Text}
   | Email
   | Phone
   deriving (Eq, Show, Generic)
@@ -217,11 +217,15 @@ markdownP = mconcat <$> A.many' fragmentP
     wordMD :: Text -> Markdown
     wordMD s
       | T.null s = unmarked s
-      | isUri s = case strDecode $ encodeUtf8 s of
-        Right cReq -> markdown (simplexUriFormat cReq) s
-        _ -> markdown Uri s
+      | isUri s =
+        let t = T.takeWhileEnd isPunctuation s
+            uri = uriMarkdown $ T.dropWhileEnd isPunctuation s
+         in if T.null t then uri else uri :|: unmarked t
       | isEmail s = markdown Email s
       | otherwise = unmarked s
+    uriMarkdown s = case strDecode $ encodeUtf8 s of
+      Right cReq -> markdown (simplexUriFormat cReq) s
+      _ -> markdown Uri s
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked
@@ -229,15 +233,12 @@ markdownP = mconcat <$> A.many' fragmentP
     simplexUriFormat = \case
       ACR _ (CRContactUri crData) ->
         let uri = safeDecodeUtf8 . strEncode $ CRContactUri crData {crScheme = CRSSimplex}
-         in SimplexLink (linkType' crData) uri (trustedUri' crData) $ uriHosts crData
+         in SimplexLink (linkType' crData) uri $ uriHosts crData
       ACR _ (CRInvitationUri crData e2e) ->
         let uri = safeDecodeUtf8 . strEncode $ CRInvitationUri crData {crScheme = CRSSimplex} e2e
-         in SimplexLink XLInvitation uri (trustedUri' crData) $ uriHosts crData
+         in SimplexLink XLInvitation uri $ uriHosts crData
       where
         uriHosts ConnReqUriData {crSmpQueues} = L.map (safeDecodeUtf8 . strEncode) $ sconcat $ L.map (host . qServer) crSmpQueues
-        trustedUri' ConnReqUriData {crScheme} = case crScheme of
-          CRSSimplex -> True
-          CRSAppServer (SrvLoc host _) -> host == "simplex.chat"
         linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
           Just (CRDataGroup _) -> XLGroup
           Nothing -> XLContact

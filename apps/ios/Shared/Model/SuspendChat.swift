@@ -19,7 +19,11 @@ let bgSuspendTimeout: Int = 5 // seconds
 let terminationTimeout: Int = 3 // seconds
 
 private func _suspendChat(timeout: Int) {
-    if ChatModel.ok {
+    // this is a redundant check to prevent logical errors, like the one fixed in this PR
+    let state = appStateGroupDefault.get()
+    if !state.canSuspend {
+        logger.error("_suspendChat called, current state: \(state.rawValue, privacy: .public)")
+    } else if ChatModel.ok {
         appStateGroupDefault.set(.suspending)
         apiSuspendChat(timeoutMicroseconds: timeout * 1000000)
         let endTask = beginBGTask(chatSuspended)
@@ -31,9 +35,7 @@ private func _suspendChat(timeout: Int) {
 
 func suspendChat() {
     suspendLockQueue.sync {
-        if appStateGroupDefault.get() != .stopped {
-            _suspendChat(timeout: appSuspendTimeout)
-        }
+        _suspendChat(timeout: appSuspendTimeout)
     }
 }
 
@@ -48,15 +50,22 @@ func suspendBgRefresh() {
 private var terminating = false
 
 func terminateChat() {
-    terminating = true
+    logger.debug("terminateChat")
     suspendLockQueue.sync {
         switch appStateGroupDefault.get() {
         case .suspending:
             // suspend instantly if already suspending
             _chatSuspended()
+            // when apiSuspendChat is called with timeout 0, it won't send any events on suspension
             if ChatModel.ok { apiSuspendChat(timeoutMicroseconds: 0) }
-        case .stopped: ()
+            chatCloseStore()
+        case .suspended:
+            chatCloseStore()
+        case .stopped:
+            chatCloseStore()
         default:
+            terminating = true
+            // the store will be closed in _chatSuspended when event is received
             _suspendChat(timeout: terminationTimeout)
         }
     }
@@ -77,12 +86,13 @@ private func _chatSuspended() {
         ChatReceiver.shared.stop()
     }
     if terminating {
-        chatCloseStore()
+         chatCloseStore()
     }
 }
 
 func activateChat(appState: AppState = .active) {
     logger.debug("DEBUGGING: activateChat")
+    terminating = false
     suspendLockQueue.sync {
         appStateGroupDefault.set(appState)
         if ChatModel.ok { apiActivateChat() }
@@ -91,6 +101,7 @@ func activateChat(appState: AppState = .active) {
 }
 
 func initChatAndMigrate(refreshInvitations: Bool = true) {
+    terminating = false
     let m = ChatModel.shared
     if (!m.chatInitialized) {
         do {
@@ -103,6 +114,7 @@ func initChatAndMigrate(refreshInvitations: Bool = true) {
 }
 
 func startChatAndActivate() {
+    terminating = false
     logger.debug("DEBUGGING: startChatAndActivate")
     if ChatModel.shared.chatRunning == true {
         ChatReceiver.shared.start()

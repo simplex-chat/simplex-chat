@@ -195,10 +195,10 @@ testSuspendResume tmp =
 
 testJoinGroup :: HasCallStack => FilePath -> IO ()
 testJoinGroup tmp =
-  withDirectoryService tmp $ \superUser dsLink ->
-    withNewTestChat tmp "bob" bobProfile $ \bob -> do
-      withNewTestChat tmp "cath" cathProfile $ \cath ->
-        withNewTestChat tmp "dan" danProfile $ \dan -> do
+  withDirectoryServiceCfg tmp testCfgGroupLinkViaContact $ \superUser dsLink ->
+    withNewTestChatCfg tmp testCfgGroupLinkViaContact "bob" bobProfile $ \bob -> do
+      withNewTestChatCfg tmp testCfgGroupLinkViaContact "cath" cathProfile $ \cath ->
+        withNewTestChatCfg tmp testCfgGroupLinkViaContact "dan" danProfile $ \dan -> do
           bob `connectVia` dsLink
           registerGroup superUser bob "privacy" "Privacy"
           cath `connectVia` dsLink
@@ -827,7 +827,7 @@ runDirectory cfg opts@DirectoryOpts {directoryLog} action = do
   threadDelay 500000
   action `finally` (mapM_ hClose (directoryLogFile st) >> killThread t)
   where
-    bot st = simplexChatCore cfg (mkChatOpts opts) Nothing $ directoryService st opts
+    bot st = simplexChatCore cfg (mkChatOpts opts) $ directoryService st opts
 
 registerGroup :: TestCC -> TestCC -> String -> String -> IO ()
 registerGroup su u n fn = registerGroupId su u n fn 1 1

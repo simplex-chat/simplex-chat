@@ -9,22 +9,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.Messages.CIContent where
 
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Type.Equality
-import Data.Typeable (Typeable)
 import Data.Word (Word32)
-import Database.SQLite.Simple (ResultError (..), SQLData (..))
-import Database.SQLite.Simple.FromField (Field, FromField (..), returnError)
-import Database.SQLite.Simple.Internal (Field (..))
-import Database.SQLite.Simple.Ok
+import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
 import GHC.Generics (Generic)
 import Simplex.Chat.Protocol
@@ -49,14 +47,6 @@ instance ToJSON MsgDirection where
 instance FromField AMsgDirection where fromField = fromIntField_ $ fmap fromMsgDirection . msgDirectionIntP
 
 instance ToField MsgDirection where toField = toField . msgDirectionInt
-
-fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> Field -> Ok a
-fromIntField_ fromInt = \case
-  f@(Field (SQLInteger i) _) ->
-    case fromInt i of
-      Just x -> Ok x
-      _ -> returnError ConversionFailed f ("invalid integer: " <> show i)
-  f -> returnError ConversionFailed f "expecting SQLInteger column type"
 
 data SMsgDirection (d :: MsgDirection) where
   SMDRcv :: SMsgDirection 'MDRcv
@@ -326,11 +316,11 @@ instance ToJSON DBRcvDirectEvent where
 newtype DBMsgErrorType = DBME MsgErrorType
 
 instance FromJSON DBMsgErrorType where
-  parseJSON v = DBME <$> J.genericParseJSON (singleFieldJSON fstToLower) v
+  parseJSON v = DBME <$> $(JQ.mkParseJSON (singleFieldJSON fstToLower) ''MsgErrorType) v
 
 instance ToJSON DBMsgErrorType where
-  toJSON (DBME v) = J.genericToJSON (singleFieldJSON fstToLower) v
-  toEncoding (DBME v) = J.genericToEncoding (singleFieldJSON fstToLower) v
+  toJSON (DBME v) = $(JQ.mkToJSON (singleFieldJSON fstToLower) ''MsgErrorType) v
+  toEncoding (DBME v) = $(JQ.mkToEncoding (singleFieldJSON fstToLower) ''MsgErrorType) v
 
 data CIGroupInvitation = CIGroupInvitation
   { groupId :: GroupId,

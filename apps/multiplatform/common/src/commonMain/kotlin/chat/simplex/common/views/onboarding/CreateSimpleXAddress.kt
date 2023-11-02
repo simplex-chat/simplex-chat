@@ -18,7 +18,8 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.newchat.QRCode
+import chat.simplex.common.views.newchat.SimpleXLinkQRCode
+import chat.simplex.common.views.newchat.simplexChatLink
 import chat.simplex.res.MR
 
 @Composable
@@ -38,7 +39,7 @@ fun CreateSimpleXAddress(m: ChatModel) {
     sendEmail = { address ->
       uriHandler.sendEmail(
         generalGetString(MR.strings.email_invite_subject),
-        generalGetString(MR.strings.email_invite_body).format(address.connReqContact)
+        generalGetString(MR.strings.email_invite_body).format(simplexChatLink(address.connReqContact))
       )
     },
     createAddress = {
@@ -91,8 +92,8 @@ private fun CreateSimpleXAddressLayout(
     Spacer(Modifier.weight(1f))
 
     if (userAddress != null) {
-      QRCode(userAddress.connReqContact, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
-      ShareAddressButton { share(userAddress.connReqContact) }
+      SimpleXLinkQRCode(userAddress.connReqContact, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+      ShareAddressButton { share(simplexChatLink(userAddress.connReqContact)) }
       Spacer(Modifier.weight(1f))
       ShareViaEmailButton { sendEmail(userAddress) }
       Spacer(Modifier.weight(1f))

@@ -422,8 +422,8 @@ public enum CustomTimeUnit {
 
 
 public func timeText(_ seconds: Int?) -> String {
-    guard let seconds = seconds else { return "off" }
-    if seconds == 0 { return "0 sec" }
+    guard let seconds = seconds else { return NSLocalizedString("off", comment: "time to disappear") }
+    if seconds == 0 { return NSLocalizedString("0 sec", comment: "time to disappear") }
     return CustomTimeUnit.toText(seconds: seconds)
 }
 
@@ -1292,7 +1292,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
     }
 
     public var ntfsEnabled: Bool {
-        self.chatSettings?.enableNtfs ?? false
+        self.chatSettings?.enableNtfs == .all
     }
 
     public var chatSettings: ChatSettings? {
@@ -1729,6 +1729,11 @@ public struct GroupInfo: Identifiable, Decodable, NamedChat {
     )
 }
 
+public struct GroupRef: Decodable {
+    public var groupId: Int64
+    var localDisplayName: GroupName
+}
+
 public struct GroupProfile: Codable, NamedChat {
     public init(displayName: String, fullName: String, description: String? = nil, image: String? = nil, groupPreferences: GroupPreferences? = nil) {
         self.displayName = displayName
@@ -1758,6 +1763,7 @@ public struct GroupMember: Identifiable, Decodable {
     public var memberRole: GroupMemberRole
     public var memberCategory: GroupMemberCategory
     public var memberStatus: GroupMemberStatus
+    public var memberSettings: GroupMemberSettings
     public var invitedBy: InvitedBy
     public var localDisplayName: ContactName
     public var memberProfile: LocalProfile
@@ -1851,6 +1857,7 @@ public struct GroupMember: Identifiable, Decodable {
         memberRole: .admin,
         memberCategory: .inviteeMember,
         memberStatus: .memComplete,
+        memberSettings: GroupMemberSettings(showMessages: true),
         invitedBy: .user,
         localDisplayName: "alice",
         memberProfile: LocalProfile.sampleData,
@@ -1860,9 +1867,18 @@ public struct GroupMember: Identifiable, Decodable {
     )
 }
 
+public struct GroupMemberSettings: Codable {
+    public var showMessages: Bool
+}
+
 public struct GroupMemberRef: Decodable {
     var groupMemberId: Int64
     var profile: Profile
+}
+
+public struct GroupMemberIds: Decodable {
+    var groupMemberId: Int64
+    var groupId: Int64
 }
 
 public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Decodable {
@@ -1957,7 +1973,7 @@ public enum InvitedBy: Decodable {
 }
 
 public struct MemberSubError: Decodable {
-    var member: GroupMember
+    var member: GroupMemberIds
     var memberError: ChatError
 }
 
@@ -1983,8 +1999,8 @@ public enum ConnectionEntity: Decodable {
 
     public var ntfsEnabled: Bool {
         switch self {
-        case let .rcvDirectMsgConnection(contact): return contact?.chatSettings.enableNtfs ?? false
-        case let .rcvGroupMsgConnection(groupInfo, _): return groupInfo.chatSettings.enableNtfs
+        case let .rcvDirectMsgConnection(contact): return contact?.chatSettings.enableNtfs == .all
+        case let .rcvGroupMsgConnection(groupInfo, _): return groupInfo.chatSettings.enableNtfs == .all
         case .sndFileConnection: return false
         case .rcvFileConnection: return false
         case let .userContactConnection(userContact): return userContact.groupId == nil
@@ -2074,12 +2090,41 @@ public struct ChatItem: Identifiable, Decodable {
 
     public var memberConnected: GroupMember? {
         switch chatDir {
-        case .groupRcv(let groupMember):
+        case let .groupRcv(groupMember):
             switch content {
             case .rcvGroupEvent(rcvGroupEvent: .memberConnected): return groupMember
             default: return nil
             }
         default: return nil
+        }
+    }
+
+    public var mergeCategory: CIMergeCategory? {
+        switch content {
+        case .rcvChatFeature: .chatFeature
+        case .sndChatFeature: .chatFeature
+        case .rcvGroupFeature: .chatFeature
+        case .sndGroupFeature: .chatFeature
+        case let.rcvGroupEvent(event):
+            switch event {
+            case .userRole: nil
+            case .userDeleted: nil
+            case .groupDeleted: nil
+            case .memberCreatedContact: nil
+            default: .rcvGroupEvent
+            }
+        case let .sndGroupEvent(event):
+            switch event {
+            case .userRole: nil
+            case .userLeft: nil
+            default: .sndGroupEvent
+            }
+        default:
+            if meta.itemDeleted == nil {
+                nil
+            } else {
+                chatDir.sent ? .sndItemDeleted : .rcvItemDeleted
+            }
         }
     }
 
@@ -2160,7 +2205,7 @@ public struct ChatItem: Identifiable, Decodable {
     public var memberDisplayName: String? {
         get {
             if case let .groupRcv(groupMember) = chatDir {
-                return groupMember.displayName
+                return groupMember.chatViewName
             } else {
                 return nil
             }
@@ -2312,6 +2357,15 @@ public struct ChatItem: Identifiable, Decodable {
             file: nil
         )
     }
+}
+
+public enum CIMergeCategory {
+    case memberConnected
+    case rcvGroupEvent
+    case sndGroupEvent
+    case sndItemDeleted
+    case rcvItemDeleted
+    case chatFeature
 }
 
 public enum CIDirection: Decodable {
@@ -2492,11 +2546,13 @@ public enum SndCIStatusProgress: String, Decodable {
 
 public enum CIDeleted: Decodable {
     case deleted(deletedTs: Date?)
+    case blocked(deletedTs: Date?)
     case moderated(deletedTs: Date?, byGroupMember: GroupMember)
 
     var id: String {
         switch self {
         case .deleted: return  "deleted"
+        case .blocked: return  "blocked"
         case .moderated: return "moderated"
         }
     }
@@ -2514,8 +2570,8 @@ protocol ItemContent {
 public enum CIContent: Decodable, ItemContent {
     case sndMsgContent(msgContent: MsgContent)
     case rcvMsgContent(msgContent: MsgContent)
-    case sndDeleted(deleteMode: CIDeleteMode)
-    case rcvDeleted(deleteMode: CIDeleteMode)
+    case sndDeleted(deleteMode: CIDeleteMode) // legacy - since v4.3.0 itemDeleted field is used
+    case rcvDeleted(deleteMode: CIDeleteMode) // legacy - since v4.3.0 itemDeleted field is used
     case sndCall(status: CICallStatus, duration: Int)
     case rcvCall(status: CICallStatus, duration: Int)
     case rcvIntegrityError(msgError: MsgErrorType)
@@ -3052,7 +3108,7 @@ public enum Format: Decodable, Equatable {
     case secret
     case colored(color: FormatColor)
     case uri
-    case simplexLink(linkType: SimplexLinkType, simplexUri: String, trustedUri: Bool, smpHosts: [String])
+    case simplexLink(linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
     case email
     case phone
 }

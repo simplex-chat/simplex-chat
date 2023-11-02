@@ -65,70 +65,133 @@ mobileTests = do
       it "should convert invalid name to a valid name" testValidNameCApi
 
 noActiveUser :: LB.ByteString
+noActiveUser =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-noActiveUser = "{\"resp\":{\"chatCmdError\":{\"chatError\":{\"error\":{\"errorType\":{\"noActiveUser\":{}}}}}}}"
+  noActiveUserSwift
 #else
-noActiveUser = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"noActiveUser\"}}}}"
+  noActiveUserTagged
 #endif
+
+noActiveUserSwift :: LB.ByteString
+noActiveUserSwift = "{\"resp\":{\"_owsf\":true,\"chatCmdError\":{\"chatError\":{\"_owsf\":true,\"error\":{\"errorType\":{\"_owsf\":true,\"noActiveUser\":{}}}}}}}"
+
+noActiveUserTagged :: LB.ByteString
+noActiveUserTagged = "{\"resp\":{\"type\":\"chatCmdError\",\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"noActiveUser\"}}}}"
 
 activeUserExists :: LB.ByteString
+activeUserExists =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-activeUserExists = "{\"resp\":{\"chatCmdError\":{\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true},\"chatError\":{\"error\":{\"errorType\":{\"userExists\":{\"contactName\":\"alice\"}}}}}}}"
+  activeUserExistsSwift
 #else
-activeUserExists = "{\"resp\":{\"type\":\"chatCmdError\",\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true},\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"userExists\",\"contactName\":\"alice\"}}}}"
+  activeUserExistsTagged
 #endif
+
+activeUserExistsSwift :: LB.ByteString
+activeUserExistsSwift = "{\"resp\":{\"_owsf\":true,\"chatCmdError\":{\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true},\"chatError\":{\"_owsf\":true,\"error\":{\"errorType\":{\"_owsf\":true,\"userExists\":{\"contactName\":\"alice\"}}}}}}}"
+
+activeUserExistsTagged :: LB.ByteString
+activeUserExistsTagged = "{\"resp\":{\"type\":\"chatCmdError\",\"user_\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true},\"chatError\":{\"type\":\"error\",\"errorType\":{\"type\":\"userExists\",\"contactName\":\"alice\"}}}}"
 
 activeUser :: LB.ByteString
+activeUser =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-activeUser = "{\"resp\":{\"activeUser\":{\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}}}}"
+  activeUserSwift
 #else
-activeUser = "{\"resp\":{\"type\":\"activeUser\",\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}}}"
+  activeUserTagged
 #endif
+
+activeUserSwift :: LB.ByteString
+activeUserSwift = "{\"resp\":{\"_owsf\":true,\"activeUser\":{\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}}}}"
+
+activeUserTagged :: LB.ByteString
+activeUserTagged = "{\"resp\":{\"type\":\"activeUser\",\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}}}"
 
 chatStarted :: LB.ByteString
+chatStarted =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-chatStarted = "{\"resp\":{\"chatStarted\":{}}}"
+  chatStartedSwift
 #else
-chatStarted = "{\"resp\":{\"type\":\"chatStarted\"}}"
+  chatStartedTagged
 #endif
 
-contactSubSummary :: LB.ByteString
+chatStartedSwift :: LB.ByteString
+chatStartedSwift = "{\"resp\":{\"_owsf\":true,\"chatStarted\":{}}}"
+
+chatStartedTagged :: LB.ByteString
+chatStartedTagged = "{\"resp\":{\"type\":\"chatStarted\"}}"
+
+networkStatuses :: LB.ByteString
+networkStatuses =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-contactSubSummary = "{\"resp\":{\"contactSubSummary\":{" <> userJSON <> ",\"contactSubscriptions\":[]}}}"
+  networkStatusesSwift
 #else
-contactSubSummary = "{\"resp\":{\"type\":\"contactSubSummary\"," <> userJSON <> ",\"contactSubscriptions\":[]}}"
+  networkStatusesTagged
 #endif
+
+networkStatusesSwift :: LB.ByteString
+networkStatusesSwift = "{\"resp\":{\"_owsf\":true,\"networkStatuses\":{\"user_\":" <> userJSON <> ",\"networkStatuses\":[]}}}"
+
+networkStatusesTagged :: LB.ByteString
+networkStatusesTagged = "{\"resp\":{\"type\":\"networkStatuses\",\"user_\":" <> userJSON <> ",\"networkStatuses\":[]}}"
 
 memberSubSummary :: LB.ByteString
+memberSubSummary =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-memberSubSummary = "{\"resp\":{\"memberSubSummary\":{" <> userJSON <> ",\"memberSubscriptions\":[]}}}"
+  memberSubSummarySwift
 #else
-memberSubSummary = "{\"resp\":{\"type\":\"memberSubSummary\"," <> userJSON <> ",\"memberSubscriptions\":[]}}"
+  memberSubSummaryTagged
 #endif
+
+memberSubSummarySwift :: LB.ByteString
+memberSubSummarySwift = "{\"resp\":{\"_owsf\":true,\"memberSubSummary\":{\"user\":" <> userJSON <> ",\"memberSubscriptions\":[]}}}"
+
+memberSubSummaryTagged :: LB.ByteString
+memberSubSummaryTagged = "{\"resp\":{\"type\":\"memberSubSummary\",\"user\":" <> userJSON <> ",\"memberSubscriptions\":[]}}"
 
 userContactSubSummary :: LB.ByteString
+userContactSubSummary =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-userContactSubSummary = "{\"resp\":{\"userContactSubSummary\":{" <> userJSON <> ",\"userContactSubscriptions\":[]}}}"
+  userContactSubSummarySwift
 #else
-userContactSubSummary = "{\"resp\":{\"type\":\"userContactSubSummary\"," <> userJSON <> ",\"userContactSubscriptions\":[]}}"
+  userContactSubSummaryTagged
 #endif
+
+userContactSubSummarySwift :: LB.ByteString
+userContactSubSummarySwift = "{\"resp\":{\"_owsf\":true,\"userContactSubSummary\":{\"user\":" <> userJSON <> ",\"userContactSubscriptions\":[]}}}"
+
+userContactSubSummaryTagged :: LB.ByteString
+userContactSubSummaryTagged = "{\"resp\":{\"type\":\"userContactSubSummary\",\"user\":" <> userJSON <> ",\"userContactSubscriptions\":[]}}"
 
 pendingSubSummary :: LB.ByteString
+pendingSubSummary =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-pendingSubSummary = "{\"resp\":{\"pendingSubSummary\":{" <> userJSON <> ",\"pendingSubscriptions\":[]}}}"
+  pendingSubSummarySwift
 #else
-pendingSubSummary = "{\"resp\":{\"type\":\"pendingSubSummary\"," <> userJSON <> ",\"pendingSubscriptions\":[]}}"
+  pendingSubSummaryTagged
 #endif
+
+pendingSubSummarySwift :: LB.ByteString
+pendingSubSummarySwift = "{\"resp\":{\"_owsf\":true,\"pendingSubSummary\":{\"user\":" <> userJSON <> ",\"pendingSubscriptions\":[]}}}"
+
+pendingSubSummaryTagged :: LB.ByteString
+pendingSubSummaryTagged = "{\"resp\":{\"type\":\"pendingSubSummary\",\"user\":" <> userJSON <> ",\"pendingSubscriptions\":[]}}"
 
 userJSON :: LB.ByteString
-userJSON = "\"user\":{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}"
+userJSON = "{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"calls\":{\"allow\":\"yes\"}},\"activeUser\":true,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true}"
 
 parsedMarkdown :: LB.ByteString
+parsedMarkdown =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-parsedMarkdown = "{\"formattedText\":[{\"format\":{\"bold\":{}},\"text\":\"hello\"}]}"
+  parsedMarkdownSwift
 #else
-parsedMarkdown = "{\"formattedText\":[{\"format\":{\"type\":\"bold\"},\"text\":\"hello\"}]}"
+  parsedMarkdownTagged
 #endif
+
+parsedMarkdownSwift :: LB.ByteString
+parsedMarkdownSwift = "{\"formattedText\":[{\"format\":{\"_owsf\":true,\"bold\":{}},\"text\":\"hello\"}]}"
+
+parsedMarkdownTagged :: LB.ByteString
+parsedMarkdownTagged = "{\"formattedText\":[{\"format\":{\"type\":\"bold\"},\"text\":\"hello\"}]}"
 
 testChatApiNoUser :: FilePath -> IO ()
 testChatApiNoUser tmp = do
@@ -157,7 +220,7 @@ testChatApi tmp = do
   chatSendCmd cc "/u" `shouldReturn` activeUser
   chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
-  chatRecvMsg cc `shouldReturn` contactSubSummary
+  chatRecvMsg cc `shouldReturn` networkStatuses
   chatRecvMsg cc `shouldReturn` userContactSubSummary
   chatRecvMsg cc `shouldReturn` memberSubSummary
   chatRecvMsgWait cc 10000 `shouldReturn` pendingSubSummary

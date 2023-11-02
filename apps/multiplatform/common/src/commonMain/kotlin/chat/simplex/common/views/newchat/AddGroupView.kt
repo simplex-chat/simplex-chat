@@ -1,5 +1,6 @@
 package chat.simplex.common.views.newchat
 
+import SectionTextFooter
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -11,10 +12,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.buildAnnotatedString
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
@@ -22,11 +22,10 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.group.AddGroupMembersView
 import chat.simplex.common.views.chatlist.setGroupMembers
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.onboarding.ReadableText
-import chat.simplex.common.views.usersettings.DeleteImageButton
-import chat.simplex.common.views.usersettings.EditImageButton
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.*
+import chat.simplex.common.views.chat.group.GroupLinkView
+import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -35,33 +34,46 @@ import java.net.URI
 @Composable
 fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
   AddGroupLayout(
-    createGroup = { groupProfile ->
+    createGroup = { incognito, groupProfile ->
       withApi {
-        val groupInfo = chatModel.controller.apiNewGroup(groupProfile)
+        val groupInfo = chatModel.controller.apiNewGroup(incognito, groupProfile)
         if (groupInfo != null) {
           chatModel.addChat(Chat(chatInfo = ChatInfo.Group(groupInfo), chatItems = listOf()))
           chatModel.chatItems.clear()
+          chatModel.chatItemStatuses.clear()
           chatModel.chatId.value = groupInfo.id
           setGroupMembers(groupInfo, chatModel)
           close.invoke()
-          ModalManager.end.showModalCloseable(true) { close ->
-            AddGroupMembersView(groupInfo, true, chatModel, close)
+          if (!groupInfo.incognito) {
+            ModalManager.end.showModalCloseable(true) { close ->
+              AddGroupMembersView(groupInfo, creatingGroup = true, chatModel, close)
+            }
+          } else {
+            ModalManager.end.showModalCloseable(true) { close ->
+              GroupLinkView(chatModel, groupInfo, connReqContact = null, memberRole = null, onGroupLinkUpdated = null, creatingGroup = true, close)
+            }
           }
         }
       }
     },
+    incognitoPref = chatModel.controller.appPrefs.incognito,
     close
   )
 }
 
 @Composable
-fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
+fun AddGroupLayout(
+  createGroup: (Boolean, GroupProfile) -> Unit,
+  incognitoPref: SharedPreference<Boolean>,
+  close: () -> Unit
+) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val scope = rememberCoroutineScope()
   val displayName = rememberSaveable { mutableStateOf("") }
   val chosenImage = rememberSaveable { mutableStateOf<URI?>(null) }
   val profileImage = rememberSaveable { mutableStateOf<String?>(null) }
   val focusRequester = remember { FocusRequester() }
+  val incognito = remember { mutableStateOf(incognitoPref.get()) }
 
   ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
     ModalBottomSheetLayout(
@@ -86,7 +98,6 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
             .padding(horizontal = DEFAULT_PADDING)
         ) {
           AppBarTitle(stringResource(MR.strings.create_secret_group_title))
-          ReadableText(MR.strings.group_is_decentralized, TextAlign.Center)
           Box(
             Modifier
               .fillMaxWidth()
@@ -117,40 +128,37 @@ fun AddGroupLayout(createGroup: (GroupProfile) -> Unit, close: () -> Unit) {
           }
           ProfileNameField(displayName, "", { isValidDisplayName(it.trim()) }, focusRequester)
           Spacer(Modifier.height(8.dp))
-          val enabled = canCreateProfile(displayName.value)
-          if (enabled) {
-            CreateGroupButton(MaterialTheme.colors.primary, Modifier
-              .clickable {
-                createGroup(GroupProfile(
-                  displayName = displayName.value.trim(),
-                  fullName = "",
-                  image = profileImage.value
-                ))
-              }
-              .padding(8.dp))
-          } else {
-            CreateGroupButton(MaterialTheme.colors.secondary, Modifier.padding(8.dp))
-          }
+
+          SettingsActionItem(
+            painterResource(MR.images.ic_check),
+            stringResource(MR.strings.create_group_button),
+            click = {
+              createGroup(incognito.value, GroupProfile(
+                displayName = displayName.value.trim(),
+                fullName = "",
+                image = profileImage.value
+              ))
+            },
+            textColor = MaterialTheme.colors.primary,
+            iconColor = MaterialTheme.colors.primary,
+            disabled = !canCreateProfile(displayName.value)
+          )
+
+          IncognitoToggle(incognitoPref, incognito) { ModalManager.start.showModal { IncognitoView() } }
+
+          SectionTextFooter(
+            buildAnnotatedString {
+              append(sharedProfileInfo(chatModel, incognito.value))
+              append("\n")
+              append(annotatedStringResource(MR.strings.group_is_decentralized))
+            }
+          )
+
           LaunchedEffect(Unit) {
             delay(300)
             focusRequester.requestFocus()
           }
         }
-      }
-    }
-  }
-}
-
-@Composable
-fun CreateGroupButton(color: Color, modifier: Modifier) {
-  Row(
-    Modifier.fillMaxWidth(),
-    horizontalArrangement = Arrangement.End
-  ) {
-    Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent) {
-      Row(modifier, verticalAlignment = Alignment.CenterVertically) {
-        Text(stringResource(MR.strings.create_profile_button), style = MaterialTheme.typography.caption, color = color, fontWeight = FontWeight.Bold)
-        Icon(painterResource(MR.images.ic_arrow_forward_ios), stringResource(MR.strings.create_profile_button), tint = color)
       }
     }
   }
@@ -163,7 +171,8 @@ fun canCreateProfile(displayName: String): Boolean = displayName.trim().isNotEmp
 fun PreviewAddGroupLayout() {
   SimpleXTheme {
     AddGroupLayout(
-      createGroup = {},
+      createGroup = { _, _ -> },
+      incognitoPref = SharedPreference({ false }, {}),
       close = {}
     )
   }

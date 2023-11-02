@@ -61,7 +61,7 @@ struct ContactConnectionInfo: View {
 
                     if contactConnection.initiated,
                        let connReqInv = contactConnection.connReqInv {
-                        QRCode(uri: connReqInv)
+                        SimpleXLinkQRCode(uri: simplexChatLink(connReqInv))
                         incognitoEnabled()
                         shareLinkButton(connReqInv)
                         oneTimeLinkLearnMoreButton()
@@ -119,7 +119,7 @@ struct ContactConnectionInfo: View {
                 if let conn = try await apiSetConnectionAlias(connId: contactConnection.pccConnId, localAlias: localAlias) {
                     await MainActor.run {
                         contactConnection = conn
-                        ChatModel.shared.updateContactConnection(conn)
+                        m.updateContactConnection(conn)
                         dismiss()
                     }
                 }

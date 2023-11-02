@@ -36,7 +36,7 @@ buildscript {
     extra.set("desktop.mac.signing.keychain", prop["desktop.mac.signing.keychain"] ?: extra.getOrNull("compose.desktop.mac.signing.keychain"))
     extra.set("desktop.mac.notarization.apple_id", prop["desktop.mac.notarization.apple_id"] ?: extra.getOrNull("compose.desktop.mac.notarization.appleID"))
     extra.set("desktop.mac.notarization.password", prop["desktop.mac.notarization.password"] ?: extra.getOrNull("compose.desktop.mac.notarization.password"))
-    extra.set("desktop.mac.notarization.team_id", prop["desktop.mac.notarization.team_id"] ?: extra.getOrNull("compose.desktop.mac.notarization.ascProvider"))
+    extra.set("desktop.mac.notarization.team_id", prop["desktop.mac.notarization.team_id"] ?: extra.getOrNull("compose.desktop.mac.notarization.teamID"))
 
     repositories {
         google()

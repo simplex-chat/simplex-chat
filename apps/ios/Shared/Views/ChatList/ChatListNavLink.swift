@@ -32,19 +32,33 @@ struct ChatListNavLink: View {
     @State private var showJoinGroupDialog = false
     @State private var showContactConnectionInfo = false
     @State private var showInvalidJSON = false
+    @State private var showDeleteContactActionSheet = false
+    @State private var inProgress = false
+    @State private var progressByTimeout = false
 
     var body: some View {
-        switch chat.chatInfo {
-        case let .direct(contact):
-            contactNavLink(contact)
-        case let .group(groupInfo):
-            groupNavLink(groupInfo)
-        case let .contactRequest(cReq):
-            contactRequestNavLink(cReq)
-        case let .contactConnection(cConn):
-            contactConnectionNavLink(cConn)
-        case let .invalidJSON(json):
-            invalidJSONPreview(json)
+        Group {
+            switch chat.chatInfo {
+            case let .direct(contact):
+                contactNavLink(contact)
+            case let .group(groupInfo):
+                groupNavLink(groupInfo)
+            case let .contactRequest(cReq):
+                contactRequestNavLink(cReq)
+            case let .contactConnection(cConn):
+                contactConnectionNavLink(cConn)
+            case let .invalidJSON(json):
+                invalidJSONPreview(json)
+            }
+        }
+        .onChange(of: inProgress) { inProgress in
+            if inProgress {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    progressByTimeout = inProgress
+                }
+            } else {
+                progressByTimeout = false
+            }
         }
     }
 
@@ -52,7 +66,7 @@ struct ChatListNavLink: View {
         NavLinkPlain(
             tag: chat.chatInfo.id,
             selection: $chatModel.chatId,
-            label: { ChatPreviewView(chat: chat) }
+            label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) }
         )
         .swipeActions(edge: .leading, allowsFullSwipe: true) {
             markReadButton()
@@ -64,23 +78,43 @@ struct ChatListNavLink: View {
                 clearChatButton()
             }
             Button {
-                AlertManager.shared.showAlert(
-                    contact.ready || !contact.active
-                    ? deleteContactAlert(chat.chatInfo)
-                    : deletePendingContactAlert(chat, contact)
-                )
+                if contact.ready || !contact.active {
+                    showDeleteContactActionSheet = true
+                } else {
+                    AlertManager.shared.showAlert(deletePendingContactAlert(chat, contact))
+                }
             } label: {
                 Label("Delete", systemImage: "trash")
             }
             .tint(.red)
         }
         .frame(height: rowHeights[dynamicTypeSize])
+        .actionSheet(isPresented: $showDeleteContactActionSheet) {
+            if contact.ready && contact.active {
+                return ActionSheet(
+                    title: Text("Delete contact?\nThis cannot be undone!"),
+                    buttons: [
+                        .destructive(Text("Delete and notify contact")) { Task { await deleteChat(chat, notify: true) } },
+                        .destructive(Text("Delete")) { Task { await deleteChat(chat, notify: false) } },
+                        .cancel()
+                    ]
+                )
+            } else {
+                return ActionSheet(
+                    title: Text("Delete contact?\nThis cannot be undone!"),
+                    buttons: [
+                        .destructive(Text("Delete")) { Task { await deleteChat(chat) } },
+                        .cancel()
+                    ]
+                )
+            }
+        }
     }
 
     @ViewBuilder private func groupNavLink(_ groupInfo: GroupInfo) -> some View {
         switch (groupInfo.membership.memberStatus) {
         case .memInvited:
-            ChatPreviewView(chat: chat)
+            ChatPreviewView(chat: chat, progressByTimeout: $progressByTimeout)
                 .frame(height: rowHeights[dynamicTypeSize])
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     joinGroupButton()
@@ -91,12 +125,16 @@ struct ChatListNavLink: View {
                 .onTapGesture { showJoinGroupDialog = true }
                 .confirmationDialog("Group invitation", isPresented: $showJoinGroupDialog, titleVisibility: .visible) {
                     Button(chat.chatInfo.incognito ? "Join incognito" : "Join group") {
-                        joinGroup(groupInfo.groupId)
+                        inProgress = true
+                        joinGroup(groupInfo.groupId) {
+                            await MainActor.run { inProgress = false }
+                        }
                     }
                     Button("Delete invitation", role: .destructive) { Task { await deleteChat(chat) } }
                 }
+                .disabled(inProgress)
         case .memAccepted:
-            ChatPreviewView(chat: chat)
+            ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
                 .frame(height: rowHeights[dynamicTypeSize])
                 .onTapGesture {
                     AlertManager.shared.showAlert(groupInvitationAcceptedAlert())
@@ -113,7 +151,7 @@ struct ChatListNavLink: View {
             NavLinkPlain(
                 tag: chat.chatInfo.id,
                 selection: $chatModel.chatId,
-                label: { ChatPreviewView(chat: chat) },
+                label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
                 disabled: !groupInfo.ready
             )
             .frame(height: rowHeights[dynamicTypeSize])
@@ -138,7 +176,10 @@ struct ChatListNavLink: View {
 
     private func joinGroupButton() -> some View {
         Button {
-            joinGroup(chat.chatInfo.apiId)
+            inProgress = true
+            joinGroup(chat.chatInfo.apiId) {
+                await MainActor.run { inProgress = false }
+            }
         } label: {
             Label("Join", systemImage: chat.chatInfo.incognito ? "theatermasks" : "ipad.and.arrow.forward")
         }
@@ -267,17 +308,6 @@ struct ChatListNavLink: View {
         .onTapGesture {
             showContactConnectionInfo = true
         }
-    }
-
-    private func deleteContactAlert(_ chatInfo: ChatInfo) -> Alert {
-        Alert(
-            title: Text("Delete contact?"),
-            message: Text("Contact and all messages will be deleted - this cannot be undone!"),
-            primaryButton: .destructive(Text("Delete")) {
-                Task { await deleteChat(chat) }
-            },
-            secondaryButton: .cancel()
-        )
     }
 
     private func deleteGroupAlert(_ groupInfo: GroupInfo) -> Alert {
@@ -409,7 +439,7 @@ func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection,
     )
 }
 
-func joinGroup(_ groupId: Int64) {
+func joinGroup(_ groupId: Int64, _ onComplete: @escaping () async -> Void) {
     Task {
         logger.debug("joinGroup")
         do {
@@ -424,7 +454,9 @@ func joinGroup(_ groupId: Int64) {
                 AlertManager.shared.showAlertMsg(title: "No group!", message: "This group no longer exists.")
                 await deleteGroup()
             }
+            await onComplete()
         } catch let error {
+            await onComplete()
             let a = getErrorAlert(error, "Error joining group")
             AlertManager.shared.showAlertMsg(title: a.title, message: a.message)
         }

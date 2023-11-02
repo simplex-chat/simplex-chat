@@ -98,6 +98,8 @@ kotlin {
         implementation("com.sshtools:two-slices:0.9.0-SNAPSHOT")
         implementation("org.slf4j:slf4j-simple:2.0.7")
         implementation("uk.co.caprica:vlcj:4.7.3")
+        implementation("com.github.NanoHttpd.nanohttpd:nanohttpd:efb2ebf85a")
+        implementation("com.github.NanoHttpd.nanohttpd:nanohttpd-websocket:efb2ebf85a")
       }
     }
     val desktopTest by getting
@@ -105,7 +107,7 @@ kotlin {
 }
 
 android {
-  compileSdkVersion(33)
+  compileSdkVersion(34)
   sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
   defaultConfig {
     minSdkVersion(26)
@@ -136,6 +138,7 @@ buildConfig {
     buildConfigField("String", "ANDROID_VERSION_NAME", "\"${extra["android.version_name"]}\"")
     buildConfigField("int", "ANDROID_VERSION_CODE", "${extra["android.version_code"]}")
     buildConfigField("String", "DESKTOP_VERSION_NAME", "\"${extra["desktop.version_name"]}\"")
+    buildConfigField("int", "DESKTOP_VERSION_CODE", "${extra["desktop.version_code"]}")
   }
 }
 

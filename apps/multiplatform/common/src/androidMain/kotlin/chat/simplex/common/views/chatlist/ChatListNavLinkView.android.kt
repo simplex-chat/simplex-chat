@@ -7,6 +7,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.views.helpers.*
 
 @Composable

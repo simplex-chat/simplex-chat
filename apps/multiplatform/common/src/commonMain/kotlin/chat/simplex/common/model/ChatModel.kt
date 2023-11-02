@@ -6,17 +6,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
-import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.ComposeState
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.*
 import kotlinx.datetime.TimeZone
 import kotlinx.serialization.*
@@ -53,6 +53,7 @@ object ChatModel {
   // current chat
   val chatId = mutableStateOf<String?>(null)
   val chatItems = mutableStateListOf<ChatItem>()
+  val chatItemStatuses = mutableMapOf<Long, CIStatus>()
   val groupMembers = mutableStateListOf<GroupMember>()
 
   val terminalItems = mutableStateListOf<TerminalItem>()
@@ -87,7 +88,7 @@ object ChatModel {
   val activeCallInvitation = mutableStateOf<RcvCallInvitation?>(null)
   val activeCall = mutableStateOf<Call?>(null)
   val activeCallViewIsVisible = mutableStateOf<Boolean>(false)
-  val callCommand = mutableStateOf<WCallCommand?>(null)
+  val callCommand = mutableStateListOf<WCallCommand>()
   val showCallView = mutableStateOf(false)
   val switchingCall = mutableStateOf(false)
 
@@ -102,6 +103,8 @@ object ChatModel {
 
   val filesToDelete = mutableSetOf<File>()
   val simplexLinkMode by lazy { mutableStateOf(ChatController.appPrefs.simplexLinkMode.get()) }
+
+  var updatingChatsMutex: Mutex = Mutex()
 
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value
@@ -133,6 +136,8 @@ object ChatModel {
   fun hasChat(id: String): Boolean = chats.toList().firstOrNull { it.id == id } != null
   fun getChat(id: String): Chat? = chats.toList().firstOrNull { it.id == id }
   fun getContactChat(contactId: Long): Chat? = chats.toList().firstOrNull { it.chatInfo is ChatInfo.Direct && it.chatInfo.apiId == contactId }
+  fun getGroupChat(groupId: Long): Chat? = chats.toList().firstOrNull { it.chatInfo is ChatInfo.Group && it.chatInfo.apiId == groupId }
+  fun getGroupMember(groupMemberId: Long): GroupMember? = groupMembers.firstOrNull { it.groupMemberId == groupMemberId }
   private fun getChatIndex(id: String): Int = chats.toList().indexOfFirst { it.id == id }
   fun addChat(chat: Chat) = chats.add(index = 0, chat)
 
@@ -199,7 +204,7 @@ object ChatModel {
     }
   }
 
-  suspend fun addChatItem(cInfo: ChatInfo, cItem: ChatItem) {
+  suspend fun addChatItem(cInfo: ChatInfo, cItem: ChatItem) = updatingChatsMutex.withLock {
     // update previews
     val i = getChatIndex(cInfo.id)
     val chat: Chat
@@ -222,10 +227,11 @@ object ChatModel {
     } else {
       addChat(Chat(chatInfo = cInfo, chatItems = arrayListOf(cItem)))
     }
-    // add to current chat
-    if (chatId.value == cInfo.id) {
-      Log.d(TAG, "TODOCHAT: addChatItem: adding to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
-      withContext(Dispatchers.Main) {
+    Log.d(TAG, "TODOCHAT: addChatItem: adding to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
+    withContext(Dispatchers.Main) {
+      // add to current chat
+      if (chatId.value == cInfo.id) {
+        Log.d(TAG, "TODOCHAT: addChatItem: chatIds are equal, size ${chatItems.size}")
         // Prevent situation when chat item already in the list received from backend
         if (chatItems.none { it.id == cItem.id }) {
           if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
@@ -239,7 +245,7 @@ object ChatModel {
     }
   }
 
-  suspend fun upsertChatItem(cInfo: ChatInfo, cItem: ChatItem): Boolean {
+  suspend fun upsertChatItem(cInfo: ChatInfo, cItem: ChatItem): Boolean  = updatingChatsMutex.withLock {
     // update previews
     val i = getChatIndex(cInfo.id)
     val chat: Chat
@@ -259,33 +265,41 @@ object ChatModel {
       addChat(Chat(chatInfo = cInfo, chatItems = arrayListOf(cItem)))
       res = true
     }
-    // update current chat
-    return if (chatId.value == cInfo.id) {
-      Log.d(TAG, "TODOCHAT: upsertChatItem: upserting to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
-      withContext(Dispatchers.Main) {
+    Log.d(TAG, "TODOCHAT: upsertChatItem: upserting to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
+    return withContext(Dispatchers.Main) {
+      // update current chat
+      if (chatId.value == cInfo.id) {
         val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
         if (itemIndex >= 0) {
           chatItems[itemIndex] = cItem
           Log.d(TAG, "TODOCHAT: upsertChatItem: updated in chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           false
         } else {
-          chatItems.add(cItem)
+          val status = chatItemStatuses.remove(cItem.id)
+          val ci = if (status != null && cItem.meta.itemStatus is CIStatus.SndNew) {
+            cItem.copy(meta = cItem.meta.copy(itemStatus = status))
+          } else {
+            cItem
+          }
+          chatItems.add(ci)
           Log.d(TAG, "TODOCHAT: upsertChatItem: added to chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           true
         }
+      } else {
+        res
       }
-    } else {
-      res
     }
   }
 
-  suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem) {
-    if (chatId.value == cInfo.id) {
-      withContext(Dispatchers.Main) {
+  suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null) {
+    withContext(Dispatchers.Main) {
+      if (chatId.value == cInfo.id) {
         val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
         if (itemIndex >= 0) {
           chatItems[itemIndex] = cItem
         }
+      } else if (status != null) {
+        chatItemStatuses[cItem.id] = status
       }
     }
   }
@@ -323,6 +337,7 @@ object ChatModel {
     }
     // clear current chat
     if (chatId.value == cInfo.id) {
+      chatItemStatuses.clear()
       chatItems.clear()
     }
   }
@@ -428,6 +443,78 @@ object ChatModel {
     }
   }
 
+  fun getChatItemIndexOrNull(cItem: ChatItem): Int? {
+    val reversedChatItems = chatItems.asReversed()
+    val index = reversedChatItems.indexOfFirst { it.id == cItem.id }
+    return if (index != -1) index else null
+  }
+
+  // this function analyses "connected" events and assumes that each member will be there only once
+  fun getConnectedMemberNames(cItem: ChatItem): Pair<Int, List<String>> {
+    var count = 0
+    val ns = mutableListOf<String>()
+    var idx = getChatItemIndexOrNull(cItem)
+    if (cItem.mergeCategory != null && idx != null) {
+      val reversedChatItems = chatItems.asReversed()
+      while (idx < reversedChatItems.size) {
+        val ci = reversedChatItems[idx]
+        if (ci.mergeCategory != cItem.mergeCategory) break
+        val m = ci.memberConnected
+        if (m != null) {
+          ns.add(m.displayName)
+        }
+        count++
+        idx++
+      }
+    }
+    return count to ns
+  }
+
+  // returns the index of the passed item and the next item (it has smaller index)
+  fun getNextChatItem(ci: ChatItem): Pair<Int?, ChatItem?> {
+    val i = getChatItemIndexOrNull(ci)
+    return if (i != null) {
+      val reversedChatItems = chatItems.asReversed()
+      i to if (i > 0) reversedChatItems[i - 1] else null
+    } else {
+      null to null
+    }
+  }
+
+  // returns the index of the first item in the same merged group (the first hidden item)
+  // and the previous visible item with another merge category
+  fun getPrevShownChatItem(ciIndex: Int?, ciCategory: CIMergeCategory?): Pair<Int?, ChatItem?> {
+    var i = ciIndex ?: return null to null
+    val reversedChatItems = chatItems.asReversed()
+    val fst = reversedChatItems.lastIndex
+    while (i < fst) {
+      i++
+      val ci = reversedChatItems[i]
+      if (ciCategory == null || ciCategory != ci.mergeCategory) {
+        return i - 1 to ci
+      }
+    }
+    return i to null
+  }
+
+  // returns the previous member in the same merge group and the count of members in this group
+  fun getPrevHiddenMember(member: GroupMember, range: IntRange): Pair<GroupMember?, Int> {
+    val reversedChatItems = chatItems.asReversed()
+    var prevMember: GroupMember? = null
+    val names: MutableSet<Long> = mutableSetOf()
+    for (i in range) {
+      val dir = reversedChatItems[i].chatDir
+      if (dir is CIDirection.GroupRcv) {
+        val m = dir.groupMember
+        if (prevMember == null && m.groupMemberId != member.groupMemberId) {
+          prevMember = m
+        }
+        names.add(m.groupMemberId)
+      }
+    }
+    return prevMember to names.size
+  }
+
 //  func popChat(_ id: String) {
 //    if let i = getChatIndex(id) {
 //      popChat_(i)
@@ -460,7 +547,7 @@ object ChatModel {
     }
     // update current chat
     return if (chatId.value == groupInfo.id) {
-      val memberIndex = groupMembers.indexOfFirst { it.id == member.id }
+      val memberIndex = groupMembers.indexOfFirst { it.groupMemberId == member.groupMemberId }
       if (memberIndex >= 0) {
         groupMembers[memberIndex] = member
         false
@@ -726,7 +813,7 @@ sealed class ChatInfo: SomeChat, NamedChat {
     override val apiId get() = contactConnection.apiId
     override val ready get() = contactConnection.ready
     override val sendMsgEnabled get() = contactConnection.sendMsgEnabled
-    override val ntfsEnabled get() = contactConnection.incognito
+    override val ntfsEnabled get() = false
     override val incognito get() = contactConnection.incognito
     override fun featureEnabled(feature: ChatFeature) = contactConnection.featureEnabled(feature)
     override val timedMessagesTTL: Int? get() = contactConnection.timedMessagesTTL
@@ -786,15 +873,18 @@ sealed class NetworkStatus {
   val statusExplanation: String get() =
     when (this) {
       is Connected -> generalGetString(MR.strings.connected_to_server_to_receive_messages_from_contact)
-      is Error -> String.format(generalGetString(MR.strings.trying_to_connect_to_server_to_receive_messages_with_error), error)
+      is Error -> String.format(generalGetString(MR.strings.trying_to_connect_to_server_to_receive_messages_with_error), connectionError)
       else -> generalGetString(MR.strings.trying_to_connect_to_server_to_receive_messages)
     }
 
   @Serializable @SerialName("unknown") class Unknown: NetworkStatus()
   @Serializable @SerialName("connected") class Connected: NetworkStatus()
   @Serializable @SerialName("disconnected") class Disconnected: NetworkStatus()
-  @Serializable @SerialName("error") class Error(val error: String): NetworkStatus()
+  @Serializable @SerialName("error") class Error(val connectionError: String): NetworkStatus()
 }
+
+@Serializable
+data class ConnNetworkStatus(val agentConnId: String, val networkStatus: NetworkStatus)
 
 @Serializable
 data class Contact(
@@ -822,7 +912,7 @@ data class Contact(
     (ready && active && !(activeConn.connectionStats?.ratchetSyncSendProhibited ?: false))
         || nextSendGrpInv
   val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
-  override val ntfsEnabled get() = chatSettings.enableNtfs
+  override val ntfsEnabled get() = chatSettings.enableNtfs == MsgFilter.All
   override val incognito get() = contactConnIncognito
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.enabled.forUser
@@ -869,7 +959,7 @@ data class Contact(
       activeConn = Connection.sampleData,
       contactUsed = true,
       contactStatus = ContactStatus.Active,
-      chatSettings = ChatSettings(enableNtfs = true, sendRcpts = null, favorite = false),
+      chatSettings = ChatSettings(enableNtfs = MsgFilter.All, sendRcpts = null, favorite = false),
       userPreferences = ChatPreferences.sampleData,
       mergedPreferences = ContactUserPreferences.sampleData,
       createdAt = Clock.System.now(),
@@ -1009,7 +1099,7 @@ data class GroupInfo (
   override val apiId get() = groupId
   override val ready get() = membership.memberActive
   override val sendMsgEnabled get() = membership.memberActive
-  override val ntfsEnabled get() = chatSettings.enableNtfs
+  override val ntfsEnabled get() = chatSettings.enableNtfs == MsgFilter.All
   override val incognito get() = membership.memberIncognito
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
     ChatFeature.TimedMessages -> fullGroupPreferences.timedMessages.on
@@ -1041,12 +1131,15 @@ data class GroupInfo (
       fullGroupPreferences = FullGroupPreferences.sampleData,
       membership = GroupMember.sampleData,
       hostConnCustomUserProfileId = null,
-      chatSettings = ChatSettings(enableNtfs = true, sendRcpts = null, favorite = false),
+      chatSettings = ChatSettings(enableNtfs = MsgFilter.All, sendRcpts = null, favorite = false),
       createdAt = Clock.System.now(),
       updatedAt = Clock.System.now()
     )
   }
 }
+
+@Serializable
+data class GroupRef(val groupId: Long, val localDisplayName: String)
 
 @Serializable
 data class GroupProfile (
@@ -1070,10 +1163,11 @@ data class GroupMember (
   val groupMemberId: Long,
   val groupId: Long,
   val memberId: String,
-  var memberRole: GroupMemberRole,
-  var memberCategory: GroupMemberCategory,
-  var memberStatus: GroupMemberStatus,
-  var invitedBy: InvitedBy,
+  val memberRole: GroupMemberRole,
+  val memberCategory: GroupMemberCategory,
+  val memberStatus: GroupMemberStatus,
+  val memberSettings: GroupMemberSettings,
+  val invitedBy: InvitedBy,
   val localDisplayName: String,
   val memberProfile: LocalProfile,
   val memberContactId: Long? = null,
@@ -1140,6 +1234,7 @@ data class GroupMember (
       memberRole = GroupMemberRole.Member,
       memberCategory = GroupMemberCategory.InviteeMember,
       memberStatus = GroupMemberStatus.MemComplete,
+      memberSettings = GroupMemberSettings(showMessages = true),
       invitedBy = InvitedBy.IBUser(),
       localDisplayName = "alice",
       memberProfile = LocalProfile.sampleData,
@@ -1151,9 +1246,18 @@ data class GroupMember (
 }
 
 @Serializable
-class GroupMemberRef(
+data class GroupMemberSettings(val showMessages: Boolean) {}
+
+@Serializable
+data class GroupMemberRef(
   val groupMemberId: Long,
   val profile: Profile
+)
+
+@Serializable
+data class GroupMemberIds(
+  val groupMemberId: Long,
+  val groupId: Long
 )
 
 @Serializable
@@ -1249,7 +1353,7 @@ class LinkPreview (
 
 @Serializable
 class MemberSubError (
-  val member: GroupMember,
+  val member: GroupMemberIds,
   val memberError: ChatError
 )
 
@@ -1436,7 +1540,7 @@ data class ChatItem (
         chatController.appPrefs.privacyEncryptLocalFiles.get()
 
   val memberDisplayName: String? get() =
-    if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.displayName
+    if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.chatViewName
     else null
 
   val isDeletedContent: Boolean get() =
@@ -1458,6 +1562,29 @@ data class ChatItem (
         else -> null
       }
       else -> null
+    }
+
+  val mergeCategory: CIMergeCategory?
+    get() = when (content) {
+      is CIContent.RcvChatFeature,
+      is CIContent.SndChatFeature,
+      is CIContent.RcvGroupFeature,
+      is CIContent.SndGroupFeature -> CIMergeCategory.ChatFeature
+      is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
+        is RcvGroupEvent.UserRole, is RcvGroupEvent.UserDeleted, is RcvGroupEvent.GroupDeleted, is RcvGroupEvent.MemberCreatedContact -> null
+        else -> CIMergeCategory.RcvGroupEvent
+      }
+      is CIContent.SndGroupEventContent -> when (content.sndGroupEvent) {
+        is SndGroupEvent.UserRole, is SndGroupEvent.UserLeft -> null
+        else -> CIMergeCategory.SndGroupEvent
+      }
+      else -> {
+        if (meta.itemDeleted == null) {
+          null
+        } else {
+          if (chatDir.sent) CIMergeCategory.SndItemDeleted else CIMergeCategory.RcvItemDeleted
+        }
+      }
     }
 
   fun memberToModerate(chatInfo: ChatInfo): Pair<GroupInfo, GroupMember>? {
@@ -1664,6 +1791,15 @@ data class ChatItem (
   }
 }
 
+enum class CIMergeCategory {
+  MemberConnected,
+  RcvGroupEvent,
+  SndGroupEvent,
+  SndItemDeleted,
+  RcvItemDeleted,
+  ChatFeature,
+}
+
 @Serializable
 sealed class CIDirection {
   @Serializable @SerialName("directSnd") class DirectSnd: CIDirection()
@@ -1844,6 +1980,7 @@ enum class SndCIStatusProgress {
 @Serializable
 sealed class CIDeleted {
   @Serializable @SerialName("deleted") class Deleted(val deletedTs: Instant?): CIDeleted()
+  @Serializable @SerialName("blocked") class Blocked(val deletedTs: Instant?): CIDeleted()
   @Serializable @SerialName("moderated") class Moderated(val deletedTs: Instant?, val byGroupMember: GroupMember): CIDeleted()
 }
 
@@ -1863,7 +2000,9 @@ sealed class CIContent: ItemContent {
 
   @Serializable @SerialName("sndMsgContent") class SndMsgContent(override val msgContent: MsgContent): CIContent()
   @Serializable @SerialName("rcvMsgContent") class RcvMsgContent(override val msgContent: MsgContent): CIContent()
+  // legacy - since v4.3.0 itemDeleted field is used
   @Serializable @SerialName("sndDeleted") class SndDeleted(val deleteMode: CIDeleteMode): CIContent() { override val msgContent: MsgContent? get() = null }
+  // legacy - since v4.3.0 itemDeleted field is used
   @Serializable @SerialName("rcvDeleted")  class RcvDeleted(val deleteMode: CIDeleteMode): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndCall") class SndCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvCall") class RcvCall(val status: CICallStatus, val duration: Int): CIContent() { override val msgContent: MsgContent? get() = null }
@@ -2395,7 +2534,7 @@ sealed class Format {
   @Serializable @SerialName("secret") class Secret: Format()
   @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
   @Serializable @SerialName("uri") class Uri: Format()
-  @Serializable @SerialName("simplexLink") class SimplexLink(val linkType: SimplexLinkType, val simplexUri: String, val trustedUri: Boolean, val smpHosts: List<String>): Format()
+  @Serializable @SerialName("simplexLink") class SimplexLink(val linkType: SimplexLinkType, val simplexUri: String, val smpHosts: List<String>): Format()
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
 

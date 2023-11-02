@@ -13,6 +13,8 @@ import CodeScanner
 struct ScanToConnectView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
+    @State private var alert: PlanAndConnectAlert?
+    @State private var sheet: PlanAndConnectActionSheet?
 
     var body: some View {
         ScrollView {
@@ -36,11 +38,11 @@ struct ScanToConnectView: View {
                     )
                     .padding(.top)
 
-                Group {
+                VStack(alignment: .leading, spacing: 4) {
                     sharedProfileInfo(incognitoDefault)
-                    + Text(String("\n\n"))
-                    + Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
+                    Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
                 .font(.footnote)
                 .foregroundColor(.secondary)
                 .padding(.horizontal)
@@ -49,18 +51,20 @@ struct ScanToConnectView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .background(Color(.systemGroupedBackground))
+        .alert(item: $alert) { a in planAndConnectAlert(a, dismiss: true) }
+        .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: true) }
     }
 
     func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
-            if let crData = parseLinkQueryData(r.string),
-               checkCRDataGroup(crData) {
-                dismiss()
-                AlertManager.shared.showAlert(groupLinkAlert(r.string, incognito: incognitoDefault))
-            } else {
-                Task { connectViaLink(r.string, dismiss: dismiss, incognito: incognitoDefault) }
-            }
+            planAndConnect(
+                r.string,
+                showAlert: { alert = $0 },
+                showActionSheet: { sheet = $0 },
+                dismiss: true,
+                incognito: incognitoDefault
+            )
         case let .failure(e):
             logger.error("ConnectContactView.processQRCode QR code error: \(e.localizedDescription)")
             dismiss()

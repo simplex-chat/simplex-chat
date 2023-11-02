@@ -8,7 +8,7 @@ plugins {
 }
 
 android {
-    compileSdkVersion(33)
+    compileSdkVersion(34)
 
     defaultConfig {
         applicationId = "chat.simplex.app"
@@ -77,6 +77,7 @@ android {
         }
         jniLibs.useLegacyPackaging = rootProject.extra["compression.level"] as Int != 0
     }
+    android.sourceSets["main"].assets.setSrcDirs(listOf("../common/src/commonMain/resources/assets"))
     val isRelease = gradle.startParameter.taskNames.find { it.toLowerCase().contains("release") } != null
     val isBundle = gradle.startParameter.taskNames.find { it.toLowerCase().contains("bundle") } != null
     //    if (isRelease) {
@@ -143,7 +144,7 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.3")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.4.0")
     //androidTestImplementation("androidx.compose.ui:ui-test-junit4:$compose_version")
-    debugImplementation("androidx.compose.ui:ui-tooling:${rootProject.extra["compose.version"] as String}")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.4.3")
 }
 
 tasks {
