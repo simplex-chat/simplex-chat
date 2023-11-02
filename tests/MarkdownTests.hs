@@ -144,6 +144,8 @@ textWithUri :: Spec
 textWithUri = describe "text with Uri" do
   it "correct markdown" do
     parseMarkdown "https://simplex.chat" `shouldBe` uri "https://simplex.chat"
+    parseMarkdown "https://simplex.chat." `shouldBe` uri "https://simplex.chat" <> "."
+    parseMarkdown "https://simplex.chat, hello" `shouldBe` uri "https://simplex.chat" <> ", hello"
     parseMarkdown "http://simplex.chat" `shouldBe` uri "http://simplex.chat"
     parseMarkdown "this is https://simplex.chat" `shouldBe` "this is " <> uri "https://simplex.chat"
     parseMarkdown "https://simplex.chat site" `shouldBe` uri "https://simplex.chat" <> " site"

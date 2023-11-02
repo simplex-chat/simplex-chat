@@ -52,7 +52,6 @@ struct VideoPlayerView: UIViewRepresentable {
         var timeObserver: Any? = nil
 
         deinit {
-            print("deinit coordinator of VideoPlayer")
             if let timeObserver = timeObserver {
                 NotificationCenter.default.removeObserver(timeObserver)
             }
