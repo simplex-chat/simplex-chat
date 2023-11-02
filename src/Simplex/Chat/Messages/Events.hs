@@ -20,7 +20,8 @@ data StoredGroupEvent d = StoredGroupEvent
   { chatVRange :: VersionRange,
     msgId :: SharedMsgId,
     eventData :: StoredGroupEventData,
-    dagErrors :: [GroupEventIntegrityError],
+    integrityErrors :: [GroupEventIntegrityError],
+    integrityConfirmations :: [GroupEventIntegrityConfirmation],
     sharedHash :: ByteString,
     eventDir :: GEDirection d,
     parents :: [AStoredGroupEvent]
@@ -29,15 +30,20 @@ data StoredGroupEvent d = StoredGroupEvent
 data AStoredGroupEvent = forall d. MsgDirectionI d => AStoredGroupEvent (StoredGroupEvent d)
 
 data GroupEventIntegrityError
-  = GEErrInvalidHash                    -- content hash mismatch
-  | GEErrUnconfirmedParent SharedMsgId  -- referenced parent wasn't previously received from author or admin
-  | GEErrParentHashMismatch SharedMsgId -- referenced parent has different hash
-  | GEErrChildHashMismatch SharedMsgId  -- child referencing this event has different hash (mirrors GEErrParentHashMismatch)
+  = GEErrInvalidHash                                  -- content hash mismatch
+  | GEErrUnconfirmedParent GroupMemberId SharedMsgId  -- referenced parent wasn't previously received from author or admin
+  | GEErrParentHashMismatch GroupMemberId SharedMsgId -- referenced parent has different hash
+  | GEErrChildHashMismatch GroupMemberId SharedMsgId  -- child referencing this event has different hash (mirrors GEErrParentHashMismatch)
   deriving (Show, Generic)
 
 instance ToJSON GroupEventIntegrityError where
   toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "GEErr"
   toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "GEErr"
+
+data GroupEventIntegrityConfirmation = GroupEventIntegrityConfirmation
+  { groupMemberId :: GroupMemberId,
+    memberRole :: GroupMemberRole
+  }
 
 -- data GroupEventMemberIntegrity = GroupEventMemberIntegrity
 --   { groupMemberId :: GroupMemberId,
@@ -66,15 +72,17 @@ data StoredGroupEventData = SGEData (ChatMsgEvent 'Json) | SGEAvailable [GroupMe
 data ReceivedEventInfo = ReceivedEventInfo
   { authorMemberId :: MemberId,
     authorMemberName :: ContactName,
-    authorMember :: Maybe GroupMemberRef,
-    receivedFrom :: GroupMemberRef,
+    authorMember :: Maybe GroupMemberRef, -- why is it Maybe? if member is unknown pending member w/t connection should be created
+    authorMemberRole :: Maybe GroupMemberRole,
+    receivedFrom :: GroupMemberRef, -- should this be Maybe too? it's nullable in schema
+    receivedFromRole :: GroupMemberRole,
     processing :: EventProcessing
   }
 
 data ReceivedFromRole = RFAuthor | RFSufficientPrivilege | RFLower
 
-receviedFromRole :: ReceivedEventInfo -> ReceivedFromRole
-receviedFromRole = undefined
+receivedFromRole' :: ReceivedEventInfo -> ReceivedFromRole
+receivedFromRole' = undefined
 
 data EventProcessing
   = EPProcessed UTCTime

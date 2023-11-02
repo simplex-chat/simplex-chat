@@ -18,18 +18,20 @@ CREATE TABLE group_events (
   event_data TEXT NOT NULL,                     -- eventData :: StoredGroupEventData
   shared_hash BLOB NOT NULL,                    -- sharedHash :: ByteString
   event_sent INTEGER NOT NULL,                  -- 0 for received, 1 for sent; below `rcvd_` fields are null for sent
-  rcvd_author_member_id BLOB,                   -- ReceivedEventInfo authorMemberId :: MemberId
-  rcvd_author_member_name TEXT,                 -- ReceivedEventInfo authorMemberName :: ContactName
-  -- ReceivedEventInfo authorMember :: Maybe GroupMemberRef; can be null even for received event
+  -- ReceivedEventInfo fields:
+  rcvd_author_member_id BLOB,                   -- authorMemberId :: MemberId
+  rcvd_author_member_name TEXT,                 -- authorMemberName :: ContactName
+  -- authorMember :: Maybe GroupMemberRef; can be null even for received event -- ? see question in Events.hs
   rcvd_author_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   rcvd_author_contact_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
-  -- rcvd_author_role TEXT NOT NULL,            -- ReceivedFromRole - store in case it changes?
-  -- ReceivedEventInfo receivedFrom :: GroupMemberRef
+  rcvd_author_role TEXT,                        -- authorMemberRole :: Maybe GroupMemberRole; store in case it changes? null if member is unknown
+  -- receivedFrom :: GroupMemberRef
   rcvd_from_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   rcvd_from_contact_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
-  rcvd_processing TEXT NOT NULL,                -- ReceivedEventInfo processing :: EventProcessing
-  rcvd_processed INTEGER NOT NULL DEFAULT 0,    -- 1 for processed; when retrieving unprocessed
-  -- rcvd_scheduled_at TEXT,                    -- EPScheduled UTCTime; when retrieving scheduled at near time?
+  rcvd_from_role TEXT NOT NULL,                 -- receivedFromRole :: GroupMemberRole; store in case it changes?
+  -- ReceivedEventInfo processing :: EventProcessing
+  rcvd_processed_at TEXT,                       -- EPProcessed UTCTime
+  rcvd_scheduled_at TEXT,                       -- EPScheduled UTCTime; both this and rcvd_processed_at are null -> EPPendingConfirmation
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
@@ -53,7 +55,7 @@ CREATE TABLE group_events_availabilities (
 CREATE INDEX idx_group_events_availabilities_group_event_id ON group_events_availabilities(group_event_id);
 CREATE INDEX idx_group_events_availabilities_available_at_group_member_id ON group_events_availabilities(available_at_group_member_id);
 
-CREATE TABLE group_events_dag_errors (
+CREATE TABLE group_events_errors (
   group_event_dag_error_id INTEGER PRIMARY KEY,
   group_event_id INTEGER NOT NULL REFERENCES group_events ON DELETE CASCADE,
   dag_error TEXT NOT NULL,
@@ -61,7 +63,19 @@ CREATE TABLE group_events_dag_errors (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
-CREATE INDEX idx_group_events_dag_errors_group_event_id ON group_events_dag_errors(group_event_id);
+CREATE INDEX idx_group_events_errors_group_event_id ON group_events_errors(group_event_id);
+
+CREATE TABLE group_events_confirmations (
+  group_event_confirmation_id INTEGER PRIMARY KEY,
+  group_event_id INTEGER NOT NULL REFERENCES group_events ON DELETE CASCADE,
+  confirmed_by_group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  confirmed_by_group_member_role TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX idx_group_events_confirmations_group_event_id ON group_events_confirmations(group_event_id);
+CREATE INDEX idx_group_events_confirmations_confirmed_by_group_member_id ON group_events_confirmations(confirmed_by_group_member_id);
 
 CREATE TABLE group_events_parents (
   group_event_parent_id INTEGER NOT NULL REFERENCES group_events ON DELETE CASCADE,
@@ -80,16 +94,17 @@ down_m20231101_group_events =
   [sql|
 DROP INDEX idx_group_events_parents_group_event_parent_id;
 DROP INDEX idx_group_events_parents_group_event_child_id;
-
 DROP TABLE group_events_parents;
 
-DROP INDEX idx_group_events_dag_errors_group_event_id;
+DROP INDEX idx_group_events_confirmations_group_event_id;
+DROP INDEX idx_group_events_confirmations_confirmed_by_group_member_id;
+DROP TABLE group_events_confirmations;
 
-DROP TABLE group_events_dag_errors;
+DROP INDEX idx_group_events_errors_group_event_id;
+DROP TABLE group_events_errors;
 
 DROP INDEX idx_group_events_availabilities_group_event_id;
 DROP INDEX idx_group_events_availabilities_available_at_group_member_id;
-
 DROP TABLE group_events_availabilities;
 
 DROP INDEX idx_group_events_user_id;
@@ -99,6 +114,5 @@ DROP INDEX idx_group_events_rcvd_author_group_member_id;
 DROP INDEX idx_group_events_rcvd_author_contact_profile_id;
 DROP INDEX idx_group_events_rcvd_from_group_member_id;
 DROP INDEX idx_group_events_rcvd_from_contact_profile_id;
-
 DROP TABLE group_events;
 |]
