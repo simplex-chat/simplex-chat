@@ -55,15 +55,14 @@ function toggleVideoManually() {
   }
 }
 
-function toggleScreenManually() {
+async function toggleScreenManually() {
   const was = activeCall?.screenShare
-  toggleScreenShare().then(function () {
-    if (was != activeCall?.screenShare) {
-      document.getElementById("toggle-screen")!!.innerHTML = activeCall?.screenShare
-        ? '<img src="/desktop/images/ic_stop_screen_share.svg" />'
-        : '<img src="/desktop/images/ic_screen_share.svg" />'
-    }
-  })
+  await toggleScreenShare()
+  if (was != activeCall?.screenShare) {
+    document.getElementById("toggle-screen")!!.innerHTML = activeCall?.screenShare
+      ? '<img src="/desktop/images/ic_stop_screen_share.svg" />'
+      : '<img src="/desktop/images/ic_screen_share.svg" />'
+  }
 }
 
 function reactOnMessageFromServer(msg: WVApiMessage) {

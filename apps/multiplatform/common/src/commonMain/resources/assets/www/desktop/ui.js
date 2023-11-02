@@ -47,15 +47,14 @@ function toggleVideoManually() {
             : '<img src="/desktop/images/ic_videocam_off.svg" />';
     }
 }
-function toggleScreenManually() {
+async function toggleScreenManually() {
     const was = activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShare;
-    toggleScreenShare().then(function () {
-        if (was != (activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShare)) {
-            document.getElementById("toggle-screen").innerHTML = (activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShare)
-                ? '<img src="/desktop/images/ic_stop_screen_share.svg" />'
-                : '<img src="/desktop/images/ic_screen_share.svg" />';
-        }
-    });
+    await toggleScreenShare();
+    if (was != (activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShare)) {
+        document.getElementById("toggle-screen").innerHTML = (activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShare)
+            ? '<img src="/desktop/images/ic_stop_screen_share.svg" />'
+            : '<img src="/desktop/images/ic_screen_share.svg" />';
+    }
 }
 function reactOnMessageFromServer(msg) {
     var _a;
