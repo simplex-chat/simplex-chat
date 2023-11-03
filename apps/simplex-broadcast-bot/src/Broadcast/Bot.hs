@@ -62,7 +62,8 @@ broadcastBot BroadcastBotOpts {publishers, welcomeMessage, prohibitedMessage} _u
             MCLink {} -> True
             MCImage {} -> True
             _ -> False
-          broadcastTo ct'@Contact {activeConn = conn@Connection {connStatus}} =
+          broadcastTo Contact {activeConn = Nothing} = False
+          broadcastTo ct'@Contact {activeConn = Just conn@Connection {connStatus}} =
             (connStatus == ConnSndReady || connStatus == ConnReady)
               && not (connDisabled conn)
               && contactId' ct' /= contactId' ct
