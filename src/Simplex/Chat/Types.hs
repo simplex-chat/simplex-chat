@@ -192,9 +192,6 @@ instance ToJSON Contact where
 contactConn :: Contact -> Maybe Connection
 contactConn Contact {activeConn} = activeConn
 
-contactAgentConnId :: Contact -> Maybe AgentConnId
-contactAgentConnId Contact {activeConn} = (\c -> c.agentConnId) <$> activeConn
-
 contactConnId :: Contact -> Maybe ConnId
 contactConnId c = aConnId <$> contactConn c
 
