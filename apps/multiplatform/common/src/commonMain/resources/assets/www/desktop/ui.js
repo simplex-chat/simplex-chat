@@ -42,16 +42,24 @@ function toggleSpeakerManually() {
 }
 function toggleVideoManually() {
     if (activeCall === null || activeCall === void 0 ? void 0 : activeCall.localMedia) {
-        document.getElementById("toggle-video").innerHTML = toggleMedia(activeCall.localStream, CallMediaType.Video)
+        let res;
+        if (activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShareEnabled) {
+            activeCall.cameraEnabled = !activeCall.cameraEnabled;
+            res = activeCall.cameraEnabled;
+        }
+        else {
+            res = toggleMedia(activeCall.localStream, CallMediaType.Video);
+        }
+        document.getElementById("toggle-video").innerHTML = res
             ? '<img src="/desktop/images/ic_videocam_filled.svg" />'
             : '<img src="/desktop/images/ic_videocam_off.svg" />';
     }
 }
 async function toggleScreenManually() {
-    const was = activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShare;
+    const was = activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShareEnabled;
     await toggleScreenShare();
-    if (was != (activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShare)) {
-        document.getElementById("toggle-screen").innerHTML = (activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShare)
+    if (was != (activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShareEnabled)) {
+        document.getElementById("toggle-screen").innerHTML = (activeCall === null || activeCall === void 0 ? void 0 : activeCall.screenShareEnabled)
             ? '<img src="/desktop/images/ic_stop_screen_share.svg" />'
             : '<img src="/desktop/images/ic_screen_share.svg" />';
     }
@@ -66,7 +74,7 @@ function reactOnMessageFromServer(msg) {
         case "start":
             document.getElementById("toggle-audio").style.display = "inline-block";
             document.getElementById("toggle-speaker").style.display = "inline-block";
-            if (msg.command.media == "video") {
+            if (msg.command.media == CallMediaType.Video) {
                 document.getElementById("toggle-video").style.display = "inline-block";
                 document.getElementById("toggle-screen").style.display = "inline-block";
             }

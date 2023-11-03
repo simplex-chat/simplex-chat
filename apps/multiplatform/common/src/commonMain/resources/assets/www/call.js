@@ -108,7 +108,17 @@ const processCommand = (function () {
         const localCamera = VideoCamera.User;
         const localStream = await getLocalMediaStream(mediaType, localCamera);
         const iceCandidates = getIceCandidates(pc, config);
-        const call = { connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, screenShare: false };
+        const call = {
+            connection: pc,
+            iceCandidates,
+            localMedia: mediaType,
+            localCamera,
+            localStream,
+            remoteStream,
+            aesKey,
+            screenShareEnabled: false,
+            cameraEnabled: true,
+        };
         await setupMediaStreams(call);
         let connectionTimeout = setTimeout(connectionHandler, answerTimeout);
         pc.addEventListener("connectionstatechange", connectionStateChange);
@@ -432,16 +442,14 @@ const processCommand = (function () {
             throw Error("no video elements");
         const pc = call.connection;
         const oldAudioTracks = call.localStream.getAudioTracks();
-        const oldVideoTracks = call.localStream.getVideoTracks();
         const audioWasEnabled = oldAudioTracks.some((elem) => elem.enabled);
-        const videoWasEnabled = oldVideoTracks.some((elem) => elem.enabled);
         let localStream;
         try {
-            localStream = call.screenShare ? await getLocalScreenCaptureStream() : await getLocalMediaStream(call.localMedia, camera);
+            localStream = call.screenShareEnabled ? await getLocalScreenCaptureStream() : await getLocalMediaStream(call.localMedia, camera);
         }
         catch (e) {
-            if (call.screenShare) {
-                call.screenShare = false;
+            if (call.screenShareEnabled) {
+                call.screenShareEnabled = false;
             }
             return;
         }
@@ -453,7 +461,7 @@ const processCommand = (function () {
         if (!audioWasEnabled && oldAudioTracks.length > 0) {
             audioTracks.forEach((elem) => (elem.enabled = false));
         }
-        if (!videoWasEnabled && oldVideoTracks.length > 0) {
+        if (!call.cameraEnabled && !call.screenShareEnabled) {
             videoTracks.forEach((elem) => (elem.enabled = false));
         }
         replaceTracks(pc, audioTracks);
@@ -563,12 +571,15 @@ const processCommand = (function () {
         const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks();
         for (const t of tracks)
             t.enabled = enable;
+        if (media == CallMediaType.Video && activeCall) {
+            activeCall.cameraEnabled = enable;
+        }
     }
     toggleScreenShare = async function () {
         const call = activeCall;
         if (!call)
             return;
-        call.screenShare = !call.screenShare;
+        call.screenShareEnabled = !call.screenShareEnabled;
         await replaceMedia(call, call.localCamera);
     };
     return processCommand;
@@ -583,6 +594,9 @@ function toggleMedia(s, media) {
     for (const t of tracks) {
         t.enabled = !t.enabled;
         res = t.enabled;
+    }
+    if (media == CallMediaType.Video && activeCall) {
+        activeCall.cameraEnabled = res;
     }
     return res;
 }

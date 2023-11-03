@@ -194,7 +194,8 @@ interface Call {
   localCamera: VideoCamera
   localStream: MediaStream
   remoteStream: MediaStream
-  screenShare: boolean
+  screenShareEnabled: boolean
+  cameraEnabled: boolean
   aesKey?: string
   worker?: Worker
   key?: CryptoKey
@@ -311,7 +312,17 @@ const processCommand = (function () {
     const localCamera = VideoCamera.User
     const localStream = await getLocalMediaStream(mediaType, localCamera)
     const iceCandidates = getIceCandidates(pc, config)
-    const call = {connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey, screenShare: false}
+    const call = {
+      connection: pc,
+      iceCandidates,
+      localMedia: mediaType,
+      localCamera,
+      localStream,
+      remoteStream,
+      aesKey,
+      screenShareEnabled: false,
+      cameraEnabled: true,
+    }
     await setupMediaStreams(call)
     let connectionTimeout: number | undefined = setTimeout(connectionHandler, answerTimeout)
     pc.addEventListener("connectionstatechange", connectionStateChange)
@@ -629,15 +640,13 @@ const processCommand = (function () {
     if (!videos) throw Error("no video elements")
     const pc = call.connection
     const oldAudioTracks = call.localStream.getAudioTracks()
-    const oldVideoTracks = call.localStream.getVideoTracks()
     const audioWasEnabled = oldAudioTracks.some((elem) => elem.enabled)
-    const videoWasEnabled = oldVideoTracks.some((elem) => elem.enabled)
     let localStream: MediaStream
     try {
-      localStream = call.screenShare ? await getLocalScreenCaptureStream() : await getLocalMediaStream(call.localMedia, camera)
+      localStream = call.screenShareEnabled ? await getLocalScreenCaptureStream() : await getLocalMediaStream(call.localMedia, camera)
     } catch (e: any) {
-      if (call.screenShare) {
-        call.screenShare = false
+      if (call.screenShareEnabled) {
+        call.screenShareEnabled = false
       }
       return
     }
@@ -649,7 +658,7 @@ const processCommand = (function () {
     if (!audioWasEnabled && oldAudioTracks.length > 0) {
       audioTracks.forEach((elem) => (elem.enabled = false))
     }
-    if (!videoWasEnabled && oldVideoTracks.length > 0) {
+    if (!call.cameraEnabled && !call.screenShareEnabled) {
       videoTracks.forEach((elem) => (elem.enabled = false))
     }
 
@@ -775,12 +784,15 @@ const processCommand = (function () {
   function enableMedia(s: MediaStream, media: CallMediaType, enable: boolean) {
     const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks()
     for (const t of tracks) t.enabled = enable
+    if (media == CallMediaType.Video && activeCall) {
+      activeCall.cameraEnabled = enable
+    }
   }
 
   toggleScreenShare = async function () {
     const call = activeCall
     if (!call) return
-    call.screenShare = !call.screenShare
+    call.screenShareEnabled = !call.screenShareEnabled
     await replaceMedia(call, call.localCamera)
   }
 
@@ -798,6 +810,9 @@ function toggleMedia(s: MediaStream, media: CallMediaType): boolean {
   for (const t of tracks) {
     t.enabled = !t.enabled
     res = t.enabled
+  }
+  if (media == CallMediaType.Video && activeCall) {
+    activeCall.cameraEnabled = res
   }
   return res
 }
