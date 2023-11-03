@@ -514,6 +514,7 @@ getDirectChatPreviews_ db user@User {userId} = do
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
         LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
         WHERE ct.user_id = ?
+          AND ct.is_user = 0
           AND ct.deleted = 0
           AND (
             (
