@@ -88,7 +88,7 @@ compose {
             notarization {
               this.appleID.set(appleId)
               this.password.set(password)
-              this.ascProvider.set(teamId)
+              this.teamID.set(teamId)
             }
           }
         }

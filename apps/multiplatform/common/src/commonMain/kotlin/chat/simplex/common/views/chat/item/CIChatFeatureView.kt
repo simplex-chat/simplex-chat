@@ -12,7 +12,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.getChatItemIndexOrNull
-import chat.simplex.common.views.helpers.onRightClick
+import chat.simplex.common.platform.onRightClick
 
 @Composable
 fun CIChatFeatureView(
