@@ -520,6 +520,26 @@ CREATE TABLE IF NOT EXISTS "received_probes"(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL)
 );
+CREATE TABLE group_events(
+  group_event_id INTEGER PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  chat_item_id INTEGER REFERENCES chat_items ON DELETE SET NULL,
+  message_id INTEGER REFERENCES messages ON DELETE SET NULL,
+  shared_msg_id BLOB NOT NULL,
+  event_sent INTEGER NOT NULL, -- 0 for received, 1 for sent; below `rcvd_` fields are null for sent
+  rcvd_author_member_id BLOB,
+  rcvd_author_group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE, -- can be null for rcvd if author is unknown
+  rcvd_from_group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE group_events_parents(
+  group_event_parent_id INTEGER NOT NULL REFERENCES group_events ON DELETE CASCADE,
+  group_event_child_id INTEGER NOT NULL REFERENCES group_events ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
+  UNIQUE(group_event_parent_id, group_event_child_id)
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -747,4 +767,20 @@ CREATE INDEX idx_groups_via_group_link_uri_hash ON groups(
 CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
   user_id,
   via_contact_uri_hash
+);
+CREATE INDEX idx_group_events_user_id ON group_events(user_id);
+CREATE INDEX idx_group_events_chat_item_id ON group_events(chat_item_id);
+CREATE INDEX idx_group_events_message_id ON group_events(message_id);
+CREATE INDEX idx_group_events_shared_msg_id ON group_events(shared_msg_id);
+CREATE INDEX idx_group_events_rcvd_author_group_member_id ON group_events(
+  rcvd_author_group_member_id
+);
+CREATE INDEX idx_group_events_rcvd_from_group_member_id ON group_events(
+  rcvd_from_group_member_id
+);
+CREATE INDEX idx_group_events_parents_group_event_parent_id ON group_events_parents(
+  group_event_parent_id
+);
+CREATE INDEX idx_group_events_parents_group_event_child_id ON group_events_parents(
+  group_event_child_id
 );

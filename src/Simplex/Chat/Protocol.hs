@@ -126,9 +126,28 @@ data AppMessageJson = AppMessageJson
   { v :: Maybe ChatVersionRange,
     msgId :: Maybe SharedMsgId,
     event :: Text,
-    params :: J.Object
+    params :: J.Object,
+    groupEvent :: Maybe JsonGroupEvent
   }
-  deriving (Generic, FromJSON)
+  deriving (Eq, Show, Generic, FromJSON)
+
+data JsonGroupEvent = JsonGroupEvent
+  { parents :: [JsonGroupEventParent]
+  }
+  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+
+data JsonGroupEventParent = JsonGroupEventParent
+  { msgParentId :: MemberMsgId,
+    memberName :: ContactName,
+    groupEvent :: JsonGroupEvent
+  }
+  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+
+data MemberMsgId = MemberMsgId
+  { msgId :: SharedMsgId,
+    memberId :: MemberId
+  }
+  deriving (Eq, Show, Generic, FromJSON, ToJSON)
 
 data AppMessageBinary = AppMessageBinary
   { msgId :: Maybe SharedMsgId,
@@ -186,9 +205,29 @@ instance ToJSON MsgRef where
 data ChatMessage e = ChatMessage
   { chatVRange :: VersionRange,
     msgId :: Maybe SharedMsgId,
-    chatMsgEvent :: ChatMsgEvent e
+    chatMsgEvent :: ChatMsgEvent e,
+    groupEvent :: Maybe GroupEvent
   }
   deriving (Eq, Show)
+
+data GroupEvent = GroupEvent
+  { parents :: [GroupEventParent]
+  }
+  deriving (Eq, Show)
+
+data GroupEventParent = GroupEventParent
+  { msgParentId :: MemberMsgId,
+    memberName :: ContactName,
+    groupEvent :: GroupEvent
+  }
+  deriving (Eq, Show)
+
+data MsgForward = MsgForward
+  { msgId :: MemberMsgId,
+    msgData :: AppMessageJson,
+    msgTs :: UTCTime
+  }
+  deriving (Eq, Show, Generic, FromJSON, ToJSON)
 
 data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMessage e)
 
@@ -204,6 +243,54 @@ instance StrEncoding AChatMessage where
     A.peekChar' >>= \case
       '{' -> ACMsg SJson <$> ((appJsonToCM <=< J.eitherDecodeStrict') <$?> A.takeByteString)
       _ -> ACMsg SBinary <$> (appBinaryToCM <$?> strP)
+
+sharedGroupMsgEvent :: ChatMsgEvent e -> Maybe (ChatMsgEvent e)
+sharedGroupMsgEvent ev = case ev of
+  XMsgNew _ -> Just ev -- TODO remove file description, include file hash
+  XMsgFileDescr {} -> Nothing
+  XMsgFileCancel _ -> Just ev
+  XMsgUpdate {} -> Just ev
+  XMsgDel {} -> Just ev
+  XMsgDeleted -> Nothing
+  XMsgReact {} -> Just ev
+  XFile _ -> Nothing
+  XFileAcpt _ -> Nothing
+  XFileAcptInv {} -> Nothing
+  XFileCancel _ -> Nothing
+  XInfo _ -> Just ev
+  XContact {} -> Just ev -- ?
+  XDirectDel -> Nothing
+  XGrpInv _ -> Nothing
+  XGrpAcpt _ -> Nothing
+  XGrpLinkInv _ -> Nothing
+  XGrpLinkMem _ -> Nothing
+  XGrpMemNew _ -> Just ev
+  XGrpMemIntro _ -> Nothing
+  XGrpMemInv {} -> Nothing
+  XGrpMemFwd {} -> Nothing
+  XGrpMemInfo {} -> Nothing
+  XGrpMemRole {} -> Just ev
+  XGrpMemCon _ -> Nothing -- TODO not implemented
+  XGrpMemConAll _ -> Nothing -- TODO not implemented
+  XGrpMemDel _ -> Just ev
+  XGrpLeave -> Just ev
+  XGrpDel -> Just ev
+  XGrpInfo _ -> Just ev
+  XGrpDirectInv {} -> Nothing
+  XGrpReqMsg _ _ -> Nothing
+  XGrpFwdMsg _ -> Nothing
+  XGrpReqConn _ _ -> Nothing
+  XInfoProbe _ -> Nothing
+  XInfoProbeCheck _ -> Nothing
+  XInfoProbeOk _ -> Nothing
+  XCallInv {} -> Nothing
+  XCallOffer {} -> Nothing
+  XCallAnswer {} -> Nothing
+  XCallExtra {} -> Nothing
+  XCallEnd _ -> Nothing
+  XOk -> Nothing
+  XUnknown {} -> Nothing
+  BFileChunk {} -> Nothing
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
@@ -237,6 +324,9 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> ChatMsgEvent 'Json
+  XGrpReqMsg :: [MemberMsgId] -> [MemberMsgId] -> ChatMsgEvent 'Json -- TODO test encoding
+  XGrpFwdMsg :: MsgForward -> ChatMsgEvent 'Json -- TODO test encoding
+  XGrpReqConn :: MemberId -> ConnReqInvitation -> ChatMsgEvent 'Json -- XGrpMemReq? -- TODO test encoding
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
   XInfoProbeOk :: Probe -> ChatMsgEvent 'Json
@@ -580,6 +670,9 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpDel_ :: CMEventTag 'Json
   XGrpInfo_ :: CMEventTag 'Json
   XGrpDirectInv_ :: CMEventTag 'Json
+  XGrpReqMsg_ :: CMEventTag 'Json
+  XGrpFwdMsg_ :: CMEventTag 'Json
+  XGrpReqConn_ :: CMEventTag 'Json
   XInfoProbe_ :: CMEventTag 'Json
   XInfoProbeCheck_ :: CMEventTag 'Json
   XInfoProbeOk_ :: CMEventTag 'Json
@@ -629,6 +722,9 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpDel_ -> "x.grp.del"
     XGrpInfo_ -> "x.grp.info"
     XGrpDirectInv_ -> "x.grp.direct.inv"
+    XGrpReqMsg_ -> "x.grp.req.msg"
+    XGrpFwdMsg_ -> "x.grp.fwd.msg"
+    XGrpReqConn_ -> "x.grp.req.conn"
     XInfoProbe_ -> "x.info.probe"
     XInfoProbeCheck_ -> "x.info.probe.check"
     XInfoProbeOk_ -> "x.info.probe.ok"
@@ -679,6 +775,9 @@ instance StrEncoding ACMEventTag where
         "x.grp.del" -> XGrpDel_
         "x.grp.info" -> XGrpInfo_
         "x.grp.direct.inv" -> XGrpDirectInv_
+        "x.grp.req.msg" -> XGrpReqMsg_
+        "x.grp.fwd.msg" -> XGrpFwdMsg_
+        "x.grp.req.conn" -> XGrpReqConn_
         "x.info.probe" -> XInfoProbe_
         "x.info.probe.check" -> XInfoProbeCheck_
         "x.info.probe.ok" -> XInfoProbeOk_
@@ -725,6 +824,9 @@ toCMEventTag msg = case msg of
   XGrpDel -> XGrpDel_
   XGrpInfo _ -> XGrpInfo_
   XGrpDirectInv _ _ -> XGrpDirectInv_
+  XGrpReqMsg _ _ -> XGrpReqMsg_
+  XGrpFwdMsg _ -> XGrpFwdMsg_
+  XGrpReqConn _ _ -> XGrpReqConn_
   XInfoProbe _ -> XInfoProbe_
   XInfoProbeCheck _ -> XInfoProbeCheck_
   XInfoProbeOk _ -> XInfoProbeOk_
@@ -775,7 +877,7 @@ appBinaryToCM :: AppMessageBinary -> Either String (ChatMessage 'Binary)
 appBinaryToCM AppMessageBinary {msgId, tag, body} = do
   eventTag <- strDecode $ B.singleton tag
   chatMsgEvent <- parseAll (msg eventTag) body
-  pure ChatMessage {chatVRange = chatInitialVRange, msgId, chatMsgEvent}
+  pure ChatMessage {chatVRange = chatInitialVRange, msgId, chatMsgEvent, groupEvent = Nothing}
   where
     msg :: CMEventTag 'Binary -> A.Parser (ChatMsgEvent 'Binary)
     msg = \case
@@ -785,7 +887,7 @@ appJsonToCM :: AppMessageJson -> Either String (ChatMessage 'Json)
 appJsonToCM AppMessageJson {v, msgId, event, params} = do
   eventTag <- strDecode $ encodeUtf8 event
   chatMsgEvent <- msg eventTag
-  pure ChatMessage {chatVRange = maybe chatInitialVRange fromChatVRange v, msgId, chatMsgEvent}
+  pure ChatMessage {chatVRange = maybe chatInitialVRange fromChatVRange v, msgId, chatMsgEvent, groupEvent = Nothing}
   where
     p :: FromJSON a => J.Key -> Either String a
     p key = JT.parseEither (.: key) params
@@ -824,6 +926,9 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpDel_ -> pure XGrpDel
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content"
+      XGrpReqMsg_ -> XGrpReqMsg <$> p "unknownParentsIds" <*> p "knownLeavesIds"
+      XGrpFwdMsg_ -> XGrpFwdMsg <$> p "msgForward"
+      XGrpReqConn_ -> XGrpReqConn <$> p "memberId" <*> p "connReq"
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
@@ -843,7 +948,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
   SBinary ->
     let (binaryMsgId, body) = toBody chatMsgEvent
      in AMBinary AppMessageBinary {msgId = binaryMsgId, tag = B.head $ strEncode tag, body}
-  SJson -> AMJson AppMessageJson {v = Just $ ChatVersionRange chatVRange, msgId, event = textEncode tag, params = params chatMsgEvent}
+  SJson -> AMJson AppMessageJson {v = Just $ ChatVersionRange chatVRange, msgId, event = textEncode tag, params = params chatMsgEvent, groupEvent = Nothing}
   where
     tag = toCMEventTag chatMsgEvent
     o :: [(J.Key, J.Value)] -> J.Object
@@ -884,6 +989,9 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpDel -> JM.empty
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpDirectInv connReq content -> o $ ("content" .=? content) ["connReq" .= connReq]
+      XGrpReqMsg unknownParentsIds knownLeavesIds -> o ["unknownParentsIds" .= unknownParentsIds, "knownLeavesIds" .= knownLeavesIds]
+      XGrpFwdMsg msgForward -> o ["msgForward" .= msgForward]
+      XGrpReqConn memId connReq -> o ["memberId" .= memId, "connReq" .= connReq]
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]

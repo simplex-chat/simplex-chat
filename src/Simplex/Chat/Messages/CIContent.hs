@@ -137,6 +137,7 @@ data CIContent (d :: MsgDirection) where
   CIRcvGroupFeatureRejected :: GroupFeature -> CIContent 'MDRcv
   CISndModerated :: CIContent 'MDSnd
   CIRcvModerated :: CIContent 'MDRcv
+  -- CIRcvMissing :: CIContent 'MDRcv -- to display group dag gaps
   CIInvalidJSON :: Text -> CIContent d
 -- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! ^ Nested sum types also have to use different encodings for database and API
