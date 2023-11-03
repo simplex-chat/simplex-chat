@@ -787,6 +787,11 @@ const processCommand = (function () {
   return processCommand
 })()
 
+function toggleRemoteVideoFitFill() {
+  const remote = document.getElementById("remote-video-stream")!
+  remote.style.objectFit = remote.style.objectFit != "contain" ? "contain" : "cover"
+}
+
 function toggleMedia(s: MediaStream, media: CallMediaType): boolean {
   let res = false
   const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks()
