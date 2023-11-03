@@ -396,10 +396,36 @@ const processCommand = (function () {
                     console.log("set up decryption for receiving");
                     setupPeerTransform(TransformOperation.Decrypt, event.receiver, call.worker, call.aesKey, call.key);
                 }
+                const hadAudio = call.remoteStream.getTracks().some((elem) => elem.kind == "audio" && elem.enabled);
+                const hadVideo = call.remoteStream.getTracks().some((elem) => elem.kind == "video" && elem.enabled);
                 for (const stream of event.streams) {
+                    stream.onaddtrack = (event) => {
+                        console.log("LALAL ADDED TRACK " + event.track.kind);
+                    };
                     for (const track of stream.getTracks()) {
                         call.remoteStream.addTrack(track);
                     }
+                }
+                const hasAudio = call.remoteStream.getTracks().some((elem) => elem.kind == "audio" && elem.enabled);
+                const hasVideo = call.remoteStream.getTracks().some((elem) => elem.kind == "video" && elem.enabled);
+                console.log(`LALAL HAS AUDIO ${hasAudio}  ${hasVideo} ${JSON.stringify(call.remoteStream.getTracks())}`);
+                if (hadAudio != hasAudio) {
+                    const resp = {
+                        type: "media",
+                        media: CallMediaType.Audio,
+                        enable: hasAudio,
+                    };
+                    const apiResp = { corrId: undefined, resp, command: undefined };
+                    sendMessageToNative(apiResp);
+                }
+                if (hadVideo != hasVideo) {
+                    const resp = {
+                        type: "media",
+                        media: CallMediaType.Video,
+                        enable: hasVideo,
+                    };
+                    const apiResp = { corrId: undefined, resp, command: undefined };
+                    sendMessageToNative(apiResp);
                 }
                 console.log(`ontrack success`);
             }
@@ -441,8 +467,6 @@ const processCommand = (function () {
         if (!videos)
             throw Error("no video elements");
         const pc = call.connection;
-        const oldAudioTracks = call.localStream.getAudioTracks();
-        const audioWasEnabled = oldAudioTracks.some((elem) => elem.enabled);
         let localStream;
         try {
             localStream = call.screenShareEnabled ? await getLocalScreenCaptureStream() : await getLocalMediaStream(call.localMedia, camera);
@@ -458,24 +482,39 @@ const processCommand = (function () {
         call.localCamera = camera;
         const audioTracks = localStream.getAudioTracks();
         const videoTracks = localStream.getVideoTracks();
-        if (!audioWasEnabled && oldAudioTracks.length > 0) {
-            audioTracks.forEach((elem) => (elem.enabled = false));
+        const audioWasEnabled = call.localStream.getAudioTracks().some((elem) => elem.enabled);
+        if (!audioWasEnabled && call.localStream.getAudioTracks().length > 0) {
+            enableMedia(localStream, CallMediaType.Audio, false);
         }
         if (!call.cameraEnabled && !call.screenShareEnabled) {
-            videoTracks.forEach((elem) => (elem.enabled = false));
+            enableMedia(localStream, CallMediaType.Video, false);
         }
-        replaceTracks(pc, audioTracks);
-        replaceTracks(pc, videoTracks);
+        replaceTracks(pc, audioTracks, false);
+        replaceTracks(pc, videoTracks, call.screenShareEnabled);
         call.localStream = localStream;
         videos.local.srcObject = localStream;
     }
-    function replaceTracks(pc, tracks) {
+    function replaceTracks(pc, tracks, addIfNeeded) {
+        var _a;
         if (!tracks.length)
             return;
         const sender = pc.getSenders().find((s) => { var _a; return ((_a = s.track) === null || _a === void 0 ? void 0 : _a.kind) === tracks[0].kind; });
         if (sender)
             for (const t of tracks)
                 sender.replaceTrack(t);
+        else if (addIfNeeded) {
+            for (const track of tracks)
+                pc.addTrack(track, activeCall.localStream);
+            const call = activeCall;
+            if (call.aesKey && call.key) {
+                console.log("set up encryption for sending");
+                for (const sender of pc.getSenders()) {
+                    if (((_a = sender.track) === null || _a === void 0 ? void 0 : _a.kind) == "video") {
+                        setupPeerTransform(TransformOperation.Encrypt, sender, call.worker, call.aesKey, call.key);
+                    }
+                }
+            }
+        }
     }
     function setupPeerTransform(operation, peer, worker, aesKey, key) {
         if (worker && "RTCRtpScriptTransform" in window) {

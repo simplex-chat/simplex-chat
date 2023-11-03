@@ -67,6 +67,12 @@ actual fun ActiveCallView() {
         is WCallResponse.Ice -> withBGApi {
           chatModel.controller.apiSendCallExtraInfo(call.contact, r.iceCandidates)
         }
+        is WCallResponse.Media -> {
+          when (r.media) {
+            CallMediaType.Video -> call.remoteVideoEnabled.value = r.enable
+            CallMediaType.Audio -> call.remoteAudioEnabled.value = r.enable
+          }
+        }
         is WCallResponse.Connection ->
           try {
             val callStatus = json.decodeFromString<WebRTCCallStatus>("\"${r.state.connectionState}\"")
