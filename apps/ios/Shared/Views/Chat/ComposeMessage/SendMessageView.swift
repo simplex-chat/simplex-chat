@@ -99,6 +99,12 @@ struct SendMessageView: View {
                 progressByTimeout = false
             }
         }
+        .onChange(of: composeState.voiceMessageRecordingState) { recording in
+            UIApplication.shared.isIdleTimerDisabled = recording == .recording
+        }
+        .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
+        }
         .padding(.vertical, 8)
     }
 

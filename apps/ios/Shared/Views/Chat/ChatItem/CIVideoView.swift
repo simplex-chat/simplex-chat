@@ -142,6 +142,7 @@ struct CIVideoView: View {
             removeObserver()
             player.pause()
             videoPlaying = false
+            UIApplication.shared.isIdleTimerDisabled = false
         }
     }
 

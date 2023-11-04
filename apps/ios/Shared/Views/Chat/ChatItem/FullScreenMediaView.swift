@@ -133,6 +133,9 @@ struct FullScreenMediaView: View {
 
     private func videoView( _ player: AVPlayer, _ url: URL) -> some View {
         VideoPlayerView(player: player, url: url, showControls: true)
+            .onDisappear {
+                UIApplication.shared.isIdleTimerDisabled = false
+            }
     }
 
     private func chatItemImage(_ ci: ChatItem) -> (ChatItem, UIImage?, URL?)? {

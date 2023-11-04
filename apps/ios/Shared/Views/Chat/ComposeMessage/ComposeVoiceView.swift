@@ -48,6 +48,15 @@ struct ComposeVoiceView: View {
                 playbackMode()
             }
         }
+        .onChange(of: recordingState) { recording in
+            UIApplication.shared.isIdleTimerDisabled = recording == .recording
+        }
+        .onChange(of: playbackState) { playing in
+            UIApplication.shared.isIdleTimerDisabled = playing == .playing
+        }
+        .onDisappear {
+            UIApplication.shared.isIdleTimerDisabled = false
+        }
         .padding(.vertical, 1)
         .frame(height: ComposeVoiceView.previewHeight)
         .background(colorScheme == .light ? sentColorLight : sentColorDark)
