@@ -488,7 +488,7 @@ data ChatResponse
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
-  | CRContactInfo {user :: User, contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
+  | CRContactInfo {user :: User, contact :: Contact, connectionStats_ :: Maybe ConnectionStats, customUserProfile :: Maybe Profile}
   | CRGroupInfo {user :: User, groupInfo :: GroupInfo, groupSummary :: GroupSummary}
   | CRGroupMemberInfo {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
   | CRContactSwitchStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
@@ -1103,7 +1103,8 @@ chatModifyVar f newValue = asks f >>= atomically . (`modifyTVar'` newValue)
 {-# INLINE chatModifyVar #-}
 
 setContactNetworkStatus :: ChatMonad' m => Contact -> NetworkStatus -> m ()
-setContactNetworkStatus ct = chatModifyVar connNetworkStatuses . M.insert (contactAgentConnId ct)
+setContactNetworkStatus Contact {activeConn = Nothing} _ = pure ()
+setContactNetworkStatus Contact {activeConn = Just Connection {agentConnId}} status = chatModifyVar connNetworkStatuses $ M.insert agentConnId status
 
 tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
 tryChatError = tryAllErrors mkChatError

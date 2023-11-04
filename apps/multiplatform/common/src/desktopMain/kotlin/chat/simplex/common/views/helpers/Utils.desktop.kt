@@ -9,6 +9,7 @@ import chat.simplex.common.model.CIFile
 import chat.simplex.common.model.readCryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.simplexWindowState
+import chat.simplex.res.MR
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.net.URI
@@ -108,10 +109,24 @@ actual fun getAppFilePath(uri: URI): String? = uri.path
 actual fun getFileSize(uri: URI): Long? = uri.toPath().toFile().length()
 
 actual fun getBitmapFromUri(uri: URI, withAlertOnException: Boolean): ImageBitmap? =
-  ImageIO.read(uri.inputStream()).toComposeImageBitmap()
+  try {
+    ImageIO.read(uri.inputStream()).toComposeImageBitmap()
+  } catch (e: Exception) {
+    Log.e(TAG, "Error while decoding drawable: ${e.stackTraceToString()}")
+    if (withAlertOnException) showImageDecodingException()
+
+    null
+  }
 
 actual fun getBitmapFromByteArray(data: ByteArray, withAlertOnException: Boolean): ImageBitmap? =
-  ImageIO.read(ByteArrayInputStream(data)).toComposeImageBitmap()
+  try {
+    ImageIO.read(ByteArrayInputStream(data)).toComposeImageBitmap()
+  } catch (e: Exception) {
+    Log.e(TAG, "Error while encoding bitmap from byte array: ${e.stackTraceToString()}")
+    if (withAlertOnException) showImageDecodingException()
+
+    null
+  }
 
 // LALAL implement to support animated drawable
 actual fun getDrawableFromUri(uri: URI, withAlertOnException: Boolean): Any? = null
@@ -132,8 +147,8 @@ actual suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
   } else null
 }
 
-actual suspend fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolean): VideoPlayerInterface.PreviewAndDuration {
-  return VideoPlayer.getBitmapFromVideo(null, uri)
+actual suspend fun getBitmapFromVideo(uri: URI, timestamp: Long?, random: Boolean, withAlertOnException: Boolean): VideoPlayerInterface.PreviewAndDuration {
+  return VideoPlayer.getBitmapFromVideo(null, uri, withAlertOnException)
 }
 
 @OptIn(ExperimentalEncodingApi::class)

@@ -145,9 +145,11 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRGroupsList u gs -> ttyUser u $ viewGroupsList gs
   CRSentGroupInvitation u g c _ ->
     ttyUser u $
-      if viaGroupLink . contactConn $ c
-        then [ttyContact' c <> " invited to group " <> ttyGroup' g <> " via your group link"]
-        else ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
+      case contactConn c of
+        Just Connection {viaGroupLink}
+          | viaGroupLink -> [ttyContact' c <> " invited to group " <> ttyGroup' g <> " via your group link"]
+          | otherwise -> ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
+        Nothing -> []
   CRFileTransferStatus u ftStatus -> ttyUser u $ viewFileTransferStatus ftStatus
   CRFileTransferStatusXFTP u ci -> ttyUser u $ viewFileTransferStatusXFTP ci
   CRUserProfile u p -> ttyUser u $ viewUserProfile p
@@ -359,7 +361,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     testViewChats chats = [sShow $ map toChatView chats]
       where
         toChatView :: AChat -> (Text, Text, Maybe ConnStatus)
-        toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items Nothing, Just $ connStatus activeConn)
+        toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items Nothing, connStatus <$> activeConn)
         toChatView (AChat _ (Chat (GroupChat GroupInfo {membership, localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items (Just membership), Nothing)
         toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items Nothing, Nothing)
         toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items Nothing, Just pccConnStatus)
@@ -1072,10 +1074,10 @@ viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
     "use " <> highlight' "/network socks=<on/off/[ipv4]:port>[ timeout=<seconds>]" <> " to change settings"
   ]
 
-viewContactInfo :: Contact -> ConnectionStats -> Maybe Profile -> [StyledString]
+viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
 viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}, activeConn} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
-    <> viewConnectionStats stats
+    <> maybe [] viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact l)]) contactLink
     <> maybe
       ["you've shared main profile with this contact"]
@@ -1083,7 +1085,7 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
       incognitoProfile
     <> ["alias: " <> plain localAlias | localAlias /= ""]
     <> [viewConnectionVerified (contactSecurityCode ct)]
-    <> [viewPeerChatVRange (peerChatVRange activeConn)]
+    <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
 
 viewGroupInfo :: GroupInfo -> GroupSummary -> [StyledString]
 viewGroupInfo GroupInfo {groupId} s =
