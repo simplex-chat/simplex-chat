@@ -23,3 +23,5 @@ actual fun Modifier.desktopOnExternalDrag(
   onImage: (Painter) -> Unit,
   onText: (String) -> Unit
 ): Modifier = this
+
+actual fun Modifier.onRightClick(action: () -> Unit): Modifier = this

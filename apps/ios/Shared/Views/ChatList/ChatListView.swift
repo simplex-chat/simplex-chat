@@ -29,7 +29,7 @@ struct ChatListView: View {
         ZStack(alignment: .topLeading) {
             NavStackCompat(
                 isActive: Binding(
-                    get: { ChatModel.shared.chatId != nil },
+                    get: { chatModel.chatId != nil },
                     set: { _ in }
                 ),
                 destination: chatView

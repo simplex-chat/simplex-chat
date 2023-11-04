@@ -168,7 +168,7 @@ data Contact = Contact
   { contactId :: ContactId,
     localDisplayName :: ContactName,
     profile :: LocalProfile,
-    activeConn :: Connection,
+    activeConn :: Maybe Connection,
     viaGroup :: Maybe Int64,
     contactUsed :: Bool,
     contactStatus :: ContactStatus,
@@ -187,32 +187,31 @@ instance ToJSON Contact where
   toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
   toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
-contactConn :: Contact -> Connection
+contactConn :: Contact -> Maybe Connection
 contactConn Contact {activeConn} = activeConn
 
-contactAgentConnId :: Contact -> AgentConnId
-contactAgentConnId Contact {activeConn = Connection {agentConnId}} = agentConnId
-
-contactConnId :: Contact -> ConnId
-contactConnId = aConnId . contactConn
+contactConnId :: Contact -> Maybe ConnId
+contactConnId c = aConnId <$> contactConn c
 
 type IncognitoEnabled = Bool
 
 contactConnIncognito :: Contact -> IncognitoEnabled
-contactConnIncognito = connIncognito . contactConn
+contactConnIncognito = maybe False connIncognito . contactConn
 
 contactDirect :: Contact -> Bool
-contactDirect Contact {activeConn = Connection {connLevel, viaGroupLink}} = connLevel == 0 && not viaGroupLink
+contactDirect Contact {activeConn} = maybe True direct activeConn
+  where
+    direct Connection {connLevel, viaGroupLink} = connLevel == 0 && not viaGroupLink
 
 directOrUsed :: Contact -> Bool
 directOrUsed ct@Contact {contactUsed} =
   contactDirect ct || contactUsed
 
 anyDirectOrUsed :: Contact -> Bool
-anyDirectOrUsed Contact {contactUsed, activeConn = Connection {connLevel}} = connLevel == 0 || contactUsed
+anyDirectOrUsed Contact {contactUsed, activeConn} = ((\c -> c.connLevel) <$> activeConn) == Just 0 || contactUsed
 
 contactReady :: Contact -> Bool
-contactReady Contact {activeConn} = connReady activeConn
+contactReady Contact {activeConn} = maybe False connReady activeConn
 
 contactActive :: Contact -> Bool
 contactActive Contact {contactStatus} = contactStatus == CSActive
@@ -221,7 +220,7 @@ contactDeleted :: Contact -> Bool
 contactDeleted Contact {contactStatus} = contactStatus == CSDeleted
 
 contactSecurityCode :: Contact -> Maybe SecurityCode
-contactSecurityCode Contact {activeConn} = connectionCode activeConn
+contactSecurityCode Contact {activeConn} = connectionCode =<< activeConn
 
 data ContactStatus
   = CSActive

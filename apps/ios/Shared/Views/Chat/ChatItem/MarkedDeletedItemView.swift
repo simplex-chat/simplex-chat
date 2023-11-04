@@ -10,39 +10,70 @@ import SwiftUI
 import SimpleXChat
 
 struct MarkedDeletedItemView: View {
+    @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
+    @ObservedObject var chat: Chat
     var chatItem: ChatItem
+    @Binding var revealed: Bool
 
     var body: some View {
-        HStack(alignment: .bottom, spacing: 0) {
-            if case let .moderated(_, byGroupMember) = chatItem.meta.itemDeleted {
-                markedDeletedText("moderated by \(byGroupMember.chatViewName)")
-            } else {
-                markedDeletedText("marked deleted")
-            }
-            CIMetaView(chatItem: chatItem)
-                .padding(.horizontal, 12)
-        }
-        .padding(.leading, 12)
+        (Text(mergedMarkedDeletedText).italic() + Text(" ") + chatItem.timestampText)
+        .font(.caption)
+        .foregroundColor(.secondary)
+        .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(chatItemFrameColor(chatItem, colorScheme))
         .cornerRadius(18)
         .textSelection(.disabled)
     }
 
-    func markedDeletedText(_ s: LocalizedStringKey) -> some View {
-        Text(s)
-            .font(.caption)
-            .foregroundColor(.secondary)
-            .italic()
-            .lineLimit(1)
+    var mergedMarkedDeletedText: LocalizedStringKey {
+        if !revealed,
+           let ciCategory = chatItem.mergeCategory,
+           var i = m.getChatItemIndex(chatItem) {
+            var moderated = 0
+            var blocked = 0
+            var deleted = 0
+            var moderatedBy: Set<String> = []
+            while i < m.reversedChatItems.count,
+                  let ci = .some(m.reversedChatItems[i]),
+                  ci.mergeCategory == ciCategory,
+                  let itemDeleted = ci.meta.itemDeleted {
+                switch itemDeleted {
+                case let .moderated(_, byGroupMember):
+                    moderated += 1
+                    moderatedBy.insert(byGroupMember.displayName)
+                case .blocked: blocked += 1
+                case .deleted: deleted += 1
+                }
+                i += 1
+            }
+            let total = moderated + blocked + deleted
+            return total <= 1
+            ? markedDeletedText
+            : total == moderated
+            ? "\(total) messages moderated by \(moderatedBy.joined(separator: ", "))"
+            : total == blocked
+            ? "\(total) messages blocked"
+            : "\(total) messages marked deleted"
+        } else {
+            return markedDeletedText
+        }
+    }
+
+    var markedDeletedText: LocalizedStringKey {
+        switch chatItem.meta.itemDeleted {
+        case let .moderated(_, byGroupMember): "moderated by \(byGroupMember.displayName)"
+        case .blocked: "blocked"
+        default: "marked deleted"
+        }
     }
 }
 
 struct MarkedDeletedItemView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
-            MarkedDeletedItemView(chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now)))
+            MarkedDeletedItemView(chat: Chat.sampleData, chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now)), revealed: Binding.constant(true))
         }
         .previewLayout(.fixed(width: 360, height: 200))
     }

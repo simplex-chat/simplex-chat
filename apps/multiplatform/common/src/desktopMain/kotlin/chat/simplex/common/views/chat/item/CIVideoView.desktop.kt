@@ -6,9 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
-import chat.simplex.common.platform.VideoPlayer
-import chat.simplex.common.platform.isPlaying
-import chat.simplex.common.views.helpers.onRightClick
+import chat.simplex.common.platform.*
 
 @Composable
 actual fun PlayerView(player: VideoPlayer, width: Dp, onClick: () -> Unit, onLongClick: () -> Unit, stop: () -> Unit) {
