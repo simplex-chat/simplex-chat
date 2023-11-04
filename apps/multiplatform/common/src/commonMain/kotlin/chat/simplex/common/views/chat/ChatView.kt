@@ -589,18 +589,30 @@ fun ChatInfoToolbar(
   if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.allowsFeature(ChatFeature.Calls)) {
     if (activeCall == null) {
       barButtons.add {
-        IconButton(
-          {
+        if (appPlatform.isAndroid) {
+          IconButton({
             showMenu.value = false
             startCall(CallMediaType.Audio)
-          },
-          enabled = chat.chatInfo.contact.ready && chat.chatInfo.contact.active
-        ) {
-          Icon(
-            painterResource(MR.images.ic_call_500),
-            stringResource(MR.strings.icon_descr_more_button),
-            tint = if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
-          )
+          }, enabled = chat.chatInfo.contact.ready && chat.chatInfo.contact.active
+          ) {
+            Icon(
+              painterResource(MR.images.ic_call_500),
+              stringResource(MR.strings.icon_descr_audio_call).capitalize(Locale.current),
+              tint = if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+            )
+          }
+        } else {
+          IconButton({
+            showMenu.value = false
+            startCall(CallMediaType.Video)
+          }, enabled = chat.chatInfo.contact.ready && chat.chatInfo.contact.active
+          ) {
+            Icon(
+              painterResource(MR.images.ic_videocam),
+              stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current),
+              tint = if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+            )
+          }
         }
       }
     } else if (activeCall?.contact?.id == chat.id) {
@@ -634,10 +646,17 @@ fun ChatInfoToolbar(
     }
     if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active && activeCall == null) {
       menuItems.add {
-        ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(MR.images.ic_videocam), onClick = {
-          showMenu.value = false
-          startCall(CallMediaType.Video)
-        })
+        if (appPlatform.isAndroid) {
+          ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(MR.images.ic_videocam), onClick = {
+            showMenu.value = false
+            startCall(CallMediaType.Video)
+          })
+        } else {
+          ItemAction(stringResource(MR.strings.icon_descr_audio_call).capitalize(Locale.current), painterResource(MR.images.ic_call_500), onClick = {
+            showMenu.value = false
+            startCall(CallMediaType.Audio)
+          })
+        }
       }
     }
   } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.canAddMembers) {
