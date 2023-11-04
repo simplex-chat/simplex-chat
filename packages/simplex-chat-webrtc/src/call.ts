@@ -204,6 +204,7 @@ interface Call {
 let activeCall: Call | undefined
 let answerTimeout = 30_000
 var useWorker = false
+var isDesktop = false
 var localizedState = ""
 var localizedDescription = ""
 
@@ -311,6 +312,12 @@ const processCommand = (function () {
     const remoteStream = new MediaStream()
     const localCamera = VideoCamera.User
     const localStream = await getLocalMediaStream(mediaType, localCamera)
+    if (isDesktop) {
+      localStream
+        .getTracks()
+        .filter((elem) => elem.kind == "video")
+        .forEach((elem) => (elem.enabled = false))
+    }
     const iceCandidates = getIceCandidates(pc, config)
     const call = {
       connection: pc,
