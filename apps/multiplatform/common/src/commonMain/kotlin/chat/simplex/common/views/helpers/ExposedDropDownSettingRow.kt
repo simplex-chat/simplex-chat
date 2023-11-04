@@ -29,7 +29,7 @@ fun <T> ExposedDropDownSettingRow(
 ) {
   SettingsActionItemWithContent(icon, title, iconColor = iconTint, disabled = !enabled.value) {
     val expanded = remember { mutableStateOf(false) }
-    DefaultExposedDropdownMenuBox(
+    ExposedDropdownMenuBox(
       expanded = expanded.value,
       onExpandedChange = {
         expanded.value = !expanded.value && enabled.value

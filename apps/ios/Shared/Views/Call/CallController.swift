@@ -108,7 +108,6 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
             try audioSession.setActive(true)
             logger.debug("audioSession activated")
         } catch {
-            print(error)
             logger.error("failed activating audio session")
         }
     }
@@ -121,7 +120,6 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
             try audioSession.setActive(false)
             logger.debug("audioSession deactivated")
         } catch {
-            print(error)
             logger.error("failed deactivating audio session")
         }
         suspendOnEndCall()

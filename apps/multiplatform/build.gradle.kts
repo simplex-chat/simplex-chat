@@ -36,7 +36,7 @@ buildscript {
     extra.set("desktop.mac.signing.keychain", prop["desktop.mac.signing.keychain"] ?: extra.getOrNull("compose.desktop.mac.signing.keychain"))
     extra.set("desktop.mac.notarization.apple_id", prop["desktop.mac.notarization.apple_id"] ?: extra.getOrNull("compose.desktop.mac.notarization.appleID"))
     extra.set("desktop.mac.notarization.password", prop["desktop.mac.notarization.password"] ?: extra.getOrNull("compose.desktop.mac.notarization.password"))
-    extra.set("desktop.mac.notarization.team_id", prop["desktop.mac.notarization.team_id"] ?: extra.getOrNull("compose.desktop.mac.notarization.ascProvider"))
+    extra.set("desktop.mac.notarization.team_id", prop["desktop.mac.notarization.team_id"] ?: extra.getOrNull("compose.desktop.mac.notarization.teamID"))
 
     repositories {
         google()
@@ -45,7 +45,6 @@ buildscript {
     dependencies {
         classpath("com.android.tools.build:gradle:${rootProject.extra["gradle.plugin.version"]}")
         classpath(kotlin("gradle-plugin", version = rootProject.extra["kotlin.version"] as String))
-        classpath("org.jetbrains.kotlin:kotlin-serialization:1.3.2")
         classpath("dev.icerock.moko:resources-generator:0.23.0")
 
         // NOTE: Do not place your application dependencies here; they belong

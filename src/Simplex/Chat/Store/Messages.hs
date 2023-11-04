@@ -493,7 +493,7 @@ getDirectChatPreviews_ db user@User {userId} = do
           ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-        JOIN connections c ON c.contact_id = ct.contact_id
+        LEFT JOIN connections c ON c.contact_id = ct.contact_id
         LEFT JOIN (
           SELECT contact_id, MAX(chat_item_id) AS MaxId
           FROM chat_items
@@ -510,25 +510,31 @@ getDirectChatPreviews_ db user@User {userId} = do
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
         LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
         WHERE ct.user_id = ?
-          AND ((c.conn_level = 0 AND c.via_group_link = 0) OR ct.contact_used = 1)
+          AND ct.is_user = 0
           AND ct.deleted = 0
-          AND c.connection_id = (
-            SELECT cc_connection_id FROM (
-              SELECT
-                cc.connection_id AS cc_connection_id,
-                cc.created_at AS cc_created_at,
-                (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
-              FROM connections cc
-              WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
-              ORDER BY cc_conn_status_ord DESC, cc_created_at DESC
-              LIMIT 1
+          AND (
+            (
+              ((c.conn_level = 0 AND c.via_group_link = 0) OR ct.contact_used = 1)
+              AND c.connection_id = (
+                SELECT cc_connection_id FROM (
+                  SELECT
+                    cc.connection_id AS cc_connection_id,
+                    cc.created_at AS cc_created_at,
+                    (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
+                  FROM connections cc
+                  WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
+                  ORDER BY cc_conn_status_ord DESC, cc_created_at DESC
+                  LIMIT 1
+                )
+              )
             )
+            OR c.connection_id IS NULL
           )
         ORDER BY i.item_ts DESC
       |]
       (CISRcvNew, userId, ConnReady, ConnSndReady)
   where
-    toDirectChatPreview :: UTCTime -> ContactRow :. ConnectionRow :. ChatStatsRow :. MaybeChatItemRow :. QuoteRow -> AChat
+    toDirectChatPreview :: UTCTime -> ContactRow :. MaybeConnectionRow :. ChatStatsRow :. MaybeChatItemRow :. QuoteRow -> AChat
     toDirectChatPreview currentTs (contactRow :. connRow :. statsRow :. ciRow_) =
       let contact = toContact user $ contactRow :. connRow
           ci_ = toDirectChatItemList currentTs ciRow_

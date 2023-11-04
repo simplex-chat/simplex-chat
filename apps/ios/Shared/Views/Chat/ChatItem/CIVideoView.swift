@@ -11,6 +11,7 @@ import AVKit
 import SimpleXChat
 
 struct CIVideoView: View {
+    @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
     private let chatItem: ChatItem
     private let image: String
@@ -101,7 +102,7 @@ struct CIVideoView: View {
                 let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete
                 VideoPlayerView(player: player, url: url, showControls: false)
                 .frame(width: w, height: w * preview.size.height / preview.size.width)
-                .onChange(of: ChatModel.shared.stopPreviousRecPlay) { playingUrl in
+                .onChange(of: m.stopPreviousRecPlay) { playingUrl in
                     if playingUrl != url {
                         player.pause()
                         videoPlaying = false
@@ -124,7 +125,7 @@ struct CIVideoView: View {
                 }
                 if !videoPlaying {
                     Button {
-                        ChatModel.shared.stopPreviousRecPlay = url
+                        m.stopPreviousRecPlay = url
                         player.play()
                     } label: {
                         playPauseIcon(canBePlayed ? "play.fill" : "play.slash")
@@ -256,7 +257,7 @@ struct CIVideoView: View {
     // TODO encrypt: where file size is checked?
     private func receiveFileIfValidSize(file: CIFile, encrypted: Bool, receiveFile: @escaping (User, Int64, Bool, Bool) async -> Void) {
         Task {
-            if let user = ChatModel.shared.currentUser {
+            if let user = m.currentUser {
                 await receiveFile(user, file.fileId, encrypted, false)
             }
         }
@@ -290,7 +291,7 @@ struct CIVideoView: View {
             )
             .onAppear {
                 DispatchQueue.main.asyncAfter(deadline: .now()) {
-                    ChatModel.shared.stopPreviousRecPlay = url
+                    m.stopPreviousRecPlay = url
                     if let player = fullPlayer {
                         player.play()
                         fullScreenTimeObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: player.currentItem, queue: .main) { _ in

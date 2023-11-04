@@ -95,6 +95,11 @@ if [ -n "$LIBCRYPTO_PATH" ]; then
     install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.1.1.$LIB_EXT libHSsmplxmq*.$LIB_EXT
 fi
 
+LIBCRYPTO_PATH=$(otool -l libHSsqlcphr-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
+if [ -n "$LIBCRYPTO_PATH" ]; then
+    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.1.1.$LIB_EXT libHSsqlcphr-*.$LIB_EXT
+fi
+
 for lib in $(find . -type f -name "*.$LIB_EXT"); do
     RPATHS=`otool -l $lib | grep -E "path /Users/|path /usr/local|path /opt/" | cut -d' ' -f11`
     for RPATH in $RPATHS; do

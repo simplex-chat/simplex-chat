@@ -10,20 +10,92 @@ import SwiftUI
 import SimpleXChat
 
 struct CIChatFeatureView: View {
+    @EnvironmentObject var m: ChatModel
     var chatItem: ChatItem
+    @Binding var revealed: Bool
     var feature: Feature
     var icon: String? = nil
     var iconColor: Color
 
     var body: some View {
+        if !revealed, let fs = mergedFeautures() {
+            HStack {
+                ForEach(fs, content: featureIconView)
+            }
+            .padding(.horizontal, 6)
+            .padding(.vertical, 6)
+        } else {
+            fullFeatureView
+        }
+    }
+
+    private struct FeatureInfo: Identifiable {
+        var icon: String
+        var scale: CGFloat
+        var color: Color
+        var param: String?
+
+        init(_ f: Feature, _ color: Color, _ param: Int?) {
+            self.icon = f.iconFilled
+            self.scale = f.iconScale
+            self.color = color
+            self.param = f.hasParam && param != nil ? timeText(param) : nil
+        }
+
+        var id: String {
+            "\(icon) \(color) \(param ?? "")"
+        }
+    }
+
+    private func mergedFeautures() -> [FeatureInfo]? {
+        var fs: [FeatureInfo] = []
+        var icons: Set<String> = []
+        if var i = m.getChatItemIndex(chatItem) {
+            while i < m.reversedChatItems.count,
+                  let f = featureInfo(m.reversedChatItems[i]) {
+                if !icons.contains(f.icon) {
+                    fs.insert(f, at: 0)
+                    icons.insert(f.icon)
+                }
+                i += 1
+            }
+        }
+        return fs.count > 1 ? fs : nil
+    }
+
+    private func featureInfo(_ ci: ChatItem) -> FeatureInfo? {
+        switch ci.content {
+        case let .rcvChatFeature(feature, enabled, param): FeatureInfo(feature, enabled.iconColor, param)
+        case let .sndChatFeature(feature, enabled, param): FeatureInfo(feature, enabled.iconColor, param)
+        case let .rcvGroupFeature(feature, preference, param): FeatureInfo(feature, preference.enable.iconColor, param)
+        case let .sndGroupFeature(feature, preference, param): FeatureInfo(feature, preference.enable.iconColor, param)
+        default: nil
+        }
+    }
+
+    @ViewBuilder private func featureIconView(_ f: FeatureInfo) -> some View {
+        let i = Image(systemName: f.icon)
+            .foregroundColor(f.color)
+            .scaleEffect(f.scale)
+        if let param = f.param {
+            HStack {
+                i
+                chatEventText(Text(param)).lineLimit(1)
+            }
+        } else {
+            i
+        }
+    }
+
+    private var fullFeatureView: some View {
         HStack(alignment: .bottom, spacing: 4) {
             Image(systemName: icon ?? feature.iconFilled)
                 .foregroundColor(iconColor)
                 .scaleEffect(feature.iconScale)
             chatEventText(chatItem)
         }
-        .padding(.leading, 6)
-        .padding(.bottom, 6)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 4)
         .textSelection(.disabled)
     }
 }
@@ -31,6 +103,6 @@ struct CIChatFeatureView: View {
 struct CIChatFeatureView_Previews: PreviewProvider {
     static var previews: some View {
         let enabled = FeatureEnabled(forUser: false, forContact: false)
-        CIChatFeatureView(chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), feature: ChatFeature.fullDelete, iconColor: enabled.iconColor)
+        CIChatFeatureView(chatItem: ChatItem.getChatFeatureSample(.fullDelete, enabled), revealed: Binding.constant(true), feature: ChatFeature.fullDelete, iconColor: enabled.iconColor)
     }
 }
