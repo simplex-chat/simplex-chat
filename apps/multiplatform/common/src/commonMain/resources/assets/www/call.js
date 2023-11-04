@@ -25,7 +25,6 @@ var TransformOperation;
 let activeCall;
 let answerTimeout = 30000;
 var useWorker = false;
-var isDesktop = false;
 var localizedState = "";
 var localizedDescription = "";
 const processCommand = (function () {
@@ -393,7 +392,6 @@ const processCommand = (function () {
         const pc = call.connection;
         pc.ontrack = (event) => {
             try {
-                console.log("LALAL ONTRACK");
                 if (call.aesKey && call.key) {
                     console.log("set up decryption for receiving");
                     setupPeerTransform(TransformOperation.Decrypt, event.receiver, call.worker, call.aesKey, call.key);
@@ -405,9 +403,6 @@ const processCommand = (function () {
                         console.log("LALAL ADDED TRACK " + event.track.kind);
                     };
                     for (const track of stream.getTracks()) {
-                        track.onmute = (_event) => {
-                            console.log("LALAL ON MUTE");
-                        };
                         call.remoteStream.addTrack(track);
                     }
                 }
@@ -494,27 +489,12 @@ const processCommand = (function () {
         if (!call.cameraEnabled && !call.screenShareEnabled) {
             enableMedia(localStream, CallMediaType.Video, false);
         }
-        replaceTracks(pc, audioTracks, localStream, false);
-        replaceTracks(pc, videoTracks, localStream, call.screenShareEnabled);
+        replaceTracks(pc, audioTracks, false);
+        replaceTracks(pc, videoTracks, call.screenShareEnabled);
         call.localStream = localStream;
         videos.local.srcObject = localStream;
-        // const offer = await pc.createOffer()
-        // await pc.setLocalDescription(offer)
-        // // const resp: WCallRenegotiateOffer = {
-        // //   type: "renegotiate-offer",
-        // //   offer: serialize(offer),
-        // // }
-        // const encryption = supportsInsertableStreams(useWorker)
-        // const resp: WCallOffer = {
-        //   type: "offer",
-        //   offer: serialize(offer),
-        //   iceCandidates: await call.iceCandidates,
-        //   capabilities: {encryption},
-        // }
-        // const apiResp: WVApiMessage = {corrId: undefined, resp, command: undefined}
-        // sendMessageToNative(apiResp)
     }
-    function replaceTracks(pc, tracks, localStream, addIfNeeded) {
+    function replaceTracks(pc, tracks, addIfNeeded) {
         var _a;
         if (!tracks.length)
             return;
@@ -524,7 +504,7 @@ const processCommand = (function () {
                 sender.replaceTrack(t);
         else if (addIfNeeded) {
             for (const track of tracks)
-                pc.addTrack(track, localStream);
+                pc.addTrack(track, activeCall.localStream);
             const call = activeCall;
             if (call.aesKey && call.key) {
                 console.log("set up encryption for sending");
@@ -557,17 +537,9 @@ const processCommand = (function () {
             console.log(`no ${operation}`);
         }
     }
-    async function getLocalMediaStream(mediaType, facingMode) {
+    function getLocalMediaStream(mediaType, facingMode) {
         const constraints = callMediaConstraints(mediaType, facingMode);
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        if (isDesktop) {
-            stream
-                .getTracks()
-                .filter((elem) => elem.kind == "video")
-                .forEach((elem) => (elem.enabled = false));
-            stream.getTracks().forEach((elem) => console.log("LALAL TRACK EN " + elem.enabled));
-        }
-        return stream;
+        return navigator.mediaDevices.getUserMedia(constraints);
     }
     function getLocalScreenCaptureStream() {
         const constraints /* DisplayMediaStreamConstraints */ = {
@@ -585,23 +557,23 @@ const processCommand = (function () {
         return navigator.mediaDevices.getDisplayMedia(constraints);
     }
     function callMediaConstraints(mediaType, facingMode) {
-        if (mediaType == CallMediaType.Audio && !isDesktop) {
-            return { audio: true, video: false };
-        }
-        else {
-            return {
-                audio: true,
-                video: {
-                    frameRate: 24,
-                    width: {
-                        min: 480,
-                        ideal: 720,
-                        max: 1280,
+        switch (mediaType) {
+            case CallMediaType.Audio:
+                return { audio: true, video: false };
+            case CallMediaType.Video:
+                return {
+                    audio: true,
+                    video: {
+                        frameRate: 24,
+                        width: {
+                            min: 480,
+                            ideal: 720,
+                            max: 1280,
+                        },
+                        aspectRatio: 1.33,
+                        facingMode,
                     },
-                    aspectRatio: 1.33,
-                    facingMode,
-                },
-            };
+                };
         }
     }
     function supportsInsertableStreams(useWorker) {
