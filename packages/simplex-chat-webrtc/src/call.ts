@@ -23,7 +23,6 @@ type WCallResponse =
   | WCallOffer
   | WCallAnswer
   | WCallIceCandidates
-  | WCEnableMedia
   | WRConnection
   | WRCallConnected
   | WRCallEnd
@@ -34,18 +33,7 @@ type WCallResponse =
 
 type WCallCommandTag = "capabilities" | "start" | "offer" | "answer" | "ice" | "media" | "camera" | "description" | "end"
 
-type WCallResponseTag =
-  | "capabilities"
-  | "offer"
-  | "answer"
-  | "ice"
-  | "media"
-  | "connection"
-  | "connected"
-  | "end"
-  | "ended"
-  | "ok"
-  | "error"
+type WCallResponseTag = "capabilities" | "offer" | "answer" | "ice" | "connection" | "connected" | "end" | "ended" | "ok" | "error"
 
 enum CallMediaType {
   Audio = "audio",
@@ -110,7 +98,7 @@ interface WCallIceCandidates extends IWCallCommand, IWCallResponse {
   iceCandidates: string // JSON strings for RTCIceCandidateInit[]
 }
 
-interface WCEnableMedia extends IWCallCommand, IWCallResponse {
+interface WCEnableMedia extends IWCallCommand {
   type: "media"
   media: CallMediaType
   enable: boolean
@@ -606,36 +594,10 @@ const processCommand = (function () {
           console.log("set up decryption for receiving")
           setupPeerTransform(TransformOperation.Decrypt, event.receiver as RTCRtpReceiverWithEncryption, call.worker, call.aesKey, call.key)
         }
-        const hadAudio = call.remoteStream.getTracks().some((elem) => elem.kind == "audio" && elem.enabled)
-        const hadVideo = call.remoteStream.getTracks().some((elem) => elem.kind == "video" && elem.enabled)
         for (const stream of event.streams) {
-          stream.onaddtrack = (event) => {
-            console.log("LALAL ADDED TRACK " + event.track.kind)
-          }
           for (const track of stream.getTracks()) {
             call.remoteStream.addTrack(track)
           }
-        }
-        const hasAudio = call.remoteStream.getTracks().some((elem) => elem.kind == "audio" && elem.enabled)
-        const hasVideo = call.remoteStream.getTracks().some((elem) => elem.kind == "video" && elem.enabled)
-        console.log(`LALAL HAS AUDIO ${hasAudio}  ${hasVideo} ${JSON.stringify(call.remoteStream.getTracks())}`)
-        if (hadAudio != hasAudio) {
-          const resp: WCEnableMedia = {
-            type: "media",
-            media: CallMediaType.Audio,
-            enable: hasAudio,
-          }
-          const apiResp: WVApiMessage = {corrId: undefined, resp, command: undefined}
-          sendMessageToNative(apiResp)
-        }
-        if (hadVideo != hasVideo) {
-          const resp: WCEnableMedia = {
-            type: "media",
-            media: CallMediaType.Video,
-            enable: hasVideo,
-          }
-          const apiResp: WVApiMessage = {corrId: undefined, resp, command: undefined}
-          sendMessageToNative(apiResp)
         }
         console.log(`ontrack success`)
       } catch (e) {
@@ -677,6 +639,8 @@ const processCommand = (function () {
     const videos = getVideoElements()
     if (!videos) throw Error("no video elements")
     const pc = call.connection
+    const oldAudioTracks = call.localStream.getAudioTracks()
+    const audioWasEnabled = oldAudioTracks.some((elem) => elem.enabled)
     let localStream: MediaStream
     try {
       localStream = call.screenShareEnabled ? await getLocalScreenCaptureStream() : await getLocalMediaStream(call.localMedia, camera)
@@ -691,36 +655,23 @@ const processCommand = (function () {
 
     const audioTracks = localStream.getAudioTracks()
     const videoTracks = localStream.getVideoTracks()
-    const audioWasEnabled = call.localStream.getAudioTracks().some((elem) => elem.enabled)
-    if (!audioWasEnabled && call.localStream.getAudioTracks().length > 0) {
-      enableMedia(localStream, CallMediaType.Audio, false)
+    if (!audioWasEnabled && oldAudioTracks.length > 0) {
+      audioTracks.forEach((elem) => (elem.enabled = false))
     }
     if (!call.cameraEnabled && !call.screenShareEnabled) {
-      enableMedia(localStream, CallMediaType.Video, false)
+      videoTracks.forEach((elem) => (elem.enabled = false))
     }
 
-    replaceTracks(pc, audioTracks, false)
-    replaceTracks(pc, videoTracks, call.screenShareEnabled)
+    replaceTracks(pc, audioTracks)
+    replaceTracks(pc, videoTracks)
     call.localStream = localStream
     videos.local.srcObject = localStream
   }
 
-  function replaceTracks(pc: RTCPeerConnection, tracks: MediaStreamTrack[], addIfNeeded: boolean) {
+  function replaceTracks(pc: RTCPeerConnection, tracks: MediaStreamTrack[]) {
     if (!tracks.length) return
     const sender = pc.getSenders().find((s) => s.track?.kind === tracks[0].kind)
     if (sender) for (const t of tracks) sender.replaceTrack(t)
-    else if (addIfNeeded) {
-      for (const track of tracks) pc.addTrack(track, activeCall!.localStream)
-      const call = activeCall!
-      if (call.aesKey && call.key) {
-        console.log("set up encryption for sending")
-        for (const sender of pc.getSenders() as RTCRtpSenderWithEncryption[]) {
-          if (sender.track?.kind == "video") {
-            setupPeerTransform(TransformOperation.Encrypt, sender, call.worker, call.aesKey, call.key)
-          }
-        }
-      }
-    }
   }
 
   function setupPeerTransform(

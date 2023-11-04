@@ -74,9 +74,9 @@ function reactOnMessageFromServer(msg) {
         case "start":
             document.getElementById("toggle-audio").style.display = "inline-block";
             document.getElementById("toggle-speaker").style.display = "inline-block";
-            document.getElementById("toggle-screen").style.display = "inline-block";
             if (msg.command.media == CallMediaType.Video) {
                 document.getElementById("toggle-video").style.display = "inline-block";
+                document.getElementById("toggle-screen").style.display = "inline-block";
             }
             document.getElementById("info-block").className = msg.command.media;
             break;

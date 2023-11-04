@@ -1,7 +1,5 @@
 package chat.simplex.common.views.call
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.model.*
 import chat.simplex.res.MR
@@ -37,9 +35,6 @@ data class Call(
   }
 
   val hasMedia: Boolean get() = callState == CallState.OfferSent || callState == CallState.Negotiated || callState == CallState.Connected
-
-  val remoteAudioEnabled: MutableState<Boolean> = mutableStateOf(true)
-  val remoteVideoEnabled: MutableState<Boolean> = mutableStateOf(localMedia == CallMediaType.Video)
 }
 
 enum class CallState {
@@ -88,7 +83,6 @@ sealed class WCallResponse {
   @Serializable @SerialName("offer") data class Offer(val offer: String, val iceCandidates: String, val capabilities: CallCapabilities): WCallResponse()
   @Serializable @SerialName("answer") data class Answer(val answer: String, val iceCandidates: String): WCallResponse()
   @Serializable @SerialName("ice") data class Ice(val iceCandidates: String): WCallResponse()
-  @Serializable @SerialName("media") data class Media(val media: CallMediaType, val enable: Boolean): WCallResponse()
   @Serializable @SerialName("connection") data class Connection(val state: ConnectionState): WCallResponse()
   @Serializable @SerialName("connected") data class Connected(val connectionInfo: ConnectionInfo): WCallResponse()
   @Serializable @SerialName("end") object End: WCallResponse()
