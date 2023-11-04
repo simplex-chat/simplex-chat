@@ -29,7 +29,6 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
-import java.io.File
 import java.net.URI
 
 @Composable
@@ -370,6 +369,9 @@ private fun RecordVoiceView(recState: MutableState<RecordingState>, stopRecOnNex
       onRelease = stopRecordingAndAddAudio
     )
     RecordVoiceButton(interactionSource)
+  }
+  if (recState.value is RecordingState.Started) {
+    platform.AndroidKeepScreenOn()
   }
 }
 

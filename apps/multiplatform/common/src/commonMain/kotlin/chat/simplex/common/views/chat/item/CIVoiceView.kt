@@ -70,6 +70,9 @@ fun CIVoiceView(
       VoiceLayout(file, ci, text, audioPlaying, progress, duration, brokenAudio, sent, hasText, timedMessagesTTL, play, pause, longClick, receiveFile) {
         AudioPlayer.seekTo(it, progress, fileSource?.filePath)
       }
+      if (audioPlaying.value) {
+        platform.AndroidKeepScreenOn()
+      }
     } else {
       VoiceMsgIndicator(null, false, sent, hasText, null, null, false, {}, {}, longClick, receiveFile)
       val metaReserve = if (edited)

@@ -4,6 +4,7 @@ import android.os.Build
 import android.view.View
 import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.BitmapPainter
@@ -11,8 +12,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.isVisible
-import chat.simplex.common.helpers.toUri
 import chat.simplex.common.platform.VideoPlayer
+import chat.simplex.common.platform.platform
 import chat.simplex.res.MR
 import coil.ImageLoader
 import coil.compose.rememberAsyncImagePainter
@@ -23,7 +24,6 @@ import coil.size.Size
 import com.google.android.exoplayer2.ui.AspectRatioFrameLayout
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import dev.icerock.moko.resources.compose.stringResource
-import java.net.URI
 
 @Composable
 actual fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap: ImageBitmap) {
@@ -72,4 +72,7 @@ actual fun FullScreenVideoView(player: VideoPlayer, modifier: Modifier, close: (
     },
     modifier
   )
+  if (remember { player.videoPlaying }.value) {
+    platform.AndroidKeepScreenOn()
+  }
 }
