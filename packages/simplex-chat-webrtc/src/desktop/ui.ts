@@ -1,5 +1,6 @@
 // Override defaults to enable worker on Chrome and Safari
 useWorker = typeof window.Worker !== "undefined"
+isDesktop = true
 
 // Create WebSocket connection.
 const socket = new WebSocket(`ws://${location.host}`)
@@ -49,9 +50,26 @@ function toggleSpeakerManually() {
 
 function toggleVideoManually() {
   if (activeCall?.localMedia) {
-    document.getElementById("toggle-video")!!.innerHTML = toggleMedia(activeCall.localStream, CallMediaType.Video)
+    let res: boolean
+    if (activeCall?.screenShareEnabled) {
+      activeCall.cameraEnabled = !activeCall.cameraEnabled
+      res = activeCall.cameraEnabled
+    } else {
+      res = toggleMedia(activeCall.localStream, CallMediaType.Video)
+    }
+    document.getElementById("toggle-video")!!.innerHTML = res
       ? '<img src="/desktop/images/ic_videocam_filled.svg" />'
       : '<img src="/desktop/images/ic_videocam_off.svg" />'
+  }
+}
+
+async function toggleScreenManually() {
+  const was = activeCall?.screenShareEnabled
+  await toggleScreenShare()
+  if (was != activeCall?.screenShareEnabled) {
+    document.getElementById("toggle-screen")!!.innerHTML = activeCall?.screenShareEnabled
+      ? '<img src="/desktop/images/ic_stop_screen_share.svg" />'
+      : '<img src="/desktop/images/ic_screen_share.svg" />'
   }
 }
 
@@ -64,8 +82,9 @@ function reactOnMessageFromServer(msg: WVApiMessage) {
     case "start":
       document.getElementById("toggle-audio")!!.style.display = "inline-block"
       document.getElementById("toggle-speaker")!!.style.display = "inline-block"
-      if (msg.command.media == "video") {
+      if (msg.command.media == CallMediaType.Video) {
         document.getElementById("toggle-video")!!.style.display = "inline-block"
+        document.getElementById("toggle-screen")!!.style.display = "inline-block"
       }
       document.getElementById("info-block")!!.className = msg.command.media
       break
