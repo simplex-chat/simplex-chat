@@ -1,5 +1,5 @@
--- packages: .
-packages: . ../simplexmq
+packages: .
+-- packages: . ../simplexmq
 -- packages: . ../simplexmq ../direct-sqlcipher ../sqlcipher-simple
 
 with-compiler: ghc-9.6.2
