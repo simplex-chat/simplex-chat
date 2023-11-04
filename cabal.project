@@ -6,10 +6,10 @@ with-compiler: ghc-9.6.2
 
 constraints: zip +disable-bzip2 +disable-zstd
 
--- source-repository-package
---     type: git
---     location: https://github.com/simplex-chat/simplexmq.git
---     tag: d4688ca451b91d456b2d60d5faa204643d400b9d
+source-repository-package
+    type: git
+    location: https://github.com/simplex-chat/simplexmq.git
+    tag: 973faa19b61c77bffcae0ce4b6785f33c2b0891e
 
 source-repository-package
     type: git
