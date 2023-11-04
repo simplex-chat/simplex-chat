@@ -189,7 +189,7 @@ struct AddGroupView: View {
             Task {
                 let groupMembers = await apiListMembers(gInfo.groupId)
                 await MainActor.run {
-                    ChatModel.shared.groupMembers = groupMembers
+                    m.groupMembers = groupMembers.map { GMember.init($0) }
                 }
             }
             let c = Chat(chatInfo: .group(groupInfo: gInfo), chatItems: [])

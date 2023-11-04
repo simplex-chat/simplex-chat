@@ -30,7 +30,11 @@
   <!-- Item Content - ChatModel.kt -->
   <string name="deleted_description">deleted</string>
   <string name="marked_deleted_description">marked deleted</string>
+  <string name="marked_deleted_items_description">%d messages marked deleted</string>
   <string name="moderated_item_description">moderated by %s</string>
+  <string name="moderated_items_description">%d messages moderated by %s</string>
+  <string name="blocked_item_description">blocked</string>
+  <string name="blocked_items_description">%d messages blocked</string>
   <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
   <string name="receiving_files_not_yet_supported">receiving files is not supported yet</string>
   <string name="sender_you_pronoun">you</string>
@@ -243,7 +247,9 @@
   <string name="hide_verb">Hide</string>
   <string name="allow_verb">Allow</string>
   <string name="moderate_verb">Moderate</string>
+  <string name="expand_verb">Expand</string>
   <string name="delete_message__question">Delete message?</string>
+  <string name="delete_messages__question">Delete %d messages?</string>
   <string name="delete_message_cannot_be_undone_warning">Message will be deleted - this cannot be undone!</string>
   <string name="delete_message_mark_deleted_warning">Message will be marked for deletion. The recipient(s) will be able to reveal this message.</string>
   <string name="delete_member_message__question">Delete member message?</string>
@@ -1132,9 +1138,14 @@
   <string name="snd_group_event_user_left">you left</string>
   <string name="snd_group_event_group_profile_updated">group profile updated</string>
 
+  <string name="rcv_group_event_1_member_connected">%s connected</string>
   <string name="rcv_group_event_2_members_connected">%s and %s connected</string>
   <string name="rcv_group_event_3_members_connected">%s, %s and %s connected</string>
   <string name="rcv_group_event_n_members_connected">%s, %s and %d other members connected</string>
+  <string name="rcv_group_events_count">%d group events</string>
+  <string name="rcv_group_and_other_events">and %d other events</string>
+  <string name="group_members_2">%s and %s</string>
+  <string name="group_members_n">%s, %s and %d members</string>
 
   <string name="rcv_group_event_open_chat">Open</string>
 
@@ -1250,10 +1261,21 @@
   <string name="recipient_colon_delivery_status">%s: %s</string>
 
   <!-- GroupMemberInfoView.kt -->
+  <string name="button_remove_member_question">Remove member?</string>
   <string name="button_remove_member">Remove member</string>
+
   <string name="button_send_direct_message">Send direct message</string>
   <string name="member_will_be_removed_from_group_cannot_be_undone">Member will be removed from group - this cannot be undone!</string>
   <string name="remove_member_confirmation">Remove</string>
+  <string name="remove_member_button">Remove member</string>
+  <string name="block_member_question">Block member?</string>
+  <string name="block_member_button">Block member</string>
+  <string name="block_member_confirmation">Block</string>
+  <string name="block_member_desc">All new messages from %s will be hidden!</string>
+  <string name="unblock_member_question">Unblock member?</string>
+  <string name="unblock_member_button">Unblock member</string>
+  <string name="unblock_member_confirmation">Unblock</string>
+  <string name="unblock_member_desc">Messages from %s will be shown!</string>
   <string name="member_info_section_title_member">MEMBER</string>
   <string name="role_in_group">Role</string>
   <string name="change_role">Change role</string>

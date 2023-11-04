@@ -205,8 +205,9 @@ createSndGroupFileTransferConnection db user@User {userId} fileId (cmdId, acId) 
     "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
     (fileId, FSAccepted, connId, groupMemberId, currentTs, currentTs)
 
-createSndDirectInlineFT :: DB.Connection -> Contact -> FileTransferMeta -> IO SndFileTransfer
-createSndDirectInlineFT db Contact {localDisplayName = n, activeConn = Connection {connId, agentConnId}} FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, fileInline} = do
+createSndDirectInlineFT :: DB.Connection -> Contact -> FileTransferMeta -> ExceptT StoreError IO SndFileTransfer
+createSndDirectInlineFT _ Contact {localDisplayName, activeConn = Nothing} _ = throwError $ SEContactNotReady localDisplayName
+createSndDirectInlineFT db Contact {localDisplayName = n, activeConn = Just Connection {connId, agentConnId}} FileTransferMeta {fileId, fileName, filePath, fileSize, chunkSize, fileInline} = liftIO $ do
   currentTs <- getCurrentTime
   let fileStatus = FSConnected
       fileInline' = Just $ fromMaybe IFMOffer fileInline
@@ -227,8 +228,9 @@ createSndGroupInlineFT db GroupMember {groupMemberId, localDisplayName = n} Conn
     (fileId, fileStatus, fileInline', connId, groupMemberId, currentTs, currentTs)
   pure SndFileTransfer {fileId, fileName, filePath, fileSize, chunkSize, recipientDisplayName = n, connId, agentConnId, groupMemberId = Just groupMemberId, fileStatus, fileDescrId = Nothing, fileInline = fileInline'}
 
-updateSndDirectFTDelivery :: DB.Connection -> Contact -> FileTransferMeta -> Int64 -> IO ()
-updateSndDirectFTDelivery db Contact {activeConn = Connection {connId}} FileTransferMeta {fileId} msgDeliveryId =
+updateSndDirectFTDelivery :: DB.Connection -> Contact -> FileTransferMeta -> Int64 -> ExceptT StoreError IO ()
+updateSndDirectFTDelivery _ Contact {localDisplayName, activeConn = Nothing} _ _ = throwError $ SEContactNotReady localDisplayName
+updateSndDirectFTDelivery db Contact {activeConn = Just Connection {connId}} FileTransferMeta {fileId} msgDeliveryId = liftIO $
   DB.execute
     db
     "UPDATE snd_files SET last_inline_msg_delivery_id = ? WHERE connection_id = ? AND file_id = ? AND file_inline IS NOT NULL"

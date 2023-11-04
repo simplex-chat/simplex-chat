@@ -119,7 +119,7 @@ struct PrivacySettings: View {
                     Text("Send delivery receipts to")
                 } footer: {
                     VStack(alignment: .leading) {
-                        Text("These settings are for your current profile **\(ChatModel.shared.currentUser?.displayName ?? "")**.")
+                        Text("These settings are for your current profile **\(m.currentUser?.displayName ?? "")**.")
                         Text("They can be overridden in contact and group settings.")
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)

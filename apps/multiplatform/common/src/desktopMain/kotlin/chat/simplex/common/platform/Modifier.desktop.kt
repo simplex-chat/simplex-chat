@@ -1,5 +1,6 @@
 package chat.simplex.common.platform
 
+import androidx.compose.foundation.contextMenuOpenDetector
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.*
 import androidx.compose.ui.graphics.painter.Painter
@@ -29,3 +30,5 @@ onExternalDrag(enabled) {
     is DragData.Text -> onText(data.readText())
   }
 }
+
+actual fun Modifier.onRightClick(action: () -> Unit): Modifier = contextMenuOpenDetector { action() }

@@ -48,7 +48,7 @@ struct AddContactView: View {
                        let conn = try await apiSetConnectionIncognito(connId: contactConn.pccConnId, incognito: incognito) {
                         await MainActor.run {
                             contactConnection = conn
-                            ChatModel.shared.updateContactConnection(conn)
+                            chatModel.updateContactConnection(conn)
                         }
                     }
                 } catch {
