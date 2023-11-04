@@ -31,7 +31,7 @@ dependencies:
   - exceptions == 0.10.*
   - filepath == 1.4.*
   - http-types == 0.12.*
-  - http2 == 4.1.*
+  - http2 >= 4.1.4 && < 4.2
   - memory == 0.18.*
   - mtl == 2.3.*
   - network >= 3.1.2.7 && < 3.2

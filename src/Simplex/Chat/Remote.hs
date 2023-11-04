@@ -63,6 +63,7 @@ import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Simplex.Messaging.Util (ifM, liftEitherError, liftEitherWith, liftError, liftIOEither, tryAllErrors, tshow, ($>>=), (<$$>))
 import qualified Simplex.RemoteControl.Discovery as Discovery
+import Simplex.RemoteControl.Invitation (RCSignedInvitation)
 import Simplex.RemoteControl.Types
 import System.FilePath (takeFileName, (</>))
 import UnliftIO
@@ -116,11 +117,11 @@ startRemoteHost rhId = do
         -- block until some client is connected or an error happens
       logInfo $ "Remote host session connecting for " <> tshow rhId
       rcName <- chatReadVar localDeviceName
-      localAddr <- asks multicastSubscribers >>= Discovery.getLocalAddress >>= maybe (throwError . ChatError $ CEInternalError "unable to get local address") pure
+      localAddr <- asks multicastSubscribers >>= Discovery.getLocalAddressMulticast >>= maybe (throwError . ChatError $ CEInternalError "unable to get local address") pure
       started <- newEmptyTMVarIO -- XXX: should contain service port to be published
-      (dhKey, sigKey, ann, oob) <- Discovery.startSession (if rcName == "" then Nothing else Just rcName) (localAddr, 0) fingerprint
-      toView CRRemoteHostStarted {remoteHost = remoteHostInfo rh True, sessionOOB = decodeUtf8 $ strEncode oob}
-      httpClient <- liftEitherError (ChatErrorRemoteCtrl . RCEHTTP2Error . show) $ announceRevHTTP2 tasks started (sigKey, ann) credentials cleanupIO
+      (dhKey, sigKey, ann, oob) <- error "TODO: startRemoteHost.run 1" -- Discovery.startSession (if rcName == "" then Nothing else Just rcName) (localAddr, 0) fingerprint
+      toView CRRemoteHostStarted {remoteHost = remoteHostInfo rh True, sessionOOB = decodeUtf8 $ strEncode (oob :: RCSignedInvitation)}
+      httpClient <- error "TODO: startRemoteHost.run 2" -- liftEitherError (ChatErrorRemoteCtrl . RCEHTTP2Error . show) $ announceRevHTTP2 tasks started (sigKey, ann) credentials cleanupIO
       logInfo $ "Remote host session connected for " <> tshow rhId
       -- test connection and establish a protocol layer
       remoteHostClient <- liftRH rhId $ createRemoteHostClient httpClient dhKey rcName
@@ -269,16 +270,17 @@ findKnownRemoteCtrl execChatCommand = do
   startHost execChatCommand discoverer discovered confirmed verified
 
 -- | Use provided OOB link as an annouce
-connectRemoteCtrl :: ChatMonad m => (ByteString -> m ChatResponse) -> SignedOOB -> m ()
-connectRemoteCtrl execChatCommand so@(SignedOOB OOB {caFingerprint, host, port} _) = do
-  transportHost <- liftEitherWith (ChatError . CEInternalError) $ strDecode (encodeUtf8 host)
+connectRemoteCtrl :: ChatMonad m => (ByteString -> m ChatResponse) -> RCSignedInvitation -> m ()
+connectRemoteCtrl execChatCommand si = do
+  -- transportHost <- liftEitherWith (ChatError . CEInternalError) $ strDecode (encodeUtf8 host)
   checkNoRemoteCtrlSession -- a more significant race with @chatWriteVar@ due to db ops
   RemoteCtrlInfo {remoteCtrlId} <- withStore' $ \db ->
-    getRemoteCtrlByFingerprint db caFingerprint >>= \case
-      Just rc -> pure $ remoteCtrlInfo rc False
-      Nothing -> insertRemoteCtrl db so
+    error "TODO: connectRemoteCtrl"
+    -- getRemoteCtrlByFingerprint db caFingerprint >>= \case
+  --     Just rc -> pure $ remoteCtrlInfo rc False
+  --     Nothing -> insertRemoteCtrl db so
   -- do not run discover, we have the data in OOB
-  discovered <- newTVarIO $ M.singleton caFingerprint (transportHost, port)
+  discovered <- newTVarIO $ mempty -- M.singleton caFingerprint (transportHost, port)
   discoverer <- async $ pure ()
   -- OOB is also a direct confirmation by a user
   confirmed <- newTMVarIO remoteCtrlId
@@ -314,7 +316,8 @@ runHost discovered confirmed verified handleHttp = do
       if userInfo == (remoteCtrlId, sessionCode)
         then do
           toView $ CRRemoteCtrlConnected $ remoteCtrlInfo rc True
-          attachHTTP2Server handleHttp tls
+          -- attachHTTP2Server handleHttp tls
+          error "TODO: runHost"
         else do
           toView $ CRChatCmdError Nothing $ ChatErrorRemoteCtrl RCEBadVerificationCode
           -- the server doesn't enter its loop and waitCatch below falls through
@@ -418,40 +421,41 @@ handleGetFile User {userId} RemoteFile {userId = commandUserId, fileId, sent, fi
 
 discoverRemoteCtrls :: ChatMonad m => TM.TMap C.KeyHash (TransportHost, Word16) -> m ()
 discoverRemoteCtrls discovered = do
-  subscribers <- asks multicastSubscribers
-  Discovery.withListener subscribers run
-  where
-    run sock = receive sock >>= process sock
+  error "TODO: discoverRemoteCtrls"
+  -- subscribers <- asks multicastSubscribers
+  -- Discovery.withListener subscribers run
+  -- where
+  --   run sock = receive sock >>= process sock
 
-    receive sock =
-      Discovery.recvAnnounce sock >>= \case
-        (SockAddrInet _sockPort sockAddr, sigAnnBytes) -> case smpDecode sigAnnBytes of
-          Right (SignedAnnounce ann _sig) -> pure (sockAddr, ann)
-          Left _ -> receive sock -- TODO it is probably better to report errors to view here
-        _nonV4 -> receive sock
+  --   receive sock =
+  --     Discovery.recvAnnounce sock >>= \case
+  --       (SockAddrInet _sockPort sockAddr, sigAnnBytes) -> case smpDecode sigAnnBytes of
+  --         Right (SignedAnnounce ann _sig) -> pure (sockAddr, ann)
+  --         Left _ -> receive sock -- TODO it is probably better to report errors to view here
+  --       _nonV4 -> receive sock
 
-    process sock (sockAddr, Announce {caFingerprint, serviceAddress = (annAddr, port)}) = do
-      unless (annAddr == sockAddr) $ logError "Announced address doesn't match socket address"
-      let addr = THIPv4 (hostAddressToTuple sockAddr)
-      ifM
-        (atomically $ TM.member caFingerprint discovered)
-        (logDebug $ "Fingerprint already known: " <> tshow (addr, caFingerprint))
-        ( do
-            logInfo $ "New fingerprint announced: " <> tshow (addr, caFingerprint)
-            atomically $ TM.insert caFingerprint (addr, port) discovered
-        )
-      -- TODO we check fingerprint for duplicate where id doesn't matter - to prevent re-insert - and don't check to prevent duplicate events,
-      -- so UI now will have to check for duplicates again
-      withStore' (`getRemoteCtrlByFingerprint` caFingerprint) >>= \case
-        Nothing -> toView $ CRRemoteCtrlAnnounce caFingerprint -- unknown controller, ui "register" action required
-        -- TODO Maybe Bool is very confusing - the intent is very unclear here
-        Just found@RemoteCtrl {remoteCtrlId, accepted = storedChoice} -> case storedChoice of
-          Nothing -> toView $ CRRemoteCtrlFound $ remoteCtrlInfo found False -- first-time controller, ui "accept" action required
-          Just False -> run sock -- restart, skipping a rejected item
-          Just True ->
-            chatReadVar remoteCtrlSession >>= \case
-              Nothing -> toView . CRChatError Nothing . ChatError $ CEInternalError "Remote host found without running a session"
-              Just RemoteCtrlSession {confirmed} -> atomically $ void $ tryPutTMVar confirmed remoteCtrlId -- previously accepted controller, connect automatically
+  --   process sock (sockAddr, Announce {caFingerprint, serviceAddress = (annAddr, port)}) = do
+  --     unless (annAddr == sockAddr) $ logError "Announced address doesn't match socket address"
+  --     let addr = THIPv4 (hostAddressToTuple sockAddr)
+  --     ifM
+  --       (atomically $ TM.member caFingerprint discovered)
+  --       (logDebug $ "Fingerprint already known: " <> tshow (addr, caFingerprint))
+  --       ( do
+  --           logInfo $ "New fingerprint announced: " <> tshow (addr, caFingerprint)
+  --           atomically $ TM.insert caFingerprint (addr, port) discovered
+  --       )
+  --     -- TODO we check fingerprint for duplicate where id doesn't matter - to prevent re-insert - and don't check to prevent duplicate events,
+  --     -- so UI now will have to check for duplicates again
+  --     withStore' (`getRemoteCtrlByFingerprint` caFingerprint) >>= \case
+  --       Nothing -> toView $ CRRemoteCtrlAnnounce caFingerprint -- unknown controller, ui "register" action required
+  --       -- TODO Maybe Bool is very confusing - the intent is very unclear here
+  --       Just found@RemoteCtrl {remoteCtrlId, accepted = storedChoice} -> case storedChoice of
+  --         Nothing -> toView $ CRRemoteCtrlFound $ remoteCtrlInfo found False -- first-time controller, ui "accept" action required
+  --         Just False -> run sock -- restart, skipping a rejected item
+  --         Just True ->
+  --           chatReadVar remoteCtrlSession >>= \case
+  --             Nothing -> toView . CRChatError Nothing . ChatError $ CEInternalError "Remote host found without running a session"
+  --             Just RemoteCtrlSession {confirmed} -> atomically $ void $ tryPutTMVar confirmed remoteCtrlId -- previously accepted controller, connect automatically
 
 listRemoteCtrls :: ChatMonad m => m [RemoteCtrlInfo]
 listRemoteCtrls = do

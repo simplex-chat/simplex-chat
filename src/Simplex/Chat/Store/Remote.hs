@@ -41,12 +41,13 @@ toRemoteHost (remoteHostId, storePath, displayName, caKey, C.SignedObject caCert
 deleteRemoteHostRecord :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (Only remoteHostId)
 
-insertRemoteCtrl :: DB.Connection -> SignedOOB -> IO RemoteCtrlInfo
-insertRemoteCtrl db (SignedOOB OOB {deviceName, caFingerprint = fingerprint} _) = do
-  let displayName = fromMaybe "" deviceName
-  DB.execute db "INSERT INTO remote_controllers (display_name, fingerprint) VALUES (?,?)" (displayName, fingerprint)
-  remoteCtrlId <- insertedRowId db
-  pure RemoteCtrlInfo {remoteCtrlId, displayName, fingerprint, accepted = Nothing, sessionActive = False}
+insertRemoteCtrl :: DB.Connection -> todoSignedOOB -> IO RemoteCtrlInfo
+insertRemoteCtrl = undefined
+-- insertRemoteCtrl db (SignedOOB OOB {deviceName, caFingerprint = fingerprint} _) = do
+--   let displayName = fromMaybe "" deviceName
+--   DB.execute db "INSERT INTO remote_controllers (display_name, fingerprint) VALUES (?,?)" (displayName, fingerprint)
+--   remoteCtrlId <- insertedRowId db
+--   pure RemoteCtrlInfo {remoteCtrlId, displayName, fingerprint, accepted = Nothing, sessionActive = False}
 
 getRemoteCtrls :: DB.Connection -> IO [RemoteCtrl]
 getRemoteCtrls db =

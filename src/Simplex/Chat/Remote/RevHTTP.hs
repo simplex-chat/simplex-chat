@@ -9,20 +9,22 @@
 module Simplex.Chat.Remote.RevHTTP where
 
 import Control.Logger.Simple
+import Data.Text (Text)
 import Network.Socket (PortNumber)
 import qualified Network.TLS as TLS
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Transport as Transport
+import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Transport.HTTP2 (defaultHTTP2BufferSize, getHTTP2Body)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError (..), attachHTTP2Client, bodyHeadSize, connTimeout, defaultHTTP2ClientConfig)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..), runHTTP2ServerWith)
 import Simplex.Messaging.Util (ifM)
+import Simplex.Messaging.Version (VersionRange)
 import Simplex.RemoteControl.Discovery
 import Simplex.RemoteControl.Types
 import UnliftIO
 
--- announceRevHTTP2 :: MonadUnliftIO m => Tasks -> TMVar (Maybe PortNumber) -> TLS.Credentials -> m () -> m (Either HTTP2ClientError HTTP2Client)
-announceRevHTTP2 :: MonadUnliftIO m => Tasks -> TMVar (Maybe PortNumber) -> Maybe (Text, VersionRange) -> Maybe Text -> C.PrivateKeyEd25519 -> CtrlSessionKeys -> TransportHost -> a -> m (Either HTTP2ClientError HTTP2Client)
+announceRevHTTP2 :: MonadUnliftIO m => Tasks -> TMVar (Maybe PortNumber) -> Maybe (Text, VersionRange) -> Maybe Text -> C.PrivateKeyEd25519 -> CtrlSessionKeys -> TransportHost -> m () -> m (Either HTTP2ClientError HTTP2Client)
 announceRevHTTP2 = announceCtrl runHTTP2Client
 
 -- | Attach HTTP2 client and hold the TLS until the attached client finishes.

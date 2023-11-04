@@ -19,7 +19,7 @@ import WebRTCTests
 
 main :: IO ()
 main = do
-  setLogLevel LogError
+  setLogLevel LogDebug
   withGlobalLogging logCfg . hspec $ do
     describe "Schema dump" schemaDumpTest
     describe "SimpleX chat markdown" markdownTests

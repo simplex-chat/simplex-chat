@@ -16,6 +16,7 @@
 
 module Simplex.Chat.Controller where
 
+import Simplex.RemoteControl.Invitation (RCSignedInvitation)
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Exception
@@ -426,7 +427,7 @@ data ChatCommand
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
   | StoreRemoteFile {remoteHostId :: RemoteHostId, storeEncrypted :: Maybe Bool, localPath :: FilePath}
   | GetRemoteFile {remoteHostId :: RemoteHostId, file :: RemoteFile}
-  | ConnectRemoteCtrl SignedOOB -- ^ Connect new or existing controller via OOB data
+  | ConnectRemoteCtrl RCSignedInvitation -- ^ Connect new or existing controller via OOB data
   | FindKnownRemoteCtrl -- ^ Start listening for announcements from all existing controllers
   | ConfirmRemoteCtrl RemoteCtrlId -- ^ Confirm the connection with found controller
   | VerifyRemoteCtrlSession RemoteCtrlId Text -- ^ Verify remote controller session

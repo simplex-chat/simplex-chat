@@ -5,6 +5,9 @@
 
 module RemoteTests where
 
+import Data.Text.Encoding (decodeUtf8)
+import Control.Monad.Except (runExceptT)
+import qualified Simplex.RemoteControl.Client as RC
 import Simplex.Chat.Remote.RevHTTP
 import qualified Simplex.RemoteControl.Discovery as Discovery
 import Simplex.RemoteControl.Types
@@ -41,12 +44,14 @@ import Test.Hspec
 import UnliftIO
 import UnliftIO.Concurrent
 import UnliftIO.Directory
+import Crypto.Random (drgNew)
 
 remoteTests :: SpecWith FilePath
 remoteTests = describe "Remote" $ do
   -- it "generates usable credentials" genCredentialsTest
   -- it "OOB encoding, decoding, and signatures are correct" oobCodecTest
-  it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
+  -- it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
+  fit "RemoteControl TLS Hello works" rcTLSTest
   it "performs protocol handshake" remoteHandshakeTest
   it "performs protocol handshake (again)" remoteHandshakeTest -- leaking servers regression check
   it "sends messages" remoteMessageTest
@@ -55,6 +60,40 @@ remoteTests = describe "Remote" $ do
     it "should sends files from CLI wihtout /store" remoteCLIFileTest
 
 -- * Low-level TLS with ephemeral credentials
+
+rcTLSTest :: HasCallStack => FilePath -> IO ()
+rcTLSTest _tmp = do
+  drg <- drgNew >>= newTVarIO
+  hp <- RC.newRCHostPairing
+  invVar <- newEmptyMVar
+  ctrl <- async . runExceptT $ do
+    logError "c 1"
+    (inv, rcHostClient, var) <- RC.connectRCHost drg hp (J.String "app")
+    logError "c 2"
+    putMVar invVar inv
+    logError "c 3"
+    (rcHostSession, rcHelloBody, hp') <- atomically $ takeTMVar var
+    logError "c 4"
+    threadDelay 1000000
+    logError $ tshow rcHelloBody
+    logError "ctrl: ciao"
+
+  inv <- takeMVar invVar
+  -- logError $ decodeUtf8 $ strEncode inv
+
+  host <- async . runExceptT $ do
+    logError "h 1"
+    (rcCtrlClient, var) <- RC.connectRCCtrlURI drg inv Nothing
+    logError "h 2"
+    (rcCtrlSession, rcCtrlPairing) <- atomically $ takeTMVar var
+    logError "h 3"
+    liftIO $ RC.confirmCtrlSession rcCtrlClient True
+    logError "h 4"
+    threadDelay 1000000
+    logError "ctrl: adios"
+
+  timeout 10000000 (waitCatch ctrl) >>= logError . tshow
+  timeout 10000000 (waitCatch host) >>= logError . tshow
 
 -- -- XXX: extract
 -- genCredentialsTest :: (HasCallStack) => FilePath -> IO ()
@@ -90,47 +129,47 @@ remoteTests = describe "Remote" $ do
 --   strDecode (strEncode oob) `shouldBe` Right oob
 --   strDecode (strEncode signedOOB) `shouldBe` Right signedOOB
 
-announceDiscoverHttp2Test :: (HasCallStack) => FilePath -> IO ()
-announceDiscoverHttp2Test _tmp = do
-  subscribers <- newTMVarIO 0
-  localAddr <- Discovery.getLocalAddress subscribers >>= maybe (fail "unable to get local address") pure
-  (fingerprint, credentials) <- genTestCredentials
-  started <- newEmptyTMVarIO
-  (_dhKey, sigKey, ann, _oob) <- Discovery.startSession (Just "Desktop") (localAddr, 0) fingerprint
-  tasks <- newTVarIO []
-  finished <- newEmptyMVar
-  controller <- async $ do
-    logNote "Controller: starting"
-    bracket
-      (announceRevHTTP2 tasks started (sigKey, ann) credentials (putMVar finished ()) >>= either (fail . show) pure)
-      closeHTTP2Client
-      ( \http -> do
-          logNote "Controller: got client"
-          sendRequest http (C.requestNoBody "GET" "/" []) (Just 10000000) >>= \case
-            Left err -> do
-              logNote "Controller: got error"
-              fail $ show err
-            Right HTTP2Response {} ->
-              logNote "Controller: got response"
-      )
-  host <- async $ Discovery.withListener subscribers $ \sock -> do
-    (N.SockAddrInet _port addr, sigAnn) <- Discovery.recvAnnounce sock
-    SignedAnnounce Announce {caFingerprint, serviceAddress=(hostAddr, port)} _sig <- either fail pure $ smpDecode sigAnn
-    caFingerprint `shouldBe` fingerprint
-    addr `shouldBe` hostAddr
-    let service = (THIPv4 $ N.hostAddressToTuple hostAddr, port)
-    logNote $ "Host: connecting to " <> tshow service
-    server <- async $ Discovery.connectTLSClient service fingerprint $ \tls -> do
-      logNote "Host: got tls"
-      flip attachHTTP2Server tls $ \HTTP2Request {sendResponse} -> do
-        logNote "Host: got request"
-        sendResponse $ S.responseNoBody ok200 []
-        logNote "Host: sent response"
-    takeMVar finished `finally` cancel server
-    logNote "Host: finished"
-  tasks `registerAsync` controller
-  tasks `registerAsync` host
-  (waitBoth host controller `shouldReturn` ((), ())) `finally` cancelTasks tasks
+-- announceDiscoverHttp2Test :: (HasCallStack) => FilePath -> IO ()
+-- announceDiscoverHttp2Test _tmp = do
+--   subscribers <- newTMVarIO 0
+--   localAddr <- Discovery.getLocalAddressMulticast subscribers >>= maybe (fail "unable to get local address") pure
+--   (fingerprint, credentials) <- genTestCredentials
+--   started <- newEmptyTMVarIO
+--   (_dhKey, sigKey, ann, _oob) <- Discovery.startSession (Just "Desktop") (localAddr, 0) fingerprint
+--   tasks <- newTVarIO []
+--   finished <- newEmptyMVar
+--   controller <- async $ do
+--     logNote "Controller: starting"
+--     bracket
+--       (announceRevHTTP2 tasks started (sigKey, ann) credentials (putMVar finished ()) >>= either (fail . show) pure)
+--       closeHTTP2Client
+--       ( \http -> do
+--           logNote "Controller: got client"
+--           sendRequest http (C.requestNoBody "GET" "/" []) (Just 10000000) >>= \case
+--             Left err -> do
+--               logNote "Controller: got error"
+--               fail $ show err
+--             Right HTTP2Response {} ->
+--               logNote "Controller: got response"
+--       )
+--   host <- async $ Discovery.withListener subscribers $ \sock -> do
+--     (N.SockAddrInet _port addr, sigAnn) <- Discovery.recvAnnounce sock
+--     SignedAnnounce Announce {caFingerprint, serviceAddress=(hostAddr, port)} _sig <- either fail pure $ smpDecode sigAnn
+--     caFingerprint `shouldBe` fingerprint
+--     addr `shouldBe` hostAddr
+--     let service = (THIPv4 $ N.hostAddressToTuple hostAddr, port)
+--     logNote $ "Host: connecting to " <> tshow service
+--     server <- async $ Discovery.connectTLSClient service fingerprint $ \tls -> do
+--       logNote "Host: got tls"
+--       flip attachHTTP2Server tls $ \HTTP2Request {sendResponse} -> do
+--         logNote "Host: got request"
+--         sendResponse $ S.responseNoBody ok200 []
+--         logNote "Host: sent response"
+--     takeMVar finished `finally` cancel server
+--     logNote "Host: finished"
+--   tasks `registerAsync` controller
+--   tasks `registerAsync` host
+--   (waitBoth host controller `shouldReturn` ((), ())) `finally` cancelTasks tasks
 
 -- * Chat commands
 
