@@ -1,29 +1,21 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module RemoteTests where
 
-import Data.Text.Encoding (decodeUtf8)
-import Control.Monad.Except (runExceptT)
-import qualified Simplex.RemoteControl.Client as RC
-import Simplex.Chat.Remote.RevHTTP
-import qualified Simplex.RemoteControl.Discovery as Discovery
-import Simplex.RemoteControl.Types
 import ChatClient
 import ChatTests.Utils
 import Control.Logger.Simple
+import Control.Monad.Except (runExceptT)
+import Crypto.Random (drgNew)
 import qualified Data.Aeson as J
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
-import Data.String (fromString)
-import Network.HTTP.Types (ok200)
-import qualified Network.HTTP2.Client as C
-import qualified Network.HTTP2.Server as S
-import qualified Network.Socket as N
 import qualified Network.TLS as TLS
 import Simplex.Chat.Archive (archiveFilesFolder)
 import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..))
@@ -32,19 +24,17 @@ import Simplex.Chat.Mobile.File
 import Simplex.Chat.Remote.Types
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
-import Simplex.Messaging.Encoding (smpDecode)
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
-import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Response (..), closeHTTP2Client, sendRequest)
-import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Simplex.Messaging.Util
+import Simplex.RemoteControl.Client
+import qualified Simplex.RemoteControl.Client as RC
 import System.FilePath ((</>))
 import Test.Hspec
 import UnliftIO
 import UnliftIO.Concurrent
 import UnliftIO.Directory
-import Crypto.Random (drgNew)
+import Data.Bifunctor (first)
 
 remoteTests :: SpecWith FilePath
 remoteTests = describe "Remote" $ do
@@ -67,33 +57,43 @@ rcTLSTest _tmp = do
   hp <- RC.newRCHostPairing
   invVar <- newEmptyMVar
   ctrl <- async . runExceptT $ do
-    logError "c 1"
-    (inv, rcHostClient, var) <- RC.connectRCHost drg hp (J.String "app")
-    logError "c 2"
-    putMVar invVar inv
-    logError "c 3"
+    logNote "c 1"
+    (inv, hc, var) <- RC.connectRCHost drg hp (J.String "app")
+    logNote "c 2"
+    putMVar invVar (inv, hc)
+    logNote "c 3"
     (rcHostSession, rcHelloBody, hp') <- atomically $ takeTMVar var
-    logError "c 4"
+    logNote "c 4"
     threadDelay 1000000
-    logError $ tshow rcHelloBody
-    logError "ctrl: ciao"
+    logNote $ tshow rcHelloBody
+    logNote "ctrl: ciao"
+    liftIO $ RC.cancelHostClient hc
 
-  inv <- takeMVar invVar
-  -- logError $ decodeUtf8 $ strEncode inv
+  (inv, hc) <- takeMVar invVar
+  -- logNote $ decodeUtf8 $ strEncode inv
 
   host <- async . runExceptT $ do
-    logError "h 1"
-    (rcCtrlClient, var) <- RC.connectRCCtrlURI drg inv Nothing
-    logError "h 2"
+    logNote "h 1"
+    (rcCtrlClient, var) <- RC.connectRCCtrlURI drg inv Nothing (J.String "app")
+    logNote "h 2"
     (rcCtrlSession, rcCtrlPairing) <- atomically $ takeTMVar var
-    logError "h 3"
+    logNote "h 3"
     liftIO $ RC.confirmCtrlSession rcCtrlClient True
-    logError "h 4"
+    logNote "h 4"
     threadDelay 1000000
-    logError "ctrl: adios"
+    logNote "ctrl: adios"
 
-  timeout 10000000 (waitCatch ctrl) >>= logError . tshow
-  timeout 10000000 (waitCatch host) >>= logError . tshow
+  timeout 10000000 (waitCatch ctrl) >>= \case
+    Just (Right (Right ())) -> pure ()
+    err -> fail $ "Unexpected controller result: " <> show err
+
+  waitCatch hc.action >>= \case
+    Left err -> fromException err `shouldBe` Just AsyncCancelled
+    Right () -> fail "Unexpected controller finish"
+
+  timeout 10000000 (waitCatch host) >>= \case
+    Just (Right (Right ())) -> pure ()
+    err -> fail $ "Unexpected host result: " <> show err
 
 -- -- XXX: extract
 -- genCredentialsTest :: (HasCallStack) => FilePath -> IO ()
@@ -173,7 +173,7 @@ rcTLSTest _tmp = do
 
 -- * Chat commands
 
-remoteHandshakeTest :: (HasCallStack) => FilePath -> IO ()
+remoteHandshakeTest :: HasCallStack => FilePath -> IO ()
 remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   desktop ##> "/list remote hosts"
   desktop <## "No remote hosts"
@@ -202,7 +202,7 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   mobile ##> "/list remote ctrls"
   mobile <## "No remote controllers"
 
-remoteMessageTest :: (HasCallStack) => FilePath -> IO ()
+remoteMessageTest :: HasCallStack => FilePath -> IO ()
 remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
   startRemote mobile desktop
   contactBob desktop bob
@@ -357,7 +357,7 @@ remoteStoreFileTest =
       r `shouldStartWith` "remote host 1 error"
       r `shouldContain` err
 
-remoteCLIFileTest :: (HasCallStack) => FilePath -> IO ()
+remoteCLIFileTest :: HasCallStack => FilePath -> IO ()
 remoteCLIFileTest = testChatCfg3 cfg aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> withXFTPServer $ do
   createDirectoryIfMissing True "./tests/tmp/tmp/"
   let mobileFiles = "./tests/tmp/mobile_files"
@@ -509,7 +509,9 @@ stopMobile mobile desktop = do
 
 -- | Run action with extended timeout
 eventually :: Int -> IO a -> IO a
-eventually retries action = tryAny action >>= \case -- TODO: only catch timeouts
-  Left err | retries == 0 -> throwIO err
-  Left _ -> eventually (retries - 1) action
-  Right r -> pure r
+eventually retries action =
+  tryAny action >>= \case
+    -- TODO: only catch timeouts
+    Left err | retries == 0 -> throwIO err
+    Left _ -> eventually (retries - 1) action
+    Right r -> pure r
