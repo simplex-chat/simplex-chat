@@ -431,7 +431,7 @@ data ChatCommand
   | ConnectRemoteCtrl RCSignedInvitation -- ^ Connect new or existing controller via OOB data
   | FindKnownRemoteCtrl -- ^ Start listening for announcements from all existing controllers
   | ConfirmRemoteCtrl RemoteCtrlId -- ^ Confirm the connection with found controller
-  | VerifyRemoteCtrlSession RemoteCtrlId Text -- ^ Verify remote controller session
+  | VerifyRemoteCtrlSession Text -- ^ Verify remote controller session
   | ListRemoteCtrls
   | StopRemoteCtrl -- ^ Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a remote controller session
@@ -1058,6 +1058,7 @@ data RemoteHostError
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteCtrlError
   = RCEInactive -- ^ No session is running
+  | RCEBadState -- ^ A session is in a wrong state for the current operation
   | RCEBusy -- ^ A session is already running
   | RCETimeout -- ^ Remote operation timed out
   | RCEDisconnected {remoteCtrlId :: RemoteCtrlId, reason :: Text} -- ^ A session disconnected by a controller

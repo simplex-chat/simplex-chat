@@ -376,7 +376,7 @@ restoreCalls = do
 stopChatController :: forall m. MonadUnliftIO m => ChatController -> m ()
 stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
   readTVarIO remoteHostSessions >>= mapM_ cancelRemoteHostSession
-  stopRemoteCtrl `catchChatError` const (pure ())
+  atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (liftIO . cancelRemoteCtrl)
   disconnectAgentClient smpAgent
   readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
   closeFiles sndFiles
@@ -1949,7 +1949,7 @@ processChatCommand = \case
   ConnectRemoteCtrl oob -> withUser_ $ connectRemoteCtrl (execChatCommand Nothing) oob >> ok_
   FindKnownRemoteCtrl -> withUser_ $ findKnownRemoteCtrl (execChatCommand Nothing) >> ok_
   ConfirmRemoteCtrl rc -> withUser_ $ confirmRemoteCtrl rc >> ok_
-  VerifyRemoteCtrlSession rc sessId -> withUser_ $ verifyRemoteCtrlSession rc sessId >> ok_
+  VerifyRemoteCtrlSession sessId -> withUser_ $ verifyRemoteCtrlSession sessId >> ok_
   StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
   ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
@@ -5954,7 +5954,7 @@ chatCommandP =
       "/connect remote ctrl " *> (ConnectRemoteCtrl <$> strP),
       "/find remote ctrl" $> FindKnownRemoteCtrl,
       "/confirm remote ctrl " *> (ConfirmRemoteCtrl <$> A.decimal),
-      "/verify remote ctrl " *> (VerifyRemoteCtrlSession <$> A.decimal <* A.space <*> textP),
+      "/verify remote ctrl " *> (VerifyRemoteCtrlSession <$> textP),
       "/list remote ctrls" $> ListRemoteCtrls,
       "/stop remote ctrl" $> StopRemoteCtrl,
       "/delete remote ctrl " *> (DeleteRemoteCtrl <$> A.decimal),

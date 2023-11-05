@@ -36,11 +36,11 @@ import UnliftIO.Concurrent
 import UnliftIO.Directory
 
 remoteTests :: SpecWith FilePath
-remoteTests = describe "Remote" $ do
+remoteTests = fdescribe "Remote" $ do
   -- it "generates usable credentials" genCredentialsTest
   -- it "OOB encoding, decoding, and signatures are correct" oobCodecTest
   -- it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
-  fit "RemoteControl TLS Hello works" rcTLSTest
+  it "RemoteControl TLS Hello works" rcTLSTest
   it "performs protocol handshake" remoteHandshakeTest
   it "performs protocol handshake (again)" remoteHandshakeTest -- leaking servers regression check
   it "sends messages" remoteMessageTest
