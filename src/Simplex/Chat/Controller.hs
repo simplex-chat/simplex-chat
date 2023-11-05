@@ -419,11 +419,11 @@ data ChatCommand
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)
   | SetLocalDeviceName Text
-  | CreateRemoteHost -- ^ Configure a new remote host
+  -- | CreateRemoteHost -- ^ Configure a new remote host
   | ListRemoteHosts
-  | StartRemoteHost RemoteHostId -- ^ Start and announce a remote host
+  | StartRemoteHost (Maybe (RemoteHostId, Bool)) -- ^ Start new or known remote host with optional multicast for known host
   -- | SwitchRemoteHost (Maybe RemoteHostId) -- ^ Switch current remote host
-  | StopRemoteHost RemoteHostId -- ^ Shut down a running session
+  | StopRemoteHost (Maybe RemoteHostId) -- ^ Shut down a running session
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
   | StoreRemoteFile {remoteHostId :: RemoteHostId, storeEncrypted :: Maybe Bool, localPath :: FilePath}
   | GetRemoteFile {remoteHostId :: RemoteHostId, file :: RemoteFile}

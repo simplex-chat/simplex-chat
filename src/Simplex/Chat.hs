@@ -1939,10 +1939,10 @@ processChatCommand = \case
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   SetLocalDeviceName name -> withUser_ $ chatWriteVar localDeviceName name >> ok_
-  CreateRemoteHost -> CRRemoteHostCreated <$> createRemoteHost
+  -- CreateRemoteHost -> CRRemoteHostCreated <$> createRemoteHost
   ListRemoteHosts -> CRRemoteHostList <$> listRemoteHosts
-  StartRemoteHost rh -> startRemoteHost rh >> ok_
-  StopRemoteHost rh -> closeRemoteHostSession rh >> ok_
+  StartRemoteHost rh_ -> startRemoteHost' rh_ >> ok_
+  StopRemoteHost rh_ -> closeRemoteHostSession rh_ >> ok_
   DeleteRemoteHost rh -> deleteRemoteHost rh >> ok_
   StoreRemoteFile rh encrypted_ localPath -> CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
   GetRemoteFile rh rf -> getRemoteFile rh rf >> ok_
@@ -5944,10 +5944,10 @@ chatCommandP =
       "/set disappear " *> (SetUserTimedMessages <$> (("yes" $> True) <|> ("no" $> False))),
       ("/incognito" <* optional (A.space *> onOffP)) $> ChatHelp HSIncognito,
       "/set device name " *> (SetLocalDeviceName <$> textP),
-      "/create remote host" $> CreateRemoteHost,
+      -- "/create remote host" $> CreateRemoteHost,
       "/list remote hosts" $> ListRemoteHosts,
-      "/start remote host " *> (StartRemoteHost <$> A.decimal),
-      "/stop remote host " *> (StopRemoteHost <$> A.decimal),
+      "/start remote host" *> (StartRemoteHost <$> optional ((,) <$> (A.space *> A.decimal) <*> (" multicast=" *> onOffP <|> pure False)),
+      "/stop remote host" *> (StopRemoteHost <$> optional (A.space *> A.decimal)),
       "/delete remote host " *> (DeleteRemoteHost <$> A.decimal),
       "/store remote file " *> (StoreRemoteFile <$> A.decimal <*> optional (" encrypt=" *> onOffP) <* A.space <*> filePath),
       "/get remote file " *> (GetRemoteFile <$> A.decimal <* A.space <*> jsonP),

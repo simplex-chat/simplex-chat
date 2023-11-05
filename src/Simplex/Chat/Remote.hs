@@ -94,6 +94,17 @@ withRemoteHostSession_ rhId missing present = do
   sessions <- asks remoteHostSessions
   liftIOEither . atomically $ TM.lookup rhId sessions >>= maybe (missing sessions) (present sessions)
 
+startRemoteHost' :: ChatMonad m => Maybe (RemoteHostId, Bool) -> m ()
+startRemoteHost' rh_ = do
+  -- withRemoteCtrlSession_ $ maybe (Right ((), Just RCSessionStarting)) (\_ -> Left $ ChatErrorRemoteCtrl RCEBusy)
+  (pairing, multicast) <- case rh_ of
+    Just (_rhId, _multicast) -> undefined -- get from the database, start multicast if requested
+    Nothing -> (,False) <$> rcNewHostPairing
+  let ourApp = J.String "hi"
+  -- TMVar (RCHostSession, RCHelloBody, RCHostPairing)
+  (invitation, client, r) <- withAgent $ \a -> rcConnectHost a pairing ourApp multicast
+  pure ()
+
 startRemoteHost :: ChatMonad m => RemoteHostId -> m ()
 startRemoteHost rhId = do
   rh <- withStore (`getRemoteHost` rhId)
@@ -274,12 +285,12 @@ findKnownRemoteCtrl execChatCommand = undefined -- do
 
 -- | Use provided OOB link as an annouce
 connectRemoteCtrl :: ChatMonad m => (ByteString -> m ChatResponse) -> RCSignedInvitation -> m ()
-connectRemoteCtrl execChatCommand si@RCSignedInvitation {invitation = RCInvitation {ca, app = theirApp}} = do
+connectRemoteCtrl execChatCommand inv@RCSignedInvitation {invitation = RCInvitation {ca, app = theirApp}} = do
   -- TODO parse app and validate version
   withRemoteCtrlSession_ $ maybe (Right ((), Just RCSessionStarting)) (\_ -> Left $ ChatErrorRemoteCtrl RCEBusy)
   -- TODO check new or existing pairing (read from DB)
   let ourApp = J.String "hi"
-  (rcsClient, vars) <- withAgent $ \a -> rcConnectCtrlURI a si Nothing ourApp
+  (rcsClient, vars) <- withAgent $ \a -> rcConnectCtrlURI a inv Nothing ourApp
   rcsWaitSession <- async $ waitForSession rcsClient vars
   updateRemoteCtrlSession $ \case
     RCSessionStarting -> Right RCSessionConnecting {rcsClient, rcsWaitSession}
