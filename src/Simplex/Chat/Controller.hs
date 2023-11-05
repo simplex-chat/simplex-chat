@@ -1088,6 +1088,7 @@ data RemoteCtrlSession
   | RCSessionPendingConfirmation
       { rcsClient :: RCCtrlClient,
         rcsSession :: RCCtrlSession,
+        sessionCode :: Text,
         rcsPairing :: RCCtrlPairing
       }
   | RCSessionConfirmed

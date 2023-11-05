@@ -1,4 +1,3 @@
-{-# LANGUAGE BlockArguments #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -21,7 +20,7 @@ import Control.Monad.Reader
 import Control.Monad.STM (retry)
 import Crypto.Random (getRandomBytes)
 import qualified Data.Aeson as J
-import Data.Bifunctor (first)
+import Data.Bifunctor (first, second)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
 import Data.ByteString.Builder (Builder)
@@ -276,15 +275,14 @@ findKnownRemoteCtrl execChatCommand = undefined -- do
 connectRemoteCtrl :: ChatMonad m => (ByteString -> m ChatResponse) -> RCSignedInvitation -> m ()
 connectRemoteCtrl execChatCommand si@RCSignedInvitation {invitation = RCInvitation {ca, app = theirApp}} = do
   -- TODO parse app and validate version
-  updateRemoteCtrlSession_ $ maybe (Right $ Just RCSessionStarting) (\_ -> Left $ ChatErrorRemoteCtrl RCEBusy)
+  withRemoteCtrlSession_ $ maybe (Right ((), Just RCSessionStarting)) (\_ -> Left $ ChatErrorRemoteCtrl RCEBusy)
   -- TODO check new or existing pairing (read from DB)
   let ourApp = J.String "hi"
   (rcsClient, vars) <- withAgent $ \a -> rcConnectCtrlURI a si Nothing ourApp
   rcsWaitSession <- async $ waitForSession rcsClient vars
-  updateRemoteCtrlSession_ $ \case
-    Nothing -> Left $ ChatErrorRemoteCtrl RCEInactive -- TODO kill rcsClient
-    Just RCSessionStarting -> Right (Just RCSessionConnecting {rcsClient, rcsWaitSession})
-    Just _err -> Left $ ChatErrorRemoteCtrl RCEBadState -- TODO kill rcsClient
+  updateRemoteCtrlSession $ \case
+    RCSessionStarting -> Right RCSessionConnecting {rcsClient, rcsWaitSession}
+    _ -> Left $ ChatErrorRemoteCtrl RCEBadState -- TODO kill rcsClient
   where
     waitForSession rcsClient vars = do
       (rcsSession@RCCtrlSession {tls = TLS {tlsUniq}}, rcsPairing) <- atomically $ takeTMVar vars
@@ -297,10 +295,9 @@ connectRemoteCtrl execChatCommand si@RCSignedInvitation {invitation = RCInvitati
             }
       let sessionCode = verificationCode tlsUniq
       toView CRRemoteCtrlSessionCode {remoteCtrl, sessionCode, newCtrl = True}
-      updateRemoteCtrlSession_ $ \case
-        Nothing -> Left $ ChatErrorRemoteCtrl RCEInactive
-        Just RCSessionConnecting {} -> Right (Just RCSessionPendingConfirmation {rcsClient, rcsSession, rcsPairing})
-        Just _err -> Left $ ChatErrorRemoteCtrl RCEBadState
+      updateRemoteCtrlSession $ \case
+        RCSessionConnecting {} -> Right RCSessionPendingConfirmation {rcsClient, rcsSession, sessionCode, rcsPairing}
+        _ -> Left $ ChatErrorRemoteCtrl RCEBadState -- TODO kill rcsClient
 
 -- startHost :: ChatMonad m => (ByteString -> m ChatResponse) -> Async () -> TM.TMap C.KeyHash (TransportHost, Word16) -> TMVar RemoteCtrlId -> TMVar (RemoteCtrlId, Text) -> m ()
 -- startHost execChatCommand discoverer discovered confirmed verified = do
@@ -496,25 +493,25 @@ confirmRemoteCtrl rcId = do
 
 -- Take a look at emoji of tlsunique
 verifyRemoteCtrlSession :: ChatMonad m => Text -> m ()
-verifyRemoteCtrlSession sessId = do
-  (rcsClient, rcsSession@RCCtrlSession {tls = TLS {tlsUniq}}, rcsPairing) <-
-    withRemoteCtrlSession_ $ maybe (Left $ ChatErrorRemoteCtrl RCEInactive) $ \case
-      RCSessionPendingConfirmation {rcsClient, rcsSession, rcsPairing} ->
-        Right ((rcsClient, rcsSession, rcsPairing), Just RCSessionConfirmed {rcsClient, rcsSession})
+verifyRemoteCtrlSession sessCode' = do
+  (rcsClient, sessionCode, rcsPairing) <-
+    withRemoteCtrlSession $ \case
+      RCSessionPendingConfirmation {rcsClient, rcsSession, sessionCode, rcsPairing} ->
+        Right ((rcsClient, sessionCode, rcsPairing), RCSessionConfirmed {rcsClient, rcsSession})
       _ -> Left $ ChatErrorRemoteCtrl RCEBadState
-  let verified = sameVerificationCode sessId (verificationCode tlsUniq)
+  let verified = sameVerificationCode sessCode' sessionCode
   liftIO $ confirmCtrlSession rcsClient verified
   -- TODO: Store new rcsPairing
   remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
-  updateRemoteCtrlSession_ $ maybe (Left $ ChatErrorRemoteCtrl RCEInactive) $ \case
-    RCSessionConfirmed {} -> Right $ Just RCSessionConnected {rcsClient, rcsSession, remoteOutputQ}
+  updateRemoteCtrlSession $ \case
+    RCSessionConfirmed {rcsSession} -> Right RCSessionConnected {rcsClient, rcsSession, remoteOutputQ}
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   -- TODO: attach HTTP2 rcsClient
 
 stopRemoteCtrl :: ChatMonad m => m ()
 stopRemoteCtrl =
   join . withRemoteCtrlSession_ . maybe (Left $ ChatErrorRemoteCtrl RCEInactive) $
-    Right . (,Nothing) . liftIO . cancelRemoteCtrl
+    \s -> Right (liftIO $ cancelRemoteCtrl s, Nothing)
 
 cancelRemoteCtrl :: RemoteCtrlSession -> IO ()
 cancelRemoteCtrl = \case
@@ -540,6 +537,9 @@ checkNoRemoteCtrlSession :: ChatMonad m => m ()
 checkNoRemoteCtrlSession =
   chatReadVar remoteCtrlSession >>= maybe (pure ()) (\_ -> throwError $ ChatErrorRemoteCtrl RCEBusy)
 
+withRemoteCtrlSession :: ChatMonad m => (RemoteCtrlSession -> Either ChatError (a, RemoteCtrlSession)) -> m a
+withRemoteCtrlSession state = withRemoteCtrlSession_ $ maybe (Left $ ChatErrorRemoteCtrl RCEInactive) ((second . second) Just . state)
+
 -- | Atomically process controller state wrt. specific remote ctrl session
 withRemoteCtrlSession_ :: ChatMonad m => (Maybe RemoteCtrlSession -> Either ChatError (a, Maybe RemoteCtrlSession)) -> m a
 withRemoteCtrlSession_ state = do
@@ -550,9 +550,9 @@ withRemoteCtrlSession_ state = do
         Right (a, s') -> (Right a, s')
         Left e -> (Left e, s)
   liftEither r
-   
-updateRemoteCtrlSession_ :: ChatMonad m => (Maybe RemoteCtrlSession -> Either ChatError (Maybe RemoteCtrlSession)) -> m ()
-updateRemoteCtrlSession_ state = withRemoteCtrlSession_ $ fmap ((),) . state
+
+updateRemoteCtrlSession :: ChatMonad m => (RemoteCtrlSession -> Either ChatError RemoteCtrlSession) -> m ()
+updateRemoteCtrlSession state = withRemoteCtrlSession $ fmap ((),) . state
 
 utf8String :: [Char] -> ByteString
 utf8String = encodeUtf8 . T.pack
