@@ -41,7 +41,6 @@ import Data.String
 import Data.Text (Text)
 import Data.Time (NominalDiffTime, UTCTime)
 import Data.Version (showVersion)
-import Data.Word (Word16)
 import Language.Haskell.TH (Exp, Q, runIO)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC

@@ -63,6 +63,7 @@ import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Simplex.Messaging.Util (ifM, liftEitherError, liftEitherWith, liftError, liftIOEither, tryAllErrors, tshow, ($>>=), (<$$>))
 import qualified Simplex.RemoteControl.Discovery as Discovery
+import Simplex.RemoteControl.Client (CtrlSessKeys (..))
 import Simplex.RemoteControl.Invitation (RCSignedInvitation (..), RCInvitation (..))
 import Simplex.RemoteControl.Types
 import System.FilePath (takeFileName, (</>))
@@ -337,8 +338,8 @@ connectRemoteCtrl execChatCommand si@RCSignedInvitation {invitation = RCInvitati
 --   chatWriteVar remoteCtrlSession Nothing
 --   toView CRRemoteCtrlStopped
 
-handleRemoteCommand :: forall m. ChatMonad m => (ByteString -> m ChatResponse) -> TBQueue ChatResponse -> HTTP2Request -> m ()
-handleRemoteCommand execChatCommand remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do
+handleRemoteCommand :: forall m. ChatMonad m => (ByteString -> m ChatResponse) -> CtrlSessKeys -> TBQueue ChatResponse -> HTTP2Request -> m ()
+handleRemoteCommand execChatCommand _sessionKeys remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do
   logDebug "handleRemoteCommand"
   liftRC (tryRemoteError parseRequest) >>= \case
     Right (getNext, rc) -> do
@@ -492,21 +493,21 @@ confirmRemoteCtrl rcId = do
   undefined
 
 -- Take a look at emoji of tlsunique
-verifyRemoteCtrlSession :: ChatMonad m => Text -> m ()
-verifyRemoteCtrlSession sessCode' = do
-  (rcsClient, sessionCode, rcsPairing) <-
-    withRemoteCtrlSession $ \case
-      RCSessionPendingConfirmation {rcsClient, rcsSession, sessionCode, rcsPairing} ->
-        Right ((rcsClient, sessionCode, rcsPairing), RCSessionConfirmed {rcsClient, rcsSession})
-      _ -> Left $ ChatErrorRemoteCtrl RCEBadState
+verifyRemoteCtrlSession :: ChatMonad m => (ByteString -> m ChatResponse) -> Text -> m ()
+verifyRemoteCtrlSession execChatCommand sessCode' = do
+  (client, sessionCode, _rcsPairing) <- withRemoteCtrlSession $ \case
+    RCSessionPendingConfirmation {rcsClient, rcsSession, sessionCode, rcsPairing} ->
+      Right ((rcsClient, sessionCode, rcsPairing), RCSessionConfirmed {rcsClient, rcsSession})
+    _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   let verified = sameVerificationCode sessCode' sessionCode
-  liftIO $ confirmCtrlSession rcsClient verified
+  liftIO $ confirmCtrlSession client verified
   -- TODO: Store new rcsPairing
   remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
-  updateRemoteCtrlSession $ \case
-    RCSessionConfirmed {rcsSession} -> Right RCSessionConnected {rcsClient, rcsSession, remoteOutputQ}
+  RCCtrlSession {tls, sessionKeys} <- withRemoteCtrlSession $ \case
+    RCSessionConfirmed {rcsClient, rcsSession} ->
+      Right (rcsSession, RCSessionConnected {rcsClient, rcsSession, remoteOutputQ})
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
-  -- TODO: attach HTTP2 rcsClient
+  attachHTTP2Server tls $ handleRemoteCommand execChatCommand sessionKeys remoteOutputQ
 
 stopRemoteCtrl :: ChatMonad m => m ()
 stopRemoteCtrl =
