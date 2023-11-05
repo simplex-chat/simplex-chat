@@ -56,19 +56,21 @@ import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding (smpDecode)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Transport (tlsUniq)
+import Simplex.Messaging.Transport (tlsUniq, TLS (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Simplex.Messaging.Util (ifM, liftEitherError, liftEitherWith, liftError, liftIOEither, tryAllErrors, tshow, ($>>=), (<$$>))
 import qualified Simplex.RemoteControl.Discovery as Discovery
-import Simplex.RemoteControl.Invitation (RCSignedInvitation)
+import Simplex.RemoteControl.Invitation (RCSignedInvitation (..), RCInvitation (..))
 import Simplex.RemoteControl.Types
 import System.FilePath (takeFileName, (</>))
 import UnliftIO
 import UnliftIO.Concurrent (threadDelay)
 import UnliftIO.Directory (copyFile, createDirectoryIfMissing, renameFile)
+import Simplex.RemoteControl.Client
+import Simplex.Messaging.Agent
 
 -- * Desktop side
 
@@ -271,22 +273,33 @@ findKnownRemoteCtrl execChatCommand = do
 
 -- | Use provided OOB link as an annouce
 connectRemoteCtrl :: ChatMonad m => (ByteString -> m ChatResponse) -> RCSignedInvitation -> m ()
-connectRemoteCtrl execChatCommand si = do
-  -- transportHost <- liftEitherWith (ChatError . CEInternalError) $ strDecode (encodeUtf8 host)
-  checkNoRemoteCtrlSession -- a more significant race with @chatWriteVar@ due to db ops
-  RemoteCtrlInfo {remoteCtrlId} <- withStore' $ \db ->
-    error "TODO: connectRemoteCtrl"
-    -- getRemoteCtrlByFingerprint db caFingerprint >>= \case
-  --     Just rc -> pure $ remoteCtrlInfo rc False
-  --     Nothing -> insertRemoteCtrl db so
-  -- do not run discover, we have the data in OOB
-  discovered <- newTVarIO $ mempty -- M.singleton caFingerprint (transportHost, port)
-  discoverer <- async $ pure ()
-  -- OOB is also a direct confirmation by a user
-  confirmed <- newTMVarIO remoteCtrlId
-  -- Session verification is still required
-  verified <- newEmptyTMVarIO
-  startHost execChatCommand discoverer discovered confirmed verified
+connectRemoteCtrl execChatCommand si@RCSignedInvitation {invitation = RCInvitation {ca, app = theirApp}} = do
+  -- TODO parse app and validate version
+  updateRemoteCtrlSession_ $ maybe (Right $ Just RCSessionStarting) (\_ -> Left RCEBusy)
+  -- TODO check new or existing pairing (read from DB)
+  let ourApp = J.String "hi"
+  (rcsClient, vars) <- withAgent $ \a -> rcConnectCtrlURI a si Nothing ourApp
+  rcsWaitSession <- async $ waitForSession rcsClient vars
+  updateRemoteCtrlSession_ $ \case
+    Nothing -> Left RCEInactive -- TODO kill rcsClient
+    Just RCSessionStarting -> Right (Just RCSessionConnecting {rcsClient, rcsWaitSession})
+    Just _err -> Left RCEBusy -- TODO kill rcsClient
+  where
+    waitForSession rcsClient vars = do
+      (rcsSession@RCCtrlSession {tls = TLS {tlsUniq}}, rcsPairing) <- atomically $ takeTMVar vars
+      let remoteCtrl = RemoteCtrlInfo -- TODO use Pairing or something
+            { remoteCtrlId = 1,
+              displayName = "from app",
+              fingerprint = ca,
+              accepted = Just True,
+              sessionActive = True
+            }
+      let sessionCode = verificationCode tlsUniq
+      toView CRRemoteCtrlSessionCode {remoteCtrl, sessionCode, newCtrl = True}
+      updateRemoteCtrlSession_ $ \case
+        Nothing -> Left REMissing
+        Just RCSessionConnecting {} -> Right (Just RCSessionPendingConfirmation {rcsClient, rcsSession, rcsPairing})
+        Just _err -> Left RCEBusy
 
 startHost :: ChatMonad m => (ByteString -> m ChatResponse) -> Async () -> TM.TMap C.KeyHash (TransportHost, Word16) -> TMVar RemoteCtrlId -> TMVar (RemoteCtrlId, Text) -> m ()
 startHost execChatCommand discoverer discovered confirmed verified = do
@@ -471,34 +484,40 @@ remoteCtrlInfo :: RemoteCtrl -> Bool -> RemoteCtrlInfo
 remoteCtrlInfo RemoteCtrl {remoteCtrlId, displayName, fingerprint, accepted} sessionActive =
   RemoteCtrlInfo {remoteCtrlId, displayName, fingerprint, accepted, sessionActive}
 
+-- XXX: only used for multicast
 confirmRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m ()
 confirmRemoteCtrl rcId = do
   -- TODO check it exists, check the ID is the same as in session
-  RemoteCtrlSession {confirmed} <- getRemoteCtrlSession
-  withStore' $ \db -> markRemoteCtrlResolution db rcId True
-  atomically . void $ tryPutTMVar confirmed rcId -- the remote host can now proceed with connection
+  -- RemoteCtrlSession {confirmed} <- getRemoteCtrlSession
+  -- withStore' $ \db -> markRemoteCtrlResolution db rcId True
+  -- atomically . void $ tryPutTMVar confirmed rcId -- the remote host can now proceed with connection
+  undefined
 
-verifyRemoteCtrlSession :: ChatMonad m => RemoteCtrlId -> Text -> m ()
-verifyRemoteCtrlSession rcId sessId = do
-  RemoteCtrlSession {verified} <- getRemoteCtrlSession
-  void . atomically $ tryPutTMVar verified (rcId, sessId)
+-- Take a look at emoji of tlsunique
+verifyRemoteCtrlSession :: ChatMonad m => Text -> m ()
+verifyRemoteCtrlSession sessId = do
+  (rcsClient, rcsSession@RCCtrlSession {tls = TLS {tlsUniq}}, rcsPairing) <-
+    withRemoteCtrlSession_ $ maybe (Left RCEInactive) $ \case
+      RCSessionPendingConfirmation {rcsClient, rcsSession, rcsPairing} ->
+        Right ((rcsClient, rcsSession, rcsPairing), Just RCSessionConfirmed {rcsClient, rcsSession})
+      _ -> Left RCEBadState
+  confirmCtrlSession rcsClient $ sameVerificationCode sessId (verificationCode tlsUniq)
+  -- TODO: Store new rcsPairing
+  remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
+  updateRemoteCtrlSession_ $ maybe (Left RCEInactive) $ \case
+    RCSessionConfirmed {} -> Just RCSessionConnected {rcsClient, rcsSession, remoteOutputQ}
+  -- TODO: attach HTTP2 rcsClient
 
 stopRemoteCtrl :: ChatMonad m => m ()
-stopRemoteCtrl = do
-  rcs <- getRemoteCtrlSession
-  cancelRemoteCtrlSession rcs $ chatWriteVar remoteCtrlSession Nothing
-
-cancelRemoteCtrlSession_ :: MonadUnliftIO m => RemoteCtrlSession -> m ()
-cancelRemoteCtrlSession_ rcs = cancelRemoteCtrlSession rcs $ pure ()
-
-cancelRemoteCtrlSession :: MonadUnliftIO m => RemoteCtrlSession -> m () -> m ()
-cancelRemoteCtrlSession RemoteCtrlSession {discoverer, supervisor, hostServer} cleanup = do
-  cancel discoverer -- may be gone by now
-  case hostServer of
-    Just host -> cancel host -- supervisor will clean up
-    Nothing -> do
-      cancel supervisor -- supervisor is blocked until session progresses
-      cleanup
+stopRemoteCtrl =
+  join . withRemoteCtrlSession_ . maybe (Left RCEInactive) $ (,Nothing) . \case
+    RCSessionStarting -> pure ()
+    RCSessionConnecting {rcsClient, rcsWaitSession} -> do
+      cancelCtrlClient rcsClient
+      uninterruptibleCancel rcsWaitSession
+    RCSessionPendingConfirmation {rcsClient} -> cancelCtrlClient rcsClient
+    RCSessionConfirmed {rcsClient} -> cancelCtrlClient rcsClient
+    RCSessionConnected {rcsClient} -> canelCtrlClient rcsClient
 
 deleteRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m ()
 deleteRemoteCtrl rcId = do
@@ -513,6 +532,15 @@ getRemoteCtrlSession =
 checkNoRemoteCtrlSession :: ChatMonad m => m ()
 checkNoRemoteCtrlSession =
   chatReadVar remoteCtrlSession >>= maybe (pure ()) (\_ -> throwError $ ChatErrorRemoteCtrl RCEBusy)
+
+-- | Atomically process controller state wrt. specific remote ctrl session
+withRemoteCtrlSession_ :: ChatMonad m => (Maybe RemoteCtrlSession -> Either ChatError (a, Maybe RemoteCtrlSession)) -> m a
+withRemoteCtrlSession_ state = do
+  session <- asks remoteCtrlSession
+  ExceptT $ atomically $ stateTVar session $ \s -> either (,s) id (state s)
+
+updateRemoteCtrlSession_ :: ChatMonad m => (Maybe RemoteCtrlSession -> Either ChatError (Maybe RemoteCtrlSession)) -> m ()
+updateRemoteCtrlSession_ state = withRemoteCtrlSession_ $ ((),) . state
 
 utf8String :: [Char] -> ByteString
 utf8String = encodeUtf8 . T.pack

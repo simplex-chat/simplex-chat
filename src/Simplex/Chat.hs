@@ -376,7 +376,7 @@ restoreCalls = do
 stopChatController :: forall m. MonadUnliftIO m => ChatController -> m ()
 stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
   readTVarIO remoteHostSessions >>= mapM_ cancelRemoteHostSession
-  readTVarIO remoteCtrlSession >>= mapM_ cancelRemoteCtrlSession_
+  stopRemoteCtrl `catchChatError` const (pure ())
   disconnectAgentClient smpAgent
   readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
   closeFiles sndFiles
@@ -5686,12 +5686,6 @@ waitChatStarted :: ChatMonad m => m ()
 waitChatStarted = do
   agentStarted <- asks agentAsync
   atomically $ readTVar agentStarted >>= \a -> unless (isJust a) retry
-
-withAgent :: ChatMonad m => (AgentClient -> ExceptT AgentErrorType m a) -> m a
-withAgent action =
-  asks smpAgent
-    >>= runExceptT . action
-    >>= liftEither . first (`ChatErrorAgent` Nothing)
 
 chatCommandP :: Parser ChatCommand
 chatCommandP =

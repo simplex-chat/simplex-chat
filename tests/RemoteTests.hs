@@ -34,7 +34,6 @@ import Test.Hspec
 import UnliftIO
 import UnliftIO.Concurrent
 import UnliftIO.Directory
-import Data.Bifunctor (first)
 
 remoteTests :: SpecWith FilePath
 remoteTests = describe "Remote" $ do

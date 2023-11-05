@@ -77,6 +77,8 @@ import Simplex.Messaging.Version
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
 import UnliftIO.STM
+import Data.Bifunctor (first)
+import Simplex.RemoteControl.Client
 
 versionNumber :: String
 versionNumber = showVersion SC.version
@@ -1076,15 +1078,26 @@ data ArchiveError
   deriving (Show, Exception)
 
 -- | Host (mobile) side of transport to process remote commands and forward notifications
-data RemoteCtrlSession = RemoteCtrlSession
-  { discoverer :: Async (), -- multicast listener
-    supervisor :: Async (), -- session state/subprocess supervisor
-    hostServer :: Maybe (Async ()), -- a running session
-    discovered :: TMap C.KeyHash (TransportHost, Word16), -- multicast-announced services
-    confirmed :: TMVar RemoteCtrlId, -- connection fingerprint found/stored in DB
-    verified :: TMVar (RemoteCtrlId, Text), -- user confirmed the session
-    remoteOutputQ :: TBQueue ChatResponse
-  }
+data RemoteCtrlSession
+  = RCSessionStarting
+  | RCSessionConnecting
+      { rcsClient :: RCCtrlClient,
+        rcsWaitSession :: Async ()
+      }
+  | RCSessionPendingConfirmation
+      { rcsClient :: RCCtrlClient,
+        rcsSession :: RCCtrlSession,
+        rcsPairing :: RCCtrlPairing
+      }
+  | RCSessionConfirmed
+      { rcsClient :: RCCtrlClient,
+        rcsSession :: RCCtrlSession
+      }
+  | RCSessionConnected
+      { rcsClient :: RCCtrlClient,
+        rcsSession :: RCCtrlSession,
+        remoteOutputQ :: TBQueue ChatResponse
+      }
 
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
@@ -1136,17 +1149,13 @@ throwChatError = throwError . ChatError
 toView :: ChatMonad' m => ChatResponse -> m ()
 toView event = do
   localQ <- asks outputQ
-  chatReadVar remoteCtrlSession >>= \case
-    Nothing -> atomically $ writeTBQueue localQ (Nothing, Nothing, event)
-    Just RemoteCtrlSession {remoteOutputQ} ->
-      if allowRemoteEvent event
-        then do
-          -- TODO: filter events or let the UI ignore trigger events by itself?
-          -- traceM $ "Sending event to remote Q: " <> show event
-          atomically $ writeTBQueue remoteOutputQ event -- TODO: check full?
-        else do
-          -- traceM $ "Sending event to local Q: " <> show event
-          atomically $ writeTBQueue localQ (Nothing, Nothing, event)
+  session <- asks remoteCtrlSession
+  atomically $
+    readTVar session >>= \case
+      Just RCSessionConnected {remoteOutputQ} | allowRemoteEvent event ->
+        writeTBQueue remoteOutputQ event
+      -- TODO potentially, it should hold some events while connecting
+      _ -> writeTBQueue localQ (Nothing, Nothing, event)
 
 withStore' :: ChatMonad m => (DB.Connection -> IO a) -> m a
 withStore' action = withStore $ liftIO . action
@@ -1174,6 +1183,12 @@ withStoreCtx ctx_ action = do
   where
     handleInternal :: String -> SomeException -> IO (Either StoreError a)
     handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
+
+withAgent :: ChatMonad m => (AgentClient -> ExceptT AgentErrorType m a) -> m a
+withAgent action =
+  asks smpAgent
+    >>= runExceptT . action
+    >>= liftEither . first (`ChatErrorAgent` Nothing)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
 
