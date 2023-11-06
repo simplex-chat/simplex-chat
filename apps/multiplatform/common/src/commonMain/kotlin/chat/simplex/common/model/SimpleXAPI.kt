@@ -748,9 +748,9 @@ object ChatController {
   suspend fun apiSetMemberSettings(groupId: Long, groupMemberId: Long, memberSettings: GroupMemberSettings): Boolean =
     sendCommandOkResp(CC.ApiSetMemberSettings(groupId, groupMemberId, memberSettings))
 
-  suspend fun apiContactInfo(contactId: Long): Pair<ConnectionStats, Profile?>? {
+  suspend fun apiContactInfo(contactId: Long): Pair<ConnectionStats?, Profile?>? {
     val r = sendCmd(CC.APIContactInfo(contactId))
-    if (r is CR.ContactInfo) return r.connectionStats to r.customUserProfile
+    if (r is CR.ContactInfo) return r.connectionStats_ to r.customUserProfile
     Log.e(TAG, "apiContactInfo bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -3357,7 +3357,7 @@ sealed class CR {
   @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: UserRef, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
   @Serializable @SerialName("chatItemTTL") class ChatItemTTL(val user: UserRef, val chatItemTTL: Long? = null): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
-  @Serializable @SerialName("contactInfo") class ContactInfo(val user: UserRef, val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
+  @Serializable @SerialName("contactInfo") class ContactInfo(val user: UserRef, val contact: Contact, val connectionStats_: ConnectionStats? = null, val customUserProfile: Profile? = null): CR()
   @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats? = null): CR()
   @Serializable @SerialName("contactSwitchStarted") class ContactSwitchStarted(val user: UserRef, val contact: Contact, val connectionStats: ConnectionStats): CR()
   @Serializable @SerialName("groupMemberSwitchStarted") class GroupMemberSwitchStarted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
@@ -3628,7 +3628,7 @@ sealed class CR {
     is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")
     is ChatItemTTL -> withUser(user, json.encodeToString(chatItemTTL))
     is NetworkConfig -> json.encodeToString(networkConfig)
-    is ContactInfo -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
+    is ContactInfo -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats_)}")
     is GroupMemberInfo -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats_)}")
     is ContactSwitchStarted -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
     is GroupMemberSwitchStarted -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats)}")

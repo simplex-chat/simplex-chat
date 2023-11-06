@@ -199,7 +199,7 @@ actual class VideoPlayer actual constructor(
   private fun setPreviewAndDuration() {
     // It freezes main thread, doing it in IO thread
     CoroutineScope(Dispatchers.IO).launch {
-      val previewAndDuration = VideoPlayerHolder.previewsAndDurations.getOrPut(uri) { getBitmapFromVideo(uri) }
+      val previewAndDuration = VideoPlayerHolder.previewsAndDurations.getOrPut(uri) { getBitmapFromVideo(uri, withAlertOnException = false) }
       withContext(Dispatchers.Main) {
         preview.value = previewAndDuration.preview ?: defaultPreview
         duration.value = (previewAndDuration.duration ?: 0)
