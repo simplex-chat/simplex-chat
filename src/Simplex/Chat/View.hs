@@ -153,6 +153,8 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
   CRConnectionPlan u connectionPlan -> ttyUser u $ viewConnectionPlan connectionPlan
   CRSentConfirmation u -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
+  CRNewContact u c -> ttyUser u [ttyContact' c <> ": contact is created"] -- TODO preset contact: "to connect use ..." / "connecting..."
+  CRSentInvitationToContact u c -> ttyUser u [ttyContact' c <> ": invitation sent"] -- TODO incognito, same as viewSentInvitation
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
   CRContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
   CRChatCleared u chatInfo -> ttyUser u $ viewChatCleared chatInfo
@@ -1731,6 +1733,7 @@ viewChatError logLevel = \case
     CEInvalidFileDescription e -> ["invalid file description: " <> plain e]
     CEConnectionIncognitoChangeProhibited -> ["incognito mode change prohibited"]
     CEPeerChatVRangeIncompatible -> ["peer chat protocol version range incompatible"]
+    CEPresetContactAlreadyExists _ presetContact -> ["preset contact already exists"] -- TODO preset contact name
     CEInternalError e -> ["internal chat error: " <> plain e]
     CEException e -> ["exception: " <> plain e]
   -- e -> ["chat error: " <> sShow e]

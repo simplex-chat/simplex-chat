@@ -336,7 +336,12 @@ data ChatCommand
   | APIConnectPlan UserId AConnectionRequestUri
   | APIConnect UserId IncognitoEnabled (Maybe AConnectionRequestUri)
   | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
+  | APIAddPresetContact UserId PresetContact
+  | APIConnectPresetContact UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
+  | ConnectDiscovery IncognitoEnabled -- not used in UI
+  | NoteToSelf (Maybe Text)
+  | WhatsNew
   | DeleteContact ContactName
   | ClearContact ContactName
   | APIListContacts UserId
@@ -489,6 +494,8 @@ data ChatResponse
   | CRConnectionPlan {user :: User, connectionPlan :: ConnectionPlan}
   | CRSentConfirmation {user :: User}
   | CRSentInvitation {user :: User, customUserProfile :: Maybe Profile}
+  | CRNewContact {user :: User, contact :: Contact}
+  | CRSentInvitationToContact {user :: User, contact :: Contact}
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CRGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | CRContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact, updatedContact :: Contact}
@@ -1008,6 +1015,7 @@ data ChatErrorType
   | CEInvalidFileDescription {message :: String}
   | CEConnectionIncognitoChangeProhibited
   | CEPeerChatVRangeIncompatible
+  | CEPresetContactAlreadyExists {contactId :: Int64, presetContact :: PresetContact}
   | CEInternalError {message :: String}
   | CEException {message :: String}
   deriving (Show, Exception, Generic)

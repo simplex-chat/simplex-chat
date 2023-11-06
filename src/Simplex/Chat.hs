@@ -578,6 +578,11 @@ processChatCommand = \case
   APISendMessage (ChatRef cType chatId) live itemTTL (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user@User {userId} -> withChatLock "sendMessage" $ case cType of
     CTDirect -> do
       ct@Contact {contactId, contactUsed} <- withStore $ \db -> getContact db user chatId
+      -- TODO preset contact
+      -- if preset contact is PCNoteToSelf:
+      -- - createNewNoteToSelfChatItem (chat item without message)
+      -- - create file without uploading/sending
+      -- if preset contact is PCWhatsNew, throw prohibited
       assertDirectAllowed user MDSnd ct XMsgNew_
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
       if isVoice mc && not (featureAllowed SCFVoice forUser ct)
@@ -765,6 +770,9 @@ processChatCommand = \case
   APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> withChatLock "updateChatItem" $ case cType of
     CTDirect -> do
       ct@Contact {contactId} <- withStore $ \db -> getContact db user chatId
+      -- TODO preset contact
+      -- if preset contact is PCNoteToSelf, update without sending
+      -- if preset contact is PCWhatsNew, throw prohibited
       assertDirectAllowed user MDSnd ct XMsgUpdate_
       cci <- withStore $ \db -> getDirectCIWithReactions db user ct itemId
       case cci of
@@ -812,6 +820,8 @@ processChatCommand = \case
   APIDeleteChatItem (ChatRef cType chatId) itemId mode -> withUser $ \user -> withChatLock "deleteChatItem" $ case cType of
     CTDirect -> do
       (ct, CChatItem msgDir ci@ChatItem {meta = CIMeta {itemSharedMsgId, editable}}) <- withStore $ \db -> (,) <$> getContact db user chatId <*> getDirectChatItem db user chatId itemId
+      -- TODO preset contact
+      -- if preset contact is PCNoteToSelf or PCWhatsNew, delete locally without sending (no choice in UI)
       case (mode, msgDir, itemSharedMsgId, editable) of
         (CIDMInternal, _, _, _) -> deleteDirectCI user ct ci True False
         (CIDMBroadcast, SMDSnd, Just itemSharedMId, True) -> do
@@ -847,6 +857,9 @@ processChatCommand = \case
     CTDirect ->
       withStore (\db -> (,) <$> getContact db user chatId <*> getDirectChatItem db user chatId itemId) >>= \case
         (ct, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
+          -- TODO preset contact
+          -- if preset contact is PCNoteToSelf or PCWhatsNew, create reaction without sending
+          -- - or prohibit and disable in UI?
           unless (featureAllowed SCFReactions forUser ct) $
             throwChatError $ CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
           unless (ciReactionAllowed ci) $
@@ -1013,6 +1026,8 @@ processChatCommand = \case
   APISendCallInvitation contactId callType -> withUser $ \user -> do
     -- party initiating call
     ct <- withStore $ \db -> getContact db user contactId
+    -- TODO preset contact
+    -- if preset contact is PCNoteToSelf or PCWhatsNew, throw prohibited
     assertDirectAllowed user MDSnd ct XCallInv_
     if featureAllowed SCFCalls forUser ct
       then do
@@ -1393,11 +1408,81 @@ processChatCommand = \case
     unless (connectionPlanProceed plan) $ throwChatError (CEConnectionPlan plan)
     processChatCommand $ APIConnect userId incognito aCReqUri
   Connect _ Nothing -> throwChatError CEInvalidConnReq
+  APIAddPresetContact userId presetContact -> withUserId userId $ \user -> case presetContact of
+    PCSimpleX -> do
+      -- check and throw CEPresetContactAlreadyExists error if already exists
+      -- - index on preset_contact or just scan
+      -- create preset contact, use simplexContactProfile
+      -- CRNewContact
+      -- send contact request to adminContactReq (use profile contactLink)?
+      -- - parameterize api to decide?
+      ok_
+    PCDiscovery -> do
+      -- throw not supported
+      -- later: same as PCSimpleX
+      ok_
+    PCNoteToSelf -> do
+      -- check and throw error if preset contact already exists
+      -- - index on preset_contact or just scan
+      -- create preset contact, use noteToSelfContactProfile
+      -- CRNewContact
+      ok_
+    PCWhatsNew ->
+      -- throw not supported
+      -- should restore all previous items?
+      -- should be re-created on each release if doesn't exist?
+      ok_
+  APIConnectPresetContact userId incognito contactId -> withUserId userId $ \user -> do
+    Contact {presetContact} <- withStore $ \db -> getContact db user contactId
+    case presetContact of
+      Just PCSimpleX ->
+        -- [incognito] generate profile to send
+        -- send contact request to adminContactReq (use profile contactLink)
+        -- CRSentInvitationToContact
+        ok_
+      Just PCDiscovery ->
+        -- throw not supported
+        ok_
+      Just PCNoteToSelf ->
+        -- throw prohibited
+        ok_
+      Just PCWhatsNew ->
+        -- throw prohibited
+        ok_
+      Nothing ->
+        -- throw prohibited
+        ok_
   ConnectSimplex incognito -> withUser $ \user@User {userId} -> do
+    -- TODO preset contact
+    -- reuse APIAddPresetContact
+    -- if api throws CEPresetContactAlreadyExists, get contact, if connection doesn't exist proceed
+    -- reuse APIConnectPresetContact
     let cReqUri = ACR SCMContact adminContactReq
     plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILPOk)
     unless (connectionPlanProceed plan) $ throwChatError (CEConnectionPlan plan)
     processChatCommand $ APIConnect userId incognito (Just cReqUri)
+  ConnectDiscovery incognito -> withUser $ \user@User {userId} -> do
+    -- throw not supported
+    -- later: same as PCSimpleX
+    ok_
+  NoteToSelf msg_ -> withUser $ \user@User {userId} -> do
+    -- TODO preset contact
+    -- get preset contact CRNoteToSelf
+    -- if exists:
+    --   if msg_ is Just:
+    --     reuse APISendMessage
+    --   else:
+    --     reuse LastMessages
+    -- else:
+    --   - reuse APIAddPresetContact
+    --   - if msg_ is Just, reuse APISendMessage
+    ok_
+  WhatsNew -> withUser $ \user@User {userId} -> do
+    -- throw not supported
+    -- later:
+    -- if doesn't exist, reuse APIAddPresetContact
+    -- LastMessages
+    ok_
   DeleteContact cName -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId) True
   ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CTDirect
   APIListContacts userId -> withUserId userId $ \user ->
@@ -1544,6 +1629,9 @@ processChatCommand = \case
   APIAddMember groupId contactId memRole -> withUser $ \user -> withChatLock "addMember" $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withStore $ \db -> (,) <$> getGroup db user groupId <*> getContact db user contactId
+    -- TODO preset contact
+    -- if preset contact is PCNoteToSelf or PCWhatsNew, throw prohibited
+    -- - filter out in UI
     assertDirectAllowed user MDSnd contact XGrpInv_
     let Group gInfo members = group
         Contact {localDisplayName = cName} = contact
@@ -1833,6 +1921,9 @@ processChatCommand = \case
             withStore (\db -> getChatRefByFileId db user fileId) >>= \case
               ChatRef CTDirect contactId -> do
                 contact <- withStore $ \db -> getContact db user contactId
+                -- TODO preset contact
+                -- if preset contact is PCNoteToSelf or PCWhatsNew, throw prohibited
+                -- - disable in UI
                 void . sendDirectContactMessage contact $ XFileCancel sharedMsgId
               ChatRef CTGroup groupId -> do
                 Group gInfo ms <- withStore $ \db -> getGroup db user groupId
@@ -5880,7 +5971,13 @@ chatCommandP =
       "/_set_file_to_receive " *> (SetFileToReceive <$> A.decimal <*> optional (" encrypt=" *> onOffP)),
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
+      "/_add preset contact " *> (APIAddPresetContact <$> A.decimal <* A.space <*> presetContact),
+      "/_connect preset contact " *> (APIConnectPresetContact <$> A.decimal <*> incognitoOnOffP <* A.space <*> A.decimal),
       "/simplex" *> (ConnectSimplex <$> incognitoP),
+      "/discovery" *> (ConnectDiscovery <$> incognitoP),
+      "/note" $> NoteToSelf Nothing,
+      "/note " *> (NoteToSelf . Just <$> msgTextP),
+      "/whats_new" $> WhatsNew,
       "/_address " *> (APICreateMyAddress <$> A.decimal),
       ("/address" <|> "/ad") $> CreateMyAddress,
       "/_delete_address " *> (APIDeleteMyAddress <$> A.decimal),
@@ -6036,10 +6133,35 @@ chatCommandP =
     srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
     toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
     char_ = optional . A.char
+    presetContact =
+      A.choice
+        [ "simplex" $> PCSimpleX,
+          "discovery" $> PCDiscovery,
+          "note_to_self" $> PCNoteToSelf,
+          "whats_new" $> PCWhatsNew
+        ]
 
 adminContactReq :: ConnReqContact
 adminContactReq =
   either error id $ strDecode "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
+
+simplexContactProfile :: Profile
+simplexContactProfile = Profile {
+  displayName = "SimpleX Chat team",
+  fullName = "",
+  image = Nothing, -- add image
+  contactLink = Just adminContactReq,
+  preferences = Nothing
+}
+
+noteToSelfContactProfile :: Profile
+noteToSelfContactProfile = Profile {
+  displayName = "Note to Self", -- replace and localize in UI?
+  fullName = "",
+  image = Nothing, -- no image, instead use icon? (bookmark?)
+  contactLink = Nothing,
+  preferences = Nothing
+}
 
 timeItToView :: ChatMonad' m => String -> m a -> m a
 timeItToView s action = do

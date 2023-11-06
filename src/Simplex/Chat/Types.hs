@@ -181,7 +181,8 @@ data Contact = Contact
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
     contactGroupMemberId :: Maybe GroupMemberId,
-    contactGrpInvSent :: Bool
+    contactGrpInvSent :: Bool,
+    presetContact :: Maybe PresetContact
   }
   deriving (Eq, Show, Generic)
 
@@ -245,6 +246,34 @@ instance TextEncoding ContactStatus where
   textEncode = \case
     CSActive -> "active"
     CSDeleted -> "deleted"
+
+data PresetContact
+  = PCSimpleX
+  | PCDiscovery
+  | PCNoteToSelf -- PCSavedMessages?
+  | PCWhatsNew -- PCSimpleXUpdates? use PCSimpleX?
+  deriving (Eq, Show)
+
+instance FromField PresetContact where fromField = fromTextField_ textDecode
+
+instance ToField PresetContact where toField = toField . textEncode
+
+instance ToJSON PresetContact where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
+instance TextEncoding PresetContact where
+  textDecode = \case
+    "simplex" -> Just PCSimpleX
+    "discovery" -> Just PCDiscovery
+    "note_to_self" -> Just PCNoteToSelf
+    "whats_new" -> Just PCWhatsNew
+    _ -> Nothing
+  textEncode = \case
+    PCSimpleX -> "simplex"
+    PCDiscovery -> "discovery"
+    PCNoteToSelf -> "note_to_self"
+    PCWhatsNew -> "whats_new"
 
 data ContactRef = ContactRef
   { contactId :: ContactId,

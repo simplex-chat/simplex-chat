@@ -200,7 +200,24 @@ createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p
   let profile = toLocalProfile profileId p localAlias
       userPreferences = emptyChatPrefs
       mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
-  pure $ Contact {contactId, localDisplayName, profile, activeConn = Just conn, viaGroup = Nothing, contactUsed = False, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt, updatedAt = createdAt, chatTs = Just createdAt, contactGroupMemberId = Nothing, contactGrpInvSent = False}
+  pure $ Contact {
+    contactId,
+    localDisplayName,
+    profile,
+    activeConn = Just conn,
+    viaGroup = Nothing,
+    contactUsed = False,
+    contactStatus = CSActive,
+    chatSettings = defaultChatSettings,
+    userPreferences,
+    mergedPreferences,
+    createdAt,
+    updatedAt = createdAt,
+    chatTs = Just createdAt,
+    contactGroupMemberId = Nothing,
+    contactGrpInvSent = False,
+    presetContact = Nothing
+  }
 
 deleteContactConnectionsAndFiles :: DB.Connection -> UserId -> Contact -> IO ()
 deleteContactConnectionsAndFiles db userId Contact {contactId} = do
@@ -649,7 +666,24 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
   contactId <- insertedRowId db
   conn <- createConnection_ db userId ConnContact (Just contactId) agentConnId cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
-  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn = Just conn, viaGroup = Nothing, contactUsed = False, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt, chatTs = Just createdAt, contactGroupMemberId = Nothing, contactGrpInvSent = False}
+  pure $ Contact {
+    contactId,
+    localDisplayName,
+    profile = toLocalProfile profileId profile "",
+    activeConn = Just conn,
+    viaGroup = Nothing,
+    contactUsed = False,
+    contactStatus = CSActive,
+    chatSettings = defaultChatSettings,
+    userPreferences,
+    mergedPreferences,
+    createdAt = createdAt,
+    updatedAt = createdAt,
+    chatTs = Just createdAt,
+    contactGroupMemberId = Nothing,
+    contactGrpInvSent = False,
+    presetContact = Nothing
+  }
 
 getContactIdByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Int64
 getContactIdByName db User {userId} cName =

@@ -261,7 +261,24 @@ toContact user (((contactId, profileId, localDisplayName, viaGroup, displayName,
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
       incognito = maybe False connIncognito activeConn
       mergedPreferences = contactUserPreferences user userPreferences preferences incognito
-   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent}
+   in Contact {
+    contactId,
+    localDisplayName,
+    profile,
+    activeConn,
+    viaGroup,
+    contactUsed,
+    contactStatus,
+    chatSettings,
+    userPreferences,
+    mergedPreferences,
+    createdAt,
+    updatedAt,
+    chatTs,
+    contactGroupMemberId,
+    contactGrpInvSent,
+    presetContact = Nothing -- TODO preset contact: read
+  }
 
 getProfileById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO LocalProfile
 getProfileById db userId profileId =

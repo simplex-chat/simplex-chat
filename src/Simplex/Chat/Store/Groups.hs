@@ -1727,7 +1727,24 @@ createMemberContact
     connId <- insertedRowId db
     let ctConn = Connection {connId, agentConnId = AgentConnId acId, peerChatVRange, connType = ConnContact, contactConnInitiated = True, entityId = Just contactId, viaContact = Nothing, viaUserContactLink = Nothing, viaGroupLink = False, groupLinkId = Nothing, customUserProfileId, connLevel, connStatus = ConnNew, localAlias = "", createdAt = currentTs, connectionCode = Nothing, authErrCounter = 0}
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False}
+    pure Contact {
+      contactId,
+      localDisplayName,
+      profile = memberProfile,
+      activeConn = Just ctConn,
+      viaGroup = Nothing,
+      contactUsed = True,
+      contactStatus = CSActive,
+      chatSettings = defaultChatSettings,
+      userPreferences,
+      mergedPreferences,
+      createdAt = currentTs,
+      updatedAt = currentTs,
+      chatTs = Just currentTs,
+      contactGroupMemberId = Just groupMemberId,
+      contactGrpInvSent = False,
+      presetContact = Nothing
+    }
 
 getMemberContact :: DB.Connection -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db user contactId = do
@@ -1764,7 +1781,24 @@ createMemberContactInvited
     contactId <- createContactUpdateMember currentTs userPreferences
     ctConn <- createMemberContactConn_ db user connIds gInfo mConn contactId subMode
     let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-        mCt' = Contact {contactId, localDisplayName = memberLDN, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False}
+        mCt' = Contact {
+          contactId,
+          localDisplayName = memberLDN,
+          profile = memberProfile,
+          activeConn = Just ctConn,
+          viaGroup = Nothing,
+          contactUsed = True,
+          contactStatus = CSActive,
+          chatSettings = defaultChatSettings,
+          userPreferences,
+          mergedPreferences,
+          createdAt = currentTs,
+          updatedAt = currentTs,
+          chatTs = Just currentTs,
+          contactGroupMemberId = Nothing,
+          contactGrpInvSent = False,
+          presetContact = Nothing
+        }
         m' = m {memberContactId = Just contactId}
     pure (mCt', m')
     where
