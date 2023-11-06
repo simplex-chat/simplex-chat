@@ -44,9 +44,9 @@ data RHPendingSession = RHPendingSession
 
 data RemoteHostSession
   = RHSessionStarting
-  | RHSessionConnecting RHPendingSession
-  | RHSessionConfirmed RHPendingSession
-  | RHSessionConnected RemoteHostClient
+  | RHSessionConnecting {rhPendingSession :: RHPendingSession}
+  | RHSessionConfirmed {rhPendingSession :: RHPendingSession}
+  | RHSessionConnected {rhClient :: RemoteHostClient, pollAction :: Async ()}
 
 data RemoteProtocolError
   = -- | size prefix is malformed

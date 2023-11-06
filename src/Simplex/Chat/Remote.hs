@@ -78,7 +78,7 @@ import Simplex.Messaging.Agent
 
 getRemoteHostClient :: ChatMonad m => RemoteHostId -> m RemoteHostClient
 getRemoteHostClient rhId = withRemoteHostSession rhKey $ \case
-  s@(RHSessionConnected rhClient) -> Right (rhClient, s)
+  s@(RHSessionConnected rhClient _) -> Right (rhClient, s)
   _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
   where
     rhKey = RHId rhId
@@ -96,12 +96,21 @@ withRemoteHostSession_ rhKey state = do
       Right (a, s') -> Right a <$ maybe (TM.delete rhKey) (TM.insert rhKey) s' sessions
   liftEither r
 
+setNewRemoteHostId :: ChatMonad m => RemoteHostId -> m ()
+setNewRemoteHostId rhId = do
+  sessions <- asks remoteHostSessions
+  r <- atomically $ do
+    TM.lookupDelete RHNew sessions >>= \case
+      Nothing -> pure $ Left $ ChatErrorRemoteHost RHNew RHEMissing
+      Just s -> Right () <$ TM.insert (RHId rhId) s sessions
+  liftEither r
+
 startRemoteHost' :: ChatMonad m => Maybe (RemoteHostId, Bool) -> m (Maybe RemoteHostInfo, RCSignedInvitation)
 startRemoteHost' rh_ = do
   (rhKey, multicast, remoteHost_, pairing) <- case rh_ of
     Just (rhId, multicast) -> pure (RHId rhId, multicast, undefined, undefined) -- get from the database, start multicast if requested
     Nothing -> (RHNew,False,Nothing,) <$> rcNewHostPairing
-  withRemoteHostSession_ rhKey $ maybe (Right ((), Just RHSessionStarting)) (\_ -> Left $ ChatErrorRemoteHost rhKey $ RHEBusy)
+  withRemoteHostSession_ rhKey $ maybe (Right ((), Just RHSessionStarting)) (\_ -> Left $ ChatErrorRemoteHost rhKey RHEBusy)
   let ourApp = J.String "hi"
   -- TMVar (RCHostSession, RCHelloBody, RCHostPairing)
   (invitation, rchClient, vars) <- withAgent $ \a -> rcConnectHost a pairing ourApp multicast
@@ -109,7 +118,7 @@ startRemoteHost' rh_ = do
   let rhs = RHPendingSession {rhKey, rchClient, rhsWaitSession, remoteHost_}
   withRemoteHostSession rhKey $ \case
     RHSessionStarting -> Right ((), RHSessionConnecting rhs)
-    _ -> Left $ ChatErrorRemoteHost rhKey $ RHEBadState
+    _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
   pure (remoteHost_, invitation)
   where
     -- TODO handle error on waitForSession
@@ -117,27 +126,37 @@ startRemoteHost' rh_ = do
       (sessId, vars') <- atomically $ takeTMVar vars
       withRemoteHostSession rhKey $ \case
         RHSessionConnecting rhs' -> Right ((), RHSessionConfirmed rhs') -- TODO check it's the same session?
-        _ -> Left $ ChatErrorRemoteHost rhKey $ RHEBadState -- TODO kill client on error
+        _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState -- TODO kill client on error
       toView $ CRRemoteHostSessionCode {remoteHost_, sessionCode = verificationCode sessId}
       (RCHostSession {tls, sessionKeys}, rhHello, rhPairing) <- atomically $ takeTMVar vars'
       -- update remoteHost with updated pairing
       let storePath = "/tmp/TODO-RH-storePath"
       let displayName = "TODO-displayName"
       let disconnected = logDebug "HTTP2 client disconnected"
+      -- store remoteHost in DB
+      let rhId = 1 -- database ID
       httpClient <- liftEitherError (httpError rhKey) $ attachRevHTTP2Client disconnected tls
       rhClient <- liftRC $ createRemoteHostClient httpClient sessionKeys storePath displayName
+      pollAction <- async $ pollEvents rhId rhClient
       remoteHost <- withRemoteHostSession rhKey $ \case
         RHSessionConfirmed rhs' ->
           let rhi = RemoteHostInfo
-                { remoteHostId = 1,
+                { remoteHostId = rhId,
                   sessionActive = True,
                   storePath,
                   displayName
                 }
-           in Right (rhi, RHSessionConnected rhClient)
+           in Right (rhi, RHSessionConnected {rhClient, pollAction})
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState -- TODO kill client on error
-      -- store remoteHost in DB
+      -- TODO this is required for commands to be passed to remote host
+      setNewRemoteHostId rhId
+      chatWriteVar currentRemoteHost $ Just rhId
       toView $ CRRemoteHostConnected remoteHost
+    pollEvents rhId rhClient = do
+      oq <- asks outputQ
+      forever $ do
+        r_ <- liftRH rhId $ remoteRecv rhClient 10000000
+        forM r_ $ \r -> atomically $ writeTBQueue oq (Nothing, Just rhId, r)
     httpError rhKey = ChatErrorRemoteHost rhKey . RHEProtocolError . RPEHTTP2 . tshow
 
 -- startRemoteHost :: ChatMonad m => RemoteHostId -> m ()
@@ -228,7 +247,9 @@ cancelRemoteHost = \case
   RHSessionStarting -> pure ()
   RHSessionConnecting rhs -> cancelPendingSession rhs
   RHSessionConfirmed rhs -> cancelPendingSession rhs
-  RHSessionConnected RemoteHostClient {httpClient} -> closeHTTP2Client httpClient
+  RHSessionConnected {rhClient = RemoteHostClient {httpClient}, pollAction} -> do
+    uninterruptibleCancel pollAction
+    closeHTTP2Client httpClient
   where
     cancelPendingSession RHPendingSession {rchClient, rhsWaitSession} = do
       cancelHostClient rchClient

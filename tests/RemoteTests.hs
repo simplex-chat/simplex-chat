@@ -36,12 +36,12 @@ import UnliftIO.Concurrent
 import UnliftIO.Directory
 
 remoteTests :: SpecWith FilePath
-remoteTests = fdescribe "Remote" $ do
+remoteTests = describe "Remote" $ do
   -- it "generates usable credentials" genCredentialsTest
   -- it "OOB encoding, decoding, and signatures are correct" oobCodecTest
   -- it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
   it "RemoteControl TLS Hello works" rcTLSTest
-  fit "performs protocol handshake" remoteHandshakeTest'
+  it "performs protocol handshake" remoteHandshakeTest'
   xit "performs protocol handshake" remoteHandshakeTest
   xit "performs protocol handshake (again)" remoteHandshakeTest -- leaking servers regression check
   xit "sends messages" remoteMessageTest
@@ -210,7 +210,7 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
 
 remoteMessageTest :: HasCallStack => FilePath -> IO ()
 remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
-  startRemote mobile desktop
+  startRemote' mobile desktop
   contactBob desktop bob
 
   logNote "sending messages"
