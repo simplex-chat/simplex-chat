@@ -454,8 +454,9 @@ startRemote' mobile desktop = do
   mobile <## "Compare session code with controller and use:"
   mobile <## ("/verify remote ctrl " <> sessId)
   mobile ##> ("/verify remote ctrl " <> sessId)
-  desktop <## ""
-  mobile <## ""
+  mobile <## "ok"
+  desktop <## "remote host 1 connected"
+  mobile <## "remote controller 1 session started with from app"
 
 startRemote :: TestCC -> TestCC -> IO ()
 startRemote mobile desktop = do

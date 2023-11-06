@@ -19,7 +19,7 @@ import qualified Data.Aeson.KeyMap as JM
 import Data.Aeson.TH (deriveJSON)
 import qualified Data.Aeson.Types as JT
 import Data.ByteString (ByteString)
-import Data.ByteString.Builder (Builder, word32BE, lazyByteString)
+import Data.ByteString.Builder (Builder, lazyByteString, word32BE)
 import qualified Data.ByteString.Lazy as LB
 import Data.String (fromString)
 import Data.Text (Text)
@@ -39,7 +39,8 @@ import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), HTTP2BodyChunk, getBod
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2Response (..), closeHTTP2Client, sendRequestDirect)
 import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
 import Simplex.Messaging.Util (liftEitherError, liftEitherWith, tshow)
-import System.FilePath ((</>), takeFileName)
+import Simplex.RemoteControl.Client (HostSessKeys)
+import System.FilePath (takeFileName, (</>))
 import UnliftIO
 
 data RemoteCommand
@@ -66,14 +67,21 @@ $(deriveJSON (taggedObjectJSON $ dropPrefix "RR") ''RemoteResponse)
 
 -- * Client side / desktop
 
-createRemoteHostClient :: HTTP2Client -> dh -> Text -> ExceptT RemoteProtocolError IO RemoteHostClient
-createRemoteHostClient httpClient todo'dhKey desktopName = do
+createRemoteHostClient :: HTTP2Client -> HostSessKeys -> FilePath -> Text -> ExceptT RemoteProtocolError IO RemoteHostClient
+createRemoteHostClient httpClient sessionKeys storePath desktopName = do
   logDebug "Sending initial hello"
   sendRemoteCommand' httpClient localEncoding Nothing RCHello {deviceName = desktopName} >>= \case
     RRHello {encoding, deviceName = mobileName, encryptFiles} -> do
       logDebug "Got initial hello"
       when (encoding == PEKotlin && localEncoding == PESwift) $ throwError RPEIncompatibleEncoding
-      pure RemoteHostClient {hostEncoding = encoding, hostDeviceName = mobileName, httpClient, encryptHostFiles = encryptFiles}
+      pure RemoteHostClient
+        { hostEncoding = encoding,
+          hostDeviceName = mobileName,
+          httpClient,
+          encryptHostFiles = encryptFiles,
+          sessionKeys,
+          storePath
+        }
     r -> badResponse r
 
 closeRemoteHostClient :: MonadIO m => RemoteHostClient -> m ()

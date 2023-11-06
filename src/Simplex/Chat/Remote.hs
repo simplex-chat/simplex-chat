@@ -121,22 +121,21 @@ startRemoteHost' rh_ = do
       toView $ CRRemoteHostSessionCode {remoteHost_, sessionCode = verificationCode sessId}
       (RCHostSession {tls, sessionKeys}, rhHello, rhPairing) <- atomically $ takeTMVar vars'
       -- update remoteHost with updated pairing
-      -- create storePath
+      let storePath = "/tmp/TODO-RH-storePath"
+      let displayName = "TODO-displayName"
       let disconnected = logDebug "HTTP2 client disconnected"
       httpClient <- liftEitherError (httpError rhKey) $ attachRevHTTP2Client disconnected tls
-      let rhClient = RemoteHostClient
-            { httpClient,
-              sessionKeys,
-              hostEncoding = PEKotlin,
-              hostDeviceName = "fromAppInfo",
-              storePath = "TODO_RandomOrStored",
-              encryptHostFiles = False
-            }
+      rhClient <- liftRC $ createRemoteHostClient httpClient sessionKeys storePath displayName
       remoteHost <- withRemoteHostSession rhKey $ \case
         RHSessionConfirmed rhs' ->
-          let rhi = RemoteHostInfo {sessionActive = True} 
+          let rhi = RemoteHostInfo
+                { remoteHostId = 1,
+                  sessionActive = True,
+                  storePath,
+                  displayName
+                }
            in Right (rhi, RHSessionConnected rhClient)
-        _ -> Left $ ChatErrorRemoteHost rhKey $ RHEBadState -- TODO kill client on error
+        _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState -- TODO kill client on error
       -- store remoteHost in DB
       toView $ CRRemoteHostConnected remoteHost
     httpError rhKey = ChatErrorRemoteHost rhKey . RHEProtocolError . RPEHTTP2 . tshow
@@ -553,15 +552,13 @@ confirmRemoteCtrl _rcId = do
 -- Take a look at emoji of tlsunique
 verifyRemoteCtrlSession :: ChatMonad m => (ByteString -> m ChatResponse) -> Text -> m ()
 verifyRemoteCtrlSession execChatCommand sessCode' = do
-  (rcsClient, RCCtrlSession {tls, sessionKeys}, sessionCode, _rcsPairing) <- withRemoteCtrlSession $ \case
+  (client, rccs@RCCtrlSession {tls, sessionKeys}, sessionCode, _rcsPairing) <- withRemoteCtrlSession $ \case
     RCSessionPendingConfirmation {rcsClient, rcsSession, sessionCode, rcsPairing} ->
       Right ((rcsClient, rcsSession, sessionCode, rcsPairing), RCSessionConfirmed {rcsClient, rcsSession})
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   let verified = sameVerificationCode sessCode' sessionCode
-  liftIO $ confirmCtrlSession rcsClient verified
+  liftIO $ confirmCtrlSession client verified
   -- TODO: Store new rcsPairing
-  remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
-  http2Server <- async $ attachHTTP2Server tls $ handleRemoteCommand execChatCommand sessionKeys remoteOutputQ
   let remoteCtrl = RemoteCtrlInfo -- TODO use Pairing or something
         { remoteCtrlId = 1,
           displayName = "from app",
@@ -569,8 +566,10 @@ verifyRemoteCtrlSession execChatCommand sessCode' = do
           accepted = Just True,
           sessionActive = True
         }
+  remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
+  http2Server <- async $ attachHTTP2Server tls $ handleRemoteCommand execChatCommand sessionKeys remoteOutputQ
   withRemoteCtrlSession $ \case
-    RCSessionConfirmed {} -> Right ((), RCSessionConnected {rcsClient, rcsSession, http2Server, remoteOutputQ})
+    RCSessionConfirmed {} -> Right ((), RCSessionConnected {rcsClient = client, rcsSession = rccs, http2Server, remoteOutputQ})
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   toView CRRemoteCtrlConnected {remoteCtrl}
 
@@ -587,7 +586,9 @@ cancelRemoteCtrl = \case
     uninterruptibleCancel rcsWaitSession
   RCSessionPendingConfirmation {rcsClient} -> cancelCtrlClient rcsClient
   RCSessionConfirmed {rcsClient} -> cancelCtrlClient rcsClient
-  RCSessionConnected {rcsClient} -> cancelCtrlClient rcsClient
+  RCSessionConnected {rcsClient, http2Server} -> do
+    cancelCtrlClient rcsClient
+    uninterruptibleCancel http2Server
 
 deleteRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m ()
 deleteRemoteCtrl rcId = do
