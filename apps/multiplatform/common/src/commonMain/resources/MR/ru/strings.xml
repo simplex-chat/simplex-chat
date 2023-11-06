@@ -436,7 +436,6 @@
     <string name="profile_is_only_shared_with_your_contacts">Профиль отправляется только Вашим контактам.</string>
     <string name="display_name_cannot_contain_whitespace">Имя профиля не может содержать пробелы.</string>
     <string name="display_name">Имя профиля</string>
-    <string name="full_name_optional__prompt">Полное имя (не обязательно)</string>
     <string name="create_profile_button">Создать</string>
     <string name="about_simplex">О SimpleX</string>
     <!-- markdown demo - MarkdownHelpView.kt -->
@@ -1190,7 +1189,6 @@
     <string name="only_you_can_make_calls">Только Вы можете совершать звонки.</string>
     <string name="only_your_contact_can_make_calls">Только Ваш контакт может совершать звонки.</string>
     <string name="prohibit_calls">Запретить аудио/видео звонки.</string>
-    <string name="no_spaces">Без пробелов!</string>
     <string name="v5_0_large_files_support_descr">Быстрые и не нужно ждать, когда отправитель онлайн!</string>
     <string name="v5_0_polish_interface">Польский интерфейс</string>
     <string name="v5_0_app_passcode_descr">Установите код вместо системной аутентификации.</string>

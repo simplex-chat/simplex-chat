@@ -315,7 +315,6 @@
     <string name="icon_descr_email">Email</string>
     <string name="edit_image">Bewerk afbeelding</string>
     <string name="exit_without_saving">Afsluiten zonder opslaan</string>
-    <string name="full_name_optional__prompt">Volledige naam (optioneel)</string>
     <string name="encrypted_video_call">e2e versleuteld video gesprek</string>
     <string name="allow_accepting_calls_from_lock_screen">Schakel oproepen vanaf het vergrendelscherm in via Instellingen.</string>
     <string name="icon_descr_hang_up">Ophangen</string>
@@ -1093,7 +1092,6 @@
     <string name="alert_text_msg_bad_id">De ID van het volgende bericht is onjuist (minder of gelijk aan het vorige).
 \nHet kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d berichten konden niet worden ontsleuteld.</string>
-    <string name="no_spaces">Geen spaties!</string>
     <string name="stop_rcv_file__message">Het ontvangen van het bestand wordt gestopt.</string>
     <string name="revoke_file__confirm">Intrekken</string>
     <string name="revoke_file__action">Bestand intrekken</string>

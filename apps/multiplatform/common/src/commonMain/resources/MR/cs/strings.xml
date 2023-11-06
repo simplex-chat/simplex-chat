@@ -660,7 +660,6 @@
     <string name="we_do_not_store_contacts_or_messages_on_servers">Na serverech neukládáme žádné vaše kontakty ani zprávy (po doručení).</string>
     <string name="your_profile_is_stored_on_your_device">Váš profil, kontakty a doručené zprávy jsou uloženy ve vašem zařízení.</string>
     <string name="display_name">Zobrazované jméno</string>
-    <string name="full_name_optional__prompt">Celé Jméno (volitelné)</string>
     <string name="create_profile_button">Vytvořit</string>
     <string name="how_to_use_markdown">Jak používat markdown</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">K formátování zpráv můžete použít markdown:</string>
@@ -1094,7 +1093,6 @@
     <string name="alert_text_decryption_error_too_many_skipped">%1$d zprývy přeskočeny.</string>
     <string name="alert_text_fragment_please_report_to_developers">Nahlaste to prosím vývojářům.</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Může se to stát, když vy nebo vaše připojení použijete starou zálohu databáze.</string>
-    <string name="no_spaces">Žádné mezery!</string>
     <string name="revoke_file__message">Soubor bude smazán ze serverů.</string>
     <string name="stop_rcv_file__message">Příjem souboru bude zastaven.</string>
     <string name="allow_calls_only_if">Povolte hovory, pouze pokud je váš kontakt povolí.</string>

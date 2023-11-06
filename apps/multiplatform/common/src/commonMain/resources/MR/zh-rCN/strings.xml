@@ -359,7 +359,6 @@
     <string name="display_name__field">显示名：</string>
     <string name="full_name__field">全名：</string>
     <string name="display_name">显示名</string>
-    <string name="full_name_optional__prompt">全名（可选）</string>
     <string name="callstate_ended">已结束</string>
     <string name="group_member_status_group_deleted">群组已删除</string>
     <string name="delete_group_for_all_members_cannot_undo_warning">将为所有成员删除群组——此操作无法撤消！</string>
@@ -1095,7 +1094,6 @@
     <string name="alert_text_msg_bad_hash">上一条消息的散列不同。</string>
     <string name="alert_text_msg_bad_id">下一条消息的 ID 不正确（小于或等于上一条）。
 \n它可能是由于某些错误或连接被破坏才发生。</string>
-    <string name="no_spaces">没有空格！</string>
     <string name="stop_file__action">停止文件</string>
     <string name="stop_snd_file__title">停止发送文件？</string>
     <string name="stop_snd_file__message">即将停止发送文件。</string>

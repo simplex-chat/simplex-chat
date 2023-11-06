@@ -351,7 +351,6 @@
     <string name="edit_image">Modifica immagine</string>
     <string name="exit_without_saving">Esci senza salvare</string>
     <string name="full_name__field">Nome completo:</string>
-    <string name="full_name_optional__prompt">Nome completo (facoltativo)</string>
     <string name="how_to_use_markdown">Come usare il markdown</string>
     <string name="icon_descr_audio_call">chiamata audio</string>
     <string name="audio_call_no_encryption">chiamata audio (non crittografata e2e)</string>
@@ -1105,7 +1104,6 @@
     <string name="revoke_file__title">Revocare il file\?</string>
     <string name="stop_file__confirm">Ferma</string>
     <string name="stop_rcv_file__title">Fermare la ricezione del file\?</string>
-    <string name="no_spaces">Niente spazi!</string>
     <string name="allow_calls_only_if">Consenti le chiamate solo se il tuo contatto le consente.</string>
     <string name="calls_prohibited_with_this_contact">Le chiamate audio/video sono vietate.</string>
     <string name="both_you_and_your_contact_can_make_calls">Sia tu che il tuo contatto potete effettuare chiamate.</string>

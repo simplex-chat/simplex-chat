@@ -538,7 +538,6 @@
     <string name="full_name__field">フルネーム：</string>
     <string name="create_profile_button">作成</string>
     <string name="display_name">表示の名前</string>
-    <string name="full_name_optional__prompt">フルネーム (任意)：</string>
     <string name="colored_text">色付き</string>
     <string name="callstate_received_answer">応答</string>
     <string name="decentralized">分散型</string>
@@ -1109,7 +1108,6 @@
     <string name="downgrade_and_open_chat">ダウングレードしてチャットを開く</string>
     <string name="la_please_remember_to_store_password">パスワードを覚えるか、安全に保管してください。失われたパスワードを回復する方法はありません。</string>
     <string name="smp_server_test_download_file">ファイルをダウンロード</string>
-    <string name="no_spaces">空き容量がありません</string>
     <string name="you_can_hide_or_mute_user_profile">ユーザープロフィールを非表示またはミュートすることができます（メニューを長押し）。</string>
     <string name="v4_6_group_moderation">グループのモデレーション</string>
     <string name="email_invite_body">こんにちは！

@@ -438,7 +438,6 @@
     <string name="profile_is_only_shared_with_your_contacts">Das Profil wird nur mit Ihren Kontakten geteilt.</string>
     <string name="display_name_cannot_contain_whitespace">Der angezeigte Name darf keine Leerzeichen enthalten.</string>
     <string name="display_name">Angezeigter Name</string>
-    <string name="full_name_optional__prompt">Vollständiger Name (optional)</string>
     <string name="create_profile_button">Erstellen</string>
     <string name="about_simplex">Über SimpleX</string>
     <!-- markdown demo - MarkdownHelpView.kt -->
@@ -1190,7 +1189,6 @@
     <string name="stop_snd_file__message">Das Senden der Datei wird beendet.</string>
     <string name="stop_file__action">Datei beenden</string>
     <string name="revoke_file__message">Die Datei wird von den Servern gelöscht.</string>
-    <string name="no_spaces">Keine Leerzeichen!</string>
     <string name="revoke_file__confirm">Widerrufen</string>
     <string name="revoke_file__action">Datei widerrufen</string>
     <string name="revoke_file__title">Datei widerrufen\?</string>

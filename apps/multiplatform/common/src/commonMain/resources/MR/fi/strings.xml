@@ -573,7 +573,6 @@
     <string name="group_invitation_expired">Vanhentunut ryhmäkutsu</string>
     <string name="rcv_group_event_member_added">kutsuttu %1$s</string>
     <string name="group_full_name_field">Ryhmän koko nimi:</string>
-    <string name="full_name_optional__prompt">Koko nimi (valinnainen)</string>
     <string name="italic_text">kursivoitu</string>
     <string name="keychain_error">Avainnipun virhe</string>
     <string name="icon_descr_edited">muokattu</string>
@@ -938,7 +937,6 @@
     <string name="group_invitation_tap_to_join">Liity napauttamalla</string>
     <string name="group_member_status_removed">poistettu</string>
     <string name="group_member_role_owner">omistaja</string>
-    <string name="no_spaces">Ei välilyöntejä!</string>
     <string name="callstatus_rejected">hylätty puhelu</string>
     <string name="show_call_on_lock_screen">Näytä</string>
     <string name="stop_file__action">Pysäytä tiedosto</string>

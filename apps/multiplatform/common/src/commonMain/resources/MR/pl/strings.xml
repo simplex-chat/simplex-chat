@@ -411,7 +411,6 @@
     <string name="create_profile_button">Utwórz</string>
     <string name="decentralized">Zdecentralizowane</string>
     <string name="callstate_ended">zakończona</string>
-    <string name="full_name_optional__prompt">Pełna nazwa (opcjonalna)</string>
     <string name="how_to_use_markdown">Jak korzystać z markdown</string>
     <string name="immune_to_spam_and_abuse">Odporność na spam i nadużycia</string>
     <string name="italic_text">kursywa</string>
@@ -1099,7 +1098,6 @@
     <string name="revoke_file__message">Plik zostanie usunięty z serwerów.</string>
     <string name="only_you_can_make_calls">Tylko Ty możesz wykonywać połączenia.</string>
     <string name="stop_rcv_file__message">Odbieranie pliku zostanie przerwane.</string>
-    <string name="no_spaces">Bez spacji!</string>
     <string name="allow_calls_only_if">Zezwalaj na połączenia tylko wtedy, gdy Twój kontakt na to pozwala.</string>
     <string name="allow_your_contacts_to_call">Zezwól swoim kontaktom na połączenia do Ciebie.</string>
     <string name="audio_video_calls">Połączenia audio/wideo</string>

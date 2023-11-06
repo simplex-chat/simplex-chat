@@ -581,7 +581,6 @@
     <string name="v4_4_disappearing_messages">Изчезващи съобщения</string>
     <string name="enter_welcome_message_optional">Въведи съобщение при посрещане…(незадължително)</string>
     <string name="button_welcome_message">Съобщение при посрещане</string>
-    <string name="full_name_optional__prompt">Пълно име (незадължително)</string>
     <string name="icon_descr_server_status_error">Грешка при свързване със сървъра</string>
     <string name="v4_2_auto_accept_contact_requests_desc">С незадължително съобщение при посрещане.</string>
     <string name="error_deleting_database">Грешка при изтриване на чат базата данни</string>
@@ -815,7 +814,6 @@
     <string name="network_use_onion_hosts_no_desc">Няма се използват Onion хостове.</string>
     <string name="email_invite_subject">Нека да поговорим в SimpleX Chat</string>
     <string name="password_to_show">Парола за показване</string>
-    <string name="no_spaces">Без интервали!</string>
     <string name="read_more_in_github_with_link"><![CDATA[Прочетете повече в нашето <font color=#0088ff>GitHub хранилище</font>.]]></string>
     <string name="onboarding_notifications_mode_off">Когато приложението работи</string>
     <string name="onboarding_notifications_mode_periodic">Периодично</string>

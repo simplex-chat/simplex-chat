@@ -403,7 +403,6 @@
     <string name="image_descr">Imagen</string>
     <string name="file_not_found">Archivo no encontrado</string>
     <string name="how_to_use_simplex_chat">Guía de uso</string>
-    <string name="full_name_optional__prompt">Nombre completo (opcional)</string>
     <string name="callstate_ended">finalizado</string>
     <string name="settings_section_title_help">AYUDA</string>
     <string name="export_database">Exportar base de datos</string>
@@ -1096,7 +1095,6 @@
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Puede ocurrir cuando tu o tu contacto estáis usando una copia de seguridad antigua de la base de datos.</string>
     <string name="alert_text_msg_bad_hash">El hash del mensaje anterior es diferente.</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d mensaje(s) no ha(n) podido ser descifrado(s).</string>
-    <string name="no_spaces">¡Sin espacios!</string>
     <string name="stop_file__action">Detener archivo</string>
     <string name="revoke_file__message">El archivo será eliminado de los servidores.</string>
     <string name="stop_rcv_file__message">Se detendrá la recepción del archivo.</string>

@@ -474,7 +474,6 @@
     <string name="revoke_file__message">سيتم حذف الملف من الخوادم.</string>
     <string name="file_will_be_received_when_contact_completes_uploading">سيتم استلام الملف عند اكتمال تحميل جهة الاتصال الخاصة بك.</string>
     <string name="icon_descr_help">المساعدة</string>
-    <string name="full_name_optional__prompt">الاسم الكامل (اختياري)</string>
     <string name="file_with_path">الملف: %s</string>
     <string name="fix_connection_confirm">إصلاح</string>
     <string name="fix_connection">إصلاح الاتصال</string>
@@ -762,7 +761,6 @@
     <string name="feature_offered_item_with_param">متوفرة %s: %2s</string>
     <string name="notifications_will_be_hidden">سيتم تسليم الإشعارات فقط حتى يتوقف التطبيق!</string>
     <string name="no_filtered_chats">لا توجد محادثات مُصفاة</string>
-    <string name="no_spaces">لا يوجد مسافات</string>
     <string name="no_received_app_files">لا توجد ملفات مستلمة أو مرسلة</string>
     <string name="shutdown_alert_desc">ستتوقف الإشعارات عن العمل حتى تعيد تشغيل التطبيق</string>
     <string name="new_passcode">رمز مرور جديد</string>

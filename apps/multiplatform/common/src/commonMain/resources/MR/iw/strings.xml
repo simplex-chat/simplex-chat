@@ -454,7 +454,6 @@
     <string name="for_everybody">עבור כולם</string>
     <string name="choose_file">קובץ</string>
     <string name="from_gallery_button">מתוך גלריה</string>
-    <string name="full_name_optional__prompt">שם מלא (אופציונלי)</string>
     <string name="files_and_media_section">קבצים ומדיה</string>
     <string name="group_member_status_group_deleted">קבוצה נמחקה</string>
     <string name="section_title_for_console">עבור מסוף הצ׳אט</string>
@@ -623,7 +622,6 @@
     <string name="markdown_in_messages">מרקדאון בהודעות</string>
     <string name="network_and_servers">רשת ושרתים</string>
     <string name="network_settings_title">הגדרות רשת</string>
-    <string name="no_spaces">בלי רווחים!</string>
     <string name="new_database_archive">ארכיון מסד נתונים חדש</string>
     <string name="messages_section_title">הודעות</string>
     <string name="group_member_role_member">חבר קבוצה</string>
