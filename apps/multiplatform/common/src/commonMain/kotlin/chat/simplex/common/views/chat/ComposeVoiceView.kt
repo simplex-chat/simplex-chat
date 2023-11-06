@@ -22,7 +22,6 @@ import chat.simplex.common.model.durationText
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.AudioPlayer
-import chat.simplex.common.platform.platform
 import chat.simplex.res.MR
 import kotlinx.coroutines.flow.distinctUntilChanged
 
@@ -69,9 +68,6 @@ fun ComposeVoiceView(
               .size(36.dp),
             tint = if (finishedRecording) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
           )
-          if (audioPlaying.value) {
-            platform.AndroidKeepScreenOn()
-          }
         }
         val numberInText = remember(recordedDurationMs, progress.value) {
           derivedStateOf {

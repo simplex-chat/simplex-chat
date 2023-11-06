@@ -1,8 +1,6 @@
 package chat.simplex.app
 
 import android.app.Application
-import androidx.compose.runtime.*
-import androidx.compose.ui.platform.LocalView
 import chat.simplex.common.platform.Log
 import androidx.lifecycle.*
 import androidx.work.*
@@ -217,17 +215,6 @@ class SimplexApp: Application(), LifecycleEventObserver {
           return userChoice.await()
         }
         return true
-      }
-
-      @Composable
-      override fun AndroidKeepScreenOn() {
-        val view = LocalView.current
-        DisposableEffect(Unit) {
-          view.keepScreenOn = true
-          onDispose {
-            view.keepScreenOn = false
-          }
-        }
       }
     }
   }

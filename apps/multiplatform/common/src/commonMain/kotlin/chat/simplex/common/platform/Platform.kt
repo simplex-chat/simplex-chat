@@ -1,6 +1,5 @@
 package chat.simplex.common.platform
 
-import androidx.compose.runtime.*
 import chat.simplex.common.model.NotificationsMode
 
 interface PlatformInterface {
@@ -12,8 +11,6 @@ interface PlatformInterface {
   fun androidChatInitializedAndStarted() {}
   fun androidIsBackgroundCallAllowed(): Boolean = true
   suspend fun androidAskToAllowBackgroundCalls(): Boolean = true
-  @Composable
-  fun AndroidKeepScreenOn() {}
 }
 /**
  * Multiplatform project has separate directories per platform + common directory that contains directories per platform + common for all of them.
