@@ -39,7 +39,7 @@ struct ActiveCallView: View {
         }
         .onAppear {
             logger.debug("ActiveCallView: appear client is nil \(client == nil), scenePhase \(String(describing: scenePhase), privacy: .public), canConnectCall \(canConnectCall)")
-            UIApplication.shared.isIdleTimerDisabled = true
+            AppDelegate.keepScreenOn(true)
             createWebRTCClient()
             dismissAllSheets()
         }
@@ -49,7 +49,7 @@ struct ActiveCallView: View {
         }
         .onDisappear {
             logger.debug("ActiveCallView: disappear")
-            UIApplication.shared.isIdleTimerDisabled = false
+            AppDelegate.keepScreenOn(false)
             client?.endCall()
         }
         .onChange(of: m.callCommand) { _ in sendCommandToClient()}

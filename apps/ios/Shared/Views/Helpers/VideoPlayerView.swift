@@ -39,7 +39,7 @@ struct VideoPlayerView: UIViewRepresentable {
             player.play()
         }
         context.coordinator.publisher = player.publisher(for: \.timeControlStatus).sink { status in
-            UIApplication.shared.isIdleTimerDisabled = status == .playing
+            AppDelegate.keepScreenOn(status == .playing)
         }
         return controller.view
     }
