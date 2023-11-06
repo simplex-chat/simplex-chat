@@ -162,7 +162,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         hideKeyboard(view)
         withApi {
           // The idea is to preload information before showing a modal because large groups can take time to load all members
-          var preloadedContactInfo: Pair<ConnectionStats, Profile?>? = null
+          var preloadedContactInfo: Pair<ConnectionStats?, Profile?>? = null
           var preloadedCode: String? = null
           var preloadedLink: Pair<String, GroupMemberRole>? = null
           if (chat.chatInfo is ChatInfo.Direct) {
@@ -175,7 +175,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           ModalManager.end.showModalCloseable(true) { close ->
             val chat = remember { activeChat }.value
             if (chat?.chatInfo is ChatInfo.Direct) {
-              var contactInfo: Pair<ConnectionStats, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
+              var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
               var code: String? by remember { mutableStateOf(preloadedCode) }
               KeyChangeEffect(chat.id, ChatModel.networkStatuses.toMap()) {
                 contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
@@ -332,7 +332,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         withApi {
           val r = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
           if (r != null) {
-            chatModel.updateContactConnectionStats(contact, r.first)
+            val contactStats = r.first
+            if (contactStats != null)
+            chatModel.updateContactConnectionStats(contact, contactStats)
           }
         }
       },
