@@ -375,7 +375,7 @@ restoreCalls = do
 
 stopChatController :: forall m. MonadUnliftIO m => ChatController -> m ()
 stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
-  readTVarIO remoteHostSessions >>= mapM_ cancelRemoteHostSession
+  readTVarIO remoteHostSessions >>= mapM_ (liftIO . cancelRemoteHost)
   atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (liftIO . cancelRemoteCtrl)
   disconnectAgentClient smpAgent
   readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
@@ -408,7 +408,7 @@ execChatCommand_ :: ChatMonad' m => Maybe User -> ChatCommand -> m ChatResponse
 execChatCommand_ u cmd = handleCommandError u $ processChatCommand cmd
 
 execRemoteCommand :: ChatMonad' m => Maybe User -> RemoteHostId -> ChatCommand -> ByteString -> m ChatResponse
-execRemoteCommand u rhId cmd s = handleCommandError u $ getRemoteHostSession rhId >>= \rh -> processRemoteCommand rhId rh cmd s
+execRemoteCommand u rhId cmd s = handleCommandError u $ getRemoteHostClient rhId >>= \rh -> processRemoteCommand rhId rh cmd s
 
 handleCommandError :: ChatMonad' m => Maybe User -> ExceptT ChatError m ChatResponse -> m ChatResponse
 handleCommandError u a = either (CRChatCmdError u) id <$> (runExceptT a `E.catch` (pure . Left . mkChatError))
@@ -1940,14 +1940,16 @@ processChatCommand = \case
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   SetLocalDeviceName name -> withUser_ $ chatWriteVar localDeviceName name >> ok_
   -- CreateRemoteHost -> CRRemoteHostCreated <$> createRemoteHost
-  ListRemoteHosts -> CRRemoteHostList <$> listRemoteHosts
-  StartRemoteHost rh_ -> CRRemoteHostStarted <$> startRemoteHost' rh_
-  StopRemoteHost rh_ -> closeRemoteHostSession rh_ >> ok_
-  DeleteRemoteHost rh -> deleteRemoteHost rh >> ok_
-  StoreRemoteFile rh encrypted_ localPath -> CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
-  GetRemoteFile rh rf -> getRemoteFile rh rf >> ok_
-  ConnectRemoteCtrl oob -> withUser_ $ connectRemoteCtrl (execChatCommand Nothing) oob >> ok_
-  FindKnownRemoteCtrl -> withUser_ $ findKnownRemoteCtrl (execChatCommand Nothing) >> ok_
+  ListRemoteHosts -> withUser_ $ CRRemoteHostList <$> listRemoteHosts
+  StartRemoteHost rh_ -> withUser_ $ do
+    (remoteHost_, inv) <- startRemoteHost' rh_
+    pure CRRemoteHostStarted {remoteHost_, invitation = safeDecodeUtf8 $ strEncode inv}
+  StopRemoteHost rh_ -> withUser_ $ closeRemoteHost rh_ >> ok_
+  DeleteRemoteHost rh -> withUser_ $ deleteRemoteHost rh >> ok_
+  StoreRemoteFile rh encrypted_ localPath -> withUser_ $ CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
+  GetRemoteFile rh rf -> withUser_ $ getRemoteFile rh rf >> ok_
+  ConnectRemoteCtrl oob -> withUser_ $ connectRemoteCtrl oob >> ok_
+  FindKnownRemoteCtrl -> withUser_ $ findKnownRemoteCtrl >> ok_
   ConfirmRemoteCtrl rc -> withUser_ $ confirmRemoteCtrl rc >> ok_
   VerifyRemoteCtrlSession sessId -> withUser_ $ verifyRemoteCtrlSession (execChatCommand Nothing) sessId >> ok_
   StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
@@ -5947,8 +5949,8 @@ chatCommandP =
       "/set device name " *> (SetLocalDeviceName <$> textP),
       -- "/create remote host" $> CreateRemoteHost,
       "/list remote hosts" $> ListRemoteHosts,
-      "/start remote host" *> (StartRemoteHost <$> optional ((,) <$> (A.space *> A.decimal) <*> (" multicast=" *> onOffP <|> pure False)),
-      "/stop remote host" *> (StopRemoteHost <$> optional (A.space *> A.decimal)),
+      "/start remote host" *> (StartRemoteHost <$> optional ((,) <$> (A.space *> A.decimal) <*> (" multicast=" *> onOffP <|> pure False))),
+      "/stop remote host" *> (StopRemoteHost <$> (A.space *> (RHId <$> A.decimal <|> "new" $> RHNew))),
       "/delete remote host " *> (DeleteRemoteHost <$> A.decimal),
       "/store remote file " *> (StoreRemoteFile <$> A.decimal <*> optional (" encrypt=" *> onOffP) <* A.space <*> filePath),
       "/get remote file " *> (GetRemoteFile <$> A.decimal <* A.space <*> jsonP),

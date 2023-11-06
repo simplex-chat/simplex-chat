@@ -23,22 +23,28 @@ import Simplex.RemoteControl.Discovery
 import Simplex.RemoteControl.Types
 import UnliftIO
 
-announceRevHTTP2 :: MonadUnliftIO m => Tasks -> TMVar (Maybe PortNumber) -> Maybe (Text, VersionRange) -> Maybe Text -> C.PrivateKeyEd25519 -> CtrlSessionKeys -> TransportHost -> m () -> m (Either HTTP2ClientError HTTP2Client)
-announceRevHTTP2 = announceCtrl runHTTP2Client
+-- announceRevHTTP2 :: MonadUnliftIO m => Tasks -> TMVar (Maybe PortNumber) -> Maybe (Text, VersionRange) -> Maybe Text -> C.PrivateKeyEd25519 -> CtrlSessionKeys -> TransportHost -> m () -> m (Either HTTP2ClientError HTTP2Client)
+-- announceRevHTTP2 = announceCtrl runHTTP2Client
 
 -- | Attach HTTP2 client and hold the TLS until the attached client finishes.
-runHTTP2Client :: MVar (Either HTTP2ClientError HTTP2Client) -> MVar () -> TLS -> IO ()
-runHTTP2Client started finished tls =
-  ifM
-    (isEmptyMVar started)
-    attachClient
-    (logError "HTTP2 session already started on this listener")
+-- runHTTP2Client :: MVar (Either HTTP2ClientError HTTP2Client) -> MVar () -> TLS -> IO ()
+-- runHTTP2Client started finished tls =
+--   ifM
+--     (isEmptyMVar started)
+--     attachClient
+--     (logError "HTTP2 session already started on this listener")
+--   where
+--     attachClient = do
+--       client <- attachHTTP2Client config ANY_ADDR_V4 "0" (putMVar finished ()) defaultHTTP2BufferSize tls
+--       putMVar started client
+--       readMVar finished
+--     -- TODO connection timeout
+--     config = defaultHTTP2ClientConfig {bodyHeadSize = doNotPrefetchHead, connTimeout = maxBound}
+
+attachRevHTTP2Client :: IO () -> TLS -> IO (Either HTTP2ClientError HTTP2Client)
+attachRevHTTP2Client disconnected tls = do
+  attachHTTP2Client config ANY_ADDR_V4 "0" disconnected defaultHTTP2BufferSize tls
   where
-    attachClient = do
-      client <- attachHTTP2Client config ANY_ADDR_V4 "0" (putMVar finished ()) defaultHTTP2BufferSize tls
-      putMVar started client
-      readMVar finished
-    -- TODO connection timeout
     config = defaultHTTP2ClientConfig {bodyHeadSize = doNotPrefetchHead, connTimeout = maxBound}
 
 attachHTTP2Server :: MonadUnliftIO m => TLS -> (HTTP2Request -> m ()) -> m ()

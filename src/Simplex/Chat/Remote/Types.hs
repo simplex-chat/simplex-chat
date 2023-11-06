@@ -9,6 +9,7 @@
 
 module Simplex.Chat.Remote.Types where
 
+import Control.Concurrent.Async (Async)
 import Control.Exception (Exception)
 import qualified Data.Aeson.TH as J
 import Data.Int (Int64)
@@ -16,14 +17,16 @@ import Data.Text (Text)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
-import Simplex.RemoteControl.Types (Tasks)
+import Simplex.RemoteControl.Client (HostSessKeys, RCHostClient)
 import Simplex.Messaging.Crypto.File (CryptoFile)
 
 data RemoteHostClient = RemoteHostClient
   { hostEncoding :: PlatformEncoding,
     hostDeviceName :: Text,
     httpClient :: HTTP2Client,
-    encryptHostFiles :: Bool
+    sessionKeys :: HostSessKeys,
+    encryptHostFiles :: Bool,
+    storePath :: FilePath
   }
 
 -- data RemoteHostSession = RemoteHostSession
@@ -34,8 +37,12 @@ data RemoteHostClient = RemoteHostClient
 
 data RemoteHostSession
   = RHSessionStarting
-  | RHSessionConnecting {rchClient :: RCHostClient}
-  | RHSessionConnected {rhClient :: RemoteHostClient, storePath :: FilePath}
+  | RHSessionConnecting
+      { rchClient :: RCHostClient,
+        rhsWaitSession :: Async (),
+        remoteHost_ :: Maybe RemoteHostInfo
+      }
+  | RHSessionConnected {rhClient :: RemoteHostClient}
 
 data RemoteProtocolError
   = -- | size prefix is malformed
@@ -57,10 +64,11 @@ data RemoteProtocolError
 
 type RemoteHostId = Int64
 
-data RHKey = RHNew | RHId RemoteHostId
+data RHKey = RHNew | RHId {remoteHostId :: RemoteHostId}
+  deriving (Eq, Ord, Show)
 
 data RemoteHost = RemoteHost
-  { remoteHostId :: RHId,
+  { remoteHostId :: RemoteHostId,
     -- caFingerprint :: C.KeyHash,
     storePath :: FilePath,
     displayName :: Text,
@@ -128,6 +136,8 @@ data RemoteFile = RemoteFile
 $(J.deriveJSON defaultJSON ''RemoteFile)
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "RPE") ''RemoteProtocolError)
+
+$(J.deriveJSON (sumTypeJSON $ dropPrefix "RH") ''RHKey)
 
 $(J.deriveJSON (enumJSON $ dropPrefix "PE") ''PlatformEncoding)
 

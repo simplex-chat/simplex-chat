@@ -641,7 +641,7 @@ data ChatResponse
   | CRRemoteHostCreated {remoteHost :: RemoteHostInfo}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text}
-  | CRRemoteHostSessionCode {remoteHost :: RemoteHostInfo, sessionCode :: Text}
+  | CRRemoteHostSessionCode {remoteHost :: RemoteHostInfo, sessionCode :: Text, newHost :: Bool}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
   | CRRemoteFileStored {remoteHostId :: RemoteHostId, remoteFileSource :: CryptoFile}
@@ -945,7 +945,7 @@ data ChatError
   | ChatErrorStore {storeError :: StoreError}
   | ChatErrorDatabase {databaseError :: DatabaseError}
   | ChatErrorRemoteCtrl {remoteCtrlError :: RemoteCtrlError}
-  | ChatErrorRemoteHost {remoteHostId :: RemoteHostId, remoteHostError :: RemoteHostError}
+  | ChatErrorRemoteHost {rhKey :: RHKey, remoteHostError :: RemoteHostError}
   deriving (Show, Exception)
 
 data ChatErrorType
@@ -1066,9 +1066,9 @@ data RemoteCtrlError
   | RCECertificateUntrusted {remoteCtrlId :: RemoteCtrlId} -- ^ TLS is unable to validate certificate chain presented for a connection
   | RCEBadFingerprint -- ^ Bad fingerprint data provided in OOB
   | RCEBadVerificationCode -- ^ The code submitted doesn't match session TLSunique
-  | RCEHTTP2Error {http2Error :: String}
+  | RCEHTTP2Error {http2Error :: Text}
   | RCEHTTP2RespStatus {statusCode :: Maybe Int} -- TODO remove
-  | RCEInvalidResponse {responseError :: String}
+  | RCEInvalidResponse {responseError :: Text}
   | RCEProtocolError {protocolError :: RemoteProtocolError}
   deriving (Show, Exception)
 

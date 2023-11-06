@@ -6,7 +6,6 @@ module Simplex.Chat.Store.Remote where
 
 import Control.Monad.Except
 import Data.Int (Int64)
-import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Database.SQLite.Simple (Only (..))
 import qualified Database.SQLite.Simple as SQL
@@ -15,7 +14,6 @@ import Simplex.Chat.Store.Shared
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
-import Simplex.RemoteControl.Types
 
 insertRemoteHost :: DB.Connection -> FilePath -> Text -> C.APrivateSignKey -> C.SignedCertificate -> IO RemoteHostId
 insertRemoteHost db storePath displayName caKey caCert = do
@@ -36,7 +34,7 @@ remoteHostQuery = "SELECT remote_host_id, store_path, display_name, ca_key, ca_c
 
 toRemoteHost :: (Int64, FilePath, Text, C.APrivateSignKey, C.SignedObject C.Certificate, Bool) -> RemoteHost
 toRemoteHost (remoteHostId, storePath, displayName, caKey, C.SignedObject caCert, contacted) =
-  RemoteHost {remoteHostId = Just remoteHostId, storePath, displayName, caKey, caCert, contacted}
+  RemoteHost {remoteHostId, storePath, displayName, caKey, caCert, contacted}
 
 deleteRemoteHostRecord :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (Only remoteHostId)

@@ -276,9 +276,9 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRNtfMessages {} -> []
   CRRemoteHostCreated RemoteHostInfo {remoteHostId} -> ["remote host " <> sShow remoteHostId <> " created"]
   CRRemoteHostList hs -> viewRemoteHosts hs
-  CRRemoteHostStarted {remoteHost_, sessionOOB} ->
+  CRRemoteHostStarted {remoteHost_, invitation} ->
     [ maybe "new remote host started" (\rhId -> "remote host " <> sShow rhId <> " started") remoteHost_,
-      "connection code:", plain sessionOOB
+      "invitation:", plain invitation
     ]
   CRRemoteHostSessionCode {remoteHost = RemoteHostInfo {remoteHostId = rhId}, sessionCode} ->
     ["remote host " <> sShow rhId <> " is connecting", "Compare session code with host:", plain sessionCode]
