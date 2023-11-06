@@ -1907,7 +1907,8 @@ processChatCommand = \case
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
-    let versionInfo = coreVersionInfo $(simplexmqCommitQ)
+    -- simplexmqCommitQ makes iOS builds crash m(
+    let versionInfo = coreVersionInfo "" -- $(simplexmqCommitQ)
     chatMigrations <- map upMigration <$> withStore' (Migrations.getCurrent . DB.conn)
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
