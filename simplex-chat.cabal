@@ -36,6 +36,7 @@ library
       Simplex.Chat.Markdown
       Simplex.Chat.Messages
       Simplex.Chat.Messages.CIContent
+      Simplex.Chat.Messages.Events
       Simplex.Chat.Migrations.M20220101_initial
       Simplex.Chat.Migrations.M20220122_v1_1
       Simplex.Chat.Migrations.M20220205_chat_item_status
@@ -119,6 +120,7 @@ library
       Simplex.Chat.Migrations.M20231010_member_settings
       Simplex.Chat.Migrations.M20231019_indexes
       Simplex.Chat.Migrations.M20231030_xgrplinkmem_received
+      Simplex.Chat.Migrations.M20231101_group_events
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
