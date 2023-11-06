@@ -9,8 +9,6 @@ module RemoteTests where
 import ChatClient
 import ChatTests.Utils
 import Control.Logger.Simple
-import Control.Monad.Except (runExceptT)
-import Crypto.Random (drgNew)
 import qualified Data.Aeson as J
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -21,14 +19,11 @@ import Simplex.Chat.Archive (archiveFilesFolder)
 import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..))
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
-import Simplex.Chat.Remote.Types
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Util
-import Simplex.RemoteControl.Client
-import qualified Simplex.RemoteControl.Client as RC
 import System.FilePath ((</>))
 import Test.Hspec
 import UnliftIO
@@ -40,7 +35,6 @@ remoteTests = describe "Remote" $ do
   -- it "generates usable credentials" genCredentialsTest
   -- it "OOB encoding, decoding, and signatures are correct" oobCodecTest
   -- it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
-  it "RemoteControl TLS Hello works" rcTLSTest
   it "performs protocol handshake" remoteHandshakeTest'
   xit "performs protocol handshake" remoteHandshakeTest
   xit "performs protocol handshake (again)" remoteHandshakeTest -- leaking servers regression check
@@ -48,54 +42,6 @@ remoteTests = describe "Remote" $ do
   -- describe "remote files" $ do
   --   xit "store/get/send/receive files" remoteStoreFileTest
   --   xit "should sends files from CLI wihtout /store" remoteCLIFileTest
-
--- * Low-level TLS with ephemeral credentials
-
-rcTLSTest :: HasCallStack => FilePath -> IO ()
-rcTLSTest _tmp = do
-  drg <- drgNew >>= newTVarIO
-  hp <- RC.newRCHostPairing
-  invVar <- newEmptyMVar
-  ctrl <- async . runExceptT $ do
-    logNote "c 1"
-    (inv, hc, var) <- RC.connectRCHost drg hp (J.String "app")
-    logNote "c 2"
-    putMVar invVar (inv, hc)
-    logNote "c 3"
-    (sessId, vars') <- atomically $ takeTMVar var
-    logNote "c 4"
-    (rcHostSession, rcHelloBody, hp') <- atomically $ takeTMVar vars'
-    logNote "c 5"
-    threadDelay 1000000
-    logNote $ tshow rcHelloBody
-    logNote "ctrl: ciao"
-    liftIO $ RC.cancelHostClient hc
-
-  (inv, hc) <- takeMVar invVar
-  -- logNote $ decodeUtf8 $ strEncode inv
-
-  host <- async . runExceptT $ do
-    logNote "h 1"
-    (rcCtrlClient, var) <- RC.connectRCCtrlURI drg inv Nothing (J.String "app")
-    logNote "h 2"
-    (rcCtrlSession, rcCtrlPairing) <- atomically $ takeTMVar var
-    logNote "h 3"
-    liftIO $ RC.confirmCtrlSession rcCtrlClient True
-    logNote "h 4"
-    threadDelay 1000000
-    logNote "ctrl: adios"
-
-  timeout 10000000 (waitCatch ctrl) >>= \case
-    Just (Right (Right ())) -> pure ()
-    err -> fail $ "Unexpected controller result: " <> show err
-
-  waitCatch hc.action >>= \case
-    Left err -> fromException err `shouldBe` Just AsyncCancelled
-    Right () -> fail "Unexpected controller finish"
-
-  timeout 10000000 (waitCatch host) >>= \case
-    Just (Right (Right ())) -> pure ()
-    err -> fail $ "Unexpected host result: " <> show err
 
 -- -- XXX: extract
 -- genCredentialsTest :: (HasCallStack) => FilePath -> IO ()
