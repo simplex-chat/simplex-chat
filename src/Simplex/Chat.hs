@@ -1941,7 +1941,7 @@ processChatCommand = \case
   SetLocalDeviceName name -> withUser_ $ chatWriteVar localDeviceName name >> ok_
   -- CreateRemoteHost -> CRRemoteHostCreated <$> createRemoteHost
   ListRemoteHosts -> CRRemoteHostList <$> listRemoteHosts
-  StartRemoteHost rh_ -> startRemoteHost' rh_ >> ok_
+  StartRemoteHost rh_ -> CRRemoteHostStarted <$> startRemoteHost' rh_
   StopRemoteHost rh_ -> closeRemoteHostSession rh_ >> ok_
   DeleteRemoteHost rh -> deleteRemoteHost rh >> ok_
   StoreRemoteFile rh encrypted_ localPath -> CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath

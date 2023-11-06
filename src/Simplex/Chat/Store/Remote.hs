@@ -36,7 +36,7 @@ remoteHostQuery = "SELECT remote_host_id, store_path, display_name, ca_key, ca_c
 
 toRemoteHost :: (Int64, FilePath, Text, C.APrivateSignKey, C.SignedObject C.Certificate, Bool) -> RemoteHost
 toRemoteHost (remoteHostId, storePath, displayName, caKey, C.SignedObject caCert, contacted) =
-  RemoteHost {remoteHostId, storePath, displayName, caKey, caCert, contacted}
+  RemoteHost {remoteHostId = Just remoteHostId, storePath, displayName, caKey, caCert, contacted}
 
 deleteRemoteHostRecord :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (Only remoteHostId)

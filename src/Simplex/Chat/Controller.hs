@@ -181,7 +181,7 @@ data ChatController = ChatController
     currentCalls :: TMap ContactId Call,
     localDeviceName :: TVar Text,
     multicastSubscribers :: TMVar Int,
-    remoteHostSessions :: TMap RemoteHostId RemoteHostSession, -- All the active remote hosts
+    remoteHostSessions :: TMap RHKey RemoteHostSession, -- All the active remote hosts
     remoteHostsFolder :: TVar (Maybe FilePath), -- folder for remote hosts data
     remoteCtrlSession :: TVar (Maybe RemoteCtrlSession), -- Supervisor process for hosted controllers
     config :: ChatConfig,
@@ -423,7 +423,7 @@ data ChatCommand
   | ListRemoteHosts
   | StartRemoteHost (Maybe (RemoteHostId, Bool)) -- ^ Start new or known remote host with optional multicast for known host
   -- | SwitchRemoteHost (Maybe RemoteHostId) -- ^ Switch current remote host
-  | StopRemoteHost (Maybe RemoteHostId) -- ^ Shut down a running session
+  | StopRemoteHost RHKey -- ^ Shut down a running session
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
   | StoreRemoteFile {remoteHostId :: RemoteHostId, storeEncrypted :: Maybe Bool, localPath :: FilePath}
   | GetRemoteFile {remoteHostId :: RemoteHostId, file :: RemoteFile}
@@ -451,7 +451,6 @@ allowRemoteCommand = \case
   APISuspendChat _ -> False
   SetTempFolder _ -> False
   QuitChat -> False
-  CreateRemoteHost -> False
   ListRemoteHosts -> False
   StartRemoteHost _ -> False
   -- SwitchRemoteHost {} -> False
@@ -641,7 +640,7 @@ data ChatResponse
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostCreated {remoteHost :: RemoteHostInfo}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
-  | CRRemoteHostStarted {remoteHost :: RemoteHostInfo, sessionOOB :: Text}
+  | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text}
   | CRRemoteHostSessionCode {remoteHost :: RemoteHostInfo, sessionCode :: Text}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
@@ -1045,13 +1044,14 @@ throwDBError = throwError . ChatErrorDatabase
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteHostError
-  = RHMissing -- ^ No remote session matches this identifier
-  | RHBusy -- ^ A session is already running
-  | RHRejected -- ^ A session attempt was rejected by a host
-  | RHTimeout -- ^ A discovery or a remote operation has timed out
-  | RHDisconnected {reason :: Text} -- ^ A session disconnected by a host
-  | RHConnectionLost {reason :: Text} -- ^ A session disconnected due to transport issues
-  | RHProtocolError RemoteProtocolError
+  = RHEMissing -- ^ No remote session matches this identifier
+  | RHEBusy -- ^ A session is already running
+  | RHEBadState -- ^ Illegal state transition
+  | RHERejected -- ^ A session attempt was rejected by a host
+  | RHETimeout -- ^ A discovery or a remote operation has timed out
+  | RHEDisconnected {reason :: Text} -- ^ A session disconnected by a host
+  | RHEConnectionLost {reason :: Text} -- ^ A session disconnected due to transport issues
+  | RHEProtocolError RemoteProtocolError
   deriving (Show, Exception)
 
 -- TODO review errors, some of it can be covered by HTTP2 errors

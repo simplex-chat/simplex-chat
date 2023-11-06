@@ -26,11 +26,16 @@ data RemoteHostClient = RemoteHostClient
     encryptHostFiles :: Bool
   }
 
-data RemoteHostSession = RemoteHostSession
-  { remoteHostTasks :: Tasks,
-    remoteHostClient :: Maybe RemoteHostClient,
-    storePath :: FilePath
-  }
+-- data RemoteHostSession = RemoteHostSession
+--   { remoteHostTasks :: Tasks,
+--     remoteHostClient :: Maybe RemoteHostClient,
+--     storePath :: FilePath,
+--   }
+
+data RemoteHostSession
+  = RHSessionStarting
+  | RHSessionConnecting {rchClient :: RCHostClient}
+  | RHSessionConnected {rhClient :: RemoteHostClient, storePath :: FilePath}
 
 data RemoteProtocolError
   = -- | size prefix is malformed
@@ -52,8 +57,11 @@ data RemoteProtocolError
 
 type RemoteHostId = Int64
 
+data RHKey = RHNew | RHId RemoteHostId
+
 data RemoteHost = RemoteHost
-  { remoteHostId :: RemoteHostId,
+  { remoteHostId :: RHId,
+    -- caFingerprint :: C.KeyHash,
     storePath :: FilePath,
     displayName :: Text,
     -- | Credentials signing key for root and session certs

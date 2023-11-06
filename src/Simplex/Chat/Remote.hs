@@ -75,104 +75,131 @@ import Simplex.Messaging.Agent
 
 -- * Desktop side
 
-getRemoteHostSession :: ChatMonad m => RemoteHostId -> m RemoteHostSession
+getRemoteHostSession :: ChatMonad m => Maybe RemoteHostId -> m RemoteHostSession
 getRemoteHostSession rhId = withRemoteHostSession rhId $ \_ s -> pure $ Right s
 
-withRemoteHostSession :: ChatMonad m => RemoteHostId -> (TM.TMap RemoteHostId RemoteHostSession -> RemoteHostSession -> STM (Either ChatError a)) -> m a
-withRemoteHostSession rhId = withRemoteHostSession_ rhId missing
-  where
-    missing _ = pure . Left $ ChatErrorRemoteHost rhId RHMissing
+-- withRemoteHostSession :: ChatMonad m => Maybe RemoteHostId -> (TM.TMap (Maybe RemoteHostId) RemoteHostSession -> RemoteHostSession -> STM (Either ChatError a)) -> m a
+-- withRemoteHostSession rhId = withRemoteHostSession_ rhId missing
+--   where
+--     missing _ = pure . Left $ ChatErrorRemoteHost rhId RHMissing
 
-withNoRemoteHostSession :: ChatMonad m => RemoteHostId -> (TM.TMap RemoteHostId RemoteHostSession -> STM (Either ChatError a)) -> m a
+withNoRemoteHostSession :: ChatMonad m => Maybe RemoteHostId -> (TM.TMap (Maybe RemoteHostId) RemoteHostSession -> STM (Either ChatError a)) -> m a
 withNoRemoteHostSession rhId action = withRemoteHostSession_ rhId action busy
   where
     busy _ _ = pure . Left $ ChatErrorRemoteHost rhId RHBusy
 
 -- | Atomically process controller state wrt. specific remote host session
-withRemoteHostSession_ :: ChatMonad m => RemoteHostId -> (TM.TMap RemoteHostId RemoteHostSession -> STM (Either ChatError a)) -> (TM.TMap RemoteHostId RemoteHostSession -> RemoteHostSession -> STM (Either ChatError a)) -> m a
-withRemoteHostSession_ rhId missing present = do
-  sessions <- asks remoteHostSessions
-  liftIOEither . atomically $ TM.lookup rhId sessions >>= maybe (missing sessions) (present sessions)
+-- withRemoteHostSession_ :: ChatMonad m => Maybe RemoteHostId -> (TM.TMap (Maybe RemoteHostId) RemoteHostSession -> STM (Either ChatError a)) -> (TM.TMap RemoteHostId RemoteHostSession -> RemoteHostSession -> STM (Either ChatError a)) -> m a
+-- withRemoteHostSession_ rhId missing present = do
+--   sessions <- asks remoteHostSessions
+--   liftIOEither . atomically $ TM.lookup rhId sessions >>= maybe (missing sessions) (present sessions)
 
-startRemoteHost' :: ChatMonad m => Maybe (RemoteHostId, Bool) -> m ()
+withRemoteHostSession :: ChatMonad m => RHKey -> (RemoteHostSession -> Either ChatError (a, RemoteHostSession)) -> m a
+withRemoteHostSession rhKey state = withRemoteHostSession_ rhKey $ maybe (Left $ ChatErrorRemoteHost RHEBusy) ((second . second) Just . state)
+
+withRemoteHostSession_ :: ChatMonad m => RHKey -> (Maybe RemoteHostSession -> Either ChatError (a, Maybe RemoteCtrlSession)) -> m a
+withRemoteHostSession_ rhKey state = do
+  sessions <- asks remoteHostSession
+  r <- atomically $ do
+    s <- TM.lookup rhKey sessions
+    case state s of
+      Left e -> pure $ Left e
+      Right (a, s') -> Right a <$ maybe (TM.delete rhKey) (TM.insert rhKey) s' sessions
+  liftEither r
+
+startRemoteHost' :: ChatMonad m => Maybe (RemoteHostId, Bool) -> m RCSignedInvitation
 startRemoteHost' rh_ = do
-  -- withRemoteCtrlSession_ $ maybe (Right ((), Just RCSessionStarting)) (\_ -> Left $ ChatErrorRemoteCtrl RCEBusy)
-  (pairing, multicast) <- case rh_ of
-    Just (_rhId, _multicast) -> undefined -- get from the database, start multicast if requested
-    Nothing -> (,False) <$> rcNewHostPairing
+  (rhKey, multicast, remoteHost_, pairing) <- case rh_ of
+    Just (rhId, multicast) -> pure (RHId rhId, multicast, undefined, undefined) -- get from the database, start multicast if requested
+    Nothing -> (RHNew,False,Nothing,) <$> rcNewHostPairing
+  withRemoteHostSession_ rhKey $ maybe (Right ((), Just RHSessionStarting)) (\_ -> Left $ ChatErrorRemoteHost RHEBusy)
   let ourApp = J.String "hi"
   -- TMVar (RCHostSession, RCHelloBody, RCHostPairing)
-  (invitation, client, r) <- withAgent $ \a -> rcConnectHost a pairing ourApp multicast
-  pure ()
-
-startRemoteHost :: ChatMonad m => RemoteHostId -> m ()
-startRemoteHost rhId = do
-  rh <- withStore (`getRemoteHost` rhId)
-  tasks <- startRemoteHostSession rh
-  logInfo $ "Remote host session starting for " <> tshow rhId
-  asyncRegistered tasks $
-    run rh tasks `catchAny` \err -> do
-      logError $ "Remote host session startup failed for " <> tshow rhId <> ": " <> tshow err
-      cancelTasks tasks
-      chatModifyVar remoteHostSessions $ M.delete rhId
-      throwError $ fromMaybe (mkChatError err) $ fromException err
+  (invitation, client, vars) <- withAgent $ \a -> rcConnectHost a pairing ourApp multicast
+  toView $ CRRemoteHostSessionCode {remoteHost = remoteHostInfo rh True, sessionCode, newCtrl = True}
+  rhsWaitSession <- async $ waitForSession client vars
+  withRemoteHostSession rhKey $ \case -> 
+    RHSessionStarting -> Right ((), RHSessionConnecting {rhsWaitSession, remoteHost_})
+    _ -> Left $ ChatErrorRemoteHost RHEBadState
+  pure CRRemoteHostStarted {remoteHost_, invitation = encodeUtf8 $ strEncode invitation}
   where
-    -- logInfo $ "Remote host session starting for " <> tshow rhId
+    waitForSession client vars = do
+      (rhSession, rhHello, rhPairing) <- atomically $ takeTMVar vars
+      remoteHost <- withRemoteHostSession rhKey $ \case ->
+        RHSessionConnecting {rhsWaitSession, remoteHost_} ->
+          let remoteHost = RemoteHostInfo {active = True} 
+           in Right (remoteHost, RHSessionConnected {rhsClient = client, remoteHost})
+      -- store remoteHost in DB
+      toView $ CRRemoteHostConnected remoteHost
 
-    run :: ChatMonad m => RemoteHost -> Tasks -> m ()
-    run rh@RemoteHost {storePath} tasks = do
-      (fingerprint, credentials) <- liftIO $ genSessionCredentials rh
-      cleanupIO <- toIO $ do
-        logNote $ "Remote host session stopping for " <> tshow rhId
-        cancelTasks tasks -- cancel our tasks anyway
-        chatModifyVar currentRemoteHost $ \cur -> if cur == Just rhId then Nothing else cur -- only wipe the closing RH
-        withRemoteHostSession rhId $ \sessions _ -> Right <$> TM.delete rhId sessions
-        toView (CRRemoteHostStopped rhId) -- only signal "stopped" when the session is unregistered cleanly
-        -- block until some client is connected or an error happens
-      logInfo $ "Remote host session connecting for " <> tshow rhId
-      rcName <- chatReadVar localDeviceName
-      localAddr <- asks multicastSubscribers >>= Discovery.getLocalAddressMulticast >>= maybe (throwError . ChatError $ CEInternalError "unable to get local address") pure
-      started <- newEmptyTMVarIO -- XXX: should contain service port to be published
-      (dhKey, sigKey, ann, oob) <- error "TODO: startRemoteHost.run 1" -- Discovery.startSession (if rcName == "" then Nothing else Just rcName) (localAddr, 0) fingerprint
-      toView CRRemoteHostStarted {remoteHost = remoteHostInfo rh True, sessionOOB = decodeUtf8 $ strEncode (oob :: RCSignedInvitation)}
-      httpClient <- error "TODO: startRemoteHost.run 2" -- liftEitherError (ChatErrorRemoteCtrl . RCEHTTP2Error . show) $ announceRevHTTP2 tasks started (sigKey, ann) credentials cleanupIO
-      logInfo $ "Remote host session connected for " <> tshow rhId
-      -- test connection and establish a protocol layer
-      remoteHostClient <- liftRH rhId $ createRemoteHostClient httpClient dhKey rcName
-      -- set up message polling
-      oq <- asks outputQ
-      asyncRegistered tasks . forever $ do
-        liftRH rhId (remoteRecv remoteHostClient 1000000) >>= mapM_ (atomically . writeTBQueue oq . (Nothing,Just rhId,))
-      -- update session state
-      logInfo $ "Remote host session started for " <> tshow rhId
-      chatModifyVar remoteHostSessions $ M.adjust (\rhs -> rhs {remoteHostClient = Just remoteHostClient}) rhId
-      chatWriteVar currentRemoteHost $ Just rhId
-      toView $
-        CRRemoteHostConnected
-          RemoteHostInfo
-            { remoteHostId = rhId,
-              storePath = storePath,
-              displayName = hostDeviceName remoteHostClient,
-              sessionActive = True
-            }
+-- startRemoteHost :: ChatMonad m => RemoteHostId -> m ()
+-- startRemoteHost rhId = do
+--   rh <- withStore (`getRemoteHost` rhId)
+--   tasks <- startRemoteHostSession rh
+--   logInfo $ "Remote host session starting for " <> tshow rhId
+--   asyncRegistered tasks $
+--     run rh tasks `catchAny` \err -> do
+--       logError $ "Remote host session startup failed for " <> tshow rhId <> ": " <> tshow err
+--       cancelTasks tasks
+--       chatModifyVar remoteHostSessions $ M.delete rhId
+--       throwError $ fromMaybe (mkChatError err) $ fromException err
+--   where
+--     -- logInfo $ "Remote host session starting for " <> tshow rhId
 
-    genSessionCredentials RemoteHost {caKey, caCert} = do
-      sessionCreds <- genCredentials (Just parent) (0, 24) "Session"
-      pure . tlsCredentials $ sessionCreds :| [parent]
-      where
-        parent = (C.signatureKeyPair caKey, caCert)
+--     run :: ChatMonad m => RemoteHost -> Tasks -> m ()
+--     run rh@RemoteHost {storePath} tasks = do
+--       (fingerprint, credentials) <- liftIO $ genSessionCredentials rh
+--       cleanupIO <- toIO $ do
+--         logNote $ "Remote host session stopping for " <> tshow rhId
+--         cancelTasks tasks -- cancel our tasks anyway
+--         chatModifyVar currentRemoteHost $ \cur -> if cur == Just rhId then Nothing else cur -- only wipe the closing RH
+--         withRemoteHostSession rhId $ \sessions _ -> Right <$> TM.delete rhId sessions
+--         toView (CRRemoteHostStopped rhId) -- only signal "stopped" when the session is unregistered cleanly
+--         -- block until some client is connected or an error happens
+--       logInfo $ "Remote host session connecting for " <> tshow rhId
+--       rcName <- chatReadVar localDeviceName
+--       localAddr <- asks multicastSubscribers >>= Discovery.getLocalAddressMulticast >>= maybe (throwError . ChatError $ CEInternalError "unable to get local address") pure
+--       started <- newEmptyTMVarIO -- XXX: should contain service port to be published
+--       (dhKey, sigKey, ann, oob) <- error "TODO: startRemoteHost.run 1" -- Discovery.startSession (if rcName == "" then Nothing else Just rcName) (localAddr, 0) fingerprint
+--       toView CRRemoteHostStarted {remoteHost = remoteHostInfo rh True, sessionOOB = decodeUtf8 $ strEncode (oob :: RCSignedInvitation)}
+--       httpClient <- error "TODO: startRemoteHost.run 2" -- liftEitherError (ChatErrorRemoteCtrl . RCEHTTP2Error . show) $ announceRevHTTP2 tasks started (sigKey, ann) credentials cleanupIO
+--       logInfo $ "Remote host session connected for " <> tshow rhId
+--       -- test connection and establish a protocol layer
+--       remoteHostClient <- liftRH rhId $ createRemoteHostClient httpClient dhKey rcName
+--       -- set up message polling
+--       oq <- asks outputQ
+--       asyncRegistered tasks . forever $ do
+--         liftRH rhId (remoteRecv remoteHostClient 1000000) >>= mapM_ (atomically . writeTBQueue oq . (Nothing,Just rhId,))
+--       -- update session state
+--       logInfo $ "Remote host session started for " <> tshow rhId
+--       chatModifyVar remoteHostSessions $ M.adjust (\rhs -> rhs {remoteHostClient = Just remoteHostClient}) rhId
+--       chatWriteVar currentRemoteHost $ Just rhId
+--       toView $
+--         CRRemoteHostConnected
+--           RemoteHostInfo
+--             { remoteHostId = rhId,
+--               storePath = storePath,
+--               displayName = hostDeviceName remoteHostClient,
+--               sessionActive = True
+--             }
+
+--     genSessionCredentials RemoteHost {caKey, caCert} = do
+--       sessionCreds <- genCredentials (Just parent) (0, 24) "Session"
+--       pure . tlsCredentials $ sessionCreds :| [parent]
+--       where
+--         parent = (C.signatureKeyPair caKey, caCert)
 
 -- | Atomically check/register session and prepare its task list
-startRemoteHostSession :: ChatMonad m => RemoteHost -> m Tasks
-startRemoteHostSession RemoteHost {remoteHostId, storePath} = withNoRemoteHostSession remoteHostId $ \sessions -> do
-  remoteHostTasks <- newTVar []
-  TM.insert remoteHostId RemoteHostSession {remoteHostTasks, storePath, remoteHostClient = Nothing} sessions
-  pure $ Right remoteHostTasks
+-- startRemoteHostSession :: ChatMonad m => RemoteHost -> m Tasks
+-- startRemoteHostSession RemoteHost {remoteHostId, storePath} = withNoRemoteHostSession remoteHostId $ \sessions -> do
+--   remoteHostTasks <- newTVar []
+--   TM.insert remoteHostId RemoteHostSession {remoteHostTasks, storePath, remoteHostClient = Nothing} sessions
+--   pure $ Right remoteHostTasks
 
-closeRemoteHostSession :: ChatMonad m => RemoteHostId -> m ()
+closeRemoteHostSession :: ChatMonad m => Maybe RemoteHostId -> m ()
 closeRemoteHostSession rhId = do
   logNote $ "Closing remote host session for " <> tshow rhId
-  chatModifyVar currentRemoteHost $ \cur -> if cur == Just rhId then Nothing else cur -- only wipe the closing RH
+  chatModifyVar currentRemoteHost $ \cur -> if cur == rhId then Nothing else cur -- only wipe the closing RH
   session <- withRemoteHostSession rhId $ \sessions rhs -> Right rhs <$ TM.delete rhId sessions
   cancelRemoteHostSession session
 
@@ -180,6 +207,18 @@ cancelRemoteHostSession :: MonadUnliftIO m => RemoteHostSession -> m ()
 cancelRemoteHostSession RemoteHostSession {remoteHostTasks, remoteHostClient} = do
   cancelTasks remoteHostTasks
   mapM_ closeRemoteHostClient remoteHostClient
+
+
+closeRemoteHost :: ChatMonad m => m ()
+closeRemoteHost =
+  join . withRemoteCtrlSession_ . maybe (Left $ ChatErrorRemoteCtrl RCEInactive) $
+    \s -> Right (liftIO $ cancelRemoteCtrl s, Nothing)
+
+cancelRemoteHost :: RemoteHostSession -> IO ()
+cancelRemoteHost = \case
+  RHSessionStarting -> pure ()
+  RHSessionConnecting {rchClient} -> cancelHostClient rchClient
+  RHSessionConnected {rhClient = RemoteHostClient {httpClient}} -> closeHTTP2Client httpClient
 
 createRemoteHost :: ChatMonad m => m RemoteHostInfo
 createRemoteHost = do
@@ -218,7 +257,7 @@ deleteRemoteHost rhId = do
 
 storeRemoteFile :: forall m. ChatMonad m => RemoteHostId -> Maybe Bool -> FilePath -> m CryptoFile
 storeRemoteFile rhId encrypted_ localPath = do
-  RemoteHostSession {remoteHostClient, storePath} <- getRemoteHostSession rhId
+  RemoteHostSession {remoteHostClient, storePath} <- getRemoteHostSession $ Just rhId
   case remoteHostClient of
     Nothing -> throwError $ ChatErrorRemoteHost rhId RHMissing
     Just c@RemoteHostClient {encryptHostFiles} -> do
@@ -244,7 +283,7 @@ storeRemoteFile rhId encrypted_ localPath = do
 
 getRemoteFile :: ChatMonad m => RemoteHostId -> RemoteFile -> m ()
 getRemoteFile rhId rf = do
-  RemoteHostSession {remoteHostClient, storePath} <- getRemoteHostSession rhId
+  RemoteHostSession {remoteHostClient, storePath} <- getRemoteHostSession $ Just rhId
   case remoteHostClient of
     Nothing -> throwError $ ChatErrorRemoteHost rhId RHMissing
     Just c -> do
@@ -559,8 +598,8 @@ withRemoteCtrlSession_ state = do
   r <-
     atomically $ stateTVar session $ \s ->
       case state s of
-        Right (a, s') -> (Right a, s')
         Left e -> (Left e, s)
+        Right (a, s') -> (Right a, s')
   liftEither r
 
 updateRemoteCtrlSession :: ChatMonad m => (RemoteCtrlSession -> Either ChatError RemoteCtrlSession) -> m ()
