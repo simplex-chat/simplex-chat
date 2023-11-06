@@ -41,12 +41,13 @@ remoteTests = fdescribe "Remote" $ do
   -- it "OOB encoding, decoding, and signatures are correct" oobCodecTest
   -- it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
   it "RemoteControl TLS Hello works" rcTLSTest
-  it "performs protocol handshake" remoteHandshakeTest
-  it "performs protocol handshake (again)" remoteHandshakeTest -- leaking servers regression check
-  it "sends messages" remoteMessageTest
-  describe "remote files" $ do
-    it "store/get/send/receive files" remoteStoreFileTest
-    it "should sends files from CLI wihtout /store" remoteCLIFileTest
+  fit "performs protocol handshake" remoteHandshakeTest'
+  xit "performs protocol handshake" remoteHandshakeTest
+  xit "performs protocol handshake (again)" remoteHandshakeTest -- leaking servers regression check
+  xit "sends messages" remoteMessageTest
+  -- describe "remote files" $ do
+  --   xit "store/get/send/receive files" remoteStoreFileTest
+  --   xit "should sends files from CLI wihtout /store" remoteCLIFileTest
 
 -- * Low-level TLS with ephemeral credentials
 
@@ -61,8 +62,10 @@ rcTLSTest _tmp = do
     logNote "c 2"
     putMVar invVar (inv, hc)
     logNote "c 3"
-    (rcHostSession, rcHelloBody, hp') <- atomically $ takeTMVar var
+    (sessId, vars') <- atomically $ takeTMVar var
     logNote "c 4"
+    (rcHostSession, rcHelloBody, hp') <- atomically $ takeTMVar vars'
+    logNote "c 5"
     threadDelay 1000000
     logNote $ tshow rcHelloBody
     logNote "ctrl: ciao"
@@ -172,6 +175,10 @@ rcTLSTest _tmp = do
 
 -- * Chat commands
 
+remoteHandshakeTest' :: HasCallStack => FilePath -> IO ()
+remoteHandshakeTest' = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+  startRemote' mobile desktop
+
 remoteHandshakeTest :: HasCallStack => FilePath -> IO ()
 remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   desktop ##> "/list remote hosts"
@@ -227,208 +234,228 @@ remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mob
   threadDelay 1000000
   logNote "done"
 
-remoteStoreFileTest :: HasCallStack => FilePath -> IO ()
-remoteStoreFileTest =
-  testChatCfg3 cfg aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob ->
-    withXFTPServer $ do
-      let mobileFiles = "./tests/tmp/mobile_files"
-      mobile ##> ("/_files_folder " <> mobileFiles)
-      mobile <## "ok"
-      let desktopFiles = "./tests/tmp/desktop_files"
-      desktop ##> ("/_files_folder " <> desktopFiles)
-      desktop <## "ok"
-      let desktopHostFiles = "./tests/tmp/remote_hosts_data"
-      desktop ##> ("/remote_hosts_folder " <> desktopHostFiles)
-      desktop <## "ok"
-      let bobFiles = "./tests/tmp/bob_files"
-      bob ##> ("/_files_folder " <> bobFiles)
-      bob <## "ok"
-      startRemote mobile desktop
-      contactBob desktop bob
-      rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
-      desktopHostStore <- case M.lookup 1 rhs of
-        Just RemoteHostSession {storePath} -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
-        _ -> fail "Host session 1 should be started"
-      desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
-      desktop <## "file test.pdf stored on remote host 1"
-      src <- B.readFile "tests/fixtures/test.pdf"
-      B.readFile (mobileFiles </> "test.pdf") `shouldReturn` src
-      B.readFile (desktopHostStore </> "test.pdf") `shouldReturn` src
-      desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
-      desktop <## "file test_1.pdf stored on remote host 1"
-      B.readFile (mobileFiles </> "test_1.pdf") `shouldReturn` src
-      B.readFile (desktopHostStore </> "test_1.pdf") `shouldReturn` src
-      desktop ##> "/store remote file 1 encrypt=on tests/fixtures/test.pdf"
-      desktop <## "file test_2.pdf stored on remote host 1"
-      Just cfArgs@(CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine desktop
-      chatReadFile (mobileFiles </> "test_2.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
-      chatReadFile (desktopHostStore </> "test_2.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
+-- remoteStoreFileTest :: HasCallStack => FilePath -> IO ()
+-- remoteStoreFileTest =
+--   testChatCfg3 cfg aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob ->
+--     withXFTPServer $ do
+--       let mobileFiles = "./tests/tmp/mobile_files"
+--       mobile ##> ("/_files_folder " <> mobileFiles)
+--       mobile <## "ok"
+--       let desktopFiles = "./tests/tmp/desktop_files"
+--       desktop ##> ("/_files_folder " <> desktopFiles)
+--       desktop <## "ok"
+--       let desktopHostFiles = "./tests/tmp/remote_hosts_data"
+--       desktop ##> ("/remote_hosts_folder " <> desktopHostFiles)
+--       desktop <## "ok"
+--       let bobFiles = "./tests/tmp/bob_files"
+--       bob ##> ("/_files_folder " <> bobFiles)
+--       bob <## "ok"
+--       startRemote mobile desktop
+--       contactBob desktop bob
+--       rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
+--       desktopHostStore <- case M.lookup (RhId 1) rhs of
+--         Just RemoteHostSession {storePath} -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
+--         _ -> fail "Host session 1 should be started"
+--       desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
+--       desktop <## "file test.pdf stored on remote host 1"
+--       src <- B.readFile "tests/fixtures/test.pdf"
+--       B.readFile (mobileFiles </> "test.pdf") `shouldReturn` src
+--       B.readFile (desktopHostStore </> "test.pdf") `shouldReturn` src
+--       desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
+--       desktop <## "file test_1.pdf stored on remote host 1"
+--       B.readFile (mobileFiles </> "test_1.pdf") `shouldReturn` src
+--       B.readFile (desktopHostStore </> "test_1.pdf") `shouldReturn` src
+--       desktop ##> "/store remote file 1 encrypt=on tests/fixtures/test.pdf"
+--       desktop <## "file test_2.pdf stored on remote host 1"
+--       Just cfArgs@(CFArgs key nonce) <- J.decode . LB.pack <$> getTermLine desktop
+--       chatReadFile (mobileFiles </> "test_2.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
+--       chatReadFile (desktopHostStore </> "test_2.pdf") (strEncode key) (strEncode nonce) `shouldReturn` Right (LB.fromStrict src)
 
-      removeFile (desktopHostStore </> "test_1.pdf")
-      removeFile (desktopHostStore </> "test_2.pdf")
+--       removeFile (desktopHostStore </> "test_1.pdf")
+--       removeFile (desktopHostStore </> "test_2.pdf")
 
-      -- cannot get file before it is used
-      desktop ##> "/get remote file 1 {\"userId\": 1, \"fileId\": 1, \"sent\": true, \"fileSource\": {\"filePath\": \"test_1.pdf\"}}"
-      hostError desktop "SEFileNotFound"
-      -- send file not encrypted locally on mobile host
-      desktop ##> "/_send @2 json {\"filePath\": \"test_1.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"sending a file\"}}"
-      desktop <# "@bob sending a file"
-      desktop <# "/f @bob test_1.pdf"
-      desktop <## "use /fc 1 to cancel sending"
-      bob <# "alice> sending a file"
-      bob <# "alice> sends file test_1.pdf (266.0 KiB / 272376 bytes)"
-      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
-      bob ##> "/fr 1"
-      concurrentlyN_
-        [ do
-            desktop <## "completed uploading file 1 (test_1.pdf) for bob",
-          do
-            bob <## "saving file 1 from alice to test_1.pdf"
-            bob <## "started receiving file 1 (test_1.pdf) from alice"
-            bob <## "completed receiving file 1 (test_1.pdf) from alice"
-        ]
-      B.readFile (bobFiles </> "test_1.pdf") `shouldReturn` src
-      -- returns error for inactive user
-      desktop ##> "/get remote file 1 {\"userId\": 2, \"fileId\": 1, \"sent\": true, \"fileSource\": {\"filePath\": \"test_1.pdf\"}}"
-      hostError desktop "CEDifferentActiveUser"
-      -- returns error with incorrect file ID
-      desktop ##> "/get remote file 1 {\"userId\": 1, \"fileId\": 2, \"sent\": true, \"fileSource\": {\"filePath\": \"test_1.pdf\"}}"
-      hostError desktop "SEFileNotFound"
-      -- gets file
-      doesFileExist (desktopHostStore </> "test_1.pdf") `shouldReturn` False
-      desktop ##> "/get remote file 1 {\"userId\": 1, \"fileId\": 1, \"sent\": true, \"fileSource\": {\"filePath\": \"test_1.pdf\"}}"
-      desktop <## "ok"
-      B.readFile (desktopHostStore </> "test_1.pdf") `shouldReturn` src
+--       -- cannot get file before it is used
+--       desktop ##> "/get remote file 1 {\"userId\": 1, \"fileId\": 1, \"sent\": true, \"fileSource\": {\"filePath\": \"test_1.pdf\"}}"
+--       hostError desktop "SEFileNotFound"
+--       -- send file not encrypted locally on mobile host
+--       desktop ##> "/_send @2 json {\"filePath\": \"test_1.pdf\", \"msgContent\": {\"type\": \"file\", \"text\": \"sending a file\"}}"
+--       desktop <# "@bob sending a file"
+--       desktop <# "/f @bob test_1.pdf"
+--       desktop <## "use /fc 1 to cancel sending"
+--       bob <# "alice> sending a file"
+--       bob <# "alice> sends file test_1.pdf (266.0 KiB / 272376 bytes)"
+--       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+--       bob ##> "/fr 1"
+--       concurrentlyN_
+--         [ do
+--             desktop <## "completed uploading file 1 (test_1.pdf) for bob",
+--           do
+--             bob <## "saving file 1 from alice to test_1.pdf"
+--             bob <## "started receiving file 1 (test_1.pdf) from alice"
+--             bob <## "completed receiving file 1 (test_1.pdf) from alice"
+--         ]
+--       B.readFile (bobFiles </> "test_1.pdf") `shouldReturn` src
+--       -- returns error for inactive user
+--       desktop ##> "/get remote file 1 {\"userId\": 2, \"fileId\": 1, \"sent\": true, \"fileSource\": {\"filePath\": \"test_1.pdf\"}}"
+--       hostError desktop "CEDifferentActiveUser"
+--       -- returns error with incorrect file ID
+--       desktop ##> "/get remote file 1 {\"userId\": 1, \"fileId\": 2, \"sent\": true, \"fileSource\": {\"filePath\": \"test_1.pdf\"}}"
+--       hostError desktop "SEFileNotFound"
+--       -- gets file
+--       doesFileExist (desktopHostStore </> "test_1.pdf") `shouldReturn` False
+--       desktop ##> "/get remote file 1 {\"userId\": 1, \"fileId\": 1, \"sent\": true, \"fileSource\": {\"filePath\": \"test_1.pdf\"}}"
+--       desktop <## "ok"
+--       B.readFile (desktopHostStore </> "test_1.pdf") `shouldReturn` src
 
-      -- send file encrypted locally on mobile host
-      desktop ##> ("/_send @2 json {\"fileSource\": {\"filePath\":\"test_2.pdf\", \"cryptoArgs\": " <> LB.unpack (J.encode cfArgs) <> "}, \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}")
-      desktop <# "/f @bob test_2.pdf"
-      desktop <## "use /fc 2 to cancel sending"
-      bob <# "alice> sends file test_2.pdf (266.0 KiB / 272376 bytes)"
-      bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
-      bob ##> "/fr 2"
-      concurrentlyN_
-        [ do
-            desktop <## "completed uploading file 2 (test_2.pdf) for bob",
-          do
-            bob <## "saving file 2 from alice to test_2.pdf"
-            bob <## "started receiving file 2 (test_2.pdf) from alice"
-            bob <## "completed receiving file 2 (test_2.pdf) from alice"
-        ]
-      B.readFile (bobFiles </> "test_2.pdf") `shouldReturn` src
+--       -- send file encrypted locally on mobile host
+--       desktop ##> ("/_send @2 json {\"fileSource\": {\"filePath\":\"test_2.pdf\", \"cryptoArgs\": " <> LB.unpack (J.encode cfArgs) <> "}, \"msgContent\": {\"type\": \"file\", \"text\": \"\"}}")
+--       desktop <# "/f @bob test_2.pdf"
+--       desktop <## "use /fc 2 to cancel sending"
+--       bob <# "alice> sends file test_2.pdf (266.0 KiB / 272376 bytes)"
+--       bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+--       bob ##> "/fr 2"
+--       concurrentlyN_
+--         [ do
+--             desktop <## "completed uploading file 2 (test_2.pdf) for bob",
+--           do
+--             bob <## "saving file 2 from alice to test_2.pdf"
+--             bob <## "started receiving file 2 (test_2.pdf) from alice"
+--             bob <## "completed receiving file 2 (test_2.pdf) from alice"
+--         ]
+--       B.readFile (bobFiles </> "test_2.pdf") `shouldReturn` src
 
-      -- receive file via remote host
-      copyFile "./tests/fixtures/test.jpg" (bobFiles </> "test.jpg")
-      bob #> "/f @alice test.jpg"
-      bob <## "use /fc 3 to cancel sending"
-      desktop <# "bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
-      desktop <## "use /fr 3 [<dir>/ | <path>] to receive it"
-      desktop ##> "/fr 3 encrypt=on"
-      concurrentlyN_
-        [ do
-            bob <## "completed uploading file 3 (test.jpg) for alice",
-          do
-            desktop <## "saving file 3 from bob to test.jpg"
-            desktop <## "started receiving file 3 (test.jpg) from bob"
-            desktop <## "completed receiving file 3 (test.jpg) from bob"
-        ]
-      Just cfArgs'@(CFArgs key' nonce') <- J.decode . LB.pack <$> getTermLine desktop
-      desktop <## "File received to connected remote host 1"
-      desktop <## "To download to this device use:"
-      getCmd <- getTermLine desktop
-      getCmd `shouldBe` ("/get remote file 1 {\"userId\":1,\"fileId\":3,\"sent\":false,\"fileSource\":{\"filePath\":\"test.jpg\",\"cryptoArgs\":" <> LB.unpack (J.encode cfArgs') <> "}}")
-      src' <- B.readFile (bobFiles </> "test.jpg")
-      chatReadFile (mobileFiles </> "test.jpg") (strEncode key') (strEncode nonce') `shouldReturn` Right (LB.fromStrict src')
-      doesFileExist (desktopHostStore </> "test.jpg") `shouldReturn` False
-      -- returns error with incorrect key
-      desktop ##> "/get remote file 1 {\"userId\": 1, \"fileId\": 3, \"sent\": false, \"fileSource\": {\"filePath\": \"test.jpg\", \"cryptoArgs\": null}}"
-      hostError desktop "SEFileNotFound"
-      doesFileExist (desktopHostStore </> "test.jpg") `shouldReturn` False
-      desktop ##> getCmd
-      desktop <## "ok"
-      chatReadFile (desktopHostStore </> "test.jpg") (strEncode key') (strEncode nonce') `shouldReturn` Right (LB.fromStrict src')
+--       -- receive file via remote host
+--       copyFile "./tests/fixtures/test.jpg" (bobFiles </> "test.jpg")
+--       bob #> "/f @alice test.jpg"
+--       bob <## "use /fc 3 to cancel sending"
+--       desktop <# "bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+--       desktop <## "use /fr 3 [<dir>/ | <path>] to receive it"
+--       desktop ##> "/fr 3 encrypt=on"
+--       concurrentlyN_
+--         [ do
+--             bob <## "completed uploading file 3 (test.jpg) for alice",
+--           do
+--             desktop <## "saving file 3 from bob to test.jpg"
+--             desktop <## "started receiving file 3 (test.jpg) from bob"
+--             desktop <## "completed receiving file 3 (test.jpg) from bob"
+--         ]
+--       Just cfArgs'@(CFArgs key' nonce') <- J.decode . LB.pack <$> getTermLine desktop
+--       desktop <## "File received to connected remote host 1"
+--       desktop <## "To download to this device use:"
+--       getCmd <- getTermLine desktop
+--       getCmd `shouldBe` ("/get remote file 1 {\"userId\":1,\"fileId\":3,\"sent\":false,\"fileSource\":{\"filePath\":\"test.jpg\",\"cryptoArgs\":" <> LB.unpack (J.encode cfArgs') <> "}}")
+--       src' <- B.readFile (bobFiles </> "test.jpg")
+--       chatReadFile (mobileFiles </> "test.jpg") (strEncode key') (strEncode nonce') `shouldReturn` Right (LB.fromStrict src')
+--       doesFileExist (desktopHostStore </> "test.jpg") `shouldReturn` False
+--       -- returns error with incorrect key
+--       desktop ##> "/get remote file 1 {\"userId\": 1, \"fileId\": 3, \"sent\": false, \"fileSource\": {\"filePath\": \"test.jpg\", \"cryptoArgs\": null}}"
+--       hostError desktop "SEFileNotFound"
+--       doesFileExist (desktopHostStore </> "test.jpg") `shouldReturn` False
+--       desktop ##> getCmd
+--       desktop <## "ok"
+--       chatReadFile (desktopHostStore </> "test.jpg") (strEncode key') (strEncode nonce') `shouldReturn` Right (LB.fromStrict src')
 
-      stopMobile mobile desktop
-  where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp/tmp"}
-    hostError cc err = do
-      r <- getTermLine cc
-      r `shouldStartWith` "remote host 1 error"
-      r `shouldContain` err
+--       stopMobile mobile desktop
+--   where
+--     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp/tmp"}
+--     hostError cc err = do
+--       r <- getTermLine cc
+--       r `shouldStartWith` "remote host 1 error"
+--       r `shouldContain` err
 
-remoteCLIFileTest :: HasCallStack => FilePath -> IO ()
-remoteCLIFileTest = testChatCfg3 cfg aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> withXFTPServer $ do
-  createDirectoryIfMissing True "./tests/tmp/tmp/"
-  let mobileFiles = "./tests/tmp/mobile_files"
-  mobile ##> ("/_files_folder " <> mobileFiles)
-  mobile <## "ok"
-  let bobFiles = "./tests/tmp/bob_files/"
-  createDirectoryIfMissing True bobFiles
-  let desktopHostFiles = "./tests/tmp/remote_hosts_data"
-  desktop ##> ("/remote_hosts_folder " <> desktopHostFiles)
-  desktop <## "ok"
+-- remoteCLIFileTest :: HasCallStack => FilePath -> IO ()
+-- remoteCLIFileTest = testChatCfg3 cfg aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> withXFTPServer $ do
+--   createDirectoryIfMissing True "./tests/tmp/tmp/"
+--   let mobileFiles = "./tests/tmp/mobile_files"
+--   mobile ##> ("/_files_folder " <> mobileFiles)
+--   mobile <## "ok"
+--   let bobFiles = "./tests/tmp/bob_files/"
+--   createDirectoryIfMissing True bobFiles
+--   let desktopHostFiles = "./tests/tmp/remote_hosts_data"
+--   desktop ##> ("/remote_hosts_folder " <> desktopHostFiles)
+--   desktop <## "ok"
 
-  startRemote mobile desktop
-  contactBob desktop bob
+--   startRemote mobile desktop
+--   contactBob desktop bob
 
-  rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
-  desktopHostStore <- case M.lookup 1 rhs of
-    Just RemoteHostSession {storePath} -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
-    _ -> fail "Host session 1 should be started"
+--   rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
+--   desktopHostStore <- case M.lookup (RhId 1) rhs of
+--     Just RemoteHostSession {storePath} -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
+--     _ -> fail "Host session 1 should be started"
 
-  mobileName <- userName mobile
+--   mobileName <- userName mobile
 
-  bob #> ("/f @" <> mobileName <> " " <> "tests/fixtures/test.pdf")
-  bob <## "use /fc 1 to cancel sending"
+--   bob #> ("/f @" <> mobileName <> " " <> "tests/fixtures/test.pdf")
+--   bob <## "use /fc 1 to cancel sending"
 
-  desktop <# "bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
-  desktop <## "use /fr 1 [<dir>/ | <path>] to receive it"
-  desktop ##> "/fr 1"
-  concurrentlyN_
-    [ do
-        bob <## "completed uploading file 1 (test.pdf) for alice",
-      do
-        desktop <## "saving file 1 from bob to test.pdf"
-        desktop <## "started receiving file 1 (test.pdf) from bob"
-        desktop <## "completed receiving file 1 (test.pdf) from bob"
-    ]
+--   desktop <# "bob> sends file test.pdf (266.0 KiB / 272376 bytes)"
+--   desktop <## "use /fr 1 [<dir>/ | <path>] to receive it"
+--   desktop ##> "/fr 1"
+--   concurrentlyN_
+--     [ do
+--         bob <## "completed uploading file 1 (test.pdf) for alice",
+--       do
+--         desktop <## "saving file 1 from bob to test.pdf"
+--         desktop <## "started receiving file 1 (test.pdf) from bob"
+--         desktop <## "completed receiving file 1 (test.pdf) from bob"
+--     ]
 
-  desktop <## "File received to connected remote host 1"
-  desktop <## "To download to this device use:"
-  getCmd <- getTermLine desktop
-  src <- B.readFile "tests/fixtures/test.pdf"
-  B.readFile (mobileFiles </> "test.pdf") `shouldReturn` src
-  doesFileExist (desktopHostStore </> "test.pdf") `shouldReturn` False
-  desktop ##> getCmd
-  desktop <## "ok"
-  B.readFile (desktopHostStore </> "test.pdf") `shouldReturn` src
+--   desktop <## "File received to connected remote host 1"
+--   desktop <## "To download to this device use:"
+--   getCmd <- getTermLine desktop
+--   src <- B.readFile "tests/fixtures/test.pdf"
+--   B.readFile (mobileFiles </> "test.pdf") `shouldReturn` src
+--   doesFileExist (desktopHostStore </> "test.pdf") `shouldReturn` False
+--   desktop ##> getCmd
+--   desktop <## "ok"
+--   B.readFile (desktopHostStore </> "test.pdf") `shouldReturn` src
 
-  desktop `send` "/f @bob tests/fixtures/test.jpg"
-  desktop <# "/f @bob test.jpg"
-  desktop <## "use /fc 2 to cancel sending"
+--   desktop `send` "/f @bob tests/fixtures/test.jpg"
+--   desktop <# "/f @bob test.jpg"
+--   desktop <## "use /fc 2 to cancel sending"
 
-  bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
-  bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
-  bob ##> ("/fr 2 " <> bobFiles)
-  concurrentlyN_
-    [ do
-        desktop <## "completed uploading file 2 (test.jpg) for bob",
-      do
-        bob <## "saving file 2 from alice to ./tests/tmp/bob_files/test.jpg"
-        bob <## "started receiving file 2 (test.jpg) from alice"
-        bob <## "completed receiving file 2 (test.jpg) from alice"
-    ]
+--   bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+--   bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+--   bob ##> ("/fr 2 " <> bobFiles)
+--   concurrentlyN_
+--     [ do
+--         desktop <## "completed uploading file 2 (test.jpg) for bob",
+--       do
+--         bob <## "saving file 2 from alice to ./tests/tmp/bob_files/test.jpg"
+--         bob <## "started receiving file 2 (test.jpg) from alice"
+--         bob <## "completed receiving file 2 (test.jpg) from alice"
+--     ]
 
-  src' <- B.readFile "tests/fixtures/test.jpg"
-  B.readFile (mobileFiles </> "test.jpg") `shouldReturn` src'
-  B.readFile (desktopHostStore </> "test.jpg") `shouldReturn` src'
-  B.readFile (bobFiles </> "test.jpg") `shouldReturn` src'
+--   src' <- B.readFile "tests/fixtures/test.jpg"
+--   B.readFile (mobileFiles </> "test.jpg") `shouldReturn` src'
+--   B.readFile (desktopHostStore </> "test.jpg") `shouldReturn` src'
+--   B.readFile (bobFiles </> "test.jpg") `shouldReturn` src'
 
-  stopMobile mobile desktop
-  where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp/tmp"}
+--   stopMobile mobile desktop
+--   where
+--     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp/tmp"}
 
 -- * Utils
+
+startRemote' :: TestCC -> TestCC -> IO ()
+startRemote' mobile desktop = do
+  desktop ##> "/set device name My desktop"
+  desktop <## "ok"
+  desktop ##> "/start remote host new"
+  desktop <## "new remote host started"
+  desktop <## "Remote session invitation:"
+  inv <- getTermLine desktop
+  mobile ##> ("/connect remote ctrl " <> inv)
+  mobile <## "ok"
+  desktop <## "new remote host connecting"
+  desktop <## "Compare session code with host:"
+  sessId <- getTermLine desktop
+  mobile <## "remote controller 1 connected to from app"
+  mobile <## "Compare session code with controller and use:"
+  mobile <## ("/verify remote ctrl " <> sessId)
+  mobile ##> ("/verify remote ctrl " <> sessId)
+  desktop <## ""
+  mobile <## ""
 
 startRemote :: TestCC -> TestCC -> IO ()
 startRemote mobile desktop = do

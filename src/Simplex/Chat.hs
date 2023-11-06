@@ -46,7 +46,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (encodeUtf8)
+import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
@@ -1943,7 +1943,7 @@ processChatCommand = \case
   ListRemoteHosts -> withUser_ $ CRRemoteHostList <$> listRemoteHosts
   StartRemoteHost rh_ -> withUser_ $ do
     (remoteHost_, inv) <- startRemoteHost' rh_
-    pure CRRemoteHostStarted {remoteHost_, invitation = safeDecodeUtf8 $ strEncode inv}
+    pure CRRemoteHostStarted {remoteHost_, invitation = decodeLatin1 $ strEncode inv}
   StopRemoteHost rh_ -> withUser_ $ closeRemoteHost rh_ >> ok_
   DeleteRemoteHost rh -> withUser_ $ deleteRemoteHost rh >> ok_
   StoreRemoteFile rh encrypted_ localPath -> withUser_ $ CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
@@ -5949,8 +5949,8 @@ chatCommandP =
       "/set device name " *> (SetLocalDeviceName <$> textP),
       -- "/create remote host" $> CreateRemoteHost,
       "/list remote hosts" $> ListRemoteHosts,
-      "/start remote host" *> (StartRemoteHost <$> optional ((,) <$> (A.space *> A.decimal) <*> (" multicast=" *> onOffP <|> pure False))),
-      "/stop remote host" *> (StopRemoteHost <$> (A.space *> (RHId <$> A.decimal <|> "new" $> RHNew))),
+      "/start remote host " *> (StartRemoteHost <$> ("new" $> Nothing <|> (Just <$> ((,) <$> A.decimal <*> (" multicast=" *> onOffP <|> pure False))))),
+      "/stop remote host " *> (StopRemoteHost <$> ("new" $> RHNew <|> RHId <$> A.decimal)),
       "/delete remote host " *> (DeleteRemoteHost <$> A.decimal),
       "/store remote file " *> (StoreRemoteFile <$> A.decimal <*> optional (" encrypt=" *> onOffP) <* A.space <*> filePath),
       "/get remote file " *> (GetRemoteFile <$> A.decimal <* A.space <*> jsonP),

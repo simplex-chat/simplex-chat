@@ -1097,6 +1097,7 @@ data RemoteCtrlSession
   | RCSessionConnected
       { rcsClient :: RCCtrlClient,
         rcsSession :: RCCtrlSession,
+        http2Server :: Async (),
         remoteOutputQ :: TBQueue ChatResponse
       }
 

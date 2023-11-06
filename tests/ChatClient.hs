@@ -91,7 +91,7 @@ termSettings :: VirtualTerminalSettings
 termSettings =
   VirtualTerminalSettings
     { virtualType = "xterm",
-      virtualWindowSize = pure C.Size {height = 24, width = 1000},
+      virtualWindowSize = pure C.Size {height = 24, width = 2250},
       virtualEvent = retry,
       virtualInterrupt = retry
     }
@@ -273,8 +273,8 @@ getTermLine cc =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
-      when (printOutput cc) $ do
-      -- when True $ do
+      -- when (printOutput cc) $ do
+      when True $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s

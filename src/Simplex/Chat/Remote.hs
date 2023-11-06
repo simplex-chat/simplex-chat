@@ -553,19 +553,26 @@ confirmRemoteCtrl _rcId = do
 -- Take a look at emoji of tlsunique
 verifyRemoteCtrlSession :: ChatMonad m => (ByteString -> m ChatResponse) -> Text -> m ()
 verifyRemoteCtrlSession execChatCommand sessCode' = do
-  (client, sessionCode, _rcsPairing) <- withRemoteCtrlSession $ \case
+  (rcsClient, RCCtrlSession {tls, sessionKeys}, sessionCode, _rcsPairing) <- withRemoteCtrlSession $ \case
     RCSessionPendingConfirmation {rcsClient, rcsSession, sessionCode, rcsPairing} ->
-      Right ((rcsClient, sessionCode, rcsPairing), RCSessionConfirmed {rcsClient, rcsSession})
+      Right ((rcsClient, rcsSession, sessionCode, rcsPairing), RCSessionConfirmed {rcsClient, rcsSession})
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   let verified = sameVerificationCode sessCode' sessionCode
-  liftIO $ confirmCtrlSession client verified
+  liftIO $ confirmCtrlSession rcsClient verified
   -- TODO: Store new rcsPairing
   remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
-  RCCtrlSession {tls, sessionKeys} <- withRemoteCtrlSession $ \case
-    RCSessionConfirmed {rcsClient, rcsSession} ->
-      Right (rcsSession, RCSessionConnected {rcsClient, rcsSession, remoteOutputQ})
+  http2Server <- async $ attachHTTP2Server tls $ handleRemoteCommand execChatCommand sessionKeys remoteOutputQ
+  let remoteCtrl = RemoteCtrlInfo -- TODO use Pairing or something
+        { remoteCtrlId = 1,
+          displayName = "from app",
+          fingerprint = "",
+          accepted = Just True,
+          sessionActive = True
+        }
+  withRemoteCtrlSession $ \case
+    RCSessionConfirmed {} -> Right ((), RCSessionConnected {rcsClient, rcsSession, http2Server, remoteOutputQ})
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
-  attachHTTP2Server tls $ handleRemoteCommand execChatCommand sessionKeys remoteOutputQ
+  toView CRRemoteCtrlConnected {remoteCtrl}
 
 stopRemoteCtrl :: ChatMonad m => m ()
 stopRemoteCtrl =

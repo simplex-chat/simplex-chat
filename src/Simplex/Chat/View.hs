@@ -278,7 +278,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRRemoteHostList hs -> viewRemoteHosts hs
   CRRemoteHostStarted {remoteHost_, invitation} ->
     [ maybe "new remote host started" (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> sShow rhId <> " started") remoteHost_,
-      "invitation:",
+      "Remote session invitation:",
       plain invitation
     ]
   CRRemoteHostSessionCode {remoteHost_, sessionCode} ->
@@ -301,7 +301,10 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRRemoteCtrlConnecting RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} ->
     ["remote controller " <> sShow rcId <> " connecting to " <> plain rcName]
   CRRemoteCtrlSessionCode {remoteCtrl = RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName}, sessionCode} ->
-    ["remote controller " <> sShow rcId <> " connected to " <> plain rcName, "Compare session code with controller and use:", "/verify remote ctrl " <> sShow rcId <> " " <> plain sessionCode]
+    [ "remote controller " <> sShow rcId <> " connected to " <> plain rcName,
+      "Compare session code with controller and use:",
+      "/verify remote ctrl " <> plain sessionCode -- TODO maybe pass rcId
+    ]
   CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} ->
     ["remote controller " <> sShow rcId <> " session started with " <> plain rcName]
   CRRemoteCtrlStopped -> ["remote controller stopped"]
