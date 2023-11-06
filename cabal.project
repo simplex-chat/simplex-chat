@@ -2,7 +2,7 @@
 packages: . ../simplexmq
 -- packages: . ../simplexmq ../direct-sqlcipher ../sqlcipher-simple
 
-with-compiler: ghc-9.6.2
+with-compiler: ghc-9.6.3
 
 constraints: zip +disable-bzip2 +disable-zstd
 
