@@ -6,6 +6,7 @@
 import Foundation
 import SwiftUI
 import AVKit
+import Combine
 
 struct VideoPlayerView: UIViewRepresentable {
 
@@ -37,7 +38,9 @@ struct VideoPlayerView: UIViewRepresentable {
             player.seek(to: CMTime.zero)
             player.play()
         }
-        //controller.player?.addObserver(controller, forKeyPath: "rate", options: .new, context: nil)
+        context.coordinator.publisher = player.publisher(for: \.timeControlStatus).sink { status in
+            UIApplication.shared.isIdleTimerDisabled = status == .playing
+        }
         return controller.view
     }
 
@@ -51,18 +54,13 @@ struct VideoPlayerView: UIViewRepresentable {
     class Coordinator: NSObject {
         var controller: AVPlayerViewController?
         var timeObserver: Any? = nil
-
-//        override class func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
-//            if keyPath == "rate", let player = object as? AVPlayer {
-//                UIApplication.shared.isIdleTimerDisabled = player.rate > 0
-//            }
-//        }
+        var publisher: AnyCancellable? = nil
 
         deinit {
             if let timeObserver = timeObserver {
                 NotificationCenter.default.removeObserver(timeObserver)
             }
-            //controller?.player?.removeObserver(self, forKeyPath: "rate", context: nil)
+            publisher?.cancel()
         }
     }
 }

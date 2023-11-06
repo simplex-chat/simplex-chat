@@ -169,7 +169,6 @@ struct VoiceMessagePlayer: View {
         }
         .onChange(of: playbackState) { state in
             allowMenu = state == .paused || state == .noPlayback
-            UIApplication.shared.isIdleTimerDisabled = state == .playing
         }
     }
 
