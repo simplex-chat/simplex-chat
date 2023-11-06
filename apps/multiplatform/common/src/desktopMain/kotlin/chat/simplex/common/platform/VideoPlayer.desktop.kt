@@ -189,7 +189,7 @@ actual class VideoPlayer actual constructor(
   private fun setPreviewAndDuration() {
     // It freezes main thread, doing it in IO thread
     CoroutineScope(Dispatchers.IO).launch {
-      val previewAndDuration = VideoPlayerHolder.previewsAndDurations.getOrPut(uri) { getBitmapFromVideo(defaultPreview, uri) }
+      val previewAndDuration = VideoPlayerHolder.previewsAndDurations.getOrPut(uri) { getBitmapFromVideo(defaultPreview, uri, withAlertOnException = false) }
       withContext(Dispatchers.Main) {
         preview.value = previewAndDuration.preview ?: defaultPreview
         duration.value = (previewAndDuration.duration ?: 0)
@@ -214,10 +214,12 @@ actual class VideoPlayer actual constructor(
       }
     }
 
-    suspend fun getBitmapFromVideo(defaultPreview: ImageBitmap?, uri: URI?): VideoPlayerInterface.PreviewAndDuration = withContext(playerThread.asCoroutineDispatcher()) {
+    suspend fun getBitmapFromVideo(defaultPreview: ImageBitmap?, uri: URI?, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration = withContext(playerThread.asCoroutineDispatcher()) {
       val mediaComponent = getOrCreateHelperPlayer()
       val player = mediaComponent.mediaPlayer()
       if (uri == null || !File(uri.rawPath).exists()) {
+        if (withAlertOnException) showVideoDecodingException()
+
         return@withContext VideoPlayerInterface.PreviewAndDuration(preview = defaultPreview, timestamp = 0L, duration = 0L)
       }
       player.media().startPaused(uri.toString().replaceFirst("file:", "file://"))
@@ -227,7 +229,14 @@ actual class VideoPlayer actual constructor(
         snap = player.snapshots()?.get()
         delay(10)
       }
-      val orientation = player.media().info().videoTracks().first().orientation()
+      val orientation = player.media().info().videoTracks().firstOrNull()?.orientation()
+      if (orientation == null) {
+        player.stop()
+        putHelperPlayer(mediaComponent)
+        if (withAlertOnException) showVideoDecodingException()
+
+        return@withContext VideoPlayerInterface.PreviewAndDuration(preview = defaultPreview, timestamp = 0L, duration = 0L)
+      }
       val preview: ImageBitmap? = when (orientation) {
         VideoOrientation.TOP_LEFT -> snap
         VideoOrientation.TOP_RIGHT -> snap?.flip(false, true)

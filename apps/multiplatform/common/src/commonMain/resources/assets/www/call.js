@@ -14,6 +14,7 @@ var VideoCamera;
 // for debugging
 // var sendMessageToNative = ({resp}: WVApiMessage) => console.log(JSON.stringify({command: resp}))
 var sendMessageToNative = (msg) => console.log(JSON.stringify(msg));
+var toggleScreenShare = async () => { };
 // Global object with cryptrographic/encoding functions
 const callCrypto = callCryptoFunction();
 var TransformOperation;
@@ -24,6 +25,7 @@ var TransformOperation;
 let activeCall;
 let answerTimeout = 30000;
 var useWorker = false;
+var isDesktop = false;
 var localizedState = "";
 var localizedDescription = "";
 const processCommand = (function () {
@@ -106,8 +108,24 @@ const processCommand = (function () {
         const remoteStream = new MediaStream();
         const localCamera = VideoCamera.User;
         const localStream = await getLocalMediaStream(mediaType, localCamera);
+        if (isDesktop) {
+            localStream
+                .getTracks()
+                .filter((elem) => elem.kind == "video")
+                .forEach((elem) => (elem.enabled = false));
+        }
         const iceCandidates = getIceCandidates(pc, config);
-        const call = { connection: pc, iceCandidates, localMedia: mediaType, localCamera, localStream, remoteStream, aesKey };
+        const call = {
+            connection: pc,
+            iceCandidates,
+            localMedia: mediaType,
+            localCamera,
+            localStream,
+            remoteStream,
+            aesKey,
+            screenShareEnabled: false,
+            cameraEnabled: true,
+        };
         await setupMediaStreams(call);
         let connectionTimeout = setTimeout(connectionHandler, answerTimeout);
         pc.addEventListener("connectionstatechange", connectionStateChange);
@@ -430,12 +448,31 @@ const processCommand = (function () {
         if (!videos)
             throw Error("no video elements");
         const pc = call.connection;
+        const oldAudioTracks = call.localStream.getAudioTracks();
+        const audioWasEnabled = oldAudioTracks.some((elem) => elem.enabled);
+        let localStream;
+        try {
+            localStream = call.screenShareEnabled ? await getLocalScreenCaptureStream() : await getLocalMediaStream(call.localMedia, camera);
+        }
+        catch (e) {
+            if (call.screenShareEnabled) {
+                call.screenShareEnabled = false;
+            }
+            return;
+        }
         for (const t of call.localStream.getTracks())
             t.stop();
         call.localCamera = camera;
-        const localStream = await getLocalMediaStream(call.localMedia, camera);
-        replaceTracks(pc, localStream.getVideoTracks());
-        replaceTracks(pc, localStream.getAudioTracks());
+        const audioTracks = localStream.getAudioTracks();
+        const videoTracks = localStream.getVideoTracks();
+        if (!audioWasEnabled && oldAudioTracks.length > 0) {
+            audioTracks.forEach((elem) => (elem.enabled = false));
+        }
+        if (!call.cameraEnabled && !call.screenShareEnabled) {
+            videoTracks.forEach((elem) => (elem.enabled = false));
+        }
+        replaceTracks(pc, audioTracks);
+        replaceTracks(pc, videoTracks);
         call.localStream = localStream;
         videos.local.srcObject = localStream;
     }
@@ -471,6 +508,21 @@ const processCommand = (function () {
     function getLocalMediaStream(mediaType, facingMode) {
         const constraints = callMediaConstraints(mediaType, facingMode);
         return navigator.mediaDevices.getUserMedia(constraints);
+    }
+    function getLocalScreenCaptureStream() {
+        const constraints /* DisplayMediaStreamConstraints */ = {
+            video: {
+                frameRate: 24,
+                //width: {
+                //min: 480,
+                //ideal: 720,
+                //max: 1280,
+                //},
+                //aspectRatio: 1.33,
+            },
+            audio: true,
+        };
+        return navigator.mediaDevices.getDisplayMedia(constraints);
     }
     function callMediaConstraints(mediaType, facingMode) {
         switch (mediaType) {
@@ -526,15 +578,32 @@ const processCommand = (function () {
         const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks();
         for (const t of tracks)
             t.enabled = enable;
+        if (media == CallMediaType.Video && activeCall) {
+            activeCall.cameraEnabled = enable;
+        }
     }
+    toggleScreenShare = async function () {
+        const call = activeCall;
+        if (!call)
+            return;
+        call.screenShareEnabled = !call.screenShareEnabled;
+        await replaceMedia(call, call.localCamera);
+    };
     return processCommand;
 })();
+function toggleRemoteVideoFitFill() {
+    const remote = document.getElementById("remote-video-stream");
+    remote.style.objectFit = remote.style.objectFit != "contain" ? "contain" : "cover";
+}
 function toggleMedia(s, media) {
     let res = false;
     const tracks = media == CallMediaType.Video ? s.getVideoTracks() : s.getAudioTracks();
     for (const t of tracks) {
         t.enabled = !t.enabled;
         res = t.enabled;
+    }
+    if (media == CallMediaType.Video && activeCall) {
+        activeCall.cameraEnabled = res;
     }
     return res;
 }
