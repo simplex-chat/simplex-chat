@@ -35,14 +35,18 @@ data RemoteHostClient = RemoteHostClient
 --     storePath :: FilePath,
 --   }
 
+data RHPendingSession = RHPendingSession
+  { rhKey :: RHKey,
+    rchClient :: RCHostClient,
+    rhsWaitSession :: Async (),
+    remoteHost_ :: Maybe RemoteHostInfo
+  }
+
 data RemoteHostSession
   = RHSessionStarting
-  | RHSessionConnecting
-      { rchClient :: RCHostClient,
-        rhsWaitSession :: Async (),
-        remoteHost_ :: Maybe RemoteHostInfo
-      }
-  | RHSessionConnected {rhClient :: RemoteHostClient}
+  | RHSessionConnecting RHPendingSession
+  | RHSessionConfirmed RHPendingSession
+  | RHSessionConnected RemoteHostClient
 
 data RemoteProtocolError
   = -- | size prefix is malformed

@@ -641,7 +641,7 @@ data ChatResponse
   | CRRemoteHostCreated {remoteHost :: RemoteHostInfo}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text}
-  | CRRemoteHostSessionCode {remoteHost :: RemoteHostInfo, sessionCode :: Text, newHost :: Bool}
+  | CRRemoteHostSessionCode {remoteHost_ :: Maybe RemoteHostInfo, sessionCode :: Text}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
   | CRRemoteFileStored {remoteHostId :: RemoteHostId, remoteFileSource :: CryptoFile}

@@ -277,11 +277,15 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRRemoteHostCreated RemoteHostInfo {remoteHostId} -> ["remote host " <> sShow remoteHostId <> " created"]
   CRRemoteHostList hs -> viewRemoteHosts hs
   CRRemoteHostStarted {remoteHost_, invitation} ->
-    [ maybe "new remote host started" (\rhId -> "remote host " <> sShow rhId <> " started") remoteHost_,
-      "invitation:", plain invitation
+    [ maybe "new remote host started" (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> sShow rhId <> " started") remoteHost_,
+      "invitation:",
+      plain invitation
     ]
-  CRRemoteHostSessionCode {remoteHost = RemoteHostInfo {remoteHostId = rhId}, sessionCode} ->
-    ["remote host " <> sShow rhId <> " is connecting", "Compare session code with host:", plain sessionCode]
+  CRRemoteHostSessionCode {remoteHost_, sessionCode} ->
+    [ maybe "new remote host connecting" (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> sShow rhId <> " connecting") remoteHost_,
+      "Compare session code with host:",
+      plain sessionCode
+    ]
   CRRemoteHostConnected RemoteHostInfo {remoteHostId = rhId} -> ["remote host " <> sShow rhId <> " connected"]
   CRRemoteHostStopped rhId -> ["remote host " <> sShow rhId <> " stopped"]
   CRRemoteFileStored rhId (CryptoFile filePath cfArgs_) ->

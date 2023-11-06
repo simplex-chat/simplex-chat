@@ -78,7 +78,7 @@ import Simplex.Messaging.Agent
 
 getRemoteHostClient :: ChatMonad m => RemoteHostId -> m RemoteHostClient
 getRemoteHostClient rhId = withRemoteHostSession rhKey $ \case
-  s@RHSessionConnected {rhClient} -> Right (rhClient, s)
+  s@(RHSessionConnected rhClient) -> Right (rhClient, s)
   _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
   where
     rhKey = RHId rhId
@@ -104,16 +104,22 @@ startRemoteHost' rh_ = do
   withRemoteHostSession_ rhKey $ maybe (Right ((), Just RHSessionStarting)) (\_ -> Left $ ChatErrorRemoteHost rhKey $ RHEBusy)
   let ourApp = J.String "hi"
   -- TMVar (RCHostSession, RCHelloBody, RCHostPairing)
-  (invitation, client, vars) <- withAgent $ \a -> rcConnectHost a pairing ourApp multicast
-  rhsWaitSession <- async $ waitForSession rhKey client vars
+  (invitation, rchClient, vars) <- withAgent $ \a -> rcConnectHost a pairing ourApp multicast
+  rhsWaitSession <- async $ waitForSession rhKey rchClient remoteHost_ vars
+  let rhs = RHPendingSession {rhKey, rchClient, rhsWaitSession, remoteHost_}
   withRemoteHostSession rhKey $ \case
-    RHSessionStarting -> Right ((), RHSessionConnecting {rhsWaitSession, remoteHost_})
+    RHSessionStarting -> Right ((), RHSessionConnecting rhs)
     _ -> Left $ ChatErrorRemoteHost rhKey $ RHEBadState
   pure (remoteHost_, invitation)
   where
     -- TODO handle error on waitForSession
-    waitForSession rhKey _client_to_kill_on_error vars = do
-      (RCHostSession {tls, sessionKeys}, rhHello, rhPairing) <- atomically $ takeTMVar vars
+    waitForSession rhKey _rchClient_kill_on_error remoteHost_ vars = do
+      (sessId, vars') <- atomically $ takeTMVar vars
+      withRemoteHostSession rhKey $ \case
+        RHSessionConnecting rhs' -> Right ((), RHSessionConfirmed rhs') -- TODO check it's the same session?
+        _ -> Left $ ChatErrorRemoteHost rhKey $ RHEBadState -- TODO kill client on error
+      toView $ CRRemoteHostSessionCode {remoteHost_, sessionCode = verificationCode sessId}
+      (RCHostSession {tls, sessionKeys}, rhHello, rhPairing) <- atomically $ takeTMVar vars'
       -- update remoteHost with updated pairing
       -- create storePath
       let disconnected = logDebug "HTTP2 client disconnected"
@@ -127,13 +133,11 @@ startRemoteHost' rh_ = do
               encryptHostFiles = False
             }
       remoteHost <- withRemoteHostSession rhKey $ \case
-        RHSessionConnecting {rhsWaitSession, remoteHost_} ->
+        RHSessionConfirmed rhs' ->
           let rhi = RemoteHostInfo {sessionActive = True} 
-           in Right (rhi, RHSessionConnected {rhClient})
-        _ -> Left $ ChatErrorRemoteHost rhKey $ RHEBadState
+           in Right (rhi, RHSessionConnected rhClient)
+        _ -> Left $ ChatErrorRemoteHost rhKey $ RHEBadState -- TODO kill client on error
       -- store remoteHost in DB
-      toView $ CRRemoteHostSessionCode {remoteHost, sessionCode = "get it from TLS", newHost = True}
-      -- ???
       toView $ CRRemoteHostConnected remoteHost
     httpError rhKey = ChatErrorRemoteHost rhKey . RHEProtocolError . RPEHTTP2 . tshow
 
@@ -223,8 +227,13 @@ closeRemoteHost rhKey = do
 cancelRemoteHost :: RemoteHostSession -> IO ()
 cancelRemoteHost = \case
   RHSessionStarting -> pure ()
-  RHSessionConnecting {rchClient} -> cancelHostClient rchClient
-  RHSessionConnected {rhClient = RemoteHostClient {httpClient}} -> closeHTTP2Client httpClient
+  RHSessionConnecting rhs -> cancelPendingSession rhs
+  RHSessionConfirmed rhs -> cancelPendingSession rhs
+  RHSessionConnected RemoteHostClient {httpClient} -> closeHTTP2Client httpClient
+  where
+    cancelPendingSession RHPendingSession {rchClient, rhsWaitSession} = do
+      cancelHostClient rchClient
+      uninterruptibleCancel rhsWaitSession
 
 createRemoteHost :: ChatMonad m => m RemoteHostInfo
 createRemoteHost = do
