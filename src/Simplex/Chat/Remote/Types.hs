@@ -15,10 +15,10 @@ import qualified Data.Aeson.TH as J
 import Data.Int (Int64)
 import Data.Text (Text)
 import Simplex.Chat.Remote.AppVersion
-import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
-import Simplex.RemoteControl.Client (HostSessKeys, RCHostClient)
+import Simplex.RemoteControl.Client
+import Simplex.RemoteControl.Types
 import Simplex.Messaging.Crypto.File (CryptoFile)
 
 data RemoteHostClient = RemoteHostClient
@@ -29,12 +29,6 @@ data RemoteHostClient = RemoteHostClient
     encryptHostFiles :: Bool,
     storePath :: FilePath
   }
-
--- data RemoteHostSession = RemoteHostSession
---   { remoteHostTasks :: Tasks,
---     remoteHostClient :: Maybe RemoteHostClient,
---     storePath :: FilePath,
---   }
 
 data RHPendingSession = RHPendingSession
   { rhKey :: RHKey,
@@ -72,14 +66,15 @@ type RemoteHostId = Int64
 data RHKey = RHNew | RHId {remoteHostId :: RemoteHostId}
   deriving (Eq, Ord, Show)
 
+-- | Storable/internal remote host data
 data RemoteHost = RemoteHost
   { remoteHostId :: RemoteHostId,
     hostName :: Text,
     storePath :: FilePath,
     hostPairing :: RCHostPairing
   }
-  deriving (Show)
 
+-- | UI-accessible remote host information
 data RemoteHostInfo = RemoteHostInfo
   { remoteHostId :: RemoteHostId,
     hostName :: Text,
@@ -90,18 +85,17 @@ data RemoteHostInfo = RemoteHostInfo
 
 type RemoteCtrlId = Int64
 
+-- | Storable/internal remote controller data
 data RemoteCtrl = RemoteCtrl
   { remoteCtrlId :: RemoteCtrlId,
     ctrlName :: Text,
     ctrlPairing :: RCCtrlPairing
   }
-  deriving (Show)
 
+-- | UI-accessible remote controller information
 data RemoteCtrlInfo = RemoteCtrlInfo
   { remoteCtrlId :: RemoteCtrlId,
-    displayName :: Text,
-    fingerprint :: C.KeyHash,
-    accepted :: Maybe Bool,
+    ctrlName :: Text,
     sessionActive :: Bool
   }
   deriving (Show)
@@ -147,8 +141,6 @@ $(J.deriveJSON (sumTypeJSON $ dropPrefix "RH") ''RHKey)
 $(J.deriveJSON (enumJSON $ dropPrefix "PE") ''PlatformEncoding)
 
 $(J.deriveJSON defaultJSON ''RemoteHostInfo)
-
-$(J.deriveJSON defaultJSON ''RemoteCtrl)
 
 $(J.deriveJSON defaultJSON ''RemoteCtrlInfo)
 

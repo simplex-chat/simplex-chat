@@ -387,6 +387,8 @@ startRemote' :: TestCC -> TestCC -> IO ()
 startRemote' mobile desktop = do
   desktop ##> "/set device name My desktop"
   desktop <## "ok"
+  mobile ##> "/set device name Mobile"
+  mobile <## "ok"
   desktop ##> "/start remote host new"
   desktop <## "new remote host started"
   desktop <## "Remote session invitation:"
@@ -396,11 +398,11 @@ startRemote' mobile desktop = do
   desktop <## "new remote host connecting"
   desktop <## "Compare session code with host:"
   sessId <- getTermLine desktop
-  mobile <## "remote controller 1 connected to from app"
+  mobile <## "new remote controller connected"
   mobile <## "Compare session code with controller and use:"
   mobile <## ("/verify remote ctrl " <> sessId)
   mobile ##> ("/verify remote ctrl " <> sessId)
-  mobile <## "remote controller 1 session started with from app"
+  mobile <## "remote controller 1 session started with My desktop"
   desktop <## "remote host 1 connected"
 
 startRemote :: TestCC -> TestCC -> IO ()

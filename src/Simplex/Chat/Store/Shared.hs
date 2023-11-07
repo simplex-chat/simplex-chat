@@ -100,7 +100,10 @@ data StoreError
   | SEContactNotFoundByFileId {fileId :: FileTransferId}
   | SENoGroupSndStatus {itemId :: ChatItemId, groupMemberId :: GroupMemberId}
   | SERemoteHostNotFound {remoteHostId :: RemoteHostId}
+  | SERemoteHostUnknown -- ^ attempting to store KnownHost without a known fingerprint
+  | SERemoteHostDuplicateFingerprint
   | SERemoteCtrlNotFound {remoteCtrlId :: RemoteCtrlId}
+  | SERemoteCtrlDuplicateFingerprint
   deriving (Show, Exception)
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)

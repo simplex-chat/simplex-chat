@@ -14,6 +14,7 @@ import qualified Data.Version as V
 import qualified Paths_simplex_chat as SC
 import Simplex.Messaging.Parsers (defaultJSON)
 import Text.ParserCombinators.ReadP (readP_to_S)
+import Data.Maybe (mapMaybe)
 
 currentAppVersion :: AppVersion
 currentAppVersion = AppVersion SC.version
@@ -28,9 +29,13 @@ instance ToJSON AppVersion where
 instance FromJSON AppVersion where
   parseJSON = J.withText "AppVersion" parse
     where
-      parse s = case readP_to_S parseVersion $ T.unpack s of
-        (v, "") : _ -> pure $ AppVersion v
-        _ -> fail "bad AppVersion"
+      parse s = case mapMaybe fullParse $ readP_to_S parseVersion $ T.unpack s of
+        [v] -> pure $ AppVersion v
+        [] -> fail $ "bad AppVersion: " <> show s
+        many -> fail $ "ambiguous AppVersion: " <> show (s, many)
+      fullParse :: (a, String) -> Maybe a
+      fullParse (v, "") = Just v
+      fullParse _ = Nothing
 
 data AppVersionRange = AppVRange
   { minVersion :: AppVersion,

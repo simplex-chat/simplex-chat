@@ -31,18 +31,17 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word16, Word32)
 import qualified Network.HTTP.Types as N
 import Network.HTTP2.Server (responseStreaming)
-import Network.Socket (SockAddr (..), hostAddressToTuple)
 import Simplex.Chat.Archive (archiveFilesFolder)
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Messages (chatNameStr)
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Remote.Protocol
-import Simplex.Chat.Remote.RevHTTP (attachRevHTTP2Client, attachHTTP2Server)
+import Simplex.Chat.Remote.RevHTTP (attachHTTP2Server, attachRevHTTP2Client)
 import Simplex.Chat.Remote.Transport
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store.Files
@@ -51,30 +50,25 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Util (encryptFile)
 import Simplex.FileTransfer.Description (FileDigest (..))
+import Simplex.Messaging.Agent
+import Simplex.Messaging.Agent.Protocol (AgentErrorType (RCP))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
-import Simplex.Messaging.Encoding (smpDecode)
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Transport (tlsUniq, TLS (..))
 import Simplex.Messaging.Transport.Client (TransportHost (..))
-import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
-import Simplex.Messaging.Transport.HTTP2.Client (closeHTTP2Client)
+import Simplex.Messaging.Transport.HTTP2.Client (HTTP2ClientError, closeHTTP2Client)
 import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Simplex.Messaging.Util
-import qualified Simplex.RemoteControl.Discovery as Discovery
-import Simplex.RemoteControl.Client (CtrlSessKeys (..))
-import Simplex.RemoteControl.Invitation (RCSignedInvitation (..), RCInvitation (..))
+import Simplex.RemoteControl.Client
+import Simplex.RemoteControl.Invitation (RCInvitation (..), RCSignedInvitation (..))
 import Simplex.RemoteControl.Types
 import System.FilePath (takeFileName, (</>))
 import UnliftIO
-import UnliftIO.Concurrent (forkIO, threadDelay)
+import UnliftIO.Concurrent (forkIO)
 import UnliftIO.Directory (copyFile, createDirectoryIfMissing, renameFile)
-import Simplex.RemoteControl.Client
-import Simplex.Messaging.Agent
-import Simplex.Messaging.Agent.Protocol (AgentErrorType (RCP))
 
 -- when acting as host
 minRemoteCtrlVersion :: AppVersion
@@ -118,134 +112,68 @@ setNewRemoteHostId rhId = do
 startRemoteHost' :: ChatMonad m => Maybe (RemoteHostId, Bool) -> m (Maybe RemoteHostInfo, RCSignedInvitation)
 startRemoteHost' rh_ = do
   (rhKey, multicast, remoteHost_, pairing) <- case rh_ of
-    Just (rhId, multicast) -> pure (RHId rhId, multicast, undefined, undefined) -- get from the database, start multicast if requested
+    Just (rhId, multicast) -> do
+      rh@RemoteHost {hostPairing} <- withStore $ \db -> getRemoteHost db rhId
+      pure (RHId rhId, multicast, Just $ remoteHostInfo rh True, hostPairing) -- get from the database, start multicast if requested
     Nothing -> (RHNew,False,Nothing,) <$> rcNewHostPairing
   withRemoteHostSession_ rhKey $ maybe (Right ((), Just RHSessionStarting)) (\_ -> Left $ ChatErrorRemoteHost rhKey RHEBusy)
-  let ourApp = J.String "hi"
+  ourDeviceName <- chatReadVar localDeviceName
+  let todoVersionRange = AppVRange {minVersion = currentAppVersion, maxVersion = currentAppVersion}
+  let ourApp = RemoteCtrlAppInfo {appVersionRange = todoVersionRange, deviceName = ourDeviceName}
   -- TMVar (RCHostSession, RCHelloBody, RCHostPairing)
-  (invitation, rchClient, vars) <- withAgent $ \a -> rcConnectHost a pairing ourApp multicast
-  rhsWaitSession <- async $ waitForSession rhKey rchClient remoteHost_ vars
+  (invitation, rchClient, vars) <- withAgent $ \a -> rcConnectHost a pairing (J.toJSON ourApp) multicast
+  rhsWaitSession <- async $ waitForSession rhKey remoteHost_ rchClient vars
   let rhs = RHPendingSession {rhKey, rchClient, rhsWaitSession, remoteHost_}
   withRemoteHostSession rhKey $ \case
     RHSessionStarting -> Right ((), RHSessionConnecting rhs)
     _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
   pure (remoteHost_, invitation)
   where
-    -- TODO handle error on waitForSession
-    waitForSession rhKey _rchClient_kill_on_error remoteHost_ vars = do
+    waitForSession :: ChatMonad m => RHKey -> Maybe RemoteHostInfo -> RCHostClient -> RCStepTMVar (ByteString, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> m ()
+    waitForSession rhKey remoteHost_ _rchClient_kill_on_error vars = do
+      -- TODO handle errors
       (sessId, vars') <- takeRCStep vars
+      toView $ CRRemoteHostSessionCode {remoteHost_, sessionCode = verificationCode sessId} -- display confirmation code, wait for mobile to confirm
+      (RCHostSession {tls, sessionKeys}, RCHostHello {app = hostAppInfo}, pairing'@RCHostPairing {knownHost = kh_}) <- takeRCStep vars'
+      todo'rhai@RemoteHostAppInfo {} <- case J.fromJSON hostAppInfo of
+        J.Success ok -> pure ok
+        J.Error e -> throwError . ChatErrorRemoteCtrl $ RCEProtocolError RPEInvalidJSON {invalidJSON = T.pack e}
       withRemoteHostSession rhKey $ \case
         RHSessionConnecting rhs' -> Right ((), RHSessionConfirmed rhs') -- TODO check it's the same session?
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState -- TODO kill client on error
-      toView $ CRRemoteHostSessionCode {remoteHost_, sessionCode = verificationCode sessId}
-      (RCHostSession {tls, sessionKeys}, rhHello, rhPairing) <- takeRCStep vars'
+      KnownHostPairing {storedSessKeys = todo'sessionKeys'} <- maybe (throwError . ChatError $ CEInternalError "KnownHost is known after verification") pure kh_
       -- update remoteHost with updated pairing
-      let storePath = "/tmp/TODO-RH-storePath"
-      let displayName = "TODO-displayName"
-      -- store remoteHost in DB
-      let rhId = 1 -- database ID
+      storePath <- liftIO randomStorePath
+      let hostName = "TODO-displayName"
+      rhi@RemoteHostInfo {remoteHostId} <- withStoreCtx (Just "startRemoteHost.waitForSession") $ \db -> do
+        case remoteHost_ of
+          Nothing -> do
+            rh <- insertRemoteHost db hostName storePath pairing' >>= getRemoteHost db
+            pure $ remoteHostInfo rh True
+          Just rhi@RemoteHostInfo {remoteHostId} -> do
+            -- TODO: updateRemoteHostKeys db remoteHostId sessionKeys'
+            pure rhi
       disconnected <- toIO $ do
         logDebug "HTTP2 client disconnected"
-        toView $ CRRemoteHostStopped rhId
+        toView $ CRRemoteHostStopped remoteHostId
       httpClient <- liftEitherError (httpError rhKey) $ attachRevHTTP2Client disconnected tls
-      rhClient <- liftRC $ createRemoteHostClient httpClient sessionKeys storePath displayName
-      pollAction <- async $ pollEvents rhId rhClient
-      remoteHost <- withRemoteHostSession rhKey $ \case
-        RHSessionConfirmed rhs' ->
-          let rhi = RemoteHostInfo
-                { remoteHostId = rhId,
-                  sessionActive = True,
-                  storePath,
-                  displayName
-                }
-           in Right (rhi, RHSessionConnected {rhClient, pollAction})
+      rhClient <- liftRC $ createRemoteHostClient httpClient sessionKeys storePath hostName
+      pollAction <- async $ pollEvents remoteHostId rhClient
+      withRemoteHostSession rhKey $ \case
+        RHSessionConfirmed RHPendingSession {} -> Right ((), RHSessionConnected {rhClient, pollAction})
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState -- TODO kill client on error
-      -- TODO this is required for commands to be passed to remote host
-      setNewRemoteHostId rhId
-      chatWriteVar currentRemoteHost $ Just rhId
-      toView $ CRRemoteHostConnected remoteHost
+        -- TODO this is required for commands to be passed to remote host
+      setNewRemoteHostId remoteHostId
+      chatWriteVar currentRemoteHost $ Just remoteHostId
+      toView $ CRRemoteHostConnected rhi
+    pollEvents :: ChatMonad m => RemoteHostId -> RemoteHostClient -> m ()
     pollEvents rhId rhClient = do
       oq <- asks outputQ
       forever $ do
         r_ <- liftRH rhId $ remoteRecv rhClient 10000000
         forM r_ $ \r -> atomically $ writeTBQueue oq (Nothing, Just rhId, r)
+    httpError :: RHKey -> HTTP2ClientError -> ChatError
     httpError rhKey = ChatErrorRemoteHost rhKey . RHEProtocolError . RPEHTTP2 . tshow
-
--- startRemoteHost :: ChatMonad m => RemoteHostId -> m ()
--- startRemoteHost rhId = do
---   rh <- withStore (`getRemoteHost` rhId)
---   tasks <- startRemoteHostSession rh
---   logInfo $ "Remote host session starting for " <> tshow rhId
---   asyncRegistered tasks $
---     run rh tasks `catchAny` \err -> do
---       logError $ "Remote host session startup failed for " <> tshow rhId <> ": " <> tshow err
---       cancelTasks tasks
---       chatModifyVar remoteHostSessions $ M.delete rhId
---       throwError $ fromMaybe (mkChatError err) $ fromException err
---   where
---     -- logInfo $ "Remote host session starting for " <> tshow rhId
-
---     run :: ChatMonad m => RemoteHost -> Tasks -> m ()
---     run rh@RemoteHost {storePath} tasks = do
---       (fingerprint, credentials) <- liftIO $ genSessionCredentials rh
---       cleanupIO <- toIO $ do
---         logNote $ "Remote host session stopping for " <> tshow rhId
---         cancelTasks tasks -- cancel our tasks anyway
---         chatModifyVar currentRemoteHost $ \cur -> if cur == Just rhId then Nothing else cur -- only wipe the closing RH
---         withRemoteHostSession rhId $ \sessions _ -> Right <$> TM.delete rhId sessions
---         toView (CRRemoteHostStopped rhId) -- only signal "stopped" when the session is unregistered cleanly
---         -- block until some client is connected or an error happens
---       logInfo $ "Remote host session connecting for " <> tshow rhId
---       rcName <- chatReadVar localDeviceName
---       localAddr <- asks multicastSubscribers >>= Discovery.getLocalAddressMulticast >>= maybe (throwError . ChatError $ CEInternalError "unable to get local address") pure
---       started <- newEmptyTMVarIO -- XXX: should contain service port to be published
---       (dhKey, sigKey, ann, oob) <- error "TODO: startRemoteHost.run 1" -- Discovery.startSession (if rcName == "" then Nothing else Just rcName) (localAddr, 0) fingerprint
---       toView CRRemoteHostStarted {remoteHost = remoteHostInfo rh True, sessionOOB = decodeUtf8 $ strEncode (oob :: RCSignedInvitation)}
---       httpClient <- error "TODO: startRemoteHost.run 2" -- liftEitherError (ChatErrorRemoteCtrl . RCEHTTP2Error . show) $ announceRevHTTP2 tasks started (sigKey, ann) credentials cleanupIO
---       logInfo $ "Remote host session connected for " <> tshow rhId
---       -- test connection and establish a protocol layer
---       remoteHostClient <- liftRH rhId $ createRemoteHostClient httpClient dhKey rcName
---       -- set up message polling
---       oq <- asks outputQ
---       asyncRegistered tasks . forever $ do
---         liftRH rhId (remoteRecv remoteHostClient 1000000) >>= mapM_ (atomically . writeTBQueue oq . (Nothing,Just rhId,))
---       -- update session state
---       logInfo $ "Remote host session started for " <> tshow rhId
---       chatModifyVar remoteHostSessions $ M.adjust (\rhs -> rhs {remoteHostClient = Just remoteHostClient}) rhId
---       chatWriteVar currentRemoteHost $ Just rhId
---       toView $
---         CRRemoteHostConnected
---           RemoteHostInfo
---             { remoteHostId = rhId,
---               storePath = storePath,
---               displayName = hostDeviceName remoteHostClient,
---               sessionActive = True
---             }
-
---     genSessionCredentials RemoteHost {caKey, caCert} = do
---       sessionCreds <- genCredentials (Just parent) (0, 24) "Session"
---       pure . tlsCredentials $ sessionCreds :| [parent]
---       where
---         parent = (C.signatureKeyPair caKey, caCert)
-
--- | Atomically check/register session and prepare its task list
--- startRemoteHostSession :: ChatMonad m => RemoteHost -> m Tasks
--- startRemoteHostSession RemoteHost {remoteHostId, storePath} = withNoRemoteHostSession remoteHostId $ \sessions -> do
---   remoteHostTasks <- newTVar []
---   TM.insert remoteHostId RemoteHostSession {remoteHostTasks, storePath, remoteHostClient = Nothing} sessions
---   pure $ Right remoteHostTasks
-
--- closeRemoteHostSession :: ChatMonad m => Maybe RemoteHostId -> m ()
--- closeRemoteHostSession rhId = do
---   logNote $ "Closing remote host session for " <> tshow rhId
---   chatModifyVar currentRemoteHost $ \cur -> if cur == rhId then Nothing else cur -- only wipe the closing RH
---   session <- withRemoteHostSession rhId $ \sessions rhs -> Right rhs <$ TM.delete rhId sessions
---   cancelRemoteHostSession session
-
--- cancelRemoteHostSession :: MonadUnliftIO m => RemoteHostSession -> m ()
--- cancelRemoteHostSession RemoteHostSession {remoteHostTasks, remoteHostClient} = do
---   cancelTasks remoteHostTasks
---   mapM_ closeRemoteHostClient remoteHostClient
 
 closeRemoteHost :: ChatMonad m => RHKey -> m ()
 closeRemoteHost rhKey = do
@@ -267,15 +195,6 @@ cancelRemoteHost = \case
       cancelHostClient rchClient
       uninterruptibleCancel rhsWaitSession
 
-createRemoteHost :: ChatMonad m => () -> m RemoteHostInfo
-createRemoteHost _pairing = do
-  ((_, caKey), caCert) <- liftIO $ genCredentials Nothing (-25, 24 * 365) "Host"
-  storePath <- liftIO randomStorePath
-  let remoteName = "" -- will be passed from remote host in hello
-  rhId <- withStore' $ \db -> insertRemoteHost db storePath remoteName caKey caCert
-  rh <- withStore $ \db -> getRemoteHost db rhId
-  pure $ remoteHostInfo rh False
-
 -- | Generate a random 16-char filepath without / in it by using base64url encoding.
 randomStorePath :: IO FilePath
 randomStorePath = B.unpack . B64U.encode <$> getRandomBytes 12
@@ -290,8 +209,8 @@ listRemoteHosts = do
 
 -- XXX: replacing hostPairing replaced with sessionActive, could be a ($>)
 remoteHostInfo :: RemoteHost -> Bool -> RemoteHostInfo
-remoteHostInfo RemoteHost {remoteHostId, storePath, displayName} sessionActive =
-  RemoteHostInfo {remoteHostId, storePath, displayName, sessionActive}
+remoteHostInfo RemoteHost {remoteHostId, storePath, hostName} sessionActive =
+  RemoteHostInfo {remoteHostId, storePath, hostName, sessionActive}
 
 deleteRemoteHost :: ChatMonad m => RemoteHostId -> m ()
 deleteRemoteHost rhId = do
@@ -355,79 +274,40 @@ liftRH rhId = liftError (ChatErrorRemoteHost (RHId rhId) . RHEProtocolError)
 
 findKnownRemoteCtrl :: ChatMonad m => m ()
 findKnownRemoteCtrl = undefined -- do
-  -- checkNoRemoteCtrlSession -- tiny race with the final @chatWriteVar@ until the setup finishes and supervisor spawned
-  -- -- TODO: fetch known controllers from DB and pass to discoverRemoteCtrls
-  -- discovered <- newTVarIO mempty
-  -- discoverer <- async $ discoverRemoteCtrls discovered -- TODO extract to a controller service singleton
-  -- confirmed <- newEmptyTMVarIO
-  -- verified <- newEmptyTMVarIO
-  -- startHost execChatCommand discoverer discovered confirmed verified
 
 -- | Use provided OOB link as an annouce
 connectRemoteCtrl :: ChatMonad m => RCSignedInvitation -> m ()
-connectRemoteCtrl inv@RCSignedInvitation {invitation = RCInvitation {ca, app = theirApp}} = do
-  -- TODO parse app and validate version
+connectRemoteCtrl inv@RCSignedInvitation {invitation = RCInvitation {ca, app = ctrlInfo}} = do
+  RemoteCtrlAppInfo{deviceName = theirName} <- case J.fromJSON ctrlInfo of
+    J.Success ok -> do
+      -- TODO: validate version
+      pure ok
+    J.Error e -> throwError . ChatErrorRemoteCtrl $ RCEProtocolError RPEInvalidJSON {invalidJSON = T.pack e}
   withRemoteCtrlSession_ $ maybe (Right ((), Just RCSessionStarting)) (\_ -> Left $ ChatErrorRemoteCtrl RCEBusy)
-  -- TODO check new or existing pairing (read from DB)
-  let ourApp = J.String "hi"
-  (rcsClient, vars) <- withAgent $ \a -> rcConnectCtrlURI a inv Nothing ourApp
-  rcsWaitSession <- async $ waitForSession rcsClient vars
+  rc_ <- withStoreCtx' (Just "connectRemoteCtrl") $ \db -> getRemoteCtrlByFingerprint db ca
+  ourDeviceName <- chatReadVar localDeviceName
+  encryptFiles <- chatReadVar encryptLocalFiles
+  let ourApp =
+        RemoteHostAppInfo
+          { appVersion = currentAppVersion,
+            deviceName = ourDeviceName,
+            encoding = localEncoding,
+            encryptFiles
+          }
+  (rcsClient, vars) <- withAgent $ \a -> rcConnectCtrlURI a inv (fmap ctrlPairing rc_) (J.toJSON ourApp)
+  rcsWaitSession <- async $ waitForSession (fmap (`remoteCtrlInfo` True) rc_) theirName rcsClient vars
   updateRemoteCtrlSession $ \case
     RCSessionStarting -> Right RCSessionConnecting {rcsClient, rcsWaitSession}
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState -- TODO kill rcsClient
   where
-    waitForSession rcsClient vars = do
+    waitForSession :: ChatMonad m => Maybe RemoteCtrlInfo -> Text -> RCCtrlClient -> RCStepTMVar (ByteString, RCStepTMVar (RCCtrlSession, RCCtrlPairing)) -> m ()
+    waitForSession remoteCtrl_ ctrlName rcsClient vars = do
       (uniq, rcsWaitConfirmation) <- takeRCStep vars
-      let remoteCtrl = RemoteCtrlInfo -- TODO use invite
-            { remoteCtrlId = 1,
-              displayName = "from app",
-              fingerprint = ca,
-              accepted = Just True,
-              sessionActive = True
-            }
       let sessionCode = verificationCode uniq
-      toView CRRemoteCtrlSessionCode {remoteCtrl, sessionCode, newCtrl = True}
+      toView CRRemoteCtrlSessionCode {remoteCtrl_, sessionCode}
       updateRemoteCtrlSession $ \case
-        RCSessionConnecting {rcsWaitSession} -> Right RCSessionPendingConfirmation {rcsClient, sessionCode, rcsWaitSession, rcsWaitConfirmation}
+        RCSessionConnecting {rcsWaitSession} -> Right RCSessionPendingConfirmation {ctrlName, rcsClient, sessionCode, rcsWaitSession, rcsWaitConfirmation}
         _ -> Left $ ChatErrorRemoteCtrl RCEBadState -- TODO kill rcsClient
-
--- startHost :: ChatMonad m => (ByteString -> m ChatResponse) -> Async () -> TM.TMap C.KeyHash (TransportHost, Word16) -> TMVar RemoteCtrlId -> TMVar (RemoteCtrlId, Text) -> m ()
--- startHost execChatCommand discoverer discovered confirmed verified = do
---   remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
---   supervisor <- async $ do
---     threadDelay 500000 -- give chat controller a chance to reply with "ok" to prevent flaking tests
---     logInfo "Starting remote host"
---     runHost discovered confirmed verified $ handleRemoteCommand execChatCommand remoteOutputQ
---   chatWriteVar remoteCtrlSession $ Just RemoteCtrlSession {discoverer, supervisor, hostServer = Nothing, discovered, confirmed, verified, remoteOutputQ}
-
--- | Track remote host lifecycle in controller session state and signal UI on its progress
--- runHost :: ChatMonad m => TM.TMap C.KeyHash (TransportHost, Word16) -> TMVar RemoteCtrlId -> TMVar (RemoteCtrlId, Text) -> (HTTP2Request -> m ()) -> m ()
--- runHost discovered confirmed verified handleHttp = do
---   remoteCtrlId <- atomically (readTMVar confirmed) -- wait for discoverRemoteCtrls.process or confirmRemoteCtrl to confirm fingerprint as a known RC
---   rc@RemoteCtrl {fingerprint} <- withStore (`getRemoteCtrl` remoteCtrlId)
---   serviceAddress <- atomically $ TM.lookup fingerprint discovered >>= maybe retry pure -- wait for location of the matching fingerprint
---   -- XXX: the part above is only needed for discovery, can be streamlined
---   toView $ CRRemoteCtrlConnecting $ remoteCtrlInfo rc False
---   atomically $ writeTVar discovered mempty -- flush unused sources
---   server <- async $ do
---     let hsk = HostSessionKeys {ca = fingerprint}
---     -- spawn server for remote protocol commands
---     Discovery.connectTLSClient serviceAddress hsk $ \HostCryptoHandle tls -> do
---       let sessionCode = decodeUtf8 . strEncode $ tlsUniq tls
---       toView $ CRRemoteCtrlSessionCode {remoteCtrl = remoteCtrlInfo rc True, sessionCode, newCtrl = False}
---       userInfo <- atomically $ readTMVar verified
---       if userInfo == (remoteCtrlId, sessionCode)
---         then do
---           toView $ CRRemoteCtrlConnected $ remoteCtrlInfo rc True
---           -- attachHTTP2Server handleHttp tls
---           error "TODO: runHost"
---         else do
---           toView $ CRChatCmdError Nothing $ ChatErrorRemoteCtrl RCEBadVerificationCode
---           -- the server doesn't enter its loop and waitCatch below falls through
---   chatModifyVar remoteCtrlSession $ fmap $ \s -> s {hostServer = Just server}
---   waitCatch server >>= either (logDebug . tshow) pure -- wait for the server to finish
---   chatWriteVar remoteCtrlSession Nothing
---   toView CRRemoteCtrlStopped
 
 handleRemoteCommand :: forall m. ChatMonad m => (ByteString -> m ChatResponse) -> CtrlSessKeys -> TBQueue ChatResponse -> HTTP2Request -> m ()
 handleRemoteCommand execChatCommand _sessionKeys remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do
@@ -528,54 +408,20 @@ handleGetFile User {userId} RemoteFile {userId = commandUserId, fileId, sent, fi
 discoverRemoteCtrls :: ChatMonad m => TM.TMap C.KeyHash (TransportHost, Word16) -> m ()
 discoverRemoteCtrls discovered = do
   error "TODO: discoverRemoteCtrls"
-  -- subscribers <- asks multicastSubscribers
-  -- Discovery.withListener subscribers run
-  -- where
-  --   run sock = receive sock >>= process sock
-
-  --   receive sock =
-  --     Discovery.recvAnnounce sock >>= \case
-  --       (SockAddrInet _sockPort sockAddr, sigAnnBytes) -> case smpDecode sigAnnBytes of
-  --         Right (SignedAnnounce ann _sig) -> pure (sockAddr, ann)
-  --         Left _ -> receive sock -- TODO it is probably better to report errors to view here
-  --       _nonV4 -> receive sock
-
-  --   process sock (sockAddr, Announce {caFingerprint, serviceAddress = (annAddr, port)}) = do
-  --     unless (annAddr == sockAddr) $ logError "Announced address doesn't match socket address"
-  --     let addr = THIPv4 (hostAddressToTuple sockAddr)
-  --     ifM
-  --       (atomically $ TM.member caFingerprint discovered)
-  --       (logDebug $ "Fingerprint already known: " <> tshow (addr, caFingerprint))
-  --       ( do
-  --           logInfo $ "New fingerprint announced: " <> tshow (addr, caFingerprint)
-  --           atomically $ TM.insert caFingerprint (addr, port) discovered
-  --       )
-  --     -- TODO we check fingerprint for duplicate where id doesn't matter - to prevent re-insert - and don't check to prevent duplicate events,
-  --     -- so UI now will have to check for duplicates again
-  --     withStore' (`getRemoteCtrlByFingerprint` caFingerprint) >>= \case
-  --       Nothing -> toView $ CRRemoteCtrlAnnounce caFingerprint -- unknown controller, ui "register" action required
-  --       -- TODO Maybe Bool is very confusing - the intent is very unclear here
-  --       Just found@RemoteCtrl {remoteCtrlId, accepted = storedChoice} -> case storedChoice of
-  --         Nothing -> toView $ CRRemoteCtrlFound $ remoteCtrlInfo found False -- first-time controller, ui "accept" action required
-  --         Just False -> run sock -- restart, skipping a rejected item
-  --         Just True ->
-  --           chatReadVar remoteCtrlSession >>= \case
-  --             Nothing -> toView . CRChatError Nothing . ChatError $ CEInternalError "Remote host found without running a session"
-  --             Just RemoteCtrlSession {confirmed} -> atomically $ void $ tryPutTMVar confirmed remoteCtrlId -- previously accepted controller, connect automatically
 
 listRemoteCtrls :: ChatMonad m => m [RemoteCtrlInfo]
 listRemoteCtrls = pure [] -- do
-  -- active <-
-  --   chatReadVar remoteCtrlSession $>>= \RemoteCtrlSession {confirmed} ->
-  --     atomically $ tryReadTMVar confirmed
-  -- map (rcInfo active) <$> withStore' getRemoteCtrls
-  -- where
-  --   rcInfo activeRcId rc@RemoteCtrl {remoteCtrlId} =
-  --     remoteCtrlInfo rc $ activeRcId == Just remoteCtrlId
+-- active <-
+--   chatReadVar remoteCtrlSession $>>= \RemoteCtrlSession {confirmed} ->
+--     atomically $ tryReadTMVar confirmed
+-- map (rcInfo active) <$> withStore' getRemoteCtrls
+-- where
+--   rcInfo activeRcId rc@RemoteCtrl {remoteCtrlId} =
+--     remoteCtrlInfo rc $ activeRcId == Just remoteCtrlId
 
 remoteCtrlInfo :: RemoteCtrl -> Bool -> RemoteCtrlInfo
-remoteCtrlInfo RemoteCtrl {remoteCtrlId, displayName, fingerprint, accepted} sessionActive =
-  RemoteCtrlInfo {remoteCtrlId, displayName, fingerprint, accepted, sessionActive}
+remoteCtrlInfo RemoteCtrl {remoteCtrlId, ctrlName} sessionActive =
+  RemoteCtrlInfo {remoteCtrlId, ctrlName, sessionActive}
 
 -- XXX: only used for multicast
 confirmRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m ()
@@ -589,21 +435,17 @@ confirmRemoteCtrl _rcId = do
 -- Take a look at emoji of tlsunique, commit pairing, and start session server
 verifyRemoteCtrlSession :: ChatMonad m => (ByteString -> m ChatResponse) -> Text -> m RemoteCtrlInfo
 verifyRemoteCtrlSession execChatCommand sessCode' = do
-  (client, sessionCode, vars) <- getRemoteCtrlSession >>= \case
-    RCSessionPendingConfirmation {rcsClient, sessionCode, rcsWaitConfirmation} -> pure (rcsClient, sessionCode, rcsWaitConfirmation)
-    _ -> throwError $ ChatErrorRemoteCtrl RCEBadState
+  (client, ctrlName, sessionCode, vars) <-
+    getRemoteCtrlSession >>= \case
+      RCSessionPendingConfirmation {rcsClient, ctrlName, sessionCode, rcsWaitConfirmation} -> pure (rcsClient, ctrlName, sessionCode, rcsWaitConfirmation)
+      _ -> throwError $ ChatErrorRemoteCtrl RCEBadState
   let verified = sameVerificationCode sessCode' sessionCode
   liftIO $ confirmCtrlSession client verified
   unless verified $ throwError $ ChatErrorRemoteCtrl RCEBadVerificationCode
   (rcsSession@RCCtrlSession {tls, sessionKeys}, rcCtrlPairing) <- takeRCStep vars
-  -- TODO: Store new rcsPairing
-  let remoteCtrl = RemoteCtrlInfo -- TODO use Pairing or something
-        { remoteCtrlId = 1,
-          displayName = "from app",
-          fingerprint = "",
-          accepted = Just True,
-          sessionActive = True
-        }
+  rc <- withStore $ \db -> do
+    rc_ <- liftIO $ getRemoteCtrlByFingerprint db (ctrlFingerprint rcCtrlPairing)
+    maybe (insertRemoteCtrl db ctrlName rcCtrlPairing >>= getRemoteCtrl db) pure rc_
   remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
   http2Server <- async $ attachHTTP2Server tls $ handleRemoteCommand execChatCommand sessionKeys remoteOutputQ
   withRemoteCtrlSession $ \case
@@ -614,7 +456,7 @@ verifyRemoteCtrlSession execChatCommand sessCode' = do
       Left err | isNothing (fromException @AsyncCancelled err) -> logError $ "HTTP2 server crashed with " <> tshow err -- TODO: exclude AsyncCancelled
       _ -> logInfo "HTTP2 server stopped"
     toView CRRemoteCtrlStopped
-  pure remoteCtrl
+  pure $ remoteCtrlInfo rc True
 
 stopRemoteCtrl :: ChatMonad m => m ()
 stopRemoteCtrl =
@@ -627,7 +469,7 @@ cancelRemoteCtrl = \case
   RCSessionConnecting {rcsClient, rcsWaitSession} -> do
     cancelCtrlClient rcsClient
     uninterruptibleCancel rcsWaitSession
-  RCSessionPendingConfirmation {rcsClient, rcsWaitSession} ->  do
+  RCSessionPendingConfirmation {rcsClient, rcsWaitSession} -> do
     cancelCtrlClient rcsClient
     uninterruptibleCancel rcsWaitSession
   RCSessionConnected {rcsClient, http2Server} -> do

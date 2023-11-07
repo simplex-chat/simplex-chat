@@ -39,7 +39,7 @@ import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), HTTP2BodyChunk, getBod
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2Response (..), closeHTTP2Client, sendRequestDirect)
 import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
 import Simplex.Messaging.Util (liftEitherError, liftEitherWith, tshow)
-import Simplex.RemoteControl.Client (HostSessKeys)
+import Simplex.RemoteControl.Types (HostSessKeys)
 import System.FilePath (takeFileName, (</>))
 import UnliftIO
 

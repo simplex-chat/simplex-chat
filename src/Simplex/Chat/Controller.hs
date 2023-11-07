@@ -78,7 +78,7 @@ import System.Mem.Weak (Weak)
 import UnliftIO.STM
 import Data.Bifunctor (first)
 import Simplex.RemoteControl.Client
-import Simplex.RemoteControl.Types (RCErrorType)
+import Simplex.RemoteControl.Types
 
 versionNumber :: String
 versionNumber = showVersion SC.version
@@ -651,7 +651,7 @@ data ChatResponse
   | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- TODO remove, unregistered fingerprint, needs confirmation -- TODO is it needed?
   | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo} -- registered fingerprint, may connect
   | CRRemoteCtrlConnecting {remoteCtrl :: RemoteCtrlInfo} -- TODO is remove
-  | CRRemoteCtrlSessionCode {remoteCtrl :: RemoteCtrlInfo, sessionCode :: Text, newCtrl :: Bool}
+  | CRRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlStopped
   | CRSQLResult {rows :: [Text]}
@@ -1086,7 +1086,8 @@ data RemoteCtrlSession
         rcsWaitSession :: Async ()
       }
   | RCSessionPendingConfirmation
-      { rcsClient :: RCCtrlClient,
+      { ctrlName :: Text,
+        rcsClient :: RCCtrlClient,
         sessionCode :: Text,
         rcsWaitSession :: Async (),
         rcsWaitConfirmation :: TMVar (Either RCErrorType (RCCtrlSession, RCCtrlPairing))

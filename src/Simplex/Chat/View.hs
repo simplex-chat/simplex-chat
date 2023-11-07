@@ -298,15 +298,16 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     ["remote controller announced", "connection code:", plain $ strEncode fingerprint]
   CRRemoteCtrlFound rc ->
     ["remote controller found:", viewRemoteCtrl rc]
-  CRRemoteCtrlConnecting RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} ->
-    ["remote controller " <> sShow rcId <> " connecting to " <> plain rcName]
-  CRRemoteCtrlSessionCode {remoteCtrl = RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName}, sessionCode} ->
-    [ "remote controller " <> sShow rcId <> " connected to " <> plain rcName,
+  CRRemoteCtrlConnecting RemoteCtrlInfo {remoteCtrlId = rcId, ctrlName} ->
+    ["remote controller " <> sShow rcId <> " connecting to " <> plain ctrlName]
+  CRRemoteCtrlSessionCode {remoteCtrl_, sessionCode} ->
+    -- [ "remote controller " <> sShow rcId <> " connected to " <> plain ctrlName,
+    [ maybe "new remote controller connected" (\RemoteCtrlInfo {remoteCtrlId} -> "remote controller " <> sShow remoteCtrlId <> " started") remoteCtrl_,
       "Compare session code with controller and use:",
       "/verify remote ctrl " <> plain sessionCode -- TODO maybe pass rcId
     ]
-  CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} ->
-    ["remote controller " <> sShow rcId <> " session started with " <> plain rcName]
+  CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, ctrlName} ->
+    ["remote controller " <> sShow rcId <> " session started with " <> plain ctrlName]
   CRRemoteCtrlStopped -> ["remote controller stopped"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
@@ -1689,21 +1690,21 @@ viewRemoteHosts = \case
   [] -> ["No remote hosts"]
   hs -> "Remote hosts: " : map viewRemoteHostInfo hs
   where
-    viewRemoteHostInfo RemoteHostInfo {remoteHostId, displayName, sessionActive} =
-      plain $ tshow remoteHostId <> ". " <> displayName <> if sessionActive then " (active)" else ""
+    viewRemoteHostInfo RemoteHostInfo {remoteHostId, hostName, sessionActive} =
+      plain $ tshow remoteHostId <> ". " <> hostName <> if sessionActive then " (active)" else ""
 
 viewRemoteCtrls :: [RemoteCtrlInfo] -> [StyledString]
 viewRemoteCtrls = \case
   [] -> ["No remote controllers"]
   hs -> "Remote controllers: " : map viewRemoteCtrlInfo hs
   where
-    viewRemoteCtrlInfo RemoteCtrlInfo {remoteCtrlId, displayName, sessionActive} =
-      plain $ tshow remoteCtrlId <> ". " <> displayName <> if sessionActive then " (active)" else ""
+    viewRemoteCtrlInfo RemoteCtrlInfo {remoteCtrlId, ctrlName, sessionActive} =
+      plain $ tshow remoteCtrlId <> ". " <> ctrlName <> if sessionActive then " (active)" else ""
 
 -- TODO fingerprint, accepted?
 viewRemoteCtrl :: RemoteCtrlInfo -> StyledString
-viewRemoteCtrl RemoteCtrlInfo {remoteCtrlId, displayName} =
-  plain $ tshow remoteCtrlId <> ". " <> displayName
+viewRemoteCtrl RemoteCtrlInfo {remoteCtrlId, ctrlName} =
+  plain $ tshow remoteCtrlId <> ". " <> ctrlName
 
 viewChatError :: ChatLogLevel -> ChatError -> [StyledString]
 viewChatError logLevel = \case

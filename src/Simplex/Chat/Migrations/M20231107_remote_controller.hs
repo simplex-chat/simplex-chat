@@ -28,8 +28,8 @@ CREATE TABLE remote_controllers ( -- controllers known to a hosting app
   remote_controller_id INTEGER PRIMARY KEY AUTOINCREMENT,
   ctrl_name TEXT NOT NULL,        -- remote device name provided in app info
   -- RCCtrlPairing
-  ca_cert BLOB NOT NULL,          -- CA certificate for TLS clients
   ca_key BLOB NOT NULL,           -- CA key
+  ca_cert BLOB NOT NULL,          -- CA certificate for TLS clients
   ctrl_fingerprint BLOB NOT NULL, -- pinned remote controller CA, set when connected
   id_pub BLOB NOT NULL,           -- remote controller long-term/identity signing key
   -- StoredCtrlSessKeys, commited on connection confirmation
