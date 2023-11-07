@@ -170,9 +170,8 @@ actual fun isAnimImage(uri: URI, drawable: Any?): Boolean {
   return path.endsWith(".gif") || path.endsWith(".webp")
 }
 
-@Suppress("NewApi")
 actual fun loadImageBitmap(inputStream: InputStream): ImageBitmap =
-  Image.makeFromEncoded(inputStream.readAllBytes()).toComposeImageBitmap()
+  Image.makeFromEncoded(inputStream.readBytes()).toComposeImageBitmap()
 
 // https://stackoverflow.com/a/68926993
 fun BufferedImage.rotate(angle: Double): BufferedImage {
