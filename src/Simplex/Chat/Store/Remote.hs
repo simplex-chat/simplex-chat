@@ -22,18 +22,18 @@ import UnliftIO
 
 insertRemoteHost :: DB.Connection -> Text -> FilePath -> RCHostPairing -> ExceptT StoreError IO RemoteHostId
 insertRemoteHost db hostName storePath RCHostPairing {caKey, caCert, idPrivKey, knownHost = kh_} = do
-  KnownHostPairing {hostFingerprint, storedSessKeys = StoredHostSessKeys {hostDHPublicKey, kemSharedKey}} <-
+  KnownHostPairing {hostFingerprint, hostDhPubKey} <-
     maybe (throwError SERemoteHostUnknown) pure kh_
   checkConstraint SERemoteHostDuplicateFingerprint . liftIO $
     DB.execute
       db
       [sql|
       INSERT INTO remote_hosts
-        (host_name, store_path, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub, kem_shared)
+        (host_name, store_path, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub)
       VALUES
-        (?, ?, ?, ?, ?, ?, ?, ?)
+        (?, ?, ?, ?, ?, ?, ?)
     |]
-      (hostName, storePath, caKey, C.SignedObject caCert, idPrivKey, hostFingerprint, hostDHPublicKey, kemSharedKey)
+      (hostName, storePath, caKey, C.SignedObject caCert, idPrivKey, hostFingerprint, hostDhPubKey)
   liftIO $ insertedRowId db
 
 getRemoteHosts :: DB.Connection -> IO [RemoteHost]
@@ -53,38 +53,33 @@ getRemoteHostByFingerprint db fingerprint =
 remoteHostQuery :: SQL.Query
 remoteHostQuery =
   [sql|
-    SELECT remote_host_id, host_name, store_path, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub, kem_shared
+    SELECT remote_host_id, host_name, store_path, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub
     FROM remote_hosts
   |]
 
-toRemoteHost :: (Int64, Text, FilePath, C.APrivateSignKey, C.SignedObject C.Certificate, C.PrivateKeyEd25519, C.KeyHash, C.PublicKeyX25519, KEMSharedKey) -> RemoteHost
-toRemoteHost (remoteHostId, hostName, storePath, caKey, C.SignedObject caCert, idPrivKey, hostFingerprint, hostDHPublicKey, kemSharedKey) =
+toRemoteHost :: (Int64, Text, FilePath, C.APrivateSignKey, C.SignedObject C.Certificate, C.PrivateKeyEd25519, C.KeyHash, C.PublicKeyX25519) -> RemoteHost
+toRemoteHost (remoteHostId, hostName, storePath, caKey, C.SignedObject caCert, idPrivKey, hostFingerprint, hostDhPubKey) =
   RemoteHost {remoteHostId, hostName, storePath, hostPairing}
   where
-    hostPairing = RCHostPairing {caKey, caCert, idPrivKey, knownHost = Just knownHostPairing}
-    knownHostPairing = KnownHostPairing {hostFingerprint, storedSessKeys}
-    storedSessKeys = StoredHostSessKeys {hostDHPublicKey, kemSharedKey}
+    hostPairing = RCHostPairing {caKey, caCert, idPrivKey, knownHost = Just knownHost}
+    knownHost = KnownHostPairing {hostFingerprint, hostDhPubKey}
 
 deleteRemoteHostRecord :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (Only remoteHostId)
 
 insertRemoteCtrl :: DB.Connection -> Text -> RCCtrlPairing -> ExceptT StoreError IO RemoteCtrlId
-insertRemoteCtrl db ctrlName RCCtrlPairing {caKey, caCert, ctrlFingerprint, idPubKey, storedSessKeys, prevStoredSessKeys} = do
+insertRemoteCtrl db ctrlName RCCtrlPairing {caKey, caCert, ctrlFingerprint, idPubKey, dhPrivKey, prevDhPrivKey} = do
   checkConstraint SERemoteCtrlDuplicateFingerprint . liftIO $
     DB.execute
       db
       [sql|
       INSERT INTO remote_controllers
-        (ctrl_name, ca_key, ca_cert, ctrl_fingerprint, id_pub, sess_dh_key, sess_kem_shared, prev_dh_key, prev_kem_shared)
+        (ctrl_name, ca_key, ca_cert, ctrl_fingerprint, id_pub, dh_priv_key, prev_dh_priv_key)
       VALUES
-        (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (?, ?, ?, ?, ?, ?, ?)
     |]
-      (ctrlName, caKey, C.SignedObject caCert, ctrlFingerprint, idPubKey, sessDhKey, sessKemShared, prevDhKey, prevKemShared)
+      (ctrlName, caKey, C.SignedObject caCert, ctrlFingerprint, idPubKey, dhPrivKey, prevDhPrivKey)
   liftIO $ insertedRowId db
-  where
-    StoredCtrlSessKeys {dhPrivKey = sessDhKey, kemSharedKey = sessKemShared} = storedSessKeys
-    (prevDhKey, prevKemShared) =
-      maybe (Nothing, Nothing) (\StoredCtrlSessKeys {dhPrivKey, kemSharedKey} -> (Just dhPrivKey, kemSharedKey)) prevStoredSessKeys
 
 getRemoteCtrls :: DB.Connection -> IO [RemoteCtrl]
 getRemoteCtrls db =
@@ -103,7 +98,7 @@ getRemoteCtrlByFingerprint db fingerprint =
 remoteCtrlQuery :: SQL.Query
 remoteCtrlQuery =
   [sql|
-    SELECT remote_controller_id, ctrl_name, ca_key, ca_cert, ctrl_fingerprint, id_pub, sess_dh_key, sess_kem_shared, prev_dh_key, prev_kem_shared
+    SELECT remote_controller_id, ctrl_name, ca_key, ca_cert, ctrl_fingerprint, id_pub, dh_priv_key, prev_dh_priv_key
     FROM remote_controllers
   |]
 
@@ -116,24 +111,14 @@ toRemoteCtrl ::
     C.KeyHash,
     C.PublicKeyEd25519,
     C.PrivateKeyX25519,
-    KEMSharedKey,
-    Maybe C.PrivateKeyX25519,
-    Maybe KEMSharedKey
+    Maybe C.PrivateKeyX25519
   ) ->
   RemoteCtrl
-toRemoteCtrl (remoteCtrlId, ctrlName, caKey, C.SignedObject caCert, ctrlFingerprint, idPubKey, sess_dh_key, sess_kem_shared, prev_dh_key, prev_kem_shared) =
+toRemoteCtrl (remoteCtrlId, ctrlName, caKey, C.SignedObject caCert, ctrlFingerprint, idPubKey, dhPrivKey, prevDhPrivKey) =
   RemoteCtrl
     { remoteCtrlId,
       ctrlName,
-      ctrlPairing =
-        RCCtrlPairing
-          { caKey,
-            caCert,
-            ctrlFingerprint,
-            idPubKey,
-            storedSessKeys = StoredCtrlSessKeys {dhPrivKey = sess_dh_key, kemSharedKey = Just sess_kem_shared},
-            prevStoredSessKeys = StoredCtrlSessKeys <$> prev_dh_key <*> Just prev_kem_shared
-          }
+      ctrlPairing = RCCtrlPairing {caKey, caCert, ctrlFingerprint, idPubKey, dhPrivKey, prevDhPrivKey}
     }
 
 deleteRemoteCtrlRecord :: DB.Connection -> RemoteCtrlId -> IO ()

@@ -155,7 +155,7 @@ startRemoteHost' rh_ = do
       withRemoteHostSession rhKey $ \case
         RHSessionConnecting rhs' -> Right ((), RHSessionConfirmed rhs') -- TODO check it's the same session?
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState -- TODO kill client on error
-      KnownHostPairing {storedSessKeys = todo'sessionKeys'} <- maybe (throwError . ChatError $ CEInternalError "KnownHost is known after verification") pure kh_
+      KnownHostPairing {hostDhPubKey = todo'sessionKeys'} <- maybe (throwError . ChatError $ CEInternalError "KnownHost is known after verification") pure kh_
       -- update remoteHost with updated pairing
       storePath <- liftIO randomStorePath
       rhi@RemoteHostInfo {remoteHostId} <- withStoreCtx (Just "startRemoteHost.waitForSession") $ \db -> do

@@ -18,9 +18,8 @@ CREATE TABLE remote_hosts ( -- hosts known to a controlling app
   id_key BLOB NOT NULL,           -- long-term/identity signing key
   -- KnownHostPairing
   host_fingerprint BLOB NOT NULL, -- pinned remote host CA, set when connected
-  -- StoredHostSessKeys
+  -- stored host session key
   host_dh_pub BLOB NOT NULL,      -- session DH key
-  kem_shared BLOB NOT NULL,       -- session
   UNIQUE (host_fingerprint) ON CONFLICT FAIL
 );
 
@@ -32,12 +31,10 @@ CREATE TABLE remote_controllers ( -- controllers known to a hosting app
   ca_cert BLOB NOT NULL,          -- CA certificate for TLS clients
   ctrl_fingerprint BLOB NOT NULL, -- pinned remote controller CA, set when connected
   id_pub BLOB NOT NULL,           -- remote controller long-term/identity signing key
-  -- StoredCtrlSessKeys, commited on connection confirmation
-  sess_dh_key BLOB NOT NULL,      -- current DH key
-  sess_kem_shared BLOB NOT NULL,  -- current KEM shared key
-  -- Maybe StoredCtrlSessKeys
-  prev_dh_key BLOB,               -- previous DH key
-  prev_kem_shared BLOB,           -- previous KEM shared key
+  -- stored session key, commited on connection confirmation
+  dh_priv_key BLOB NOT NULL,      -- current DH key
+  -- prev session key
+  prev_dh_priv_key BLOB,          -- previous DH key
   UNIQUE (ctrl_fingerprint) ON CONFLICT FAIL
 );
 |]
