@@ -24,6 +24,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.AudioPlayer
 import chat.simplex.res.MR
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlin.math.max
 
 @Composable
 fun ComposeVoiceView(
@@ -129,7 +130,7 @@ fun FinishedRecordingSlider(backgroundColor: Color, progress: MutableState<Int>,
         drawRect(inactiveTrackColor, Offset(size.width - dp10, (size.height - dp4) / 2), size = androidx.compose.ui.geometry.Size(dp10, dp4))
       },
     colors = SliderDefaults.colors(inactiveTrackColor = inactiveTrackColor),
-    valueRange = 0f..duration.value.toFloat()
+    valueRange = 0f..max(duration.value, 0).toFloat()
   )
 }
 
