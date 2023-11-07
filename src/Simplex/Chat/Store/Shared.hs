@@ -218,8 +218,13 @@ setCommandConnId db User {userId} cmdId connId = do
     |]
     (connId, updatedAt, userId, cmdId)
 
-createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> Maybe UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
-createContact_ db userId connId Profile {displayName, fullName, image, contactLink, preferences} localAlias viaGroup currentTs chatTs =
+createContact :: DB.Connection -> User -> Profile -> ExceptT StoreError IO ()
+createContact db User {userId} profile = do
+  currentTs <- liftIO getCurrentTime
+  void $ createContact_ db userId profile "" Nothing currentTs Nothing
+
+createContact_ :: DB.Connection -> UserId -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> Maybe UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
+createContact_ db userId Profile {displayName, fullName, image, contactLink, preferences} localAlias viaGroup currentTs chatTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     DB.execute
       db
@@ -231,7 +236,6 @@ createContact_ db userId connId Profile {displayName, fullName, image, contactLi
       "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?)"
       (profileId, ldn, userId, viaGroup, currentTs, currentTs, chatTs)
     contactId <- insertedRowId db
-    DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
     pure $ Right (ldn, contactId, profileId)
 
 deleteUnusedIncognitoProfileById_ :: DB.Connection -> User -> ProfileId -> IO ()

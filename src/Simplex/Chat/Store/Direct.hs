@@ -23,6 +23,7 @@ module Simplex.Chat.Store.Direct
     createDirectConnection,
     createIncognitoProfile,
     createConnReqConnection,
+    createAddressContactConnection,
     getProfileById,
     getConnReqContactXContactId,
     getContactByConnReqHash,
@@ -119,6 +120,12 @@ deletePendingContactConnection db userId connId =
     |]
     (userId, connId, ConnContact)
 
+createAddressContactConnection :: DB.Connection -> User -> Contact -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> SubscriptionMode -> ExceptT StoreError IO Contact
+createAddressContactConnection db user@User {userId} Contact {contactId} acId cReqHash xContactId incognitoProfile subMode = do
+  PendingContactConnection {pccConnId} <- liftIO $ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile Nothing subMode
+  liftIO $ DB.execute db "UPDATE connections SET contact_id = ? WHERE connection_id = ?" (contactId, pccConnId)
+  getContact db user contactId
+
 createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> IO PendingContactConnection
 createConnReqConnection db userId acId cReqHash xContactId incognitoProfile groupLinkId subMode = do
   createdAt <- getCurrentTime
@@ -195,12 +202,13 @@ createIncognitoProfile db User {userId} p = do
 
 createDirectContact :: DB.Connection -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
 createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p@Profile {preferences} = do
-  createdAt <- liftIO getCurrentTime
-  (localDisplayName, contactId, profileId) <- createContact_ db userId connId p localAlias Nothing createdAt (Just createdAt)
+  currentTs <- liftIO getCurrentTime
+  (localDisplayName, contactId, profileId) <- createContact_ db userId p localAlias Nothing currentTs (Just currentTs)
+  liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
   let profile = toLocalProfile profileId p localAlias
       userPreferences = emptyChatPrefs
       mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
-  pure $ Contact {contactId, localDisplayName, profile, activeConn = Just conn, viaGroup = Nothing, contactUsed = False, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt, updatedAt = createdAt, chatTs = Just createdAt, contactGroupMemberId = Nothing, contactGrpInvSent = False}
+  pure $ Contact {contactId, localDisplayName, profile, activeConn = Just conn, viaGroup = Nothing, contactUsed = False, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False}
 
 deleteContactConnectionsAndFiles :: DB.Connection -> UserId -> Contact -> IO ()
 deleteContactConnectionsAndFiles db userId Contact {contactId} = do
@@ -678,17 +686,20 @@ getContact_ db user@User {userId} contactId deleted =
         LEFT JOIN connections c ON c.contact_id = ct.contact_id
         WHERE ct.user_id = ? AND ct.contact_id = ?
           AND ct.deleted = ?
-          AND c.connection_id = (
-            SELECT cc_connection_id FROM (
-              SELECT
-                cc.connection_id AS cc_connection_id,
-                cc.created_at AS cc_created_at,
-                (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
-              FROM connections cc
-              WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
-              ORDER BY cc_conn_status_ord DESC, cc_created_at DESC
-              LIMIT 1
+          AND (
+            c.connection_id = (
+              SELECT cc_connection_id FROM (
+                SELECT
+                  cc.connection_id AS cc_connection_id,
+                  cc.created_at AS cc_created_at,
+                  (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
+                FROM connections cc
+                WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
+                ORDER BY cc_conn_status_ord DESC, cc_created_at DESC
+                LIMIT 1
+              )
             )
+            OR c.connection_id IS NULL
           )
       |]
       (userId, contactId, deleted, ConnReady, ConnSndReady)

@@ -336,6 +336,7 @@ data ChatCommand
   | APIConnectPlan UserId AConnectionRequestUri
   | APIConnect UserId IncognitoEnabled (Maybe AConnectionRequestUri)
   | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
+  | APIConnectAddressContact UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName
   | ClearContact ContactName
@@ -489,6 +490,7 @@ data ChatResponse
   | CRConnectionPlan {user :: User, connectionPlan :: ConnectionPlan}
   | CRSentConfirmation {user :: User}
   | CRSentInvitation {user :: User, customUserProfile :: Maybe Profile}
+  | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CRGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | CRContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact, updatedContact :: Contact}
