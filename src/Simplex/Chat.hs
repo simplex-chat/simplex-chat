@@ -1951,7 +1951,7 @@ processChatCommand = \case
   ConnectRemoteCtrl oob -> withUser_ $ connectRemoteCtrl oob >> ok_
   FindKnownRemoteCtrl -> withUser_ $ findKnownRemoteCtrl >> ok_
   ConfirmRemoteCtrl rc -> withUser_ $ confirmRemoteCtrl rc >> ok_
-  VerifyRemoteCtrlSession sessId -> withUser_ $ verifyRemoteCtrlSession (execChatCommand Nothing) sessId >> ok_
+  VerifyRemoteCtrlSession sessId -> withUser_ $ CRRemoteCtrlConnected <$> verifyRemoteCtrlSession (execChatCommand Nothing) sessId
   StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
   ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_

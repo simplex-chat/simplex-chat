@@ -38,7 +38,7 @@ remoteTests = describe "Remote" $ do
   it "performs protocol handshake" remoteHandshakeTest'
   xit "performs protocol handshake" remoteHandshakeTest
   xit "performs protocol handshake (again)" remoteHandshakeTest -- leaking servers regression check
-  xit "sends messages" remoteMessageTest
+  fit "sends messages" remoteMessageTest
   -- describe "remote files" $ do
   --   xit "store/get/send/receive files" remoteStoreFileTest
   --   xit "should sends files from CLI wihtout /store" remoteCLIFileTest
@@ -400,9 +400,8 @@ startRemote' mobile desktop = do
   mobile <## "Compare session code with controller and use:"
   mobile <## ("/verify remote ctrl " <> sessId)
   mobile ##> ("/verify remote ctrl " <> sessId)
-  mobile <## "ok"
-  desktop <## "remote host 1 connected"
   mobile <## "remote controller 1 session started with from app"
+  desktop <## "remote host 1 connected"
 
 startRemote :: TestCC -> TestCC -> IO ()
 startRemote mobile desktop = do

@@ -7,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Remote where
@@ -28,7 +29,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
@@ -69,7 +70,7 @@ import Simplex.RemoteControl.Invitation (RCSignedInvitation (..), RCInvitation (
 import Simplex.RemoteControl.Types
 import System.FilePath (takeFileName, (</>))
 import UnliftIO
-import UnliftIO.Concurrent (threadDelay)
+import UnliftIO.Concurrent (forkIO, threadDelay)
 import UnliftIO.Directory (copyFile, createDirectoryIfMissing, renameFile)
 import Simplex.RemoteControl.Client
 import Simplex.Messaging.Agent
@@ -132,9 +133,11 @@ startRemoteHost' rh_ = do
       -- update remoteHost with updated pairing
       let storePath = "/tmp/TODO-RH-storePath"
       let displayName = "TODO-displayName"
-      let disconnected = logDebug "HTTP2 client disconnected"
       -- store remoteHost in DB
       let rhId = 1 -- database ID
+      disconnected <- toIO $ do
+        logDebug "HTTP2 client disconnected"
+        toView $ CRRemoteHostStopped rhId
       httpClient <- liftEitherError (httpError rhKey) $ attachRevHTTP2Client disconnected tls
       rhClient <- liftRC $ createRemoteHostClient httpClient sessionKeys storePath displayName
       pollAction <- async $ pollEvents rhId rhClient
@@ -571,7 +574,7 @@ confirmRemoteCtrl _rcId = do
   undefined
 
 -- Take a look at emoji of tlsunique
-verifyRemoteCtrlSession :: ChatMonad m => (ByteString -> m ChatResponse) -> Text -> m ()
+verifyRemoteCtrlSession :: ChatMonad m => (ByteString -> m ChatResponse) -> Text -> m RemoteCtrlInfo
 verifyRemoteCtrlSession execChatCommand sessCode' = do
   (client, rccs@RCCtrlSession {tls, sessionKeys}, sessionCode, _rcsPairing) <- withRemoteCtrlSession $ \case
     RCSessionPendingConfirmation {rcsClient, rcsSession, sessionCode, rcsPairing} ->
@@ -592,7 +595,13 @@ verifyRemoteCtrlSession execChatCommand sessCode' = do
   withRemoteCtrlSession $ \case
     RCSessionConfirmed {} -> Right ((), RCSessionConnected {rcsClient = client, rcsSession = rccs, http2Server, remoteOutputQ})
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
-  toView CRRemoteCtrlConnected {remoteCtrl}
+  void . forkIO $ do
+    waitCatch http2Server >>= \case
+      Left err | isNothing (fromException @AsyncCancelled err) -> logError $ "HTTP2 server crashed with " <> tshow err -- TODO: exclude AsyncCancelled
+      _ -> logInfo "HTTP2 server stopped"
+
+    toView CRRemoteCtrlStopped
+  pure remoteCtrl
 
 stopRemoteCtrl :: ChatMonad m => m ()
 stopRemoteCtrl =
