@@ -655,6 +655,7 @@ data ContactAddressPlan
   | CAPConnectingConfirmReconnect
   | CAPConnectingProhibit {contact :: Contact}
   | CAPKnown {contact :: Contact}
+  | CAPContactViaAddress {contact :: Contact}
   deriving (Show, Generic)
 
 instance ToJSON ContactAddressPlan where
@@ -683,6 +684,7 @@ connectionPlanProceed = \case
     CAPOk -> True
     CAPOwnLink -> True
     CAPConnectingConfirmReconnect -> True
+    CAPContactViaAddress _ -> True
     _ -> False
   CPGroupLink glp -> case glp of
     GLPOk -> True

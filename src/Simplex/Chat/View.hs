@@ -1310,6 +1310,7 @@ viewConnectionPlan = \case
       [ ctAddr ("known contact " <> ttyContact' ct),
         "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
       ]
+    CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)]
     where
       ctAddr = ("contact address: " <>)
   CPGroupLink glp -> case glp of

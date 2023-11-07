@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
 
@@ -43,6 +44,7 @@ module Simplex.Chat.Store.Profiles
     getUserAddress,
     getUserContactLinkById,
     getUserContactLinkByConnReq,
+    getContactWithoutConnViaAddress,
     updateUserAddressAutoAccept,
     getProtocolServers,
     overwriteProtocolServers,
@@ -87,7 +89,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolTypeI (..), SubscriptionMode)
 import Simplex.Messaging.Transport.Client (TransportHost)
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import Simplex.Messaging.Util (safeDecodeUtf8, eitherToMaybe)
 
 createUserRecord :: DB.Connection -> AgentUserId -> Profile -> Bool -> ExceptT StoreError IO User
 createUserRecord db auId p activeUser = createUserRecordAt db auId p activeUser =<< liftIO getCurrentTime
@@ -452,6 +454,21 @@ getUserContactLinkByConnReq db User {userId} (cReqSchema1, cReqSchema2) =
         WHERE user_id = ? AND conn_req_contact IN (?,?)
       |]
       (userId, cReqSchema1, cReqSchema2)
+
+getContactWithoutConnViaAddress :: DB.Connection -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
+getContactWithoutConnViaAddress db user@User {userId} (cReqSchema1, cReqSchema2) = do
+  ctId_ <- maybeFirstRow fromOnly $
+    DB.query
+      db
+      [sql|
+        SELECT ct.contact_id
+        FROM contacts ct
+        JOIN contact_profiles cp ON cp.contact_profile_id = ct.contact_profile_id
+        LEFT JOIN connections c ON c.contact_id = ct.contact_id
+        WHERE cp.user_id = ? AND cp.contact_link IN (?,?) AND c.connection_id IS NULL
+      |]
+      (userId, cReqSchema1, cReqSchema2)
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db user) ctId_
 
 updateUserAddressAutoAccept :: DB.Connection -> User -> Maybe AutoAccept -> ExceptT StoreError IO UserContactLink
 updateUserAddressAutoAccept db user@User {userId} autoAccept = do

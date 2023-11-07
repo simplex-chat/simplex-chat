@@ -1392,7 +1392,10 @@ processChatCommand = \case
   Connect incognito aCReqUri@(Just cReqUri) -> withUser $ \user@User {userId} -> do
     plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILPOk)
     unless (connectionPlanProceed plan) $ throwChatError (CEConnectionPlan plan)
-    processChatCommand $ APIConnect userId incognito aCReqUri
+    case plan of
+      CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
+        processChatCommand $ APIConnectContactViaAddress userId incognito contactId
+      _ -> processChatCommand $ APIConnect userId incognito aCReqUri
   Connect _ Nothing -> throwChatError CEInvalidConnReq
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
     ct@Contact {activeConn, profile = LocalProfile {contactLink}} <- withStore $ \db -> getContact db user contactId
@@ -1404,7 +1407,10 @@ processChatCommand = \case
     let cReqUri = ACR SCMContact adminContactReq
     plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILPOk)
     unless (connectionPlanProceed plan) $ throwChatError (CEConnectionPlan plan)
-    processChatCommand $ APIConnect userId incognito (Just cReqUri)
+    case plan of
+      CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
+        processChatCommand $ APIConnectContactViaAddress userId incognito contactId
+      _ -> processChatCommand $ APIConnect userId incognito (Just cReqUri)
   DeleteContact cName -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId) True
   ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CTDirect
   APIListContacts userId -> withUserId userId $ \user ->
@@ -2302,9 +2308,12 @@ processChatCommand = \case
         Nothing ->
           withStore' (\db -> getUserContactLinkByConnReq db user cReqSchemas) >>= \case
             Just _ -> pure $ CPContactAddress CAPOwnLink
-            Nothing -> do
+            Nothing ->
               withStore' (\db -> getContactConnEntityByConnReqHash db user cReqHashes) >>= \case
-                Nothing -> pure $ CPContactAddress CAPOk
+                Nothing ->
+                  withStore' (\db -> getContactWithoutConnViaAddress db user cReqSchemas) >>= \case
+                    Nothing -> pure $ CPContactAddress CAPOk
+                    Just ct -> pure $ CPContactAddress (CAPContactViaAddress ct)
                 Just (RcvDirectMsgConnection _conn Nothing) -> pure $ CPContactAddress CAPConnectingConfirmReconnect
                 Just (RcvDirectMsgConnection _ (Just ct))
                   | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CAPConnectingProhibit ct)

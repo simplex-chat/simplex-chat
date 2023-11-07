@@ -748,3 +748,7 @@ CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
   user_id,
   via_contact_uri_hash
 );
+CREATE INDEX idx_contact_profiles_contact_link ON contact_profiles(
+  user_id,
+  contact_link
+);
