@@ -451,7 +451,7 @@ handleRemoteCommand execChatCommand _sessionKeys remoteOutputQ HTTP2Request {req
         attach send
         flush
 
-takeRCStep :: ChatMonad m => TMVar (Either RCErrorType a) -> m a
+takeRCStep :: ChatMonad m => RCStepTMVar a -> m a
 takeRCStep = liftEitherError (\e -> ChatErrorAgent {agentError = RCP e, connectionEntity_ = Nothing}) . atomically . takeTMVar
 
 type GetChunk = Int -> IO ByteString
