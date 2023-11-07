@@ -61,8 +61,11 @@ fun initHaskell() {
     }
   }
 
-  System.loadLibrary("app-lib")
-
+  try {
+    System.loadLibrary("app-lib")
+  } catch (e: UnsatisfiedLinkError) {
+    System.loadLibrary("apppatched-lib")
+  }
   s.acquire()
   pipeStdOutToSocket(socketName)
 

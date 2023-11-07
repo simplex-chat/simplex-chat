@@ -23,6 +23,15 @@ add_library( # Sets the name of the library.
     # Provides a relative path to your source file(s).
     simplex-api.c)
 
+add_library( # Sets the name of the library.
+    apppatched-lib
+
+    # Sets the library as a shared library.
+    SHARED
+
+    # Provides a relative path to your source file(s).
+    patch.c simplex-api.c)
+
 # Searches for a specified prebuilt library and stores the path as a
 # variable. Because CMake includes system libraries in the search path by
 # default, you only need to specify the name of the public NDK library
@@ -59,6 +68,16 @@ set_target_properties( support PROPERTIES IMPORTED_LOCATION
 
 target_link_libraries( # Specifies the target library.
     app-lib
+
+    simplex support
+
+    # Links the target library to the log library
+    # included in the NDK.
+    ${log-lib})
+
+
+target_link_libraries( # Specifies the target library.
+    apppatched-lib
 
     simplex support
 

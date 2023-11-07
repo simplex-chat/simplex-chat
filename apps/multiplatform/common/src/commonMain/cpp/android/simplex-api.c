@@ -19,6 +19,8 @@ extern void __strcat_chk_generic(void){};
 extern void __libc_globals(void){};
 extern void __rel_iplt_start(void){};
 
+int getentropy(void* __buffer, size_t __buffer_size);
+
 // Android 9 only, not 13
 extern void reallocarray(void){};
 
@@ -32,6 +34,8 @@ Java_chat_simplex_common_platform_CoreKt_pipeStdOutToSocket(JNIEnv *env, __unuse
 
 JNIEXPORT void JNICALL
 Java_chat_simplex_common_platform_CoreKt_initHS(__unused JNIEnv *env, __unused jclass clazz) {
+    //char tmp;
+    //__android_log_print(ANDROID_LOG_ERROR, "simplex", "entropy %d\n", getentropy(&tmp, sizeof(tmp)));
     hs_init(NULL, NULL);
     setLineBuffering();
 }
