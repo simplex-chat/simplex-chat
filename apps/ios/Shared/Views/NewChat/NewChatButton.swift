@@ -155,12 +155,14 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool) -> Alert {
 enum PlanAndConnectActionSheet: Identifiable {
     case askCurrentOrIncognitoProfile(connectionLink: String, connectionPlan: ConnectionPlan?, title: LocalizedStringKey)
     case askCurrentOrIncognitoProfileDestructive(connectionLink: String, connectionPlan: ConnectionPlan, title: LocalizedStringKey)
+    case askCurrentOrIncognitoProfileConnectContactViaAddress(contact: Contact)
     case ownGroupLinkConfirmConnect(connectionLink: String, connectionPlan: ConnectionPlan, incognito: Bool?, groupInfo: GroupInfo)
 
     var id: String {
         switch self {
         case let .askCurrentOrIncognitoProfile(connectionLink, _, _): return "askCurrentOrIncognitoProfile \(connectionLink)"
         case let .askCurrentOrIncognitoProfileDestructive(connectionLink, _, _): return "askCurrentOrIncognitoProfileDestructive \(connectionLink)"
+        case let .askCurrentOrIncognitoProfileConnectContactViaAddress(contact): return "askCurrentOrIncognitoProfileConnectContactViaAddress \(contact.contactId)"
         case let .ownGroupLinkConfirmConnect(connectionLink, _, _, _): return "ownGroupLinkConfirmConnect \(connectionLink)"
         }
     }
@@ -183,6 +185,15 @@ func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: Bool
             buttons: [
                 .destructive(Text("Use current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false) },
                 .destructive(Text("Use new incognito profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true) },
+                .cancel()
+            ]
+        )
+    case let .askCurrentOrIncognitoProfileConnectContactViaAddress(contact):
+        return ActionSheet(
+            title: Text("Connect with \(contact.chatViewName)"),
+            buttons: [
+                .default(Text("Use current profile")) { connectContactViaAddress_(contact, dismiss: dismiss, incognito: false) },
+                .default(Text("Use new incognito profile")) { connectContactViaAddress_(contact, dismiss: dismiss, incognito: true) },
                 .cancel()
             ]
         )
@@ -277,6 +288,13 @@ func planAndConnect(
                 case let .known(contact):
                     logger.debug("planAndConnect, .contactAddress, .known, incognito=\(incognito?.description ?? "nil")")
                     openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyExistsAlert(contact)) }
+                case let .contactViaAddress(contact):
+                    logger.debug("planAndConnect, .contactAddress, .contactViaAddress, incognito=\(incognito?.description ?? "nil")")
+                    if let incognito = incognito {
+                        connectContactViaAddress_(contact, dismiss: dismiss, incognito: incognito)
+                    } else {
+                        showActionSheet(.askCurrentOrIncognitoProfileConnectContactViaAddress(contact: contact))
+                    }
                 }
             case let .groupLink(glp):
                 switch glp {
@@ -312,6 +330,17 @@ func planAndConnect(
                 showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: nil, title: "Connect via link"))
             }
         }
+    }
+}
+
+private func connectContactViaAddress_(_ contact: Contact, dismiss: Bool, incognito: Bool) {
+    Task {
+        if dismiss {
+            DispatchQueue.main.async {
+                dismissAllSheets(animated: true)
+            }
+        }
+        await connectContactViaAddress(contact.contactId, incognito)
     }
 }
 

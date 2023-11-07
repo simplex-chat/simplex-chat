@@ -1370,7 +1370,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var contactId: Int64
     var localDisplayName: ContactName
     public var profile: LocalProfile
-    public var activeConn: Connection
+    public var activeConn: Connection?
     public var viaGroup: Int64?
     public var contactUsed: Bool
     public var contactStatus: ContactStatus
@@ -1384,10 +1384,10 @@ public struct Contact: Identifiable, Decodable, NamedChat {
 
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
-    public var ready: Bool { get { activeConn.connStatus == .ready } }
-    public var active: Bool { get { contactStatus == .active } }
+    public var ready: Bool { get { activeConn?.connStatus == .ready } }
+    public var active: Bool { get { contactStatus == .active && activeConn != nil } }
     public var sendMsgEnabled: Bool { get {
-        (ready && active && !(activeConn.connectionStats?.ratchetSyncSendProhibited ?? false))
+        (ready && active && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false))
         || nextSendGrpInv
     } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
@@ -1396,14 +1396,18 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var image: String? { get { profile.image } }
     public var contactLink: String? { get { profile.contactLink } }
     public var localAlias: String { profile.localAlias }
-    public var verified: Bool { activeConn.connectionCode != nil }
+    public var verified: Bool { activeConn?.connectionCode != nil }
 
     public var directOrUsed: Bool {
-        (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
+        if let activeConn = activeConn {
+            (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
+        } else {
+            true
+        }
     }
 
     public var contactConnIncognito: Bool {
-        activeConn.customUserProfileId != nil
+        activeConn?.customUserProfileId != nil
     }
 
     public func allowsFeature(_ feature: ChatFeature) -> Bool {

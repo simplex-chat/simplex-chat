@@ -60,7 +60,7 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatPreviewImageOverlayIcon() -> some View {
         switch chat.chatInfo {
         case let .direct(contact):
-            if !contact.active {
+            if !contact.active && contact.activeConn != nil {
                 inactiveIcon()
             } else {
                 EmptyView()
@@ -190,7 +190,10 @@ struct ChatPreviewView: View {
         } else {
             switch (chat.chatInfo) {
             case let .direct(contact):
-                if !contact.ready {
+                if contact.activeConn == nil && contact.profile.contactLink != nil {
+                    chatPreviewInfoText("Tap to Connect")
+                        .foregroundColor(.accentColor)
+                } else if !contact.ready && contact.activeConn != nil {
                     if contact.nextSendGrpInv {
                         chatPreviewInfoText("send direct message")
                     } else if contact.active {
@@ -238,7 +241,9 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatStatusImage() -> some View {
         switch chat.chatInfo {
         case let .direct(contact):
-            if contact.active {
+            if progressByTimeout {
+                ProgressView()
+            } else if contact.active {
                 switch (chatModel.contactNetworkStatus(contact)) {
                 case .connected: incognitoIcon(chat.chatInfo.incognito)
                 case .error:
