@@ -6066,8 +6066,8 @@ adminContactReq =
 
 simplexContactProfile :: Profile
 simplexContactProfile = Profile {
-  displayName = "simplex",
-  fullName = "SimpleX Chat team",
+  displayName = "SimpleX Chat team",
+  fullName = "",
   image = Nothing,
   contactLink = Just adminContactReq,
   preferences = Nothing
