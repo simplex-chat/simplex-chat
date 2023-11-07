@@ -1398,10 +1398,7 @@ processChatCommand = \case
     ct@Contact {activeConn, profile = LocalProfile {contactLink}} <- withStore $ \db -> getContact db user contactId
     when (isJust activeConn) $ throwChatError (CECommandError "contact already has connection")
     case contactLink of
-      Just cReq -> do
-        plan <- connectPlan user (ACR SCMContact cReq) `catchChatError` const (pure $ CPContactAddress CAPOk)
-        unless (connectionPlanProceed plan) $ throwChatError (CEConnectionPlan plan)
-        connectAddressContact user incognito ct cReq
+      Just cReq -> connectContactViaAddress user incognito ct cReq
       Nothing -> throwChatError (CECommandError "no address in contact profile")
   ConnectSimplex incognito -> withUser $ \user@User {userId} -> do
     let cReqUri = ACR SCMContact adminContactReq
@@ -2036,8 +2033,8 @@ processChatCommand = \case
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId subMode
           toView $ CRNewContactConnection user conn
           pure $ CRSentInvitation user incognitoProfile
-    connectAddressContact :: User -> IncognitoEnabled -> Contact -> ConnectionRequestUri 'CMContact -> m ChatResponse
-    connectAddressContact user incognito ct cReq =
+    connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> ConnectionRequestUri 'CMContact -> m ChatResponse
+    connectContactViaAddress user incognito ct cReq =
       withChatLock "connectViaContact" $ do
         newXContactId <- XContactId <$> drgRandomBytes 16
         (connId, incognitoProfile, subMode) <- requestContact user incognito cReq newXContactId
