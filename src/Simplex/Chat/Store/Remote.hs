@@ -15,10 +15,18 @@ import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 
-insertRemoteHost :: DB.Connection -> FilePath -> Text -> C.APrivateSignKey -> C.SignedCertificate -> IO RemoteHostId
-insertRemoteHost db storePath displayName caKey caCert = do
-  DB.execute db "INSERT INTO remote_hosts (store_path, display_name, ca_key, ca_cert) VALUES (?,?,?,?)" (storePath, displayName, caKey, C.SignedObject caCert)
+insertRemoteHost :: DB.Connection -> Text -> FilePath -> RCHostPairing -> IO RemoteHostId
+insertRemoteHost db hostName storePath hostPairing = do
+  DB.execute db
+    [sql|
+      INSERT INTO remote_hosts
+        (host_name, store_path, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub, kem_shared)
+      VALUES
+        (?, ?, ?, ?, ?, ?, ?, ?)
+    |]
+    (hostName, storePath, caKey, caCert, idPrivKey, hostFingerprint, hostDHPublicKey, kemSharedKey)
   insertedRowId db
+  where
 
 getRemoteHosts :: DB.Connection -> IO [RemoteHost]
 getRemoteHosts db =
@@ -29,12 +37,21 @@ getRemoteHost db remoteHostId =
   ExceptT . firstRow toRemoteHost (SERemoteHostNotFound remoteHostId) $
     DB.query db (remoteHostQuery <> " WHERE remote_host_id = ?") (Only remoteHostId)
 
-remoteHostQuery :: SQL.Query
-remoteHostQuery = "SELECT remote_host_id, store_path, display_name, ca_key, ca_cert, contacted FROM remote_hosts"
+getRemoteHostFingerprint :: DB.Connection -> C.KeyHash -> IO (Maybe RemoteHost)
+getRemoteHostFingerprint db fingerprint =
+  maybeFirstRow toRemoteHost $
+    DB.query db (remoteHostQuery <> " WHERE fingerprint = ?") (Only fingerprint)
 
-toRemoteHost :: (Int64, FilePath, Text, C.APrivateSignKey, C.SignedObject C.Certificate, Bool) -> RemoteHost
-toRemoteHost (remoteHostId, storePath, displayName, caKey, C.SignedObject caCert, contacted) =
-  RemoteHost {remoteHostId, storePath, displayName, caKey, caCert, contacted}
+remoteHostQuery :: SQL.Query
+remoteHostQuery = "SELECT remote_host_id, host_name, store_path, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub, kem_shared FROM remote_hosts"
+
+toRemoteHost :: (Int64, Text, FilePath, C.APrivateSignKey, C.SignedCertificate, C.PrivateKeyEd25519, C.PublicKeyX25519, KEMSharedKey) -> RemoteHost
+toRemoteHost (remoteHostId, hostName, storePath, caKey, caCert, idPrivKey, hostFingerprint, hostDHPublicKey, kemSharedKey) =
+  RemoteHost {remoteHostId, hostName, storePath, hostPairing}
+  where
+    hostPairing = RCHostPairing {caKey, caCert, idPrivKey, knownHost = Just knownHostPairing}
+    knownHostPairing = KnownHostPairing {hostFingerprint, storedSessKeys}
+    storedSessKeys = StoredHostSessKeys {hostDHPublicKey, kemSharedKey}
 
 deleteRemoteHostRecord :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (Only remoteHostId)

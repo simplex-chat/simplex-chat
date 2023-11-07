@@ -267,8 +267,8 @@ cancelRemoteHost = \case
       cancelHostClient rchClient
       uninterruptibleCancel rhsWaitSession
 
-createRemoteHost :: ChatMonad m => m RemoteHostInfo
-createRemoteHost = do
+createRemoteHost :: ChatMonad m => () -> m RemoteHostInfo
+createRemoteHost _pairing = do
   ((_, caKey), caCert) <- liftIO $ genCredentials Nothing (-25, 24 * 365) "Host"
   storePath <- liftIO randomStorePath
   let remoteName = "" -- will be passed from remote host in hello
@@ -288,6 +288,7 @@ listRemoteHosts = do
     rhInfo active rh@RemoteHost {remoteHostId} =
       remoteHostInfo rh (M.member (RHId remoteHostId) active)
 
+-- XXX: replacing hostPairing replaced with sessionActive, could be a ($>)
 remoteHostInfo :: RemoteHost -> Bool -> RemoteHostInfo
 remoteHostInfo RemoteHost {remoteHostId, storePath, displayName} sessionActive =
   RemoteHostInfo {remoteHostId, storePath, displayName, sessionActive}

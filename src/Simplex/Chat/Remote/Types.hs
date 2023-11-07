@@ -74,27 +74,16 @@ data RHKey = RHNew | RHId {remoteHostId :: RemoteHostId}
 
 data RemoteHost = RemoteHost
   { remoteHostId :: RemoteHostId,
-    -- caFingerprint :: C.KeyHash,
+    hostName :: Text,
     storePath :: FilePath,
-    displayName :: Text,
-    -- | Credentials signing key for root and session certs
-    caKey :: C.APrivateSignKey,
-    -- | A stable part of TLS credentials used in remote session
-    caCert :: C.SignedCertificate,
-    contacted :: Bool
-  }
-  deriving (Show)
-
-data RemoteCtrlOOB = RemoteCtrlOOB
-  { fingerprint :: C.KeyHash,
-    displayName :: Text
+    hostPairing :: RCHostPairing
   }
   deriving (Show)
 
 data RemoteHostInfo = RemoteHostInfo
   { remoteHostId :: RemoteHostId,
+    hostName :: Text,
     storePath :: FilePath,
-    displayName :: Text,
     sessionActive :: Bool
   }
   deriving (Show)
@@ -103,9 +92,8 @@ type RemoteCtrlId = Int64
 
 data RemoteCtrl = RemoteCtrl
   { remoteCtrlId :: RemoteCtrlId,
-    displayName :: Text,
-    fingerprint :: C.KeyHash,
-    accepted :: Maybe Bool
+    ctrlName :: Text,
+    ctrlPairing :: RCCtrlPairing
   }
   deriving (Show)
 

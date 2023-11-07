@@ -1939,7 +1939,6 @@ processChatCommand = \case
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   SetLocalDeviceName name -> withUser_ $ chatWriteVar localDeviceName name >> ok_
-  -- CreateRemoteHost -> CRRemoteHostCreated <$> createRemoteHost
   ListRemoteHosts -> withUser_ $ CRRemoteHostList <$> listRemoteHosts
   StartRemoteHost rh_ -> withUser_ $ do
     (remoteHost_, inv) <- startRemoteHost' rh_
