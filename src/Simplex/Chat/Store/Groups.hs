@@ -1054,7 +1054,8 @@ createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupM
     Just (directCmdId, directAgentConnId) -> do
       Connection {connId = directConnId} <- liftIO $ createConnection_ db userId ConnContact Nothing directAgentConnId mcvr memberContactId Nothing customUserProfileId cLevel currentTs subMode
       liftIO $ setCommandConnId db user directCmdId directConnId
-      (localDisplayName, contactId, memProfileId) <- createContact_ db userId directConnId memberProfile "" (Just groupId) currentTs Nothing
+      (localDisplayName, contactId, memProfileId) <- createContact_ db userId memberProfile "" (Just groupId) currentTs Nothing
+      liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, directConnId)
       pure $ NewGroupMember {memInfo, memCategory = GCPreMember, memStatus = GSMemIntroduced, memInvitedBy = IBUnknown, localDisplayName, memContactId = Just contactId, memProfileId}
     Nothing -> do
       (localDisplayName, memProfileId) <- createNewMemberProfile_ db user memberProfile currentTs

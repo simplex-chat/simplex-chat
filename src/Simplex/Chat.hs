@@ -406,6 +406,7 @@ processChatCommand = \case
           withAgent (\a -> createUser a smp xftp)
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withStore $ \db -> createUserRecordAt db (AgentUserId auId) p True ts
+    when (auId == 1) $ withStore (\db -> createContact db user simplexContactProfile) `catchChatError` \_ -> pure ()
     storeServers user smpServers
     storeServers user xftpServers
     atomically . writeTVar u $ Just user
@@ -1391,13 +1392,25 @@ processChatCommand = \case
   Connect incognito aCReqUri@(Just cReqUri) -> withUser $ \user@User {userId} -> do
     plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILPOk)
     unless (connectionPlanProceed plan) $ throwChatError (CEConnectionPlan plan)
-    processChatCommand $ APIConnect userId incognito aCReqUri
+    case plan of
+      CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
+        processChatCommand $ APIConnectContactViaAddress userId incognito contactId
+      _ -> processChatCommand $ APIConnect userId incognito aCReqUri
   Connect _ Nothing -> throwChatError CEInvalidConnReq
+  APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
+    ct@Contact {activeConn, profile = LocalProfile {contactLink}} <- withStore $ \db -> getContact db user contactId
+    when (isJust activeConn) $ throwChatError (CECommandError "contact already has connection")
+    case contactLink of
+      Just cReq -> connectContactViaAddress user incognito ct cReq
+      Nothing -> throwChatError (CECommandError "no address in contact profile")
   ConnectSimplex incognito -> withUser $ \user@User {userId} -> do
     let cReqUri = ACR SCMContact adminContactReq
     plan <- connectPlan user cReqUri `catchChatError` const (pure $ CPInvitationLink ILPOk)
     unless (connectionPlanProceed plan) $ throwChatError (CEConnectionPlan plan)
-    processChatCommand $ APIConnect userId incognito (Just cReqUri)
+    case plan of
+      CPContactAddress (CAPContactViaAddress Contact {contactId}) ->
+        processChatCommand $ APIConnectContactViaAddress userId incognito contactId
+      _ -> processChatCommand $ APIConnect userId incognito (Just cReqUri)
   DeleteContact cName -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId) True
   ClearContact cName -> withContactName cName $ APIClearChat . ChatRef CTDirect
   APIListContacts userId -> withUserId userId $ \user ->
@@ -2022,15 +2035,27 @@ processChatCommand = \case
               connect' (Just gLinkId) cReqHash xContactId
       where
         connect' groupLinkId cReqHash xContactId = do
-          -- [incognito] generate profile to send
-          incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-          let profileToSend = userProfileToSend user incognitoProfile Nothing
-          dm <- directMessage (XContact profileToSend $ Just xContactId)
-          subMode <- chatReadVar subscriptionMode
-          connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm subMode
+          (connId, incognitoProfile, subMode) <- requestContact user incognito cReq xContactId
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId subMode
           toView $ CRNewContactConnection user conn
           pure $ CRSentInvitation user incognitoProfile
+    connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> ConnectionRequestUri 'CMContact -> m ChatResponse
+    connectContactViaAddress user incognito ct cReq =
+      withChatLock "connectViaContact" $ do
+        newXContactId <- XContactId <$> drgRandomBytes 16
+        (connId, incognitoProfile, subMode) <- requestContact user incognito cReq newXContactId
+        let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
+        ct' <- withStore $ \db -> createAddressContactConnection db user ct connId cReqHash newXContactId incognitoProfile subMode
+        pure $ CRSentInvitationToContact user ct' incognitoProfile
+    requestContact :: User -> IncognitoEnabled -> ConnectionRequestUri 'CMContact -> XContactId -> m (ConnId, Maybe Profile, SubscriptionMode)
+    requestContact user incognito cReq xContactId = do
+      -- [incognito] generate profile to send
+      incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+      let profileToSend = userProfileToSend user incognitoProfile Nothing
+      dm <- directMessage (XContact profileToSend $ Just xContactId)
+      subMode <- chatReadVar subscriptionMode
+      connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm subMode
+      pure (connId, incognitoProfile, subMode)
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
@@ -2283,9 +2308,12 @@ processChatCommand = \case
         Nothing ->
           withStore' (\db -> getUserContactLinkByConnReq db user cReqSchemas) >>= \case
             Just _ -> pure $ CPContactAddress CAPOwnLink
-            Nothing -> do
+            Nothing ->
               withStore' (\db -> getContactConnEntityByConnReqHash db user cReqHashes) >>= \case
-                Nothing -> pure $ CPContactAddress CAPOk
+                Nothing ->
+                  withStore' (\db -> getContactWithoutConnViaAddress db user cReqSchemas) >>= \case
+                    Nothing -> pure $ CPContactAddress CAPOk
+                    Just ct -> pure $ CPContactAddress (CAPContactViaAddress ct)
                 Just (RcvDirectMsgConnection _conn Nothing) -> pure $ CPContactAddress CAPConnectingConfirmReconnect
                 Just (RcvDirectMsgConnection _ (Just ct))
                   | not (contactReady ct) && contactActive ct -> pure $ CPContactAddress (CAPConnectingProhibit ct)
@@ -5880,6 +5908,7 @@ chatCommandP =
       "/_set_file_to_receive " *> (SetFileToReceive <$> A.decimal <*> optional (" encrypt=" *> onOffP)),
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
+      "/_connect contact " *> (APIConnectContactViaAddress <$> A.decimal <*> incognitoOnOffP <* A.space <*> A.decimal),
       "/simplex" *> (ConnectSimplex <$> incognitoP),
       "/_address " *> (APICreateMyAddress <$> A.decimal),
       ("/address" <|> "/ad") $> CreateMyAddress,
@@ -6040,6 +6069,15 @@ chatCommandP =
 adminContactReq :: ConnReqContact
 adminContactReq =
   either error id $ strDecode "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
+
+simplexContactProfile :: Profile
+simplexContactProfile = Profile {
+  displayName = "SimpleX Chat team",
+  fullName = "",
+  image = Nothing,
+  contactLink = Just adminContactReq,
+  preferences = Nothing
+}
 
 timeItToView :: ChatMonad' m => String -> m a -> m a
 timeItToView s action = do

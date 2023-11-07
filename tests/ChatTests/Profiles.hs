@@ -7,10 +7,16 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
+import Control.Monad.Except
+import qualified Data.Attoparsec.ByteString.Char8 as A
+import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), Profile (..))
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec
+import Simplex.Chat.Store.Shared (createContact)
+import Control.Monad
+import Simplex.Messaging.Encoding.String (StrEncoding(..))
 
 chatProfileTests :: SpecWith FilePath
 chatProfileTests = do
@@ -33,6 +39,7 @@ chatProfileTests = do
     it "own contact address" testPlanAddressOwn
     it "connecting via contact address" testPlanAddressConnecting
     it "re-connect with deleted contact" testPlanAddressContactDeletedReconnected
+    it "contact via address" testPlanAddressContactViaAddress
   describe "incognito" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
@@ -754,6 +761,60 @@ testPlanAddressContactDeletedReconnected =
       bob ##> ("/c " <> cLink)
       bob <## "contact address: known contact alice_1"
       bob <## "use @alice_1 <message> to send messages"
+
+testPlanAddressContactViaAddress :: HasCallStack => FilePath -> IO ()
+testPlanAddressContactViaAddress =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/ad"
+      cLink <- getContactLink alice True
+
+      alice ##> "/pa on" -- not necessary, without it bob would receive profile update removing contact link
+      alice <## "new contact address set"
+
+      case A.parseOnly strP (B.pack cLink) of
+        Left _ -> error "error parsing contact link"
+        Right cReq -> do
+          let profile = aliceProfile {contactLink = Just cReq}
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          bob @@@ [("@alice", "")]
+
+          bob ##> ("/_connect plan 1 " <> cLink)
+          bob <## "contact address: known contact without connection alice"
+
+          let cLinkSchema2 = linkAnotherSchema cLink
+          bob ##> ("/_connect plan 1 " <> cLinkSchema2)
+          bob <## "contact address: known contact without connection alice"
+
+          -- terminal api
+          bob ##> ("/c " <> cLink)
+          connecting alice bob
+
+          bob ##> "/_delete @2 notify=off"
+          bob <## "alice: contact is deleted"
+          alice ##> "/_delete @2 notify=off"
+          alice <## "bob: contact is deleted"
+
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          bob @@@ [("@alice", "")]
+
+          -- GUI api
+          bob ##> "/_connect contact 1 2"
+          connecting alice bob
+  where
+    connecting alice bob = do
+      bob <## "connection request sent!"
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request..."
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+
+      alice <##> bob
+      bob @@@ [("@alice", "hey")]
 
 testConnectIncognitoInvitationLink :: HasCallStack => FilePath -> IO ()
 testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfile $
