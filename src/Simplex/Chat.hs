@@ -1394,7 +1394,7 @@ processChatCommand = \case
     unless (connectionPlanProceed plan) $ throwChatError (CEConnectionPlan plan)
     processChatCommand $ APIConnect userId incognito aCReqUri
   Connect _ Nothing -> throwChatError CEInvalidConnReq
-  APIConnectAddressContact userId incognito contactId -> withUserId userId $ \user -> do
+  APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
     ct@Contact {activeConn, profile = LocalProfile {contactLink}} <- withStore $ \db -> getContact db user contactId
     when (isJust activeConn) $ throwChatError (CECommandError "contact already has connection")
     case contactLink of
@@ -5902,7 +5902,7 @@ chatCommandP =
       "/_set_file_to_receive " *> (SetFileToReceive <$> A.decimal <*> optional (" encrypt=" *> onOffP)),
       ("/fcancel " <|> "/fc ") *> (CancelFile <$> A.decimal),
       ("/fstatus " <|> "/fs ") *> (FileStatus <$> A.decimal),
-      "/_connect address contact " *> (APIConnectAddressContact <$> A.decimal <*> incognitoOnOffP <* A.space <*> A.decimal),
+      "/_connect contact " *> (APIConnectContactViaAddress <$> A.decimal <*> incognitoOnOffP <* A.space <*> A.decimal),
       "/simplex" *> (ConnectSimplex <$> incognitoP),
       "/_address " *> (APICreateMyAddress <$> A.decimal),
       ("/address" <|> "/ad") $> CreateMyAddress,

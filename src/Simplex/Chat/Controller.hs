@@ -336,7 +336,7 @@ data ChatCommand
   | APIConnectPlan UserId AConnectionRequestUri
   | APIConnect UserId IncognitoEnabled (Maybe AConnectionRequestUri)
   | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
-  | APIConnectAddressContact UserId IncognitoEnabled ContactId
+  | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName
   | ClearContact ContactName
