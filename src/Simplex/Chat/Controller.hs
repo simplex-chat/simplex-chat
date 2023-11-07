@@ -78,6 +78,7 @@ import System.Mem.Weak (Weak)
 import UnliftIO.STM
 import Data.Bifunctor (first)
 import Simplex.RemoteControl.Client
+import Simplex.RemoteControl.Types (RCErrorType)
 
 versionNumber :: String
 versionNumber = showVersion SC.version
@@ -1086,13 +1087,9 @@ data RemoteCtrlSession
       }
   | RCSessionPendingConfirmation
       { rcsClient :: RCCtrlClient,
-        rcsSession :: RCCtrlSession,
         sessionCode :: Text,
-        rcsPairing :: RCCtrlPairing
-      }
-  | RCSessionConfirmed
-      { rcsClient :: RCCtrlClient,
-        rcsSession :: RCCtrlSession
+        rcsWaitSession :: Async (),
+        rcsWaitConfirmation :: TMVar (Either RCErrorType (RCCtrlSession, RCCtrlPairing))
       }
   | RCSessionConnected
       { rcsClient :: RCCtrlClient,

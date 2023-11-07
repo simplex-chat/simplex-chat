@@ -74,6 +74,7 @@ import UnliftIO.Concurrent (forkIO, threadDelay)
 import UnliftIO.Directory (copyFile, createDirectoryIfMissing, renameFile)
 import Simplex.RemoteControl.Client
 import Simplex.Messaging.Agent
+import Simplex.Messaging.Agent.Protocol (AgentErrorType (RCP))
 
 -- * Desktop side
 
@@ -124,12 +125,12 @@ startRemoteHost' rh_ = do
   where
     -- TODO handle error on waitForSession
     waitForSession rhKey _rchClient_kill_on_error remoteHost_ vars = do
-      (sessId, vars') <- atomically $ takeTMVar vars
+      (sessId, vars') <- takeRCStep vars
       withRemoteHostSession rhKey $ \case
         RHSessionConnecting rhs' -> Right ((), RHSessionConfirmed rhs') -- TODO check it's the same session?
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState -- TODO kill client on error
       toView $ CRRemoteHostSessionCode {remoteHost_, sessionCode = verificationCode sessId}
-      (RCHostSession {tls, sessionKeys}, rhHello, rhPairing) <- atomically $ takeTMVar vars'
+      (RCHostSession {tls, sessionKeys}, rhHello, rhPairing) <- takeRCStep vars'
       -- update remoteHost with updated pairing
       let storePath = "/tmp/TODO-RH-storePath"
       let displayName = "TODO-displayName"
@@ -367,18 +368,18 @@ connectRemoteCtrl inv@RCSignedInvitation {invitation = RCInvitation {ca, app = t
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState -- TODO kill rcsClient
   where
     waitForSession rcsClient vars = do
-      (rcsSession@RCCtrlSession {tls = TLS {tlsUniq}}, rcsPairing) <- atomically $ takeTMVar vars
-      let remoteCtrl = RemoteCtrlInfo -- TODO use Pairing or something
+      (uniq, rcsWaitConfirmation) <- takeRCStep vars
+      let remoteCtrl = RemoteCtrlInfo -- TODO use invite
             { remoteCtrlId = 1,
               displayName = "from app",
               fingerprint = ca,
               accepted = Just True,
               sessionActive = True
             }
-      let sessionCode = verificationCode tlsUniq
+      let sessionCode = verificationCode uniq
       toView CRRemoteCtrlSessionCode {remoteCtrl, sessionCode, newCtrl = True}
       updateRemoteCtrlSession $ \case
-        RCSessionConnecting {} -> Right RCSessionPendingConfirmation {rcsClient, rcsSession, sessionCode, rcsPairing}
+        RCSessionConnecting {rcsWaitSession} -> Right RCSessionPendingConfirmation {rcsClient, sessionCode, rcsWaitSession, rcsWaitConfirmation}
         _ -> Left $ ChatErrorRemoteCtrl RCEBadState -- TODO kill rcsClient
 
 -- startHost :: ChatMonad m => (ByteString -> m ChatResponse) -> Async () -> TM.TMap C.KeyHash (TransportHost, Word16) -> TMVar RemoteCtrlId -> TMVar (RemoteCtrlId, Text) -> m ()
@@ -449,6 +450,9 @@ handleRemoteCommand execChatCommand _sessionKeys remoteOutputQ HTTP2Request {req
         send $ sizePrefixedEncode rr
         attach send
         flush
+
+takeRCStep :: ChatMonad m => TMVar (Either RCErrorType a) -> m a
+takeRCStep = liftEitherError (\e -> ChatErrorAgent {agentError = RCP e, connectionEntity_ = Nothing}) . atomically . takeTMVar
 
 type GetChunk = Int -> IO ByteString
 
@@ -573,15 +577,16 @@ confirmRemoteCtrl _rcId = do
   -- atomically . void $ tryPutTMVar confirmed rcId -- the remote host can now proceed with connection
   undefined
 
--- Take a look at emoji of tlsunique
+-- Take a look at emoji of tlsunique, commit pairing, and start session server
 verifyRemoteCtrlSession :: ChatMonad m => (ByteString -> m ChatResponse) -> Text -> m RemoteCtrlInfo
 verifyRemoteCtrlSession execChatCommand sessCode' = do
-  (client, rccs@RCCtrlSession {tls, sessionKeys}, sessionCode, _rcsPairing) <- withRemoteCtrlSession $ \case
-    RCSessionPendingConfirmation {rcsClient, rcsSession, sessionCode, rcsPairing} ->
-      Right ((rcsClient, rcsSession, sessionCode, rcsPairing), RCSessionConfirmed {rcsClient, rcsSession})
-    _ -> Left $ ChatErrorRemoteCtrl RCEBadState
+  (client, sessionCode, vars) <- getRemoteCtrlSession >>= \case
+    RCSessionPendingConfirmation {rcsClient, sessionCode, rcsWaitConfirmation} -> pure (rcsClient, sessionCode, rcsWaitConfirmation)
+    _ -> throwError $ ChatErrorRemoteCtrl RCEBadState
   let verified = sameVerificationCode sessCode' sessionCode
   liftIO $ confirmCtrlSession client verified
+  unless verified $ throwError $ ChatErrorRemoteCtrl RCEBadVerificationCode
+  (rcsSession@RCCtrlSession {tls, sessionKeys}, rcCtrlPairing) <- takeRCStep vars
   -- TODO: Store new rcsPairing
   let remoteCtrl = RemoteCtrlInfo -- TODO use Pairing or something
         { remoteCtrlId = 1,
@@ -593,13 +598,12 @@ verifyRemoteCtrlSession execChatCommand sessCode' = do
   remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
   http2Server <- async $ attachHTTP2Server tls $ handleRemoteCommand execChatCommand sessionKeys remoteOutputQ
   withRemoteCtrlSession $ \case
-    RCSessionConfirmed {} -> Right ((), RCSessionConnected {rcsClient = client, rcsSession = rccs, http2Server, remoteOutputQ})
+    RCSessionPendingConfirmation {} -> Right ((), RCSessionConnected {rcsClient = client, rcsSession, http2Server, remoteOutputQ})
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   void . forkIO $ do
     waitCatch http2Server >>= \case
       Left err | isNothing (fromException @AsyncCancelled err) -> logError $ "HTTP2 server crashed with " <> tshow err -- TODO: exclude AsyncCancelled
       _ -> logInfo "HTTP2 server stopped"
-
     toView CRRemoteCtrlStopped
   pure remoteCtrl
 
@@ -614,8 +618,9 @@ cancelRemoteCtrl = \case
   RCSessionConnecting {rcsClient, rcsWaitSession} -> do
     cancelCtrlClient rcsClient
     uninterruptibleCancel rcsWaitSession
-  RCSessionPendingConfirmation {rcsClient} -> cancelCtrlClient rcsClient
-  RCSessionConfirmed {rcsClient} -> cancelCtrlClient rcsClient
+  RCSessionPendingConfirmation {rcsClient, rcsWaitSession} ->  do
+    cancelCtrlClient rcsClient
+    uninterruptibleCancel rcsWaitSession
   RCSessionConnected {rcsClient, http2Server} -> do
     cancelCtrlClient rcsClient
     uninterruptibleCancel http2Server
