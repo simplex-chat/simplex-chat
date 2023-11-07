@@ -2,7 +2,15 @@
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TemplateHaskell #-}
 
-module Simplex.Chat.Remote.AppVersion where
+module Simplex.Chat.Remote.AppVersion
+  ( AppVersionRange (minVersion, maxVersion),
+    AppVersion (..),
+    pattern AppCompatible,
+    mkAppVersionRange,
+    compatibleAppVersion,
+    isAppCompatible,
+  )
+  where
 
 import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Aeson as J
@@ -11,44 +19,39 @@ import qualified Data.Aeson.TH as JQ
 import qualified Data.Text as T
 import Data.Version (parseVersion, showVersion)
 import qualified Data.Version as V
-import qualified Paths_simplex_chat as SC
 import Simplex.Messaging.Parsers (defaultJSON)
 import Text.ParserCombinators.ReadP (readP_to_S)
-import Data.Maybe (mapMaybe)
-
-currentAppVersion :: AppVersion
-currentAppVersion = AppVersion SC.version
 
 newtype AppVersion = AppVersion V.Version
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Show)
 
 instance ToJSON AppVersion where
   toJSON (AppVersion v) = J.String . T.pack $ showVersion v
   toEncoding (AppVersion v) = JE.text . T.pack $ showVersion v
 
 instance FromJSON AppVersion where
-  parseJSON = J.withText "AppVersion" parse
+  parseJSON = J.withText "AppVersion" $ parse . T.unpack
     where
-      parse s = case mapMaybe fullParse $ readP_to_S parseVersion $ T.unpack s of
-        [v] -> pure $ AppVersion v
-        [] -> fail $ "bad AppVersion: " <> show s
-        many -> fail $ "ambiguous AppVersion: " <> show (s, many)
-      fullParse :: (a, String) -> Maybe a
-      fullParse (v, "") = Just v
-      fullParse _ = Nothing
+      parse s = case filter (null . snd) $ readP_to_S parseVersion s of
+        (v, _) : _ -> pure $ AppVersion v
+        _ -> fail $ "bad AppVersion: " <> s
 
 data AppVersionRange = AppVRange
   { minVersion :: AppVersion,
     maxVersion :: AppVersion
   }
 
-pattern AppVersionRange :: AppVersion -> AppVersion -> AppVersionRange
-pattern AppVersionRange v1 v2 <- AppVRange v1 v2
+mkAppVersionRange :: AppVersion -> AppVersion -> AppVersionRange
+mkAppVersionRange v1 v2
+  | v1 <= v2 = AppVRange v1 v2
+  | otherwise = error "invalid version range"
 
 newtype AppCompatible a = AppCompatible_ a
 
 pattern AppCompatible :: a -> AppCompatible a
 pattern AppCompatible a <- AppCompatible_ a
+
+{-# COMPLETE AppCompatible #-}
 
 isAppCompatible :: AppVersion -> AppVersionRange -> Bool
 isAppCompatible v (AppVRange v1 v2) = v1 <= v && v <= v2

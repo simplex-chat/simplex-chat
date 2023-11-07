@@ -49,6 +49,7 @@ import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
+import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store (AutoAccept, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
@@ -1048,6 +1049,7 @@ data RemoteHostError
   = RHEMissing -- ^ No remote session matches this identifier
   | RHEBusy -- ^ A session is already running
   | RHEBadState -- ^ Illegal state transition
+  | RHEBadVersion {appVersion :: AppVersion}
   | RHERejected -- ^ A session attempt was rejected by a host
   | RHETimeout -- ^ A discovery or a remote operation has timed out
   | RHEDisconnected {reason :: Text} -- ^ A session disconnected by a host
@@ -1066,6 +1068,8 @@ data RemoteCtrlError
   | RCECertificateExpired {remoteCtrlId :: RemoteCtrlId} -- ^ A connection or CA certificate in a chain have bad validity period
   | RCECertificateUntrusted {remoteCtrlId :: RemoteCtrlId} -- ^ TLS is unable to validate certificate chain presented for a connection
   | RCEBadFingerprint -- ^ Bad fingerprint data provided in OOB
+  | RCEBadInvitation
+  | RCEBadVersion {appVersion :: AppVersion}
   | RCEBadVerificationCode -- ^ The code submitted doesn't match session TLSunique
   | RCEHTTP2Error {http2Error :: Text}
   | RCEHTTP2RespStatus {statusCode :: Maybe Int} -- TODO remove

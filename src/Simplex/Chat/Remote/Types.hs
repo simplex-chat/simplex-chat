@@ -47,7 +47,7 @@ data RemoteProtocolError
   = -- | size prefix is malformed
     RPEInvalidSize
   | -- | failed to parse RemoteCommand or RemoteResponse
-    RPEInvalidJSON {invalidJSON :: Text}
+    RPEInvalidJSON {invalidJSON :: String}
   | RPEIncompatibleEncoding
   | RPEUnexpectedFile
   | RPENoFile
@@ -120,12 +120,12 @@ data RemoteFile = RemoteFile
   }
   deriving (Show)
 
-data RemoteCtrlAppInfo = RemoteCtrlAppInfo
+data CtrlAppInfo = CtrlAppInfo
   { appVersionRange :: AppVersionRange,
     deviceName :: Text
   }
 
-data RemoteHostAppInfo = RemoteHostAppInfo
+data HostAppInfo = HostAppInfo
   { appVersion :: AppVersion,
     deviceName :: Text,
     encoding :: PlatformEncoding,
@@ -144,6 +144,6 @@ $(J.deriveJSON defaultJSON ''RemoteHostInfo)
 
 $(J.deriveJSON defaultJSON ''RemoteCtrlInfo)
 
-$(J.deriveJSON defaultJSON ''RemoteCtrlAppInfo)
+$(J.deriveJSON defaultJSON ''CtrlAppInfo)
 
-$(J.deriveJSON defaultJSON ''RemoteHostAppInfo)
+$(J.deriveJSON defaultJSON ''HostAppInfo)
