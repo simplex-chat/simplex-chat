@@ -241,9 +241,7 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatStatusImage() -> some View {
         switch chat.chatInfo {
         case let .direct(contact):
-            if progressByTimeout {
-                ProgressView()
-            } else if contact.active {
+            if contact.active {
                 switch (chatModel.contactNetworkStatus(contact)) {
                 case .connected: incognitoIcon(chat.chatInfo.incognito)
                 case .error:
