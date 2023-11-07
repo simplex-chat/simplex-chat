@@ -4,6 +4,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
@@ -18,16 +19,14 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Control.Monad.Reader
-import Control.Monad.STM (retry)
 import Crypto.Random (getRandomBytes)
 import qualified Data.Aeson as J
-import Data.Bifunctor (first, second)
+import Data.Bifunctor (second)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Base64.URL as B64U
 import Data.ByteString.Builder (Builder)
 import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
-import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isNothing)
 import Data.Text (Text)
@@ -41,6 +40,7 @@ import Simplex.Chat.Archive (archiveFilesFolder)
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Messages (chatNameStr)
+import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Remote.Protocol
 import Simplex.Chat.Remote.RevHTTP (attachRevHTTP2Client, attachHTTP2Server)
 import Simplex.Chat.Remote.Transport
@@ -75,6 +75,14 @@ import UnliftIO.Directory (copyFile, createDirectoryIfMissing, renameFile)
 import Simplex.RemoteControl.Client
 import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Protocol (AgentErrorType (RCP))
+
+-- when acting as host
+minRemoteCtrlVersion :: AppVersion
+minRemoteCtrlVersion = AppVersion [5, 4, 0, 2]
+
+-- when acting as controller
+minRemoteHostVersion :: AppVersion
+minRemoteHostVersion = AppVersion [5, 4, 0, 2]
 
 -- * Desktop side
 

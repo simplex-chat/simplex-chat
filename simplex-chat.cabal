@@ -130,6 +130,7 @@ library
       Simplex.Chat.ProfileGenerator
       Simplex.Chat.Protocol
       Simplex.Chat.Remote
+      Simplex.Chat.Remote.AppVersion
       Simplex.Chat.Remote.Multicast
       Simplex.Chat.Remote.Protocol
       Simplex.Chat.Remote.RevHTTP

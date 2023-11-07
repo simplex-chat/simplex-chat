@@ -14,6 +14,7 @@ import Control.Exception (Exception)
 import qualified Data.Aeson.TH as J
 import Data.Int (Int64)
 import Data.Text (Text)
+import Simplex.Chat.Remote.AppVersion
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
@@ -137,6 +138,18 @@ data RemoteFile = RemoteFile
   }
   deriving (Show)
 
+data RemoteCtrlAppInfo = RemoteCtrlAppInfo
+  { appVersionRange :: AppVersionRange,
+    deviceName :: Text
+  }
+
+data RemoteHostAppInfo = RemoteHostAppInfo
+  { appVersion :: AppVersion,
+    deviceName :: Text,
+    encoding :: PlatformEncoding,
+    encryptFiles :: Bool -- if the host encrypts files in app storage
+  }
+
 $(J.deriveJSON defaultJSON ''RemoteFile)
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "RPE") ''RemoteProtocolError)
@@ -150,3 +163,7 @@ $(J.deriveJSON defaultJSON ''RemoteHostInfo)
 $(J.deriveJSON defaultJSON ''RemoteCtrl)
 
 $(J.deriveJSON defaultJSON ''RemoteCtrlInfo)
+
+$(J.deriveJSON defaultJSON ''RemoteCtrlAppInfo)
+
+$(J.deriveJSON defaultJSON ''RemoteHostAppInfo)
