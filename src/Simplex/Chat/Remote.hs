@@ -93,7 +93,7 @@ hostAppVersionRange = mkAppVersionRange minRemoteCtrlVersion currentAppVersion
 
 getRemoteHostClient :: ChatMonad m => RemoteHostId -> m RemoteHostClient
 getRemoteHostClient rhId = withRemoteHostSession rhKey $ \case
-  s@(RHSessionConnected rhClient _) -> Right (rhClient, s)
+  s@RHSessionConnected {rhClient} -> Right (rhClient, s)
   _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
   where
     rhKey = RHId rhId
@@ -143,7 +143,7 @@ startRemoteHost' rh_ = do
     parseHostAppInfo RCHostHello {app = hostAppInfo} rhKey = do
       HostAppInfo {deviceName, appVersion} <-
         liftEitherWith (ChatErrorRemoteHost rhKey . RHEProtocolError . RPEInvalidJSON) $ JT.parseEither J.parseJSON hostAppInfo
-      unless (isAppCompatible appVersion ctrlAppVersionRange) $ throwError $ ChatErrorRemoteHost rhKey $ RHEBadVersion appVersion 
+      unless (isAppCompatible appVersion ctrlAppVersionRange) $ throwError $ ChatErrorRemoteHost rhKey $ RHEBadVersion appVersion
       pure deviceName
     waitForSession :: ChatMonad m => RHKey -> Maybe RemoteHostInfo -> RCHostClient -> RCStepTMVar (ByteString, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> m ()
     waitForSession rhKey remoteHost_ _rchClient_kill_on_error vars = do
@@ -173,7 +173,7 @@ startRemoteHost' rh_ = do
       rhClient <- liftRC $ createRemoteHostClient httpClient sessionKeys storePath hostDeviceName
       pollAction <- async $ pollEvents remoteHostId rhClient
       withRemoteHostSession rhKey $ \case
-        RHSessionConfirmed RHPendingSession {} -> Right ((), RHSessionConnected {rhClient, pollAction})
+        RHSessionConfirmed RHPendingSession {} -> Right ((), RHSessionConnected {rhClient, pollAction, storePath})
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState -- TODO kill client on error
         -- TODO this is required for commands to be passed to remote host
       setNewRemoteHostId remoteHostId
@@ -314,7 +314,7 @@ connectRemoteCtrl inv@RCSignedInvitation {invitation = RCInvitation {ca, app}} =
         liftEitherWith (const $ ChatErrorRemoteCtrl RCEBadInvitation) $ JT.parseEither J.parseJSON ctrlAppInfo
       v <- case compatibleAppVersion hostAppVersionRange appVersionRange of
         Just (AppCompatible v) -> pure v
-        Nothing -> throwError $ ChatErrorRemoteCtrl $ RCEBadVersion $ maxVersion appVersionRange 
+        Nothing -> throwError $ ChatErrorRemoteCtrl $ RCEBadVersion $ maxVersion appVersionRange
       pure (deviceName, v)
     getHostAppInfo appVersion = do
       hostDeviceName <- chatReadVar localDeviceName

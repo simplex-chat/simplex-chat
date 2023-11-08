@@ -1852,7 +1852,8 @@ viewChatError logLevel = \case
       cId :: Connection -> StyledString
       cId conn = sShow conn.connId
   ChatErrorRemoteCtrl e -> [plain $ "remote controller error: " <> show e]
-  ChatErrorRemoteHost rhId e -> [plain $ "remote host " <> show rhId <> " error: " <> show e]
+  ChatErrorRemoteHost RHNew e -> [plain $ "new remote host error: " <> show e]
+  ChatErrorRemoteHost (RHId rhId) e -> [plain $ "remote host " <> show rhId <> " error: " <> show e]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
     sqliteError' = \case
