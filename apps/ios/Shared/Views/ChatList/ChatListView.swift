@@ -177,13 +177,6 @@ struct ChatListView: View {
                 showAddChat = true
             }
 
-            connectButton("or chat with the developers") {
-                DispatchQueue.main.async {
-                    UIApplication.shared.open(simplexTeamURL)
-                }
-            }
-            .padding(.top, 10)
-
             Spacer()
             Text("You have no chats")
                 .foregroundColor(.secondary)
