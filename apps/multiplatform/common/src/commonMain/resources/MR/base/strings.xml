@@ -309,6 +309,7 @@
   <string name="videos_limit_desc">Only 10 videos can be sent at the same time</string>
   <string name="image_decoding_exception_title">Decoding error</string>
   <string name="image_decoding_exception_desc">The image cannot be decoded. Please, try a different image or contact developers.</string>
+  <string name="video_decoding_exception_desc">The video cannot be decoded. Please, try a different video or contact developers.</string>
   <string name="you_are_observer">you are observer</string>
   <string name="observer_cant_send_message_title">You can\'t send messages!</string>
   <string name="observer_cant_send_message_desc">Please contact group admin.</string>

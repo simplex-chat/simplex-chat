@@ -23,6 +23,7 @@ module Simplex.Chat.Store.Direct
     createDirectConnection,
     createIncognitoProfile,
     createConnReqConnection,
+    createAddressContactConnection,
     getProfileById,
     getConnReqContactXContactId,
     getContactByConnReqHash,
@@ -119,6 +120,12 @@ deletePendingContactConnection db userId connId =
     |]
     (userId, connId, ConnContact)
 
+createAddressContactConnection :: DB.Connection -> User -> Contact -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> SubscriptionMode -> ExceptT StoreError IO Contact
+createAddressContactConnection db user@User {userId} Contact {contactId} acId cReqHash xContactId incognitoProfile subMode = do
+  PendingContactConnection {pccConnId} <- liftIO $ createConnReqConnection db userId acId cReqHash xContactId incognitoProfile Nothing subMode
+  liftIO $ DB.execute db "UPDATE connections SET contact_id = ? WHERE connection_id = ?" (contactId, pccConnId)
+  getContact db user contactId
+
 createConnReqConnection :: DB.Connection -> UserId -> ConnId -> ConnReqUriHash -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> IO PendingContactConnection
 createConnReqConnection db userId acId cReqHash xContactId incognitoProfile groupLinkId subMode = do
   createdAt <- getCurrentTime
@@ -194,13 +201,14 @@ createIncognitoProfile db User {userId} p = do
   createIncognitoProfile_ db userId createdAt p
 
 createDirectContact :: DB.Connection -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
-createDirectContact db user@User {userId} activeConn@Connection {connId, localAlias} p@Profile {preferences} = do
-  createdAt <- liftIO getCurrentTime
-  (localDisplayName, contactId, profileId) <- createContact_ db userId connId p localAlias Nothing createdAt (Just createdAt)
+createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p@Profile {preferences} = do
+  currentTs <- liftIO getCurrentTime
+  (localDisplayName, contactId, profileId) <- createContact_ db userId p localAlias Nothing currentTs (Just currentTs)
+  liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
   let profile = toLocalProfile profileId p localAlias
       userPreferences = emptyChatPrefs
-      mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-  pure $ Contact {contactId, localDisplayName, profile, activeConn, viaGroup = Nothing, contactUsed = False, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt, updatedAt = createdAt, chatTs = Just createdAt, contactGroupMemberId = Nothing, contactGrpInvSent = False}
+      mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
+  pure $ Contact {contactId, localDisplayName, profile, activeConn = Just conn, viaGroup = Nothing, contactUsed = False, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, contactGroupMemberId = Nothing, contactGrpInvSent = False}
 
 deleteContactConnectionsAndFiles :: DB.Connection -> UserId -> Contact -> IO ()
 deleteContactConnectionsAndFiles db userId Contact {contactId} = do
@@ -218,7 +226,7 @@ deleteContactConnectionsAndFiles db userId Contact {contactId} = do
   DB.execute db "DELETE FROM files WHERE user_id = ? AND contact_id = ?" (userId, contactId)
 
 deleteContact :: DB.Connection -> User -> Contact -> IO ()
-deleteContact db user@User {userId} Contact {contactId, localDisplayName, activeConn = Connection {customUserProfileId}} = do
+deleteContact db user@User {userId} Contact {contactId, localDisplayName, activeConn} = do
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
   ctMember :: (Maybe ContactId) <- maybeFirstRow fromOnly $ DB.query db "SELECT contact_id FROM group_members WHERE user_id = ? AND contact_id = ? LIMIT 1" (userId, contactId)
   if isNothing ctMember
@@ -229,16 +237,20 @@ deleteContact db user@User {userId} Contact {contactId, localDisplayName, active
       currentTs <- getCurrentTime
       DB.execute db "UPDATE group_members SET contact_id = NULL, updated_at = ? WHERE user_id = ? AND contact_id = ?" (currentTs, userId, contactId)
   DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  forM_ customUserProfileId $ \profileId -> deleteUnusedIncognitoProfileById_ db user profileId
+  forM_ activeConn $ \Connection {customUserProfileId} ->
+    forM_ customUserProfileId $ \profileId ->
+      deleteUnusedIncognitoProfileById_ db user profileId
 
 -- should only be used if contact is not member of any groups
 deleteContactWithoutGroups :: DB.Connection -> User -> Contact -> IO ()
-deleteContactWithoutGroups db user@User {userId} Contact {contactId, localDisplayName, activeConn = Connection {customUserProfileId}} = do
+deleteContactWithoutGroups db user@User {userId} Contact {contactId, localDisplayName, activeConn} = do
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
   deleteContactProfile_ db userId contactId
   DB.execute db "DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?" (userId, localDisplayName)
   DB.execute db "DELETE FROM contacts WHERE user_id = ? AND contact_id = ?" (userId, contactId)
-  forM_ customUserProfileId $ \profileId -> deleteUnusedIncognitoProfileById_ db user profileId
+  forM_ activeConn $ \Connection {customUserProfileId} ->
+    forM_ customUserProfileId $ \profileId ->
+      deleteUnusedIncognitoProfileById_ db user profileId
 
 setContactDeleted :: DB.Connection -> User -> Contact -> IO ()
 setContactDeleted db User {userId} Contact {contactId} = do
@@ -307,19 +319,19 @@ updateContactProfile db user@User {userId} c p'
       updateContact_ db userId contactId localDisplayName ldn currentTs
       pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
   where
-    Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}, activeConn, userPreferences} = c
+    Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}, userPreferences} = c
     Profile {displayName = newName, preferences} = p'
     profile = toLocalProfile profileId p' localAlias
-    mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
+    mergedPreferences = contactUserPreferences user userPreferences preferences $ contactConnIncognito c
 
 updateContactUserPreferences :: DB.Connection -> User -> Contact -> Preferences -> IO Contact
-updateContactUserPreferences db user@User {userId} c@Contact {contactId, activeConn} userPreferences = do
+updateContactUserPreferences db user@User {userId} c@Contact {contactId} userPreferences = do
   updatedAt <- getCurrentTime
   DB.execute
     db
     "UPDATE contacts SET user_preferences = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?"
     (userPreferences, updatedAt, userId, contactId)
-  let mergedPreferences = contactUserPreferences user userPreferences (preferences' c) $ connIncognito activeConn
+  let mergedPreferences = contactUserPreferences user userPreferences (preferences' c) $ contactConnIncognito c
   pure $ c {mergedPreferences, userPreferences}
 
 updateContactAlias :: DB.Connection -> UserId -> Contact -> LocalAlias -> IO Contact
@@ -453,7 +465,8 @@ getContactByName db user localDisplayName = do
 getUserContacts :: DB.Connection -> User -> IO [Contact]
 getUserContacts db user@User {userId} = do
   contactIds <- map fromOnly <$> DB.query db "SELECT contact_id FROM contacts WHERE user_id = ? AND deleted = 0" (Only userId)
-  rights <$> mapM (runExceptT . getContact db user) contactIds
+  contacts <- rights <$> mapM (runExceptT . getContact db user) contactIds
+  pure $ filter (\Contact {activeConn} -> isJust activeConn) contacts
 
 createOrUpdateContactRequest :: DB.Connection -> User -> Int64 -> InvitationId -> VersionRange -> Profile -> Maybe XContactId -> ExceptT StoreError IO ContactOrRequest
 createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (VersionRange minV maxV) Profile {displayName, fullName, image, contactLink, preferences} xContactId_ =
@@ -642,9 +655,9 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
     "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, chat_ts, xcontact_id) VALUES (?,?,?,?,?,?,?,?,?)"
     (userId, localDisplayName, profileId, True, userPreferences, createdAt, createdAt, createdAt, xContactId)
   contactId <- insertedRowId db
-  activeConn <- createConnection_ db userId ConnContact (Just contactId) agentConnId cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode
-  let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn, viaGroup = Nothing, contactUsed = False, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt, chatTs = Just createdAt, contactGroupMemberId = Nothing, contactGrpInvSent = False}
+  conn <- createConnection_ db userId ConnContact (Just contactId) agentConnId cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode
+  let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
+  pure $ Contact {contactId, localDisplayName, profile = toLocalProfile profileId profile "", activeConn = Just conn, viaGroup = Nothing, contactUsed = False, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = createdAt, updatedAt = createdAt, chatTs = Just createdAt, contactGroupMemberId = Nothing, contactGrpInvSent = False}
 
 getContactIdByName :: DB.Connection -> User -> ContactName -> ExceptT StoreError IO Int64
 getContactIdByName db User {userId} cName =
@@ -656,7 +669,7 @@ getContact db user contactId = getContact_ db user contactId False
 
 getContact_ :: DB.Connection -> User -> Int64 -> Bool -> ExceptT StoreError IO Contact
 getContact_ db user@User {userId} contactId deleted =
-  ExceptT . fmap join . firstRow (toContactOrError user) (SEContactNotFound contactId) $
+  ExceptT . firstRow (toContact user) (SEContactNotFound contactId) $
     DB.query
       db
       [sql|
@@ -673,17 +686,20 @@ getContact_ db user@User {userId} contactId deleted =
         LEFT JOIN connections c ON c.contact_id = ct.contact_id
         WHERE ct.user_id = ? AND ct.contact_id = ?
           AND ct.deleted = ?
-          AND c.connection_id = (
-            SELECT cc_connection_id FROM (
-              SELECT
-                cc.connection_id AS cc_connection_id,
-                cc.created_at AS cc_created_at,
-                (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
-              FROM connections cc
-              WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
-              ORDER BY cc_conn_status_ord DESC, cc_created_at DESC
-              LIMIT 1
+          AND (
+            c.connection_id = (
+              SELECT cc_connection_id FROM (
+                SELECT
+                  cc.connection_id AS cc_connection_id,
+                  cc.created_at AS cc_created_at,
+                  (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
+                FROM connections cc
+                WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
+                ORDER BY cc_conn_status_ord DESC, cc_created_at DESC
+                LIMIT 1
+              )
             )
+            OR c.connection_id IS NULL
           )
       |]
       (userId, contactId, deleted, ConnReady, ConnSndReady)
@@ -707,7 +723,7 @@ getPendingContactConnections db User {userId} = do
       |]
       [":user_id" := userId, ":conn_type" := ConnContact]
 
-getContactConnections :: DB.Connection -> UserId -> Contact -> ExceptT StoreError IO [Connection]
+getContactConnections :: DB.Connection -> UserId -> Contact -> IO [Connection]
 getContactConnections db userId Contact {contactId} =
   connections =<< liftIO getConnections_
   where
@@ -723,7 +739,7 @@ getContactConnections db userId Contact {contactId} =
           WHERE c.user_id = ? AND ct.user_id = ? AND ct.contact_id = ?
         |]
         (userId, userId, contactId)
-    connections [] = throwError $ SEContactNotFound contactId
+    connections [] = pure []
     connections rows = pure $ map toConnection rows
 
 getConnectionById :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Connection

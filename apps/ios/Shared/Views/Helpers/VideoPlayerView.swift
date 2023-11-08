@@ -6,6 +6,7 @@
 import Foundation
 import SwiftUI
 import AVKit
+import Combine
 
 struct VideoPlayerView: UIViewRepresentable {
 
@@ -37,6 +38,9 @@ struct VideoPlayerView: UIViewRepresentable {
             player.seek(to: CMTime.zero)
             player.play()
         }
+        context.coordinator.publisher = player.publisher(for: \.timeControlStatus).sink { status in
+            AppDelegate.keepScreenOn(status == .playing)
+        }
         return controller.view
     }
 
@@ -50,11 +54,13 @@ struct VideoPlayerView: UIViewRepresentable {
     class Coordinator: NSObject {
         var controller: AVPlayerViewController?
         var timeObserver: Any? = nil
+        var publisher: AnyCancellable? = nil
 
         deinit {
             if let timeObserver = timeObserver {
                 NotificationCenter.default.removeObserver(timeObserver)
             }
+            publisher?.cancel()
         }
     }
 }

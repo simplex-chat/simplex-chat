@@ -8,37 +8,20 @@
 
 module Simplex.Chat.Remote.RevHTTP where
 
-import Simplex.RemoteControl.Discovery
-import Simplex.RemoteControl.Types
-import Control.Logger.Simple
-import qualified Network.TLS as TLS
-import qualified Simplex.Messaging.Crypto as C
-import qualified Simplex.Messaging.Transport as Transport
+import Simplex.Messaging.Transport (TLS)
 import Simplex.Messaging.Transport.HTTP2 (defaultHTTP2BufferSize, getHTTP2Body)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2ClientError (..), attachHTTP2Client, bodyHeadSize, connTimeout, defaultHTTP2ClientConfig)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..), runHTTP2ServerWith)
-import Simplex.Messaging.Util (ifM)
+import Simplex.RemoteControl.Discovery
 import UnliftIO
 
-announceRevHTTP2 :: MonadUnliftIO m => Tasks -> (C.PrivateKeyEd25519, Announce) -> TLS.Credentials -> m () -> m (Either HTTP2ClientError HTTP2Client)
-announceRevHTTP2 = announceCtrl runHTTP2Client
-
--- | Attach HTTP2 client and hold the TLS until the attached client finishes.
-runHTTP2Client :: MVar () -> MVar (Either HTTP2ClientError HTTP2Client) -> Transport.TLS -> IO ()
-runHTTP2Client finishedVar clientVar tls =
-  ifM (isEmptyMVar clientVar)
-    attachClient
-    (logError "HTTP2 session already started on this listener")
+attachRevHTTP2Client :: IO () -> TLS -> IO (Either HTTP2ClientError HTTP2Client)
+attachRevHTTP2Client disconnected = attachHTTP2Client config ANY_ADDR_V4 "0" disconnected defaultHTTP2BufferSize
   where
-    attachClient = do
-      client <- attachHTTP2Client config ANY_ADDR_V4 DISCOVERY_PORT (putMVar finishedVar ()) defaultHTTP2BufferSize tls
-      putMVar clientVar client
-      readMVar finishedVar
-    -- TODO connection timeout
     config = defaultHTTP2ClientConfig {bodyHeadSize = doNotPrefetchHead, connTimeout = maxBound}
 
-attachHTTP2Server :: (MonadUnliftIO m) => (HTTP2Request -> m ()) -> Transport.TLS -> m ()
-attachHTTP2Server processRequest tls = do
+attachHTTP2Server :: MonadUnliftIO m => TLS -> (HTTP2Request -> m ()) -> m ()
+attachHTTP2Server tls processRequest = do
   withRunInIO $ \unlift ->
     runHTTP2ServerWith defaultHTTP2BufferSize ($ tls) $ \sessionId r sendResponse -> do
       reqBody <- getHTTP2Body r doNotPrefetchHead

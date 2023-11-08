@@ -1,13 +1,11 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module RemoteTests where
 
-import Simplex.Chat.Remote.RevHTTP
-import qualified Simplex.RemoteControl.Discovery as Discovery
-import Simplex.RemoteControl.Types
 import ChatClient
 import ChatTests.Utils
 import Control.Logger.Simple
@@ -16,11 +14,6 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
-import Data.String (fromString)
-import Network.HTTP.Types (ok200)
-import qualified Network.HTTP2.Client as C
-import qualified Network.HTTP2.Server as S
-import qualified Network.Socket as N
 import qualified Network.TLS as TLS
 import Simplex.Chat.Archive (archiveFilesFolder)
 import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..))
@@ -29,12 +22,8 @@ import Simplex.Chat.Mobile.File
 import Simplex.Chat.Remote.Types
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
-import Simplex.Messaging.Encoding (smpDecode)
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
-import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Response (..), closeHTTP2Client, sendRequest)
-import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Simplex.Messaging.Util
 import System.FilePath ((</>))
 import Test.Hspec
@@ -44,113 +33,35 @@ import UnliftIO.Directory
 
 remoteTests :: SpecWith FilePath
 remoteTests = describe "Remote" $ do
-  -- it "generates usable credentials" genCredentialsTest
-  -- it "OOB encoding, decoding, and signatures are correct" oobCodecTest
-  it "connects announcer with discoverer over reverse-http2" announceDiscoverHttp2Test
-  it "performs protocol handshake" remoteHandshakeTest
-  it "performs protocol handshake (again)" remoteHandshakeTest -- leaking servers regression check
+  describe "protocol handshake" $ do
+    it "connects with new pairing" remoteHandshakeTest
+    it "connects with new pairing (again)" remoteHandshakeTest -- leaking servers regression check
+    it "connects with stored pairing" remoteHandshakeStoredTest
   it "sends messages" remoteMessageTest
   describe "remote files" $ do
     it "store/get/send/receive files" remoteStoreFileTest
-    it "should sends files from CLI wihtout /store" remoteCLIFileTest
-
--- * Low-level TLS with ephemeral credentials
-
--- -- XXX: extract
--- genCredentialsTest :: (HasCallStack) => FilePath -> IO ()
--- genCredentialsTest _tmp = do
---   (fingerprint, credentials) <- genTestCredentials
---   started <- newEmptyTMVarIO
---   bracket (startTLSServer started credentials serverHandler) cancel $ \_server -> do
---     ok <- atomically (readTMVar started)
---     port <- maybe (error "TLS server failed to start") pure ok
---     logNote $ "Assigned port: " <> tshow port
---     connectTLSClient ("127.0.0.1", fromIntegral port) fingerprint clientHandler
---   where
---     serverHandler serverTls = do
---       logNote "Sending from server"
---       Transport.putLn serverTls "hi client"
---       logNote "Reading from server"
---       Transport.getLn serverTls `shouldReturn` "hi server"
---     clientHandler clientTls = do
---       logNote "Sending from client"
---       Transport.putLn clientTls "hi server"
---       logNote "Reading from client"
---       Transport.getLn clientTls `shouldReturn` "hi client"
-
--- * UDP discovery and rever HTTP2
-
--- oobCodecTest :: (HasCallStack) => FilePath -> IO ()
--- oobCodecTest _tmp = do
---   subscribers <- newTMVarIO 0
---   localAddr <- Discovery.getLocalAddress subscribers >>= maybe (fail "unable to get local address") pure
---   (fingerprint, _credentials) <- genTestCredentials
---   (_dhKey, _sigKey, _ann, signedOOB@(SignedOOB oob _sig)) <- Discovery.startSession (Just "Desktop") (localAddr, read Discovery.DISCOVERY_PORT) fingerprint
---   verifySignedOOB signedOOB `shouldBe` True
---   strDecode (strEncode oob) `shouldBe` Right oob
---   strDecode (strEncode signedOOB) `shouldBe` Right signedOOB
-
-announceDiscoverHttp2Test :: (HasCallStack) => FilePath -> IO ()
-announceDiscoverHttp2Test _tmp = do
-  subscribers <- newTMVarIO 0
-  localAddr <- Discovery.getLocalAddress subscribers >>= maybe (fail "unable to get local address") pure
-  (fingerprint, credentials) <- genTestCredentials
-  (_dhKey, sigKey, ann, _oob) <- Discovery.startSession (Just "Desktop") (localAddr, read Discovery.DISCOVERY_PORT) fingerprint
-  tasks <- newTVarIO []
-  finished <- newEmptyMVar
-  controller <- async $ do
-    logNote "Controller: starting"
-    bracket
-      (announceRevHTTP2 tasks (sigKey, ann) credentials (putMVar finished ()) >>= either (fail . show) pure)
-      closeHTTP2Client
-      ( \http -> do
-          logNote "Controller: got client"
-          sendRequest http (C.requestNoBody "GET" "/" []) (Just 10000000) >>= \case
-            Left err -> do
-              logNote "Controller: got error"
-              fail $ show err
-            Right HTTP2Response {} ->
-              logNote "Controller: got response"
-      )
-  host <- async $ Discovery.withListener subscribers $ \sock -> do
-    (N.SockAddrInet _port addr, sigAnn) <- Discovery.recvAnnounce sock
-    SignedAnnounce Announce {caFingerprint, serviceAddress=(hostAddr, port)} _sig <- either fail pure $ smpDecode sigAnn
-    caFingerprint `shouldBe` fingerprint
-    addr `shouldBe` hostAddr
-    let service = (THIPv4 $ N.hostAddressToTuple hostAddr, port)
-    logNote $ "Host: connecting to " <> tshow service
-    server <- async $ Discovery.connectTLSClient service fingerprint $ \tls -> do
-      logNote "Host: got tls"
-      flip attachHTTP2Server tls $ \HTTP2Request {sendResponse} -> do
-        logNote "Host: got request"
-        sendResponse $ S.responseNoBody ok200 []
-        logNote "Host: sent response"
-    takeMVar finished `finally` cancel server
-    logNote "Host: finished"
-  tasks `registerAsync` controller
-  tasks `registerAsync` host
-  (waitBoth host controller `shouldReturn` ((), ())) `finally` cancelTasks tasks
+    it "should send files from CLI wihtout /store" remoteCLIFileTest
 
 -- * Chat commands
 
-remoteHandshakeTest :: (HasCallStack) => FilePath -> IO ()
-remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
+remoteHandshakeTest :: HasCallStack => FilePath -> IO ()
+remoteHandshakeTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
   desktop ##> "/list remote hosts"
   desktop <## "No remote hosts"
+  mobile ##> "/list remote ctrls"
+  mobile <## "No remote controllers"
 
   startRemote mobile desktop
 
-  logNote "Session active"
-
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
-  desktop <## "1.  (active)"
+  desktop <## "1. Mobile (active)"
+
   mobile ##> "/list remote ctrls"
   mobile <## "Remote controllers:"
   mobile <## "1. My desktop (active)"
 
   stopMobile mobile desktop `catchAny` (logError . tshow)
-  -- TODO: add a case for 'stopDesktop'
 
   desktop ##> "/delete remote host 1"
   desktop <## "ok"
@@ -162,7 +73,28 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   mobile ##> "/list remote ctrls"
   mobile <## "No remote controllers"
 
-remoteMessageTest :: (HasCallStack) => FilePath -> IO ()
+remoteHandshakeStoredTest :: HasCallStack => FilePath -> IO ()
+remoteHandshakeStoredTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+  logNote "Starting new session"
+  startRemote mobile desktop
+  stopMobile mobile desktop `catchAny` (logError . tshow)
+
+  logNote "Starting stored session"
+  startRemoteStored mobile desktop
+  stopMobile mobile desktop `catchAny` (logError . tshow)
+
+  desktop ##> "/list remote hosts"
+  desktop <## "Remote hosts:"
+  desktop <## "1. Mobile"
+  mobile ##> "/list remote ctrls"
+  mobile <## "Remote controllers:"
+  mobile <## "1. My desktop"
+
+  logNote "Starting stored session again"
+  startRemoteStored mobile desktop
+  stopMobile mobile desktop `catchAny` (logError . tshow)
+
+remoteMessageTest :: HasCallStack => FilePath -> IO ()
 remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
   startRemote mobile desktop
   contactBob desktop bob
@@ -204,11 +136,13 @@ remoteStoreFileTest =
       let bobFiles = "./tests/tmp/bob_files"
       bob ##> ("/_files_folder " <> bobFiles)
       bob <## "ok"
+
       startRemote mobile desktop
       contactBob desktop bob
+
       rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
-      desktopHostStore <- case M.lookup 1 rhs of
-        Just RemoteHostSession {storePath} -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
+      desktopHostStore <- case M.lookup (RHId 1) rhs of
+        Just RHSessionConnected {storePath} -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
         _ -> fail "Host session 1 should be started"
       desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
       desktop <## "file test.pdf stored on remote host 1"
@@ -317,7 +251,7 @@ remoteStoreFileTest =
       r `shouldStartWith` "remote host 1 error"
       r `shouldContain` err
 
-remoteCLIFileTest :: (HasCallStack) => FilePath -> IO ()
+remoteCLIFileTest :: HasCallStack => FilePath -> IO ()
 remoteCLIFileTest = testChatCfg3 cfg aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> withXFTPServer $ do
   createDirectoryIfMissing True "./tests/tmp/tmp/"
   let mobileFiles = "./tests/tmp/mobile_files"
@@ -333,8 +267,8 @@ remoteCLIFileTest = testChatCfg3 cfg aliceProfile aliceDesktopProfile bobProfile
   contactBob desktop bob
 
   rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
-  desktopHostStore <- case M.lookup 1 rhs of
-    Just RemoteHostSession {storePath} -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
+  desktopHostStore <- case M.lookup (RHId 1) rhs of
+    Just RHSessionConnected {storePath} -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
     _ -> fail "Host session 1 should be started"
 
   mobileName <- userName mobile
@@ -395,41 +329,41 @@ startRemote :: TestCC -> TestCC -> IO ()
 startRemote mobile desktop = do
   desktop ##> "/set device name My desktop"
   desktop <## "ok"
-  desktop ##> "/create remote host"
-  desktop <## "remote host 1 created"
-  -- A new host is started [automatically] by UI
-  desktop ##> "/start remote host 1"
-  desktop <## "ok"
-  desktop <## "remote host 1 started"
-  desktop <## "connection code:"
-  oobLink <- getTermLine desktop
-  OOB {caFingerprint = oobFingerprint} <- either (fail . mappend "OOB link failed: ") pure $ decodeOOBLink (fromString oobLink)
-  -- Desktop displays OOB QR code
-
   mobile ##> "/set device name Mobile"
   mobile <## "ok"
-  mobile ##> "/find remote ctrl"
+  desktop ##> "/start remote host new"
+  desktop <## "new remote host started"
+  desktop <## "Remote session invitation:"
+  inv <- getTermLine desktop
+  mobile ##> ("/connect remote ctrl " <> inv)
   mobile <## "ok"
-  mobile <## "remote controller announced"
-  mobile <## "connection code:"
-  annFingerprint <- getTermLine mobile
-  -- The user scans OOB QR code and confirms it matches the announced stuff
-  fromString annFingerprint `shouldBe` strEncode oobFingerprint
-
-  mobile ##> ("/connect remote ctrl " <> oobLink)
-  mobile <## "remote controller 1 registered"
-  mobile ##> "/confirm remote ctrl 1"
-  mobile <## "ok"
-  mobile <## "remote controller 1 connecting to My desktop"
-  -- TODO: rework tls connection prelude
-  mobile <## "remote controller 1 connected to My desktop"
+  desktop <## "new remote host connecting"
+  desktop <## "Compare session code with host:"
+  sessId <- getTermLine desktop
+  mobile <## "new remote controller connected"
   mobile <## "Compare session code with controller and use:"
-  verifyCmd <- getTermLine mobile
-  mobile ##> verifyCmd
+  mobile <## ("/verify remote ctrl " <> sessId)
+  mobile ##> ("/verify remote ctrl " <> sessId)
+  mobile <## "remote controller 1 session started with My desktop"
+  desktop <## "remote host 1 connected"
+
+startRemoteStored :: TestCC -> TestCC -> IO ()
+startRemoteStored mobile desktop = do
+  desktop ##> "/start remote host 1"
+  desktop <## "remote host 1 started"
+  desktop <## "Remote session invitation:"
+  inv <- getTermLine desktop
+  mobile ##> ("/connect remote ctrl " <> inv)
   mobile <## "ok"
-  concurrently_
-    (mobile <## "remote controller 1 session started with My desktop")
-    (desktop <## "remote host 1 connected")
+  desktop <## "remote host 1 connecting"
+  desktop <## "Compare session code with host:"
+  sessId <- getTermLine desktop
+  mobile <## "remote controller 1 connected"
+  mobile <## "Compare session code with controller and use:"
+  mobile <## ("/verify remote ctrl " <> sessId)
+  mobile ##> ("/verify remote ctrl " <> sessId)
+  mobile <## "remote controller 1 session started with My desktop"
+  desktop <## "remote host 1 connected"
 
 contactBob :: TestCC -> TestCC -> IO ()
 contactBob desktop bob = do
@@ -453,9 +387,12 @@ stopDesktop mobile desktop = do
   logWarn "stopping via desktop"
   desktop ##> "/stop remote host 1"
   -- desktop <## "ok"
-  concurrently_
-    (desktop <## "remote host 1 stopped")
-    (eventually 3 $ mobile <## "remote controller stopped")
+  concurrentlyN_
+    [ do
+        desktop <## "remote host 1 stopped"
+        desktop <## "ok",
+      eventually 3 $ mobile <## "remote controller stopped"
+    ]
 
 stopMobile :: HasCallStack => TestCC -> TestCC -> IO ()
 stopMobile mobile desktop = do
@@ -468,7 +405,9 @@ stopMobile mobile desktop = do
 
 -- | Run action with extended timeout
 eventually :: Int -> IO a -> IO a
-eventually retries action = tryAny action >>= \case -- TODO: only catch timeouts
-  Left err | retries == 0 -> throwIO err
-  Left _ -> eventually (retries - 1) action
-  Right r -> pure r
+eventually retries action =
+  tryAny action >>= \case
+    -- TODO: only catch timeouts
+    Left err | retries == 0 -> throwIO err
+    Left _ -> eventually (retries - 1) action
+    Right r -> pure r

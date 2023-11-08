@@ -137,7 +137,7 @@ fun saveAnimImage(uri: URI, encrypted: Boolean): CryptoFile? {
     val destFileName = generateNewFileName("IMG", ext)
     val destFile = File(getAppFilePath(destFileName))
     if (encrypted) {
-      val args = writeCryptoFile(destFile.absolutePath, uri.inputStream()?.readAllBytes() ?: return null)
+      val args = writeCryptoFile(destFile.absolutePath, uri.inputStream()?.readBytes() ?: return null)
       CryptoFile(destFileName, args)
     } else {
       Files.copy(uri.inputStream(), destFile.toPath())
@@ -151,7 +151,7 @@ fun saveAnimImage(uri: URI, encrypted: Boolean): CryptoFile? {
 
 expect suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean): File?
 
-fun saveFileFromUri(uri: URI, encrypted: Boolean): CryptoFile? {
+fun saveFileFromUri(uri: URI, encrypted: Boolean, withAlertOnException: Boolean = true): CryptoFile? {
   return try {
     val inputStream = uri.inputStream()
     val fileToSave = getFileName(uri)
@@ -170,10 +170,14 @@ fun saveFileFromUri(uri: URI, encrypted: Boolean): CryptoFile? {
       }
     } else {
       Log.e(TAG, "Util.kt saveFileFromUri null inputStream")
+      if (withAlertOnException) showWrongUriAlert()
+
       null
     }
   } catch (e: Exception) {
     Log.e(TAG, "Util.kt saveFileFromUri error: ${e.stackTraceToString()}")
+    if (withAlertOnException) showWrongUriAlert()
+
     null
   }
 }
@@ -267,7 +271,28 @@ fun getMaxFileSize(fileProtocol: FileProtocol): Long {
   }
 }
 
-expect suspend fun getBitmapFromVideo(uri: URI, timestamp: Long? = null, random: Boolean = true): VideoPlayerInterface.PreviewAndDuration
+expect suspend fun getBitmapFromVideo(uri: URI, timestamp: Long? = null, random: Boolean = true, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration
+
+fun showWrongUriAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.non_content_uri_alert_title),
+    text = generalGetString(MR.strings.non_content_uri_alert_text)
+  )
+}
+
+fun showImageDecodingException() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.image_decoding_exception_title),
+    text = generalGetString(MR.strings.image_decoding_exception_desc)
+  )
+}
+
+fun showVideoDecodingException() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.image_decoding_exception_title),
+    text = generalGetString(MR.strings.video_decoding_exception_desc)
+  )
+}
 
 fun Color.darker(factor: Float = 0.1f): Color =
   Color(max(red * (1 - factor), 0f), max(green * (1 - factor), 0f), max(blue * (1 - factor), 0f), alpha)

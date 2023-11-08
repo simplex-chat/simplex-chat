@@ -9,34 +9,45 @@
 
 module Simplex.Chat.Remote.Types where
 
+import Control.Concurrent.Async (Async)
 import Control.Exception (Exception)
 import qualified Data.Aeson.TH as J
 import Data.Int (Int64)
 import Data.Text (Text)
-import qualified Simplex.Messaging.Crypto as C
+import Simplex.Chat.Remote.AppVersion
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
-import Simplex.RemoteControl.Types (Tasks)
+import Simplex.RemoteControl.Client
+import Simplex.RemoteControl.Types
 import Simplex.Messaging.Crypto.File (CryptoFile)
 
 data RemoteHostClient = RemoteHostClient
   { hostEncoding :: PlatformEncoding,
     hostDeviceName :: Text,
     httpClient :: HTTP2Client,
-    encryptHostFiles :: Bool
-  }
-
-data RemoteHostSession = RemoteHostSession
-  { remoteHostTasks :: Tasks,
-    remoteHostClient :: Maybe RemoteHostClient,
+    sessionKeys :: HostSessKeys,
+    encryptHostFiles :: Bool,
     storePath :: FilePath
   }
+
+data RHPendingSession = RHPendingSession
+  { rhKey :: RHKey,
+    rchClient :: RCHostClient,
+    rhsWaitSession :: Async (),
+    remoteHost_ :: Maybe RemoteHostInfo
+  }
+
+data RemoteHostSession
+  = RHSessionStarting
+  | RHSessionConnecting {rhPendingSession :: RHPendingSession}
+  | RHSessionConfirmed {rhPendingSession :: RHPendingSession}
+  | RHSessionConnected {rhClient :: RemoteHostClient, pollAction :: Async (), storePath :: FilePath}
 
 data RemoteProtocolError
   = -- | size prefix is malformed
     RPEInvalidSize
   | -- | failed to parse RemoteCommand or RemoteResponse
-    RPEInvalidJSON {invalidJSON :: Text}
+    RPEInvalidJSON {invalidJSON :: String}
   | RPEIncompatibleEncoding
   | RPEUnexpectedFile
   | RPENoFile
@@ -52,47 +63,39 @@ data RemoteProtocolError
 
 type RemoteHostId = Int64
 
+data RHKey = RHNew | RHId {remoteHostId :: RemoteHostId}
+  deriving (Eq, Ord, Show)
+
+-- | Storable/internal remote host data
 data RemoteHost = RemoteHost
   { remoteHostId :: RemoteHostId,
+    hostName :: Text,
     storePath :: FilePath,
-    displayName :: Text,
-    -- | Credentials signing key for root and session certs
-    caKey :: C.APrivateSignKey,
-    -- | A stable part of TLS credentials used in remote session
-    caCert :: C.SignedCertificate,
-    contacted :: Bool
+    hostPairing :: RCHostPairing
   }
-  deriving (Show)
 
-data RemoteCtrlOOB = RemoteCtrlOOB
-  { fingerprint :: C.KeyHash,
-    displayName :: Text
-  }
-  deriving (Show)
-
+-- | UI-accessible remote host information
 data RemoteHostInfo = RemoteHostInfo
   { remoteHostId :: RemoteHostId,
+    hostName :: Text,
     storePath :: FilePath,
-    displayName :: Text,
     sessionActive :: Bool
   }
   deriving (Show)
 
 type RemoteCtrlId = Int64
 
+-- | Storable/internal remote controller data
 data RemoteCtrl = RemoteCtrl
   { remoteCtrlId :: RemoteCtrlId,
-    displayName :: Text,
-    fingerprint :: C.KeyHash,
-    accepted :: Maybe Bool
+    ctrlName :: Text,
+    ctrlPairing :: RCCtrlPairing
   }
-  deriving (Show)
 
+-- | UI-accessible remote controller information
 data RemoteCtrlInfo = RemoteCtrlInfo
   { remoteCtrlId :: RemoteCtrlId,
-    displayName :: Text,
-    fingerprint :: C.KeyHash,
-    accepted :: Maybe Bool,
+    ctrlName :: Text,
     sessionActive :: Bool
   }
   deriving (Show)
@@ -117,14 +120,30 @@ data RemoteFile = RemoteFile
   }
   deriving (Show)
 
+data CtrlAppInfo = CtrlAppInfo
+  { appVersionRange :: AppVersionRange,
+    deviceName :: Text
+  }
+
+data HostAppInfo = HostAppInfo
+  { appVersion :: AppVersion,
+    deviceName :: Text,
+    encoding :: PlatformEncoding,
+    encryptFiles :: Bool -- if the host encrypts files in app storage
+  }
+
 $(J.deriveJSON defaultJSON ''RemoteFile)
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "RPE") ''RemoteProtocolError)
+
+$(J.deriveJSON (sumTypeJSON $ dropPrefix "RH") ''RHKey)
 
 $(J.deriveJSON (enumJSON $ dropPrefix "PE") ''PlatformEncoding)
 
 $(J.deriveJSON defaultJSON ''RemoteHostInfo)
 
-$(J.deriveJSON defaultJSON ''RemoteCtrl)
-
 $(J.deriveJSON defaultJSON ''RemoteCtrlInfo)
+
+$(J.deriveJSON defaultJSON ''CtrlAppInfo)
+
+$(J.deriveJSON defaultJSON ''HostAppInfo)

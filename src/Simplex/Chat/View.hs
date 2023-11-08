@@ -145,9 +145,11 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRGroupsList u gs -> ttyUser u $ viewGroupsList gs
   CRSentGroupInvitation u g c _ ->
     ttyUser u $
-      if viaGroupLink . contactConn $ c
-        then [ttyContact' c <> " invited to group " <> ttyGroup' g <> " via your group link"]
-        else ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
+      case contactConn c of
+        Just Connection {viaGroupLink}
+          | viaGroupLink -> [ttyContact' c <> " invited to group " <> ttyGroup' g <> " via your group link"]
+          | otherwise -> ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
+        Nothing -> []
   CRFileTransferStatus u ftStatus -> ttyUser u $ viewFileTransferStatus ftStatus
   CRFileTransferStatusXFTP u ci -> ttyUser u $ viewFileTransferStatusXFTP ci
   CRUserProfile u p -> ttyUser u $ viewUserProfile p
@@ -159,6 +161,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRConnectionPlan u connectionPlan -> ttyUser u $ viewConnectionPlan connectionPlan
   CRSentConfirmation u -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
+  CRSentInvitationToContact u _c customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
   CRContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
   CRChatCleared u chatInfo -> ttyUser u $ viewChatCleared chatInfo
@@ -274,9 +277,16 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRNtfMessages {} -> []
   CRRemoteHostCreated RemoteHostInfo {remoteHostId} -> ["remote host " <> sShow remoteHostId <> " created"]
   CRRemoteHostList hs -> viewRemoteHosts hs
-  CRRemoteHostStarted {remoteHost = RemoteHostInfo {remoteHostId = rhId}, sessionOOB} -> ["remote host " <> sShow rhId <> " started", "connection code:", plain sessionOOB]
-  CRRemoteHostSessionCode {remoteHost = RemoteHostInfo {remoteHostId = rhId}, sessionCode} ->
-    ["remote host " <> sShow rhId <> " is connecting", "Compare session code with host:", plain sessionCode]
+  CRRemoteHostStarted {remoteHost_, invitation} ->
+    [ maybe "new remote host started" (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> sShow rhId <> " started") remoteHost_,
+      "Remote session invitation:",
+      plain invitation
+    ]
+  CRRemoteHostSessionCode {remoteHost_, sessionCode} ->
+    [ maybe "new remote host connecting" (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> sShow rhId <> " connecting") remoteHost_,
+      "Compare session code with host:",
+      plain sessionCode
+    ]
   CRRemoteHostConnected RemoteHostInfo {remoteHostId = rhId} -> ["remote host " <> sShow rhId <> " connected"]
   CRRemoteHostStopped rhId -> ["remote host " <> sShow rhId <> " stopped"]
   CRRemoteFileStored rhId (CryptoFile filePath cfArgs_) ->
@@ -289,12 +299,15 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     ["remote controller announced", "connection code:", plain $ strEncode fingerprint]
   CRRemoteCtrlFound rc ->
     ["remote controller found:", viewRemoteCtrl rc]
-  CRRemoteCtrlConnecting RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} ->
-    ["remote controller " <> sShow rcId <> " connecting to " <> plain rcName]
-  CRRemoteCtrlSessionCode {remoteCtrl = RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName}, sessionCode} ->
-    ["remote controller " <> sShow rcId <> " connected to " <> plain rcName, "Compare session code with controller and use:", "/verify remote ctrl " <> sShow rcId <> " " <> plain sessionCode]
-  CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} ->
-    ["remote controller " <> sShow rcId <> " session started with " <> plain rcName]
+  CRRemoteCtrlConnecting RemoteCtrlInfo {remoteCtrlId = rcId, ctrlName} ->
+    ["remote controller " <> sShow rcId <> " connecting to " <> plain ctrlName]
+  CRRemoteCtrlSessionCode {remoteCtrl_, sessionCode} ->
+    [ maybe "new remote controller connected" (\RemoteCtrlInfo {remoteCtrlId} -> "remote controller " <> sShow remoteCtrlId <> " connected") remoteCtrl_,
+      "Compare session code with controller and use:",
+      "/verify remote ctrl " <> plain sessionCode -- TODO maybe pass rcId
+    ]
+  CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, ctrlName} ->
+    ["remote controller " <> sShow rcId <> " session started with " <> plain ctrlName]
   CRRemoteCtrlStopped -> ["remote controller stopped"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
@@ -359,7 +372,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     testViewChats chats = [sShow $ map toChatView chats]
       where
         toChatView :: AChat -> (Text, Text, Maybe ConnStatus)
-        toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items Nothing, Just $ connStatus activeConn)
+        toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items Nothing, connStatus <$> activeConn)
         toChatView (AChat _ (Chat (GroupChat GroupInfo {membership, localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items (Just membership), Nothing)
         toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items Nothing, Nothing)
         toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items Nothing, Just pccConnStatus)
@@ -1072,10 +1085,10 @@ viewNetworkConfig NetworkConfig {socksProxy, tcpTimeout} =
     "use " <> highlight' "/network socks=<on/off/[ipv4]:port>[ timeout=<seconds>]" <> " to change settings"
   ]
 
-viewContactInfo :: Contact -> ConnectionStats -> Maybe Profile -> [StyledString]
+viewContactInfo :: Contact -> Maybe ConnectionStats -> Maybe Profile -> [StyledString]
 viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, contactLink}, activeConn} stats incognitoProfile =
   ["contact ID: " <> sShow contactId]
-    <> viewConnectionStats stats
+    <> maybe [] viewConnectionStats stats
     <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact l)]) contactLink
     <> maybe
       ["you've shared main profile with this contact"]
@@ -1083,7 +1096,7 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
       incognitoProfile
     <> ["alias: " <> plain localAlias | localAlias /= ""]
     <> [viewConnectionVerified (contactSecurityCode ct)]
-    <> [viewPeerChatVRange (peerChatVRange activeConn)]
+    <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
 
 viewGroupInfo :: GroupInfo -> GroupSummary -> [StyledString]
 viewGroupInfo GroupInfo {groupId} s =
@@ -1341,6 +1354,7 @@ viewConnectionPlan = \case
       [ ctAddr ("known contact " <> ttyContact' ct),
         "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
       ]
+    CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)]
     where
       ctAddr = ("contact address: " <>)
   CPGroupLink glp -> case glp of
@@ -1677,21 +1691,21 @@ viewRemoteHosts = \case
   [] -> ["No remote hosts"]
   hs -> "Remote hosts: " : map viewRemoteHostInfo hs
   where
-    viewRemoteHostInfo RemoteHostInfo {remoteHostId, displayName, sessionActive} =
-      plain $ tshow remoteHostId <> ". " <> displayName <> if sessionActive then " (active)" else ""
+    viewRemoteHostInfo RemoteHostInfo {remoteHostId, hostName, sessionActive} =
+      plain $ tshow remoteHostId <> ". " <> hostName <> if sessionActive then " (active)" else ""
 
 viewRemoteCtrls :: [RemoteCtrlInfo] -> [StyledString]
 viewRemoteCtrls = \case
   [] -> ["No remote controllers"]
   hs -> "Remote controllers: " : map viewRemoteCtrlInfo hs
   where
-    viewRemoteCtrlInfo RemoteCtrlInfo {remoteCtrlId, displayName, sessionActive} =
-      plain $ tshow remoteCtrlId <> ". " <> displayName <> if sessionActive then " (active)" else ""
+    viewRemoteCtrlInfo RemoteCtrlInfo {remoteCtrlId, ctrlName, sessionActive} =
+      plain $ tshow remoteCtrlId <> ". " <> ctrlName <> if sessionActive then " (active)" else ""
 
 -- TODO fingerprint, accepted?
 viewRemoteCtrl :: RemoteCtrlInfo -> StyledString
-viewRemoteCtrl RemoteCtrlInfo {remoteCtrlId, displayName} =
-  plain $ tshow remoteCtrlId <> ". " <> displayName
+viewRemoteCtrl RemoteCtrlInfo {remoteCtrlId, ctrlName} =
+  plain $ tshow remoteCtrlId <> ". " <> ctrlName
 
 viewChatError :: ChatLogLevel -> ChatError -> [StyledString]
 viewChatError logLevel = \case
@@ -1839,7 +1853,8 @@ viewChatError logLevel = \case
       cId :: Connection -> StyledString
       cId conn = sShow conn.connId
   ChatErrorRemoteCtrl e -> [plain $ "remote controller error: " <> show e]
-  ChatErrorRemoteHost rhId e -> [plain $ "remote host " <> show rhId <> " error: " <> show e]
+  ChatErrorRemoteHost RHNew e -> [plain $ "new remote host error: " <> show e]
+  ChatErrorRemoteHost (RHId rhId) e -> [plain $ "remote host " <> show rhId <> " error: " <> show e]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
     sqliteError' = \case
