@@ -723,7 +723,7 @@ getPendingContactConnections db User {userId} = do
       |]
       [":user_id" := userId, ":conn_type" := ConnContact]
 
-getContactConnections :: DB.Connection -> UserId -> Contact -> ExceptT StoreError IO [Connection]
+getContactConnections :: DB.Connection -> UserId -> Contact -> IO [Connection]
 getContactConnections db userId Contact {contactId} =
   connections =<< liftIO getConnections_
   where
@@ -739,7 +739,7 @@ getContactConnections db userId Contact {contactId} =
           WHERE c.user_id = ? AND ct.user_id = ? AND ct.contact_id = ?
         |]
         (userId, userId, contactId)
-    connections [] = throwError $ SEContactNotFound contactId
+    connections [] = pure []
     connections rows = pure $ map toConnection rows
 
 getConnectionById :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO Connection

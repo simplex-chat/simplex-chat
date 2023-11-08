@@ -779,6 +779,12 @@ testPlanAddressContactViaAddress =
           void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
           bob @@@ [("@alice", "")]
 
+          bob ##> "/delete @alice"
+          bob <## "alice: contact is deleted"
+
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          bob @@@ [("@alice", "")]
+
           bob ##> ("/_connect plan 1 " <> cLink)
           bob <## "contact address: known contact without connection alice"
 

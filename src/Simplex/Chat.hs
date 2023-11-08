@@ -933,7 +933,7 @@ processChatCommand = \case
         deleteFilesAndConns user filesInfo
         when (contactReady ct && contactActive ct && notify) $
           void (sendDirectContactMessage ct XDirectDel) `catchChatError` const (pure ())
-        contactConnIds <- map aConnId <$> withStore (\db -> getContactConnections db userId ct)
+        contactConnIds <- map aConnId <$> withStore' (\db -> getContactConnections db userId ct)
         deleteAgentConnectionsAsync user contactConnIds
         -- functions below are called in separate transactions to prevent crashes on android
         -- (possibly, race condition on integrity check?)
@@ -976,7 +976,7 @@ processChatCommand = \case
                 withStore' (\db -> checkContactHasGroups db user ct) >>= \case
                   Just _ -> pure []
                   Nothing -> do
-                    conns <- withStore $ \db -> getContactConnections db userId ct
+                    conns <- withStore' $ \db -> getContactConnections db userId ct
                     withStore' (\db -> setContactDeleted db user ct)
                       `catchChatError` (toView . CRChatError (Just user))
                     pure $ map aConnId conns
@@ -4496,7 +4496,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         then do
           checkIntegrityCreateItem (CDDirectRcv c) msgMeta
           ct' <- withStore' $ \db -> updateContactStatus db user c CSDeleted
-          contactConns <- withStore $ \db -> getContactConnections db userId ct'
+          contactConns <- withStore' $ \db -> getContactConnections db userId ct'
           deleteAgentConnectionsAsync user $ map aConnId contactConns
           forM_ contactConns $ \conn -> withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
           activeConn' <- forM (contactConn ct') $ \conn -> pure conn {connStatus = ConnDeleted}
@@ -4505,7 +4505,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct'') ci)
           toView $ CRContactDeletedByContact user ct''
         else do
-          contactConns <- withStore $ \db -> getContactConnections db userId c
+          contactConns <- withStore' $ \db -> getContactConnections db userId c
           deleteAgentConnectionsAsync user $ map aConnId contactConns
           withStore' $ \db -> deleteContact db user c
 
