@@ -81,7 +81,6 @@ struct ChatListNavLink: View {
                         Button("Use current profile") { connectContactViaAddress_(contact, false) }
                         Button("Use new incognito profile") { connectContactViaAddress_(contact, true) }
                     }
-                    .disabled(inProgress)
             } else {
                 NavLinkPlain(
                     tag: chat.chatInfo.id,
