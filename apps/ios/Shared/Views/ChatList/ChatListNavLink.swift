@@ -78,12 +78,8 @@ struct ChatListNavLink: View {
                     }
                     .onTapGesture { showConnectContactViaAddressDialog = true }
                     .confirmationDialog("Connect with \(contact.chatViewName)", isPresented: $showConnectContactViaAddressDialog, titleVisibility: .visible) {
-                        Button("Use current profile") {
-                            Task { await connectContactViaAddress(contact.contactId, false) }
-                        }
-                        Button("Use new incognito profile") {
-                            Task { await connectContactViaAddress(contact.contactId, true) }
-                        }
+                        Button("Use current profile") { connectContactViaAddress_(contact, false) }
+                        Button("Use new incognito profile") { connectContactViaAddress_(contact, true) }
                     }
                     .disabled(inProgress)
             } else {
@@ -437,6 +433,17 @@ struct ChatListNavLink: View {
                     .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
             }
     }
+
+    private func connectContactViaAddress_(_ contact: Contact, _ incognito: Bool) {
+        Task {
+            let ok = await connectContactViaAddress(contact.contactId, true)
+            if ok {
+                await MainActor.run {
+                    chatModel.chatId = contact.id
+                }
+            }
+        }
+    }
 }
 
 func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection, showError: @escaping (ErrorAlert) -> Void, success: @escaping () -> Void = {}) -> Alert {
@@ -465,16 +472,19 @@ func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection,
     )
 }
 
-func connectContactViaAddress(_ contactId: Int64, _ incognito: Bool) async {
+func connectContactViaAddress(_ contactId: Int64, _ incognito: Bool) async -> Bool {
     let (contact, alert) = await apiConnectContactViaAddress(incognito: incognito, contactId: contactId)
     if let alert = alert {
         AlertManager.shared.showAlert(alert)
+        return false
     } else if let contact = contact {
         await MainActor.run {
             ChatModel.shared.updateContact(contact)
             AlertManager.shared.showAlert(connReqSentAlert(.contact))
         }
+        return true
     }
+    return false
 }
 
 func joinGroup(_ groupId: Int64, _ onComplete: @escaping () async -> Void) {

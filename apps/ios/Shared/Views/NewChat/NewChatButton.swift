@@ -340,7 +340,7 @@ private func connectContactViaAddress_(_ contact: Contact, dismiss: Bool, incogn
                 dismissAllSheets(animated: true)
             }
         }
-        await connectContactViaAddress(contact.contactId, incognito)
+        _ = await connectContactViaAddress(contact.contactId, incognito)
     }
 }
 
