@@ -786,38 +786,38 @@ window.addEventListener('scroll',changeHeaderBg);
 <p><strong>In simplex-chat repo</strong></p>
 <ul>
 <li>
-<p><code>stable</code> - stable release of the apps, can be used for updates to the previous stable release (GHC 9.6.2).</p>
+<p><code>stable</code> - stable release of the apps, can be used for updates to the previous stable release (GHC 9.6.3).</p>
 </li>
 <li>
-<p><code>stable-android</code> - used to build stable Android core library with Nix (GHC 8.10.7).</p>
+<p><code>stable-android</code> - used to build stable Android core library with Nix (GHC 8.10.7) - only for Android armv7a.</p>
 </li>
 <li>
-<p><code>stable-ios</code> - used to build stable iOS core library with Nix (GHC 8.10.7) – this branch should be the same as <code>stable-android</code> except Nix configuration files.</p>
+<p><code>stable-ios</code> - used to build stable iOS core library with Nix (GHC 8.10.7) – this branch should be the same as <code>stable-android</code> except Nix configuration files. Deprecated.</p>
 </li>
 <li>
-<p><code>master</code> - branch for beta version releases (GHC 9.6.2).</p>
+<p><code>master</code> - branch for beta version releases (GHC 9.6.3).</p>
 </li>
 <li>
-<p><code>master-ghc8107</code> - branch for beta version releases (GHC 8.10.7).</p>
+<p><code>master-ghc8107</code> - branch for beta version releases (GHC 8.10.7). Deprecated.</p>
 </li>
 <li>
-<p><code>master-android</code> - used to build beta Android core library with Nix (GHC 8.10.7), same as <code>master-ghc8107</code></p>
+<p><code>master-android</code> - used to build beta Android core library with Nix (GHC 8.10.7) - only for Android armv7a.</p>
 </li>
 <li>
-<p><code>master-ios</code> - used to build beta iOS core library with Nix (GHC 8.10.7).</p>
+<p><code>master-ios</code> - used to build beta iOS core library with Nix (GHC 8.10.7). Deprecated.</p>
 </li>
 <li>
-<p><code>windows-ghc8107</code> - branch for windows core library build (GHC 8.10.7).</p>
+<p><code>windows-ghc8107</code> - branch for windows core library build (GHC 8.10.7). Deprecated?</p>
 </li>
 </ul>
 <p><code>master-ios</code> and <code>windows-ghc8107</code> branches should be the same as <code>master-ghc8107</code> except Nix configuration files.</p>
 <p><strong>In simplexmq repo</strong></p>
 <ul>
 <li>
-<p><code>master</code> - uses GHC 9.6.2 its commit should be used in <code>master</code> branch of simplex-chat repo.</p>
+<p><code>master</code> - uses GHC 9.6.3 its commit should be used in <code>master</code> branch of simplex-chat repo.</p>
 </li>
 <li>
-<p><code>master-ghc8107</code> - its commit should be used in <code>master-android</code> (and <code>master-ios</code>) branch of simplex-chat repo.</p>
+<p><code>master-ghc8107</code> - its commit should be used in <code>master-android</code> (and <code>master-ios</code>) branch of simplex-chat repo. Deprecated.</p>
 </li>
 </ul>
 <h2 id="development-and-release-process" tabindex="-1">Development &amp; release process</h2>
@@ -833,20 +833,13 @@ window.addEventListener('scroll',changeHeaderBg);
 </li>
 </ol>
 <ul>
-<li>merge <code>master</code> branch to <code>master-ghc8107</code> branch.</li>
-<li>update <code>simplexmq</code> commit in <code>master-ghc8107</code> branch to the commit in <code>master-ghc8107</code> branch (probably, when resolving merge conflicts).</li>
+<li>merge <code>master</code> branch to <code>master-android</code> branch.</li>
 <li>update code to be compatible with GHC 8.10.7 (see below).</li>
 <li>push to GitHub.</li>
 </ul>
 <ol start="4">
 <li>
-<p>To build Android core library, merge <code>master-ghc8107</code> branch to <code>master-android</code> branch, and push to GitHub.</p>
-</li>
-<li>
-<p>To build iOS core library, merge <code>master-ghc8107</code> branch to <code>master-ios</code> branch, and push to GitHub.</p>
-</li>
-<li>
-<p>To build windows core library, merge <code>master-ghc8107</code> branch to <code>windows-ghc8107</code> branch, and push to GitHub.</p>
+<p>All libraries should be built from <code>master</code> branch, Android armv7a - from <code>master-android</code> branch.</p>
 </li>
 <li>
 <p>To build Desktop and CLI apps, make tag in <code>master</code> branch, APK files should be attached to the release.</p>
@@ -857,33 +850,29 @@ window.addEventListener('scroll',changeHeaderBg);
 </ol>
 <ul>
 <li><code>master</code> to <code>stable</code></li>
-<li><code>master</code> to <code>master-ghc8107</code> (and compile/update code)</li>
-<li><code>master-ghc8107</code> to <code>master-android</code></li>
-<li><code>master-ghc8107</code> to <code>master-ios</code></li>
-<li><code>master-ghc8107</code> to <code>windows-ghc8107</code></li>
+<li><code>master</code> to <code>master-android</code> (and compile/update code)</li>
 <li><code>master-android</code> to <code>stable-android</code></li>
-<li><code>master-ios</code> to <code>stable-ios</code></li>
 </ul>
-<ol start="9">
+<ol start="7">
 <li>Independently, <code>master</code> branch of simplexmq repo should be merged to <code>stable</code> branch on stable releases.</li>
 </ol>
-<h2 id="differences-between-ghc-8107-and-ghc-962" tabindex="-1">Differences between GHC 8.10.7 and GHC 9.6.2</h2>
+<h2 id="differences-between-ghc-8107-and-ghc-963" tabindex="-1">Differences between GHC 8.10.7 and GHC 9.6.3</h2>
 <ol>
 <li>The main difference is related to <code>DuplicateRecordFields</code> extension.</li>
 </ol>
-<p>It is no longer possible in GHC 9.6.2 to specify type when using selectors, instead OverloadedRecordDot extension and syntax are used that need to be removed in GHC 8.10.7:</p>
+<p>It is no longer possible in GHC 9.6.3 to specify type when using selectors, instead OverloadedRecordDot extension and syntax are used that need to be removed in GHC 8.10.7:</p>
 <pre><code class="language-haskell">{-# LANGUAGE DuplicateRecordFields #-}
--- use this in GHC 9.6.2 when needed
+-- use this in GHC 9.6.3 when needed
 {-# LANGUAGE OverloadedRecordDot #-}
 
--- GHC 9.6.2 syntax
+-- GHC 9.6.3 syntax
 let x = record.field
 
--- GHC 8.10.7 syntax removed in GHC 9.6.2
+-- GHC 8.10.7 syntax removed in GHC 9.6.3
 let x = field (record :: Record)
 </code></pre>
 <p>It is still possible to specify type when using record update syntax, use this pragma to suppress compiler warning:</p>
-<pre><code class="language-haskell">-- use this in GHC 9.6.2 when needed
+<pre><code class="language-haskell">-- use this in GHC 9.6.3 when needed
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 let r' = (record :: Record) {field = value}
@@ -891,7 +880,7 @@ let r' = (record :: Record) {field = value}
 <ol start="2">
 <li>Most monad functions now have to be imported from <code>Control.Monad</code>, and not from specific monad modules (e.g. <code>Control.Monad.Except</code>).</li>
 </ol>
-<pre><code class="language-haskell">-- use this in GHC 9.6.2 when needed
+<pre><code class="language-haskell">-- use this in GHC 9.6.3 when needed
 import Control.Monad
 </code></pre>
 <p><a href="https://github.com/simplex-chat/simplex-chat/pull/2975/files">This PR</a> has all the differences.</p>
