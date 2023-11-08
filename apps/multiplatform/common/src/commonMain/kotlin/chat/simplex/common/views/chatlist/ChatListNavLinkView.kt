@@ -30,6 +30,7 @@ import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
+import java.net.URI
 
 @Composable
 fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
@@ -61,8 +62,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       val contactNetworkStatus = chatModel.contactNetworkStatus(chat.chatInfo.contact)
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, stopped, linkMode, inProgress = false, progressByTimeout = false) },
-        click = { directChatAction(chat.chatInfo, chatModel) },
-        dropdownMenuItems = { ContactMenuItems(chat, chatModel, showMenu, showMarkRead) },
+        click = { directChatAction(chat.chatInfo.contact, chatModel) },
+        dropdownMenuItems = { ContactMenuItems(chat, chat.chatInfo.contact, chatModel, showMenu, showMarkRead) },
         showMenu,
         stopped,
         selectedChat
@@ -118,8 +119,11 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   }
 }
 
-fun directChatAction(chatInfo: ChatInfo, chatModel: ChatModel) {
-  withBGApi { openChat(chatInfo, chatModel) }
+fun directChatAction(contact: Contact, chatModel: ChatModel) {
+  when {
+    contact.activeConn == null && contact.profile.contactLink != null -> askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, contact, close = null, openChat = true)
+    else -> withBGApi { openChat(ChatInfo.Direct(contact), chatModel) }
+  }
 }
 
 fun groupChatAction(groupInfo: GroupInfo, chatModel: ChatModel, inProgress: MutableState<Boolean>? = null) {
@@ -192,15 +196,17 @@ suspend fun setGroupMembers(groupInfo: GroupInfo, chatModel: ChatModel) {
 }
 
 @Composable
-fun ContactMenuItems(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
-  if (showMarkRead) {
-    MarkReadChatAction(chat, chatModel, showMenu)
-  } else {
-    MarkUnreadChatAction(chat, chatModel, showMenu)
+fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
+  if (contact.activeConn != null) {
+    if (showMarkRead) {
+      MarkReadChatAction(chat, chatModel, showMenu)
+    } else {
+      MarkUnreadChatAction(chat, chatModel, showMenu)
+    }
+    ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
+    ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
+    ClearChatAction(chat, chatModel, showMenu)
   }
-  ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
-  ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
-  ClearChatAction(chat, chatModel, showMenu)
   DeleteContactAction(chat, chatModel, showMenu)
 }
 
@@ -589,6 +595,63 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
     destructive = true,
     dismissText = generalGetString(MR.strings.cancel_verb),
   )
+}
+
+fun askCurrentOrIncognitoProfileConnectContactViaAddress(
+  chatModel: ChatModel,
+  contact: Contact,
+  close: (() -> Unit)?,
+  openChat: Boolean
+) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = String.format(generalGetString(MR.strings.connect_with_contact_name_question), contact.chatViewName),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          withApi {
+            close?.invoke()
+            val ok = connectContactViaAddress(chatModel, contact.contactId, incognito = false)
+            if (ok && openChat) {
+              openDirectChat(contact.contactId, chatModel)
+            }
+          }
+        }) {
+          Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          withApi {
+            close?.invoke()
+            val ok = connectContactViaAddress(chatModel, contact.contactId, incognito = true)
+            if (ok && openChat) {
+              openDirectChat(contact.contactId, chatModel)
+            }
+          }
+        }) {
+          Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+    }
+  )
+}
+
+suspend fun connectContactViaAddress(chatModel: ChatModel, contactId: Long, incognito: Boolean): Boolean {
+  val contact = chatModel.controller.apiConnectContactViaAddress(incognito, contactId)
+  if (contact != null) {
+    chatModel.updateContact(contact)
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(MR.strings.connection_request_sent),
+      text = generalGetString(MR.strings.you_will_be_connected_when_your_connection_request_is_accepted)
+    )
+    return true
+  }
+  return false
 }
 
 fun acceptGroupInvitationAlertDialog(groupInfo: GroupInfo, chatModel: ChatModel, inProgress: MutableState<Boolean>? = null) {
