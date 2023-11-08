@@ -35,6 +35,7 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word16, Word32)
 import qualified Network.HTTP.Types as N
+import Network.HTTP2.Client (HTTP2Error (..))
 import Network.HTTP2.Server (responseStreaming)
 import qualified Paths_simplex_chat as SC
 import Simplex.Chat.Archive (archiveFilesFolder)
@@ -465,7 +466,8 @@ verifyRemoteCtrlSession execChatCommand sessCode' = do
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   void . forkIO $ do
     waitCatch http2Server >>= \case
-      Left err | isNothing (fromException @AsyncCancelled err) -> logError $ "HTTP2 server crashed with " <> tshow err -- TODO: exclude AsyncCancelled
+      Left err | Just (BadThingHappen innerErr) <- fromException err -> logWarn $ "HTTP2 server crashed with internal " <> tshow innerErr
+      Left err | isNothing (fromException @AsyncCancelled err) -> logError $ "HTTP2 server crashed with " <> tshow err
       _ -> logInfo "HTTP2 server stopped"
     toView CRRemoteCtrlStopped
   pure $ remoteCtrlInfo rc True
