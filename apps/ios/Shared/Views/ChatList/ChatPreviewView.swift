@@ -60,7 +60,7 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatPreviewImageOverlayIcon() -> some View {
         switch chat.chatInfo {
         case let .direct(contact):
-            if !contact.active && contact.activeConn != nil {
+            if !contact.active {
                 inactiveIcon()
             } else {
                 EmptyView()
@@ -241,7 +241,7 @@ struct ChatPreviewView: View {
     @ViewBuilder private func chatStatusImage() -> some View {
         switch chat.chatInfo {
         case let .direct(contact):
-            if contact.active {
+            if contact.active && contact.activeConn != nil {
                 switch (chatModel.contactNetworkStatus(contact)) {
                 case .connected: incognitoIcon(chat.chatInfo.incognito)
                 case .error:

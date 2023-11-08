@@ -70,9 +70,7 @@ struct ChatListNavLink: View {
                     .frame(height: rowHeights[dynamicTypeSize])
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button {
-                            if contact.ready || !contact.active {
-                                showDeleteContactActionSheet = true
-                            }
+                            showDeleteContactActionSheet = true
                         } label: {
                             Label("Delete", systemImage: "trash")
                         }

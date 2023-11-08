@@ -1385,7 +1385,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
     public var ready: Bool { get { activeConn?.connStatus == .ready } }
-    public var active: Bool { get { contactStatus == .active && activeConn != nil } }
+    public var active: Bool { get { contactStatus == .active } }
     public var sendMsgEnabled: Bool { get {
         (ready && active && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false))
         || nextSendGrpInv
