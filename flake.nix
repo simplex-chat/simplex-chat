@@ -154,6 +154,9 @@
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
                     (pkgs.pkgsCross.mingwW64.openssl) #.override) # { static = true; enableKTLS = false; })
                   ];
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.pkgsCross.mingwW64.openssl) #.override) # { static = true; enableKTLS = false; })
+                  ];
                   packages.unix-time.postPatch = ''
                     sed -i 's/mingwex//g' unix-time.cabal
                   '';
@@ -183,6 +186,9 @@
                     ./scripts/nix/direct-sqlcipher-2.3.27-win.patch
                   ];
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
+                    pkgs.pkgsCross.mingwW64.openssl
+                  ];
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     pkgs.pkgsCross.mingwW64.openssl
                   ];
                   packages.unix-time.postPatch = ''
@@ -513,6 +519,9 @@
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.openssl.override { static = true; })
+                  ];
                 }];
               }).simplex-chat.components.library.override (
                 iosOverrides "pkg-ios-aarch64-swift-json"
@@ -523,6 +532,9 @@
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.openssl.override { static = true; })
+                  ];
                 }];
               }).simplex-chat.components.library.override (
                 iosOverrides "pkg-ios-aarch64-tagged-json"
@@ -537,6 +549,9 @@
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.openssl.override { static = true; })
+                  ];
                 }];
               }).simplex-chat.components.library.override (
                 iosOverrides "pkg-ios-x86_64-swift-json"
@@ -547,6 +562,9 @@
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.openssl.override { static = true; })
+                  ];
                 }];
               }).simplex-chat.components.library.override (
                 iosOverrides "pkg-ios-x86_64-tagged-json"
