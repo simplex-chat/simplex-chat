@@ -16,6 +16,7 @@
 
 module Simplex.Chat.Controller where
 
+import Simplex.RemoteControl.Invitation (RCSignedInvitation)
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Exception
@@ -40,7 +41,6 @@ import Data.String
 import Data.Text (Text)
 import Data.Time (NominalDiffTime, UTCTime)
 import Data.Version (showVersion)
-import Data.Word (Word16)
 import Language.Haskell.TH (Exp, Q, runIO)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
@@ -49,6 +49,7 @@ import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
+import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store (AutoAccept, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
@@ -73,10 +74,12 @@ import Simplex.Messaging.Transport (simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, liftEitherError, tryAllErrors, (<$$>))
 import Simplex.Messaging.Version
-import Simplex.RemoteControl.Types
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
 import UnliftIO.STM
+import Data.Bifunctor (first)
+import Simplex.RemoteControl.Client
+import Simplex.RemoteControl.Types
 
 versionNumber :: String
 versionNumber = showVersion SC.version
@@ -180,7 +183,7 @@ data ChatController = ChatController
     currentCalls :: TMap ContactId Call,
     localDeviceName :: TVar Text,
     multicastSubscribers :: TMVar Int,
-    remoteHostSessions :: TMap RemoteHostId RemoteHostSession, -- All the active remote hosts
+    remoteHostSessions :: TMap RHKey RemoteHostSession, -- All the active remote hosts
     remoteHostsFolder :: TVar (Maybe FilePath), -- folder for remote hosts data
     remoteCtrlSession :: TVar (Maybe RemoteCtrlSession), -- Supervisor process for hosted controllers
     config :: ChatConfig,
@@ -419,18 +422,18 @@ data ChatCommand
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)
   | SetLocalDeviceName Text
-  | CreateRemoteHost -- ^ Configure a new remote host
+  -- | CreateRemoteHost -- ^ Configure a new remote host
   | ListRemoteHosts
-  | StartRemoteHost RemoteHostId -- ^ Start and announce a remote host
+  | StartRemoteHost (Maybe (RemoteHostId, Bool)) -- ^ Start new or known remote host with optional multicast for known host
   -- | SwitchRemoteHost (Maybe RemoteHostId) -- ^ Switch current remote host
-  | StopRemoteHost RemoteHostId -- ^ Shut down a running session
+  | StopRemoteHost RHKey -- ^ Shut down a running session
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
   | StoreRemoteFile {remoteHostId :: RemoteHostId, storeEncrypted :: Maybe Bool, localPath :: FilePath}
   | GetRemoteFile {remoteHostId :: RemoteHostId, file :: RemoteFile}
-  | ConnectRemoteCtrl SignedOOB -- ^ Connect new or existing controller via OOB data
+  | ConnectRemoteCtrl RCSignedInvitation -- ^ Connect new or existing controller via OOB data
   | FindKnownRemoteCtrl -- ^ Start listening for announcements from all existing controllers
   | ConfirmRemoteCtrl RemoteCtrlId -- ^ Confirm the connection with found controller
-  | VerifyRemoteCtrlSession RemoteCtrlId Text -- ^ Verify remote controller session
+  | VerifyRemoteCtrlSession Text -- ^ Verify remote controller session
   | ListRemoteCtrls
   | StopRemoteCtrl -- ^ Stop listening for announcements or terminate an active session
   | DeleteRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a remote controller session
@@ -451,7 +454,6 @@ allowRemoteCommand = \case
   APISuspendChat _ -> False
   SetTempFolder _ -> False
   QuitChat -> False
-  CreateRemoteHost -> False
   ListRemoteHosts -> False
   StartRemoteHost _ -> False
   -- SwitchRemoteHost {} -> False
@@ -642,8 +644,8 @@ data ChatResponse
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostCreated {remoteHost :: RemoteHostInfo}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
-  | CRRemoteHostStarted {remoteHost :: RemoteHostInfo, sessionOOB :: Text}
-  | CRRemoteHostSessionCode {remoteHost :: RemoteHostInfo, sessionCode :: Text}
+  | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text}
+  | CRRemoteHostSessionCode {remoteHost_ :: Maybe RemoteHostInfo, sessionCode :: Text}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
   | CRRemoteFileStored {remoteHostId :: RemoteHostId, remoteFileSource :: CryptoFile}
@@ -652,7 +654,7 @@ data ChatResponse
   | CRRemoteCtrlAnnounce {fingerprint :: C.KeyHash} -- TODO remove, unregistered fingerprint, needs confirmation -- TODO is it needed?
   | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo} -- registered fingerprint, may connect
   | CRRemoteCtrlConnecting {remoteCtrl :: RemoteCtrlInfo} -- TODO is remove
-  | CRRemoteCtrlSessionCode {remoteCtrl :: RemoteCtrlInfo, sessionCode :: Text, newCtrl :: Bool}
+  | CRRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlStopped
   | CRSQLResult {rows :: [Text]}
@@ -949,7 +951,7 @@ data ChatError
   | ChatErrorStore {storeError :: StoreError}
   | ChatErrorDatabase {databaseError :: DatabaseError}
   | ChatErrorRemoteCtrl {remoteCtrlError :: RemoteCtrlError}
-  | ChatErrorRemoteHost {remoteHostId :: RemoteHostId, remoteHostError :: RemoteHostError}
+  | ChatErrorRemoteHost {rhKey :: RHKey, remoteHostError :: RemoteHostError}
   deriving (Show, Exception)
 
 data ChatErrorType
@@ -1048,29 +1050,24 @@ throwDBError = throwError . ChatErrorDatabase
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteHostError
-  = RHMissing -- ^ No remote session matches this identifier
-  | RHBusy -- ^ A session is already running
-  | RHRejected -- ^ A session attempt was rejected by a host
-  | RHTimeout -- ^ A discovery or a remote operation has timed out
-  | RHDisconnected {reason :: Text} -- ^ A session disconnected by a host
-  | RHConnectionLost {reason :: Text} -- ^ A session disconnected due to transport issues
-  | RHProtocolError RemoteProtocolError
+  = RHEMissing -- ^ No remote session matches this identifier
+  | RHEBusy -- ^ A session is already running
+  | RHEBadState -- ^ Illegal state transition
+  | RHEBadVersion {appVersion :: AppVersion}
+  | RHEDisconnected {reason :: Text} -- TODO should be sent when disconnected?
+  | RHEProtocolError RemoteProtocolError
   deriving (Show, Exception)
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteCtrlError
   = RCEInactive -- ^ No session is running
+  | RCEBadState -- ^ A session is in a wrong state for the current operation
   | RCEBusy -- ^ A session is already running
-  | RCETimeout -- ^ Remote operation timed out
   | RCEDisconnected {remoteCtrlId :: RemoteCtrlId, reason :: Text} -- ^ A session disconnected by a controller
-  | RCEConnectionLost {remoteCtrlId :: RemoteCtrlId, reason :: Text} -- ^ A session disconnected due to transport issues
-  | RCECertificateExpired {remoteCtrlId :: RemoteCtrlId} -- ^ A connection or CA certificate in a chain have bad validity period
-  | RCECertificateUntrusted {remoteCtrlId :: RemoteCtrlId} -- ^ TLS is unable to validate certificate chain presented for a connection
-  | RCEBadFingerprint -- ^ Bad fingerprint data provided in OOB
+  | RCEBadInvitation
+  | RCEBadVersion {appVersion :: AppVersion}
   | RCEBadVerificationCode -- ^ The code submitted doesn't match session TLSunique
-  | RCEHTTP2Error {http2Error :: String}
-  | RCEHTTP2RespStatus {statusCode :: Maybe Int} -- TODO remove
-  | RCEInvalidResponse {responseError :: String}
+  | RCEHTTP2Error {http2Error :: Text} -- TODO currently not used
   | RCEProtocolError {protocolError :: RemoteProtocolError}
   deriving (Show, Exception)
 
@@ -1080,15 +1077,26 @@ data ArchiveError
   deriving (Show, Exception)
 
 -- | Host (mobile) side of transport to process remote commands and forward notifications
-data RemoteCtrlSession = RemoteCtrlSession
-  { discoverer :: Async (), -- multicast listener
-    supervisor :: Async (), -- session state/subprocess supervisor
-    hostServer :: Maybe (Async ()), -- a running session
-    discovered :: TMap C.KeyHash (TransportHost, Word16), -- multicast-announced services
-    confirmed :: TMVar RemoteCtrlId, -- connection fingerprint found/stored in DB
-    verified :: TMVar (RemoteCtrlId, Text), -- user confirmed the session
-    remoteOutputQ :: TBQueue ChatResponse
-  }
+data RemoteCtrlSession
+  = RCSessionStarting
+  | RCSessionConnecting
+      { rcsClient :: RCCtrlClient,
+        rcsWaitSession :: Async ()
+      }
+  | RCSessionPendingConfirmation
+      { ctrlName :: Text,
+        rcsClient :: RCCtrlClient,
+        sessionCode :: Text,
+        rcsWaitSession :: Async (),
+        rcsWaitConfirmation :: TMVar (Either RCErrorType (RCCtrlSession, RCCtrlPairing))
+      }
+  | RCSessionConnected
+      { remoteCtrlId :: RemoteCtrlId,
+        rcsClient :: RCCtrlClient,
+        rcsSession :: RCCtrlSession,
+        http2Server :: Async (),
+        remoteOutputQ :: TBQueue ChatResponse
+      }
 
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
@@ -1140,17 +1148,13 @@ throwChatError = throwError . ChatError
 toView :: ChatMonad' m => ChatResponse -> m ()
 toView event = do
   localQ <- asks outputQ
-  chatReadVar remoteCtrlSession >>= \case
-    Nothing -> atomically $ writeTBQueue localQ (Nothing, Nothing, event)
-    Just RemoteCtrlSession {remoteOutputQ} ->
-      if allowRemoteEvent event
-        then do
-          -- TODO: filter events or let the UI ignore trigger events by itself?
-          -- traceM $ "Sending event to remote Q: " <> show event
-          atomically $ writeTBQueue remoteOutputQ event -- TODO: check full?
-        else do
-          -- traceM $ "Sending event to local Q: " <> show event
-          atomically $ writeTBQueue localQ (Nothing, Nothing, event)
+  session <- asks remoteCtrlSession
+  atomically $
+    readTVar session >>= \case
+      Just RCSessionConnected {remoteOutputQ} | allowRemoteEvent event ->
+        writeTBQueue remoteOutputQ event
+      -- TODO potentially, it should hold some events while connecting
+      _ -> writeTBQueue localQ (Nothing, Nothing, event)
 
 withStore' :: ChatMonad m => (DB.Connection -> IO a) -> m a
 withStore' action = withStore $ liftIO . action
@@ -1178,6 +1182,12 @@ withStoreCtx ctx_ action = do
   where
     handleInternal :: String -> SomeException -> IO (Either StoreError a)
     handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
+
+withAgent :: ChatMonad m => (AgentClient -> ExceptT AgentErrorType m a) -> m a
+withAgent action =
+  asks smpAgent
+    >>= runExceptT . action
+    >>= liftEither . first (`ChatErrorAgent` Nothing)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
 

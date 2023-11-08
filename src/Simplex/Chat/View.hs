@@ -277,9 +277,16 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRNtfMessages {} -> []
   CRRemoteHostCreated RemoteHostInfo {remoteHostId} -> ["remote host " <> sShow remoteHostId <> " created"]
   CRRemoteHostList hs -> viewRemoteHosts hs
-  CRRemoteHostStarted {remoteHost = RemoteHostInfo {remoteHostId = rhId}, sessionOOB} -> ["remote host " <> sShow rhId <> " started", "connection code:", plain sessionOOB]
-  CRRemoteHostSessionCode {remoteHost = RemoteHostInfo {remoteHostId = rhId}, sessionCode} ->
-    ["remote host " <> sShow rhId <> " is connecting", "Compare session code with host:", plain sessionCode]
+  CRRemoteHostStarted {remoteHost_, invitation} ->
+    [ maybe "new remote host started" (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> sShow rhId <> " started") remoteHost_,
+      "Remote session invitation:",
+      plain invitation
+    ]
+  CRRemoteHostSessionCode {remoteHost_, sessionCode} ->
+    [ maybe "new remote host connecting" (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> sShow rhId <> " connecting") remoteHost_,
+      "Compare session code with host:",
+      plain sessionCode
+    ]
   CRRemoteHostConnected RemoteHostInfo {remoteHostId = rhId} -> ["remote host " <> sShow rhId <> " connected"]
   CRRemoteHostStopped rhId -> ["remote host " <> sShow rhId <> " stopped"]
   CRRemoteFileStored rhId (CryptoFile filePath cfArgs_) ->
@@ -292,12 +299,15 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     ["remote controller announced", "connection code:", plain $ strEncode fingerprint]
   CRRemoteCtrlFound rc ->
     ["remote controller found:", viewRemoteCtrl rc]
-  CRRemoteCtrlConnecting RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} ->
-    ["remote controller " <> sShow rcId <> " connecting to " <> plain rcName]
-  CRRemoteCtrlSessionCode {remoteCtrl = RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName}, sessionCode} ->
-    ["remote controller " <> sShow rcId <> " connected to " <> plain rcName, "Compare session code with controller and use:", "/verify remote ctrl " <> sShow rcId <> " " <> plain sessionCode]
-  CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, displayName = rcName} ->
-    ["remote controller " <> sShow rcId <> " session started with " <> plain rcName]
+  CRRemoteCtrlConnecting RemoteCtrlInfo {remoteCtrlId = rcId, ctrlName} ->
+    ["remote controller " <> sShow rcId <> " connecting to " <> plain ctrlName]
+  CRRemoteCtrlSessionCode {remoteCtrl_, sessionCode} ->
+    [ maybe "new remote controller connected" (\RemoteCtrlInfo {remoteCtrlId} -> "remote controller " <> sShow remoteCtrlId <> " connected") remoteCtrl_,
+      "Compare session code with controller and use:",
+      "/verify remote ctrl " <> plain sessionCode -- TODO maybe pass rcId
+    ]
+  CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, ctrlName} ->
+    ["remote controller " <> sShow rcId <> " session started with " <> plain ctrlName]
   CRRemoteCtrlStopped -> ["remote controller stopped"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
@@ -1681,21 +1691,21 @@ viewRemoteHosts = \case
   [] -> ["No remote hosts"]
   hs -> "Remote hosts: " : map viewRemoteHostInfo hs
   where
-    viewRemoteHostInfo RemoteHostInfo {remoteHostId, displayName, sessionActive} =
-      plain $ tshow remoteHostId <> ". " <> displayName <> if sessionActive then " (active)" else ""
+    viewRemoteHostInfo RemoteHostInfo {remoteHostId, hostName, sessionActive} =
+      plain $ tshow remoteHostId <> ". " <> hostName <> if sessionActive then " (active)" else ""
 
 viewRemoteCtrls :: [RemoteCtrlInfo] -> [StyledString]
 viewRemoteCtrls = \case
   [] -> ["No remote controllers"]
   hs -> "Remote controllers: " : map viewRemoteCtrlInfo hs
   where
-    viewRemoteCtrlInfo RemoteCtrlInfo {remoteCtrlId, displayName, sessionActive} =
-      plain $ tshow remoteCtrlId <> ". " <> displayName <> if sessionActive then " (active)" else ""
+    viewRemoteCtrlInfo RemoteCtrlInfo {remoteCtrlId, ctrlName, sessionActive} =
+      plain $ tshow remoteCtrlId <> ". " <> ctrlName <> if sessionActive then " (active)" else ""
 
 -- TODO fingerprint, accepted?
 viewRemoteCtrl :: RemoteCtrlInfo -> StyledString
-viewRemoteCtrl RemoteCtrlInfo {remoteCtrlId, displayName} =
-  plain $ tshow remoteCtrlId <> ". " <> displayName
+viewRemoteCtrl RemoteCtrlInfo {remoteCtrlId, ctrlName} =
+  plain $ tshow remoteCtrlId <> ". " <> ctrlName
 
 viewChatError :: ChatLogLevel -> ChatError -> [StyledString]
 viewChatError logLevel = \case
@@ -1843,7 +1853,8 @@ viewChatError logLevel = \case
       cId :: Connection -> StyledString
       cId conn = sShow conn.connId
   ChatErrorRemoteCtrl e -> [plain $ "remote controller error: " <> show e]
-  ChatErrorRemoteHost rhId e -> [plain $ "remote host " <> show rhId <> " error: " <> show e]
+  ChatErrorRemoteHost RHNew e -> [plain $ "new remote host error: " <> show e]
+  ChatErrorRemoteHost (RHId rhId) e -> [plain $ "remote host " <> show rhId <> " error: " <> show e]
   where
     fileNotFound fileId = ["file " <> sShow fileId <> " not found"]
     sqliteError' = \case
