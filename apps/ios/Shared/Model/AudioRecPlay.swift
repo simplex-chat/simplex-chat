@@ -46,6 +46,7 @@ class AudioRecorder {
             audioRecorder?.record(forDuration: MAX_VOICE_MESSAGE_LENGTH)
 
             await MainActor.run {
+                AppDelegate.keepScreenOn(true)
                 recordingTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
                     guard let time = self.audioRecorder?.currentTime else { return }
                     self.onTimer?(time)
@@ -57,6 +58,9 @@ class AudioRecorder {
             }
             return nil
         } catch let error {
+            await MainActor.run {
+                AppDelegate.keepScreenOn(false)
+            }
             logger.error("AudioRecorder startAudioRecording error \(error.localizedDescription)")
             return .error(error.localizedDescription)
         }
@@ -71,6 +75,7 @@ class AudioRecorder {
             timer.invalidate()
         }
         recordingTimer = nil
+        AppDelegate.keepScreenOn(false)
     }
 
     private func checkPermission() async -> Bool {
@@ -121,6 +126,7 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
 
         playbackTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { timer in
             if self.audioPlayer?.isPlaying ?? false {
+                AppDelegate.keepScreenOn(true)
                 guard let time = self.audioPlayer?.currentTime else { return }
                 self.onTimer?(time)
             }
@@ -129,6 +135,7 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
 
     func pause() {
         audioPlayer?.pause()
+        AppDelegate.keepScreenOn(false)
     }
 
     func play() {
@@ -149,6 +156,7 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
     func stop() {
         if let player = audioPlayer {
             player.stop()
+            AppDelegate.keepScreenOn(false)
         }
         audioPlayer = nil
         if let timer = playbackTimer {

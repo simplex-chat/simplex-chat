@@ -137,7 +137,7 @@ fun saveAnimImage(uri: URI, encrypted: Boolean): CryptoFile? {
     val destFileName = generateNewFileName("IMG", ext)
     val destFile = File(getAppFilePath(destFileName))
     if (encrypted) {
-      val args = writeCryptoFile(destFile.absolutePath, uri.inputStream()?.readAllBytes() ?: return null)
+      val args = writeCryptoFile(destFile.absolutePath, uri.inputStream()?.readBytes() ?: return null)
       CryptoFile(destFileName, args)
     } else {
       Files.copy(uri.inputStream(), destFile.toPath())

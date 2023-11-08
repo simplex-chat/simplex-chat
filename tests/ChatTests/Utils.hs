@@ -438,6 +438,17 @@ getContactProfiles cc = do
       profiles <- withTransaction (chatStore $ chatController cc) $ \db -> getUserContactProfiles db user
       pure $ map (\Profile {displayName} -> displayName) profiles
 
+withCCUser :: TestCC -> (User -> IO a) -> IO a
+withCCUser cc action = do
+  user_ <- readTVarIO (currentUser $ chatController cc)
+  case user_ of
+    Nothing -> error "no user"
+    Just user -> action user
+
+withCCTransaction :: TestCC -> (DB.Connection -> IO a) -> IO a
+withCCTransaction cc action =
+  withTransaction (chatStore $ chatController cc) $ \db -> action db
+
 getProfilePictureByName :: TestCC -> String -> IO (Maybe String)
 getProfilePictureByName cc displayName =
   withTransaction (chatStore $ chatController cc) $ \db ->
