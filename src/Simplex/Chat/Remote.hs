@@ -159,14 +159,14 @@ startRemoteHost' rh_ = do
       -- update remoteHost with updated pairing
       rhi@RemoteHostInfo {remoteHostId, storePath} <- upsertRemoteHost pairing' remoteHost_ hostDeviceName
       let rhKey' = RHId remoteHostId
-      disconnected <- toIO $ mkDisconnected remoteHostId
+      disconnected <- toIO $ onDisconnected remoteHostId
       httpClient <- liftEitherError (httpError rhKey) $ attachRevHTTP2Client disconnected tls
       rhClient <- liftRC $ createRemoteHostClient httpClient sessionKeys storePath hostDeviceName
       pollAction <- async $ pollEvents remoteHostId rhClient
       withRemoteHostSession rhKey' $ \case
         RHSessionConfirmed RHPendingSession {} -> Right ((), RHSessionConnected {rhClient, pollAction, storePath})
         _ -> Left $ ChatErrorRemoteHost rhKey' RHEBadState -- TODO kill client on error
-      chatWriteVar currentRemoteHost $ Just remoteHostId -- TODO this is required for commands to be passed to remote host
+      chatWriteVar currentRemoteHost $ Just remoteHostId -- this is required for commands to be passed to remote host
       toView $ CRRemoteHostConnected rhi
     upsertRemoteHost :: ChatMonad m => RCHostPairing -> Maybe RemoteHostInfo -> Text -> m RemoteHostInfo
     upsertRemoteHost pairing'@RCHostPairing {knownHost = kh_} rh_ hostDeviceName = do
@@ -180,8 +180,8 @@ startRemoteHost' rh_ = do
         Just rhi@RemoteHostInfo {remoteHostId} -> do
           withStore' $ \db -> updateHostPairing db remoteHostId hostDeviceName hostDhPubKey'
           pure rhi
-    mkDisconnected :: ChatMonad m => RemoteHostId -> m ()
-    mkDisconnected remoteHostId = do
+    onDisconnected :: ChatMonad m => RemoteHostId -> m ()
+    onDisconnected remoteHostId = do
       logDebug "HTTP2 client disconnected"
       chatModifyVar currentRemoteHost $ \cur -> if cur == Just remoteHostId then Nothing else cur -- only wipe the closing RH
       sessions <- asks remoteHostSessions

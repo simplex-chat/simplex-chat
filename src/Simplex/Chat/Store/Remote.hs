@@ -20,7 +20,7 @@ import Simplex.RemoteControl.Types
 import UnliftIO
 
 insertRemoteHost :: DB.Connection -> Text -> FilePath -> RCHostPairing -> ExceptT StoreError IO RemoteHostId
-insertRemoteHost db hostName storePath RCHostPairing {caKey, caCert, idPrivKey, knownHost = kh_} = do
+insertRemoteHost db hostDeviceName storePath RCHostPairing {caKey, caCert, idPrivKey, knownHost = kh_} = do
   KnownHostPairing {hostFingerprint, hostDhPubKey} <-
     maybe (throwError SERemoteHostUnknown) pure kh_
   checkConstraint SERemoteHostDuplicateFingerprint . liftIO $
@@ -28,11 +28,11 @@ insertRemoteHost db hostName storePath RCHostPairing {caKey, caCert, idPrivKey, 
       db
       [sql|
         INSERT INTO remote_hosts
-          (host_name, store_path, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub)
+          (host_device_name, store_path, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub)
         VALUES
           (?, ?, ?, ?, ?, ?, ?)
       |]
-      (hostName, storePath, caKey, C.SignedObject caCert, idPrivKey, hostFingerprint, hostDhPubKey)
+      (hostDeviceName, storePath, caKey, C.SignedObject caCert, idPrivKey, hostFingerprint, hostDhPubKey)
   liftIO $ insertedRowId db
 
 getRemoteHosts :: DB.Connection -> IO [RemoteHost]
@@ -52,7 +52,7 @@ getRemoteHostByFingerprint db fingerprint =
 remoteHostQuery :: SQL.Query
 remoteHostQuery =
   [sql|
-    SELECT remote_host_id, host_name, store_path, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub
+    SELECT remote_host_id, host_device_name, store_path, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub
     FROM remote_hosts
   |]
 
@@ -69,7 +69,7 @@ updateHostPairing db rhId hostName hostDhPubKey =
     db
     [sql|
       UPDATE remote_hosts
-      SET host_name = ?, host_dh_pub = ?
+      SET host_device_name = ?, host_dh_pub = ?
       WHERE remote_host_id = ?
     |]
     (hostName, hostDhPubKey, rhId)
@@ -78,17 +78,17 @@ deleteRemoteHostRecord :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (Only remoteHostId)
 
 insertRemoteCtrl :: DB.Connection -> Text -> RCCtrlPairing -> ExceptT StoreError IO RemoteCtrlId
-insertRemoteCtrl db ctrlName RCCtrlPairing {caKey, caCert, ctrlFingerprint, idPubKey, dhPrivKey, prevDhPrivKey} = do
+insertRemoteCtrl db ctrlDeviceName RCCtrlPairing {caKey, caCert, ctrlFingerprint, idPubKey, dhPrivKey, prevDhPrivKey} = do
   checkConstraint SERemoteCtrlDuplicateFingerprint . liftIO $
     DB.execute
       db
       [sql|
       INSERT INTO remote_controllers
-        (ctrl_name, ca_key, ca_cert, ctrl_fingerprint, id_pub, dh_priv_key, prev_dh_priv_key)
+        (ctrl_device_name, ca_key, ca_cert, ctrl_fingerprint, id_pub, dh_priv_key, prev_dh_priv_key)
       VALUES
         (?, ?, ?, ?, ?, ?, ?)
     |]
-      (ctrlName, caKey, C.SignedObject caCert, ctrlFingerprint, idPubKey, dhPrivKey, prevDhPrivKey)
+      (ctrlDeviceName, caKey, C.SignedObject caCert, ctrlFingerprint, idPubKey, dhPrivKey, prevDhPrivKey)
   liftIO $ insertedRowId db
 
 getRemoteCtrls :: DB.Connection -> IO [RemoteCtrl]
@@ -98,7 +98,7 @@ getRemoteCtrls db =
 getRemoteCtrl :: DB.Connection -> RemoteCtrlId -> ExceptT StoreError IO RemoteCtrl
 getRemoteCtrl db remoteCtrlId =
   ExceptT . firstRow toRemoteCtrl (SERemoteCtrlNotFound remoteCtrlId) $
-    DB.query db (remoteCtrlQuery <> " WHERE remote_controller_id = ?") (Only remoteCtrlId)
+    DB.query db (remoteCtrlQuery <> " WHERE remote_ctrl_id = ?") (Only remoteCtrlId)
 
 getRemoteCtrlByFingerprint :: DB.Connection -> C.KeyHash -> IO (Maybe RemoteCtrl)
 getRemoteCtrlByFingerprint db fingerprint =
@@ -108,7 +108,7 @@ getRemoteCtrlByFingerprint db fingerprint =
 remoteCtrlQuery :: SQL.Query
 remoteCtrlQuery =
   [sql|
-    SELECT remote_controller_id, ctrl_name, ca_key, ca_cert, ctrl_fingerprint, id_pub, dh_priv_key, prev_dh_priv_key
+    SELECT remote_ctrl_id, ctrl_device_name, ca_key, ca_cert, ctrl_fingerprint, id_pub, dh_priv_key, prev_dh_priv_key
     FROM remote_controllers
   |]
 
@@ -137,10 +137,10 @@ updateCtrlPairingKeys db rcId dhPrivKey =
     [sql|
       UPDATE remote_controllers
       SET dh_priv_key = ?, prev_dh_priv_key = dh_priv_key
-      WHERE remote_controller_id = ?
+      WHERE remote_ctrl_id = ?
     |]
     (dhPrivKey, rcId)
 
 deleteRemoteCtrlRecord :: DB.Connection -> RemoteCtrlId -> IO ()
 deleteRemoteCtrlRecord db remoteCtrlId =
-  DB.execute db "DELETE FROM remote_controllers WHERE remote_controller_id = ?" (Only remoteCtrlId)
+  DB.execute db "DELETE FROM remote_controllers WHERE remote_ctrl_id = ?" (Only remoteCtrlId)
