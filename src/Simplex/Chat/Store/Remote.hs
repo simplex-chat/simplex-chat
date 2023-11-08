@@ -23,7 +23,7 @@ insertRemoteHost :: DB.Connection -> Text -> FilePath -> RCHostPairing -> Except
 insertRemoteHost db hostDeviceName storePath RCHostPairing {caKey, caCert, idPrivKey, knownHost = kh_} = do
   KnownHostPairing {hostFingerprint, hostDhPubKey} <-
     maybe (throwError SERemoteHostUnknown) pure kh_
-  checkConstraint SERemoteHostDuplicateFingerprint . liftIO $
+  checkConstraint SERemoteHostDuplicateCA . liftIO $
     DB.execute
       db
       [sql|
@@ -79,7 +79,7 @@ deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts
 
 insertRemoteCtrl :: DB.Connection -> Text -> RCCtrlPairing -> ExceptT StoreError IO RemoteCtrlId
 insertRemoteCtrl db ctrlDeviceName RCCtrlPairing {caKey, caCert, ctrlFingerprint, idPubKey, dhPrivKey, prevDhPrivKey} = do
-  checkConstraint SERemoteCtrlDuplicateFingerprint . liftIO $
+  checkConstraint SERemoteCtrlDuplicateCA . liftIO $
     DB.execute
       db
       [sql|

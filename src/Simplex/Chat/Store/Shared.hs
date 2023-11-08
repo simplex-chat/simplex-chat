@@ -101,9 +101,9 @@ data StoreError
   | SENoGroupSndStatus {itemId :: ChatItemId, groupMemberId :: GroupMemberId}
   | SERemoteHostNotFound {remoteHostId :: RemoteHostId}
   | SERemoteHostUnknown -- ^ attempting to store KnownHost without a known fingerprint
-  | SERemoteHostDuplicateFingerprint
+  | SERemoteHostDuplicateCA
   | SERemoteCtrlNotFound {remoteCtrlId :: RemoteCtrlId}
-  | SERemoteCtrlDuplicateFingerprint
+  | SERemoteCtrlDuplicateCA
   deriving (Show, Exception)
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)
