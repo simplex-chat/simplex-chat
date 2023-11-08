@@ -112,12 +112,12 @@ withRemoteHostSession_ rhKey state = do
       Right (a, s') -> Right a <$ maybe (TM.delete rhKey) (TM.insert rhKey) s' sessions
   liftEither r
 
-setNewRemoteHostId :: ChatMonad m => RemoteHostId -> m ()
-setNewRemoteHostId rhId = do
+setNewRemoteHostId :: ChatMonad m => RHKey -> RemoteHostId -> m ()
+setNewRemoteHostId rhKey rhId = do
   sessions <- asks remoteHostSessions
   r <- atomically $ do
-    TM.lookupDelete RHNew sessions >>= \case
-      Nothing -> pure $ Left $ ChatErrorRemoteHost RHNew RHEMissing
+    TM.lookupDelete rhKey sessions >>= \case
+      Nothing -> pure $ Left $ ChatErrorRemoteHost rhKey RHEMissing
       Just s -> Right () <$ TM.insert (RHId rhId) s sessions
   liftEither r
 
@@ -156,7 +156,7 @@ startRemoteHost' rh_ = do
       withRemoteHostSession rhKey $ \case
         RHSessionConnecting rhs' -> Right ((), RHSessionConfirmed rhs') -- TODO check it's the same session?
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState -- TODO kill client on error
-      KnownHostPairing {hostDhPubKey = todo'sessionKeys'} <- maybe (throwError . ChatError $ CEInternalError "KnownHost is known after verification") pure kh_
+      KnownHostPairing {hostDhPubKey = hostDhPubKey'} <- maybe (throwError . ChatError $ CEInternalError "KnownHost is known after verification") pure kh_
       -- update remoteHost with updated pairing
       storePath <- liftIO randomStorePath
       rhi@RemoteHostInfo {remoteHostId} <- withStoreCtx (Just "startRemoteHost.waitForSession") $ \db -> do
@@ -165,10 +165,13 @@ startRemoteHost' rh_ = do
             rh <- insertRemoteHost db hostDeviceName storePath pairing' >>= getRemoteHost db
             pure $ remoteHostInfo rh True
           Just rhi@RemoteHostInfo {remoteHostId} -> do
-            -- TODO: updateRemoteHostKeys db remoteHostId sessionKeys'
+            liftIO $ updateHostPairingKeys db remoteHostId hostDhPubKey'
             pure rhi
       disconnected <- toIO $ do
         logDebug "HTTP2 client disconnected"
+        chatModifyVar currentRemoteHost $ \cur -> if cur == Just remoteHostId then Nothing else cur -- only wipe the closing RH
+        sessions <- asks remoteHostSessions
+        void . atomically $ TM.lookupDelete (RHId remoteHostId) sessions
         toView $ CRRemoteHostStopped remoteHostId
       httpClient <- liftEitherError (httpError rhKey) $ attachRevHTTP2Client disconnected tls
       rhClient <- liftRC $ createRemoteHostClient httpClient sessionKeys storePath hostDeviceName
@@ -176,9 +179,8 @@ startRemoteHost' rh_ = do
       withRemoteHostSession rhKey $ \case
         RHSessionConfirmed RHPendingSession {} -> Right ((), RHSessionConnected {rhClient, pollAction, storePath})
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState -- TODO kill client on error
-        -- TODO this is required for commands to be passed to remote host
-      setNewRemoteHostId remoteHostId
-      chatWriteVar currentRemoteHost $ Just remoteHostId
+      setNewRemoteHostId rhKey remoteHostId
+      chatWriteVar currentRemoteHost $ Just remoteHostId -- TODO this is required for commands to be passed to remote host
       toView $ CRRemoteHostConnected rhi
     pollEvents :: ChatMonad m => RemoteHostId -> RemoteHostClient -> m ()
     pollEvents rhId rhClient = do
@@ -423,14 +425,14 @@ discoverRemoteCtrls discovered = do
   error "TODO: discoverRemoteCtrls"
 
 listRemoteCtrls :: ChatMonad m => m [RemoteCtrlInfo]
-listRemoteCtrls = pure [] -- do
--- active <-
---   chatReadVar remoteCtrlSession $>>= \RemoteCtrlSession {confirmed} ->
---     atomically $ tryReadTMVar confirmed
--- map (rcInfo active) <$> withStore' getRemoteCtrls
--- where
---   rcInfo activeRcId rc@RemoteCtrl {remoteCtrlId} =
---     remoteCtrlInfo rc $ activeRcId == Just remoteCtrlId
+listRemoteCtrls = do
+  active <- chatReadVar remoteCtrlSession >>= \case
+    Just RCSessionConnected {remoteCtrlId} -> pure $ Just remoteCtrlId
+    _ -> pure Nothing
+  map (rcInfo active) <$> withStore' getRemoteCtrls
+  where
+    rcInfo activeRcId rc@RemoteCtrl {remoteCtrlId} =
+      remoteCtrlInfo rc $ activeRcId == Just remoteCtrlId
 
 remoteCtrlInfo :: RemoteCtrl -> Bool -> RemoteCtrlInfo
 remoteCtrlInfo RemoteCtrl {remoteCtrlId, ctrlName} sessionActive =
@@ -445,7 +447,7 @@ confirmRemoteCtrl _rcId = do
   -- atomically . void $ tryPutTMVar confirmed rcId -- the remote host can now proceed with connection
   undefined
 
--- Take a look at emoji of tlsunique, commit pairing, and start session server
+-- | Take a look at emoji of tlsunique, commit pairing, and start session server
 verifyRemoteCtrlSession :: ChatMonad m => (ByteString -> m ChatResponse) -> Text -> m RemoteCtrlInfo
 verifyRemoteCtrlSession execChatCommand sessCode' = do
   (client, ctrlName, sessionCode, vars) <-
@@ -456,13 +458,17 @@ verifyRemoteCtrlSession execChatCommand sessCode' = do
   liftIO $ confirmCtrlSession client verified
   unless verified $ throwError $ ChatErrorRemoteCtrl RCEBadVerificationCode
   (rcsSession@RCCtrlSession {tls, sessionKeys}, rcCtrlPairing) <- takeRCStep vars
-  rc <- withStore $ \db -> do
+  rc@RemoteCtrl {remoteCtrlId} <- withStore $ \db -> do
     rc_ <- liftIO $ getRemoteCtrlByFingerprint db (ctrlFingerprint rcCtrlPairing)
-    maybe (insertRemoteCtrl db ctrlName rcCtrlPairing >>= getRemoteCtrl db) pure rc_
+    case rc_ of
+      Nothing -> insertRemoteCtrl db ctrlName rcCtrlPairing >>= getRemoteCtrl db
+      Just rc@RemoteCtrl {remoteCtrlId} -> do
+        liftIO $ updateCtrlPairingKeys db remoteCtrlId (dhPrivKey rcCtrlPairing)
+        pure rc
   remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
   http2Server <- async $ attachHTTP2Server tls $ handleRemoteCommand execChatCommand sessionKeys remoteOutputQ
   withRemoteCtrlSession $ \case
-    RCSessionPendingConfirmation {} -> Right ((), RCSessionConnected {rcsClient = client, rcsSession, http2Server, remoteOutputQ})
+    RCSessionPendingConfirmation {} -> Right ((), RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, http2Server, remoteOutputQ})
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   void . forkIO $ do
     waitCatch http2Server >>= \case

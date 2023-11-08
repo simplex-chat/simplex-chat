@@ -63,6 +63,17 @@ toRemoteHost (remoteHostId, hostName, storePath, caKey, C.SignedObject caCert, i
     hostPairing = RCHostPairing {caKey, caCert, idPrivKey, knownHost = Just knownHost}
     knownHost = KnownHostPairing {hostFingerprint, hostDhPubKey}
 
+updateHostPairingKeys :: DB.Connection -> RemoteHostId -> C.PublicKeyX25519 -> IO ()
+updateHostPairingKeys db rhId hostDhPubKey =
+  DB.execute
+    db
+    [sql|
+      UPDATE remote_hosts
+      SET host_dh_pub = ?
+      WHERE remote_host_id = ?
+    |]
+    (hostDhPubKey, rhId)
+
 deleteRemoteHostRecord :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (Only remoteHostId)
 
@@ -101,7 +112,6 @@ remoteCtrlQuery =
     FROM remote_controllers
   |]
 
--- toRemoteCtrl :: (Int64, Text, C.KeyHash, Maybe Bool) -> RemoteCtrl
 toRemoteCtrl ::
   ( RemoteCtrlId,
     Text,
@@ -119,6 +129,17 @@ toRemoteCtrl (remoteCtrlId, ctrlName, caKey, C.SignedObject caCert, ctrlFingerpr
       ctrlName,
       ctrlPairing = RCCtrlPairing {caKey, caCert, ctrlFingerprint, idPubKey, dhPrivKey, prevDhPrivKey}
     }
+
+updateCtrlPairingKeys :: DB.Connection -> RemoteCtrlId -> C.PrivateKeyX25519 -> IO ()
+updateCtrlPairingKeys db rcId dhPrivKey =
+  DB.execute
+    db
+    [sql|
+      UPDATE remote_controllers
+      SET dh_priv_key = ?, prev_dh_priv_key = dh_priv_key
+      WHERE remote_controller_id = ?
+    |]
+    (dhPrivKey, rcId)
 
 deleteRemoteCtrlRecord :: DB.Connection -> RemoteCtrlId -> IO ()
 deleteRemoteCtrlRecord db remoteCtrlId =

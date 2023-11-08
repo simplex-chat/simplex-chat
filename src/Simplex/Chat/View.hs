@@ -302,8 +302,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRRemoteCtrlConnecting RemoteCtrlInfo {remoteCtrlId = rcId, ctrlName} ->
     ["remote controller " <> sShow rcId <> " connecting to " <> plain ctrlName]
   CRRemoteCtrlSessionCode {remoteCtrl_, sessionCode} ->
-    -- [ "remote controller " <> sShow rcId <> " connected to " <> plain ctrlName,
-    [ maybe "new remote controller connected" (\RemoteCtrlInfo {remoteCtrlId} -> "remote controller " <> sShow remoteCtrlId <> " started") remoteCtrl_,
+    [ maybe "new remote controller connected" (\RemoteCtrlInfo {remoteCtrlId} -> "remote controller " <> sShow remoteCtrlId <> " connected") remoteCtrl_,
       "Compare session code with controller and use:",
       "/verify remote ctrl " <> plain sessionCode -- TODO maybe pass rcId
     ]

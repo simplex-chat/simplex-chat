@@ -33,8 +33,10 @@ import UnliftIO.Directory
 
 remoteTests :: SpecWith FilePath
 remoteTests = describe "Remote" $ do
-  it "performs protocol handshake" remoteHandshakeTest'
-  it "performs protocol handshake (again)" remoteHandshakeTest' -- leaking servers regression check
+  describe "protocol handshake" $ do
+    it "connects with new pairing" remoteHandshakeTest
+    it "connects with new pairing (again)" remoteHandshakeTest -- leaking servers regression check
+    it "connects with stored pairing" remoteHandshakeStoredTest
   it "sends messages" remoteMessageTest
   describe "remote files" $ do
     it "store/get/send/receive files" remoteStoreFileTest
@@ -42,36 +44,24 @@ remoteTests = describe "Remote" $ do
 
 -- * Chat commands
 
-remoteHandshakeTest' :: HasCallStack => FilePath -> IO ()
-remoteHandshakeTest' = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+remoteHandshakeTest :: HasCallStack => FilePath -> IO ()
+remoteHandshakeTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
   desktop ##> "/list remote hosts"
   desktop <## "No remote hosts"
+  mobile ##> "/list remote ctrls"
+  mobile <## "No remote controllers"
 
   startRemote mobile desktop
 
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
   desktop <## "1. Mobile (active)"
-  -- TODO: persistence-related tests
 
-remoteHandshakeTest :: HasCallStack => FilePath -> IO ()
-remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
-  desktop ##> "/list remote hosts"
-  desktop <## "No remote hosts"
-
-  startRemote mobile desktop
-
-  logNote "Session active"
-
-  desktop ##> "/list remote hosts"
-  desktop <## "Remote hosts:"
-  desktop <## "1.  (active)"
   mobile ##> "/list remote ctrls"
   mobile <## "Remote controllers:"
   mobile <## "1. My desktop (active)"
 
   stopMobile mobile desktop `catchAny` (logError . tshow)
-  -- TODO: add a case for 'stopDesktop'
 
   desktop ##> "/delete remote host 1"
   desktop <## "ok"
@@ -82,6 +72,27 @@ remoteHandshakeTest = testChat2 aliceProfile bobProfile $ \desktop mobile -> do
   mobile <## "ok"
   mobile ##> "/list remote ctrls"
   mobile <## "No remote controllers"
+
+remoteHandshakeStoredTest :: HasCallStack => FilePath -> IO ()
+remoteHandshakeStoredTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+  logNote "Starting new session"
+  startRemote mobile desktop
+  stopMobile mobile desktop `catchAny` (logError . tshow)
+
+  logNote "Starting stored session"
+  startRemoteStored mobile desktop
+  stopMobile mobile desktop `catchAny` (logError . tshow)
+
+  desktop ##> "/list remote hosts"
+  desktop <## "Remote hosts:"
+  desktop <## "1. Mobile"
+  mobile ##> "/list remote ctrls"
+  mobile <## "Remote controllers:"
+  mobile <## "1. My desktop"
+
+  logNote "Starting stored session again"
+  startRemoteStored mobile desktop
+  stopMobile mobile desktop `catchAny` (logError . tshow)
 
 remoteMessageTest :: HasCallStack => FilePath -> IO ()
 remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
@@ -336,6 +347,24 @@ startRemote mobile desktop = do
   mobile <## "remote controller 1 session started with My desktop"
   desktop <## "remote host 1 connected"
 
+startRemoteStored :: TestCC -> TestCC -> IO ()
+startRemoteStored mobile desktop = do
+  desktop ##> "/start remote host 1"
+  desktop <## "remote host 1 started"
+  desktop <## "Remote session invitation:"
+  inv <- getTermLine desktop
+  mobile ##> ("/connect remote ctrl " <> inv)
+  mobile <## "ok"
+  desktop <## "remote host 1 connecting"
+  desktop <## "Compare session code with host:"
+  sessId <- getTermLine desktop
+  mobile <## "remote controller 1 connected"
+  mobile <## "Compare session code with controller and use:"
+  mobile <## ("/verify remote ctrl " <> sessId)
+  mobile ##> ("/verify remote ctrl " <> sessId)
+  mobile <## "remote controller 1 session started with My desktop"
+  desktop <## "remote host 1 connected"
+
 contactBob :: TestCC -> TestCC -> IO ()
 contactBob desktop bob = do
   logNote "exchanging contacts"
@@ -358,9 +387,12 @@ stopDesktop mobile desktop = do
   logWarn "stopping via desktop"
   desktop ##> "/stop remote host 1"
   -- desktop <## "ok"
-  concurrently_
-    (desktop <## "remote host 1 stopped")
-    (eventually 3 $ mobile <## "remote controller stopped")
+  concurrentlyN_
+    [ do
+        desktop <## "remote host 1 stopped"
+        desktop <## "ok",
+      eventually 3 $ mobile <## "remote controller stopped"
+    ]
 
 stopMobile :: HasCallStack => TestCC -> TestCC -> IO ()
 stopMobile mobile desktop = do

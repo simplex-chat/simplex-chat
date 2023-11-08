@@ -1101,7 +1101,8 @@ data RemoteCtrlSession
         rcsWaitConfirmation :: TMVar (Either RCErrorType (RCCtrlSession, RCCtrlPairing))
       }
   | RCSessionConnected
-      { rcsClient :: RCCtrlClient,
+      { remoteCtrlId :: RemoteCtrlId,
+        rcsClient :: RCCtrlClient,
         rcsSession :: RCCtrlSession,
         http2Server :: Async (),
         remoteOutputQ :: TBQueue ChatResponse
