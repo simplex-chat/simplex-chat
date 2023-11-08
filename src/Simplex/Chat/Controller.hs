@@ -1054,10 +1054,7 @@ data RemoteHostError
   | RHEBusy -- ^ A session is already running
   | RHEBadState -- ^ Illegal state transition
   | RHEBadVersion {appVersion :: AppVersion}
-  | RHERejected -- ^ A session attempt was rejected by a host
-  | RHETimeout -- ^ A discovery or a remote operation has timed out
-  | RHEDisconnected {reason :: Text} -- ^ A session disconnected by a host
-  | RHEConnectionLost {reason :: Text} -- ^ A session disconnected due to transport issues
+  | RHEDisconnected {reason :: Text} -- TODO should be sent when disconnected?
   | RHEProtocolError RemoteProtocolError
   deriving (Show, Exception)
 
@@ -1066,18 +1063,11 @@ data RemoteCtrlError
   = RCEInactive -- ^ No session is running
   | RCEBadState -- ^ A session is in a wrong state for the current operation
   | RCEBusy -- ^ A session is already running
-  | RCETimeout -- ^ Remote operation timed out
   | RCEDisconnected {remoteCtrlId :: RemoteCtrlId, reason :: Text} -- ^ A session disconnected by a controller
-  | RCEConnectionLost {remoteCtrlId :: RemoteCtrlId, reason :: Text} -- ^ A session disconnected due to transport issues
-  | RCECertificateExpired {remoteCtrlId :: RemoteCtrlId} -- ^ A connection or CA certificate in a chain have bad validity period
-  | RCECertificateUntrusted {remoteCtrlId :: RemoteCtrlId} -- ^ TLS is unable to validate certificate chain presented for a connection
-  | RCEBadFingerprint -- ^ Bad fingerprint data provided in OOB
   | RCEBadInvitation
   | RCEBadVersion {appVersion :: AppVersion}
   | RCEBadVerificationCode -- ^ The code submitted doesn't match session TLSunique
-  | RCEHTTP2Error {http2Error :: Text}
-  | RCEHTTP2RespStatus {statusCode :: Maybe Int} -- TODO remove
-  | RCEInvalidResponse {responseError :: Text}
+  | RCEHTTP2Error {http2Error :: Text} -- TODO currently not used
   | RCEProtocolError {protocolError :: RemoteProtocolError}
   deriving (Show, Exception)
 
