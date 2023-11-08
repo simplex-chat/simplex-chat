@@ -151,37 +151,42 @@ startRemoteHost' rh_ = do
       -- TODO handle errors
       (sessId, vars') <- takeRCStep vars
       toView $ CRRemoteHostSessionCode {remoteHost_, sessionCode = verificationCode sessId} -- display confirmation code, wait for mobile to confirm
-      (RCHostSession {tls, sessionKeys}, rhHello, pairing'@RCHostPairing {knownHost = kh_}) <- takeRCStep vars'
+      (RCHostSession {tls, sessionKeys}, rhHello, pairing') <- takeRCStep vars'
       hostDeviceName <- parseHostAppInfo rhHello rhKey
       withRemoteHostSession rhKey $ \case
         RHSessionConnecting rhs' -> Right ((), RHSessionConfirmed rhs') -- TODO check it's the same session?
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState -- TODO kill client on error
-      KnownHostPairing {hostDhPubKey = hostDhPubKey'} <- maybe (throwError . ChatError $ CEInternalError "KnownHost is known after verification") pure kh_
       -- update remoteHost with updated pairing
-      storePath <- liftIO randomStorePath
-      rhi@RemoteHostInfo {remoteHostId} <- withStoreCtx (Just "startRemoteHost.waitForSession") $ \db -> do
-        case remoteHost_ of
-          Nothing -> do
-            rh <- insertRemoteHost db hostDeviceName storePath pairing' >>= getRemoteHost db
-            pure $ remoteHostInfo rh True
-          Just rhi@RemoteHostInfo {remoteHostId} -> do
-            liftIO $ updateHostPairingKeys db remoteHostId hostDhPubKey'
-            pure rhi
-      disconnected <- toIO $ do
-        logDebug "HTTP2 client disconnected"
-        chatModifyVar currentRemoteHost $ \cur -> if cur == Just remoteHostId then Nothing else cur -- only wipe the closing RH
-        sessions <- asks remoteHostSessions
-        void . atomically $ TM.lookupDelete (RHId remoteHostId) sessions
-        toView $ CRRemoteHostStopped remoteHostId
+      rhi@RemoteHostInfo {remoteHostId, storePath} <- upsertRemoteHost pairing' remoteHost_ hostDeviceName
+      let rhKey' = RHId remoteHostId
+      disconnected <- toIO $ mkDisconnected remoteHostId
       httpClient <- liftEitherError (httpError rhKey) $ attachRevHTTP2Client disconnected tls
       rhClient <- liftRC $ createRemoteHostClient httpClient sessionKeys storePath hostDeviceName
       pollAction <- async $ pollEvents remoteHostId rhClient
-      withRemoteHostSession rhKey $ \case
+      withRemoteHostSession rhKey' $ \case
         RHSessionConfirmed RHPendingSession {} -> Right ((), RHSessionConnected {rhClient, pollAction, storePath})
-        _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState -- TODO kill client on error
-      setNewRemoteHostId rhKey remoteHostId
+        _ -> Left $ ChatErrorRemoteHost rhKey' RHEBadState -- TODO kill client on error
       chatWriteVar currentRemoteHost $ Just remoteHostId -- TODO this is required for commands to be passed to remote host
       toView $ CRRemoteHostConnected rhi
+    upsertRemoteHost :: ChatMonad m => RCHostPairing -> Maybe RemoteHostInfo -> Text -> m RemoteHostInfo
+    upsertRemoteHost pairing'@RCHostPairing {knownHost = kh_} rh_ hostDeviceName = do
+      KnownHostPairing {hostDhPubKey = hostDhPubKey'} <- maybe (throwError . ChatError $ CEInternalError "KnownHost is known after verification") pure kh_
+      case rh_ of
+        Nothing -> do
+          storePath <- liftIO randomStorePath
+          rh@RemoteHost {remoteHostId} <- withStore $ \db -> insertRemoteHost db hostDeviceName storePath pairing' >>= getRemoteHost db
+          setNewRemoteHostId RHNew remoteHostId
+          pure $ remoteHostInfo rh True
+        Just rhi@RemoteHostInfo {remoteHostId} -> do
+          withStore' $ \db -> updateHostPairing db remoteHostId hostDeviceName hostDhPubKey'
+          pure rhi
+    mkDisconnected :: ChatMonad m => RemoteHostId -> m ()
+    mkDisconnected remoteHostId = do
+      logDebug "HTTP2 client disconnected"
+      chatModifyVar currentRemoteHost $ \cur -> if cur == Just remoteHostId then Nothing else cur -- only wipe the closing RH
+      sessions <- asks remoteHostSessions
+      void . atomically $ TM.lookupDelete (RHId remoteHostId) sessions
+      toView $ CRRemoteHostStopped remoteHostId
     pollEvents :: ChatMonad m => RemoteHostId -> RemoteHostClient -> m ()
     pollEvents rhId rhClient = do
       oq <- asks outputQ
@@ -296,19 +301,19 @@ connectRemoteCtrl :: ChatMonad m => RCSignedInvitation -> m ()
 connectRemoteCtrl inv@RCSignedInvitation {invitation = RCInvitation {ca, app}} = do
   (ctrlDeviceName, v) <- parseCtrlAppInfo app
   withRemoteCtrlSession_ $ maybe (Right ((), Just RCSessionStarting)) (\_ -> Left $ ChatErrorRemoteCtrl RCEBusy)
-  rc_ <- withStoreCtx' (Just "connectRemoteCtrl") $ \db -> getRemoteCtrlByFingerprint db ca
+  rc_ <- withStore' $ \db -> getRemoteCtrlByFingerprint db ca
   hostAppInfo <- getHostAppInfo v
-  (rcsClient, vars) <- withAgent $ \a -> rcConnectCtrlURI a inv (fmap ctrlPairing rc_) (J.toJSON hostAppInfo)
-  rcsWaitSession <- async $ waitForSession (fmap (`remoteCtrlInfo` True) rc_) ctrlDeviceName rcsClient vars
+  (rcsClient, vars) <- withAgent $ \a -> rcConnectCtrlURI a inv (ctrlPairing <$> rc_) (J.toJSON hostAppInfo)
+  rcsWaitSession <- async $ waitForSession rc_ ctrlDeviceName rcsClient vars
   updateRemoteCtrlSession $ \case
     RCSessionStarting -> Right RCSessionConnecting {rcsClient, rcsWaitSession}
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState -- TODO kill rcsClient
   where
-    waitForSession :: ChatMonad m => Maybe RemoteCtrlInfo -> Text -> RCCtrlClient -> RCStepTMVar (ByteString, RCStepTMVar (RCCtrlSession, RCCtrlPairing)) -> m ()
-    waitForSession remoteCtrl_ ctrlName rcsClient vars = do
+    waitForSession :: ChatMonad m => Maybe RemoteCtrl -> Text -> RCCtrlClient -> RCStepTMVar (ByteString, RCStepTMVar (RCCtrlSession, RCCtrlPairing)) -> m ()
+    waitForSession rc_ ctrlName rcsClient vars = do
       (uniq, rcsWaitConfirmation) <- takeRCStep vars
       let sessionCode = verificationCode uniq
-      toView CRRemoteCtrlSessionCode {remoteCtrl_, sessionCode}
+      toView CRRemoteCtrlSessionCode {remoteCtrl_ = (`remoteCtrlInfo` True) <$> rc_, sessionCode}
       updateRemoteCtrlSession $ \case
         RCSessionConnecting {rcsWaitSession} -> Right RCSessionPendingConfirmation {ctrlName, rcsClient, sessionCode, rcsWaitSession, rcsWaitConfirmation}
         _ -> Left $ ChatErrorRemoteCtrl RCEBadState -- TODO kill rcsClient

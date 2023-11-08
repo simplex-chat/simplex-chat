@@ -27,11 +27,11 @@ insertRemoteHost db hostName storePath RCHostPairing {caKey, caCert, idPrivKey, 
     DB.execute
       db
       [sql|
-      INSERT INTO remote_hosts
-        (host_name, store_path, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub)
-      VALUES
-        (?, ?, ?, ?, ?, ?, ?)
-    |]
+        INSERT INTO remote_hosts
+          (host_name, store_path, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub)
+        VALUES
+          (?, ?, ?, ?, ?, ?, ?)
+      |]
       (hostName, storePath, caKey, C.SignedObject caCert, idPrivKey, hostFingerprint, hostDhPubKey)
   liftIO $ insertedRowId db
 
@@ -63,16 +63,16 @@ toRemoteHost (remoteHostId, hostName, storePath, caKey, C.SignedObject caCert, i
     hostPairing = RCHostPairing {caKey, caCert, idPrivKey, knownHost = Just knownHost}
     knownHost = KnownHostPairing {hostFingerprint, hostDhPubKey}
 
-updateHostPairingKeys :: DB.Connection -> RemoteHostId -> C.PublicKeyX25519 -> IO ()
-updateHostPairingKeys db rhId hostDhPubKey =
+updateHostPairing :: DB.Connection -> RemoteHostId -> Text -> C.PublicKeyX25519 -> IO ()
+updateHostPairing db rhId hostName hostDhPubKey =
   DB.execute
     db
     [sql|
       UPDATE remote_hosts
-      SET host_dh_pub = ?
+      SET host_name = ?, host_dh_pub = ?
       WHERE remote_host_id = ?
     |]
-    (hostDhPubKey, rhId)
+    (hostName, hostDhPubKey, rhId)
 
 deleteRemoteHostRecord :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (Only remoteHostId)
