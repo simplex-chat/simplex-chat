@@ -161,6 +161,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRConnectionPlan u connectionPlan -> ttyUser u $ viewConnectionPlan connectionPlan
   CRSentConfirmation u -> ttyUser u ["confirmation sent!"]
   CRSentInvitation u customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
+  CRSentInvitationToContact u _c customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
   CRContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
   CRChatCleared u chatInfo -> ttyUser u $ viewChatCleared chatInfo
@@ -1354,6 +1355,7 @@ viewConnectionPlan = \case
       [ ctAddr ("known contact " <> ttyContact' ct),
         "use " <> ttyToContact' ct <> highlight' "<message>" <> " to send messages"
       ]
+    CAPContactViaAddress ct -> [ctAddr ("known contact without connection " <> ttyContact' ct)]
     where
       ctAddr = ("contact address: " <>)
   CPGroupLink glp -> case glp of

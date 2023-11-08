@@ -87,7 +87,8 @@ import Simplex.Chat.Migrations.M20231009_via_group_link_uri_hash
 import Simplex.Chat.Migrations.M20231010_member_settings
 import Simplex.Chat.Migrations.M20231019_indexes
 import Simplex.Chat.Migrations.M20231030_xgrplinkmem_received
-import Simplex.Chat.Migrations.M20231107_remote_controller
+import Simplex.Chat.Migrations.M20231107_indexes
+import Simplex.Chat.Migrations.M20231114_remote_controller
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -175,7 +176,8 @@ schemaMigrations =
     ("20231010_member_settings", m20231010_member_settings, Just down_m20231010_member_settings),
     ("20231019_indexes", m20231019_indexes, Just down_m20231019_indexes),
     ("20231030_xgrplinkmem_received", m20231030_xgrplinkmem_received, Just down_m20231030_xgrplinkmem_received),
-    ("20231107_remote_controller", m20231107_remote_controller, Just down_m20231107_remote_controller)
+    ("20231107_indexes", m20231107_indexes, Just down_m20231107_indexes),
+    ("20231114_remote_controller", m20231114_remote_controller, Just down_m20231114_remote_controller)
   ]
 
 -- | The list of migrations in ascending order by date

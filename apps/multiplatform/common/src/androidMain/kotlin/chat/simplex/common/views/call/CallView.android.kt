@@ -196,12 +196,14 @@ actual fun ActiveCallView() {
     chatModel.activeCallViewIsVisible.value = true
     // After the first call, End command gets added to the list which prevents making another calls
     chatModel.callCommand.removeAll { it is WCallCommand.End }
+    keepScreenOn(true)
     onDispose {
       activity.volumeControlStream = prevVolumeControlStream
       // Unlock orientation
       activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
       chatModel.activeCallViewIsVisible.value = false
       chatModel.callCommand.clear()
+      keepScreenOn(false)
     }
   }
 }
