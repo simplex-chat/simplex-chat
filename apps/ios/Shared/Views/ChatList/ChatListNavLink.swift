@@ -435,7 +435,7 @@ struct ChatListNavLink: View {
 
     private func connectContactViaAddress_(_ contact: Contact, _ incognito: Bool) {
         Task {
-            let ok = await connectContactViaAddress(contact.contactId, true)
+            let ok = await connectContactViaAddress(contact.contactId, incognito)
             if ok {
                 await MainActor.run {
                     chatModel.chatId = contact.id
