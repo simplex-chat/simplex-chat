@@ -32,7 +32,7 @@ import UnliftIO.Concurrent
 import UnliftIO.Directory
 
 remoteTests :: SpecWith FilePath
-remoteTests = fdescribe "Remote" $ do
+remoteTests = describe "Remote" $ do
   describe "protocol handshake" $ do
     it "connects with new pairing (stops mobile)" $ remoteHandshakeTest False
     it "connects with new pairing (stops desktop)" $ remoteHandshakeTest True
