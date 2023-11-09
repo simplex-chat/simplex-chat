@@ -60,6 +60,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import qualified Simplex.Messaging.TMap as TM
+import Simplex.Messaging.Transport (tlsUniq)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2ClientError, closeHTTP2Client)
 import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
@@ -177,7 +178,7 @@ startRemoteHost' rh_ = do
       atomically $ writeTMVar currentKey rhKey'
       disconnected <- toIO $ onDisconnected remoteHostId
       httpClient <- liftEitherError (httpError rhKey') $ attachRevHTTP2Client disconnected tls
-      let rhClient = mkRemoteHostClient httpClient sessionKeys storePath hostInfo
+      rhClient <- mkRemoteHostClient httpClient sessionKeys sessId storePath hostInfo
       pollAction <- async $ pollEvents remoteHostId rhClient
       withRemoteHostSession rhKey' $ \case
         RHSessionConfirmed RHPendingSession {} -> Right ((), RHSessionConnected {rhClient, pollAction, storePath})
@@ -354,8 +355,8 @@ connectRemoteCtrl inv@RCSignedInvitation {invitation = RCInvitation {ca, app}} =
       encryptFiles <- chatReadVar encryptLocalFiles
       pure HostAppInfo {appVersion, deviceName = hostDeviceName, encoding = localEncoding, encryptFiles}
 
-handleRemoteCommand :: forall m. ChatMonad m => (ByteString -> m ChatResponse) -> CtrlSessKeys -> TBQueue ChatResponse -> HTTP2Request -> m ()
-handleRemoteCommand execChatCommand _sessionKeys remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do
+handleRemoteCommand :: forall m. ChatMonad m => (ByteString -> m ChatResponse) -> RemoteCrypto -> TBQueue ChatResponse -> HTTP2Request -> m ()
+handleRemoteCommand execChatCommand encryption remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do
   logDebug "handleRemoteCommand"
   liftRC (tryRemoteError parseRequest) >>= \case
     Right (getNext, rc) -> do
@@ -366,8 +367,8 @@ handleRemoteCommand execChatCommand _sessionKeys remoteOutputQ HTTP2Request {req
   where
     parseRequest :: ExceptT RemoteProtocolError IO (GetChunk, RemoteCommand)
     parseRequest = do
-      (header, getNext) <- parseHTTP2Body request reqBody
-      (getNext,) <$> liftEitherWith RPEInvalidJSON (J.eitherDecodeStrict' header)
+      (header, getNext) <- parseDecryptHTTP2Body encryption request reqBody
+      (getNext,) <$> liftEitherWith RPEInvalidJSON (J.eitherDecode header)
     replyError = reply . RRChatResponse . CRChatCmdError Nothing
     processCommand :: User -> GetChunk -> RemoteCommand -> m ()
     processCommand user getNext = \case
@@ -378,9 +379,10 @@ handleRemoteCommand execChatCommand _sessionKeys remoteOutputQ HTTP2Request {req
     reply :: RemoteResponse -> m ()
     reply = (`replyWith` \_ -> pure ())
     replyWith :: Respond m
-    replyWith rr attach =
+    replyWith rr attach = do
+      resp <- liftRC $ encryptEncodeHTTP2Body encryption $ J.encode rr
       liftIO . sendResponse . responseStreaming N.status200 [] $ \send flush -> do
-        send $ sizePrefixedEncode rr
+        send resp
         attach send
         flush
 
@@ -478,11 +480,12 @@ verifyRemoteCtrlSession execChatCommand sessCode' = cleanupOnError $ do
       _ -> throwError $ ChatErrorRemoteCtrl RCEBadState
   let verified = sameVerificationCode sessCode' sessionCode
   liftIO $ confirmCtrlSession client verified
-  unless verified $ throwError $ ChatErrorRemoteCtrl RCEBadVerificationCode
+  unless verified $ throwError $ ChatErrorRemoteCtrl $ RCEProtocolError PRESessionCode
   (rcsSession@RCCtrlSession {tls, sessionKeys}, rcCtrlPairing) <- takeRCStep vars
   rc@RemoteCtrl {remoteCtrlId} <- upsertRemoteCtrl ctrlName rcCtrlPairing
   remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
-  http2Server <- async $ attachHTTP2Server tls $ handleRemoteCommand execChatCommand sessionKeys remoteOutputQ
+  encryption <- mkCtrlRemoteCrypto sessionKeys $ tlsUniq tls
+  http2Server <- async $ attachHTTP2Server tls $ handleRemoteCommand execChatCommand encryption remoteOutputQ
   void . forkIO $ monitor http2Server
   withRemoteCtrlSession $ \case
     RCSessionPendingConfirmation {} -> Right ((), RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, http2Server, remoteOutputQ})
