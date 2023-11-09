@@ -122,7 +122,7 @@ setNewRemoteHostId rhKey rhId = do
   liftEither r
 
 startRemoteHost' :: ChatMonad m => Maybe (RemoteHostId, Bool) -> m (Maybe RemoteHostInfo, RCSignedInvitation)
-startRemoteHost' rh_ = afterOk $ \asyncAfter -> do
+startRemoteHost' rh_ = do
   (rhKey, multicast, remoteHost_, pairing) <- case rh_ of
     Just (rhId, multicast) -> do
       rh@RemoteHost {hostPairing} <- withStore $ \db -> getRemoteHost db rhId
@@ -131,23 +131,34 @@ startRemoteHost' rh_ = afterOk $ \asyncAfter -> do
   withRemoteHostSession_ rhKey $ maybe (Right ((), Just RHSessionStarting)) (\_ -> Left $ ChatErrorRemoteHost rhKey RHEBusy)
   ctrlAppInfo <- mkCtrlAppInfo
   (invitation, rchClient, vars) <- withAgent $ \a -> rcConnectHost a pairing (J.toJSON ctrlAppInfo) multicast
-  rhsWaitSession <- asyncAfter $ handleSessionError rchClient $ waitForSession remoteHost_ vars
+  cmdOk <- newEmptyTMVarIO
+  rhsWaitSession <- async $ do
+    atomically $ takeTMVar cmdOk
+    cleanupOnError rchClient $ waitForSession remoteHost_ vars
   let rhs = RHPendingSession {rhKey, rchClient, rhsWaitSession, remoteHost_}
   withRemoteHostSession rhKey $ \case
     RHSessionStarting -> Right ((), RHSessionConnecting rhs)
     _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
-  pure (remoteHost_, invitation)
+  (remoteHost_, invitation) <$ atomically (putTMVar cmdOk ())
   where
-    handleSessionError rchClient action = do
+    mkCtrlAppInfo = do
+      deviceName <- chatReadVar localDeviceName
+      pure CtrlAppInfo {appVersionRange = ctrlAppVersionRange, deviceName}
+    parseHostAppInfo :: RCHostHello -> ExceptT RemoteHostError IO HostAppInfo
+    parseHostAppInfo RCHostHello {app = hostAppInfo} = do
+      hostInfo@HostAppInfo {appVersion, encoding} <-
+        liftEitherWith (RHEProtocolError . RPEInvalidJSON) $ JT.parseEither J.parseJSON hostAppInfo
+      unless (isAppCompatible appVersion ctrlAppVersionRange) $ throwError $ RHEBadVersion appVersion
+      when (encoding == PEKotlin && localEncoding == PESwift) $ throwError $ RHEProtocolError RPEIncompatibleEncoding
+      pure hostInfo
+    cleanupOnError :: ChatMonad m => RCHostClient -> (TMVar RHKey -> m ()) -> m ()
+    cleanupOnError rchClient action = do
       currentKey <- newEmptyTMVarIO
       action currentKey `catchChatError` \err -> do
         logError $ "startRemoteHost'.waitForSession crashed: " <> tshow err
         sessions <- asks remoteHostSessions
         atomically $ readTMVar currentKey >>= (`TM.delete` sessions)
         liftIO $ cancelHostClient rchClient
-    mkCtrlAppInfo = do
-      deviceName <- chatReadVar localDeviceName
-      pure CtrlAppInfo {appVersionRange = ctrlAppVersionRange, deviceName}
     waitForSession :: ChatMonad m => Maybe RemoteHostInfo -> RCStepTMVar (ByteString, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> TMVar RHKey -> m ()
     waitForSession remoteHost_ vars currentKey = do
       let rhKey = maybe RHNew (\RemoteHostInfo {remoteHostId} -> RHId remoteHostId) remoteHost_
@@ -173,17 +184,10 @@ startRemoteHost' rh_ = afterOk $ \asyncAfter -> do
         _ -> Left $ ChatErrorRemoteHost rhKey' RHEBadState
       chatWriteVar currentRemoteHost $ Just remoteHostId -- this is required for commands to be passed to remote host
       toView $ CRRemoteHostConnected rhi
-    parseHostAppInfo :: RCHostHello -> ExceptT RemoteHostError IO HostAppInfo
-    parseHostAppInfo RCHostHello {app = hostAppInfo} = do
-      hostInfo@HostAppInfo {appVersion, encoding} <-
-        liftEitherWith (RHEProtocolError . RPEInvalidJSON) $ JT.parseEither J.parseJSON hostAppInfo
-      unless (isAppCompatible appVersion ctrlAppVersionRange) $ throwError $ RHEBadVersion appVersion
-      when (encoding == PEKotlin && localEncoding == PESwift) $ throwError $ RHEProtocolError RPEIncompatibleEncoding
-      pure hostInfo
     upsertRemoteHost :: ChatMonad m => RCHostPairing -> Maybe RemoteHostInfo -> Text -> m RemoteHostInfo
-    upsertRemoteHost pairing'@RCHostPairing {knownHost = kh_} rh_ hostDeviceName = do
+    upsertRemoteHost pairing'@RCHostPairing {knownHost = kh_} rhi_ hostDeviceName = do
       KnownHostPairing {hostDhPubKey = hostDhPubKey'} <- maybe (throwError . ChatError $ CEInternalError "KnownHost is known after verification") pure kh_
-      case rh_ of
+      case rhi_ of
         Nothing -> do
           storePath <- liftIO randomStorePath
           rh@RemoteHost {remoteHostId} <- withStore $ \db -> insertRemoteHost db hostDeviceName storePath pairing' >>= getRemoteHost db
@@ -310,21 +314,26 @@ findKnownRemoteCtrl = undefined -- do
 
 -- | Use provided OOB link as an annouce
 connectRemoteCtrl :: ChatMonad m => RCSignedInvitation -> m ()
-connectRemoteCtrl inv@RCSignedInvitation {invitation = RCInvitation {ca, app}} = afterOk $ \asyncAfter -> do
+connectRemoteCtrl inv@RCSignedInvitation {invitation = RCInvitation {ca, app}} = do
   (ctrlDeviceName, v) <- parseCtrlAppInfo app
   withRemoteCtrlSession_ $ maybe (Right ((), Just RCSessionStarting)) (\_ -> Left $ ChatErrorRemoteCtrl RCEBusy)
   rc_ <- withStore' $ \db -> getRemoteCtrlByFingerprint db ca
   hostAppInfo <- getHostAppInfo v
   (rcsClient, vars) <- withAgent $ \a -> rcConnectCtrlURI a inv (ctrlPairing <$> rc_) (J.toJSON hostAppInfo)
-  let handleSessionError action = action `catchChatError` \e -> do
-        logError $ "connectRemoteCtrl crashed with: " <> tshow e
-        chatWriteVar remoteCtrlSession Nothing -- XXX: can only wipe PendingConfirmation or RCSessionConnecting, which only have rcsClient to cancel
-        liftIO $ cancelCtrlClient rcsClient
-  rcsWaitSession <- asyncAfter $ handleSessionError $ waitForSession rc_ ctrlDeviceName rcsClient vars
-  handleSessionError . updateRemoteCtrlSession $ \case
+  cmdOk <- newEmptyTMVarIO
+  rcsWaitSession <- async $ do
+    atomically $ takeTMVar cmdOk
+    cleanupOnError rcsClient $ waitForSession rc_ ctrlDeviceName rcsClient vars
+  cleanupOnError rcsClient . updateRemoteCtrlSession $ \case
     RCSessionStarting -> Right RCSessionConnecting {rcsClient, rcsWaitSession}
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
+  atomically $ putTMVar cmdOk ()
   where
+    cleanupOnError :: ChatMonad m => RCCtrlClient -> m () -> m ()
+    cleanupOnError rcsClient action = action `catchChatError` \e -> do
+      logError $ "connectRemoteCtrl crashed with: " <> tshow e
+      chatWriteVar remoteCtrlSession Nothing -- XXX: can only wipe PendingConfirmation or RCSessionConnecting, which only have rcsClient to cancel
+      liftIO $ cancelCtrlClient rcsClient
     waitForSession :: ChatMonad m => Maybe RemoteCtrl -> Text -> RCCtrlClient -> RCStepTMVar (ByteString, RCStepTMVar (RCCtrlSession, RCCtrlPairing)) -> m ()
     waitForSession rc_ ctrlName rcsClient vars = do
       (uniq, rcsWaitConfirmation) <- takeRCStep vars
@@ -462,7 +471,7 @@ confirmRemoteCtrl _rcId = do
 
 -- | Take a look at emoji of tlsunique, commit pairing, and start session server
 verifyRemoteCtrlSession :: ChatMonad m => (ByteString -> m ChatResponse) -> Text -> m RemoteCtrlInfo
-verifyRemoteCtrlSession execChatCommand sessCode' = handleSessionError $ do
+verifyRemoteCtrlSession execChatCommand sessCode' = cleanupOnError $ do
   (client, ctrlName, sessionCode, vars) <-
     getRemoteCtrlSession >>= \case
       RCSessionPendingConfirmation {rcsClient, ctrlName, sessionCode, rcsWaitConfirmation} -> pure (rcsClient, ctrlName, sessionCode, rcsWaitConfirmation)
@@ -471,30 +480,35 @@ verifyRemoteCtrlSession execChatCommand sessCode' = handleSessionError $ do
   liftIO $ confirmCtrlSession client verified
   unless verified $ throwError $ ChatErrorRemoteCtrl RCEBadVerificationCode
   (rcsSession@RCCtrlSession {tls, sessionKeys}, rcCtrlPairing) <- takeRCStep vars
-  rc@RemoteCtrl {remoteCtrlId} <- withStore $ \db -> do
-    rc_ <- liftIO $ getRemoteCtrlByFingerprint db (ctrlFingerprint rcCtrlPairing)
-    case rc_ of
-      Nothing -> insertRemoteCtrl db ctrlName rcCtrlPairing >>= getRemoteCtrl db
-      Just rc@RemoteCtrl {remoteCtrlId} -> do
-        liftIO $ updateCtrlPairingKeys db remoteCtrlId (dhPrivKey rcCtrlPairing)
-        pure rc
+  rc@RemoteCtrl {remoteCtrlId} <- upsertRemoteCtrl ctrlName rcCtrlPairing
   remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
   http2Server <- async $ attachHTTP2Server tls $ handleRemoteCommand execChatCommand sessionKeys remoteOutputQ
-  void . forkIO $ do
-    waitCatch http2Server >>= \case
-      Left err | Just (BadThingHappen innerErr) <- fromException err -> logWarn $ "HTTP2 server crashed with internal " <> tshow innerErr
-      Left err | isNothing (fromException @AsyncCancelled err) -> logError $ "HTTP2 server crashed with " <> tshow err
-      _ -> logInfo "HTTP2 server stopped"
-    toView CRRemoteCtrlStopped
+  void . forkIO $ monitor http2Server
   withRemoteCtrlSession $ \case
     RCSessionPendingConfirmation {} -> Right ((), RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, http2Server, remoteOutputQ})
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   pure $ remoteCtrlInfo rc True
   where
-    handleSessionError action = action `catchChatError` \e -> do
+    upsertRemoteCtrl :: ChatMonad m => Text -> RCCtrlPairing -> m RemoteCtrl
+    upsertRemoteCtrl ctrlName rcCtrlPairing = withStore $ \db -> do
+      rc_ <- liftIO $ getRemoteCtrlByFingerprint db (ctrlFingerprint rcCtrlPairing)
+      case rc_ of
+        Nothing -> insertRemoteCtrl db ctrlName rcCtrlPairing >>= getRemoteCtrl db
+        Just rc@RemoteCtrl {remoteCtrlId} -> do
+          liftIO $ updateCtrlPairingKeys db remoteCtrlId (dhPrivKey rcCtrlPairing)
+          pure rc
+    cleanupOnError :: ChatMonad m => m a -> m a
+    cleanupOnError action = action `catchChatError` \e -> do
       logError $ "verifyRemoteCtrlSession crashed with: " <> tshow e
       withRemoteCtrlSession_ (\s -> pure (s, Nothing)) >>= mapM_ (liftIO . cancelRemoteCtrl) -- cancel session threads, if any
       throwError e
+    monitor :: ChatMonad m => Async a -> m ()
+    monitor server = do
+      waitCatch server >>= \case
+        Left err | Just (BadThingHappen innerErr) <- fromException err -> logWarn $ "HTTP2 server crashed with internal " <> tshow innerErr
+        Left err | isNothing (fromException @AsyncCancelled err) -> logError $ "HTTP2 server crashed with " <> tshow err
+        _ -> logInfo "HTTP2 server stopped"
+      toView CRRemoteCtrlStopped
 
 stopRemoteCtrl :: ChatMonad m => m ()
 stopRemoteCtrl =
@@ -544,16 +558,6 @@ withRemoteCtrlSession_ state = do
 
 updateRemoteCtrlSession :: ChatMonad m => (RemoteCtrlSession -> Either ChatError RemoteCtrlSession) -> m ()
 updateRemoteCtrlSession state = withRemoteCtrlSession $ fmap ((),) . state
-
--- | Experimental gadget to fight events-before-ok source of flaking tests
-afterOk :: MonadUnliftIO m => ((m () -> m (Async ())) -> m b) -> m b
-afterOk syncAction = do
-  barrier <- newEmptyTMVarIO
-  let asyncAfter asyncAction = async $ do
-        atomically $ readTMVar barrier
-        asyncAction
-  res <- syncAction asyncAfter
-  res <$ atomically (putTMVar barrier ())
 
 utf8String :: [Char] -> ByteString
 utf8String = encodeUtf8 . T.pack
