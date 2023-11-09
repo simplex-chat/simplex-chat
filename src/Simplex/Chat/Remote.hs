@@ -504,12 +504,10 @@ verifyRemoteCtrlSession execChatCommand sessCode' = cleanupOnError $ do
       logError $ "verifyRemoteCtrlSession crashed with: " <> tshow e
       withRemoteCtrlSession_ (\s -> pure (s, Nothing)) >>= mapM_ (liftIO . cancelRemoteCtrl) -- cancel session threads, if any
       throwError e
-    monitor :: ChatMonad m => Async a -> m ()
+    monitor :: ChatMonad m => Async () -> m ()
     monitor server = do
-      waitCatch server >>= \case
-        Left err | Just (BadThingHappen innerErr) <- fromException err -> logWarn $ "HTTP2 server crashed with internal " <> tshow innerErr
-        Left err | Nothing <- fromException @AsyncCancelled err -> logError $ "HTTP2 server crashed with " <> tshow err
-        _ -> logInfo "HTTP2 server stopped"
+      res <- waitCatch server
+      logInfo $ "HTTP2 server stopped: " <> tshow res
       withRemoteCtrlSession_ (\s -> pure (s, Nothing)) >>= mapM_ (liftIO . cancelRemoteCtrl) -- cancel session threads, if any
       toView CRRemoteCtrlStopped
 
