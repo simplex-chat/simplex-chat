@@ -141,18 +141,21 @@ startRemoteHost' rh_ = do
     mkCtrlAppInfo = do
       deviceName <- chatReadVar localDeviceName
       pure CtrlAppInfo {appVersionRange = ctrlAppVersionRange, deviceName}
-    parseHostAppInfo RCHostHello {app = hostAppInfo} rhKey = do
-      HostAppInfo {deviceName, appVersion} <-
-        liftEitherWith (ChatErrorRemoteHost rhKey . RHEProtocolError . RPEInvalidJSON) $ JT.parseEither J.parseJSON hostAppInfo
-      unless (isAppCompatible appVersion ctrlAppVersionRange) $ throwError $ ChatErrorRemoteHost rhKey $ RHEBadVersion appVersion
-      pure deviceName
+    parseHostAppInfo :: RCHostHello -> ExceptT RemoteHostError IO HostAppInfo
+    parseHostAppInfo RCHostHello {app = hostAppInfo} = do
+      hostInfo@HostAppInfo {deviceName, appVersion, encoding, encryptFiles} <-
+        liftEitherWith (RHEProtocolError . RPEInvalidJSON) $ JT.parseEither J.parseJSON hostAppInfo
+      unless (isAppCompatible appVersion ctrlAppVersionRange) $ throwError $ RHEBadVersion appVersion
+      when (encoding == PEKotlin && localEncoding == PESwift) $ throwError $ RHEProtocolError RPEIncompatibleEncoding
+      pure hostInfo
     waitForSession :: ChatMonad m => RHKey -> Maybe RemoteHostInfo -> RCHostClient -> RCStepTMVar (ByteString, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> m ()
     waitForSession rhKey remoteHost_ _rchClient_kill_on_error vars = do
       -- TODO handle errors
       (sessId, vars') <- takeRCStep vars
       toView $ CRRemoteHostSessionCode {remoteHost_, sessionCode = verificationCode sessId} -- display confirmation code, wait for mobile to confirm
       (RCHostSession {tls, sessionKeys}, rhHello, pairing') <- takeRCStep vars'
-      hostDeviceName <- parseHostAppInfo rhHello rhKey
+      hostInfo@HostAppInfo {deviceName = hostDeviceName} <-
+        liftError (ChatErrorRemoteHost rhKey) $ parseHostAppInfo rhHello
       withRemoteHostSession rhKey $ \case
         RHSessionConnecting rhs' -> Right ((), RHSessionConfirmed rhs') -- TODO check it's the same session?
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState -- TODO kill client on error
@@ -161,7 +164,7 @@ startRemoteHost' rh_ = do
       let rhKey' = RHId remoteHostId
       disconnected <- toIO $ onDisconnected remoteHostId
       httpClient <- liftEitherError (httpError rhKey) $ attachRevHTTP2Client disconnected tls
-      rhClient <- liftRC $ createRemoteHostClient httpClient sessionKeys storePath hostDeviceName
+      let rhClient = mkRemoteHostClient httpClient sessionKeys storePath hostInfo
       pollAction <- async $ pollEvents remoteHostId rhClient
       withRemoteHostSession rhKey' $ \case
         RHSessionConfirmed RHPendingSession {} -> Right ((), RHSessionConnected {rhClient, pollAction, storePath})
@@ -346,7 +349,6 @@ handleRemoteCommand execChatCommand _sessionKeys remoteOutputQ HTTP2Request {req
     replyError = reply . RRChatResponse . CRChatCmdError Nothing
     processCommand :: User -> GetChunk -> RemoteCommand -> m ()
     processCommand user getNext = \case
-      RCHello {deviceName = desktopName} -> handleHello desktopName >>= reply
       RCSend {command} -> handleSend execChatCommand command >>= reply
       RCRecv {wait = time} -> handleRecv time remoteOutputQ >>= reply
       RCStoreFile {fileName, fileSize, fileDigest} -> handleStoreFile fileName fileSize fileDigest getNext >>= reply
@@ -375,13 +377,6 @@ liftRC = liftError (ChatErrorRemoteCtrl . RCEProtocolError)
 tryRemoteError :: ExceptT RemoteProtocolError IO a -> ExceptT RemoteProtocolError IO (Either RemoteProtocolError a)
 tryRemoteError = tryAllErrors (RPEException . tshow)
 {-# INLINE tryRemoteError #-}
-
-handleHello :: ChatMonad m => Text -> m RemoteResponse
-handleHello desktopName = do
-  logInfo $ "Hello from " <> tshow desktopName
-  mobileName <- chatReadVar localDeviceName
-  encryptFiles <- chatReadVar encryptLocalFiles
-  pure RRHello {encoding = localEncoding, deviceName = mobileName, encryptFiles}
 
 handleSend :: ChatMonad m => (ByteString -> m ChatResponse) -> Text -> m RemoteResponse
 handleSend execChatCommand command = do

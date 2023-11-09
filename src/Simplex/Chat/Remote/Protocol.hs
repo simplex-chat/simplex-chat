@@ -9,7 +9,6 @@
 
 module Simplex.Chat.Remote.Protocol where
 
-import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
 import Data.Aeson ((.=))
@@ -44,8 +43,7 @@ import System.FilePath (takeFileName, (</>))
 import UnliftIO
 
 data RemoteCommand
-  = RCHello {deviceName :: Text}
-  | RCSend {command :: Text} -- TODO maybe ChatCommand here?
+  = RCSend {command :: Text} -- TODO maybe ChatCommand here?
   | RCRecv {wait :: Int} -- this wait should be less than HTTP timeout
   | -- local file encryption is determined by the host, but can be overridden for videos
     RCStoreFile {fileName :: String, fileSize :: Word32, fileDigest :: FileDigest} -- requires attachment
@@ -53,8 +51,7 @@ data RemoteCommand
   deriving (Show)
 
 data RemoteResponse
-  = RRHello {encoding :: PlatformEncoding, deviceName :: Text, encryptFiles :: Bool}
-  | RRChatResponse {chatResponse :: ChatResponse}
+  = RRChatResponse {chatResponse :: ChatResponse}
   | RRChatEvent {chatEvent :: Maybe ChatResponse} -- ^ 'Nothing' on poll timeout
   | RRFileStored {filePath :: String}
   | RRFile {fileSize :: Word32, fileDigest :: FileDigest} -- provides attachment , fileDigest :: FileDigest
@@ -67,22 +64,16 @@ $(deriveJSON (taggedObjectJSON $ dropPrefix "RR") ''RemoteResponse)
 
 -- * Client side / desktop
 
-createRemoteHostClient :: HTTP2Client -> HostSessKeys -> FilePath -> Text -> ExceptT RemoteProtocolError IO RemoteHostClient
-createRemoteHostClient httpClient sessionKeys storePath desktopName = do
-  logDebug "Sending initial hello"
-  sendRemoteCommand' httpClient localEncoding Nothing RCHello {deviceName = desktopName} >>= \case
-    RRHello {encoding, deviceName = mobileName, encryptFiles} -> do
-      logDebug "Got initial hello"
-      when (encoding == PEKotlin && localEncoding == PESwift) $ throwError RPEIncompatibleEncoding
-      pure RemoteHostClient
-        { hostEncoding = encoding,
-          hostDeviceName = mobileName,
-          httpClient,
-          encryptHostFiles = encryptFiles,
-          sessionKeys,
-          storePath
-        }
-    r -> badResponse r
+mkRemoteHostClient :: HTTP2Client -> HostSessKeys -> FilePath -> HostAppInfo -> RemoteHostClient
+mkRemoteHostClient httpClient sessionKeys storePath HostAppInfo {encoding, deviceName, encryptFiles} =
+  RemoteHostClient
+    { hostEncoding = encoding,
+      hostDeviceName = deviceName,
+      httpClient,
+      encryptHostFiles = encryptFiles,
+      sessionKeys,
+      storePath
+    }
 
 closeRemoteHostClient :: MonadIO m => RemoteHostClient -> m ()
 closeRemoteHostClient RemoteHostClient {httpClient} = liftIO $ closeHTTP2Client httpClient
@@ -148,7 +139,7 @@ convertJSON :: PlatformEncoding -> PlatformEncoding -> J.Value -> J.Value
 convertJSON _remote@PEKotlin _local@PEKotlin = id
 convertJSON PESwift PESwift = id
 convertJSON PESwift PEKotlin = owsf2tagged
-convertJSON PEKotlin PESwift = error "unsupported convertJSON: K/S" -- guarded by createRemoteHostClient
+convertJSON PEKotlin PESwift = error "unsupported convertJSON: K/S" -- guarded by handshake
 
 -- | Convert swift single-field sum encoding into tagged/discriminator-field
 owsf2tagged :: J.Value -> J.Value
