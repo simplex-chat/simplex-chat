@@ -49,7 +49,7 @@ extra-deps:
   # - simplexmq-1.0.0@sha256:34b2004728ae396e3ae449cd090ba7410781e2b3cefc59259915f4ca5daa9ea8,8561
   # - ../simplexmq
   - github: simplex-chat/simplexmq
-    commit: 102487bc4fbb865aac4207d2ba6f2ea77eff3290
+    commit: bd06b47a9df13506ee77251868a5a1d1e7cadafe
   - github: kazu-yamamoto/http2
     commit: f5525b755ff2418e6e6ecc69e877363b0d0bcaeb
   # - ../direct-sqlcipher

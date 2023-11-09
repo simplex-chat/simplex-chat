@@ -1086,14 +1086,15 @@ data RemoteCtrlSession
   | RCSessionPendingConfirmation
       { ctrlName :: Text,
         rcsClient :: RCCtrlClient,
+        tls :: TLS,
         sessionCode :: Text,
         rcsWaitSession :: Async (),
         rcsWaitConfirmation :: TMVar (Either RCErrorType (RCCtrlSession, RCCtrlPairing))
       }
   | RCSessionConnected
       { remoteCtrlId :: RemoteCtrlId,
-        tls :: TLS,
         rcsClient :: RCCtrlClient,
+        tls :: TLS,
         rcsSession :: RCCtrlSession,
         http2Server :: Async (),
         remoteOutputQ :: TBQueue ChatResponse

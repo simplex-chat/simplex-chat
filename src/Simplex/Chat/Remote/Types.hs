@@ -41,7 +41,7 @@ data RHPendingSession = RHPendingSession
 data RemoteHostSession
   = RHSessionStarting
   | RHSessionConnecting {rhPendingSession :: RHPendingSession}
-  | RHSessionConfirmed {rhPendingSession :: RHPendingSession}
+  | RHSessionConfirmed {tls :: TLS, rhPendingSession :: RHPendingSession}
   | RHSessionConnected {tls :: TLS, rhClient :: RemoteHostClient, pollAction :: Async (), storePath :: FilePath}
 
 data RemoteProtocolError
