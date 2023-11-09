@@ -60,6 +60,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import qualified Simplex.Messaging.TMap as TM
+import Simplex.Messaging.Transport (TLS, closeConnection)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2ClientError, closeHTTP2Client)
 import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
@@ -169,7 +170,7 @@ startRemoteHost' rh_ = do
       hostInfo@HostAppInfo {deviceName = hostDeviceName} <-
         liftError (ChatErrorRemoteHost rhKey) $ parseHostAppInfo rhHello
       withRemoteHostSession rhKey $ \case
-        RHSessionConnecting rhs' -> Right ((), RHSessionConfirmed rhs') -- TODO check it's the same session?
+        RHSessionConnecting rhs' -> Right ((), RHSessionConfirmed tls rhs') -- TODO check it's the same session?
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
       -- update remoteHost with updated pairing
       rhi@RemoteHostInfo {remoteHostId, storePath} <- upsertRemoteHost pairing' remoteHost_ hostDeviceName
@@ -180,7 +181,7 @@ startRemoteHost' rh_ = do
       let rhClient = mkRemoteHostClient httpClient sessionKeys storePath hostInfo
       pollAction <- async $ pollEvents remoteHostId rhClient
       withRemoteHostSession rhKey' $ \case
-        RHSessionConfirmed RHPendingSession {} -> Right ((), RHSessionConnected {rhClient, pollAction, storePath})
+        RHSessionConfirmed _ RHPendingSession {} -> Right ((), RHSessionConnected {tls, rhClient, pollAction, storePath})
         _ -> Left $ ChatErrorRemoteHost rhKey' RHEBadState
       chatWriteVar currentRemoteHost $ Just remoteHostId -- this is required for commands to be passed to remote host
       toView $ CRRemoteHostConnected rhi
@@ -223,14 +224,17 @@ cancelRemoteHost :: RemoteHostSession -> IO ()
 cancelRemoteHost = \case
   RHSessionStarting -> pure ()
   RHSessionConnecting rhs -> cancelPendingSession rhs
-  RHSessionConfirmed rhs -> cancelPendingSession rhs
-  RHSessionConnected {rhClient = RemoteHostClient {httpClient}, pollAction} -> do
+  RHSessionConfirmed tls rhs -> do
+    cancelPendingSession rhs
+    closeConnection tls
+  RHSessionConnected {tls, rhClient = RemoteHostClient {httpClient}, pollAction} -> do
     uninterruptibleCancel pollAction
     closeHTTP2Client httpClient
+    closeConnection tls
   where
     cancelPendingSession RHPendingSession {rchClient, rhsWaitSession} = do
-      cancelHostClient rchClient
       uninterruptibleCancel rhsWaitSession
+      cancelHostClient rchClient
 
 -- | Generate a random 16-char filepath without / in it by using base64url encoding.
 randomStorePath :: IO FilePath
@@ -334,13 +338,13 @@ connectRemoteCtrl inv@RCSignedInvitation {invitation = RCInvitation {ca, app}} =
       logError $ "connectRemoteCtrl crashed with: " <> tshow e
       chatWriteVar remoteCtrlSession Nothing -- XXX: can only wipe PendingConfirmation or RCSessionConnecting, which only have rcsClient to cancel
       liftIO $ cancelCtrlClient rcsClient
-    waitForSession :: ChatMonad m => Maybe RemoteCtrl -> Text -> RCCtrlClient -> RCStepTMVar (ByteString, RCStepTMVar (RCCtrlSession, RCCtrlPairing)) -> m ()
+    waitForSession :: ChatMonad m => Maybe RemoteCtrl -> Text -> RCCtrlClient -> RCStepTMVar (ByteString, TLS, RCStepTMVar (RCCtrlSession, RCCtrlPairing)) -> m ()
     waitForSession rc_ ctrlName rcsClient vars = do
-      (uniq, rcsWaitConfirmation) <- takeRCStep vars
+      (uniq, tls, rcsWaitConfirmation) <- takeRCStep vars
       let sessionCode = verificationCode uniq
       toView CRRemoteCtrlSessionCode {remoteCtrl_ = (`remoteCtrlInfo` True) <$> rc_, sessionCode}
       updateRemoteCtrlSession $ \case
-        RCSessionConnecting {rcsWaitSession} -> Right RCSessionPendingConfirmation {ctrlName, rcsClient, sessionCode, rcsWaitSession, rcsWaitConfirmation}
+        RCSessionConnecting {rcsWaitSession} -> Right RCSessionPendingConfirmation {ctrlName, rcsClient, tls, sessionCode, rcsWaitSession, rcsWaitConfirmation}
         _ -> Left $ ChatErrorRemoteCtrl RCEBadState
     parseCtrlAppInfo ctrlAppInfo = do
       CtrlAppInfo {deviceName, appVersionRange} <-
@@ -485,7 +489,7 @@ verifyRemoteCtrlSession execChatCommand sessCode' = cleanupOnError $ do
   http2Server <- async $ attachHTTP2Server tls $ handleRemoteCommand execChatCommand sessionKeys remoteOutputQ
   void . forkIO $ monitor http2Server
   withRemoteCtrlSession $ \case
-    RCSessionPendingConfirmation {} -> Right ((), RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, http2Server, remoteOutputQ})
+    RCSessionPendingConfirmation {} -> Right ((), RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, tls, http2Server, remoteOutputQ})
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   pure $ remoteCtrlInfo rc True
   where
@@ -502,12 +506,11 @@ verifyRemoteCtrlSession execChatCommand sessCode' = cleanupOnError $ do
       logError $ "verifyRemoteCtrlSession crashed with: " <> tshow e
       withRemoteCtrlSession_ (\s -> pure (s, Nothing)) >>= mapM_ (liftIO . cancelRemoteCtrl) -- cancel session threads, if any
       throwError e
-    monitor :: ChatMonad m => Async a -> m ()
+    monitor :: ChatMonad m => Async () -> m ()
     monitor server = do
-      waitCatch server >>= \case
-        Left err | Just (BadThingHappen innerErr) <- fromException err -> logWarn $ "HTTP2 server crashed with internal " <> tshow innerErr
-        Left err | isNothing (fromException @AsyncCancelled err) -> logError $ "HTTP2 server crashed with " <> tshow err
-        _ -> logInfo "HTTP2 server stopped"
+      res <- waitCatch server
+      logInfo $ "HTTP2 server stopped: " <> tshow res
+      withRemoteCtrlSession_ (\s -> pure (s, Nothing)) >>= mapM_ (liftIO . cancelRemoteCtrl) -- cancel session threads, if any
       toView CRRemoteCtrlStopped
 
 stopRemoteCtrl :: ChatMonad m => m ()
@@ -519,14 +522,16 @@ cancelRemoteCtrl :: RemoteCtrlSession -> IO ()
 cancelRemoteCtrl = \case
   RCSessionStarting -> pure ()
   RCSessionConnecting {rcsClient, rcsWaitSession} -> do
-    cancelCtrlClient rcsClient
     uninterruptibleCancel rcsWaitSession
-  RCSessionPendingConfirmation {rcsClient, rcsWaitSession} -> do
     cancelCtrlClient rcsClient
+  RCSessionPendingConfirmation {rcsClient, tls, rcsWaitSession} -> do
     uninterruptibleCancel rcsWaitSession
-  RCSessionConnected {rcsClient, http2Server} -> do
     cancelCtrlClient rcsClient
+    closeConnection tls
+  RCSessionConnected {rcsClient, tls, http2Server} -> do
     uninterruptibleCancel http2Server
+    cancelCtrlClient rcsClient
+    closeConnection tls
 
 deleteRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m ()
 deleteRemoteCtrl rcId = do
