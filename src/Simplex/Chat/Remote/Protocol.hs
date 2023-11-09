@@ -25,7 +25,7 @@ import qualified Data.Aeson.Types as JT
 import qualified Data.ByteArray as BA
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
-import Data.ByteString.Builder (Builder, byteString, lazyByteString, word32BE)
+import Data.ByteString.Builder (Builder, byteString, lazyByteString)
 import qualified Data.ByteString.Lazy as LB
 import Data.String (fromString)
 import Data.Text (Text)
@@ -78,10 +78,11 @@ $(deriveJSON (taggedObjectJSON $ dropPrefix "RR") ''RemoteResponse)
 -- * Client side / desktop
 
 mkRemoteHostClient :: ChatMonad m => HTTP2Client -> HostSessKeys -> SessionCode -> FilePath -> HostAppInfo -> m RemoteHostClient
-mkRemoteHostClient httpClient HostSessKeys {hybridKey} sessionCode storePath HostAppInfo {encoding, deviceName, encryptFiles} = do
+mkRemoteHostClient httpClient sessionKeys sessionCode storePath HostAppInfo {encoding, deviceName, encryptFiles} = do
   drg <- asks $ agentDRG . smpAgent
   counter <- newTVarIO 1
-  let signatures = RSNone -- TODO
+  let HostSessKeys {hybridKey, idPrivKey, sessPrivKey} = sessionKeys
+      signatures = RSSign {idPrivKey, sessPrivKey}
       encryption = RemoteCrypto {drg, counter, sessionCode, hybridKey, signatures}
   pure
     RemoteHostClient
@@ -94,10 +95,10 @@ mkRemoteHostClient httpClient HostSessKeys {hybridKey} sessionCode storePath Hos
       }
 
 mkCtrlRemoteCrypto :: ChatMonad m => CtrlSessKeys -> SessionCode -> m RemoteCrypto
-mkCtrlRemoteCrypto CtrlSessKeys {hybridKey} sessionCode = do
+mkCtrlRemoteCrypto CtrlSessKeys {hybridKey, idPubKey, sessPubKey} sessionCode = do
   drg <- asks $ agentDRG . smpAgent
   counter <- newTVarIO 1
-  let signatures = RSNone -- TODO
+  let signatures = RSVerify {idPubKey, sessPubKey}
   pure RemoteCrypto {drg, counter, sessionCode, hybridKey, signatures}
 
 closeRemoteHostClient :: MonadIO m => RemoteHostClient -> m ()
@@ -275,8 +276,8 @@ parseDecryptHTTP2Body RemoteCrypto {hybridKey, sessionCode, signatures} hr HTTP2
         getSig = do
           len <- liftIO $ B.head <$> getNext 1
           liftEitherError RPEInvalidBody $ C.decodeSignature <$> getNext (fromIntegral len)
-        verifySig key sig hc = do
-          let signed = BA.convert $ CH.hashFinalize hc
+        verifySig key sig hc' = do
+          let signed = BA.convert $ CH.hashFinalize hc'
           unless (C.verify' key sig signed) $ throwError $ PRERemoteControl RCECtrlAuth
     parseBody :: LazyByteString -> ExceptT RemoteProtocolError IO LazyByteString
     parseBody s = case LB.uncons s of
@@ -287,8 +288,8 @@ parseDecryptHTTP2Body RemoteCrypto {hybridKey, sessionCode, signatures} hr HTTP2
         (_corrId, s') <- takeBytes 8 rest'
         pure s'
       where
-        takeBytes n s = do
-          let (bs, rest) = LB.splitAt n s
+        takeBytes n s' = do
+          let (bs, rest) = LB.splitAt n s'
           unless (LB.length bs == n) $ throwError PRESessionCode
           pure (LB.toStrict bs, rest)
     getNext sz = getBuffered bodyBuffer sz Nothing $ getBodyChunk hr
