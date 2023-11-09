@@ -17,6 +17,16 @@ fi
 
 BUILD_DIR=dist-newstyle/build/$ARCH-$OS/ghc-*/simplex-chat-*
 
+# IMPORTANT: in order to get a working build you should use x86_64 MinGW with make, cmake, gcc.
+# 100% working MinGW is https://github.com/brechtsanders/winlibs_mingw/releases/download/13.1.0-16.0.5-11.0.0-ucrt-r5/winlibs-x86_64-posix-seh-gcc-13.1.0-mingw-w64ucrt-11.0.0-r5.zip
+# Many other distributions I tested don't work in some cases or don't have required tools.
+# Also, standalone Cmake installed globally via .msi package does not produce working library, you should use MinGW's Cmake.
+# Example of export:
+# export PATH=/c/MinGW/bin:/c/ghcup/bin:/c/Program\ Files/Amazon\ Corretto/jdk17.0.9_8/bin/:$PATH
+# If you use Msys2, use UCRT64 (NOT Mingw64, because it will crash on launch because of non-posix threads), install these packages:
+# pacman -S perl make mingw-w64-ucrt-x86_64-cmake mingw-w64-ucrt-x86_64-gcc
+# and export path to ghcup/bin and java
+
 cd $root_dir
 mkdir dist-newstyle 2>/dev/null || true
 
@@ -27,7 +37,7 @@ if [ ! -f dist-newstyle/openssl-1.1.1w/libcrypto-1_1-x64.dll ]; then
 	cd openssl-1.1.1w
 	./Configure mingw64
 	make
-	cd -
+	cd ../../
 fi
 openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-1.1.1w | sed 's#/\([a-z]\)#\1:#' | sed 's#/#\\#g')
 rm -rf $BUILD_DIR 2>/dev/null || true
