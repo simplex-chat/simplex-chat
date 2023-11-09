@@ -60,6 +60,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import qualified Simplex.Messaging.TMap as TM
+import qualified Simplex.Messaging.Transport as T
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2ClientError, closeHTTP2Client)
 import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
@@ -180,7 +181,7 @@ startRemoteHost' rh_ = do
       let rhClient = mkRemoteHostClient httpClient sessionKeys storePath hostInfo
       pollAction <- async $ pollEvents remoteHostId rhClient
       withRemoteHostSession rhKey' $ \case
-        RHSessionConfirmed RHPendingSession {} -> Right ((), RHSessionConnected {rhClient, pollAction, storePath})
+        RHSessionConfirmed RHPendingSession {} -> Right ((), RHSessionConnected {tls, rhClient, pollAction, storePath})
         _ -> Left $ ChatErrorRemoteHost rhKey' RHEBadState
       chatWriteVar currentRemoteHost $ Just remoteHostId -- this is required for commands to be passed to remote host
       toView $ CRRemoteHostConnected rhi
@@ -224,13 +225,14 @@ cancelRemoteHost = \case
   RHSessionStarting -> pure ()
   RHSessionConnecting rhs -> cancelPendingSession rhs
   RHSessionConfirmed rhs -> cancelPendingSession rhs
-  RHSessionConnected {rhClient = RemoteHostClient {httpClient}, pollAction} -> do
+  RHSessionConnected {tls, rhClient = RemoteHostClient {httpClient}, pollAction} -> do
     uninterruptibleCancel pollAction
     closeHTTP2Client httpClient
+    T.closeConnection tls
   where
     cancelPendingSession RHPendingSession {rchClient, rhsWaitSession} = do
-      cancelHostClient rchClient
       uninterruptibleCancel rhsWaitSession
+      cancelHostClient rchClient
 
 -- | Generate a random 16-char filepath without / in it by using base64url encoding.
 randomStorePath :: IO FilePath
@@ -485,7 +487,7 @@ verifyRemoteCtrlSession execChatCommand sessCode' = cleanupOnError $ do
   http2Server <- async $ attachHTTP2Server tls $ handleRemoteCommand execChatCommand sessionKeys remoteOutputQ
   void . forkIO $ monitor http2Server
   withRemoteCtrlSession $ \case
-    RCSessionPendingConfirmation {} -> Right ((), RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, http2Server, remoteOutputQ})
+    RCSessionPendingConfirmation {} -> Right ((), RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, tls, http2Server, remoteOutputQ})
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   pure $ remoteCtrlInfo rc True
   where
@@ -506,8 +508,9 @@ verifyRemoteCtrlSession execChatCommand sessCode' = cleanupOnError $ do
     monitor server = do
       waitCatch server >>= \case
         Left err | Just (BadThingHappen innerErr) <- fromException err -> logWarn $ "HTTP2 server crashed with internal " <> tshow innerErr
-        Left err | isNothing (fromException @AsyncCancelled err) -> logError $ "HTTP2 server crashed with " <> tshow err
+        Left err | Nothing <- fromException @AsyncCancelled err -> logError $ "HTTP2 server crashed with " <> tshow err
         _ -> logInfo "HTTP2 server stopped"
+      withRemoteCtrlSession_ (\s -> pure (s, Nothing)) >>= mapM_ (liftIO . cancelRemoteCtrl) -- cancel session threads, if any
       toView CRRemoteCtrlStopped
 
 stopRemoteCtrl :: ChatMonad m => m ()
@@ -519,14 +522,15 @@ cancelRemoteCtrl :: RemoteCtrlSession -> IO ()
 cancelRemoteCtrl = \case
   RCSessionStarting -> pure ()
   RCSessionConnecting {rcsClient, rcsWaitSession} -> do
-    cancelCtrlClient rcsClient
     uninterruptibleCancel rcsWaitSession
+    cancelCtrlClient rcsClient
   RCSessionPendingConfirmation {rcsClient, rcsWaitSession} -> do
-    cancelCtrlClient rcsClient
     uninterruptibleCancel rcsWaitSession
-  RCSessionConnected {rcsClient, http2Server} -> do
     cancelCtrlClient rcsClient
+  RCSessionConnected {rcsClient, tls, http2Server} -> do
     uninterruptibleCancel http2Server
+    T.closeConnection tls
+    cancelCtrlClient rcsClient
 
 deleteRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m ()
 deleteRemoteCtrl rcId = do

@@ -20,6 +20,7 @@ import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Types
 import Simplex.Messaging.Crypto.File (CryptoFile)
+import Simplex.Messaging.Transport (TLS)
 
 data RemoteHostClient = RemoteHostClient
   { hostEncoding :: PlatformEncoding,
@@ -41,7 +42,7 @@ data RemoteHostSession
   = RHSessionStarting
   | RHSessionConnecting {rhPendingSession :: RHPendingSession}
   | RHSessionConfirmed {rhPendingSession :: RHPendingSession}
-  | RHSessionConnected {rhClient :: RemoteHostClient, pollAction :: Async (), storePath :: FilePath}
+  | RHSessionConnected {tls :: TLS, rhClient :: RemoteHostClient, pollAction :: Async (), storePath :: FilePath}
 
 data RemoteProtocolError
   = -- | size prefix is malformed

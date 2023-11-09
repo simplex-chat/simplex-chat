@@ -34,8 +34,8 @@ import UnliftIO.Directory
 remoteTests :: SpecWith FilePath
 remoteTests = describe "Remote" $ do
   describe "protocol handshake" $ do
-    it "connects with new pairing" remoteHandshakeTest
-    it "connects with new pairing (again)" remoteHandshakeTest -- leaking servers regression check
+    it "connects with new pairing (stops mobile)" $ remoteHandshakeTest False
+    it "connects with new pairing (stops desktop)" $ remoteHandshakeTest True
     it "connects with stored pairing" remoteHandshakeStoredTest
   it "sends messages" remoteMessageTest
   describe "remote files" $ do
@@ -44,8 +44,8 @@ remoteTests = describe "Remote" $ do
 
 -- * Chat commands
 
-remoteHandshakeTest :: HasCallStack => FilePath -> IO ()
-remoteHandshakeTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+remoteHandshakeTest :: HasCallStack => Bool -> FilePath -> IO ()
+remoteHandshakeTest viaDesktop = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
   desktop ##> "/list remote hosts"
   desktop <## "No remote hosts"
   mobile ##> "/list remote ctrls"
@@ -61,7 +61,7 @@ remoteHandshakeTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile deskt
   mobile <## "Remote controllers:"
   mobile <## "1. My desktop (active)"
 
-  stopMobile mobile desktop `catchAny` (logError . tshow)
+  if viaDesktop then stopDesktop mobile desktop else stopMobile mobile desktop
 
   desktop ##> "/delete remote host 1"
   desktop <## "ok"
@@ -81,7 +81,7 @@ remoteHandshakeStoredTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile
 
   logNote "Starting stored session"
   startRemoteStored mobile desktop
-  stopMobile mobile desktop `catchAny` (logError . tshow)
+  stopDesktop mobile desktop `catchAny` (logError . tshow)
 
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
@@ -398,10 +398,12 @@ stopMobile :: HasCallStack => TestCC -> TestCC -> IO ()
 stopMobile mobile desktop = do
   logWarn "stopping via mobile"
   mobile ##> "/stop remote ctrl"
-  mobile <## "ok"
-  concurrently_
-    (mobile <## "remote controller stopped")
-    (eventually 3 $ desktop <## "remote host 1 stopped")
+  concurrentlyN_
+    [ do
+        mobile <## "remote controller stopped"
+        mobile <## "ok",
+      eventually 3 $ desktop <## "remote host 1 stopped"
+    ]
 
 -- | Run action with extended timeout
 eventually :: Int -> IO a -> IO a

@@ -16,7 +16,6 @@
 
 module Simplex.Chat.Controller where
 
-import Simplex.RemoteControl.Invitation (RCSignedInvitation)
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Exception
@@ -29,6 +28,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (ord)
@@ -70,16 +70,16 @@ import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServerWithAuth, userProtocol)
 import Simplex.Messaging.TMap (TMap)
-import Simplex.Messaging.Transport (simplexMQVersion)
+import Simplex.Messaging.Transport (TLS, simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, liftEitherError, tryAllErrors, (<$$>))
 import Simplex.Messaging.Version
+import Simplex.RemoteControl.Client
+import Simplex.RemoteControl.Invitation (RCSignedInvitation)
+import Simplex.RemoteControl.Types
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
 import UnliftIO.STM
-import Data.Bifunctor (first)
-import Simplex.RemoteControl.Client
-import Simplex.RemoteControl.Types
 
 versionNumber :: String
 versionNumber = showVersion SC.version
@@ -1092,6 +1092,7 @@ data RemoteCtrlSession
       }
   | RCSessionConnected
       { remoteCtrlId :: RemoteCtrlId,
+        tls :: TLS,
         rcsClient :: RCCtrlClient,
         rcsSession :: RCCtrlSession,
         http2Server :: Async (),
