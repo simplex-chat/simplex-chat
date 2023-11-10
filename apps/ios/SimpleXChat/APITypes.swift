@@ -90,6 +90,7 @@ public enum ChatCommand {
     case apiSetConnectionIncognito(connId: Int64, incognito: Bool)
     case apiConnectPlan(userId: Int64, connReq: String)
     case apiConnect(userId: Int64, incognito: Bool, connReq: String)
+    case apiConnectContactViaAddress(userId: Int64, incognito: Bool, contactId: Int64)
     case apiDeleteChat(type: ChatType, id: Int64, notify: Bool?)
     case apiClearChat(type: ChatType, id: Int64)
     case apiListContacts(userId: Int64)
@@ -226,6 +227,7 @@ public enum ChatCommand {
             case let .apiSetConnectionIncognito(connId, incognito): return "/_set incognito :\(connId) \(onOff(incognito))"
             case let .apiConnectPlan(userId, connReq): return "/_connect plan \(userId) \(connReq)"
             case let .apiConnect(userId, incognito, connReq): return "/_connect \(userId) incognito=\(onOff(incognito)) \(connReq)"
+            case let .apiConnectContactViaAddress(userId, incognito, contactId): return "/_connect contact \(userId) incognito=\(onOff(incognito)) \(contactId)"
             case let .apiDeleteChat(type, id, notify): if let notify = notify {
                 return "/_delete \(ref(type, id)) notify=\(onOff(notify))"
             } else {
@@ -297,6 +299,7 @@ public enum ChatCommand {
             case .apiSendMessage: return "apiSendMessage"
             case .apiUpdateChatItem: return "apiUpdateChatItem"
             case .apiDeleteChatItem: return "apiDeleteChatItem"
+            case .apiConnectContactViaAddress: return "apiConnectContactViaAddress"
             case .apiDeleteMemberChatItem: return "apiDeleteMemberChatItem"
             case .apiChatItemReaction: return "apiChatItemReaction"
             case .apiGetNtfToken: return "apiGetNtfToken"
@@ -478,6 +481,7 @@ public enum ChatResponse: Decodable, Error {
     case connectionPlan(user: UserRef, connectionPlan: ConnectionPlan)
     case sentConfirmation(user: UserRef)
     case sentInvitation(user: UserRef)
+    case sentInvitationToContact(user: UserRef, contact: Contact, customUserProfile: Profile?)
     case contactAlreadyExists(user: UserRef, contact: Contact)
     case contactRequestAlreadyAccepted(user: UserRef, contact: Contact)
     case contactDeleted(user: UserRef, contact: Contact)
@@ -622,6 +626,7 @@ public enum ChatResponse: Decodable, Error {
             case .connectionPlan: return "connectionPlan"
             case .sentConfirmation: return "sentConfirmation"
             case .sentInvitation: return "sentInvitation"
+            case .sentInvitationToContact: return "sentInvitationToContact"
             case .contactAlreadyExists: return "contactAlreadyExists"
             case .contactRequestAlreadyAccepted: return "contactRequestAlreadyAccepted"
             case .contactDeleted: return "contactDeleted"
@@ -763,6 +768,7 @@ public enum ChatResponse: Decodable, Error {
             case let .connectionPlan(u, connectionPlan): return withUser(u, String(describing: connectionPlan))
             case .sentConfirmation: return noDetails
             case .sentInvitation: return noDetails
+            case let .sentInvitationToContact(u, contact, _): return withUser(u, String(describing: contact))
             case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
             case let .contactRequestAlreadyAccepted(u, contact): return withUser(u, String(describing: contact))
             case let .contactDeleted(u, contact): return withUser(u, String(describing: contact))
@@ -902,6 +908,7 @@ public enum ContactAddressPlan: Decodable {
     case connectingConfirmReconnect
     case connectingProhibit(contact: Contact)
     case known(contact: Contact)
+    case contactViaAddress(contact: Contact)
 }
 
 public enum GroupLinkPlan: Decodable {

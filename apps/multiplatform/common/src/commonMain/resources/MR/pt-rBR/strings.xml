@@ -405,7 +405,6 @@
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Se você optar por rejeitar o remetente NÃO será notificado.</string>
     <string name="incorrect_code">Código de segurança incorreto!</string>
     <string name="install_simplex_chat_for_terminal">Instale o SimpleX para terminal</string>
-    <string name="full_name_optional__prompt">Nome Completo (opcional)</string>
     <string name="how_it_works">Como funciona</string>
     <string name="immune_to_spam_and_abuse">Imune a spam e abuso</string>
     <string name="icon_descr_flip_camera">Vire a câmera</string>
@@ -1097,7 +1096,6 @@
     <string name="stop_file__confirm">Parar</string>
     <string name="revoke_file__message">O arquivo será excluído dos servidores.</string>
     <string name="revoke_file__title">Revogar arquivo\?</string>
-    <string name="no_spaces">Sem espaços!</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d mensagens ignoradas</string>
     <string name="audio_video_calls">Chamadas de áudio/vídeo</string>
     <string name="calls_prohibited_with_this_contact">Chamadas de áudio/vídeo são proibidas.</string>

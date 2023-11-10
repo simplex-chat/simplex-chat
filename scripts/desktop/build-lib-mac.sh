@@ -5,6 +5,7 @@ set -e
 OS=mac
 ARCH="${1:-`uname -a | rev | cut -d' ' -f1 | rev`}"
 COMPOSE_ARCH=$ARCH
+GHC_VERSION=8.10.7
 
 if [ "$ARCH" == "arm64" ]; then
     ARCH=aarch64
