@@ -328,7 +328,7 @@
     <string name="smp_server_test_secure_queue">Zabezpečit frontu</string>
     <string name="service_notifications">Okamžitá oznámení!</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>V nastavení ji lze vypnout</b> - oznámení se budou zobrazovat pokud aplikace běží.]]></string>
-    <string name="turn_off_battery_optimization">Pro použití, prosím <b>povolte pro SimpleX běh na pozadí</b> v dalším dialogu. Jinak budou oznámení vypnuta.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Pro použití, prosím <b>povolte pro SimpleX běh na pozadí</b> v dalším dialogu. Jinak budou oznámení vypnuta.]]></string>
     <string name="periodic_notifications_desc">Aplikace pravidelně načítá nové zprávy - denně spotřebuje několik procent baterie. Aplikace nepoužívá push oznámení - data ze zařízení nejsou odesílána na servery.</string>
     <string name="enter_passphrase_notification_title">Je vyžadována přístupová fráze</string>
     <string name="enter_passphrase_notification_desc">Chcete-li dostávat oznámení, zadejte přístupovou frázi do databáze.</string>
@@ -1376,7 +1376,7 @@
     <string name="send_receipts_disabled_alert_msg">Tato skupina má více než %1$d členů, doručenky nejsou odeslány.</string>
     <string name="in_developing_desc">Tato funkce zatím není podporována. Vyzkoušejte další vydání.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Databáze bude zašifrována a heslo bude uloženo v klíčence.</string>
-    <string name="socks_proxy_setting_limitations"><b>Všimněte si prosím</b>: relé zpráv a souborů jsou připojeny prostřednictvím proxy SOCKS. Volání a odesílání náhledů odkazů používá přímé připojení.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Všimněte si prosím</b>: relé zpráv a souborů jsou připojeny prostřednictvím proxy SOCKS. Volání a odesílání náhledů odkazů používá přímé připojení.]]></string>
     <string name="encrypt_local_files">Šifrovat místní soubory</string>
     <string name="you_can_change_it_later">Náhodná přístupová fráze je uložena v nastavení jako prostý text.
 \nMůžete ji později změnit.</string>

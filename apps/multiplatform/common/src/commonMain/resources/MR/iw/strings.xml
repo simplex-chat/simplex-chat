@@ -1380,7 +1380,7 @@
     <string name="rcv_group_event_open_chat">פתח</string>
     <string name="v5_3_encrypt_local_files">הצפנת קבצים ומדיה מאוחסנים</string>
     <string name="error_creating_member_contact">שגיאה ביצירת איש קשר</string>
-    <string name="socks_proxy_setting_limitations"><b>שימו לב</b>: ממסרי הודעות וקבצים מחוברים דרך פרוקסי SOCKS. שיחות ושליחת תצוגות מקדימות של קישורים משתמשים בחיבור ישיר.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>שימו לב</b>: ממסרי הודעות וקבצים מחוברים דרך פרוקסי SOCKS. שיחות ושליחת תצוגות מקדימות של קישורים משתמשים בחיבור ישיר.]]></string>
     <string name="encrypt_local_files">הצפין קבצים מקומיים</string>
     <string name="v5_3_new_desktop_app">אפליקציית שולחן עבודה חדשה!</string>
     <string name="v5_3_new_interface_languages">6 שפות ממשק חדשות</string>
