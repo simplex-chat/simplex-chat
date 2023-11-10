@@ -675,6 +675,18 @@ private func connectionErrorAlert(_ r: ChatResponse) -> Alert {
     }
 }
 
+func apiConnectContactViaAddress(incognito: Bool, contactId: Int64) async -> (Contact?, Alert?) {
+    guard let userId = ChatModel.shared.currentUser?.userId else {
+        logger.error("apiConnectContactViaAddress: no current user")
+        return (nil, nil)
+    }
+    let r = await chatSendCmd(.apiConnectContactViaAddress(userId: userId, incognito: incognito, contactId: contactId))
+    if case let .sentInvitationToContact(_, contact, _) = r { return (contact, nil) }
+    logger.error("apiConnectContactViaAddress error: \(responseError(r))")
+    let alert = connectionErrorAlert(r)
+    return (nil, alert)
+}
+
 func apiDeleteChat(type: ChatType, id: Int64, notify: Bool? = nil) async throws {
     let r = await chatSendCmd(.apiDeleteChat(type: type, id: id, notify: notify), bgTask: false)
     if case .direct = type, case .contactDeleted = r { return }
@@ -1326,8 +1338,10 @@ func processReceivedMsg(_ res: ChatResponse) async {
         if active(user) && contact.directOrUsed {
             await MainActor.run {
                 m.updateContact(contact)
-                m.dismissConnReqView(contact.activeConn.id)
-                m.removeChat(contact.activeConn.id)
+                if let conn = contact.activeConn {
+                    m.dismissConnReqView(conn.id)
+                    m.removeChat(conn.id)
+                }
             }
         }
         if contact.directOrUsed {
@@ -1340,8 +1354,10 @@ func processReceivedMsg(_ res: ChatResponse) async {
         if active(user) && contact.directOrUsed {
             await MainActor.run {
                 m.updateContact(contact)
-                m.dismissConnReqView(contact.activeConn.id)
-                m.removeChat(contact.activeConn.id)
+                if let conn = contact.activeConn {
+                    m.dismissConnReqView(conn.id)
+                    m.removeChat(conn.id)
+                }
             }
         }
     case let .receivedContactRequest(user, contactRequest):
@@ -1480,9 +1496,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
 
         await MainActor.run {
             m.updateGroup(groupInfo)
-            if let hostContact = hostContact {
-                m.dismissConnReqView(hostContact.activeConn.id)
-                m.removeChat(hostContact.activeConn.id)
+            if let conn = hostContact?.activeConn {
+                m.dismissConnReqView(conn.id)
+                m.removeChat(conn.id)
             }
         }
     case let .groupLinkConnecting(user, groupInfo, hostMember):
