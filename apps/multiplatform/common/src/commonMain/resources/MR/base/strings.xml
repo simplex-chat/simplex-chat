@@ -289,6 +289,8 @@
   <string name="chat_with_developers">Chat with the developers</string>
   <string name="you_have_no_chats">You have no chats</string>
   <string name="no_filtered_chats">No filtered chats</string>
+  <string name="contact_tap_to_connect">Tap to Connect</string>
+  <string name="connect_with_contact_name_question">Connect with %1$s?</string>
 
   <!-- ChatView.kt -->
   <string name="no_selected_chat">No selected chat</string>
@@ -1228,7 +1230,7 @@
   <string name="error_updating_link_for_group">Error updating group link</string>
   <string name="error_deleting_link_for_group">Error deleting group link</string>
   <string name="error_creating_member_contact">Error creating member contact</string>
-  <string name="error_sending_message_contact_invitation">Sending message contact invitation</string>
+  <string name="error_sending_message_contact_invitation">Error sending invitation</string>
   <string name="only_group_owners_can_change_prefs">Only group owners can change group preferences.</string>
   <string name="address_section_title">Address</string>
   <string name="share_address">Share address</string>
@@ -1640,7 +1642,6 @@
   <string name="connect_plan_this_is_your_link_for_group_vName">This is your link for group %1$s!</string>
   <string name="connect_plan_open_group">Open group</string>
   <string name="connect_plan_repeat_join_request">Repeat join request?</string>
-  <string name="connect_plan_you_are_already_joining_the_group_via_this_link">You are already joining the group via this link!</string>
   <string name="connect_plan_group_already_exists">Group already exists!</string>
   <string name="connect_plan_you_are_already_joining_the_group_vName">You are already joining the group %1$s.</string>
   <string name="connect_plan_already_joining_the_group">Already joining the group!</string>

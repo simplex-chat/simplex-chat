@@ -338,7 +338,7 @@ struct ChatInfoView: View {
                 verify: { code in
                     if let r = apiVerifyContact(chat.chatInfo.apiId, connectionCode: code) {
                         let (verified, existingCode) = r
-                        contact.activeConn.connectionCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
+                        contact.activeConn?.connectionCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
                         connectionCode = existingCode
                         DispatchQueue.main.async {
                             chat.chatInfo = .direct(contact: contact)

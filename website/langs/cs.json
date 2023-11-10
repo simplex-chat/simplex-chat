@@ -2,7 +2,7 @@
     "simplex-private-card-10-point-2": "Umožňuje doručovat zprávy bez identifikátoru uživatelských profilů, což poskytuje lepší soukromí metadat než alternativy.",
     "simplex-unique-4-overlay-1-title": "Plně decentralizované &mdash; uživatelé vlastní síť SimpleX",
     "hero-overlay-card-1-p-6": "Přečtěte si více v <a href='https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md' target='_blank'>SimpleX whitepaper</a>.",
-    "hero-overlay-card-1-p-2": "Pro doručování zpráv používá SimpleX namísto ID uživatelů používaných všemi ostatními platformami dočasné anonymní párové identifikátory front zpráv, oddělené pro každé z vašich připojení - neexistují žádné dlouhodobé identifikátory.",
+    "hero-overlay-card-1-p-2": "Pro doručování zpráv používá SimpleX namísto ID uživatelů používaných všemi ostatními platformami dočasné anonymní párové identifikátory front zpráv, oddělené pro každé z vašich připojení &mdash; neexistují žádné dlouhodobé identifikátory.",
     "hero-overlay-card-1-p-3": "Definujete, které servery se mají používat k přijímání zpráv, vašich kontaktů &mdash; servery, které používáte k odesílání zpráv. Každá konverzace bude pravděpodobně používat dva různé servery.",
     "hero-overlay-card-2-p-3": "I v těch nejsoukromějších aplikacích, které používají služby Tor v3, pokud mluvíte se dvěma různými kontakty prostřednictvím stejného profilu, může být prokázáno, že jsou spojeni se stejnou osobou.",
     "simplex-network-overlay-card-1-p-1": "<a href='https://en.wikipedia.org/wiki/Peer-to-peer'>P2P</a> protokoly a aplikace pro zasílání zpráv mají různé problémy, které je činí méně spolehlivými než SimpleX, složitějšími na analýzu a zranitelnými vůči několika typům útoků.",

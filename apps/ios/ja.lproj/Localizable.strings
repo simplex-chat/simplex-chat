@@ -182,6 +182,9 @@
 "%lld minutes" = "%lld 分";
 
 /* No comment provided by engineer. */
+"%lld new interface languages" = "%lldつの新しいインターフェース言語";
+
+/* No comment provided by engineer. */
 "%lld second(s)" = "%lld 秒";
 
 /* No comment provided by engineer. */
@@ -444,6 +447,9 @@
 "App build: %@" = "アプリのビルド: %@";
 
 /* No comment provided by engineer. */
+"App encrypts new local files (except videos)." = "アプリは新しいローカルファイル（ビデオを除く）を暗号化します。";
+
+/* No comment provided by engineer. */
 "App icon" = "アプリのアイコン";
 
 /* No comment provided by engineer. */
@@ -535,6 +541,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "あなたと連絡相手が音声メッセージを送信できます。";
+
+/* No comment provided by engineer. */
+"Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "ブルガリア語、フィンランド語、タイ語、ウクライナ語 - ユーザーと [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)に感謝します！";
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "チャット プロファイル経由 (デフォルト) または [接続経由](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
@@ -709,19 +718,10 @@
 "Connect" = "接続";
 
 /* No comment provided by engineer. */
-"Connect directly" = "直接接続する";
-
-/* No comment provided by engineer. */
 "Connect incognito" = "シークレットモードで接続";
 
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "SimpleX Chat 開発者に接続します。";
-
-/* No comment provided by engineer. */
-"Connect via contact link" = "連絡先リンク経由で接続しますか？";
-
-/* No comment provided by engineer. */
-"Connect via group link?" = "グループリンク経由で接続しますか？";
 
 /* No comment provided by engineer. */
 "Connect via link" = "リンク経由で接続";
@@ -790,9 +790,6 @@
 "Contact already exists" = "連絡先に既に存在します";
 
 /* No comment provided by engineer. */
-"Contact and all messages will be deleted - this cannot be undone!" = "連絡先と全メッセージが削除されます (※元に戻せません※)！";
-
-/* No comment provided by engineer. */
 "contact has e2e encryption" = "連絡先はエンドツーエンド暗号化があります";
 
 /* No comment provided by engineer. */
@@ -842,6 +839,9 @@
 
 /* No comment provided by engineer. */
 "Create link" = "リンクを生成する";
+
+/* No comment provided by engineer. */
+"Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "[デスクトップアプリ](https://simplex.chat/downloads/)で新しいプロファイルを作成します。 💻";
 
 /* No comment provided by engineer. */
 "Create one-time invitation link" = "使い捨ての招待リンクを生成する";
@@ -994,9 +994,6 @@
 "Delete Contact" = "連絡先を削除";
 
 /* No comment provided by engineer. */
-"Delete contact?" = "連絡先を削除しますか？";
-
-/* No comment provided by engineer. */
 "Delete database" = "データベースを削除";
 
 /* server test step */
@@ -1081,6 +1078,9 @@
 "Delivery receipts are disabled!" = "Delivery receipts are disabled!";
 
 /* No comment provided by engineer. */
+"Delivery receipts!" = "配信通知！";
+
+/* No comment provided by engineer. */
 "Description" = "説明";
 
 /* No comment provided by engineer. */
@@ -1147,10 +1147,7 @@
 "Disconnect" = "切断";
 
 /* No comment provided by engineer. */
-"Display name" = "表示名";
-
-/* No comment provided by engineer. */
-"Display name:" = "表示名：";
+"Discover and join groups" = "グループを見つけて参加する";
 
 /* No comment provided by engineer. */
 "Do it later" = "後で行う";
@@ -1244,6 +1241,9 @@
 
 /* No comment provided by engineer. */
 "Encrypt local files" = "ローカルファイルを暗号化する";
+
+/* No comment provided by engineer. */
+"Encrypt stored files & media" = "保存されたファイルとメディアを暗号化する";
 
 /* No comment provided by engineer. */
 "Encrypted database" = "暗号化済みデータベース";
@@ -1354,6 +1354,9 @@
 "Error creating group link" = "グループリンク生成にエラー発生";
 
 /* No comment provided by engineer. */
+"Error creating member contact" = "メンバー連絡先の作成中にエラーが発生";
+
+/* No comment provided by engineer. */
 "Error creating profile!" = "プロフィール作成にエラー発生！";
 
 /* No comment provided by engineer. */
@@ -1427,6 +1430,9 @@
 
 /* No comment provided by engineer. */
 "Error sending email" = "メールの送信にエラー発生";
+
+/* No comment provided by engineer. */
+"Error sending member contact invitation" = "招待メッセージの送信エラー";
 
 /* No comment provided by engineer. */
 "Error sending message" = "メッセージ送信にエラー発生";
@@ -2116,6 +2122,9 @@
 "New database archive" = "新しいデータベースのアーカイブ";
 
 /* No comment provided by engineer. */
+"New desktop app!" = "新しいデスクトップアプリ！";
+
+/* No comment provided by engineer. */
 "New display name" = "新たな表示名";
 
 /* No comment provided by engineer. */
@@ -2191,7 +2200,8 @@
 "observer" = "オブザーバー";
 
 /* enabled status
-   group pref value */
+   group pref value
+   time to disappear */
 "off" = "オフ";
 
 /* No comment provided by engineer. */
@@ -2273,6 +2283,9 @@
 "Only your contact can send voice messages." = "音声メッセージを送れるのはあなたの連絡相手だけです。";
 
 /* No comment provided by engineer. */
+"Open" = "開く";
+
+/* No comment provided by engineer. */
 "Open chat" = "チャットを開く";
 
 /* authentication reason */
@@ -2289,12 +2302,6 @@
 
 /* No comment provided by engineer. */
 "Opening database…" = "データベースを開いています…";
-
-/* No comment provided by engineer. */
-"Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "ブラウザでリンクを開くと接続のプライバシーとセキュリティが下がる可能性があります。信頼されないSimpleXリンクは読み込まれません。";
-
-/* No comment provided by engineer. */
-"or chat with the developers" = "または開発者とチャットする";
 
 /* member role */
 "owner" = "オーナー";
@@ -2744,6 +2751,9 @@
 "Send direct message" = "ダイレクトメッセージを送信";
 
 /* No comment provided by engineer. */
+"Send direct message to connect" = "ダイレクトメッセージを送信して接続する";
+
+/* No comment provided by engineer. */
 "Send disappearing message" = "消えるメッセージを送信";
 
 /* No comment provided by engineer. */
@@ -2903,6 +2913,9 @@
 "SimpleX one-time invitation" = "SimpleX使い捨て招待リンク";
 
 /* No comment provided by engineer. */
+"Simplified incognito mode" = "シークレットモードの簡素化";
+
+/* No comment provided by engineer. */
 "Skip" = "スキップ";
 
 /* No comment provided by engineer. */
@@ -3048,9 +3061,6 @@
 
 /* No comment provided by engineer. */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "暗号化は機能しており、新しい暗号化への同意は必要ありません。接続エラーが発生する可能性があります！";
-
-/* No comment provided by engineer. */
-"The group is fully decentralized – it is visible only to the members." = "グループは完全分散型で、メンバーしか内容を見れません。";
 
 /* No comment provided by engineer. */
 "The hash of the previous message is different." = "以前のメッセージとハッシュ値が異なります。";
@@ -3539,9 +3549,6 @@
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "起動時、または非アクティブ状態で30秒が経った後に戻ると、認証する必要となります。";
 
 /* No comment provided by engineer. */
-"You will join a group this link refers to and connect to its group members." = "このリンクのグループに参加し、そのメンバーに繋がります。";
-
-/* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "ミュートされたプロフィールがアクティブな場合でも、そのプロフィールからの通話や通知は引き続き受信します。";
 
 /* No comment provided by engineer. */
@@ -3570,9 +3577,6 @@
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "チャット データベースは暗号化されていません - 暗号化するにはパスフレーズを設定してください。";
-
-/* No comment provided by engineer. */
-"Your chat profile will be sent to group members" = "あなたのチャットプロフィールが他のグループメンバーに送られます";
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "あなたのチャットプロフィール";

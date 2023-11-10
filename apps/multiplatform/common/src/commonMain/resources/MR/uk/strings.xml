@@ -660,7 +660,6 @@
     <string name="hidden_profile_password">Прихований пароль профілю</string>
     <string name="profile_is_only_shared_with_your_contacts">Профіль доступний лише вашим контактам.</string>
     <string name="display_name_cannot_contain_whitespace">Ім\'я не може містити пробілів.</string>
-    <string name="full_name_optional__prompt">Повне ім\'я (необов\'язково)</string>
     <string name="how_to_use_markdown">Як використовувати націнку</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Ви можете використовувати розмітку для форматування повідомлень:</string>
     <string name="create_your_profile">Створіть свій профіль</string>
@@ -1207,7 +1206,6 @@
     <string name="icon_descr_address">SimpleX Адреса</string>
     <string name="show_QR_code">Показати QR-код</string>
     <string name="joining_group">Приєднання до групи</string>
-    <string name="no_spaces">Ніяких пробілів!</string>
     <string name="italic_text">курсив</string>
     <string name="webrtc_ice_servers">Сервери WebRTC ICE</string>
     <string name="allow_accepting_calls_from_lock_screen">Увімкніть дзвінки з екрана блокування через Налаштування.</string>

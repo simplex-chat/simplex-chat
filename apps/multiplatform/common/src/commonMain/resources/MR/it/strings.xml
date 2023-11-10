@@ -351,7 +351,6 @@
     <string name="edit_image">Modifica immagine</string>
     <string name="exit_without_saving">Esci senza salvare</string>
     <string name="full_name__field">Nome completo:</string>
-    <string name="full_name_optional__prompt">Nome completo (facoltativo)</string>
     <string name="how_to_use_markdown">Come usare il markdown</string>
     <string name="icon_descr_audio_call">chiamata audio</string>
     <string name="audio_call_no_encryption">chiamata audio (non crittografata e2e)</string>
@@ -420,7 +419,7 @@
     <string name="rcv_group_event_changed_your_role">cambiato il tuo ruolo in %s</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">cambio indirizzo…</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">cambio indirizzo per %s…</string>
-    <string name="rcv_group_event_member_connected">connesso/a</string>
+    <string name="rcv_group_event_member_connected">si è connesso/a</string>
     <string name="group_member_status_connected">connesso/a</string>
     <string name="group_member_status_accepted">in connessione (accettato)</string>
     <string name="group_member_status_announced">in connessione (annunciato)</string>
@@ -771,8 +770,8 @@
     <string name="group_member_role_member">membro</string>
     <string name="group_member_role_owner">proprietario</string>
     <string name="group_member_status_removed">ha rimosso</string>
-    <string name="rcv_group_event_member_deleted">rimosso %1$s</string>
-    <string name="rcv_group_event_user_deleted">sei stato/a rimosso/a</string>
+    <string name="rcv_group_event_member_deleted">ha rimosso %1$s</string>
+    <string name="rcv_group_event_user_deleted">ti ha rimosso/a</string>
     <string name="group_invitation_tap_to_join">Tocca per entrare</string>
     <string name="group_invitation_tap_to_join_incognito">Toccare per entrare in incognito</string>
     <string name="alert_message_no_group">Questo gruppo non esiste più.</string>
@@ -820,7 +819,7 @@
     <string name="network_option_protocol_timeout">Scadenza del protocollo</string>
     <string name="receiving_via">Ricezione via</string>
     <string name="network_options_reset_to_defaults">Ripristina i predefiniti</string>
-    <string name="network_options_revert">Annulla</string>
+    <string name="network_options_revert">Ripristina</string>
     <string name="network_options_save">Salva</string>
     <string name="save_group_profile">Salva il profilo del gruppo</string>
     <string name="network_option_seconds_label">sec</string>
@@ -1105,7 +1104,6 @@
     <string name="revoke_file__title">Revocare il file\?</string>
     <string name="stop_file__confirm">Ferma</string>
     <string name="stop_rcv_file__title">Fermare la ricezione del file\?</string>
-    <string name="no_spaces">Niente spazi!</string>
     <string name="allow_calls_only_if">Consenti le chiamate solo se il tuo contatto le consente.</string>
     <string name="calls_prohibited_with_this_contact">Le chiamate audio/video sono vietate.</string>
     <string name="both_you_and_your_contact_can_make_calls">Sia tu che il tuo contatto potete effettuare chiamate.</string>
@@ -1403,4 +1401,9 @@
     <string name="v5_3_discover_join_groups_descr">- connessione al servizio directory (BETA)!
 \n- ricevute di consegna (fino a 20 membri).
 \n- più veloce e più stabile.</string>
+    <string name="rcv_group_event_open_chat">Apri</string>
+    <string name="error_creating_member_contact">Errore di creazione del contatto</string>
+    <string name="compose_send_direct_message_to_connect">Invia messaggio diretto per connetterti</string>
+    <string name="member_contact_send_direct_message">invia messaggio diretto</string>
+    <string name="rcv_group_event_member_created_contact">si è connesso/a direttamente</string>
 </resources>
