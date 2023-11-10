@@ -141,9 +141,9 @@ cmake {
     val main by creating {
       cmakeLists.set(file("$cppPath/desktop/CMakeLists.txt"))
       targetMachines.addAll(compileMachineTargets.toSet())
-      if (machines.host.name.contains("win")) {
-        cmakeArgs.add("-G MinGW Makefiles")
-      }
+      //if (machines.host.name.contains("win")) {
+      //  cmakeArgs.add("-G MinGW Makefiles")
+      //}
     }
   }
 }
