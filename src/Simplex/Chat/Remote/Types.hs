@@ -10,25 +10,49 @@
 module Simplex.Chat.Remote.Types where
 
 import Control.Concurrent.Async (Async)
+import Control.Concurrent.STM (TVar)
 import Control.Exception (Exception)
+import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson.TH as J
+import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Simplex.Chat.Remote.AppVersion
+import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.SNTRUP761 (KEMHybridSecret)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Types
 import Simplex.Messaging.Crypto.File (CryptoFile)
+import Simplex.Messaging.Transport (TLS)
 
 data RemoteHostClient = RemoteHostClient
   { hostEncoding :: PlatformEncoding,
     hostDeviceName :: Text,
     httpClient :: HTTP2Client,
-    sessionKeys :: HostSessKeys,
+    encryption :: RemoteCrypto,
     encryptHostFiles :: Bool,
     storePath :: FilePath
   }
+
+data RemoteCrypto = RemoteCrypto
+  { drg :: TVar ChaChaDRG,
+    counter :: TVar Int64,
+    sessionCode :: ByteString,
+    hybridKey :: KEMHybridSecret,
+    signatures :: RemoteSignatures
+  }
+
+data RemoteSignatures
+  = RSSign
+    { idPrivKey :: C.PrivateKeyEd25519,
+      sessPrivKey :: C.PrivateKeyEd25519
+    }
+  | RSVerify
+    { idPubKey :: C.PublicKeyEd25519,
+      sessPubKey :: C.PublicKeyEd25519
+    }
 
 data RHPendingSession = RHPendingSession
   { rhKey :: RHKey,
@@ -40,14 +64,16 @@ data RHPendingSession = RHPendingSession
 data RemoteHostSession
   = RHSessionStarting
   | RHSessionConnecting {rhPendingSession :: RHPendingSession}
-  | RHSessionConfirmed {rhPendingSession :: RHPendingSession}
-  | RHSessionConnected {rhClient :: RemoteHostClient, pollAction :: Async (), storePath :: FilePath}
+  | RHSessionConfirmed {tls :: TLS, rhPendingSession :: RHPendingSession}
+  | RHSessionConnected {tls :: TLS, rhClient :: RemoteHostClient, pollAction :: Async (), storePath :: FilePath}
 
 data RemoteProtocolError
   = -- | size prefix is malformed
     RPEInvalidSize
   | -- | failed to parse RemoteCommand or RemoteResponse
     RPEInvalidJSON {invalidJSON :: String}
+  | RPEInvalidBody {invalidBody :: String}
+  | PRESessionCode
   | RPEIncompatibleEncoding
   | RPEUnexpectedFile
   | RPENoFile
@@ -57,6 +83,7 @@ data RemoteProtocolError
     RPEUnexpectedResponse {response :: Text}
   | -- | A file already exists in the destination position
     RPEStoredFileExists
+  | PRERemoteControl {rcError :: RCErrorType}
   | RPEHTTP2 {http2Error :: Text}
   | RPEException {someException :: Text}
   deriving (Show, Exception)

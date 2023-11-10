@@ -34,18 +34,20 @@ import UnliftIO.Directory
 remoteTests :: SpecWith FilePath
 remoteTests = describe "Remote" $ do
   describe "protocol handshake" $ do
-    it "connects with new pairing" remoteHandshakeTest
-    it "connects with new pairing (again)" remoteHandshakeTest -- leaking servers regression check
+    it "connects with new pairing (stops mobile)" $ remoteHandshakeTest False
+    it "connects with new pairing (stops desktop)" $ remoteHandshakeTest True
     it "connects with stored pairing" remoteHandshakeStoredTest
   it "sends messages" remoteMessageTest
   describe "remote files" $ do
     it "store/get/send/receive files" remoteStoreFileTest
     it "should send files from CLI wihtout /store" remoteCLIFileTest
+  it "switches remote hosts" switchRemoteHostTest
+  it "indicates remote hosts" indicateRemoteHostTest
 
 -- * Chat commands
 
-remoteHandshakeTest :: HasCallStack => FilePath -> IO ()
-remoteHandshakeTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+remoteHandshakeTest :: HasCallStack => Bool -> FilePath -> IO ()
+remoteHandshakeTest viaDesktop = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
   desktop ##> "/list remote hosts"
   desktop <## "No remote hosts"
   mobile ##> "/list remote ctrls"
@@ -61,7 +63,7 @@ remoteHandshakeTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile deskt
   mobile <## "Remote controllers:"
   mobile <## "1. My desktop (active)"
 
-  stopMobile mobile desktop `catchAny` (logError . tshow)
+  if viaDesktop then stopDesktop mobile desktop else stopMobile mobile desktop
 
   desktop ##> "/delete remote host 1"
   desktop <## "ok"
@@ -81,7 +83,7 @@ remoteHandshakeStoredTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile
 
   logNote "Starting stored session"
   startRemoteStored mobile desktop
-  stopMobile mobile desktop `catchAny` (logError . tshow)
+  stopDesktop mobile desktop `catchAny` (logError . tshow)
 
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
@@ -323,6 +325,56 @@ remoteCLIFileTest = testChatCfg3 cfg aliceProfile aliceDesktopProfile bobProfile
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp/tmp"}
 
+switchRemoteHostTest :: FilePath -> IO ()
+switchRemoteHostTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
+  startRemote mobile desktop
+  contactBob desktop bob
+
+  desktop ##> "/contacts"
+  desktop <## "bob (Bob)"
+
+  desktop ##> "/switch remote host local"
+  desktop <## "Using local profile"
+  desktop ##> "/contacts"
+
+  desktop ##> "/switch remote host 1"
+  desktop <## "Using remote host 1 (Mobile)"
+  desktop ##> "/contacts"
+  desktop <## "bob (Bob)"
+
+  desktop ##> "/switch remote host 123"
+  desktop <## "remote host 123 error: RHEMissing"
+
+  stopDesktop mobile desktop
+  desktop ##> "/contacts"
+  desktop ##> "/switch remote host 1"
+  desktop <## "remote host 1 error: RHEInactive"
+  desktop ##> "/contacts"
+
+indicateRemoteHostTest :: FilePath -> IO ()
+indicateRemoteHostTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cathProfile $ \mobile desktop bob cath -> do
+  connectUsers desktop cath
+  startRemote mobile desktop
+  contactBob desktop bob
+  -- remote contact -> remote host
+  bob #> "@alice hi"
+  desktop <#. "bob> hi"
+  -- local -> remote
+  cath #> "@alice_desktop hello"
+  (desktop, "[local] ") ^<# "cath> hello"
+  -- local -> local
+  desktop ##> "/switch remote host local"
+  desktop <## "Using local profile"
+  desktop <##> cath
+  -- local -> remote
+  bob #> "@alice what's up?"
+  (desktop, "[remote: 1] ") ^<# "bob> what's up?"
+
+  -- local -> local after disconnect
+  stopDesktop mobile desktop
+  desktop <##> cath
+  cath <##> desktop
+
 -- * Utils
 
 startRemote :: TestCC -> TestCC -> IO ()
@@ -398,10 +450,12 @@ stopMobile :: HasCallStack => TestCC -> TestCC -> IO ()
 stopMobile mobile desktop = do
   logWarn "stopping via mobile"
   mobile ##> "/stop remote ctrl"
-  mobile <## "ok"
-  concurrently_
-    (mobile <## "remote controller stopped")
-    (eventually 3 $ desktop <## "remote host 1 stopped")
+  concurrentlyN_
+    [ do
+        mobile <## "remote controller stopped"
+        mobile <## "ok",
+      eventually 3 $ desktop <## "remote host 1 stopped"
+    ]
 
 -- | Run action with extended timeout
 eventually :: Int -> IO a -> IO a

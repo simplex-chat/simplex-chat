@@ -182,6 +182,9 @@
 "%lld minutes" = "%lld minuuttia";
 
 /* No comment provided by engineer. */
+"%lld new interface languages" = "%lld uutta käyttöliittymän kieltä";
+
+/* No comment provided by engineer. */
 "%lld second(s)" = "%lld sekunti(a)";
 
 /* No comment provided by engineer. */
@@ -709,19 +712,10 @@
 "Connect" = "Yhdistä";
 
 /* No comment provided by engineer. */
-"Connect directly" = "Yhdistä suoraan";
-
-/* No comment provided by engineer. */
 "Connect incognito" = "Yhdistä Incognito";
 
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "ole yhteydessä SimpleX Chat -kehittäjiin.";
-
-/* No comment provided by engineer. */
-"Connect via contact link" = "Yhdistä kontaktilinkillä";
-
-/* No comment provided by engineer. */
-"Connect via group link?" = "Yhdistetäänkö ryhmälinkin kautta?";
 
 /* No comment provided by engineer. */
 "Connect via link" = "Yhdistä linkin kautta";
@@ -790,9 +784,6 @@
 "Contact already exists" = "Kontakti on jo olemassa";
 
 /* No comment provided by engineer. */
-"Contact and all messages will be deleted - this cannot be undone!" = "Kontakti ja kaikki viestit poistetaan - tätä ei voi perua!";
-
-/* No comment provided by engineer. */
 "contact has e2e encryption" = "kontaktilla on e2e-salaus";
 
 /* No comment provided by engineer. */
@@ -842,6 +833,9 @@
 
 /* No comment provided by engineer. */
 "Create link" = "Luo linkki";
+
+/* No comment provided by engineer. */
+"Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "Luo uusi profiili [työpöytäsovelluksessa](https://simplex.chat/downloads/). 💻";
 
 /* No comment provided by engineer. */
 "Create one-time invitation link" = "Luo kertakutsulinkki";
@@ -992,9 +986,6 @@
 
 /* No comment provided by engineer. */
 "Delete Contact" = "Poista kontakti";
-
-/* No comment provided by engineer. */
-"Delete contact?" = "Poista kontakti?";
 
 /* No comment provided by engineer. */
 "Delete database" = "Poista tietokanta";
@@ -1150,10 +1141,7 @@
 "Disconnect" = "Katkaise";
 
 /* No comment provided by engineer. */
-"Display name" = "Näyttönimi";
-
-/* No comment provided by engineer. */
-"Display name:" = "Näyttönimi:";
+"Discover and join groups" = "Löydä ryhmiä ja liity niihin";
 
 /* No comment provided by engineer. */
 "Do it later" = "Tee myöhemmin";
@@ -2203,7 +2191,8 @@
 "observer" = "tarkkailija";
 
 /* enabled status
-   group pref value */
+   group pref value
+   time to disappear */
 "off" = "pois";
 
 /* No comment provided by engineer. */
@@ -2301,12 +2290,6 @@
 
 /* No comment provided by engineer. */
 "Opening database…" = "Avataan tietokantaa…";
-
-/* No comment provided by engineer. */
-"Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "Linkin avaaminen selaimessa voi heikentää yhteyden yksityisyyttä ja turvallisuutta. Epäluotetut SimpleX-linkit näkyvät punaisina.";
-
-/* No comment provided by engineer. */
-"or chat with the developers" = "tai keskustele kehittäjien kanssa";
 
 /* member role */
 "owner" = "omistaja";
@@ -3089,9 +3072,6 @@
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Salaus toimii ja uutta salaussopimusta ei tarvita. Tämä voi johtaa yhteysvirheisiin!";
 
 /* No comment provided by engineer. */
-"The group is fully decentralized – it is visible only to the members." = "Ryhmä on täysin hajautettu - se näkyy vain jäsenille.";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Edellisen viestin tarkiste on erilainen.";
 
 /* No comment provided by engineer. */
@@ -3581,9 +3561,6 @@
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Sinun on tunnistauduttava, kun käynnistät sovelluksen tai jatkat sen käyttöä 30 sekunnin tauon jälkeen.";
 
 /* No comment provided by engineer. */
-"You will join a group this link refers to and connect to its group members." = "Liityt ryhmään, johon tämä linkki viittaa, ja muodostat yhteyden sen ryhmän jäseniin.";
-
-/* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "Saat edelleen puheluita ja ilmoituksia mykistetyiltä profiileilta, kun ne ovat aktiivisia.";
 
 /* No comment provided by engineer. */
@@ -3612,9 +3589,6 @@
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Keskustelut-tietokantasi ei ole salattu - aseta tunnuslause sen salaamiseksi.";
-
-/* No comment provided by engineer. */
-"Your chat profile will be sent to group members" = "Keskusteluprofiilisi lähetetään ryhmän jäsenille";
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Keskusteluprofiilisi";

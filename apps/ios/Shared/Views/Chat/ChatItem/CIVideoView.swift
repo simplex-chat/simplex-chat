@@ -9,6 +9,7 @@
 import SwiftUI
 import AVKit
 import SimpleXChat
+import Combine
 
 struct CIVideoView: View {
     @EnvironmentObject var m: ChatModel
@@ -28,6 +29,7 @@ struct CIVideoView: View {
     @State private var showFullScreenPlayer = false
     @State private var timeObserver: Any? = nil
     @State private var fullScreenTimeObserver: Any? = nil
+    @State private var publisher: AnyCancellable? = nil
 
     init(chatItem: ChatItem, image: String, duration: Int, maxWidth: CGFloat, videoWidth: Binding<CGFloat?>, scrollProxy: ScrollViewProxy?) {
         self.chatItem = chatItem
@@ -294,6 +296,14 @@ struct CIVideoView: View {
                     m.stopPreviousRecPlay = url
                     if let player = fullPlayer {
                         player.play()
+                        var played = false
+                        publisher = player.publisher(for: \.timeControlStatus).sink { status in
+                            if played || status == .playing {
+                                AppDelegate.keepScreenOn(status == .playing)
+                                AudioPlayer.changeAudioSession(status == .playing)
+                            }
+                            played = status == .playing
+                        }
                         fullScreenTimeObserver = NotificationCenter.default.addObserver(forName: .AVPlayerItemDidPlayToEndTime, object: player.currentItem, queue: .main) { _ in
                             player.seek(to: CMTime.zero)
                             player.play()
@@ -308,6 +318,7 @@ struct CIVideoView: View {
                 fullScreenTimeObserver = nil
                 fullPlayer?.pause()
                 fullPlayer?.seek(to: CMTime.zero)
+                publisher?.cancel()
             }
         }
     }

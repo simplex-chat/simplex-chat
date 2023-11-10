@@ -20,6 +20,9 @@
 "_italic_" = "\\_斜体_";
 
 /* No comment provided by engineer. */
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- 连接 [目录服务](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- 发送回执（最多20成员）。\n- 更快并且更稳固。";
+
+/* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- 更稳定的传输！\n- 更好的社群！\n- 以及更多！";
 
 /* No comment provided by engineer. */
@@ -447,6 +450,9 @@
 "App build: %@" = "应用程序构建：%@";
 
 /* No comment provided by engineer. */
+"App encrypts new local files (except videos)." = "应用程序为新的本地文件（视频除外）加密。";
+
+/* No comment provided by engineer. */
 "App icon" = "应用程序图标";
 
 /* No comment provided by engineer. */
@@ -538,6 +544,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "您和您的联系人都可以发送语音消息。";
+
+/* No comment provided by engineer. */
+"Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "保加利亚语、芬兰语、泰语和乌克兰语——感谢用户和[Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "通过聊天资料（默认）或者[通过连接](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)。";
@@ -712,19 +721,10 @@
 "Connect" = "连接";
 
 /* No comment provided by engineer. */
-"Connect directly" = "直接连接";
-
-/* No comment provided by engineer. */
 "Connect incognito" = "在隐身状态下连接";
 
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "连接到 SimpleX Chat 开发者。";
-
-/* No comment provided by engineer. */
-"Connect via contact link" = "通过联系人链接进行连接";
-
-/* No comment provided by engineer. */
-"Connect via group link?" = "通过群组链接连接？";
 
 /* No comment provided by engineer. */
 "Connect via link" = "通过链接连接";
@@ -737,6 +737,9 @@
 
 /* No comment provided by engineer. */
 "connected" = "已连接";
+
+/* rcv group event chat item */
+"connected directly" = "已直连";
 
 /* No comment provided by engineer. */
 "connecting" = "连接中";
@@ -793,9 +796,6 @@
 "Contact already exists" = "联系人已存在";
 
 /* No comment provided by engineer. */
-"Contact and all messages will be deleted - this cannot be undone!" = "联系人和所有的消息都将被删除——这是不可逆回的！";
-
-/* No comment provided by engineer. */
 "contact has e2e encryption" = "联系人具有端到端加密";
 
 /* No comment provided by engineer. */
@@ -845,6 +845,9 @@
 
 /* No comment provided by engineer. */
 "Create link" = "创建链接";
+
+/* No comment provided by engineer. */
+"Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" = "在[桌面应用程序](https://simplex.chat/downloads/)中创建新的个人资料。 💻";
 
 /* No comment provided by engineer. */
 "Create one-time invitation link" = "创建一次性邀请链接";
@@ -995,9 +998,6 @@
 
 /* No comment provided by engineer. */
 "Delete Contact" = "删除联系人";
-
-/* No comment provided by engineer. */
-"Delete contact?" = "删除联系人？";
 
 /* No comment provided by engineer. */
 "Delete database" = "删除数据库";
@@ -1153,10 +1153,7 @@
 "Disconnect" = "断开连接";
 
 /* No comment provided by engineer. */
-"Display name" = "显示名称";
-
-/* No comment provided by engineer. */
-"Display name:" = "显示名：";
+"Discover and join groups" = "发现和加入群组";
 
 /* No comment provided by engineer. */
 "Do it later" = "稍后再做";
@@ -1250,6 +1247,9 @@
 
 /* No comment provided by engineer. */
 "Encrypt local files" = "加密本地文件";
+
+/* No comment provided by engineer. */
+"Encrypt stored files & media" = "为存储的文件和媒体加密";
 
 /* No comment provided by engineer. */
 "Encrypted database" = "加密数据库";
@@ -1360,6 +1360,9 @@
 "Error creating group link" = "创建群组链接错误";
 
 /* No comment provided by engineer. */
+"Error creating member contact" = "创建成员联系人时出错";
+
+/* No comment provided by engineer. */
 "Error creating profile!" = "创建资料错误！";
 
 /* No comment provided by engineer. */
@@ -1436,6 +1439,9 @@
 
 /* No comment provided by engineer. */
 "Error sending email" = "发送电邮错误";
+
+/* No comment provided by engineer. */
+"Error sending member contact invitation" = "发送成员联系人邀请错误";
 
 /* No comment provided by engineer. */
 "Error sending message" = "发送消息错误";
@@ -2131,6 +2137,9 @@
 "New database archive" = "新数据库存档";
 
 /* No comment provided by engineer. */
+"New desktop app!" = "全新桌面应用！";
+
+/* No comment provided by engineer. */
 "New display name" = "新显示名";
 
 /* No comment provided by engineer. */
@@ -2206,7 +2215,8 @@
 "observer" = "观察者";
 
 /* enabled status
-   group pref value */
+   group pref value
+   time to disappear */
 "off" = "关闭";
 
 /* No comment provided by engineer. */
@@ -2288,6 +2298,9 @@
 "Only your contact can send voice messages." = "只有您的联系人可以发送语音消息。";
 
 /* No comment provided by engineer. */
+"Open" = "打开";
+
+/* No comment provided by engineer. */
 "Open chat" = "打开聊天";
 
 /* authentication reason */
@@ -2304,12 +2317,6 @@
 
 /* No comment provided by engineer. */
 "Opening database…" = "打开数据库中……";
-
-/* No comment provided by engineer. */
-"Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "在浏览器中打开链接可能会降低连接的隐私和安全性。SimpleX 上不受信任的链接将显示为红色。";
-
-/* No comment provided by engineer. */
-"or chat with the developers" = "或与开发者聊天";
 
 /* member role */
 "owner" = "群主";
@@ -2762,7 +2769,13 @@
 "Send delivery receipts to" = "将送达回执发送给";
 
 /* No comment provided by engineer. */
+"send direct message" = "发送私信";
+
+/* No comment provided by engineer. */
 "Send direct message" = "发送私信";
+
+/* No comment provided by engineer. */
+"Send direct message to connect" = "发送私信来连接";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "发送限时消息中";
@@ -2945,6 +2958,9 @@
 "SimpleX one-time invitation" = "SimpleX 一次性邀请";
 
 /* No comment provided by engineer. */
+"Simplified incognito mode" = "简化的隐身模式";
+
+/* No comment provided by engineer. */
 "Skip" = "跳过";
 
 /* No comment provided by engineer. */
@@ -3092,9 +3108,6 @@
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "加密正在运行，不需要新的加密协议。这可能会导致连接错误！";
 
 /* No comment provided by engineer. */
-"The group is fully decentralized – it is visible only to the members." = "该小组是完全分散式的——它只对成员可见。";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "上一条消息的散列不同。";
 
 /* No comment provided by engineer. */
@@ -3189,6 +3202,9 @@
 
 /* No comment provided by engineer. */
 "To verify end-to-end encryption with your contact compare (or scan) the code on your devices." = "要与您的联系人验证端到端加密，请比较（或扫描）您设备上的代码。";
+
+/* No comment provided by engineer. */
+"Toggle incognito when connecting." = "在连接时切换隐身模式。";
 
 /* No comment provided by engineer. */
 "Transport isolation" = "传输隔离";
@@ -3584,9 +3600,6 @@
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "当您启动应用或在应用程序驻留后台超过30 秒后，您将需要进行身份验证。";
 
 /* No comment provided by engineer. */
-"You will join a group this link refers to and connect to its group members." = "您将加入此链接指向的群组并连接到其群组成员。";
-
-/* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "当静音配置文件处于活动状态时，您仍会收到来自静音配置文件的电话和通知。";
 
 /* No comment provided by engineer. */
@@ -3615,9 +3628,6 @@
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "您的聊天数据库未加密——设置密码来加密。";
-
-/* No comment provided by engineer. */
-"Your chat profile will be sent to group members" = "您的聊天资料将被发送给群组成员";
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "您的聊天资料";
