@@ -126,6 +126,7 @@ data ChatConfig = ChatConfig
     cleanupManagerInterval :: NominalDiffTime,
     cleanupManagerStepDelay :: Int64,
     ciExpirationInterval :: Int64, -- microseconds
+    requestGroupEventsInterval :: NominalDiffTime,
     coreApi :: Bool
   }
 
@@ -183,7 +184,8 @@ data ChatController = ChatController
     userXFTPFileConfig :: TVar (Maybe XFTPFileConfig),
     tempDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
-    contactMergeEnabled :: TVar Bool
+    contactMergeEnabled :: TVar Bool,
+    requestGroupEventsAsync :: TVar (Maybe (Async ()))
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSSettings | HSDatabase
