@@ -768,6 +768,10 @@ CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
   user_id,
   via_contact_uri_hash
 );
+CREATE INDEX idx_contact_profiles_contact_link ON contact_profiles(
+  user_id,
+  contact_link
+);
 CREATE INDEX idx_group_events_user_id ON group_events(user_id);
 CREATE INDEX idx_group_events_chat_item_id ON group_events(chat_item_id);
 CREATE INDEX idx_group_events_message_id ON group_events(message_id);

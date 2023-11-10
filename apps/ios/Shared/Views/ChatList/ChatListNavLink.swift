@@ -33,6 +33,7 @@ struct ChatListNavLink: View {
     @State private var showContactConnectionInfo = false
     @State private var showInvalidJSON = false
     @State private var showDeleteContactActionSheet = false
+    @State private var showConnectContactViaAddressDialog = false
     @State private var inProgress = false
     @State private var progressByTimeout = false
 
@@ -63,32 +64,52 @@ struct ChatListNavLink: View {
     }
 
     @ViewBuilder private func contactNavLink(_ contact: Contact) -> some View {
-        NavLinkPlain(
-            tag: chat.chatInfo.id,
-            selection: $chatModel.chatId,
-            label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) }
-        )
-        .swipeActions(edge: .leading, allowsFullSwipe: true) {
-            markReadButton()
-            toggleFavoriteButton()
-            toggleNtfsButton(chat)
-        }
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            if !chat.chatItems.isEmpty {
-                clearChatButton()
-            }
-            Button {
-                if contact.ready || !contact.active {
-                    showDeleteContactActionSheet = true
-                } else {
-                    AlertManager.shared.showAlert(deletePendingContactAlert(chat, contact))
+        Group {
+            if contact.activeConn == nil && contact.profile.contactLink != nil {
+                ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
+                    .frame(height: rowHeights[dynamicTypeSize])
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button {
+                            showDeleteContactActionSheet = true
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                        .tint(.red)
+                    }
+                    .onTapGesture { showConnectContactViaAddressDialog = true }
+                    .confirmationDialog("Connect with \(contact.chatViewName)", isPresented: $showConnectContactViaAddressDialog, titleVisibility: .visible) {
+                        Button("Use current profile") { connectContactViaAddress_(contact, false) }
+                        Button("Use new incognito profile") { connectContactViaAddress_(contact, true) }
+                    }
+            } else {
+                NavLinkPlain(
+                    tag: chat.chatInfo.id,
+                    selection: $chatModel.chatId,
+                    label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) }
+                )
+                .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                    markReadButton()
+                    toggleFavoriteButton()
+                    toggleNtfsButton(chat)
                 }
-            } label: {
-                Label("Delete", systemImage: "trash")
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    if !chat.chatItems.isEmpty {
+                        clearChatButton()
+                    }
+                    Button {
+                        if contact.ready || !contact.active {
+                            showDeleteContactActionSheet = true
+                        } else {
+                            AlertManager.shared.showAlert(deletePendingContactAlert(chat, contact))
+                        }
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                    .tint(.red)
+                }
+                .frame(height: rowHeights[dynamicTypeSize])
             }
-            .tint(.red)
         }
-        .frame(height: rowHeights[dynamicTypeSize])
         .actionSheet(isPresented: $showDeleteContactActionSheet) {
             if contact.ready && contact.active {
                 return ActionSheet(
@@ -411,6 +432,17 @@ struct ChatListNavLink: View {
                     .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
             }
     }
+
+    private func connectContactViaAddress_(_ contact: Contact, _ incognito: Bool) {
+        Task {
+            let ok = await connectContactViaAddress(contact.contactId, incognito)
+            if ok {
+                await MainActor.run {
+                    chatModel.chatId = contact.id
+                }
+            }
+        }
+    }
 }
 
 func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection, showError: @escaping (ErrorAlert) -> Void, success: @escaping () -> Void = {}) -> Alert {
@@ -437,6 +469,21 @@ func deleteContactConnectionAlert(_ contactConnection: PendingContactConnection,
         },
         secondaryButton: .cancel()
     )
+}
+
+func connectContactViaAddress(_ contactId: Int64, _ incognito: Bool) async -> Bool {
+    let (contact, alert) = await apiConnectContactViaAddress(incognito: incognito, contactId: contactId)
+    if let alert = alert {
+        AlertManager.shared.showAlert(alert)
+        return false
+    } else if let contact = contact {
+        await MainActor.run {
+            ChatModel.shared.updateContact(contact)
+            AlertManager.shared.showAlert(connReqSentAlert(.contact))
+        }
+        return true
+    }
+    return false
 }
 
 func joinGroup(_ groupId: Int64, _ onComplete: @escaping () async -> Void) {

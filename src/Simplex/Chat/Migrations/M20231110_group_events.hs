@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20231103_group_events where
+module Simplex.Chat.Migrations.M20231110_group_events where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20231103_group_events :: Query
-m20231103_group_events =
+m20231110_group_events :: Query
+m20231110_group_events =
   [sql|
 CREATE TABLE group_events (
   group_event_id INTEGER PRIMARY KEY,
@@ -41,8 +41,8 @@ CREATE INDEX idx_group_events_parents_group_event_parent_id ON group_events_pare
 CREATE INDEX idx_group_events_parents_group_event_child_id ON group_events_parents(group_event_child_id);
 |]
 
-down_m20231103_group_events :: Query
-down_m20231103_group_events =
+down_m20231110_group_events :: Query
+down_m20231110_group_events =
   [sql|
 DROP INDEX idx_group_events_user_id;
 DROP INDEX idx_group_events_chat_item_id;

@@ -178,11 +178,13 @@ fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
       if (fileName != null) {
         value = value.copy(message = text ?: value.message, preview = ComposePreview.FilePreview(fileName, uri))
       }
-    } else {
+    } else if (fileSize != null) {
       AlertManager.shared.showAlertMsg(
         generalGetString(MR.strings.large_file),
         String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
       )
+    } else {
+      showWrongUriAlert()
     }
   }
 }
@@ -196,7 +198,8 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
       isImage(uri) -> {
         // Image
         val drawable = getDrawableFromUri(uri)
-        bitmap = getBitmapFromUri(uri)
+        // Do not show alert in case it's already shown from the function above
+        bitmap = getBitmapFromUri(uri, withAlertOnException = AlertManager.shared.alertViews.isEmpty())
         if (isAnimImage(uri, drawable)) {
           // It's a gif or webp
           val fileSize = getFileSize(uri)
@@ -209,13 +212,13 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
               String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
             )
           }
-        } else {
+        } else if (bitmap != null) {
           content.add(UploadContent.SimpleImage(uri))
         }
       }
       else -> {
         // Video
-        val res = getBitmapFromVideo(uri)
+        val res = getBitmapFromVideo(uri, withAlertOnException = true)
         bitmap = res.preview
         val durationMs = res.duration
         content.add(UploadContent.Video(uri, durationMs?.div(1000)?.toInt() ?: 0))

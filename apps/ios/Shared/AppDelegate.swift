@@ -120,6 +120,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
         BGManager.shared.receiveMessages(complete)
     }
+
+    static func keepScreenOn(_ on: Bool) {
+        UIApplication.shared.isIdleTimerDisabled = on
+    }
 }
 
 class SceneDelegate: NSObject, ObservableObject, UIWindowSceneDelegate {

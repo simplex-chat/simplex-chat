@@ -1,0 +1,36 @@
+From 2738929ce15b4c8704bbbac24a08539b5d4bf30e Mon Sep 17 00:00:00 2001
+From: sternenseemann <sternenseemann@systemli.org>
+Date: Mon, 14 Aug 2023 10:51:30 +0200
+Subject: [PATCH] Data.Memory.Internal.CompatPrim64: fix 32 bit with GHC >= 9.4
+
+Since 9.4, GHC.Prim exports Word64# operations like timesWord64# even on
+i686 whereas GHC.IntWord64 no longer exists. Therefore, we can just use
+the ready made solution.
+
+Closes #98, as it should be the better solution.
+---
+ Data/Memory/Internal/CompatPrim64.hs | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/Data/Memory/Internal/CompatPrim64.hs b/Data/Memory/Internal/CompatPrim64.hs
+index b9eef8a..a134c88 100644
+--- a/Data/Memory/Internal/CompatPrim64.hs
++++ b/Data/Memory/Internal/CompatPrim64.hs
+@@ -150,6 +150,7 @@ w64# :: Word# -> Word# -> Word# -> Word64#
+ w64# w _ _ = w
+ 
+ #elif WORD_SIZE_IN_BITS == 32
++#if __GLASGOW_HASKELL__ < 904
+ import GHC.IntWord64
+ import GHC.Prim (Word#)
+ 
+@@ -158,6 +159,9 @@ timesWord64# a b =
+     let !ai = word64ToInt64# a
+         !bi = word64ToInt64# b
+      in int64ToWord64# (timesInt64# ai bi)
++#else
++import GHC.Prim
++#endif
+ 
+ w64# :: Word# -> Word# -> Word# -> Word64#
+ w64# _ hw lw =

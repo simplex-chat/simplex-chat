@@ -150,7 +150,7 @@ fun ChatInfoView(
                   val (verified, existingCode) = r
                   chatModel.updateContact(
                     ct.copy(
-                      activeConn = ct.activeConn.copy(
+                      activeConn = ct.activeConn?.copy(
                         connectionCode = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
                       )
                     )

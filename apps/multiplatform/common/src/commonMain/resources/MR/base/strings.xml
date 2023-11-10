@@ -289,6 +289,8 @@
   <string name="chat_with_developers">Chat with the developers</string>
   <string name="you_have_no_chats">You have no chats</string>
   <string name="no_filtered_chats">No filtered chats</string>
+  <string name="contact_tap_to_connect">Tap to Connect</string>
+  <string name="connect_with_contact_name_question">Connect with %1$s?</string>
 
   <!-- ChatView.kt -->
   <string name="no_selected_chat">No selected chat</string>
@@ -309,6 +311,7 @@
   <string name="videos_limit_desc">Only 10 videos can be sent at the same time</string>
   <string name="image_decoding_exception_title">Decoding error</string>
   <string name="image_decoding_exception_desc">The image cannot be decoded. Please, try a different image or contact developers.</string>
+  <string name="video_decoding_exception_desc">The video cannot be decoded. Please, try a different video or contact developers.</string>
   <string name="you_are_observer">you are observer</string>
   <string name="observer_cant_send_message_title">You can\'t send messages!</string>
   <string name="observer_cant_send_message_desc">Please contact group admin.</string>

@@ -162,7 +162,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         hideKeyboard(view)
         withApi {
           // The idea is to preload information before showing a modal because large groups can take time to load all members
-          var preloadedContactInfo: Pair<ConnectionStats, Profile?>? = null
+          var preloadedContactInfo: Pair<ConnectionStats?, Profile?>? = null
           var preloadedCode: String? = null
           var preloadedLink: Pair<String, GroupMemberRole>? = null
           if (chat.chatInfo is ChatInfo.Direct) {
@@ -175,7 +175,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           ModalManager.end.showModalCloseable(true) { close ->
             val chat = remember { activeChat }.value
             if (chat?.chatInfo is ChatInfo.Direct) {
-              var contactInfo: Pair<ConnectionStats, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
+              var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
               var code: String? by remember { mutableStateOf(preloadedCode) }
               KeyChangeEffect(chat.id, ChatModel.networkStatuses.toMap()) {
                 contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
@@ -332,7 +332,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         withApi {
           val r = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
           if (r != null) {
-            chatModel.updateContactConnectionStats(contact, r.first)
+            val contactStats = r.first
+            if (contactStats != null)
+            chatModel.updateContactConnectionStats(contact, contactStats)
           }
         }
       },
@@ -589,18 +591,30 @@ fun ChatInfoToolbar(
   if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.allowsFeature(ChatFeature.Calls)) {
     if (activeCall == null) {
       barButtons.add {
-        IconButton(
-          {
+        if (appPlatform.isAndroid) {
+          IconButton({
             showMenu.value = false
             startCall(CallMediaType.Audio)
-          },
-          enabled = chat.chatInfo.contact.ready && chat.chatInfo.contact.active
-        ) {
-          Icon(
-            painterResource(MR.images.ic_call_500),
-            stringResource(MR.strings.icon_descr_more_button),
-            tint = if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
-          )
+          }, enabled = chat.chatInfo.contact.ready && chat.chatInfo.contact.active
+          ) {
+            Icon(
+              painterResource(MR.images.ic_call_500),
+              stringResource(MR.strings.icon_descr_audio_call).capitalize(Locale.current),
+              tint = if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+            )
+          }
+        } else {
+          IconButton({
+            showMenu.value = false
+            startCall(CallMediaType.Video)
+          }, enabled = chat.chatInfo.contact.ready && chat.chatInfo.contact.active
+          ) {
+            Icon(
+              painterResource(MR.images.ic_videocam),
+              stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current),
+              tint = if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+            )
+          }
         }
       }
     } else if (activeCall?.contact?.id == chat.id) {
@@ -634,10 +648,17 @@ fun ChatInfoToolbar(
     }
     if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active && activeCall == null) {
       menuItems.add {
-        ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(MR.images.ic_videocam), onClick = {
-          showMenu.value = false
-          startCall(CallMediaType.Video)
-        })
+        if (appPlatform.isAndroid) {
+          ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(MR.images.ic_videocam), onClick = {
+            showMenu.value = false
+            startCall(CallMediaType.Video)
+          })
+        } else {
+          ItemAction(stringResource(MR.strings.icon_descr_audio_call).capitalize(Locale.current), painterResource(MR.images.ic_call_500), onClick = {
+            showMenu.value = false
+            startCall(CallMediaType.Audio)
+          })
+        }
       }
     }
   } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.canAddMembers) {

@@ -748,9 +748,9 @@ object ChatController {
   suspend fun apiSetMemberSettings(groupId: Long, groupMemberId: Long, memberSettings: GroupMemberSettings): Boolean =
     sendCommandOkResp(CC.ApiSetMemberSettings(groupId, groupMemberId, memberSettings))
 
-  suspend fun apiContactInfo(contactId: Long): Pair<ConnectionStats, Profile?>? {
+  suspend fun apiContactInfo(contactId: Long): Pair<ConnectionStats?, Profile?>? {
     val r = sendCmd(CC.APIContactInfo(contactId))
-    if (r is CR.ContactInfo) return r.connectionStats to r.customUserProfile
+    if (r is CR.ContactInfo) return r.connectionStats_ to r.customUserProfile
     Log.e(TAG, "apiContactInfo bad response: ${r.responseType} ${r.details}")
     return null
   }
@@ -903,6 +903,23 @@ object ChatController {
           apiErrorAlert("apiConnect", generalGetString(MR.strings.connection_error), r)
         }
         return false
+      }
+    }
+  }
+
+  suspend fun apiConnectContactViaAddress(incognito: Boolean, contactId: Long): Contact? {
+    val userId = chatModel.currentUser.value?.userId ?: run {
+      Log.e(TAG, "apiConnectContactViaAddress: no current user")
+      return null
+    }
+    val r = sendCmd(CC.ApiConnectContactViaAddress(userId, incognito, contactId))
+    when {
+      r is CR.SentInvitationToContact -> return r.contact
+      else -> {
+        if (!(networkErrorAlert(r))) {
+          apiErrorAlert("apiConnectContactViaAddress", generalGetString(MR.strings.connection_error), r)
+        }
+        return null
       }
     }
   }
@@ -1413,8 +1430,11 @@ object ChatController {
       is CR.ContactConnected -> {
         if (active(r.user) && r.contact.directOrUsed) {
           chatModel.updateContact(r.contact)
-          chatModel.dismissConnReqView(r.contact.activeConn.id)
-          chatModel.removeChat(r.contact.activeConn.id)
+          val conn = r.contact.activeConn
+          if (conn != null) {
+            chatModel.dismissConnReqView(conn.id)
+            chatModel.removeChat(conn.id)
+          }
         }
         if (r.contact.directOrUsed) {
           ntfManager.notifyContactConnected(r.user, r.contact)
@@ -1424,8 +1444,11 @@ object ChatController {
       is CR.ContactConnecting -> {
         if (active(r.user) && r.contact.directOrUsed) {
           chatModel.updateContact(r.contact)
-          chatModel.dismissConnReqView(r.contact.activeConn.id)
-          chatModel.removeChat(r.contact.activeConn.id)
+          val conn = r.contact.activeConn
+          if (conn != null) {
+            chatModel.dismissConnReqView(conn.id)
+            chatModel.removeChat(conn.id)
+          }
         }
       }
       is CR.ReceivedContactRequest -> {
@@ -1556,9 +1579,10 @@ object ChatController {
         if (!active(r.user)) return
 
         chatModel.updateGroup(r.groupInfo)
-        if (r.hostContact != null) {
-          chatModel.dismissConnReqView(r.hostContact.activeConn.id)
-          chatModel.removeChat(r.hostContact.activeConn.id)
+        val conn = r.hostContact?.activeConn
+        if (conn != null) {
+          chatModel.dismissConnReqView(conn.id)
+          chatModel.removeChat(conn.id)
         }
       }
       is CR.GroupLinkConnecting -> {
@@ -1946,6 +1970,7 @@ sealed class CC {
   class ApiSetConnectionIncognito(val connId: Long, val incognito: Boolean): CC()
   class APIConnectPlan(val userId: Long, val connReq: String): CC()
   class APIConnect(val userId: Long, val incognito: Boolean, val connReq: String): CC()
+  class ApiConnectContactViaAddress(val userId: Long, val incognito: Boolean, val contactId: Long): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long, val notify: Boolean?): CC()
   class ApiClearChat(val type: ChatType, val id: Long): CC()
   class ApiListContacts(val userId: Long): CC()
@@ -2057,6 +2082,7 @@ sealed class CC {
     is ApiSetConnectionIncognito -> "/_set incognito :$connId ${onOff(incognito)}"
     is APIConnectPlan -> "/_connect plan $userId $connReq"
     is APIConnect -> "/_connect $userId incognito=${onOff(incognito)} $connReq"
+    is ApiConnectContactViaAddress -> "/_connect contact $userId incognito=${onOff(incognito)} $contactId"
     is ApiDeleteChat -> if (notify != null) {
       "/_delete ${chatRef(type, id)} notify=${onOff(notify)}"
     } else {
@@ -2164,6 +2190,7 @@ sealed class CC {
     is ApiSetConnectionIncognito -> "apiSetConnectionIncognito"
     is APIConnectPlan -> "apiConnectPlan"
     is APIConnect -> "apiConnect"
+    is ApiConnectContactViaAddress -> "apiConnectContactViaAddress"
     is ApiDeleteChat -> "apiDeleteChat"
     is ApiClearChat -> "apiClearChat"
     is ApiListContacts -> "apiListContacts"
@@ -3357,7 +3384,7 @@ sealed class CR {
   @Serializable @SerialName("serverTestResult") class ServerTestResult(val user: UserRef, val testServer: String, val testFailure: ProtocolTestFailure? = null): CR()
   @Serializable @SerialName("chatItemTTL") class ChatItemTTL(val user: UserRef, val chatItemTTL: Long? = null): CR()
   @Serializable @SerialName("networkConfig") class NetworkConfig(val networkConfig: NetCfg): CR()
-  @Serializable @SerialName("contactInfo") class ContactInfo(val user: UserRef, val contact: Contact, val connectionStats: ConnectionStats, val customUserProfile: Profile? = null): CR()
+  @Serializable @SerialName("contactInfo") class ContactInfo(val user: UserRef, val contact: Contact, val connectionStats_: ConnectionStats? = null, val customUserProfile: Profile? = null): CR()
   @Serializable @SerialName("groupMemberInfo") class GroupMemberInfo(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats_: ConnectionStats? = null): CR()
   @Serializable @SerialName("contactSwitchStarted") class ContactSwitchStarted(val user: UserRef, val contact: Contact, val connectionStats: ConnectionStats): CR()
   @Serializable @SerialName("groupMemberSwitchStarted") class GroupMemberSwitchStarted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val connectionStats: ConnectionStats): CR()
@@ -3379,6 +3406,7 @@ sealed class CR {
   @Serializable @SerialName("connectionPlan") class CRConnectionPlan(val user: UserRef, val connectionPlan: ConnectionPlan): CR()
   @Serializable @SerialName("sentConfirmation") class SentConfirmation(val user: UserRef): CR()
   @Serializable @SerialName("sentInvitation") class SentInvitation(val user: UserRef): CR()
+  @Serializable @SerialName("sentInvitationToContact") class SentInvitationToContact(val user: UserRef, val contact: Contact, val customUserProfile: Profile?): CR()
   @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactRequestAlreadyAccepted") class ContactRequestAlreadyAccepted(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactDeleted") class ContactDeleted(val user: UserRef, val contact: Contact): CR()
@@ -3517,6 +3545,7 @@ sealed class CR {
     is CRConnectionPlan -> "connectionPlan"
     is SentConfirmation -> "sentConfirmation"
     is SentInvitation -> "sentInvitation"
+    is SentInvitationToContact -> "sentInvitationToContact"
     is ContactAlreadyExists -> "contactAlreadyExists"
     is ContactRequestAlreadyAccepted -> "contactRequestAlreadyAccepted"
     is ContactDeleted -> "contactDeleted"
@@ -3628,7 +3657,7 @@ sealed class CR {
     is ServerTestResult -> withUser(user, "server: $testServer\nresult: ${json.encodeToString(testFailure)}")
     is ChatItemTTL -> withUser(user, json.encodeToString(chatItemTTL))
     is NetworkConfig -> json.encodeToString(networkConfig)
-    is ContactInfo -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
+    is ContactInfo -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats_)}")
     is GroupMemberInfo -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats_)}")
     is ContactSwitchStarted -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
     is GroupMemberSwitchStarted -> withUser(user, "group: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionStats: ${json.encodeToString(connectionStats)}")
@@ -3650,6 +3679,7 @@ sealed class CR {
     is CRConnectionPlan -> withUser(user, json.encodeToString(connectionPlan))
     is SentConfirmation -> withUser(user, noDetails())
     is SentInvitation -> withUser(user, noDetails())
+    is SentInvitationToContact -> withUser(user, json.encodeToString(contact))
     is ContactAlreadyExists -> withUser(user, json.encodeToString(contact))
     is ContactRequestAlreadyAccepted -> withUser(user, json.encodeToString(contact))
     is ContactDeleted -> withUser(user, json.encodeToString(contact))
@@ -3785,6 +3815,7 @@ sealed class ContactAddressPlan {
   @Serializable @SerialName("connectingConfirmReconnect") object ConnectingConfirmReconnect: ContactAddressPlan()
   @Serializable @SerialName("connectingProhibit") class ConnectingProhibit(val contact: Contact): ContactAddressPlan()
   @Serializable @SerialName("known") class Known(val contact: Contact): ContactAddressPlan()
+  @Serializable @SerialName("contactViaAddress") class ContactViaAddress(val contact: Contact): ContactAddressPlan()
 }
 
 @Serializable

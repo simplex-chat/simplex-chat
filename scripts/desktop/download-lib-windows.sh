@@ -18,7 +18,7 @@ output_dir="$root_dir/apps/multiplatform/common/src/commonMain/cpp/desktop/libs/
 
 mkdir -p "$output_dir" 2> /dev/null
 
-curl --location -o libsimplex.zip $job_repo/$arch-linux.$arch-windows:lib:simplex-chat/latest/download/1 && \
+curl --location -o libsimplex.zip $job_repo/$arch-windows:lib:simplex-chat.$arch-linux/latest/download/1 && \
 $WINDIR\\System32\\tar.exe -xf libsimplex.zip && \
 mv libsimplex.dll "$output_dir" && \
 mv libcrypto*.dll "$output_dir" && \

@@ -146,11 +146,6 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
 @Composable
 private fun OnboardingButtons(openNewChatSheet: () -> Unit) {
   Column(Modifier.fillMaxSize().padding(DEFAULT_PADDING), horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.Bottom) {
-    val uriHandler = LocalUriHandler.current
-    ConnectButton(generalGetString(MR.strings.chat_with_developers)) {
-      uriHandler.openVerifiedSimplexUri(simplexTeamUri)
-    }
-    Spacer(Modifier.height(DEFAULT_PADDING))
     ConnectButton(generalGetString(MR.strings.tap_to_start_new_chat), openNewChatSheet)
     val color = MaterialTheme.colors.primaryVariant
     Canvas(modifier = Modifier.width(40.dp).height(10.dp), onDraw = {

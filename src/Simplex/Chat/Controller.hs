@@ -336,6 +336,7 @@ data ChatCommand
   | APIConnectPlan UserId AConnectionRequestUri
   | APIConnect UserId IncognitoEnabled (Maybe AConnectionRequestUri)
   | Connect IncognitoEnabled (Maybe AConnectionRequestUri)
+  | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName
   | ClearContact ContactName
@@ -436,7 +437,7 @@ data ChatResponse
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
-  | CRContactInfo {user :: User, contact :: Contact, connectionStats :: ConnectionStats, customUserProfile :: Maybe Profile}
+  | CRContactInfo {user :: User, contact :: Contact, connectionStats_ :: Maybe ConnectionStats, customUserProfile :: Maybe Profile}
   | CRGroupInfo {user :: User, groupInfo :: GroupInfo, groupSummary :: GroupSummary}
   | CRGroupMemberInfo {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
   | CRContactSwitchStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
@@ -489,6 +490,7 @@ data ChatResponse
   | CRConnectionPlan {user :: User, connectionPlan :: ConnectionPlan}
   | CRSentConfirmation {user :: User}
   | CRSentInvitation {user :: User, customUserProfile :: Maybe Profile}
+  | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CRGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
   | CRContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact, updatedContact :: Contact}
@@ -653,6 +655,7 @@ data ContactAddressPlan
   | CAPConnectingConfirmReconnect
   | CAPConnectingProhibit {contact :: Contact}
   | CAPKnown {contact :: Contact}
+  | CAPContactViaAddress {contact :: Contact}
   deriving (Show, Generic)
 
 instance ToJSON ContactAddressPlan where
@@ -681,6 +684,7 @@ connectionPlanProceed = \case
     CAPOk -> True
     CAPOwnLink -> True
     CAPConnectingConfirmReconnect -> True
+    CAPContactViaAddress _ -> True
     _ -> False
   CPGroupLink glp -> case glp of
     GLPOk -> True
@@ -1064,7 +1068,8 @@ chatModifyVar f newValue = asks f >>= atomically . (`modifyTVar'` newValue)
 {-# INLINE chatModifyVar #-}
 
 setContactNetworkStatus :: ChatMonad' m => Contact -> NetworkStatus -> m ()
-setContactNetworkStatus ct = chatModifyVar connNetworkStatuses . M.insert (contactAgentConnId ct)
+setContactNetworkStatus Contact {activeConn = Nothing} _ = pure ()
+setContactNetworkStatus Contact {activeConn = Just Connection {agentConnId}} status = chatModifyVar connNetworkStatuses $ M.insert agentConnId status
 
 tryChatError :: ChatMonad m => m a -> m (Either ChatError a)
 tryChatError = tryAllErrors mkChatError

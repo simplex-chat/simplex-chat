@@ -114,7 +114,7 @@ struct ChatView: View {
                                     connectionStats = stats
                                     customUserProfile = profile
                                     connectionCode = code
-                                    if contact.activeConn.connectionCode != ct.activeConn.connectionCode {
+                                    if contact.activeConn?.connectionCode != ct.activeConn?.connectionCode {
                                         chat.chatInfo = .direct(contact: ct)
                                     }
                                 }
