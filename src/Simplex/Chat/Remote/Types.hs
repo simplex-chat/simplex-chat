@@ -53,7 +53,6 @@ data RemoteSignatures
     { idPubKey :: C.PublicKeyEd25519,
       sessPubKey :: C.PublicKeyEd25519
     }
-  | RSNone -- TODO remove
 
 data RHPendingSession = RHPendingSession
   { rhKey :: RHKey,
