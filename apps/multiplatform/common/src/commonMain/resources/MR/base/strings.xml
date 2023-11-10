@@ -1642,7 +1642,6 @@
   <string name="connect_plan_this_is_your_link_for_group_vName">This is your link for group %1$s!</string>
   <string name="connect_plan_open_group">Open group</string>
   <string name="connect_plan_repeat_join_request">Repeat join request?</string>
-  <string name="connect_plan_you_are_already_joining_the_group_via_this_link">You are already joining the group via this link!</string>
   <string name="connect_plan_group_already_exists">Group already exists!</string>
   <string name="connect_plan_you_are_already_joining_the_group_vName">You are already joining the group %1$s.</string>
   <string name="connect_plan_already_joining_the_group">Already joining the group!</string>
