@@ -767,7 +767,7 @@ struct ChatView: View {
             } else if ci.isDeletedContent {
                 menu.append(viewInfoUIAction(ci))
                 menu.append(deleteUIAction(ci))
-            } else if ci.mergeCategory != nil {
+            } else if ci.mergeCategory != nil && ((range?.count ?? 0) > 1 || revealed) {
                 menu.append(revealed ? shrinkUIAction() : expandUIAction())
             }
             return menu

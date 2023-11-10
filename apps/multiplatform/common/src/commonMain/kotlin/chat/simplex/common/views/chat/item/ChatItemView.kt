@@ -177,77 +177,85 @@ fun ChatItemView(
         @Composable
         fun MsgContentItemDropdownMenu() {
           val saveFileLauncher = rememberSaveFileLauncher(ciFile = cItem.file)
-          DefaultDropdownMenu(showMenu) {
-            if (cItem.content.msgContent != null) {
-              if (cInfo.featureEnabled(ChatFeature.Reactions) && cItem.allowAddReaction) {
-                MsgReactionsMenu()
-              }
-              if (cItem.meta.itemDeleted == null && !live) {
-                ItemAction(stringResource(MR.strings.reply_verb), painterResource(MR.images.ic_reply), onClick = {
-                  if (composeState.value.editing) {
-                    composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
-                  } else {
-                    composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+          val canBeShown = cItem.content.msgContent != null ||
+              cItem.meta.itemDeleted != null ||
+              cItem.isDeletedContent ||
+              cItem.mergeCategory != null && ((range?.count() ?: 0) > 1 || revealed.value)
+          if (canBeShown) {
+            DefaultDropdownMenu(showMenu) {
+              if (cItem.content.msgContent != null) {
+                if (cInfo.featureEnabled(ChatFeature.Reactions) && cItem.allowAddReaction) {
+                  MsgReactionsMenu()
+                }
+                if (cItem.meta.itemDeleted == null && !live) {
+                  ItemAction(stringResource(MR.strings.reply_verb), painterResource(MR.images.ic_reply), onClick = {
+                    if (composeState.value.editing) {
+                      composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
+                    } else {
+                      composeState.value = composeState.value.copy(contextItem = ComposeContextItem.QuotedItem(cItem))
+                    }
+                    showMenu.value = false
+                  })
+                }
+                val clipboard = LocalClipboardManager.current
+                ItemAction(stringResource(MR.strings.share_verb), painterResource(MR.images.ic_share), onClick = {
+                  val fileSource = getLoadedFileSource(cItem.file)
+                  when {
+                    fileSource != null -> shareFile(cItem.text, fileSource)
+                    else -> clipboard.shareText(cItem.content.text)
                   }
                   showMenu.value = false
                 })
-              }
-              val clipboard = LocalClipboardManager.current
-              ItemAction(stringResource(MR.strings.share_verb), painterResource(MR.images.ic_share), onClick = {
-                val fileSource = getLoadedFileSource(cItem.file)
-                when {
-                  fileSource != null -> shareFile(cItem.text, fileSource)
-                  else -> clipboard.shareText(cItem.content.text)
-                }
-                showMenu.value = false
-              })
-              ItemAction(stringResource(MR.strings.copy_verb), painterResource(MR.images.ic_content_copy), onClick = {
-                copyItemToClipboard(cItem, clipboard)
-                showMenu.value = false
-              })
-              if ((cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) && getLoadedFilePath(cItem.file) != null) {
-                SaveContentItemAction(cItem, saveFileLauncher, showMenu)
-              }
-              if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {
-                ItemAction(stringResource(MR.strings.edit_verb), painterResource(MR.images.ic_edit_filled), onClick = {
-                  composeState.value = ComposeState(editingItem = cItem, useLinkPreviews = useLinkPreviews)
+                ItemAction(stringResource(MR.strings.copy_verb), painterResource(MR.images.ic_content_copy), onClick = {
+                  copyItemToClipboard(cItem, clipboard)
                   showMenu.value = false
                 })
-              }
-              ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-              if (revealed.value) {
-                HideItemAction(revealed, showMenu)
-              }
-              if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancelAction != null) {
-                CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
-              }
-              if (!(live && cItem.meta.isLive)) {
+                if ((cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) && getLoadedFilePath(cItem.file) != null) {
+                  SaveContentItemAction(cItem, saveFileLauncher, showMenu)
+                }
+                if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {
+                  ItemAction(stringResource(MR.strings.edit_verb), painterResource(MR.images.ic_edit_filled), onClick = {
+                    composeState.value = ComposeState(editingItem = cItem, useLinkPreviews = useLinkPreviews)
+                    showMenu.value = false
+                  })
+                }
+                ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
+                if (revealed.value) {
+                  HideItemAction(revealed, showMenu)
+                }
+                if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancelAction != null) {
+                  CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
+                }
+                if (!(live && cItem.meta.isLive)) {
+                  DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+                }
+                val groupInfo = cItem.memberToModerate(cInfo)?.first
+                if (groupInfo != null) {
+                  ModerateItemAction(cItem, questionText = moderateMessageQuestionText(), showMenu, deleteMessage)
+                }
+              } else if (cItem.meta.itemDeleted != null) {
+                if (revealed.value) {
+                  HideItemAction(revealed, showMenu)
+                } else if (!cItem.isDeletedContent) {
+                  RevealItemAction(revealed, showMenu)
+                } else if (range != null) {
+                  ExpandItemAction(revealed, showMenu)
+                }
+                ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
                 DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
-              }
-              val groupInfo = cItem.memberToModerate(cInfo)?.first
-              if (groupInfo != null) {
-                ModerateItemAction(cItem, questionText = moderateMessageQuestionText(), showMenu, deleteMessage)
-              }
-            } else if (cItem.meta.itemDeleted != null) {
-              if (revealed.value) {
-                HideItemAction(revealed, showMenu)
-              } else if (!cItem.isDeletedContent) {
-                RevealItemAction(revealed, showMenu)
-              } else if (range != null) {
-                ExpandItemAction(revealed, showMenu)
-              }
-              ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-              DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
-            } else if (cItem.isDeletedContent) {
-              ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
-              DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
-            } else if (cItem.mergeCategory != null) {
-              if (revealed.value) {
-                ShrinkItemAction(revealed, showMenu)
-              } else {
-                ExpandItemAction(revealed, showMenu)
+              } else if (cItem.isDeletedContent) {
+                ItemInfoAction(cInfo, cItem, showItemDetails, showMenu)
+                DeleteItemAction(cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
+              } else if (cItem.mergeCategory != null && ((range?.count() ?: 0) > 1 || revealed.value)) {
+                if (revealed.value) {
+                  ShrinkItemAction(revealed, showMenu)
+                } else {
+                  ExpandItemAction(revealed, showMenu)
+                }
               }
             }
+          } else {
+            showMenu.value = false
           }
         }
 
