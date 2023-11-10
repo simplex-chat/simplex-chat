@@ -361,14 +361,14 @@ indicateRemoteHostTest = testChat4 aliceProfile aliceDesktopProfile bobProfile c
   desktop <#. "bob> hi"
   -- local -> remote
   cath #> "@alice_desktop hello"
-  desktop <##. "[local] "
+  ("[local] ", desktop) .<# "cath> hello"
   -- local -> local
   desktop ##> "/switch remote host local"
   desktop <## "Using local profile"
   desktop <##> cath
   -- local -> remote
   bob #> "@alice what's up?"
-  desktop <##. "[remote: 1] "
+  ("[remote: 1] ", desktop) .<# "bob> what's up?"
 
   -- local -> local after disconnect
   stopDesktop mobile desktop
@@ -376,6 +376,9 @@ indicateRemoteHostTest = testChat4 aliceProfile aliceDesktopProfile bobProfile c
   cath <##> desktop
 
 -- * Utils
+
+(.<#) :: ([Char], TestCC) -> String -> Expectation
+(p, cc) .<# line = (dropTime . dropStrPrefix p <$> getTermLine cc) `shouldReturn` line
 
 startRemote :: TestCC -> TestCC -> IO ()
 startRemote mobile desktop = do
