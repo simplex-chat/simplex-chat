@@ -438,7 +438,6 @@
     <string name="profile_is_only_shared_with_your_contacts">Das Profil wird nur mit Ihren Kontakten geteilt.</string>
     <string name="display_name_cannot_contain_whitespace">Der angezeigte Name darf keine Leerzeichen enthalten.</string>
     <string name="display_name">Angezeigter Name</string>
-    <string name="full_name_optional__prompt">Vollständiger Name (optional)</string>
     <string name="create_profile_button">Erstellen</string>
     <string name="about_simplex">Über SimpleX</string>
     <!-- markdown demo - MarkdownHelpView.kt -->
@@ -1190,7 +1189,6 @@
     <string name="stop_snd_file__message">Das Senden der Datei wird beendet.</string>
     <string name="stop_file__action">Datei beenden</string>
     <string name="revoke_file__message">Die Datei wird von den Servern gelöscht.</string>
-    <string name="no_spaces">Keine Leerzeichen!</string>
     <string name="revoke_file__confirm">Widerrufen</string>
     <string name="revoke_file__action">Datei widerrufen</string>
     <string name="revoke_file__title">Datei widerrufen\?</string>
@@ -1472,4 +1470,21 @@
     <string name="settings_is_storing_in_clear_text">Das Passwort wurde in Klartext in den Einstellungen gespeichert.</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Bitte beachten Sie</b>: Die Nachrichten- und Dateirelais sind per SOCKS Proxy verbunden. Anrufe und gesendete Link-Vorschaubilder nutzen eine direkte Verbindung.]]></string>
     <string name="encrypt_local_files">Lokale Dateien verschlüsseln</string>
+    <string name="rcv_group_event_open_chat">Öffnen</string>
+    <string name="v5_3_encrypt_local_files">Gespeicherte Dateien &amp; Medien verschlüsseln</string>
+    <string name="error_creating_member_contact">Fehler beim Anlegen eines Mitglied-Kontaktes</string>
+    <string name="v5_3_new_desktop_app">Neue Desktop-App!</string>
+    <string name="v5_3_new_interface_languages">6 neue Sprachen für die Bedienoberfläche</string>
+    <string name="v5_3_encrypt_local_files_descr">Neue lokale Dateien (außer Video-Dateien) werden von der App verschlüsselt.</string>
+    <string name="compose_send_direct_message_to_connect">Eine Direktnachricht zum Verbinden senden</string>
+    <string name="v5_3_discover_join_groups">Gruppen entdecken und ihnen beitreten</string>
+    <string name="v5_3_simpler_incognito_mode">Vereinfachter Inkognito-Modus</string>
+    <string name="v5_3_new_interface_languages_descr">Arabisch, Bulgarisch, Finnisch, Hebräisch, Thailändisch und Ukrainisch - Dank der Nutzer und Weblate.</string>
+    <string name="v5_3_new_desktop_app_descr">Erstellen eines neuen Profils in der Desktop-App. 💻</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Inkognito beim Verbinden einschalten.</string>
+    <string name="v5_3_discover_join_groups_descr">- Verbindung mit dem Directory-Service (BETA)!
+\n- Empfangsbestätigungen (für bis zu 20 Mitglieder).
+\n- Schneller und stabiler.</string>
+    <string name="member_contact_send_direct_message">Direktnachricht senden</string>
+    <string name="rcv_group_event_member_created_contact">Direkt miteinander verbunden</string>
 </resources>

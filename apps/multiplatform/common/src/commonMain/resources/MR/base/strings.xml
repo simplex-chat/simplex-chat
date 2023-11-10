@@ -1230,7 +1230,7 @@
   <string name="error_updating_link_for_group">Error updating group link</string>
   <string name="error_deleting_link_for_group">Error deleting group link</string>
   <string name="error_creating_member_contact">Error creating member contact</string>
-  <string name="error_sending_message_contact_invitation">Sending message contact invitation</string>
+  <string name="error_sending_message_contact_invitation">Error sending invitation</string>
   <string name="only_group_owners_can_change_prefs">Only group owners can change group preferences.</string>
   <string name="address_section_title">Address</string>
   <string name="share_address">Share address</string>

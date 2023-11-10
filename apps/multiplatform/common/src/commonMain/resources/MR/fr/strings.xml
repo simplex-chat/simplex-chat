@@ -363,7 +363,6 @@
     <string name="your_profile_is_stored_on_your_device">Votre profil, vos contacts et les messages reçus sont stockés sur votre appareil.</string>
     <string name="profile_is_only_shared_with_your_contacts">Le profil n\'est partagé qu\'avec vos contacts.</string>
     <string name="display_name_cannot_contain_whitespace">Le nom d\'affichage ne peut pas contenir d\'espace.</string>
-    <string name="full_name_optional__prompt">Nom complet (optionnel)</string>
     <string name="create_profile_button">Créer</string>
     <string name="about_simplex">À propos de SimpleX</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Vous pouvez utiliser le format markdown pour mettre en forme les messages :</string>
@@ -751,7 +750,7 @@
     <string name="invite_prohibited_description">Vous essayez d\'inviter un contact avec lequel vous avez partagé un profil incognito à rejoindre le groupe dans lequel vous utilisez votre profil principal</string>
     <string name="info_row_database_id">ID de base de données</string>
     <string name="button_remove_member">Retirer le membre</string>
-    <string name="button_send_direct_message">Envoi de message direct</string>
+    <string name="button_send_direct_message">Envoyer un message direct</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">Ce membre sera retiré du groupe - impossible de revenir en arrière !</string>
     <string name="role_in_group">Rôle</string>
     <string name="change_role">Changer le rôle</string>
@@ -1086,7 +1085,6 @@
     <string name="decryption_error">Erreur de déchiffrement</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Cela peut se produire lorsque vous ou votre contact avez utilisé une ancienne sauvegarde de base de données.</string>
     <string name="alert_title_msg_bad_hash">Mauvais hash de message</string>
-    <string name="no_spaces">Pas d\'espace !</string>
     <string name="allow_calls_only_if">Autoriser les appels que si votre contact les autorise.</string>
     <string name="allow_your_contacts_to_call">Autorise vos contacts à vous appeler.</string>
     <string name="audio_video_calls">Appels audio/vidéo</string>
@@ -1403,4 +1401,9 @@
     <string name="v5_3_discover_join_groups_descr">- connexion au service d\'annuaire (BETA) !
 \n- accusés de réception (jusqu\'à 20 membres).
 \n- plus rapide et plus stable.</string>
+    <string name="rcv_group_event_open_chat">Ouvrir</string>
+    <string name="error_creating_member_contact">Erreur lors de la création du contact du membre</string>
+    <string name="compose_send_direct_message_to_connect">Envoyer un message direct pour vous connecter</string>
+    <string name="member_contact_send_direct_message">envoyer un message direct</string>
+    <string name="rcv_group_event_member_created_contact">s\'est connecté.e de manière directe</string>
 </resources>
