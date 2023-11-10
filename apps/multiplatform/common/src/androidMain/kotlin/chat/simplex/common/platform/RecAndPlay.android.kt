@@ -284,9 +284,11 @@ actual object AudioPlayer: AudioPlayerInterface {
     kotlin.runCatching {
       helperPlayer.setDataSource(unencryptedFilePath)
       helperPlayer.prepare()
-      helperPlayer.start()
-      helperPlayer.stop()
-      res = helperPlayer.duration
+      if (helperPlayer.duration <= 0) {
+        Log.e(TAG, "Duration of audio is incorrect: ${helperPlayer.duration}")
+      } else {
+        res = helperPlayer.duration
+      }
       helperPlayer.reset()
     }
     return res
