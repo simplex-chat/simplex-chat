@@ -9,9 +9,9 @@
     <string name="display_name_connecting">łączenie…</string>
     <string name="display_name_connection_established">połączenie ustanowione</string>
     <string name="connection_local_display_name">połączenie %1$d</string>
-    <string name="connect_via_contact_link">Połączyć się przez link kontaktowy\?</string>
+    <string name="connect_via_contact_link">Połączyć się przez adres kontaktowy?</string>
     <string name="connect_via_group_link">Połącz się przez link grupowy\?</string>
-    <string name="connect_via_invitation_link">Połączyć się przez link zapraszający\?</string>
+    <string name="connect_via_invitation_link">Połączyć się przez link jednorazowy?</string>
     <string name="deleted_description">usunięty</string>
     <string name="server_error">błąd</string>
     <string name="invalid_chat">nieprawidłowy czat</string>
@@ -723,7 +723,7 @@
     <string name="error_removing_member">Błąd usuwania członka</string>
     <string name="section_title_for_console">DLA KONSOLI</string>
     <string name="info_row_group">Grupa</string>
-    <string name="group_display_name_field">Wyświetlana nazwa grupy:</string>
+    <string name="group_display_name_field">Wprowadź nazwę grupy:</string>
     <string name="group_full_name_field">Pełna nazwa grupy:</string>
     <string name="info_row_local_name">Nazwa lokalna</string>
     <string name="member_info_section_title_member">CZŁONEK</string>
@@ -1406,4 +1406,25 @@
     <string name="compose_send_direct_message_to_connect">Wyślij wiadomość bezpośrednią aby połączyć</string>
     <string name="member_contact_send_direct_message">wyślij wiadomość bezpośrednią</string>
     <string name="rcv_group_event_member_created_contact">połącz bezpośrednio</string>
+    <string name="rcv_direct_event_contact_deleted">usunięto kontakt</string>
+    <string name="create_group_button">Utwórz grupę</string>
+    <string name="create_another_profile_button">Utwórz profil</string>
+    <string name="marked_deleted_items_description">%d wiadomości oznaczonych do usunięcia</string>
+    <string name="connect_plan_already_connecting">Już połączony!</string>
+    <string name="rcv_group_and_other_events">i %d innych wydarzeń</string>
+    <string name="connect_plan_connect_via_link">Połączyć przez link?</string>
+    <string name="connect_plan_already_joining_the_group">Już dołączono do grupy!</string>
+    <string name="moderated_items_description">%d wiadomości zmoderowanych przez %s</string>
+    <string name="connect_plan_connect_to_yourself">Połączyć się ze sobą?</string>
+    <string name="correct_name_to">Poprawić nazwę do %s?</string>
+    <string name="delete_messages__question">Usunąć %d wiadomości?</string>
+    <string name="connect_with_contact_name_question">Połączyć z %1$s?</string>
+    <string name="block_member_confirmation">Zablokuj</string>
+    <string name="blocked_items_description">%d wiadomości zablokowanych</string>
+    <string name="block_member_button">Zablokuj członka</string>
+    <string name="delete_and_notify_contact">Usuń i powiadom kontakt</string>
+    <string name="block_member_question">Zablokować członka?</string>
+    <string name="rcv_group_events_count">%d wydarzeń grupy</string>
+    <string name="block_member_desc">Wszystkie nowe wiadomości z %s będą ukryte!</string>
+    <string name="blocked_item_description">zablokowany</string>
 </resources>
