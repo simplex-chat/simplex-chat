@@ -275,6 +275,9 @@ responseToView user_ ChatConfig {logLevel, showReactions, showReceipts, testView
             <> (" :: avg: " <> sShow timeAvg <> " ms")
             <> (" :: " <> plain (T.unwords $ T.lines query))
      in ("Chat queries" : map viewQuery chatQueries) <> [""] <> ("Agent queries" : map viewQuery agentQueries)
+  CRStoreSQLMode {chatMode, agentMode} ->
+    let viewMode mode = plain $ "DB journal mode: " <> strEncode mode
+     in ["Chat " <> viewMode chatMode, "Agent " <> viewMode agentMode]      
   CRDebugLocks {chatLockName, agentLocks} ->
     [ maybe "no chat lock" (("chat lock: " <>) . plain) chatLockName,
       plain $ "agent locks: " <> LB.unpack (J.encode agentLocks)

@@ -29,7 +29,7 @@ import Simplex.Chat.Mobile.WebRTC
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), closeSQLiteStore)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile(..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -209,9 +209,14 @@ testChatApi tmp = do
       f = chatStoreFile dbPrefix
   Right st <- createChatStore f "myKey" MCYesUp
   Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
+  closeSQLiteStore st
   Right cc <- chatMigrateInit dbPrefix "myKey" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "anotherKey" "yesUp"
+  chatCloseStore cc `shouldReturn` ""
+  chatOpenStore cc "" >>= (`shouldContain` "file is not a database")
+  chatOpenStore cc "anotherKey" >>= (`shouldContain` "file is not a database")
+  chatOpenStore cc "myKey" `shouldReturn` ""
   chatSendCmd cc "/u" `shouldReturn` activeUser
   chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted

@@ -24,6 +24,7 @@ import Network.Socket
 import Simplex.Chat
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..))
 import Simplex.Chat.Core
+import Simplex.Chat.Mobile (chatCloseStore)
 import Simplex.Chat.Options
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
@@ -184,6 +185,7 @@ stopTestChat TestCC {chatController = cc, chatAsync, termAsync} = do
   stopChatController cc
   uninterruptibleCancel termAsync
   uninterruptibleCancel chatAsync
+  chatCloseStore cc `shouldReturn` ""
   threadDelay 200000
 
 withNewTestChat :: HasCallStack => FilePath -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a

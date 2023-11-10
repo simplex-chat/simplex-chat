@@ -54,7 +54,7 @@ import Simplex.Messaging.Agent.Client (AgentLocks, ProtocolTestFailure)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, SQLiteJournalMode, UpMigration, withTransaction)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
@@ -232,6 +232,7 @@ data ChatCommand
   | ExecChatStoreSQL Text
   | ExecAgentStoreSQL Text
   | SlowSQLQueries
+  | StoreSQLMode (Maybe SQLiteJournalMode)
   | APIGetChats {userId :: UserId, pendingConnections :: Bool}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
@@ -590,6 +591,7 @@ data ChatResponse
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
+  | CRStoreSQLMode {chatMode :: SQLiteJournalMode, agentMode :: SQLiteJournalMode}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
   | CRAgentStats {agentStats :: [[String]]}
   | CRAgentSubs {activeSubs :: Map Text Int, pendingSubs :: Map Text Int, removedSubs :: Map Text [String]}
