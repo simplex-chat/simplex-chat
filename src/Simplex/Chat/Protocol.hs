@@ -278,7 +278,7 @@ sharedGroupMsgEvent ev = case ev of
   XGrpInfo _ -> Just ev
   XGrpDirectInv {} -> Nothing
   XGrpReqMsg _ _ -> Nothing
-  XGrpFwdMsg _ -> Nothing
+  XGrpMsgHistory _ _ -> Nothing
   XGrpReqConn _ _ -> Nothing
   XInfoProbe _ -> Nothing
   XInfoProbeCheck _ -> Nothing
@@ -325,7 +325,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> ChatMsgEvent 'Json
   XGrpReqMsg :: [MemberMsgId] -> [MemberMsgId] -> ChatMsgEvent 'Json -- TODO test encoding
-  XGrpFwdMsg :: MsgForward -> ChatMsgEvent 'Json -- TODO test encoding
+  XGrpMsgHistory :: SharedMsgId -> [MsgForward] -> ChatMsgEvent 'Json -- TODO test encoding
   XGrpReqConn :: MemberId -> ConnReqInvitation -> ChatMsgEvent 'Json -- XGrpMemReq? -- TODO test encoding
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
@@ -671,7 +671,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpInfo_ :: CMEventTag 'Json
   XGrpDirectInv_ :: CMEventTag 'Json
   XGrpReqMsg_ :: CMEventTag 'Json
-  XGrpFwdMsg_ :: CMEventTag 'Json
+  XGrpMsgHistory_ :: CMEventTag 'Json
   XGrpReqConn_ :: CMEventTag 'Json
   XInfoProbe_ :: CMEventTag 'Json
   XInfoProbeCheck_ :: CMEventTag 'Json
@@ -723,7 +723,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpInfo_ -> "x.grp.info"
     XGrpDirectInv_ -> "x.grp.direct.inv"
     XGrpReqMsg_ -> "x.grp.req.msg"
-    XGrpFwdMsg_ -> "x.grp.fwd.msg"
+    XGrpMsgHistory_ -> "x.grp.msg.history"
     XGrpReqConn_ -> "x.grp.req.conn"
     XInfoProbe_ -> "x.info.probe"
     XInfoProbeCheck_ -> "x.info.probe.check"
@@ -776,7 +776,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.info" -> XGrpInfo_
         "x.grp.direct.inv" -> XGrpDirectInv_
         "x.grp.req.msg" -> XGrpReqMsg_
-        "x.grp.fwd.msg" -> XGrpFwdMsg_
+        "x.grp.msg.history" -> XGrpMsgHistory_
         "x.grp.req.conn" -> XGrpReqConn_
         "x.info.probe" -> XInfoProbe_
         "x.info.probe.check" -> XInfoProbeCheck_
@@ -825,7 +825,7 @@ toCMEventTag msg = case msg of
   XGrpInfo _ -> XGrpInfo_
   XGrpDirectInv _ _ -> XGrpDirectInv_
   XGrpReqMsg _ _ -> XGrpReqMsg_
-  XGrpFwdMsg _ -> XGrpFwdMsg_
+  XGrpMsgHistory _ _ -> XGrpMsgHistory_
   XGrpReqConn _ _ -> XGrpReqConn_
   XInfoProbe _ -> XInfoProbe_
   XInfoProbeCheck _ -> XInfoProbeCheck_
@@ -927,7 +927,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content"
       XGrpReqMsg_ -> XGrpReqMsg <$> p "unknownParentsIds" <*> p "knownLeavesIds"
-      XGrpFwdMsg_ -> XGrpFwdMsg <$> p "msgForward"
+      XGrpMsgHistory_ -> XGrpMsgHistory <$> p "reqSharedMsgId" <*> p "msgHistory"
       XGrpReqConn_ -> XGrpReqConn <$> p "memberId" <*> p "connReq"
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
@@ -990,7 +990,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpDirectInv connReq content -> o $ ("content" .=? content) ["connReq" .= connReq]
       XGrpReqMsg unknownParentsIds knownLeavesIds -> o ["unknownParentsIds" .= unknownParentsIds, "knownLeavesIds" .= knownLeavesIds]
-      XGrpFwdMsg msgForward -> o ["msgForward" .= msgForward]
+      XGrpMsgHistory reqSharedMsgId msgHistory -> o ["reqSharedMsgId" .= reqSharedMsgId, "msgHistory" .= msgHistory]
       XGrpReqConn memId connReq -> o ["memberId" .= memId, "connReq" .= connReq]
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
