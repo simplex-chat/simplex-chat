@@ -290,7 +290,7 @@
     <string name="chat_preferences_contact_allows">تسمح جهة الاتصال</string>
     <string name="confirm_verb">تأكيد</string>
     <string name="alert_title_contact_connection_pending">جهة الاتصال ليست متصلة بعد!</string>
-    <string name="connect_button">تواصل</string>
+    <string name="connect_button">اتصال</string>
     <string name="connect_via_link">تواصل عبر الرابط</string>
     <string name="connection_local_display_name">الاتصال %1$d</string>
     <string name="display_name_connection_established">انشأت الاتصال</string>
