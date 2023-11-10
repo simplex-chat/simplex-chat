@@ -1401,7 +1401,6 @@
     <string name="error_creating_member_contact">حدث خطأ أثناء إنشاء جهة اتصال للعضو</string>
     <string name="compose_send_direct_message_to_connect">أرسل رسالة مباشرة للاتصال</string>
     <string name="v5_3_simpler_incognito_mode">وضع التخفي اصبح أسهل</string>
-    <string name="error_sending_message_contact_invitation">جارِ إرسال رسالة دعوة الاتصال</string>
     <string name="v5_3_simpler_incognito_mode_descr">فعّل وضع التخفي عند الاتصال.</string>
     <string name="member_contact_send_direct_message">أرسل رسالة مباشرة</string>
     <string name="rcv_group_event_member_created_contact">متصل مباشرةً</string>

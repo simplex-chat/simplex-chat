@@ -1399,7 +1399,6 @@
     <string name="open_database_folder">פתח את תיקיית מסד הנתונים</string>
     <string name="v5_3_new_interface_languages_descr">ערבית, בולגרית, פינית, עברית, תאילנדית ואוקראינית - הודות למשתמשים ול-Weblate.</string>
     <string name="v5_3_new_desktop_app_descr">צור פרופיל חדש באפליקציית שולחן העבודה. 💻</string>
-    <string name="error_sending_message_contact_invitation">שליחת הודעה להזמנת איש קשר</string>
     <string name="passphrase_will_be_saved_in_settings">ביטוי הסיסמה יישמר בהגדרות כטקסט רגיל לאחר שתשנה אותו או תפעיל מחדש את האפליקציה.</string>
     <string name="v5_3_simpler_incognito_mode_descr">החלף מצב זהות נסתרת בעת חיבור.</string>
     <string name="v5_3_discover_join_groups_descr">- התחבר לשירות ספריות (ביטא)!

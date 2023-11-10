@@ -1401,7 +1401,6 @@
     <string name="v5_3_discover_join_groups">Objevte a připojte se ke skupinám</string>
     <string name="v5_3_simpler_incognito_mode">Zjednodušený režim inkognito</string>
     <string name="v5_3_new_desktop_app_descr">Vytvořit nový profil v desktopové aplikaci. 💻</string>
-    <string name="error_sending_message_contact_invitation">Odeslílám kontaktu pozvánku</string>
     <string name="v5_3_simpler_incognito_mode_descr">Změnit inkognito při připojování.</string>
     <string name="v5_3_discover_join_groups_descr">- připojit k adresáři skupin (BETA)!
 \n- doručenky (až 20 členů).

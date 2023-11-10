@@ -1402,7 +1402,6 @@
     <string name="rcv_group_event_open_chat">Open</string>
     <string name="error_creating_member_contact">Fout bij aanmaken contact</string>
     <string name="compose_send_direct_message_to_connect">Stuur een direct bericht om verbinding te maken</string>
-    <string name="error_sending_message_contact_invitation">Contact uitnodiging verzenden</string>
     <string name="member_contact_send_direct_message">stuur een direct bericht</string>
     <string name="rcv_group_event_member_created_contact">direct verbonden</string>
 </resources>

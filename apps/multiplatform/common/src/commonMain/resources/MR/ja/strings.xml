@@ -1400,7 +1400,6 @@
     <string name="v5_3_simpler_incognito_mode">シークレットモードの簡素化</string>
     <string name="v5_3_new_interface_languages_descr">アラビア語、ブルガリア語、フィンランド語、ヘブライ語、タイ語、ウクライナ語 - ユーザーとWeblateに感謝します。</string>
     <string name="v5_3_new_desktop_app_descr">デスクトップアプリで新しいプロファイルを作成します。 💻</string>
-    <string name="error_sending_message_contact_invitation">招待メッセージの送信</string>
     <string name="v5_3_simpler_incognito_mode_descr">接続時にシークレットモードを切り替えます。</string>
     <string name="member_contact_send_direct_message">ダイレクトメッセージを送る</string>
     <string name="rcv_group_event_member_created_contact">直接接続中</string>

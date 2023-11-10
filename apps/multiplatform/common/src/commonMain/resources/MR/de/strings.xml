@@ -1481,7 +1481,6 @@
     <string name="v5_3_simpler_incognito_mode">Vereinfachter Inkognito-Modus</string>
     <string name="v5_3_new_interface_languages_descr">Arabisch, Bulgarisch, Finnisch, Hebräisch, Thailändisch und Ukrainisch - Dank der Nutzer und Weblate.</string>
     <string name="v5_3_new_desktop_app_descr">Erstellen eines neuen Profils in der Desktop-App. 💻</string>
-    <string name="error_sending_message_contact_invitation">Nachricht für die Einladung eines Kontaktes senden</string>
     <string name="v5_3_simpler_incognito_mode_descr">Inkognito beim Verbinden einschalten.</string>
     <string name="v5_3_discover_join_groups_descr">- Verbindung mit dem Directory-Service (BETA)!
 \n- Empfangsbestätigungen (für bis zu 20 Mitglieder).

@@ -1401,7 +1401,7 @@
     <string name="v5_3_simpler_incognito_mode">Modo incógnito simplificado</string>
     <string name="v5_3_new_interface_languages_descr">Árabe, Búlgaro, Finlandés, Hebreo, Tailandés y Ucraniano - gracias a los usuarios y Weblate.</string>
     <string name="v5_3_new_desktop_app_descr">Crea perfil nuevo en la aplicación para PC. 💻</string>
-    <string name="error_sending_message_contact_invitation">Error al enviar mensaje de invitación al contacto</string>
+    <string name="error_sending_message_contact_invitation">Error al enviar invitación</string>
     <string name="v5_3_simpler_incognito_mode_descr">Activa incógnito al conectar.</string>
     <string name="v5_3_discover_join_groups_descr">- conexión al servicio de directorio (BETA)!
 \n- confirmaciones de entrega (hasta 20 miembros).

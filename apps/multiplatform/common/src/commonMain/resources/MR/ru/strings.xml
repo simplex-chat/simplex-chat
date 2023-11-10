@@ -345,8 +345,8 @@
     <string name="your_settings">Настройки</string>
     <string name="your_simplex_contact_address">Ваш SimpleX адрес</string>
     <string name="database_passphrase_and_export">База данных</string>
-    <string name="about_simplex_chat">О приложении</string>
-    <string name="how_to_use_simplex_chat">Руководство</string>
+    <string name="about_simplex_chat">Информация о SimpleX Chat</string>
+    <string name="how_to_use_simplex_chat">Как использовать</string>
     <string name="markdown_help">Форматирование сообщений</string>
     <string name="markdown_in_messages">Форматирование сообщений</string>
     <string name="chat_with_the_founder">Вопросы и предложения</string>
@@ -866,7 +866,7 @@
     <string name="contact_preferences">Предпочтения контакта</string>
     <string name="group_preferences">Предпочтения группы</string>
     <string name="set_group_preferences">Предпочтения группы</string>
-    <string name="your_preferences">Чаты и звонки</string>
+    <string name="your_preferences">Настройки чатов</string>
     <string name="direct_messages">Прямые сообщения</string>
     <string name="full_deletion">Удаление для всех</string>
     <string name="voice_messages">Голосовые сообщения</string>
@@ -1485,8 +1485,8 @@
     <string name="settings_is_storing_in_clear_text">Пароль хранится в настройках, как открытый текст.</string>
     <string name="rcv_group_event_open_chat">Открыть</string>
     <string name="error_creating_member_contact">Ошибка при создании контакта</string>
-    <string name="compose_send_direct_message_to_connect">Послать прямое сообщение адресату</string>
-    <string name="error_sending_message_contact_invitation">Передача приглашения адресату</string>
-    <string name="member_contact_send_direct_message">Постать прямое сообщение</string>
+    <string name="compose_send_direct_message_to_connect">Послать прямое сообщение контакту</string>
+    <string name="error_sending_message_contact_invitation">Ошибка отправки приглашения</string>
+    <string name="member_contact_send_direct_message">Послать прямое сообщение</string>
     <string name="rcv_group_event_member_created_contact">соединен напрямую</string>
 </resources>

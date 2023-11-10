@@ -1404,7 +1404,6 @@
     <string name="rcv_group_event_open_chat">Otwórz</string>
     <string name="error_creating_member_contact">Błąd tworzenia kontaktu członka</string>
     <string name="compose_send_direct_message_to_connect">Wyślij wiadomość bezpośrednią aby połączyć</string>
-    <string name="error_sending_message_contact_invitation">Wysyłanie wiadomość powitalną kontaktu</string>
     <string name="member_contact_send_direct_message">wyślij wiadomość bezpośrednią</string>
     <string name="rcv_group_event_member_created_contact">połącz bezpośrednio</string>
 </resources>
