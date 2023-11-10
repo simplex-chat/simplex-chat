@@ -425,7 +425,7 @@ data ChatCommand
   -- | CreateRemoteHost -- ^ Configure a new remote host
   | ListRemoteHosts
   | StartRemoteHost (Maybe (RemoteHostId, Bool)) -- ^ Start new or known remote host with optional multicast for known host
-  -- | SwitchRemoteHost (Maybe RemoteHostId) -- ^ Switch current remote host
+  | SwitchRemoteHost (Maybe RemoteHostId) -- ^ Switch current remote host
   | StopRemoteHost RHKey -- ^ Shut down a running session
   | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
   | StoreRemoteFile {remoteHostId :: RemoteHostId, storeEncrypted :: Maybe Bool, localPath :: FilePath}
@@ -456,7 +456,7 @@ allowRemoteCommand = \case
   QuitChat -> False
   ListRemoteHosts -> False
   StartRemoteHost _ -> False
-  -- SwitchRemoteHost {} -> False
+  SwitchRemoteHost {} -> False
   StoreRemoteFile {} -> False
   GetRemoteFile {} -> False
   StopRemoteHost _ -> False
@@ -644,6 +644,7 @@ data ChatResponse
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostCreated {remoteHost :: RemoteHostInfo}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
+  | CRCurrentRemoteHost {remoteHost_ :: Maybe RemoteHostInfo}
   | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text}
   | CRRemoteHostSessionCode {remoteHost_ :: Maybe RemoteHostInfo, sessionCode :: Text}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
@@ -1051,6 +1052,7 @@ throwDBError = throwError . ChatErrorDatabase
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteHostError
   = RHEMissing -- ^ No remote session matches this identifier
+  | RHEInactive -- ^ A session exists, but not active
   | RHEBusy -- ^ A session is already running
   | RHEBadState -- ^ Illegal state transition
   | RHEBadVersion {appVersion :: AppVersion}

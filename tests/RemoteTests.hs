@@ -41,6 +41,7 @@ remoteTests = describe "Remote" $ do
   describe "remote files" $ do
     it "store/get/send/receive files" remoteStoreFileTest
     it "should send files from CLI wihtout /store" remoteCLIFileTest
+  it "switches remote hosts" switchRemoteHostTest
 
 -- * Chat commands
 
@@ -322,6 +323,32 @@ remoteCLIFileTest = testChatCfg3 cfg aliceProfile aliceDesktopProfile bobProfile
   stopMobile mobile desktop
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp/tmp"}
+
+switchRemoteHostTest :: FilePath -> IO ()
+switchRemoteHostTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
+  startRemote mobile desktop
+  contactBob desktop bob
+
+  desktop ##> "/contacts"
+  desktop <## "bob (Bob)"
+
+  desktop ##> "/switch remote host local"
+  desktop <## "Using local profile"
+  desktop ##> "/contacts"
+
+  desktop ##> "/switch remote host 1"
+  desktop <## "Using remote host 1 (Mobile)"
+  desktop ##> "/contacts"
+  desktop <## "bob (Bob)"
+
+  desktop ##> "/switch remote host 123"
+  desktop <## "remote host 123 error: RHEMissing"
+
+  stopDesktop mobile desktop
+  desktop ##> "/contacts"
+  desktop ##> "/switch remote host 1"
+  desktop <## "remote host 1 error: RHEInactive"
+  desktop ##> "/contacts"
 
 -- * Utils
 

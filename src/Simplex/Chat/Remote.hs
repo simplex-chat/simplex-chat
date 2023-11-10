@@ -248,6 +248,17 @@ listRemoteHosts = do
     rhInfo active rh@RemoteHost {remoteHostId} =
       remoteHostInfo rh (M.member (RHId remoteHostId) active)
 
+switchRemoteHost :: ChatMonad m => Maybe RemoteHostId -> m (Maybe RemoteHostInfo)
+switchRemoteHost rhId_ = do
+  rhi_ <- forM rhId_ $ \rhId -> do
+    let rhKey = RHId rhId
+    rhi <- withError (const $ ChatErrorRemoteHost rhKey RHEMissing) $ (`remoteHostInfo` True) <$> withStore (`getRemoteHost` rhId)
+    active <- chatReadVar remoteHostSessions
+    case M.lookup rhKey active of
+      Just RHSessionConnected {} -> pure rhi
+      _ -> throwError $ ChatErrorRemoteHost rhKey RHEInactive
+  rhi_ <$ chatWriteVar currentRemoteHost rhId_
+
 -- XXX: replacing hostPairing replaced with sessionActive, could be a ($>)
 remoteHostInfo :: RemoteHost -> Bool -> RemoteHostInfo
 remoteHostInfo RemoteHost {remoteHostId, storePath, hostName} sessionActive =
