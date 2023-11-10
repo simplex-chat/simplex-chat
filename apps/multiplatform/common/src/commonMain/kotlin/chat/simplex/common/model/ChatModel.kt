@@ -147,12 +147,13 @@ object ChatModel {
       val currentCInfo = chats[i].chatInfo
       var newCInfo = cInfo
       if (currentCInfo is ChatInfo.Direct && newCInfo is ChatInfo.Direct) {
-        val currentStats = currentCInfo.contact.activeConn.connectionStats
-        val newStats = newCInfo.contact.activeConn.connectionStats
-        if (currentStats != null && newStats == null) {
+        val currentStats = currentCInfo.contact.activeConn?.connectionStats
+        val newConn = newCInfo.contact.activeConn
+        val newStats = newConn?.connectionStats
+        if (currentStats != null && newConn != null && newStats == null) {
           newCInfo = newCInfo.copy(
             contact = newCInfo.contact.copy(
-              activeConn = newCInfo.contact.activeConn.copy(
+              activeConn = newConn.copy(
                 connectionStats = currentStats
               )
             )
@@ -168,7 +169,7 @@ object ChatModel {
   fun updateContact(contact: Contact) = updateChat(ChatInfo.Direct(contact), addMissing = contact.directOrUsed)
 
   fun updateContactConnectionStats(contact: Contact, connectionStats: ConnectionStats) {
-    val updatedConn = contact.activeConn.copy(connectionStats = connectionStats)
+    val updatedConn = contact.activeConn?.copy(connectionStats = connectionStats)
     val updatedContact = contact.copy(activeConn = updatedConn)
     updateContact(updatedContact)
   }
@@ -570,11 +571,19 @@ object ChatModel {
   }
 
   fun setContactNetworkStatus(contact: Contact, status: NetworkStatus) {
-    networkStatuses[contact.activeConn.agentConnId] = status
+    val conn = contact.activeConn
+    if (conn != null) {
+      networkStatuses[conn.agentConnId] = status
+    }
   }
 
-  fun contactNetworkStatus(contact: Contact): NetworkStatus =
-    networkStatuses[contact.activeConn.agentConnId] ?: NetworkStatus.Unknown()
+  fun contactNetworkStatus(contact: Contact): NetworkStatus {
+    val conn = contact.activeConn
+    return if (conn != null)
+      networkStatuses[conn.agentConnId] ?: NetworkStatus.Unknown()
+    else
+      NetworkStatus.Unknown()
+  }
 
   fun addTerminalItem(item: TerminalItem) {
     if (terminalItems.size >= 500) {
@@ -891,7 +900,7 @@ data class Contact(
   val contactId: Long,
   override val localDisplayName: String,
   val profile: LocalProfile,
-  val activeConn: Connection,
+  val activeConn: Connection? = null,
   val viaGroup: Long? = null,
   val contactUsed: Boolean,
   val contactStatus: ContactStatus,
@@ -906,10 +915,10 @@ data class Contact(
   override val chatType get() = ChatType.Direct
   override val id get() = "@$contactId"
   override val apiId get() = contactId
-  override val ready get() = activeConn.connStatus == ConnStatus.Ready
+  override val ready get() = activeConn?.connStatus == ConnStatus.Ready
   val active get() = contactStatus == ContactStatus.Active
   override val sendMsgEnabled get() =
-    (ready && active && !(activeConn.connectionStats?.ratchetSyncSendProhibited ?: false))
+    (ready && active && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?: false))
         || nextSendGrpInv
   val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
   override val ntfsEnabled get() = chatSettings.enableNtfs == MsgFilter.All
@@ -927,13 +936,17 @@ data class Contact(
   override val image get() = profile.image
   val contactLink: String? = profile.contactLink
   override val localAlias get() = profile.localAlias
-  val verified get() = activeConn.connectionCode != null
+  val verified get() = activeConn?.connectionCode != null
 
   val directOrUsed: Boolean get() =
-    (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
+    if (activeConn != null) {
+      (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
+    } else {
+      true
+    }
 
   val contactConnIncognito =
-    activeConn.customUserProfileId != null
+    activeConn?.customUserProfileId != null
 
   fun allowsFeature(feature: ChatFeature): Boolean = when (feature) {
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.contactPreference.allow != FeatureAllowed.NO
