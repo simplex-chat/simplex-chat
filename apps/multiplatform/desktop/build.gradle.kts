@@ -68,6 +68,7 @@ compose {
           perUserInstall = false
           dirChooser = true
           shortcut = true
+          upgradeUuid = "CC9EFBC8-AFFF-40D8-BB69-FCD7CE99EFB9"
         }
         macOS {
           packageName = "SimpleX"
