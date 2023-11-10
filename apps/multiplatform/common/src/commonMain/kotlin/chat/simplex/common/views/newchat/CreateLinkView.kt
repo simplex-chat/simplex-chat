@@ -11,8 +11,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.PendingContactConnection
-import chat.simplex.common.views.helpers.ModalManager
-import chat.simplex.common.views.helpers.withApi
+import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.res.MR
 
@@ -24,7 +23,7 @@ enum class CreateLinkTab {
 fun CreateLinkView(m: ChatModel, initialSelection: CreateLinkTab) {
   val selection = remember { mutableStateOf(initialSelection) }
   val connReqInvitation = rememberSaveable { m.connReqInv }
-  val contactConnection: MutableState<PendingContactConnection?> = rememberSaveable { mutableStateOf(null) }
+  val contactConnection: MutableState<PendingContactConnection?> = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(null) }
   val creatingConnReq = rememberSaveable { mutableStateOf(false) }
   LaunchedEffect(selection.value) {
     if (

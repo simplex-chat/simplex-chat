@@ -378,7 +378,6 @@
     <string name="hidden_profile_password">รหัสผ่านโปรไฟล์ที่ซ่อนอยู่</string>
     <string name="hide_profile">ซ่อนโปรไฟล์</string>
     <string name="error_saving_user_password">เกิดข้อผิดพลาดในการบันทึกรหัสผ่านผู้ใช้</string>
-    <string name="full_name_optional__prompt">ชื่อเต็ม (ไม่บังคับ)</string>
     <string name="display_name">ชื่อที่แสดง</string>
     <string name="display_name_cannot_contain_whitespace">ชื่อที่แสดงต้องไม่มีช่องว่าง</string>
     <string name="how_to_use_markdown">วิธีใช้มาร์กดาวน์</string>
@@ -675,7 +674,6 @@
     <string name="network_use_onion_hosts_no_desc">โฮสต์หัวหอมจะไม่ถูกใช้</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">โฮสต์หัวหอมจะไม่ถูกใช้</string>
     <string name="password_to_show">รหัสผ่านที่จะแสดง</string>
-    <string name="no_spaces">ไม่มีช่องว่าง!</string>
     <string name="callstatus_missed">สายที่ไม่ได้รับ</string>
     <string name="people_can_connect_only_via_links_you_share">ผู้คนสามารถเชื่อมต่อกับคุณผ่านลิงก์ที่คุณแบ่งปันเท่านั้น</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">โปรโตคอลและโค้ดโอเพ่นซอร์ส – ใคร ๆ ก็สามารถเปิดใช้เซิร์ฟเวอร์ได้</string>

@@ -19,8 +19,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.TAG
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chatlist.openDirectChat
-import chat.simplex.common.views.chatlist.openGroupChat
+import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
@@ -170,6 +169,16 @@ suspend fun planAndConnect(
             generalGetString(MR.strings.contact_already_exists),
             String.format(generalGetString(MR.strings.you_are_already_connected_to_vName_via_this_link), contact.displayName)
           )
+        }
+        is ContactAddressPlan.ContactViaAddress -> {
+          Log.d(TAG, "planAndConnect, .ContactAddress, .ContactViaAddress, incognito=$incognito")
+          val contact = connectionPlan.contactAddressPlan.contact
+          if (incognito != null) {
+            close?.invoke()
+            connectContactViaAddress(chatModel, contact.contactId, incognito)
+          } else {
+            askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, contact, close, openChat = false)
+          }
         }
       }
       is ConnectionPlan.GroupLink -> when (connectionPlan.groupLinkPlan) {

@@ -721,19 +721,10 @@
 "Connect" = "Se connecter";
 
 /* No comment provided by engineer. */
-"Connect directly" = "Se connecter directement";
-
-/* No comment provided by engineer. */
 "Connect incognito" = "Se connecter incognito";
 
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "se connecter aux developpeurs de SimpleX Chat.";
-
-/* No comment provided by engineer. */
-"Connect via contact link" = "Se connecter via un lien de contact";
-
-/* No comment provided by engineer. */
-"Connect via group link?" = "Se connecter via le lien du groupe ?";
 
 /* No comment provided by engineer. */
 "Connect via link" = "Se connecter via un lien";
@@ -746,6 +737,9 @@
 
 /* No comment provided by engineer. */
 "connected" = "connecté";
+
+/* rcv group event chat item */
+"connected directly" = "s'est connecté.e de manière directe";
 
 /* No comment provided by engineer. */
 "connecting" = "connexion";
@@ -800,9 +794,6 @@
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Contact déjà existant";
-
-/* No comment provided by engineer. */
-"Contact and all messages will be deleted - this cannot be undone!" = "Le contact et tous les messages seront supprimés - impossible de revenir en arrière !";
 
 /* No comment provided by engineer. */
 "contact has e2e encryption" = "Ce contact a le chiffrement de bout en bout";
@@ -1009,9 +1000,6 @@
 "Delete Contact" = "Supprimer le contact";
 
 /* No comment provided by engineer. */
-"Delete contact?" = "Supprimer le contact ?";
-
-/* No comment provided by engineer. */
 "Delete database" = "Supprimer la base de données";
 
 /* server test step */
@@ -1166,12 +1154,6 @@
 
 /* No comment provided by engineer. */
 "Discover and join groups" = "Découvrir et rejoindre des groupes";
-
-/* No comment provided by engineer. */
-"Display name" = "Nom affiché";
-
-/* No comment provided by engineer. */
-"Display name:" = "Nom affiché :";
 
 /* No comment provided by engineer. */
 "Do it later" = "Faites-le plus tard";
@@ -1378,6 +1360,9 @@
 "Error creating group link" = "Erreur lors de la création du lien du groupe";
 
 /* No comment provided by engineer. */
+"Error creating member contact" = "Erreur lors de la création du contact du membre";
+
+/* No comment provided by engineer. */
 "Error creating profile!" = "Erreur lors de la création du profil !";
 
 /* No comment provided by engineer. */
@@ -1454,6 +1439,9 @@
 
 /* No comment provided by engineer. */
 "Error sending email" = "Erreur lors de l'envoi de l'e-mail";
+
+/* No comment provided by engineer. */
+"Error sending member contact invitation" = "Erreur lors de l'envoi de l'invitation de contact d'un membre";
 
 /* No comment provided by engineer. */
 "Error sending message" = "Erreur lors de l'envoi du message";
@@ -2227,7 +2215,8 @@
 "observer" = "observateur";
 
 /* enabled status
-   group pref value */
+   group pref value
+   time to disappear */
 "off" = "off";
 
 /* No comment provided by engineer. */
@@ -2309,6 +2298,9 @@
 "Only your contact can send voice messages." = "Seul votre contact peut envoyer des messages vocaux.";
 
 /* No comment provided by engineer. */
+"Open" = "Ouvrir";
+
+/* No comment provided by engineer. */
 "Open chat" = "Ouvrir le chat";
 
 /* authentication reason */
@@ -2325,12 +2317,6 @@
 
 /* No comment provided by engineer. */
 "Opening database…" = "Ouverture de la base de données…";
-
-/* No comment provided by engineer. */
-"Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "Ouvrir le lien dans le navigateur peut réduire la confidentialité et la sécurité de la connexion. Les liens SimpleX non fiables seront en rouge.";
-
-/* No comment provided by engineer. */
-"or chat with the developers" = "ou ici pour discuter avec les développeurs";
 
 /* member role */
 "owner" = "propriétaire";
@@ -2783,7 +2769,13 @@
 "Send delivery receipts to" = "Envoyer les accusés de réception à";
 
 /* No comment provided by engineer. */
-"Send direct message" = "Envoi de message direct";
+"send direct message" = "envoyer un message direct";
+
+/* No comment provided by engineer. */
+"Send direct message" = "Envoyer un message direct";
+
+/* No comment provided by engineer. */
+"Send direct message to connect" = "Envoyer un message direct pour vous connecter";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Envoyer un message éphémère";
@@ -3114,9 +3106,6 @@
 
 /* No comment provided by engineer. */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Le chiffrement fonctionne et le nouvel accord de chiffrement n'est pas nécessaire. Cela peut provoquer des erreurs de connexion !";
-
-/* No comment provided by engineer. */
-"The group is fully decentralized – it is visible only to the members." = "Le groupe est entièrement décentralisé – il n'est visible que par ses membres.";
 
 /* No comment provided by engineer. */
 "The hash of the previous message is different." = "Le hash du message précédent est différent.";
@@ -3611,9 +3600,6 @@
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Il vous sera demandé de vous authentifier lorsque vous démarrez ou reprenez l'application après 30 secondes en arrière-plan.";
 
 /* No comment provided by engineer. */
-"You will join a group this link refers to and connect to its group members." = "Vous allez rejoindre le groupe correspondant à ce lien et être mis en relation avec les autres membres du groupe.";
-
-/* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "Vous continuerez à recevoir des appels et des notifications des profils mis en sourdine lorsqu'ils sont actifs.";
 
 /* No comment provided by engineer. */
@@ -3642,9 +3628,6 @@
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Votre base de données de chat n'est pas chiffrée - définisez une phrase secrète.";
-
-/* No comment provided by engineer. */
-"Your chat profile will be sent to group members" = "Votre profil de chat sera envoyé aux membres du groupe";
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Vos profils de chat";

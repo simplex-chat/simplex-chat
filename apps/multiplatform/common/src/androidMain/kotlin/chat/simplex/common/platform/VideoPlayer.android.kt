@@ -1,13 +1,10 @@
 package chat.simplex.common.platform
 
-import android.media.MediaMetadataRetriever
 import android.media.session.PlaybackState
 import android.net.Uri
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import chat.simplex.common.helpers.toUri
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import com.google.android.exoplayer2.*
@@ -134,6 +131,7 @@ actual class VideoPlayer actual constructor(
     player.addListener(object: Player.Listener{
       override fun onIsPlayingChanged(isPlaying: Boolean) {
         super.onIsPlayingChanged(isPlaying)
+        keepScreenOn(isPlaying)
         // Produce non-ideal transition from stopped to playing state while showing preview image in ChatView
         //        videoPlaying.value = isPlaying
       }
@@ -192,6 +190,7 @@ actual class VideoPlayer actual constructor(
 
   override fun release(remove: Boolean) {
     player.release()
+    keepScreenOn(false)
     if (remove) {
       VideoPlayerHolder.players.remove(uri to gallery)
     }

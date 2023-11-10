@@ -321,7 +321,7 @@
     <string name="icon_descr_flip_camera">Voltear la cámara</string>
     <string name="group_invitation_expired">Invitación de grupo caducada</string>
     <string name="alert_message_group_invitation_expired">La invitación al grupo ya no es válida, ha sido eliminada por el remitente.</string>
-    <string name="delete_group_for_self_cannot_undo_warning">El grupo se eliminará para tí. ¡No podrá deshacerse!</string>
+    <string name="delete_group_for_self_cannot_undo_warning">El grupo será eliminado para tí. ¡No podrá deshacerse!</string>
     <string name="how_to_use_markdown">Cómo usar la sintaxis markdown</string>
     <string name="description_via_one_time_link_incognito">en modo incógnito mediante enlace de un solo uso</string>
     <string name="simplex_link_contact">Dirección de contacto SimpleX</string>
@@ -403,7 +403,6 @@
     <string name="image_descr">Imagen</string>
     <string name="file_not_found">Archivo no encontrado</string>
     <string name="how_to_use_simplex_chat">Guía de uso</string>
-    <string name="full_name_optional__prompt">Nombre completo (opcional)</string>
     <string name="callstate_ended">finalizado</string>
     <string name="settings_section_title_help">AYUDA</string>
     <string name="export_database">Exportar base de datos</string>
@@ -421,7 +420,7 @@
     <string name="v4_3_improved_privacy_and_security_desc">Ocultar pantalla de aplicaciones en aplicaciones recientes.</string>
     <string name="encrypt_database">Cifrar</string>
     <string name="icon_descr_expand_role">Ampliar la selección de roles</string>
-    <string name="delete_group_for_all_members_cannot_undo_warning">El grupo se eliminará para todos los miembros. ¡No podrá deshacerse!</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">El grupo será eliminado para todos los miembros. ¡No podrá deshacerse!</string>
     <string name="network_option_enable_tcp_keep_alive">Activar TCP keep-alive</string>
     <string name="feature_enabled_for_you">activado para tí</string>
     <string name="server_error">error</string>
@@ -438,7 +437,7 @@
     <string name="icon_descr_help">ayuda</string>
     <string name="share_link">Compartir enlace</string>
     <string name="how_it_works">Cómo funciona</string>
-    <string name="delete_message_cannot_be_undone_warning">El mensaje se eliminará. ¡No podrá deshacerse!</string>
+    <string name="delete_message_cannot_be_undone_warning">El mensaje será eliminado. ¡No podrá deshacerse!</string>
     <string name="incognito_info_protects">El modo incógnito protege tu privacidad creando un perfil aleatorio por cada contacto.</string>
     <string name="turn_off_battery_optimization"><![CDATA[Para usar SimpleX, por favor <b>permite que SimpleX se ejecute en segundo plano</b> en el siguiente cuadro de diálogo. De lo contrario las notificaciones se desactivarán.]]></string>
     <string name="install_simplex_chat_for_terminal">Instalar terminal para SimpleX Chat</string>
@@ -513,7 +512,8 @@
     <string name="large_file">¡Archivo grande!</string>
     <string name="mute_chat">Silenciar</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Asegúrate de que las direcciones del servidor WebRTC ICE tienen el formato correcto, están separadas por líneas y no duplicadas.</string>
-    <string name="network_use_onion_hosts_required_desc">Se requieren hosts .onion para la conexión</string>
+    <string name="network_use_onion_hosts_required_desc">Se requieren hosts .onion para la conexión
+\nAtención: no podrás conectarte a servidores que no tengan dirección .onion.</string>
     <string name="network_use_onion_hosts_prefer_desc_in_alert">Se usarán hosts .onion si están disponibles.</string>
     <string name="immune_to_spam_and_abuse">Inmune a spam y abuso</string>
     <string name="many_people_asked_how_can_it_deliver"><![CDATA[Muchos se preguntarán: <i>si SimpleX no tiene identificadores de usuario, ¿cómo puede entregar los mensajes\?</i>]]></string>
@@ -1089,13 +1089,12 @@
     <string name="alert_text_msg_bad_id">El ID del siguiente mensaje es incorrecto (menor o igual que el anterior).
 \nPuede ocurrir por algún bug o cuando la conexión está comprometida.</string>
     <string name="alert_text_fragment_please_report_to_developers">Por favor, informa a los desarrolladores.</string>
-    <string name="alert_text_decryption_error_too_many_skipped">%1$d mensajes omitidos.</string>
+    <string name="alert_text_decryption_error_too_many_skipped">%1$d mensaje(s) omitido(s).</string>
     <string name="alert_title_msg_bad_hash">Hash de mensaje incorrecto</string>
     <string name="alert_title_msg_bad_id">ID de mensaje incorrecto</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Puede ocurrir cuando tu o tu contacto estáis usando una copia de seguridad antigua de la base de datos.</string>
     <string name="alert_text_msg_bad_hash">El hash del mensaje anterior es diferente.</string>
-    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d mensajes no han podido ser descifrados.</string>
-    <string name="no_spaces">¡Sin espacios!</string>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d mensaje(s) no ha(n) podido ser descifrado(s).</string>
     <string name="stop_file__action">Detener archivo</string>
     <string name="revoke_file__message">El archivo será eliminado de los servidores.</string>
     <string name="stop_rcv_file__message">Se detendrá la recepción del archivo.</string>
@@ -1389,4 +1388,24 @@
     <string name="open_database_folder">Abrir carpeta base de datos</string>
     <string name="passphrase_will_be_saved_in_settings">La contraseña se almacenará en configuración como texto plano después de cambiarla o reiniciar la aplicación.</string>
     <string name="settings_is_storing_in_clear_text">La contraseña está almacenada en configuración como texto plano.</string>
+    <string name="rcv_group_event_open_chat">Abrir</string>
+    <string name="v5_3_encrypt_local_files">Cifra archivos almacenados y multimedia</string>
+    <string name="error_creating_member_contact">Error al establecer contacto con el miembro</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Atención</b>: los servidores de retransmisión están conectados mediante SOCKS proxy. Las llamadas y las previsualizaciones de enlaces usan conexión directa.]]></string>
+    <string name="encrypt_local_files">Cifra archivos locales</string>
+    <string name="v5_3_new_desktop_app">Nueva aplicación para PC!</string>
+    <string name="v5_3_new_interface_languages">6 idiomas nuevos para el interfaz</string>
+    <string name="v5_3_encrypt_local_files_descr">Cifrado de los nuevos archivos locales (excepto vídeos).</string>
+    <string name="compose_send_direct_message_to_connect">Enviar mensaje directo para conectar</string>
+    <string name="v5_3_discover_join_groups">Descubre y únete a grupos</string>
+    <string name="v5_3_simpler_incognito_mode">Modo incógnito simplificado</string>
+    <string name="v5_3_new_interface_languages_descr">Árabe, Búlgaro, Finlandés, Hebreo, Tailandés y Ucraniano - gracias a los usuarios y Weblate.</string>
+    <string name="v5_3_new_desktop_app_descr">Crea perfil nuevo en la aplicación para PC. 💻</string>
+    <string name="error_sending_message_contact_invitation">Error al enviar invitación</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Activa incógnito al conectar.</string>
+    <string name="v5_3_discover_join_groups_descr">- conexión al servicio de directorio (BETA)!
+\n- confirmaciones de entrega (hasta 20 miembros).
+\n- mayor rapidez y estabilidad.</string>
+    <string name="member_contact_send_direct_message">Enviar mensaje directo</string>
+    <string name="rcv_group_event_member_created_contact">conectado directamente</string>
 </resources>

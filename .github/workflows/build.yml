@@ -293,13 +293,26 @@ jobs:
           body: |
             ${{ steps.windows_build.outputs.bin_hash }}
 
+      - name: 'Setup MSYS2'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ucrt64
+          update: true
+          install: >-
+            git
+            perl
+            make
+          pacboy: >-
+            toolchain:p
+            cmake:p
+
       - name: Windows build desktop
         id: windows_desktop_build
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
-        env:
-          SIMPLEX_CI_REPO_URL: ${{ secrets.SIMPLEX_CI_REPO_URL }}
-        shell: bash
+        shell: msys2 {0}
         run: |
+          export PATH=$PATH:/c/ghcup/bin
           scripts/desktop/build-lib-windows.sh
           cd apps/multiplatform
           ./gradlew packageMsi
