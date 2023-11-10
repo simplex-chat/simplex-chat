@@ -42,6 +42,7 @@ remoteTests = describe "Remote" $ do
     it "store/get/send/receive files" remoteStoreFileTest
     it "should send files from CLI wihtout /store" remoteCLIFileTest
   it "switches remote hosts" switchRemoteHostTest
+  it "indicates remote hosts" indicateRemoteHostTest
 
 -- * Chat commands
 
@@ -349,6 +350,30 @@ switchRemoteHostTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \
   desktop ##> "/switch remote host 1"
   desktop <## "remote host 1 error: RHEInactive"
   desktop ##> "/contacts"
+
+indicateRemoteHostTest :: FilePath -> IO ()
+indicateRemoteHostTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cathProfile $ \mobile desktop bob cath -> do
+  connectUsers desktop cath
+  startRemote mobile desktop
+  contactBob desktop bob
+  -- remote contact -> remote host
+  bob #> "@alice hi"
+  desktop <#. "bob> hi"
+  -- local -> remote
+  cath #> "@alice_desktop hello"
+  desktop <##. "[local] "
+  -- local -> local
+  desktop ##> "/switch remote host local"
+  desktop <## "Using local profile"
+  desktop <##> cath
+  -- local -> remote
+  bob #> "@alice what's up?"
+  desktop <##. "[remote: 1] "
+
+  -- local -> local after disconnect
+  stopDesktop mobile desktop
+  desktop <##> cath
+  cath <##> desktop
 
 -- * Utils
 
