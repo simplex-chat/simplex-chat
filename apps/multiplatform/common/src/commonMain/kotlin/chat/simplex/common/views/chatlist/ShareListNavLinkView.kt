@@ -20,7 +20,7 @@ fun ShareListNavLinkView(chat: Chat, chatModel: ChatModel) {
     is ChatInfo.Direct ->
       ShareListNavLinkLayout(
         chatLinkPreview = { SharePreviewView(chat) },
-        click = { directChatAction(chat.chatInfo, chatModel) },
+        click = { directChatAction(chat.chatInfo.contact, chatModel) },
         stopped
       )
     is ChatInfo.Group ->
