@@ -251,19 +251,18 @@ parseDecryptHTTP2Body RemoteCrypto {hybridKey, sessionCode, signatures} hr HTTP2
       ctLenStr <- liftIO $ getNext 4
       let ctLen = decodeWord32 ctLenStr
       when (ctLen > fromIntegral (maxBound :: Int)) $ throwError RPEInvalidSize
+      chunks <- liftIO $ getLazy $ fromIntegral ctLen
       let hc = CH.hashUpdates (CH.hashInit @SHA512) [nonceStr, ctLenStr]
-      (ct, hc') <- liftIO $ getLazy [] hc (fromIntegral ctLen)
+          hc' = CH.hashUpdates hc chunks
       verifySignatures hc'
-      pure (nonce, ct)
-    getLazy :: [ByteString] -> CH.Context SHA512 -> Int -> IO (LazyByteString, CH.Context SHA512)
-    getLazy acc hc 0 = pure (LB.fromChunks $ reverse acc, hc)
-    getLazy acc hc n = do
+      pure (nonce, LB.fromChunks chunks)
+    getLazy :: Int -> IO [ByteString]
+    getLazy 0 = pure []
+    getLazy n = do
       let sz = min n xrcpBlockSize
       bs <- getNext sz
-      let acc' = bs : acc
-          hc' = CH.hashUpdate hc bs
-          n' = if B.length bs < sz then 0 else max 0 (n - xrcpBlockSize)
-      getLazy acc' hc' n'
+      let n' = if B.length bs < sz then 0 else max 0 (n - xrcpBlockSize)
+      (bs :) <$> getLazy n'
     verifySignatures :: CH.Context SHA512 -> ExceptT RemoteProtocolError IO ()
     verifySignatures hc = case signatures of
       RSVerify {sessPubKey, idPubKey} -> do
