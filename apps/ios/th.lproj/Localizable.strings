@@ -691,9 +691,6 @@
 "connect to SimpleX Chat developers." = "เชื่อมต่อกับนักพัฒนา SimpleX Chat";
 
 /* No comment provided by engineer. */
-"Connect via group link?" = "เชื่อมต่อผ่านลิงค์กลุ่ม?";
-
-/* No comment provided by engineer. */
 "Connect via link" = "เชื่อมต่อผ่านลิงก์";
 
 /* No comment provided by engineer. */
@@ -755,9 +752,6 @@
 
 /* No comment provided by engineer. */
 "Contact already exists" = "ผู้ติดต่อรายนี้มีอยู่แล้ว";
-
-/* No comment provided by engineer. */
-"Contact and all messages will be deleted - this cannot be undone!" = "ผู้ติดต่อและข้อความทั้งหมดจะถูกลบ - ไม่สามารถยกเลิกได้!";
 
 /* No comment provided by engineer. */
 "contact has e2e encryption" = "ผู้ติดต่อมีการ encrypt จากต้นจนจบ";
@@ -961,9 +955,6 @@
 "Delete Contact" = "ลบผู้ติดต่อ";
 
 /* No comment provided by engineer. */
-"Delete contact?" = "ลบผู้ติดต่อ?";
-
-/* No comment provided by engineer. */
 "Delete database" = "ลบฐานข้อมูล";
 
 /* server test step */
@@ -1109,12 +1100,6 @@
 
 /* server test step */
 "Disconnect" = "ตัดการเชื่อมต่อ";
-
-/* No comment provided by engineer. */
-"Display name" = "ชื่อที่แสดง";
-
-/* No comment provided by engineer. */
-"Display name:" = "ชื่อที่แสดง:";
 
 /* No comment provided by engineer. */
 "Do it later" = "ทำในภายหลัง";
@@ -2143,7 +2128,8 @@
 "observer" = "ผู้สังเกตการณ์";
 
 /* enabled status
-   group pref value */
+   group pref value
+   time to disappear */
 "off" = "ปิด";
 
 /* No comment provided by engineer. */
@@ -2241,12 +2227,6 @@
 
 /* No comment provided by engineer. */
 "Opening database…" = "กำลังเปิดฐานข้อมูล…";
-
-/* No comment provided by engineer. */
-"Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "การเปิดลิงก์ในเบราว์เซอร์อาจลดความเป็นส่วนตัวและความปลอดภัยของการเชื่อมต่อ ลิงก์ SimpleX ที่ไม่น่าเชื่อถือจะเป็นสีแดง";
-
-/* No comment provided by engineer. */
-"or chat with the developers" = "หรือแชทกับนักพัฒนาแอป";
 
 /* member role */
 "owner" = "เจ้าของ";
@@ -3008,9 +2988,6 @@
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "encryption กำลังทำงานและไม่จำเป็นต้องใช้ข้อตกลง encryption ใหม่ อาจทำให้การเชื่อมต่อผิดพลาดได้!";
 
 /* No comment provided by engineer. */
-"The group is fully decentralized – it is visible only to the members." = "กลุ่มมีการกระจายอำนาจอย่างเต็มที่ – มองเห็นได้เฉพาะสมาชิกเท่านั้น";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "แฮชของข้อความก่อนหน้านี้แตกต่างกัน";
 
 /* No comment provided by engineer. */
@@ -3485,9 +3462,6 @@
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "คุณจะต้องตรวจสอบสิทธิ์เมื่อคุณเริ่มหรือกลับมาใช้แอปพลิเคชันอีกครั้งหลังจากผ่านไป 30 วินาทีในพื้นหลัง";
 
 /* No comment provided by engineer. */
-"You will join a group this link refers to and connect to its group members." = "คุณจะเข้าร่วมกลุ่มที่ลิงก์นี้อ้างถึงและเชื่อมต่อกับสมาชิกในกลุ่ม";
-
-/* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "คุณจะยังได้รับสายเรียกเข้าและการแจ้งเตือนจากโปรไฟล์ที่ปิดเสียงเมื่อโปรไฟล์ของเขามีการใช้งาน";
 
 /* No comment provided by engineer. */
@@ -3516,9 +3490,6 @@
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "ฐานข้อมูลการแชทของคุณไม่ได้ถูก encrypt - ตั้งรหัสผ่านเพื่อ encrypt";
-
-/* No comment provided by engineer. */
-"Your chat profile will be sent to group members" = "โปรไฟล์การแชทของคุณจะถูกส่งไปยังสมาชิกในกลุ่ม";
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "โปรไฟล์แชทของคุณ";

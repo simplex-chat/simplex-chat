@@ -721,19 +721,10 @@
 "Connect" = "Соединиться";
 
 /* No comment provided by engineer. */
-"Connect directly" = "Соединиться напрямую";
-
-/* No comment provided by engineer. */
 "Connect incognito" = "Соединиться Инкогнито";
 
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "соединитесь с разработчиками.";
-
-/* No comment provided by engineer. */
-"Connect via contact link" = "Соединиться через ссылку-контакт";
-
-/* No comment provided by engineer. */
-"Connect via group link?" = "Соединиться через ссылку группы?";
 
 /* No comment provided by engineer. */
 "Connect via link" = "Соединиться через ссылку";
@@ -800,9 +791,6 @@
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Существующий контакт";
-
-/* No comment provided by engineer. */
-"Contact and all messages will be deleted - this cannot be undone!" = "Контакт и все сообщения будут удалены - это действие нельзя отменить!";
 
 /* No comment provided by engineer. */
 "contact has e2e encryption" = "у контакта есть e2e шифрование";
@@ -1009,9 +997,6 @@
 "Delete Contact" = "Удалить контакт";
 
 /* No comment provided by engineer. */
-"Delete contact?" = "Удалить контакт?";
-
-/* No comment provided by engineer. */
 "Delete database" = "Удалить данные чата";
 
 /* server test step */
@@ -1166,12 +1151,6 @@
 
 /* No comment provided by engineer. */
 "Discover and join groups" = "Найдите и вступите в группы";
-
-/* No comment provided by engineer. */
-"Display name" = "Имя профиля";
-
-/* No comment provided by engineer. */
-"Display name:" = "Имя профиля:";
 
 /* No comment provided by engineer. */
 "Do it later" = "Отложить";
@@ -2227,7 +2206,8 @@
 "observer" = "читатель";
 
 /* enabled status
-   group pref value */
+   group pref value
+   time to disappear */
 "off" = "нет";
 
 /* No comment provided by engineer. */
@@ -2325,12 +2305,6 @@
 
 /* No comment provided by engineer. */
 "Opening database…" = "Открытие базы данных…";
-
-/* No comment provided by engineer. */
-"Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения. Ссылки на неизвестные сайты будут красными.";
-
-/* No comment provided by engineer. */
-"or chat with the developers" = "или соединитесь с разработчиками";
 
 /* member role */
 "owner" = "владелец";
@@ -3116,9 +3090,6 @@
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Шифрование работает, и новое соглашение не требуется. Это может привести к ошибкам соединения!";
 
 /* No comment provided by engineer. */
-"The group is fully decentralized – it is visible only to the members." = "Группа полностью децентрализована — она видна только членам.";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Хэш предыдущего сообщения отличается.";
 
 /* No comment provided by engineer. */
@@ -3611,9 +3582,6 @@
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Вы будете аутентифицированы при запуске и возобновлении приложения, которое было 30 секунд в фоновом режиме.";
 
 /* No comment provided by engineer. */
-"You will join a group this link refers to and connect to its group members." = "Вы вступите в группу, на которую ссылается эта ссылка, и соединитесь с её членами.";
-
-/* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "Вы все равно получите звонки и уведомления в профилях без звука, когда они активные.";
 
 /* No comment provided by engineer. */
@@ -3642,9 +3610,6 @@
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "База данных НЕ зашифрована. Установите пароль, чтобы защитить Ваши данные.";
-
-/* No comment provided by engineer. */
-"Your chat profile will be sent to group members" = "Ваш профиль чата будет отправлен членам группы";
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Ваши профили чата";

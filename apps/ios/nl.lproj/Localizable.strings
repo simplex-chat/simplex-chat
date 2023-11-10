@@ -721,19 +721,10 @@
 "Connect" = "Verbind";
 
 /* No comment provided by engineer. */
-"Connect directly" = "Verbind direct";
-
-/* No comment provided by engineer. */
 "Connect incognito" = "Verbind incognito";
 
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "maak verbinding met SimpleX Chat-ontwikkelaars.";
-
-/* No comment provided by engineer. */
-"Connect via contact link" = "Verbinden via contact link?";
-
-/* No comment provided by engineer. */
-"Connect via group link?" = "Verbinden via groep link?";
 
 /* No comment provided by engineer. */
 "Connect via link" = "Maak verbinding via link";
@@ -746,6 +737,9 @@
 
 /* No comment provided by engineer. */
 "connected" = "verbonden";
+
+/* rcv group event chat item */
+"connected directly" = "direct verbonden";
 
 /* No comment provided by engineer. */
 "connecting" = "Verbinden";
@@ -800,9 +794,6 @@
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Contact bestaat al";
-
-/* No comment provided by engineer. */
-"Contact and all messages will be deleted - this cannot be undone!" = "Contact en alle berichten worden verwijderd, dit kan niet ongedaan worden gemaakt!";
 
 /* No comment provided by engineer. */
 "contact has e2e encryption" = "contact heeft e2e-codering";
@@ -1009,9 +1000,6 @@
 "Delete Contact" = "Verwijder contact";
 
 /* No comment provided by engineer. */
-"Delete contact?" = "Verwijder contact?";
-
-/* No comment provided by engineer. */
 "Delete database" = "Database verwijderen";
 
 /* server test step */
@@ -1166,12 +1154,6 @@
 
 /* No comment provided by engineer. */
 "Discover and join groups" = "Ontdek en sluit je aan bij groepen";
-
-/* No comment provided by engineer. */
-"Display name" = "Weergavenaam";
-
-/* No comment provided by engineer. */
-"Display name:" = "Weergavenaam:";
 
 /* No comment provided by engineer. */
 "Do it later" = "Doe het later";
@@ -1378,6 +1360,9 @@
 "Error creating group link" = "Fout bij maken van groep link";
 
 /* No comment provided by engineer. */
+"Error creating member contact" = "Fout bij aanmaken contact";
+
+/* No comment provided by engineer. */
 "Error creating profile!" = "Fout bij aanmaken van profiel!";
 
 /* No comment provided by engineer. */
@@ -1454,6 +1439,9 @@
 
 /* No comment provided by engineer. */
 "Error sending email" = "Fout bij het verzenden van e-mail";
+
+/* No comment provided by engineer. */
+"Error sending member contact invitation" = "Fout bij verzenden van contact uitnodiging";
 
 /* No comment provided by engineer. */
 "Error sending message" = "Fout bij verzenden van bericht";
@@ -1894,10 +1882,10 @@
 "It allows having many anonymous connections without any shared data between them in a single chat profile." = "Het maakt het mogelijk om veel anonieme verbindingen te hebben zonder enige gedeelde gegevens tussen hen in een enkel chat profiel.";
 
 /* No comment provided by engineer. */
-"It can happen when you or your connection used the old database backup." = "Het kan gebeuren wanneer u of de ander een oude databaseback-up gebruikt.";
+"It can happen when you or your connection used the old database backup." = "Het kan gebeuren wanneer u of de ander een oude database back-up gebruikt.";
 
 /* No comment provided by engineer. */
-"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Het kan gebeuren wanneer:\n1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de server.\n2. Decodering van het bericht is mislukt, omdat u of uw contact een oude databaseback-up heeft gebruikt.\n3. De verbinding is verbroken.";
+"It can happen when:\n1. The messages expired in the sending client after 2 days or on the server after 30 days.\n2. Message decryption failed, because you or your contact used old database backup.\n3. The connection was compromised." = "Het kan gebeuren wanneer:\n1. De berichten zijn na 2 dagen verlopen bij de verzendende client of na 30 dagen op de server.\n2. Decodering van het bericht is mislukt, omdat u of uw contact een oude database back-up heeft gebruikt.\n3. De verbinding is verbroken.";
 
 /* No comment provided by engineer. */
 "It seems like you are already connected via this link. If it is not the case, there was an error (%@)." = "Het lijkt erop dat u al bent verbonden via deze link. Als dit niet het geval is, is er een fout opgetreden (%@).";
@@ -2227,7 +2215,8 @@
 "observer" = "Waarnemer";
 
 /* enabled status
-   group pref value */
+   group pref value
+   time to disappear */
 "off" = "uit";
 
 /* No comment provided by engineer. */
@@ -2309,6 +2298,9 @@
 "Only your contact can send voice messages." = "Alleen uw contact kan spraak berichten verzenden.";
 
 /* No comment provided by engineer. */
+"Open" = "Open";
+
+/* No comment provided by engineer. */
 "Open chat" = "Gesprekken openen";
 
 /* authentication reason */
@@ -2325,12 +2317,6 @@
 
 /* No comment provided by engineer. */
 "Opening database…" = "Database openen…";
-
-/* No comment provided by engineer. */
-"Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "Het openen van de link in de browser kan de privacy en beveiliging van de verbinding verminderen. Niet vertrouwde SimpleX links worden rood weergegeven.";
-
-/* No comment provided by engineer. */
-"or chat with the developers" = "of praat met de ontwikkelaars";
 
 /* member role */
 "owner" = "Eigenaar";
@@ -2783,7 +2769,13 @@
 "Send delivery receipts to" = "Stuur ontvangstbewijzen naar";
 
 /* No comment provided by engineer. */
+"send direct message" = "stuur een direct bericht";
+
+/* No comment provided by engineer. */
 "Send direct message" = "Direct bericht sturen";
+
+/* No comment provided by engineer. */
+"Send direct message to connect" = "Stuur een direct bericht om verbinding te maken";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Stuur een verdwijnend bericht";
@@ -3114,9 +3106,6 @@
 
 /* No comment provided by engineer. */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "De versleuteling werkt en de nieuwe versleutelingsovereenkomst is niet vereist. Dit kan leiden tot verbindingsfouten!";
-
-/* No comment provided by engineer. */
-"The group is fully decentralized – it is visible only to the members." = "De groep is volledig gedecentraliseerd – het is alleen zichtbaar voor de leden.";
 
 /* No comment provided by engineer. */
 "The hash of the previous message is different." = "De hash van het vorige bericht is anders.";
@@ -3611,9 +3600,6 @@
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "U moet zich authenticeren wanneer u de app na 30 seconden op de achtergrond start of hervat.";
 
 /* No comment provided by engineer. */
-"You will join a group this link refers to and connect to its group members." = "U wordt lid van de groep waar deze link naar verwijst en maakt verbinding met de groepsleden.";
-
-/* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "U ontvangt nog steeds oproepen en meldingen van gedempte profielen wanneer deze actief zijn.";
 
 /* No comment provided by engineer. */
@@ -3642,9 +3628,6 @@
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Uw chat database is niet versleuteld, stel een wachtwoord in om deze te versleutelen.";
-
-/* No comment provided by engineer. */
-"Your chat profile will be sent to group members" = "Uw chat profiel wordt verzonden naar de groepsleden";
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Uw chat profielen";

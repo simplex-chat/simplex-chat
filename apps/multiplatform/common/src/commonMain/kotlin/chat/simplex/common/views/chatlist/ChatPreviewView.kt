@@ -185,10 +185,14 @@ fun ChatPreviewView(
     } else {
       when (cInfo) {
         is ChatInfo.Direct ->
-          if (cInfo.contact.nextSendGrpInv) {
-            Text(stringResource(MR.strings.member_contact_send_direct_message), color = MaterialTheme.colors.secondary)
-          } else if (!cInfo.ready && cInfo.contact.active) {
-            Text(stringResource(MR.strings.contact_connection_pending), color = MaterialTheme.colors.secondary)
+          if (cInfo.contact.activeConn == null && cInfo.contact.profile.contactLink != null) {
+            Text(stringResource(MR.strings.contact_tap_to_connect), color = MaterialTheme.colors.primary)
+          } else if (!cInfo.ready && cInfo.contact.activeConn != null) {
+            if (cInfo.contact.nextSendGrpInv) {
+              Text(stringResource(MR.strings.member_contact_send_direct_message), color = MaterialTheme.colors.secondary)
+            } else if (cInfo.contact.active) {
+              Text(stringResource(MR.strings.contact_connection_pending), color = MaterialTheme.colors.secondary)
+            }
           }
         is ChatInfo.Group ->
           when (cInfo.groupInfo.membership.memberStatus) {
@@ -215,7 +219,7 @@ fun ChatPreviewView(
   @Composable
   fun chatStatusImage() {
     if (cInfo is ChatInfo.Direct) {
-      if (cInfo.contact.active) {
+      if (cInfo.contact.active && cInfo.contact.activeConn != null) {
         val descr = contactNetworkStatus?.statusString
         when (contactNetworkStatus) {
           is NetworkStatus.Connected ->

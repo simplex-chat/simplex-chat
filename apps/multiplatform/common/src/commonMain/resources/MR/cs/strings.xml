@@ -5,7 +5,7 @@
     <string name="allow_to_send_voice">Hlasové zprávy povoleny.</string>
     <string name="v4_2_group_links_desc">Správci mohou vytvářet odkazy pro připojení ke skupinám.</string>
     <string name="accept_contact_button">Přijmout</string>
-    <string name="smp_servers_preset_add">Přidejte přednastavené servery</string>
+    <string name="smp_servers_preset_add">Přidat přednastavené servery</string>
     <string name="network_settings">Pokročilá nastavení sítě</string>
     <string name="accept">Přijmout</string>
     <string name="smp_servers_add">Přidat server…</string>
@@ -24,7 +24,7 @@
     <string name="users_add">Přidat profil</string>
     <string name="users_delete_all_chats_deleted">Všechny chaty a zprávy budou smazány – tuto akci nelze vrátit zpět!</string>
     <string name="allow_disappearing_messages_only_if">Povolte mizící zprávy, pouze pokud to váš kontakt povolí.</string>
-    <string name="v4_3_improved_server_configuration_desc">Přidejte servery skenováním QR kódů.</string>
+    <string name="v4_3_improved_server_configuration_desc">Přidat servery skenováním QR kódů.</string>
     <string name="chat_item_ttl_month">1 měsíci</string>
     <string name="chat_item_ttl_week">1 týdnu</string>
     <string name="callstatus_accepted">přijatý hovor</string>
@@ -328,7 +328,7 @@
     <string name="smp_server_test_secure_queue">Zabezpečit frontu</string>
     <string name="service_notifications">Okamžitá oznámení!</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>V nastavení ji lze vypnout</b> - oznámení se budou zobrazovat pokud aplikace běží.]]></string>
-    <string name="turn_off_battery_optimization"><![CDATA[Chcete-li ji používat, <b>vypněte optimalizaci baterie</b> pro SimpleX v dalším dialogu. V opačném případě budou oznámení vypnuta.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[Pro použití, prosím <b>povolte pro SimpleX běh na pozadí</b> v dalším dialogu. Jinak budou oznámení vypnuta.]]></string>
     <string name="periodic_notifications_desc">Aplikace pravidelně načítá nové zprávy - denně spotřebuje několik procent baterie. Aplikace nepoužívá push oznámení - data ze zařízení nejsou odesílána na servery.</string>
     <string name="enter_passphrase_notification_title">Je vyžadována přístupová fráze</string>
     <string name="enter_passphrase_notification_desc">Chcete-li dostávat oznámení, zadejte přístupovou frázi do databáze.</string>
@@ -386,7 +386,8 @@
     <string name="chat_with_the_founder">Zaslat otázky a nápady</string>
     <string name="smp_servers_test_server">Test serveru</string>
     <string name="enter_one_ICE_server_per_line">Servery ICE (jeden na řádek)</string>
-    <string name="network_use_onion_hosts_required_desc">Pro připojení budou vyžadováni Onion hostitelé.</string>
+    <string name="network_use_onion_hosts_required_desc">Pro připojení budou vyžadováni Onion hostitelé.
+\nVezměte prosím na vědomí: nebudete mít možnost připojení k serverům bez adresy .onion.</string>
     <string name="update_network_session_mode_question">Aktualizovat režim dopravní izolace\?</string>
     <string name="app_version_code">Sestavení aplikace: %s</string>
     <string name="share_link">Sdílet odkaz</string>
@@ -659,7 +660,6 @@
     <string name="we_do_not_store_contacts_or_messages_on_servers">Na serverech neukládáme žádné vaše kontakty ani zprávy (po doručení).</string>
     <string name="your_profile_is_stored_on_your_device">Váš profil, kontakty a doručené zprávy jsou uloženy ve vašem zařízení.</string>
     <string name="display_name">Zobrazované jméno</string>
-    <string name="full_name_optional__prompt">Celé Jméno (volitelné)</string>
     <string name="create_profile_button">Vytvořit</string>
     <string name="how_to_use_markdown">Jak používat markdown</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">K formátování zpráv můžete použít markdown:</string>
@@ -890,8 +890,8 @@
     <string name="theme_dark">Tmavé</string>
     <string name="theme">Téma</string>
     <string name="chat_preferences_contact_allows">Kontakt povolil</string>
-    <string name="chat_preferences_on">zapnuto</string>
-    <string name="chat_preferences_off">vypnout</string>
+    <string name="chat_preferences_on">zaplé</string>
+    <string name="chat_preferences_off">vyplé</string>
     <string name="chat_preferences">Chat předvolby</string>
     <string name="contact_preferences">Předvolby kontaktu</string>
     <string name="group_preferences">Předvolby skupiny</string>
@@ -1093,7 +1093,6 @@
     <string name="alert_text_decryption_error_too_many_skipped">%1$d zprývy přeskočeny.</string>
     <string name="alert_text_fragment_please_report_to_developers">Nahlaste to prosím vývojářům.</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Může se to stát, když vy nebo vaše připojení použijete starou zálohu databáze.</string>
-    <string name="no_spaces">Žádné mezery!</string>
     <string name="revoke_file__message">Soubor bude smazán ze serverů.</string>
     <string name="stop_rcv_file__message">Příjem souboru bude zastaven.</string>
     <string name="allow_calls_only_if">Povolte hovory, pouze pokud je váš kontakt povolí.</string>
@@ -1302,7 +1301,7 @@
     <string name="receipts_contacts_override_enabled">Odesílání potvrzení o doručení je povoleno pro %d kontakty</string>
     <string name="receipts_contacts_title_disable">Vypnout potvrzení\?</string>
     <string name="receipts_contacts_title_enable">Povolit potvrzení\?</string>
-    <string name="receipts_section_description_1">Mohou být přepsány v nastavení kontaktů</string>
+    <string name="receipts_section_description_1">Mohou být přepsány v nastavení kontaktů a skupin.</string>
     <string name="conn_event_ratchet_sync_ok">šifrování ok</string>
     <string name="conn_event_ratchet_sync_started">povoluji šifrování…</string>
     <string name="snd_conn_event_ratchet_sync_ok">šifrování ok pro %s</string>
@@ -1353,7 +1352,7 @@
     <string name="receipts_groups_override_disabled">Odesílání doručenky je zakázáno pro %d skupin</string>
     <string name="receipts_groups_disable_for_all">Vypnout pro všechny skupiny</string>
     <string name="send_receipts_disabled">vypnut</string>
-    <string name="send_receipts_disabled_alert_title">Receipts jsou zakázány</string>
+    <string name="send_receipts_disabled_alert_title">Potvrzení jsou zakázána</string>
     <string name="in_developing_title">Již brzy!</string>
     <string name="connect_use_current_profile">Použít aktuální profil</string>
     <string name="connect_use_new_incognito_profile">Použít nový incognito profil</string>
@@ -1370,24 +1369,41 @@
     <string name="receipts_section_groups">Malé skupiny (max. 20)</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
     <string name="rcv_group_event_2_members_connected">%s a %s připojen</string>
-    <string name="rcv_group_event_3_members_connected">%s, %s a %s připojeni</string>
-    <string name="rcv_group_event_n_members_connected">%s, %s a %d dalších členů připojeno</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s a %s připojen</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s a %d další členové připojeni</string>
     <string name="privacy_message_draft">Rozepsáno</string>
     <string name="privacy_show_last_messages">Zobrazit poslední zprávy</string>
     <string name="send_receipts_disabled_alert_msg">Tato skupina má více než %1$d členů, doručenky nejsou odeslány.</string>
     <string name="in_developing_desc">Tato funkce zatím není podporována. Vyzkoušejte další vydání.</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Databáze bude zašifrována a heslo bude uloženo v klíčence.</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Všimněte si prosím</b>: zprávy a relé souborů jsou spojeny prostřednictvím proxy SOCKS. Volání a odesílání náhledů odkazů pomocí přímého připojení.]]></string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Všimněte si prosím</b>: relé zpráv a souborů jsou připojeny prostřednictvím proxy SOCKS. Volání a odesílání náhledů odkazů používá přímé připojení.]]></string>
     <string name="encrypt_local_files">Šifrovat místní soubory</string>
-    <string name="you_can_change_it_later">Náhodné heslo je uloženo v nastavení jako prostý text.
-\nMůžete jej změnit později.</string>
+    <string name="you_can_change_it_later">Náhodná přístupová fráze je uložena v nastavení jako prostý text.
+\nMůžete ji později změnit.</string>
     <string name="database_encryption_will_be_updated_in_settings">Heslo pro šifrování databáze bude aktualizováno a uloženo v klíčence.</string>
-    <string name="remove_passphrase_from_settings">Odebrat heslo z nastavení\?</string>
-    <string name="use_random_passphrase">Použít náhodné heslo</string>
-    <string name="save_passphrase_in_settings">Uložit heslo v nastavení</string>
-    <string name="setup_database_passphrase">Nastavení hesla databáze</string>
-    <string name="set_database_passphrase">Nastavit heslo databáze</string>
-    <string name="open_database_folder">Otevřete složku databáze</string>
-    <string name="passphrase_will_be_saved_in_settings">Heslo bude uloženo v nastavení jako prostý text až jej změníte nebo po restartu aplikace.</string>
-    <string name="settings_is_storing_in_clear_text">Heslo je uloženo v nastavení jako prostý text.</string>
+    <string name="remove_passphrase_from_settings">Odebrat přístupovou frázi z nastavení\?</string>
+    <string name="use_random_passphrase">Použít náhodnou přístupovou frázi</string>
+    <string name="save_passphrase_in_settings">Uložit přístupovou frázi v nastavení</string>
+    <string name="setup_database_passphrase">Nastavení přístupové fráze databáze</string>
+    <string name="set_database_passphrase">Nastavit přístupovou frázi databáze</string>
+    <string name="open_database_folder">Otevřít složku databáze</string>
+    <string name="passphrase_will_be_saved_in_settings">Přístupová fráze bude uložena v nastavení jako prostý text až ji změníte nebo po restartu aplikace.</string>
+    <string name="settings_is_storing_in_clear_text">Přístupová fráze je uložena v nastavení jako prostý text.</string>
+    <string name="v5_3_new_interface_languages">6 nových jazyků pro rozhraní</string>
+    <string name="v5_3_encrypt_local_files_descr">Aplikace šifruje nové místní soubory (kromě videí)</string>
+    <string name="v5_3_new_interface_languages_descr">Arabština, bulharština, finština, hebrejština, thajština a ukrajinština - díky uživatelům a Weblate.</string>
+    <string name="rcv_group_event_member_created_contact">propojeno napřímo</string>
+    <string name="rcv_group_event_open_chat">Otevřít</string>
+    <string name="v5_3_encrypt_local_files">Šifrování uložených souborů a médií</string>
+    <string name="error_creating_member_contact">Chyba vytváření kontaktu</string>
+    <string name="v5_3_new_desktop_app">Nová desktopová aplikace!</string>
+    <string name="compose_send_direct_message_to_connect">Odeslat přímou zprávu pro připojení</string>
+    <string name="v5_3_discover_join_groups">Objevte a připojte se ke skupinám</string>
+    <string name="v5_3_simpler_incognito_mode">Zjednodušený režim inkognito</string>
+    <string name="v5_3_new_desktop_app_descr">Vytvořit nový profil v desktopové aplikaci. 💻</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Změnit inkognito při připojování.</string>
+    <string name="v5_3_discover_join_groups_descr">- připojit k adresáři skupin (BETA)!
+\n- doručenky (až 20 členů).
+\n- rychlejší a stabilnější.</string>
+    <string name="member_contact_send_direct_message">odeslat přímou zprávu</string>
 </resources>

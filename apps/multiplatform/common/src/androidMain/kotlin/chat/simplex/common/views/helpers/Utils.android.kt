@@ -11,6 +11,7 @@ import android.text.Spanned
 import android.text.SpannedString
 import android.text.style.*
 import android.util.Base64
+import android.view.WindowManager
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.*
@@ -41,6 +42,17 @@ fun Resources.getText(id: StringResource, vararg args: Any): CharSequence {
   val htmlResource = resource.toHtmlWithoutParagraphs()
   val formattedHtml = String.format(htmlResource, *escapedArgs)
   return HtmlCompat.fromHtml(formattedHtml, HtmlCompat.FROM_HTML_MODE_LEGACY)
+}
+
+fun keepScreenOn(on: Boolean) {
+  val window = mainActivity.get()?.window ?: return
+  Handler(Looper.getMainLooper()).post {
+    if (on) {
+      window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    } else {
+      window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    }
+  }
 }
 
 actual fun escapedHtmlToAnnotatedString(text: String, density: Density): AnnotatedString {
