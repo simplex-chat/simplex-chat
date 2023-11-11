@@ -18,7 +18,7 @@
     <string name="network_settings">Geavanceerde netwerk instellingen</string>
     <string name="network_enable_socks_info">Toegang tot de servers via SOCKS proxy op poort %d\? De proxy moet worden gestart voordat u deze optie inschakelt.</string>
     <string name="alert_title_cant_invite_contacts">Kan geen contacten uitnodigen!</string>
-    <string name="allow_direct_messages">Sta het verzenden van directe berichten naar leden toe.</string>
+    <string name="allow_direct_messages">Sta het verzenden van directe berichten naar gebruikers toe.</string>
     <string name="allow_to_delete_messages">Sta toe om verzonden berichten onomkeerbaar te verwijderen.</string>
     <string name="allow_to_send_voice">Sta toe om spraak berichten te verzenden.</string>
     <string name="chat_is_running">Chat is actief</string>
@@ -44,7 +44,7 @@
     <string name="v4_2_group_links_desc">Beheerders kunnen de uitnodiging links naar groepen aanmaken.</string>
     <string name="v4_3_improved_server_configuration_desc">Servers toevoegen door QR-codes te scannen.</string>
     <string name="group_member_role_admin">Beheerder</string>
-    <string name="all_group_members_will_remain_connected">Alle groepsleden blijven verbonden.</string>
+    <string name="all_group_members_will_remain_connected">Alle gebruikers blijven verbonden.</string>
     <string name="allow_verb">Toestaan</string>
     <string name="chat_item_ttl_day">1 dag</string>
     <string name="accept_feature">Accepteer</string>
@@ -263,7 +263,7 @@
     <string name="auth_device_authentication_is_disabled_turning_off">Apparaatverificatie is uitgeschakeld. SimpleX Vergrendelen uitschakelen.</string>
     <string name="display_name">Vul uw naam in:</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Apparaatverificatie is niet ingeschakeld. Je kunt SimpleX Vergrendelen inschakelen via Instellingen zodra je apparaatverificatie hebt ingeschakeld.</string>
-    <string name="direct_messages_are_prohibited_in_chat">Directe berichten tussen leden zijn verboden in deze groep.</string>
+    <string name="direct_messages_are_prohibited_in_chat">Directe berichten tussen gebruikers zijn verboden in deze groep.</string>
     <string name="total_files_count_and_size">%d bestand(en) met een totale grootte van %s</string>
     <string name="ttl_hour">%d uur</string>
     <string name="no_call_on_lock_screen">Uitzetten</string>
@@ -300,7 +300,7 @@
     <string name="error_importing_database">Fout bij het importeren van de chat database</string>
     <string name="encrypt_database_question">Database versleutelen\?</string>
     <string name="alert_title_no_group">Groep niet gevonden!</string>
-    <string name="group_display_name_field">Groepsnaam invoeren:</string>
+    <string name="group_display_name_field">Groep naam invoeren:</string>
     <string name="failed_to_create_user_duplicate_title">Dubbele weergavenaam!</string>
     <string name="error_sending_message">Fout bij verzenden van bericht</string>
     <string name="failed_to_active_user_title">Fout bij wisselen van profiel!</string>
@@ -335,7 +335,7 @@
     <string name="snd_group_event_group_profile_updated">groep profiel bijgewerkt</string>
     <string name="group_member_status_group_deleted">groep verwijderd</string>
     <string name="icon_descr_expand_role">Vouw de rolselectie uit</string>
-    <string name="delete_group_for_all_members_cannot_undo_warning">Groep wordt verwijderd voor alle leden, dit kan niet ongedaan worden gemaakt!</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">Groep wordt verwijderd voor alle gebruikers, dit kan niet ongedaan worden gemaakt!</string>
     <string name="error_creating_link_for_group">Fout bij maken van groep link</string>
     <string name="error_deleting_link_for_group">Fout bij verwijderen groep link</string>
     <string name="group_link">Groep link</string>
@@ -347,9 +347,9 @@
     <string name="feature_enabled">ingeschakeld</string>
     <string name="feature_enabled_for_contact">ingeschakeld voor contact</string>
     <string name="feature_enabled_for_you">voor u ingeschakeld</string>
-    <string name="group_members_can_delete">Groepsleden kunnen verzonden berichten onherroepelijk verwijderen.</string>
-    <string name="group_members_can_send_dms">Groepsleden kunnen directe berichten sturen</string>
-    <string name="group_members_can_send_voice">Groepsleden kunnen spraak berichten verzenden.</string>
+    <string name="group_members_can_delete">Gebruikers kunnen verzonden berichten onherroepelijk verwijderen.</string>
+    <string name="group_members_can_send_dms">Gebruikers kunnen directe berichten sturen</string>
+    <string name="group_members_can_send_voice">Gebruikers kunnen spraak berichten verzenden.</string>
     <string name="v4_5_transport_isolation_descr">Per chat profiel (standaard) of per verbinding (BETA).</string>
     <string name="v4_5_multiple_chat_profiles_descr">Verschillende namen, avatars en transportisolatie.</string>
     <string name="v4_4_french_interface">Franse interface</string>
@@ -368,7 +368,7 @@
     <string name="group_invitation_expired">Groep uitnodiging verlopen</string>
     <string name="icon_descr_file">Bestand</string>
     <string name="section_title_for_console">VOOR CONSOLE</string>
-    <string name="group_profile_is_stored_on_members_devices">Groep profiel wordt opgeslagen op de apparaten van de leden, niet op de servers.</string>
+    <string name="group_profile_is_stored_on_members_devices">Groep profiel wordt opgeslagen op de apparaten van de gebruikers, niet op de servers.</string>
     <string name="notification_preview_mode_hidden">Verborgen</string>
     <string name="delete_group_for_self_cannot_undo_warning">De groep wordt voor u verwijderd, dit kan niet ongedaan worden gemaakt!</string>
     <string name="hide_notification">Verbergen</string>
@@ -382,7 +382,7 @@
     <string name="gallery_video_button">Video</string>
     <string name="error_saving_ICE_servers">Fout bij opslaan van ICE servers</string>
     <string name="callstate_ended">geëindigd</string>
-    <string name="group_members_can_send_disappearing">Groepsleden kunnen verdwijnende berichten sturen.</string>
+    <string name="group_members_can_send_disappearing">Gebruikers kunnen verdwijnende berichten sturen.</string>
     <string name="ttl_week">%d week</string>
     <string name="ttl_w">%dw</string>
     <string name="ttl_weeks">%d weken</string>
@@ -407,7 +407,7 @@
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Als je een uitnodiging link voor SimpleX Chat hebt ontvangen, kun je deze in je browser openen:</string>
     <string name="onboarding_notifications_mode_subtitle">Dit kan later worden gewijzigd via instellingen.</string>
     <string name="join_group_question">Deelnemen aan groep\?</string>
-    <string name="icon_descr_add_members">Nodig leden uit</string>
+    <string name="icon_descr_add_members">Nodig gebruikers uit</string>
     <string name="no_contacts_selected">Geen contacten geselecteerd</string>
     <string name="v4_4_live_messages">Live berichten</string>
     <string name="icon_descr_instant_notifications">Onmiddellijke meldingen</string>
@@ -457,7 +457,7 @@
     <string name="keychain_error">Keychain fout</string>
     <string name="join_group_button">Word lid van</string>
     <string name="leave_group_question">Groep verlaten\?</string>
-    <string name="new_member_role">Nieuwe leden rol</string>
+    <string name="new_member_role">Nieuwe gebruikers rol</string>
     <string name="no_contacts_to_add">Geen contacten om toe te voegen</string>
     <string name="incognito_info_allows">Het maakt het mogelijk om veel anonieme verbindingen te hebben zonder enige gedeelde gegevens tussen hen in een enkel chat profiel.</string>
     <string name="theme_light">Licht</string>
@@ -466,7 +466,7 @@
     <string name="v4_5_italian_interface">Italiaanse interface</string>
     <string name="v4_5_message_draft">Concept bericht</string>
     <string name="v4_5_reduced_battery_usage_descr">Meer verbeteringen volgen snel!</string>
-    <string name="button_add_members">Nodig leden uit</string>
+    <string name="button_add_members">Nodig gebruikers uit</string>
     <string name="notification_display_mode_hidden_desc">Verberg contact en bericht</string>
     <string name="turn_off_battery_optimization"><![CDATA[Om het te gebruiken, kunt u Simplex in het volgende dialoogvenster \u0020<b>op de achtergrond uitvoeren</b>. Anders worden de meldingen uitgeschakeld.]]></string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Als u ervoor kiest om te weigeren, wordt de afzender NIET op de hoogte gesteld.</string>
@@ -578,7 +578,7 @@
     <string name="add_contact">Eenmalige uitnodiging link</string>
     <string name="network_use_onion_hosts_required_desc_in_alert">Onion hosts zijn vereist voor verbinding.</string>
     <string name="only_group_owners_can_change_prefs">Alleen groep eigenaren kunnen groep voorkeuren wijzigen.</string>
-    <string name="only_stored_on_members_devices">(alleen opgeslagen door groepsleden)</string>
+    <string name="only_stored_on_members_devices">(alleen opgeslagen door gebruikers)</string>
     <string name="smp_servers_preset_server">Vooraf ingestelde server</string>
     <string name="periodic_notifications_disabled">Periodieke meldingen zijn uitgeschakeld!</string>
     <string name="icon_descr_server_status_pending">In behandeling</string>
@@ -630,7 +630,7 @@
     <string name="save_archive">Bewaar archief</string>
     <string name="rcv_group_event_updated_group_profile">bijgewerkt groep profiel</string>
     <string name="group_member_status_removed">verwijderd</string>
-    <string name="group_main_profile_sent">Uw chat profiel wordt verzonden naar de groepsleden</string>
+    <string name="group_main_profile_sent">Uw chat profiel wordt verzonden naar de gebruikers</string>
     <string name="failed_to_create_user_duplicate_desc">Je hebt al een chat profiel met dezelfde weergave naam. Kies een andere naam.</string>
     <string name="you_are_already_connected_to_vName_via_this_link">U bent al verbonden met %1$s.</string>
     <string name="error_smp_test_failed_at_step">Test mislukt bij stap %s.</string>
@@ -717,7 +717,7 @@
     <string name="save_and_notify_contact">Opslaan en Contact melden</string>
     <string name="your_current_profile">Je huidige profiel</string>
     <string name="save_and_notify_contacts">Opslaan en Contacten melden</string>
-    <string name="save_and_notify_group_members">Opslaan en Groepsleden melden</string>
+    <string name="save_and_notify_group_members">Opslaan en gebruikers melden</string>
     <string name="strikethrough_text">staking</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Het berichten- en applicatieplatform dat uw privacy en veiligheid beschermt.</string>
     <string name="profile_is_only_shared_with_your_contacts">Het profiel wordt alleen gedeeld met uw contacten.</string>
@@ -769,13 +769,13 @@
     <string name="rcv_group_event_member_deleted">verwijderd %1$s</string>
     <string name="rcv_group_event_user_deleted">heeft je verwijderd</string>
     <string name="group_info_member_you">jij: %1$s</string>
-    <string name="group_info_section_title_num_members">%1$s LEDEN</string>
-    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">U kunt een link of een QR-code delen. Iedereen kan lid worden van de groep. U verliest geen leden van de groep als u deze later verwijdert.</string>
+    <string name="group_info_section_title_num_members">%1$s GEBRUIKERS</string>
+    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">U kunt een link of een QR-code delen. Iedereen kan lid worden van de groep. U verliest geen gebruikers van de groep als u deze later verwijdert.</string>
     <string name="switch_verb">Wijzig</string>
     <string name="member_role_will_be_changed_with_notification">De rol wordt gewijzigd in \"%s\". Iedereen in de groep wordt op de hoogte gebracht.</string>
     <string name="receiving_via">Ontvang via</string>
     <string name="save_group_profile">Groep profiel opslaan</string>
-    <string name="group_is_decentralized">Volledig gedecentraliseerd – alleen zichtbaar voor leden.</string>
+    <string name="group_is_decentralized">Volledig gedecentraliseerd – alleen zichtbaar voor gebruikers.</string>
     <string name="network_option_tcp_connection_timeout">Timeout van TCP-verbinding</string>
     <string name="voice_messages">Spraak berichten</string>
     <string name="voice_prohibited_in_this_chat">Spraak berichten zijn verboden in dit gesprek.</string>
@@ -791,15 +791,15 @@
     <string name="database_restore_error">Databasefout herstellen</string>
     <string name="unknown_error">Onbekende fout</string>
     <string name="wrong_passphrase_title">Verkeerd wachtwoord!</string>
-    <string name="you_are_invited_to_group_join_to_connect_with_group_members">U bent uitgenodigd voor de groep. Word lid om in contact te komen met groepsleden.</string>
-    <string name="group_invitation_tap_to_join">Tik om mee te doen</string>
-    <string name="group_invitation_tap_to_join_incognito">Tik om incognito deel te nemen</string>
-    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Je bent lid geworden van deze groep. Verbinding maken met uitnodigend groepslid.</string>
+    <string name="you_are_invited_to_group_join_to_connect_with_group_members">U bent uitgenodigd voor de groep. Word lid om in contact te komen met de gebruikers.</string>
+    <string name="group_invitation_tap_to_join">Tik om lid te worden</string>
+    <string name="group_invitation_tap_to_join_incognito">Tik om incognito lid te worden</string>
+    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Je bent lid geworden van deze groep. Verbinding maken met uitnodigend gebruiker.</string>
     <string name="you_sent_group_invitation">Je hebt een groep uitnodiging verzonden</string>
     <string name="snd_group_event_user_left">jij bent vertrokken</string>
     <string name="snd_conn_event_switch_queue_phase_completed">je bent van adres veranderd</string>
     <string name="select_contacts">Selecteer contacten</string>
-    <string name="skip_inviting_button">Sla het uitnodigen van leden over</string>
+    <string name="skip_inviting_button">Sla het uitnodigen van gebruikers over</string>
     <string name="num_contacts_selected">%d contact(en) geselecteerd</string>
     <string name="remove_member_confirmation">Verwijderen</string>
     <string name="button_remove_member">Gebruiker verwijderen</string>
@@ -831,7 +831,7 @@
     <string name="app_name">SimpleX</string>
     <string name="connected_to_server_to_receive_messages_from_contact">U bent verbonden met de server die wordt gebruikt om berichten van dit contact te ontvangen.</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Je profiel wordt verzonden naar het contact van wie je deze link hebt ontvangen.</string>
-    <string name="you_will_join_group">U wordt lid van de groep waar deze link naar verwijst en maakt verbinding met de groepsleden.</string>
+    <string name="you_will_join_group">Je maakt verbinding met alle gebruikers.</string>
     <string name="notifications_mode_off">Uitvoeren bij geopende app</string>
     <string name="settings_notification_preview_mode_title">Toon voorbeeld</string>
     <string name="ntf_channel_calls">SimpleX Chat oproepen</string>
@@ -864,7 +864,7 @@
     <string name="callstate_received_confirmation">bevestiging ontvangen…</string>
     <string name="callstate_waiting_for_confirmation">Wachten op bevestiging…</string>
     <string name="first_platform_without_user_ids">Het eerste platform zonder gebruikers-ID\'s, privé door ontwerp.</string>
-    <string name="prohibit_direct_messages">Verbied het sturen van directe berichten naar leden.</string>
+    <string name="prohibit_direct_messages">Verbied het sturen van directe berichten naar gebruikers.</string>
     <string name="prohibit_sending_voice">Verbieden het verzenden van spraak berichten.</string>
     <string name="v4_2_security_assessment_desc">De beveiliging van SimpleX Chat is gecontroleerd door Trail of Bits.</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Met optioneel welkomst bericht.</string>
@@ -949,10 +949,10 @@
     <string name="integrity_msg_skipped">%1$d bericht(en) overgeslagen</string>
     <string name="moderated_description">gemodereerd</string>
     <string name="moderated_item_description">gemodereerd door %s</string>
-    <string name="delete_member_message__question">Bericht van lid verwijderen\?</string>
+    <string name="delete_member_message__question">Bericht van gebruiker verwijderen?</string>
     <string name="moderate_verb">Modereren</string>
-    <string name="moderate_message_will_be_deleted_warning">Het bericht wordt verwijderd voor alle leden.</string>
-    <string name="moderate_message_will_be_marked_warning">Het bericht wordt gemarkeerd als gemodereerd voor alle leden.</string>
+    <string name="moderate_message_will_be_deleted_warning">Het bericht wordt verwijderd voor alle gebruikers.</string>
+    <string name="moderate_message_will_be_marked_warning">Het bericht wordt gemarkeerd als gemodereerd voor alle gebruikers.</string>
     <string name="observer_cant_send_message_desc">Neem contact op met de groep beheerder.</string>
     <string name="error_updating_link_for_group">Fout bij bijwerken van groep link</string>
     <string name="initial_member_role">Initiële rol</string>
@@ -981,14 +981,14 @@
     <string name="v4_6_reduced_battery_usage_descr">Meer verbeteringen volgen snel!</string>
     <string name="make_profile_private">Profiel privé maken!</string>
     <string name="v4_6_group_moderation_descr">Nu kunnen beheerders:
-\n- berichten van leden verwijderen.
+\n- berichten van gebruikers verwijderen.
 \n- schakel leden uit (\"waarnemer\" rol)</string>
     <string name="v4_6_hidden_chat_profiles_descr">Bescherm je chat profielen met een wachtwoord!</string>
     <string name="password_to_show">Wachtwoord om weer te geven</string>
     <string name="save_and_update_group_profile">Groep profiel opslaan en bijwerken</string>
     <string name="smp_save_servers_question">Servers opslaan\?</string>
     <string name="save_profile_password">Bewaar profiel wachtwoord</string>
-    <string name="v4_6_group_welcome_message_descr">Stel het getoonde bericht in voor nieuwe leden!</string>
+    <string name="v4_6_group_welcome_message_descr">Stel het getoonde bericht in voor nieuwe gebruikers!</string>
     <string name="save_welcome_message_question">Welkomst bericht opslaan\?</string>
     <string name="v4_6_audio_video_calls_descr">Ondersteuning voor bluetooth en andere verbeteringen.</string>
     <string name="tap_to_activate_profile">Tik om profiel te activeren.</string>
@@ -1197,7 +1197,7 @@
     <string name="allow_message_reactions_only_if">Sta berichtreacties alleen toe als uw contact dit toestaat.</string>
     <string name="allow_your_contacts_adding_message_reactions">Sta uw contactpersonen toe om berichtreacties toe te voegen.</string>
     <string name="allow_message_reactions">Sta berichtreacties toe.</string>
-    <string name="group_members_can_add_message_reactions">Groepsleden kunnen berichtreacties toevoegen.</string>
+    <string name="group_members_can_add_message_reactions">Gebruikers kunnen berichtreacties toevoegen.</string>
     <string name="both_you_and_your_contact_can_add_message_reactions">Zowel u als uw contact kunnen berichtreacties toevoegen.</string>
     <string name="message_reactions">Reacties op berichten</string>
     <string name="message_reactions_prohibited_in_this_chat">Reacties op berichten zijn verboden in deze chat.</string>
@@ -1263,7 +1263,7 @@
     <string name="abort_switch_receiving_address">Annuleer het wijzigen van het adres</string>
     <string name="abort_switch_receiving_address_confirm">Afbreken</string>
     <string name="no_filtered_chats">Geen gefilterde gesprekken</string>
-    <string name="only_owners_can_enable_files_and_media">Alleen groepseigenaren kunnen bestanden en media inschakelen.</string>
+    <string name="only_owners_can_enable_files_and_media">Alleen groep eigenaren kunnen bestanden en media inschakelen.</string>
     <string name="files_are_prohibited_in_group">Bestanden en media zijn verboden in deze groep.</string>
     <string name="favorite_chat">Favoriet</string>
     <string name="files_and_media_prohibited">Bestanden en media verboden!</string>
@@ -1271,7 +1271,7 @@
     <string name="files_and_media">Bestanden en media</string>
     <string name="prohibit_sending_files">Verbied het verzenden van bestanden en media.</string>
     <string name="allow_to_send_files">Sta toe om bestanden en media te verzenden.</string>
-    <string name="group_members_can_send_files">Groepsleden kunnen bestanden en media verzenden.</string>
+    <string name="group_members_can_send_files">Gebruikers kunnen bestanden en media verzenden.</string>
     <string name="search_verb">Zoeken</string>
     <string name="la_mode_off">Uit</string>
     <string name="network_option_protocol_timeout_per_kb">Protocol timeout per KB</string>
@@ -1285,7 +1285,7 @@
     <string name="sender_at_ts">%s bij %s</string>
     <string name="rcv_conn_event_verification_code_reset">beveiligingscode gewijzigd</string>
     <string name="fix_connection_not_supported_by_contact">Herstel wordt niet ondersteund door contact</string>
-    <string name="fix_connection_not_supported_by_group_member">Herstel wordt niet ondersteund door groepslid</string>
+    <string name="fix_connection_not_supported_by_group_member">Herstel wordt niet ondersteund door gebruiker</string>
     <string name="renegotiate_encryption">Heronderhandel over versleuteling</string>
     <string name="conn_event_ratchet_sync_started">versleuteling overeenkomen…</string>
     <string name="snd_conn_event_ratchet_sync_started">versleuteling overeenkomen voor %s…</string>
@@ -1349,7 +1349,7 @@
     <string name="receipts_groups_override_disabled">Het verzenden van ontvangstbevestigingen is uitgeschakeld voor %d-groepen</string>
     <string name="receipts_groups_override_enabled">Het verzenden van ontvangstbevestigingen is ingeschakeld voor %d-groepen</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
-    <string name="send_receipts_disabled_alert_msg">Deze groep heeft meer dan %1$d leden, Ontvangstbevestigingen worden niet verzonden.</string>
+    <string name="send_receipts_disabled_alert_msg">Deze groep heeft meer dan %1$d gebruikers, Ontvangstbevestigingen worden niet verzonden.</string>
     <string name="send_receipts_disabled">uitgeschakeld</string>
     <string name="send_receipts_disabled_alert_title">Ontvangstbevestigingen zijn uitgeschakeld</string>
     <string name="connect_via_member_address_alert_title">Verbind direct\?</string>
@@ -1364,12 +1364,12 @@
     <string name="system_restricted_background_in_call_desc">De app is misschien afgesloten na 1 minuut achtergrond.</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Kies de <b>app -batterijgebruik</b> / <b>onbeperkt</b> in de app -instellingen om met gesloten app te bellen.]]></string>
     <string name="connect__your_profile_will_be_shared">Uw profiel %1$s wordt gedeeld.</string>
-    <string name="connect_via_member_address_alert_desc">Verzoek voor het verbinden wordt naar dit groepslid verzonden.</string>
+    <string name="connect_via_member_address_alert_desc">Verzoek voor het verbinden wordt naar deze gebruiker verzonden.</string>
     <string name="paste_the_link_you_received_to_connect_with_your_contact">Plak de link die je hebt ontvangen om verbinding te maken met je contact…</string>
     <string name="system_restricted_background_warn"><![CDATA[Als u meldingen wilt inschakelen, kiest u <b> App-batterijgebruik</b> /<b> Onbeperkt</b> in de app-instellingen.]]></string>
     <string name="connect_use_new_incognito_profile">Gebruik een nieuw incognito profiel</string>
     <string name="privacy_message_draft">Concept bericht</string>
-    <string name="rcv_group_event_n_members_connected">%s, %s en %d andere leden verbonden</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s en %d andere gebruikers verbonden</string>
     <string name="privacy_show_last_messages">Laat laatste berichten zien</string>
     <string name="rcv_group_event_3_members_connected">%s, %s en %s verbonden</string>
     <string name="rcv_group_event_2_members_connected">%s en %s verbonden</string>
@@ -1397,7 +1397,7 @@
     <string name="v5_3_new_desktop_app_descr">Maak een nieuw profiel in de desktop-app. 💻</string>
     <string name="v5_3_simpler_incognito_mode_descr">Schakel incognito in tijdens het verbinden.</string>
     <string name="v5_3_discover_join_groups_descr">- maak verbinding met de directoryservice (BETA)!
-\n- ontvangst bevestiging (tot 20 leden).
+\n- ontvangst bevestiging (tot 20 gebruikers).
 \n- sneller en stabieler.</string>
     <string name="rcv_group_event_open_chat">Open</string>
     <string name="error_creating_member_contact">Fout bij aanmaken contact</string>
@@ -1417,10 +1417,10 @@
     <string name="connect_plan_already_connecting">Al bezig met verbinden!</string>
     <string name="video_decoding_exception_desc">De video kan niet worden gedecodeerd. Probeer een andere video of neem contact op met de ontwikkelaars.</string>
     <string name="rcv_group_event_1_member_connected">%s verbonden</string>
-    <string name="rcv_group_and_other_events">en %d andere evenementen</string>
+    <string name="rcv_group_and_other_events">en %d andere gebeurtenissen</string>
     <string name="connect_plan_connect_via_link">Verbinden via link?</string>
     <string name="connect_plan_already_joining_the_group">Al lid van de groep!</string>
-    <string name="group_members_n">%s, %s en %d leden</string>
+    <string name="group_members_n">%s, %s en %d gebruikers</string>
     <string name="moderated_items_description">%d berichten gemodereerd door %s</string>
     <string name="connect_plan_connect_to_yourself">Verbinding maken met jezelf?</string>
     <string name="contact_tap_to_connect">Tik om verbinding te maken</string>
@@ -1438,10 +1438,23 @@
     <string name="unblock_member_desc">Berichten van %s worden getoond!</string>
     <string name="error_sending_message_contact_invitation">Fout bij verzenden van uitnodiging</string>
     <string name="block_member_question">Gebruiker blokkeren?</string>
-    <string name="rcv_group_events_count">%d groepsevenementen</string>
+    <string name="rcv_group_events_count">%d groep gebeurtenissen</string>
     <string name="invalid_name">Ongeldige naam!</string>
     <string name="non_content_uri_alert_title">Ongeldig bestandspad</string>
     <string name="terminal_always_visible">Console in nieuw venster weergeven</string>
     <string name="block_member_desc">Alle nieuwe berichten van %s worden verborgen!</string>
     <string name="blocked_item_description">geblokkeerd</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName">Je bent al verbonden met %1$s.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Je wordt al lid van de groep via deze link.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName">Je bent al lid van de groep %1$s.</string>
+    <string name="connect_plan_this_is_your_own_one_time_link">Dit is uw eigen eenmalige link!</string>
+    <string name="unblock_member_button">Gebruiker deblokkeren</string>
+    <string name="connect_plan_you_are_already_in_group_vName">Je zit al in groep %1$s.</string>
+    <string name="connect_plan_this_is_your_own_simplex_address">Dit is uw eigen SimpleX adres!</string>
+    <string name="unblock_member_question">Gebruiker deblokkeren?</string>
+    <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">Je maakt al verbinding via deze eenmalige link!</string>
+    <string name="non_content_uri_alert_text">Je hebt een ongeldig bestandslocatie gedeeld. Rapporteer het probleem aan de app-ontwikkelaars.</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName">Dit is jouw link voor groep %1$s!</string>
+    <string name="unblock_member_confirmation">Deblokkeren</string>
+    <string name="connect_plan_you_have_already_requested_connection_via_this_address">U heeft al een verbinding aangevraagd via dit adres!</string>
 </resources>
