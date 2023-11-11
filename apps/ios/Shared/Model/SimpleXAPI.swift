@@ -909,13 +909,21 @@ func setLocalDeviceName(_ displayName: String) throws {
     try sendCommandOkRespSync(.setLocalDeviceName(displayName: displayName))
 }
 
-func startRemoteCtrl() async throws {
-    try await sendCommandOkResp(.startRemoteCtrl)
+func connectRemoteCtrl(desktopAddress: String) async throws {
+    try await sendCommandOkResp(.connectRemoteCtrl(xrcpInvitation: desktopAddress))
 }
 
-func registerRemoteCtrl(_ remoteCtrlOOB: RemoteCtrlOOB) async throws -> RemoteCtrlInfo {
-    let r = await chatSendCmd(.registerRemoteCtrl(remoteCtrlOOB: remoteCtrlOOB))
-    if case let .remoteCtrlRegistered(rcInfo) = r { return rcInfo }
+func findKnownRemoteCtrl() async throws {
+    try await sendCommandOkResp(.findKnownRemoteCtrl)
+}
+
+func confirmRemoteCtrl(_ rcId: Int64) async throws {
+    try await sendCommandOkResp(.confirmRemoteCtrl(remoteCtrlId: rcId))
+}
+
+func verifyRemoteCtrlSession(_ sessCode: String) async throws -> RemoteCtrlInfo {
+    let r = await chatSendCmd(.verifyRemoteCtrlSession(sessionCode: sessCode))
+    if case let .remoteCtrlConnected(rc) = r { return rc }
     throw r
 }
 
@@ -923,14 +931,6 @@ func listRemoteCtrls() async throws -> [RemoteCtrlInfo] {
     let r = await chatSendCmd(.listRemoteCtrls)
     if case let .remoteCtrlList(rcInfo) = r { return rcInfo }
     throw r
-}
-
-func acceptRemoteCtrl(_ rcId: Int64) async throws {
-    try await sendCommandOkResp(.acceptRemoteCtrl(remoteCtrlId: rcId))
-}
-
-func rejectRemoteCtrl(_ rcId: Int64) async throws {
-    try await sendCommandOkResp(.rejectRemoteCtrl(remoteCtrlId: rcId))
 }
 
 func stopRemoteCtrl() async throws {
@@ -1711,6 +1711,26 @@ func processReceivedMsg(_ res: ChatResponse) async {
     case let .groupMemberRatchetSync(_, groupInfo, member, ratchetSyncProgress):
         await MainActor.run {
             m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
+        }
+    case let .remoteCtrlFound(remoteCtrl):
+        // TODO multicast
+        logger.debug("\(String(describing: remoteCtrl))")
+    case .remoteCtrlConnecting:
+        // TODO is it needed?
+        await MainActor.run {
+            m.remoteCtrlSession = .connecting
+        }
+    case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode):
+        await MainActor.run {
+            m.remoteCtrlSession = .pendingConfirmation(remoteCtrl_: remoteCtrl_, sessionCode: sessionCode)
+        }
+    case let .remoteCtrlConnected(remoteCtrl):
+        await MainActor.run {
+            m.remoteCtrlSession = .connected(remoteCtrl: remoteCtrl)
+        }
+    case .remoteCtrlStopped:
+        await MainActor.run {
+            m.remoteCtrlSession = nil
         }
     default:
         logger.debug("unsupported event: \(res.responseType)")

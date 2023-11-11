@@ -86,7 +86,7 @@ final class ChatModel: ObservableObject {
     @Published var callCommand: WCallCommand?
     @Published var showCallView = false
     // remote desktop
-    @Published var currentRemoteCtrlId: Int64?
+    @Published var remoteCtrlSession: RemoteCtrlSession?
     // currently showing QR code
     @Published var connReqInv: String?
     // audio recording and playback
@@ -763,4 +763,11 @@ final class GMember: ObservableObject, Identifiable {
     var displayName: String { wrapped.displayName }
     var viewId: String { get { "\(wrapped.id) \(created.timeIntervalSince1970)" } }
     static let sampleData = GMember(GroupMember.sampleData)
+}
+
+enum RemoteCtrlSession {
+    case starting
+    case connecting
+    case pendingConfirmation(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
+    case connected(remoteCtrl: RemoteCtrlInfo)
 }
