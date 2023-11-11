@@ -343,7 +343,7 @@ switchRemoteHostTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \
   desktop <## "bob (Bob)"
 
   desktop ##> "/switch remote host 123"
-  desktop <## "remote host 123 error: RHEMissing"
+  desktop <## "no remote host 123"
 
   stopDesktop mobile desktop
   desktop ##> "/contacts"

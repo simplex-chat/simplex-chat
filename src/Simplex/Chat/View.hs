@@ -1822,6 +1822,8 @@ viewChatError logLevel = \case
     SEChatItemNotFoundByText text -> ["message not found by text: " <> plain text]
     SEDuplicateGroupLink g -> ["you already have link for this group, to show: " <> highlight ("/show link #" <> viewGroupName g)]
     SEGroupLinkNotFound g -> ["no group link, to create: " <> highlight ("/create link #" <> viewGroupName g)]
+    SERemoteCtrlNotFound rcId -> ["no remote controller " <> sShow rcId]
+    SERemoteHostNotFound rhId -> ["no remote host " <> sShow rhId]
     e -> ["chat db error: " <> sShow e]
   ChatErrorDatabase err -> case err of
     DBErrorEncrypted -> ["error: chat database is already encrypted"]

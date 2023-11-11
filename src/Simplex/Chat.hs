@@ -1955,7 +1955,7 @@ processChatCommand = \case
   ListRemoteHosts -> withUser_ $ CRRemoteHostList <$> listRemoteHosts
   SwitchRemoteHost rh_ -> withUser_ $ CRCurrentRemoteHost <$> switchRemoteHost rh_
   StartRemoteHost rh_ -> withUser_ $ do
-    (remoteHost_, inv) <- startRemoteHost' rh_
+    (remoteHost_, inv) <- startRemoteHost rh_
     pure CRRemoteHostStarted {remoteHost_, invitation = decodeLatin1 $ strEncode inv}
   StopRemoteHost rh_ -> withUser_ $ closeRemoteHost rh_ >> ok_
   DeleteRemoteHost rh -> withUser_ $ deleteRemoteHost rh >> ok_
