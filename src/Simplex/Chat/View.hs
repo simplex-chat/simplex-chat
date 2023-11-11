@@ -276,6 +276,12 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRNtfToken _ status mode -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode)]
   CRNtfMessages {} -> []
   CRRemoteHostCreated RemoteHostInfo {remoteHostId} -> ["remote host " <> sShow remoteHostId <> " created"]
+  CRCurrentRemoteHost rhi_ ->
+    [ maybe
+        "Using local profile"
+        (\RemoteHostInfo {remoteHostId = rhId, hostName} -> "Using remote host " <> sShow rhId <> " (" <> plain hostName <> ")")
+        rhi_
+    ]
   CRRemoteHostList hs -> viewRemoteHosts hs
   CRRemoteHostStarted {remoteHost_, invitation} ->
     [ maybe "new remote host started" (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> sShow rhId <> " started") remoteHost_,
@@ -1816,6 +1822,8 @@ viewChatError logLevel = \case
     SEChatItemNotFoundByText text -> ["message not found by text: " <> plain text]
     SEDuplicateGroupLink g -> ["you already have link for this group, to show: " <> highlight ("/show link #" <> viewGroupName g)]
     SEGroupLinkNotFound g -> ["no group link, to create: " <> highlight ("/create link #" <> viewGroupName g)]
+    SERemoteCtrlNotFound rcId -> ["no remote controller " <> sShow rcId]
+    SERemoteHostNotFound rhId -> ["no remote host " <> sShow rhId]
     e -> ["chat db error: " <> sShow e]
   ChatErrorDatabase err -> case err of
     DBErrorEncrypted -> ["error: chat database is already encrypted"]

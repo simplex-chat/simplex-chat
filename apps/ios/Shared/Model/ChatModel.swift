@@ -196,7 +196,7 @@ final class ChatModel: ObservableObject {
 
     func updateContactConnectionStats(_ contact: Contact, _ connectionStats: ConnectionStats) {
         var updatedConn = contact.activeConn
-        updatedConn.connectionStats = connectionStats
+        updatedConn?.connectionStats = connectionStats
         var updatedContact = contact
         updatedContact.activeConn = updatedConn
         updateContact(updatedContact)
@@ -673,11 +673,17 @@ final class ChatModel: ObservableObject {
     }
 
     func setContactNetworkStatus(_ contact: Contact, _ status: NetworkStatus) {
-        networkStatuses[contact.activeConn.agentConnId] = status
+        if let conn = contact.activeConn {
+            networkStatuses[conn.agentConnId] = status
+        }
     }
 
     func contactNetworkStatus(_ contact: Contact) -> NetworkStatus {
-        networkStatuses[contact.activeConn.agentConnId] ?? .unknown
+        if let conn = contact.activeConn {
+            networkStatuses[conn.agentConnId] ?? .unknown
+        } else {
+            .unknown
+        }
     }
 }
 

@@ -1953,8 +1953,9 @@ processChatCommand = \case
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
   SetLocalDeviceName name -> withUser_ $ chatWriteVar localDeviceName name >> ok_
   ListRemoteHosts -> withUser_ $ CRRemoteHostList <$> listRemoteHosts
+  SwitchRemoteHost rh_ -> withUser_ $ CRCurrentRemoteHost <$> switchRemoteHost rh_
   StartRemoteHost rh_ -> withUser_ $ do
-    (remoteHost_, inv) <- startRemoteHost' rh_
+    (remoteHost_, inv) <- startRemoteHost rh_
     pure CRRemoteHostStarted {remoteHost_, invitation = decodeLatin1 $ strEncode inv}
   StopRemoteHost rh_ -> withUser_ $ closeRemoteHost rh_ >> ok_
   DeleteRemoteHost rh -> withUser_ $ deleteRemoteHost rh >> ok_
@@ -5977,6 +5978,7 @@ chatCommandP =
       "/set device name " *> (SetLocalDeviceName <$> textP),
       -- "/create remote host" $> CreateRemoteHost,
       "/list remote hosts" $> ListRemoteHosts,
+      "/switch remote host " *> (SwitchRemoteHost <$> ("local" $> Nothing <|> (Just <$> A.decimal))),
       "/start remote host " *> (StartRemoteHost <$> ("new" $> Nothing <|> (Just <$> ((,) <$> A.decimal <*> (" multicast=" *> onOffP <|> pure False))))),
       "/stop remote host " *> (StopRemoteHost <$> ("new" $> RHNew <|> RHId <$> A.decimal)),
       "/delete remote host " *> (DeleteRemoteHost <$> A.decimal),

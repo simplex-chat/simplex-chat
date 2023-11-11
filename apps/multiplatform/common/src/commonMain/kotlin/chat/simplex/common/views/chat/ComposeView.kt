@@ -776,7 +776,11 @@ fun ComposeView(
           .collect {
             when(it) {
               is RecordingState.Started -> onAudioAdded(it.filePath, it.progressMs, false)
-              is RecordingState.Finished -> onAudioAdded(it.filePath, it.durationMs, true)
+              is RecordingState.Finished -> if (it.durationMs > 300) {
+                onAudioAdded(it.filePath, it.durationMs, true)
+              } else {
+                cancelVoice()
+              }
               is RecordingState.NotStarted -> {}
             }
           }
