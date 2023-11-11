@@ -72,7 +72,6 @@
     <string name="display_name_cannot_contain_whitespace">顯示的名稱中不能有空白。</string>
     <string name="save_preferences_question">儲存設定？</string>
     <string name="display_name">顯示名稱</string>
-    <string name="full_name_optional__prompt">全名（可選擇的）</string>
     <string name="callstatus_error">通話出錯</string>
     <string name="callstatus_calling">正在撥打…</string>
     <string name="callstatus_in_progress">通話中</string>
@@ -1085,7 +1084,6 @@
     <string name="alert_title_msg_bad_id">錯誤的訊息 ID</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">當你或你的連結在用舊的數據庫備份時會發生。</string>
     <string name="alert_text_msg_bad_hash">上一則訊息的雜奏則是不同的。</string>
-    <string name="no_spaces">沒有空位！</string>
     <string name="v5_0_app_passcode">應用程式密碼</string>
     <string name="v5_0_large_files_support_descr">迅速以及不用等待發送者在線！</string>
     <string name="v5_0_polish_interface">波蘭文界面</string>

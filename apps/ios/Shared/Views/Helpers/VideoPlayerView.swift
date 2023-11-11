@@ -38,8 +38,13 @@ struct VideoPlayerView: UIViewRepresentable {
             player.seek(to: CMTime.zero)
             player.play()
         }
+        var played = false
         context.coordinator.publisher = player.publisher(for: \.timeControlStatus).sink { status in
-            AppDelegate.keepScreenOn(status == .playing)
+            if played || status == .playing {
+                AppDelegate.keepScreenOn(status == .playing)
+                AudioPlayer.changeAudioSession(status == .playing)
+            }
+            played = status == .playing
         }
         return controller.view
     }

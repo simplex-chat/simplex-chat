@@ -57,7 +57,7 @@ fun CIRcvDecryptionError(
   if (cInfo is ChatInfo.Direct) {
     val modelCInfo = findModelChat(cInfo.id)?.chatInfo
     if (modelCInfo is ChatInfo.Direct) {
-      val modelContactStats = modelCInfo.contact.activeConn.connectionStats
+      val modelContactStats = modelCInfo.contact.activeConn?.connectionStats
       if (modelContactStats != null) {
         if (modelContactStats.ratchetSyncAllowed) {
           DecryptionErrorItemFixButton(
