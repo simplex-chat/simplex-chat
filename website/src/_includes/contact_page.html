@@ -8,7 +8,10 @@
 <section class="hidden xl:block h-screen pt-[66px] bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial">
     <div class="container m-auto h-full flex items-center justify-between px-5">
         <div class="flex flex-col items-start justify-center w-full h-full">
-            <h1 class="text-[38px] leading-[43px] font-bold max-w-[500px] mb-[100px] primary-header-contact show-if-no-js">{{ "link-can-be-used-directly-in-app" | i18n({}, lang ) | safe }}</h1>
+
+            <noscript>
+                <h1 class="text-[38px] leading-[43px] font-bold mb-[100px] primary-header-contact">{{ "please-enable-javascript" | i18n({}, lang ) | safe }}</h1>
+            </noscript>
 
             <h1 class="text-[38px] leading-[43px] font-bold max-w-[500px] mb-[30px] primary-header-contact d-none-if-js-disabled">{{ header | i18n({}, lang ) | safe }}</h1>
             <h2 class="text-[20px] leading-[28px] text-[#606C71] dark:text-white font-bold max-w-[475px] mb-[80px] secondary-header-contact d-none-if-js-disabled">{{ "contact-hero-subheader" | i18n({}, lang ) | safe }}</h2>
@@ -169,9 +172,4 @@
 
 <script>
     document.querySelectorAll('.d-none-if-js-disabled').forEach(el => el.classList.remove('d-none-if-js-disabled'));
-
-    document.querySelectorAll('.show-if-no-js').forEach(el => {
-        el.classList.remove('show-if-no-js');
-        el.classList.add('hidden');
-    });
 </script>
