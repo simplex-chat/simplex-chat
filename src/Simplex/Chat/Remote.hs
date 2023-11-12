@@ -172,7 +172,9 @@ startRemoteHost rh_ = do
       -- update remoteHost with updated pairing
       rhi@RemoteHostInfo {remoteHostId, storePath} <- upsertRemoteHost pairing' remoteHost_ hostDeviceName
       let rhKey' = RHId remoteHostId -- rhKey may be invalid after upserting on RHNew
-      atomically $ writeTVar rhKeyVar rhKey'
+      when (rhKey' /= rhKey) $ do
+        atomically $ writeTVar rhKeyVar rhKey'
+        toView $ CRNewRemoteHost rhi
       disconnected <- toIO $ onDisconnected remoteHostId
       httpClient <- liftEitherError (httpError rhKey') $ attachRevHTTP2Client disconnected tls
       rhClient <- mkRemoteHostClient httpClient sessionKeys sessId storePath hostInfo
@@ -193,7 +195,7 @@ startRemoteHost rh_ = do
           pure $ remoteHostInfo rh True
         Just rhi@RemoteHostInfo {remoteHostId} -> do
           withStore' $ \db -> updateHostPairing db remoteHostId hostDeviceName hostDhPubKey'
-          pure rhi
+          pure (rhi :: RemoteHostInfo) {sessionActive = True}
     onDisconnected :: ChatMonad m => RemoteHostId -> m ()
     onDisconnected remoteHostId = do
       logDebug "HTTP2 client disconnected"

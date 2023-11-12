@@ -422,7 +422,6 @@ data ChatCommand
   | SetContactTimedMessages ContactName (Maybe TimedMessagesEnabled)
   | SetGroupTimedMessages GroupName (Maybe Int)
   | SetLocalDeviceName Text
-  -- | CreateRemoteHost -- ^ Configure a new remote host
   | ListRemoteHosts
   | StartRemoteHost (Maybe (RemoteHostId, Bool)) -- ^ Start new or known remote host with optional multicast for known host
   | SwitchRemoteHost (Maybe RemoteHostId) -- ^ Switch current remote host
@@ -642,17 +641,17 @@ data ChatResponse
   | CRNtfMessages {user_ :: Maybe User, connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNewContactConnection {user :: User, connection :: PendingContactConnection}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
-  | CRRemoteHostCreated {remoteHost :: RemoteHostInfo}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRCurrentRemoteHost {remoteHost_ :: Maybe RemoteHostInfo}
   | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text}
   | CRRemoteHostSessionCode {remoteHost_ :: Maybe RemoteHostInfo, sessionCode :: Text}
+  | CRNewRemoteHost {remoteHost :: RemoteHostInfo}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
   | CRRemoteHostStopped {remoteHostId :: RemoteHostId}
   | CRRemoteFileStored {remoteHostId :: RemoteHostId, remoteFileSource :: CryptoFile}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
   | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo} -- registered fingerprint, may connect
-  | CRRemoteCtrlConnecting {remoteCtrl_ :: Maybe RemoteCtrlInfo, ctrlAppInfo :: CtrlAppInfo, appVersion :: AppVersion} -- TODO is remove
+  | CRRemoteCtrlConnecting {remoteCtrl_ :: Maybe RemoteCtrlInfo, ctrlAppInfo :: CtrlAppInfo, appVersion :: AppVersion}
   | CRRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
   | CRRemoteCtrlStopped
@@ -675,7 +674,6 @@ data ChatResponse
 
 allowRemoteEvent :: ChatResponse -> Bool
 allowRemoteEvent = \case
-  CRRemoteHostCreated {} -> False
   CRRemoteHostList {} -> False
   CRRemoteHostConnected {} -> False
   CRRemoteHostStopped {} -> False
