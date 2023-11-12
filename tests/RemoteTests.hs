@@ -397,6 +397,7 @@ startRemote mobile desktop = do
   mobile <## ("/verify remote ctrl " <> sessId)
   mobile ##> ("/verify remote ctrl " <> sessId)
   mobile <## "remote controller 1 session started with My desktop"
+  desktop <## "new remote host 1 added: Mobile"
   desktop <## "remote host 1 connected"
 
 startRemoteStored :: TestCC -> TestCC -> IO ()
