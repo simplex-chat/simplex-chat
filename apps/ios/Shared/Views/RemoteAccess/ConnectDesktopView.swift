@@ -173,18 +173,10 @@ struct ConnectDesktopView: View {
     private func desktopAddressView() -> some View {
         Section("Desktop address") {
             if sessionAddress.isEmpty {
-                Group {
-                    if #available(iOS 16.0, *) {
-                        PasteButton(payloadType: String.self) { strings in
-                            sessionAddress = strings.first ?? ""
-                        }
-                    } else {
-                        Button {
-                            sessionAddress = UIPasteboard.general.string ?? ""
-                        } label: {
-                            Label("Paste desktop address", systemImage: "doc.plaintext")
-                        }
-                    }
+                Button {
+                    sessionAddress = UIPasteboard.general.string ?? ""
+                } label: {
+                    Label("Paste desktop address", systemImage: "doc.plaintext")
                 }
                 .disabled(!UIPasteboard.general.hasStrings)
             } else {

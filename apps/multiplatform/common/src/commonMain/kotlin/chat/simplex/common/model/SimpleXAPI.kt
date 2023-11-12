@@ -1807,7 +1807,8 @@ object ChatController {
         switchUIRemoteHost(r.remoteHost.remoteHostId)
       }
       is CR.RemoteHostStopped -> {
-        //
+        chatModel.currentRemoteHost.value = null
+        switchUIRemoteHost(null)
       }
       else ->
         Log.d(TAG , "unsupported event: ${r.responseType}")
@@ -1890,7 +1891,7 @@ object ChatController {
     chatModel.setContactNetworkStatus(contact, NetworkStatus.Error(err))
   }
 
-  suspend fun switchUIRemoteHost(rhId: Long) {
+  suspend fun switchUIRemoteHost(rhId: Long?) {
     chatModel.currentRemoteHost.value = switchRemoteHost(rhId)
     val user = apiGetActiveUser()
     val users = listUsers()
