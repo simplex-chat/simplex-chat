@@ -423,7 +423,7 @@
                     ./scripts/nix/direct-sqlcipher-android-log.patch
                   ];
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
-                    (android32Pkgs.openssl.override { static = true; })
+                    (androidPkgs.openssl.override { static = true; })
                   ];
                 }];
               }).simplex-chat.components.library.override (p: {
@@ -526,7 +526,7 @@
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
-                    (pkgs.openssl.override { static = true; enableKTLS = false; })
+                    (pkgs.openssl.override { static = true; })
                   ];
                 }];
               }).simplex-chat.components.library.override (
@@ -539,7 +539,7 @@
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
-                    (pkgs.openssl.override { static = true; enableKTLS = false; })
+                    (pkgs.openssl.override { static = true; })
                   ];
                 }];
               }).simplex-chat.components.library.override (
@@ -556,7 +556,7 @@
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
-                    (pkgs.openssl.override { static = true; enableKTLS = false; })
+                    (pkgs.openssl.override { static = true; })
                   ];
                 }];
               }).simplex-chat.components.library.override (
@@ -569,7 +569,7 @@
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
-                    (pkgs.openssl.override { static = true; enableKTLS = false; })
+                    (pkgs.openssl.override { static = true; })
                   ];
                 }];
               }).simplex-chat.components.library.override (
