@@ -211,20 +211,9 @@ startRemoteHost rh_ = do
       oq <- asks outputQ
       forever $ do
         r_ <- liftRH rhId $ remoteRecv rhClient 10000000
-        forM r_ $ updateRemoteHostUser rhId >=> \r -> atomically $ writeTBQueue oq (Nothing, Just rhId, r)
+        forM r_ $ \r -> atomically $ writeTBQueue oq (Nothing, Just rhId, r)
     httpError :: RHKey -> HTTP2ClientError -> ChatError
     httpError rhKey = ChatErrorRemoteHost rhKey . RHEProtocolError . RPEHTTP2 . tshow
-
-updateRemoteHostUser :: ChatMonad m => RemoteHostId -> ChatResponse -> m ChatResponse
-updateRemoteHostUser rhId = \case
-  r@CRActiveUser {user} -> do
-    withRemoteHostSession rhKey $ \case
-      s@RHSessionConnected {} -> Right ((), s {hostUser_ = Just user})
-      _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
-    pure r
-  r -> pure r
-  where
-    rhKey = RHId rhId
 
 closeRemoteHost :: ChatMonad m => RHKey -> m ()
 closeRemoteHost rhKey = do
@@ -321,16 +310,28 @@ processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostClient -> ChatC
 processRemoteCommand remoteHostId c cmd s = case cmd of
   SendFile chatName f -> sendFile "/f" chatName f
   SendImage chatName f -> sendFile "/img" chatName f
-  _ -> liftRH remoteHostId (remoteSend c s) >>= updateRemoteHostUser remoteHostId
+  ShowActiveUser{} -> sendRemoteCmd s >>= updateRemoteHostUser
+  APISetActiveUser{} -> sendRemoteCmd s >>= updateRemoteHostUser
+  CreateActiveUser{} -> sendRemoteCmd s >>= updateRemoteHostUser
+  _ -> sendRemoteCmd s
   where
+    sendRemoteCmd = liftRH remoteHostId . remoteSend c
     sendFile cmdName chatName (CryptoFile path cfArgs) = do
       -- don't encrypt in host if already encrypted locally
       CryptoFile path' cfArgs' <- storeRemoteFile remoteHostId (cfArgs $> False) path
       let f = CryptoFile path' (cfArgs <|> cfArgs') -- use local or host encryption
-      liftRH remoteHostId $ remoteSend c $ B.unwords [cmdName, B.pack (chatNameStr chatName), cryptoFileStr f]
+      sendRemoteCmd $ B.unwords [cmdName, B.pack (chatNameStr chatName), cryptoFileStr f]
     cryptoFileStr CryptoFile {filePath, cryptoArgs} =
       maybe "" (\(CFArgs key nonce) -> "key=" <> strEncode key <> " nonce=" <> strEncode nonce <> " ") cryptoArgs
         <> encodeUtf8 (T.pack filePath)
+    updateRemoteHostUser = \case
+      r@CRActiveUser {user} -> do
+        withRemoteHostSession rhKey $ \case
+          st@RHSessionConnected {} -> Right ((), st {hostUser_ = Just user})
+          _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
+        pure r
+      r -> pure r
+    rhKey = RHId remoteHostId
 
 liftRH :: ChatMonad m => RemoteHostId -> ExceptT RemoteProtocolError IO a -> m a
 liftRH rhId = liftError (ChatErrorRemoteHost (RHId rhId) . RHEProtocolError)
