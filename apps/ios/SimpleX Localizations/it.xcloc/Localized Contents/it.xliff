@@ -5879,9 +5879,9 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <target>indirizzo cambiato per te</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="changed role of %@ to %@" xml:space="preserve">
+      <trans-unit id="changed role of %@ to %@" xml:space="preserve" approved="no">
         <source>changed role of %1$@ to %2$@</source>
-        <target>cambiato il ruolo di %1$@ in %2$@</target>
+        <target state="translated">ha cambiato il ruolo di %1$@ in %2$@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="changed your role to %@" xml:space="preserve">
