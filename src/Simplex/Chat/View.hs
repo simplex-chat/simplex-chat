@@ -5,6 +5,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
@@ -32,6 +33,7 @@ import Data.Time (LocalTime (..), TimeOfDay (..), TimeZone (..), utcToLocalTime)
 import Data.Time.Calendar (addDays)
 import Data.Time.Clock (UTCTime)
 import Data.Time.Format (defaultTimeLocale, formatTime)
+import qualified Data.Version as V
 import qualified Network.HTTP.Types as Q
 import Numeric (showFFloat)
 import Simplex.Chat (defaultChatConfig, maxImageSize)
@@ -43,6 +45,7 @@ import Simplex.Chat.Messages hiding (NewChatItem (..))
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.Types
+import Simplex.Chat.Remote.AppVersion (pattern AppVersionRange, AppVersion (..))
 import Simplex.Chat.Store (AutoAccept (..), StoreError (..), UserContactLink (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Types
@@ -279,7 +282,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRCurrentRemoteHost rhi_ ->
     [ maybe
         "Using local profile"
-        (\RemoteHostInfo {remoteHostId = rhId, hostName} -> "Using remote host " <> sShow rhId <> " (" <> plain hostName <> ")")
+        (\RemoteHostInfo {remoteHostId = rhId, hostDeviceName} -> "Using remote host " <> sShow rhId <> " (" <> plain hostDeviceName <> ")")
         rhi_
     ]
   CRRemoteHostList hs -> viewRemoteHosts hs
@@ -299,21 +302,25 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     [plain $ "file " <> filePath <> " stored on remote host " <> show rhId]
       <> maybe [] ((: []) . plain . cryptoFileArgsStr testView) cfArgs_
   CRRemoteCtrlList cs -> viewRemoteCtrls cs
-  CRRemoteCtrlRegistered RemoteCtrlInfo {remoteCtrlId = rcId} ->
-    ["remote controller " <> sShow rcId <> " registered"]
-  CRRemoteCtrlAnnounce fingerprint ->
-    ["remote controller announced", "connection code:", plain $ strEncode fingerprint]
   CRRemoteCtrlFound rc ->
     ["remote controller found:", viewRemoteCtrl rc]
-  CRRemoteCtrlConnecting RemoteCtrlInfo {remoteCtrlId = rcId, ctrlName} ->
-    ["remote controller " <> sShow rcId <> " connecting to " <> plain ctrlName]
+  CRRemoteCtrlConnecting {remoteCtrl_, ctrlAppInfo = CtrlAppInfo {deviceName, appVersionRange = AppVersionRange _ (AppVersion ctrlVersion)}, appVersion = AppVersion v} ->
+    [ (maybe "connecting new remote controller" (\RemoteCtrlInfo {remoteCtrlId} -> "connecting remote controller " <> sShow remoteCtrlId) remoteCtrl_ <> ": ")
+        <> (if T.null deviceName then "" else plain deviceName <> ", ")
+        <> ("v" <> plain (V.showVersion ctrlVersion) <> ctrlVersionInfo)
+    ]
+    where
+      ctrlVersionInfo
+        | ctrlVersion < v = " (older than this app - upgrade controller)"
+        | ctrlVersion > v = " (newer than this app - upgrade it)"
+        | otherwise = ""
   CRRemoteCtrlSessionCode {remoteCtrl_, sessionCode} ->
     [ maybe "new remote controller connected" (\RemoteCtrlInfo {remoteCtrlId} -> "remote controller " <> sShow remoteCtrlId <> " connected") remoteCtrl_,
       "Compare session code with controller and use:",
       "/verify remote ctrl " <> plain sessionCode -- TODO maybe pass rcId
     ]
-  CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, ctrlName} ->
-    ["remote controller " <> sShow rcId <> " session started with " <> plain ctrlName]
+  CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, ctrlDeviceName} ->
+    ["remote controller " <> sShow rcId <> " session started with " <> plain ctrlDeviceName]
   CRRemoteCtrlStopped -> ["remote controller stopped"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
@@ -1697,21 +1704,21 @@ viewRemoteHosts = \case
   [] -> ["No remote hosts"]
   hs -> "Remote hosts: " : map viewRemoteHostInfo hs
   where
-    viewRemoteHostInfo RemoteHostInfo {remoteHostId, hostName, sessionActive} =
-      plain $ tshow remoteHostId <> ". " <> hostName <> if sessionActive then " (active)" else ""
+    viewRemoteHostInfo RemoteHostInfo {remoteHostId, hostDeviceName, sessionActive} =
+      plain $ tshow remoteHostId <> ". " <> hostDeviceName <> if sessionActive then " (active)" else ""
 
 viewRemoteCtrls :: [RemoteCtrlInfo] -> [StyledString]
 viewRemoteCtrls = \case
   [] -> ["No remote controllers"]
   hs -> "Remote controllers: " : map viewRemoteCtrlInfo hs
   where
-    viewRemoteCtrlInfo RemoteCtrlInfo {remoteCtrlId, ctrlName, sessionActive} =
-      plain $ tshow remoteCtrlId <> ". " <> ctrlName <> if sessionActive then " (active)" else ""
+    viewRemoteCtrlInfo RemoteCtrlInfo {remoteCtrlId, ctrlDeviceName, sessionActive} =
+      plain $ tshow remoteCtrlId <> ". " <> ctrlDeviceName <> if sessionActive then " (active)" else ""
 
 -- TODO fingerprint, accepted?
 viewRemoteCtrl :: RemoteCtrlInfo -> StyledString
-viewRemoteCtrl RemoteCtrlInfo {remoteCtrlId, ctrlName} =
-  plain $ tshow remoteCtrlId <> ". " <> ctrlName
+viewRemoteCtrl RemoteCtrlInfo {remoteCtrlId, ctrlDeviceName} =
+  plain $ tshow remoteCtrlId <> ". " <> ctrlDeviceName
 
 viewChatError :: ChatLogLevel -> ChatError -> [StyledString]
 viewChatError logLevel = \case

@@ -388,7 +388,7 @@ startRemote mobile desktop = do
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobile ##> ("/connect remote ctrl " <> inv)
-  mobile <## "ok"
+  mobile <## "connecting new remote controller: My desktop, v5.4.0.3"
   desktop <## "new remote host connecting"
   desktop <## "Compare session code with host:"
   sessId <- getTermLine desktop
@@ -406,7 +406,7 @@ startRemoteStored mobile desktop = do
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobile ##> ("/connect remote ctrl " <> inv)
-  mobile <## "ok"
+  mobile <## "connecting remote controller 1: My desktop, v5.4.0.3"
   desktop <## "remote host 1 connecting"
   desktop <## "Compare session code with host:"
   sessId <- getTermLine desktop

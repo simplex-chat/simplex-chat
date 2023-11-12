@@ -57,14 +57,14 @@ remoteHostQuery =
   |]
 
 toRemoteHost :: (Int64, Text, FilePath, C.APrivateSignKey, C.SignedObject C.Certificate, C.PrivateKeyEd25519, C.KeyHash, C.PublicKeyX25519) -> RemoteHost
-toRemoteHost (remoteHostId, hostName, storePath, caKey, C.SignedObject caCert, idPrivKey, hostFingerprint, hostDhPubKey) =
-  RemoteHost {remoteHostId, hostName, storePath, hostPairing}
+toRemoteHost (remoteHostId, hostDeviceName, storePath, caKey, C.SignedObject caCert, idPrivKey, hostFingerprint, hostDhPubKey) =
+  RemoteHost {remoteHostId, hostDeviceName, storePath, hostPairing}
   where
     hostPairing = RCHostPairing {caKey, caCert, idPrivKey, knownHost = Just knownHost}
     knownHost = KnownHostPairing {hostFingerprint, hostDhPubKey}
 
 updateHostPairing :: DB.Connection -> RemoteHostId -> Text -> C.PublicKeyX25519 -> IO ()
-updateHostPairing db rhId hostName hostDhPubKey =
+updateHostPairing db rhId hostDeviceName hostDhPubKey =
   DB.execute
     db
     [sql|
@@ -72,7 +72,7 @@ updateHostPairing db rhId hostName hostDhPubKey =
       SET host_device_name = ?, host_dh_pub = ?
       WHERE remote_host_id = ?
     |]
-    (hostName, hostDhPubKey, rhId)
+    (hostDeviceName, hostDhPubKey, rhId)
 
 deleteRemoteHostRecord :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (Only remoteHostId)
@@ -123,23 +123,20 @@ toRemoteCtrl ::
     Maybe C.PrivateKeyX25519
   ) ->
   RemoteCtrl
-toRemoteCtrl (remoteCtrlId, ctrlName, caKey, C.SignedObject caCert, ctrlFingerprint, idPubKey, dhPrivKey, prevDhPrivKey) =
-  RemoteCtrl
-    { remoteCtrlId,
-      ctrlName,
-      ctrlPairing = RCCtrlPairing {caKey, caCert, ctrlFingerprint, idPubKey, dhPrivKey, prevDhPrivKey}
-    }
+toRemoteCtrl (remoteCtrlId, ctrlDeviceName, caKey, C.SignedObject caCert, ctrlFingerprint, idPubKey, dhPrivKey, prevDhPrivKey) =
+  let ctrlPairing = RCCtrlPairing {caKey, caCert, ctrlFingerprint, idPubKey, dhPrivKey, prevDhPrivKey}
+   in RemoteCtrl {remoteCtrlId, ctrlDeviceName, ctrlPairing}
 
-updateCtrlPairingKeys :: DB.Connection -> RemoteCtrlId -> C.PrivateKeyX25519 -> IO ()
-updateCtrlPairingKeys db rcId dhPrivKey =
+updateRemoteCtrl :: DB.Connection -> RemoteCtrl -> Text -> C.PrivateKeyX25519 -> IO ()
+updateRemoteCtrl db RemoteCtrl {remoteCtrlId} ctrlDeviceName dhPrivKey =
   DB.execute
     db
     [sql|
       UPDATE remote_controllers
-      SET dh_priv_key = ?, prev_dh_priv_key = dh_priv_key
+      SET ctrl_device_name = ?, dh_priv_key = ?, prev_dh_priv_key = dh_priv_key
       WHERE remote_ctrl_id = ?
     |]
-    (dhPrivKey, rcId)
+    (ctrlDeviceName, dhPrivKey, remoteCtrlId)
 
 deleteRemoteCtrlRecord :: DB.Connection -> RemoteCtrlId -> IO ()
 deleteRemoteCtrlRecord db remoteCtrlId =
