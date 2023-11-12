@@ -21,22 +21,29 @@ fun AddMobileView(
   connecting: MutableState<Boolean>,
   close: () -> Unit
 ) {
+  val remoteHost = remember { mutableStateOf<RemoteHostInfo?>(null) }
+  val invitation = remember { mutableStateOf<String?>(null) }
   LaunchedEffect(Unit) {
     withBGApi {
-      val rh = m.controller.createRemoteHost() ?: return@withBGApi
-      m.controller.startRemoteHost(rh.remoteHostId)
-      m.connectingRemoteHost.value = rh
-      connecting.value = true
+      val r = m.controller.startRemoteHost(null)
+      if (r != null) {
+        val (rh_, inv) = r
+        connecting.value = true
+        remoteHost.value = rh_
+        invitation.value = inv
+      }
     }
   }
   AddMobileViewLayout(
-    remoteHost = m.connectingRemoteHost
+    remoteHost = remoteHost,
+    invitation = invitation
   )
 }
 
 @Composable
 private fun AddMobileViewLayout(
-  remoteHost: MutableState<RemoteHostInfo?>
+  remoteHost: MutableState<RemoteHostInfo?>,
+  invitation: MutableState<String?>,
 ) {
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
@@ -45,9 +52,10 @@ private fun AddMobileViewLayout(
     AppBarTitle(stringResource(MR.strings.add_mobile_device))
     SectionView {
       val rh = remoteHost.value
-      if (rh != null) {
+      val inv = invitation.value
+      if (inv != null) {
         QRCode(
-          json.encodeToString(rh.remoteCtrlOOB), Modifier
+          inv, Modifier
             .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)
             .aspectRatio(1f)
         )

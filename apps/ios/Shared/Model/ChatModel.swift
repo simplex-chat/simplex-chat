@@ -765,9 +765,18 @@ final class GMember: ObservableObject, Identifiable {
     static let sampleData = GMember(GroupMember.sampleData)
 }
 
-enum RemoteCtrlSession {
-    case starting
-    case connecting
+struct RemoteCtrlSession {
+    var ctrlAppInfo: CtrlAppInfo
+    var appVersion: String
+    var sessionState: RemoteCtrlSessionState
+
+    func updateState(_ state: RemoteCtrlSessionState) -> RemoteCtrlSession {
+        RemoteCtrlSession(ctrlAppInfo: ctrlAppInfo, appVersion: appVersion, sessionState: state)
+    }
+}
+
+enum RemoteCtrlSessionState {
+    case connecting(remoteCtrl_: RemoteCtrlInfo?)
     case pendingConfirmation(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
     case connected(remoteCtrl: RemoteCtrlInfo)
 }

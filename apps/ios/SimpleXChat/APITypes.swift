@@ -610,7 +610,7 @@ public enum ChatResponse: Decodable, Error {
     // remote desktop responses/events
     case remoteCtrlList(remoteCtrls: [RemoteCtrlInfo])
     case remoteCtrlFound(remoteCtrl: RemoteCtrlInfo)
-    case remoteCtrlConnecting(remoteCtrl: RemoteCtrlInfo)
+    case remoteCtrlConnecting(remoteCtrl_: RemoteCtrlInfo?, ctrlAppInfo: CtrlAppInfo, appVersion: String)
     case remoteCtrlSessionCode(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
     case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
     case remoteCtrlStopped
@@ -904,7 +904,7 @@ public enum ChatResponse: Decodable, Error {
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
             case let .remoteCtrlList(remoteCtrls): return String(describing: remoteCtrls)
             case let .remoteCtrlFound(remoteCtrl): return String(describing: remoteCtrl)
-            case let .remoteCtrlConnecting(remoteCtrl): return String(describing: remoteCtrl)
+            case let .remoteCtrlConnecting(remoteCtrl_, ctrlAppInfo, appVersion): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nctrlAppInfo:\n\(String(describing: ctrlAppInfo))\nappVersion: \(appVersion)"
             case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nsessionCode: \(sessionCode)"
             case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
             case .remoteCtrlStopped: return noDetails
@@ -1538,6 +1538,16 @@ public struct RemoteCtrlInfo: Decodable {
     public var remoteCtrlId: Int64
     public var ctrlName: String
     public var sessionActive: Bool
+}
+
+public struct CtrlAppInfo: Decodable {
+    var appVersionRange: AppVersionRange
+    var deviceName: String
+}
+
+public struct AppVersionRange: Decodable {
+    var minVersion: String
+    var maxVersion: String
 }
 
 public struct CoreVersionInfo: Decodable {

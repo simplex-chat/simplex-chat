@@ -345,11 +345,6 @@ object ChatController {
       val users = listUsers()
       chatModel.users.clear()
       chatModel.users.addAll(users)
-      val remoteHosts = listRemoteHosts()
-      if (remoteHosts != null) {
-        chatModel.remoteHosts.clear()
-        chatModel.remoteHosts.addAll(remoteHosts)
-      }
       if (justStarted) {
         chatModel.currentUser.value = user
         chatModel.userCreated.value = true
@@ -1371,45 +1366,54 @@ object ChatController {
 
   suspend fun setLocalDeviceName(displayName: String): Boolean = sendCommandOkResp(CC.SetLocalDeviceName(displayName))
 
-  suspend fun createRemoteHost(): RemoteHostInfo? {
-    val r = sendCmd(CC.CreateRemoteHost())
-    if (r is CR.RemoteHostCreated) return r.remoteHost
-    apiErrorAlert("createRemoteHost", generalGetString(MR.strings.error), r)
-    return null
-  }
-
   suspend fun listRemoteHosts(): List<RemoteHostInfo>? {
     val r = sendCmd(CC.ListRemoteHosts())
     if (r is CR.RemoteHostList) return r.remoteHosts
-    apiErrorAlert("listRemoteHosts", generalGetString(MR.strings.error), r)
+    apiErrorAlert("listRemoteHosts", generalGetString(MR.strings.error_alert_title), r)
     return null
   }
 
-  suspend fun startRemoteHost(rhId: Long): Boolean = sendCommandOkResp(CC.StartRemoteHost(rhId))
-
-  suspend fun registerRemoteCtrl(oob: RemoteCtrlOOB): RemoteCtrlInfo? {
-    val r = sendCmd(CC.RegisterRemoteCtrl(oob))
-    if (r is CR.RemoteCtrlRegistered) return r.remoteCtrl
-    apiErrorAlert("registerRemoteCtrl", generalGetString(MR.strings.error), r)
+  suspend fun startRemoteHost(rhId: Long?, multicast: Boolean = false): Pair<RemoteHostInfo?, String>? {
+    val r = sendCmd(CC.StartRemoteHost(rhId, multicast))
+    if (r is CR.RemoteHostStarted) return r.remoteHost_ to r.invitation
+    apiErrorAlert("listRemoteHosts", generalGetString(MR.strings.error_alert_title), r)
     return null
   }
+
+  suspend fun switchRemoteHost (rhId: Long?): Boolean = sendCommandOkResp(CC.SwitchRemoteHost(rhId))
+
+  suspend fun stopRemoteHost(rhId: Long?): Boolean = sendCommandOkResp(CC.StopRemoteHost(rhId))
+
+  suspend fun deleteRemoteHost(rhId: Long): Boolean = sendCommandOkResp(CC.DeleteRemoteHost(rhId))
+
+  suspend fun storeRemoteFile(rhId: Long, storeEncrypted: Boolean?, localPath: String): CryptoFile? {
+    val r = sendCmd(CC.StoreRemoteFile(rhId, storeEncrypted, localPath))
+    if (r is CR.RemoteFileStored) return r.remoteFileSource
+    apiErrorAlert("storeRemoteFile", generalGetString(MR.strings.error_alert_title), r)
+    return null
+  }
+
+  suspend fun getRemoteFile(rhId: Long, file: RemoteFile): Boolean = sendCommandOkResp(CC.GetRemoteFile(rhId, file))
+
+  suspend fun connectRemoteCtrl(invitation: String): SomeRemoteCtrl? {
+    val r = sendCmd(CC.ConnectRemoteCtrl(invitation))
+    if (r is CR.RemoteCtrlConnecting) return SomeRemoteCtrl(r.remoteCtrl_, r.ctrlAppInfo, r.appVersion)
+    apiErrorAlert("connectRemoteCtrl", generalGetString(MR.strings.error_alert_title), r)
+    return null
+  }
+
+  suspend fun findKnownRemoteCtrl(): Boolean = sendCommandOkResp(CC.FindKnownRemoteCtrl())
+
+  suspend fun confirmRemoteCtrl(rhId: Long): Boolean = sendCommandOkResp(CC.ConfirmRemoteCtrl(rhId))
+
+  suspend fun verifyRemoteCtrlSession(sessionCode: String): Boolean = sendCommandOkResp(CC.VerifyRemoteCtrlSession(sessionCode))
 
   suspend fun listRemoteCtrls(): List<RemoteCtrlInfo>? {
     val r = sendCmd(CC.ListRemoteCtrls())
     if (r is CR.RemoteCtrlList) return r.remoteCtrls
-    apiErrorAlert("listRemoteCtrls", generalGetString(MR.strings.error), r)
+    apiErrorAlert("listRemoteCtrls", generalGetString(MR.strings.error_alert_title), r)
     return null
   }
-
-  suspend fun stopRemoteHost(rhId: Long): Boolean = sendCommandOkResp(CC.StopRemoteHost(rhId))
-
-  suspend fun deleteRemoteHost(rhId: Long): Boolean = sendCommandOkResp(CC.DeleteRemoteHost(rhId))
-
-  suspend fun startRemoteCtrl(): Boolean = sendCommandOkResp(CC.StartRemoteCtrl())
-
-  suspend fun acceptRemoteCtrl(rcId: Long): Boolean = sendCommandOkResp(CC.AcceptRemoteCtrl(rcId))
-
-  suspend fun rejectRemoteCtrl(rcId: Long): Boolean = sendCommandOkResp(CC.RejectRemoteCtrl(rcId))
 
   suspend fun stopRemoteCtrl(): Boolean = sendCommandOkResp(CC.StopRemoteCtrl())
 
@@ -1791,7 +1795,7 @@ object ChatController {
         chatModel.updateGroupMemberConnectionStats(r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
       is CR.RemoteHostConnected -> {
         // update
-        chatModel.connectingRemoteHost.value = r.remoteHost
+//        chatModel.connectingRemoteHost.value = r.remoteHost
       }
       is CR.RemoteHostStopped -> {
         //
@@ -2059,19 +2063,23 @@ sealed class CC {
   class ApiChatUnread(val type: ChatType, val id: Long, val unreadChat: Boolean): CC()
   class ReceiveFile(val fileId: Long, val encrypt: Boolean, val inline: Boolean?): CC()
   class CancelFile(val fileId: Long): CC()
+  // Remote control
   class SetLocalDeviceName(val displayName: String): CC()
-  class CreateRemoteHost(): CC()
   class ListRemoteHosts(): CC()
-  class StartRemoteHost(val remoteHostId: Long): CC()
-  class StopRemoteHost(val remoteHostId: Long): CC()
+  class StartRemoteHost(val remoteHostId: Long?, val multicast: Boolean): CC()
+  class SwitchRemoteHost (val remoteHostId: Long?): CC()
+  class StopRemoteHost(val remoteHostKey: Long?): CC()
   class DeleteRemoteHost(val remoteHostId: Long): CC()
-  class StartRemoteCtrl(): CC()
-  class RegisterRemoteCtrl(val remoteCtrlOOB: RemoteCtrlOOB): CC()
+  class StoreRemoteFile(val remoteHostId: Long, val storeEncrypted: Boolean?, val localPath: String): CC()
+  class GetRemoteFile(val remoteHostId: Long, val file: RemoteFile): CC()
+  class ConnectRemoteCtrl(val xrcpInvitation: String): CC()
+  class FindKnownRemoteCtrl(): CC()
+  class ConfirmRemoteCtrl(val remoteCtrlId: Long): CC()
+  class VerifyRemoteCtrlSession(val sessionCode: String): CC()
   class ListRemoteCtrls(): CC()
-  class AcceptRemoteCtrl(val remoteCtrlId: Long): CC()
-  class RejectRemoteCtrl(val remoteCtrlId: Long): CC()
   class StopRemoteCtrl(): CC()
   class DeleteRemoteCtrl(val remoteCtrlId: Long): CC()
+  // misc
   class ShowVersion(): CC()
 
   val cmdString: String get() = when (this) {
@@ -2192,15 +2200,20 @@ sealed class CC {
           (if (inline == null) "" else " inline=${onOff(inline)}")
     is CancelFile -> "/fcancel $fileId"
     is SetLocalDeviceName -> "/set device name $displayName"
-    is CreateRemoteHost -> "/create remote host"
     is ListRemoteHosts -> "/list remote hosts"
-    is StartRemoteHost -> "/start remote host $remoteHostId"
-    is StopRemoteHost -> "/stop remote host $remoteHostId"
+    is StartRemoteHost -> "/start remote host " + if (remoteHostId == null) "new" else "$remoteHostId multicast=${onOff(multicast)}"
+    is SwitchRemoteHost -> "/switch remote host " + if (remoteHostId == null) "local" else "$remoteHostId"
+    is StopRemoteHost -> "/stop remote host " + if (remoteHostKey == null) "new" else "$remoteHostKey"
     is DeleteRemoteHost -> "/delete remote host $remoteHostId"
-    is StartRemoteCtrl -> "/start remote ctrl"
-    is RegisterRemoteCtrl -> "/register remote ctrl ${remoteCtrlOOB.fingerprint}"
-    is AcceptRemoteCtrl -> "/accept remote ctrl $remoteCtrlId"
-    is RejectRemoteCtrl -> "/reject remote ctrl $remoteCtrlId"
+    is StoreRemoteFile ->
+      "/store remote file $remoteHostId " +
+          (if (storeEncrypted == null) "" else " encrypt=${onOff(storeEncrypted)}") +
+          localPath
+    is GetRemoteFile -> "/get remote file $remoteHostId ${json.encodeToString(file)}"
+    is ConnectRemoteCtrl -> "/connect remote ctrl $xrcpInvitation"
+    is FindKnownRemoteCtrl -> "/find remote ctrl"
+    is ConfirmRemoteCtrl -> "/confirm remote ctrl $remoteCtrlId"
+    is VerifyRemoteCtrlSession -> "/verify remote ctrl $sessionCode"
     is ListRemoteCtrls -> "/list remote ctrls"
     is StopRemoteCtrl -> "/stop remote ctrl"
     is DeleteRemoteCtrl -> "/delete remote ctrl $remoteCtrlId"
@@ -2306,16 +2319,18 @@ sealed class CC {
     is ReceiveFile -> "receiveFile"
     is CancelFile -> "cancelFile"
     is SetLocalDeviceName -> "setLocalDeviceName"
-    is CreateRemoteHost -> "createRemoteHost"
     is ListRemoteHosts -> "listRemoteHosts"
     is StartRemoteHost -> "startRemoteHost"
+    is SwitchRemoteHost -> "switchRemoteHost"
     is StopRemoteHost -> "stopRemoteHost"
     is DeleteRemoteHost -> "deleteRemoteHost"
-    is StartRemoteCtrl -> "startRemoteCtrl"
-    is RegisterRemoteCtrl -> "registerRemoteCtrl"
+    is StoreRemoteFile -> "storeRemoteFile"
+    is GetRemoteFile -> "getRemoteFile"
+    is ConnectRemoteCtrl -> "connectRemoteCtrl"
+    is FindKnownRemoteCtrl -> "FindKnownRemoteCtrl"
+    is ConfirmRemoteCtrl -> "confirmRemoteCtrl"
+    is VerifyRemoteCtrlSession -> "verifyRemoteCtrlSession"
     is ListRemoteCtrls -> "listRemoteCtrls"
-    is AcceptRemoteCtrl -> "acceptRemoteCtrl"
-    is RejectRemoteCtrl -> "rejectRemoteCtrl"
     is StopRemoteCtrl -> "stopRemoteCtrl"
     is DeleteRemoteCtrl -> "deleteRemoteCtrl"
     is ShowVersion -> "showVersion"
@@ -3389,24 +3404,17 @@ data class RemoteCtrl (
 )
 
 @Serializable
-data class RemoteCtrlOOB (
-  val fingerprint: String,
-  val displayName: String
-)
-
-@Serializable
 data class RemoteCtrlInfo (
   val remoteCtrlId: Long,
-  val displayName: String,
+  val ctrlDeviceName: String,
   val sessionActive: Boolean
 )
 
 @Serializable
 data class RemoteHostInfo (
   val remoteHostId: Long,
+  val hostDeviceName: String,
   val storePath: String,
-  val displayName: String,
-  val remoteCtrlOOB: RemoteCtrlOOB,
   val sessionActive: Boolean
 )
 
@@ -3621,16 +3629,18 @@ sealed class CR {
   @Serializable @SerialName("newContactConnection") class NewContactConnection(val user: UserRef, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val user: UserRef, val connection: PendingContactConnection): CR()
   // remote events (desktop)
-  @Serializable @SerialName("remoteHostCreated") class RemoteHostCreated(val remoteHost: RemoteHostInfo): CR()
   @Serializable @SerialName("remoteHostList") class RemoteHostList(val remoteHosts: List<RemoteHostInfo>): CR()
+  @Serializable @SerialName("currentRemoteHost") class CurrentRemoteHost(val remoteHost_: RemoteHostInfo?): CR()
+  @Serializable @SerialName("remoteHostStarted") class RemoteHostStarted(val remoteHost_: RemoteHostInfo?, val invitation: String): CR()
+  @Serializable @SerialName("remoteHostSessionCode") class RemoteHostSessionCode(val remoteHost_: RemoteHostInfo?, val sessionCode: String): CR()
   @Serializable @SerialName("remoteHostConnected") class RemoteHostConnected(val remoteHost: RemoteHostInfo): CR()
   @Serializable @SerialName("remoteHostStopped") class RemoteHostStopped(val remoteHostId: Long): CR()
+  @Serializable @SerialName("remoteFileStored") class RemoteFileStored(val remoteHostId: Long, val remoteFileSource: CryptoFile): CR()
   // remote events (mobile)
   @Serializable @SerialName("remoteCtrlList") class RemoteCtrlList(val remoteCtrls: List<RemoteCtrlInfo>): CR()
-  @Serializable @SerialName("remoteCtrlRegistered") class RemoteCtrlRegistered(val remoteCtrl: RemoteCtrlInfo): CR()
-  @Serializable @SerialName("remoteCtrlAnnounce") class RemoteCtrlAnnounce(val fingerprint: String): CR()
   @Serializable @SerialName("remoteCtrlFound") class RemoteCtrlFound(val remoteCtrl: RemoteCtrlInfo): CR()
-  @Serializable @SerialName("remoteCtrlConnecting") class RemoteCtrlConnecting(val remoteCtrl: RemoteCtrlInfo): CR()
+  @Serializable @SerialName("remoteCtrlConnecting") class RemoteCtrlConnecting(val remoteCtrl_: RemoteCtrlInfo?, val ctrlAppInfo: CtrlAppInfo, val appVersion: String): CR()
+  @Serializable @SerialName("remoteCtrlSessionCode") class RemoteCtrlSessionCode(val remoteCtrl_: RemoteCtrlInfo?, val sessionCode: String): CR()
   @Serializable @SerialName("remoteCtrlConnected") class RemoteCtrlConnected(val remoteCtrl: RemoteCtrlInfo): CR()
   @Serializable @SerialName("remoteCtrlStopped") class RemoteCtrlStopped(): CR()
   @Serializable @SerialName("versionInfo") class VersionInfo(val versionInfo: CoreVersionInfo, val chatMigrations: List<UpMigration>, val agentMigrations: List<UpMigration>): CR()
@@ -3767,15 +3777,17 @@ sealed class CR {
     is CallEnded -> "callEnded"
     is NewContactConnection -> "newContactConnection"
     is ContactConnectionDeleted -> "contactConnectionDeleted"
-    is RemoteHostCreated -> "remoteHostCreated"
     is RemoteHostList -> "remoteHostList"
+    is CurrentRemoteHost -> "currentRemoteHost"
+    is RemoteHostStarted -> "remoteHostStarted"
+    is RemoteHostSessionCode -> "remoteHostSessionCode"
     is RemoteHostConnected -> "remoteHostConnected"
     is RemoteHostStopped -> "remoteHostStopped"
+    is RemoteFileStored -> "remoteFileStored"
     is RemoteCtrlList -> "remoteCtrlList"
-    is RemoteCtrlRegistered -> "remoteCtrlRegistered"
-    is RemoteCtrlAnnounce -> "remoteCtrlAnnounce"
     is RemoteCtrlFound -> "remoteCtrlFound"
     is RemoteCtrlConnecting -> "remoteCtrlConnecting"
+    is RemoteCtrlSessionCode -> "remoteCtrlSessionCode"
     is RemoteCtrlConnected -> "remoteCtrlConnected"
     is RemoteCtrlStopped -> "remoteCtrlStopped"
     is VersionInfo -> "versionInfo"
@@ -3912,15 +3924,28 @@ sealed class CR {
     is CallEnded -> withUser(user, "contact: ${contact.id}")
     is NewContactConnection -> withUser(user, json.encodeToString(connection))
     is ContactConnectionDeleted -> withUser(user, json.encodeToString(connection))
-    is RemoteHostCreated -> json.encodeToString(remoteHost)
+    // remote events (mobile)
     is RemoteHostList -> json.encodeToString(remoteHosts)
+    is CurrentRemoteHost -> if (remoteHost_ == null) "local" else json.encodeToString(remoteHost_)
+    is RemoteHostStarted -> if (remoteHost_ == null) "new" else json.encodeToString(remoteHost_)
+    is RemoteHostSessionCode ->
+      "remote host: " +
+          (if (remoteHost_ == null) "new" else json.encodeToString(remoteHost_)) +
+          "\nsession code: $sessionCode"
     is RemoteHostConnected -> json.encodeToString(remoteHost)
     is RemoteHostStopped -> "remote host ID: $remoteHostId"
+    is RemoteFileStored -> "remote host ID: $remoteHostId\nremoteFileSource:\n" + json.encodeToString(remoteFileSource)
     is RemoteCtrlList -> json.encodeToString(remoteCtrls)
-    is RemoteCtrlRegistered -> json.encodeToString(remoteCtrl)
-    is RemoteCtrlAnnounce -> "fingerprint: $fingerprint"
     is RemoteCtrlFound -> json.encodeToString(remoteCtrl)
-    is RemoteCtrlConnecting -> json.encodeToString(remoteCtrl)
+    is RemoteCtrlConnecting ->
+      "remote ctrl: " +
+          (if (remoteCtrl_ == null) "null" else json.encodeToString(remoteCtrl_)) +
+          "\nctrlAppInfo:\n${json.encodeToString(ctrlAppInfo)}" +
+          "\nappVersion: $appVersion"
+    is RemoteCtrlSessionCode ->
+      "remote ctrl: " +
+          (if (remoteCtrl_ == null) "null" else json.encodeToString(remoteCtrl_)) +
+          "\nsessionCode: $sessionCode"
     is RemoteCtrlConnected -> json.encodeToString(remoteCtrl)
     is RemoteCtrlStopped -> noDetails()
     is VersionInfo -> "version ${json.encodeToString(versionInfo)}\n\n" +
@@ -4100,6 +4125,26 @@ data class CoreVersionInfo(
   val version: String,
   val simplexmqVersion: String,
   val simplexmqCommit: String
+)
+
+data class SomeRemoteCtrl(
+  val remoteCtrl_: RemoteCtrlInfo?,
+  val ctrlAppInfo: CtrlAppInfo,
+  val appVersion: String
+)
+
+@Serializable
+data class CtrlAppInfo(val appVersionRange: AppVersionRange, val deviceName: String)
+
+@Serializable
+data class AppVersionRange(val minVersion: String, val maxVersion: String)
+
+@Serializable
+data class RemoteFile(
+  val userId: Long,
+  val fileId: Long,
+  val sent: Boolean,
+  val fileSource: CryptoFile
 )
 
 @Serializable

@@ -909,8 +909,10 @@ func setLocalDeviceName(_ displayName: String) throws {
     try sendCommandOkRespSync(.setLocalDeviceName(displayName: displayName))
 }
 
-func connectRemoteCtrl(desktopAddress: String) async throws {
-    try await sendCommandOkResp(.connectRemoteCtrl(xrcpInvitation: desktopAddress))
+func connectRemoteCtrl(desktopAddress: String) async throws -> (RemoteCtrlInfo?, CtrlAppInfo, String) {
+    let r = await chatSendCmd(.connectRemoteCtrl(xrcpInvitation: desktopAddress))
+    if case let .remoteCtrlConnecting(rc_, ctrlAppInfo, v) = r { return (rc_, ctrlAppInfo, v) }
+    throw r
 }
 
 func findKnownRemoteCtrl() async throws {
@@ -1715,18 +1717,15 @@ func processReceivedMsg(_ res: ChatResponse) async {
     case let .remoteCtrlFound(remoteCtrl):
         // TODO multicast
         logger.debug("\(String(describing: remoteCtrl))")
-    case .remoteCtrlConnecting:
-        // TODO is it needed?
-        await MainActor.run {
-            m.remoteCtrlSession = .connecting
-        }
     case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode):
         await MainActor.run {
-            m.remoteCtrlSession = .pendingConfirmation(remoteCtrl_: remoteCtrl_, sessionCode: sessionCode)
+            let state = RemoteCtrlSessionState.pendingConfirmation(remoteCtrl_: remoteCtrl_, sessionCode: sessionCode)
+            m.remoteCtrlSession = m.remoteCtrlSession?.updateState(state)
         }
     case let .remoteCtrlConnected(remoteCtrl):
+        // TODO currently it is returned in response to command, so it is redundant
         await MainActor.run {
-            m.remoteCtrlSession = .connected(remoteCtrl: remoteCtrl)
+            m.remoteCtrlSession = m.remoteCtrlSession?.updateState(.connected(remoteCtrl: remoteCtrl))
         }
     case .remoteCtrlStopped:
         await MainActor.run {

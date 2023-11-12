@@ -34,14 +34,15 @@ fun ConnectMobileView(
   m: ChatModel
 ) {
   val connecting = remember { mutableStateOf(false) }
+  val remoteHosts = remember { mutableStateListOf<RemoteHostInfo>() }
   LaunchedEffect(Unit) {
     val hosts = m.controller.listRemoteHosts() ?: return@LaunchedEffect
-    m.remoteHosts.clear()
-    m.remoteHosts.addAll(hosts)
+    remoteHosts.clear()
+    remoteHosts.addAll(hosts)
   }
   ConnectMobileLayout(
     deviceName = m.controller.appPrefs.deviceNameForRemoteAccess,
-    hosts = m.remoteHosts,
+    remoteHosts = remoteHosts,
     connecting,
     connectedHost = remember { m.currentRemoteHost },
     updateDeviceName = {
@@ -63,7 +64,7 @@ fun ConnectMobileView(
 @Composable
 fun ConnectMobileLayout(
   deviceName: SharedPreference<String?>,
-  hosts: List<RemoteHostInfo>,
+  remoteHosts: List<RemoteHostInfo>,
   connecting: MutableState<Boolean>,
   connectedHost: MutableState<RemoteHostInfo?>,
   updateDeviceName: (String) -> Unit,
@@ -77,11 +78,9 @@ fun ConnectMobileLayout(
     AppBarTitle(stringResource(MR.strings.add_mobile_device))
     SectionView(generalGetString(MR.strings.this_device_name)) {
       DeviceNameField(deviceName.state.value ?: "") { updateDeviceName(it) }
-      for (host in hosts) {
+      for (host in remoteHosts) {
         SectionItemView({ connectMobileDevice(host) }, disabled = connecting.value) {
-          Text(host.displayName)
-          // TODO
-          // ProtocolServerView(serverProtocol, srv, servers, testing)
+          Text(host.hostDeviceName)
         }
       }
       SettingsActionItem(painterResource(MR.images.ic_smartphone), stringResource(MR.strings.add_mobile_device), addMobileDevice, disabled = connecting.value, extraPadding = true)

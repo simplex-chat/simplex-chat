@@ -32,12 +32,14 @@ struct ConnectDesktopView: View {
 
     var body: some View {
         Group {
-            switch m.remoteCtrlSession {
-            case .none: connectDesktopView()
-            case .starting: connectingDesktopView()
-            case .connecting: connectingDesktopView()
-            case let .pendingConfirmation(rc_, sessCode): verifySessionView(rc_, sessCode)
-            case let .connected(rc): activeSessionView(rc)
+            if let session = m.remoteCtrlSession {
+                switch session.sessionState {
+                case let .connecting(rc_): connectingDesktopView(session, rc_)
+                case let .pendingConfirmation(rc_, sessCode): verifySessionView(session, rc_, sessCode)
+                case let .connected(rc): activeSessionView(session, rc)
+                }
+            } else {
+                connectDesktopView()
             }
         }
         .onAppear {
@@ -87,7 +89,7 @@ struct ConnectDesktopView: View {
         .navigationTitle("Connect to desktop")
     }
 
-    private func connectingDesktopView() -> some View {
+    private func connectingDesktopView(_ session: RemoteCtrlSession, _ rc_: RemoteCtrlInfo?) -> some View {
         List {
             Section("This device name") {
                 devicesView()
@@ -106,7 +108,7 @@ struct ConnectDesktopView: View {
         .navigationTitle("Connecting to desktop")
     }
 
-    private func verifySessionView(_ rc: RemoteCtrlInfo?, _ sessCode: String) -> some View {
+    private func verifySessionView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo?, _ sessCode: String) -> some View {
         List {
             Section("Connected to desktop") {
                 if let rc = rc {
@@ -129,7 +131,7 @@ struct ConnectDesktopView: View {
         .navigationTitle("Verify connection")
     }
 
-    private func activeSessionView(_ rc: RemoteCtrlInfo) -> some View {
+    private func activeSessionView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo) -> some View {
         List {
             Section {
                 Text(rc.ctrlName)
@@ -242,10 +244,14 @@ struct ConnectDesktopView: View {
     private func connectDesktopAddress(_ addr: String) {
         Task {
             do {
-                try await connectRemoteCtrl(desktopAddress: addr)
+                let (rc_, ctrlAppInfo, v) = try await connectRemoteCtrl(desktopAddress: addr)
                 await MainActor.run {
                     sessionAddress = ""
-                    m.remoteCtrlSession = .starting
+                    m.remoteCtrlSession = RemoteCtrlSession(
+                        ctrlAppInfo: ctrlAppInfo,
+                        appVersion: v,
+                        sessionState: .connecting(remoteCtrl_: rc_)
+                    )
                 }
             } catch let e {
                 errorAlert(e)
@@ -258,7 +264,7 @@ struct ConnectDesktopView: View {
             do {
                 let rc = try await verifyRemoteCtrlSession(sessCode)
                 await MainActor.run {
-                    m.remoteCtrlSession = .connected(remoteCtrl: rc)
+                    m.remoteCtrlSession = m.remoteCtrlSession?.updateState(.connected(remoteCtrl: rc))
                 }
             } catch let error {
                 errorAlert(error)
