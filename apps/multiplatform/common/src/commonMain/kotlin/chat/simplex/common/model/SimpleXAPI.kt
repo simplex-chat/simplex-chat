@@ -424,7 +424,8 @@ object ChatController {
       val c = cmd.cmdString
       chatModel.addTerminalItem(TerminalItem.cmd(cmd.obfuscated))
       Log.d(TAG, "sendCmd: ${cmd.cmdType}")
-      val json = chatSendCmd(ctrl, c)
+      val rhId = chatModel.currentRemoteHost.value?.remoteHostId?.toInt() ?: -1
+      val json = if (rhId == -1) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId, c)
       val r = APIResponse.decodeStr(json)
       Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
       if (r.resp is CR.Response || r.resp is CR.Invalid) {
@@ -1169,10 +1170,10 @@ object ChatController {
     }
   }
 
-  suspend fun cancelFile(user: User, fileId: Long) {
+  suspend fun cancelFile(rhId: Long?, user: User, fileId: Long) {
     val chatItem = apiCancelFile(fileId)
     if (chatItem != null) {
-      chatItemSimpleUpdate(user, chatItem)
+      chatItemSimpleUpdate(rhId, user, chatItem)
       cleanupFile(chatItem)
     }
   }
@@ -1380,7 +1381,12 @@ object ChatController {
     return null
   }
 
-  suspend fun switchRemoteHost (rhId: Long?): Boolean = sendCommandOkResp(CC.SwitchRemoteHost(rhId))
+  suspend fun switchRemoteHost (rhId: Long?): RemoteHostInfo? {
+    val r = sendCmd(CC.SwitchRemoteHost(rhId))
+    if (r is CR.CurrentRemoteHost) return r.remoteHost_
+    apiErrorAlert("switchRemoteHost", generalGetString(MR.strings.error_alert_title), r)
+    return null
+  }
 
   suspend fun stopRemoteHost(rhId: Long?): Boolean = sendCommandOkResp(CC.StopRemoteHost(rhId))
 
@@ -1469,6 +1475,8 @@ object ChatController {
   private suspend fun processReceivedMsg(apiResp: APIResponse) {
     lastMsgReceivedTimestamp = System.currentTimeMillis()
     val r = apiResp.resp
+    val rhId = apiResp.remoteHostId
+    fun active(user: UserLike): Boolean = activeUser(rhId, user)
     chatModel.addTerminalItem(TerminalItem.resp(r))
     when (r) {
       is CR.NewContactConnection -> {
@@ -1581,7 +1589,7 @@ object ChatController {
             ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
-          withApi { receiveFile(r.user, file.fileId, encrypted = cItem.encryptLocalFile && chatController.appPrefs.privacyEncryptLocalFiles.get(), auto = true) }
+          withApi { receiveFile(rhId, r.user, file.fileId, encrypted = cItem.encryptLocalFile && chatController.appPrefs.privacyEncryptLocalFiles.get(), auto = true) }
         }
         if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
@@ -1595,7 +1603,7 @@ object ChatController {
         }
       }
       is CR.ChatItemUpdated ->
-        chatItemSimpleUpdate(r.user, r.chatItem)
+        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
       is CR.ChatItemReaction -> {
         if (active(r.user)) {
           chatModel.updateChatItem(r.reaction.chatInfo, r.reaction.chatReaction.chatItem)
@@ -1707,37 +1715,37 @@ object ChatController {
           chatModel.updateContact(r.contact)
         }
       is CR.RcvFileStart ->
-        chatItemSimpleUpdate(r.user, r.chatItem)
+        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
       is CR.RcvFileComplete ->
-        chatItemSimpleUpdate(r.user, r.chatItem)
+        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
       is CR.RcvFileSndCancelled -> {
-        chatItemSimpleUpdate(r.user, r.chatItem)
+        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupFile(r.chatItem)
       }
       is CR.RcvFileProgressXFTP ->
-        chatItemSimpleUpdate(r.user, r.chatItem)
+        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
       is CR.RcvFileError -> {
-        chatItemSimpleUpdate(r.user, r.chatItem)
+        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupFile(r.chatItem)
       }
       is CR.SndFileStart ->
-        chatItemSimpleUpdate(r.user, r.chatItem)
+        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
       is CR.SndFileComplete -> {
-        chatItemSimpleUpdate(r.user, r.chatItem)
+        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupDirectFile(r.chatItem)
       }
       is CR.SndFileRcvCancelled -> {
-        chatItemSimpleUpdate(r.user, r.chatItem)
+        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupDirectFile(r.chatItem)
       }
       is CR.SndFileProgressXFTP ->
-        chatItemSimpleUpdate(r.user, r.chatItem)
+        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
       is CR.SndFileCompleteXFTP -> {
-        chatItemSimpleUpdate(r.user, r.chatItem)
+        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupFile(r.chatItem)
       }
       is CR.SndFileError -> {
-        chatItemSimpleUpdate(r.user, r.chatItem)
+        chatItemSimpleUpdate(rhId, r.user, r.chatItem)
         cleanupFile(r.chatItem)
       }
       is CR.CallInvitation -> {
@@ -1794,8 +1802,9 @@ object ChatController {
       is CR.GroupMemberRatchetSync ->
         chatModel.updateGroupMemberConnectionStats(r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
       is CR.RemoteHostConnected -> {
-        // update
-//        chatModel.connectingRemoteHost.value = r.remoteHost
+        // TODO needs to update it instead in sessions
+        chatModel.currentRemoteHost.value = r.remoteHost
+        switchUIRemoteHost(r.remoteHost.remoteHostId)
       }
       is CR.RemoteHostStopped -> {
         //
@@ -1823,7 +1832,8 @@ object ChatController {
     }
   }
 
-  private fun active(user: UserLike): Boolean = user.userId == chatModel.currentUser.value?.userId
+  private fun activeUser(rhId: Long?, user: UserLike): Boolean =
+    rhId == chatModel.currentRemoteHost.value?.remoteHostId && user.userId == chatModel.currentUser.value?.userId
 
   private fun withCall(r: CR, contact: Contact, perform: (Call) -> Unit) {
     val call = chatModel.activeCall.value
@@ -1834,10 +1844,10 @@ object ChatController {
     }
   }
 
-  suspend fun receiveFile(user: UserLike, fileId: Long, encrypted: Boolean, auto: Boolean = false) {
+  suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, encrypted: Boolean, auto: Boolean = false) {
     val chatItem = apiReceiveFile(fileId, encrypted = encrypted, auto = auto)
     if (chatItem != null) {
-      chatItemSimpleUpdate(user, chatItem)
+      chatItemSimpleUpdate(rhId, user, chatItem)
     }
   }
 
@@ -1848,11 +1858,11 @@ object ChatController {
     }
   }
 
-  private suspend fun chatItemSimpleUpdate(user: UserLike, aChatItem: AChatItem) {
+  private suspend fun chatItemSimpleUpdate(rhId: Long?, user: UserLike, aChatItem: AChatItem) {
     val cInfo = aChatItem.chatInfo
     val cItem = aChatItem.chatItem
     val notify = { ntfManager.notifyMessageReceived(user, cInfo, cItem) }
-    if (!active(user)) {
+    if (!activeUser(rhId, user)) {
       notify()
     } else if (chatModel.upsertChatItem(cInfo, cItem)) {
       notify()
@@ -1878,6 +1888,17 @@ object ChatController {
       }
       else e.string
     chatModel.setContactNetworkStatus(contact, NetworkStatus.Error(err))
+  }
+
+  suspend fun switchUIRemoteHost(rhId: Long) {
+    chatModel.currentRemoteHost.value = switchRemoteHost(rhId)
+    val user = apiGetActiveUser()
+    val users = listUsers()
+    chatModel.users.clear()
+    chatModel.users.addAll(users)
+    chatModel.currentUser.value = user
+    chatModel.userCreated.value = true
+    getUserChatData()
   }
 
   fun getXFTPCfg(): XFTPFileConfig {
@@ -3633,6 +3654,7 @@ sealed class CR {
   @Serializable @SerialName("currentRemoteHost") class CurrentRemoteHost(val remoteHost_: RemoteHostInfo?): CR()
   @Serializable @SerialName("remoteHostStarted") class RemoteHostStarted(val remoteHost_: RemoteHostInfo?, val invitation: String): CR()
   @Serializable @SerialName("remoteHostSessionCode") class RemoteHostSessionCode(val remoteHost_: RemoteHostInfo?, val sessionCode: String): CR()
+  @Serializable @SerialName("newRemoteHost") class NewRemoteHost(val remoteHost: RemoteHostInfo): CR()
   @Serializable @SerialName("remoteHostConnected") class RemoteHostConnected(val remoteHost: RemoteHostInfo): CR()
   @Serializable @SerialName("remoteHostStopped") class RemoteHostStopped(val remoteHostId: Long): CR()
   @Serializable @SerialName("remoteFileStored") class RemoteFileStored(val remoteHostId: Long, val remoteFileSource: CryptoFile): CR()
@@ -3781,6 +3803,7 @@ sealed class CR {
     is CurrentRemoteHost -> "currentRemoteHost"
     is RemoteHostStarted -> "remoteHostStarted"
     is RemoteHostSessionCode -> "remoteHostSessionCode"
+    is NewRemoteHost -> "newRemoteHost"
     is RemoteHostConnected -> "remoteHostConnected"
     is RemoteHostStopped -> "remoteHostStopped"
     is RemoteFileStored -> "remoteFileStored"
@@ -3932,6 +3955,7 @@ sealed class CR {
       "remote host: " +
           (if (remoteHost_ == null) "new" else json.encodeToString(remoteHost_)) +
           "\nsession code: $sessionCode"
+    is NewRemoteHost -> json.encodeToString(remoteHost)
     is RemoteHostConnected -> json.encodeToString(remoteHost)
     is RemoteHostStopped -> "remote host ID: $remoteHostId"
     is RemoteFileStored -> "remote host ID: $remoteHostId\nremoteFileSource:\n" + json.encodeToString(remoteFileSource)
