@@ -23,16 +23,17 @@ import Simplex.Chat (processChatCommand)
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.CIContent (CIContent(..), SMsgDirection (..))
+import Simplex.Chat.Messages.CIContent (CIContent (..), SMsgDirection (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..), msgContentText)
-import Simplex.Chat.Remote.Types (RemoteHostId)
+import Simplex.Chat.Remote.Types (RHKey (..), RemoteHostId, RemoteHostSession (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Notification (Notification (..), initializeNotifications)
 import Simplex.Chat.Types
 import Simplex.Chat.View
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Encoding.String
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import System.Console.ANSI.Types
 import System.IO (IOMode (..), hPutStrLn, withFile)
@@ -259,11 +260,20 @@ printRespToTerminal ct cc liveItems outputRH r = responseString cc liveItems out
 
 responseString :: ChatController -> Bool -> Maybe RemoteHostId -> ChatResponse -> IO [StyledString]
 responseString cc liveItems outputRH r = do
-  currentRH <- readTVarIO $ currentRemoteHost cc
-  user <- readTVarIO $ currentUser cc -- XXX: local user, should be subsumed by remote when connected
+  cu <- getCurrentUser cc
   ts <- getCurrentTime
   tz <- getCurrentTimeZone
-  pure $ responseToView (currentRH, user) (config cc) liveItems ts tz outputRH r
+  pure $ responseToView cu (config cc) liveItems ts tz outputRH r
+
+getCurrentUser :: ChatController -> IO (Maybe RemoteHostId, Maybe User)
+getCurrentUser cc = atomically $ do
+  localUser_ <- readTVar (currentUser cc)
+  readTVar (currentRemoteHost cc) >>= \case
+    Nothing -> pure (Nothing, localUser_)
+    Just rhId ->
+      TM.lookup (RHId rhId) (remoteHostSessions cc) >>= \case
+        Just RHSessionConnected {hostUser_} -> pure (Just rhId, hostUser_)
+        _ -> pure (Nothing, localUser_)
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =

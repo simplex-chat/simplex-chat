@@ -177,9 +177,13 @@ startRemoteHost rh_ = do
       disconnected <- toIO $ onDisconnected remoteHostId
       httpClient <- liftEitherError (httpError rhKey') $ attachRevHTTP2Client disconnected tls
       rhClient <- mkRemoteHostClient httpClient sessionKeys sessId storePath hostInfo
+      hostUser_ <- liftRH remoteHostId $ remoteSend rhClient "/user" >>= \case
+        CRActiveUser {user} -> pure $ Just user
+        CRChatError Nothing (ChatError CENoActiveUser) -> pure Nothing
+        cr -> throwError $ RPEUnexpectedResponse {response = tshow cr}
       pollAction <- async $ pollEvents remoteHostId rhClient
       withRemoteHostSession rhKey' $ \case
-        RHSessionConfirmed _ RHPendingSession {} -> Right ((), RHSessionConnected {tls, rhClient, pollAction, storePath})
+        RHSessionConfirmed _ RHPendingSession {} -> Right ((), RHSessionConnected {tls, rhClient, pollAction, storePath, hostUser_})
         _ -> Left $ ChatErrorRemoteHost rhKey' RHEBadState
       chatWriteVar currentRemoteHost $ Just remoteHostId -- this is required for commands to be passed to remote host
       toView $ CRRemoteHostConnected rhi
@@ -207,9 +211,20 @@ startRemoteHost rh_ = do
       oq <- asks outputQ
       forever $ do
         r_ <- liftRH rhId $ remoteRecv rhClient 10000000
-        forM r_ $ \r -> atomically $ writeTBQueue oq (Nothing, Just rhId, r)
+        forM r_ $ updateRemoteHostUser rhId >=> \r -> atomically $ writeTBQueue oq (Nothing, Just rhId, r)
     httpError :: RHKey -> HTTP2ClientError -> ChatError
     httpError rhKey = ChatErrorRemoteHost rhKey . RHEProtocolError . RPEHTTP2 . tshow
+
+updateRemoteHostUser :: ChatMonad m => RemoteHostId -> ChatResponse -> m ChatResponse
+updateRemoteHostUser rhId = \case
+  r@CRActiveUser {user} -> do
+    withRemoteHostSession rhKey $ \case
+      s@RHSessionConnected {} -> Right ((), s {hostUser_ = Just user})
+      _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
+    pure r
+  r -> pure r
+  where
+    rhKey = RHId rhId
 
 closeRemoteHost :: ChatMonad m => RHKey -> m ()
 closeRemoteHost rhKey = do
@@ -306,7 +321,7 @@ processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostClient -> ChatC
 processRemoteCommand remoteHostId c cmd s = case cmd of
   SendFile chatName f -> sendFile "/f" chatName f
   SendImage chatName f -> sendFile "/img" chatName f
-  _ -> liftRH remoteHostId $ remoteSend c s
+  _ -> liftRH remoteHostId (remoteSend c s) >>= updateRemoteHostUser remoteHostId
   where
     sendFile cmdName chatName (CryptoFile path cfArgs) = do
       -- don't encrypt in host if already encrypted locally
