@@ -96,7 +96,7 @@ data RHKey = RHNew | RHId {remoteHostId :: RemoteHostId}
 -- | Storable/internal remote host data
 data RemoteHost = RemoteHost
   { remoteHostId :: RemoteHostId,
-    hostName :: Text,
+    hostDeviceName :: Text,
     storePath :: FilePath,
     hostPairing :: RCHostPairing
   }
@@ -104,7 +104,7 @@ data RemoteHost = RemoteHost
 -- | UI-accessible remote host information
 data RemoteHostInfo = RemoteHostInfo
   { remoteHostId :: RemoteHostId,
-    hostName :: Text,
+    hostDeviceName :: Text,
     storePath :: FilePath,
     sessionActive :: Bool
   }
@@ -115,14 +115,14 @@ type RemoteCtrlId = Int64
 -- | Storable/internal remote controller data
 data RemoteCtrl = RemoteCtrl
   { remoteCtrlId :: RemoteCtrlId,
-    ctrlName :: Text,
+    ctrlDeviceName :: Text,
     ctrlPairing :: RCCtrlPairing
   }
 
 -- | UI-accessible remote controller information
 data RemoteCtrlInfo = RemoteCtrlInfo
   { remoteCtrlId :: RemoteCtrlId,
-    ctrlName :: Text,
+    ctrlDeviceName :: Text,
     sessionActive :: Bool
   }
   deriving (Show)
@@ -151,6 +151,7 @@ data CtrlAppInfo = CtrlAppInfo
   { appVersionRange :: AppVersionRange,
     deviceName :: Text
   }
+  deriving (Show)
 
 data HostAppInfo = HostAppInfo
   { appVersion :: AppVersion,
