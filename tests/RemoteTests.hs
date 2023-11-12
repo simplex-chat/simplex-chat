@@ -343,7 +343,7 @@ switchRemoteHostTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \
   desktop <## "bob (Bob)"
 
   desktop ##> "/switch remote host 123"
-  desktop <## "remote host 123 error: RHEMissing"
+  desktop <## "no remote host 123"
 
   stopDesktop mobile desktop
   desktop ##> "/contacts"
@@ -388,7 +388,7 @@ startRemote mobile desktop = do
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobile ##> ("/connect remote ctrl " <> inv)
-  mobile <## "ok"
+  mobile <## "connecting new remote controller: My desktop, v5.4.0.3"
   desktop <## "new remote host connecting"
   desktop <## "Compare session code with host:"
   sessId <- getTermLine desktop
@@ -397,6 +397,7 @@ startRemote mobile desktop = do
   mobile <## ("/verify remote ctrl " <> sessId)
   mobile ##> ("/verify remote ctrl " <> sessId)
   mobile <## "remote controller 1 session started with My desktop"
+  desktop <## "new remote host 1 added: Mobile"
   desktop <## "remote host 1 connected"
 
 startRemoteStored :: TestCC -> TestCC -> IO ()
@@ -406,7 +407,7 @@ startRemoteStored mobile desktop = do
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobile ##> ("/connect remote ctrl " <> inv)
-  mobile <## "ok"
+  mobile <## "connecting remote controller 1: My desktop, v5.4.0.3"
   desktop <## "remote host 1 connecting"
   desktop <## "Compare session code with host:"
   sessId <- getTermLine desktop

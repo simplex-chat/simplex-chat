@@ -1955,13 +1955,16 @@ processChatCommand = \case
   ListRemoteHosts -> withUser_ $ CRRemoteHostList <$> listRemoteHosts
   SwitchRemoteHost rh_ -> withUser_ $ CRCurrentRemoteHost <$> switchRemoteHost rh_
   StartRemoteHost rh_ -> withUser_ $ do
-    (remoteHost_, inv) <- startRemoteHost' rh_
+    (remoteHost_, inv) <- startRemoteHost rh_
     pure CRRemoteHostStarted {remoteHost_, invitation = decodeLatin1 $ strEncode inv}
   StopRemoteHost rh_ -> withUser_ $ closeRemoteHost rh_ >> ok_
   DeleteRemoteHost rh -> withUser_ $ deleteRemoteHost rh >> ok_
   StoreRemoteFile rh encrypted_ localPath -> withUser_ $ CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
   GetRemoteFile rh rf -> withUser_ $ getRemoteFile rh rf >> ok_
-  ConnectRemoteCtrl oob -> withUser_ $ connectRemoteCtrl oob >> ok_
+  ConnectRemoteCtrl inv -> withUser_ $ do
+    (rc_, ctrlAppInfo) <- connectRemoteCtrl inv
+    let remoteCtrl_ = (`remoteCtrlInfo` True) <$> rc_
+    pure CRRemoteCtrlConnecting {remoteCtrl_, ctrlAppInfo, appVersion = currentAppVersion}
   FindKnownRemoteCtrl -> withUser_ $ findKnownRemoteCtrl >> ok_
   ConfirmRemoteCtrl rc -> withUser_ $ confirmRemoteCtrl rc >> ok_
   VerifyRemoteCtrlSession sessId -> withUser_ $ CRRemoteCtrlConnected <$> verifyRemoteCtrlSession (execChatCommand Nothing) sessId
