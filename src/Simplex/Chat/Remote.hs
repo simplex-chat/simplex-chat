@@ -29,13 +29,12 @@ import Data.ByteString.Builder (Builder)
 import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word16, Word32)
 import qualified Network.HTTP.Types as N
-import Network.HTTP2.Client (HTTP2Error (..))
 import Network.HTTP2.Server (responseStreaming)
 import qualified Paths_simplex_chat as SC
 import Simplex.Chat.Archive (archiveFilesFolder)
@@ -504,9 +503,10 @@ verifyRemoteCtrlSession execChatCommand sessCode' = handleCtrlError "verifyRemot
       rc_ <- liftIO $ getRemoteCtrlByFingerprint db (ctrlFingerprint rcCtrlPairing)
       case rc_ of
         Nothing -> insertRemoteCtrl db ctrlName rcCtrlPairing >>= getRemoteCtrl db
-        Just rc@RemoteCtrl {remoteCtrlId} -> do
-          liftIO $ updateCtrlPairingKeys db remoteCtrlId (dhPrivKey rcCtrlPairing)
-          pure rc
+        Just rc@RemoteCtrl {ctrlPairing} -> do
+          let dhPrivKey' = dhPrivKey rcCtrlPairing
+          liftIO $ updateRemoteCtrl db rc ctrlName dhPrivKey'
+          pure rc {ctrlName, ctrlPairing = ctrlPairing {dhPrivKey = dhPrivKey'}}
     monitor :: ChatMonad m => Async () -> m ()
     monitor server = do
       res <- waitCatch server

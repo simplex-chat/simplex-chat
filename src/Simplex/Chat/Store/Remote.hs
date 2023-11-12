@@ -130,16 +130,16 @@ toRemoteCtrl (remoteCtrlId, ctrlName, caKey, C.SignedObject caCert, ctrlFingerpr
       ctrlPairing = RCCtrlPairing {caKey, caCert, ctrlFingerprint, idPubKey, dhPrivKey, prevDhPrivKey}
     }
 
-updateCtrlPairingKeys :: DB.Connection -> RemoteCtrlId -> C.PrivateKeyX25519 -> IO ()
-updateCtrlPairingKeys db rcId dhPrivKey =
+updateRemoteCtrl :: DB.Connection -> RemoteCtrl -> Text -> C.PrivateKeyX25519 -> IO ()
+updateRemoteCtrl db RemoteCtrl {remoteCtrlId} ctrlDeviceName dhPrivKey =
   DB.execute
     db
     [sql|
       UPDATE remote_controllers
-      SET dh_priv_key = ?, prev_dh_priv_key = dh_priv_key
+      SET ctrl_device_name = ?, dh_priv_key = ?, prev_dh_priv_key = dh_priv_key
       WHERE remote_ctrl_id = ?
     |]
-    (dhPrivKey, rcId)
+    (ctrlDeviceName, dhPrivKey, remoteCtrlId)
 
 deleteRemoteCtrlRecord :: DB.Connection -> RemoteCtrlId -> IO ()
 deleteRemoteCtrlRecord db remoteCtrlId =
