@@ -112,7 +112,7 @@ struct ConnectDesktopView: View {
         List {
             Section("Connected to desktop") {
                 if let rc = rc {
-                    Text(rc.ctrlName)
+                    Text(rc.deviceViewName)
                 } else {
                     Text("New device").italic()
                 }
@@ -134,7 +134,7 @@ struct ConnectDesktopView: View {
     private func activeSessionView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo) -> some View {
         List {
             Section {
-                Text(rc.ctrlName)
+                Text(rc.deviceViewName)
                 disconnectButton()
             } header: {
                 Text("Connected desktop")
@@ -222,7 +222,7 @@ struct ConnectDesktopView: View {
     }
 
     private func remoteCtrlView(_ rc: RemoteCtrlInfo) -> some View {
-        Text(rc.ctrlName == "" ? "\(rc.remoteCtrlId)" : rc.ctrlName)
+        Text(rc.deviceViewName)
     }
 
 

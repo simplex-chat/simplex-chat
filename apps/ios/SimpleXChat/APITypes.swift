@@ -1536,8 +1536,12 @@ public enum NotificationPreviewMode: String, SelectableItem {
 
 public struct RemoteCtrlInfo: Decodable {
     public var remoteCtrlId: Int64
-    public var ctrlName: String
+    public var ctrlDeviceName: String
     public var sessionActive: Bool
+
+    public var deviceViewName: String {
+        ctrlDeviceName == "" ? "\(remoteCtrlId)" : ctrlDeviceName
+    }
 }
 
 public struct CtrlAppInfo: Decodable {
