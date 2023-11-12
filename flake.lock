@@ -417,11 +417,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1698662474,
-        "narHash": "sha256-VoMvl+N1K8LuWO8rjlm6ko//1/l35InxFTrtNSKRc20=",
+        "lastModified": 1699767871,
+        "narHash": "sha256-kxeCUfwC/Vgh2FvVMlBUq0eVx1JvfHyN+5MPKUik9mE=",
         "owner": "zw3rk",
         "repo": "mobile-core-tools",
-        "rev": "00d48cc5a929af4b047604805dd8aba9933b37e4",
+        "rev": "4dcb77d5ea896d749381806dfab5358851b08951",
         "type": "github"
       },
       "original": {
