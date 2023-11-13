@@ -3433,11 +3433,21 @@ data class RemoteCtrlInfo (
 )
 
 @Serializable
-data class RemoteHostInfo (
+data class RemoteHostInfo(
   val remoteHostId: Long,
   val hostDeviceName: String,
   val storePath: String,
   val sessionActive: Boolean
+  // val sessionState: RemoteHostSessionState? // instead of sessionActive
+)
+
+@Serializable
+sealed class RemoteHostSessionState(
+  object Starting: RemoteHostSessionState()
+  class Connecting(val invitation: String): RemoteHostSessionState()
+  class PendingConfirmation(val sessionCode: String): RemoteHostSessionState()
+  object Confirmed: RemoteHostSessionState()
+  object Connected: RemoteHostSessionState()
 )
 
 val json = Json {
