@@ -216,7 +216,7 @@ closeRemoteHost :: ChatMonad m => RHKey -> m ()
 closeRemoteHost rhKey = do
   logNote $ "Closing remote host session for " <> tshow rhKey
   chatModifyVar currentRemoteHost $ \cur -> if (RHId <$> cur) == Just rhKey then Nothing else cur -- only wipe the closing RH
-  join . withRemoteHostSession_ rhKey . maybe (Left $ ChatErrorRemoteCtrl RCEInactive) $
+  join . withRemoteHostSession_ rhKey . maybe (Left $ ChatErrorRemoteHost rhKey RHEInactive) $
     \s -> Right (liftIO $ cancelRemoteHost s, Nothing)
 
 cancelRemoteHost :: RemoteHostSession -> IO ()
