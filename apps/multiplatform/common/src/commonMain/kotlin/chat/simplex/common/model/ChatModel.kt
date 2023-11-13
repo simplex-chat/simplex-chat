@@ -2078,6 +2078,7 @@ sealed class CIContent: ItemContent {
       is RcvDecryptionError -> true
       is RcvGroupInvitation -> true
       is RcvModerated -> true
+      is SndModerated -> true
       is InvalidJSON -> true
       else -> false
     }
