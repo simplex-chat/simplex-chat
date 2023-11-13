@@ -265,8 +265,8 @@ switchRemoteHost rhId_ = do
   rhi_ <- forM rhId_ $ \rhId -> do
     let rhKey = RHId rhId
     rh <- withStore (`getRemoteHost` rhId)
-    active <- chatReadVar remoteHostSessions
-    case M.lookup rhKey active of
+    sessions <- chatReadVar remoteHostSessions
+    case M.lookup rhKey sessions of
       Just RHSessionConnected {} -> pure $ remoteHostInfo rh $ Just RHSConnected
       _ -> throwError $ ChatErrorRemoteHost rhKey RHEInactive
   rhi_ <$ chatWriteVar currentRemoteHost rhId_
