@@ -3,11 +3,11 @@
     <string name="app_name">SimpleX</string>
     <string name="thousand_abbreviation">k</string>
     <!-- Connect via Link - MainActivity.kt -->
-    <string name="connect_via_contact_link">Über den Kontakt-Link verbinden?</string>
-    <string name="connect_via_invitation_link">Über den Einladungslink verbinden\?</string>
-    <string name="connect_via_group_link">Über den Gruppen-Link verbinden?</string>
+    <string name="connect_via_contact_link">Über die Kontakt-Adresse verbinden?</string>
+    <string name="connect_via_invitation_link">Über den Einmal-Link verbinden?</string>
+    <string name="connect_via_group_link">Der Gruppe beitreten?</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Ihr Profil wird an den Kontakt gesendet, von dem Sie diesen Link erhalten haben.</string>
-    <string name="you_will_join_group">Sie werden der Gruppe beitreten, auf die sich dieser Link bezieht, und sich mit deren Gruppenmitgliedern verbinden.</string>
+    <string name="you_will_join_group">Sie werden mit allen Gruppenmitgliedern verbunden.</string>
     <string name="connect_via_link_verb">Verbinden</string>
     <!-- Server info - ChatModel.kt -->
     <string name="server_connected">Verbunden</string>
@@ -418,7 +418,7 @@
     <string name="share_link">Link teilen</string>
     <string name="delete_address">Adresse löschen</string>
     <!-- User profile details - UserProfileView.kt -->
-    <string name="display_name__field">Angezeigter Name:</string>
+    <string name="display_name__field">Profilname:</string>
     <string name="full_name__field">Vollständiger Name:</string>
     <string name="your_current_profile">Mein aktuelles Chat-Profil</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt. SimpleX-Server können Ihr Profil nicht sehen.</string>
@@ -437,7 +437,7 @@
     <string name="your_profile_is_stored_on_your_device">Ihr Profil, Ihre Kontakte und zugestellten Nachrichten werden auf Ihrem Gerät gespeichert.</string>
     <string name="profile_is_only_shared_with_your_contacts">Das Profil wird nur mit Ihren Kontakten geteilt.</string>
     <string name="display_name_cannot_contain_whitespace">Der angezeigte Name darf keine Leerzeichen enthalten.</string>
-    <string name="display_name">Angezeigter Name</string>
+    <string name="display_name">Geben Sie Ihren Namen ein:</string>
     <string name="create_profile_button">Erstellen</string>
     <string name="about_simplex">Über SimpleX</string>
     <!-- markdown demo - MarkdownHelpView.kt -->
@@ -712,7 +712,7 @@
     <string name="group_invitation_expired">Die Gruppeneinladung ist abgelaufen</string>
     <!-- Group event chat items -->
     <string name="rcv_group_event_member_added">hat %1$s eingeladen.</string>
-    <string name="rcv_group_event_member_connected">beigetreten</string>
+    <string name="rcv_group_event_member_connected">verbunden</string>
     <string name="rcv_group_event_member_left">hat die Gruppe verlassen</string>
     <string name="rcv_group_event_changed_member_role">änderte die Rolle von %s auf %s</string>
     <string name="rcv_group_event_changed_your_role">änderte Ihre Rolle auf %s</string>
@@ -813,8 +813,8 @@
     <string name="switch_receiving_address">Empfängeradresse wechseln</string>
     <!-- AddGroupView.kt -->
     <string name="create_secret_group_title">Geheime Gruppe erstellen</string>
-    <string name="group_is_decentralized">Die Gruppe ist vollständig dezentralisiert – sie ist nur für Mitglieder sichtbar.</string>
-    <string name="group_display_name_field">Anzeigename der Gruppe:</string>
+    <string name="group_is_decentralized">Vollständig dezentralisiert – nur für Mitglieder sichtbar.</string>
+    <string name="group_display_name_field">Geben Sie den Gruppennamen ein:</string>
     <string name="group_full_name_field">Vollständiger Gruppenname:</string>
     <string name="group_main_profile_sent">Ihr Chat-Profil wird an die Gruppenmitglieder gesendet</string>
     <!-- GroupProfileView.kt -->
@@ -1451,9 +1451,9 @@
     <string name="system_restricted_background_desc">SimpleX kann nicht im Hintergrund ablaufen. Sie erhalten Benachrichtigungen nur dann, solange die App läuft.</string>
     <string name="system_restricted_background_in_call_desc">Die App kann nach einer Minute im Hintergrund geschlossen werden.</string>
     <string name="system_restricted_background_warn"><![CDATA[Wählen Sie bitte in den App-Einstellungen <b>App-Akkuverbrauch</b> / <b>Unbeschränkt</b> , um Benachrichtigungen zu aktivieren.]]></string>
-    <string name="rcv_group_event_n_members_connected">%s, %s und %d weitere Mitglieder wurden verbunden</string>
-    <string name="rcv_group_event_2_members_connected">%s und %s wurden verbunden</string>
-    <string name="rcv_group_event_3_members_connected">%s, %s und %s wurden verbunden</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s und %d weitere Mitglieder wurden mit Ihnen verbunden</string>
+    <string name="rcv_group_event_2_members_connected">%s und %s wurden mit Ihnen verbunden</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s und %s wurden mit Ihnen verbunden</string>
     <string name="privacy_message_draft">Nachrichtenentwurf</string>
     <string name="privacy_show_last_messages">Letzte Nachrichten anzeigen</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Die Datenbank wird verschlüsselt und das Passwort in den Einstellungen gespeichert.</string>
@@ -1487,4 +1487,57 @@
 \n- Schneller und stabiler.</string>
     <string name="member_contact_send_direct_message">Direktnachricht senden</string>
     <string name="rcv_group_event_member_created_contact">Direkt miteinander verbunden</string>
+    <string name="expand_verb">Erweitern</string>
+    <string name="connect_plan_repeat_connection_request">Verbindungsanfrage wiederholen?</string>
+    <string name="rcv_direct_event_contact_deleted">Gelöschter Kontakt</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName">Sie sind bereits mit %1$s verbunden.</string>
+    <string name="error_alert_title">Fehler</string>
+    <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Sie sind über diesen Link bereits Mitglied der Gruppe.</string>
+    <string name="create_group_button">Gruppe erstellen</string>
+    <string name="create_another_profile_button">Profil erstellen</string>
+    <string name="group_members_2">%s und %s</string>
+    <string name="connect_plan_join_your_group">Ihrer Gruppe beitreten?</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName">Sie sind bereits in der Gruppe %1$s Mitglied.</string>
+    <string name="connect_plan_this_is_your_own_one_time_link">Das ist Ihr eigener Einmal-Link!</string>
+    <string name="marked_deleted_items_description">%d Nachrichten als gelöscht markiert</string>
+    <string name="connect_plan_group_already_exists">Gruppe besteht bereits!</string>
+    <string name="connect_plan_already_connecting">Bereits verbunden!</string>
+    <string name="video_decoding_exception_desc">Das Video kann nicht dekodiert werden. Bitte probieren Sie ein anderes Video aus, oder kontaktieren Sie die Entwickler.</string>
+    <string name="rcv_group_event_1_member_connected">%s wurde mit Ihnen verbunden</string>
+    <string name="rcv_group_and_other_events">und %d weitere Ereignisse</string>
+    <string name="connect_plan_connect_via_link">Über einen Link verbinden?</string>
+    <string name="connect_plan_already_joining_the_group">Sie sind bereits Mitglied der Gruppe!</string>
+    <string name="group_members_n">%s, %s und %d Mitglieder</string>
+    <string name="moderated_items_description">%d Nachrichten von %s moderiert</string>
+    <string name="unblock_member_button">Mitglied freigeben</string>
+    <string name="connect_plan_connect_to_yourself">Mit Ihnen selbst verbinden?</string>
+    <string name="contact_tap_to_connect">Zum Verbinden antippen</string>
+    <string name="connect_plan_you_are_already_in_group_vName">Sie sind bereits in der Gruppe %1$s Mitglied.</string>
+    <string name="connect_plan_this_is_your_own_simplex_address">Das ist Ihre eigene SimpleX-Adresse!</string>
+    <string name="correct_name_to">Richtiger Name für %s?</string>
+    <string name="delete_messages__question">%d Nachrichten löschen?</string>
+    <string name="connect_with_contact_name_question">Mit %1$s verbinden?</string>
+    <string name="remove_member_button">Mitglied entfernen</string>
+    <string name="block_member_confirmation">Blockieren</string>
+    <string name="unblock_member_question">Mitglied freigeben?</string>
+    <string name="blocked_items_description">%d Nachrichten blockiert</string>
+    <string name="block_member_button">Mitglied blockieren</string>
+    <string name="connect_plan_repeat_join_request">Verbindungsanfrage wiederholen?</string>
+    <string name="button_remove_member_question">Mitglied entfernen?</string>
+    <string name="delete_and_notify_contact">Kontakt löschen und benachrichtigen</string>
+    <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">Sie sind bereits über diesen Einmal-Link verbunden!</string>
+    <string name="connect_plan_open_group">Gruppe öffnen</string>
+    <string name="unblock_member_desc">Die Nachrichten von %s werden angezeigt!</string>
+    <string name="error_sending_message_contact_invitation">Fehler beim Senden der Einladung</string>
+    <string name="non_content_uri_alert_text">Sie haben einen ungültigen Datei-Pfad geteilt. Bitte melden Sie diesen Fehler den App-Entwicklern.</string>
+    <string name="block_member_question">Mitglied blockieren?</string>
+    <string name="rcv_group_events_count">%d Gruppenereignisse</string>
+    <string name="invalid_name">Ungültiger Name!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName">Das ist Ihr Link für die Gruppe %1$s!</string>
+    <string name="unblock_member_confirmation">Freigeben</string>
+    <string name="non_content_uri_alert_title">Ungültiger Datei-Pfad</string>
+    <string name="connect_plan_you_have_already_requested_connection_via_this_address">Sie haben über diese Adresse bereits eine Verbindung beantragt!</string>
+    <string name="terminal_always_visible">Die Konsole in einem neuen Fenster anzeigen</string>
+    <string name="block_member_desc">Alle neuen Nachrichten von %s werden ausgeblendet!</string>
+    <string name="blocked_item_description">blockiert</string>
 </resources>
