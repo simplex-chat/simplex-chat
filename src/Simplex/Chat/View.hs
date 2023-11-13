@@ -1704,8 +1704,14 @@ viewRemoteHosts = \case
   [] -> ["No remote hosts"]
   hs -> "Remote hosts: " : map viewRemoteHostInfo hs
   where
-    viewRemoteHostInfo RemoteHostInfo {remoteHostId, hostDeviceName, sessionActive} =
-      plain $ tshow remoteHostId <> ". " <> hostDeviceName <> if sessionActive then " (active)" else ""
+    viewRemoteHostInfo RemoteHostInfo {remoteHostId, hostDeviceName, sessionState} =
+      plain $ tshow remoteHostId <> ". " <> hostDeviceName <> maybe "" viewSessionState sessionState
+    viewSessionState = \case
+      RHSStarting -> " (starting)"
+      RHSConnecting _ -> " (connecting)"
+      RHSPendingConfirmation {sessionCode} -> " (pending confirmation, code: " <> sessionCode <> ")"
+      RHSConfirmed -> " (confirmed)"
+      RHSConnected -> " (connected)"
 
 viewRemoteCtrls :: [RemoteCtrlInfo] -> [StyledString]
 viewRemoteCtrls = \case
@@ -1713,7 +1719,7 @@ viewRemoteCtrls = \case
   hs -> "Remote controllers: " : map viewRemoteCtrlInfo hs
   where
     viewRemoteCtrlInfo RemoteCtrlInfo {remoteCtrlId, ctrlDeviceName, sessionActive} =
-      plain $ tshow remoteCtrlId <> ". " <> ctrlDeviceName <> if sessionActive then " (active)" else ""
+      plain $ tshow remoteCtrlId <> ". " <> ctrlDeviceName <> if sessionActive then " (connected)" else ""
 
 -- TODO fingerprint, accepted?
 viewRemoteCtrl :: RemoteCtrlInfo -> StyledString
