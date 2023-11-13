@@ -65,7 +65,13 @@ data RemoteHostSession
   = RHSessionStarting
   | RHSessionConnecting {rhPendingSession :: RHPendingSession}
   | RHSessionConfirmed {tls :: TLS, rhPendingSession :: RHPendingSession}
-  | RHSessionConnected {tls :: TLS, rhClient :: RemoteHostClient, pollAction :: Async (), storePath :: FilePath}
+  | RHSessionConnected
+    { rchClient :: RCHostClient,
+      tls :: TLS,
+      rhClient :: RemoteHostClient,
+      pollAction :: Async (),
+      storePath :: FilePath
+    }
 
 data RemoteProtocolError
   = -- | size prefix is malformed
