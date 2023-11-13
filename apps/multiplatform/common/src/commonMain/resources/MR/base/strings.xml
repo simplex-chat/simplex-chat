@@ -1632,6 +1632,7 @@
   <string name="enter_this_device_name">Enter this device name…</string>
   <string name="this_device_name_shared_with_mobile">The device name will be shared with the connected mobile client.</string>
   <string name="error">Error</string>
+  <string name="this_device">This device</string>
 
   <!-- Under development -->
   <string name="in_developing_title">Coming soon!</string>

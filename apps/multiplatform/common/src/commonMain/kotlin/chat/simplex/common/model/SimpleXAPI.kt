@@ -3439,16 +3439,21 @@ data class RemoteHostInfo(
   val storePath: String,
   val sessionActive: Boolean
   // val sessionState: RemoteHostSessionState? // instead of sessionActive
-)
+) {
+  val activeHost: Boolean
+    @Composable get() = chatModel.currentRemoteHost.value?.remoteHostId == remoteHostId
+
+  fun activeHost(): Boolean = chatModel.currentRemoteHost.value?.remoteHostId == remoteHostId
+}
 
 @Serializable
-sealed class RemoteHostSessionState(
+sealed class RemoteHostSessionState {
   object Starting: RemoteHostSessionState()
   class Connecting(val invitation: String): RemoteHostSessionState()
   class PendingConfirmation(val sessionCode: String): RemoteHostSessionState()
   object Confirmed: RemoteHostSessionState()
   object Connected: RemoteHostSessionState()
-)
+}
 
 val json = Json {
   prettyPrint = true

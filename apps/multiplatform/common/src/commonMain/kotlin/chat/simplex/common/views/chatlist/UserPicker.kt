@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.*
 import androidx.compose.ui.graphics.Color
@@ -18,12 +19,13 @@ import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.unit.*
+import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.User
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.remote.connectMobileDevice
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -51,6 +53,12 @@ fun UserPicker(
       chatModel.users
         .filter { u -> u.user.activeUser || !u.user.hidden }
         .sortedByDescending { it.user.activeUser }
+    }
+  }
+  val remoteHosts by remember {
+    derivedStateOf {
+      chatModel.remoteHosts
+        .sortedBy { it.hostDeviceName }
     }
   }
   val animatedFloat = remember { Animatable(if (newChat.isVisible()) 0f else 1f) }
@@ -92,6 +100,34 @@ fun UserPicker(
         }
       }
   }
+  LaunchedEffect(Unit) {
+    chatModel.remoteHosts.clear()
+    chatModel.remoteHosts.addAll(chatController.listRemoteHosts() ?: emptyList())
+  }
+  val UsersView: @Composable ColumnScope.() -> Unit = {
+    users.forEach { u ->
+      UserProfilePickerItem(u.user, u.unreadCount, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), openSettings = {
+        settingsClicked()
+        userPickerState.value = AnimatedViewState.GONE
+      }) {
+        userPickerState.value = AnimatedViewState.HIDING
+        if (!u.user.activeUser) {
+          scope.launch {
+            val job = launch {
+              delay(500)
+              switchingUsers.value = true
+            }
+            ModalManager.closeAllModalsEverywhere()
+            chatModel.controller.changeActiveUser(u.user.userId, null)
+            job.cancel()
+            switchingUsers.value = false
+          }
+        }
+      }
+      Divider(Modifier.requiredHeight(1.dp))
+      if (u.user.activeUser) Divider(Modifier.requiredHeight(0.5.dp))
+    }
+  }
   val xOffset = with(LocalDensity.current) { 10.dp.roundToPx() }
   val maxWidth = with(LocalDensity.current) { windowWidth() * density }
   Box(Modifier
@@ -114,28 +150,56 @@ fun UserPicker(
         .clip(RoundedCornerShape(corner = CornerSize(25.dp)))
     ) {
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-        users.forEach { u ->
-          UserProfilePickerItem(u.user, u.unreadCount, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), openSettings = {
+        // if (has any users on this desktop installation)
+        if (true && chatModel.remoteHosts.isNotEmpty()) {
+          LocalDevicePickerItem(chatModel.currentRemoteHost.value == null, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), openSettings = {
+            settingsClicked()
+            userPickerState.value = AnimatedViewState.GONE
+          }) {
+            withBGApi {
+              val remoteHostId = chatModel.currentRemoteHost.value?.remoteHostId ?: return@withBGApi
+              val index = chatModel.remoteHosts.indexOfFirst { it.remoteHostId == remoteHostId }
+              val res = chatController.stopRemoteHost(chatModel.currentRemoteHost.value!!.remoteHostId)
+              if (res) {
+                chatModel.remoteHosts[index] = chatModel.remoteHosts[index].copy(sessionActive = false)
+              }
+            }
+          }
+          Divider(Modifier.requiredHeight(1.dp))
+        }
+        if (chatModel.currentRemoteHost.value == null) {
+          UsersView()
+        }
+        remoteHosts.forEach { h ->
+          val connecting = rememberSaveable { mutableStateOf(false) }
+          RemoteHostPickerItem(h, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), openSettings = {
             settingsClicked()
             userPickerState.value = AnimatedViewState.GONE
           }) {
             userPickerState.value = AnimatedViewState.HIDING
-            if (!u.user.activeUser) {
+            if (!h.activeHost()) {
               scope.launch {
                 val job = launch {
                   delay(500)
                   switchingUsers.value = true
                 }
                 ModalManager.closeAllModalsEverywhere()
-                chatModel.controller.changeActiveUser(u.user.userId, null)
+                if (h.sessionActive) {
+                  chatModel.controller.switchRemoteHost(h.remoteHostId)
+                } else {
+                  connectMobileDevice(h, connecting)
+                }
                 job.cancel()
                 switchingUsers.value = false
               }
             }
           }
           Divider(Modifier.requiredHeight(1.dp))
-          if (u.user.activeUser) Divider(Modifier.requiredHeight(0.5.dp))
+          if (h.activeHost) {
+            UsersView()
+          }
         }
+
       }
       if (showSettings) {
         SettingsPickerItem {
@@ -197,6 +261,7 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, padding: PaddingValues 
   }
 }
 
+
 @Composable
 fun UserProfileRow(u: User) {
   Row(
@@ -215,6 +280,90 @@ fun UserProfileRow(u: User) {
         .padding(start = 10.dp, end = 8.dp),
       color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
       fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
+    )
+  }
+}
+
+@Composable
+fun RemoteHostPickerItem(h: RemoteHostInfo, padding: PaddingValues = PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), onLongClick: () -> Unit = {}, openSettings: () -> Unit = {}, onClick: () -> Unit) {
+  Row(
+    Modifier
+      .fillMaxWidth()
+      .sizeIn(minHeight = 46.dp)
+      .combinedClickable(
+        onClick = if (h.activeHost) openSettings else onClick,
+        onLongClick = onLongClick,
+        interactionSource = remember { MutableInteractionSource() },
+        indication = if (!h.activeHost) LocalIndication.current else null
+      )
+      .onRightClick { onLongClick() }
+      .padding(padding),
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    RemoteHostRow(h)
+    if (h.activeHost) {
+      Icon(painterResource(MR.images.ic_lan), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    } else {
+      Box(Modifier.size(20.dp))
+    }
+  }
+}
+
+@Composable
+fun RemoteHostRow(h: RemoteHostInfo) {
+  Row(
+    Modifier
+      .widthIn(max = windowWidth() * 0.7f)
+      .padding(vertical = 8.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Text(
+      h.hostDeviceName,
+      modifier = Modifier
+        .padding(start = 10.dp, end = 8.dp),
+      color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
+      fontWeight = if (h.activeHost) FontWeight.Medium else FontWeight.Normal
+    )
+  }
+}
+
+@Composable
+fun LocalDevicePickerItem(active: Boolean, padding: PaddingValues = PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), onLongClick: () -> Unit = {}, openSettings: () -> Unit = {}, onClick: () -> Unit) {
+  Row(
+    Modifier
+      .fillMaxWidth()
+      .sizeIn(minHeight = 46.dp)
+      .combinedClickable(
+        onClick = if (active) openSettings else onClick,
+        onLongClick = onLongClick,
+        interactionSource = remember { MutableInteractionSource() },
+        indication = if (!active) LocalIndication.current else null
+      )
+      .onRightClick { onLongClick() }
+      .padding(padding),
+    horizontalArrangement = Arrangement.SpaceBetween,
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    LocalDeviceRow(active)
+    Box(Modifier.size(20.dp))
+  }
+}
+
+@Composable
+fun LocalDeviceRow(active: Boolean) {
+  Row(
+    Modifier
+      .widthIn(max = windowWidth() * 0.7f)
+      .padding(vertical = 8.dp),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    Text(
+      stringResource(MR.strings.this_device),
+      modifier = Modifier
+        .padding(start = 10.dp, end = 8.dp),
+      color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
+      fontWeight = if (active) FontWeight.Medium else FontWeight.Normal
     )
   }
 }

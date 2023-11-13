@@ -11,6 +11,7 @@ import androidx.compose.foundation.text.*
 import androidx.compose.material.*
 import androidx.compose.material.TextFieldDefaults.indicatorLine
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -34,9 +35,8 @@ import dev.icerock.moko.resources.compose.stringResource
 fun ConnectMobileView(
   m: ChatModel
 ) {
-  val connecting = remember { mutableStateOf(false) }
-  val invitation = remember { mutableStateOf<String?>(null) }
-  val remoteHosts = remember { mutableStateListOf<RemoteHostInfo>() }
+  val connecting = rememberSaveable() { mutableStateOf(false) }
+  val remoteHosts = remember { chatModel.remoteHosts }
   val deviceName = m.controller.appPrefs.deviceNameForRemoteAccess
   LaunchedEffect(Unit) {
     val hosts = m.controller.listRemoteHosts() ?: return@LaunchedEffect
@@ -58,7 +58,8 @@ fun ConnectMobileView(
     },
     addMobileDevice = {
       ModalManager.start.showModalCloseable { close ->
-        ConnectMobileViewLayout(stringResource(MR.strings.add_mobile_device), invitation)
+        val invitation = rememberSaveable { mutableStateOf<String?>(null) }
+        ConnectMobileViewLayout(stringResource(MR.strings.add_mobile_device), invitation.value)
         DisposableEffect(Unit) {
           val oldRemoteHostId = m.currentRemoteHost.value?.remoteHostId
           withBGApi {
@@ -78,36 +79,7 @@ fun ConnectMobileView(
         }
       }
     },
-    connectMobileDevice = {
-      ModalManager.start.showModalCloseable { close ->
-        ConnectMobileViewLayout(
-          title = stringResource(MR.strings.connect_mobile_device),
-          invitation = invitation,
-        )
-        val remoteHost = remember { mutableStateOf<RemoteHostInfo?>(null) }
-        LaunchedEffect(Unit) {
-          val r = m.controller.startRemoteHost(it.remoteHostId)
-          if (r != null) {
-            val (rh_, inv) = r
-            connecting.value = true
-            remoteHost.value = rh_
-            invitation.value = inv
-          }
-        }
-        DisposableEffect(remember { chatModel.currentRemoteHost }.value) {
-          if (remoteHost.value != null && chatModel.currentRemoteHost.value?.remoteHostId == remoteHost.value?.remoteHostId) {
-            close()
-          }
-          onDispose {
-            if (remoteHost.value != null && chatModel.currentRemoteHost.value?.remoteHostId != remoteHost.value?.remoteHostId) {
-              withBGApi {
-                chatController.stopRemoteHost(remoteHost.value?.remoteHostId)
-              }
-            }
-          }
-        }
-      }
-    }
+    connectMobileDevice = { connectMobileDevice(it, connecting) }
   )
 }
 
@@ -198,7 +170,7 @@ private fun DeviceNameField(
 @Composable
 private fun ConnectMobileViewLayout(
   title: String,
-  invitation: MutableState<String?>,
+  invitation: String?,
 ) {
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
@@ -206,14 +178,45 @@ private fun ConnectMobileViewLayout(
   ) {
     AppBarTitle(title)
     SectionView {
-      val inv = invitation.value
-      if (inv != null) {
+      if (invitation != null) {
         QRCode(
-          inv, Modifier
+          invitation, Modifier
             .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)
             .aspectRatio(1f)
         )
       }
     }
   }
+}
+
+fun connectMobileDevice(rh: RemoteHostInfo, connecting: MutableState<Boolean>) {
+    ModalManager.start.showModalCloseable { close ->
+      val invitation = rememberSaveable { mutableStateOf<String?>(null) }
+      ConnectMobileViewLayout(
+        title = stringResource(MR.strings.connect_mobile_device),
+        invitation = invitation.value,
+      )
+      val remoteHost = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf<RemoteHostInfo?>(null) }
+      LaunchedEffect(Unit) {
+        val r = chatModel.controller.startRemoteHost(rh.remoteHostId)
+        if (r != null) {
+          val (rh_, inv) = r
+          connecting.value = true
+          remoteHost.value = rh_
+          invitation.value = inv
+        }
+      }
+      DisposableEffect(remember { chatModel.currentRemoteHost }.value) {
+        if (remoteHost.value != null && chatModel.currentRemoteHost.value?.remoteHostId == remoteHost.value?.remoteHostId) {
+          close()
+        }
+        onDispose {
+          if (remoteHost.value != null && chatModel.currentRemoteHost.value?.remoteHostId != remoteHost.value?.remoteHostId) {
+            withBGApi {
+              chatController.stopRemoteHost(remoteHost.value?.remoteHostId)
+            }
+          }
+        }
+      }
+    }
 }
