@@ -1289,7 +1289,7 @@ processChatCommand = \case
         connectionStats <- withAgent $ \a -> abortConnectionSwitch a connId
         pure $ CRGroupMemberSwitchAborted user g m connectionStats
       _ -> throwChatError CEGroupMemberNotActive
-  APISyncContactRatchet contactId force -> withUser $ \user -> do
+  APISyncContactRatchet contactId force -> withUser $ \user -> withChatLock "syncContactRatchet" $ do
     ct <- withStore $ \db -> getContact db user contactId
     case contactConnId ct of
       Just connId -> do
@@ -1297,7 +1297,7 @@ processChatCommand = \case
         createInternalChatItem user (CDDirectSnd ct) (CISndConnEvent $ SCERatchetSync rss Nothing) Nothing
         pure $ CRContactRatchetSyncStarted user ct cStats
       Nothing -> throwChatError $ CEContactNotActive ct
-  APISyncGroupMemberRatchet gId gMemberId force -> withUser $ \user -> do
+  APISyncGroupMemberRatchet gId gMemberId force -> withUser $ \user -> withChatLock "syncGroupMemberRatchet" $ do
     (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
     case memberConnId m of
       Just connId -> do

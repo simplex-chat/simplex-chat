@@ -214,7 +214,13 @@ fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =
     if (filePath != null && to != null) {
       if (ciFile?.fileSource?.cryptoArgs != null) {
         createTmpFileAndDelete { tmpFile ->
-          decryptCryptoFile(filePath, ciFile.fileSource.cryptoArgs, tmpFile.absolutePath)
+          try {
+            decryptCryptoFile(filePath, ciFile.fileSource.cryptoArgs, tmpFile.absolutePath)
+          } catch (e: Exception) {
+            Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
+            tmpFile.delete()
+            return@createTmpFileAndDelete
+          }
           copyFileToFile(tmpFile, to) {}
           tmpFile.delete()
         }
