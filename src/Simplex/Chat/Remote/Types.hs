@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -63,7 +64,8 @@ data RHPendingSession = RHPendingSession
 
 data RemoteHostSession
   = RHSessionStarting
-  | RHSessionConnecting {rhPendingSession :: RHPendingSession}
+  | RHSessionConnecting {invitation :: Text, rhPendingSession :: RHPendingSession}
+  | RHSessionPendingConfirmation {sessionCode :: Text, tls :: TLS, rhPendingSession :: RHPendingSession}
   | RHSessionConfirmed {tls :: TLS, rhPendingSession :: RHPendingSession}
   | RHSessionConnected
     { rchClient :: RCHostClient,
@@ -72,6 +74,22 @@ data RemoteHostSession
       pollAction :: Async (),
       storePath :: FilePath
     }
+
+data RemoteHostSessionState
+  = RHSStarting
+  | RHSConnecting {invitation :: Text}
+  | RHSPendingConfirmation {sessionCode :: Text}
+  | RHSConfirmed
+  | RHSConnected
+  deriving (Show)
+
+rhsSessionState :: RemoteHostSession -> RemoteHostSessionState
+rhsSessionState = \case
+  RHSessionStarting -> RHSStarting
+  RHSessionConnecting {invitation} -> RHSConnecting {invitation}
+  RHSessionPendingConfirmation {sessionCode} -> RHSPendingConfirmation {sessionCode}
+  RHSessionConfirmed {} -> RHSConfirmed
+  RHSessionConnected {} -> RHSConnected
 
 data RemoteProtocolError
   = -- | size prefix is malformed
@@ -112,7 +130,7 @@ data RemoteHostInfo = RemoteHostInfo
   { remoteHostId :: RemoteHostId,
     hostDeviceName :: Text,
     storePath :: FilePath,
-    sessionActive :: Bool
+    sessionState :: Maybe RemoteHostSessionState
   }
   deriving (Show)
 
@@ -173,6 +191,8 @@ $(J.deriveJSON (sumTypeJSON $ dropPrefix "RPE") ''RemoteProtocolError)
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "RH") ''RHKey)
 
 $(J.deriveJSON (enumJSON $ dropPrefix "PE") ''PlatformEncoding)
+
+$(J.deriveJSON (sumTypeJSON $ dropPrefix "RHS") ''RemoteHostSessionState)
 
 $(J.deriveJSON defaultJSON ''RemoteHostInfo)
 

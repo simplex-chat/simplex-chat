@@ -57,11 +57,11 @@ remoteHandshakeTest viaDesktop = testChat2 aliceProfile aliceDesktopProfile $ \m
 
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
-  desktop <## "1. Mobile (active)"
+  desktop <## "1. Mobile (connected)"
 
   mobile ##> "/list remote ctrls"
   mobile <## "Remote controllers:"
-  mobile <## "1. My desktop (active)"
+  mobile <## "1. My desktop (connected)"
 
   if viaDesktop then stopDesktop mobile desktop else stopMobile mobile desktop
 
