@@ -19,6 +19,7 @@ typedef void* chat_ctrl;
 extern char *chat_migrate_init(char *path, char *key, char *confirm, chat_ctrl *ctrl);
 extern char *chat_close_store(chat_ctrl ctl);
 extern char *chat_send_cmd(chat_ctrl ctl, char *cmd);
+extern char *chat_send_remote_cmd(chat_ctrl ctrl, int rhId, char *cmd);
 extern char *chat_recv_msg(chat_ctrl ctl);
 extern char *chat_recv_msg_wait(chat_ctrl ctl, int wait);
 extern char *chat_parse_markdown(char *str);
