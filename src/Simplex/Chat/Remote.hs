@@ -180,7 +180,7 @@ startRemoteHost rh_ = do
       rhClient <- mkRemoteHostClient httpClient sessionKeys sessId storePath hostInfo
       pollAction <- async $ pollEvents remoteHostId rhClient
       withRemoteHostSession rhKey' $ \case
-        RHSessionConfirmed _ RHPendingSession {} -> Right ((), RHSessionConnected {tls, rhClient, pollAction, storePath})
+        RHSessionConfirmed _ RHPendingSession {rchClient} -> Right ((), RHSessionConnected {rchClient, tls, rhClient, pollAction, storePath})
         _ -> Left $ ChatErrorRemoteHost rhKey' RHEBadState
       chatWriteVar currentRemoteHost $ Just remoteHostId -- this is required for commands to be passed to remote host
       toView $ CRRemoteHostConnected rhi
@@ -226,10 +226,11 @@ cancelRemoteHost = \case
   RHSessionConfirmed tls rhs -> do
     cancelPendingSession rhs
     closeConnection tls
-  RHSessionConnected {tls, rhClient = RemoteHostClient {httpClient}, pollAction} -> do
+  RHSessionConnected {rchClient, tls, rhClient = RemoteHostClient {httpClient}, pollAction} -> do
     uninterruptibleCancel pollAction
     closeHTTP2Client httpClient
     closeConnection tls
+    cancelHostClient rchClient
   where
     cancelPendingSession RHPendingSession {rchClient, rhsWaitSession} = do
       uninterruptibleCancel rhsWaitSession
