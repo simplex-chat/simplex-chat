@@ -94,9 +94,14 @@ actual fun getAppFileUri(fileName: String): URI =
 actual fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
   val filePath = getLoadedFilePath(file)
   return if (filePath != null) {
-    val data = if (file?.fileSource?.cryptoArgs != null) readCryptoFile(filePath, file.fileSource.cryptoArgs) else File(filePath).readBytes()
-    val bitmap = getBitmapFromByteArray(data, false)
-    if (bitmap != null) bitmap to data else null
+    try {
+      val data = if (file?.fileSource?.cryptoArgs != null) readCryptoFile(filePath, file.fileSource.cryptoArgs) else File(filePath).readBytes()
+      val bitmap = getBitmapFromByteArray(data, false)
+      if (bitmap != null) bitmap to data else null
+    } catch (e: Exception) {
+      Log.e(TAG, "Unable to read crypto file: " + e.stackTraceToString())
+      null
+    }
   } else {
     null
   }

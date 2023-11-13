@@ -27,7 +27,11 @@ actual fun shareFile(text: String, fileSource: CryptoFile) {
     FileChooserLauncher(false) { to: URI? ->
       if (to != null) {
         if (fileSource.cryptoArgs != null) {
-          decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs, to.path)
+          try {
+            decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs, to.path)
+          } catch (e: Exception) {
+            Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
+          }
         } else {
           copyFileToFile(File(fileSource.filePath), to) {}
         }
