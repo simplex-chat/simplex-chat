@@ -90,6 +90,9 @@ ctrlAppVersionRange = mkAppVersionRange minRemoteHostVersion currentAppVersion
 hostAppVersionRange :: AppVersionRange
 hostAppVersionRange = mkAppVersionRange minRemoteCtrlVersion currentAppVersion
 
+networkIOTimeout :: Int
+networkIOTimeout = 15000000
+
 -- * Desktop side
 
 getRemoteHostClient :: ChatMonad m => RemoteHostId -> m RemoteHostClient
@@ -334,7 +337,7 @@ connectRemoteCtrl signedInv@RCSignedInvitation {invitation = inv@RCInvitation {c
   rc_ <- withStore' $ \db -> getRemoteCtrlByFingerprint db ca
   mapM_ (validateRemoteCtrl inv) rc_
   hostAppInfo <- getHostAppInfo v
-  (rcsClient, vars) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) 15000000 . withAgent $ \a ->
+  (rcsClient, vars) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) networkIOTimeout . withAgent $ \a ->
     rcConnectCtrlURI a signedInv (ctrlPairing <$> rc_) (J.toJSON hostAppInfo)
   cmdOk <- newEmptyTMVarIO
   rcsWaitSession <- async $ do
@@ -350,7 +353,7 @@ connectRemoteCtrl signedInv@RCSignedInvitation {invitation = inv@RCInvitation {c
       unless (idkey == idPubKey) $ throwError $ ChatErrorRemoteCtrl $ RCEProtocolError $ PRERemoteControl RCEIdentity
     waitForCtrlSession :: ChatMonad m => Maybe RemoteCtrl -> Text -> RCCtrlClient -> RCStepTMVar (ByteString, TLS, RCStepTMVar (RCCtrlSession, RCCtrlPairing)) -> m ()
     waitForCtrlSession rc_ ctrlName rcsClient vars = do
-      (uniq, tls, rcsWaitConfirmation) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) 15000000 $ takeRCStep vars
+      (uniq, tls, rcsWaitConfirmation) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) networkIOTimeout $ takeRCStep vars
       let sessionCode = verificationCode uniq
       toView CRRemoteCtrlSessionCode {remoteCtrl_ = (`remoteCtrlInfo` True) <$> rc_, sessionCode}
       updateRemoteCtrlSession $ \case
@@ -495,9 +498,9 @@ verifyRemoteCtrlSession execChatCommand sessCode' = handleCtrlError "verifyRemot
       RCSessionPendingConfirmation {rcsClient, ctrlDeviceName = ctrlName, sessionCode, rcsWaitConfirmation} -> pure (rcsClient, ctrlName, sessionCode, rcsWaitConfirmation)
       _ -> throwError $ ChatErrorRemoteCtrl RCEBadState
   let verified = sameVerificationCode sessCode' sessionCode
-  timeoutThrow (ChatErrorRemoteCtrl RCETimeout) 15000000 . liftIO $ confirmCtrlSession client verified -- signal verification result before crashing
+  timeoutThrow (ChatErrorRemoteCtrl RCETimeout) networkIOTimeout . liftIO $ confirmCtrlSession client verified -- signal verification result before crashing
   unless verified $ throwError $ ChatErrorRemoteCtrl $ RCEProtocolError PRESessionCode
-  (rcsSession@RCCtrlSession {tls, sessionKeys}, rcCtrlPairing) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) 15000000 $ takeRCStep vars
+  (rcsSession@RCCtrlSession {tls, sessionKeys}, rcCtrlPairing) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) networkIOTimeout $ takeRCStep vars
   rc@RemoteCtrl {remoteCtrlId} <- upsertRemoteCtrl ctrlName rcCtrlPairing
   remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
   encryption <- mkCtrlRemoteCrypto sessionKeys $ tlsUniq tls
