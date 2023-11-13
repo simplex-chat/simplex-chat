@@ -1048,6 +1048,7 @@ data RemoteHostError
   = RHEMissing -- ^ No remote session matches this identifier
   | RHEInactive -- ^ A session exists, but not active
   | RHEBusy -- ^ A session is already running
+  | RHETimeout
   | RHEBadState -- ^ Illegal state transition
   | RHEBadVersion {appVersion :: AppVersion}
   | RHEDisconnected {reason :: Text} -- TODO should be sent when disconnected?
@@ -1059,10 +1060,10 @@ data RemoteCtrlError
   = RCEInactive -- ^ No session is running
   | RCEBadState -- ^ A session is in a wrong state for the current operation
   | RCEBusy -- ^ A session is already running
+  | RCETimeout
   | RCEDisconnected {remoteCtrlId :: RemoteCtrlId, reason :: Text} -- ^ A session disconnected by a controller
   | RCEBadInvitation
   | RCEBadVersion {appVersion :: AppVersion}
-  | RCEBadVerificationCode -- ^ The code submitted doesn't match session TLSunique
   | RCEHTTP2Error {http2Error :: Text} -- TODO currently not used
   | RCEProtocolError {protocolError :: RemoteProtocolError}
   deriving (Show, Exception)

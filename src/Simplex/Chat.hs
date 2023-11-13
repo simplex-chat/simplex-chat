@@ -103,7 +103,7 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
-import System.Exit (exitFailure, exitSuccess)
+import System.Exit (ExitCode, exitFailure, exitSuccess)
 import System.FilePath (takeFileName, (</>))
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, stdout)
 import System.Random (randomRIO)
@@ -411,7 +411,12 @@ execRemoteCommand :: ChatMonad' m => Maybe User -> RemoteHostId -> ChatCommand -
 execRemoteCommand u rhId cmd s = handleCommandError u $ getRemoteHostClient rhId >>= \rh -> processRemoteCommand rhId rh cmd s
 
 handleCommandError :: ChatMonad' m => Maybe User -> ExceptT ChatError m ChatResponse -> m ChatResponse
-handleCommandError u a = either (CRChatCmdError u) id <$> (runExceptT a `E.catch` (pure . Left . mkChatError))
+handleCommandError u a = either (CRChatCmdError u) id <$> (runExceptT a `E.catches` ioErrors)
+  where
+    ioErrors =
+      [ E.Handler $ \(e :: ExitCode) -> E.throwIO e,
+        E.Handler $ pure . Left . mkChatError
+      ]
 
 parseChatCommand :: ByteString -> Either String ChatCommand
 parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace

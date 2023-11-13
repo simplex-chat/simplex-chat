@@ -392,7 +392,7 @@ jsonCIContent = \case
   CIRcvChatFeatureRejected feature -> JCIRcvChatFeatureRejected {feature}
   CIRcvGroupFeatureRejected groupFeature -> JCIRcvGroupFeatureRejected {groupFeature}
   CISndModerated -> JCISndModerated
-  CIRcvModerated -> JCISndModerated
+  CIRcvModerated -> JCIRcvModerated
   CIInvalidJSON json -> JCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentJSON :: JSONCIContent -> ACIContent
