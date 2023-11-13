@@ -161,7 +161,7 @@ fun UserPicker(
               val index = chatModel.remoteHosts.indexOfFirst { it.remoteHostId == remoteHostId }
               val res = chatController.stopRemoteHost(chatModel.currentRemoteHost.value!!.remoteHostId)
               if (res) {
-                chatModel.remoteHosts[index] = chatModel.remoteHosts[index].copy(sessionActive = false)
+                chatModel.remoteHosts[index] = chatModel.remoteHosts[index].copy(sessionState = null)
               }
             }
           }
@@ -184,7 +184,7 @@ fun UserPicker(
                   switchingUsers.value = true
                 }
                 ModalManager.closeAllModalsEverywhere()
-                if (h.sessionActive) {
+                if (h.sessionState != null) {
                   chatModel.controller.switchRemoteHost(h.remoteHostId)
                 } else {
                   connectMobileDevice(h, connecting)

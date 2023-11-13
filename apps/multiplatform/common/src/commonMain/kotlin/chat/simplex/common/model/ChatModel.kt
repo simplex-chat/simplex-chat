@@ -107,8 +107,7 @@ object ChatModel {
   var updatingChatsMutex: Mutex = Mutex()
 
   // remote controller
-  // val remoteHostSessions = mutableStateMapOf<Long?, RemoteHostSession>()
-  val remoteHosts = mutableStateListOf<RemoteHostInfo>() // instead of remoteHostSessions
+  val remoteHosts = mutableStateListOf<RemoteHostInfo>()
   val currentRemoteHost = mutableStateOf<RemoteHostInfo?>(null)
   val newRemoteHostParing = mutableStateOf<RemoteHostSessionState?>(null)
 
