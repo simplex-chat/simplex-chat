@@ -59,6 +59,7 @@ actual object AudioPlayer: AudioPlayerInterface {
         }
       }.onFailure {
         Log.e(TAG, it.stackTraceToString())
+        fileSource.deleteTmpFile()
         AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.message)
         return null
       }
