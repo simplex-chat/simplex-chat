@@ -88,8 +88,11 @@ actual fun escapedHtmlToAnnotatedString(text: String, density: Density): Annotat
   AnnotatedString(text)
 }
 
-actual fun getAppFileUri(fileName: String): URI =
-  URI(appFilesDir.toURI().toString() + "/" + fileName)
+actual fun getAppFileUri(fileName: String): URI {
+  val rh = chatModel.currentRemoteHost.value
+  val path = if (rh == null) "/" else "/" + rh.storePath + "/simplex_v1_files/"
+  return URI(appFilesDir.toURI().toString() + path + fileName)
+}
 
 actual fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
   val filePath = getLoadedFilePath(file)

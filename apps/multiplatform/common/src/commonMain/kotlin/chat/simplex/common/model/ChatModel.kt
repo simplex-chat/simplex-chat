@@ -2265,7 +2265,6 @@ class CIFile(
     is CIFileStatus.RcvError -> null
     is CIFileStatus.Invalid -> null
   }
-
   companion object {
     fun getSample(
       fileId: Long = 1,
@@ -2368,6 +2367,21 @@ sealed class CIFileStatus {
   @Serializable @SerialName("rcvCancelled") object RcvCancelled: CIFileStatus()
   @Serializable @SerialName("rcvError") object RcvError: CIFileStatus()
   @Serializable @SerialName("invalid") class Invalid(val text: String): CIFileStatus()
+
+  val sent: Boolean get() = when (this) {
+    is SndStored -> true
+    is SndTransfer -> true
+    is SndComplete -> true
+    is SndCancelled -> true
+    is SndError -> true
+    is RcvInvitation -> false
+    is RcvAccepted -> false
+    is RcvTransfer -> false
+    is RcvComplete -> false
+    is RcvCancelled -> false
+    is RcvError -> false
+    is Invalid -> false
+  }
 }
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")

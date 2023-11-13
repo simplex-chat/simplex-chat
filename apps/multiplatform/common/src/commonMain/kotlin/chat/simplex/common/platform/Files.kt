@@ -59,24 +59,27 @@ fun copyBytesToFile(bytes: ByteArrayInputStream, to: URI, finally: () -> Unit) {
 }
 
 fun getAppFilePath(fileName: String): String {
-  return appFilesDir.absolutePath + File.separator + fileName
+  val rh = chatModel.currentRemoteHost.value
+  val s = File.separator
+  val path = if (rh == null) s else s + rh.storePath + s + "simplex_v1_files" + s
+  return appFilesDir.absolutePath + path + fileName
 }
 
-fun getLoadedFilePath(file: CIFile?): String? {
+fun getLoadedFilePath(file: CIFile?, checkExists: Boolean = true): String? {
   val f = file?.fileSource?.filePath
   return if (f != null && file.loaded) {
     val filePath = getAppFilePath(f)
-    if (File(filePath).exists()) filePath else null
+    if (!checkExists || File(filePath).exists()) filePath else null
   } else {
     null
   }
 }
 
-fun getLoadedFileSource(file: CIFile?): CryptoFile? {
+fun getLoadedFileSource(file: CIFile?, checkExists: Boolean = true): CryptoFile? {
   val f = file?.fileSource?.filePath
   return if (f != null && file.loaded) {
     val filePath = getAppFilePath(f)
-    if (File(filePath).exists()) file.fileSource else null
+    if (!checkExists || File(filePath).exists()) file.fileSource else null
   } else {
     null
   }
