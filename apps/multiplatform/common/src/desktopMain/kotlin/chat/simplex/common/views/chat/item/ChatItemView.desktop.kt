@@ -48,7 +48,12 @@ actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) {
     val filePath: String = if (fileSource.cryptoArgs != null) {
       val tmpFile = File(tmpDir, fileSource.filePath)
       tmpFile.deleteOnExit()
-      decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs, tmpFile.absolutePath)
+      try {
+        decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs, tmpFile.absolutePath)
+      } catch (e: Exception) {
+        Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
+        return
+      }
       tmpFile.absolutePath
     } else {
       getAppFilePath(fileSource.filePath)
