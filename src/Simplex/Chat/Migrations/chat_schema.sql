@@ -147,6 +147,7 @@ CREATE TABLE group_members(
   member_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   show_messages INTEGER NOT NULL DEFAULT 1,
   xgrplinkmem_received INTEGER NOT NULL DEFAULT 0,
+  invited_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -520,6 +521,15 @@ CREATE TABLE IF NOT EXISTS "received_probes"(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL)
 );
+CREATE TABLE group_invitees_forwards(
+  group_invitee_forward_id INTEGER PRIMARY KEY,
+  invitee_group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  forward_group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  connected INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
+  UNIQUE(invitee_group_member_id, forward_group_member_id)
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -751,4 +761,13 @@ CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
 CREATE INDEX idx_contact_profiles_contact_link ON contact_profiles(
   user_id,
   contact_link
+);
+CREATE INDEX idx_group_invitees_forwards_invitee_group_member_id ON group_invitees_forwards(
+  invitee_group_member_id
+);
+CREATE INDEX idx_group_invitees_forwards_forward_group_member_id ON group_invitees_forwards(
+  forward_group_member_id
+);
+CREATE INDEX idx_group_members_invited_by_group_member_id ON group_members(
+  invited_by_group_member_id
 );

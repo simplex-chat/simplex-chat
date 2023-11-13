@@ -3505,6 +3505,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro ->
               processIntro intro `catchChatError` (toView . CRChatError (Just user))
+            -- TODO group forward
+            -- - populate group_invitees_forwards for this invitee with introduced members
+            --   ( messages to and from only these members will be forwarded between them and invitee;
+            --     messages between future members and own invitees will be forwarded by inviting members )
             where
               sendXGrpLinkMem = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
@@ -3526,51 +3530,80 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                     notifyMemberConnected gInfo m $ Just ct
                     let connectedIncognito = contactConnIncognito ct || incognitoMembership gInfo
                     when (memberCategory m == GCPreMember) $ probeMatchingContactsAndMembers ct connectedIncognito True
+            -- TODO group forward
+            -- - if member category is GCPostMember:
+            --   - send XGrpMemCon to inviting member
+            --     - invited_by refers to contacts, use invited_by_group_member_id?
       MSG msgMeta _msgFlags msgBody -> do
         cmdId <- createAckCmd conn
-        withAckMessage agentConnId cmdId msgMeta $ do
-          (conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveRcvMSG conn (GroupId groupId) msgMeta msgBody cmdId
-          let m' = m {activeConn = Just conn'} :: GroupMember
-          updateChatLock "groupMessage" event
-          case event of
-            XMsgNew mc -> canSend m' $ newGroupContentMessage gInfo m' mc msg msgMeta
-            XMsgFileDescr sharedMsgId fileDescr -> canSend m' $ groupMessageFileDescription gInfo m' sharedMsgId fileDescr msgMeta
-            XMsgFileCancel sharedMsgId -> cancelGroupMessageFile gInfo m' sharedMsgId msgMeta
-            XMsgUpdate sharedMsgId mContent ttl live -> canSend m' $ groupMessageUpdate gInfo m' sharedMsgId mContent msg msgMeta ttl live
-            XMsgDel sharedMsgId memberId -> groupMessageDelete gInfo m' sharedMsgId memberId msg msgMeta
-            XMsgReact sharedMsgId (Just memberId) reaction add -> groupMsgReaction gInfo m' sharedMsgId memberId reaction add msg msgMeta
-            -- TODO discontinue XFile
-            XFile fInv -> processGroupFileInvitation' gInfo m' fInv msg msgMeta
-            XFileCancel sharedMsgId -> xFileCancelGroup gInfo m' sharedMsgId msgMeta
-            XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInvGroup gInfo m' sharedMsgId fileConnReq_ fName msgMeta
-            -- XInfo p -> xInfoMember gInfo m' p -- TODO use for member profile update
-            XGrpLinkMem p -> xGrpLinkMem gInfo m' conn' p
-            XGrpMemNew memInfo -> xGrpMemNew gInfo m' memInfo msg msgMeta
-            XGrpMemIntro memInfo -> xGrpMemIntro gInfo m' memInfo
-            XGrpMemInv memId introInv -> xGrpMemInv gInfo m' memId introInv
-            XGrpMemFwd memInfo introInv -> xGrpMemFwd gInfo m' memInfo introInv
-            XGrpMemRole memId memRole -> xGrpMemRole gInfo m' memId memRole msg msgMeta
-            XGrpMemDel memId -> xGrpMemDel gInfo m' memId msg msgMeta
-            XGrpLeave -> xGrpLeave gInfo m' msg msgMeta
-            XGrpDel -> xGrpDel gInfo m' msg msgMeta
-            XGrpInfo p' -> xGrpInfo gInfo m' p' msg msgMeta
-            XGrpDirectInv connReq mContent_ -> canSend m' $ xGrpDirectInv gInfo m' conn' connReq mContent_ msg msgMeta
-            XInfoProbe probe -> xInfoProbe (COMGroupMember m') probe
-            XInfoProbeCheck probeHash -> xInfoProbeCheck (COMGroupMember m') probeHash
-            XInfoProbeOk probe -> xInfoProbeOk (COMGroupMember m') probe
-            BFileChunk sharedMsgId chunk -> bFileChunkGroup gInfo sharedMsgId chunk msgMeta
-            _ -> messageError $ "unsupported message: " <> T.pack (show event)
-          currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
-          let GroupInfo {chatSettings = ChatSettings {sendRcpts}} = gInfo
-          pure $
-            fromMaybe (sendRcptsSmallGroups user) sendRcpts
-              && hasDeliveryReceipt (toCMEventTag event)
-              && currentMemCount <= smallGroupsRcptsMemLimit
+        tryChatError (parseAChatMessage conn msgMeta msgBody) >>= \case
+          Right (ACMsg _ chatMsg@ChatMessage {msgId = _sharedMsgId_, chatMsgEvent = _chatMsgEvent}) -> do
+            tryChatError (processEvent cmdId chatMsg) >>= \case
+              Right withRcpt -> ackMsg agentConnId cmdId msgMeta $ if withRcpt then Just "" else Nothing
+              Left e -> ackMsg agentConnId cmdId msgMeta Nothing >> toView (CRChatError (Just user) e)
+            forwardMsg_ chatMsg
+          Left e -> ackMsg agentConnId cmdId msgMeta Nothing >> throwError e
         where
+          processEvent :: (MsgEncodingI e) => CommandId -> ChatMessage e -> m Bool
+          processEvent cmdId chatMsg = do
+            (conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveRcvMSG' conn (GroupId groupId) msgMeta msgBody cmdId chatMsg
+            let m' = m {activeConn = Just conn'} :: GroupMember
+            updateChatLock "groupMessage" event
+            case event of
+              XMsgNew mc -> canSend m' $ newGroupContentMessage gInfo m' mc msg msgMeta
+              XMsgFileDescr sharedMsgId fileDescr -> canSend m' $ groupMessageFileDescription gInfo m' sharedMsgId fileDescr msgMeta
+              XMsgFileCancel sharedMsgId -> cancelGroupMessageFile gInfo m' sharedMsgId msgMeta
+              XMsgUpdate sharedMsgId mContent ttl live -> canSend m' $ groupMessageUpdate gInfo m' sharedMsgId mContent msg msgMeta ttl live
+              XMsgDel sharedMsgId memberId -> groupMessageDelete gInfo m' sharedMsgId memberId msg msgMeta
+              XMsgReact sharedMsgId (Just memberId) reaction add -> groupMsgReaction gInfo m' sharedMsgId memberId reaction add msg msgMeta
+              -- TODO discontinue XFile
+              XFile fInv -> processGroupFileInvitation' gInfo m' fInv msg msgMeta
+              XFileCancel sharedMsgId -> xFileCancelGroup gInfo m' sharedMsgId msgMeta
+              XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInvGroup gInfo m' sharedMsgId fileConnReq_ fName msgMeta
+              -- XInfo p -> xInfoMember gInfo m' p -- TODO use for member profile update
+              XGrpLinkMem p -> xGrpLinkMem gInfo m' conn' p
+              XGrpMemNew memInfo -> xGrpMemNew gInfo m' memInfo msg msgMeta
+              XGrpMemIntro memInfo -> xGrpMemIntro gInfo m' memInfo
+              XGrpMemInv memId introInv -> xGrpMemInv gInfo m' memId introInv
+              XGrpMemFwd memInfo introInv -> xGrpMemFwd gInfo m' memInfo introInv
+              XGrpMemRole memId memRole -> xGrpMemRole gInfo m' memId memRole msg msgMeta
+              XGrpMemCon memId -> xGrpMemCon gInfo m' memId msg msgMeta
+              XGrpMemDel memId -> xGrpMemDel gInfo m' memId msg msgMeta
+              XGrpLeave -> xGrpLeave gInfo m' msg msgMeta
+              XGrpDel -> xGrpDel gInfo m' msg msgMeta
+              XGrpInfo p' -> xGrpInfo gInfo m' p' msg msgMeta
+              XGrpDirectInv connReq mContent_ -> canSend m' $ xGrpDirectInv gInfo m' conn' connReq mContent_ msg msgMeta
+              XGrpMsgForward msgForward -> xGrpMsgForward gInfo m' msgForward msg msgMeta
+              XInfoProbe probe -> xInfoProbe (COMGroupMember m') probe
+              XInfoProbeCheck probeHash -> xInfoProbeCheck (COMGroupMember m') probeHash
+              XInfoProbeOk probe -> xInfoProbeOk (COMGroupMember m') probe
+              BFileChunk sharedMsgId chunk -> bFileChunkGroup gInfo sharedMsgId chunk msgMeta
+              _ -> messageError $ "unsupported message: " <> T.pack (show event)
+            checkSendRcpt event
           canSend :: GroupMember -> m () -> m ()
           canSend mem a
             | mem.memberRole <= GRObserver = messageError "member is not allowed to send messages"
             | otherwise = a
+          checkSendRcpt :: ChatMsgEvent e -> m Bool
+          checkSendRcpt event = do
+            currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
+            let GroupInfo {chatSettings = ChatSettings {sendRcpts}} = gInfo
+            pure $
+              fromMaybe (sendRcptsSmallGroups user) sendRcpts
+                && hasDeliveryReceipt (toCMEventTag event)
+                && currentMemCount <= smallGroupsRcptsMemLimit
+          forwardMsg_ :: ChatMessage e -> m ()
+          forwardMsg_ chatMsg@ChatMessage {msgId = sharedMsgId_, chatMsgEvent = chatMsgEvent_} = do
+            -- TODO group forward
+            -- - take AppMessageJson as parameter? (see StrEncoding AChatMessage - split parser?)
+            --   or convert ChatMessage back (chatToAppMessage)?
+            -- - if forwardedGroupMsg(event): / limit to XMsgNew initially
+            --   - if member category is GCInviteeMember:
+            --     - get all forward members from group_invitees_forwards that are not connected for this invitee
+            --     - send XGrpMsgForward to each forward member
+            --   - get all invitee members from group_invitees_forwards that are not connected for this "forward" member
+            --   - send XGrpMsgForward to each invitee
+            pure ()
       RCVD msgMeta msgRcpt ->
         withAckMessage' agentConnId conn msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
@@ -3870,7 +3903,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       withAckMessage cId cmdId msgMeta $ action $> False
 
     withAckMessage :: ConnId -> CommandId -> MsgMeta -> m Bool -> m ()
-    withAckMessage cId cmdId MsgMeta {recipient = (msgId, _)} action = do
+    withAckMessage cId cmdId msgMeta action = do
       -- [async agent commands] command should be asynchronous, continuation is ackMsgDeliveryEvent
       -- TODO catching error and sending ACK after an error, particularly if it is a database error, will result in the message not processed (and no notification to the user).
       -- Possible solutions are:
@@ -3878,10 +3911,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       -- 2) stabilize database
       -- 3) show screen of death to the user asking to restart
       tryChatError action >>= \case
-        Right withRcpt -> ack $ if withRcpt then Just "" else Nothing
-        Left e -> ack Nothing >> throwError e
-      where
-        ack rcpt = withAgent $ \a -> ackMessageAsync a (aCorrId cmdId) cId msgId rcpt
+        Right withRcpt -> ackMsg cId cmdId msgMeta $ if withRcpt then Just "" else Nothing
+        Left e -> ackMsg cId cmdId msgMeta Nothing >> throwError e
+
+    ackMsg :: ConnId -> CommandId -> MsgMeta -> Maybe MsgReceiptInfo -> m ()
+    ackMsg cId cmdId MsgMeta {recipient = (msgId, _)} rcpt = withAgent $ \a -> ackMessageAsync a (aCorrId cmdId) cId msgId rcpt
 
     ackMsgDeliveryEvent :: Connection -> CommandId -> m ()
     ackMsgDeliveryEvent Connection {connId} ackCmdId =
@@ -4934,6 +4968,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     checkHostRole GroupMember {memberRole, localDisplayName} memRole =
       when (memberRole < GRAdmin || memberRole < memRole) $ throwChatError (CEGroupContactRole localDisplayName)
 
+    xGrpMemCon :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> MsgMeta -> m ()
+    xGrpMemCon gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId msg msgMeta = do
+      -- TODO group forward
+      -- - mark invitee-forward member pair as connected
+      --   - delete record? then there's no need for `connected` flag
+      pure ()
+
     xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> MsgMeta -> m ()
     xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId msg msgMeta = do
       members <- withStore' $ \db -> getGroupMembers db user gInfo
@@ -5049,6 +5090,16 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     securityCodeChanged ct = do
       toView $ CRContactVerificationReset user ct
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
+
+    xGrpMsgForward :: GroupInfo -> GroupMember -> MsgForward -> RcvMessage -> MsgMeta -> m ()
+    xGrpMsgForward g m MsgForward {memberId, msgData, msgTs} msg msgMeta = do
+      -- TODO group forward
+      -- - parse msgData (AppMessageJson)
+      -- - prohibit forward of forward
+      -- - reuse processEvent
+      -- - saveRcvMSG' should deduplicate: throw error on duplicate msgId (SharedMsgId)?
+      --   - TODO check that all forwarded group events (forwardedGroupMsg) include msgId
+      pure ()
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do
@@ -5385,8 +5436,12 @@ sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn
         _ -> pure ()
 
 saveRcvMSG :: ChatMonad m => Connection -> ConnOrGroupId -> MsgMeta -> MsgBody -> CommandId -> m (Connection, RcvMessage)
-saveRcvMSG conn@Connection {connId} connOrGroupId agentMsgMeta msgBody agentAckCmdId = do
-  ACMsg _ ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} <- parseAChatMessage conn agentMsgMeta msgBody
+saveRcvMSG conn connOrGroupId agentMsgMeta msgBody agentAckCmdId = do
+  ACMsg _ chatMsg <- parseAChatMessage conn agentMsgMeta msgBody
+  saveRcvMSG' conn connOrGroupId agentMsgMeta msgBody agentAckCmdId chatMsg
+
+saveRcvMSG' :: (MsgEncodingI e, ChatMonad m) =>Connection -> ConnOrGroupId -> MsgMeta -> MsgBody -> CommandId -> ChatMessage e -> m (Connection, RcvMessage)
+saveRcvMSG' conn@Connection {connId} connOrGroupId agentMsgMeta msgBody agentAckCmdId ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = do
   conn' <- updatePeerChatVRange conn chatVRange
   let agentMsgId = fst $ recipient agentMsgMeta
       newMsg = NewMessage {chatMsgEvent, msgBody}
