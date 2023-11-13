@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.ProtocolServerView
@@ -35,19 +36,23 @@ fun ConnectMobileView(
 ) {
   val connecting = remember { mutableStateOf(false) }
   val remoteHosts = remember { mutableStateListOf<RemoteHostInfo>() }
+  val deviceName = m.controller.appPrefs.deviceNameForRemoteAccess
   LaunchedEffect(Unit) {
     val hosts = m.controller.listRemoteHosts() ?: return@LaunchedEffect
     remoteHosts.clear()
     remoteHosts.addAll(hosts)
   }
   ConnectMobileLayout(
-    deviceName = m.controller.appPrefs.deviceNameForRemoteAccess,
+    deviceName = deviceName,
     remoteHosts = remoteHosts,
     connecting,
     connectedHost = remember { m.currentRemoteHost },
     updateDeviceName = {
       withBGApi {
-        m.controller.setLocalDeviceName(it)
+        if (it != "") {
+          m.controller.setLocalDeviceName(it)
+          deviceName.set(it)
+        }
       }
     },
     addMobileDevice = {
