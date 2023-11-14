@@ -2676,6 +2676,7 @@ public enum MsgDecryptError: String, Decodable {
     case tooManySkipped
     case ratchetEarlier
     case other
+    case ratchetSync
 
     var text: String {
         switch self {
@@ -2683,6 +2684,7 @@ public enum MsgDecryptError: String, Decodable {
         case .tooManySkipped: return NSLocalizedString("Permanent decryption error", comment: "message decrypt error item")
         case .ratchetEarlier: return NSLocalizedString("Decryption error", comment: "message decrypt error item")
         case .other: return NSLocalizedString("Decryption error", comment: "message decrypt error item")
+        case .ratchetSync: return NSLocalizedString("Encryption re-negotiation error", comment: "message decrypt error item")
         }
     }
 }

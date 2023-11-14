@@ -25,7 +25,7 @@ Using the same profile as on mobile device is not yet supported – you need to 
 
 **Mac**: [x86_64](https://github.com/simplex-chat/simplex-chat/releases/download/v5.3.2/simplex-desktop-macos-x86_64.dmg) (Intel), [aarch64](https://github.com/simplex-chat/simplex-chat/releases/download/v5.3.1/simplex-desktop-macos-aarch64.dmg) (Apple Silicon).
 
-**Windows**: [x86_64](https://github.com/simplex-chat/simplex-chat/releases/download/v5.4.0-beta.0/simplex-desktop-windows-x86-64.msi) (BETA).
+**Windows**: [x86_64](https://github.com/simplex-chat/simplex-chat/releases/download/v5.4.0-beta.3/simplex-desktop-windows-x86-64.msi) (BETA).
 
 ## Mobile apps
 
