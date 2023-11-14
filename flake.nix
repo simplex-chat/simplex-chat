@@ -127,8 +127,18 @@
                       hardeningDisable = [ "fortify" ];
                   }
               );in {
+              # STATIC x86_64-linux
               "${pkgs.pkgsCross.musl64.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.musl64).simplex-chat.components.exes.simplex-chat;
-              "${pkgs.pkgsCross.musl32.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.musl32).simplex-chat.components.exes.simplex-chat;
+              # STATIC i686-linux
+              "${pkgs.pkgsCross.musl32.hostPlatform.system}-static:exe:simplex-chat" = (drv' {
+                pkgs' = pkgs.pkgsCross.musl32;
+                extra-modules = [{
+                  packages.basement.patches = [
+                    ./scripts/nix/basement-pr-573.patch
+                  ];
+                }];
+              }).simplex-chat.components.exes.simplex-chat;
+              # WINDOWS x86_64-mingwW64
               "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:exe:simplex-chat" = (drv' {
                 pkgs' = pkgs.pkgsCross.mingwW64;
                 extra-modules = [{
@@ -235,6 +245,8 @@
                 '';
               });
               # "${pkgs.pkgsCross.muslpi.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.muslpi).simplex-chat.components.exes.simplex-chat;
+
+              # STATIC aarch64-linux
               "${pkgs.pkgsCross.aarch64-multiplatform-musl.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.aarch64-multiplatform-musl).simplex-chat.components.exes.simplex-chat;
               "armv7a-android:lib:support" = (drv android32Pkgs).android-support.components.library.override {
                 smallAddressSpace = true;
@@ -243,7 +255,7 @@
                 # we also do not want to have any dependencies listed (especially no rts!)
                 enableStatic = false;
 
-                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsupport.so" ];
+                setupBuildFlags = p.component.setupBuildFlags ++ map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsupport.so" ];
                 postInstall = ''
 
                   mkdir -p $out/_pkg
