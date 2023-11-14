@@ -165,6 +165,8 @@ struct CIRcvDecryptionError: View {
             message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why
         case .other:
             message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why
+        case .ratchetSync:
+            message = Text("Encryption re-negotiation failed.")
         }
         return message
     }
