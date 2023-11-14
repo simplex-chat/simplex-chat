@@ -1,23 +1,52 @@
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+
 module Simplex.Chat.Remote.Transport where
 
 import Control.Monad
 import Control.Monad.Except
+import Data.ByteString.Builder (Builder, byteString)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as LB
 import Data.Word (Word32)
 import Simplex.FileTransfer.Description (FileDigest (..))
 import Simplex.Chat.Remote.Types
+import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.Lazy as LC
-import Simplex.Messaging.Transport.HTTP2.File (hReceiveFile)
+import Simplex.FileTransfer.Transport (ReceiveFileError (..), receiveSbFile, sendEncFile)
+import Simplex.Messaging.Encoding
+import Simplex.Messaging.Util (liftEitherError, liftEitherWith)
+import Simplex.RemoteControl.Types (RCErrorType (..))
 import UnliftIO
 import UnliftIO.Directory (getFileSize)
 
-receiveRemoteFile :: (Int -> IO ByteString) -> Word32 -> FileDigest -> FilePath -> ExceptT RemoteProtocolError IO ()
-receiveRemoteFile getChunk fileSize fileDigest toPath = do
-  diff <- liftIO $ withFile toPath WriteMode $ \h -> hReceiveFile getChunk h fileSize
-  unless (diff == 0) $ throwError RPEFileSize
+type EncryptedFile = ((Handle, Word32), C.CbNonce, LC.SbState)
+
+prepareEncryptedFile :: RemoteCrypto -> (Handle, Word32) -> ExceptT RemoteProtocolError IO EncryptedFile
+prepareEncryptedFile RemoteCrypto {drg, hybridKey} f = do
+  nonce <- atomically $ C.pseudoRandomCbNonce drg
+  sbState <- liftEitherWith (const $ PRERemoteControl RCEEncrypt) $ LC.kcbInit hybridKey nonce
+  pure (f, nonce, sbState)
+
+sendEncryptedFile :: EncryptedFile -> (Builder -> IO ()) -> IO ()
+sendEncryptedFile ((h, sz), nonce, sbState) send = do
+  send $ byteString $ smpEncode ('\x01', nonce, sz + 16)
+  sendEncFile h send sbState sz
+
+receiveEncryptedFile :: RemoteCrypto -> (Int -> IO ByteString) -> Word32 -> FileDigest -> FilePath -> ExceptT RemoteProtocolError IO ()
+receiveEncryptedFile RemoteCrypto {hybridKey} getChunk fileSize fileDigest toPath = do
+  c <- liftIO $ getChunk 1
+  unless (c == "\x01") $ throwError RPENoFile
+  nonce <- liftEitherError RPEInvalidBody $ smpDecode <$> getChunk 24
+  size <- liftEitherError RPEInvalidBody $ smpDecode <$> getChunk 4
+  unless (size == fileSize + 16) $ throwError RPEFileSize
+  sbState <- liftEitherWith (const $ PRERemoteControl RCEDecrypt) $ LC.kcbInit hybridKey nonce
+  liftEitherError fErr $ withFile toPath WriteMode $ \h -> receiveSbFile getChunk h sbState fileSize
   digest <- liftIO $ LC.sha512Hash <$> LB.readFile toPath
   unless (FileDigest digest == fileDigest) $ throwError RPEFileDigest
+  where
+    fErr RFESize = RPEFileSize
+    fErr RFECrypto = PRERemoteControl RCEDecrypt
 
 getFileInfo :: FilePath -> ExceptT RemoteProtocolError IO (Word32, FileDigest)
 getFileInfo filePath = do

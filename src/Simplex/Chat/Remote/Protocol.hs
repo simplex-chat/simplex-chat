@@ -47,7 +47,6 @@ import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON, pattern SingleFi
 import Simplex.Messaging.Transport.Buffer (getBuffered)
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), HTTP2BodyChunk, getBodyChunk)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2Response (..), closeHTTP2Client, sendRequestDirect)
-import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
 import Simplex.Messaging.Util (liftEitherError, liftEitherWith, liftError, tshow)
 import Simplex.RemoteControl.Types (CtrlSessKeys (..), HostSessKeys (..), RCErrorType (..), SessionCode)
 import Simplex.RemoteControl.Client (xrcpBlockSize)
@@ -127,31 +126,30 @@ remoteStoreFile c localPath fileName = do
     r -> badResponse r
 
 remoteGetFile :: RemoteHostClient -> FilePath -> RemoteFile -> ExceptT RemoteProtocolError IO ()
-remoteGetFile c destDir rf@RemoteFile {fileSource = CryptoFile {filePath}} =
+remoteGetFile c@RemoteHostClient{encryption} destDir rf@RemoteFile {fileSource = CryptoFile {filePath}} =
   sendRemoteCommand c Nothing RCGetFile {file = rf} >>= \case
     (getChunk, RRFile {fileSize, fileDigest}) -> do
       -- TODO we could optimize by checking size and hash before receiving the file
       let localPath = destDir </> takeFileName filePath
-      receiveRemoteFile getChunk fileSize fileDigest localPath
+      receiveEncryptedFile encryption getChunk fileSize fileDigest localPath
     (_, r) -> badResponse r
 
--- TODO validate there is no attachment
+-- TODO validate there is no attachment in response
 sendRemoteCommand' :: RemoteHostClient -> Maybe (Handle, Word32) -> RemoteCommand -> ExceptT RemoteProtocolError IO RemoteResponse
 sendRemoteCommand' c attachment_ rc = snd <$> sendRemoteCommand c attachment_ rc
 
 sendRemoteCommand :: RemoteHostClient -> Maybe (Handle, Word32) -> RemoteCommand -> ExceptT RemoteProtocolError IO (Int -> IO ByteString, RemoteResponse)
-sendRemoteCommand RemoteHostClient {httpClient, hostEncoding, encryption} attachment_ cmd = do
-  req <- httpRequest <$> encryptEncodeHTTP2Body encryption (J.encode cmd)
+sendRemoteCommand RemoteHostClient {httpClient, hostEncoding, encryption} file_ cmd = do
+  encFile_ <- mapM (prepareEncryptedFile encryption) file_ 
+  req <- httpRequest encFile_ <$> encryptEncodeHTTP2Body encryption (J.encode cmd)
   HTTP2Response {response, respBody} <- liftEitherError (RPEHTTP2 . tshow) $ sendRequestDirect httpClient req Nothing
   (header, getNext) <- parseDecryptHTTP2Body encryption response respBody
   rr <- liftEitherWith (RPEInvalidJSON . fromString) $ J.eitherDecode header >>= JT.parseEither J.parseJSON . convertJSON hostEncoding localEncoding
   pure (getNext, rr)
   where
-    httpRequest cmdBld = H.requestStreaming N.methodPost "/" mempty $ \send flush -> do
+    httpRequest encFile_ cmdBld = H.requestStreaming N.methodPost "/" mempty $ \send flush -> do
       send cmdBld
-      case attachment_ of
-        Nothing -> pure ()
-        Just (h, sz) -> hSendFile h send sz
+      forM_ encFile_ (`sendEncryptedFile` send)
       flush
 
 badResponse :: RemoteResponse -> ExceptT RemoteProtocolError IO a
