@@ -596,6 +596,8 @@ object ChatModel {
     }
     terminalItems.add(item)
   }
+
+  fun connectedToRemote(): Boolean = currentRemoteHost.value != null
 }
 
 enum class ChatType(val type: String) {
@@ -2265,6 +2267,22 @@ class CIFile(
     is CIFileStatus.RcvError -> null
     is CIFileStatus.Invalid -> null
   }
+
+  suspend fun loadRemoteFile(): Boolean {
+    val rh = chatModel.currentRemoteHost.value
+    val user = chatModel.currentUser.value
+    if (rh == null || user == null || fileSource == null || !loaded) return false
+    if (getLoadedFilePath(this) != null) return true
+
+    val rf = RemoteFile(
+      userId = user.userId,
+      fileId = fileId,
+      sent = fileStatus.sent,
+      fileSource = fileSource
+    )
+    return chatModel.controller.getRemoteFile(rh.remoteHostId, rf)
+  }
+
   companion object {
     fun getSample(
       fileId: Long = 1,

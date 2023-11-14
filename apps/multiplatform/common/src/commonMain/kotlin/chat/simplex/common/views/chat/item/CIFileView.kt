@@ -94,13 +94,19 @@ fun CIFileView(
               )
           }
         is CIFileStatus.RcvComplete -> {
-          val filePath = getLoadedFilePath(file)
-          if (filePath != null) {
-            withApi {
-              saveFileLauncher.launch(file.fileName)
+          withBGApi {
+            var filePath = getLoadedFilePath(file)
+            if (chatModel.connectedToRemote() && filePath == null) {
+              file.loadRemoteFile()
+              filePath = getLoadedFilePath(file)
             }
-          } else {
-            showToast(generalGetString(MR.strings.file_not_found))
+            if (filePath != null) {
+              withApi {
+                saveFileLauncher.launch(file.fileName)
+              }
+            } else {
+              showToast(generalGetString(MR.strings.file_not_found))
+            }
           }
         }
         else -> {}

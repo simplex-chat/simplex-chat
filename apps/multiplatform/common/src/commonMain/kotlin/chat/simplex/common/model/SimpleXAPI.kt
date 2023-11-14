@@ -24,6 +24,7 @@ import kotlinx.serialization.*
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.*
+import java.io.File
 import java.util.Date
 
 typealias ChatCtrl = Long
@@ -339,6 +340,9 @@ object ChatController {
       apiSetNetworkConfig(getNetCfg())
       apiSetTempFolder(coreTmpDir.absolutePath)
       apiSetFilesFolder(appFilesDir.absolutePath)
+      if (appPlatform.isDesktop) {
+        apiSetRemoteHostsFolder(dataDir.absolutePath + File.separator + "remote_hosts")
+      }
       apiSetXFTPConfig(getXFTPCfg())
       apiSetEncryptLocalFiles(appPrefs.privacyEncryptLocalFiles.get())
       val justStarted = apiStartChat()
@@ -557,6 +561,12 @@ object ChatController {
     val r = sendCmd(CC.SetFilesFolder(filesFolder))
     if (r is CR.CmdOk) return
     throw Error("failed to set files folder: ${r.responseType} ${r.details}")
+  }
+
+  private suspend fun apiSetRemoteHostsFolder(remoteHostsFolder: String) {
+    val r = sendCmd(CC.SetRemoteHostsFolder(remoteHostsFolder))
+    if (r is CR.CmdOk) return
+    throw Error("failed to set remote hosts folder: ${r.responseType} ${r.details}")
   }
 
   suspend fun apiSetXFTPConfig(cfg: XFTPFileConfig?) {
@@ -2035,6 +2045,7 @@ sealed class CC {
   class ApiStopChat: CC()
   class SetTempFolder(val tempFolder: String): CC()
   class SetFilesFolder(val filesFolder: String): CC()
+  class SetRemoteHostsFolder(val remoteHostsFolder: String): CC()
   class ApiSetXFTPConfig(val config: XFTPFileConfig?): CC()
   class ApiSetEncryptLocalFiles(val enable: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
@@ -2161,6 +2172,7 @@ sealed class CC {
     is ApiStopChat -> "/_stop"
     is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
+    is SetRemoteHostsFolder -> "/remote_hosts_folder $remoteHostsFolder"
     is ApiSetXFTPConfig -> if (config != null) "/_xftp on ${json.encodeToString(config)}" else "/_xftp off"
     is ApiSetEncryptLocalFiles -> "/_files_encrypt ${onOff(enable)}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
@@ -2290,6 +2302,7 @@ sealed class CC {
     is ApiStopChat -> "apiStopChat"
     is SetTempFolder -> "setTempFolder"
     is SetFilesFolder -> "setFilesFolder"
+    is SetRemoteHostsFolder -> "setRemoteHostsFolder"
     is ApiSetXFTPConfig -> "apiSetXFTPConfig"
     is ApiSetEncryptLocalFiles -> "apiSetEncryptLocalFiles"
     is ApiExportArchive -> "apiExportArchive"

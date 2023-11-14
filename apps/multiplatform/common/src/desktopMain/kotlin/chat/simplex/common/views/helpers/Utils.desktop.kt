@@ -5,8 +5,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
-import chat.simplex.common.model.CIFile
-import chat.simplex.common.model.readCryptoFile
+import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.simplexWindowState
 import chat.simplex.res.MR
@@ -90,12 +89,19 @@ actual fun escapedHtmlToAnnotatedString(text: String, density: Density): Annotat
 
 actual fun getAppFileUri(fileName: String): URI {
   val rh = chatModel.currentRemoteHost.value
-  val path = if (rh == null) "/" else "/" + rh.storePath + "/simplex_v1_files/"
-  return URI(appFilesDir.toURI().toString() + path + fileName)
+  return if (rh == null) {
+    URI(appFilesDir.toURI().toString() + "/" + fileName)
+  } else {
+    URI(dataDir.absolutePath + "/remote_hosts/" + rh.storePath + "/simplex_v1_files/" + fileName)
+  }
 }
 
-actual fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
-  val filePath = getLoadedFilePath(file)
+actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
+  var filePath = getLoadedFilePath(file)
+  if (chatModel.connectedToRemote() && filePath == null) {
+    file?.loadRemoteFile()
+    filePath = getLoadedFilePath(file)
+  }
   return if (filePath != null) {
     try {
       val data = if (file?.fileSource?.cryptoArgs != null) readCryptoFile(filePath, file.fileSource.cryptoArgs) else File(filePath).readBytes()

@@ -67,7 +67,7 @@ const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
 expect fun getAppFileUri(fileName: String): URI
 
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
-expect fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>?
+expect suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>?
 
 expect fun getFileName(uri: URI): String?
 
