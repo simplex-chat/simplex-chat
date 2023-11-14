@@ -1459,4 +1459,6 @@
     <string name="non_content_uri_alert_title">Nieprawidłowa ścieżka pliku</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Już prosiłeś o połączenie na ten adres!</string>
     <string name="terminal_always_visible">Pokaż konsolę w nowym oknie</string>
+    <string name="encryption_renegotiation_error">Błąd renegocjacji szyfrowania</string>
+    <string name="alert_text_encryption_renegotiation_failed">Renegocjacja szyfrowania nie powiodła się.</string>
 </resources>
