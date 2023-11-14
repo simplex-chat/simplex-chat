@@ -1200,7 +1200,7 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CP") ''ConnectionPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CE") ''ChatErrorType)
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RH") ''RemoteHostError)
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHE") ''RemoteHostError)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCE") ''RemoteCtrlError)
 
