@@ -248,7 +248,7 @@
 
               # STATIC aarch64-linux
               "${pkgs.pkgsCross.aarch64-multiplatform-musl.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.aarch64-multiplatform-musl).simplex-chat.components.exes.simplex-chat;
-              "armv7a-android:lib:support" = (drv android32Pkgs).android-support.components.library.override {
+              "armv7a-android:lib:support" = (drv android32Pkgs).android-support.components.library.override (p: {
                 smallAddressSpace = true;
                 # we won't want -dyamic (see aarch64-android:lib:simplex-chat)
                 enableShared = false;
@@ -268,7 +268,7 @@
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
                         > $out/nix-support/hydra-build-products
                 '';
-              };
+              });
               # The android-support package is at
               # https://github.com/simplex-chat/android-support
               "aarch64-android:lib:support" = (drv androidPkgs).android-support.components.library.override (p: {
