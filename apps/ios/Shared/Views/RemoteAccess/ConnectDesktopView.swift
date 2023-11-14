@@ -60,6 +60,9 @@ struct ConnectDesktopView: View {
         .onChange(of: deviceName) {
             setDeviceName($0)
         }
+        .onChange(of: m.remoteCtrlSession?.sessionState.active) { active in
+            UIApplication.shared.isIdleTimerDisabled = active ?? false
+        }
         .alert(item: $alert) { a in
             switch a {
             case let .deleteRemoteCtrl(rc):

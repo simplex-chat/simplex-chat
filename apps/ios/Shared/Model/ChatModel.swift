@@ -779,4 +779,8 @@ enum RemoteCtrlSessionState {
     case connecting(remoteCtrl_: RemoteCtrlInfo?)
     case pendingConfirmation(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
     case connected(remoteCtrl: RemoteCtrlInfo)
+
+    var active: Bool {
+        if case .connected = self { true } else { false }
+    }
 }
