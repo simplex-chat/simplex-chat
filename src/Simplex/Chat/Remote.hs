@@ -170,7 +170,9 @@ startRemoteHost rh_ = do
       withRemoteHostSession rhKey $ \case
         RHSessionConnecting _inv rhs' -> Right ((), RHSessionPendingConfirmation sessCode tls rhs') -- TODO check it's the same session?
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
-      toView $ CRRemoteHostSessionCode {remoteHost_, sessionCode = verificationCode sessId} -- display confirmation code, wait for mobile to confirm
+      -- display confirmation code, wait for mobile to confirm
+      let rh_' = (\rh -> rh {sessionState = Just $ RHSPendingConfirmation sessCode}) <$> remoteHost_
+      toView $ CRRemoteHostSessionCode {remoteHost_ = rh_', sessionCode = verificationCode sessId}
       (RCHostSession {sessionKeys}, rhHello, pairing') <- takeRCStep vars' -- no timeout, waiting for user to compare the code
       hostInfo@HostAppInfo {deviceName = hostDeviceName} <-
         liftError (ChatErrorRemoteHost rhKey) $ parseHostAppInfo rhHello
@@ -178,7 +180,7 @@ startRemoteHost rh_ = do
         RHSessionPendingConfirmation _ tls' rhs' -> Right ((), RHSessionConfirmed tls' rhs') -- TODO check it's the same session?
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
       -- update remoteHost with updated pairing
-      rhi@RemoteHostInfo {remoteHostId, storePath} <- upsertRemoteHost pairing' remoteHost_ hostDeviceName RHSConfirmed
+      rhi@RemoteHostInfo {remoteHostId, storePath} <- upsertRemoteHost pairing' rh_' hostDeviceName RHSConfirmed
       let rhKey' = RHId remoteHostId -- rhKey may be invalid after upserting on RHNew
       when (rhKey' /= rhKey) $ do
         atomically $ writeTVar rhKeyVar rhKey'
@@ -191,7 +193,7 @@ startRemoteHost rh_ = do
         RHSessionConfirmed _ RHPendingSession {rchClient} -> Right ((), RHSessionConnected {rchClient, tls, rhClient, pollAction, storePath})
         _ -> Left $ ChatErrorRemoteHost rhKey' RHEBadState
       chatWriteVar currentRemoteHost $ Just remoteHostId -- this is required for commands to be passed to remote host
-      toView $ CRRemoteHostConnected rhi
+      toView $ CRRemoteHostConnected rhi {sessionState = Just RHSConnected}
     upsertRemoteHost :: ChatMonad m => RCHostPairing -> Maybe RemoteHostInfo -> Text -> RemoteHostSessionState -> m RemoteHostInfo
     upsertRemoteHost pairing'@RCHostPairing {knownHost = kh_} rhi_ hostDeviceName state = do
       KnownHostPairing {hostDhPubKey = hostDhPubKey'} <- maybe (throwError . ChatError $ CEInternalError "KnownHost is known after verification") pure kh_
