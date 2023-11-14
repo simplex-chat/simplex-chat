@@ -1457,4 +1457,6 @@
     <string name="connect_plan_this_is_your_link_for_group_vName">Dit is jouw link voor groep %1$s!</string>
     <string name="unblock_member_confirmation">Deblokkeren</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">U heeft al een verbinding aangevraagd via dit adres!</string>
+    <string name="encryption_renegotiation_error">Fout bij heronderhandeling van codering</string>
+    <string name="alert_text_encryption_renegotiation_failed">Opnieuw onderhandelen over de codering is mislukt.</string>
 </resources>
