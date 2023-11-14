@@ -1497,7 +1497,7 @@
     <string name="create_another_profile_button">Profil erstellen</string>
     <string name="group_members_2">%s und %s</string>
     <string name="connect_plan_join_your_group">Ihrer Gruppe beitreten?</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Sie sind bereits in der Gruppe %1$s Mitglied.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName">Sie sind bereits Mitglied in der Gruppe %1$s.</string>
     <string name="connect_plan_this_is_your_own_one_time_link">Das ist Ihr eigener Einmal-Link!</string>
     <string name="marked_deleted_items_description">%d Nachrichten als gelöscht markiert</string>
     <string name="connect_plan_group_already_exists">Gruppe besteht bereits!</string>
@@ -1512,7 +1512,7 @@
     <string name="unblock_member_button">Mitglied freigeben</string>
     <string name="connect_plan_connect_to_yourself">Mit Ihnen selbst verbinden?</string>
     <string name="contact_tap_to_connect">Zum Verbinden antippen</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Sie sind bereits in der Gruppe %1$s Mitglied.</string>
+    <string name="connect_plan_you_are_already_in_group_vName">Sie sind bereits Mitglied in der Gruppe %1$s.</string>
     <string name="connect_plan_this_is_your_own_simplex_address">Das ist Ihre eigene SimpleX-Adresse!</string>
     <string name="correct_name_to">Richtiger Name für %s?</string>
     <string name="delete_messages__question">%d Nachrichten löschen?</string>
@@ -1540,4 +1540,6 @@
     <string name="terminal_always_visible">Die Konsole in einem neuen Fenster anzeigen</string>
     <string name="block_member_desc">Alle neuen Nachrichten von %s werden ausgeblendet!</string>
     <string name="blocked_item_description">blockiert</string>
+    <string name="encryption_renegotiation_error">Fehler bei der Neuverhandlung der Verschlüsselung</string>
+    <string name="alert_text_encryption_renegotiation_failed">Neuverhandlung der Verschlüsselung fehlgeschlagen</string>
 </resources>
