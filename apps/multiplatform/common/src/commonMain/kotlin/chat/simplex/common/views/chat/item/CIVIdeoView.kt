@@ -40,16 +40,12 @@ fun CIVideoView(
   ) {
     val preview = remember(image) { base64ToBitmap(image) }
     val filePath = remember(file) { mutableStateOf(getLoadedFilePath(file)) }
-    LaunchedEffect(Unit) {
-      if (chatModel.connectedToRemote()) {
-        snapshotFlow { file }
-          .distinctUntilChanged()
-          .filterNotNull()
-          .filter { it.loaded && getLoadedFilePath(it) == null }
-          .collect {
-            it.loadRemoteFile()
-            filePath.value = getLoadedFilePath(it)
-          }
+    if (chatModel.connectedToRemote()) {
+      LaunchedEffect(file) {
+        if (file != null && file.loaded && getLoadedFilePath(file) == null) {
+          file.loadRemoteFile()
+          filePath.value = getLoadedFilePath(file)
+        }
       }
     }
     val f = filePath.value

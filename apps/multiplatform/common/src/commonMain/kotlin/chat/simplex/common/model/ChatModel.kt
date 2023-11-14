@@ -2224,7 +2224,7 @@ enum class MREmojiChar(val value: String) {
 }
 
 @Serializable
-class CIFile(
+data class CIFile(
   val fileId: Long,
   val fileName: String,
   val fileSize: Long,

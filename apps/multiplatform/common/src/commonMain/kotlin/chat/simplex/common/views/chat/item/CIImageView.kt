@@ -156,13 +156,9 @@ fun CIImageView(
         if (chatModel.connectedToRemote()) null else runBlocking { imageAndFilePath(file) }
       )
     }
-    LaunchedEffect(Unit) {
-      if (chatModel.connectedToRemote()) {
-        snapshotFlow { file }
-          .distinctUntilChanged()
-          .collect {
-            res.value = imageAndFilePath(it)
-          }
+    if (chatModel.connectedToRemote()) {
+      LaunchedEffect(file) {
+        res.value = imageAndFilePath(file)
       }
     }
     val loaded = res.value
