@@ -1907,6 +1907,12 @@ object ChatController {
     chatModel.users.addAll(users)
     chatModel.currentUser.value = user
     chatModel.userCreated.value = true
+    val statuses = apiGetNetworkStatuses()
+    if (statuses != null) {
+      chatModel.networkStatuses.clear()
+      val ss = statuses.associate { it.agentConnId to it.networkStatus }.toMap()
+      chatModel.networkStatuses.putAll(ss)
+    }
     getUserChatData()
   }
 
