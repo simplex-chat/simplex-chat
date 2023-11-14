@@ -133,8 +133,12 @@
               "${pkgs.pkgsCross.musl32.hostPlatform.system}-static:exe:simplex-chat" = (drv' {
                 pkgs' = pkgs.pkgsCross.musl32;
                 extra-modules = [{
+                  # 32 bit patches
                   packages.basement.patches = [
                     ./scripts/nix/basement-pr-573.patch
+                  ];
+                  packages.memory.patches = [
+                    ./scripts/nix/memory-pr-99.patch
                   ];
                 }];
               }).simplex-chat.components.exes.simplex-chat;
@@ -314,6 +318,7 @@
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (android32Pkgs.openssl.override { static = true; enableKTLS = false; })
                   ];
+                  # 32 bit patches
                   packages.basement.patches = [
                     ./scripts/nix/basement-pr-573.patch
                   ];
