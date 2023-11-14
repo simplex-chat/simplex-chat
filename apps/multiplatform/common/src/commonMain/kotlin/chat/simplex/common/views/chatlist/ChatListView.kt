@@ -131,6 +131,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   if (appPlatform.isAndroid) {
     UserPicker(chatModel, userPickerState, switchingUsers) {
       scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
+      userPickerState.value = AnimatedViewState.GONE
     }
   }
   if (switchingUsers.value) {
@@ -254,15 +255,25 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
 
 @Composable
 fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> Unit) {
-  IconButton(onClick = onButtonClicked) {
-    Box {
-      ProfileImage(
-        image = image,
-        size = 37.dp
-      )
-      if (!allRead) {
-        unreadBadge()
+  Row {
+    IconButton(onClick = onButtonClicked) {
+      Box {
+        ProfileImage(
+          image = image,
+          size = 37.dp
+        )
+        if (!allRead) {
+          unreadBadge()
+        }
       }
+    }
+    if (appPlatform.isDesktop && remember { chatModel.currentRemoteHost }.value != null) {
+      Icon(
+        painterResource(MR.images.ic_wifi),
+        null,
+        tint = MaterialTheme.colors.onBackground,
+        modifier = Modifier.size(12.dp).align(Alignment.CenterVertically)
+      )
     }
   }
 }

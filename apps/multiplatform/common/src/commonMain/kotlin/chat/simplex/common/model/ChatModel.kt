@@ -109,7 +109,6 @@ object ChatModel {
   // remote controller
   val remoteHosts = mutableStateListOf<RemoteHostInfo>()
   val currentRemoteHost = mutableStateOf<RemoteHostInfo?>(null)
-  val newRemoteHostParing = mutableStateOf<RemoteHostSessionState?>(null)
 
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value

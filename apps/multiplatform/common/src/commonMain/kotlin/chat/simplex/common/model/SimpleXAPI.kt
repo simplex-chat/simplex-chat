@@ -1804,10 +1804,18 @@ object ChatController {
       is CR.RemoteHostConnected -> {
         // TODO needs to update it instead in sessions
         chatModel.currentRemoteHost.value = r.remoteHost
+        val index = chatModel.remoteHosts.indexOfFirst { it.remoteHostId == r.remoteHost.remoteHostId }
+        if (index != -1) {
+          chatModel.remoteHosts[index] = r.remoteHost
+        }
         switchUIRemoteHost(r.remoteHost.remoteHostId)
       }
       is CR.RemoteHostStopped -> {
         chatModel.currentRemoteHost.value = null
+        val index = chatModel.remoteHosts.indexOfFirst { it.remoteHostId == r.remoteHostId }
+        if (index != -1) {
+          chatModel.remoteHosts[index] = chatModel.remoteHosts[index].copy(sessionState = null)
+        }
         switchUIRemoteHost(null)
       }
       else ->
