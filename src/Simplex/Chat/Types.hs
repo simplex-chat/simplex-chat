@@ -692,6 +692,7 @@ data GroupMember = GroupMember
     memberStatus :: GroupMemberStatus,
     memberSettings :: GroupMemberSettings,
     invitedBy :: InvitedBy,
+    invitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
     -- for membership, memberProfile can be either user's profile or incognito profile, based on memberIncognito test.
     -- for other members it's whatever profile the local user can see (there is no info about whether it's main or incognito profile for remote users).
@@ -719,7 +720,7 @@ groupMemberRef GroupMember {groupMemberId, memberProfile = p} =
   GroupMemberRef {groupMemberId, profile = fromLocalProfile p}
 
 memberConn :: GroupMember -> Maybe Connection
-memberConn GroupMember{activeConn} = activeConn
+memberConn GroupMember {activeConn} = activeConn
 
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = aConnId <$> activeConn
@@ -747,6 +748,7 @@ data NewGroupMember = NewGroupMember
     memCategory :: GroupMemberCategory,
     memStatus :: GroupMemberStatus,
     memInvitedBy :: InvitedBy,
+    memInvitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
     memProfileId :: Int64,
     memContactId :: Maybe Int64

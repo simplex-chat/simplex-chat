@@ -1571,7 +1571,7 @@ processChatCommand = \case
         gVar <- asks idsDrg
         subMode <- chatReadVar subscriptionMode
         (agentConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing subMode
-        member <- withStore $ \db -> createNewContactMember db gVar user groupId contact memRole agentConnId cReq subMode
+        member <- withStore $ \db -> createNewContactMember db gVar user gInfo contact memRole agentConnId cReq subMode
         sendInvitation member cReq
         pure $ CRSentGroupInvitation user gInfo contact member
       Just member@GroupMember {groupMemberId, memberStatus, memberRole = mRole}
@@ -3342,10 +3342,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                       ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
                       toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
                     forM_ groupId_ $ \groupId -> do
+                      groupInfo <- withStore $ \db -> getGroupInfo db user groupId
                       subMode <- chatReadVar subscriptionMode
-                      gVar <- asks idsDrg
                       groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
-                      withStore $ \db -> createNewContactMemberAsync db gVar user groupId ct gLinkMemRole groupConnIds (fromJVersionRange peerChatVRange) subMode
+                      gVar <- asks idsDrg
+                      withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct gLinkMemRole groupConnIds (fromJVersionRange peerChatVRange) subMode
                   _ -> pure ()
             Just (gInfo, m@GroupMember {activeConn}) ->
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
@@ -3505,10 +3506,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro ->
               processIntro intro `catchChatError` (toView . CRChatError (Just user))
-            -- TODO group forward
-            -- - populate group_invitees_forwards for this invitee with introduced members
-            --   ( messages to and from only these members will be forwarded between them and invitee;
-            --     messages between future members and own invitees will be forwarded by inviting members )
+            -- messages to and from only these members will be forwarded between them and invitee;
+            -- messages between future members and own invitees will be forwarded by inviting members
+            let reMembers = map reMember intros
+            withStore' $ \db -> createGroupInviteeForwards db m reMembers
             where
               sendXGrpLinkMem = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
@@ -3530,10 +3531,20 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                     notifyMemberConnected gInfo m $ Just ct
                     let connectedIncognito = contactConnIncognito ct || incognitoMembership gInfo
                     when (memberCategory m == GCPreMember) $ probeMatchingContactsAndMembers ct connectedIncognito True
-            -- TODO group forward
-            -- - if member category is GCPostMember:
-            --   - send XGrpMemCon to inviting member
-            --     - invited_by refers to contacts, use invited_by_group_member_id?
+            sendXGrpMemCon
+            where
+              sendXGrpMemCon
+                | memberCategory m == GCPreMember =
+                  forM_ (invitedByGroupMemberId membership) $ \hostId -> do
+                    host <- withStore $ \db -> getGroupMember db user groupId hostId
+                    forM_ (memberConn host) $ \hostConn ->
+                      void $ sendDirectMessage hostConn (XGrpMemCon m.memberId) (GroupId groupId)
+                | memberCategory m == GCPostMember =
+                  forM_ (invitedByGroupMemberId m) $ \invitingMemberId -> do
+                    im <- withStore $ \db -> getGroupMember db user groupId invitingMemberId
+                    forM_ (memberConn im) $ \imConn ->
+                      void $ sendDirectMessage imConn (XGrpMemCon m.memberId) (GroupId groupId)
+                | otherwise = messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
       MSG msgMeta _msgFlags msgBody -> do
         cmdId <- createAckCmd conn
         tryChatError (parseAChatMessage conn msgMeta msgBody) >>= \case
@@ -3567,7 +3578,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               XGrpMemInv memId introInv -> xGrpMemInv gInfo m' memId introInv
               XGrpMemFwd memInfo introInv -> xGrpMemFwd gInfo m' memInfo introInv
               XGrpMemRole memId memRole -> xGrpMemRole gInfo m' memId memRole msg msgMeta
-              XGrpMemCon memId -> xGrpMemCon gInfo m' memId msg msgMeta
+              XGrpMemCon memId -> xGrpMemCon gInfo m' memId
               XGrpMemDel memId -> xGrpMemDel gInfo m' memId msg msgMeta
               XGrpLeave -> xGrpLeave gInfo m' msg msgMeta
               XGrpDel -> xGrpDel gInfo m' msg msgMeta
@@ -4875,7 +4886,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         if isMember memId gInfo members
           then messageError "x.grp.mem.new error: member already exists"
           else do
-            newMember@GroupMember {groupMemberId} <- withStore $ \db -> createNewGroupMember db user gInfo memInfo GCPostMember GSMemAnnounced
+            newMember@GroupMember {groupMemberId} <- withStore $ \db -> createNewGroupMember db user gInfo m memInfo GCPostMember GSMemAnnounced
             ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg msgMeta (CIRcvGroupEvent $ RGEMemberAdded groupMemberId memberProfile)
             groupMsgToView gInfo m ci msgMeta
             toView $ CRJoinedGroupMemberConnecting user gInfo m newMember
@@ -4932,7 +4943,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- the situation when member does not exist is an error
         -- member receiving x.grp.mem.fwd should have also received x.grp.mem.new prior to that.
         -- For now, this branch compensates for the lack of delayed message delivery.
-        Nothing -> withStore $ \db -> createNewGroupMember db user gInfo memInfo GCPostMember GSMemAnnounced
+        Nothing -> withStore $ \db -> createNewGroupMember db user gInfo m memInfo GCPostMember GSMemAnnounced
         Just m' -> pure m'
       withStore' $ \db -> saveMemberInvitation db toMember introInv
       subMode <- chatReadVar subscriptionMode
@@ -4968,12 +4979,20 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     checkHostRole GroupMember {memberRole, localDisplayName} memRole =
       when (memberRole < GRAdmin || memberRole < memRole) $ throwChatError (CEGroupContactRole localDisplayName)
 
-    xGrpMemCon :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> MsgMeta -> m ()
-    xGrpMemCon gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId msg msgMeta = do
-      -- TODO group forward
-      -- - mark invitee-forward member pair as connected
-      --   - delete record? then there's no need for `connected` flag
-      pure ()
+    xGrpMemCon :: GroupInfo -> GroupMember -> MemberId -> m ()
+    xGrpMemCon gInfo m memId = do
+      refMember <- withStore $ \db -> getGroupMemberByMemberId db user gInfo memId
+      case (memberCategory m, memberCategory refMember) of
+        (GCInviteeMember, GCInviteeMember) ->
+          withStore' $ \db -> do
+            deleteGroupInviteeForward db m refMember
+            deleteGroupInviteeForward db refMember m
+        (GCInviteeMember, _) ->
+          withStore' $ \db -> deleteGroupInviteeForward db m refMember
+        (_, GCInviteeMember) ->
+          withStore' $ \db -> deleteGroupInviteeForward db refMember m
+        _ ->
+          messageWarning "x.grp.mem.con: neither member is invitee"
 
     xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> MsgMeta -> m ()
     xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId msg msgMeta = do

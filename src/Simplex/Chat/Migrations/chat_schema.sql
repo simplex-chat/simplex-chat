@@ -525,7 +525,6 @@ CREATE TABLE group_invitees_forwards(
   group_invitee_forward_id INTEGER PRIMARY KEY,
   invitee_group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
   forward_group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
-  connected INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now')),
   UNIQUE(invitee_group_member_id, forward_group_member_id)
