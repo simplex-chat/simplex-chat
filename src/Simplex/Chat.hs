@@ -3680,6 +3680,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       RATCHET_HEADER -> (MDERatchetHeader, 1)
       RATCHET_EARLIER _ -> (MDERatchetEarlier, 1)
       RATCHET_SKIPPED n -> (MDETooManySkipped, n)
+      RATCHET_SYNC -> (MDERatchetSync, 0)
 
     mdeUpdatedCI :: (MsgDecryptError, Word32) -> CChatItem c -> Maybe (ChatItem c 'MDRcv, CIContent 'MDRcv)
     mdeUpdatedCI (mde', n') (CChatItem _ ci@ChatItem {content = CIRcvDecryptionError mde n})
@@ -3688,6 +3689,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         MDETooManySkipped -> r n' -- the numbers are not added as sequential MDETooManySkipped will have it incremented by 1
         MDERatchetEarlier -> r (n + n')
         MDEOther -> r (n + n')
+        MDERatchetSync -> r 0
       | otherwise = Nothing
       where
         r n'' = Just (ci, CIRcvDecryptionError mde n'')

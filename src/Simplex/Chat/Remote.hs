@@ -62,7 +62,6 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport (TLS, closeConnection, tlsUniq)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2ClientError, closeHTTP2Client)
-import Simplex.Messaging.Transport.HTTP2.File (hSendFile)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Simplex.Messaging.Util
 import Simplex.RemoteControl.Client
@@ -399,8 +398,8 @@ handleRemoteCommand execChatCommand encryption remoteOutputQ HTTP2Request {reque
     processCommand user getNext = \case
       RCSend {command} -> handleSend execChatCommand command >>= reply
       RCRecv {wait = time} -> handleRecv time remoteOutputQ >>= reply
-      RCStoreFile {fileName, fileSize, fileDigest} -> handleStoreFile fileName fileSize fileDigest getNext >>= reply
-      RCGetFile {file} -> handleGetFile user file replyWith
+      RCStoreFile {fileName, fileSize, fileDigest} -> handleStoreFile encryption fileName fileSize fileDigest getNext >>= reply
+      RCGetFile {file} -> handleGetFile encryption user file replyWith
     reply :: RemoteResponse -> m ()
     reply = (`replyWith` \_ -> pure ())
     replyWith :: Respond m
@@ -444,8 +443,8 @@ handleRecv time events = do
 
 -- TODO this command could remember stored files and return IDs to allow removing files that are not needed.
 -- Also, there should be some process removing unused files uploaded to remote host (possibly, all unused files).
-handleStoreFile :: forall m. ChatMonad m => FilePath -> Word32 -> FileDigest -> GetChunk -> m RemoteResponse
-handleStoreFile fileName fileSize fileDigest getChunk =
+handleStoreFile :: forall m. ChatMonad m => RemoteCrypto -> FilePath -> Word32 -> FileDigest -> GetChunk -> m RemoteResponse
+handleStoreFile encryption fileName fileSize fileDigest getChunk =
   either RRProtocolError RRFileStored <$> (chatReadVar filesFolder >>= storeFile)
   where
     storeFile :: Maybe FilePath -> m (Either RemoteProtocolError FilePath)
@@ -455,11 +454,11 @@ handleStoreFile fileName fileSize fileDigest getChunk =
     storeFileTo :: FilePath -> m (Either RemoteProtocolError FilePath)
     storeFileTo dir = liftRC . tryRemoteError $ do
       filePath <- dir `uniqueCombine` fileName
-      receiveRemoteFile getChunk fileSize fileDigest filePath
+      receiveEncryptedFile encryption getChunk fileSize fileDigest filePath
       pure filePath
 
-handleGetFile :: ChatMonad m => User -> RemoteFile -> Respond m -> m ()
-handleGetFile User {userId} RemoteFile {userId = commandUserId, fileId, sent, fileSource = cf'@CryptoFile {filePath}} reply = do
+handleGetFile :: ChatMonad m => RemoteCrypto -> User -> RemoteFile -> Respond m -> m ()
+handleGetFile encryption User {userId} RemoteFile {userId = commandUserId, fileId, sent, fileSource = cf'@CryptoFile {filePath}} reply = do
   logDebug $ "GetFile: " <> tshow filePath
   unless (userId == commandUserId) $ throwChatError $ CEDifferentActiveUser {commandUserId, activeUserId = userId}
   path <- maybe filePath (</> filePath) <$> chatReadVar filesFolder
@@ -469,8 +468,9 @@ handleGetFile User {userId} RemoteFile {userId = commandUserId, fileId, sent, fi
   liftRC (tryRemoteError $ getFileInfo path) >>= \case
     Left e -> reply (RRProtocolError e) $ \_ -> pure ()
     Right (fileSize, fileDigest) ->
-      withFile path ReadMode $ \h ->
-        reply RRFile {fileSize, fileDigest} $ \send -> hSendFile h send fileSize
+      withFile path ReadMode $ \h -> do
+        encFile <- liftRC $ prepareEncryptedFile encryption (h, fileSize)
+        reply RRFile {fileSize, fileDigest} $ sendEncryptedFile encFile
 
 discoverRemoteCtrls :: ChatMonad m => TM.TMap C.KeyHash (TransportHost, Word16) -> m ()
 discoverRemoteCtrls discovered = do
