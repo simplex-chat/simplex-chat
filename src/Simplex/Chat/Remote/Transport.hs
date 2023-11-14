@@ -30,7 +30,7 @@ prepareEncryptedFile RemoteCrypto {drg, hybridKey} f = do
 
 sendEncryptedFile :: EncryptedFile -> (Builder -> IO ()) -> IO ()
 sendEncryptedFile ((h, sz), nonce, sbState) send = do
-  send $ byteString $ smpEncode ('\x01', nonce, sz + 16)
+  send $ byteString $ smpEncode ('\x01', nonce, sz + fromIntegral C.authTagSize)
   sendEncFile h send sbState sz
 
 receiveEncryptedFile :: RemoteCrypto -> (Int -> IO ByteString) -> Word32 -> FileDigest -> FilePath -> ExceptT RemoteProtocolError IO ()
@@ -39,7 +39,7 @@ receiveEncryptedFile RemoteCrypto {hybridKey} getChunk fileSize fileDigest toPat
   unless (c == "\x01") $ throwError RPENoFile
   nonce <- liftEitherError RPEInvalidBody $ smpDecode <$> getChunk 24
   size <- liftEitherError RPEInvalidBody $ smpDecode <$> getChunk 4
-  unless (size == fileSize + 16) $ throwError RPEFileSize
+  unless (size == fileSize + fromIntegral C.authTagSize) $ throwError RPEFileSize
   sbState <- liftEitherWith (const $ PRERemoteControl RCEDecrypt) $ LC.kcbInit hybridKey nonce
   liftEitherError fErr $ withFile toPath WriteMode $ \h -> receiveSbFile getChunk h sbState fileSize
   digest <- liftIO $ LC.sha512Hash <$> LB.readFile toPath
