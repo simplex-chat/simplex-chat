@@ -28,6 +28,7 @@ import qualified Data.ByteString.Base64.URL as B64U
 import Data.ByteString.Builder (Builder)
 import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
+import Data.List.NonEmpty (nonEmpty)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -65,7 +66,7 @@ import Simplex.Messaging.Transport.HTTP2.Client (HTTP2ClientError, closeHTTP2Cli
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Simplex.Messaging.Util
 import Simplex.RemoteControl.Client
-import Simplex.RemoteControl.Invitation (RCInvitation (..), RCSignedInvitation (..))
+import Simplex.RemoteControl.Invitation (RCInvitation (..), RCSignedInvitation (..), RCVerifiedInvitation (..), verifySignedInviteURI)
 import Simplex.RemoteControl.Types
 import System.FilePath (takeFileName, (</>))
 import UnliftIO
@@ -336,19 +337,60 @@ liftRH rhId = liftError (ChatErrorRemoteHost (RHId rhId) . RHEProtocolError)
 
 -- * Mobile side
 
+-- ** Multicast
+
 findKnownRemoteCtrl :: ChatMonad m => m ()
-findKnownRemoteCtrl = undefined -- do
+findKnownRemoteCtrl = do
+  knownCtrls <- withStore' getRemoteCtrls
+  pairings <- maybe (throwError $ ChatErrorRemoteCtrl RCENoKnownControllers) (pure . fmap (\RemoteCtrl {ctrlPairing} -> ctrlPairing)) $ nonEmpty knownCtrls
+  withRemoteCtrlSession_ $ maybe (Right ((), Just RCSessionStarting)) (\_ -> Left $ ChatErrorRemoteCtrl RCEBusy)
+  foundCtrls <- newTVarIO Nothing -- XXX: use Set or something for chosing from all available?
+  cmdOk <- newEmptyTMVarIO
+  action <- async $ do
+    -- TODO: timeout
+    atomically $ takeTMVar cmdOk
+    found <- error "TODO: discover matching pairing and get verified invitation" pairings
+    atomically $ writeTVar foundCtrls $ Just found
+    remoteCtrl <- error "TODO" found
+    toView CRRemoteCtrlFound {remoteCtrl}
+  withRemoteCtrlSession $ \case
+    RCSessionStarting -> Right ((), RCSessionDiscovery {action, foundCtrls})
+    _ -> Left $ ChatErrorRemoteCtrl RCEBadState
+  atomically $ putTMVar cmdOk ()
+
+confirmRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m (RemoteCtrl, CtrlAppInfo)
+confirmRemoteCtrl rcId = do
+  rc <- error "get store RemoteCtrl/pairing" rcId
+  found <- getRemoteCtrlSession >>= \case
+    RCSessionDiscovery {action, foundCtrls} -> do
+      uninterruptibleCancel action
+      pure foundCtrls
+    _ -> throwError $ ChatErrorRemoteCtrl RCEBadState
+  (foundPairing, verifiedInv) <- error "get discovered pairing" found rc
+  connectRemoteCtrl verifiedInv >>= \case
+    (Nothing, _) -> throwChatError (CEInternalError "connecting with a stored ctrl")
+    (Just rc, appInfo) -> pure (rc, appInfo)
+
+-- ** QR/link
 
 -- | Use provided OOB link as an annouce
-connectRemoteCtrl :: ChatMonad m => RCSignedInvitation -> m (Maybe RemoteCtrl, CtrlAppInfo)
-connectRemoteCtrl signedInv@RCSignedInvitation {invitation = inv@RCInvitation {ca, app}} = handleCtrlError "connectRemoteCtrl" $ do
-  (ctrlInfo@CtrlAppInfo {deviceName = ctrlDeviceName}, v) <- parseCtrlAppInfo app
+connectRemoteCtrlURI :: ChatMonad m => RCSignedInvitation -> m (Maybe RemoteCtrl, CtrlAppInfo)
+connectRemoteCtrlURI signedInv = do
+  verifiedInv <- maybe (throwError $ ChatErrorRemoteCtrl RCEBadInvitation) pure $ verifySignedInviteURI signedInv
+  rcsPairingConfirmed <- newTMVarIO True -- URI connections are self-confirming
   withRemoteCtrlSession_ $ maybe (Right ((), Just RCSessionStarting)) (\_ -> Left $ ChatErrorRemoteCtrl RCEBusy)
+  connectRemoteCtrl verifiedInv
+
+-- ** Common
+
+connectRemoteCtrl :: ChatMonad m => RCVerifiedInvitation -> m (Maybe RemoteCtrl, CtrlAppInfo)
+connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) = handleCtrlError "connectRemoteCtrl" $ do
+  (ctrlInfo@CtrlAppInfo {deviceName = ctrlDeviceName}, v) <- parseCtrlAppInfo app
   rc_ <- withStore' $ \db -> getRemoteCtrlByFingerprint db ca
   mapM_ (validateRemoteCtrl inv) rc_
   hostAppInfo <- getHostAppInfo v
   (rcsClient, vars) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) networkIOTimeout . withAgent $ \a ->
-    rcConnectCtrlURI a signedInv (ctrlPairing <$> rc_) (J.toJSON hostAppInfo)
+    rcConnectCtrl a verifiedInv (ctrlPairing <$> rc_) (J.toJSON hostAppInfo)
   cmdOk <- newEmptyTMVarIO
   rcsWaitSession <- async $ do
     atomically $ takeTMVar cmdOk
@@ -412,9 +454,6 @@ handleRemoteCommand execChatCommand encryption remoteOutputQ HTTP2Request {reque
         attach send
         flush
 
-timeoutThrow :: (MonadUnliftIO m, MonadError e m) => e -> Int -> m a -> m a
-timeoutThrow e ms action = timeout ms action >>= maybe (throwError e) pure
-
 takeRCStep :: ChatMonad m => RCStepTMVar a -> m a
 takeRCStep = liftEitherError (\e -> ChatErrorAgent {agentError = RCP e, connectionEntity_ = Nothing}) . atomically . takeTMVar
 
@@ -474,10 +513,6 @@ handleGetFile encryption User {userId} RemoteFile {userId = commandUserId, fileI
         encFile <- liftRC $ prepareEncryptedFile encryption (h, fileSize)
         reply RRFile {fileSize, fileDigest} $ sendEncryptedFile encFile
 
-discoverRemoteCtrls :: ChatMonad m => TM.TMap C.KeyHash (TransportHost, Word16) -> m ()
-discoverRemoteCtrls discovered = do
-  error "TODO: discoverRemoteCtrls"
-
 listRemoteCtrls :: ChatMonad m => m [RemoteCtrlInfo]
 listRemoteCtrls = do
   active <- chatReadVar remoteCtrlSession >>= \case
@@ -491,15 +526,6 @@ listRemoteCtrls = do
 remoteCtrlInfo :: RemoteCtrl -> Bool -> RemoteCtrlInfo
 remoteCtrlInfo RemoteCtrl {remoteCtrlId, ctrlDeviceName} sessionActive =
   RemoteCtrlInfo {remoteCtrlId, ctrlDeviceName, sessionActive}
-
--- XXX: only used for multicast
-confirmRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m ()
-confirmRemoteCtrl _rcId = do
-  -- TODO check it exists, check the ID is the same as in session
-  -- RemoteCtrlSession {confirmed} <- getRemoteCtrlSession
-  -- withStore' $ \db -> markRemoteCtrlResolution db rcId True
-  -- atomically . void $ tryPutTMVar confirmed rcId -- the remote host can now proceed with connection
-  undefined
 
 -- | Take a look at emoji of tlsunique, commit pairing, and start session server
 verifyRemoteCtrlSession :: ChatMonad m => (ByteString -> m ChatResponse) -> Text -> m RemoteCtrlInfo
@@ -555,6 +581,7 @@ cancelActiveRemoteCtrl = withRemoteCtrlSession_ (\s -> pure (s, Nothing)) >>= ma
 cancelRemoteCtrl :: RemoteCtrlSession -> IO ()
 cancelRemoteCtrl = \case
   RCSessionStarting -> pure ()
+  RCSessionDiscovery {action} -> uninterruptibleCancel action
   RCSessionConnecting {rcsClient, rcsWaitSession} -> do
     uninterruptibleCancel rcsWaitSession
     cancelCtrlClient rcsClient
