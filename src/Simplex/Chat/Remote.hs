@@ -159,7 +159,7 @@ startRemoteHost rh_ = do
     handleHostError :: ChatMonad m => TVar RHKey -> m () -> m ()
     handleHostError rhKeyVar action = action `catchChatError` \err -> do
       logError $ "startRemoteHost.waitForHostSession crashed: " <> tshow err
-      readTVarIO rhKeyVar >>= cancelRemoteHostSession True
+      readTVarIO rhKeyVar >>= cancelRemoteHostSession True True
     waitForHostSession :: ChatMonad m => Maybe RemoteHostInfo -> RHKey -> TVar RHKey -> RCStepTMVar (ByteString, TLS, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> m ()
     waitForHostSession remoteHost_ rhKey rhKeyVar vars = do
       (sessId, tls, vars') <- takeRCStep vars -- no timeout, waiting for user to scan invite
@@ -206,7 +206,7 @@ startRemoteHost rh_ = do
     onDisconnected :: ChatMonad m => RHKey -> m ()
     onDisconnected rhKey = do
       logDebug "HTTP2 client disconnected"
-      cancelRemoteHostSession True rhKey
+      cancelRemoteHostSession True False rhKey
     pollEvents :: ChatMonad m => RemoteHostId -> RemoteHostClient -> m ()
     pollEvents rhId rhClient = do
       oq <- asks outputQ
@@ -219,23 +219,23 @@ startRemoteHost rh_ = do
 closeRemoteHost :: ChatMonad m => RHKey -> m ()
 closeRemoteHost rhKey = do
   logNote $ "Closing remote host session for " <> tshow rhKey
-  cancelRemoteHostSession False rhKey
+  cancelRemoteHostSession False True rhKey
 
-cancelRemoteHostSession :: ChatMonad m => Bool -> RHKey -> m ()
-cancelRemoteHostSession sendEvent rhKey = handleAny (logError . tshow) $ do
+cancelRemoteHostSession :: ChatMonad m => Bool -> Bool -> RHKey -> m ()
+cancelRemoteHostSession sendEvent stopHttp rhKey = handleAny (logError . tshow) $ do
   chatModifyVar currentRemoteHost $ \cur -> if (RHId <$> cur) == Just rhKey then Nothing else cur -- only wipe the closing RH
   sessions <- asks remoteHostSessions
   session_ <- atomically $ TM.lookupDelete rhKey sessions
   forM_ session_ $ \session -> do
-    handleAny (logError . tshow) . liftIO $ cancelRemoteHost session
+    liftIO $ cancelRemoteHost stopHttp session
     when sendEvent $ toView $ CRRemoteHostStopped rhId_
   where
     rhId_ = case rhKey of
       RHNew -> Nothing
       RHId rhId -> Just rhId
 
-cancelRemoteHost :: RemoteHostSession -> IO ()
-cancelRemoteHost = \case
+cancelRemoteHost :: Bool -> RemoteHostSession -> IO ()
+cancelRemoteHost stopHttp = \case
   RHSessionStarting -> pure ()
   RHSessionConnecting _inv rhs -> cancelPendingSession rhs
   RHSessionPendingConfirmation _sessCode tls rhs -> do
@@ -244,8 +244,9 @@ cancelRemoteHost = \case
   RHSessionConfirmed tls rhs -> do
     cancelPendingSession rhs
     closeConnection tls
-  RHSessionConnected {rchClient, tls, pollAction} -> do
+  RHSessionConnected {rchClient, tls, rhClient = RemoteHostClient {httpClient}, pollAction} -> do
     uninterruptibleCancel pollAction
+    when stopHttp $ closeHTTP2Client httpClient `catchAny` (logError . tshow)
     closeConnection tls `catchAny` (logError . tshow)
     cancelHostClient rchClient `catchAny` (logError . tshow)
   where
