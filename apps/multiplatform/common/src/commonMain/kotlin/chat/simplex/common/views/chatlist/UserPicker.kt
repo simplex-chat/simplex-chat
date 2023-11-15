@@ -150,7 +150,7 @@ fun UserPicker(
     ) {
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
         if (remoteHosts.isNotEmpty() && chatModel.currentRemoteHost.value == null) {
-          LocalDevicePickerItem(chat.simplex.common.platform.chatModel.currentRemoteHost.value == null, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), openSettings = settingsClicked, onClick = {
+          LocalDevicePickerItem(chat.simplex.common.platform.chatModel.currentRemoteHost.value == null, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), onClick = {
             userPickerState.value = AnimatedViewState.HIDING
             localDeviceSelected()
           })
@@ -158,7 +158,7 @@ fun UserPicker(
         } else if (remoteHosts.isNotEmpty() && chatModel.currentRemoteHost.value != null) {
           val h = chatModel.currentRemoteHost.value!!
           val connecting = rememberSaveable { mutableStateOf(false) }
-          RemoteHostPickerItem(h, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), openSettings = settingsClicked,
+          RemoteHostPickerItem(h, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING),
             actionButtonClick = {
               userPickerState.value = AnimatedViewState.HIDING
               stopRemoteHost(h)
@@ -170,7 +170,7 @@ fun UserPicker(
         }
         UsersView()
         if (remoteHosts.isNotEmpty() && chatModel.currentRemoteHost.value != null) {
-          LocalDevicePickerItem(chat.simplex.common.platform.chatModel.currentRemoteHost.value == null, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), openSettings = settingsClicked, onClick = {
+          LocalDevicePickerItem(chat.simplex.common.platform.chatModel.currentRemoteHost.value == null, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), onClick = {
             userPickerState.value = AnimatedViewState.HIDING
             localDeviceSelected()
           })
@@ -178,7 +178,7 @@ fun UserPicker(
         }
         remoteHosts.filter { !it.activeHost }.forEach { h ->
           val connecting = rememberSaveable { mutableStateOf(false) }
-          RemoteHostPickerItem(h, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), openSettings = settingsClicked,
+          RemoteHostPickerItem(h, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING),
             actionButtonClick = {
               userPickerState.value = AnimatedViewState.HIDING
               stopRemoteHost(h)
@@ -272,13 +272,13 @@ fun UserProfileRow(u: User) {
 }
 
 @Composable
-fun RemoteHostPickerItem(h: RemoteHostInfo, padding: PaddingValues = PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), onLongClick: () -> Unit = {}, openSettings: () -> Unit = {}, actionButtonClick: () -> Unit = {}, onClick: () -> Unit) {
+fun RemoteHostPickerItem(h: RemoteHostInfo, padding: PaddingValues = PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), onLongClick: () -> Unit = {}, actionButtonClick: () -> Unit = {}, onClick: () -> Unit) {
   Row(
     Modifier
       .fillMaxWidth()
       .sizeIn(minHeight = 46.dp)
       .combinedClickable(
-        onClick = if (h.activeHost) openSettings else onClick,
+        onClick = if (h.activeHost) {{}} else onClick,
         onLongClick = onLongClick,
         interactionSource = remember { MutableInteractionSource() },
         indication = if (!h.activeHost) LocalIndication.current else null
@@ -290,7 +290,7 @@ fun RemoteHostPickerItem(h: RemoteHostInfo, padding: PaddingValues = PaddingValu
   ) {
     RemoteHostRow(h)
     if (h.sessionState is RemoteHostSessionState.Connected) {
-      HostDisconnectButton(onClick = actionButtonClick)
+      HostDisconnectButton(actionButtonClick)
     } else {
       Box(Modifier.size(20.dp))
     }
@@ -311,20 +311,20 @@ fun RemoteHostRow(h: RemoteHostInfo) {
       modifier = Modifier
         .padding(start = 26.dp, end = 8.dp),
       color = if (h.activeHost) MaterialTheme.colors.secondary else if (isInDarkTheme()) MenuTextColorDark else Color.Black,
-      fontWeight = if (h.activeHost) FontWeight.Normal else FontWeight.Medium,
-      fontSize = if (h.activeHost) 16.sp else 12.sp
+      fontWeight = FontWeight.Normal,
+      fontSize = 14.sp,
     )
   }
 }
 
 @Composable
-fun LocalDevicePickerItem(active: Boolean, padding: PaddingValues = PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), onLongClick: () -> Unit = {}, openSettings: () -> Unit = {}, onClick: () -> Unit) {
+fun LocalDevicePickerItem(active: Boolean, padding: PaddingValues = PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING), onLongClick: () -> Unit = {}, onClick: () -> Unit) {
   Row(
     Modifier
       .fillMaxWidth()
       .sizeIn(minHeight = 46.dp)
       .combinedClickable(
-        onClick = if (active) openSettings else onClick,
+        onClick = if (active) {{}} else onClick,
         onLongClick = onLongClick,
         interactionSource = remember { MutableInteractionSource() },
         indication = if (!active) LocalIndication.current else null
@@ -353,8 +353,8 @@ fun LocalDeviceRow(active: Boolean) {
       modifier = Modifier
         .padding(start = 26.dp, end = 8.dp),
       color = if (active) MaterialTheme.colors.secondary else if (isInDarkTheme()) MenuTextColorDark else Color.Black,
-      fontWeight = if (active) FontWeight.Normal else FontWeight.Medium,
-      fontSize = if (active) 16.sp else 12.sp,
+      fontWeight = FontWeight.Normal,
+      fontSize = 14.sp,
     )
   }
 }
@@ -386,10 +386,10 @@ private fun CancelPickerItem(onClick: () -> Unit) {
 }
 
 @Composable
-fun HostDisconnectButton(modifier: Modifier = Modifier, onClick: (() -> Unit)?) {
+fun HostDisconnectButton(onClick: (() -> Unit)?) {
   val interactionSource = remember { MutableInteractionSource() }
   val hovered = interactionSource.collectIsHoveredAsState().value
-  IconButton(onClick ?: {}, modifier.then(Modifier.size(20.dp)), enabled = onClick != null) {
+  IconButton(onClick ?: {}, Modifier.requiredSize(20.dp), enabled = onClick != null) {
     Icon(
       painterResource(if (onClick == null) MR.images.ic_desktop else if (hovered) MR.images.ic_wifi_off else MR.images.ic_wifi),
       null,

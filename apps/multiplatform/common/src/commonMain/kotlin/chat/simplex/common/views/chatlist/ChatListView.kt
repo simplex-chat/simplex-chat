@@ -270,11 +270,10 @@ fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> U
     if (appPlatform.isDesktop) {
       val h by remember { chatModel.currentRemoteHost }
       if (h != null) {
+        Spacer(Modifier.width(12.dp))
         HostDisconnectButton {
           stopRemoteHost(h!!)
         }
-      } else if (remember { chatModel.remoteHosts }.isNotEmpty()) {
-        HostDisconnectButton(Modifier.padding(top = 3.dp), null)
       }
     }
   }
