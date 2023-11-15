@@ -14,19 +14,22 @@ struct ConnectDesktopView: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.dismiss) var dismiss: DismissAction
     @AppStorage(DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS) private var deviceName = UIDevice.current.name
+    @AppStorage(DEFAULT_CONFIRM_REMOTE_SESSIONS) private var confirmRemoteSessions = false
+    @AppStorage(DEFAULT_CONNECT_REMOTE_VIA_MULTICAST) private var connectRemoteViaMulticast = false
+    @AppStorage(DEFAULT_OFFER_REMOTE_MULTICAST) private var offerRemoteMulticast = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var sessionAddress: String = ""
     @State private var remoteCtrls: [RemoteCtrlInfo] = []
     @State private var alert: ConnectDesktopAlert?
 
     private enum ConnectDesktopAlert: Identifiable {
-        case deletePairedDesktop(rc: RemoteCtrlInfo)
+        case unlinkDesktop(rc: RemoteCtrlInfo)
         case disconnectDesktop(action: UserDisconnectAction)
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
             switch self {
-            case let .deletePairedDesktop(rc): "deleteRemoteCtrl \(rc.remoteCtrlId)"
+            case let .unlinkDesktop(rc): "unlinkDesktop \(rc.remoteCtrlId)"
             case let .disconnectDesktop(action): "disconnectDecktop \(action)"
             case let .error(title, _): "error \(title)"
             }
@@ -44,7 +47,14 @@ struct ConnectDesktopView: View {
                 switch session.sessionState {
                 case .starting: connectingDesktopView(session, nil)
                 case let .connecting(rc_): connectingDesktopView(session, rc_)
-                case let .pendingConfirmation(rc_, sessCode): verifySessionView(session, rc_, sessCode)
+                case let .pendingConfirmation(rc_, sessCode):
+                    if confirmRemoteSessions || rc_ == nil {
+                        verifySessionView(session, rc_, sessCode)
+                    } else {
+                        connectingDesktopView(session, rc_).onAppear {
+                            verifyDesktopSessionCode(sessCode)
+                        }
+                    }
                 case let .connected(rc, _): activeSessionView(session, rc)
                 }
             } else {
@@ -79,11 +89,11 @@ struct ConnectDesktopView: View {
         }
         .alert(item: $alert) { a in
             switch a {
-            case let .deletePairedDesktop(rc):
+            case let .unlinkDesktop(rc):
                 Alert(
-                    title: Text("Forget linked desktop?"),
-                    primaryButton: .destructive(Text("Delete")) {
-                        deleteDesktop(rc)
+                    title: Text("Unlink desktop?"),
+                    primaryButton: .destructive(Text("Unlink")) {
+                        unlinkDesktop(rc)
                     },
                     secondaryButton: .cancel()
                 )
@@ -124,18 +134,22 @@ struct ConnectDesktopView: View {
 
     private func connectingDesktopView(_ session: RemoteCtrlSession, _ rc_: RemoteCtrlInfo?) -> some View {
         List {
-            Section("This device name") {
-                devicesView()
-                .disabled(true)
-                disconnectButton()
+            Section("Connecting to desktop") {
+                if let rc = rc_ {
+                    Text(rc.deviceViewName)
+                } else {
+                    Text("New desktop device").italic()
+                }
             }
 
-            scanDesctopAddressView()
-            .disabled(true)
+            if let sessCode = session.sessionCode {
+                Section("Session code") {
+                    sessionCodeText(sessCode)
+                }
+            }
 
-            if developerTools {
-                desktopAddressView()
-                .disabled(true)
+            Section {
+                disconnectButton()
             }
         }
         .navigationTitle("Connecting to desktop")
@@ -182,7 +196,8 @@ struct ConnectDesktopView: View {
             Section {
                 disconnectButton()
             } footer: {
-                Text("Please keep this screen open to use the app from desktop")
+                // This is specific to iOS
+                Text("Keep the app open to use it from desktop")
             }
         }
         .navigationTitle("Connected to desktop")
@@ -246,15 +261,24 @@ struct ConnectDesktopView: View {
 
     private func pairedDesktopsView() -> some View {
         List {
-            Section("Swipe to forget") {
+            Section {
                 ForEach(remoteCtrls, id: \.remoteCtrlId) { rc in
                     remoteCtrlView(rc)
                 }
                 .onDelete { indexSet in
-                    if let i = indexSet.first {
-                        alert = .deletePairedDesktop(rc: remoteCtrls[i])
+                    if let i = indexSet.first, i < remoteCtrls.count {
+                        alert = .unlinkDesktop(rc: remoteCtrls[i])
                     }
                 }
+            } header: {
+                Text("Desktop devices")
+            } footer: {
+                Text("Swipe to unlink")
+            }
+
+            Section("Linked desktop options") {
+                Toggle("Confirm connections", isOn: $confirmRemoteSessions)
+                Toggle("Discover on network", isOn: $connectRemoteViaMulticast).disabled(true)
             }
         }
         .navigationTitle("Linked desktops")
@@ -324,7 +348,7 @@ struct ConnectDesktopView: View {
             do {
                 try await stopRemoteCtrl()
                 await MainActor.run {
-                    m.remoteCtrlSession = nil
+                    switchToLocalSession()
                     switch action {
                     case .back: dismiss()
                     case .dismiss: dismiss()
@@ -337,7 +361,7 @@ struct ConnectDesktopView: View {
         }
     }
 
-    private func deleteDesktop(_ rc: RemoteCtrlInfo) {
+    private func unlinkDesktop(_ rc: RemoteCtrlInfo) {
         Task {
             do {
                 try await deleteRemoteCtrl(rc.remoteCtrlId)

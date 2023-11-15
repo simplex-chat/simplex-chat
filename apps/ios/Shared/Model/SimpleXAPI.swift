@@ -1730,7 +1730,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
     case .remoteCtrlStopped:
         await MainActor.run {
-            m.remoteCtrlSession = nil
+            switchToLocalSession()
         }
     default:
         logger.debug("unsupported event: \(res.responseType)")
@@ -1742,6 +1742,19 @@ func processReceivedMsg(_ res: ChatResponse) async {
         } else {
             logger.debug("processReceivedMsg: ignoring \(res.responseType), not in call with the contact \(contact.id)")
         }
+    }
+}
+
+func switchToLocalSession() {
+    let m = ChatModel.shared
+    m.remoteCtrlSession = nil
+    do {
+        m.users = try listUsers()
+        try getUserChatData()
+        let statuses = (try apiGetNetworkStatuses()).map { s in (s.agentConnId, s.networkStatus) }
+        m.networkStatuses = Dictionary(uniqueKeysWithValues: statuses)
+    } catch let error {
+        logger.debug("error updating chat data: \(responseError(error))")
     }
 }
 

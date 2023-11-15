@@ -62,6 +62,14 @@ struct UserPicker: View {
                 .simultaneousGesture(DragGesture(minimumDistance: disableScrolling ? 0 : 10000000))
                 .frame(maxHeight: scrollViewContentSize.height)
 
+                menuButton("Use from desktop", icon: "desktopcomputer") {
+                    // TODO
+                    showSettings = true
+                    withAnimation {
+                        userPickerVisible.toggle()
+                    }
+                }
+                Divider()
                 menuButton("Settings", icon: "gearshape") {
                     showSettings = true
                     withAnimation {
@@ -85,7 +93,7 @@ struct UserPicker: View {
             do {
                 m.users = try listUsers()
             } catch let error {
-                logger.error("Error updating users \(responseError(error))")
+                logger.error("Error loading users \(responseError(error))")
             }
         }
     }
@@ -144,7 +152,8 @@ struct UserPicker: View {
                     .overlay(DetermineWidth())
                 Spacer()
                 Image(systemName: icon)
-//                    .frame(width: 24, alignment: .center)
+                    .symbolRenderingMode(.monochrome)
+                    .foregroundColor(.secondary)
             }
             .padding(.horizontal)
             .padding(.vertical, 22)
