@@ -3446,7 +3446,7 @@ data class RemoteCtrl (
 data class RemoteCtrlInfo (
   val remoteCtrlId: Long,
   val ctrlDeviceName: String,
-  val sessionActive: Boolean
+  val sessionState: RemoteCtrlSessionState?
 )
 
 @Serializable

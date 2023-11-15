@@ -2860,8 +2860,10 @@ data class RemoteCtrlSession(
   val sessionState: RemoteCtrlSessionState
 )
 
+@Serializable
 sealed class RemoteCtrlSessionState {
-  class Connecting(val remoteCtrl_: RemoteCtrlInfo?): RemoteCtrlSessionState()
-  class PendingConfirmation(val remoteCtrl_: RemoteCtrlInfo?, val sessionCode: String): RemoteCtrlSessionState()
-  class Connected(val remoteCtrl: RemoteCtrlInfo): RemoteCtrlSessionState()
+  @Serializable @SerialName("starting") object Starting: RemoteCtrlSessionState()
+  @Serializable @SerialName("connecting") object Connecting: RemoteCtrlSessionState()
+  @Serializable @SerialName("pendingConfirmation") data class PendingConfirmation(val sessionCode: String): RemoteCtrlSessionState()
+  @Serializable @SerialName("connected") data class Connected(val sessionCode: String): RemoteCtrlSessionState()
 }
