@@ -150,8 +150,6 @@ actual fun PlatformTextField(
                   listOf(UploadContent.SimpleImage(uri))))
               }
 
-            } else {
-              println("Flavor is NOT supported")
             }
 
             true
