@@ -37,6 +37,7 @@ remoteTests = describe "Remote" $ do
     it "connects with new pairing (stops mobile)" $ remoteHandshakeTest False
     it "connects with new pairing (stops desktop)" $ remoteHandshakeTest True
     it "connects with stored pairing" remoteHandshakeStoredTest
+    fit "connects with multicast discovery" remoteHandshakeDiscoverTest
   it "sends messages" remoteMessageTest
   describe "remote files" $ do
     it "store/get/send/receive files" remoteStoreFileTest
@@ -94,6 +95,16 @@ remoteHandshakeStoredTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile
 
   logNote "Starting stored session again"
   startRemoteStored mobile desktop
+  stopMobile mobile desktop `catchAny` (logError . tshow)
+
+remoteHandshakeDiscoverTest :: HasCallStack => FilePath -> IO ()
+remoteHandshakeDiscoverTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+  logNote "Preparing new session"
+  startRemote mobile desktop
+  stopMobile mobile desktop `catchAny` (logError . tshow)
+
+  logNote "Starting stored session with multicast"
+  startRemoteDiscover mobile desktop
   stopMobile mobile desktop `catchAny` (logError . tshow)
 
 remoteMessageTest :: HasCallStack => FilePath -> IO ()
@@ -390,15 +401,8 @@ startRemote mobile desktop = do
   mobile ##> ("/connect remote ctrl " <> inv)
   mobile <## "connecting new remote controller: My desktop, v5.4.0.3"
   desktop <## "new remote host connecting"
-  desktop <## "Compare session code with host:"
-  sessId <- getTermLine desktop
   mobile <## "new remote controller connected"
-  mobile <## "Compare session code with controller and use:"
-  mobile <## ("/verify remote ctrl " <> sessId)
-  mobile ##> ("/verify remote ctrl " <> sessId)
-  mobile <## "remote controller 1 session started with My desktop"
-  desktop <## "new remote host 1 added: Mobile"
-  desktop <## "remote host 1 connected"
+  verifyRemoteCtrl mobile desktop
 
 startRemoteStored :: TestCC -> TestCC -> IO ()
 startRemoteStored mobile desktop = do
@@ -409,13 +413,33 @@ startRemoteStored mobile desktop = do
   mobile ##> ("/connect remote ctrl " <> inv)
   mobile <## "connecting remote controller 1: My desktop, v5.4.0.3"
   desktop <## "remote host 1 connecting"
+  mobile <## "remote controller 1 connected"
+  verifyRemoteCtrl mobile desktop
+
+startRemoteDiscover :: TestCC -> TestCC -> IO ()
+startRemoteDiscover mobile desktop = do
+  desktop ##> "/start remote host 1 multicast=on"
+  desktop <## "remote host 1 started"
+  desktop <## "Remote session invitation:"
+  _inv <- getTermLine desktop -- will use multicast instead
+  mobile ##> "/find remote ctrl"
+  mobile <## "ok"
+  mobile <## "poop"
+
+  mobile <## "connecting remote controller 1: My desktop, v5.4.0.3"
+  desktop <## "remote host 1 connecting"
+  mobile <## "remote controller 1 connected"
+  verifyRemoteCtrl mobile desktop
+
+verifyRemoteCtrl :: TestCC -> TestCC -> IO ()
+verifyRemoteCtrl mobile desktop = do
   desktop <## "Compare session code with host:"
   sessId <- getTermLine desktop
-  mobile <## "remote controller 1 connected"
   mobile <## "Compare session code with controller and use:"
   mobile <## ("/verify remote ctrl " <> sessId)
   mobile ##> ("/verify remote ctrl " <> sessId)
   mobile <## "remote controller 1 session started with My desktop"
+  desktop <## "new remote host 1 added: Mobile"
   desktop <## "remote host 1 connected"
 
 contactBob :: TestCC -> TestCC -> IO ()

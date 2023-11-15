@@ -1079,7 +1079,7 @@ data RemoteCtrlSession
   = RCSessionStarting
   | RCSessionDiscovery
       { action :: Async (),
-        foundCtrls :: TVar (Maybe (RCCtrlPairing, RCVerifiedInvitation))
+        foundCtrl :: TVar (Maybe (RCCtrlPairing, RCVerifiedInvitation))
       }
   | RCSessionConnecting
       { rcsClient :: RCCtrlClient,

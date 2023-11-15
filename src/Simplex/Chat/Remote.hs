@@ -344,17 +344,17 @@ findKnownRemoteCtrl = do
   knownCtrls <- withStore' getRemoteCtrls
   pairings <- maybe (throwError $ ChatErrorRemoteCtrl RCENoKnownControllers) (pure . fmap (\RemoteCtrl {ctrlPairing} -> ctrlPairing)) $ nonEmpty knownCtrls
   withRemoteCtrlSession_ $ maybe (Right ((), Just RCSessionStarting)) (\_ -> Left $ ChatErrorRemoteCtrl RCEBusy)
-  foundCtrls <- newTVarIO Nothing -- XXX: use Set or something for chosing from all available?
+  foundCtrl <- newTVarIO Nothing
   cmdOk <- newEmptyTMVarIO
   action <- async $ do
     -- TODO: timeout
     atomically $ takeTMVar cmdOk
     found <- error "TODO: discover matching pairing and get verified invitation" pairings
-    atomically $ writeTVar foundCtrls $ Just found
+    atomically $ writeTVar foundCtrl $ Just found
     remoteCtrl <- error "TODO" found
     toView CRRemoteCtrlFound {remoteCtrl}
   withRemoteCtrlSession $ \case
-    RCSessionStarting -> Right ((), RCSessionDiscovery {action, foundCtrls})
+    RCSessionStarting -> Right ((), RCSessionDiscovery {action, foundCtrl})
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   atomically $ putTMVar cmdOk ()
 
@@ -362,9 +362,9 @@ confirmRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m (RemoteCtrl, CtrlAppInfo)
 confirmRemoteCtrl rcId = do
   rc <- error "get store RemoteCtrl/pairing" rcId
   found <- getRemoteCtrlSession >>= \case
-    RCSessionDiscovery {action, foundCtrls} -> do
+    RCSessionDiscovery {action, foundCtrl} -> do
       uninterruptibleCancel action
-      pure foundCtrls
+      pure foundCtrl
     _ -> throwError $ ChatErrorRemoteCtrl RCEBadState
   (foundPairing, verifiedInv) <- error "get discovered pairing" found rc
   connectRemoteCtrl verifiedInv >>= \case
