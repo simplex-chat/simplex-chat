@@ -212,7 +212,7 @@ struct ConnectDesktopView: View {
             TextField("Enter this device name…", text: $deviceName)
             if !remoteCtrls.isEmpty {
                 NavigationLink {
-                    pairedDesktopsView()
+                    linkedDesktopsView()
                 } label: {
                     Text("Linked desktops")
                 }
@@ -259,9 +259,9 @@ struct ConnectDesktopView: View {
         }
     }
 
-    private func pairedDesktopsView() -> some View {
+    private func linkedDesktopsView() -> some View {
         List {
-            Section {
+            Section("Desktop devices") {
                 ForEach(remoteCtrls, id: \.remoteCtrlId) { rc in
                     remoteCtrlView(rc)
                 }
@@ -270,14 +270,10 @@ struct ConnectDesktopView: View {
                         alert = .unlinkDesktop(rc: remoteCtrls[i])
                     }
                 }
-            } header: {
-                Text("Desktop devices")
-            } footer: {
-                Text("Swipe to unlink")
             }
 
             Section("Linked desktop options") {
-                Toggle("Confirm connections", isOn: $confirmRemoteSessions)
+                Toggle("Verify connections", isOn: $confirmRemoteSessions)
                 Toggle("Discover on network", isOn: $connectRemoteViaMulticast).disabled(true)
             }
         }
