@@ -1078,7 +1078,7 @@ data ArchiveError
 -- | Host (mobile) side of transport to process remote commands and forward notifications
 data RemoteCtrlSession
   = RCSessionStarting
-  | RCSessionDiscovery
+  | RCSessionSearching
       { action :: Async (),
         foundCtrl :: TMVar (RemoteCtrl, RCVerifiedInvitation)
       }
@@ -1107,7 +1107,7 @@ data RemoteCtrlSession
 
 data RemoteCtrlSessionState
   = RCSStarting
-  | RCSDiscovery
+  | RCSSearching
   | RCSConnecting
   | RCSPendingConfirmation {sessionCode :: Text}
   | RCSConnected {sessionCode :: Text}
@@ -1116,7 +1116,7 @@ data RemoteCtrlSessionState
 rcsSessionState :: RemoteCtrlSession -> RemoteCtrlSessionState
 rcsSessionState = \case
   RCSessionStarting -> RCSStarting
-  RCSessionDiscovery {} -> RCSDiscovery
+  RCSessionSearching {} -> RCSSearching
   RCSessionConnecting {} -> RCSConnecting
   RCSessionPendingConfirmation {tls} -> RCSPendingConfirmation {sessionCode = tlsSessionCode tls}
   RCSessionConnected {tls} -> RCSConnected {sessionCode = tlsSessionCode tls}

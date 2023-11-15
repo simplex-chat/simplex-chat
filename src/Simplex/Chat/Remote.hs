@@ -351,16 +351,16 @@ findKnownRemoteCtrl = handleCtrlError "findKnownRemoteCtrl" $ do
     rc_ <- withStore' $ \db -> getRemoteCtrlByFingerprint db ctrlFingerprint
     rc <- maybe (throwChatError $ CEInternalError "connecting with a stored ctrl") pure rc_
     atomically $ putTMVar foundCtrl (rc, inv)
-    toView CRRemoteCtrlFound {remoteCtrl = remoteCtrlInfo rc (Just RCSDiscovery)}
+    toView CRRemoteCtrlFound {remoteCtrl = remoteCtrlInfo rc (Just RCSSearching)}
   withRemoteCtrlSession $ \case
-    RCSessionStarting -> Right ((), RCSessionDiscovery {action, foundCtrl})
+    RCSessionStarting -> Right ((), RCSessionSearching {action, foundCtrl})
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   atomically $ putTMVar cmdOk ()
 
 confirmRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m (RemoteCtrlInfo, CtrlAppInfo)
 confirmRemoteCtrl rcId = do
   (listener, found) <- withRemoteCtrlSession $ \case
-    RCSessionDiscovery {action, foundCtrl} -> Right ((action, foundCtrl), RCSessionStarting) -- drop intermediate state so connectRemoteCtrl can proceed
+    RCSessionSearching {action, foundCtrl} -> Right ((action, foundCtrl), RCSessionStarting) -- drop intermediate state so connectRemoteCtrl can proceed
     _ -> throwError $ ChatErrorRemoteCtrl RCEBadState
   uninterruptibleCancel listener
   (RemoteCtrl{remoteCtrlId = foundRcId}, verifiedInv) <- atomically $ takeTMVar found
@@ -587,7 +587,7 @@ cancelActiveRemoteCtrl = withRemoteCtrlSession_ (\s -> pure (s, Nothing)) >>= ma
 cancelRemoteCtrl :: RemoteCtrlSession -> IO ()
 cancelRemoteCtrl = \case
   RCSessionStarting -> pure ()
-  RCSessionDiscovery {action} -> uninterruptibleCancel action
+  RCSessionSearching {action} -> uninterruptibleCancel action
   RCSessionConnecting {rcsClient, rcsWaitSession} -> do
     uninterruptibleCancel rcsWaitSession
     cancelCtrlClient rcsClient

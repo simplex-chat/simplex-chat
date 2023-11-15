@@ -1722,7 +1722,7 @@ viewRemoteCtrls = \case
       plain $ tshow remoteCtrlId <> ". " <> ctrlDeviceName <> maybe "" viewSessionState sessionState
     viewSessionState = \case
       RCSStarting -> " (starting)"
-      RCSDiscovery -> " (searching)"
+      RCSSearching -> " (searching)"
       RCSConnecting -> " (connecting)"
       RCSPendingConfirmation {sessionCode} -> " (pending confirmation, code: " <> sessionCode <> ")"
       RCSConnected _ -> " (connected)"
