@@ -21,6 +21,7 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import chat.simplex.common.model.ChatModel
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -33,7 +34,9 @@ import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.net.URI
+import java.util.*
 import javax.imageio.ImageIO
+import kotlin.collections.ArrayList
 import kotlin.io.path.*
 import kotlin.math.min
 import kotlin.text.substring
@@ -145,12 +148,17 @@ actual fun PlatformTextField(
 
                 if (bitmap != null) {
                   val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-
-                  val tempFile = createTempFile("paste.png")
+                  val fileName = UUID.randomUUID().toString()
+                  val tempFile = File(tmpDir, "$fileName.png")
                   tempFile.writeBytes(bytes)
-                  val uri = tempFile.toUri()
-                  composeState.value = composeState.value.copy(preview = ComposePreview.MediaPreview(listOf(imagePreview),
-                    listOf(UploadContent.SimpleImage(uri))))
+
+                  // handle deleting the temp file when program exits
+                  val content = ArrayList<UploadContent>()
+                  content.add(UploadContent.SimpleImage(tempFile.toURI()))
+                  ChatModel.filesToDelete.add(tempFile)
+
+                  val uri = tempFile.toURI()
+                  composeState.value = composeState.value.copy(preview = ComposePreview.MediaPreview(listOf(imagePreview), content))
                 }
 
               }
