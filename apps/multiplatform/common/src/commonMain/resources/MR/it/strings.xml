@@ -1459,4 +1459,6 @@
     <string name="terminal_always_visible">Mostra console in una nuova finestra</string>
     <string name="block_member_desc">Tutti i nuovi messaggi di %s verranno nascosti!</string>
     <string name="blocked_item_description">bloccato</string>
+    <string name="encryption_renegotiation_error">Errore di rinegoziazione crittografia</string>
+    <string name="alert_text_encryption_renegotiation_failed">Rinegoziazione crittografia fallita.</string>
 </resources>
