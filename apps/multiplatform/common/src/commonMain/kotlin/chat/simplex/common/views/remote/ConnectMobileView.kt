@@ -212,7 +212,7 @@ private fun ConnectMobileViewLayout(
         SectionView(stringResource(MR.strings.connected_mobile).uppercase()) {
           SelectionContainer {
             Text(
-              deviceName ?: stringResource(MR.strings.new_device),
+              deviceName ?: stringResource(MR.strings.new_mobile_device),
               Modifier.padding(start = DEFAULT_PADDING, top = 5.dp, end = DEFAULT_PADDING, bottom = 10.dp),
               style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 16.sp, fontStyle = if (deviceName != null) FontStyle.Normal else FontStyle.Italic)
             )
