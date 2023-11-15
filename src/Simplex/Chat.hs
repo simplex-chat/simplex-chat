@@ -1967,8 +1967,7 @@ processChatCommand = \case
   StoreRemoteFile rh encrypted_ localPath -> withUser_ $ CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
   GetRemoteFile rh rf -> withUser_ $ getRemoteFile rh rf >> ok_
   ConnectRemoteCtrl inv -> withUser_ $ do
-    (rc_, ctrlAppInfo) <- connectRemoteCtrlURI inv
-    let remoteCtrl_ = (`remoteCtrlInfo` True) <$> rc_
+    (remoteCtrl_, ctrlAppInfo) <- connectRemoteCtrlURI inv
     pure CRRemoteCtrlConnecting {remoteCtrl_, ctrlAppInfo, appVersion = currentAppVersion}
   FindKnownRemoteCtrl -> withUser_ $ findKnownRemoteCtrl >> ok_
   ConfirmRemoteCtrl rcId -> withUser_ $ do

@@ -1083,11 +1083,13 @@ data RemoteCtrlSession
         foundCtrl :: TMVar (RemoteCtrl, RCVerifiedInvitation)
       }
   | RCSessionConnecting
-      { rcsClient :: RCCtrlClient,
+      { remoteCtrlId_ :: Maybe RemoteCtrlId,
+        rcsClient :: RCCtrlClient,
         rcsWaitSession :: Async ()
       }
   | RCSessionPendingConfirmation
-      { ctrlDeviceName :: Text,
+      { remoteCtrlId_ :: Maybe RemoteCtrlId,
+        ctrlDeviceName :: Text,
         rcsClient :: RCCtrlClient,
         tls :: TLS,
         sessionCode :: Text,
@@ -1102,6 +1104,28 @@ data RemoteCtrlSession
         http2Server :: Async (),
         remoteOutputQ :: TBQueue ChatResponse
       }
+
+data RemoteCtrlSessionState
+  = RCSStarting
+  | RCSConnecting
+  | RCSPendingConfirmation {sessionCode :: Text}
+  | RCSConnected {sessionCode :: Text}
+  deriving (Show)
+
+rcsSessionState :: RemoteCtrlSession -> RemoteCtrlSessionState
+rcsSessionState = \case
+  RCSessionStarting -> RCSStarting
+  RCSessionConnecting {} -> RCSConnecting
+  RCSessionPendingConfirmation {tls} -> RCSPendingConfirmation {sessionCode = tlsSessionCode tls}
+  RCSessionConnected {tls} -> RCSConnected {sessionCode = tlsSessionCode tls}
+
+-- | UI-accessible remote controller information
+data RemoteCtrlInfo = RemoteCtrlInfo
+  { remoteCtrlId :: RemoteCtrlId,
+    ctrlDeviceName :: Text,
+    sessionState :: Maybe RemoteCtrlSessionState
+  }
+  deriving (Show)
 
 type ChatMonad' m = (MonadUnliftIO m, MonadReader ChatController m)
 
@@ -1264,6 +1288,10 @@ instance FromJSON AUserProtoServers where
 instance ToJSON AUserProtoServers where
   toJSON (AUPS s) = $(JQ.mkToJSON defaultJSON ''UserProtoServers) s
   toEncoding (AUPS s) = $(JQ.mkToEncoding defaultJSON ''UserProtoServers) s
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCS") ''RemoteCtrlSessionState)
+
+$(JQ.deriveJSON defaultJSON ''RemoteCtrlInfo)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 
