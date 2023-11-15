@@ -297,7 +297,9 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     ]
   CRNewRemoteHost RemoteHostInfo {remoteHostId = rhId, hostDeviceName} -> ["new remote host " <> sShow rhId <> " added: " <> plain hostDeviceName]
   CRRemoteHostConnected RemoteHostInfo {remoteHostId = rhId} -> ["remote host " <> sShow rhId <> " connected"]
-  CRRemoteHostStopped rhId -> ["remote host " <> sShow rhId <> " stopped"]
+  CRRemoteHostStopped rhId_ ->
+    [ maybe "new remote host" (mappend "remote host " . sShow) rhId_ <> " stopped"
+    ]
   CRRemoteFileStored rhId (CryptoFile filePath cfArgs_) ->
     [plain $ "file " <> filePath <> " stored on remote host " <> show rhId]
       <> maybe [] ((: []) . plain . cryptoFileArgsStr testView) cfArgs_
