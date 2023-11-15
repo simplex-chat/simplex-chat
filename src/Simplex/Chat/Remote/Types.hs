@@ -19,6 +19,7 @@ import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Simplex.Chat.Remote.AppVersion
+import Simplex.Chat.Types (verificationCode)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.SNTRUP761 (KEMHybridSecret)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
@@ -26,7 +27,7 @@ import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Types
 import Simplex.Messaging.Crypto.File (CryptoFile)
-import Simplex.Messaging.Transport (TLS)
+import Simplex.Messaging.Transport (TLS (..))
 
 data RemoteHostClient = RemoteHostClient
   { hostEncoding :: PlatformEncoding,
@@ -79,17 +80,20 @@ data RemoteHostSessionState
   = RHSStarting
   | RHSConnecting {invitation :: Text}
   | RHSPendingConfirmation {sessionCode :: Text}
-  | RHSConfirmed
-  | RHSConnected
+  | RHSConfirmed {sessionCode :: Text}
+  | RHSConnected {sessionCode :: Text}
   deriving (Show)
 
 rhsSessionState :: RemoteHostSession -> RemoteHostSessionState
 rhsSessionState = \case
   RHSessionStarting -> RHSStarting
   RHSessionConnecting {invitation} -> RHSConnecting {invitation}
-  RHSessionPendingConfirmation {sessionCode} -> RHSPendingConfirmation {sessionCode}
-  RHSessionConfirmed {} -> RHSConfirmed
-  RHSessionConnected {} -> RHSConnected
+  RHSessionPendingConfirmation {tls} -> RHSPendingConfirmation {sessionCode = tlsSessionCode tls}
+  RHSessionConfirmed {tls} -> RHSConfirmed {sessionCode = tlsSessionCode tls}
+  RHSessionConnected {tls} -> RHSConnected {sessionCode = tlsSessionCode tls}
+
+tlsSessionCode :: TLS -> Text
+tlsSessionCode = verificationCode . tlsUniq
 
 data RemoteProtocolError
   = -- | size prefix is malformed
@@ -143,13 +147,8 @@ data RemoteCtrl = RemoteCtrl
     ctrlPairing :: RCCtrlPairing
   }
 
--- | UI-accessible remote controller information
-data RemoteCtrlInfo = RemoteCtrlInfo
-  { remoteCtrlId :: RemoteCtrlId,
-    ctrlDeviceName :: Text,
-    sessionActive :: Bool
-  }
-  deriving (Show)
+remoteCtrlId' :: RemoteCtrl -> RemoteCtrlId
+remoteCtrlId' = remoteCtrlId
 
 data PlatformEncoding
   = PESwift
@@ -195,8 +194,6 @@ $(J.deriveJSON (enumJSON $ dropPrefix "PE") ''PlatformEncoding)
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "RHS") ''RemoteHostSessionState)
 
 $(J.deriveJSON defaultJSON ''RemoteHostInfo)
-
-$(J.deriveJSON defaultJSON ''RemoteCtrlInfo)
 
 $(J.deriveJSON defaultJSON ''CtrlAppInfo)
 
