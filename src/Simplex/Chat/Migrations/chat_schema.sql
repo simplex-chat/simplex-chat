@@ -324,7 +324,8 @@ CREATE TABLE messages(
   connection_id INTEGER DEFAULT NULL REFERENCES connections ON DELETE CASCADE,
   group_id INTEGER DEFAULT NULL REFERENCES groups ON DELETE CASCADE,
   shared_msg_id BLOB,
-  shared_msg_id_user INTEGER
+  shared_msg_id_user INTEGER,
+  forwarded INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE msg_deliveries(
   msg_delivery_id INTEGER PRIMARY KEY,

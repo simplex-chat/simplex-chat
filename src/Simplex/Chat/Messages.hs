@@ -814,7 +814,8 @@ data RcvMessage = RcvMessage
   { msgId :: MessageId,
     chatMsgEvent :: AChatMsgEvent,
     sharedMsgId_ :: Maybe SharedMsgId,
-    msgBody :: MsgBody
+    msgBody :: MsgBody,
+    forwarded :: Bool
   }
 
 data PendingGroupMessage = PendingGroupMessage

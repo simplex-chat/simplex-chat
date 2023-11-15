@@ -1677,6 +1677,12 @@ viewChatError logLevel = \case
             <> (", connection id: " <> show connId)
             <> maybe "" (\MsgMetaJSON {rcvId} -> ", agent msg rcv id: " <> show rcvId) msgMeta_
       ]
+    CEInvalidForwardedChatMessage fwdMem author msg e ->
+      [ plain $
+          ("chat message error: " <> e <> " (" <> T.unpack (T.take 120 msg) <> ")")
+            <> (", forwarding member: " <> show fwdMem.localDisplayName <> " (id " <> show fwdMem.groupMemberId <> ")")
+            <> (", author: " <> show author.localDisplayName <> " (id " <> show author.groupMemberId <> ")")
+      ]
     CEContactNotFound cName m_ -> viewContactNotFound cName m_
     CEContactNotReady c -> [ttyContact' c <> ": not ready"]
     CEContactDisabled ct -> [ttyContact' ct <> ": disabled, to enable: " <> highlight ("/enable " <> viewContactName ct) <> ", to delete: " <> highlight ("/d " <> viewContactName ct)]

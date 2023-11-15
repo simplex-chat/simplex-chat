@@ -23,6 +23,7 @@ module Simplex.Chat.Store.Messages
     createNewSndMessage,
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
+    createNewRcvMessage,
     createSndMsgDeliveryEvent,
     createRcvMsgDeliveryEvent,
     createPendingGroupMessage,
@@ -186,20 +187,30 @@ createSndMsgDelivery db sndMsgDelivery messageId = do
   pure msgDeliveryId
 
 createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> RcvMsgDelivery -> IO RcvMessage
-createNewMessageAndRcvMsgDelivery db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId} = do
+createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId} = do
+  msg@RcvMessage {msgId} <- createNewRcvMessage db connOrGroupId newMessage sharedMsgId_ False
   currentTs <- getCurrentTime
-  DB.execute
-    db
-    "INSERT INTO messages (msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id, shared_msg_id) VALUES (?,?,?,?,?,?,?,?)"
-    (MDRcv, toCMEventTag chatMsgEvent, msgBody, currentTs, currentTs, connId_, groupId_, sharedMsgId_)
-  msgId <- insertedRowId db
   DB.execute
     db
     "INSERT INTO msg_deliveries (message_id, connection_id, agent_msg_id, agent_msg_meta, agent_ack_cmd_id, chat_ts, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
     (msgId, connId, agentMsgId, msgMetaJson agentMsgMeta, agentAckCmdId, snd $ broker agentMsgMeta, currentTs, currentTs)
   msgDeliveryId <- insertedRowId db
   createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent currentTs
-  pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody}
+  pure msg
+
+createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> Bool -> IO RcvMessage
+createNewRcvMessage db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMsgId_ forwarded = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      INSERT INTO messages
+        (msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id, shared_msg_id, forwarded)
+      VALUES (?,?,?,?,?,?,?,?,?)
+    |]
+    (MDRcv, toCMEventTag chatMsgEvent, msgBody, currentTs, currentTs, connId_, groupId_, sharedMsgId_, forwarded)
+  msgId <- insertedRowId db
+  pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody, forwarded}
   where
     (connId_, groupId_) = case connOrGroupId of
       ConnectionId connId' -> (Just connId', Nothing)
