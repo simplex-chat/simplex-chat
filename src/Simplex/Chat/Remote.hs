@@ -346,8 +346,7 @@ findKnownRemoteCtrl = handleCtrlError "findKnownRemoteCtrl" $ do
   cmdOk <- newEmptyTMVarIO
   action <- async $ handleCtrlError "findKnownRemoteCtrl.discover" $ do
     atomically $ takeTMVar cmdOk
-    -- TODO: timeout
-    (RCCtrlPairing {ctrlFingerprint}, inv) <- withAgent $ \a -> rcDiscoverCtrl a pairings
+    (RCCtrlPairing {ctrlFingerprint}, inv) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) (networkIOTimeout * 4) . withAgent $ \a -> rcDiscoverCtrl a pairings
     rc_ <- withStore' $ \db -> getRemoteCtrlByFingerprint db ctrlFingerprint
     rc <- maybe (throwChatError $ CEInternalError "connecting with a stored ctrl") pure rc_
     atomically $ putTMVar foundCtrl (rc, inv)
