@@ -187,7 +187,7 @@ struct SettingsView: View {
                     }
 
                     NavigationLink {
-                        ConnectDesktopView()
+                        ConnectDesktopView(viaSettings: true)
                     } label: {
                         settingsRow("desktopcomputer") { Text("Use from desktop") }
                     }

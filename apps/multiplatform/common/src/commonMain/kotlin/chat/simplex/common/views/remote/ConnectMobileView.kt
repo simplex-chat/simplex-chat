@@ -222,7 +222,7 @@ private fun ConnectMobileViewLayout(
       }
 
       if (sessionCode != null) {
-        SectionView(stringResource(MR.strings.verify_code_with_mobile).uppercase()) {
+        SectionView(stringResource(MR.strings.verify_code_on_mobile).uppercase()) {
           SelectionContainer {
             Text(
               sessionCode.substring(0, 23),

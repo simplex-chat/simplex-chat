@@ -13,6 +13,7 @@ struct UserPicker: View {
     @EnvironmentObject var m: ChatModel
     @Environment(\.colorScheme) var colorScheme
     @Binding var showSettings: Bool
+    @Binding var showConnectDesktop: Bool
     @Binding var userPickerVisible: Bool
     @State var scrollViewContentSize: CGSize = .zero
     @State var disableScrolling: Bool = true
@@ -63,8 +64,7 @@ struct UserPicker: View {
                 .frame(maxHeight: scrollViewContentSize.height)
 
                 menuButton("Use from desktop", icon: "desktopcomputer") {
-                    // TODO
-                    showSettings = true
+                    showConnectDesktop = true
                     withAnimation {
                         userPickerVisible.toggle()
                     }
@@ -179,6 +179,7 @@ struct UserPicker_Previews: PreviewProvider {
         m.users = [UserInfo.sampleData, UserInfo.sampleData]
         return UserPicker(
             showSettings: Binding.constant(false),
+            showConnectDesktop: Binding.constant(false),
             userPickerVisible: Binding.constant(true)
         )
         .environmentObject(m)
