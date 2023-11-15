@@ -1459,4 +1459,6 @@
     <string name="terminal_always_visible">在新窗口中显示控制台</string>
     <string name="block_member_desc">所有来自 %s 的新消息都将被隐藏！</string>
     <string name="blocked_item_description">已封禁</string>
+    <string name="encryption_renegotiation_error">加密重协商错误</string>
+    <string name="alert_text_encryption_renegotiation_failed">加密重协商失败了。</string>
 </resources>
