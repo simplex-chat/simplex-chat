@@ -157,12 +157,9 @@ startRemoteHost rh_ = do
       when (encoding == PEKotlin && localEncoding == PESwift) $ throwError $ RHEProtocolError RPEIncompatibleEncoding
       pure hostInfo
     handleHostError :: ChatMonad m => TVar RHKey -> m () -> m ()
-    handleHostError rhKeyVar action = do
-      action `catchChatError` \err -> do
-        logError $ "startRemoteHost.waitForHostSession crashed: " <> tshow err
-        sessions <- asks remoteHostSessions
-        session_ <- atomically $ readTVar rhKeyVar >>= (`TM.lookupDelete` sessions)
-        mapM_ (liftIO . cancelRemoteHost) session_
+    handleHostError rhKeyVar action = action `catchChatError` \err -> do
+      logError $ "startRemoteHost.waitForHostSession crashed: " <> tshow err
+      readTVarIO rhKeyVar >>= cancelRemoteHostSession True True
     waitForHostSession :: ChatMonad m => Maybe RemoteHostInfo -> RHKey -> TVar RHKey -> RCStepTMVar (ByteString, TLS, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> m ()
     waitForHostSession remoteHost_ rhKey rhKeyVar vars = do
       (sessId, tls, vars') <- takeRCStep vars -- no timeout, waiting for user to scan invite
@@ -185,7 +182,7 @@ startRemoteHost rh_ = do
       when (rhKey' /= rhKey) $ do
         atomically $ writeTVar rhKeyVar rhKey'
         toView $ CRNewRemoteHost rhi
-      disconnected <- toIO $ onDisconnected remoteHostId
+      disconnected <- toIO $ onDisconnected rhKey'
       httpClient <- liftEitherError (httpError rhKey') $ attachRevHTTP2Client disconnected tls
       rhClient <- mkRemoteHostClient httpClient sessionKeys sessId storePath hostInfo
       pollAction <- async $ pollEvents remoteHostId rhClient
@@ -206,13 +203,10 @@ startRemoteHost rh_ = do
         Just rhi@RemoteHostInfo {remoteHostId} -> do
           withStore' $ \db -> updateHostPairing db remoteHostId hostDeviceName hostDhPubKey'
           pure (rhi :: RemoteHostInfo) {sessionState = Just state}
-    onDisconnected :: ChatMonad m => RemoteHostId -> m ()
-    onDisconnected remoteHostId = do
+    onDisconnected :: ChatMonad m => RHKey -> m ()
+    onDisconnected rhKey = do
       logDebug "HTTP2 client disconnected"
-      chatModifyVar currentRemoteHost $ \cur -> if cur == Just remoteHostId then Nothing else cur -- only wipe the closing RH
-      sessions <- asks remoteHostSessions
-      void . atomically $ TM.lookupDelete (RHId remoteHostId) sessions
-      toView $ CRRemoteHostStopped remoteHostId
+      cancelRemoteHostSession True False rhKey
     pollEvents :: ChatMonad m => RemoteHostId -> RemoteHostClient -> m ()
     pollEvents rhId rhClient = do
       oq <- asks outputQ
@@ -225,12 +219,23 @@ startRemoteHost rh_ = do
 closeRemoteHost :: ChatMonad m => RHKey -> m ()
 closeRemoteHost rhKey = do
   logNote $ "Closing remote host session for " <> tshow rhKey
-  chatModifyVar currentRemoteHost $ \cur -> if (RHId <$> cur) == Just rhKey then Nothing else cur -- only wipe the closing RH
-  join . withRemoteHostSession_ rhKey . maybe (Left $ ChatErrorRemoteHost rhKey RHEInactive) $
-    \s -> Right (liftIO $ cancelRemoteHost s, Nothing)
+  cancelRemoteHostSession False True rhKey
 
-cancelRemoteHost :: RemoteHostSession -> IO ()
-cancelRemoteHost = \case
+cancelRemoteHostSession :: ChatMonad m => Bool -> Bool -> RHKey -> m ()
+cancelRemoteHostSession sendEvent stopHttp rhKey = handleAny (logError . tshow) $ do
+  chatModifyVar currentRemoteHost $ \cur -> if (RHId <$> cur) == Just rhKey then Nothing else cur -- only wipe the closing RH
+  sessions <- asks remoteHostSessions
+  session_ <- atomically $ TM.lookupDelete rhKey sessions
+  forM_ session_ $ \session -> do
+    liftIO $ cancelRemoteHost stopHttp session
+    when sendEvent $ toView $ CRRemoteHostStopped rhId_
+  where
+    rhId_ = case rhKey of
+      RHNew -> Nothing
+      RHId rhId -> Just rhId
+
+cancelRemoteHost :: Bool -> RemoteHostSession -> IO ()
+cancelRemoteHost stopHttp = \case
   RHSessionStarting -> pure ()
   RHSessionConnecting _inv rhs -> cancelPendingSession rhs
   RHSessionPendingConfirmation _sessCode tls rhs -> do
@@ -241,9 +246,9 @@ cancelRemoteHost = \case
     closeConnection tls
   RHSessionConnected {rchClient, tls, rhClient = RemoteHostClient {httpClient}, pollAction} -> do
     uninterruptibleCancel pollAction
-    closeHTTP2Client httpClient
-    closeConnection tls
-    cancelHostClient rchClient
+    when stopHttp $ closeHTTP2Client httpClient `catchAny` (logError . tshow)
+    closeConnection tls `catchAny` (logError . tshow)
+    cancelHostClient rchClient `catchAny` (logError . tshow)
   where
     cancelPendingSession RHPendingSession {rchClient, rhsWaitSession} = do
       uninterruptibleCancel rhsWaitSession
@@ -544,22 +549,23 @@ verifyRemoteCtrlSession execChatCommand sessCode' = handleCtrlError "verifyRemot
     monitor server = do
       res <- waitCatch server
       logInfo $ "HTTP2 server stopped: " <> tshow res
-      cancelActiveRemoteCtrl
-      toView CRRemoteCtrlStopped
+      cancelActiveRemoteCtrl True
 
 stopRemoteCtrl :: ChatMonad m => m ()
-stopRemoteCtrl =
-  join . withRemoteCtrlSession_ . maybe (Left $ ChatErrorRemoteCtrl RCEInactive) $
-    \s -> Right (liftIO $ cancelRemoteCtrl s, Nothing)
+stopRemoteCtrl = cancelActiveRemoteCtrl False
 
 handleCtrlError :: ChatMonad m => Text -> m a -> m a
 handleCtrlError name action = action `catchChatError` \e -> do
   logError $ name <> " remote ctrl error: " <> tshow e
-  cancelActiveRemoteCtrl
+  cancelActiveRemoteCtrl True
   throwError e
 
-cancelActiveRemoteCtrl :: ChatMonad m => m ()
-cancelActiveRemoteCtrl = withRemoteCtrlSession_ (\s -> pure (s, Nothing)) >>= mapM_ (liftIO . cancelRemoteCtrl)
+cancelActiveRemoteCtrl :: ChatMonad m => Bool -> m ()
+cancelActiveRemoteCtrl sendEvent = handleAny (logError . tshow) $ do
+  session_ <- withRemoteCtrlSession_ (\s -> pure (s, Nothing))
+  forM_ session_ $ \session -> do
+    liftIO $ cancelRemoteCtrl session
+    when sendEvent $ toView CRRemoteCtrlStopped
 
 cancelRemoteCtrl :: RemoteCtrlSession -> IO ()
 cancelRemoteCtrl = \case

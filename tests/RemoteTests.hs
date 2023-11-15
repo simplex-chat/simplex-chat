@@ -1,7 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module RemoteTests where
@@ -40,7 +39,7 @@ remoteTests = describe "Remote" $ do
   it "sends messages" remoteMessageTest
   describe "remote files" $ do
     it "store/get/send/receive files" remoteStoreFileTest
-    it "should send files from CLI wihtout /store" remoteCLIFileTest
+    it "should send files from CLI without /store" remoteCLIFileTest
   it "switches remote hosts" switchRemoteHostTest
   it "indicates remote hosts" indicateRemoteHostTest
 
@@ -439,24 +438,15 @@ stopDesktop :: HasCallStack => TestCC -> TestCC -> IO ()
 stopDesktop mobile desktop = do
   logWarn "stopping via desktop"
   desktop ##> "/stop remote host 1"
-  -- desktop <## "ok"
-  concurrentlyN_
-    [ do
-        desktop <## "remote host 1 stopped"
-        desktop <## "ok",
-      eventually 3 $ mobile <## "remote controller stopped"
-    ]
+  desktop <## "ok"
+  eventually 3 $ mobile <## "remote controller stopped"
 
 stopMobile :: HasCallStack => TestCC -> TestCC -> IO ()
 stopMobile mobile desktop = do
   logWarn "stopping via mobile"
   mobile ##> "/stop remote ctrl"
-  concurrentlyN_
-    [ do
-        mobile <## "remote controller stopped"
-        mobile <## "ok",
-      eventually 3 $ desktop <## "remote host 1 stopped"
-    ]
+  mobile <## "ok"
+  eventually 3 $ desktop <## "remote host 1 stopped"
 
 -- | Run action with extended timeout
 eventually :: Int -> IO a -> IO a
