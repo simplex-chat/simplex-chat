@@ -12,6 +12,7 @@ import CodeScanner
 
 struct ConnectDesktopView: View {
     @EnvironmentObject var m: ChatModel
+    @Environment(\.dismiss) var dismiss: DismissAction
     @AppStorage(DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS) private var deviceName = UIDevice.current.name
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var sessionAddress: String = ""
@@ -19,15 +20,22 @@ struct ConnectDesktopView: View {
     @State private var alert: ConnectDesktopAlert?
 
     private enum ConnectDesktopAlert: Identifiable {
-        case deleteRemoteCtrl(rc: RemoteCtrlInfo)
+        case deletePairedDesktop(rc: RemoteCtrlInfo)
+        case disconnectDesktop(action: UserDisconnectAction)
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
             switch self {
-            case let .deleteRemoteCtrl(rc): return "deleteRemoteCtrl \(rc.remoteCtrlId)"
-            case let .error(title, _): return "error \(title)"
+            case let .deletePairedDesktop(rc): "deleteRemoteCtrl \(rc.remoteCtrlId)"
+            case let .disconnectDesktop(action): "disconnectDecktop \(action)"
+            case let .error(title, _): "error \(title)"
             }
         }
+    }
+
+    private enum UserDisconnectAction: String {
+        case back
+        case dismiss // TODO dismiss settings after confirmation
     }
 
     var body: some View {
@@ -60,12 +68,12 @@ struct ConnectDesktopView: View {
         .onChange(of: deviceName) {
             setDeviceName($0)
         }
-        .onChange(of: m.remoteCtrlSession?.sessionState.active) { active in
-            UIApplication.shared.isIdleTimerDisabled = active ?? false
+        .onChange(of: m.activeRemoteCtrl) {
+            UIApplication.shared.isIdleTimerDisabled = $0
         }
         .alert(item: $alert) { a in
             switch a {
-            case let .deleteRemoteCtrl(rc):
+            case let .deletePairedDesktop(rc):
                 Alert(
                     title: Text("Forget paired desktop?"),
                     primaryButton: .destructive(Text("Delete")) {
@@ -73,10 +81,22 @@ struct ConnectDesktopView: View {
                     },
                     secondaryButton: .cancel()
                 )
+            case let .disconnectDesktop(action):
+                Alert(
+                    title: Text("Disconnect desktop?"),
+                    primaryButton: .destructive(Text("Disconnect")) {
+                        disconnectDesktop(action)
+                    },
+                    secondaryButton: .cancel()
+                )
             case let .error(title, error):
                 Alert(title: Text(title), message: Text(error))
             }
         }
+        .modifier(BackButton(label: "Back") {
+            alert = .disconnectDesktop(action: .back)
+        })
+        .interactiveDismissDisabled(m.activeRemoteCtrl)
     }
 
     private func connectDesktopView() -> some View {
@@ -208,7 +228,7 @@ struct ConnectDesktopView: View {
                 }
                 .onDelete { indexSet in
                     if let i = indexSet.first {
-                        alert = .deleteRemoteCtrl(rc: remoteCtrls[i])
+                        alert = .deletePairedDesktop(rc: remoteCtrls[i])
                     }
                 }
             }
@@ -275,12 +295,17 @@ struct ConnectDesktopView: View {
         }
     }
 
-    private func disconnectDesktop() {
+    private func disconnectDesktop(_ action: UserDisconnectAction? = nil) {
         Task {
             do {
                 try await stopRemoteCtrl()
                 await MainActor.run {
                     m.remoteCtrlSession = nil
+                    switch action {
+                    case .back: dismiss()
+                    case .dismiss: dismiss()
+                    case .none: ()
+                    }
                 }
             } catch let e {
                 errorAlert(e)

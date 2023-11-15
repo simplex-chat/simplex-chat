@@ -112,6 +112,10 @@ final class ChatModel: ObservableObject {
         notificationMode == .periodic || ntfEnablePeriodicGroupDefault.get()
     }
 
+    var activeRemoteCtrl: Bool {
+        remoteCtrlSession?.sessionState.active ?? false
+    }
+
     func getUser(_ userId: Int64) -> User? {
         currentUser?.userId == userId
         ? currentUser
