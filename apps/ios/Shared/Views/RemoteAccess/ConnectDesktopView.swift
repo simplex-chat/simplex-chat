@@ -81,18 +81,7 @@ struct ConnectDesktopView: View {
         }
         .onAppear {
             setDeviceName(deviceName)
-            Task {
-                do {
-                    let rcs = try await listRemoteCtrls()
-                    if !rcs.isEmpty {
-                        await MainActor.run {
-                            remoteCtrls = rcs
-                        }
-                    }
-                } catch let e {
-                    errorAlert(e)
-                }
-            }
+            updateRemoteCtrls()
         }
         .onDisappear {
             if m.activeRemoteCtrl {
@@ -308,6 +297,14 @@ struct ConnectDesktopView: View {
         }
     }
 
+    private func updateRemoteCtrls() {
+        do {
+            remoteCtrls = try listRemoteCtrls()
+        } catch let e {
+            errorAlert(e)
+        }
+    }
+
     private func processDesktopQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r): connectDesktopAddress(r.string)
@@ -328,7 +325,9 @@ struct ConnectDesktopView: View {
                     )
                 }
             } catch let e {
-                errorAlert(e)
+                await MainActor.run {
+                    errorAlert(e)
+                }
             }
         }
     }
@@ -340,8 +339,13 @@ struct ConnectDesktopView: View {
                 await MainActor.run {
                     m.remoteCtrlSession = m.remoteCtrlSession?.updateState(.connected(remoteCtrl: rc, sessionCode: sessCode))
                 }
+                await MainActor.run {
+                    updateRemoteCtrls()
+                }
             } catch let error {
-                errorAlert(error)
+                await MainActor.run {
+                    errorAlert(error)
+                }
             }
         }
     }
@@ -367,7 +371,9 @@ struct ConnectDesktopView: View {
                     }
                 }
             } catch let e {
-                errorAlert(e)
+                await MainActor.run {
+                    errorAlert(e)
+                }
             }
         }
     }
@@ -380,7 +386,9 @@ struct ConnectDesktopView: View {
                     remoteCtrls.removeAll(where: { $0.remoteCtrlId == rc.remoteCtrlId })
                 }
             } catch let e {
-                errorAlert(e)
+                await MainActor.run {
+                    errorAlert(e)
+                }
             }
         }
     }

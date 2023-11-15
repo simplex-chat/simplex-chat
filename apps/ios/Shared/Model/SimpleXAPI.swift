@@ -929,8 +929,8 @@ func verifyRemoteCtrlSession(_ sessCode: String) async throws -> RemoteCtrlInfo 
     throw r
 }
 
-func listRemoteCtrls() async throws -> [RemoteCtrlInfo] {
-    let r = await chatSendCmd(.listRemoteCtrls)
+func listRemoteCtrls() throws -> [RemoteCtrlInfo] {
+    let r = chatSendCmdSync(.listRemoteCtrls)
     if case let .remoteCtrlList(rcInfo) = r { return rcInfo }
     throw r
 }
