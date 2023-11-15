@@ -113,7 +113,7 @@ final class ChatModel: ObservableObject {
     }
 
     var activeRemoteCtrl: Bool {
-        remoteCtrlSession?.sessionState.active ?? false
+        remoteCtrlSession?.active ?? false
     }
 
     func getUser(_ userId: Int64) -> User? {
@@ -772,19 +772,28 @@ final class GMember: ObservableObject, Identifiable {
 struct RemoteCtrlSession {
     var ctrlAppInfo: CtrlAppInfo
     var appVersion: String
-    var sessionState: RemoteCtrlSessionState
+    var sessionState: UIRemoteCtrlSessionState
 
-    func updateState(_ state: RemoteCtrlSessionState) -> RemoteCtrlSession {
+    func updateState(_ state: UIRemoteCtrlSessionState) -> RemoteCtrlSession {
         RemoteCtrlSession(ctrlAppInfo: ctrlAppInfo, appVersion: appVersion, sessionState: state)
+    }
+
+    var active: Bool {
+        if case .connected = sessionState { true } else { false }
+    }
+
+    var sessionCode: String? {
+        switch sessionState {
+        case let .pendingConfirmation(_, sessionCode): sessionCode
+        case let .connected(_, sessionCode): sessionCode
+        default: nil
+        }
     }
 }
 
-enum RemoteCtrlSessionState {
+enum UIRemoteCtrlSessionState {
+    case starting
     case connecting(remoteCtrl_: RemoteCtrlInfo?)
     case pendingConfirmation(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
-    case connected(remoteCtrl: RemoteCtrlInfo)
-
-    var active: Bool {
-        if case .connected = self { true } else { false }
-    }
+    case connected(remoteCtrl: RemoteCtrlInfo, sessionCode: String)
 }

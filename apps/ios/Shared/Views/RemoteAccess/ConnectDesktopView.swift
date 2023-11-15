@@ -42,9 +42,10 @@ struct ConnectDesktopView: View {
         Group {
             if let session = m.remoteCtrlSession {
                 switch session.sessionState {
+                case .starting: connectingDesktopView(session, nil)
                 case let .connecting(rc_): connectingDesktopView(session, rc_)
                 case let .pendingConfirmation(rc_, sessCode): verifySessionView(session, rc_, sessCode)
-                case let .connected(rc): activeSessionView(session, rc)
+                case let .connected(rc, _): activeSessionView(session, rc)
                 }
             } else {
                 connectDesktopView()
@@ -65,6 +66,11 @@ struct ConnectDesktopView: View {
                 }
             }
         }
+        .onDisappear {
+            if m.activeRemoteCtrl {
+                disconnectDesktop()
+            }
+        }
         .onChange(of: deviceName) {
             setDeviceName($0)
         }
@@ -75,7 +81,7 @@ struct ConnectDesktopView: View {
             switch a {
             case let .deletePairedDesktop(rc):
                 Alert(
-                    title: Text("Forget paired desktop?"),
+                    title: Text("Forget linked desktop?"),
                     primaryButton: .destructive(Text("Delete")) {
                         deleteDesktop(rc)
                     },
@@ -141,18 +147,21 @@ struct ConnectDesktopView: View {
                 if let rc = rc {
                     Text(rc.deviceViewName)
                 } else {
-                    Text("New device").italic()
+                    Text("New desktop device").italic()
                 }
             }
 
             Section("Verify code with desktop") {
-                Text(sessCode)
-                disconnectButton()
+                sessionCodeText(sessCode)
                 Button {
                     verifyDesktopSessionCode(sessCode)
                 } label: {
                     Label("Confirm", systemImage: "checkmark")
                 }
+            }
+
+            Section {
+                disconnectButton()
             }
         }
         .navigationTitle("Verify connection")
@@ -160,16 +169,27 @@ struct ConnectDesktopView: View {
 
     private func activeSessionView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo) -> some View {
         List {
-            Section {
+            Section("Connected desktop") {
                 Text(rc.deviceViewName)
+            }
+
+            if let sessCode = session.sessionCode {
+                Section("Session code") {
+                    sessionCodeText(sessCode)
+                }
+            }
+
+            Section {
                 disconnectButton()
-            } header: {
-                Text("Connected desktop")
             } footer: {
                 Text("Please keep this screen open to use the app from desktop")
             }
         }
         .navigationTitle("Connected to desktop")
+    }
+
+    private func sessionCodeText(_ code: String) -> some View {
+        Text(code.prefix(23))
     }
 
     private func devicesView() -> some View {
@@ -179,7 +199,7 @@ struct ConnectDesktopView: View {
                 NavigationLink {
                     pairedDesktopsView()
                 } label: {
-                    Text("Paired desktops")
+                    Text("Linked desktops")
                 }
             }
         }
@@ -237,7 +257,7 @@ struct ConnectDesktopView: View {
                 }
             }
         }
-        .navigationTitle("Paired desktops")
+        .navigationTitle("Linked desktops")
     }
 
     private func remoteCtrlView(_ rc: RemoteCtrlInfo) -> some View {
@@ -283,7 +303,7 @@ struct ConnectDesktopView: View {
             do {
                 let rc = try await verifyRemoteCtrlSession(sessCode)
                 await MainActor.run {
-                    m.remoteCtrlSession = m.remoteCtrlSession?.updateState(.connected(remoteCtrl: rc))
+                    m.remoteCtrlSession = m.remoteCtrlSession?.updateState(.connected(remoteCtrl: rc, sessionCode: sessCode))
                 }
             } catch let error {
                 errorAlert(error)

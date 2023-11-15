@@ -1719,13 +1719,14 @@ func processReceivedMsg(_ res: ChatResponse) async {
         logger.debug("\(String(describing: remoteCtrl))")
     case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode):
         await MainActor.run {
-            let state = RemoteCtrlSessionState.pendingConfirmation(remoteCtrl_: remoteCtrl_, sessionCode: sessionCode)
+            let state = UIRemoteCtrlSessionState.pendingConfirmation(remoteCtrl_: remoteCtrl_, sessionCode: sessionCode)
             m.remoteCtrlSession = m.remoteCtrlSession?.updateState(state)
         }
     case let .remoteCtrlConnected(remoteCtrl):
         // TODO currently it is returned in response to command, so it is redundant
         await MainActor.run {
-            m.remoteCtrlSession = m.remoteCtrlSession?.updateState(.connected(remoteCtrl: remoteCtrl))
+            let state = UIRemoteCtrlSessionState.connected(remoteCtrl: remoteCtrl, sessionCode: m.remoteCtrlSession?.sessionCode ?? "")
+            m.remoteCtrlSession = m.remoteCtrlSession?.updateState(state)
         }
     case .remoteCtrlStopped:
         await MainActor.run {
