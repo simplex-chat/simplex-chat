@@ -219,15 +219,15 @@ startRemoteHost rh_ = do
 closeRemoteHost :: ChatMonad m => RHKey -> m ()
 closeRemoteHost rhKey = do
   logNote $ "Closing remote host session for " <> tshow rhKey
-  cancelRemoteHostSession False rhKey -- XXX: doesn't throw Inactive (which may be good, when manually cancelling that is about to close by itself)
+  cancelRemoteHostSession False rhKey
 
 cancelRemoteHostSession :: ChatMonad m => Bool -> RHKey -> m ()
-cancelRemoteHostSession sendEvent rhKey = do
+cancelRemoteHostSession sendEvent rhKey = handleAny (logError . tshow) $ do
   chatModifyVar currentRemoteHost $ \cur -> if (RHId <$> cur) == Just rhKey then Nothing else cur -- only wipe the closing RH
   sessions <- asks remoteHostSessions
   session_ <- atomically $ TM.lookupDelete rhKey sessions
   forM_ session_ $ \session -> do
-    liftIO $ cancelRemoteHost session
+    handleAny (logError . tshow) . liftIO $ cancelRemoteHost session
     when sendEvent $ toView $ CRRemoteHostStopped rhId_
   where
     rhId_ = case rhKey of
@@ -244,11 +244,10 @@ cancelRemoteHost = \case
   RHSessionConfirmed tls rhs -> do
     cancelPendingSession rhs
     closeConnection tls
-  RHSessionConnected {rchClient, tls, rhClient = RemoteHostClient {httpClient}, pollAction} -> do
+  RHSessionConnected {rchClient, tls, pollAction} -> do
     uninterruptibleCancel pollAction
-    closeHTTP2Client httpClient
-    closeConnection tls
-    cancelHostClient rchClient
+    closeConnection tls `catchAny` (logError . tshow)
+    cancelHostClient rchClient `catchAny` (logError . tshow)
   where
     cancelPendingSession RHPendingSession {rchClient, rhsWaitSession} = do
       uninterruptibleCancel rhsWaitSession
@@ -561,7 +560,7 @@ handleCtrlError name action = action `catchChatError` \e -> do
   throwError e
 
 cancelActiveRemoteCtrl :: ChatMonad m => Bool -> m ()
-cancelActiveRemoteCtrl sendEvent = do
+cancelActiveRemoteCtrl sendEvent = handleAny (logError . tshow) $ do
   session_ <- withRemoteCtrlSession_ (\s -> pure (s, Nothing))
   forM_ session_ $ \session -> do
     liftIO $ cancelRemoteCtrl session
