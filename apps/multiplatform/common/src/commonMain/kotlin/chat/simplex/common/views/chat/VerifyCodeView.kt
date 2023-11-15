@@ -64,7 +64,7 @@ private fun VerifyCodeLayout(
       .padding(horizontal = DEFAULT_PADDING)
   ) {
     AppBarTitle(stringResource(MR.strings.security_code), false)
-    val splitCode = splitToParts(connectionCode, 24)
+    val splitCode = splitCodeToParts(connectionCode, 24)
     Row(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF), horizontalArrangement = Arrangement.Center) {
       if (connectionVerified) {
         Icon(painterResource(MR.images.ic_verified_user), null, Modifier.padding(end = 4.dp).size(22.dp), tint = MaterialTheme.colors.secondary)
@@ -133,7 +133,7 @@ private fun VerifyCodeLayout(
   }
 }
 
-private fun splitToParts(s: String, length: Int): String {
+fun splitCodeToParts(s: String, length: Int): String {
   if (length >= s.length) return s
   return (0..(s.length - 1) / length)
     .map { s.drop(it * length).take(length) }

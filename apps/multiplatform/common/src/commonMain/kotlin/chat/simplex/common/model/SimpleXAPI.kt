@@ -1801,6 +1801,9 @@ object ChatController {
         chatModel.updateContactConnectionStats(r.contact, r.ratchetSyncProgress.connectionStats)
       is CR.GroupMemberRatchetSync ->
         chatModel.updateGroupMemberConnectionStats(r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
+      is CR.RemoteHostSessionCode -> {
+        chatModel.newRemoteHostParing.value = RemoteHostSessionState.PendingConfirmation(r.sessionCode)
+      }
       is CR.RemoteHostConnected -> {
         // TODO needs to update it instead in sessions
         chatModel.currentRemoteHost.value = r.remoteHost

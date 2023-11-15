@@ -1,6 +1,7 @@
 package chat.simplex.common.views.remote
 
-import SectionItemView
+import SectionDividerSpaced
+import SectionItemViewLongClickable
 import SectionTextFooter
 import SectionView
 import androidx.compose.foundation.*
@@ -8,22 +9,28 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.ZeroCornerSize
 import androidx.compose.foundation.text.*
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.material.TextFieldDefaults.indicatorLine
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
+import chat.simplex.common.views.chat.item.ItemAction
+import chat.simplex.common.views.chat.splitCodeToParts
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCode
 import chat.simplex.common.views.usersettings.SettingsActionItem
@@ -59,9 +66,14 @@ fun ConnectMobileView(
     addMobileDevice = {
       ModalManager.start.showModalCloseable { close ->
         val invitation = rememberSaveable { mutableStateOf<String?>(null) }
-        ConnectMobileViewLayout(stringResource(MR.strings.add_mobile_device), invitation.value)
+        ConnectMobileViewLayout(stringResource(MR.strings.link_a_mobile), invitation.value)
+        val oldRemoteHostId by remember { mutableStateOf(chatModel.currentRemoteHost.value?.remoteHostId) }
+        LaunchedEffect(remember { chatModel.currentRemoteHost }.value) {
+          if (chatModel.currentRemoteHost.value?.remoteHostId != oldRemoteHostId) {
+            close()
+          }
+        }
         DisposableEffect(Unit) {
-          val oldRemoteHostId = m.currentRemoteHost.value?.remoteHostId
           withBGApi {
             val r = chatModel.controller.startRemoteHost(null)
             if (r != null) {
@@ -75,11 +87,20 @@ fun ConnectMobileView(
                 chatController.stopRemoteHost(null)
               }
             }
+            chatModel.newRemoteHostParing.value = null
           }
         }
       }
     },
-    connectMobileDevice = { connectMobileDevice(it, connecting) }
+    connectMobileDevice = { connectMobileDevice(it, connecting) },
+    deleteHost = { host ->
+      withBGApi {
+        val success = controller.deleteRemoteHost(host.remoteHostId)
+        if (success) {
+          chatModel.remoteHosts.removeAll { it.remoteHostId == host.remoteHostId }
+        }
+      }
+    }
   )
 }
 
@@ -92,22 +113,38 @@ fun ConnectMobileLayout(
   updateDeviceName: (String) -> Unit,
   addMobileDevice: () -> Unit,
   connectMobileDevice: (RemoteHostInfo) -> Unit,
+  deleteHost: (RemoteHostInfo) -> Unit,
 ) {
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
-    AppBarTitle(stringResource(MR.strings.add_mobile_device))
-    SectionView(generalGetString(MR.strings.this_device_name)) {
+    AppBarTitle(stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles))
+    SectionView(generalGetString(MR.strings.this_device_name).uppercase()) {
       DeviceNameField(deviceName.state.value ?: "") { updateDeviceName(it) }
+      SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
+      SectionDividerSpaced(maxBottomPadding = false)
+
+      val showMenu = remember { mutableStateOf(false) }
       for (host in remoteHosts) {
-        SectionItemView({ connectMobileDevice(host) }, disabled = connecting.value) {
+        SectionItemViewLongClickable({ connectMobileDevice(host) }, { showMenu.value = true }, disabled = connecting.value || host.activeHost) {
           Text(host.hostDeviceName)
+          if (host.activeHost) {
+            Spacer(Modifier.weight(1f))
+            Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+          }
+        }
+        Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+          DefaultDropdownMenu(showMenu) {
+            ItemAction(stringResource(MR.strings.delete_verb), painterResource(MR.images.ic_delete), color = Color.Red, onClick = {
+              deleteHost(host)
+              showMenu.value = false
+            })
+          }
         }
       }
-      SettingsActionItem(painterResource(MR.images.ic_smartphone), stringResource(MR.strings.add_mobile_device), addMobileDevice, disabled = connecting.value, extraPadding = false)
+      SettingsActionItem(painterResource(MR.images.ic_smartphone), stringResource(MR.strings.link_a_mobile), addMobileDevice, disabled = connecting.value, extraPadding = false)
     }
-    SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
   }
 }
 
@@ -185,6 +222,24 @@ private fun ConnectMobileViewLayout(
             .aspectRatio(1f)
         )
       }
+      val sessionCode = when (val state = remember { chatModel.newRemoteHostParing }.value) {
+        is RemoteHostSessionState.PendingConfirmation -> state.sessionCode
+        else -> null
+      }
+      if (sessionCode != null) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+          Spacer(Modifier.weight(2f))
+          SelectionContainer(Modifier.padding(DEFAULT_PADDING_HALF)) {
+            Text(
+              splitCodeToParts(sessionCode, 24),
+              fontFamily = FontFamily.Monospace,
+              fontSize = 18.sp,
+              maxLines = 20
+            )
+          }
+          Spacer(Modifier.weight(2f))
+        }
+      }
     }
   }
 }
@@ -193,29 +248,30 @@ fun connectMobileDevice(rh: RemoteHostInfo, connecting: MutableState<Boolean>) {
     ModalManager.start.showModalCloseable { close ->
       val invitation = rememberSaveable { mutableStateOf<String?>(null) }
       ConnectMobileViewLayout(
-        title = stringResource(MR.strings.connect_mobile_device),
+        title = stringResource(MR.strings.link_a_mobile),
         invitation = invitation.value,
       )
-      val remoteHost = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf<RemoteHostInfo?>(null) }
+      var remoteHostId by rememberSaveable { mutableStateOf<Long?>(null) }
       LaunchedEffect(Unit) {
         val r = chatModel.controller.startRemoteHost(rh.remoteHostId)
         if (r != null) {
           val (rh_, inv) = r
           connecting.value = true
-          remoteHost.value = rh_
+          remoteHostId = rh_?.remoteHostId
           invitation.value = inv
         }
       }
       DisposableEffect(remember { chatModel.currentRemoteHost }.value) {
-        if (remoteHost.value != null && chatModel.currentRemoteHost.value?.remoteHostId == remoteHost.value?.remoteHostId) {
+        if (remoteHostId != null && chatModel.currentRemoteHost.value?.remoteHostId == remoteHostId) {
           close()
         }
         onDispose {
-          if (remoteHost.value != null && chatModel.currentRemoteHost.value?.remoteHostId != remoteHost.value?.remoteHostId) {
+          if (remoteHostId!= null && chatModel.currentRemoteHost.value?.remoteHostId != remoteHostId) {
             withBGApi {
-              chatController.stopRemoteHost(remoteHost.value?.remoteHostId)
+              chatController.stopRemoteHost(remoteHostId)
             }
           }
+          chatModel.newRemoteHostParing.value = null
         }
       }
     }

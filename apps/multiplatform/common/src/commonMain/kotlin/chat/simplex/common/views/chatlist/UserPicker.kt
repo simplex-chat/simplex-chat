@@ -276,6 +276,7 @@ fun RemoteHostPickerItem(h: RemoteHostInfo, padding: PaddingValues = PaddingValu
   Row(
     Modifier
       .fillMaxWidth()
+      .background(color = if (h.activeHost) MaterialTheme.colors.surface.mixWith(MaterialTheme.colors.onBackground, 0.95f) else Color.Unspecified)
       .sizeIn(minHeight = 46.dp)
       .combinedClickable(
         onClick = if (h.activeHost) {{}} else onClick,
@@ -310,7 +311,7 @@ fun RemoteHostRow(h: RemoteHostInfo) {
       h.hostDeviceName,
       modifier = Modifier
         .padding(start = 26.dp, end = 8.dp),
-      color = if (h.activeHost) MaterialTheme.colors.secondary else if (isInDarkTheme()) MenuTextColorDark else Color.Black,
+      color = if (h.activeHost) MaterialTheme.colors.onBackground else if (isInDarkTheme()) MenuTextColorDark else Color.Black,
       fontWeight = FontWeight.Normal,
       fontSize = 14.sp,
     )
@@ -322,6 +323,7 @@ fun LocalDevicePickerItem(active: Boolean, padding: PaddingValues = PaddingValue
   Row(
     Modifier
       .fillMaxWidth()
+      .background(color = if (active) MaterialTheme.colors.surface.mixWith(MaterialTheme.colors.onBackground, 0.95f) else Color.Unspecified)
       .sizeIn(minHeight = 46.dp)
       .combinedClickable(
         onClick = if (active) {{}} else onClick,
@@ -352,7 +354,7 @@ fun LocalDeviceRow(active: Boolean) {
       stringResource(MR.strings.this_device),
       modifier = Modifier
         .padding(start = 26.dp, end = 8.dp),
-      color = if (active) MaterialTheme.colors.secondary else if (isInDarkTheme()) MenuTextColorDark else Color.Black,
+      color = if (active) MaterialTheme.colors.onBackground else if (isInDarkTheme()) MenuTextColorDark else Color.Black,
       fontWeight = FontWeight.Normal,
       fontSize = 14.sp,
     )
