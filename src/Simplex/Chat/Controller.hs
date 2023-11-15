@@ -1107,6 +1107,7 @@ data RemoteCtrlSession
 
 data RemoteCtrlSessionState
   = RCSStarting
+  | RCSDiscovery
   | RCSConnecting
   | RCSPendingConfirmation {sessionCode :: Text}
   | RCSConnected {sessionCode :: Text}
@@ -1115,6 +1116,7 @@ data RemoteCtrlSessionState
 rcsSessionState :: RemoteCtrlSession -> RemoteCtrlSessionState
 rcsSessionState = \case
   RCSessionStarting -> RCSStarting
+  RCSessionDiscovery {} -> RCSDiscovery
   RCSessionConnecting {} -> RCSConnecting
   RCSessionPendingConfirmation {tls} -> RCSPendingConfirmation {sessionCode = tlsSessionCode tls}
   RCSessionConnected {tls} -> RCSConnected {sessionCode = tlsSessionCode tls}

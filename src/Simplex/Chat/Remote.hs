@@ -351,13 +351,13 @@ findKnownRemoteCtrl = handleCtrlError "findKnownRemoteCtrl" $ do
     rc_ <- withStore' $ \db -> getRemoteCtrlByFingerprint db ctrlFingerprint
     rc <- maybe (throwChatError $ CEInternalError "connecting with a stored ctrl") pure rc_
     atomically $ putTMVar foundCtrl (rc, inv)
-    toView CRRemoteCtrlFound {remoteCtrl = remoteCtrlInfo rc False}
+    toView CRRemoteCtrlFound {remoteCtrl = remoteCtrlInfo rc (Just RCSDiscovery)}
   withRemoteCtrlSession $ \case
     RCSessionStarting -> Right ((), RCSessionDiscovery {action, foundCtrl})
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   atomically $ putTMVar cmdOk ()
 
-confirmRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m (RemoteCtrl, CtrlAppInfo)
+confirmRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m (RemoteCtrlInfo, CtrlAppInfo)
 confirmRemoteCtrl rcId = do
   (listener, found) <- withRemoteCtrlSession $ \case
     RCSessionDiscovery {action, foundCtrl} -> Right ((action, foundCtrl), RCSessionStarting) -- drop intermediate state so connectRemoteCtrl can proceed
@@ -367,20 +367,20 @@ confirmRemoteCtrl rcId = do
   unless (rcId == foundRcId) $ throwError $ ChatErrorRemoteCtrl RCEControllerMismatch
   connectRemoteCtrl verifiedInv >>= \case
     (Nothing, _) -> throwChatError $ CEInternalError "connecting with a stored ctrl"
-    (Just rc, appInfo) -> pure (rc, appInfo)
+    (Just rci, appInfo) -> pure (rci, appInfo)
 
 -- ** QR/link
 
 -- | Use provided OOB link as an annouce
 connectRemoteCtrlURI :: ChatMonad m => RCSignedInvitation -> m (Maybe RemoteCtrlInfo, CtrlAppInfo)
-connectRemoteCtrlURI signedInv@RCSignedInvitation {invitation = inv@RCInvitation {ca, app}} = handleCtrlError "connectRemoteCtrl" $ do
+connectRemoteCtrlURI signedInv = handleCtrlError "connectRemoteCtrl" $ do
   verifiedInv <- maybe (throwError $ ChatErrorRemoteCtrl RCEBadInvitation) pure $ verifySignedInviteURI signedInv
   withRemoteCtrlSession_ $ maybe (Right ((), Just RCSessionStarting)) (\_ -> Left $ ChatErrorRemoteCtrl RCEBusy)
   connectRemoteCtrl verifiedInv
 
 -- ** Common
 
-connectRemoteCtrl :: ChatMonad m => RCVerifiedInvitation -> m (Maybe RemoteCtrl, CtrlAppInfo)
+connectRemoteCtrl :: ChatMonad m => RCVerifiedInvitation -> m (Maybe RemoteCtrlInfo, CtrlAppInfo)
 connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) = handleCtrlError "connectRemoteCtrl" $ do
   (ctrlInfo@CtrlAppInfo {deviceName = ctrlDeviceName}, v) <- parseCtrlAppInfo app
   rc_ <- withStore' $ \db -> getRemoteCtrlByFingerprint db ca
