@@ -22,12 +22,18 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
+import java.awt.Image
+import java.awt.Toolkit
+import java.awt.datatransfer.DataFlavor
+import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.net.URI
+import javax.imageio.ImageIO
 import kotlin.io.path.*
 import kotlin.math.min
 import kotlin.text.substring
@@ -112,12 +118,44 @@ actual fun PlatformTextField(
           onUpArrow()
           true
         } else if (it.key == Key.V &&
-          it.type == KeyEventType.KeyDown &&
-          ((it.isCtrlPressed && !desktopPlatform.isMac()) || (it.isMetaPressed && desktopPlatform.isMac())) &&
-          parseToFiles(clipboard.getText()).isNotEmpty()) {
-          onFilesPasted(parseToFiles(clipboard.getText()))
-          true
-        }
+            it.type == KeyEventType.KeyDown &&
+            ((it.isCtrlPressed && !desktopPlatform.isMac()) || (it.isMetaPressed && desktopPlatform.isMac()))) {
+            // check if clipboard contains image
+            var transferable = Toolkit.getDefaultToolkit().systemClipboard.getContents(null)
+            var isFlavorSupported = transferable.isDataFlavorSupported(DataFlavor.imageFlavor)
+
+            if (transferable != null && isFlavorSupported) {
+              var data = transferable.getTransferData(DataFlavor.imageFlavor) as Image
+
+              // create BufferedImage from Image
+              var bi = BufferedImage(data.getWidth(null), data.getHeight(null), BufferedImage.TYPE_INT_ARGB)
+              var bgr = bi.createGraphics()
+              bgr.drawImage(data, 0, 0, null)
+              bgr.dispose()
+
+              // create byte array from BufferedImage
+              val baos = ByteArrayOutputStream()
+              ImageIO.write(bi, "png", baos)
+              val bytes = baos.toByteArray()
+
+              val bitmap = getBitmapFromByteArray(bytes, false)
+
+              if (bitmap != null) {
+                val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
+
+                val tempFile = createTempFile("paste.png")
+                tempFile.writeBytes(bytes)
+                val uri = tempFile.toUri()
+                composeState.value = composeState.value.copy(preview = ComposePreview.MediaPreview(listOf(imagePreview),
+                  listOf(UploadContent.SimpleImage(uri))))
+              }
+
+            } else {
+              println("Flavor is NOT supported")
+            }
+
+            true
+          }
         else false
       },
     cursorBrush = SolidColor(MaterialTheme.colors.secondary),
