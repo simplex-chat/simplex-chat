@@ -1824,7 +1824,7 @@ object ChatController {
       }
       is CR.RemoteHostStopped -> {
         chatModel.currentRemoteHost.value = null
-        val index = chatModel.remoteHosts.indexOfFirst { it.remoteHostId == r.remoteHostId }
+        val index = chatModel.remoteHosts.indexOfFirst { it.remoteHostId == r.remoteHostId_ }
         if (index != -1) {
           chatModel.remoteHosts[index] = chatModel.remoteHosts[index].copy(sessionState = null)
         }
@@ -3697,7 +3697,7 @@ sealed class CR {
   @Serializable @SerialName("remoteHostSessionCode") class RemoteHostSessionCode(val remoteHost_: RemoteHostInfo?, val sessionCode: String): CR()
   @Serializable @SerialName("newRemoteHost") class NewRemoteHost(val remoteHost: RemoteHostInfo): CR()
   @Serializable @SerialName("remoteHostConnected") class RemoteHostConnected(val remoteHost: RemoteHostInfo): CR()
-  @Serializable @SerialName("remoteHostStopped") class RemoteHostStopped(val remoteHostId: Long): CR()
+  @Serializable @SerialName("remoteHostStopped") class RemoteHostStopped(val remoteHostId_: Long?): CR()
   @Serializable @SerialName("remoteFileStored") class RemoteFileStored(val remoteHostId: Long, val remoteFileSource: CryptoFile): CR()
   // remote events (mobile)
   @Serializable @SerialName("remoteCtrlList") class RemoteCtrlList(val remoteCtrls: List<RemoteCtrlInfo>): CR()
@@ -3998,7 +3998,7 @@ sealed class CR {
           "\nsession code: $sessionCode"
     is NewRemoteHost -> json.encodeToString(remoteHost)
     is RemoteHostConnected -> json.encodeToString(remoteHost)
-    is RemoteHostStopped -> "remote host ID: $remoteHostId"
+    is RemoteHostStopped -> "remote host ID: $remoteHostId_"
     is RemoteFileStored -> "remote host ID: $remoteHostId\nremoteFileSource:\n" + json.encodeToString(remoteFileSource)
     is RemoteCtrlList -> json.encodeToString(remoteCtrls)
     is RemoteCtrlFound -> json.encodeToString(remoteCtrl)
