@@ -352,6 +352,7 @@ object ChatController {
         appPrefs.chatLastStart.set(Clock.System.now())
         chatModel.chatRunning.value = true
         startReceiver()
+        setLocalDeviceName(appPrefs.deviceNameForRemoteAccess.get()!!)
         Log.d(TAG, "startChat: started")
       } else {
         updatingChatsMutex.withLock {
@@ -1372,6 +1373,14 @@ object ChatController {
     if (r is CR.RemoteHostList) return r.remoteHosts
     apiErrorAlert("listRemoteHosts", generalGetString(MR.strings.error_alert_title), r)
     return null
+  }
+
+  fun reloadRemoteHosts() {
+    withBGApi {
+      val hosts = listRemoteHosts() ?: return@withBGApi
+      chatModel.remoteHosts.clear()
+      chatModel.remoteHosts.addAll(hosts)
+    }
   }
 
   suspend fun startRemoteHost(rhId: Long?, multicast: Boolean = false): Pair<RemoteHostInfo?, String>? {

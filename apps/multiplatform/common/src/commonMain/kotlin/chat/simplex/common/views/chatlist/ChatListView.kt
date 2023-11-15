@@ -272,7 +272,7 @@ fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> U
       if (h != null) {
         Spacer(Modifier.width(12.dp))
         HostDisconnectButton {
-          stopRemoteHost(h!!)
+          stopRemoteHost(h!!, true)
         }
       }
     }

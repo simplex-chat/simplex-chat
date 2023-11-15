@@ -103,8 +103,7 @@ fun UserPicker(
       }
   }
   LaunchedEffect(Unit) {
-    chatModel.remoteHosts.clear()
-    chatModel.remoteHosts.addAll(chatController.listRemoteHosts() ?: emptyList())
+    controller.reloadRemoteHosts()
   }
   val UsersView: @Composable ColumnScope.() -> Unit = {
     users.forEach { u ->
@@ -161,7 +160,7 @@ fun UserPicker(
           RemoteHostPickerItem(h, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING),
             actionButtonClick = {
               userPickerState.value = AnimatedViewState.HIDING
-              stopRemoteHost(h)
+              stopRemoteHost(h, true)
             }, onClick = {
               userPickerState.value = AnimatedViewState.HIDING
               remoteHostSelected(h, switchingUsers, connecting)
@@ -181,7 +180,7 @@ fun UserPicker(
           RemoteHostPickerItem(h, PaddingValues(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING),
             actionButtonClick = {
               userPickerState.value = AnimatedViewState.HIDING
-              stopRemoteHost(h)
+              stopRemoteHost(h, false)
             }, onClick = {
               userPickerState.value = AnimatedViewState.HIDING
               remoteHostSelected(h, switchingUsers, connecting)
@@ -279,10 +278,10 @@ fun RemoteHostPickerItem(h: RemoteHostInfo, padding: PaddingValues = PaddingValu
       .background(color = if (h.activeHost) MaterialTheme.colors.surface.mixWith(MaterialTheme.colors.onBackground, 0.95f) else Color.Unspecified)
       .sizeIn(minHeight = 46.dp)
       .combinedClickable(
-        onClick = if (h.activeHost) {{}} else onClick,
+        onClick = onClick,
         onLongClick = onLongClick,
         interactionSource = remember { MutableInteractionSource() },
-        indication = if (!h.activeHost) LocalIndication.current else null
+        indication = LocalIndication.current
       )
       .onRightClick { onLongClick() }
       .padding(padding),
@@ -423,11 +422,17 @@ private fun remoteHostSelected(h: RemoteHostInfo, switchingUsers: MutableState<B
       job.cancel()
       switchingUsers.value = false
     }
+  } else {
+    connectMobileDevice(h, connecting)
   }
 }
 
-fun stopRemoteHost(h: RemoteHostInfo) {
+fun stopRemoteHost(h: RemoteHostInfo, switchToLocal: Boolean) {
   withBGApi {
     controller.stopRemoteHost(h.remoteHostId)
+    controller.reloadRemoteHosts()
+    if (switchToLocal) {
+      controller.switchUIRemoteHost(null)
+    }
   }
 }
