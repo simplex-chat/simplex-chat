@@ -166,13 +166,13 @@ startRemoteHost rh_ = do
     waitForHostSession :: ChatMonad m => Maybe RemoteHostInfo -> RHKey -> TVar RHKey -> RCStepTMVar (ByteString, TLS, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> m ()
     waitForHostSession remoteHost_ rhKey rhKeyVar vars = do
       (sessId, tls, vars') <- takeRCStep vars -- no timeout, waiting for user to scan invite
-      let sessCode = verificationCode sessId
+      let sessionCode = verificationCode sessId
       withRemoteHostSession rhKey $ \case
-        RHSessionConnecting _inv rhs' -> Right ((), RHSessionPendingConfirmation sessCode tls rhs') -- TODO check it's the same session?
+        RHSessionConnecting _inv rhs' -> Right ((), RHSessionPendingConfirmation sessionCode tls rhs') -- TODO check it's the same session?
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
       -- display confirmation code, wait for mobile to confirm
-      let rh_' = (\rh -> rh {sessionState = Just $ RHSPendingConfirmation sessCode}) <$> remoteHost_
-      toView $ CRRemoteHostSessionCode {remoteHost_ = rh_', sessionCode = verificationCode sessId}
+      let rh_' = (\rh -> (rh :: RemoteHostInfo) {sessionState = Just $ RHSPendingConfirmation {sessionCode}}) <$> remoteHost_
+      toView $ CRRemoteHostSessionCode {remoteHost_ = rh_', sessionCode}
       (RCHostSession {sessionKeys}, rhHello, pairing') <- takeRCStep vars' -- no timeout, waiting for user to compare the code
       hostInfo@HostAppInfo {deviceName = hostDeviceName} <-
         liftError (ChatErrorRemoteHost rhKey) $ parseHostAppInfo rhHello
@@ -180,7 +180,7 @@ startRemoteHost rh_ = do
         RHSessionPendingConfirmation _ tls' rhs' -> Right ((), RHSessionConfirmed tls' rhs') -- TODO check it's the same session?
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
       -- update remoteHost with updated pairing
-      rhi@RemoteHostInfo {remoteHostId, storePath} <- upsertRemoteHost pairing' rh_' hostDeviceName RHSConfirmed
+      rhi@RemoteHostInfo {remoteHostId, storePath} <- upsertRemoteHost pairing' rh_' hostDeviceName RHSConfirmed {sessionCode}
       let rhKey' = RHId remoteHostId -- rhKey may be invalid after upserting on RHNew
       when (rhKey' /= rhKey) $ do
         atomically $ writeTVar rhKeyVar rhKey'
@@ -193,7 +193,7 @@ startRemoteHost rh_ = do
         RHSessionConfirmed _ RHPendingSession {rchClient} -> Right ((), RHSessionConnected {rchClient, tls, rhClient, pollAction, storePath})
         _ -> Left $ ChatErrorRemoteHost rhKey' RHEBadState
       chatWriteVar currentRemoteHost $ Just remoteHostId -- this is required for commands to be passed to remote host
-      toView $ CRRemoteHostConnected rhi {sessionState = Just RHSConnected}
+      toView $ CRRemoteHostConnected rhi {sessionState = Just RHSConnected {sessionCode}}
     upsertRemoteHost :: ChatMonad m => RCHostPairing -> Maybe RemoteHostInfo -> Text -> RemoteHostSessionState -> m RemoteHostInfo
     upsertRemoteHost pairing'@RCHostPairing {knownHost = kh_} rhi_ hostDeviceName state = do
       KnownHostPairing {hostDhPubKey = hostDhPubKey'} <- maybe (throwError . ChatError $ CEInternalError "KnownHost is known after verification") pure kh_
@@ -268,7 +268,7 @@ switchRemoteHost rhId_ = do
     rh <- withStore (`getRemoteHost` rhId)
     sessions <- chatReadVar remoteHostSessions
     case M.lookup rhKey sessions of
-      Just RHSessionConnected {} -> pure $ remoteHostInfo rh $ Just RHSConnected
+      Just RHSessionConnected {tls} -> pure $ remoteHostInfo rh $ Just RHSConnected {sessionCode = tlsSessionCode tls}
       _ -> throwError $ ChatErrorRemoteHost rhKey RHEInactive
   rhi_ <$ chatWriteVar currentRemoteHost rhId_
 
@@ -341,7 +341,7 @@ findKnownRemoteCtrl :: ChatMonad m => m ()
 findKnownRemoteCtrl = undefined -- do
 
 -- | Use provided OOB link as an annouce
-connectRemoteCtrl :: ChatMonad m => RCSignedInvitation -> m (Maybe RemoteCtrl, CtrlAppInfo)
+connectRemoteCtrl :: ChatMonad m => RCSignedInvitation -> m (Maybe RemoteCtrlInfo, CtrlAppInfo)
 connectRemoteCtrl signedInv@RCSignedInvitation {invitation = inv@RCInvitation {ca, app}} = handleCtrlError "connectRemoteCtrl" $ do
   (ctrlInfo@CtrlAppInfo {deviceName = ctrlDeviceName}, v) <- parseCtrlAppInfo app
   withRemoteCtrlSession_ $ maybe (Right ((), Just RCSessionStarting)) (\_ -> Left $ ChatErrorRemoteCtrl RCEBusy)
@@ -355,10 +355,10 @@ connectRemoteCtrl signedInv@RCSignedInvitation {invitation = inv@RCInvitation {c
     atomically $ takeTMVar cmdOk
     handleCtrlError "waitForCtrlSession" $ waitForCtrlSession rc_ ctrlDeviceName rcsClient vars
   updateRemoteCtrlSession $ \case
-    RCSessionStarting -> Right RCSessionConnecting {rcsClient, rcsWaitSession}
+    RCSessionStarting -> Right RCSessionConnecting {remoteCtrlId_ = remoteCtrlId' <$> rc_, rcsClient, rcsWaitSession}
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   atomically $ putTMVar cmdOk ()
-  pure (rc_, ctrlInfo)
+  pure ((`remoteCtrlInfo` Just RCSConnecting) <$> rc_, ctrlInfo)
   where
     validateRemoteCtrl RCInvitation {idkey} RemoteCtrl {ctrlPairing = RCCtrlPairing {idPubKey}} =
       unless (idkey == idPubKey) $ throwError $ ChatErrorRemoteCtrl $ RCEProtocolError $ PRERemoteControl RCEIdentity
@@ -366,10 +366,12 @@ connectRemoteCtrl signedInv@RCSignedInvitation {invitation = inv@RCInvitation {c
     waitForCtrlSession rc_ ctrlName rcsClient vars = do
       (uniq, tls, rcsWaitConfirmation) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) networkIOTimeout $ takeRCStep vars
       let sessionCode = verificationCode uniq
-      toView CRRemoteCtrlSessionCode {remoteCtrl_ = (`remoteCtrlInfo` True) <$> rc_, sessionCode}
       updateRemoteCtrlSession $ \case
-        RCSessionConnecting {rcsWaitSession} -> Right RCSessionPendingConfirmation {ctrlDeviceName = ctrlName, rcsClient, tls, sessionCode, rcsWaitSession, rcsWaitConfirmation}
+        RCSessionConnecting {rcsWaitSession} ->
+          let remoteCtrlId_ = remoteCtrlId' <$> rc_
+           in Right RCSessionPendingConfirmation {remoteCtrlId_, ctrlDeviceName = ctrlName, rcsClient, tls, sessionCode, rcsWaitSession, rcsWaitConfirmation}
         _ -> Left $ ChatErrorRemoteCtrl RCEBadState
+      toView CRRemoteCtrlSessionCode {remoteCtrl_ = (`remoteCtrlInfo` Just RCSPendingConfirmation {sessionCode}) <$> rc_, sessionCode}
     parseCtrlAppInfo ctrlAppInfo = do
       ctrlInfo@CtrlAppInfo {appVersionRange} <-
         liftEitherWith (const $ ChatErrorRemoteCtrl RCEBadInvitation) $ JT.parseEither J.parseJSON ctrlAppInfo
@@ -481,17 +483,23 @@ discoverRemoteCtrls discovered = do
 
 listRemoteCtrls :: ChatMonad m => m [RemoteCtrlInfo]
 listRemoteCtrls = do
-  active <- chatReadVar remoteCtrlSession >>= \case
-    Just RCSessionConnected {remoteCtrlId} -> pure $ Just remoteCtrlId
-    _ -> pure Nothing
-  map (rcInfo active) <$> withStore' getRemoteCtrls
+  session <- chatReadVar remoteCtrlSession
+  let rcId = sessionRcId =<< session
+      sessState = rcsSessionState <$> session
+  map (rcInfo rcId sessState) <$> withStore' getRemoteCtrls
   where
-    rcInfo activeRcId rc@RemoteCtrl {remoteCtrlId} =
-      remoteCtrlInfo rc $ activeRcId == Just remoteCtrlId
+    rcInfo :: Maybe RemoteCtrlId -> Maybe RemoteCtrlSessionState -> RemoteCtrl -> RemoteCtrlInfo
+    rcInfo rcId sessState rc@RemoteCtrl {remoteCtrlId} =
+      remoteCtrlInfo rc $ if rcId == Just remoteCtrlId then sessState else Nothing
+    sessionRcId = \case
+      RCSessionConnecting {remoteCtrlId_} -> remoteCtrlId_
+      RCSessionPendingConfirmation {remoteCtrlId_} -> remoteCtrlId_
+      RCSessionConnected {remoteCtrlId} -> Just remoteCtrlId
+      _ -> Nothing
 
-remoteCtrlInfo :: RemoteCtrl -> Bool -> RemoteCtrlInfo
-remoteCtrlInfo RemoteCtrl {remoteCtrlId, ctrlDeviceName} sessionActive =
-  RemoteCtrlInfo {remoteCtrlId, ctrlDeviceName, sessionActive}
+remoteCtrlInfo :: RemoteCtrl -> Maybe RemoteCtrlSessionState -> RemoteCtrlInfo
+remoteCtrlInfo RemoteCtrl {remoteCtrlId, ctrlDeviceName} sessionState =
+  RemoteCtrlInfo {remoteCtrlId, ctrlDeviceName, sessionState}
 
 -- XXX: only used for multicast
 confirmRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m ()
@@ -521,7 +529,7 @@ verifyRemoteCtrlSession execChatCommand sessCode' = handleCtrlError "verifyRemot
   withRemoteCtrlSession $ \case
     RCSessionPendingConfirmation {} -> Right ((), RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, tls, http2Server, remoteOutputQ})
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
-  pure $ remoteCtrlInfo rc True
+  pure $ remoteCtrlInfo rc $ Just RCSConnected {sessionCode = tlsSessionCode tls}
   where
     upsertRemoteCtrl :: ChatMonad m => Text -> RCCtrlPairing -> m RemoteCtrl
     upsertRemoteCtrl ctrlName rcCtrlPairing = withStore $ \db -> do
