@@ -125,8 +125,8 @@ fun ConnectMobileLayout(
       SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
       SectionDividerSpaced(maxBottomPadding = false)
 
-      val showMenu = remember { mutableStateOf(false) }
       for (host in remoteHosts) {
+        val showMenu = rememberSaveable { mutableStateOf(false) }
         SectionItemViewLongClickable({ connectMobileDevice(host) }, { showMenu.value = true }, disabled = connecting.value || host.activeHost) {
           Text(host.hostDeviceName)
           if (host.activeHost) {
