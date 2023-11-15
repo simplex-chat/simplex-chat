@@ -401,7 +401,7 @@ fun HostDisconnectButton(onClick: (() -> Unit)?) {
   }
 }
 
-private fun localDeviceSelected() {
+fun localDeviceSelected() {
   withBGApi {
     chatController.switchUIRemoteHost(null)
   }

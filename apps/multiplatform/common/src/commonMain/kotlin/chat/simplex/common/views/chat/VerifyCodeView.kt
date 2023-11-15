@@ -133,7 +133,7 @@ private fun VerifyCodeLayout(
   }
 }
 
-fun splitCodeToParts(s: String, length: Int): String {
+private fun splitCodeToParts(s: String, length: Int): String {
   if (length >= s.length) return s
   return (0..(s.length - 1) / length)
     .map { s.drop(it * length).take(length) }

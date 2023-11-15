@@ -1,6 +1,7 @@
 package chat.simplex.common.views.remote
 
 import SectionDividerSpaced
+import SectionItemView
 import SectionItemViewLongClickable
 import SectionTextFooter
 import SectionView
@@ -14,13 +15,11 @@ import androidx.compose.material.*
 import androidx.compose.material.TextFieldDefaults.indicatorLine
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -30,7 +29,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.chat.item.ItemAction
-import chat.simplex.common.views.chat.splitCodeToParts
+import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCode
 import chat.simplex.common.views.usersettings.SettingsActionItem
@@ -66,10 +65,16 @@ fun ConnectMobileView(
     addMobileDevice = {
       ModalManager.start.showModalCloseable { close ->
         val invitation = rememberSaveable { mutableStateOf<String?>(null) }
-        ConnectMobileViewLayout(stringResource(MR.strings.link_a_mobile), invitation.value)
+        val pairing = remember { chatModel.newRemoteHostPairing }
+        val sessionCode = when (val state = pairing.value?.second) {
+          is RemoteHostSessionState.PendingConfirmation -> state.sessionCode
+          else -> null
+        }
+        val remoteDeviceName = pairing.value?.first?.hostDeviceName
+        ConnectMobileViewLayout(stringResource(MR.strings.link_a_mobile), invitation.value, remoteDeviceName, sessionCode)
         val oldRemoteHostId by remember { mutableStateOf(chatModel.currentRemoteHost.value?.remoteHostId) }
         LaunchedEffect(remember { chatModel.currentRemoteHost }.value) {
-          if (chatModel.currentRemoteHost.value?.remoteHostId != oldRemoteHostId) {
+          if (chatModel.currentRemoteHost.value?.remoteHostId != null && chatModel.currentRemoteHost.value?.remoteHostId != oldRemoteHostId) {
             close()
           }
         }
@@ -87,12 +92,13 @@ fun ConnectMobileView(
                 chatController.stopRemoteHost(null)
               }
             }
-            chatModel.newRemoteHostParing.value = null
+            chatModel.newRemoteHostPairing.value = null
           }
         }
       }
     },
     connectMobileDevice = { connectMobileDevice(it, connecting) },
+    connectDesktop = ::localDeviceSelected,
     deleteHost = { host ->
       withBGApi {
         val success = controller.deleteRemoteHost(host.remoteHostId)
@@ -113,6 +119,7 @@ fun ConnectMobileLayout(
   updateDeviceName: (String) -> Unit,
   addMobileDevice: () -> Unit,
   connectMobileDevice: (RemoteHostInfo) -> Unit,
+  connectDesktop: () -> Unit,
   deleteHost: (RemoteHostInfo) -> Unit,
 ) {
   Column(
@@ -125,13 +132,23 @@ fun ConnectMobileLayout(
       SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
       SectionDividerSpaced(maxBottomPadding = false)
 
+      SectionItemView({ connectDesktop() }, disabled = connecting.value) {
+        Text(stringResource(MR.strings.this_device))
+        Spacer(Modifier.weight(1f))
+        if (remember { connectedHost }.value == null) {
+          Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+        }
+      }
+
       for (host in remoteHosts) {
         val showMenu = rememberSaveable { mutableStateOf(false) }
-        SectionItemViewLongClickable({ connectMobileDevice(host) }, { showMenu.value = true }, disabled = connecting.value || host.activeHost) {
+        SectionItemViewLongClickable({ connectMobileDevice(host) }, { showMenu.value = true }, disabled = connecting.value) {
           Text(host.hostDeviceName)
+          Spacer(Modifier.weight(1f))
           if (host.activeHost) {
-            Spacer(Modifier.weight(1f))
             Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+          } else if (host.sessionState is RemoteHostSessionState.Connected) {
+            HostDisconnectButton { stopRemoteHost(host) }
           }
         }
         Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
@@ -208,6 +225,8 @@ private fun DeviceNameField(
 private fun ConnectMobileViewLayout(
   title: String,
   invitation: String?,
+  deviceName: String?,
+  sessionCode: String?
 ) {
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
@@ -215,29 +234,35 @@ private fun ConnectMobileViewLayout(
   ) {
     AppBarTitle(title)
     SectionView {
-      if (invitation != null) {
+      if (invitation != null && deviceName == null && sessionCode == null) {
         QRCode(
           invitation, Modifier
-            .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)
+            .padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING)
             .aspectRatio(1f)
         )
       }
-      val sessionCode = when (val state = remember { chatModel.newRemoteHostParing }.value) {
-        is RemoteHostSessionState.PendingConfirmation -> state.sessionCode
-        else -> null
-      }
-      if (sessionCode != null) {
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-          Spacer(Modifier.weight(2f))
-          SelectionContainer(Modifier.padding(DEFAULT_PADDING_HALF)) {
+      if (deviceName != null || sessionCode != null) {
+        SectionView(stringResource(MR.strings.connected_mobile).uppercase()) {
+          SelectionContainer {
             Text(
-              splitCodeToParts(sessionCode, 24),
-              fontFamily = FontFamily.Monospace,
-              fontSize = 18.sp,
-              maxLines = 20
+              deviceName ?: stringResource(MR.strings.new_device),
+              Modifier.padding(start = DEFAULT_PADDING, top = 5.dp, end = DEFAULT_PADDING, bottom = 10.dp),
+              style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 16.sp, fontStyle = if (deviceName != null) FontStyle.Normal else FontStyle.Italic)
             )
           }
-          Spacer(Modifier.weight(2f))
+        }
+        Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+      }
+
+      if (sessionCode != null) {
+        SectionView(stringResource(MR.strings.verify_code_with_mobile).uppercase()) {
+          SelectionContainer {
+            Text(
+              sessionCode.substring(0, 23),
+              Modifier.padding(start = DEFAULT_PADDING, top = 5.dp, end = DEFAULT_PADDING, bottom = 10.dp),
+              style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 16.sp)
+            )
+          }
         }
       }
     }
@@ -245,34 +270,73 @@ private fun ConnectMobileViewLayout(
 }
 
 fun connectMobileDevice(rh: RemoteHostInfo, connecting: MutableState<Boolean>) {
-    ModalManager.start.showModalCloseable { close ->
-      val invitation = rememberSaveable { mutableStateOf<String?>(null) }
-      ConnectMobileViewLayout(
-        title = stringResource(MR.strings.link_a_mobile),
-        invitation = invitation.value,
-      )
-      var remoteHostId by rememberSaveable { mutableStateOf<Long?>(null) }
-      LaunchedEffect(Unit) {
-        val r = chatModel.controller.startRemoteHost(rh.remoteHostId)
-        if (r != null) {
-          val (rh_, inv) = r
-          connecting.value = true
-          remoteHostId = rh_?.remoteHostId
-          invitation.value = inv
-        }
-      }
-      DisposableEffect(remember { chatModel.currentRemoteHost }.value) {
-        if (remoteHostId != null && chatModel.currentRemoteHost.value?.remoteHostId == remoteHostId) {
-          close()
-        }
-        onDispose {
-          if (remoteHostId!= null && chatModel.currentRemoteHost.value?.remoteHostId != remoteHostId) {
-            withBGApi {
-              chatController.stopRemoteHost(remoteHostId)
-            }
-          }
-          chatModel.newRemoteHostParing.value = null
-        }
+  if (!rh.activeHost() && rh.sessionState is RemoteHostSessionState.Connected) {
+    withBGApi {
+      controller.switchUIRemoteHost(rh.remoteHostId)
+    }
+  } else if (rh.activeHost()) {
+    showConnectedMobileDevice(rh)
+  } else {
+    showConnectMobileDevice(rh, connecting)
+  }
+}
+
+private fun showConnectMobileDevice(rh: RemoteHostInfo, connecting: MutableState<Boolean>) {
+  ModalManager.start.showModalCloseable { close ->
+    val pairing = remember { chatModel.newRemoteHostPairing }
+    val invitation = rememberSaveable { mutableStateOf<String?>(null) }
+    val sessionCode = when (val state = pairing.value?.second) {
+      is RemoteHostSessionState.PendingConfirmation -> state.sessionCode
+      else -> null
+    }
+    ConnectMobileViewLayout(
+      title = stringResource(MR.strings.scan_from_mobile),
+      invitation = invitation.value,
+      deviceName = pairing.value?.first?.hostDeviceName,
+      sessionCode = sessionCode,
+    )
+    var remoteHostId by rememberSaveable { mutableStateOf<Long?>(null) }
+    LaunchedEffect(Unit) {
+      val r = chatModel.controller.startRemoteHost(rh.remoteHostId)
+      if (r != null) {
+        val (rh_, inv) = r
+        connecting.value = true
+        remoteHostId = rh_?.remoteHostId
+        invitation.value = inv
       }
     }
+    LaunchedEffect(remember { chatModel.currentRemoteHost }.value) {
+      if (remoteHostId != null && chatModel.currentRemoteHost.value?.remoteHostId == remoteHostId) {
+        close()
+      }
+    }
+    DisposableEffect(Unit) {
+      onDispose {
+        if (remoteHostId != null && chatModel.currentRemoteHost.value?.remoteHostId != remoteHostId) {
+          withBGApi {
+            chatController.stopRemoteHost(remoteHostId)
+          }
+        }
+        chatModel.newRemoteHostPairing.value = null
+      }
+    }
+  }
+}
+
+private fun showConnectedMobileDevice(rh: RemoteHostInfo) {
+  ModalManager.start.showModalCloseable { close ->
+    val sessionCode = when (val state = rh.sessionState) {
+      is RemoteHostSessionState.Connected -> state.sessionCode
+      else -> null
+    }
+    ConnectMobileViewLayout(
+      title = stringResource(MR.strings.verify_connection),
+      invitation = null,
+      deviceName = rh.hostDeviceName,
+      sessionCode = sessionCode
+    )
+    KeyChangeEffect(remember { chatModel.currentRemoteHost }.value) {
+      close()
+    }
+  }
 }

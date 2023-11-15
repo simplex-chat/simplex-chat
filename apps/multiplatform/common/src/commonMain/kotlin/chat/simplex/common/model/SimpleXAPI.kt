@@ -1802,7 +1802,7 @@ object ChatController {
       is CR.GroupMemberRatchetSync ->
         chatModel.updateGroupMemberConnectionStats(r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
       is CR.RemoteHostSessionCode -> {
-        chatModel.newRemoteHostParing.value = RemoteHostSessionState.PendingConfirmation(r.sessionCode)
+        chatModel.newRemoteHostPairing.value = r.remoteHost_ to RemoteHostSessionState.PendingConfirmation(r.sessionCode)
       }
       is CR.RemoteHostConnected -> {
         // TODO needs to update it instead in sessions
@@ -3467,8 +3467,8 @@ sealed class RemoteHostSessionState {
   @Serializable @SerialName("starting") object Starting: RemoteHostSessionState()
   @Serializable @SerialName("connecting") class Connecting(val invitation: String): RemoteHostSessionState()
   @Serializable @SerialName("pendingConfirmation") class PendingConfirmation(val sessionCode: String): RemoteHostSessionState()
-  @Serializable @SerialName("confirmed") object Confirmed: RemoteHostSessionState()
-  @Serializable @SerialName("connected") object Connected: RemoteHostSessionState()
+  @Serializable @SerialName("confirmed") data class Confirmed(val sessionCode: String): RemoteHostSessionState()
+  @Serializable @SerialName("connected") data class Connected(val sessionCode: String): RemoteHostSessionState()
 }
 
 val json = Json {
@@ -4725,18 +4725,20 @@ sealed class ArchiveError {
 sealed class RemoteHostError {
   val string: String get() = when (this) {
     is Missing -> "missing"
+    is Inactive -> "inactive"
     is Busy -> "busy"
-    is Rejected -> "rejected"
     is Timeout -> "timeout"
+    is BadState -> "badState"
+    is BadVersion -> "badVersion"
     is Disconnected -> "disconnected"
-    is ConnectionLost -> "connectionLost"
   }
   @Serializable @SerialName("missing") object Missing: RemoteHostError()
+  @Serializable @SerialName("inactive") object Inactive: RemoteHostError()
   @Serializable @SerialName("busy") object Busy: RemoteHostError()
-  @Serializable @SerialName("rejected") object Rejected: RemoteHostError()
   @Serializable @SerialName("timeout") object Timeout: RemoteHostError()
+  @Serializable @SerialName("badState") object BadState: RemoteHostError()
+  @Serializable @SerialName("badVersion") object BadVersion: RemoteHostError()
   @Serializable @SerialName("disconnected") class Disconnected(val reason: String): RemoteHostError()
-  @Serializable @SerialName("connectionLost") class ConnectionLost(val reason: String): RemoteHostError()
 }
 
 @Serializable
