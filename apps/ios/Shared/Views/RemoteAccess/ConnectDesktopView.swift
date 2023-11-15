@@ -94,7 +94,11 @@ struct ConnectDesktopView: View {
             }
         }
         .modifier(BackButton(label: "Back") {
-            alert = .disconnectDesktop(action: .back)
+            if m.activeRemoteCtrl {
+                alert = .disconnectDesktop(action: .back)
+            } else {
+                dismiss()
+            }
         })
         .interactiveDismissDisabled(m.activeRemoteCtrl)
     }
