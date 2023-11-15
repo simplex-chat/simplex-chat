@@ -276,7 +276,7 @@ fun RemoteHostPickerItem(h: RemoteHostInfo, padding: PaddingValues = PaddingValu
   Row(
     Modifier
       .fillMaxWidth()
-      .sizeIn(minHeight = if (h.activeHost) 46.dp else 68.dp)
+      .sizeIn(minHeight = 46.dp)
       .combinedClickable(
         onClick = if (h.activeHost) openSettings else onClick,
         onLongClick = onLongClick,
@@ -290,16 +290,7 @@ fun RemoteHostPickerItem(h: RemoteHostInfo, padding: PaddingValues = PaddingValu
   ) {
     RemoteHostRow(h)
     if (h.sessionState is RemoteHostSessionState.Connected) {
-      val interactionSource = remember { MutableInteractionSource() }
-      val hovered = interactionSource.collectIsHoveredAsState().value
-      IconButton(actionButtonClick, Modifier.size(20.dp)) {
-        Icon(
-          painterResource(if (hovered) MR.images.ic_wifi_off else MR.images.ic_wifi),
-          null,
-          Modifier.size(20.dp).hoverable(interactionSource),
-          tint = if (hovered) WarningOrange else MaterialTheme.colors.onBackground
-        )
-      }
+      HostDisconnectButton(onClick = actionButtonClick)
     } else {
       Box(Modifier.size(20.dp))
     }
@@ -314,14 +305,14 @@ fun RemoteHostRow(h: RemoteHostInfo) {
       .padding(start = 17.dp),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Icon(painterResource(MR.images.ic_smartphone), h.hostDeviceName, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Icon(painterResource(MR.images.ic_smartphone_300), h.hostDeviceName, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Text(
       h.hostDeviceName,
       modifier = Modifier
         .padding(start = 26.dp, end = 8.dp),
       color = if (h.activeHost) MaterialTheme.colors.secondary else if (isInDarkTheme()) MenuTextColorDark else Color.Black,
-      fontWeight = if (h.activeHost) FontWeight.Medium else FontWeight.Normal,
-      fontSize = if (h.activeHost) 12.sp else TextUnit.Unspecified
+      fontWeight = if (h.activeHost) FontWeight.Normal else FontWeight.Medium,
+      fontSize = if (h.activeHost) 16.sp else 12.sp
     )
   }
 }
@@ -331,7 +322,7 @@ fun LocalDevicePickerItem(active: Boolean, padding: PaddingValues = PaddingValue
   Row(
     Modifier
       .fillMaxWidth()
-      .sizeIn(minHeight = if (active) 46.dp else 68.dp)
+      .sizeIn(minHeight = 46.dp)
       .combinedClickable(
         onClick = if (active) openSettings else onClick,
         onLongClick = onLongClick,
@@ -356,14 +347,14 @@ fun LocalDeviceRow(active: Boolean) {
       .padding(start = 17.dp, end = DEFAULT_PADDING),
     verticalAlignment = Alignment.CenterVertically
   ) {
-    Icon(painterResource(MR.images.ic_computer), stringResource(MR.strings.this_device), Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Icon(painterResource(MR.images.ic_desktop), stringResource(MR.strings.this_device), Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Text(
       stringResource(MR.strings.this_device),
       modifier = Modifier
         .padding(start = 26.dp, end = 8.dp),
       color = if (active) MaterialTheme.colors.secondary else if (isInDarkTheme()) MenuTextColorDark else Color.Black,
-      fontWeight = if (active) FontWeight.Medium else FontWeight.Normal,
-      fontSize = if (active) 12.sp else TextUnit.Unspecified,
+      fontWeight = if (active) FontWeight.Normal else FontWeight.Medium,
+      fontSize = if (active) 16.sp else 12.sp,
     )
   }
 }
@@ -394,6 +385,20 @@ private fun CancelPickerItem(onClick: () -> Unit) {
   }
 }
 
+@Composable
+fun HostDisconnectButton(modifier: Modifier = Modifier, onClick: (() -> Unit)?) {
+  val interactionSource = remember { MutableInteractionSource() }
+  val hovered = interactionSource.collectIsHoveredAsState().value
+  IconButton(onClick ?: {}, modifier.then(Modifier.size(20.dp)), enabled = onClick != null) {
+    Icon(
+      painterResource(if (onClick == null) MR.images.ic_desktop else if (hovered) MR.images.ic_wifi_off else MR.images.ic_wifi),
+      null,
+      Modifier.size(20.dp).hoverable(interactionSource),
+      tint = if (hovered && onClick != null) WarningOrange else MaterialTheme.colors.onBackground
+    )
+  }
+}
+
 private fun localDeviceSelected() {
   withBGApi {
     chatController.switchUIRemoteHost(null)
@@ -419,7 +424,7 @@ private fun remoteHostSelected(h: RemoteHostInfo, switchingUsers: MutableState<B
   }
 }
 
-private fun stopRemoteHost(h: RemoteHostInfo) {
+fun stopRemoteHost(h: RemoteHostInfo) {
   withBGApi {
     controller.stopRemoteHost(h.remoteHostId)
   }

@@ -255,7 +255,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
 
 @Composable
 fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> Unit) {
-  Row {
+  Row(verticalAlignment = Alignment.CenterVertically) {
     IconButton(onClick = onButtonClicked) {
       Box {
         ProfileImage(
@@ -267,13 +267,15 @@ fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> U
         }
       }
     }
-    if (appPlatform.isDesktop && remember { chatModel.currentRemoteHost }.value != null) {
-      Icon(
-        painterResource(MR.images.ic_wifi),
-        null,
-        tint = MaterialTheme.colors.onBackground,
-        modifier = Modifier.size(12.dp).align(Alignment.CenterVertically)
-      )
+    if (appPlatform.isDesktop) {
+      val h by remember { chatModel.currentRemoteHost }
+      if (h != null) {
+        HostDisconnectButton {
+          stopRemoteHost(h!!)
+        }
+      } else if (remember { chatModel.remoteHosts }.isNotEmpty()) {
+        HostDisconnectButton(Modifier.padding(top = 3.dp), null)
+      }
     }
   }
 }
