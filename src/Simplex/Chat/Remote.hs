@@ -70,7 +70,7 @@ import Simplex.RemoteControl.Types
 import System.FilePath (takeFileName, (</>))
 import UnliftIO
 import UnliftIO.Concurrent (forkIO)
-import UnliftIO.Directory (copyFile, createDirectoryIfMissing, renameFile)
+import UnliftIO.Directory (copyFile, createDirectoryIfMissing, removeDirectoryRecursive, renameFile)
 
 -- when acting as host
 minRemoteCtrlVersion :: AppVersion
@@ -282,7 +282,8 @@ deleteRemoteHost rhId = do
   chatReadVar filesFolder >>= \case
     Just baseDir -> do
       let hostStore = baseDir </> storePath
-      logError $ "TODO: remove " <> tshow hostStore
+      logInfo $ "removing host store at " <> tshow hostStore
+      removeDirectoryRecursive $ hostStore
     Nothing -> logWarn "Local file store not available while deleting remote host"
   withStore' (`deleteRemoteHostRecord` rhId)
 
