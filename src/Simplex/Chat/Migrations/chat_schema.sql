@@ -761,3 +761,7 @@ CREATE INDEX idx_group_member_intros_re_group_member_id ON group_member_intros(
 CREATE INDEX idx_group_members_invited_by_group_member_id ON group_members(
   invited_by_group_member_id
 );
+CREATE INDEX idx_messages_group_id_shared_msg_id ON messages(
+  group_id,
+  shared_msg_id
+);

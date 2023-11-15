@@ -15,11 +15,13 @@ ALTER TABLE group_members ADD COLUMN invited_by_group_member_id INTEGER REFERENC
 CREATE INDEX idx_group_members_invited_by_group_member_id ON group_members(invited_by_group_member_id);
 
 ALTER TABLE messages ADD COLUMN forwarded INTEGER NOT NULL DEFAULT 0;
+CREATE INDEX idx_messages_group_id_shared_msg_id ON messages(group_id, shared_msg_id);
 |]
 
 down_m20231113_group_forward :: Query
 down_m20231113_group_forward =
   [sql|
+DROP INDEX idx_messages_group_id_shared_msg_id;
 ALTER TABLE messages DROP COLUMN forwarded;
 
 DROP INDEX idx_group_members_invited_by_group_member_id;

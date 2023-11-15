@@ -5524,13 +5524,13 @@ saveRcvMSG' conn@Connection {connId} connOrGroupId agentMsgMeta msgBody agentAck
   let agentMsgId = fst $ recipient agentMsgMeta
       newMsg = NewMessage {chatMsgEvent, msgBody}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId}
-  msg <- withStore' $ \db -> createNewMessageAndRcvMsgDelivery db connOrGroupId newMsg sharedMsgId_ rcvMsgDelivery
+  msg <- withStore $ \db -> createNewMessageAndRcvMsgDelivery db connOrGroupId newMsg sharedMsgId_ rcvMsgDelivery
   pure (conn', msg)
 
 saveFwdRcvMsg :: (MsgEncodingI e, ChatMonad m) => ConnOrGroupId -> MsgBody -> ChatMessage e -> m RcvMessage
 saveFwdRcvMsg connOrGroupId msgBody ChatMessage {msgId = sharedMsgId_, chatMsgEvent} = do
   let newMsg = NewMessage {chatMsgEvent, msgBody}
-  withStore' $ \db -> createNewRcvMessage db connOrGroupId newMsg sharedMsgId_ True
+  withStore $ \db -> createNewRcvMessage db connOrGroupId newMsg sharedMsgId_ True
 
 saveSndChatItem :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> m (ChatItem c 'MDSnd)
 saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothing Nothing Nothing False
