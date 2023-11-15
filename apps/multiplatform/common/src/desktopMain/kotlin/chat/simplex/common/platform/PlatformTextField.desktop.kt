@@ -120,39 +120,43 @@ actual fun PlatformTextField(
         } else if (it.key == Key.V &&
             it.type == KeyEventType.KeyDown &&
             ((it.isCtrlPressed && !desktopPlatform.isMac()) || (it.isMetaPressed && desktopPlatform.isMac()))) {
-            // check if clipboard contains image
-            var transferable = Toolkit.getDefaultToolkit().systemClipboard.getContents(null)
-            var isFlavorSupported = transferable.isDataFlavorSupported(DataFlavor.imageFlavor)
+            if (parseToFiles(clipboard.getText()).isNotEmpty()) {
+              onFilesPasted(parseToFiles(clipboard.getText()))
+            } else {
+              // check if clipboard contains image
+              var transferable = Toolkit.getDefaultToolkit().systemClipboard.getContents(null)
+              var isFlavorSupported = transferable.isDataFlavorSupported(DataFlavor.imageFlavor)
 
-            if (transferable != null && isFlavorSupported) {
-              var data = transferable.getTransferData(DataFlavor.imageFlavor) as Image
+              if (transferable != null && isFlavorSupported) {
+                var data = transferable.getTransferData(DataFlavor.imageFlavor) as Image
 
-              // create BufferedImage from Image
-              var bi = BufferedImage(data.getWidth(null), data.getHeight(null), BufferedImage.TYPE_INT_ARGB)
-              var bgr = bi.createGraphics()
-              bgr.drawImage(data, 0, 0, null)
-              bgr.dispose()
+                // create BufferedImage from Image
+                var bi = BufferedImage(data.getWidth(null), data.getHeight(null), BufferedImage.TYPE_INT_ARGB)
+                var bgr = bi.createGraphics()
+                bgr.drawImage(data, 0, 0, null)
+                bgr.dispose()
 
-              // create byte array from BufferedImage
-              val baos = ByteArrayOutputStream()
-              ImageIO.write(bi, "png", baos)
-              val bytes = baos.toByteArray()
+                // create byte array from BufferedImage
+                val baos = ByteArrayOutputStream()
+                ImageIO.write(bi, "png", baos)
+                val bytes = baos.toByteArray()
 
-              val bitmap = getBitmapFromByteArray(bytes, false)
+                val bitmap = getBitmapFromByteArray(bytes, false)
 
-              if (bitmap != null) {
-                val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
+                if (bitmap != null) {
+                  val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
 
-                val tempFile = createTempFile("paste.png")
-                tempFile.writeBytes(bytes)
-                val uri = tempFile.toUri()
-                composeState.value = composeState.value.copy(preview = ComposePreview.MediaPreview(listOf(imagePreview),
-                  listOf(UploadContent.SimpleImage(uri))))
+                  val tempFile = createTempFile("paste.png")
+                  tempFile.writeBytes(bytes)
+                  val uri = tempFile.toUri()
+                  composeState.value = composeState.value.copy(preview = ComposePreview.MediaPreview(listOf(imagePreview),
+                    listOf(UploadContent.SimpleImage(uri))))
+                }
+
               }
-
             }
 
-            true
+            false
           }
         else false
       },
