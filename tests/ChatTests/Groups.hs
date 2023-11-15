@@ -45,6 +45,7 @@ chatGroupTests = do
     it "group description is shown as the first message to new members" testGroupDescription
     it "moderate message of another group member" testGroupModerate
     it "moderate message of another group member (full delete)" testGroupModerateFullDelete
+    -- TODO fix tests to not rely on pending messages
     it "moderate message that arrives after the event of moderation" testGroupDelayedModeration
     it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
   describe "async group connections" $ do

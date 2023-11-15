@@ -3546,9 +3546,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         tryChatError (parseAChatMessage conn msgMeta msgBody) >>= \case
           Right (ACMsg _ chatMsg@ChatMessage {msgId = _sharedMsgId_, chatMsgEvent = _chatMsgEvent}) -> do
             tryChatError (processEvent cmdId chatMsg) >>= \case
-              Right withRcpt -> ackMsg agentConnId cmdId msgMeta $ if withRcpt then Just "" else Nothing
+              Right withRcpt -> do
+                ackMsg agentConnId cmdId msgMeta $ if withRcpt then Just "" else Nothing
+                forwardMsg_ chatMsg
               Left e -> ackMsg agentConnId cmdId msgMeta Nothing >> toView (CRChatError (Just user) e)
-            forwardMsg_ chatMsg
           Left e -> ackMsg agentConnId cmdId msgMeta Nothing >> throwError e
         where
           processEvent :: (MsgEncodingI e) => CommandId -> ChatMessage e -> m Bool
