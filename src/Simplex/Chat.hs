@@ -3548,7 +3548,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             tryChatError (processEvent cmdId chatMsg) >>= \case
               Right withRcpt -> do
                 ackMsg agentConnId cmdId msgMeta $ if withRcpt then Just "" else Nothing
-                forwardMsg_ chatMsg
+                when (membership.memberRole >= GRAdmin) $
+                  forwardMsg_ chatMsg msgBody msgMeta
               Left e -> ackMsg agentConnId cmdId msgMeta Nothing >> toView (CRChatError (Just user) e)
           Left e -> ackMsg agentConnId cmdId msgMeta Nothing >> throwError e
         where
@@ -3600,18 +3601,19 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               fromMaybe (sendRcptsSmallGroups user) sendRcpts
                 && hasDeliveryReceipt (toCMEventTag event)
                 && currentMemCount <= smallGroupsRcptsMemLimit
-          forwardMsg_ :: ChatMessage e -> m ()
-          forwardMsg_ chatMsg@ChatMessage {msgId = sharedMsgId_, chatMsgEvent = chatMsgEvent_} = do
-            -- TODO group forward
-            -- - take AppMessageJson as parameter? (see StrEncoding AChatMessage - split parser?)
-            --   or convert ChatMessage back (chatToAppMessage)?
-            -- - if forwardedGroupMsg(event): / limit to XMsgNew initially
-            --   - if member category is GCInviteeMember:
-            --     - get all forward members from group_invitees_forwards that are not connected for this invitee
-            --     - send XGrpMsgForward to each forward member
-            --   - get all invitee members from group_invitees_forwards that are not connected for this "forward" member
-            --   - send XGrpMsgForward to each invitee
-            pure ()
+          forwardMsg_ :: ChatMessage e -> MsgBody -> MsgMeta -> m ()
+          forwardMsg_ ChatMessage {chatMsgEvent} body MsgMeta {broker = (_, brokerTs)}
+            | forwardedGroupMsg chatMsgEvent = do
+              -- members to which this member was introduced
+              forwardMembers <- if memberCategory m == GCInviteeMember
+                then withStore' $ \db -> getInviteeForwardMembers db user m
+                else pure []
+              -- members introduced to this member
+              inviteeMembers <- withStore' $ \db -> getForwardMemberInvitees db user m
+              let ms = forwardMembers <> inviteeMembers
+                  msg = XGrpMsgForward $ MsgForward m.memberId (ForwardMsgBody body) brokerTs
+              void $ sendGroupMessage user gInfo ms msg
+            | otherwise = pure ()
       RCVD msgMeta msgRcpt ->
         withAckMessage' agentConnId conn msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
@@ -5128,7 +5130,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
     xGrpMsgForward :: GroupInfo -> GroupMember -> MsgForward -> RcvMessage -> MsgMeta -> m ()
-    xGrpMsgForward g m MsgForward {memberId, msgData, msgTs} msg msgMeta = do
+    xGrpMsgForward g m MsgForward {memberId, msgBody, msgTs} msg msgMeta = do
       -- TODO group forward
       -- - parse msgData (AppMessageJson)
       -- - prohibit forward of forward
@@ -5452,10 +5454,13 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
         | otherwise -> pendingOrForwarded
       where
         pendingOrForwarded
-          | forwardedGroupMsg chatMsgEvent = pure Nothing
+          | forwardedGroupMsg chatMsgEvent || isXGrpMsgForward chatMsgEvent = pure Nothing
           | otherwise = do
             withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
             pure $ Just m
+        isXGrpMsgForward ev = case ev of
+          XGrpMsgForward _ -> True
+          _ -> False
 
 sendPendingGroupMessages :: ChatMonad m => User -> GroupMember -> Connection -> m ()
 sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn = do

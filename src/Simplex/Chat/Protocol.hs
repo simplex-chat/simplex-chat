@@ -237,7 +237,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> ChatMsgEvent 'Json
-  XGrpMsgForward :: MsgForward -> ChatMsgEvent 'Json -- test encoding
+  XGrpMsgForward :: MsgForward -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
   XInfoProbeOk :: Probe -> ChatMsgEvent 'Json
@@ -311,10 +311,25 @@ forwardedGroupMsg ev = case ev of
 
 data MsgForward = MsgForward
   { memberId :: MemberId,
-    msgData :: AppMessageJson,
+    msgBody :: ForwardMsgBody,
     msgTs :: UTCTime
   }
   deriving (Eq, Show, Generic, FromJSON, ToJSON)
+
+newtype ForwardMsgBody = ForwardMsgBody {msgBody :: ByteString}
+  deriving (Eq, Show)
+
+instance StrEncoding ForwardMsgBody where
+  strEncode (ForwardMsgBody m) = strEncode m
+  strDecode s = ForwardMsgBody <$> strDecode s
+  strP = ForwardMsgBody <$> strP
+
+instance FromJSON ForwardMsgBody where
+  parseJSON = strParseJSON "ForwardMsgBody"
+
+instance ToJSON ForwardMsgBody where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)

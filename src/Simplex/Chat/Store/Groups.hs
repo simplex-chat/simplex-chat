@@ -79,6 +79,8 @@ module Simplex.Chat.Store.Groups
     updateIntroStatus,
     saveIntroInvitation,
     getIntroduction,
+    getInviteeForwardMembers,
+    getForwardMemberInvitees,
     createIntroReMember,
     createIntroToMemberContact,
     saveMemberInvitation,
@@ -1075,6 +1077,36 @@ getIntroduction db reMember toMember = ExceptT $ do
       let introInvitation = IntroInvitation <$> groupConnReq <*> pure directConnReq
        in Right GroupMemberIntro {introId, reMember, toMember, introStatus, introInvitation}
     toIntro _ = Left SEIntroNotFound
+
+getInviteeForwardMembers :: DB.Connection -> User -> GroupMember -> IO [GroupMember]
+getInviteeForwardMembers db user invitee = do
+  memberIds <-
+    map fromOnly <$>
+      DB.query
+        db
+        [sql|
+          SELECT re_group_member_id
+          FROM group_member_intros
+          WHERE to_group_member_id = ?
+            AND xgrpmemcon_supported = 1 AND intro_status NOT IN (?,?,?)
+        |]
+        (groupMemberId' invitee, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
+  filter memberCurrent . rights <$> mapM (runExceptT . getGroupMemberById db user) memberIds
+
+getForwardMemberInvitees :: DB.Connection -> User -> GroupMember -> IO [GroupMember]
+getForwardMemberInvitees db user forwardMember = do
+  memberIds <-
+    map fromOnly <$>
+      DB.query
+        db
+        [sql|
+          SELECT to_group_member_id
+          FROM group_member_intros
+          WHERE re_group_member_id = ?
+            AND xgrpmemcon_supported = 1 AND intro_status NOT IN (?,?,?)
+        |]
+        (groupMemberId' forwardMember, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
+  filter memberCurrent . rights <$> mapM (runExceptT . getGroupMemberById db user) memberIds
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> SubscriptionMode -> ExceptT StoreError IO GroupMember
 createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupMember {memberContactId, activeConn} memInfo@(MemberInfo _ _ memberChatVRange memberProfile) (groupCmdId, groupAgentConnId) directConnIds customUserProfileId subMode = do
