@@ -77,9 +77,8 @@ module Simplex.Chat.Store.Groups
     updateGroupMemberRole,
     createIntroductions,
     updateIntroStatus,
-    createGroupInviteeForwards,
-    deleteGroupInviteeForward,
     saveIntroInvitation,
+    getIntroduction,
     createIntroReMember,
     createIntroToMemberContact,
     saveMemberInvitation,
@@ -997,10 +996,10 @@ createIntroductions db members toMember = do
         db
         [sql|
           INSERT INTO group_member_intros
-            (re_group_member_id, to_group_member_id, intro_status, created_at, updated_at)
-          VALUES (?,?,?,?,?)
+            (re_group_member_id, to_group_member_id, intro_status, xgrpmemcon_supported, created_at, updated_at)
+          VALUES (?,?,?,?,?,?)
         |]
-        (groupMemberId' reMember, groupMemberId' toMember, GMIntroPending, ts, ts)
+        (groupMemberId' reMember, groupMemberId' toMember, GMIntroPending, True, ts, ts)
       introId <- insertedRowId db
       pure GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending, introInvitation = Nothing}
 
@@ -1016,32 +1015,9 @@ updateIntroStatus db introId introStatus = do
     |]
     [":intro_status" := introStatus, ":updated_at" := currentTs, ":intro_id" := introId]
 
-createGroupInviteeForwards :: DB.Connection -> GroupMember -> [GroupMember] -> IO ()
-createGroupInviteeForwards db invitee forwardMembers = do
-  currentTs <- getCurrentTime
-  forM_ forwardMembers $ \forwardMember ->
-    DB.execute
-      db
-      [sql|
-        INSERT INTO group_invitees_forwards
-          (invitee_group_member_id, forward_group_member_id, created_at, updated_at)
-        VALUES (?,?,?,?)
-      |]
-      (groupMemberId' invitee, groupMemberId' forwardMember, currentTs, currentTs)
-
-deleteGroupInviteeForward :: DB.Connection -> GroupMember -> GroupMember -> IO ()
-deleteGroupInviteeForward db invitee forwardMember = do
-  DB.execute
-    db
-    [sql|
-      DELETE FROM group_invitees_forwards
-      WHERE invitee_group_member_id = ? AND forward_group_member_id = ?
-    |]
-    (groupMemberId' invitee, groupMemberId' forwardMember)
-
 saveIntroInvitation :: DB.Connection -> GroupMember -> GroupMember -> IntroInvitation -> ExceptT StoreError IO GroupMemberIntro
 saveIntroInvitation db reMember toMember introInv = do
-  intro <- getIntroduction_ db reMember toMember
+  intro <- getIntroduction db reMember toMember
   liftIO $ do
     currentTs <- getCurrentTime
     DB.executeNamed
@@ -1082,8 +1058,8 @@ saveMemberInvitation db GroupMember {groupMemberId} IntroInvitation {groupConnRe
       ":group_member_id" := groupMemberId
     ]
 
-getIntroduction_ :: DB.Connection -> GroupMember -> GroupMember -> ExceptT StoreError IO GroupMemberIntro
-getIntroduction_ db reMember toMember = ExceptT $ do
+getIntroduction :: DB.Connection -> GroupMember -> GroupMember -> ExceptT StoreError IO GroupMemberIntro
+getIntroduction db reMember toMember = ExceptT $ do
   toIntro
     <$> DB.query
       db

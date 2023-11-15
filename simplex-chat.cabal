@@ -120,7 +120,7 @@ library
       Simplex.Chat.Migrations.M20231019_indexes
       Simplex.Chat.Migrations.M20231030_xgrplinkmem_received
       Simplex.Chat.Migrations.M20231107_indexes
-      Simplex.Chat.Migrations.M20231113_group_invitees_forwards
+      Simplex.Chat.Migrations.M20231113_group_forward
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared

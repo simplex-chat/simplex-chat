@@ -258,51 +258,56 @@ data AChatMsgEvent = forall e. MsgEncodingI e => ACME (SMsgEncoding e) (ChatMsgE
 
 deriving instance Show AChatMsgEvent
 
+-- forwardedGroupMsg :: ChatMsgEvent e -> Bool
+-- forwardedGroupMsg ev = case ev of
+--   XMsgNew _ -> True
+--   XMsgFileDescr {} -> True
+--   XMsgFileCancel _ -> True
+--   XMsgUpdate {} -> True
+--   XMsgDel {} -> True
+--   XMsgDeleted -> False
+--   XMsgReact {} -> True
+--   XFile _ -> False
+--   XFileAcpt _ -> False
+--   XFileAcptInv {} -> False
+--   XFileCancel _ -> True
+--   XInfo _ -> True
+--   XContact {} -> True
+--   XDirectDel -> False
+--   XGrpInv _ -> False
+--   XGrpAcpt _ -> False
+--   XGrpLinkInv _ -> False
+--   XGrpLinkMem _ -> False
+--   XGrpMemNew _ -> True
+--   XGrpMemIntro _ -> False
+--   XGrpMemInv {} -> False
+--   XGrpMemFwd {} -> False
+--   XGrpMemInfo {} -> True
+--   XGrpMemRole {} -> True
+--   XGrpMemCon _ -> False
+--   XGrpMemConAll _ -> False
+--   XGrpMemDel _ -> True
+--   XGrpLeave -> True
+--   XGrpDel -> True
+--   XGrpInfo _ -> True
+--   XGrpDirectInv {} -> False
+--   XGrpMsgForward _ -> False
+--   XInfoProbe _ -> False
+--   XInfoProbeCheck _ -> False
+--   XInfoProbeOk _ -> False
+--   XCallInv {} -> False
+--   XCallOffer {} -> False
+--   XCallAnswer {} -> False
+--   XCallExtra {} -> False
+--   XCallEnd _ -> False
+--   XOk -> False
+--   XUnknown {} -> False
+--   BFileChunk {} -> False
+
 forwardedGroupMsg :: ChatMsgEvent e -> Bool
 forwardedGroupMsg ev = case ev of
   XMsgNew _ -> True
-  XMsgFileDescr {} -> True
-  XMsgFileCancel _ -> True
-  XMsgUpdate {} -> True
-  XMsgDel {} -> True
-  XMsgDeleted -> False
-  XMsgReact {} -> True
-  XFile _ -> False
-  XFileAcpt _ -> False
-  XFileAcptInv {} -> False
-  XFileCancel _ -> True
-  XInfo _ -> True
-  XContact {} -> True
-  XDirectDel -> False
-  XGrpInv _ -> False
-  XGrpAcpt _ -> False
-  XGrpLinkInv _ -> False
-  XGrpLinkMem _ -> False
-  XGrpMemNew _ -> True
-  XGrpMemIntro _ -> False
-  XGrpMemInv {} -> False
-  XGrpMemFwd {} -> False
-  XGrpMemInfo {} -> True
-  XGrpMemRole {} -> True
-  XGrpMemCon _ -> False
-  XGrpMemConAll _ -> False
-  XGrpMemDel _ -> True
-  XGrpLeave -> True
-  XGrpDel -> True
-  XGrpInfo _ -> True
-  XGrpDirectInv {} -> False
-  XGrpMsgForward _ -> False
-  XInfoProbe _ -> False
-  XInfoProbeCheck _ -> False
-  XInfoProbeOk _ -> False
-  XCallInv {} -> False
-  XCallOffer {} -> False
-  XCallAnswer {} -> False
-  XCallExtra {} -> False
-  XCallEnd _ -> False
-  XOk -> False
-  XUnknown {} -> False
-  BFileChunk {} -> False
+  _ -> False
 
 data MsgForward = MsgForward
   { memberId :: MemberId,

@@ -1473,7 +1473,7 @@ data GroupMemberIntroStatus
   | GMIntroReConnected
   | GMIntroToConnected
   | GMIntroConnected
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance FromField GroupMemberIntroStatus where fromField = fromTextField_ introStatusT
 

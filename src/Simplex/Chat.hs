@@ -3506,10 +3506,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro ->
               processIntro intro `catchChatError` (toView . CRChatError (Just user))
-            -- messages to and from only these members will be forwarded between them and invitee;
-            -- messages between future members and own invitees will be forwarded by inviting members
-            let reMembers = map reMember intros
-            withStore' $ \db -> createGroupInviteeForwards db m reMembers
             where
               sendXGrpLinkMem = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
@@ -4982,19 +4978,37 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       when (memberRole < GRAdmin || memberRole < memRole) $ throwChatError (CEGroupContactRole localDisplayName)
 
     xGrpMemCon :: GroupInfo -> GroupMember -> MemberId -> m ()
-    xGrpMemCon gInfo m memId = do
+    xGrpMemCon gInfo sendingMember memId = do
       refMember <- withStore $ \db -> getGroupMemberByMemberId db user gInfo memId
-      case (memberCategory m, memberCategory refMember) of
+      case (memberCategory sendingMember, memberCategory refMember) of
         (GCInviteeMember, GCInviteeMember) ->
-          withStore' $ \db -> do
-            deleteGroupInviteeForward db m refMember
-            deleteGroupInviteeForward db refMember m
+          withStore' (\db -> runExceptT $ getIntroduction db refMember sendingMember) >>= \case
+            Right intro -> inviteeXGrpMemCon intro
+            Left _ -> withStore' (\db -> runExceptT $ getIntroduction db sendingMember refMember) >>= \case
+              Right intro -> forwardMemberXGrpMemCon intro
+              Left _ -> messageWarning "x.grp.mem.con: no introduction"
         (GCInviteeMember, _) ->
-          withStore' $ \db -> deleteGroupInviteeForward db m refMember
+          withStore' (\db -> runExceptT $ getIntroduction db refMember sendingMember) >>= \case
+            Right intro -> inviteeXGrpMemCon intro
+            Left _ -> messageWarning "x.grp.mem.con: no introduction"
         (_, GCInviteeMember) ->
-          withStore' $ \db -> deleteGroupInviteeForward db refMember m
+          withStore' (\db -> runExceptT $ getIntroduction db sendingMember refMember) >>= \case
+            Right intro -> forwardMemberXGrpMemCon intro
+            Left _ -> messageWarning "x.grp.mem.con: no introduction"
         _ ->
           messageWarning "x.grp.mem.con: neither member is invitee"
+      where
+        inviteeXGrpMemCon :: GroupMemberIntro -> m ()
+        inviteeXGrpMemCon GroupMemberIntro {introId, introStatus}
+          | introStatus == GMIntroReConnected = updateStatus introId GMIntroConnected
+          | introStatus `elem` [GMIntroToConnected, GMIntroConnected] = pure ()
+          | otherwise = updateStatus introId GMIntroToConnected
+        forwardMemberXGrpMemCon :: GroupMemberIntro -> m ()
+        forwardMemberXGrpMemCon GroupMemberIntro {introId, introStatus}
+          | introStatus == GMIntroToConnected = updateStatus introId GMIntroConnected
+          | introStatus `elem` [GMIntroReConnected, GMIntroConnected] = pure ()
+          | otherwise = updateStatus introId GMIntroReConnected
+        updateStatus introId status = withStore' $ \db -> updateIntroStatus db introId status
 
     xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> MsgMeta -> m ()
     xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId msg msgMeta = do
@@ -5427,18 +5441,20 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
   where
     messageMember :: GroupMember -> SndMessage -> m (Maybe GroupMember)
     messageMember m@GroupMember {groupMemberId} SndMessage {msgId, msgBody} = case memberConn m of
-      Nothing -> do
-        withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
-        pure $ Just m
+      Nothing -> pendingOrForwarded
       Just conn@Connection {connStatus}
         | connDisabled conn || connStatus == ConnDeleted -> pure Nothing
         | connStatus == ConnSndReady || connStatus == ConnReady -> do
           let tag = toCMEventTag chatMsgEvent
           deliverMessage conn tag msgBody msgId >> postDeliver
           pure $ Just m
-        | otherwise -> do
-          withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
-          pure $ Just m
+        | otherwise -> pendingOrForwarded
+      where
+        pendingOrForwarded
+          | forwardedGroupMsg chatMsgEvent = pure Nothing
+          | otherwise = do
+            withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
+            pure $ Just m
 
 sendPendingGroupMessages :: ChatMonad m => User -> GroupMember -> Connection -> m ()
 sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn = do

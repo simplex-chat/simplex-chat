@@ -162,7 +162,8 @@ CREATE TABLE group_member_intros(
   direct_queue_info BLOB,
   intro_status TEXT NOT NULL,
   created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL), -- see GroupMemberIntroStatus
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  xgrpmemcon_supported INTEGER NOT NULL DEFAULT 0, -- see GroupMemberIntroStatus
   UNIQUE(re_group_member_id, to_group_member_id)
 );
 CREATE TABLE files(
@@ -521,14 +522,6 @@ CREATE TABLE IF NOT EXISTS "received_probes"(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL)
 );
-CREATE TABLE group_invitees_forwards(
-  group_invitee_forward_id INTEGER PRIMARY KEY,
-  invitee_group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
-  forward_group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
-  created_at TEXT NOT NULL DEFAULT(datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
-  UNIQUE(invitee_group_member_id, forward_group_member_id)
-);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -761,11 +754,8 @@ CREATE INDEX idx_contact_profiles_contact_link ON contact_profiles(
   user_id,
   contact_link
 );
-CREATE INDEX idx_group_invitees_forwards_invitee_group_member_id ON group_invitees_forwards(
-  invitee_group_member_id
-);
-CREATE INDEX idx_group_invitees_forwards_forward_group_member_id ON group_invitees_forwards(
-  forward_group_member_id
+CREATE INDEX idx_group_member_intros_re_group_member_id ON group_member_intros(
+  re_group_member_id
 );
 CREATE INDEX idx_group_members_invited_by_group_member_id ON group_members(
   invited_by_group_member_id
