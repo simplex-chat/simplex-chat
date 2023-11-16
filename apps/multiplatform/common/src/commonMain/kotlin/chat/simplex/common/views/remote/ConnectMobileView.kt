@@ -150,7 +150,7 @@ private fun DeviceNameField(
   DefaultConfigurableTextField(
     state = state,
     placeholder = generalGetString(MR.strings.enter_this_device_name),
-    modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
+    modifier = Modifier.padding(start = DEFAULT_PADDING),
     isValid = { true },
   )
   KeyChangeEffect(state.value) {
