@@ -5153,7 +5153,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     xGrpMsgForward :: GroupInfo -> GroupMember -> MsgForward -> m ()
     xGrpMsgForward gInfo@GroupInfo {groupId} m MsgForward {memberId, msgBody = ForwardMsgBody body, msgTs} = do
-      when (m.memberRole < GRAdmin) $ throwChatError $ CEGroupUserRole gInfo GRAdmin
+      when (m.memberRole < GRAdmin) $ throwChatError (CEGroupContactRole m.localDisplayName)
       author <- withStore $ \db -> getGroupMemberByMemberId db user gInfo memberId
       ACMsg _ chatMsg <- parseFwdChatMessage m author body
       processForwardedMsg author chatMsg
