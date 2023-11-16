@@ -150,7 +150,12 @@ ciMsgContent = \case
   CIRcvMsgContent mc -> Just mc
   _ -> Nothing
 
-data MsgDecryptError = MDERatchetHeader | MDETooManySkipped | MDERatchetEarlier | MDEOther
+data MsgDecryptError
+  = MDERatchetHeader
+  | MDETooManySkipped
+  | MDERatchetEarlier
+  | MDEOther
+  | MDERatchetSync
   deriving (Eq, Show, Generic)
 
 instance ToJSON MsgDecryptError where
@@ -460,6 +465,7 @@ msgDecryptErrorText err n =
       MDETooManySkipped -> Just $ "too many skipped messages" <> counter
       MDERatchetEarlier -> Just $ "earlier message" <> counter
       MDEOther -> counter_
+      MDERatchetSync -> Just "synchronization error"
     counter_ = if n == 1 then Nothing else Just $ tshow n <> " messages"
     counter = maybe "" (", " <>) counter_
 
@@ -555,7 +561,7 @@ jsonCIContent = \case
   CIRcvChatFeatureRejected feature -> JCIRcvChatFeatureRejected {feature}
   CIRcvGroupFeatureRejected groupFeature -> JCIRcvGroupFeatureRejected {groupFeature}
   CISndModerated -> JCISndModerated
-  CIRcvModerated -> JCISndModerated
+  CIRcvModerated -> JCIRcvModerated
   CIInvalidJSON json -> JCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentJSON :: JSONCIContent -> ACIContent

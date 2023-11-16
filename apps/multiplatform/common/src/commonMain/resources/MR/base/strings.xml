@@ -45,6 +45,7 @@
   <string name="invalid_chat">invalid chat</string>
   <string name="invalid_data">invalid data</string>
   <string name="decryption_error">Decryption error</string>
+  <string name="encryption_renegotiation_error">Encryption re-negotiation error</string>
 
   <!-- PendingContactConnection - ChatModel.kt -->
   <string name="connection_local_display_name">connection %1$d</string>
@@ -866,6 +867,7 @@
   <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d messages failed to decrypt.</string>
   <string name="alert_text_decryption_error_too_many_skipped">%1$d messages skipped.</string>
   <string name="alert_text_fragment_encryption_out_of_sync_old_database">It can happen when you or your connection used the old database backup.</string>
+  <string name="alert_text_encryption_renegotiation_failed">Encryption re-negotiation failed.</string>
   <string name="alert_text_fragment_please_report_to_developers">Please report it to the developers.</string>
 
   <!-- Privacy settings -->
