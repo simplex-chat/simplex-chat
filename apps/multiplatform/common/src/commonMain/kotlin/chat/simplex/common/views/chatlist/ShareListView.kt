@@ -72,7 +72,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
   val navButton: @Composable RowScope.() -> Unit = {
     when {
       showSearch -> NavigationButtonBack(hideSearchOnBack)
-      users.size > 1 -> {
+      users.size > 1 && chatModel.remoteHosts.isEmpty() -> {
         val allRead = users
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }

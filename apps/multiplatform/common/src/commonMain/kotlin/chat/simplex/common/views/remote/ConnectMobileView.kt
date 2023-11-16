@@ -4,8 +4,10 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewLongClickable
+import SectionItemViewWithIcon
 import SectionTextFooter
 import SectionView
+import TextIconSpaced
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
@@ -33,6 +35,7 @@ import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCode
 import chat.simplex.common.views.usersettings.SettingsActionItem
+import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -95,10 +98,9 @@ fun ConnectMobileLayout(
       DeviceNameField(deviceName.state.value ?: "") { updateDeviceName(it) }
       SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
       SectionDividerSpaced(maxBottomPadding = false)
-
-      SectionItemView({ connectDesktop() }, disabled = connecting.value) {
-        Text(stringResource(MR.strings.this_device))
-        Spacer(Modifier.weight(1f))
+    }
+    SectionView(stringResource(MR.strings.devices).uppercase()) {
+      SettingsActionItemWithContent(text = stringResource(MR.strings.this_device), icon = painterResource(MR.images.ic_desktop), click = connectDesktop) {
         if (remember { connectedHost }.value == null) {
           Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
         }
@@ -107,6 +109,8 @@ fun ConnectMobileLayout(
       for (host in remoteHosts) {
         val showMenu = rememberSaveable { mutableStateOf(false) }
         SectionItemViewLongClickable({ connectMobileDevice(host) }, { showMenu.value = true }, disabled = connecting.value) {
+          Icon(painterResource(MR.images.ic_smartphone_300), host.hostDeviceName, tint = MaterialTheme.colors.secondary)
+          TextIconSpaced(false)
           Text(host.hostDeviceName)
           Spacer(Modifier.weight(1f))
           if (host.activeHost) {
@@ -117,14 +121,25 @@ fun ConnectMobileLayout(
         }
         Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
           DefaultDropdownMenu(showMenu) {
-            ItemAction(stringResource(MR.strings.delete_verb), painterResource(MR.images.ic_delete), color = Color.Red, onClick = {
-              deleteHost(host)
-              showMenu.value = false
-            })
+            if (host.activeHost()) {
+              ItemAction(stringResource(MR.strings.disconnect_remote_host), painterResource(MR.images.ic_wifi_off), color = WarningOrange, onClick = {
+                stopRemoteHost(host, true)
+                showMenu.value = false
+              })
+            } else {
+              ItemAction(stringResource(MR.strings.delete_verb), painterResource(MR.images.ic_delete), color = Color.Red, onClick = {
+                deleteHost(host)
+                showMenu.value = false
+              })
+            }
           }
         }
       }
-      SettingsActionItem(painterResource(MR.images.ic_smartphone), stringResource(MR.strings.link_a_mobile), addMobileDevice, disabled = connecting.value, extraPadding = false)
+      SectionItemView(addMobileDevice) {
+        Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.link_a_mobile), tint = MaterialTheme.colors.primary)
+        Spacer(Modifier.padding(horizontal = 4.dp))
+        Text(stringResource(MR.strings.link_a_mobile), color = MaterialTheme.colors.primary)
+      }
     }
     SectionBottomSpacer()
   }
