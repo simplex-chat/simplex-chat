@@ -5490,6 +5490,7 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
           pure $ Just m
         | otherwise -> pendingOrForwarded
       where
+        -- TODO group forward: check both recipient and their host support group forwarding
         pendingOrForwarded
           | forwardedGroupMsg chatMsgEvent || isXGrpMsgForward chatMsgEvent = pure Nothing
           | otherwise = do
