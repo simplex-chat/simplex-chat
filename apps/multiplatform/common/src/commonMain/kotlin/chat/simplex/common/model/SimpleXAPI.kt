@@ -1400,9 +1400,10 @@ object ChatController {
   fun stopRemoteHostAndReloadHosts(h: RemoteHostInfo, switchToLocal: Boolean) {
     withBGApi {
       stopRemoteHost(h.remoteHostId)
-      reloadRemoteHosts()
       if (switchToLocal) {
         switchUIRemoteHost(null)
+      } else {
+        reloadRemoteHosts()
       }
     }
   }
