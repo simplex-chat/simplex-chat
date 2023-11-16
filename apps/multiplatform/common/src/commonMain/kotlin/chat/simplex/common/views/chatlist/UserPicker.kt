@@ -104,18 +104,7 @@ fun UserPicker(
         if (!appPlatform.isDesktop) return@collect
         try {
           val updatedHosts = chatModel.controller.listRemoteHosts()?.sortedBy { it.hostDeviceName } ?: emptyList()
-          var same = remoteHosts.size == updatedHosts.size
-          if (same) {
-            for (i in 0 until minOf(remoteHosts.size, updatedHosts.size)) {
-              val prev = updatedHosts[i]
-              val next = remoteHosts[i]
-              if (prev.remoteHostId != next.remoteHostId || prev.hostDeviceName != next.hostDeviceName) {
-                same = false
-                break
-              }
-            }
-          }
-          if (!same) {
+          if (remoteHosts != updatedHosts) {
             chatModel.remoteHosts.clear()
             chatModel.remoteHosts.addAll(updatedHosts)
           }
