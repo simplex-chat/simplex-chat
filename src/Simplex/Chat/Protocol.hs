@@ -51,7 +51,7 @@ import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
 
 currentChatVersion :: Version
-currentChatVersion = 3
+currentChatVersion = 4
 
 supportedChatVRange :: VersionRange
 supportedChatVRange = mkVersionRange 1 currentChatVersion
@@ -67,6 +67,10 @@ xGrpDirectInvVRange = mkVersionRange 2 currentChatVersion
 -- version range that supports joining group via group link without creating direct contact
 groupLinkNoContactVRange :: VersionRange
 groupLinkNoContactVRange = mkVersionRange 3 currentChatVersion
+
+-- version range that supports group forwarding
+groupForwardVRange :: VersionRange
+groupForwardVRange = mkVersionRange 4 currentChatVersion
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}

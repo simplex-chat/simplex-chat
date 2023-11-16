@@ -129,6 +129,7 @@ import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Messages
+import Simplex.Chat.Protocol (currentChatVersion, groupForwardVRange)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
@@ -998,10 +999,10 @@ createIntroductions db members toMember = do
         db
         [sql|
           INSERT INTO group_member_intros
-            (re_group_member_id, to_group_member_id, intro_status, xgrpmemcon_supported, created_at, updated_at)
+            (re_group_member_id, to_group_member_id, intro_status, intro_chat_protocol_version, created_at, updated_at)
           VALUES (?,?,?,?,?,?)
         |]
-        (groupMemberId' reMember, groupMemberId' toMember, GMIntroPending, True, ts, ts)
+        (groupMemberId' reMember, groupMemberId' toMember, GMIntroPending, currentChatVersion, ts, ts)
       introId <- insertedRowId db
       pure GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending, introInvitation = Nothing}
 
@@ -1088,9 +1089,9 @@ getInviteeForwardMembers db user invitee = do
           SELECT re_group_member_id
           FROM group_member_intros
           WHERE to_group_member_id = ?
-            AND xgrpmemcon_supported = 1 AND intro_status NOT IN (?,?,?)
+            AND intro_chat_protocol_version >= ? AND intro_status NOT IN (?,?,?)
         |]
-        (groupMemberId' invitee, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
+        (groupMemberId' invitee, minVersion groupForwardVRange, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
   filter memberCurrent . rights <$> mapM (runExceptT . getGroupMemberById db user) memberIds
 
 getForwardMemberInvitees :: DB.Connection -> User -> GroupMember -> IO [GroupMember]
@@ -1103,9 +1104,9 @@ getForwardMemberInvitees db user forwardMember = do
           SELECT to_group_member_id
           FROM group_member_intros
           WHERE re_group_member_id = ?
-            AND xgrpmemcon_supported = 1 AND intro_status NOT IN (?,?,?)
+            AND intro_chat_protocol_version >= ? AND intro_status NOT IN (?,?,?)
         |]
-        (groupMemberId' forwardMember, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
+        (groupMemberId' forwardMember, minVersion groupForwardVRange, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
   filter memberCurrent . rights <$> mapM (runExceptT . getGroupMemberById db user) memberIds
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> SubscriptionMode -> ExceptT StoreError IO GroupMember

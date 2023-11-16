@@ -8,7 +8,7 @@ import Database.SQLite.Simple.QQ (sql)
 m20231113_group_forward :: Query
 m20231113_group_forward =
   [sql|
-ALTER TABLE group_member_intros ADD COLUMN xgrpmemcon_supported INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE group_member_intros ADD COLUMN intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3;
 CREATE INDEX idx_group_member_intros_re_group_member_id ON group_member_intros(re_group_member_id);
 
 ALTER TABLE group_members ADD COLUMN invited_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL;
@@ -36,5 +36,5 @@ DROP INDEX idx_group_members_invited_by_group_member_id;
 ALTER TABLE group_members DROP COLUMN invited_by_group_member_id;
 
 DROP INDEX idx_group_member_intros_re_group_member_id;
-ALTER TABLE group_member_intros DROP COLUMN xgrpmemcon_supported;
+ALTER TABLE group_member_intros DROP COLUMN intro_chat_protocol_version;
 |]

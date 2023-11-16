@@ -163,7 +163,7 @@ CREATE TABLE group_member_intros(
   intro_status TEXT NOT NULL,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
-  xgrpmemcon_supported INTEGER NOT NULL DEFAULT 0, -- see GroupMemberIntroStatus
+  intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3, -- see GroupMemberIntroStatus
   UNIQUE(re_group_member_id, to_group_member_id)
 );
 CREATE TABLE files(
