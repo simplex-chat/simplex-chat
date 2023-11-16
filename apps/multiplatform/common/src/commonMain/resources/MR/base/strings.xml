@@ -1625,6 +1625,24 @@
   <string name="you_can_enable_delivery_receipts_later_alert">You can enable them later via app Privacy &amp; Security settings.</string>
   <string name="error_enabling_delivery_receipts">Error enabling delivery receipts!</string>
 
+  <!-- Remote access -->
+  <string name="link_a_mobile">Link a mobile</string>
+  <string name="linked_mobiles">Linked mobiles</string>
+  <string name="scan_from_mobile">Scan from mobile</string>
+  <string name="verify_connection">Verify connection</string>
+  <string name="verify_code_on_mobile">Verify code on mobile</string>
+  <string name="this_device_name">This device name</string>
+  <string name="connected_mobile">Connected mobile</string>
+  <string name="connected_to_mobile">Connected to mobile</string>
+  <string name="enter_this_device_name">Enter this device name…</string>
+  <string name="this_device_name_shared_with_mobile">The device name will be shared with the connected mobile client.</string>
+  <string name="error">Error</string>
+  <string name="this_device">This device</string>
+  <string name="devices">Devices</string>
+  <string name="new_mobile_device">New mobile device</string>
+  <string name="disconnect_remote_host">Disconnect</string>
+  <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Open <i>Use from desktop</i> in mobile app and scan QR code]]></string>
+
   <!-- Under development -->
   <string name="in_developing_title">Coming soon!</string>
   <string name="in_developing_desc">This feature is not yet supported. Try the next release.</string>

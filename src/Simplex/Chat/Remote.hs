@@ -158,10 +158,10 @@ startRemoteHost rh_ = do
     handleHostError :: ChatMonad m => TVar RHKey -> m () -> m ()
     handleHostError rhKeyVar action = action `catchChatError` \err -> do
       logError $ "startRemoteHost.waitForHostSession crashed: " <> tshow err
-      readTVarIO rhKeyVar >>= cancelRemoteHostSession True True
+      readTVarIO rhKeyVar >>= cancelRemoteHostSession True
     waitForHostSession :: ChatMonad m => Maybe RemoteHostInfo -> RHKey -> TVar RHKey -> RCStepTMVar (ByteString, TLS, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> m ()
     waitForHostSession remoteHost_ rhKey rhKeyVar vars = do
-      (sessId, tls, vars') <- takeRCStep vars -- no timeout, waiting for user to scan invite
+      (sessId, tls, vars') <- timeoutThrow (ChatErrorRemoteHost rhKey RHETimeout) 60000000 $ takeRCStep vars
       let sessionCode = verificationCode sessId
       withRemoteHostSession rhKey $ \case
         RHSessionConnecting _inv rhs' -> Right ((), RHSessionPendingConfirmation sessionCode tls rhs') -- TODO check it's the same session?
@@ -169,7 +169,7 @@ startRemoteHost rh_ = do
       -- display confirmation code, wait for mobile to confirm
       let rh_' = (\rh -> (rh :: RemoteHostInfo) {sessionState = Just $ RHSPendingConfirmation {sessionCode}}) <$> remoteHost_
       toView $ CRRemoteHostSessionCode {remoteHost_ = rh_', sessionCode}
-      (RCHostSession {sessionKeys}, rhHello, pairing') <- takeRCStep vars' -- no timeout, waiting for user to compare the code
+      (RCHostSession {sessionKeys}, rhHello, pairing') <- timeoutThrow (ChatErrorRemoteHost rhKey RHETimeout) 60000000 $ takeRCStep vars'
       hostInfo@HostAppInfo {deviceName = hostDeviceName} <-
         liftError (ChatErrorRemoteHost rhKey) $ parseHostAppInfo rhHello
       withRemoteHostSession rhKey $ \case
@@ -205,7 +205,7 @@ startRemoteHost rh_ = do
     onDisconnected :: ChatMonad m => RHKey -> m ()
     onDisconnected rhKey = do
       logDebug "HTTP2 client disconnected"
-      cancelRemoteHostSession True False rhKey
+      cancelRemoteHostSession True rhKey
     pollEvents :: ChatMonad m => RemoteHostId -> RemoteHostClient -> m ()
     pollEvents rhId rhClient = do
       oq <- asks outputQ
@@ -218,23 +218,23 @@ startRemoteHost rh_ = do
 closeRemoteHost :: ChatMonad m => RHKey -> m ()
 closeRemoteHost rhKey = do
   logNote $ "Closing remote host session for " <> tshow rhKey
-  cancelRemoteHostSession False True rhKey
+  cancelRemoteHostSession False rhKey
 
-cancelRemoteHostSession :: ChatMonad m => Bool -> Bool -> RHKey -> m ()
-cancelRemoteHostSession sendEvent stopHttp rhKey = handleAny (logError . tshow) $ do
+cancelRemoteHostSession :: ChatMonad m => Bool -> RHKey -> m ()
+cancelRemoteHostSession handlingError rhKey = handleAny (logError . tshow) $ do
   chatModifyVar currentRemoteHost $ \cur -> if (RHId <$> cur) == Just rhKey then Nothing else cur -- only wipe the closing RH
   sessions <- asks remoteHostSessions
-  session_ <- atomically $ TM.lookupDelete rhKey sessions
+  session_ <- atomically $ TM.lookupDelete rhKey sessions -- XXX: when invoked from delayed error handler this can wipe the next session instead
   forM_ session_ $ \session -> do
-    liftIO $ cancelRemoteHost stopHttp session
-    when sendEvent $ toView $ CRRemoteHostStopped rhId_
+    liftIO $ cancelRemoteHost handlingError session `catchAny` (logError . tshow)
+    when handlingError $ toView $ CRRemoteHostStopped rhId_
   where
     rhId_ = case rhKey of
       RHNew -> Nothing
       RHId rhId -> Just rhId
 
 cancelRemoteHost :: Bool -> RemoteHostSession -> IO ()
-cancelRemoteHost stopHttp = \case
+cancelRemoteHost handlingError = \case
   RHSessionStarting -> pure ()
   RHSessionConnecting _inv rhs -> cancelPendingSession rhs
   RHSessionPendingConfirmation _sessCode tls rhs -> do
@@ -245,13 +245,13 @@ cancelRemoteHost stopHttp = \case
     closeConnection tls
   RHSessionConnected {rchClient, tls, rhClient = RemoteHostClient {httpClient}, pollAction} -> do
     uninterruptibleCancel pollAction
-    when stopHttp $ closeHTTP2Client httpClient `catchAny` (logError . tshow)
-    closeConnection tls `catchAny` (logError . tshow)
     cancelHostClient rchClient `catchAny` (logError . tshow)
+    closeConnection tls `catchAny` (logError . tshow)
+    unless handlingError $ closeHTTP2Client httpClient `catchAny` (logError . tshow)
   where
     cancelPendingSession RHPendingSession {rchClient, rhsWaitSession} = do
-      uninterruptibleCancel rhsWaitSession
-      cancelHostClient rchClient
+      unless handlingError $ uninterruptibleCancel rhsWaitSession `catchAny` (logError . tshow)
+      cancelHostClient rchClient `catchAny` (logError . tshow)
 
 -- | Generate a random 16-char filepath without / in it by using base64url encoding.
 randomStorePath :: IO FilePath
@@ -584,25 +584,25 @@ handleCtrlError name action =
     throwError e
 
 cancelActiveRemoteCtrl :: ChatMonad m => Bool -> m ()
-cancelActiveRemoteCtrl sendEvent = handleAny (logError . tshow) $ do
+cancelActiveRemoteCtrl handlingError = handleAny (logError . tshow) $ do
   session_ <- withRemoteCtrlSession_ (\s -> pure (s, Nothing))
   forM_ session_ $ \session -> do
-    liftIO $ cancelRemoteCtrl session
-    when sendEvent $ toView CRRemoteCtrlStopped
+    liftIO $ cancelRemoteCtrl handlingError session
+    when handlingError $ toView CRRemoteCtrlStopped
 
-cancelRemoteCtrl :: RemoteCtrlSession -> IO ()
-cancelRemoteCtrl = \case
+cancelRemoteCtrl :: Bool -> RemoteCtrlSession -> IO ()
+cancelRemoteCtrl handlingError = \case
   RCSessionStarting -> pure ()
   RCSessionSearching {action} -> uninterruptibleCancel action
   RCSessionConnecting {rcsClient, rcsWaitSession} -> do
-    uninterruptibleCancel rcsWaitSession
+    unless handlingError $ uninterruptibleCancel rcsWaitSession
     cancelCtrlClient rcsClient
   RCSessionPendingConfirmation {rcsClient, tls, rcsWaitSession} -> do
-    uninterruptibleCancel rcsWaitSession
+    unless handlingError $ uninterruptibleCancel rcsWaitSession
     cancelCtrlClient rcsClient
     closeConnection tls
   RCSessionConnected {rcsClient, tls, http2Server} -> do
-    uninterruptibleCancel http2Server
+    unless handlingError $ uninterruptibleCancel http2Server
     cancelCtrlClient rcsClient
     closeConnection tls
 

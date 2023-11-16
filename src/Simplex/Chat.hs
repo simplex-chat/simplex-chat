@@ -375,8 +375,8 @@ restoreCalls = do
 
 stopChatController :: forall m. MonadUnliftIO m => ChatController -> m ()
 stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
-  readTVarIO remoteHostSessions >>= mapM_ (liftIO . cancelRemoteHost True)
-  atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (liftIO . cancelRemoteCtrl)
+  readTVarIO remoteHostSessions >>= mapM_ (liftIO . cancelRemoteHost False)
+  atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (liftIO . cancelRemoteCtrl False)
   disconnectAgentClient smpAgent
   readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
   closeFiles sndFiles
