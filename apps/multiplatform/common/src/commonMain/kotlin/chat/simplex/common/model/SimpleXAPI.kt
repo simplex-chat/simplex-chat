@@ -1824,13 +1824,11 @@ object ChatController {
       is CR.RemoteHostConnected -> {
         // TODO needs to update it instead in sessions
         chatModel.currentRemoteHost.value = r.remoteHost
-        reloadRemoteHosts()
         switchUIRemoteHost(r.remoteHost.remoteHostId)
       }
       is CR.RemoteHostStopped -> {
         chatModel.currentRemoteHost.value = null
         chatModel.newRemoteHostPairing.value = null
-        reloadRemoteHosts()
         switchUIRemoteHost(null)
       }
       else ->
@@ -1917,6 +1915,7 @@ object ChatController {
   suspend fun switchUIRemoteHost(rhId: Long?) {
     chatModel.chatId.value = null
     chatModel.currentRemoteHost.value = switchRemoteHost(rhId)
+    reloadRemoteHosts()
     val user = apiGetActiveUser()
     val users = listUsers()
     chatModel.users.clear()
