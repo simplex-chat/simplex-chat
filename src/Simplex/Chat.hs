@@ -5163,7 +5163,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- Note: forwarded group events (see forwardedGroupMsg) should include msgId to be deduplicated
         processForwardedMsg :: forall e. MsgEncodingI e => GroupMember -> ChatMessage e -> m ()
         processForwardedMsg author chatMsg = do
-          -- TODO group forward: catch and send x.grp.mem.con if inviting member sends duplicate
           msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveFwdRcvMsg m (GroupId groupId) body chatMsg
           case event of
             XMsgNew mc -> memberCanSend author $ newGroupContentMessage gInfo author mc msg msgTs
@@ -5530,12 +5529,18 @@ saveRcvMSG' conn@Connection {connId} connOrGroupId agentMsgMeta msgBody agentAck
       newMsg = NewMessage {chatMsgEvent, msgBody}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId}
   msg <- withStore $ \db -> createNewMessageAndRcvMsgDelivery db connOrGroupId newMsg sharedMsgId_ rcvMsgDelivery
+  -- TODO group forward:
+  -- catch and send x.grp.mem.con if inviting member sends duplicate
+  -- (add Maybe forwardedByGroupMemberId to SEDuplicateGroupMessage)
   pure (conn', msg)
 
 saveFwdRcvMsg :: (MsgEncodingI e, ChatMonad m) => GroupMember -> ConnOrGroupId -> MsgBody -> ChatMessage e -> m RcvMessage
 saveFwdRcvMsg forwardingMember connOrGroupId msgBody ChatMessage {msgId = sharedMsgId_, chatMsgEvent} = do
   let newMsg = NewMessage {chatMsgEvent, msgBody}
       forwardedByGroupMemberId = Just $ groupMemberId' forwardingMember
+  -- TODO group forward:
+  -- catch and send x.grp.mem.con if inviting member sends duplicate
+  -- (use forwardingMember)
   withStore $ \db -> createNewRcvMessage db connOrGroupId newMsg sharedMsgId_ forwardedByGroupMemberId
 
 saveSndChatItem :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> m (ChatItem c 'MDSnd)

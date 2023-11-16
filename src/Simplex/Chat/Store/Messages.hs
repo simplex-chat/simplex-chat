@@ -207,10 +207,11 @@ createNewRcvMessage db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMs
       Just sharedMsgId ->
         ifM
           (liftIO $ duplicateGroupMsgExists groupId sharedMsgId)
-          (throwError $ SEDuplicateGroupMessage groupId sharedMsgId)
+          (throwError $ SEDuplicateGroupMessage groupId sharedMsgId Nothing)
           (liftIO $ insertRcvMsg Nothing $ Just groupId)
       Nothing -> liftIO $ insertRcvMsg Nothing $ Just groupId
   where
+    -- TODO group forward: differentiate absence of record and NULL in forwarded_by_group_member_id
     duplicateGroupMsgExists :: Int64 -> SharedMsgId -> IO Bool
     duplicateGroupMsgExists groupId sharedMsgId =
       fromMaybe False
