@@ -1629,6 +1629,7 @@
   <string name="link_a_mobile">Link a mobile</string>
   <string name="linked_mobiles">Linked mobiles</string>
   <string name="scan_from_mobile">Scan from mobile</string>
+  <string name="verify_connection">Verify connection</string>
   <string name="verify_code_on_mobile">Verify code on mobile</string>
   <string name="this_device_name">This device name</string>
   <string name="connected_mobile">Connected mobile</string>

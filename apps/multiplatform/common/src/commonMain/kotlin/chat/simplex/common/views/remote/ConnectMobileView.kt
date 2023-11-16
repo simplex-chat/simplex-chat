@@ -4,7 +4,6 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionItemView
 import SectionItemViewLongClickable
-import SectionItemViewWithIcon
 import SectionTextFooter
 import SectionView
 import TextIconSpaced
@@ -21,6 +20,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.input.*
@@ -34,7 +34,6 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCode
-import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -221,6 +220,15 @@ private fun ConnectMobileViewLayout(
             .aspectRatio(1f)
         )
         SectionTextFooter(annotatedStringResource(MR.strings.open_on_mobile_and_scan_qr_code))
+
+        if (controller.appPrefs.developerTools.get()) {
+          val clipboard = LocalClipboardManager.current
+          Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+          SectionItemView({ clipboard.shareText(invitation) }) {
+            Text(generalGetString(MR.strings.share_link), color = MaterialTheme.colors.primary)
+          }
+        }
+
         Spacer(Modifier.height(DEFAULT_PADDING))
       }
       if (deviceName != null || sessionCode != null) {
@@ -274,7 +282,12 @@ private fun showAddingMobileDevice(connecting: MutableState<Boolean>) {
       else -> null
     }
     val remoteDeviceName = pairing.value?.first?.hostDeviceName
-    ConnectMobileViewLayout(stringResource(MR.strings.link_a_mobile), invitation.value, remoteDeviceName, sessionCode)
+    ConnectMobileViewLayout(
+      title = if (sessionCode == null) stringResource(MR.strings.link_a_mobile) else stringResource(MR.strings.verify_connection),
+      invitation = invitation.value,
+      deviceName = remoteDeviceName,
+      sessionCode = sessionCode
+    )
     val oldRemoteHostId by remember { mutableStateOf(chatModel.currentRemoteHost.value?.remoteHostId) }
     LaunchedEffect(remember { chatModel.currentRemoteHost }.value) {
       if (chatModel.currentRemoteHost.value?.remoteHostId != null && chatModel.currentRemoteHost.value?.remoteHostId != oldRemoteHostId) {
@@ -310,7 +323,7 @@ private fun showConnectMobileDevice(rh: RemoteHostInfo, connecting: MutableState
       else -> null
     }
     ConnectMobileViewLayout(
-      title = stringResource(MR.strings.scan_from_mobile),
+      title = if (sessionCode == null) stringResource(MR.strings.scan_from_mobile) else stringResource(MR.strings.verify_connection),
       invitation = invitation.value,
       deviceName = pairing.value?.first?.hostDeviceName ?: rh.hostDeviceName,
       sessionCode = sessionCode,

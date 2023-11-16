@@ -1912,6 +1912,7 @@ object ChatController {
   }
 
   suspend fun switchUIRemoteHost(rhId: Long?) {
+    chatModel.chatId.value = null
     chatModel.currentRemoteHost.value = switchRemoteHost(rhId)
     val user = apiGetActiveUser()
     val users = listUsers()
