@@ -1248,7 +1248,7 @@ processChatCommand = \case
         connectionStats <- withAgent $ \a -> abortConnectionSwitch a connId
         pure $ CRGroupMemberSwitchAborted user g m connectionStats
       _ -> throwChatError CEGroupMemberNotActive
-  APISyncContactRatchet contactId force -> withUser $ \user -> do
+  APISyncContactRatchet contactId force -> withUser $ \user -> withChatLock "syncContactRatchet" $ do
     ct <- withStore $ \db -> getContact db user contactId
     case contactConnId ct of
       Just connId -> do
@@ -1256,7 +1256,7 @@ processChatCommand = \case
         createInternalChatItem user (CDDirectSnd ct) (CISndConnEvent $ SCERatchetSync rss Nothing) Nothing
         pure $ CRContactRatchetSyncStarted user ct cStats
       Nothing -> throwChatError $ CEContactNotActive ct
-  APISyncGroupMemberRatchet gId gMemberId force -> withUser $ \user -> do
+  APISyncGroupMemberRatchet gId gMemberId force -> withUser $ \user -> withChatLock "syncGroupMemberRatchet" $ do
     (g, m) <- withStore $ \db -> (,) <$> getGroupInfo db user gId <*> getGroupMember db user gId gMemberId
     case memberConnId m of
       Just connId -> do
@@ -3627,6 +3627,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       RATCHET_HEADER -> (MDERatchetHeader, 1)
       RATCHET_EARLIER _ -> (MDERatchetEarlier, 1)
       RATCHET_SKIPPED n -> (MDETooManySkipped, n)
+      RATCHET_SYNC -> (MDERatchetSync, 0)
 
     mdeUpdatedCI :: (MsgDecryptError, Word32) -> CChatItem c -> Maybe (ChatItem c 'MDRcv, CIContent 'MDRcv)
     mdeUpdatedCI (mde', n') (CChatItem _ ci@ChatItem {content = CIRcvDecryptionError mde n})
@@ -3635,6 +3636,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         MDETooManySkipped -> r n' -- the numbers are not added as sequential MDETooManySkipped will have it incremented by 1
         MDERatchetEarlier -> r (n + n')
         MDEOther -> r (n + n')
+        MDERatchetSync -> r 0
       | otherwise = Nothing
       where
         r n'' = Just (ci, CIRcvDecryptionError mde n'')
