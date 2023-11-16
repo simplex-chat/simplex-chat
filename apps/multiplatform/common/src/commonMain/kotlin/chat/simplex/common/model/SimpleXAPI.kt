@@ -1375,12 +1375,10 @@ object ChatController {
     return null
   }
 
-  fun reloadRemoteHosts() {
-    withBGApi {
-      val hosts = listRemoteHosts() ?: return@withBGApi
-      chatModel.remoteHosts.clear()
-      chatModel.remoteHosts.addAll(hosts)
-    }
+  suspend fun reloadRemoteHosts() {
+    val hosts = listRemoteHosts() ?: return
+    chatModel.remoteHosts.clear()
+    chatModel.remoteHosts.addAll(hosts)
   }
 
   suspend fun startRemoteHost(rhId: Long?, multicast: Boolean = false): Pair<RemoteHostInfo?, String>? {
@@ -1826,19 +1824,13 @@ object ChatController {
       is CR.RemoteHostConnected -> {
         // TODO needs to update it instead in sessions
         chatModel.currentRemoteHost.value = r.remoteHost
-        val index = chatModel.remoteHosts.indexOfFirst { it.remoteHostId == r.remoteHost.remoteHostId }
-        if (index != -1) {
-          chatModel.remoteHosts[index] = r.remoteHost
-        }
+        reloadRemoteHosts()
         switchUIRemoteHost(r.remoteHost.remoteHostId)
       }
       is CR.RemoteHostStopped -> {
         chatModel.currentRemoteHost.value = null
         chatModel.newRemoteHostPairing.value = null
-        val index = chatModel.remoteHosts.indexOfFirst { it.remoteHostId == r.remoteHostId_ }
-        if (index != -1) {
-          chatModel.remoteHosts[index] = chatModel.remoteHosts[index].copy(sessionState = null)
-        }
+        reloadRemoteHosts()
         switchUIRemoteHost(null)
       }
       else ->
