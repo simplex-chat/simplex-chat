@@ -5,6 +5,7 @@ package com.sd.lib.compose.wheel_picker
 import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.core.calculateTargetValue
 import androidx.compose.animation.core.exponentialDecay
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -18,10 +19,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.runBlocking
 import kotlin.math.absoluteValue
 
 interface FWheelPickerContentScope {
@@ -147,6 +150,35 @@ private fun WheelPicker(
   Box(
     modifier = modifier
       .nestedScroll(nestedScrollConnection)
+      .pointerInput(Unit) {
+        awaitEachGesture {
+          do {
+            val event = awaitPointerEvent()
+
+            if (event.type == PointerEventType.Scroll) {
+              // set index based on scroll direction
+              val c = event.changes.firstOrNull()
+              if (c != null) {
+                val dir = c.scrollDelta.y
+                var i = state.currentIndex
+
+                if (dir == -1.0f) {
+                  // scroll wheel moved up
+                  i = (state.currentIndex-1).coerceAtLeast(0)
+                } else if (dir == 1.0f) {
+                  // scroll wheel moved down
+                  i = (state.currentIndex+1).coerceAtMost(count-1)
+                }
+
+                state.setCurrentIndexInternal(i)
+                runBlocking {
+                  state.scrollToIndex(i)
+                }
+              }
+            }
+          } while (event.changes.any { it.pressed })
+        }
+      }
       .run {
         if (totalSize > 0.dp) {
           if (isVertical) {

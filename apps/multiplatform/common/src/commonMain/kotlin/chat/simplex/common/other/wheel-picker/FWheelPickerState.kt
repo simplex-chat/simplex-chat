@@ -153,7 +153,7 @@ class FWheelPickerState(
     setCurrentIndexInternal(index)
   }
 
-  private fun setCurrentIndexInternal(index: Int) {
+  fun setCurrentIndexInternal(index: Int) {
     val safeIndex = index.coerceAtLeast(-1)
     if (_currentIndex != safeIndex) {
       logMsg(debug) { "Current index changed $safeIndex" }
