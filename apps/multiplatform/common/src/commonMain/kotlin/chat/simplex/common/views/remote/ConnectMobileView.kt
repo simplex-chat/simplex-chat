@@ -239,16 +239,26 @@ private fun showAddingMobileDevice(connecting: MutableState<Boolean>) {
       is RemoteHostSessionState.PendingConfirmation -> state.sessionCode
       else -> null
     }
+    /** It's needed to prevent screen flashes when [chatModel.newRemoteHostPairing] sets to null in background */
+    var cachedSessionCode by remember { mutableStateOf<String?>(null) }
+    if (cachedSessionCode == null && sessionCode != null) {
+      cachedSessionCode = sessionCode
+    }
     val remoteDeviceName = pairing.value?.first?.hostDeviceName
     ConnectMobileViewLayout(
-      title = if (sessionCode == null) stringResource(MR.strings.link_a_mobile) else stringResource(MR.strings.verify_connection),
+      title = if (cachedSessionCode == null) stringResource(MR.strings.link_a_mobile) else stringResource(MR.strings.verify_connection),
       invitation = invitation.value,
       deviceName = remoteDeviceName,
-      sessionCode = sessionCode
+      sessionCode = cachedSessionCode
     )
     val oldRemoteHostId by remember { mutableStateOf(chatModel.currentRemoteHost.value?.remoteHostId) }
     LaunchedEffect(remember { chatModel.currentRemoteHost }.value) {
       if (chatModel.currentRemoteHost.value?.remoteHostId != null && chatModel.currentRemoteHost.value?.remoteHostId != oldRemoteHostId) {
+        close()
+      }
+    }
+    KeyChangeEffect(pairing.value) {
+      if (pairing.value == null) {
         close()
       }
     }
@@ -280,11 +290,16 @@ private fun showConnectMobileDevice(rh: RemoteHostInfo, connecting: MutableState
       is RemoteHostSessionState.PendingConfirmation -> state.sessionCode
       else -> null
     }
+    /** It's needed to prevent screen flashes when [chatModel.newRemoteHostPairing] sets to null in background */
+    var cachedSessionCode by remember { mutableStateOf<String?>(null) }
+    if (cachedSessionCode == null && sessionCode != null) {
+      cachedSessionCode = sessionCode
+    }
     ConnectMobileViewLayout(
-      title = if (sessionCode == null) stringResource(MR.strings.scan_from_mobile) else stringResource(MR.strings.verify_connection),
+      title = if (cachedSessionCode == null) stringResource(MR.strings.scan_from_mobile) else stringResource(MR.strings.verify_connection),
       invitation = invitation.value,
       deviceName = pairing.value?.first?.hostDeviceName ?: rh.hostDeviceName,
-      sessionCode = sessionCode,
+      sessionCode = cachedSessionCode,
     )
     var remoteHostId by rememberSaveable { mutableStateOf<Long?>(null) }
     LaunchedEffect(Unit) {
@@ -298,6 +313,11 @@ private fun showConnectMobileDevice(rh: RemoteHostInfo, connecting: MutableState
     }
     LaunchedEffect(remember { chatModel.currentRemoteHost }.value) {
       if (remoteHostId != null && chatModel.currentRemoteHost.value?.remoteHostId == remoteHostId) {
+        close()
+      }
+    }
+    KeyChangeEffect(pairing.value) {
+      if (pairing.value == null) {
         close()
       }
     }

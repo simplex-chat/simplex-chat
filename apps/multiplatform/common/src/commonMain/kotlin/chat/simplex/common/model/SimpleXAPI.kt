@@ -1834,6 +1834,7 @@ object ChatController {
       }
       is CR.RemoteHostStopped -> {
         chatModel.currentRemoteHost.value = null
+        chatModel.newRemoteHostPairing.value = null
         val index = chatModel.remoteHosts.indexOfFirst { it.remoteHostId == r.remoteHostId_ }
         if (index != -1) {
           chatModel.remoteHosts[index] = chatModel.remoteHosts[index].copy(sessionState = null)
