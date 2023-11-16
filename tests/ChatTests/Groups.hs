@@ -7,12 +7,13 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad (when)
+import Control.Monad (when, void)
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (GroupMemberRole (..))
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Version
 import System.Directory (copyFile)
 import System.FilePath ((</>))
@@ -104,6 +105,8 @@ chatGroupTests = do
     it "invited member replaces member contact reference if it already exists" testMemberContactInvitedConnectionReplaced
     it "share incognito profile" testMemberContactIncognito
     it "sends and updates profile when creating contact" testMemberContactProfileUpdate
+  describe "forwarding messages" $ do
+    it "admin should forward messages between invitee and introduced" testGroupMsgForward
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -3882,3 +3885,25 @@ testMemberContactProfileUpdate =
       cath #> "#team hello there"
       alice <# "#team kate> hello there"
       bob <# "#team kate> hello there" -- updated profile
+
+testGroupMsgForward :: HasCallStack => FilePath -> IO ()
+testGroupMsgForward =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 500000 -- delay so intro_status doesn't get overwritten to connected
+      void $ withCCTransaction bob $ \db ->
+        DB.execute_ db "UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3"
+      void $ withCCTransaction cath $ \db ->
+        DB.execute_ db "UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3"
+      void $ withCCTransaction alice $ \db ->
+        DB.execute_ db "UPDATE group_member_intros SET intro_status='fwd'"
+
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there"
+
+      cath #> "#team hey team"
+      alice <# "#team cath> hey team"
+      bob <# "#team cath> hey team"

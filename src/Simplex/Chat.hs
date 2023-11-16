@@ -3626,7 +3626,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               inviteeMembers <- withStore' $ \db -> getForwardMemberInvitees db user m
               let ms = forwardMembers <> inviteeMembers
                   msg = XGrpMsgForward $ MsgForward m.memberId (ForwardMsgBody body) brokerTs
-              void $ sendGroupMessage user gInfo ms msg
+              unless (null ms) $
+                void $ sendGroupMessage user gInfo ms msg
             | otherwise = pure ()
       RCVD msgMeta msgRcpt ->
         withAckMessage' agentConnId conn msgMeta $
@@ -5160,6 +5161,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- Note: forwarded group events (see forwardedGroupMsg) should include msgId to be deduplicated
         processForwardedMsg :: forall e. MsgEncodingI e => GroupMember -> ChatMessage e -> m ()
         processForwardedMsg author chatMsg = do
+          -- TODO group forward: catch and send x.grp.mem.con if inviting member sends duplicate
           msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveFwdRcvMsg (GroupId groupId) body chatMsg
           case event of
             XMsgNew mc -> memberCanSend author $ newGroupContentMessage gInfo author mc msg msgTs
