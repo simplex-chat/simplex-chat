@@ -26,12 +26,18 @@ struct ConnectDesktopView: View {
     private enum ConnectDesktopAlert: Identifiable {
         case unlinkDesktop(rc: RemoteCtrlInfo)
         case disconnectDesktop(action: UserDisconnectAction)
+        case badInvitationError
+        case badVersionError(version: String?)
+        case desktopDisconnectedError
         case error(title: LocalizedStringKey, error: LocalizedStringKey = "")
 
         var id: String {
             switch self {
             case let .unlinkDesktop(rc): "unlinkDesktop \(rc.remoteCtrlId)"
             case let .disconnectDesktop(action): "disconnectDecktop \(action)"
+            case .badInvitationError: "badInvitationError"
+            case let .badVersionError(v): "badVersionError \(v ?? "")"
+            case let .desktopDisconnectedError: "desktopDisconnectedError"
             case let .error(title, _): "error \(title)"
             }
         }
@@ -112,6 +118,15 @@ struct ConnectDesktopView: View {
                     },
                     secondaryButton: .cancel()
                 )
+            case .badInvitationError:
+                Alert(title: Text("Bad desktop address"))
+            case let .badVersionError(v):
+                Alert(
+                    title: Text("Incompatible version"),
+                    message: Text("Desktop app version \(v ?? "") is not compatible with this app.")
+                )
+            case .desktopDisconnectedError:
+                Alert(title: Text("Connection terminated"))
             case let .error(title, error):
                 Alert(title: Text(title), message: Text(error))
             }
@@ -132,14 +147,11 @@ struct ConnectDesktopView: View {
         .navigationTitle("Connect to desktop")
     }
 
-    private func connectingDesktopView(_ session: RemoteCtrlSession, _ rc_: RemoteCtrlInfo?) -> some View {
+    private func connectingDesktopView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo?) -> some View {
         List {
             Section("Connecting to desktop") {
-                if let rc = rc_ {
-                    Text(rc.deviceViewName)
-                } else {
-                    Text("New desktop device").italic()
-                }
+                ctrlDeviceNameText(session, rc)
+                ctrlDeviceVersionText(session)
             }
 
             if let sessCode = session.sessionCode {
@@ -158,11 +170,8 @@ struct ConnectDesktopView: View {
     private func verifySessionView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo?, _ sessCode: String) -> some View {
         List {
             Section("Connected to desktop") {
-                if let rc = rc {
-                    Text(rc.deviceViewName)
-                } else {
-                    Text("New desktop device").italic()
-                }
+                ctrlDeviceNameText(session, rc)
+                ctrlDeviceVersionText(session)
             }
 
             Section("Verify code with desktop") {
@@ -181,10 +190,28 @@ struct ConnectDesktopView: View {
         .navigationTitle("Verify connection")
     }
 
+    private func ctrlDeviceNameText(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo?) -> Text {
+        var t = Text(rc?.deviceViewName ?? session.ctrlAppInfo.deviceName)
+        if (rc == nil) {
+            t = t + Text(" ") + Text("(new)").italic()
+        }
+        return t
+    }
+
+    private func ctrlDeviceVersionText(_ session: RemoteCtrlSession) -> Text {
+        let v = session.ctrlAppInfo.appVersionRange.maxVersion
+        var t = Text("v\(v)")
+        if v != session.appVersion {
+            t = t + Text(" ") + Text("(this device v\(session.appVersion))").italic()
+        }
+        return t
+    }
+
     private func activeSessionView(_ session: RemoteCtrlSession, _ rc: RemoteCtrlInfo) -> some View {
         List {
             Section("Connected desktop") {
                 Text(rc.deviceViewName)
+                ctrlDeviceVersionText(session)
             }
 
             if let sessCode = session.sessionCode {
@@ -322,7 +349,14 @@ struct ConnectDesktopView: View {
                 }
             } catch let e {
                 await MainActor.run {
-                    errorAlert(e)
+                    switch e as? ChatResponse {
+                    case .chatCmdError(_, .errorRemoteCtrl(.badInvitation)): alert = .badInvitationError
+                    case .chatCmdError(_, .error(.commandError)): alert = .badInvitationError
+                    case let .chatCmdError(_, .errorRemoteCtrl(.badVersion(v))): alert = .badVersionError(version: v)
+                    case .chatCmdError(_, .errorAgent(.RCP(.version))): alert = .badVersionError(version: nil)
+                    case .chatCmdError(_, .errorAgent(.RCP(.ctrlAuth))): alert = .desktopDisconnectedError
+                    default: errorAlert(e)
+                    }
                 }
             }
         }

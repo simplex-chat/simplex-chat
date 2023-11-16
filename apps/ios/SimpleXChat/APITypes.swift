@@ -1552,13 +1552,13 @@ public enum RemoteCtrlSessionState: Decodable {
 }
 
 public struct CtrlAppInfo: Decodable {
-    var appVersionRange: AppVersionRange
-    var deviceName: String
+    public var appVersionRange: AppVersionRange
+    public var deviceName: String
 }
 
 public struct AppVersionRange: Decodable {
-    var minVersion: String
-    var maxVersion: String
+    public var minVersion: String
+    public var maxVersion: String
 }
 
 public struct CoreVersionInfo: Decodable {
@@ -1748,6 +1748,7 @@ public enum AgentErrorType: Decodable {
     case SMP(smpErr: ProtocolErrorType)
     case NTF(ntfErr: ProtocolErrorType)
     case XFTP(xftpErr: XFTPErrorType)
+    case RCP(rcpErr: RCErrorType)
     case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
     case INTERNAL(internalErr: String)
@@ -1805,6 +1806,22 @@ public enum XFTPErrorType: Decodable {
     case INTERNAL
 }
 
+public enum RCErrorType: Decodable {
+    case `internal`(internalErr: String)
+    case identity
+    case noLocalAddress
+    case tlsStartFailed
+    case exception(exception: String)
+    case ctrlAuth
+    case ctrlNotFound
+    case ctrlError(ctrlErr: String)
+    case version
+    case encrypt
+    case decrypt
+    case blockSize
+    case syntax(syntaxErr: String)
+}
+
 public enum ProtocolCommandError: Decodable {
     case UNKNOWN
     case SYNTAX
@@ -1842,12 +1859,12 @@ public enum ArchiveError: Decodable {
 }
 
 public enum RemoteCtrlError: Decodable {
-  case inactive
-  case busy
-  case timeout
-  case disconnected(remoteCtrlId: Int64, reason: String)
-  case connectionLost(remoteCtrlId: Int64, reason: String)
-  case certificateExpired(remoteCtrlId: Int64)
-  case certificateUntrusted(remoteCtrlId: Int64)
-  case badFingerprint
+    case inactive
+    case badState
+    case busy
+    case timeout
+    case disconnected(remoteCtrlId: Int64, reason: String)
+    case badInvitation
+    case badVersion(appVersion: String)
+//    case protocolError(protocolError: RemoteProtocolError)
 }
