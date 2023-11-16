@@ -5162,7 +5162,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         processForwardedMsg :: forall e. MsgEncodingI e => GroupMember -> ChatMessage e -> m ()
         processForwardedMsg author chatMsg = do
           -- TODO group forward: catch and send x.grp.mem.con if inviting member sends duplicate
-          msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveFwdRcvMsg (GroupId groupId) body chatMsg
+          msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveFwdRcvMsg m (GroupId groupId) body chatMsg
           case event of
             XMsgNew mc -> memberCanSend author $ newGroupContentMessage gInfo author mc msg msgTs
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
@@ -5529,10 +5529,11 @@ saveRcvMSG' conn@Connection {connId} connOrGroupId agentMsgMeta msgBody agentAck
   msg <- withStore $ \db -> createNewMessageAndRcvMsgDelivery db connOrGroupId newMsg sharedMsgId_ rcvMsgDelivery
   pure (conn', msg)
 
-saveFwdRcvMsg :: (MsgEncodingI e, ChatMonad m) => ConnOrGroupId -> MsgBody -> ChatMessage e -> m RcvMessage
-saveFwdRcvMsg connOrGroupId msgBody ChatMessage {msgId = sharedMsgId_, chatMsgEvent} = do
+saveFwdRcvMsg :: (MsgEncodingI e, ChatMonad m) => GroupMember -> ConnOrGroupId -> MsgBody -> ChatMessage e -> m RcvMessage
+saveFwdRcvMsg forwardingMember connOrGroupId msgBody ChatMessage {msgId = sharedMsgId_, chatMsgEvent} = do
   let newMsg = NewMessage {chatMsgEvent, msgBody}
-  withStore $ \db -> createNewRcvMessage db connOrGroupId newMsg sharedMsgId_ True
+      forwardedByGroupMemberId = Just $ groupMemberId' forwardingMember
+  withStore $ \db -> createNewRcvMessage db connOrGroupId newMsg sharedMsgId_ forwardedByGroupMemberId
 
 saveSndChatItem :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> m (ChatItem c 'MDSnd)
 saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothing Nothing Nothing False
@@ -5545,7 +5546,7 @@ saveSndChatItem' user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem 
     ciId <- createNewSndChatItem db user cd msg content quotedItem itemTimed live createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     pure ciId
-  liftIO $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) itemTimed live createdAt createdAt
+  liftIO $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) itemTimed live createdAt Nothing createdAt
 
 saveRcvChatItem :: ChatMonad m => User -> ChatDirection c 'MDRcv -> RcvMessage -> UTCTime -> CIContent 'MDRcv -> m (ChatItem c 'MDRcv)
 saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} brokerTs content =
@@ -5559,13 +5560,13 @@ saveRcvChatItem' user cd msg sharedMsgId_ brokerTs content ciFile itemTimed live
     (ciId, quotedItem) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     pure (ciId, quotedItem)
-  liftIO $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemTimed live brokerTs createdAt
+  liftIO $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemTimed live brokerTs msg.forwardedByGroupMemberId createdAt
 
-mkChatItem :: forall c d. MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CITimed -> Bool -> ChatItemTs -> UTCTime -> IO (ChatItem c d)
-mkChatItem cd ciId content file quotedItem sharedMsgId itemTimed live itemTs currentTs = do
+mkChatItem :: forall c d. MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CITimed -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> IO (ChatItem c d)
+mkChatItem cd ciId content file quotedItem sharedMsgId itemTimed live itemTs forwardedByGroupMemberId currentTs = do
   let itemText = ciContentToText content
       itemStatus = ciCreateStatus content
-      meta = mkCIMeta ciId content itemText itemStatus sharedMsgId Nothing False itemTimed (justTrue live) currentTs itemTs currentTs currentTs
+      meta = mkCIMeta ciId content itemText itemStatus sharedMsgId Nothing False itemTimed (justTrue live) currentTs itemTs forwardedByGroupMemberId currentTs currentTs
   pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, reactions = [], file}
 
 deleteDirectCI :: (ChatMonad m, MsgDirectionI d) => User -> Contact -> ChatItem 'CTDirect d -> Bool -> Bool -> m ChatResponse
@@ -5728,7 +5729,7 @@ createInternalChatItem user cd content itemTs_ = do
   ciId <- withStore' $ \db -> do
     when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
     createNewChatItemNoMsg db user cd content itemTs createdAt
-  ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs createdAt
+  ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
   toView $ CRNewChatItem user (AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci)
 
 getCreateActiveUser :: SQLiteStore -> Bool -> IO User

@@ -3648,9 +3648,9 @@ testMemberContactProhibitedRepeatInv =
 
 testMemberContactInvitedConnectionReplaced :: HasCallStack => FilePath -> IO ()
 testMemberContactInvitedConnectionReplaced tmp = do
-  withNewTestChat tmp "alice" aliceProfile $ \a -> withTestOutput a $ \alice -> do
-    withNewTestChat tmp "bob" bobProfile $ \b -> withTestOutput b $ \bob -> do
-      withNewTestChat tmp "cath" cathProfile $ \c -> withTestOutput c $ \cath -> do
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      withNewTestChat tmp "cath" cathProfile $ \cath -> do
         createGroup3 "team" alice bob cath
 
         alice ##> "/d bob"
@@ -3892,7 +3892,8 @@ testGroupMsgForward =
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
 
-      threadDelay 500000 -- delay so intro_status doesn't get overwritten to connected
+      threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
+
       void $ withCCTransaction bob $ \db ->
         DB.execute_ db "UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3"
       void $ withCCTransaction cath $ \db ->
@@ -3902,8 +3903,22 @@ testGroupMsgForward =
 
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
-      cath <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
+
+      threadDelay 1000000
 
       cath #> "#team hey team"
       alice <# "#team cath> hey team"
-      bob <# "#team cath> hey team"
+      bob <# "#team cath> hey team [>>]"
+
+      alice ##> "/tail #team 2"
+      alice <# "#team bob> hi there"
+      alice <# "#team cath> hey team"
+
+      bob ##> "/tail #team 2"
+      bob <# "#team hi there"
+      bob <# "#team cath> hey team [>>]"
+
+      cath ##> "/tail #team 2"
+      cath <# "#team bob> hi there [>>]"
+      cath <# "#team hey team"

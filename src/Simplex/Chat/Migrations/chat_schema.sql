@@ -325,7 +325,7 @@ CREATE TABLE messages(
   group_id INTEGER DEFAULT NULL REFERENCES groups ON DELETE CASCADE,
   shared_msg_id BLOB,
   shared_msg_id_user INTEGER,
-  forwarded INTEGER NOT NULL DEFAULT 0
+  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
 );
 CREATE TABLE msg_deliveries(
   msg_delivery_id INTEGER PRIMARY KEY,
@@ -375,7 +375,8 @@ CREATE TABLE chat_items(
   timed_delete_at TEXT,
   item_live INTEGER,
   item_deleted_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  item_deleted_ts TEXT
+  item_deleted_ts TEXT,
+  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -761,7 +762,13 @@ CREATE INDEX idx_group_member_intros_re_group_member_id ON group_member_intros(
 CREATE INDEX idx_group_members_invited_by_group_member_id ON group_members(
   invited_by_group_member_id
 );
+CREATE INDEX idx_messages_forwarded_by_group_member_id ON messages(
+  forwarded_by_group_member_id
+);
 CREATE INDEX idx_messages_group_id_shared_msg_id ON messages(
   group_id,
   shared_msg_id
+);
+CREATE INDEX idx_chat_items_forwarded_by_group_member_id ON chat_items(
+  forwarded_by_group_member_id
 );
