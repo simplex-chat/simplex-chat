@@ -1459,4 +1459,6 @@
     <string name="terminal_always_visible">Afficher la console dans une nouvelle fenêtre</string>
     <string name="block_member_desc">Tous les nouveaux messages provenant de %s seront cachés !</string>
     <string name="blocked_item_description">blocké</string>
+    <string name="encryption_renegotiation_error">Erreur lors de la renégociation du chiffrement</string>
+    <string name="alert_text_encryption_renegotiation_failed">La renégociation du chiffrement a échoué.</string>
 </resources>
