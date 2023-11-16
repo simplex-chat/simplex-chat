@@ -144,7 +144,8 @@ defaultChatConfig =
       cleanupManagerInterval = 30 * 60, -- 30 minutes
       cleanupManagerStepDelay = 3 * 1000000, -- 3 seconds
       ciExpirationInterval = 30 * 60 * 1000000, -- 30 minutes
-      coreApi = False
+      coreApi = False,
+      highlyAvailable = False
     }
 
 _defaultSMPServers :: NonEmpty SMPServerWithAuth
@@ -188,9 +189,9 @@ createChatDatabase filePrefix key confirmMigrations = runExceptT $ do
   pure ChatDatabase {chatStore, agentStore}
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> IO ChatController
-newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, tempDir} ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, networkConfig, logLevel, logConnections, logServerHosts, logFile, tbqSize}, optFilesFolder, showReactions, allowInstantFiles, autoAcceptFileSize} = do
+newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, tempDir} ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, networkConfig, logLevel, logConnections, logServerHosts, logFile, tbqSize, highlyAvailable}, optFilesFolder, showReactions, allowInstantFiles, autoAcceptFileSize} = do
   let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
-      config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles', autoAcceptFileSize}
+      config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles', autoAcceptFileSize, highlyAvailable}
       firstTime = dbNew chatStore
   currentUser <- newTVarIO user
   servers <- agentServers config
@@ -3618,12 +3619,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           forwardMsg_ :: ChatMessage e -> MsgBody -> m ()
           forwardMsg_ ChatMessage {chatMsgEvent} body
             | forwardedGroupMsg chatMsgEvent = do
+              ChatConfig {highlyAvailable} <- asks config
               -- members to which this member was introduced
               forwardMembers <- if memberCategory m == GCInviteeMember
-                then withStore' $ \db -> getInviteeForwardMembers db user m
+                then withStore' $ \db -> getInviteeForwardMembers db user m highlyAvailable
                 else pure []
               -- members introduced to this member
-              inviteeMembers <- withStore' $ \db -> getForwardMemberInvitees db user m
+              inviteeMembers <- withStore' $ \db -> getForwardMemberInvitees db user m highlyAvailable
               let ms = forwardMembers <> inviteeMembers
                   msg = XGrpMsgForward $ MsgForward m.memberId (ForwardMsgBody body) brokerTs
               unless (null ms) $

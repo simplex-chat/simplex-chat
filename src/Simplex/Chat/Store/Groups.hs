@@ -1079,35 +1079,45 @@ getIntroduction db reMember toMember = ExceptT $ do
        in Right GroupMemberIntro {introId, reMember, toMember, introStatus, introInvitation}
     toIntro _ = Left SEIntroNotFound
 
-getInviteeForwardMembers :: DB.Connection -> User -> GroupMember -> IO [GroupMember]
-getInviteeForwardMembers db user invitee = do
-  memberIds <-
-    map fromOnly <$>
-      DB.query
-        db
-        [sql|
-          SELECT re_group_member_id
-          FROM group_member_intros
-          WHERE to_group_member_id = ?
-            AND intro_chat_protocol_version >= ? AND intro_status NOT IN (?,?,?)
-        |]
-        (groupMemberId' invitee, minVersion groupForwardVRange, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
+getInviteeForwardMembers :: DB.Connection -> User -> GroupMember -> Bool -> IO [GroupMember]
+getInviteeForwardMembers db user invitee highlyAvailable = do
+  memberIds <- map fromOnly <$> query
   filter memberCurrent . rights <$> mapM (runExceptT . getGroupMemberById db user) memberIds
+ where
+  mId = groupMemberId' invitee
+  query
+    | highlyAvailable = DB.query db q (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
+    | otherwise =
+        DB.query
+          db
+          (q <> " AND intro_chat_protocol_version >= ?")
+          (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, minVersion groupForwardVRange)
+  q =
+    [sql|
+      SELECT re_group_member_id
+      FROM group_member_intros
+      WHERE to_group_member_id = ? AND intro_status NOT IN (?,?,?)
+    |]
 
-getForwardMemberInvitees :: DB.Connection -> User -> GroupMember -> IO [GroupMember]
-getForwardMemberInvitees db user forwardMember = do
-  memberIds <-
-    map fromOnly <$>
-      DB.query
-        db
-        [sql|
-          SELECT to_group_member_id
-          FROM group_member_intros
-          WHERE re_group_member_id = ?
-            AND intro_chat_protocol_version >= ? AND intro_status NOT IN (?,?,?)
-        |]
-        (groupMemberId' forwardMember, minVersion groupForwardVRange, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
+getForwardMemberInvitees :: DB.Connection -> User -> GroupMember -> Bool -> IO [GroupMember]
+getForwardMemberInvitees db user forwardMember highlyAvailable = do
+  memberIds <- map fromOnly <$> query
   filter memberCurrent . rights <$> mapM (runExceptT . getGroupMemberById db user) memberIds
+ where
+  mId = groupMemberId' forwardMember
+  query
+    | highlyAvailable = DB.query db q (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
+    | otherwise =
+        DB.query
+          db
+          (q <> " AND intro_chat_protocol_version >= ?")
+          (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, minVersion groupForwardVRange)
+  q =
+    [sql|
+      SELECT to_group_member_id
+      FROM group_member_intros
+      WHERE re_group_member_id = ? AND intro_status NOT IN (?,?,?)
+    |]
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> SubscriptionMode -> ExceptT StoreError IO GroupMember
 createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupMember {memberContactId, activeConn} memInfo@(MemberInfo _ _ memberChatVRange memberProfile) (groupCmdId, groupAgentConnId) directConnIds customUserProfileId subMode = do

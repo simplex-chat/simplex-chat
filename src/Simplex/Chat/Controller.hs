@@ -126,7 +126,8 @@ data ChatConfig = ChatConfig
     cleanupManagerInterval :: NominalDiffTime,
     cleanupManagerStepDelay :: Int64,
     ciExpirationInterval :: Int64, -- microseconds
-    coreApi :: Bool
+    coreApi :: Bool,
+    highlyAvailable :: Bool
   }
 
 data DefaultAgentServers = DefaultAgentServers
