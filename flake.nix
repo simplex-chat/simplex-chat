@@ -363,6 +363,7 @@
                   "chat_recv_msg"
                   "chat_recv_msg_wait"
                   "chat_send_cmd"
+                  "chat_send_remote_cmd"
                   "chat_valid_name"
                   "chat_write_file"
                 ];
@@ -464,6 +465,7 @@
                   "chat_recv_msg"
                   "chat_recv_msg_wait"
                   "chat_send_cmd"
+                  "chat_send_remote_cmd"
                   "chat_valid_name"
                   "chat_write_file"
                 ];

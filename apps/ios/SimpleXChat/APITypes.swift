@@ -120,14 +120,16 @@ public enum ChatCommand {
     case receiveFile(fileId: Int64, encrypted: Bool?, inline: Bool?)
     case setFileToReceive(fileId: Int64, encrypted: Bool?)
     case cancelFile(fileId: Int64)
+    // remote desktop commands
     case setLocalDeviceName(displayName: String)
-    case startRemoteCtrl
-    case registerRemoteCtrl(remoteCtrlOOB: RemoteCtrlOOB)
+    case connectRemoteCtrl(xrcpInvitation: String)
+    case findKnownRemoteCtrl
+    case confirmRemoteCtrl(remoteCtrlId: Int64)
+    case verifyRemoteCtrlSession(sessionCode: String)
     case listRemoteCtrls
-    case acceptRemoteCtrl(remoteCtrlId: Int64)
-    case rejectRemoteCtrl(remoteCtrlId: Int64)
     case stopRemoteCtrl
     case deleteRemoteCtrl(remoteCtrlId: Int64)
+    // misc
     case showVersion
     case string(String)
 
@@ -269,10 +271,10 @@ public enum ChatCommand {
             case let .setFileToReceive(fileId, encrypt): return "/_set_file_to_receive \(fileId)\(onOffParam("encrypt", encrypt))"
             case let .cancelFile(fileId): return "/fcancel \(fileId)"
             case let .setLocalDeviceName(displayName): return "/set device name \(displayName)"
-            case .startRemoteCtrl: return "/start remote ctrl"
-            case let .registerRemoteCtrl(oob): return "/register remote ctrl \(oob.caFingerprint)"
-            case let .acceptRemoteCtrl(rcId): return "/accept remote ctrl \(rcId)"
-            case let .rejectRemoteCtrl(rcId): return "/reject remote ctrl \(rcId)"
+            case let .connectRemoteCtrl(xrcpInv): return "/connect remote ctrl \(xrcpInv)"
+            case .findKnownRemoteCtrl: return "/find remote ctrl"
+            case let .confirmRemoteCtrl(rcId): return "/confirm remote ctrl \(rcId)"
+            case let .verifyRemoteCtrlSession(sessCode): return "/verify remote ctrl \(sessCode)"
             case .listRemoteCtrls: return "/list remote ctrls"
             case .stopRemoteCtrl: return "/stop remote ctrl"
             case let .deleteRemoteCtrl(rcId): return "/delete remote ctrl \(rcId)"
@@ -392,11 +394,11 @@ public enum ChatCommand {
             case .setFileToReceive: return "setFileToReceive"
             case .cancelFile: return "cancelFile"
             case .setLocalDeviceName: return "setLocalDeviceName"
-            case .startRemoteCtrl: return "startRemoteCtrl"
-            case .registerRemoteCtrl: return "registerRemoteCtrl"
+            case .connectRemoteCtrl: return "connectRemoteCtrl"
+            case .findKnownRemoteCtrl: return "findKnownRemoteCtrl"
+            case .confirmRemoteCtrl: return "confirmRemoteCtrl"
+            case .verifyRemoteCtrlSession: return "verifyRemoteCtrlSession"
             case .listRemoteCtrls: return "listRemoteCtrls"
-            case .acceptRemoteCtrl: return "acceptRemoteCtrl"
-            case .rejectRemoteCtrl: return "rejectRemoteCtrl"
             case .stopRemoteCtrl: return "stopRemoteCtrl"
             case .deleteRemoteCtrl: return "deleteRemoteCtrl"
             case .showVersion: return "showVersion"
@@ -605,13 +607,14 @@ public enum ChatResponse: Decodable, Error {
     case ntfMessages(user_: User?, connEntity: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
     case newContactConnection(user: UserRef, connection: PendingContactConnection)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
+    // remote desktop responses/events
     case remoteCtrlList(remoteCtrls: [RemoteCtrlInfo])
-    case remoteCtrlRegistered(remoteCtrl: RemoteCtrlInfo)
-    case remoteCtrlAnnounce(fingerprint: String)
     case remoteCtrlFound(remoteCtrl: RemoteCtrlInfo)
-    case remoteCtrlConnecting(remoteCtrl: RemoteCtrlInfo)
+    case remoteCtrlConnecting(remoteCtrl_: RemoteCtrlInfo?, ctrlAppInfo: CtrlAppInfo, appVersion: String)
+    case remoteCtrlSessionCode(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
     case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
     case remoteCtrlStopped
+    // misc
     case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
     case cmdOk(user: UserRef?)
     case chatCmdError(user_: UserRef?, chatError: ChatError)
@@ -752,10 +755,9 @@ public enum ChatResponse: Decodable, Error {
             case .newContactConnection: return "newContactConnection"
             case .contactConnectionDeleted: return "contactConnectionDeleted"
             case .remoteCtrlList: return "remoteCtrlList"
-            case .remoteCtrlRegistered: return "remoteCtrlRegistered"
-            case .remoteCtrlAnnounce: return "remoteCtrlAnnounce"
             case .remoteCtrlFound: return "remoteCtrlFound"
             case .remoteCtrlConnecting: return "remoteCtrlConnecting"
+            case .remoteCtrlSessionCode: return "remoteCtrlSessionCode"
             case .remoteCtrlConnected: return "remoteCtrlConnected"
             case .remoteCtrlStopped: return "remoteCtrlStopped"
             case .versionInfo: return "versionInfo"
@@ -901,10 +903,9 @@ public enum ChatResponse: Decodable, Error {
             case let .newContactConnection(u, connection): return withUser(u, String(describing: connection))
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
             case let .remoteCtrlList(remoteCtrls): return String(describing: remoteCtrls)
-            case let .remoteCtrlRegistered(remoteCtrl): return String(describing: remoteCtrl)
-            case let .remoteCtrlAnnounce(fingerprint): return "fingerprint: \(fingerprint)"
             case let .remoteCtrlFound(remoteCtrl): return String(describing: remoteCtrl)
-            case let .remoteCtrlConnecting(remoteCtrl): return String(describing: remoteCtrl)
+            case let .remoteCtrlConnecting(remoteCtrl_, ctrlAppInfo, appVersion): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nctrlAppInfo:\n\(String(describing: ctrlAppInfo))\nappVersion: \(appVersion)"
+            case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nsessionCode: \(sessionCode)"
             case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
             case .remoteCtrlStopped: return noDetails
             case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
@@ -1533,21 +1534,31 @@ public enum NotificationPreviewMode: String, SelectableItem {
     public static var values: [NotificationPreviewMode] = [.message, .contact, .hidden]
 }
 
-public struct RemoteCtrlOOB {
-    public var caFingerprint: String
-}
-
 public struct RemoteCtrlInfo: Decodable {
     public var remoteCtrlId: Int64
-    public var displayName: String
-    public var sessionActive: Bool
+    public var ctrlDeviceName: String
+    public var sessionState: RemoteCtrlSessionState?
+
+    public var deviceViewName: String {
+        ctrlDeviceName == "" ? "\(remoteCtrlId)" : ctrlDeviceName
+    }
 }
 
-public struct RemoteCtrl: Decodable {
-    var remoteCtrlId: Int64
-    var displayName: String
-    var fingerprint: String
-    var accepted: Bool?
+public enum RemoteCtrlSessionState: Decodable {
+    case starting
+    case connecting
+    case pendingConfirmation(sessionCode: String)
+    case connected(sessionCode: String)
+}
+
+public struct CtrlAppInfo: Decodable {
+    public var appVersionRange: AppVersionRange
+    public var deviceName: String
+}
+
+public struct AppVersionRange: Decodable {
+    public var minVersion: String
+    public var maxVersion: String
 }
 
 public struct CoreVersionInfo: Decodable {
@@ -1737,6 +1748,7 @@ public enum AgentErrorType: Decodable {
     case SMP(smpErr: ProtocolErrorType)
     case NTF(ntfErr: ProtocolErrorType)
     case XFTP(xftpErr: XFTPErrorType)
+    case RCP(rcpErr: RCErrorType)
     case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
     case INTERNAL(internalErr: String)
@@ -1794,6 +1806,22 @@ public enum XFTPErrorType: Decodable {
     case INTERNAL
 }
 
+public enum RCErrorType: Decodable {
+    case `internal`(internalErr: String)
+    case identity
+    case noLocalAddress
+    case tlsStartFailed
+    case exception(exception: String)
+    case ctrlAuth
+    case ctrlNotFound
+    case ctrlError(ctrlErr: String)
+    case version
+    case encrypt
+    case decrypt
+    case blockSize
+    case syntax(syntaxErr: String)
+}
+
 public enum ProtocolCommandError: Decodable {
     case UNKNOWN
     case SYNTAX
@@ -1831,12 +1859,12 @@ public enum ArchiveError: Decodable {
 }
 
 public enum RemoteCtrlError: Decodable {
-  case inactive
-  case busy
-  case timeout
-  case disconnected(remoteCtrlId: Int64, reason: String)
-  case connectionLost(remoteCtrlId: Int64, reason: String)
-  case certificateExpired(remoteCtrlId: Int64)
-  case certificateUntrusted(remoteCtrlId: Int64)
-  case badFingerprint
+    case inactive
+    case badState
+    case busy
+    case timeout
+    case disconnected(remoteCtrlId: Int64, reason: String)
+    case badInvitation
+    case badVersion(appVersion: String)
+//    case protocolError(protocolError: RemoteProtocolError)
 }
