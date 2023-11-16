@@ -37,7 +37,7 @@ struct ConnectDesktopView: View {
             case let .disconnectDesktop(action): "disconnectDecktop \(action)"
             case .badInvitationError: "badInvitationError"
             case let .badVersionError(v): "badVersionError \(v ?? "")"
-            case let .desktopDisconnectedError: "desktopDisconnectedError"
+            case .desktopDisconnectedError: "desktopDisconnectedError"
             case let .error(title, _): "error \(title)"
             }
         }
@@ -90,7 +90,7 @@ struct ConnectDesktopView: View {
             updateRemoteCtrls()
         }
         .onDisappear {
-            if m.activeRemoteCtrl {
+            if m.remoteCtrlSession != nil {
                 disconnectDesktop()
             }
         }
