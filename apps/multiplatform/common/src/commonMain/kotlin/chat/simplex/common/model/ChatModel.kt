@@ -2111,13 +2111,15 @@ enum class MsgDecryptError {
   @SerialName("ratchetHeader") RatchetHeader,
   @SerialName("tooManySkipped") TooManySkipped,
   @SerialName("ratchetEarlier") RatchetEarlier,
-  @SerialName("other") Other;
+  @SerialName("other") Other,
+  @SerialName("ratchetSync") RatchetSync;
 
   val text: String get() = when (this) {
     RatchetHeader -> generalGetString(MR.strings.decryption_error)
     TooManySkipped -> generalGetString(MR.strings.decryption_error)
     RatchetEarlier -> generalGetString(MR.strings.decryption_error)
     Other -> generalGetString(MR.strings.decryption_error)
+    RatchetSync -> generalGetString(MR.strings.encryption_renegotiation_error)
   }
 }
 
