@@ -3,6 +3,7 @@ EXPORTS
     hs_init
     chat_migrate_init
     chat_send_cmd
+    chat_send_remote_cmd
     chat_recv_msg
     chat_recv_msg_wait
     chat_parse_markdown

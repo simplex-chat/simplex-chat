@@ -106,6 +106,11 @@ object ChatModel {
 
   var updatingChatsMutex: Mutex = Mutex()
 
+  // remote controller
+  val remoteHosts = mutableStateListOf<RemoteHostInfo>()
+  val currentRemoteHost = mutableStateOf<RemoteHostInfo?>(null)
+  val newRemoteHostPairing = mutableStateOf<Pair<RemoteHostInfo?, RemoteHostSessionState>?>(null)
+
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value
   } else {
@@ -2840,4 +2845,18 @@ enum class NotificationPreviewMode {
   companion object {
     val default: NotificationPreviewMode = MESSAGE
   }
+}
+
+data class RemoteCtrlSession(
+  val ctrlAppInfo: CtrlAppInfo,
+  val appVersion: String,
+  val sessionState: RemoteCtrlSessionState
+)
+
+@Serializable
+sealed class RemoteCtrlSessionState {
+  @Serializable @SerialName("starting") object Starting: RemoteCtrlSessionState()
+  @Serializable @SerialName("connecting") object Connecting: RemoteCtrlSessionState()
+  @Serializable @SerialName("pendingConfirmation") data class PendingConfirmation(val sessionCode: String): RemoteCtrlSessionState()
+  @Serializable @SerialName("connected") data class Connected(val sessionCode: String): RemoteCtrlSessionState()
 }

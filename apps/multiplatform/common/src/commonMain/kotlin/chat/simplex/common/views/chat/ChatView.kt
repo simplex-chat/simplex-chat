@@ -46,6 +46,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
   val activeChat = remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatId }) }
   val searchText = rememberSaveable { mutableStateOf("") }
   val user = chatModel.currentUser.value
+  val rhId = remember { chatModel.currentRemoteHost }.value?.remoteHostId
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
   val composeState = rememberSaveable(saver = ComposeState.saver()) {
     mutableStateOf(
@@ -284,10 +285,10 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         }
       },
       receiveFile = { fileId, encrypted ->
-        withApi { chatModel.controller.receiveFile(user, fileId, encrypted) }
+        withApi { chatModel.controller.receiveFile(rhId, user, fileId, encrypted) }
       },
       cancelFile = { fileId ->
-        withApi { chatModel.controller.cancelFile(user, fileId) }
+        withApi { chatModel.controller.cancelFile(rhId, user, fileId) }
       },
       joinGroup = { groupId, onComplete ->
         withApi {
