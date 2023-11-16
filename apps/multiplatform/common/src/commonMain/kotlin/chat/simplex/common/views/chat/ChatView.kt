@@ -46,7 +46,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
   val activeChat = remember { mutableStateOf(chatModel.chats.firstOrNull { chat -> chat.chatInfo.id == chatId }) }
   val searchText = rememberSaveable { mutableStateOf("") }
   val user = chatModel.currentUser.value
-  val rhId = chatModel.currentRemoteHost.value?.remoteHostId
+  val rhId = remember { chatModel.currentRemoteHost }.value?.remoteHostId
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
   val composeState = rememberSaveable(saver = ComposeState.saver()) {
     mutableStateOf(

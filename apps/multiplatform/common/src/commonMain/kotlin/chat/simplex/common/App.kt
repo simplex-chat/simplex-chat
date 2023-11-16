@@ -38,7 +38,7 @@ import kotlinx.coroutines.flow.*
 data class SettingsViewState(
   val userPickerState: MutableStateFlow<AnimatedViewState>,
   val scaffoldState: ScaffoldState,
-  val switchingUsers: MutableState<Boolean>
+  val switchingUsersAndHosts: MutableState<Boolean>
 )
 
 @Composable
@@ -121,8 +121,8 @@ fun MainScreen() {
           showAdvertiseLAAlert = true
           val userPickerState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(AnimatedViewState.GONE)) }
           val scaffoldState = rememberScaffoldState()
-          val switchingUsers = rememberSaveable { mutableStateOf(false) }
-          val settingsState = remember { SettingsViewState(userPickerState, scaffoldState, switchingUsers) }
+          val switchingUsersAndHosts = rememberSaveable { mutableStateOf(false) }
+          val settingsState = remember { SettingsViewState(userPickerState, scaffoldState, switchingUsersAndHosts) }
           if (appPlatform.isAndroid) {
             AndroidScreen(settingsState)
           } else {
@@ -298,7 +298,7 @@ fun DesktopScreen(settingsState: SettingsViewState) {
         EndPartOfScreen()
       }
     }
-    val (userPickerState, scaffoldState, switchingUsers ) = settingsState
+    val (userPickerState, scaffoldState, switchingUsersAndHosts ) = settingsState
     val scope = rememberCoroutineScope()
     if (scaffoldState.drawerState.isOpen) {
       Box(
@@ -312,7 +312,7 @@ fun DesktopScreen(settingsState: SettingsViewState) {
       )
     }
     VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH))
-    UserPicker(chatModel, userPickerState, switchingUsers) {
+    UserPicker(chatModel, userPickerState, switchingUsersAndHosts) {
       scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
       userPickerState.value = AnimatedViewState.GONE
     }

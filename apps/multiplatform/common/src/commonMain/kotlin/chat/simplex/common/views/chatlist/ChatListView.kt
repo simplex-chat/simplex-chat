@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chatlist
 
-import SectionItemView
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -9,30 +8,22 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.SettingsViewState
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.WhatsNewView
 import chat.simplex.common.views.onboarding.shouldShowWhatsNew
 import chat.simplex.common.views.usersettings.SettingsView
-import chat.simplex.common.views.usersettings.simplexTeamUri
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.call.Call
-import chat.simplex.common.views.call.CallMediaType
-import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
@@ -77,7 +68,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   var searchInList by rememberSaveable { mutableStateOf("") }
   val scope = rememberCoroutineScope()
-  val (userPickerState, scaffoldState, switchingUsers ) = settingsState
+  val (userPickerState, scaffoldState, switchingUsersAndHosts ) = settingsState
   Scaffold(topBar = { Box(Modifier.padding(end = endPadding)) { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } } },
     scaffoldState = scaffoldState,
     drawerContent = { SettingsView(chatModel, setPerformLA, scaffoldState.drawerState) },
@@ -113,7 +104,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       ) {
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel, search = searchInList)
-        } else if (!switchingUsers.value) {
+        } else if (!switchingUsersAndHosts.value) {
           Box(Modifier.fillMaxSize()) {
             if (!stopped && !newChatSheetState.collectAsState().value.isVisible()) {
               OnboardingButtons(showNewChatSheet)
@@ -129,12 +120,12 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
   }
   if (appPlatform.isAndroid) {
-    UserPicker(chatModel, userPickerState, switchingUsers) {
+    UserPicker(chatModel, userPickerState, switchingUsersAndHosts) {
       scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
       userPickerState.value = AnimatedViewState.GONE
     }
   }
-  if (switchingUsers.value) {
+  if (switchingUsersAndHosts.value) {
     Box(
       Modifier.fillMaxSize().clickable(enabled = false, onClick = {}),
       contentAlignment = Alignment.Center
@@ -272,7 +263,7 @@ fun UserProfileButton(image: String?, allRead: Boolean, onButtonClicked: () -> U
       if (h != null) {
         Spacer(Modifier.width(12.dp))
         HostDisconnectButton {
-          stopRemoteHost(h!!, true)
+          stopRemoteHostAndReloadHosts(h!!, true)
         }
       }
     }

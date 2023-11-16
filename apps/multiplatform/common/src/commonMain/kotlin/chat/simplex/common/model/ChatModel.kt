@@ -2847,13 +2847,6 @@ enum class NotificationPreviewMode {
   }
 }
 
-// Remove
-//sealed class RemoteHostSession {
-//  class Connecting(val remoteHost_: RemoteHostInfo?, val invitation: String): RemoteHostSession()
-//  class PendingConfirmation(val remoteHost_: RemoteHostInfo?, val sessionCode: String): RemoteHostSession()
-//  class Connected(val remoteHost: RemoteHostInfo): RemoteHostSession()
-//}
-
 data class RemoteCtrlSession(
   val ctrlAppInfo: CtrlAppInfo,
   val appVersion: String,

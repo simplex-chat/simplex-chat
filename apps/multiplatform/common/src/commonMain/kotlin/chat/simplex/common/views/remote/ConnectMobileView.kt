@@ -8,18 +8,13 @@ import SectionTextFooter
 import SectionView
 import TextIconSpaced
 import androidx.compose.foundation.*
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.ZeroCornerSize
-import androidx.compose.foundation.text.*
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
-import androidx.compose.material.TextFieldDefaults.indicatorLine
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.*
@@ -27,6 +22,7 @@ import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -50,7 +46,7 @@ fun ConnectMobileView(
     controller.reloadRemoteHosts()
   }
   ConnectMobileLayout(
-    deviceName = deviceName,
+    deviceName = remember { deviceName.state },
     remoteHosts = remoteHosts,
     connecting,
     connectedHost = remember { m.currentRemoteHost },
@@ -64,7 +60,7 @@ fun ConnectMobileView(
     },
     addMobileDevice = { showAddingMobileDevice(connecting) },
     connectMobileDevice = { connectMobileDevice(it, connecting) },
-    connectDesktop = ::localDeviceSelected,
+    connectDesktop = { withBGApi { chatController.switchUIRemoteHost(null) } },
     deleteHost = { host ->
       withBGApi {
         val success = controller.deleteRemoteHost(host.remoteHostId)
@@ -78,10 +74,10 @@ fun ConnectMobileView(
 
 @Composable
 fun ConnectMobileLayout(
-  deviceName: SharedPreference<String?>,
+  deviceName: State<String?>,
   remoteHosts: List<RemoteHostInfo>,
   connecting: MutableState<Boolean>,
-  connectedHost: MutableState<RemoteHostInfo?>,
+  connectedHost: State<RemoteHostInfo?>,
   updateDeviceName: (String) -> Unit,
   addMobileDevice: () -> Unit,
   connectMobileDevice: (RemoteHostInfo) -> Unit,
@@ -94,13 +90,13 @@ fun ConnectMobileLayout(
   ) {
     AppBarTitle(stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles))
     SectionView(generalGetString(MR.strings.this_device_name).uppercase()) {
-      DeviceNameField(deviceName.state.value ?: "") { updateDeviceName(it) }
+      DeviceNameField(deviceName.value ?: "") { updateDeviceName(it) }
       SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
       SectionDividerSpaced(maxBottomPadding = false)
     }
     SectionView(stringResource(MR.strings.devices).uppercase()) {
       SettingsActionItemWithContent(text = stringResource(MR.strings.this_device), icon = painterResource(MR.images.ic_desktop), click = connectDesktop) {
-        if (remember { connectedHost }.value == null) {
+        if (connectedHost.value == null) {
           Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
         }
       }
@@ -115,28 +111,28 @@ fun ConnectMobileLayout(
           if (host.activeHost) {
             Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
           } else if (host.sessionState is RemoteHostSessionState.Connected) {
-            HostDisconnectButton { stopRemoteHost(host, false) }
+            HostDisconnectButton { stopRemoteHostAndReloadHosts(host, false) }
           }
         }
         Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
           DefaultDropdownMenu(showMenu) {
-            if (host.activeHost()) {
-              ItemAction(stringResource(MR.strings.disconnect_remote_host), painterResource(MR.images.ic_wifi_off), color = WarningOrange, onClick = {
-                stopRemoteHost(host, true)
+            if (host.activeHost) {
+              ItemAction(stringResource(MR.strings.disconnect_remote_host), painterResource(MR.images.ic_wifi_off), color = WarningOrange) {
+                stopRemoteHostAndReloadHosts(host, true)
                 showMenu.value = false
-              })
+              }
             } else {
-              ItemAction(stringResource(MR.strings.delete_verb), painterResource(MR.images.ic_delete), color = Color.Red, onClick = {
+              ItemAction(stringResource(MR.strings.delete_verb), painterResource(MR.images.ic_delete), color = Color.Red) {
                 deleteHost(host)
                 showMenu.value = false
-              })
+              }
             }
           }
         }
       }
       SectionItemView(addMobileDevice) {
         Icon(painterResource(MR.images.ic_add), stringResource(MR.strings.link_a_mobile), tint = MaterialTheme.colors.primary)
-        Spacer(Modifier.padding(horizontal = 4.dp))
+        Spacer(Modifier.padding(horizontal = 10.dp))
         Text(stringResource(MR.strings.link_a_mobile), color = MaterialTheme.colors.primary)
       }
     }
@@ -151,53 +147,15 @@ private fun DeviceNameField(
 ) {
   // TODO get user-defined device name
   val state = remember { mutableStateOf(TextFieldValue(initialValue)) }
-  val colors = TextFieldDefaults.textFieldColors(
-    backgroundColor = Color.Unspecified,
-    textColor = MaterialTheme.colors.onBackground,
-    focusedIndicatorColor = Color.Unspecified,
-    unfocusedIndicatorColor = Color.Unspecified,
+  DefaultConfigurableTextField(
+    state = state,
+    placeholder = generalGetString(MR.strings.enter_this_device_name),
+    modifier = Modifier.padding(horizontal = DEFAULT_PADDING),
+    isValid = { true },
   )
-  val enabled = true
-  val shape = MaterialTheme.shapes.small.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize)
-  val interactionSource = remember { MutableInteractionSource() }
-  BasicTextField(
-    value = state.value,
-    modifier = Modifier
-      .padding(horizontal = DEFAULT_PADDING)
-      .fillMaxWidth()
-      .background(colors.backgroundColor(enabled).value, shape)
-      .indicatorLine(enabled, false, interactionSource, colors)
-      .defaultMinSize(
-        minWidth = TextFieldDefaults.MinWidth,
-        minHeight = TextFieldDefaults.MinHeight
-      ),
-    onValueChange = {
-      state.value = it
-      onChange(it.text)
-    },
-    cursorBrush = SolidColor(colors.cursorColor(false).value),
-    singleLine = true,
-    textStyle = TextStyle.Default.copy(
-      color = MaterialTheme.colors.onBackground,
-      fontWeight = FontWeight.Normal,
-      fontSize = 16.sp
-    ),
-    interactionSource = interactionSource,
-    decorationBox = @Composable { innerTextField ->
-      TextFieldDefaults.TextFieldDecorationBox(
-        value = state.value.text,
-        innerTextField = innerTextField,
-        placeholder = { Text(generalGetString(MR.strings.enter_this_device_name), color = MaterialTheme.colors.secondary) },
-        singleLine = true,
-        enabled = enabled,
-        isError = false,
-        interactionSource = interactionSource,
-        contentPadding = TextFieldDefaults.textFieldWithLabelPadding(start = 0.dp, end = 0.dp),
-        visualTransformation = VisualTransformation.None,
-        colors = colors
-      )
-    }
-  )
+  KeyChangeEffect(state.value) {
+    onChange(state.value.text)
+  }
 }
 
 @Composable
@@ -221,7 +179,7 @@ private fun ConnectMobileViewLayout(
         )
         SectionTextFooter(annotatedStringResource(MR.strings.open_on_mobile_and_scan_qr_code))
 
-        if (controller.appPrefs.developerTools.get()) {
+        if (remember { controller.appPrefs.developerTools.state }.value) {
           val clipboard = LocalClipboardManager.current
           Spacer(Modifier.height(DEFAULT_PADDING_HALF))
           SectionItemView({ clipboard.shareText(invitation) }) {
@@ -266,7 +224,7 @@ fun connectMobileDevice(rh: RemoteHostInfo, connecting: MutableState<Boolean>) {
     }
   } else if (rh.activeHost()) {
     showConnectedMobileDevice(rh) {
-      stopRemoteHost(rh, true)
+      stopRemoteHostAndReloadHosts(rh, true)
     }
   } else {
     showConnectMobileDevice(rh, connecting)

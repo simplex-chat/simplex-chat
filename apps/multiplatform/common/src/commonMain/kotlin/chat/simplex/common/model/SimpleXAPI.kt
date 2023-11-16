@@ -1399,6 +1399,16 @@ object ChatController {
 
   suspend fun stopRemoteHost(rhId: Long?): Boolean = sendCommandOkResp(CC.StopRemoteHost(rhId))
 
+  fun stopRemoteHostAndReloadHosts(h: RemoteHostInfo, switchToLocal: Boolean) {
+    withBGApi {
+      stopRemoteHost(h.remoteHostId)
+      reloadRemoteHosts()
+      if (switchToLocal) {
+        switchUIRemoteHost(null)
+      }
+    }
+  }
+
   suspend fun deleteRemoteHost(rhId: Long): Boolean = sendCommandOkResp(CC.DeleteRemoteHost(rhId))
 
   suspend fun storeRemoteFile(rhId: Long, storeEncrypted: Boolean?, localPath: String): CryptoFile? {
