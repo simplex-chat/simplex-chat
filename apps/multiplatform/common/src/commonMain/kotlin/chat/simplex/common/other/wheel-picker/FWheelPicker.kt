@@ -108,7 +108,7 @@ expect fun WheelPickerModifier(
   reverseLayout: Boolean): Modifier
 
 @Composable
-fun WheelPicker(
+private fun WheelPicker(
   isVertical: Boolean,
   count: Int,
   state: FWheelPickerState,
