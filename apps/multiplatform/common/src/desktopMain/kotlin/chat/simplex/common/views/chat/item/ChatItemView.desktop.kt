@@ -44,7 +44,7 @@ actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
     var fileSource = getLoadedFileSource(cItem.file)
     if (chatModel.connectedToRemote() && fileSource == null) {
       withBGApi {
-        cItem.file?.loadRemoteFile()
+        cItem.file?.loadRemoteFile(true)
         fileSource = getLoadedFileSource(cItem.file)
         saveIfExists()
       }
@@ -55,7 +55,7 @@ actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
 actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) = withBGApi {
   var fileSource = getLoadedFileSource(cItem.file)
   if (chatModel.connectedToRemote() && fileSource == null) {
-    cItem.file?.loadRemoteFile()
+    cItem.file?.loadRemoteFile(true)
     fileSource = getLoadedFileSource(cItem.file)
   }
 

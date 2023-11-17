@@ -194,28 +194,33 @@ fun ChatItemView(
                   })
                 }
                 val clipboard = LocalClipboardManager.current
-                ItemAction(stringResource(MR.strings.share_verb), painterResource(MR.images.ic_share), onClick = {
-                  var fileSource = getLoadedFileSource(cItem.file)
-                  val shareIfExists = {
-                    when (val f = fileSource) {
-                      null -> clipboard.shareText(cItem.content.text)
-                      else -> shareFile(cItem.text, f)
+                val copyAndShareAllowed = cItem.file == null || !chatModel.connectedToRemote() || getLoadedFilePath(cItem.file) != null || !remember { CIFile.cachedRemoteFileRequests }.contains(cItem.file.fileSource)
+                if (copyAndShareAllowed) {
+                  ItemAction(stringResource(MR.strings.share_verb), painterResource(MR.images.ic_share), onClick = {
+                    var fileSource = getLoadedFileSource(cItem.file)
+                    val shareIfExists = {
+                      when (val f = fileSource) {
+                        null -> clipboard.shareText(cItem.content.text)
+                        else -> shareFile(cItem.text, f)
+                      }
+                      showMenu.value = false
                     }
+                    if (chatModel.connectedToRemote() && fileSource == null) {
+                      withBGApi {
+                        cItem.file?.loadRemoteFile(true)
+                        fileSource = getLoadedFileSource(cItem.file)
+                        shareIfExists()
+                      }
+                    } else shareIfExists()
+                  })
+                }
+                if (copyAndShareAllowed) {
+                  ItemAction(stringResource(MR.strings.copy_verb), painterResource(MR.images.ic_content_copy), onClick = {
+                    copyItemToClipboard(cItem, clipboard)
                     showMenu.value = false
-                  }
-                  if (chatModel.connectedToRemote() && fileSource == null) {
-                    withBGApi {
-                      cItem.file?.loadRemoteFile()
-                      fileSource = getLoadedFileSource(cItem.file)
-                      shareIfExists()
-                    }
-                  } else shareIfExists()
-                })
-                ItemAction(stringResource(MR.strings.copy_verb), painterResource(MR.images.ic_content_copy), onClick = {
-                  copyItemToClipboard(cItem, clipboard)
-                  showMenu.value = false
-                })
-                if ((cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) && (getLoadedFilePath(cItem.file) != null || chatModel.connectedToRemote())) {
+                  })
+                }
+                if ((cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) && (getLoadedFilePath(cItem.file) != null || (chatModel.connectedToRemote() && !remember { CIFile.cachedRemoteFileRequests }.contains(cItem.file?.fileSource)))) {
                   SaveContentItemAction(cItem, saveFileLauncher, showMenu)
                 }
                 if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {

@@ -1,11 +1,15 @@
 package chat.simplex.common.model
 
-import androidx.compose.material.MaterialTheme
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
@@ -14,6 +18,8 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
+import dev.icerock.moko.resources.compose.painterResource
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -29,6 +35,7 @@ import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.*
+import kotlin.collections.ArrayList
 import kotlin.random.Random
 import kotlin.time.*
 
@@ -2270,11 +2277,16 @@ data class CIFile(
     is CIFileStatus.Invalid -> null
   }
 
-  suspend fun loadRemoteFile(): Boolean {
+  /**
+   * DO NOT CALL this function in compose scope, [LaunchedEffect], [DisposableEffect] and so on. Only with [withBGApi] or [runBlocking].
+   * Otherwise, it will be canceled when moving to another screen/item/view, etc
+   * */
+  suspend fun loadRemoteFile(allowToShowAlert: Boolean): Boolean {
     val rh = chatModel.currentRemoteHost.value
     val user = chatModel.currentUser.value
     if (rh == null || user == null || fileSource == null || !loaded) return false
     if (getLoadedFilePath(this) != null) return true
+    if (cachedRemoteFileRequests.contains(fileSource)) return false
 
     val rf = RemoteFile(
       userId = user.userId,
@@ -2282,7 +2294,20 @@ data class CIFile(
       sent = fileStatus.sent,
       fileSource = fileSource
     )
-    return chatModel.controller.getRemoteFile(rh.remoteHostId, rf)
+    cachedRemoteFileRequests.add(fileSource)
+    val showAlert = fileSize > 5_000_000 && allowToShowAlert
+    if (showAlert) {
+      AlertManager.shared.showAlertMsgWithProgress(
+        title = generalGetString(MR.strings.loading_remote_file_title),
+        text = generalGetString(MR.strings.loading_remote_file_desc)
+      )
+    }
+    val res = chatModel.controller.getRemoteFile(rh.remoteHostId, rf)
+    cachedRemoteFileRequests.remove(fileSource)
+    if (showAlert) {
+      AlertManager.shared.hideAlert()
+    }
+    return res
   }
 
   companion object {
@@ -2294,6 +2319,8 @@ data class CIFile(
       fileStatus: CIFileStatus = CIFileStatus.RcvComplete
     ): CIFile =
       CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, fileSource = if (filePath == null) null else CryptoFile.plain(filePath), fileStatus = fileStatus, fileProtocol = FileProtocol.XFTP)
+
+    val cachedRemoteFileRequests = SnapshotStateList<CryptoFile>()
   }
 }
 

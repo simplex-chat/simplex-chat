@@ -42,9 +42,11 @@ fun CIVideoView(
     val filePath = remember(file) { mutableStateOf(getLoadedFilePath(file)) }
     if (chatModel.connectedToRemote()) {
       LaunchedEffect(file) {
-        if (file != null && file.loaded && getLoadedFilePath(file) == null) {
-          file.loadRemoteFile()
-          filePath.value = getLoadedFilePath(file)
+        withBGApi {
+          if (file != null && file.loaded && getLoadedFilePath(file) == null) {
+            file.loadRemoteFile(false)
+            filePath.value = getLoadedFilePath(file)
+          }
         }
       }
     }

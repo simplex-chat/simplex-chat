@@ -97,7 +97,7 @@ fun CIFileView(
           withBGApi {
             var filePath = getLoadedFilePath(file)
             if (chatModel.connectedToRemote() && filePath == null) {
-              file.loadRemoteFile()
+              file.loadRemoteFile(true)
               filePath = getLoadedFilePath(file)
             }
             if (filePath != null) {

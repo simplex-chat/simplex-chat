@@ -158,7 +158,9 @@ fun CIImageView(
     }
     if (chatModel.connectedToRemote()) {
       LaunchedEffect(file) {
-        res.value = imageAndFilePath(file)
+        withBGApi {
+          res.value = imageAndFilePath(file)
+        }
       }
     }
     val loaded = res.value

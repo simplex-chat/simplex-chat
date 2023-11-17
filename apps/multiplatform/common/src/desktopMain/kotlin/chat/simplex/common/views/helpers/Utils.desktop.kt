@@ -99,7 +99,7 @@ actual fun getAppFileUri(fileName: String): URI {
 actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
   var filePath = getLoadedFilePath(file)
   if (chatModel.connectedToRemote() && filePath == null) {
-    file?.loadRemoteFile()
+    file?.loadRemoteFile(false)
     filePath = getLoadedFilePath(file)
   }
   return if (filePath != null) {

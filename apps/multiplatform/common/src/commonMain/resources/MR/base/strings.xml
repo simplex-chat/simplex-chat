@@ -350,6 +350,8 @@
   <string name="file_saved">File saved</string>
   <string name="file_not_found">File not found</string>
   <string name="error_saving_file">Error saving file</string>
+  <string name="loading_remote_file_title">Loading the file </string>
+  <string name="loading_remote_file_desc">Please, wait while the file is being loaded from the linked mobile</string>
 
   <!-- Voice messages -->
   <string name="voice_message">Voice message</string>

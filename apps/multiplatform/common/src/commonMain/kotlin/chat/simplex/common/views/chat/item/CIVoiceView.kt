@@ -58,7 +58,7 @@ fun CIVoiceView(
         }
         if (chatModel.connectedToRemote() && fileSource.value == null) {
           withBGApi {
-            file.loadRemoteFile()
+            file.loadRemoteFile(true)
             fileSource.value = getLoadedFileSource(file)
             playIfExists()
           }
