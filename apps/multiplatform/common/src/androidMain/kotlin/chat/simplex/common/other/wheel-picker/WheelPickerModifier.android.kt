@@ -20,5 +20,5 @@ actual fun Modifier.wheelPickerScroll(
     this.reverseLayout = reverseLayout
   }
 
-  return Modifier.nestedScroll(nestedScrollConnection)
+  return nestedScroll(nestedScrollConnection)
 }

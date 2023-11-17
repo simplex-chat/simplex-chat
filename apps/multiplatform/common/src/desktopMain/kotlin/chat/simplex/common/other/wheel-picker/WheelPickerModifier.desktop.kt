@@ -12,7 +12,7 @@ actual fun Modifier.wheelPickerScroll(
   itemSize: Dp,
   isVertical: Boolean,
   reverseLayout: Boolean): Modifier {
-  return Modifier.pointerInput(Unit) {
+  return pointerInput(Unit) {
     awaitEachGesture {
       do {
         val event = awaitPointerEvent()
