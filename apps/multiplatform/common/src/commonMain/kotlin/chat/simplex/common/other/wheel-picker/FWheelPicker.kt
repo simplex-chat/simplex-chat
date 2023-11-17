@@ -296,7 +296,7 @@ private class WheelPickerContentScopeImpl(
   override val state: FWheelPickerState,
 ) : FWheelPickerContentScope
 
-class FWheelPickerContentWrapperScopeImpl(
+private class FWheelPickerContentWrapperScopeImpl(
   private val contentScope: FWheelPickerContentScope
 ) : FWheelPickerContentWrapperScope {
   lateinit var content: @Composable FWheelPickerContentScope.(index: Int) -> Unit
