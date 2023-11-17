@@ -91,6 +91,9 @@ hostAppVersionRange = mkAppVersionRange minRemoteCtrlVersion currentAppVersion
 networkIOTimeout :: Int
 networkIOTimeout = 15000000
 
+discoveryTimeout :: Int
+discoveryTimeout = 60000000
+
 -- * Desktop side
 
 getRemoteHostClient :: ChatMonad m => RemoteHostId -> m RemoteHostClient
@@ -355,15 +358,18 @@ connectRemoteCtrlURI signedInv = handleCtrlError "connectRemoteCtrl" $ do
 findKnownRemoteCtrl :: ChatMonad m => m ()
 findKnownRemoteCtrl = handleCtrlError "findKnownRemoteCtrl" $ do
   knownCtrls <- withStore' getRemoteCtrls
-  pairings <- maybe (throwError $ ChatErrorRemoteCtrl RCENoKnownControllers) (pure . fmap (\RemoteCtrl {ctrlPairing} -> ctrlPairing)) $ nonEmpty knownCtrls
+  pairings <- case nonEmpty knownCtrls of
+    Nothing -> throwError $ ChatErrorRemoteCtrl RCENoKnownControllers
+    Just ne -> pure $ fmap (\RemoteCtrl {ctrlPairing} -> ctrlPairing) ne
   withRemoteCtrlSession_ $ maybe (Right ((), Just RCSessionStarting)) (\_ -> Left $ ChatErrorRemoteCtrl RCEBusy)
   foundCtrl <- newEmptyTMVarIO
   cmdOk <- newEmptyTMVarIO
   action <- async $ handleCtrlError "findKnownRemoteCtrl.discover" $ do
     atomically $ takeTMVar cmdOk
-    (RCCtrlPairing {ctrlFingerprint}, inv) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) (networkIOTimeout * 4) . withAgent $ \a -> rcDiscoverCtrl a pairings
-    rc_ <- withStore' $ \db -> getRemoteCtrlByFingerprint db ctrlFingerprint
-    rc <- maybe (throwChatError $ CEInternalError "connecting with a stored ctrl") pure rc_
+    (RCCtrlPairing {ctrlFingerprint}, inv) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) discoveryTimeout . withAgent $ \a -> rcDiscoverCtrl a pairings
+    rc <- withStore' (`getRemoteCtrlByFingerprint` ctrlFingerprint) >>= \case
+      Nothing -> throwChatError $ CEInternalError "connecting with a stored ctrl"
+      Just rc  -> pure rc
     atomically $ putTMVar foundCtrl (rc, inv)
     toView CRRemoteCtrlFound {remoteCtrl = remoteCtrlInfo rc (Just RCSSearching)}
   withRemoteCtrlSession $ \case
