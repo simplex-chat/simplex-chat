@@ -47,7 +47,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, defaultJSON, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
 
