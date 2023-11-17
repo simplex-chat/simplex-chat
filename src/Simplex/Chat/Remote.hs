@@ -64,7 +64,7 @@ import Simplex.Messaging.Transport.HTTP2.Client (HTTP2ClientError, closeHTTP2Cli
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Simplex.Messaging.Util
 import Simplex.RemoteControl.Client
-import Simplex.RemoteControl.Invitation (RCInvitation (..), RCSignedInvitation (..), RCVerifiedInvitation (..), verifySignedInviteURI)
+import Simplex.RemoteControl.Invitation (RCInvitation (..), RCSignedInvitation (..), RCVerifiedInvitation (..), verifySignedInvitation)
 import Simplex.RemoteControl.Types
 import System.FilePath (takeFileName, (</>))
 import UnliftIO
@@ -341,6 +341,15 @@ liftRH rhId = liftError (ChatErrorRemoteHost (RHId rhId) . RHEProtocolError)
 
 -- * Mobile side
 
+-- ** QR/link
+
+-- | Use provided OOB link as an annouce
+connectRemoteCtrlURI :: ChatMonad m => RCSignedInvitation -> m (Maybe RemoteCtrlInfo, CtrlAppInfo)
+connectRemoteCtrlURI signedInv = handleCtrlError "connectRemoteCtrl" $ do
+  verifiedInv <- maybe (throwError $ ChatErrorRemoteCtrl RCEBadInvitation) pure $ verifySignedInvitation signedInv
+  withRemoteCtrlSession_ $ maybe (Right ((), Just RCSessionStarting)) (\_ -> Left $ ChatErrorRemoteCtrl RCEBusy)
+  connectRemoteCtrl verifiedInv
+
 -- ** Multicast
 
 findKnownRemoteCtrl :: ChatMonad m => m ()
@@ -365,7 +374,7 @@ findKnownRemoteCtrl = handleCtrlError "findKnownRemoteCtrl" $ do
 confirmRemoteCtrl :: ChatMonad m => RemoteCtrlId -> m (RemoteCtrlInfo, CtrlAppInfo)
 confirmRemoteCtrl rcId = do
   (listener, found) <- withRemoteCtrlSession $ \case
-    RCSessionSearching {action, foundCtrl} -> Right ((action, foundCtrl), RCSessionStarting) -- drop intermediate state so connectRemoteCtrl can proceed
+    RCSessionSearching {action, foundCtrl} -> Right ((action, foundCtrl), RCSessionStarting) -- drop intermediate "Searching" state so connectRemoteCtrl can proceed
     _ -> throwError $ ChatErrorRemoteCtrl RCEBadState
   uninterruptibleCancel listener
   (RemoteCtrl{remoteCtrlId = foundRcId}, verifiedInv) <- atomically $ takeTMVar found
@@ -373,15 +382,6 @@ confirmRemoteCtrl rcId = do
   connectRemoteCtrl verifiedInv >>= \case
     (Nothing, _) -> throwChatError $ CEInternalError "connecting with a stored ctrl"
     (Just rci, appInfo) -> pure (rci, appInfo)
-
--- ** QR/link
-
--- | Use provided OOB link as an annouce
-connectRemoteCtrlURI :: ChatMonad m => RCSignedInvitation -> m (Maybe RemoteCtrlInfo, CtrlAppInfo)
-connectRemoteCtrlURI signedInv = handleCtrlError "connectRemoteCtrl" $ do
-  verifiedInv <- maybe (throwError $ ChatErrorRemoteCtrl RCEBadInvitation) pure $ verifySignedInviteURI signedInv
-  withRemoteCtrlSession_ $ maybe (Right ((), Just RCSessionStarting)) (\_ -> Left $ ChatErrorRemoteCtrl RCEBusy)
-  connectRemoteCtrl verifiedInv
 
 -- ** Common
 
