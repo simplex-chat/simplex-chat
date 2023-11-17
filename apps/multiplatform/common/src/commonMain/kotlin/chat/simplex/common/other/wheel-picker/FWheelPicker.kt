@@ -224,7 +224,7 @@ private fun WheelPicker(
 }
 
 @Composable
-fun ItemSizeBox(
+private fun ItemSizeBox(
   modifier: Modifier = Modifier,
   isVertical: Boolean,
   itemSize: Dp,
@@ -292,7 +292,7 @@ private fun Velocity.flingItemCount(
   return if (reverseLayout) -flingItemCount else flingItemCount
 }
 
-class WheelPickerContentScopeImpl(
+private class WheelPickerContentScopeImpl(
   override val state: FWheelPickerState,
 ) : FWheelPickerContentScope
 

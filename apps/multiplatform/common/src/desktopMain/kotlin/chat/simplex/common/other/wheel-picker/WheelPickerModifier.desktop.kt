@@ -32,8 +32,7 @@ actual fun WheelPickerModifier(
               // scroll wheel moved down
               i = (state.currentIndex+1).coerceAtMost(count-1)
             }
-
-            state.setCurrentIndexInternal(i)
+            
             runBlocking {
               state.scrollToIndex(i)
             }
