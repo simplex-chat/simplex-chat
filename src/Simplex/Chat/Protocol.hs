@@ -311,13 +311,22 @@ deriving instance Show AChatMsgEvent
 
 forwardedGroupMsg :: ChatMsgEvent e -> Bool
 forwardedGroupMsg ev = case ev of
-  XMsgNew _ -> True -- TODO don't forward inline file without text; if text is present convert to event without file?
+  -- XMsgNew _ -> True -- TODO don't forward inline file without text; if text is present convert to event without file?
+  XMsgNew mc -> not $ mcHasFile mc
+  _ -> False
+
+mcHasFile :: MsgContainer -> Bool
+mcHasFile = \case
+  MCSimple ExtMsgContent {file = Just _} -> True
+  MCQuote _ ExtMsgContent {file = Just _} -> True
+  MCForward ExtMsgContent {file = Just _} -> True
   _ -> False
 
 -- TODO refactor this and forwardedGroupMsg to use single function
 forwardedGroupMsg' :: ChatMessage e -> Maybe (ChatMessage 'Json)
 forwardedGroupMsg' msg@ChatMessage {chatMsgEvent} = case chatMsgEvent of
-  XMsgNew _ -> Just msg
+  -- XMsgNew _ -> Just msg
+  XMsgNew mc -> if mcHasFile mc then Nothing else Just msg
   _ -> Nothing
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
