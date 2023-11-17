@@ -75,7 +75,7 @@ import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (allFinally, catchAllErrors, liftEitherError, tryAllErrors, (<$$>))
 import Simplex.Messaging.Version
 import Simplex.RemoteControl.Client
-import Simplex.RemoteControl.Invitation (RCSignedInvitation)
+import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
 import Simplex.RemoteControl.Types
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
@@ -1061,6 +1061,8 @@ data RemoteCtrlError
   | RCEBadState -- ^ A session is in a wrong state for the current operation
   | RCEBusy -- ^ A session is already running
   | RCETimeout
+  | RCENoKnownControllers -- ^ No previously-contacted controllers to discover
+  | RCEBadController -- ^ Attempting to confirm a found controller with another ID
   | RCEDisconnected {remoteCtrlId :: RemoteCtrlId, reason :: Text} -- ^ A session disconnected by a controller
   | RCEBadInvitation
   | RCEBadVersion {appVersion :: AppVersion}
@@ -1076,6 +1078,10 @@ data ArchiveError
 -- | Host (mobile) side of transport to process remote commands and forward notifications
 data RemoteCtrlSession
   = RCSessionStarting
+  | RCSessionSearching
+      { action :: Async (),
+        foundCtrl :: TMVar (RemoteCtrl, RCVerifiedInvitation)
+      }
   | RCSessionConnecting
       { remoteCtrlId_ :: Maybe RemoteCtrlId,
         rcsClient :: RCCtrlClient,
@@ -1101,6 +1107,7 @@ data RemoteCtrlSession
 
 data RemoteCtrlSessionState
   = RCSStarting
+  | RCSSearching
   | RCSConnecting
   | RCSPendingConfirmation {sessionCode :: Text}
   | RCSConnected {sessionCode :: Text}
@@ -1109,6 +1116,7 @@ data RemoteCtrlSessionState
 rcsSessionState :: RemoteCtrlSession -> RemoteCtrlSessionState
 rcsSessionState = \case
   RCSessionStarting -> RCSStarting
+  RCSessionSearching {} -> RCSSearching
   RCSessionConnecting {} -> RCSConnecting
   RCSessionPendingConfirmation {tls} -> RCSPendingConfirmation {sessionCode = tlsSessionCode tls}
   RCSessionConnected {tls} -> RCSConnected {sessionCode = tlsSessionCode tls}
