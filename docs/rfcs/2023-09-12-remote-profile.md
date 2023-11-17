@@ -125,9 +125,10 @@ Alternatively a mobile (or a desktop, why not) may signal that they're done here
 At any time a user may click on a "cancel" button and return to the main UI.
 That should fully re-initialise UI state.
 
-In the "Network & servers" section of "Settings", there is an item to list all the registered remote controllers with buttons attached to *dispose* them one by one.
-*Disposing* a remote controller means its entry will be removed from database.
-Future connection attempts from a disposed device would be treated exactly as from a previously-unknown device.
+This screen should have a way to open the list of all known remote controllers (desktop devices), to allow removing them.
+
+*Removing* remote controller means its entry will be removed from database.
+Future connection attempts with a removed desktop will be treated as with a previously unknown device.
 
 ### On a desktop device
 
@@ -148,8 +149,9 @@ Future connection attempts from a disposed device would be treated exactly as fr
 4. A user may open sidebar and click "disconnect from mobile" to close the session and return to local mode.
   * That should fully re-initialise UI state.
 
-In the "Network & servers" section of "Settings", there is an item to list all the registered remote hosts with buttons attached to *dispose* them one by one.
-*Disposing* a remote host means its entry will be removed from database and any associated files deleted (photos, voice messages, transferred files etc).
+Unlike mobile UI, removing known mobiles should happen via the same screen that shows connected mobile deivices.
+
+*Removing* a remote host means its entry will be removed from database and any associated files deleted (photos, voice messages, transferred files etc).
 
 ## Caveats
 
@@ -192,9 +194,20 @@ A backup system may be implemented by attaching a headless app to a bouncer as o
 The unauthenticated remote host can be considered a feature.
 A use case for that may be something like a "dead drop" host that wakes up in response to any discovery broadcast.
 
-## Unresolved questions
+## Other questions
 
 - What to do with WebRTC/calls?
+
+Calls use local desktop implementation, they will use host for signalling.
+
 - Do we want attaching only to a subset of profiles?
+
+No.
+
 - Do we want a client to mix remote and local profiles?
+
+No.
+
 - Do we want M-to-N sessions? (follows naturally from the previous two)
+
+No.
