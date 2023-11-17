@@ -3621,13 +3621,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           forwardMsg_ chatMsg = case forwardedGroupMsg' chatMsg of
             Just chatMsg' -> do
               ChatConfig {highlyAvailable} <- asks config
-              -- members to which this member was introduced
-              forwardMembers <- if memberCategory m == GCInviteeMember
-                then withStore' $ \db -> getInviteeForwardMembers db user m highlyAvailable
+              -- members introduced to this invited member
+              introducedMembers <- if memberCategory m == GCInviteeMember
+                then withStore' $ \db -> getForwardIntroducedMembers db user m highlyAvailable
                 else pure []
-              -- members introduced to this member
-              inviteeMembers <- withStore' $ \db -> getForwardMemberInvitees db user m highlyAvailable
-              let ms = forwardMembers <> inviteeMembers
+              -- invited members to which this member was introduced
+              invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db user m highlyAvailable
+              let ms = introducedMembers <> invitedMembers
                   msg = XGrpMsgForward m.memberId chatMsg' brokerTs
               unless (null ms) $
                 void $ sendGroupMessage user gInfo ms msg

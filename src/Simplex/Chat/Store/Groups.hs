@@ -79,8 +79,8 @@ module Simplex.Chat.Store.Groups
     updateIntroStatus,
     saveIntroInvitation,
     getIntroduction,
-    getInviteeForwardMembers,
-    getForwardMemberInvitees,
+    getForwardIntroducedMembers,
+    getForwardInvitedMembers,
     createIntroReMember,
     createIntroToMemberContact,
     saveMemberInvitation,
@@ -1100,8 +1100,8 @@ getIntroduction db reMember toMember = ExceptT $ do
        in Right GroupMemberIntro {introId, reMember, toMember, introStatus, introInvitation}
     toIntro _ = Left SEIntroNotFound
 
-getInviteeForwardMembers :: DB.Connection -> User -> GroupMember -> Bool -> IO [GroupMember]
-getInviteeForwardMembers db user invitee highlyAvailable = do
+getForwardIntroducedMembers :: DB.Connection -> User -> GroupMember -> Bool -> IO [GroupMember]
+getForwardIntroducedMembers db user invitee highlyAvailable = do
   memberIds <- map fromOnly <$> query
   filter memberCurrent . rights <$> mapM (runExceptT . getGroupMemberById db user) memberIds
  where
@@ -1120,8 +1120,8 @@ getInviteeForwardMembers db user invitee highlyAvailable = do
       WHERE to_group_member_id = ? AND intro_status NOT IN (?,?,?)
     |]
 
-getForwardMemberInvitees :: DB.Connection -> User -> GroupMember -> Bool -> IO [GroupMember]
-getForwardMemberInvitees db user forwardMember highlyAvailable = do
+getForwardInvitedMembers :: DB.Connection -> User -> GroupMember -> Bool -> IO [GroupMember]
+getForwardInvitedMembers db user forwardMember highlyAvailable = do
   memberIds <- map fromOnly <$> query
   filter memberCurrent . rights <$> mapM (runExceptT . getGroupMemberById db user) memberIds
  where
