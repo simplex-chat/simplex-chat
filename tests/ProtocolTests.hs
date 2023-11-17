@@ -279,11 +279,9 @@ decodeChatMessageTest = describe "Chat message encoding/decoding" $ do
   -- it "x.grp.msg.forward"
   --   $ "{\"v\":\"1\",\"event\":\"x.grp.msg.forward\",\"params\":{\"msgForward\":{\"memberId\":\"AQIDBA==\",\"msg\":\"{\"v\":\"1\",\"event\":\"x.msg.new\",\"params\":{\"content\":{\"text\":\"hello\",\"type\":\"text\"}}}\",\"msgTs\":\"1970-01-01T00:00:01.000000001Z\"}}}"
   --   #==# XGrpMsgForward
-  --     ( MsgForward
-  --         (MemberId "\1\2\3\4")
-  --         (ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (MCSimple (extMsgContent (MCText "hello") Nothing))))
-  --         (systemToUTCTime $ MkSystemTime 1 1)
-  --     )
+  --     (MemberId "\1\2\3\4")
+  --     (ChatMessage chatInitialVRange (Just $ SharedMsgId "\1\2\3\4") (XMsgNew (MCSimple (extMsgContent (MCText "hello") Nothing))))
+  --     (systemToUTCTime $ MkSystemTime 1 1)
   it "x.info.probe" $
     "{\"v\":\"1\",\"event\":\"x.info.probe\",\"params\":{\"probe\":\"AQIDBA==\"}}"
       #==# XInfoProbe (Probe "\1\2\3\4")

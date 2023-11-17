@@ -3601,7 +3601,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               XGrpDel -> xGrpDel gInfo m' msg brokerTs
               XGrpInfo p' -> xGrpInfo gInfo m' p' msg brokerTs
               XGrpDirectInv connReq mContent_ -> memberCanSend m' $ xGrpDirectInv gInfo m' conn' connReq mContent_ msg brokerTs
-              XGrpMsgForward msgForward -> xGrpMsgForward gInfo m' msgForward
+              XGrpMsgForward memberId msg' msgTs -> xGrpMsgForward gInfo m' memberId msg' msgTs
               XInfoProbe probe -> xInfoProbe (COMGroupMember m') probe
               XInfoProbeCheck probeHash -> xInfoProbeCheck (COMGroupMember m') probeHash
               XInfoProbeOk probe -> xInfoProbeOk (COMGroupMember m') probe
@@ -3627,7 +3627,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- members introduced to this member
               inviteeMembers <- withStore' $ \db -> getForwardMemberInvitees db user m highlyAvailable
               let ms = forwardMembers <> inviteeMembers
-                  msg = XGrpMsgForward $ MsgForward m.memberId chatMsg' brokerTs
+                  msg = XGrpMsgForward m.memberId chatMsg' brokerTs
               unless (null ms) $
                 void $ sendGroupMessage user gInfo ms msg
             Nothing -> pure ()
@@ -5155,8 +5155,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       toView $ CRContactVerificationReset user ct
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
-    xGrpMsgForward :: GroupInfo -> GroupMember -> MsgForward -> m ()
-    xGrpMsgForward gInfo@GroupInfo {groupId} m MsgForward {memberId, msg, msgTs} = do
+    xGrpMsgForward :: GroupInfo -> GroupMember -> MemberId -> ChatMessage 'Json -> UTCTime -> m ()
+    xGrpMsgForward gInfo@GroupInfo {groupId} m memberId msg msgTs = do
       when (m.memberRole < GRAdmin) $ throwChatError (CEGroupContactRole m.localDisplayName)
       author <- withStore $ \db -> getGroupMemberByMemberId db user gInfo memberId
       processForwardedMsg author msg
@@ -5527,7 +5527,7 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
               Nothing -> False
           Nothing -> False
         isXGrpMsgForward ev = case ev of
-          XGrpMsgForward _ -> True
+          XGrpMsgForward {} -> True
           _ -> False
 
 sendPendingGroupMessages :: ChatMonad m => User -> GroupMember -> Connection -> m ()
