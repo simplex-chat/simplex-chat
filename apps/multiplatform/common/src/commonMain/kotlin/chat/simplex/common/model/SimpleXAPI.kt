@@ -422,14 +422,14 @@ object ChatController {
     }
   }
 
-  suspend fun sendCmd(cmd: CC): CR {
+  suspend fun sendCmd(cmd: CC, customRhId: Long? = null): CR {
     val ctrl = ctrl ?: throw Exception("Controller is not initialized")
 
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
       chatModel.addTerminalItem(TerminalItem.cmd(cmd.obfuscated))
       Log.d(TAG, "sendCmd: ${cmd.cmdType}")
-      val rhId = chatModel.currentRemoteHost.value?.remoteHostId?.toInt() ?: -1
+      val rhId = customRhId?.toInt() ?: chatModel.currentRemoteHost.value?.remoteHostId?.toInt() ?: -1
       val json = if (rhId == -1) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId, c)
       val r = APIResponse.decodeStr(json)
       Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
@@ -619,9 +619,9 @@ object ChatController {
     return null
   }
 
-  suspend fun apiSendMessage(type: ChatType, id: Long, file: CryptoFile? = null, quotedItemId: Long? = null, mc: MsgContent, live: Boolean = false, ttl: Int? = null): AChatItem? {
+  suspend fun apiSendMessage(rhId: Long?, type: ChatType, id: Long, file: CryptoFile? = null, quotedItemId: Long? = null, mc: MsgContent, live: Boolean = false, ttl: Int? = null): AChatItem? {
     val cmd = CC.ApiSendMessage(type, id, file, quotedItemId, mc, live, ttl)
-    val r = sendCmd(cmd)
+    val r = sendCmd(cmd, rhId)
     return when (r) {
       is CR.NewChatItem -> r.chatItem
       else -> {
@@ -2271,7 +2271,7 @@ sealed class CC {
     is DeleteRemoteHost -> "/delete remote host $remoteHostId"
     is StoreRemoteFile ->
       "/store remote file $remoteHostId " +
-          (if (storeEncrypted == null) "" else " encrypt=${onOff(storeEncrypted)}") +
+          (if (storeEncrypted == null) "" else " encrypt=${onOff(storeEncrypted)} ") +
           localPath
     is GetRemoteFile -> "/get remote file $remoteHostId ${json.encodeToString(file)}"
     is ConnectRemoteCtrl -> "/connect remote ctrl $xrcpInvitation"

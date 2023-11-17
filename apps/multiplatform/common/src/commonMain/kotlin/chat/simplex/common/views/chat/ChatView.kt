@@ -499,6 +499,7 @@ fun ChatLayout(
         enabled = !attachmentDisabled.value && rememberUpdatedState(chat.userCanSend).value,
         onFiles = { paths -> composeState.onFilesAttached(paths.map { URI.create(it) }) },
         onImage = {
+          // TODO: file is not saved anywhere?!
           val tmpFile = File.createTempFile("image", ".bmp", tmpDir)
           tmpFile.deleteOnExit()
           chatModel.filesToDelete.add(tmpFile)

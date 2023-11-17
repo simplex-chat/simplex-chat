@@ -1,15 +1,12 @@
 package chat.simplex.common.model
 
-import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
@@ -18,8 +15,6 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
-import dev.icerock.moko.resources.compose.painterResource
-import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -35,7 +30,6 @@ import java.net.URI
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.*
-import kotlin.collections.ArrayList
 import kotlin.random.Random
 import kotlin.time.*
 
@@ -2352,6 +2346,8 @@ data class CryptoFile(
 
   companion object {
     fun plain(f: String): CryptoFile = CryptoFile(f, null)
+
+    fun desktopPlain(f: URI): CryptoFile = CryptoFile(f.rawPath, null)
   }
 }
 
