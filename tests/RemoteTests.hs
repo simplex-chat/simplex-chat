@@ -36,6 +36,7 @@ remoteTests = describe "Remote" $ do
     it "connects with new pairing (stops mobile)" $ remoteHandshakeTest False
     it "connects with new pairing (stops desktop)" $ remoteHandshakeTest True
     it "connects with stored pairing" remoteHandshakeStoredTest
+    it "refuses invalid client cert" remoteHandshakeRejectTest
   it "sends messages" remoteMessageTest
   describe "remote files" $ do
     it "store/get/send/receive files" remoteStoreFileTest
@@ -94,6 +95,36 @@ remoteHandshakeStoredTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile
   logNote "Starting stored session again"
   startRemoteStored mobile desktop
   stopMobile mobile desktop `catchAny` (logError . tshow)
+
+remoteHandshakeRejectTest :: HasCallStack => FilePath -> IO ()
+remoteHandshakeRejectTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop mobileBob -> do
+  logNote "Starting new session"
+  startRemote mobile desktop
+  stopMobile mobile desktop
+
+  mobileBob ##> "/set device name MobileBob"
+  mobileBob <## "ok"
+  desktop ##> "/start remote host 1"
+  desktop <## "remote host 1 started"
+  desktop <## "Remote session invitation:"
+  inv <- getTermLine desktop
+  mobileBob ##> ("/connect remote ctrl " <> inv)
+  mobileBob <## "connecting new remote controller: My desktop, v5.4.0.3"
+  mobileBob <## "remote controller stopped"
+
+  -- the server remains active after rejecting invalid client
+  mobile ##> ("/connect remote ctrl " <> inv)
+  mobile <## "connecting remote controller 1: My desktop, v5.4.0.3"
+  desktop <## "remote host 1 connecting"
+  desktop <## "Compare session code with host:"
+  sessId <- getTermLine desktop
+  mobile <## "remote controller 1 connected"
+  mobile <## "Compare session code with controller and use:"
+  mobile <## ("/verify remote ctrl " <> sessId)
+  mobile ##> ("/verify remote ctrl " <> sessId)
+  mobile <## "remote controller 1 session started with My desktop"
+  desktop <## "remote host 1 connected"
+  stopMobile mobile desktop
 
 remoteMessageTest :: HasCallStack => FilePath -> IO ()
 remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
