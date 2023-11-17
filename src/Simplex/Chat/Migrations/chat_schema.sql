@@ -325,6 +325,7 @@ CREATE TABLE messages(
   group_id INTEGER DEFAULT NULL REFERENCES groups ON DELETE CASCADE,
   shared_msg_id BLOB,
   shared_msg_id_user INTEGER,
+  author_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
 );
 CREATE TABLE msg_deliveries(
@@ -761,6 +762,9 @@ CREATE INDEX idx_group_member_intros_re_group_member_id ON group_member_intros(
 );
 CREATE INDEX idx_group_members_invited_by_group_member_id ON group_members(
   invited_by_group_member_id
+);
+CREATE INDEX idx_messages_author_group_member_id ON messages(
+  author_group_member_id
 );
 CREATE INDEX idx_messages_forwarded_by_group_member_id ON messages(
   forwarded_by_group_member_id

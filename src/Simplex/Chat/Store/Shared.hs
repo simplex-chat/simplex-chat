@@ -100,7 +100,7 @@ data StoreError
   | SEHostMemberIdNotFound {groupId :: Int64}
   | SEContactNotFoundByFileId {fileId :: FileTransferId}
   | SENoGroupSndStatus {itemId :: ChatItemId, groupMemberId :: GroupMemberId}
-  | SEDuplicateGroupMessage {groupId :: Int64, sharedMsgId :: SharedMsgId, forwardedByGroupMemberId :: Maybe GroupMemberId}
+  | SEDuplicateGroupMessage {groupId :: Int64, sharedMsgId :: SharedMsgId, authorGroupMemberId :: Maybe GroupMemberId, forwardedByGroupMemberId :: Maybe GroupMemberId}
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where

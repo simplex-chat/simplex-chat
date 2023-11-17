@@ -3228,7 +3228,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         MSG meta _msgFlags msgBody -> do
           cmdId <- createAckCmd conn
           withAckMessage agentConnId cmdId meta $ do
-            (_conn', _) <- saveRcvMSG conn (ConnectionId connId) meta msgBody cmdId
+            (_conn', _) <- saveDirectRcvMSG conn meta cmdId msgBody
             pure False
         SENT msgId ->
           sentMsgDeliveryEvent conn msgId
@@ -3259,7 +3259,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         MSG msgMeta _msgFlags msgBody -> do
           cmdId <- createAckCmd conn
           withAckMessage agentConnId cmdId msgMeta $ do
-            (conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveRcvMSG conn (ConnectionId connId) msgMeta msgBody cmdId
+            (conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn msgMeta cmdId msgBody
             let ct' = ct {activeConn = Just conn'} :: Contact
             assertDirectAllowed user MDRcv ct' $ toCMEventTag event
             updateChatLock "directMessage" event
@@ -3574,7 +3574,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 _ -> False
           processEvent :: (MsgEncodingI e) => CommandId -> ChatMessage e -> m Bool
           processEvent cmdId chatMsg = do
-            (conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveRcvMSG' conn (GroupId groupId) msgMeta msgBody cmdId chatMsg
+            (conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m conn msgMeta cmdId msgBody chatMsg
             let m' = m {activeConn = Just conn'} :: GroupMember
             updateChatLock "groupMessage" event
             case event of
@@ -5022,7 +5022,12 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         (_, GCInviteeMember) ->
           withStore' (\db -> runExceptT $ getIntroduction db sendingMember refMember) >>= \case
             Right intro -> forwardMemberXGrpMemCon intro
-            Left _ -> messageWarning "x.grp.mem.con: no introduction"
+            Left _ -> messageWarning "x.grp.mem.con: no introductiosupportn"
+        -- Note: we can allow XGrpMemCon to all member categories if we decide to support broader group forwarding,
+        -- deduplication (see saveGroupRcvMsg, saveGroupFwdRcvMsg) already supports sending XGrpMemCon
+        -- to any forwarding member, not only host/inviting member;
+        -- database would track all members connections then
+        -- (currently it's done via group_member_intros for introduced connections only)
         _ ->
           messageWarning "x.grp.mem.con: neither member is invitee"
       where
@@ -5067,9 +5072,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         deleteMemberItem gEvent = do
           ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs (CIRcvGroupEvent gEvent)
           groupMsgToView gInfo ci
-
-    sameMemberId :: MemberId -> GroupMember -> Bool
-    sameMemberId memId GroupMember {memberId} = memId == memberId
 
     xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> m ()
     xGrpLeave gInfo m msg brokerTs = do
@@ -5163,7 +5165,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- Note: forwarded group events (see forwardedGroupMsg) should include msgId to be deduplicated
         processForwardedMsg :: forall e. MsgEncodingI e => GroupMember -> ChatMessage e -> m ()
         processForwardedMsg author chatMsg = do
-          msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveFwdRcvMsg m (GroupId groupId) body chatMsg
+          msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveGroupFwdRcvMsg user groupId m author body chatMsg
           case event of
             XMsgNew mc -> memberCanSend author $ newGroupContentMessage gInfo author mc msg msgTs
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
@@ -5218,6 +5220,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
 metaBrokerTs :: MsgMeta -> UTCTime
 metaBrokerTs MsgMeta {broker = (_, brokerTs)} = brokerTs
+
+sameMemberId :: MemberId -> GroupMember -> Bool
+sameMemberId memId GroupMember {memberId} = memId == memberId
 
 updatePeerChatVRange :: ChatMonad m => Connection -> VersionRange -> m Connection
 updatePeerChatVRange conn@Connection {connId, peerChatVRange} msgChatVRange = do
@@ -5517,31 +5522,48 @@ sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn
           _ -> throwChatError $ CEGroupMemberIntroNotFound localDisplayName
         _ -> pure ()
 
-saveRcvMSG :: ChatMonad m => Connection -> ConnOrGroupId -> MsgMeta -> MsgBody -> CommandId -> m (Connection, RcvMessage)
-saveRcvMSG conn connOrGroupId agentMsgMeta msgBody agentAckCmdId = do
-  ACMsg _ chatMsg <- parseAChatMessage conn agentMsgMeta msgBody
-  saveRcvMSG' conn connOrGroupId agentMsgMeta msgBody agentAckCmdId chatMsg
-
-saveRcvMSG' :: (MsgEncodingI e, ChatMonad m) => Connection -> ConnOrGroupId -> MsgMeta -> MsgBody -> CommandId -> ChatMessage e -> m (Connection, RcvMessage)
-saveRcvMSG' conn@Connection {connId} connOrGroupId agentMsgMeta msgBody agentAckCmdId ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = do
+saveDirectRcvMSG :: ChatMonad m => Connection -> MsgMeta -> CommandId -> MsgBody -> m (Connection, RcvMessage)
+saveDirectRcvMSG conn@Connection {connId} agentMsgMeta agentAckCmdId msgBody = do
+  ACMsg _ ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} <- parseAChatMessage conn agentMsgMeta msgBody
   conn' <- updatePeerChatVRange conn chatVRange
   let agentMsgId = fst $ recipient agentMsgMeta
       newMsg = NewMessage {chatMsgEvent, msgBody}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId}
-  msg <- withStore $ \db -> createNewMessageAndRcvMsgDelivery db connOrGroupId newMsg sharedMsgId_ rcvMsgDelivery
-  -- TODO group forward:
-  -- catch and send x.grp.mem.con if inviting member sends duplicate
-  -- (add Maybe forwardedByGroupMemberId to SEDuplicateGroupMessage)
+  msg <- withStore $ \db -> createNewMessageAndRcvMsgDelivery db (ConnectionId connId) newMsg sharedMsgId_ rcvMsgDelivery Nothing
   pure (conn', msg)
 
-saveFwdRcvMsg :: (MsgEncodingI e, ChatMonad m) => GroupMember -> ConnOrGroupId -> MsgBody -> ChatMessage e -> m RcvMessage
-saveFwdRcvMsg forwardingMember connOrGroupId msgBody ChatMessage {msgId = sharedMsgId_, chatMsgEvent} = do
+saveGroupRcvMsg :: (MsgEncodingI e, ChatMonad m) => User -> GroupId -> GroupMember -> Connection -> MsgMeta -> CommandId -> MsgBody -> ChatMessage e -> m (Connection, RcvMessage)
+saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta agentAckCmdId msgBody ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = do
+  conn' <- updatePeerChatVRange conn chatVRange
+  let agentMsgId = fst $ recipient agentMsgMeta
+      newMsg = NewMessage {chatMsgEvent, msgBody}
+      rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId}
+      amId = Just authorMember.groupMemberId
+  msg <- withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ rcvMsgDelivery amId)
+    `catchChatError` \e -> case e of
+      ChatErrorStore (SEDuplicateGroupMessage _ _ _ (Just forwardedByGroupMemberId)) -> do
+        fm <- withStore $ \db -> getGroupMember db user groupId forwardedByGroupMemberId
+        forM_ (memberConn fm) $ \fmConn ->
+          void $ sendDirectMessage fmConn (XGrpMemCon authorMember.memberId) (GroupId groupId)
+        throwError e
+      _ -> throwError e
+  pure (conn', msg)
+
+saveGroupFwdRcvMsg :: (MsgEncodingI e, ChatMonad m) => User -> GroupId -> GroupMember -> GroupMember -> MsgBody -> ChatMessage e -> m RcvMessage
+saveGroupFwdRcvMsg user groupId forwardingMember refAuthorMember msgBody ChatMessage {msgId = sharedMsgId_, chatMsgEvent} = do
   let newMsg = NewMessage {chatMsgEvent, msgBody}
-      forwardedByGroupMemberId = Just $ groupMemberId' forwardingMember
-  -- TODO group forward:
-  -- catch and send x.grp.mem.con if inviting member sends duplicate
-  -- (use forwardingMember)
-  withStore $ \db -> createNewRcvMessage db connOrGroupId newMsg sharedMsgId_ forwardedByGroupMemberId
+      fwdMemberId = Just $ groupMemberId' forwardingMember
+      refAuthorId = Just $ groupMemberId' refAuthorMember
+  withStore (\db -> createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ refAuthorId fwdMemberId)
+    `catchChatError` \e -> case e of
+      ChatErrorStore (SEDuplicateGroupMessage _ _ (Just authorGroupMemberId) Nothing) -> do
+        am <- withStore $ \db -> getGroupMember db user groupId authorGroupMemberId
+        if sameMemberId refAuthorMember.memberId am
+          then forM_ (memberConn forwardingMember) $ \fmConn ->
+            void $ sendDirectMessage fmConn (XGrpMemCon am.memberId) (GroupId groupId)
+          else toView $ CRMessageError user "error" "saveGroupFwdRcvMsg: referenced author member id doesn't match message member id"
+        throwError e
+      _ -> throwError e
 
 saveSndChatItem :: ChatMonad m => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> m (ChatItem c 'MDSnd)
 saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothing Nothing Nothing False

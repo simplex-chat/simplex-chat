@@ -131,7 +131,7 @@ import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
-import Simplex.Messaging.Util (eitherToMaybe, ifM)
+import Simplex.Messaging.Util (eitherToMaybe)
 import UnliftIO.STM
 
 deleteContactCIs :: DB.Connection -> User -> Contact -> IO ()
@@ -186,9 +186,9 @@ createSndMsgDelivery db sndMsgDelivery messageId = do
   createMsgDeliveryEvent_ db msgDeliveryId MDSSndAgent currentTs
   pure msgDeliveryId
 
-createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> RcvMsgDelivery -> ExceptT StoreError IO RcvMessage
-createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId} = do
-  msg@RcvMessage {msgId} <- createNewRcvMessage db connOrGroupId newMessage sharedMsgId_ Nothing
+createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> RcvMsgDelivery -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
+createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId} authorGroupMemberId_ = do
+  msg@RcvMessage {msgId} <- createNewRcvMessage db connOrGroupId newMessage sharedMsgId_ authorGroupMemberId_ Nothing
   liftIO $ do
     currentTs <- getCurrentTime
     DB.execute
@@ -199,41 +199,40 @@ createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMs
     createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent currentTs
   pure msg
 
-createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
-createNewRcvMessage db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMsgId_ forwardedByGroupMemberId =
+createNewRcvMessage :: forall e. (MsgEncodingI e) => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
+createNewRcvMessage db connOrGroupId NewMessage{chatMsgEvent, msgBody} sharedMsgId_ authorGroupMemberId forwardedByGroupMemberId =
   case connOrGroupId of
     ConnectionId connId -> liftIO $ insertRcvMsg (Just connId) Nothing
     GroupId groupId -> case sharedMsgId_ of
-      Just sharedMsgId ->
-        ifM
-          (liftIO $ duplicateGroupMsgExists groupId sharedMsgId)
-          (throwError $ SEDuplicateGroupMessage groupId sharedMsgId Nothing)
-          (liftIO $ insertRcvMsg Nothing $ Just groupId)
+      Just sharedMsgId -> liftIO (duplicateGroupMsgMemberIds groupId sharedMsgId) >>= \case
+        Just (duplAuthorId, duplFwdMemberId) ->
+          throwError $ SEDuplicateGroupMessage groupId sharedMsgId duplAuthorId duplFwdMemberId
+        Nothing -> liftIO $ insertRcvMsg Nothing $ Just groupId
       Nothing -> liftIO $ insertRcvMsg Nothing $ Just groupId
-  where
-    -- TODO group forward: differentiate absence of record and NULL in forwarded_by_group_member_id
-    duplicateGroupMsgExists :: Int64 -> SharedMsgId -> IO Bool
-    duplicateGroupMsgExists groupId sharedMsgId =
-      fromMaybe False
-        <$> maybeFirstRow
-          fromOnly
-          ( DB.query
-              db
-              "SELECT 1 FROM messages WHERE group_id = ? AND shared_msg_id = ? LIMIT 1"
-              (groupId, sharedMsgId)
-          )
-    insertRcvMsg connId_ groupId_ = do
-      currentTs <- getCurrentTime
-      DB.execute
+ where
+  duplicateGroupMsgMemberIds :: Int64 -> SharedMsgId -> IO (Maybe (Maybe GroupMemberId, Maybe GroupMemberId))
+  duplicateGroupMsgMemberIds groupId sharedMsgId =
+    maybeFirstRow id
+      $ DB.query
         db
         [sql|
-          INSERT INTO messages
-            (msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id, shared_msg_id, forwarded_by_group_member_id)
-          VALUES (?,?,?,?,?,?,?,?,?)
+          SELECT author_group_member_id, forwarded_by_group_member_id
+          FROM messages
+          WHERE group_id = ? AND shared_msg_id = ? LIMIT 1
         |]
-        (MDRcv, toCMEventTag chatMsgEvent, msgBody, currentTs, currentTs, connId_, groupId_, sharedMsgId_, forwardedByGroupMemberId)
-      msgId <- insertedRowId db
-      pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody, forwardedByGroupMemberId}
+        (groupId, sharedMsgId)
+  insertRcvMsg connId_ groupId_ = do
+    currentTs <- getCurrentTime
+    DB.execute
+      db
+      [sql|
+        INSERT INTO messages
+          (msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id, shared_msg_id, author_group_member_id, forwarded_by_group_member_id)
+        VALUES (?,?,?,?,?,?,?,?,?,?)
+      |]
+      (MDRcv, toCMEventTag chatMsgEvent, msgBody, currentTs, currentTs, connId_, groupId_, sharedMsgId_, authorGroupMemberId, forwardedByGroupMemberId)
+    msgId <- insertedRowId db
+    pure RcvMessage{msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody, authorGroupMemberId, forwardedByGroupMemberId}
 
 createSndMsgDeliveryEvent :: DB.Connection -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> ExceptT StoreError IO ()
 createSndMsgDeliveryEvent db connId agentMsgId sndMsgDeliveryStatus = do

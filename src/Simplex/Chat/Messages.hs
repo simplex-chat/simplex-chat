@@ -816,6 +816,7 @@ data RcvMessage = RcvMessage
     chatMsgEvent :: AChatMsgEvent,
     sharedMsgId_ :: Maybe SharedMsgId,
     msgBody :: MsgBody,
+    authorGroupMemberId :: Maybe GroupMemberId,
     forwardedByGroupMemberId :: Maybe GroupMemberId
   }
 

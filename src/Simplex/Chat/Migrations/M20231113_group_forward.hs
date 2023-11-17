@@ -14,7 +14,9 @@ CREATE INDEX idx_group_member_intros_re_group_member_id ON group_member_intros(r
 ALTER TABLE group_members ADD COLUMN invited_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL;
 CREATE INDEX idx_group_members_invited_by_group_member_id ON group_members(invited_by_group_member_id);
 
+ALTER TABLE messages ADD COLUMN author_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL;
 ALTER TABLE messages ADD COLUMN forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL;
+CREATE INDEX idx_messages_author_group_member_id ON messages(author_group_member_id);
 CREATE INDEX idx_messages_forwarded_by_group_member_id ON messages(forwarded_by_group_member_id);
 CREATE INDEX idx_messages_group_id_shared_msg_id ON messages(group_id, shared_msg_id);
 
@@ -30,7 +32,9 @@ ALTER TABLE chat_items DROP COLUMN forwarded_by_group_member_id;
 
 DROP INDEX idx_messages_group_id_shared_msg_id;
 DROP INDEX idx_messages_forwarded_by_group_member_id;
+DROP INDEX idx_messages_author_group_member_id;
 ALTER TABLE messages DROP COLUMN forwarded_by_group_member_id;
+ALTER TABLE messages DROP COLUMN author_group_member_id;
 
 DROP INDEX idx_group_members_invited_by_group_member_id;
 ALTER TABLE group_members DROP COLUMN invited_by_group_member_id;
