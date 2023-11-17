@@ -3574,8 +3574,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 _ -> False
           processEvent :: (MsgEncodingI e) => CommandId -> ChatMessage e -> m Bool
           processEvent cmdId chatMsg = do
-            (conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m conn msgMeta cmdId msgBody chatMsg
-            let m' = m {activeConn = Just conn'} :: GroupMember
+            (m', conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m conn msgMeta cmdId msgBody chatMsg
             updateChatLock "groupMessage" event
             case event of
               XMsgNew mc -> memberCanSend m' $ newGroupContentMessage gInfo m' mc msg brokerTs
@@ -4918,7 +4917,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             toView $ CRJoinedGroupMemberConnecting user gInfo m newMember
 
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> m ()
-    xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memberChatVRange _) = do
+    xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _) = do
       case memberCategory m of
         GCHostMember -> do
           members <- withStore' $ \db -> getGroupMembers db user gInfo
@@ -4929,7 +4928,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               subMode <- chatReadVar subscriptionMode
               -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
               groupConnIds <- createConn subMode
-              directConnIds <- case memberChatVRange of
+              directConnIds <- case memChatVRange of
                 Nothing -> Just <$> createConn subMode
                 Just mcvr
                   | isCompatibleRange (fromChatVRange mcvr) groupNoDirectVRange -> pure Nothing
@@ -4961,7 +4960,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
-    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings} m memInfo@(MemberInfo memId memRole memberChatVRange _) introInv@IntroInvitation {groupConnReq, directConnReq} = do
+    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings} m memInfo@(MemberInfo memId memRole memChatVRange _) introInv@IntroInvitation {groupConnReq, directConnReq} = do
       checkHostRole m memRole
       members <- withStore' $ \db -> getGroupMembers db user gInfo
       toMember <- case find (sameMemberId memId) members of
@@ -4979,7 +4978,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       groupConnIds <- joinAgentConnectionAsync user (chatHasNtfs chatSettings) groupConnReq dm subMode
       directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user True dcr dm subMode
       let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
-          mcvr = maybe chatInitialVRange fromChatVRange memberChatVRange
+          mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
       withStore' $ \db -> createIntroToMemberContact db user m toMember mcvr groupConnIds directConnIds customUserProfileId subMode
 
     xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> RcvMessage -> UTCTime -> m ()
@@ -5232,6 +5231,18 @@ updatePeerChatVRange conn@Connection {connId, peerChatVRange} msgChatVRange = do
       withStore' $ \db -> setPeerChatVRange db connId msgChatVRange
       pure conn {peerChatVRange = jMsgChatVRange}
     else pure conn
+
+updateMemberChatVRange :: ChatMonad m => GroupMember -> Connection -> VersionRange -> m (GroupMember, Connection)
+updateMemberChatVRange mem@GroupMember {groupMemberId} conn@Connection {connId, peerChatVRange} msgChatVRange = do
+  let jMsgChatVRange = JVersionRange msgChatVRange
+  if jMsgChatVRange /= peerChatVRange
+    then do
+      withStore' $ \db -> do
+        setPeerChatVRange db connId msgChatVRange
+        setMemberChatVRange db groupMemberId msgChatVRange
+      let conn' = conn {peerChatVRange = jMsgChatVRange}
+      pure (mem {memberChatVRange = jMsgChatVRange, activeConn = Just conn'}, conn')
+    else pure (mem, conn)
 
 parseFileDescription :: (ChatMonad m, FilePartyI p) => Text -> m (ValidFileDescription p)
 parseFileDescription =
@@ -5496,12 +5507,24 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
           pure $ Just m
         | otherwise -> pendingOrForwarded
       where
-        -- TODO group forward: check both recipient and their host support group forwarding
         pendingOrForwarded
-          | forwardedGroupMsg chatMsgEvent || isXGrpMsgForward chatMsgEvent = pure Nothing
+          | forwardSupported && forwardedGroupMsg chatMsgEvent = pure Nothing
+          | isXGrpMsgForward chatMsgEvent = pure Nothing
           | otherwise = do
             withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
             pure $ Just m
+        forwardSupported = do
+          let mcvr = memberChatVRange' m
+          isCompatibleRange mcvr groupForwardVRange && invitingMemberSupportsForward
+        invitingMemberSupportsForward = case m.invitedByGroupMemberId of
+          Just invMemberId ->
+            -- can be optimized for large groups by replacing [GroupMember] with Map GroupMemberId GroupMember
+            case find (\m' -> groupMemberId' m' == invMemberId) members of
+              Just invitingMember -> do
+                let mcvr = memberChatVRange' invitingMember
+                isCompatibleRange mcvr groupForwardVRange
+              Nothing -> False
+          Nothing -> False
         isXGrpMsgForward ev = case ev of
           XGrpMsgForward _ -> True
           _ -> False
@@ -5532,22 +5555,22 @@ saveDirectRcvMSG conn@Connection {connId} agentMsgMeta agentAckCmdId msgBody = d
   msg <- withStore $ \db -> createNewMessageAndRcvMsgDelivery db (ConnectionId connId) newMsg sharedMsgId_ rcvMsgDelivery Nothing
   pure (conn', msg)
 
-saveGroupRcvMsg :: (MsgEncodingI e, ChatMonad m) => User -> GroupId -> GroupMember -> Connection -> MsgMeta -> CommandId -> MsgBody -> ChatMessage e -> m (Connection, RcvMessage)
+saveGroupRcvMsg :: (MsgEncodingI e, ChatMonad m) => User -> GroupId -> GroupMember -> Connection -> MsgMeta -> CommandId -> MsgBody -> ChatMessage e -> m (GroupMember, Connection, RcvMessage)
 saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta agentAckCmdId msgBody ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = do
-  conn' <- updatePeerChatVRange conn chatVRange
+  (am', conn') <- updateMemberChatVRange authorMember conn chatVRange
   let agentMsgId = fst $ recipient agentMsgMeta
       newMsg = NewMessage {chatMsgEvent, msgBody}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId}
-      amId = Just authorMember.groupMemberId
+      amId = Just am'.groupMemberId
   msg <- withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ rcvMsgDelivery amId)
     `catchChatError` \e -> case e of
       ChatErrorStore (SEDuplicateGroupMessage _ _ _ (Just forwardedByGroupMemberId)) -> do
         fm <- withStore $ \db -> getGroupMember db user groupId forwardedByGroupMemberId
         forM_ (memberConn fm) $ \fmConn ->
-          void $ sendDirectMessage fmConn (XGrpMemCon authorMember.memberId) (GroupId groupId)
+          void $ sendDirectMessage fmConn (XGrpMemCon am'.memberId) (GroupId groupId)
         throwError e
       _ -> throwError e
-  pure (conn', msg)
+  pure (am', conn', msg)
 
 saveGroupFwdRcvMsg :: (MsgEncodingI e, ChatMonad m) => User -> GroupId -> GroupMember -> GroupMember -> MsgBody -> ChatMessage e -> m RcvMessage
 saveGroupFwdRcvMsg user groupId forwardingMember refAuthorMember msgBody ChatMessage {msgId = sharedMsgId_, chatMsgEvent} = do

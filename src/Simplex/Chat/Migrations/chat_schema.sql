@@ -148,6 +148,8 @@ CREATE TABLE group_members(
   show_messages INTEGER NOT NULL DEFAULT 1,
   xgrplinkmem_received INTEGER NOT NULL DEFAULT 0,
   invited_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
+  peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

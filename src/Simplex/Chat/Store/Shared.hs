@@ -207,6 +207,17 @@ setPeerChatVRange db connId (VersionRange minVer maxVer) =
     |]
     (minVer, maxVer, connId)
 
+setMemberChatVRange :: DB.Connection -> GroupMemberId -> VersionRange -> IO ()
+setMemberChatVRange db mId (VersionRange minVer maxVer) =
+  DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET peer_chat_min_version = ?, peer_chat_max_version = ?
+      WHERE group_member_id = ?
+    |]
+    (minVer, maxVer, mId)
+
 setCommandConnId :: DB.Connection -> User -> CommandId -> Int64 -> IO ()
 setCommandConnId db User {userId} cmdId connId = do
   updatedAt <- getCurrentTime

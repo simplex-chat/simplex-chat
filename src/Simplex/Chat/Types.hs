@@ -668,9 +668,9 @@ instance ToJSON MemberInfo where
 
 memberInfo :: GroupMember -> MemberInfo
 memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
-  MemberInfo memberId memberRole memberChatVRange (fromLocalProfile memberProfile)
+  MemberInfo memberId memberRole cvr (fromLocalProfile memberProfile)
   where
-    memberChatVRange = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn
+    cvr = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -702,7 +702,10 @@ data GroupMember = GroupMember
     -- for membership it would always point to user's contact
     -- it is used to test for incognito status by comparing with ID in memberProfile
     memberContactProfileId :: ProfileId,
-    activeConn :: Maybe Connection
+    activeConn :: Maybe Connection,
+    -- member chat protocol version range; if member has active connection, its version range is preferred;
+    -- for membership current supportedChatVRange is set, it's not updated on protocol version increase
+    memberChatVRange :: JVersionRange
   }
   deriving (Eq, Show, Generic)
 
@@ -724,6 +727,12 @@ memberConn GroupMember {activeConn} = activeConn
 
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = aConnId <$> activeConn
+
+memberChatVRange' :: GroupMember -> VersionRange
+memberChatVRange' GroupMember {activeConn, memberChatVRange} =
+  fromJVersionRange $ case activeConn of
+    Just Connection {peerChatVRange} -> peerChatVRange
+    Nothing -> memberChatVRange
 
 groupMemberId' :: GroupMember -> GroupMemberId
 groupMemberId' GroupMember {groupMemberId} = groupMemberId

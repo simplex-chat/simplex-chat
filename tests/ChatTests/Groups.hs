@@ -46,7 +46,6 @@ chatGroupTests = do
     it "group description is shown as the first message to new members" testGroupDescription
     it "moderate message of another group member" testGroupModerate
     it "moderate message of another group member (full delete)" testGroupModerateFullDelete
-    -- TODO fix tests to not rely on pending messages
     it "moderate message that arrives after the event of moderation" testGroupDelayedModeration
     it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
   describe "async group connections" $ do
@@ -1526,6 +1525,13 @@ testGroupDelayedModeration tmp = do
           cath <## "#team: you joined the group"
         ]
       threadDelay 1000000
+
+      -- imitate not implemented group forwarding
+      -- (real client wouldn't have forwarding code, but tests use "current code" with configured version,
+      -- and forwarding client doesn't check compatibility)
+      void $ withCCTransaction alice $ \db ->
+        DB.execute_ db "UPDATE group_member_intros SET intro_status='con'"
+
       cath #> "#team hi" -- message is pending for bob
       alice <# "#team cath> hi"
       alice ##> "\\\\ #team @cath hi"
@@ -1565,6 +1571,13 @@ testGroupDelayedModerationFullDelete tmp = do
           cath <## "#team: you joined the group"
         ]
       threadDelay 1000000
+
+      -- imitate not implemented group forwarding
+      -- (real client wouldn't have forwarding code, but tests use "current code" with configured version,
+      -- and forwarding client doesn't check compatibility)
+      void $ withCCTransaction alice $ \db ->
+        DB.execute_ db "UPDATE group_member_intros SET intro_status='con'"
+
       cath #> "#team hi" -- message is pending for bob
       alice <# "#team cath> hi"
       alice ##> "\\\\ #team @cath hi"
