@@ -3617,9 +3617,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               fromMaybe (sendRcptsSmallGroups user) sendRcpts
                 && hasDeliveryReceipt (toCMEventTag event)
                 && currentMemCount <= smallGroupsRcptsMemLimit
-          forwardMsg_ :: ChatMessage e -> m ()
-          forwardMsg_ chatMsg = case forwardedGroupMsg' chatMsg of
-            Just chatMsg' -> do
+          forwardMsg_ :: MsgEncodingI e => ChatMessage e -> m ()
+          forwardMsg_ chatMsg =
+            forM_ (forwardedGroupMsg chatMsg) $ \chatMsg' -> do
               ChatConfig {highlyAvailable} <- asks config
               -- members introduced to this invited member
               introducedMembers <- if memberCategory m == GCInviteeMember
@@ -3631,7 +3631,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   msg = XGrpMsgForward m.memberId chatMsg' brokerTs
               unless (null ms) $
                 void $ sendGroupMessage user gInfo ms msg
-            Nothing -> pure ()
       RCVD msgMeta msgRcpt ->
         withAckMessage' agentConnId conn msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
@@ -5169,6 +5168,16 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           rcvMsg@RcvMessage {chatMsgEvent = ACME _ event} <- saveGroupFwdRcvMsg user groupId m author body chatMsg
           case event of
             XMsgNew mc -> memberCanSend author $ newGroupContentMessage gInfo author mc rcvMsg msgTs
+            XMsgFileDescr sharedMsgId fileDescr -> memberCanSend author $ groupMessageFileDescription gInfo author sharedMsgId fileDescr
+            XMsgUpdate sharedMsgId mContent ttl live -> memberCanSend author $ groupMessageUpdate gInfo author sharedMsgId mContent rcvMsg msgTs ttl live
+            XMsgDel sharedMsgId memId -> groupMessageDelete gInfo author sharedMsgId memId rcvMsg msgTs
+            XMsgReact sharedMsgId (Just memId) reaction add -> groupMsgReaction gInfo author sharedMsgId memId reaction add rcvMsg msgTs
+            XFileCancel sharedMsgId -> xFileCancelGroup gInfo author sharedMsgId
+            XGrpMemRole memId memRole -> xGrpMemRole gInfo author memId memRole rcvMsg msgTs
+            XGrpMemDel memId -> xGrpMemDel gInfo author memId rcvMsg msgTs
+            XGrpLeave -> xGrpLeave gInfo author rcvMsg msgTs
+            XGrpDel -> xGrpDel gInfo author rcvMsg msgTs
+            XGrpInfo p' -> xGrpInfo gInfo author p' rcvMsg msgTs
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
@@ -5510,7 +5519,7 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
         | otherwise -> pendingOrForwarded
       where
         pendingOrForwarded
-          | forwardSupported && forwardedGroupMsg chatMsgEvent = pure Nothing
+          | forwardSupported && isForwardedGroupMsg chatMsgEvent = pure Nothing
           | isXGrpMsgForward chatMsgEvent = pure Nothing
           | otherwise = do
             withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_

@@ -235,7 +235,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpMemFwd :: MemberInfo -> IntroInvitation -> ChatMsgEvent 'Json
   XGrpMemInfo :: MemberId -> Profile -> ChatMsgEvent 'Json
   XGrpMemRole :: MemberId -> GroupMemberRole -> ChatMsgEvent 'Json
-  XGrpMemCon :: MemberId -> ChatMsgEvent 'Json -- TODO not implemented
+  XGrpMemCon :: MemberId -> ChatMsgEvent 'Json
   XGrpMemConAll :: MemberId -> ChatMsgEvent 'Json -- TODO not implemented
   XGrpMemDel :: MemberId -> ChatMsgEvent 'Json
   XGrpLeave :: ChatMsgEvent 'Json
@@ -263,70 +263,27 @@ data AChatMsgEvent = forall e. MsgEncodingI e => ACME (SMsgEncoding e) (ChatMsgE
 
 deriving instance Show AChatMsgEvent
 
--- forwardedGroupMsg :: ChatMsgEvent e -> Bool
--- forwardedGroupMsg ev = case ev of
---   XMsgNew _ -> True
---   XMsgFileDescr {} -> True
---   XMsgFileCancel _ -> True
---   XMsgUpdate {} -> True
---   XMsgDel {} -> True
---   XMsgDeleted -> False
---   XMsgReact {} -> True
---   XFile _ -> False
---   XFileAcpt _ -> False
---   XFileAcptInv {} -> False
---   XFileCancel _ -> True
---   XInfo _ -> True
---   XContact {} -> True
---   XDirectDel -> False
---   XGrpInv _ -> False
---   XGrpAcpt _ -> False
---   XGrpLinkInv _ -> False
---   XGrpLinkMem _ -> False
---   XGrpMemNew _ -> True
---   XGrpMemIntro _ -> False
---   XGrpMemInv {} -> False
---   XGrpMemFwd {} -> False
---   XGrpMemInfo {} -> True
---   XGrpMemRole {} -> True
---   XGrpMemCon _ -> False
---   XGrpMemConAll _ -> False
---   XGrpMemDel _ -> True
---   XGrpLeave -> True
---   XGrpDel -> True
---   XGrpInfo _ -> True
---   XGrpDirectInv {} -> False
---   XGrpMsgForward _ -> False
---   XInfoProbe _ -> False
---   XInfoProbeCheck _ -> False
---   XInfoProbeOk _ -> False
---   XCallInv {} -> False
---   XCallOffer {} -> False
---   XCallAnswer {} -> False
---   XCallExtra {} -> False
---   XCallEnd _ -> False
---   XOk -> False
---   XUnknown {} -> False
---   BFileChunk {} -> False
-
-forwardedGroupMsg :: ChatMsgEvent e -> Bool
-forwardedGroupMsg ev = case ev of
-  -- XMsgNew _ -> True -- TODO don't forward inline file without text; if text is present convert to event without file?
-  XMsgNew mc -> not $ mcHasFile mc
+isForwardedGroupMsg :: ChatMsgEvent e -> Bool
+isForwardedGroupMsg ev = case ev of
+  XMsgNew mc -> case mcExtMsgContent mc of
+    ExtMsgContent {file = Just FileInvitation {fileInline = Just _}} -> False
+    _ -> True
+  XMsgFileDescr _ _ -> True
+  XMsgUpdate {} -> True
+  XMsgDel _ _ -> True
+  XMsgReact {} -> True
+  XFileCancel _ -> True
+--  XGrpMemNew _ -> True
+  XGrpMemRole {} -> True
+  XGrpMemDel _ -> True -- TODO there should be a special logic when deleting host member (e.g., host forwards it before deleting connections)
+  XGrpLeave -> True
+  XGrpDel -> True -- TODO there should be a special logic - host should forward before deleting connections
+  XGrpInfo _ -> True
   _ -> False
 
-mcHasFile :: MsgContainer -> Bool
-mcHasFile = \case
-  MCSimple ExtMsgContent {file = Just _} -> True
-  MCQuote _ ExtMsgContent {file = Just _} -> True
-  MCForward ExtMsgContent {file = Just _} -> True
-  _ -> False
-
--- TODO refactor this and forwardedGroupMsg to use single function
-forwardedGroupMsg' :: ChatMessage e -> Maybe (ChatMessage 'Json)
-forwardedGroupMsg' msg@ChatMessage {chatMsgEvent} = case chatMsgEvent of
-  -- XMsgNew _ -> Just msg
-  XMsgNew mc -> if mcHasFile mc then Nothing else Just msg
+forwardedGroupMsg :: forall e. MsgEncodingI e => ChatMessage e -> Maybe (ChatMessage 'Json)
+forwardedGroupMsg msg@ChatMessage {chatMsgEvent} = case encoding @e of
+  SJson | isForwardedGroupMsg chatMsgEvent -> Just msg
   _ -> Nothing
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}

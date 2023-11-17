@@ -8,8 +8,9 @@ import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (when, void)
+import qualified Data.ByteString as B
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..))
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (GroupMemberRole (..))
@@ -3901,8 +3902,8 @@ testMemberContactProfileUpdate =
 
 testGroupMsgForward :: HasCallStack => FilePath -> IO ()
 testGroupMsgForward =
-  testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath -> do
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
       createGroup3 "team" alice bob cath
 
       threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
@@ -3935,3 +3936,41 @@ testGroupMsgForward =
       cath ##> "/tail #team 2"
       cath <# "#team bob> hi there [>>]"
       cath <# "#team hey team"
+
+      bob ##> "! #team hello there"
+      bob <# "#team [edited] hello there"
+      alice <# "#team bob> [edited] hello there"
+      cath <# "#team bob> [edited] hello there" -- TODO show as forwarded
+
+      cath ##> "+1 #team hello there"
+      cath <## "added 👍"
+      alice <# "#team cath> > bob hello there"
+      alice <## "    + 👍"
+      bob <# "#team cath> > bob hello there"
+      bob <## "    + 👍"
+
+      bob ##> "\\ #team hello there"
+      bob <## "message marked deleted"
+      alice <# "#team bob> [marked deleted] hello there"
+      cath <# "#team bob> [marked deleted] hello there" -- TODO show as forwarded
+
+      bob #> "/f #team ./tests/fixtures/test.jpg"
+      bob <## "use /fc 1 to cancel sending"
+      bob <## "completed uploading file 1 (test.jpg) for #team"
+      concurrentlyN_
+        [ do
+            alice <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            alice <## "use /fr 1 [<dir>/ | <path>] to receive it",
+          do
+            cath <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+            cath <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+        ]
+      cath ##> "/fr 1 ./tests/tmp"
+      cath <## "saving file 1 from bob to ./tests/tmp/test.jpg"
+      cath <## "started receiving file 1 (test.jpg) from bob"
+      cath <## "completed receiving file 1 (test.jpg) from bob"
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
