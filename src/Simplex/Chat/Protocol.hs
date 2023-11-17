@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
@@ -19,7 +20,7 @@ module Simplex.Chat.Protocol where
 
 import Control.Applicative ((<|>))
 import Control.Monad ((<=<))
-import Data.Aeson (FromJSON, ToJSON, (.:), (.:?), (.=))
+import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.:?), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.KeyMap as JM
@@ -46,7 +47,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (dropPrefix, defaultJSON, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
 
@@ -313,27 +314,19 @@ forwardedGroupMsg ev = case ev of
   XMsgNew _ -> True
   _ -> False
 
+forwardedGroupMsg' :: ChatMessage e -> Maybe (ChatMessage 'Json)
+forwardedGroupMsg' msg@ChatMessage {chatMsgEvent} = case chatMsgEvent of
+  XMsgNew _ -> Just msg
+  _ -> Nothing
+
 data MsgForward = MsgForward
   { memberId :: MemberId,
-    msgBody :: ForwardMsgBody,
+    msg :: ChatMessage 'Json,
     msgTs :: UTCTime
   }
-  deriving (Eq, Show, Generic, FromJSON, ToJSON)
+  deriving (Eq, Show, Generic, FromJSON)
 
-newtype ForwardMsgBody = ForwardMsgBody {msgBody :: ByteString}
-  deriving (Eq, Show)
-
-instance StrEncoding ForwardMsgBody where
-  strEncode (ForwardMsgBody m) = strEncode m
-  strDecode s = ForwardMsgBody <$> strDecode s
-  strP = ForwardMsgBody <$> strP
-
-instance FromJSON ForwardMsgBody where
-  parseJSON = strParseJSON "ForwardMsgBody"
-
-instance ToJSON ForwardMsgBody where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
+instance ToJSON MsgForward where toEncoding = J.genericToEncoding defaultJSON
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)
@@ -978,3 +971,9 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XCallEnd callId -> o ["callId" .= callId]
       XOk -> JM.empty
       XUnknown _ ps -> ps
+
+instance ToJSON (ChatMessage 'Json) where
+  toJSON = (\(AMJson msg) -> toJSON msg) . chatToAppMessage
+
+instance FromJSON (ChatMessage 'Json) where
+  parseJSON v = appJsonToCM <$?> parseJSON v

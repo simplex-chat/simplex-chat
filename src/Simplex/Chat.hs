@@ -32,6 +32,7 @@ import Data.Bifunctor (bimap, first)
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char
 import Data.Constraint (Dict (..))
 import Data.Either (fromRight, rights)
@@ -3551,7 +3552,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               Right withRcpt -> do
                 ackMsg agentConnId cmdId msgMeta $ if withRcpt then Just "" else Nothing
                 when (membership.memberRole >= GRAdmin) $
-                  forwardMsg_ chatMsg msgBody
+                  forwardMsg_ chatMsg
               Left e -> ackMsg agentConnId cmdId msgMeta Nothing >> toView (CRChatError (Just user) e)
           Left e -> ackMsg agentConnId cmdId msgMeta Nothing >> throwError e
         where
@@ -3615,9 +3616,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               fromMaybe (sendRcptsSmallGroups user) sendRcpts
                 && hasDeliveryReceipt (toCMEventTag event)
                 && currentMemCount <= smallGroupsRcptsMemLimit
-          forwardMsg_ :: ChatMessage e -> MsgBody -> m ()
-          forwardMsg_ ChatMessage {chatMsgEvent} body
-            | forwardedGroupMsg chatMsgEvent = do
+          forwardMsg_ :: ChatMessage e -> m ()
+          forwardMsg_ chatMsg = case forwardedGroupMsg' chatMsg of
+            Just chatMsg' -> do
               ChatConfig {highlyAvailable} <- asks config
               -- members to which this member was introduced
               forwardMembers <- if memberCategory m == GCInviteeMember
@@ -3626,10 +3627,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- members introduced to this member
               inviteeMembers <- withStore' $ \db -> getForwardMemberInvitees db user m highlyAvailable
               let ms = forwardMembers <> inviteeMembers
-                  msg = XGrpMsgForward $ MsgForward m.memberId (ForwardMsgBody body) brokerTs
+                  msg = XGrpMsgForward $ MsgForward m.memberId chatMsg' brokerTs
               unless (null ms) $
                 void $ sendGroupMessage user gInfo ms msg
-            | otherwise = pure ()
+            Nothing -> pure ()
       RCVD msgMeta msgRcpt ->
         withAckMessage' agentConnId conn msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
@@ -5155,18 +5156,18 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
     xGrpMsgForward :: GroupInfo -> GroupMember -> MsgForward -> m ()
-    xGrpMsgForward gInfo@GroupInfo {groupId} m MsgForward {memberId, msgBody = ForwardMsgBody body, msgTs} = do
+    xGrpMsgForward gInfo@GroupInfo {groupId} m MsgForward {memberId, msg, msgTs} = do
       when (m.memberRole < GRAdmin) $ throwChatError (CEGroupContactRole m.localDisplayName)
       author <- withStore $ \db -> getGroupMemberByMemberId db user gInfo memberId
-      ACMsg _ chatMsg <- parseFwdChatMessage m author body
-      processForwardedMsg author chatMsg
+      processForwardedMsg author msg
       where
         -- Note: forwarded group events (see forwardedGroupMsg) should include msgId to be deduplicated
-        processForwardedMsg :: forall e. MsgEncodingI e => GroupMember -> ChatMessage e -> m ()
+        processForwardedMsg :: GroupMember -> ChatMessage 'Json -> m ()
         processForwardedMsg author chatMsg = do
-          msg@RcvMessage {chatMsgEvent = ACME _ event} <- saveGroupFwdRcvMsg user groupId m author body chatMsg
+          let body = LB.toStrict $ J.encode msg
+          rcvMsg@RcvMessage {chatMsgEvent = ACME _ event} <- saveGroupFwdRcvMsg user groupId m author body chatMsg
           case event of
-            XMsgNew mc -> memberCanSend author $ newGroupContentMessage gInfo author mc msg msgTs
+            XMsgNew mc -> memberCanSend author $ newGroupContentMessage gInfo author mc rcvMsg msgTs
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
