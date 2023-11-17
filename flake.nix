@@ -127,8 +127,22 @@
                       hardeningDisable = [ "fortify" ];
                   }
               );in {
+              # STATIC x86_64-linux
               "${pkgs.pkgsCross.musl64.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.musl64).simplex-chat.components.exes.simplex-chat;
-              "${pkgs.pkgsCross.musl32.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.musl32).simplex-chat.components.exes.simplex-chat;
+              # STATIC i686-linux
+              "${pkgs.pkgsCross.musl32.hostPlatform.system}-static:exe:simplex-chat" = (drv' {
+                pkgs' = pkgs.pkgsCross.musl32;
+                extra-modules = [{
+                  # 32 bit patches
+                  packages.basement.patches = [
+                    ./scripts/nix/basement-pr-573.patch
+                  ];
+                  packages.memory.patches = [
+                    ./scripts/nix/memory-pr-99.patch
+                  ];
+                }];
+              }).simplex-chat.components.exes.simplex-chat;
+              # WINDOWS x86_64-mingwW64
               "${pkgs.pkgsCross.mingwW64.hostPlatform.system}:exe:simplex-chat" = (drv' {
                 pkgs' = pkgs.pkgsCross.mingwW64;
                 extra-modules = [{
@@ -138,6 +152,9 @@
                     ./scripts/nix/direct-sqlcipher-2.3.27-win.patch
                   ];
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.pkgsCross.mingwW64.openssl) #.override) # { static = true; enableKTLS = false; })
+                  ];
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (pkgs.pkgsCross.mingwW64.openssl) #.override) # { static = true; enableKTLS = false; })
                   ];
                   packages.unix-time.postPatch = ''
@@ -169,6 +186,9 @@
                     ./scripts/nix/direct-sqlcipher-2.3.27-win.patch
                   ];
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
+                    pkgs.pkgsCross.mingwW64.openssl
+                  ];
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     pkgs.pkgsCross.mingwW64.openssl
                   ];
                   packages.unix-time.postPatch = ''
@@ -229,15 +249,17 @@
                 '';
               });
               # "${pkgs.pkgsCross.muslpi.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.muslpi).simplex-chat.components.exes.simplex-chat;
+
+              # STATIC aarch64-linux
               "${pkgs.pkgsCross.aarch64-multiplatform-musl.hostPlatform.system}-static:exe:simplex-chat" = (drv pkgs.pkgsCross.aarch64-multiplatform-musl).simplex-chat.components.exes.simplex-chat;
-              "armv7a-android:lib:support" = (drv android32Pkgs).android-support.components.library.override {
+              "armv7a-android:lib:support" = (drv android32Pkgs).android-support.components.library.override (p: {
                 smallAddressSpace = true;
                 # we won't want -dyamic (see aarch64-android:lib:simplex-chat)
                 enableShared = false;
                 # we also do not want to have any dependencies listed (especially no rts!)
                 enableStatic = false;
 
-                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsupport.so" ];
+                setupBuildFlags = p.component.setupBuildFlags ++ map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsupport.so" ];
                 postInstall = ''
 
                   mkdir -p $out/_pkg
@@ -250,7 +272,7 @@
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
                         > $out/nix-support/hydra-build-products
                 '';
-              };
+              });
               # The android-support package is at
               # https://github.com/simplex-chat/android-support
               "aarch64-android:lib:support" = (drv androidPkgs).android-support.components.library.override (p: {
@@ -293,6 +315,10 @@
                   packages.direct-sqlcipher.patches = [
                     ./scripts/nix/direct-sqlcipher-android-log.patch
                   ];
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (android32Pkgs.openssl.override { static = true; enableKTLS = false; })
+                  ];
+                  # 32 bit patches
                   packages.basement.patches = [
                     ./scripts/nix/basement-pr-573.patch
                   ];
@@ -396,6 +422,9 @@
                   packages.direct-sqlcipher.patches = [
                     ./scripts/nix/direct-sqlcipher-android-log.patch
                   ];
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (androidPkgs.openssl.override { static = true; })
+                  ];
                 }];
               }).simplex-chat.components.library.override (p: {
                 smallAddressSpace = true;
@@ -492,9 +521,13 @@
               "aarch64-darwin-ios:lib:simplex-chat" = (drv' {
                 pkgs' = pkgs;
                 extra-modules = [{
+                  packages.simplex-chat.flags.swift = true;
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.openssl.override { static = true; })
+                  ];
                 }];
               }).simplex-chat.components.library.override (
                 iosOverrides "pkg-ios-aarch64-swift-json"
@@ -505,6 +538,9 @@
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.openssl.override { static = true; })
+                  ];
                 }];
               }).simplex-chat.components.library.override (
                 iosOverrides "pkg-ios-aarch64-tagged-json"
@@ -515,9 +551,13 @@
               "x86_64-darwin-ios:lib:simplex-chat" = (drv' {
                 pkgs' = pkgs;
                 extra-modules = [{
+                  packages.simplex-chat.flags.swift = true;
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.openssl.override { static = true; })
+                  ];
                 }];
               }).simplex-chat.components.library.override (
                 iosOverrides "pkg-ios-x86_64-swift-json"
@@ -528,6 +568,9 @@
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.openssl.override { static = true; })
+                  ];
                 }];
               }).simplex-chat.components.library.override (
                 iosOverrides "pkg-ios-x86_64-tagged-json"
