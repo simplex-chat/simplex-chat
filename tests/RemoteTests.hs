@@ -185,7 +185,7 @@ remoteStoreFileTest =
 
       rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
       desktopHostStore <- case M.lookup (RHId 1) rhs of
-        Just RHSessionConnected {storePath} -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
+        Just (_, RHSessionConnected {storePath}) -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
         _ -> fail "Host session 1 should be started"
       desktop ##> "/store remote file 1 tests/fixtures/test.pdf"
       desktop <## "file test.pdf stored on remote host 1"
@@ -311,7 +311,7 @@ remoteCLIFileTest = testChatCfg3 cfg aliceProfile aliceDesktopProfile bobProfile
 
   rhs <- readTVarIO (Controller.remoteHostSessions $ chatController desktop)
   desktopHostStore <- case M.lookup (RHId 1) rhs of
-    Just RHSessionConnected {storePath} -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
+    Just (_, RHSessionConnected {storePath}) -> pure $ desktopHostFiles </> storePath </> archiveFilesFolder
     _ -> fail "Host session 1 should be started"
 
   mobileName <- userName mobile

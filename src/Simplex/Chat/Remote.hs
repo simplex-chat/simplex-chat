@@ -29,7 +29,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.Functor (($>))
 import Data.List.NonEmpty (nonEmpty)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -96,33 +96,52 @@ discoveryTimeout = 60000000
 -- * Desktop side
 
 getRemoteHostClient :: ChatMonad m => RemoteHostId -> m RemoteHostClient
-getRemoteHostClient rhId = withRemoteHostSession rhKey $ \case
-  s@RHSessionConnected {rhClient} -> Right (rhClient, s)
-  _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
+getRemoteHostClient rhId = do
+  sessions <- asks remoteHostSessions
+  liftIOEither . atomically $ TM.lookup rhKey sessions >>= \case
+    Just (_, RHSessionConnected {rhClient}) -> pure $ Right rhClient
+    Just _ -> pure . Left $ ChatErrorRemoteHost rhKey RHEBadState
+    Nothing -> pure . Left $ ChatErrorRemoteHost rhKey RHEMissing
   where
     rhKey = RHId rhId
 
-withRemoteHostSession :: ChatMonad m => RHKey -> (RemoteHostSession -> Either ChatError (a, RemoteHostSession)) -> m a
-withRemoteHostSession rhKey state = withRemoteHostSession_ rhKey $ maybe (Left $ ChatErrorRemoteHost rhKey $ RHEMissing) ((second . second) Just . state)
-
-withRemoteHostSession_ :: ChatMonad m => RHKey -> (Maybe RemoteHostSession -> Either ChatError (a, Maybe RemoteHostSession)) -> m a
-withRemoteHostSession_ rhKey state = do
+-- | Transition session state with a 'RHNew' ID to an assigned 'RemoteHostId'
+-- XXX: Old RHStateKey becomes invalid
+setNewRemoteHostId :: ChatMonad m => RHStateKey -> RemoteHostId -> m ()
+setNewRemoteHostId (sessionSeq, rhKey) rhId = do
+  unless (rhKey == RHNew) $ throwChatError $ CEInternalError "setNewRemoteHostId key must be RHNew"
   sessions <- asks remoteHostSessions
-  r <- atomically $ do
-    s <- TM.lookup rhKey sessions
-    case state s of
-      Left e -> pure $ Left e
-      Right (a, s') -> Right a <$ maybe (TM.delete rhKey) (TM.insert rhKey) s' sessions
-  liftEither r
+  liftIOEither . atomically $ do
+    TM.lookup RHNew sessions >>= \case
+      Nothing -> err RHEMissing
+      Just (stateSeq, _) | stateSeq /= sessionSeq -> err RHEBadState -- RHEGhostSession
+      Just session -> Right () <$ modifyTVar' sessions (M.insert (RHId rhId) session . M.delete RHNew)
+  where
+    err = pure . Left . ChatErrorRemoteHost rhKey
 
-setNewRemoteHostId :: ChatMonad m => RHKey -> RemoteHostId -> m ()
-setNewRemoteHostId rhKey rhId = do
+startRemoteHostSession :: ChatMonad m => RHKey -> m RHStateKey
+startRemoteHostSession rhKey = do
   sessions <- asks remoteHostSessions
-  r <- atomically $ do
-    TM.lookupDelete rhKey sessions >>= \case
-      Nothing -> pure $ Left $ ChatErrorRemoteHost rhKey RHEMissing
-      Just s -> Right () <$ TM.insert (RHId rhId) s sessions
-  liftEither r
+  nextSessionSeq <- asks remoteSessionSeq
+  liftIOEither . atomically $
+    TM.lookup rhKey sessions >>= \case
+      Just _ -> pure . Left $ ChatErrorRemoteHost rhKey RHEBusy
+      Nothing -> do
+        sessionSeq <- stateTVar nextSessionSeq $ \s -> (s, s + 1)
+        Right (sessionSeq, rhKey) <$ TM.insert rhKey (sessionSeq, RHSessionStarting) sessions
+
+remoteHostSessionState :: ChatMonad m => RHStateKey -> (RemoteHostSession -> Maybe (a, RemoteHostSession)) -> m a
+remoteHostSessionState (sseq, rhKey) f = do
+  sessions <- asks remoteHostSessions
+  liftIOEither . atomically $
+    TM.lookup rhKey sessions >>= \case
+      Nothing -> err RHEMissing
+      Just (oldSeq, _) | oldSeq /= sseq -> err RHEBadState -- XXX: RHEGhostSession or something like that?
+      Just (_, oldState) -> case f oldState of
+        Nothing -> err RHEBadState
+        Just (r, newState) -> Right r <$ TM.insert rhKey (sseq, newState) sessions
+  where
+    err = pure . Left . ChatErrorRemoteHost rhKey
 
 startRemoteHost :: ChatMonad m => Maybe (RemoteHostId, Bool) -> m (Maybe RemoteHostInfo, RCSignedInvitation)
 startRemoteHost rh_ = do
@@ -131,20 +150,19 @@ startRemoteHost rh_ = do
       rh@RemoteHost {hostPairing} <- withStore $ \db -> getRemoteHost db rhId
       pure (RHId rhId, multicast, Just $ remoteHostInfo rh $ Just RHSStarting, hostPairing) -- get from the database, start multicast if requested
     Nothing -> (RHNew,False,Nothing,) <$> rcNewHostPairing
-  withRemoteHostSession_ rhKey $ maybe (Right ((), Just RHSessionStarting)) (\_ -> Left $ ChatErrorRemoteHost rhKey RHEBusy)
+  stKey <- startRemoteHostSession rhKey
   ctrlAppInfo <- mkCtrlAppInfo
   (invitation, rchClient, vars) <- withAgent $ \a -> rcConnectHost a pairing (J.toJSON ctrlAppInfo) multicast
   cmdOk <- newEmptyTMVarIO
   rhsWaitSession <- async $ do
     rhKeyVar <- newTVarIO rhKey
     atomically $ takeTMVar cmdOk
-    handleHostError rhKeyVar $ waitForHostSession remoteHost_ rhKey rhKeyVar vars
+    handleHostError (fst stKey) rhKeyVar $ waitForHostSession remoteHost_ stKey rhKeyVar vars
   let rhs = RHPendingSession {rhKey, rchClient, rhsWaitSession, remoteHost_}
-  withRemoteHostSession rhKey $ \case
-    RHSessionStarting ->
-      let inv = decodeLatin1 $ strEncode invitation
-       in Right ((), RHSessionConnecting inv rhs)
-    _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
+  remoteHostSessionState stKey $ \case
+    RHSessionStarting -> Just ((), RHSessionConnecting inv rhs)
+      where inv = decodeLatin1 $ strEncode invitation
+    _ -> Nothing
   (remoteHost_, invitation) <$ atomically (putTMVar cmdOk ())
   where
     mkCtrlAppInfo = do
@@ -157,80 +175,89 @@ startRemoteHost rh_ = do
       unless (isAppCompatible appVersion ctrlAppVersionRange) $ throwError $ RHEBadVersion appVersion
       when (encoding == PEKotlin && localEncoding == PESwift) $ throwError $ RHEProtocolError RPEIncompatibleEncoding
       pure hostInfo
-    handleHostError :: ChatMonad m => TVar RHKey -> m () -> m ()
-    handleHostError rhKeyVar action = action `catchChatError` \err -> do
+    handleHostError :: ChatMonad m => SessionSeq -> TVar RHKey -> m () -> m ()
+    handleHostError sessSeq rhKeyVar action = action `catchChatError` \err -> do
       logError $ "startRemoteHost.waitForHostSession crashed: " <> tshow err
-      readTVarIO rhKeyVar >>= cancelRemoteHostSession True
-    waitForHostSession :: ChatMonad m => Maybe RemoteHostInfo -> RHKey -> TVar RHKey -> RCStepTMVar (ByteString, TLS, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> m ()
-    waitForHostSession remoteHost_ rhKey rhKeyVar vars = do
+      readTVarIO rhKeyVar >>= cancelRemoteHostSession (Just sessSeq)
+    waitForHostSession :: ChatMonad m => Maybe RemoteHostInfo -> RHStateKey -> TVar RHKey -> RCStepTMVar (ByteString, TLS, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> m ()
+    waitForHostSession remoteHost_ stateKey@(_, rhKey) rhKeyVar vars = do
       (sessId, tls, vars') <- timeoutThrow (ChatErrorRemoteHost rhKey RHETimeout) 60000000 $ takeRCStep vars
       let sessionCode = verificationCode sessId
-      withRemoteHostSession rhKey $ \case
-        RHSessionConnecting _inv rhs' -> Right ((), RHSessionPendingConfirmation sessionCode tls rhs') -- TODO check it's the same session?
-        _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
-      -- display confirmation code, wait for mobile to confirm
-      let rh_' = (\rh -> (rh :: RemoteHostInfo) {sessionState = Just $ RHSPendingConfirmation {sessionCode}}) <$> remoteHost_
+      remoteHostSessionState stateKey $ \case
+        RHSessionConnecting _inv rhs' -> Just ((), RHSessionPendingConfirmation sessionCode tls rhs')
+        _ -> Nothing
+      let rh_' = (\rh -> (rh :: RemoteHostInfo) {sessionState = Just RHSPendingConfirmation {sessionCode}}) <$> remoteHost_
       toView $ CRRemoteHostSessionCode {remoteHost_ = rh_', sessionCode}
       (RCHostSession {sessionKeys}, rhHello, pairing') <- timeoutThrow (ChatErrorRemoteHost rhKey RHETimeout) 60000000 $ takeRCStep vars'
       hostInfo@HostAppInfo {deviceName = hostDeviceName} <-
         liftError (ChatErrorRemoteHost rhKey) $ parseHostAppInfo rhHello
-      withRemoteHostSession rhKey $ \case
-        RHSessionPendingConfirmation _ tls' rhs' -> Right ((), RHSessionConfirmed tls' rhs') -- TODO check it's the same session?
-        _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
-      -- update remoteHost with updated pairing
-      rhi@RemoteHostInfo {remoteHostId, storePath} <- upsertRemoteHost pairing' rh_' hostDeviceName RHSConfirmed {sessionCode}
+      remoteHostSessionState stateKey $ \case
+        RHSessionPendingConfirmation _ tls' rhs' -> Just ((), RHSessionConfirmed tls' rhs')
+        _ -> Nothing
+      rhi@RemoteHostInfo {remoteHostId, storePath} <- upsertRemoteHost pairing' rh_' hostDeviceName stateKey RHSConfirmed {sessionCode}
       let rhKey' = RHId remoteHostId -- rhKey may be invalid after upserting on RHNew
       when (rhKey' /= rhKey) $ do
         atomically $ writeTVar rhKeyVar rhKey'
         toView $ CRNewRemoteHost rhi
-      disconnected <- toIO $ onDisconnected rhKey'
-      httpClient <- liftEitherError (httpError rhKey') $ attachRevHTTP2Client disconnected tls
+      let stateKey' = rhKey' <$ stateKey
+      -- set up HTTP transport and remote profile protocol
+      disconnected <- toIO $ onDisconnected stateKey'
+      httpClient <- liftEitherError (httpError remoteHostId) $ attachRevHTTP2Client disconnected tls
       rhClient <- mkRemoteHostClient httpClient sessionKeys sessId storePath hostInfo
       pollAction <- async $ pollEvents remoteHostId rhClient
-      withRemoteHostSession rhKey' $ \case
-        RHSessionConfirmed _ RHPendingSession {rchClient} -> Right ((), RHSessionConnected {rchClient, tls, rhClient, pollAction, storePath})
-        _ -> Left $ ChatErrorRemoteHost rhKey' RHEBadState
+      remoteHostSessionState stateKey' $ \case
+        RHSessionConfirmed _ RHPendingSession {rchClient} -> Just ((), RHSessionConnected {rchClient, tls, rhClient, pollAction, storePath})
+        _ -> Nothing
       chatWriteVar currentRemoteHost $ Just remoteHostId -- this is required for commands to be passed to remote host
       toView $ CRRemoteHostConnected rhi {sessionState = Just RHSConnected {sessionCode}}
-    upsertRemoteHost :: ChatMonad m => RCHostPairing -> Maybe RemoteHostInfo -> Text -> RemoteHostSessionState -> m RemoteHostInfo
-    upsertRemoteHost pairing'@RCHostPairing {knownHost = kh_} rhi_ hostDeviceName state = do
+    upsertRemoteHost :: ChatMonad m => RCHostPairing -> Maybe RemoteHostInfo -> Text -> RHStateKey -> RemoteHostSessionState -> m RemoteHostInfo
+    upsertRemoteHost pairing'@RCHostPairing {knownHost = kh_} rhi_ hostDeviceName stKey state = do
       KnownHostPairing {hostDhPubKey = hostDhPubKey'} <- maybe (throwError . ChatError $ CEInternalError "KnownHost is known after verification") pure kh_
       case rhi_ of
         Nothing -> do
           storePath <- liftIO randomStorePath
           rh@RemoteHost {remoteHostId} <- withStore $ \db -> insertRemoteHost db hostDeviceName storePath pairing' >>= getRemoteHost db
-          setNewRemoteHostId RHNew remoteHostId
+          setNewRemoteHostId stKey remoteHostId
           pure $ remoteHostInfo rh $ Just state
         Just rhi@RemoteHostInfo {remoteHostId} -> do
           withStore' $ \db -> updateHostPairing db remoteHostId hostDeviceName hostDhPubKey'
           pure (rhi :: RemoteHostInfo) {sessionState = Just state}
-    onDisconnected :: ChatMonad m => RHKey -> m ()
-    onDisconnected rhKey = do
-      logDebug "HTTP2 client disconnected"
-      cancelRemoteHostSession True rhKey
+    onDisconnected :: ChatMonad m => RHStateKey -> m ()
+    onDisconnected stKey@(sseq, rhKey) = do
+      logDebug $ "HTTP2 client disconnected: " <> tshow stKey
+      cancelRemoteHostSession (Just sseq) rhKey
     pollEvents :: ChatMonad m => RemoteHostId -> RemoteHostClient -> m ()
     pollEvents rhId rhClient = do
       oq <- asks outputQ
       forever $ do
         r_ <- liftRH rhId $ remoteRecv rhClient 10000000
         forM r_ $ \r -> atomically $ writeTBQueue oq (Nothing, Just rhId, r)
-    httpError :: RHKey -> HTTP2ClientError -> ChatError
-    httpError rhKey = ChatErrorRemoteHost rhKey . RHEProtocolError . RPEHTTP2 . tshow
+    httpError :: RemoteHostId -> HTTP2ClientError -> ChatError
+    httpError rhId = ChatErrorRemoteHost (RHId rhId) . RHEProtocolError . RPEHTTP2 . tshow
 
 closeRemoteHost :: ChatMonad m => RHKey -> m ()
 closeRemoteHost rhKey = do
   logNote $ "Closing remote host session for " <> tshow rhKey
-  cancelRemoteHostSession False rhKey
+  cancelRemoteHostSession Nothing rhKey
+  -- cancelRemoteHostSession False rhKey
 
-cancelRemoteHostSession :: ChatMonad m => Bool -> RHKey -> m ()
-cancelRemoteHostSession handlingError rhKey = handleAny (logError . tshow) $ do
-  chatModifyVar currentRemoteHost $ \cur -> if (RHId <$> cur) == Just rhKey then Nothing else cur -- only wipe the closing RH
+cancelRemoteHostSession :: ChatMonad m => Maybe SessionSeq -> RHKey -> m ()
+cancelRemoteHostSession sseq_ rhKey = do
   sessions <- asks remoteHostSessions
-  session_ <- atomically $ TM.lookupDelete rhKey sessions -- XXX: when invoked from delayed error handler this can wipe the next session instead
-  forM_ session_ $ \session -> do
+  crh <- asks currentRemoteHost
+  deregistered <- atomically $
+    TM.lookup rhKey sessions >>= \case
+      Nothing -> pure Nothing
+      Just (sessSeq, _) | maybe False (/= sessSeq) sseq_ -> pure Nothing -- ignore cancel from a ghost session handler
+      Just (_, rhs) -> do
+        TM.delete rhKey sessions
+        modifyTVar' crh $ \cur -> if (RHId <$> cur) == Just rhKey then Nothing else cur -- only wipe the closing RH
+        pure $ Just rhs
+  forM_ deregistered $ \session -> do
     liftIO $ cancelRemoteHost handlingError session `catchAny` (logError . tshow)
     when handlingError $ toView $ CRRemoteHostStopped rhId_
   where
+    handlingError = isJust sseq_
     rhId_ = case rhKey of
       RHNew -> Nothing
       RHId rhId -> Just rhId
@@ -265,7 +292,7 @@ listRemoteHosts = do
   map (rhInfo sessions) <$> withStore' getRemoteHosts
   where
     rhInfo sessions rh@RemoteHost {remoteHostId} =
-      remoteHostInfo rh (rhsSessionState <$> M.lookup (RHId remoteHostId) sessions)
+      remoteHostInfo rh $ rhsSessionState . snd <$> M.lookup (RHId remoteHostId) sessions
 
 switchRemoteHost :: ChatMonad m => Maybe RemoteHostId -> m (Maybe RemoteHostInfo)
 switchRemoteHost rhId_ = do
@@ -274,7 +301,7 @@ switchRemoteHost rhId_ = do
     rh <- withStore (`getRemoteHost` rhId)
     sessions <- chatReadVar remoteHostSessions
     case M.lookup rhKey sessions of
-      Just RHSessionConnected {tls} -> pure $ remoteHostInfo rh $ Just RHSConnected {sessionCode = tlsSessionCode tls}
+      Just (_, RHSessionConnected {tls}) -> pure $ remoteHostInfo rh $ Just RHSConnected {sessionCode = tlsSessionCode tls}
       _ -> throwError $ ChatErrorRemoteHost rhKey RHEInactive
   rhi_ <$ chatWriteVar currentRemoteHost rhId_
 

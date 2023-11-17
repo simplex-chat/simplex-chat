@@ -184,7 +184,8 @@ data ChatController = ChatController
     currentCalls :: TMap ContactId Call,
     localDeviceName :: TVar Text,
     multicastSubscribers :: TMVar Int,
-    remoteHostSessions :: TMap RHKey RemoteHostSession, -- All the active remote hosts
+    remoteSessionSeq :: TVar Int,
+    remoteHostSessions :: TMap RHKey (SessionSeq, RemoteHostSession), -- All the active remote hosts
     remoteHostsFolder :: TVar (Maybe FilePath), -- folder for remote hosts data
     remoteCtrlSession :: TVar (Maybe RemoteCtrlSession), -- Supervisor process for hosted controllers
     config :: ChatConfig,
