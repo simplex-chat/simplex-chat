@@ -104,8 +104,16 @@ fun FHorizontalWheelPicker(
   )
 }
 
+expect fun WheelPickerModifier(
+  modifier: Modifier,
+  state: FWheelPickerState,
+  count: Int,
+  itemSize: Dp,
+  isVertical: Boolean,
+  reverseLayout: Boolean): Modifier
+
 @Composable
-expect fun WheelPicker(
+fun WheelPicker(
   isVertical: Boolean,
   count: Int,
   state: FWheelPickerState,
@@ -119,7 +127,106 @@ expect fun WheelPicker(
   focus: @Composable () -> Unit,
   contentWrapper: @Composable FWheelPickerContentWrapperScope.(index: Int) -> Unit,
   content: @Composable FWheelPickerContentScope.(index: Int) -> Unit,
-)
+) {
+  require(count >= 0) { "require count >= 0" }
+  require(unfocusedCount >= 1) { "require unfocusedCount >= 1" }
+
+  state.debug = debug
+  LaunchedEffect(state, count) {
+    state.notifyCountChanged(count)
+  }
+
+  val totalSize = remember(itemSize, unfocusedCount) {
+    itemSize * (unfocusedCount * 2 + 1)
+  }
+
+  val contentWrapperScope = remember(state) {
+    val contentScope = WheelPickerContentScopeImpl(state)
+    FWheelPickerContentWrapperScopeImpl(contentScope)
+  }.apply {
+    this.content = content
+  }
+
+  Box(
+    modifier = WheelPickerModifier(
+        modifier
+        .run {
+          if (totalSize > 0.dp) {
+            if (isVertical) {
+              height(totalSize).widthIn(40.dp)
+            } else {
+              width(totalSize).heightIn(40.dp)
+            }
+          } else {
+            this
+          }
+        },
+        state, count, itemSize, isVertical, reverseLayout
+      ),
+    contentAlignment = Alignment.Center,
+  ) {
+
+    val lazyListScope: LazyListScope.() -> Unit = {
+      repeat(unfocusedCount) {
+        item {
+          ItemSizeBox(
+            isVertical = isVertical,
+            itemSize = itemSize,
+          )
+        }
+      }
+
+      items(
+        count = count,
+        key = key,
+      ) { index ->
+        ItemSizeBox(
+          isVertical = isVertical,
+          itemSize = itemSize,
+        ) {
+          contentWrapperScope.contentWrapper(index)
+        }
+      }
+
+      repeat(unfocusedCount) {
+        item {
+          ItemSizeBox(
+            isVertical = isVertical,
+            itemSize = itemSize,
+          )
+        }
+      }
+    }
+
+    if (isVertical) {
+      LazyColumn(
+        state = state.lazyListState,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        reverseLayout = reverseLayout,
+        userScrollEnabled = userScrollEnabled,
+        modifier = Modifier.matchParentSize(),
+        content = lazyListScope,
+      )
+    } else {
+      LazyRow(
+        state = state.lazyListState,
+        verticalAlignment = Alignment.CenterVertically,
+        reverseLayout = reverseLayout,
+        userScrollEnabled = userScrollEnabled,
+        modifier = Modifier.matchParentSize(),
+        content = lazyListScope,
+      )
+    }
+
+    ItemSizeBox(
+      modifier = Modifier.align(Alignment.Center),
+      isVertical = isVertical,
+      itemSize = itemSize,
+    ) {
+      focus()
+    }
+  }
+}
 
 @Composable
 fun ItemSizeBox(
