@@ -3518,44 +3518,45 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
           _ -> do
             -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
+            let memCategory = memberCategory m
             withStore' (\db -> getViaGroupContact db user m) >>= \case
               Nothing -> do
                 notifyMemberConnected gInfo m Nothing
                 let connectedIncognito = memberIncognito membership
-                when (memberCategory m == GCPreMember) $ probeMatchingMemberContact m connectedIncognito
+                when (memCategory == GCPreMember) $ probeMatchingMemberContact m connectedIncognito
               Just ct@Contact {activeConn} ->
                 forM_ activeConn $ \Connection {connStatus} ->
                   when (connStatus == ConnReady) $ do
                     notifyMemberConnected gInfo m $ Just ct
                     let connectedIncognito = contactConnIncognito ct || incognitoMembership gInfo
-                    when (memberCategory m == GCPreMember) $ probeMatchingContactsAndMembers ct connectedIncognito True
-            sendXGrpMemCon
+                    when (memCategory == GCPreMember) $ probeMatchingContactsAndMembers ct connectedIncognito True
+            sendXGrpMemCon memCategory
             where
-              sendXGrpMemCon
-                | memberCategory m == GCPreMember =
+              sendXGrpMemCon = \case
+                GCPreMember ->
                   forM_ (invitedByGroupMemberId membership) $ \hostId -> do
                     host <- withStore $ \db -> getGroupMember db user groupId hostId
                     forM_ (memberConn host) $ \hostConn ->
                       void $ sendDirectMessage hostConn (XGrpMemCon m.memberId) (GroupId groupId)
-                | memberCategory m == GCPostMember =
+                GCPostMember ->
                   forM_ (invitedByGroupMemberId m) $ \invitingMemberId -> do
                     im <- withStore $ \db -> getGroupMember db user groupId invitingMemberId
                     forM_ (memberConn im) $ \imConn ->
                       void $ sendDirectMessage imConn (XGrpMemCon m.memberId) (GroupId groupId)
-                | otherwise = messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
+                _ -> messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
       MSG msgMeta _msgFlags msgBody -> do
         cmdId <- createAckCmd conn
-        tryChatError (parseAChatMessage conn msgMeta msgBody) >>= \case
-          Right (ACMsg _ chatMsg) -> do
-            checkIntegrity chatMsg `catchChatError` \_ -> pure ()
-            tryChatError (processEvent cmdId chatMsg) >>= \case
-              Right withRcpt -> do
-                ackMsg agentConnId cmdId msgMeta $ if withRcpt then Just "" else Nothing
-                when (membership.memberRole >= GRAdmin) $
-                  forwardMsg_ chatMsg
-              Left e -> ackMsg agentConnId cmdId msgMeta Nothing >> toView (CRChatError (Just user) e)
+        tryChatError (processChatMessage cmdId) >>= \case
+          Right (ACMsg _ chatMsg, withRcpt) -> do
+            ackMsg agentConnId cmdId msgMeta $ if withRcpt then Just "" else Nothing
+            when (membership.memberRole >= GRAdmin) $ forwardMsg_ chatMsg
           Left e -> ackMsg agentConnId cmdId msgMeta Nothing >> throwError e
         where
+          processChatMessage :: Int64 -> m (AChatMessage, Bool)
+          processChatMessage cmdId = do
+            msg@(ACMsg _ chatMsg) <- parseAChatMessage conn msgMeta msgBody
+            checkIntegrity chatMsg `catchChatError` \_ -> pure ()
+            (msg,) <$> processEvent cmdId chatMsg
           brokerTs = metaBrokerTs msgMeta
           checkIntegrity :: ChatMessage e -> m ()
           checkIntegrity ChatMessage {chatMsgEvent} = do
@@ -3573,7 +3574,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 XGrpInfo _ -> True
                 XGrpDirectInv {} -> True
                 _ -> False
-          processEvent :: (MsgEncodingI e) => CommandId -> ChatMessage e -> m Bool
+          processEvent :: MsgEncodingI e => CommandId -> ChatMessage e -> m Bool
           processEvent cmdId chatMsg = do
             (m', conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveGroupRcvMsg user groupId m conn msgMeta cmdId msgBody chatMsg
             updateChatLock "groupMessage" event
