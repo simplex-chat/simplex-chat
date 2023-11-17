@@ -6,14 +6,13 @@ import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.unit.Dp
 import kotlinx.coroutines.runBlocking
 
-actual fun WheelPickerModifier(
-  modifier: Modifier,
+actual fun Modifier.wheelPickerScroll(
   state: FWheelPickerState,
   count: Int,
   itemSize: Dp,
   isVertical: Boolean,
   reverseLayout: Boolean): Modifier {
-  return modifier.pointerInput(Unit) {
+  return Modifier.pointerInput(Unit) {
     awaitEachGesture {
       do {
         val event = awaitPointerEvent()
@@ -32,7 +31,7 @@ actual fun WheelPickerModifier(
               // scroll wheel moved down
               i = (state.currentIndex+1).coerceAtMost(count-1)
             }
-            
+
             runBlocking {
               state.scrollToIndex(i)
             }

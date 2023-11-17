@@ -99,8 +99,7 @@ fun FHorizontalWheelPicker(
   )
 }
 
-expect fun WheelPickerModifier(
-  modifier: Modifier,
+expect fun Modifier.wheelPickerScroll(
   state: FWheelPickerState,
   count: Int,
   itemSize: Dp,
@@ -143,21 +142,19 @@ private fun WheelPicker(
   }
 
   Box(
-    modifier = WheelPickerModifier(
-        modifier
-        .run {
-          if (totalSize > 0.dp) {
-            if (isVertical) {
-              height(totalSize).widthIn(40.dp)
-            } else {
-              width(totalSize).heightIn(40.dp)
-            }
+    modifier = modifier
+      .wheelPickerScroll(state, count, itemSize, isVertical, reverseLayout)
+      .run {
+        if (totalSize > 0.dp) {
+          if (isVertical) {
+            height(totalSize).widthIn(40.dp)
           } else {
-            this
+            width(totalSize).heightIn(40.dp)
           }
-        },
-        state, count, itemSize, isVertical, reverseLayout
-      ),
+        } else {
+          this
+        }
+      },
     contentAlignment = Alignment.Center,
   ) {
 

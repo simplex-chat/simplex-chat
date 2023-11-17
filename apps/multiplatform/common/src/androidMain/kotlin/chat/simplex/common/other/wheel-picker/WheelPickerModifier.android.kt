@@ -6,8 +6,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 
-actual fun WheelPickerModifier(
-  modifier: Modifier,
+actual fun Modifier.wheelPickerScroll(
   state: FWheelPickerState,
   count: Int,
   itemSize: Dp,
@@ -21,5 +20,5 @@ actual fun WheelPickerModifier(
     this.reverseLayout = reverseLayout
   }
 
-  return modifier.nestedScroll(nestedScrollConnection)
+  return Modifier.nestedScroll(nestedScrollConnection)
 }
