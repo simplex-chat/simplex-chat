@@ -34,7 +34,6 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Word (Word32)
-import GHC.Stack (HasCallStack, withFrozenCallStack)
 import qualified Network.HTTP.Types as N
 import Network.HTTP2.Server (responseStreaming)
 import qualified Paths_simplex_chat as SC
@@ -384,7 +383,7 @@ confirmRemoteCtrl rcId = do
     _ -> throwError $ ChatErrorRemoteCtrl RCEBadState
   uninterruptibleCancel listener
   (RemoteCtrl{remoteCtrlId = foundRcId}, verifiedInv) <- atomically $ takeTMVar found
-  unless (rcId == foundRcId) $ throwError $ ChatErrorRemoteCtrl RCEControllerMismatch
+  unless (rcId == foundRcId) $ throwError $ ChatErrorRemoteCtrl RCEBadController
   connectRemoteCtrl verifiedInv >>= \case
     (Nothing, _) -> throwChatError $ CEInternalError "connecting with a stored ctrl"
     (Just rci, appInfo) -> pure (rci, appInfo)
@@ -582,10 +581,10 @@ verifyRemoteCtrlSession execChatCommand sessCode' = handleCtrlError "verifyRemot
 stopRemoteCtrl :: ChatMonad m => m ()
 stopRemoteCtrl = cancelActiveRemoteCtrl False
 
-handleCtrlError :: (HasCallStack, ChatMonad m) => Text -> m a -> m a
+handleCtrlError :: ChatMonad m => Text -> m a -> m a
 handleCtrlError name action =
   action `catchChatError` \e -> do
-    withFrozenCallStack $ logError $ name <> " remote ctrl error: " <> tshow e
+    logError $ name <> " remote ctrl error: " <> tshow e
     cancelActiveRemoteCtrl True
     throwError e
 

@@ -1062,7 +1062,7 @@ data RemoteCtrlError
   | RCEBusy -- ^ A session is already running
   | RCETimeout
   | RCENoKnownControllers -- ^ No previously-contacted controllers to discover
-  | RCEControllerMismatch -- ^ Attempting to confirm a found controller with another ID
+  | RCEBadController -- ^ Attempting to confirm a found controller with another ID
   | RCEDisconnected {remoteCtrlId :: RemoteCtrlId, reason :: Text} -- ^ A session disconnected by a controller
   | RCEBadInvitation
   | RCEBadVersion {appVersion :: AppVersion}
