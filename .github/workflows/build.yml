@@ -266,6 +266,15 @@ jobs:
         if: matrix.os == 'windows-latest'
         shell: bash
         run: |
+          scripts/desktop/prepare-openssl-windows.sh
+          openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-1.1.1w | sed 's#/\([a-zA-Z]\)#\1:#' | sed 's#/#\\#g')
+          rm cabal.project.local 2>/dev/null || true
+          echo "ignore-project: False" >> cabal.project.local
+          echo "package direct-sqlcipher" >> cabal.project.local
+          echo "    flags: +openssl" >> cabal.project.local
+          echo "    extra-include-dirs: $openssl_windows_style_path\include" >> cabal.project.local
+          echo "    extra-lib-dirs: $openssl_windows_style_path" >> cabal.project.local
+
           rm -rf dist-newstyle/src/direct-sq*
           sed -i "s/, unix /--, unix /" simplex-chat.cabal
           cabal build --enable-tests
