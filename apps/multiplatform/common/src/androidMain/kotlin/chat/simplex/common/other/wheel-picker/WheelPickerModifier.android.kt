@@ -1,5 +1,3 @@
-// Fork of https://github.com/zj565061763/compose-wheel-picker to make multi-platform
-
 package com.sd.lib.compose.wheel_picker
 
 import androidx.compose.runtime.remember
