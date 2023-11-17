@@ -261,11 +261,27 @@ jobs:
       # / Windows
       # rm -rf dist-newstyle/src/direct-sq* is here because of the bug in cabal's dependency which prevents second build from finishing
 
+      - name: 'Setup MSYS2'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ucrt64
+          update: true
+          install: >-
+            git
+            perl
+            make
+          pacboy: >-
+            toolchain:p
+            cmake:p
+
+
       - name: Windows build
         id: windows_build
         if: matrix.os == 'windows-latest'
-        shell: bash
+        shell: msys2 {0}
         run: |
+          export PATH=$PATH:/c/ghcup/bin
           scripts/desktop/prepare-openssl-windows.sh
           openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-1.1.1w | sed 's#/\([a-zA-Z]\)#\1:#' | sed 's#/#\\#g')
           rm cabal.project.local 2>/dev/null || true
@@ -301,20 +317,6 @@ jobs:
           append_body: true
           body: |
             ${{ steps.windows_build.outputs.bin_hash }}
-
-      - name: 'Setup MSYS2'
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: ucrt64
-          update: true
-          install: >-
-            git
-            perl
-            make
-          pacboy: >-
-            toolchain:p
-            cmake:p
 
       - name: Windows build desktop
         id: windows_desktop_build
