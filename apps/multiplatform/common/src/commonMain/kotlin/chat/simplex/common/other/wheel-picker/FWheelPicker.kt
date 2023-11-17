@@ -105,7 +105,7 @@ fun FHorizontalWheelPicker(
 }
 
 @Composable
-private fun WheelPicker(
+expect fun WheelPicker(
   isVertical: Boolean,
   count: Int,
   state: FWheelPickerState,
@@ -119,144 +119,10 @@ private fun WheelPicker(
   focus: @Composable () -> Unit,
   contentWrapper: @Composable FWheelPickerContentWrapperScope.(index: Int) -> Unit,
   content: @Composable FWheelPickerContentScope.(index: Int) -> Unit,
-) {
-  require(count >= 0) { "require count >= 0" }
-  require(unfocusedCount >= 1) { "require unfocusedCount >= 1" }
-
-  state.debug = debug
-  LaunchedEffect(state, count) {
-    state.notifyCountChanged(count)
-  }
-
-  val nestedScrollConnection = remember(state) {
-    WheelPickerNestedScrollConnection(state)
-  }.apply {
-    this.isVertical = isVertical
-    this.itemSizePx = with(LocalDensity.current) { itemSize.roundToPx() }
-    this.reverseLayout = reverseLayout
-  }
-
-  val totalSize = remember(itemSize, unfocusedCount) {
-    itemSize * (unfocusedCount * 2 + 1)
-  }
-
-  val contentWrapperScope = remember(state) {
-    val contentScope = WheelPickerContentScopeImpl(state)
-    FWheelPickerContentWrapperScopeImpl(contentScope)
-  }.apply {
-    this.content = content
-  }
-
-  Box(
-    modifier = modifier
-      .nestedScroll(nestedScrollConnection)
-      .pointerInput(Unit) {
-        awaitEachGesture {
-          do {
-            val event = awaitPointerEvent()
-
-            if (event.type == PointerEventType.Scroll) {
-              // set index based on scroll direction
-              val c = event.changes.firstOrNull()
-              if (c != null) {
-                val dir = c.scrollDelta.y
-                var i = state.currentIndex
-
-                if (dir == -1.0f) {
-                  // scroll wheel moved up
-                  i = (state.currentIndex-1).coerceAtLeast(0)
-                } else if (dir == 1.0f) {
-                  // scroll wheel moved down
-                  i = (state.currentIndex+1).coerceAtMost(count-1)
-                }
-
-                state.setCurrentIndexInternal(i)
-                runBlocking {
-                  state.scrollToIndex(i)
-                }
-              }
-            }
-          } while (event.changes.any { it.pressed })
-        }
-      }
-      .run {
-        if (totalSize > 0.dp) {
-          if (isVertical) {
-            height(totalSize).widthIn(40.dp)
-          } else {
-            width(totalSize).heightIn(40.dp)
-          }
-        } else {
-          this
-        }
-      },
-    contentAlignment = Alignment.Center,
-  ) {
-
-    val lazyListScope: LazyListScope.() -> Unit = {
-      repeat(unfocusedCount) {
-        item {
-          ItemSizeBox(
-            isVertical = isVertical,
-            itemSize = itemSize,
-          )
-        }
-      }
-
-      items(
-        count = count,
-        key = key,
-      ) { index ->
-        ItemSizeBox(
-          isVertical = isVertical,
-          itemSize = itemSize,
-        ) {
-          contentWrapperScope.contentWrapper(index)
-        }
-      }
-
-      repeat(unfocusedCount) {
-        item {
-          ItemSizeBox(
-            isVertical = isVertical,
-            itemSize = itemSize,
-          )
-        }
-      }
-    }
-
-    if (isVertical) {
-      LazyColumn(
-        state = state.lazyListState,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        reverseLayout = reverseLayout,
-        userScrollEnabled = userScrollEnabled,
-        modifier = Modifier.matchParentSize(),
-        content = lazyListScope,
-      )
-    } else {
-      LazyRow(
-        state = state.lazyListState,
-        verticalAlignment = Alignment.CenterVertically,
-        reverseLayout = reverseLayout,
-        userScrollEnabled = userScrollEnabled,
-        modifier = Modifier.matchParentSize(),
-        content = lazyListScope,
-      )
-    }
-
-    ItemSizeBox(
-      modifier = Modifier.align(Alignment.Center),
-      isVertical = isVertical,
-      itemSize = itemSize,
-    ) {
-      focus()
-    }
-  }
-}
+)
 
 @Composable
-private fun ItemSizeBox(
+fun ItemSizeBox(
   modifier: Modifier = Modifier,
   isVertical: Boolean,
   itemSize: Dp,
@@ -277,7 +143,7 @@ private fun ItemSizeBox(
   }
 }
 
-private class WheelPickerNestedScrollConnection(
+class WheelPickerNestedScrollConnection(
   private val state: FWheelPickerState,
 ) : NestedScrollConnection {
   var isVertical: Boolean? = null
@@ -324,11 +190,11 @@ private fun Velocity.flingItemCount(
   return if (reverseLayout) -flingItemCount else flingItemCount
 }
 
-private class WheelPickerContentScopeImpl(
+class WheelPickerContentScopeImpl(
   override val state: FWheelPickerState,
 ) : FWheelPickerContentScope
 
-private class FWheelPickerContentWrapperScopeImpl(
+class FWheelPickerContentWrapperScopeImpl(
   private val contentScope: FWheelPickerContentScope
 ) : FWheelPickerContentWrapperScope {
   lateinit var content: @Composable FWheelPickerContentScope.(index: Int) -> Unit
