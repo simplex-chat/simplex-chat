@@ -194,7 +194,8 @@ fun ChatItemView(
                   })
                 }
                 val clipboard = LocalClipboardManager.current
-                val copyAndShareAllowed = cItem.file == null || !chatModel.connectedToRemote() || getLoadedFilePath(cItem.file) != null || !remember { CIFile.cachedRemoteFileRequests }.contains(cItem.file.fileSource)
+                val cachedRemoteReqs = remember { CIFile.cachedRemoteFileRequests }
+                val copyAndShareAllowed = cItem.file == null || !chatModel.connectedToRemote() || getLoadedFilePath(cItem.file) != null || !cachedRemoteReqs.contains(cItem.file.fileSource)
                 if (copyAndShareAllowed) {
                   ItemAction(stringResource(MR.strings.share_verb), painterResource(MR.images.ic_share), onClick = {
                     var fileSource = getLoadedFileSource(cItem.file)
@@ -220,7 +221,7 @@ fun ChatItemView(
                     showMenu.value = false
                   })
                 }
-                if ((cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) && (getLoadedFilePath(cItem.file) != null || (chatModel.connectedToRemote() && !remember { CIFile.cachedRemoteFileRequests }.contains(cItem.file?.fileSource)))) {
+                if ((cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) && (getLoadedFilePath(cItem.file) != null || (chatModel.connectedToRemote() && !cachedRemoteReqs.contains(cItem.file?.fileSource)))) {
                   SaveContentItemAction(cItem, saveFileLauncher, showMenu)
                 }
                 if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {

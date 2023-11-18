@@ -74,7 +74,7 @@ fun getLoadedFilePath(file: CIFile?): String? {
   val f = file?.fileSource?.filePath
   return if (f != null && file.loaded) {
     val filePath = getAppFilePath(f)
-    if (File(filePath).exists() && !CIFile.cachedRemoteFileRequests.contains(file.fileSource) && File(filePath).length() >= file.fileSize) filePath else null
+    if (fileReady(file, filePath)) filePath else null
   } else {
     null
   }
@@ -84,11 +84,16 @@ fun getLoadedFileSource(file: CIFile?): CryptoFile? {
   val f = file?.fileSource?.filePath
   return if (f != null && file.loaded) {
     val filePath = getAppFilePath(f)
-    if (File(filePath).exists() && !CIFile.cachedRemoteFileRequests.contains(file.fileSource) && File(filePath).length() >= file.fileSize) file.fileSource else null
+    if (fileReady(file, filePath)) file.fileSource else null
   } else {
     null
   }
 }
+
+private fun fileReady(file: CIFile, filePath: String) =
+  File(filePath).exists() &&
+  !CIFile.cachedRemoteFileRequests.contains(file.fileSource)
+  && File(filePath).length() >= file.fileSize
 
 /**
 * [rememberedValue] is used in `remember(rememberedValue)`. So when the value changes, file saver will update a callback function
