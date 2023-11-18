@@ -24,6 +24,8 @@ expect val agentDatabaseFileName: String
 * */
 expect val databaseExportDir: File
 
+expect val remoteHostsDir: File
+
 expect fun desktopOpenDatabaseDir()
 
 fun copyFileToFile(from: File, to: URI, finally: () -> Unit) {
@@ -64,7 +66,7 @@ fun getAppFilePath(fileName: String): String {
   return if (rh == null) {
     appFilesDir.absolutePath + s + fileName
   } else {
-    dataDir.absolutePath + s + "remote_hosts" + s + rh.storePath + s + "simplex_v1_files" + s + fileName
+    remoteHostsDir.absolutePath + s + rh.storePath + s + "simplex_v1_files" + s + fileName
   }
 }
 

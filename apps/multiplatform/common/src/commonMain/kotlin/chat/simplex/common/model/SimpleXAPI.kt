@@ -341,7 +341,7 @@ object ChatController {
       apiSetTempFolder(coreTmpDir.absolutePath)
       apiSetFilesFolder(appFilesDir.absolutePath)
       if (appPlatform.isDesktop) {
-        apiSetRemoteHostsFolder(dataDir.absolutePath + File.separator + "remote_hosts")
+        apiSetRemoteHostsFolder(remoteHostsDir.absolutePath)
       }
       apiSetXFTPConfig(getXFTPCfg())
       apiSetEncryptLocalFiles(appPrefs.privacyEncryptLocalFiles.get())
