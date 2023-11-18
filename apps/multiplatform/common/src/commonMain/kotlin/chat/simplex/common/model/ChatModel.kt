@@ -1,7 +1,8 @@
 package chat.simplex.common.model
 
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
@@ -596,6 +597,8 @@ object ChatModel {
     }
     terminalItems.add(item)
   }
+
+  fun connectedToRemote(): Boolean = currentRemoteHost.value != null
 }
 
 enum class ChatType(val type: String) {
@@ -2224,7 +2227,7 @@ enum class MREmojiChar(val value: String) {
 }
 
 @Serializable
-class CIFile(
+data class CIFile(
   val fileId: Long,
   val fileName: String,
   val fileSize: Long,
@@ -2268,6 +2271,39 @@ class CIFile(
     is CIFileStatus.Invalid -> null
   }
 
+  /**
+   * DO NOT CALL this function in compose scope, [LaunchedEffect], [DisposableEffect] and so on. Only with [withBGApi] or [runBlocking].
+   * Otherwise, it will be canceled when moving to another screen/item/view, etc
+   * */
+  suspend fun loadRemoteFile(allowToShowAlert: Boolean): Boolean {
+    val rh = chatModel.currentRemoteHost.value
+    val user = chatModel.currentUser.value
+    if (rh == null || user == null || fileSource == null || !loaded) return false
+    if (getLoadedFilePath(this) != null) return true
+    if (cachedRemoteFileRequests.contains(fileSource)) return false
+
+    val rf = RemoteFile(
+      userId = user.userId,
+      fileId = fileId,
+      sent = fileStatus.sent,
+      fileSource = fileSource
+    )
+    cachedRemoteFileRequests.add(fileSource)
+    val showAlert = fileSize > 5_000_000 && allowToShowAlert
+    if (showAlert) {
+      AlertManager.shared.showAlertMsgWithProgress(
+        title = generalGetString(MR.strings.loading_remote_file_title),
+        text = generalGetString(MR.strings.loading_remote_file_desc)
+      )
+    }
+    val res = chatModel.controller.getRemoteFile(rh.remoteHostId, rf)
+    cachedRemoteFileRequests.remove(fileSource)
+    if (showAlert) {
+      AlertManager.shared.hideAlert()
+    }
+    return res
+  }
+
   companion object {
     fun getSample(
       fileId: Long = 1,
@@ -2277,6 +2313,8 @@ class CIFile(
       fileStatus: CIFileStatus = CIFileStatus.RcvComplete
     ): CIFile =
       CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, fileSource = if (filePath == null) null else CryptoFile.plain(filePath), fileStatus = fileStatus, fileProtocol = FileProtocol.XFTP)
+
+    val cachedRemoteFileRequests = SnapshotStateList<CryptoFile>()
   }
 }
 
@@ -2308,6 +2346,8 @@ data class CryptoFile(
 
   companion object {
     fun plain(f: String): CryptoFile = CryptoFile(f, null)
+
+    fun desktopPlain(f: URI): CryptoFile = CryptoFile(f.rawPath, null)
   }
 }
 
@@ -2370,6 +2410,21 @@ sealed class CIFileStatus {
   @Serializable @SerialName("rcvCancelled") object RcvCancelled: CIFileStatus()
   @Serializable @SerialName("rcvError") object RcvError: CIFileStatus()
   @Serializable @SerialName("invalid") class Invalid(val text: String): CIFileStatus()
+
+  val sent: Boolean get() = when (this) {
+    is SndStored -> true
+    is SndTransfer -> true
+    is SndComplete -> true
+    is SndCancelled -> true
+    is SndError -> true
+    is RcvInvitation -> false
+    is RcvAccepted -> false
+    is RcvTransfer -> false
+    is RcvComplete -> false
+    is RcvCancelled -> false
+    is RcvError -> false
+    is Invalid -> false
+  }
 }
 
 @Suppress("SERIALIZER_TYPE_INCOMPATIBLE")

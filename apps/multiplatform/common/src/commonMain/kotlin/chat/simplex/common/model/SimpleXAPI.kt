@@ -24,6 +24,7 @@ import kotlinx.serialization.*
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.*
+import java.io.File
 import java.util.Date
 
 typealias ChatCtrl = Long
@@ -339,6 +340,9 @@ object ChatController {
       apiSetNetworkConfig(getNetCfg())
       apiSetTempFolder(coreTmpDir.absolutePath)
       apiSetFilesFolder(appFilesDir.absolutePath)
+      if (appPlatform.isDesktop) {
+        apiSetRemoteHostsFolder(remoteHostsDir.absolutePath)
+      }
       apiSetXFTPConfig(getXFTPCfg())
       apiSetEncryptLocalFiles(appPrefs.privacyEncryptLocalFiles.get())
       val justStarted = apiStartChat()
@@ -418,14 +422,14 @@ object ChatController {
     }
   }
 
-  suspend fun sendCmd(cmd: CC): CR {
+  suspend fun sendCmd(cmd: CC, customRhId: Long? = null): CR {
     val ctrl = ctrl ?: throw Exception("Controller is not initialized")
 
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
       chatModel.addTerminalItem(TerminalItem.cmd(cmd.obfuscated))
       Log.d(TAG, "sendCmd: ${cmd.cmdType}")
-      val rhId = chatModel.currentRemoteHost.value?.remoteHostId?.toInt() ?: -1
+      val rhId = customRhId?.toInt() ?: chatModel.currentRemoteHost.value?.remoteHostId?.toInt() ?: -1
       val json = if (rhId == -1) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId, c)
       val r = APIResponse.decodeStr(json)
       Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
@@ -559,6 +563,12 @@ object ChatController {
     throw Error("failed to set files folder: ${r.responseType} ${r.details}")
   }
 
+  private suspend fun apiSetRemoteHostsFolder(remoteHostsFolder: String) {
+    val r = sendCmd(CC.SetRemoteHostsFolder(remoteHostsFolder))
+    if (r is CR.CmdOk) return
+    throw Error("failed to set remote hosts folder: ${r.responseType} ${r.details}")
+  }
+
   suspend fun apiSetXFTPConfig(cfg: XFTPFileConfig?) {
     val r = sendCmd(CC.ApiSetXFTPConfig(cfg))
     if (r is CR.CmdOk) return
@@ -609,9 +619,9 @@ object ChatController {
     return null
   }
 
-  suspend fun apiSendMessage(type: ChatType, id: Long, file: CryptoFile? = null, quotedItemId: Long? = null, mc: MsgContent, live: Boolean = false, ttl: Int? = null): AChatItem? {
+  suspend fun apiSendMessage(rhId: Long?, type: ChatType, id: Long, file: CryptoFile? = null, quotedItemId: Long? = null, mc: MsgContent, live: Boolean = false, ttl: Int? = null): AChatItem? {
     val cmd = CC.ApiSendMessage(type, id, file, quotedItemId, mc, live, ttl)
-    val r = sendCmd(cmd)
+    val r = sendCmd(cmd, rhId)
     return when (r) {
       is CR.NewChatItem -> r.chatItem
       else -> {
@@ -1142,8 +1152,9 @@ object ChatController {
     return false
   }
 
-  suspend fun apiReceiveFile(fileId: Long, encrypted: Boolean, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
-    val r = sendCmd(CC.ReceiveFile(fileId, encrypted, inline))
+  suspend fun apiReceiveFile(rhId: Long?, fileId: Long, encrypted: Boolean, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
+    // -1 here is to override default behavior of providing current remote host id because file can be asked by local device while remote is connected
+    val r = sendCmd(CC.ReceiveFile(fileId, encrypted, inline), rhId ?: -1)
     return when (r) {
       is CR.RcvFileAccepted -> r.chatItem
       is CR.RcvFileAcceptedSndCancelled -> {
@@ -1868,7 +1879,7 @@ object ChatController {
   }
 
   suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, encrypted: Boolean, auto: Boolean = false) {
-    val chatItem = apiReceiveFile(fileId, encrypted = encrypted, auto = auto)
+    val chatItem = apiReceiveFile(rhId, fileId, encrypted = encrypted, auto = auto)
     if (chatItem != null) {
       chatItemSimpleUpdate(rhId, user, chatItem)
     }
@@ -2035,6 +2046,7 @@ sealed class CC {
   class ApiStopChat: CC()
   class SetTempFolder(val tempFolder: String): CC()
   class SetFilesFolder(val filesFolder: String): CC()
+  class SetRemoteHostsFolder(val remoteHostsFolder: String): CC()
   class ApiSetXFTPConfig(val config: XFTPFileConfig?): CC()
   class ApiSetEncryptLocalFiles(val enable: Boolean): CC()
   class ApiExportArchive(val config: ArchiveConfig): CC()
@@ -2161,6 +2173,7 @@ sealed class CC {
     is ApiStopChat -> "/_stop"
     is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
+    is SetRemoteHostsFolder -> "/remote_hosts_folder $remoteHostsFolder"
     is ApiSetXFTPConfig -> if (config != null) "/_xftp on ${json.encodeToString(config)}" else "/_xftp off"
     is ApiSetEncryptLocalFiles -> "/_files_encrypt ${onOff(enable)}"
     is ApiExportArchive -> "/_db export ${json.encodeToString(config)}"
@@ -2259,7 +2272,7 @@ sealed class CC {
     is DeleteRemoteHost -> "/delete remote host $remoteHostId"
     is StoreRemoteFile ->
       "/store remote file $remoteHostId " +
-          (if (storeEncrypted == null) "" else " encrypt=${onOff(storeEncrypted)}") +
+          (if (storeEncrypted == null) "" else " encrypt=${onOff(storeEncrypted)} ") +
           localPath
     is GetRemoteFile -> "/get remote file $remoteHostId ${json.encodeToString(file)}"
     is ConnectRemoteCtrl -> "/connect remote ctrl $xrcpInvitation"
@@ -2290,6 +2303,7 @@ sealed class CC {
     is ApiStopChat -> "apiStopChat"
     is SetTempFolder -> "setTempFolder"
     is SetFilesFolder -> "setFilesFolder"
+    is SetRemoteHostsFolder -> "setRemoteHostsFolder"
     is ApiSetXFTPConfig -> "apiSetXFTPConfig"
     is ApiSetEncryptLocalFiles -> "apiSetEncryptLocalFiles"
     is ApiExportArchive -> "apiExportArchive"

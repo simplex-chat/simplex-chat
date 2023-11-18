@@ -499,6 +499,7 @@ fun ChatLayout(
         enabled = !attachmentDisabled.value && rememberUpdatedState(chat.userCanSend).value,
         onFiles = { paths -> composeState.onFilesAttached(paths.map { URI.create(it) }) },
         onImage = {
+          // TODO: file is not saved anywhere?!
           val tmpFile = File.createTempFile("image", ".bmp", tmpDir)
           tmpFile.deleteOnExit()
           chatModel.filesToDelete.add(tmpFile)
@@ -1300,7 +1301,7 @@ private fun providerForGallery(
   scrollTo: (Int) -> Unit
 ): ImageGalleryProvider {
   fun canShowMedia(item: ChatItem): Boolean =
-    (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && getLoadedFilePath(item.file) != null)
+    (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && (getLoadedFilePath(item.file) != null || chatModel.connectedToRemote()))
 
   fun item(skipInternalIndex: Int, initialChatId: Long): Pair<Int, ChatItem>? {
     var processedInternalIndex = -skipInternalIndex.sign
@@ -1327,7 +1328,7 @@ private fun providerForGallery(
       val item = item(internalIndex, initialChatId)?.second ?: return null
       return when (item.content.msgContent) {
         is MsgContent.MCImage -> {
-          val res = getLoadedImage(item.file)
+          val res = runBlocking { getLoadedImage(item.file) }
           val filePath = getLoadedFilePath(item.file)
           if (res != null && filePath != null) {
             val (imageBitmap: ImageBitmap, data: ByteArray) = res
@@ -1335,7 +1336,7 @@ private fun providerForGallery(
           } else null
         }
         is MsgContent.MCVideo -> {
-          val filePath = getLoadedFilePath(item.file)
+          val filePath = if (chatModel.connectedToRemote() && item.file?.loaded == true) getAppFilePath(item.file.fileName) else getLoadedFilePath(item.file)
           if (filePath != null) {
             val uri = getAppFileUri(filePath.substringAfterLast(File.separator))
             ProviderMedia.Video(uri, (item.content.msgContent as MsgContent.MCVideo).image)

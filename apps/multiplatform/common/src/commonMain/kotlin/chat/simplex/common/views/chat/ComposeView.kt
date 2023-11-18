@@ -15,6 +15,8 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.model.ChatModel.filesToDelete
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.Indigo
 import chat.simplex.common.ui.theme.isSystemInDarkTheme
@@ -349,8 +351,9 @@ fun ComposeView(
     }
   }
 
-  suspend fun send(cInfo: ChatInfo, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?): ChatItem? {
+  suspend fun send(rhId: Long?, cInfo: ChatInfo, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?): ChatItem? {
     val aChatItem = chatModel.controller.apiSendMessage(
+      rhId = rhId,
       type = cInfo.chatType,
       id = cInfo.apiId,
       file = file,
@@ -447,15 +450,23 @@ fun ComposeView(
     } else {
       val msgs: ArrayList<MsgContent> = ArrayList()
       val files: ArrayList<CryptoFile> = ArrayList()
+      val remoteHost = chatModel.currentRemoteHost.value
       when (val preview = cs.preview) {
         ComposePreview.NoPreview -> msgs.add(MsgContent.MCText(msgText))
         is ComposePreview.CLinkPreview -> msgs.add(checkLinkPreview())
         is ComposePreview.MediaPreview -> {
           preview.content.forEachIndexed { index, it ->
+            val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
             val file = when (it) {
-              is UploadContent.SimpleImage -> saveImage(it.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get())
-              is UploadContent.AnimatedImage -> saveAnimImage(it.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get())
-              is UploadContent.Video -> saveFileFromUri(it.uri, encrypted = false)
+              is UploadContent.SimpleImage ->
+                if (remoteHost == null) saveImage(it.uri, encrypted = encrypted)
+                else desktopSaveImageInTmp(it.uri)
+              is UploadContent.AnimatedImage ->
+                if (remoteHost == null) saveAnimImage(it.uri, encrypted = encrypted)
+                else CryptoFile.desktopPlain(it.uri)
+              is UploadContent.Video ->
+                if (remoteHost == null) saveFileFromUri(it.uri, encrypted = false)
+                else CryptoFile.desktopPlain(it.uri)
             }
             if (file != null) {
               files.add(file)
@@ -470,22 +481,32 @@ fun ComposeView(
         is ComposePreview.VoicePreview -> {
           val tmpFile = File(preview.voice)
           AudioPlayer.stop(tmpFile.absolutePath)
-          val actualFile = File(getAppFilePath(tmpFile.name.replaceAfter(RecorderInterface.extension, "")))
-          files.add(withContext(Dispatchers.IO) {
-            if (chatController.appPrefs.privacyEncryptLocalFiles.get()) {
-              val args = encryptCryptoFile(tmpFile.absolutePath, actualFile.absolutePath)
-              tmpFile.delete()
-              CryptoFile(actualFile.name, args)
-            } else {
-              Files.move(tmpFile.toPath(), actualFile.toPath())
-              CryptoFile.plain(actualFile.name)
-            }
-          })
-          deleteUnusedFiles()
+          if (remoteHost == null) {
+            val actualFile = File(getAppFilePath(tmpFile.name.replaceAfter(RecorderInterface.extension, "")))
+            files.add(withContext(Dispatchers.IO) {
+              if (chatController.appPrefs.privacyEncryptLocalFiles.get()) {
+                val args = encryptCryptoFile(tmpFile.absolutePath, actualFile.absolutePath)
+                tmpFile.delete()
+                CryptoFile(actualFile.name, args)
+              } else {
+                Files.move(tmpFile.toPath(), actualFile.toPath())
+                CryptoFile.plain(actualFile.name)
+              }
+            })
+            deleteUnusedFiles()
+          } else {
+            files.add(CryptoFile.plain(tmpFile.absolutePath))
+            // It will be deleted on JVM shutdown or next start (if the app crashes unexpectedly)
+            filesToDelete.remove(tmpFile)
+          }
           msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", preview.durationMs / 1000))
         }
         is ComposePreview.FilePreview -> {
-          val file = saveFileFromUri(preview.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get())
+          val file = if (remoteHost == null) {
+            saveFileFromUri(preview.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get())
+          } else {
+            CryptoFile.desktopPlain(preview.uri)
+          }
           if (file != null) {
             files.add((file))
             msgs.add(MsgContent.MCFile(if (msgs.isEmpty()) msgText else ""))
@@ -499,7 +520,15 @@ fun ComposeView(
       sent = null
       msgs.forEachIndexed { index, content ->
         if (index > 0) delay(100)
-        sent = send(cInfo, content, if (index == 0) quotedItemId else null, files.getOrNull(index),
+        var file = files.getOrNull(index)
+        if (remoteHost != null && file != null) {
+          file = controller.storeRemoteFile(
+            rhId = remoteHost.remoteHostId,
+            storeEncrypted = if (content is MsgContent.MCVideo) false else null,
+            localPath = file.filePath
+          )
+        }
+        sent = send(remoteHost?.remoteHostId, cInfo, content, if (index == 0) quotedItemId else null, file,
           live = if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false,
           ttl = ttl
         )
@@ -509,7 +538,7 @@ fun ComposeView(
             cs.preview is ComposePreview.FilePreview ||
             cs.preview is ComposePreview.VoicePreview)
       ) {
-        sent = send(cInfo, MsgContent.MCText(msgText), quotedItemId, null, live, ttl)
+        sent = send(remoteHost?.remoteHostId, cInfo, MsgContent.MCText(msgText), quotedItemId, null, live, ttl)
       }
     }
     clearState(live)
