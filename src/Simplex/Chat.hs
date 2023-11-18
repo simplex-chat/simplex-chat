@@ -3589,7 +3589,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               XFile fInv -> processGroupFileInvitation' gInfo m' fInv msg brokerTs
               XFileCancel sharedMsgId -> xFileCancelGroup gInfo m' sharedMsgId
               XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInvGroup gInfo m' sharedMsgId fileConnReq_ fName
-              -- XInfo p -> xInfoMember gInfo m' p -- TODO use for member profile update
+              XInfo p -> xInfoMember gInfo m' p
               XGrpLinkMem p -> xGrpLinkMem gInfo m' conn' p
               XGrpMemNew memInfo -> xGrpMemNew gInfo m' memInfo msg brokerTs
               XGrpMemIntro memInfo -> xGrpMemIntro gInfo m' memInfo
@@ -4608,9 +4608,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   | otherwise -> Nothing
            in setPreference_ SCFTimedMessages ctUserTMPref' ctUserPrefs
 
-    -- TODO use for member profile update
-    -- xInfoMember :: GroupInfo -> GroupMember -> Profile -> m ()
-    -- xInfoMember gInfo m p' = void $ processMemberProfileUpdate gInfo m p'
+    xInfoMember :: GroupInfo -> GroupMember -> Profile -> m ()
+    xInfoMember gInfo m p' = void $ processMemberProfileUpdate gInfo m p'
 
     xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> m ()
     xGrpLinkMem gInfo@GroupInfo {membership} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' = do
@@ -5169,10 +5168,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           case event of
             XMsgNew mc -> memberCanSend author $ newGroupContentMessage gInfo author mc rcvMsg msgTs
             XMsgFileDescr sharedMsgId fileDescr -> memberCanSend author $ groupMessageFileDescription gInfo author sharedMsgId fileDescr
+            XMsgFileCancel sharedMsgId -> cancelGroupMessageFile gInfo author sharedMsgId
             XMsgUpdate sharedMsgId mContent ttl live -> memberCanSend author $ groupMessageUpdate gInfo author sharedMsgId mContent rcvMsg msgTs ttl live
             XMsgDel sharedMsgId memId -> groupMessageDelete gInfo author sharedMsgId memId rcvMsg msgTs
             XMsgReact sharedMsgId (Just memId) reaction add -> groupMsgReaction gInfo author sharedMsgId memId reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> xFileCancelGroup gInfo author sharedMsgId
+            XInfo p -> xInfoMember gInfo author p
+            XGrpMemNew memInfo -> xGrpMemNew gInfo author memInfo rcvMsg msgTs
             XGrpMemRole memId memRole -> xGrpMemRole gInfo author memId memRole rcvMsg msgTs
             XGrpMemDel memId -> xGrpMemDel gInfo author memId rcvMsg msgTs
             XGrpLeave -> xGrpLeave gInfo author rcvMsg msgTs

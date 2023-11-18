@@ -3902,8 +3902,8 @@ testMemberContactProfileUpdate =
 
 testGroupMsgForward :: HasCallStack => FilePath -> IO ()
 testGroupMsgForward =
-  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
-    \alice bob cath -> withXFTPServer $ do
+  testChatCfg4 cfg aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> withXFTPServer $ do
       createGroup3 "team" alice bob cath
 
       threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
@@ -3972,5 +3972,36 @@ testGroupMsgForward =
       src <- B.readFile "./tests/fixtures/test.jpg"
       dest <- B.readFile "./tests/tmp/test.jpg"
       dest `shouldBe` src
+
+      cath ##> "/mr #team bob member"
+      cath <## "#team: you changed the role of bob from admin to member"
+      alice <## "#team: cath changed the role of bob from admin to member"
+      bob <## "#team: cath changed your role from admin to member" -- TODO show as forwarded
+
+      connectUsers cath dan
+      cath ##> "/a #team dan"
+      cath <## "invitation to join the group #team sent to dan"
+      dan <## "#team: cath invites you to join the group as member"
+      dan <## "use /j team to accept"
+      dan ##> "/j #team"
+      dan <## "#team: you joined the group"
+      concurrentlyN_
+        [ cath <## "#team: dan joined the group",
+          do
+            alice <## "#team: cath added dan (Daniel) to the group (connecting...)"
+            alice <## "#team: new member dan is connected",
+          -- bob will not connect to dan, as introductions are not forwarded (yet?)
+          bob <## "#team: cath added dan (Daniel) to the group (connecting...)", -- TODO show as forwarded
+          dan <## "#team: member alice (Alice) is connected"
+        ]
+      dan #> "#team hello all"
+      alice <# "#team dan> hello all"
+      -- bob <# "#team dan> hello all [>>]"
+      cath <# "#team dan> hello all"
+      
+      bob #> "#team hi all"
+      alice <# "#team bob> hi all"
+      cath <# "#team bob> hi all [>>]"
+      -- dan <# "#team bob> hi all"
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
