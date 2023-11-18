@@ -150,7 +150,7 @@ actual suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
   return if (file != null) {
     try {
       val ext = if (asPng) "png" else "jpg"
-      val newFile = File(file.absolutePath + File.separator + generateNewFileName("IMG", ext))
+      val newFile = File(file.absolutePath + File.separator + generateNewFileName("IMG", ext, File(getAppFilePath(""))))
       // LALAL FILE IS EMPTY
       ImageIO.write(image.toAwtImage(), ext.uppercase(), newFile.outputStream())
       newFile

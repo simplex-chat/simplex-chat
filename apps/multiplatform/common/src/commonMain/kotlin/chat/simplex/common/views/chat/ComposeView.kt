@@ -457,7 +457,7 @@ fun ComposeView(
         is ComposePreview.MediaPreview -> {
           preview.content.forEachIndexed { index, it ->
             val file = when (it) {
-              is UploadContent.SimpleImage -> if (remoteHost == null) saveImage(it.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()) else CryptoFile.desktopPlain(it.uri)
+              is UploadContent.SimpleImage -> if (remoteHost == null) saveImage(it.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()) else desktopSaveImageInTmp(it.uri)
               is UploadContent.AnimatedImage -> if (remoteHost == null) saveAnimImage(it.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()) else CryptoFile.desktopPlain(it.uri)
               is UploadContent.Video -> if (remoteHost == null) saveFileFromUri(it.uri, encrypted = false) else CryptoFile.desktopPlain(it.uri)
             }
