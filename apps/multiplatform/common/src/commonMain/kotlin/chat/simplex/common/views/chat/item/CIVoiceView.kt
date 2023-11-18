@@ -44,7 +44,7 @@ fun CIVoiceView(
   ) {
     if (file != null) {
       val f = file.fileSource?.filePath
-      val fileSource = remember(f, file.fileStatus) { mutableStateOf(getLoadedFileSource(file)) }
+      val fileSource = remember(f, file.fileStatus, CIFile.cachedRemoteFileRequests.toList()) { mutableStateOf(getLoadedFileSource(file)) }
       var brokenAudio by rememberSaveable(f) { mutableStateOf(false) }
       val audioPlaying = rememberSaveable(f) { mutableStateOf(false) }
       val progress = rememberSaveable(f) { mutableStateOf(0) }

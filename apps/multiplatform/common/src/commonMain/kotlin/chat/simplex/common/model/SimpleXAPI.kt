@@ -1152,8 +1152,9 @@ object ChatController {
     return false
   }
 
-  suspend fun apiReceiveFile(fileId: Long, encrypted: Boolean, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
-    val r = sendCmd(CC.ReceiveFile(fileId, encrypted, inline))
+  suspend fun apiReceiveFile(rhId: Long?, fileId: Long, encrypted: Boolean, inline: Boolean? = null, auto: Boolean = false): AChatItem? {
+    // -1 here is to override default behavior of providing current remote host id because file can be asked by local device while remote is connected
+    val r = sendCmd(CC.ReceiveFile(fileId, encrypted, inline), rhId ?: -1)
     return when (r) {
       is CR.RcvFileAccepted -> r.chatItem
       is CR.RcvFileAcceptedSndCancelled -> {
@@ -1878,7 +1879,7 @@ object ChatController {
   }
 
   suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, encrypted: Boolean, auto: Boolean = false) {
-    val chatItem = apiReceiveFile(fileId, encrypted = encrypted, auto = auto)
+    val chatItem = apiReceiveFile(rhId, fileId, encrypted = encrypted, auto = auto)
     if (chatItem != null) {
       chatItemSimpleUpdate(rhId, user, chatItem)
     }

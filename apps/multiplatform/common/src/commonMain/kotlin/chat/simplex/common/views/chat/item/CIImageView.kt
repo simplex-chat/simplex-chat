@@ -157,9 +157,11 @@ fun CIImageView(
       )
     }
     if (chatModel.connectedToRemote()) {
-      LaunchedEffect(file) {
+      LaunchedEffect(file, CIFile.cachedRemoteFileRequests.toList()) {
         withBGApi {
-          res.value = imageAndFilePath(file)
+          if (res.value == null || res.value!!.third != getLoadedFilePath(file)) {
+            res.value = imageAndFilePath(file)
+          }
         }
       }
     }

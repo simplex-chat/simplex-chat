@@ -39,7 +39,7 @@ fun CIVideoView(
     contentAlignment = Alignment.TopEnd
   ) {
     val preview = remember(image) { base64ToBitmap(image) }
-    val filePath = remember(file) { mutableStateOf(getLoadedFilePath(file)) }
+    val filePath = remember(file, CIFile.cachedRemoteFileRequests.toList()) { mutableStateOf(getLoadedFilePath(file)) }
     if (chatModel.connectedToRemote()) {
       LaunchedEffect(file) {
         withBGApi {
