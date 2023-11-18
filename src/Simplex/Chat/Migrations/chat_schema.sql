@@ -147,6 +147,9 @@ CREATE TABLE group_members(
   member_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   show_messages INTEGER NOT NULL DEFAULT 1,
   xgrplinkmem_received INTEGER NOT NULL DEFAULT 0,
+  invited_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
+  peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -161,7 +164,8 @@ CREATE TABLE group_member_intros(
   direct_queue_info BLOB,
   intro_status TEXT NOT NULL,
   created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL), -- see GroupMemberIntroStatus
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3, -- see GroupMemberIntroStatus
   UNIQUE(re_group_member_id, to_group_member_id)
 );
 CREATE TABLE files(
@@ -322,7 +326,9 @@ CREATE TABLE messages(
   connection_id INTEGER DEFAULT NULL REFERENCES connections ON DELETE CASCADE,
   group_id INTEGER DEFAULT NULL REFERENCES groups ON DELETE CASCADE,
   shared_msg_id BLOB,
-  shared_msg_id_user INTEGER
+  shared_msg_id_user INTEGER,
+  author_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
 );
 CREATE TABLE msg_deliveries(
   msg_delivery_id INTEGER PRIMARY KEY,
@@ -372,7 +378,8 @@ CREATE TABLE chat_items(
   timed_delete_at TEXT,
   item_live INTEGER,
   item_deleted_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  item_deleted_ts TEXT
+  item_deleted_ts TEXT,
+  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -781,4 +788,23 @@ CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
 CREATE INDEX idx_contact_profiles_contact_link ON contact_profiles(
   user_id,
   contact_link
+);
+CREATE INDEX idx_group_member_intros_re_group_member_id ON group_member_intros(
+  re_group_member_id
+);
+CREATE INDEX idx_group_members_invited_by_group_member_id ON group_members(
+  invited_by_group_member_id
+);
+CREATE INDEX idx_messages_author_group_member_id ON messages(
+  author_group_member_id
+);
+CREATE INDEX idx_messages_forwarded_by_group_member_id ON messages(
+  forwarded_by_group_member_id
+);
+CREATE INDEX idx_messages_group_id_shared_msg_id ON messages(
+  group_id,
+  shared_msg_id
+);
+CREATE INDEX idx_chat_items_forwarded_by_group_member_id ON chat_items(
+  forwarded_by_group_member_id
 );

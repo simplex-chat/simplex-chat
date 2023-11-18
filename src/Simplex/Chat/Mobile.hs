@@ -178,7 +178,8 @@ mobileChatOpts dbFilePrefix dbKey =
             logServerHosts = True,
             logAgent = Nothing,
             logFile = Nothing,
-            tbqSize = 1024
+            tbqSize = 1024,
+            highlyAvailable = False
           },
       chatCmd = "",
       chatCmdDelay = 3,

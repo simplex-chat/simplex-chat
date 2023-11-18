@@ -54,7 +54,8 @@ data CoreChatOpts = CoreChatOpts
     logServerHosts :: Bool,
     logAgent :: Maybe LogLevel,
     logFile :: Maybe FilePath,
-    tbqSize :: Natural
+    tbqSize :: Natural,
+    highlyAvailable :: Bool
   }
 
 agentLogLevel :: ChatLogLevel -> LogLevel
@@ -172,6 +173,11 @@ coreChatOptsP appDir defaultDbFileName = do
           <> value 1024
           <> showDefault
       )
+  highlyAvailable <-
+    switch
+      ( long "ha"
+          <> help "Run as a highly available client (this may increase traffic in groups)"
+      )
   pure
     CoreChatOpts
       { dbFilePrefix,
@@ -184,7 +190,8 @@ coreChatOptsP appDir defaultDbFileName = do
         logServerHosts = logServerHosts || logLevel <= CLLInfo,
         logAgent = if logAgent || logLevel == CLLDebug then Just $ agentLogLevel logLevel else Nothing,
         logFile,
-        tbqSize
+        tbqSize,
+        highlyAvailable
       }
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 5 (const 10) p
