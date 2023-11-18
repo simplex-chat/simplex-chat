@@ -269,11 +269,13 @@ isForwardedGroupMsg ev = case ev of
     ExtMsgContent {file = Just FileInvitation {fileInline = Just _}} -> False
     _ -> True
   XMsgFileDescr _ _ -> True
+  -- XMsgFileCancel _ -> True
   XMsgUpdate {} -> True
   XMsgDel _ _ -> True
   XMsgReact {} -> True
   XFileCancel _ -> True
---  XGrpMemNew _ -> True
+  -- XInfo _ -> True
+  -- XGrpMemNew _ -> True
   XGrpMemRole {} -> True
   XGrpMemDel _ -> True -- TODO there should be a special logic when deleting host member (e.g., host forwards it before deleting connections)
   XGrpLeave -> True
