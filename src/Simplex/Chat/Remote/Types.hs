@@ -57,7 +57,6 @@ data RemoteSignatures
     }
 
 type SessionSeq = Int
-type RHStateKey = (SessionSeq, RHKey)
 
 data RHPendingSession = RHPendingSession
   { rhKey :: RHKey,
