@@ -1502,6 +1502,7 @@
 				INFOPLIST_FILE = "SimpleX--iOS--Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = "SimpleX needs camera access to scan QR codes to connect to other users and for video calls.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "SimpleX uses Face ID for local authentication";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "SimpleX uses local network access to allow using user chat profile via desktop app on the same network.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "SimpleX needs microphone access for audio and video calls, and to record voice messages.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "SimpleX needs access to Photo Library for saving captured and received media";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -1544,6 +1545,7 @@
 				INFOPLIST_FILE = "SimpleX--iOS--Info.plist";
 				INFOPLIST_KEY_NSCameraUsageDescription = "SimpleX needs camera access to scan QR codes to connect to other users and for video calls.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "SimpleX uses Face ID for local authentication";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "SimpleX uses local network access to allow using user chat profile via desktop app on the same network.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "SimpleX needs microphone access for audio and video calls, and to record voice messages.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "SimpleX needs access to Photo Library for saving captured and received media";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

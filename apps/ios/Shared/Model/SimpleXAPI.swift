@@ -1729,7 +1729,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
             m.remoteCtrlSession = m.remoteCtrlSession?.updateState(state)
         }
     case .remoteCtrlStopped:
-        await MainActor.run {
+        // This delay is needed to cancel the session that fails on network failure,
+        // e.g. when user did not grant permission to access local network yet.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             switchToLocalSession()
         }
     default:
