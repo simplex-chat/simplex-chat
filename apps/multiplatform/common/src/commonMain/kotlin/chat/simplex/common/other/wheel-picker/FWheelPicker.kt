@@ -5,6 +5,7 @@ package com.sd.lib.compose.wheel_picker
 import androidx.compose.animation.core.DecayAnimationSpec
 import androidx.compose.animation.core.calculateTargetValue
 import androidx.compose.animation.core.exponentialDecay
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
@@ -20,6 +21,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.runBlocking
 import kotlin.math.absoluteValue
 
 interface FWheelPickerContentScope {
@@ -175,6 +177,11 @@ private fun WheelPicker(
         ItemSizeBox(
           isVertical = isVertical,
           itemSize = itemSize,
+          modifier = Modifier.clickable {
+            runBlocking {
+              state.scrollToIndex(index)
+            }
+          }
         ) {
           contentWrapperScope.contentWrapper(index)
         }
