@@ -1403,7 +1403,7 @@
     <string name="compose_send_direct_message_to_connect">Надішліть пряме повідомлення, щоб підключитися</string>
     <string name="video_decoding_exception_desc">Відео не може бути декодовано. Будь ласка, спробуйте інше відео або зверніться до розробників.</string>
     <string name="rcv_group_event_1_member_connected">%s підключено</string>
-    <string name="rcv_group_and_other_events">"ще інших подій -  %d"</string>
+    <string name="rcv_group_and_other_events">ще інших подій -  %d</string>
     <string name="v5_3_discover_join_groups">Знаходьте та приєднуйтесь до груп</string>
     <string name="connect_plan_connect_via_link">Підключитися за посиланням?</string>
     <string name="database_encryption_will_be_updated_in_settings">Пароль для шифрування бази даних буде оновлено і збережено в налаштуваннях.</string>
