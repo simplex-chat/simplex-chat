@@ -3267,7 +3267,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             case event of
               XMsgNew mc -> newContentMessage ct' mc msg msgMeta
               XMsgFileDescr sharedMsgId fileDescr -> messageFileDescription ct' sharedMsgId fileDescr msgMeta
-              XMsgFileCancel sharedMsgId -> cancelMessageFile ct' sharedMsgId msgMeta
               XMsgUpdate sharedMsgId mContent ttl live -> messageUpdate ct' sharedMsgId mContent msg msgMeta ttl live
               XMsgDel sharedMsgId _ -> messageDelete ct' sharedMsgId msg msgMeta
               XMsgReact sharedMsgId _ reaction add -> directMsgReaction ct' sharedMsgId reaction add msg msgMeta
@@ -3581,7 +3580,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             case event of
               XMsgNew mc -> memberCanSend m' $ newGroupContentMessage gInfo m' mc msg brokerTs
               XMsgFileDescr sharedMsgId fileDescr -> memberCanSend m' $ groupMessageFileDescription gInfo m' sharedMsgId fileDescr
-              XMsgFileCancel sharedMsgId -> cancelGroupMessageFile gInfo m' sharedMsgId
               XMsgUpdate sharedMsgId mContent ttl live -> memberCanSend m' $ groupMessageUpdate gInfo m' sharedMsgId mContent msg brokerTs ttl live
               XMsgDel sharedMsgId memberId -> groupMessageDelete gInfo m' sharedMsgId memberId msg brokerTs
               XMsgReact sharedMsgId (Just memberId) reaction add -> groupMsgReaction gInfo m' sharedMsgId memberId reaction add msg brokerTs
@@ -4104,17 +4102,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         case (fileStatus, xftpRcvFile) of
           (RFSAccepted _, Just XFTPRcvFile {}) -> receiveViaCompleteFD user fileId rfd cryptoArgs
           _ -> pure ()
-
-    cancelMessageFile :: Contact -> SharedMsgId -> MsgMeta -> m ()
-    cancelMessageFile ct _sharedMsgId msgMeta = do
-      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
-      -- find the original chat item and file
-      -- mark file as cancelled, remove description if exists
-      pure ()
-
-    cancelGroupMessageFile :: GroupInfo -> GroupMember -> SharedMsgId -> m ()
-    cancelGroupMessageFile _gInfo _m _sharedMsgId = do
-      pure ()
 
     processFileInvitation :: Maybe FileInvitation -> MsgContent -> (DB.Connection -> FileInvitation -> Maybe InlineFileMode -> Integer -> ExceptT StoreError IO RcvFileTransfer) -> m (Maybe (RcvFileTransfer, CIFile 'MDRcv))
     processFileInvitation fInv_ mc createRcvFT = forM fInv_ $ \fInv@FileInvitation {fileName, fileSize} -> do
@@ -5168,7 +5155,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           case event of
             XMsgNew mc -> memberCanSend author $ newGroupContentMessage gInfo author mc rcvMsg msgTs
             XMsgFileDescr sharedMsgId fileDescr -> memberCanSend author $ groupMessageFileDescription gInfo author sharedMsgId fileDescr
-            XMsgFileCancel sharedMsgId -> cancelGroupMessageFile gInfo author sharedMsgId
             XMsgUpdate sharedMsgId mContent ttl live -> memberCanSend author $ groupMessageUpdate gInfo author sharedMsgId mContent rcvMsg msgTs ttl live
             XMsgDel sharedMsgId memId -> groupMessageDelete gInfo author sharedMsgId memId rcvMsg msgTs
             XMsgReact sharedMsgId (Just memId) reaction add -> groupMsgReaction gInfo author sharedMsgId memId reaction add rcvMsg msgTs
