@@ -5294,12 +5294,6 @@ parseChatMessage_ conn msgMeta s = liftEither . first (ChatError . errType) $ st
   where
     errType = CEInvalidChatMessage conn (msgMetaToJson <$> msgMeta) (safeDecodeUtf8 s)
 
-parseFwdChatMessage :: (ChatMonad m, StrEncoding s) => GroupMember -> GroupMember -> ByteString -> m s
-parseFwdChatMessage forwardingMember author s = liftEither . first (ChatError . errType) $ strDecode s
-  where
-    errType = CEInvalidForwardedChatMessage forwardingMember author (safeDecodeUtf8 s)
-{-# INLINE parseFwdChatMessage #-}
-
 sendFileChunk :: ChatMonad m => User -> SndFileTransfer -> m ()
 sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId acId} =
   unless (fileStatus == FSComplete || fileStatus == FSCancelled) $

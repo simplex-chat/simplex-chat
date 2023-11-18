@@ -960,7 +960,6 @@ data ChatErrorType
   | CEConnectionPlan {connectionPlan :: ConnectionPlan}
   | CEInvalidConnReq
   | CEInvalidChatMessage {connection :: Connection, msgMeta :: Maybe MsgMetaJSON, messageData :: Text, message :: String}
-  | CEInvalidForwardedChatMessage {forwardingMember :: GroupMember, author :: GroupMember, messageData :: Text, message :: String}
   | CEContactNotFound {contactName :: ContactName, suspectedMember :: Maybe (GroupInfo, GroupMember)}
   | CEContactNotReady {contact :: Contact}
   | CEContactNotActive {contact :: Contact}
