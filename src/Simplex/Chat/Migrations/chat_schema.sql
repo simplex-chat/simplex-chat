@@ -528,34 +528,26 @@ CREATE TABLE IF NOT EXISTS "received_probes"(
   updated_at TEXT CHECK(updated_at NOT NULL)
 );
 CREATE TABLE remote_hosts(
-  -- hosts known to a controlling app
+  -- e.g., mobiles known to a desktop app
   remote_host_id INTEGER PRIMARY KEY AUTOINCREMENT,
   host_device_name TEXT NOT NULL,
-  store_path TEXT NOT NULL, -- file path for host files relative to app storage(must not contain "/")
-  -- RCHostPairing
-  ca_key BLOB NOT NULL, -- private key to sign session certificates
-  ca_cert BLOB NOT NULL, -- root certificate
+  store_path TEXT NOT NULL, -- relative folder name for host files
+  ca_key BLOB NOT NULL,
+  ca_cert BLOB NOT NULL,
   id_key BLOB NOT NULL, -- long-term/identity signing key
-  -- KnownHostPairing
-  host_fingerprint BLOB NOT NULL, -- pinned remote host CA, set when connected
-  -- stored host session key
-  host_dh_pub BLOB NOT NULL, -- session DH key
-  UNIQUE(host_fingerprint) ON CONFLICT FAIL
+  host_fingerprint BLOB NOT NULL, -- remote host CA cert fingerprint, set when connected
+  host_dh_pub BLOB NOT NULL -- last session DH key
 );
 CREATE TABLE remote_controllers(
-  -- controllers known to a hosting app
+  -- e.g., desktops known to a mobile app
   remote_ctrl_id INTEGER PRIMARY KEY AUTOINCREMENT,
   ctrl_device_name TEXT NOT NULL,
-  -- RCCtrlPairing
-  ca_key BLOB NOT NULL, -- CA key
-  ca_cert BLOB NOT NULL, -- CA certificate for TLS clients
-  ctrl_fingerprint BLOB NOT NULL, -- remote controller CA, set when connected
+  ca_key BLOB NOT NULL,
+  ca_cert BLOB NOT NULL,
+  ctrl_fingerprint BLOB NOT NULL, -- remote controller CA cert fingerprint, set when connected
   id_pub BLOB NOT NULL, -- remote controller long-term/identity key to verify signatures
-  -- stored session key, commited on connection confirmation
-  dh_priv_key BLOB NOT NULL, -- session DH key
-  -- prev session key
-  prev_dh_priv_key BLOB, -- previous session DH key
-  UNIQUE(ctrl_fingerprint) ON CONFLICT FAIL
+  dh_priv_key BLOB NOT NULL, -- last session DH key
+  prev_dh_priv_key BLOB -- previous session DH key
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -807,4 +799,10 @@ CREATE INDEX idx_messages_group_id_shared_msg_id ON messages(
 );
 CREATE INDEX idx_chat_items_forwarded_by_group_member_id ON chat_items(
   forwarded_by_group_member_id
+);
+CREATE UNIQUE INDEX idx_remote_hosts_host_fingerprint ON remote_hosts(
+  host_fingerprint
+);
+CREATE UNIQUE INDEX idx_remote_controllers_ctrl_fingerprint ON remote_controllers(
+  ctrl_fingerprint
 );
