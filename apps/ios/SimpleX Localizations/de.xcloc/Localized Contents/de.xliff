@@ -4974,7 +4974,7 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
       </trans-unit>
       <trans-unit id="To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page." xml:space="preserve">
         <source>To reveal your hidden profile, enter a full password into a search field in **Your chat profiles** page.</source>
-        <target>Geben Sie ein vollständiges Passwort in das Suchfeld auf der Seite **Meine Chat-Profile** ein, um Ihr verborgenes Profil zu sehen.</target>
+        <target>Geben Sie ein vollständiges Passwort in das Suchfeld auf der Seite **Ihre Chat-Profile** ein, um Ihr verborgenes Profil zu sehen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
@@ -5366,7 +5366,7 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       </trans-unit>
       <trans-unit id="You" xml:space="preserve">
         <source>You</source>
-        <target>Meine Daten</target>
+        <target>Ihre Daten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You accepted connection" xml:space="preserve">
@@ -5650,7 +5650,7 @@ Verbindungsanfrage wiederholen?</target>
       </trans-unit>
       <trans-unit id="Your SimpleX address" xml:space="preserve">
         <source>Your SimpleX address</source>
-        <target>Meine SimpleX-Adresse</target>
+        <target>Ihre SimpleX-Adresse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your XFTP servers" xml:space="preserve">
@@ -5675,7 +5675,7 @@ Verbindungsanfrage wiederholen?</target>
       </trans-unit>
       <trans-unit id="Your chat profiles" xml:space="preserve">
         <source>Your chat profiles</source>
-        <target>Meine Chat-Profile</target>
+        <target>Ihre Chat-Profile</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact needs to be online for the connection to complete.&#10;You can cancel this connection and remove the contact (and try later with a new link)." xml:space="preserve">
@@ -5719,12 +5719,12 @@ Sie können es in den Einstellungen ändern.</target>
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve">
         <source>Your preferences</source>
-        <target>Meine Präferenzen</target>
+        <target>Ihre Präferenzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your privacy" xml:space="preserve">
         <source>Your privacy</source>
-        <target>Meine Privatsphäre</target>
+        <target>Ihre Privatsphäre</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile" xml:space="preserve" approved="no">
@@ -5766,7 +5766,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="Your settings" xml:space="preserve">
         <source>Your settings</source>
-        <target>Meine Einstellungen</target>
+        <target>Ihre Einstellungen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" xml:space="preserve">

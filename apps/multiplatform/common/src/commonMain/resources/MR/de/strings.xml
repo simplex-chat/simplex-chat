@@ -21,7 +21,7 @@
     <string name="marked_deleted_description">als gelöscht markiert</string>
     <string name="sending_files_not_yet_supported">Das Senden von Dateien wird noch nicht unterstützt</string>
     <string name="receiving_files_not_yet_supported">Der Empfang von Dateien wird noch nicht unterstützt</string>
-    <string name="sender_you_pronoun">Meine Daten</string>
+    <string name="sender_you_pronoun">Ihre Daten</string>
     <string name="unknown_message_format">Unbekanntes Nachrichtenformat</string>
     <string name="invalid_message_format">Unzulässiges Nachrichtenformat</string>
     <!-- PendingContactConnection - ChatModel.kt -->
@@ -344,8 +344,8 @@
     <string name="create_one_time_link">Einmal-Einladungslink erstellen</string>
     <string name="one_time_link">Einmal-Einladungslink</string>
     <!-- settings - SettingsView.kt -->
-    <string name="your_settings">Meine Einstellungen</string>
-    <string name="your_simplex_contact_address">Meine SimpleX-Adresse</string>
+    <string name="your_settings">Ihre Einstellungen</string>
+    <string name="your_simplex_contact_address">Ihre SimpleX-Adresse</string>
     <string name="database_passphrase_and_export">Datenbank-Passwort &amp; -Export</string>
     <string name="about_simplex_chat">Über SimpleX Chat</string>
     <string name="how_to_use_simplex_chat">Wie man SimpleX nutzt</string>
@@ -553,7 +553,7 @@
 \n3. Die Verbindung wurde kompromittiert.</string>
     <!-- Privacy settings -->
     <string name="privacy_and_security">Datenschutz &amp; Sicherheit</string>
-    <string name="your_privacy">Meine Privatsphäre</string>
+    <string name="your_privacy">Ihre Privatsphäre</string>
     <string name="protect_app_screen">App-Bildschirm schützen</string>
     <string name="auto_accept_images">Bilder automatisch akzeptieren</string>
     <string name="send_link_previews">Link-Vorschau senden</string>
@@ -1001,7 +1001,7 @@
     <string name="network_session_mode_transport_isolation">Transport-Isolation</string>
     <string name="users_delete_question">Chat-Profil löschen\?</string>
     <string name="error_deleting_user">Fehler beim Löschen des Benutzerprofils</string>
-    <string name="your_chat_profiles">Meine Chat-Profile</string>
+    <string name="your_chat_profiles">Ihre Chat-Profile</string>
     <string name="network_session_mode_entity">Verbindung</string>
     <string name="network_session_mode_user">Chat-Profil</string>
     <string name="delete_files_and_media_for_all_users">Dateien für alle Chat-Profile löschen</string>
@@ -1084,7 +1084,7 @@
     <string name="you_will_still_receive_calls_and_ntfs">Sie können Anrufe und Benachrichtigungen auch von stummgeschalteten Profilen empfangen, solange diese aktiv sind.</string>
     <string name="group_welcome_title">Begrüßungsmeldung</string>
     <string name="you_can_hide_or_mute_user_profile">Sie können ein Benutzerprofil verbergen oder stummschalten – für das Menü gedrückt halten.</string>
-    <string name="to_reveal_profile_enter_password">Geben Sie ein vollständiges Passwort in das Suchfeld auf der Seite \"Meine Chat-Profile\" ein, um Ihr verborgenes Profil zu sehen.</string>
+    <string name="to_reveal_profile_enter_password">Geben Sie ein vollständiges Passwort in das Suchfeld auf der Seite \"Ihre Chat-Profile\" ein, um Ihr verborgenes Profil zu sehen.</string>
     <string name="invalid_migration_confirmation">Migrations-Bestätigung ungültig</string>
     <string name="upgrade_and_open_chat">Aktualisieren und den Chat öffnen</string>
     <string name="confirm_database_upgrades">Datenbank-Aktualisierungen bestätigen</string>
