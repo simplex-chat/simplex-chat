@@ -259,7 +259,17 @@
                 # we also do not want to have any dependencies listed (especially no rts!)
                 enableStatic = false;
 
-                setupBuildFlags = p.component.setupBuildFlags ++ map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsupport.so" ];
+                # This used to work with 8.10.7...
+                # setupBuildFlags = p.component.setupBuildFlags ++ map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsupport.so" ];
+                # ... but now with 9.6+
+                # we have to do the -shared thing by hand.
+                postBuild = ''
+                  armv7a-unknown-linux-androideabi-ghc -shared -o libsupport.so \
+                    -optl-Wl,-u,setLineBuffering \
+                    -optl-Wl,-u,pipe_std_to_socket \
+                    dist/build/*.a
+                '';
+
                 postInstall = ''
 
                   mkdir -p $out/_pkg
