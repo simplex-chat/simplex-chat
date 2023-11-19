@@ -29,10 +29,6 @@ import java.io.File
 val simplexWindowState = SimplexWindowState()
 
 fun showApp() = application {
-  // TODO: remove after update to compose 1.5.0+
-  // See: https://github.com/JetBrains/compose-multiplatform/issues/3366#issuecomment-1643799976
-  System.setProperty("compose.scrolling.smooth.enabled", "false")
-
   // For some reason on Linux actual width will be 10.dp less after specifying it here. If we specify 1366,
   // it will show 1356. But after that we can still update it to 1366 by changing window state. Just making it +10 now here
   val width = if (desktopPlatform.isLinux()) 1376.dp else 1366.dp
