@@ -29,6 +29,7 @@ import chat.simplex.common.views.database.DatabaseView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.SimpleXInfo
 import chat.simplex.common.views.onboarding.WhatsNewView
+import chat.simplex.common.views.remote.ConnectDesktopView
 import chat.simplex.common.views.remote.ConnectMobileView
 import chat.simplex.res.MR
 import kotlinx.coroutines.launch
@@ -158,6 +159,8 @@ fun SettingsLayout(
         ChatPreferencesItem(showCustomModal, stopped = stopped)
         if (appPlatform.isDesktop) {
           SettingsActionItem(painterResource(MR.images.ic_smartphone), stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles), showModal { ConnectMobileView(it) }, disabled = stopped, extraPadding = true)
+        } else {
+          SettingsActionItem(painterResource(MR.images.ic_desktop), stringResource(MR.strings.settings_section_title_use_from_desktop), showCustomModal{ it, close -> ConnectDesktopView(close) }, disabled = stopped, extraPadding = true)
         }
       }
       SectionDividerSpaced()

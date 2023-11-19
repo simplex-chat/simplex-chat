@@ -52,6 +52,14 @@ fun annotatedStringResource(id: StringResource): AnnotatedString {
   }
 }
 
+@Composable
+fun annotatedStringResource(id: StringResource, vararg args: Any?): AnnotatedString {
+  val density = LocalDensity.current
+  return remember(id) {
+    escapedHtmlToAnnotatedString(id.localized().format(args), density)
+  }
+}
+
 // maximum image file size to be auto-accepted
 const val MAX_IMAGE_SIZE: Long = 261_120 // 255KB
 const val MAX_IMAGE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2

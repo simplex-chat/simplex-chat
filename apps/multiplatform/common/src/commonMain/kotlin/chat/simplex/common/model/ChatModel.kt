@@ -27,6 +27,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 import java.io.File
 import java.net.URI
+import java.net.URLDecoder
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.*
@@ -111,6 +112,7 @@ object ChatModel {
   val remoteHosts = mutableStateListOf<RemoteHostInfo>()
   val currentRemoteHost = mutableStateOf<RemoteHostInfo?>(null)
   val newRemoteHostPairing = mutableStateOf<Pair<RemoteHostInfo?, RemoteHostSessionState>?>(null)
+  val remoteCtrlSession = mutableStateOf<RemoteCtrlSession?>(null)
 
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value
@@ -598,7 +600,7 @@ object ChatModel {
     terminalItems.add(item)
   }
 
-  fun connectedToRemote(): Boolean = currentRemoteHost.value != null
+  fun connectedToRemote(): Boolean = currentRemoteHost.value != null || remoteCtrlSession.value?.active == true
 }
 
 enum class ChatType(val type: String) {
@@ -2347,7 +2349,7 @@ data class CryptoFile(
   companion object {
     fun plain(f: String): CryptoFile = CryptoFile(f, null)
 
-    fun desktopPlain(f: URI): CryptoFile = CryptoFile(f.rawPath, null)
+    fun desktopPlain(f: URI): CryptoFile = CryptoFile(URLDecoder.decode(f.rawPath, "UTF-8"), null)
   }
 }
 
@@ -2907,8 +2909,18 @@ enum class NotificationPreviewMode {
 data class RemoteCtrlSession(
   val ctrlAppInfo: CtrlAppInfo,
   val appVersion: String,
-  val sessionState: RemoteCtrlSessionState
-)
+  val sessionState: UIRemoteCtrlSessionState
+) {
+  val active: Boolean
+    get () = sessionState is UIRemoteCtrlSessionState.Connected
+
+  val sessionCode: String?
+    get() = when (val s = sessionState) {
+      is UIRemoteCtrlSessionState.PendingConfirmation -> s.sessionCode
+      is UIRemoteCtrlSessionState.Connected -> s.sessionCode
+      else -> null
+    }
+}
 
 @Serializable
 sealed class RemoteCtrlSessionState {
@@ -2916,4 +2928,11 @@ sealed class RemoteCtrlSessionState {
   @Serializable @SerialName("connecting") object Connecting: RemoteCtrlSessionState()
   @Serializable @SerialName("pendingConfirmation") data class PendingConfirmation(val sessionCode: String): RemoteCtrlSessionState()
   @Serializable @SerialName("connected") data class Connected(val sessionCode: String): RemoteCtrlSessionState()
+}
+
+sealed class UIRemoteCtrlSessionState {
+  @Serializable @SerialName("starting") object Starting: UIRemoteCtrlSessionState()
+  @Serializable @SerialName("connecting") data class Connecting(val remoteCtrl_: RemoteCtrlInfo? = null): UIRemoteCtrlSessionState()
+  @Serializable @SerialName("pendingConfirmation") data class PendingConfirmation(val remoteCtrl_: RemoteCtrlInfo? = null, val sessionCode: String): UIRemoteCtrlSessionState()
+  @Serializable @SerialName("connected") data class Connected(val remoteCtrl: RemoteCtrlInfo, val sessionCode: String): UIRemoteCtrlSessionState()
 }
