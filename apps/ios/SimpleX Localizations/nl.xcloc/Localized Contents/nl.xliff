@@ -134,7 +134,7 @@
       </trans-unit>
       <trans-unit id="%@, %@ and %lld members" xml:space="preserve" approved="no">
         <source>%@, %@ and %lld members</source>
-        <target state="translated">%@, %@ en %lld gebruikers</target>
+        <target state="translated">%@, %@ en %lld leden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve" approved="no">
@@ -991,7 +991,7 @@
       </trans-unit>
       <trans-unit id="Change member role?" xml:space="preserve">
         <source>Change member role?</source>
-        <target>Rol van gebruiker wijzigen?</target>
+        <target>Rol van lid wijzigen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change passcode" xml:space="preserve">
@@ -2061,7 +2061,7 @@ Dit kan niet ongedaan gemaakt worden!</target>
       </trans-unit>
       <trans-unit id="Error adding member(s)" xml:space="preserve">
         <source>Error adding member(s)</source>
-        <target>Fout bij het toevoegen van gebruiker(s)</target>
+        <target>Fout bij het toevoegen van leden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing address" xml:space="preserve">
@@ -2191,7 +2191,7 @@ Dit kan niet ongedaan gemaakt worden!</target>
       </trans-unit>
       <trans-unit id="Error removing member" xml:space="preserve">
         <source>Error removing member</source>
-        <target>Fout bij verwijderen van gebruiker</target>
+        <target>Fout bij verwijderen van lid</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error saving %@ servers" xml:space="preserve">
@@ -2466,7 +2466,7 @@ Dit kan niet ongedaan gemaakt worden!</target>
       </trans-unit>
       <trans-unit id="Fully decentralized – visible only to members." xml:space="preserve" approved="no">
         <source>Fully decentralized – visible only to members.</source>
-        <target state="translated">Volledig gedecentraliseerd – alleen zichtbaar voor gebruikers.</target>
+        <target state="translated">Volledig gedecentraliseerd – alleen zichtbaar voor leden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fully re-implemented - work in background!" xml:space="preserve">
@@ -3116,22 +3116,22 @@ Dit is jouw link voor groep %@!</target>
       </trans-unit>
       <trans-unit id="Member" xml:space="preserve">
         <source>Member</source>
-        <target>Gebruiker</target>
+        <target>Lid</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". All group members will be notified.</source>
-        <target state="translated">De rol van gebruiker wordt gewijzigd in "%@". Alle groepsleden worden op de hoogte gebracht.</target>
+        <target state="translated">De rol van lid wordt gewijzigd in "%@". Alle groepsleden worden op de hoogte gebracht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". The member will receive a new invitation.</source>
-        <target state="translated">De rol van gebruiker wordt gewijzigd in "%@". Het lid ontvangt een nieuwe uitnodiging.</target>
+        <target state="translated">De rol van lid wordt gewijzigd in "%@". Het lid ontvangt een nieuwe uitnodiging.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
         <source>Member will be removed from group - this cannot be undone!</source>
-        <target>Gebruiker wordt uit de groep verwijderd, dit kan niet ongedaan worden gemaakt!</target>
+        <target>Lid wordt uit de groep verwijderd, dit kan niet ongedaan worden gemaakt!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message delivery error" xml:space="preserve">
@@ -3970,12 +3970,12 @@ Dit is jouw link voor groep %@!</target>
       </trans-unit>
       <trans-unit id="Remove member" xml:space="preserve">
         <source>Remove member</source>
-        <target>Gebruiker verwijderen</target>
+        <target>Lid verwijderen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove member?" xml:space="preserve">
         <source>Remove member?</source>
-        <target>Gebruiker verwijderen?</target>
+        <target>Lid verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove passphrase from keychain?" xml:space="preserve">
@@ -5605,7 +5605,7 @@ Verbindingsverzoek herhalen?</target>
       </trans-unit>
       <trans-unit id="You will connect to all group members." xml:space="preserve" approved="no">
         <source>You will connect to all group members.</source>
-        <target state="translated">Je maakt verbinding met alle gebruikers.</target>
+        <target state="translated">Je maakt verbinding met alle leden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will still receive calls and notifications from muted profiles when they are active." xml:space="preserve">
@@ -6236,7 +6236,7 @@ SimpleX servers kunnen uw profiel niet zien.</target>
       </trans-unit>
       <trans-unit id="member" xml:space="preserve">
         <source>member</source>
-        <target>gebruiker</target>
+        <target>lid</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="member connected" xml:space="preserve">
