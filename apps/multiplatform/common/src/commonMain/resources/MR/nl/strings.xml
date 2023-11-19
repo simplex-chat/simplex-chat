@@ -340,7 +340,7 @@
     <string name="error_deleting_link_for_group">Fout bij verwijderen groep link</string>
     <string name="group_link">Groep link</string>
     <string name="error_changing_role">Fout bij wisselen van rol</string>
-    <string name="error_removing_member">Fout bij verwijderen van gebruiker</string>
+    <string name="error_removing_member">Fout bij verwijderen van lid</string>
     <string name="info_row_group">Groep</string>
     <string name="group_full_name_field">Volledige naam groep:</string>
     <string name="group_preferences">Groep voorkeuren</string>
@@ -362,7 +362,7 @@
     <string name="button_edit_group_profile">Groep profiel bewerken</string>
     <string name="network_option_enable_tcp_keep_alive">Schakel TCP keep-alive in</string>
     <string name="encrypt_database">Versleutelen</string>
-    <string name="error_adding_members">Fout bij het toevoegen van gebruiker(s)</string>
+    <string name="error_adding_members">Fout bij het toevoegen van leden</string>
     <string name="smp_servers_enter_manually">Voer de server handmatig in</string>
     <string name="error_accepting_contact_request">Fout bij het accepteren van een contactverzoek</string>
     <string name="group_invitation_expired">Groep uitnodiging verlopen</string>
@@ -482,12 +482,12 @@
 \n3. De verbinding is verbroken.</string>
     <string name="joining_group">Deel nemen aan groep</string>
     <string name="leave_group_button">Verlaten</string>
-    <string name="group_member_role_member">Gebruiker</string>
+    <string name="group_member_role_member">Lid</string>
     <string name="image_descr_link_preview">link voorbeeld afbeelding</string>
-    <string name="member_info_section_title_member">GEBRUIKER</string>
+    <string name="member_info_section_title_member">LID</string>
     <string name="settings_section_title_messages">BERICHTEN EN BESTANDEN</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobiel: tik op <b>Openen in mobiele app</b> en tik vervolgens op <b>Verbinden</b> in de app.]]></string>
-    <string name="member_will_be_removed_from_group_cannot_be_undone">Gebruiker wordt uit de groep verwijderd, dit kan niet ongedaan worden gemaakt!</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">Lid wordt uit de groep verwijderd, dit kan niet ongedaan worden gemaakt!</string>
     <string name="message_delivery_error_title">Fout bij bezorging van bericht</string>
     <string name="delete_message_mark_deleted_warning">Bericht wordt gemarkeerd voor verwijdering. De ontvanger(s) kunnen dit bericht onthullen.</string>
     <string name="network_status">Netwerk status</string>
@@ -794,7 +794,7 @@
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">U bent uitgenodigd voor de groep. Word lid om in contact te komen met de groepsleden.</string>
     <string name="group_invitation_tap_to_join">Tik om lid te worden</string>
     <string name="group_invitation_tap_to_join_incognito">Tik om incognito lid te worden</string>
-    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Je bent lid geworden van deze groep. Verbinding maken met uitnodigend gebruiker.</string>
+    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Je bent lid geworden van deze groep. Verbinding maken met uitnodigend lid.</string>
     <string name="you_sent_group_invitation">Je hebt een groep uitnodiging verzonden</string>
     <string name="snd_group_event_user_left">jij bent vertrokken</string>
     <string name="snd_conn_event_switch_queue_phase_completed">je bent van adres veranderd</string>
@@ -802,7 +802,7 @@
     <string name="skip_inviting_button">Sla het uitnodigen van leden over</string>
     <string name="num_contacts_selected">%d contact(en) geselecteerd</string>
     <string name="remove_member_confirmation">Verwijderen</string>
-    <string name="button_remove_member">Gebruiker verwijderen</string>
+    <string name="button_remove_member">Lid verwijderen</string>
     <string name="role_in_group">Rol</string>
     <string name="button_send_direct_message">Direct bericht sturen</string>
     <string name="member_role_will_be_changed_with_invitation">De rol wordt gewijzigd in \"%s\". De gebruiker ontvangt een nieuwe uitnodiging.</string>
