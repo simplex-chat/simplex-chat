@@ -104,17 +104,6 @@ getRemoteHostClient rhId = do
   where
     rhKey = RHId rhId
 
-startRemoteHostSession :: ChatMonad m => RHKey -> m SessionSeq
-startRemoteHostSession rhKey = do
-  sessions <- asks remoteHostSessions
-  nextSessionSeq <- asks remoteSessionSeq
-  liftIOEither . atomically $
-    TM.lookup rhKey sessions >>= \case
-      Just _ -> pure . Left $ ChatErrorRemoteHost rhKey RHEBusy
-      Nothing -> do
-        sessionSeq <- stateTVar nextSessionSeq $ \s -> (s, s + 1)
-        Right sessionSeq <$ TM.insert rhKey (sessionSeq, RHSessionStarting) sessions
-
 remoteHostSessionState :: ChatMonad m => RHKey -> SessionSeq -> (RemoteHostSession -> Maybe (a, RemoteHostSession)) -> m a
 remoteHostSessionState rhKey sseq f = do
   sessions <- asks remoteHostSessions
@@ -231,11 +220,21 @@ startRemoteHost rh_ = do
     httpError :: RemoteHostId -> HTTP2ClientError -> ChatError
     httpError rhId = ChatErrorRemoteHost (RHId rhId) . RHEProtocolError . RPEHTTP2 . tshow
 
+startRemoteHostSession :: ChatMonad m => RHKey -> m SessionSeq
+startRemoteHostSession rhKey = do
+  sessions <- asks remoteHostSessions
+  nextSessionSeq <- asks remoteSessionSeq
+  liftIOEither . atomically $
+    TM.lookup rhKey sessions >>= \case
+      Just _ -> pure . Left $ ChatErrorRemoteHost rhKey RHEBusy
+      Nothing -> do
+        sessionSeq <- stateTVar nextSessionSeq $ \s -> (s, s + 1)
+        Right sessionSeq <$ TM.insert rhKey (sessionSeq, RHSessionStarting) sessions
+
 closeRemoteHost :: ChatMonad m => RHKey -> m ()
 closeRemoteHost rhKey = do
   logNote $ "Closing remote host session for " <> tshow rhKey
   cancelRemoteHostSession Nothing rhKey
-  -- cancelRemoteHostSession False rhKey
 
 cancelRemoteHostSession :: ChatMonad m => Maybe SessionSeq -> RHKey -> m ()
 cancelRemoteHostSession sseq_ rhKey = do
