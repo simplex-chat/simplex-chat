@@ -100,6 +100,7 @@ data StoreError
   | SEHostMemberIdNotFound {groupId :: Int64}
   | SEContactNotFoundByFileId {fileId :: FileTransferId}
   | SENoGroupSndStatus {itemId :: ChatItemId, groupMemberId :: GroupMemberId}
+  | SEDuplicateGroupMessage {groupId :: Int64, sharedMsgId :: SharedMsgId, authorGroupMemberId :: Maybe GroupMemberId, forwardedByGroupMemberId :: Maybe GroupMemberId}
   deriving (Show, Exception, Generic)
 
 instance ToJSON StoreError where
@@ -205,6 +206,17 @@ setPeerChatVRange db connId (VersionRange minVer maxVer) =
       WHERE connection_id = ?
     |]
     (minVer, maxVer, connId)
+
+setMemberChatVRange :: DB.Connection -> GroupMemberId -> VersionRange -> IO ()
+setMemberChatVRange db mId (VersionRange minVer maxVer) =
+  DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET peer_chat_min_version = ?, peer_chat_max_version = ?
+      WHERE group_member_id = ?
+    |]
+    (minVer, maxVer, mId)
 
 setCommandConnId :: DB.Connection -> User -> CommandId -> Int64 -> IO ()
 setCommandConnId db User {userId} cmdId connId = do
