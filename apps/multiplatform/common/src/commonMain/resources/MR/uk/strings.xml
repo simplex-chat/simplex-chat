@@ -1385,7 +1385,7 @@
     <string name="error_creating_member_contact">Помилка при створенні контакту користувача</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Ви вже приєдналися до групи за цим посиланням.</string>
     <string name="create_group_button">Створити групу</string>
-    <string name="socks_proxy_setting_limitations"><b>Зверніть увагу</b>: ретранслятори повідомлень і файлів підключаються через проксі SOCKS. Дзвінки та надсилання попередніх переглядів посилань використовують пряме з’єднання.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Зверніть увагу</b>: ретранслятори повідомлень і файлів підключаються через проксі SOCKS. Дзвінки та надсилання попередніх переглядів посилань використовують пряме з’єднання.]]></string>
     <string name="create_another_profile_button">Створити профіль</string>
     <string name="group_members_2">%s та %s</string>
     <string name="connect_plan_join_your_group">Приєднатися до групи?</string>
