@@ -141,7 +141,7 @@ fun ConnectMobileLayout(
 }
 
 @Composable
-private fun DeviceNameField(
+fun DeviceNameField(
   initialValue: String,
   onChange: (String) -> Unit
 ) {

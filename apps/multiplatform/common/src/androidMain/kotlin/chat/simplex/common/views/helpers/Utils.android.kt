@@ -295,7 +295,7 @@ actual suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
   return try {
     val ext = if (asPng) "png" else "jpg"
     tmpDir.mkdir()
-    return File(tmpDir.absolutePath + File.separator + generateNewFileName("IMG", ext)).apply {
+    return File(tmpDir.absolutePath + File.separator + generateNewFileName("IMG", ext, tmpDir)).apply {
       outputStream().use { out ->
         image.asAndroidBitmap().compress(if (asPng) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG, 85, out)
         out.flush()

@@ -24,7 +24,6 @@ import kotlinx.serialization.*
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.*
-import java.io.File
 import java.util.Date
 
 typealias ChatCtrl = Long
@@ -167,7 +166,11 @@ class AppPreferences {
   val whatsNewVersion = mkStrPreference(SHARED_PREFS_WHATS_NEW_VERSION, null)
   val lastMigratedVersionCode = mkIntPreference(SHARED_PREFS_LAST_MIGRATED_VERSION_CODE, 0)
   val customDisappearingMessageTime = mkIntPreference(SHARED_PREFS_CUSTOM_DISAPPEARING_MESSAGE_TIME, 300)
-  val deviceNameForRemoteAccess = mkStrPreference(SHARED_PREFS_DEVICE_NAME_FOR_REMOTE_ACCESS, "Desktop")
+  val deviceNameForRemoteAccess = mkStrPreference(SHARED_PREFS_DEVICE_NAME_FOR_REMOTE_ACCESS, deviceName)
+
+  val confirmRemoteSessions = mkBoolPreference(SHARED_PREFS_CONFIRM_REMOTE_SESSIONS, false)
+  val connectRemoteViaMulticast = mkBoolPreference(SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST, false)
+  val offerRemoteMulticast = mkBoolPreference(SHARED_PREFS_OFFER_REMOTE_MULTICAST, true)
 
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
@@ -309,6 +312,9 @@ class AppPreferences {
     private const val SHARED_PREFS_LAST_MIGRATED_VERSION_CODE = "LastMigratedVersionCode"
     private const val SHARED_PREFS_CUSTOM_DISAPPEARING_MESSAGE_TIME = "CustomDisappearingMessageTime"
     private const val SHARED_PREFS_DEVICE_NAME_FOR_REMOTE_ACCESS = "DeviceNameForRemoteAccess"
+    private const val SHARED_PREFS_CONFIRM_REMOTE_SESSIONS = "ConfirmRemoteSessions"
+    private const val SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST = "ConnectRemoteViaMulticast"
+    private const val SHARED_PREFS_OFFER_REMOTE_MULTICAST = "OfferRemoteMulticast"
   }
 }
 
@@ -1430,18 +1436,23 @@ object ChatController {
 
   suspend fun getRemoteFile(rhId: Long, file: RemoteFile): Boolean = sendCommandOkResp(CC.GetRemoteFile(rhId, file))
 
-  suspend fun connectRemoteCtrl(invitation: String): SomeRemoteCtrl? {
-    val r = sendCmd(CC.ConnectRemoteCtrl(invitation))
-    if (r is CR.RemoteCtrlConnecting) return SomeRemoteCtrl(r.remoteCtrl_, r.ctrlAppInfo, r.appVersion)
-    apiErrorAlert("connectRemoteCtrl", generalGetString(MR.strings.error_alert_title), r)
-    return null
+  suspend fun connectRemoteCtrl(desktopAddress: String): Pair<SomeRemoteCtrl?, CR.ChatCmdError?> {
+    val r = sendCmd(CC.ConnectRemoteCtrl(desktopAddress))
+    if (r is CR.RemoteCtrlConnecting) return SomeRemoteCtrl(r.remoteCtrl_, r.ctrlAppInfo, r.appVersion) to null
+    else if (r is CR.ChatCmdError) return null to r
+    else throw Exception("connectRemoteCtrl error: ${r.responseType} ${r.details}")
   }
 
   suspend fun findKnownRemoteCtrl(): Boolean = sendCommandOkResp(CC.FindKnownRemoteCtrl())
 
-  suspend fun confirmRemoteCtrl(rhId: Long): Boolean = sendCommandOkResp(CC.ConfirmRemoteCtrl(rhId))
+  suspend fun confirmRemoteCtrl(rcId: Long): Boolean = sendCommandOkResp(CC.ConfirmRemoteCtrl(rcId))
 
-  suspend fun verifyRemoteCtrlSession(sessionCode: String): Boolean = sendCommandOkResp(CC.VerifyRemoteCtrlSession(sessionCode))
+  suspend fun verifyRemoteCtrlSession(sessionCode: String): RemoteCtrlInfo? {
+    val r = sendCmd(CC.VerifyRemoteCtrlSession(sessionCode))
+    if (r is CR.RemoteCtrlConnected) return r.remoteCtrl
+    apiErrorAlert("verifyRemoteCtrlSession", generalGetString(MR.strings.error_alert_title), r)
+    return null
+  }
 
   suspend fun listRemoteCtrls(): List<RemoteCtrlInfo>? {
     val r = sendCmd(CC.ListRemoteCtrls())
@@ -1843,6 +1854,22 @@ object ChatController {
         chatModel.newRemoteHostPairing.value = null
         switchUIRemoteHost(null)
       }
+      is CR.RemoteCtrlFound -> {
+        // TODO multicast
+        Log.d(TAG, "RemoteCtrlFound: ${r.remoteCtrl}")
+      }
+      is CR.RemoteCtrlSessionCode -> {
+        val state = UIRemoteCtrlSessionState.PendingConfirmation(remoteCtrl_ = r.remoteCtrl_, sessionCode = r.sessionCode)
+        chatModel.remoteCtrlSession.value = chatModel.remoteCtrlSession.value?.copy(sessionState = state)
+      }
+      is CR.RemoteCtrlConnected -> {
+        // TODO currently it is returned in response to command, so it is redundant
+        val state = UIRemoteCtrlSessionState.Connected(remoteCtrl = r.remoteCtrl, sessionCode = chatModel.remoteCtrlSession.value?.sessionCode ?: "")
+        chatModel.remoteCtrlSession.value = chatModel.remoteCtrlSession.value?.copy(sessionState = state)
+      }
+      is CR.RemoteCtrlStopped -> {
+        switchToLocalSession()
+      }
       else ->
         Log.d(TAG , "unsupported event: ${r.responseType}")
     }
@@ -1863,6 +1890,23 @@ object ChatController {
       && fileName != null
     ) {
       removeFile(fileName)
+    }
+  }
+
+  fun switchToLocalSession() {
+    val m = chatModel
+    m.remoteCtrlSession.value = null
+    withBGApi {
+      val users = listUsers()
+      m.users.clear()
+      m.users.addAll(users)
+      getUserChatData()
+      val statuses = apiGetNetworkStatuses()
+      if (statuses != null) {
+        chatModel.networkStatuses.clear()
+        val ss = statuses.associate { it.agentConnId to it.networkStatus }.toMap()
+        chatModel.networkStatuses.putAll(ss)
+      }
     }
   }
 
@@ -3474,7 +3518,10 @@ data class RemoteCtrlInfo (
   val remoteCtrlId: Long,
   val ctrlDeviceName: String,
   val sessionState: RemoteCtrlSessionState?
-)
+) {
+  val deviceViewName: String
+    get() = ctrlDeviceName.ifEmpty { remoteCtrlId.toString() }
+}
 
 @Serializable
 data class RemoteHostInfo(
@@ -4558,6 +4605,7 @@ sealed class AgentErrorType {
     is SMP -> "SMP ${smpErr.string}"
     // is NTF -> "NTF ${ntfErr.string}"
     is XFTP -> "XFTP ${xftpErr.string}"
+    is RCP -> "RCP ${rcpErr.string}"
     is BROKER -> "BROKER ${brokerErr.string}"
     is AGENT -> "AGENT ${agentErr.string}"
     is INTERNAL -> "INTERNAL $internalErr"
@@ -4568,6 +4616,7 @@ sealed class AgentErrorType {
   @Serializable @SerialName("SMP") class SMP(val smpErr: SMPErrorType): AgentErrorType()
   // @Serializable @SerialName("NTF") class NTF(val ntfErr: SMPErrorType): AgentErrorType()
   @Serializable @SerialName("XFTP") class XFTP(val xftpErr: XFTPErrorType): AgentErrorType()
+  @Serializable @SerialName("XFTP") class RCP(val rcpErr: RCErrorType): AgentErrorType()
   @Serializable @SerialName("BROKER") class BROKER(val brokerAddress: String, val brokerErr: BrokerErrorType): AgentErrorType()
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
@@ -4739,6 +4788,38 @@ sealed class XFTPErrorType {
 }
 
 @Serializable
+sealed class RCErrorType {
+  val string: String get() = when (this) {
+    is INTERNAL -> "INTERNAL $internalErr"
+    is IDENTITY -> "IDENTITY"
+    is NO_LOCAL_ADDRESS -> "NO_LOCAL_ADDRESS"
+    is TLS_START_FAILED -> "TLS_START_FAILED"
+    is EXCEPTION -> "EXCEPTION $EXCEPTION"
+    is CTRL_AUTH -> "CTRL_AUTH"
+    is CTRL_NOT_FOUND -> "CTRL_NOT_FOUND"
+    is CTRL_ERROR -> "CTRL_ERROR $ctrlErr"
+    is VERSION -> "VERSION"
+    is ENCRYPT -> "ENCRYPT"
+    is DECRYPT -> "DECRYPT"
+    is BLOCK_SIZE -> "BLOCK_SIZE"
+    is SYNTAX -> "SYNTAX $syntaxErr"
+  }
+  @Serializable @SerialName("internal") data class INTERNAL(val internalErr: String): RCErrorType()
+  @Serializable @SerialName("identity") object IDENTITY: RCErrorType()
+  @Serializable @SerialName("noLocalAddress") object NO_LOCAL_ADDRESS: RCErrorType()
+  @Serializable @SerialName("tlsStartFailed") object TLS_START_FAILED: RCErrorType()
+  @Serializable @SerialName("exception") data class EXCEPTION(val exception: String): RCErrorType()
+  @Serializable @SerialName("ctrlAuth") object CTRL_AUTH: RCErrorType()
+  @Serializable @SerialName("ctrlNotFound") object CTRL_NOT_FOUND: RCErrorType()
+  @Serializable @SerialName("ctrlError") data class CTRL_ERROR(val ctrlErr: String): RCErrorType()
+  @Serializable @SerialName("version") object VERSION: RCErrorType()
+  @Serializable @SerialName("encrypt") object ENCRYPT: RCErrorType()
+  @Serializable @SerialName("decrypt") object DECRYPT: RCErrorType()
+  @Serializable @SerialName("blockSize") object BLOCK_SIZE: RCErrorType()
+  @Serializable @SerialName("syntax") data class SYNTAX(val syntaxErr: String): RCErrorType()
+}
+
+@Serializable
 sealed class ArchiveError {
   val string: String get() = when (this) {
     is ArchiveErrorImport -> "import ${chatError.string}"
@@ -4772,22 +4853,21 @@ sealed class RemoteHostError {
 sealed class RemoteCtrlError {
   val string: String get() = when (this) {
     is Inactive -> "inactive"
+    is BadState -> "badState"
     is Busy -> "busy"
     is Timeout -> "timeout"
     is Disconnected -> "disconnected"
-    is ConnectionLost -> "connectionLost"
-    is CertificateExpired -> "certificateExpired"
-    is CertificateUntrusted -> "certificateUntrusted"
-    is BadFingerprint -> "badFingerprint"
+    is BadInvitation -> "badInvitation"
+    is BadVersion -> "badVersion"
   }
   @Serializable @SerialName("inactive") object Inactive: RemoteCtrlError()
+  @Serializable @SerialName("badState") object BadState: RemoteCtrlError()
   @Serializable @SerialName("busy") object Busy: RemoteCtrlError()
   @Serializable @SerialName("timeout") object Timeout: RemoteCtrlError()
   @Serializable @SerialName("disconnected") class Disconnected(val remoteCtrlId: Long, val reason: String): RemoteCtrlError()
-  @Serializable @SerialName("connectionLost") class ConnectionLost(val remoteCtrlId: Long, val reason: String): RemoteCtrlError()
-  @Serializable @SerialName("certificateExpired") class CertificateExpired(val remoteCtrlId: Long): RemoteCtrlError()
-  @Serializable @SerialName("certificateUntrusted") class CertificateUntrusted(val remoteCtrlId: Long): RemoteCtrlError()
-  @Serializable @SerialName("badFingerprint") object BadFingerprint: RemoteCtrlError()
+  @Serializable @SerialName("badInvitation") object BadInvitation: RemoteCtrlError()
+  @Serializable @SerialName("badVersion") data class BadVersion(val appVersion: String): RemoteCtrlError()
+  //@Serializable @SerialName("protocolError") data class ProtocolError(val protocolError: RemoteProtocolError): RemoteCtrlError()
 }
 
 enum class NotificationsMode() {

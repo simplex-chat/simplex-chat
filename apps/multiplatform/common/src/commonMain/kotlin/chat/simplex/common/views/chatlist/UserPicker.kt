@@ -26,6 +26,7 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.remote.ConnectDesktopView
 import chat.simplex.common.views.remote.connectMobileDevice
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
@@ -42,6 +43,7 @@ fun UserPicker(
   showSettings: Boolean = true,
   showCancel: Boolean = false,
   cancelClicked: () -> Unit = {},
+  useFromDesktopClicked: () -> Unit = {},
   settingsClicked: () -> Unit = {},
 ) {
   val scope = rememberCoroutineScope()
@@ -203,6 +205,15 @@ fun UserPicker(
           Divider(Modifier.requiredHeight(1.dp))
         }
       }
+      if (appPlatform.isAndroid) {
+        UseFromDesktopPickerItem {
+          ModalManager.start.showCustomModal { close ->
+            ConnectDesktopView(close)
+          }
+          userPickerState.value = AnimatedViewState.GONE
+        }
+        Divider(Modifier.requiredHeight(1.dp))
+      }
       if (showSettings) {
         SettingsPickerItem(settingsClicked)
       }
@@ -360,6 +371,16 @@ fun LocalDeviceRow(active: Boolean) {
       color = if (active) MaterialTheme.colors.onBackground else if (isInDarkTheme()) MenuTextColorDark else Color.Black,
       fontSize = 14.sp,
     )
+  }
+}
+
+@Composable
+private fun UseFromDesktopPickerItem(onClick: () -> Unit) {
+  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
+    val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
+    Icon(painterResource(MR.images.ic_desktop), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
+    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
   }
 }
 
