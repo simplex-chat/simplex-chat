@@ -452,8 +452,22 @@ allowRemoteCommand = \case
   APIStopChat -> False
   APIActivateChat -> False
   APISuspendChat _ -> False
-  SetTempFolder _ -> False
   QuitChat -> False
+  SetTempFolder _ -> False
+  SetFilesFolder _ -> False
+  SetRemoteHostsFolder _ -> False
+  APISetXFTPConfig _ -> False
+  APISetEncryptLocalFiles _ -> False
+  APIExportArchive _ -> False
+  APIImportArchive _ -> False
+  ExportArchive -> False
+  APIDeleteStorage -> False
+  APIStorageEncryption _ -> False
+  ExecChatStoreSQL _ -> False
+  ExecAgentStoreSQL _ -> False
+  APISetNetworkConfig _ -> False
+  APIGetNetworkConfig -> False
+  SetLocalDeviceName _ -> False
   ListRemoteHosts -> False
   StartRemoteHost _ -> False
   SwitchRemoteHost {} -> False
