@@ -58,7 +58,7 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
         for (contactId in selectedContacts) {
           val member = chatModel.controller.apiAddMember(rhId, groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {
-            chatModel.upsertGroupMember(groupInfo, member)
+            chatModel.upsertGroupMember(rhId, groupInfo, member)
           } else {
             break
           }

@@ -1221,10 +1221,10 @@ object ChatController {
     val r = sendCmd(rh, CC.ApiJoinGroup(groupId))
     when (r) {
       is CR.UserAcceptedGroupSent ->
-        chatModel.updateGroup(r.groupInfo)
+        chatModel.updateGroup(rh, r.groupInfo)
       is CR.ChatCmdError -> {
         val e = r.chatError
-        suspend fun deleteGroup() { if (apiDeleteChat(rh, ChatType.Group, groupId)) { chatModel.removeChat("#$groupId") } }
+        suspend fun deleteGroup() { if (apiDeleteChat(rh, ChatType.Group, groupId)) { chatModel.removeChat(rh, "#$groupId") } }
         if (e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.SMP && e.agentError.smpErr is SMPErrorType.AUTH) {
           deleteGroup()
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.alert_title_group_invitation_expired), generalGetString(MR.strings.alert_message_group_invitation_expired))
@@ -1367,7 +1367,7 @@ object ChatController {
     val prefs = contact.mergedPreferences.toPreferences().setAllowed(feature, param = param)
     val toContact = apiSetContactPrefs(rh, contact.contactId, prefs)
     if (toContact != null) {
-      chatModel.updateContact(toContact)
+      chatModel.updateContact(rh, toContact)
     }
   }
 
@@ -1509,26 +1509,26 @@ object ChatController {
     when (r) {
       is CR.NewContactConnection -> {
         if (active(r.user)) {
-          chatModel.updateContactConnection(r.connection)
+          chatModel.updateContactConnection(rhId, r.connection)
         }
       }
       is CR.ContactConnectionDeleted -> {
         if (active(r.user)) {
-          chatModel.removeChat(r.connection.id)
+          chatModel.removeChat(rhId, r.connection.id)
         }
       }
       is CR.ContactDeletedByContact -> {
         if (active(r.user) && r.contact.directOrUsed) {
-          chatModel.updateContact(r.contact)
+          chatModel.updateContact(rhId, r.contact)
         }
       }
       is CR.ContactConnected -> {
         if (active(r.user) && r.contact.directOrUsed) {
-          chatModel.updateContact(r.contact)
+          chatModel.updateContact(rhId, r.contact)
           val conn = r.contact.activeConn
           if (conn != null) {
             chatModel.dismissConnReqView(conn.id)
-            chatModel.removeChat(conn.id)
+            chatModel.removeChat(rhId, conn.id)
           }
         }
         if (r.contact.directOrUsed) {
@@ -1538,11 +1538,11 @@ object ChatController {
       }
       is CR.ContactConnecting -> {
         if (active(r.user) && r.contact.directOrUsed) {
-          chatModel.updateContact(r.contact)
+          chatModel.updateContact(rhId, r.contact)
           val conn = r.contact.activeConn
           if (conn != null) {
             chatModel.dismissConnReqView(conn.id)
-            chatModel.removeChat(conn.id)
+            chatModel.removeChat(rhId, conn.id)
           }
         }
       }
@@ -1550,31 +1550,31 @@ object ChatController {
         val contactRequest = r.contactRequest
         val cInfo = ChatInfo.ContactRequest(contactRequest)
         if (active(r.user)) {
-          if (chatModel.hasChat(contactRequest.id)) {
-            chatModel.updateChatInfo(cInfo)
+          if (chatModel.hasChat(rhId, contactRequest.id)) {
+            chatModel.updateChatInfo(rhId, cInfo)
           } else {
-            chatModel.addChat(Chat(chatInfo = cInfo, chatItems = listOf()))
+            chatModel.addChat(Chat(remoteHostId = rhId, chatInfo = cInfo, chatItems = listOf()))
           }
         }
         ntfManager.notifyContactRequestReceived(r.user, cInfo)
       }
       is CR.ContactUpdated -> {
-        if (active(r.user) && chatModel.hasChat(r.toContact.id)) {
+        if (active(r.user) && chatModel.hasChat(rhId, r.toContact.id)) {
           val cInfo = ChatInfo.Direct(r.toContact)
-          chatModel.updateChatInfo(cInfo)
+          chatModel.updateChatInfo(rhId, cInfo)
         }
       }
       is CR.GroupMemberUpdated -> {
         if (active(r.user)) {
-          chatModel.upsertGroupMember(r.groupInfo, r.toMember)
+          chatModel.upsertGroupMember(rhId, r.groupInfo, r.toMember)
         }
       }
       is CR.ContactsMerged -> {
-        if (active(r.user) && chatModel.hasChat(r.mergedContact.id)) {
+        if (active(r.user) && chatModel.hasChat(rhId, r.mergedContact.id)) {
           if (chatModel.chatId.value == r.mergedContact.id) {
             chatModel.chatId.value = r.intoContact.id
           }
-          chatModel.removeChat(r.mergedContact.id)
+          chatModel.removeChat(rhId, r.mergedContact.id)
         }
       }
       is CR.ContactsSubscribed -> updateContactsStatus(r.contactRefs, NetworkStatus.Connected())
@@ -1582,7 +1582,7 @@ object ChatController {
       is CR.ContactSubSummary -> {
         for (sub in r.contactSubscriptions) {
           if (active(r.user)) {
-            chatModel.updateContact(sub.contact)
+            chatModel.updateContact(rhId, sub.contact)
           }
           val err = sub.contactError
           if (err == null) {
@@ -1606,7 +1606,7 @@ object ChatController {
         val cInfo = r.chatItem.chatInfo
         val cItem = r.chatItem.chatItem
         if (active(r.user)) {
-          chatModel.addChatItem(cInfo, cItem)
+          chatModel.addChatItem(rhId, cInfo, cItem)
         } else if (cItem.isRcvNew && cInfo.ntfsEnabled) {
           chatModel.increaseUnreadCounter(r.user)
         }
@@ -1659,76 +1659,76 @@ object ChatController {
           )
         }
         if (r.toChatItem == null) {
-          chatModel.removeChatItem(cInfo, cItem)
+          chatModel.removeChatItem(rhId, cInfo, cItem)
         } else {
-          chatModel.upsertChatItem(cInfo, r.toChatItem.chatItem)
+          chatModel.upsertChatItem(rhId, cInfo, r.toChatItem.chatItem)
         }
       }
       is CR.ReceivedGroupInvitation -> {
         if (active(r.user)) {
-          chatModel.updateGroup(r.groupInfo) // update so that repeat group invitations are not duplicated
+          chatModel.updateGroup(rhId, r.groupInfo) // update so that repeat group invitations are not duplicated
           // TODO NtfManager.shared.notifyGroupInvitation
         }
       }
       is CR.UserAcceptedGroupSent -> {
         if (!active(r.user)) return
 
-        chatModel.updateGroup(r.groupInfo)
+        chatModel.updateGroup(rhId, r.groupInfo)
         val conn = r.hostContact?.activeConn
         if (conn != null) {
           chatModel.dismissConnReqView(conn.id)
-          chatModel.removeChat(conn.id)
+          chatModel.removeChat(rhId, conn.id)
         }
       }
       is CR.GroupLinkConnecting -> {
         if (!active(r.user)) return
 
-        chatModel.updateGroup(r.groupInfo)
+        chatModel.updateGroup(rhId, r.groupInfo)
         val hostConn = r.hostMember.activeConn
         if (hostConn != null) {
           chatModel.dismissConnReqView(hostConn.id)
-          chatModel.removeChat(hostConn.id)
+          chatModel.removeChat(rhId, hostConn.id)
         }
       }
       is CR.JoinedGroupMemberConnecting ->
         if (active(r.user)) {
-          chatModel.upsertGroupMember(r.groupInfo, r.member)
+          chatModel.upsertGroupMember(rhId, r.groupInfo, r.member)
         }
       is CR.DeletedMemberUser -> // TODO update user member
         if (active(r.user)) {
-          chatModel.updateGroup(r.groupInfo)
+          chatModel.updateGroup(rhId, r.groupInfo)
         }
       is CR.DeletedMember ->
         if (active(r.user)) {
-          chatModel.upsertGroupMember(r.groupInfo, r.deletedMember)
+          chatModel.upsertGroupMember(rhId, r.groupInfo, r.deletedMember)
         }
       is CR.LeftMember ->
         if (active(r.user)) {
-          chatModel.upsertGroupMember(r.groupInfo, r.member)
+          chatModel.upsertGroupMember(rhId, r.groupInfo, r.member)
         }
       is CR.MemberRole ->
         if (active(r.user)) {
-          chatModel.upsertGroupMember(r.groupInfo, r.member)
+          chatModel.upsertGroupMember(rhId, r.groupInfo, r.member)
         }
       is CR.MemberRoleUser ->
         if (active(r.user)) {
-          chatModel.upsertGroupMember(r.groupInfo, r.member)
+          chatModel.upsertGroupMember(rhId, r.groupInfo, r.member)
         }
       is CR.GroupDeleted -> // TODO update user member
         if (active(r.user)) {
-          chatModel.updateGroup(r.groupInfo)
+          chatModel.updateGroup(rhId, r.groupInfo)
         }
       is CR.UserJoinedGroup ->
         if (active(r.user)) {
-          chatModel.updateGroup(r.groupInfo)
+          chatModel.updateGroup(rhId, r.groupInfo)
         }
       is CR.JoinedGroupMember ->
         if (active(r.user)) {
-          chatModel.upsertGroupMember(r.groupInfo, r.member)
+          chatModel.upsertGroupMember(rhId, r.groupInfo, r.member)
         }
       is CR.ConnectedToGroupMember -> {
         if (active(r.user)) {
-          chatModel.upsertGroupMember(r.groupInfo, r.member)
+          chatModel.upsertGroupMember(rhId, r.groupInfo, r.member)
         }
         if (r.memberContact != null) {
           chatModel.setContactNetworkStatus(r.memberContact, NetworkStatus.Connected())
@@ -1736,11 +1736,11 @@ object ChatController {
       }
       is CR.GroupUpdated ->
         if (active(r.user)) {
-          chatModel.updateGroup(r.toGroup)
+          chatModel.updateGroup(rhId, r.toGroup)
         }
       is CR.NewMemberContactReceivedInv ->
         if (active(r.user)) {
-          chatModel.updateContact(r.contact)
+          chatModel.updateContact(rhId, r.contact)
         }
       is CR.RcvFileStart ->
         chatItemSimpleUpdate(rhId, r.user, r.chatItem)
@@ -1822,13 +1822,13 @@ object ChatController {
         }
       }
       is CR.ContactSwitch ->
-        chatModel.updateContactConnectionStats(r.contact, r.switchProgress.connectionStats)
+        chatModel.updateContactConnectionStats(rhId, r.contact, r.switchProgress.connectionStats)
       is CR.GroupMemberSwitch ->
-        chatModel.updateGroupMemberConnectionStats(r.groupInfo, r.member, r.switchProgress.connectionStats)
+        chatModel.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.switchProgress.connectionStats)
       is CR.ContactRatchetSync ->
-        chatModel.updateContactConnectionStats(r.contact, r.ratchetSyncProgress.connectionStats)
+        chatModel.updateContactConnectionStats(rhId, r.contact, r.ratchetSyncProgress.connectionStats)
       is CR.GroupMemberRatchetSync ->
-        chatModel.updateGroupMemberConnectionStats(r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
+        chatModel.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
       is CR.RemoteHostSessionCode -> {
         chatModel.newRemoteHostPairing.value = r.remoteHost_ to RemoteHostSessionState.PendingConfirmation(r.sessionCode)
       }
@@ -1920,7 +1920,7 @@ object ChatController {
   suspend fun leaveGroup(rh: Long?, groupId: Long) {
     val groupInfo = apiLeaveGroup(rh, groupId)
     if (groupInfo != null) {
-      chatModel.updateGroup(groupInfo)
+      chatModel.updateGroup(rh, groupInfo)
     }
   }
 
@@ -1930,7 +1930,7 @@ object ChatController {
     val notify = { ntfManager.notifyMessageReceived(user, cInfo, cItem) }
     if (!activeUser(rh, user)) {
       notify()
-    } else if (chatModel.upsertChatItem(cInfo, cItem)) {
+    } else if (chatModel.upsertChatItem(rh, cInfo, cItem)) {
       notify()
     }
   }

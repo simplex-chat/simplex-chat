@@ -68,7 +68,7 @@ fun AddContactLayout(
       if (contactConnVal != null) {
         chatModel.controller.apiSetConnectionIncognito(rhId, contactConnVal.pccConnId, incognito.value)?.let {
           contactConnection.value = it
-          chatModel.updateContactConnection(it)
+          chatModel.updateContactConnection(rhId, it)
         }
       }
     }

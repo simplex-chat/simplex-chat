@@ -28,8 +28,8 @@ fun PreferencesView(m: ChatModel, user: User, close: () -> Unit,) {
       val updated = m.controller.apiUpdateProfile(user.remoteHostId, newProfile)
       if (updated != null) {
         val (updatedProfile, updatedContacts) = updated
-        m.updateCurrentUser(updatedProfile, preferences)
-        updatedContacts.forEach(m::updateContact)
+        m.updateCurrentUser(user.remoteHostId, updatedProfile, preferences)
+        updatedContacts.forEach { m.updateContact(user.remoteHostId, it) }
         currentPreferences = preferences
       }
       afterSave()

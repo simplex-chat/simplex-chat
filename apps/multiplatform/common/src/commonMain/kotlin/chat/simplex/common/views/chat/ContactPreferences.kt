@@ -39,7 +39,7 @@ fun ContactPreferencesView(
       val prefs = contactFeaturesAllowedToPrefs(featuresAllowed)
       val toContact = m.controller.apiSetContactPrefs(rhId, ct.contactId, prefs)
       if (toContact != null) {
-        m.updateContact(toContact)
+        m.updateContact(rhId, toContact)
         currentFeaturesAllowed = featuresAllowed
       }
       afterSave()

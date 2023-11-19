@@ -134,7 +134,7 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
       withApi {
         val r = chatModel.controller.apiDeleteChat(chat.remoteHostId, chatInfo.chatType, chatInfo.apiId)
         if (r) {
-          chatModel.removeChat(chatInfo.id)
+          chatModel.removeChat(chat.remoteHostId, chatInfo.id)
           if (chatModel.chatId.value == chatInfo.id) {
             chatModel.chatId.value = null
             ModalManager.end.closeModals()
@@ -172,7 +172,7 @@ private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMembe
       withApi {
         val updatedMember = chatModel.controller.apiRemoveMember(rhId, groupInfo.groupId, mem.groupMemberId)
         if (updatedMember != null) {
-          chatModel.upsertGroupMember(groupInfo, updatedMember)
+          chatModel.upsertGroupMember(rhId, groupInfo, updatedMember)
         }
       }
     },

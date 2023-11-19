@@ -110,7 +110,7 @@ fun GroupMemberInfoView(
           withApi {
             kotlin.runCatching {
               val mem = chatModel.controller.apiMemberRole(rhId, groupInfo.groupId, member.groupMemberId, it)
-              chatModel.upsertGroupMember(groupInfo, mem)
+              chatModel.upsertGroupMember(rhId, groupInfo, mem)
             }.onFailure {
               newRole.value = prevValue
             }
@@ -123,7 +123,7 @@ fun GroupMemberInfoView(
             val r = chatModel.controller.apiSwitchGroupMember(rhId, groupInfo.apiId, member.groupMemberId)
             if (r != null) {
               connStats.value = r.second
-              chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, r.second)
+              chatModel.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               close.invoke()
             }
           }
@@ -135,7 +135,7 @@ fun GroupMemberInfoView(
             val r = chatModel.controller.apiAbortSwitchGroupMember(rhId, groupInfo.apiId, member.groupMemberId)
             if (r != null) {
               connStats.value = r.second
-              chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, r.second)
+              chatModel.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               close.invoke()
             }
           }
@@ -146,7 +146,7 @@ fun GroupMemberInfoView(
           val r = chatModel.controller.apiSyncGroupMemberRatchet(rhId, groupInfo.apiId, member.groupMemberId, force = false)
           if (r != null) {
             connStats.value = r.second
-            chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, r.second)
+            chatModel.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
             close.invoke()
           }
         }
@@ -157,7 +157,7 @@ fun GroupMemberInfoView(
             val r = chatModel.controller.apiSyncGroupMemberRatchet(rhId, groupInfo.apiId, member.groupMemberId, force = true)
             if (r != null) {
               connStats.value = r.second
-              chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, r.second)
+              chatModel.updateGroupMemberConnectionStats(rhId, groupInfo, r.first, r.second)
               close.invoke()
             }
           }
@@ -174,6 +174,7 @@ fun GroupMemberInfoView(
                 chatModel.controller.apiVerifyGroupMember(rhId, mem.groupId, mem.groupMemberId, code)?.let { r ->
                   val (verified, existingCode) = r
                   chatModel.upsertGroupMember(
+                    rhId,
                     groupInfo,
                     mem.copy(
                       activeConn = mem.activeConn?.copy(
@@ -206,7 +207,7 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
       withApi {
         val removedMember = chatModel.controller.apiRemoveMember(rhId, member.groupId, member.groupMemberId)
         if (removedMember != null) {
-          chatModel.upsertGroupMember(groupInfo, removedMember)
+          chatModel.upsertGroupMember(rhId, groupInfo, removedMember)
         }
         close?.invoke()
       }
@@ -547,7 +548,7 @@ fun updateMemberSettings(rhId: Long?, gInfo: GroupInfo, member: GroupMember, mem
   withBGApi {
     val success = ChatController.apiSetMemberSettings(rhId, gInfo.groupId, member.groupMemberId, memberSettings)
     if (success) {
-      ChatModel.upsertGroupMember(gInfo, member.copy(memberSettings = memberSettings))
+      ChatModel.upsertGroupMember(rhId, gInfo, member.copy(memberSettings = memberSettings))
     }
   }
 }

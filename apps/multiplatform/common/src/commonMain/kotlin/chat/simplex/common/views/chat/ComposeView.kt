@@ -364,7 +364,7 @@ fun ComposeView(
       ttl = ttl
     )
     if (aChatItem != null) {
-      chatModel.addChatItem(cInfo, aChatItem.chatItem)
+      chatModel.addChatItem(chat.remoteHostId, cInfo, aChatItem.chatItem)
       return aChatItem.chatItem
     }
     if (file != null) removeFile(file.filePath)
@@ -413,7 +413,7 @@ fun ComposeView(
       val mc = checkLinkPreview()
       val contact = chatModel.controller.apiSendMemberContactInvitation(chat.remoteHostId, chat.chatInfo.apiId, mc)
       if (contact != null) {
-        chatModel.updateContact(contact)
+        chatModel.updateContact(chat.remoteHostId, contact)
       }
     }
 
@@ -429,7 +429,7 @@ fun ComposeView(
           mc = updateMsgContent(oldMsgContent),
           live = live
         )
-        if (updatedItem != null) chatModel.upsertChatItem(cInfo, updatedItem.chatItem)
+        if (updatedItem != null) chatModel.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
         return updatedItem?.chatItem
       }
       return null

@@ -44,7 +44,7 @@ fun GroupWelcomeView(m: ChatModel, rhId: Long?, groupInfo: GroupInfo, close: () 
       val res = m.controller.apiUpdateGroup(rhId, gInfo.groupId, groupProfileUpdated)
       if (res != null) {
         gInfo = res
-        m.updateGroup(res)
+        m.updateGroup(rhId, res)
         welcomeText.value = welcome ?: ""
       }
       afterSave()

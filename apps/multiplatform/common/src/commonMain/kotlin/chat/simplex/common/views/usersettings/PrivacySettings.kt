@@ -111,7 +111,7 @@ fun PrivacySettingsView(
                 val sendRcpts = contact.chatSettings.sendRcpts
                 if (sendRcpts != null && sendRcpts != enable) {
                   contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
-                  chatModel.updateContact(contact)
+                  chatModel.updateContact(currentUser.remoteHostId, contact)
                 }
               }
             }
@@ -134,7 +134,7 @@ fun PrivacySettingsView(
                 val sendRcpts = groupInfo.chatSettings.sendRcpts
                 if (sendRcpts != null && sendRcpts != enable) {
                   groupInfo = groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(sendRcpts = null))
-                  chatModel.updateGroup(groupInfo)
+                  chatModel.updateGroup(currentUser.remoteHostId, groupInfo)
                 }
               }
             }

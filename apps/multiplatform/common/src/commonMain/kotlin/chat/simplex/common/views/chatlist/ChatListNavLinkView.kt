@@ -473,7 +473,7 @@ fun markChatRead(c: Chat, chatModel: ChatModel) {
   withApi {
     if (chat.chatStats.unreadCount > 0) {
       val minUnreadItemId = chat.chatStats.minUnreadItemId
-      chatModel.markChatItemsRead(chat.chatInfo)
+      chatModel.markChatItemsRead(chat)
       chatModel.controller.apiChatRead(
         chat.remoteHostId,
         chat.chatInfo.chatType,
@@ -490,7 +490,7 @@ fun markChatRead(c: Chat, chatModel: ChatModel) {
         false
       )
       if (success) {
-        chatModel.replaceChat(chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
+        chatModel.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = false)))
       }
     }
   }
@@ -508,7 +508,7 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
       true
     )
     if (success) {
-      chatModel.replaceChat(chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
+      chatModel.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
     }
   }
 }
@@ -547,7 +547,7 @@ fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRe
     val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, apiId)
     if (contact != null && isCurrentUser && contactRequest != null) {
       val chat = Chat(remoteHostId = rhId, ChatInfo.Direct(contact), listOf())
-      chatModel.replaceChat(contactRequest.id, chat)
+      chatModel.replaceChat(rhId, contactRequest.id, chat)
     }
   }
 }
@@ -555,7 +555,7 @@ fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRe
 fun rejectContactRequest(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
   withApi {
     chatModel.controller.apiRejectContactRequest(rhId, contactRequest.apiId)
-    chatModel.removeChat(contactRequest.id)
+    chatModel.removeChat(rhId, contactRequest.id)
   }
 }
 
@@ -571,7 +571,7 @@ fun deleteContactConnectionAlert(rhId: Long?, connection: PendingContactConnecti
       withApi {
         AlertManager.shared.hideAlert()
         if (chatModel.controller.apiDeleteChat(rhId, ChatType.ContactConnection, connection.apiId)) {
-          chatModel.removeChat(connection.id)
+          chatModel.removeChat(rhId, connection.id)
           onSuccess()
         }
       }
@@ -590,7 +590,7 @@ fun pendingContactAlertDialog(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatMo
       withApi {
         val r = chatModel.controller.apiDeleteChat(rhId, chatInfo.chatType, chatInfo.apiId)
         if (r) {
-          chatModel.removeChat(chatInfo.id)
+          chatModel.removeChat(rhId, chatInfo.id)
           if (chatModel.chatId.value == chatInfo.id) {
             chatModel.chatId.value = null
             ModalManager.end.closeModals()
@@ -651,7 +651,7 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
 suspend fun connectContactViaAddress(chatModel: ChatModel, rhId: Long?, contactId: Long, incognito: Boolean): Boolean {
   val contact = chatModel.controller.apiConnectContactViaAddress(rhId, incognito, contactId)
   if (contact != null) {
-    chatModel.updateContact(contact)
+    chatModel.updateContact(rhId, contact)
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.connection_request_sent),
       text = generalGetString(MR.strings.you_will_be_connected_when_your_connection_request_is_accepted)
@@ -690,7 +690,7 @@ fun deleteGroup(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
   withApi {
     val r = chatModel.controller.apiDeleteChat(rhId, ChatType.Group, groupInfo.apiId)
     if (r) {
-      chatModel.removeChat(groupInfo.id)
+      chatModel.removeChat(rhId, groupInfo.id)
       if (chatModel.chatId.value == groupInfo.id) {
         chatModel.chatId.value = null
         ModalManager.end.closeModals()
@@ -738,7 +738,7 @@ fun updateChatSettings(chat: Chat, chatSettings: ChatSettings, chatModel: ChatMo
       else -> false
     }
     if (res && newChatInfo != null) {
-      chatModel.updateChatInfo(newChatInfo)
+      chatModel.updateChatInfo(chat.remoteHostId, newChatInfo)
       if (chatSettings.enableNtfs != MsgFilter.All) {
         ntfManager.cancelNotificationsForChat(chat.id)
       }

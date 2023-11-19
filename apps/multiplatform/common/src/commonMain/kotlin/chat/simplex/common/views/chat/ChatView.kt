@@ -261,9 +261,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             toChatItem = r?.toChatItem?.chatItem
           }
           if (toChatItem == null && deletedChatItem != null) {
-            chatModel.removeChatItem(cInfo, deletedChatItem)
+            chatModel.removeChatItem(chatRh, cInfo, deletedChatItem)
           } else if (toChatItem != null) {
-            chatModel.upsertChatItem(cInfo, toChatItem)
+            chatModel.upsertChatItem(chatRh, cInfo, toChatItem)
           }
         }
       },
@@ -281,7 +281,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               }
             }
             for (di in deletedItems) {
-              chatModel.removeChatItem(chatInfo, di)
+              chatModel.removeChatItem(chatRh, chatInfo, di)
             }
           }
         }
@@ -337,7 +337,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           if (r != null) {
             val contactStats = r.first
             if (contactStats != null)
-            chatModel.updateContactConnectionStats(contact, contactStats)
+            chatModel.updateContactConnectionStats(chatRh, contact, contactStats)
           }
         }
       },
@@ -347,7 +347,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           if (r != null) {
             val memStats = r.second
             if (memStats != null) {
-              chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, memStats)
+              chatModel.updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, memStats)
             }
           }
         }
@@ -356,7 +356,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         withApi {
           val cStats = chatModel.controller.apiSyncContactRatchet(chatRh, contact.contactId, force = false)
           if (cStats != null) {
-            chatModel.updateContactConnectionStats(contact, cStats)
+            chatModel.updateContactConnectionStats(chatRh, contact, cStats)
           }
         }
       },
@@ -364,7 +364,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         withApi {
           val r = chatModel.controller.apiSyncGroupMemberRatchet(chatRh, groupInfo.apiId, member.groupMemberId, force = false)
           if (r != null) {
-            chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, r.second)
+            chatModel.updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, r.second)
           }
         }
       },
@@ -426,7 +426,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         }
       },
       markRead = { range, unreadCountAfter ->
-        chatModel.markChatItemsRead(chat.chatInfo, range, unreadCountAfter)
+        chatModel.markChatItemsRead(chat, range, unreadCountAfter)
         ntfManager.cancelNotificationsForChat(chat.id)
         withBGApi {
           chatModel.controller.apiChatRead(
@@ -1258,15 +1258,16 @@ private fun markUnreadChatAsRead(activeChat: MutableState<Chat?>, chatModel: Cha
   val chat = activeChat.value
   if (chat?.chatStats?.unreadChat != true) return
   withApi {
+    val chatRh = chat.remoteHostId
     val success = chatModel.controller.apiChatUnread(
-      chat.remoteHostId,
+      chatRh,
       chat.chatInfo.chatType,
       chat.chatInfo.apiId,
       false
     )
     if (success && chat.id == activeChat.value?.id) {
       activeChat.value = chat.copy(chatStats = chat.chatStats.copy(unreadChat = false))
-      chatModel.replaceChat(chat.id, activeChat.value!!)
+      chatModel.replaceChat(chatRh, chat.id, activeChat.value!!)
     }
   }
 }
