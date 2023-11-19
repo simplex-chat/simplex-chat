@@ -33,7 +33,7 @@ import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 
 @Composable
-fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, chatModel: ChatModel, close: () -> Unit) {
+fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolean = false, chatModel: ChatModel, close: () -> Unit) {
   val selectedContacts = remember { mutableStateListOf<Long>() }
   val selectedRole = remember { mutableStateOf(GroupMemberRole.Member) }
   var allowModifyMembers by remember { mutableStateOf(true) }
@@ -49,14 +49,14 @@ fun AddGroupMembersView(groupInfo: GroupInfo, creatingGroup: Boolean = false, ch
     searchText,
     openPreferences = {
       ModalManager.end.showCustomModal { close ->
-        GroupPreferencesView(chatModel, groupInfo.id, close)
+        GroupPreferencesView(chatModel, rhId, groupInfo.id, close)
       }
     },
     inviteMembers = {
       allowModifyMembers = false
       withApi {
         for (contactId in selectedContacts) {
-          val member = chatModel.controller.apiAddMember(groupInfo.groupId, contactId, selectedRole.value)
+          val member = chatModel.controller.apiAddMember(rhId, groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {
             chatModel.upsertGroupMember(groupInfo, member)
           } else {

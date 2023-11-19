@@ -32,25 +32,25 @@ import kotlinx.coroutines.launch
 import java.net.URI
 
 @Composable
-fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
+fun AddGroupView(chatModel: ChatModel, rhId: Long?, close: () -> Unit) {
   AddGroupLayout(
     createGroup = { incognito, groupProfile ->
       withApi {
-        val groupInfo = chatModel.controller.apiNewGroup(incognito, groupProfile)
+        val groupInfo = chatModel.controller.apiNewGroup(rhId, incognito, groupProfile)
         if (groupInfo != null) {
           chatModel.addChat(Chat(chatInfo = ChatInfo.Group(groupInfo), chatItems = listOf()))
           chatModel.chatItems.clear()
           chatModel.chatItemStatuses.clear()
           chatModel.chatId.value = groupInfo.id
-          setGroupMembers(groupInfo, chatModel)
+          setGroupMembers(rhId, groupInfo, chatModel)
           close.invoke()
           if (!groupInfo.incognito) {
             ModalManager.end.showModalCloseable(true) { close ->
-              AddGroupMembersView(groupInfo, creatingGroup = true, chatModel, close)
+              AddGroupMembersView(rhId, groupInfo, creatingGroup = true, chatModel, close)
             }
           } else {
             ModalManager.end.showModalCloseable(true) { close ->
-              GroupLinkView(chatModel, groupInfo, connReqContact = null, memberRole = null, onGroupLinkUpdated = null, creatingGroup = true, close)
+              GroupLinkView(chatModel, rhId, groupInfo, connReqContact = null, memberRole = null, onGroupLinkUpdated = null, creatingGroup = true, close)
             }
           }
         }

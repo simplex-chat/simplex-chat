@@ -111,6 +111,7 @@ object ChatModel {
   // remote controller
   val remoteHosts = mutableStateListOf<RemoteHostInfo>()
   val currentRemoteHost = mutableStateOf<RemoteHostInfo?>(null)
+  val remoteHostId: Long? get() = currentRemoteHost?.value?.remoteHostId
   val newRemoteHostPairing = mutableStateOf<Pair<RemoteHostInfo?, RemoteHostSessionState>?>(null)
   val remoteCtrlSession = mutableStateOf<RemoteCtrlSession?>(null)
 
@@ -357,9 +358,9 @@ object ChatModel {
       profile = newProfile.toLocalProfile(current.profile.profileId),
       fullPreferences = preferences ?: current.fullPreferences
     )
-    val indexInUsers = users.indexOfFirst { it.user.userId == current.userId }
-    if (indexInUsers != -1) {
-      users[indexInUsers] = UserInfo(updated, users[indexInUsers].unreadCount)
+    val i = users.indexOfFirst { it.user.userId == current.userId }
+    if (i != -1) {
+      users[i] = users[i].copy(user = updated)
     }
     currentUser.value = updated
   }
@@ -448,7 +449,7 @@ object ChatModel {
   private fun changeUnreadCounter(user: UserLike, by: Int) {
     val i = users.indexOfFirst { it.user.userId == user.userId }
     if (i != -1) {
-      users[i] = UserInfo(users[i].user, users[i].unreadCount + by)
+      users[i] = users[i].copy(unreadCount = users[i].unreadCount + by)
     }
   }
 
@@ -612,6 +613,7 @@ enum class ChatType(val type: String) {
 
 @Serializable
 data class User(
+  val remoteHostId: Long? = null,
   override val userId: Long,
   val userContactId: Long,
   val localDisplayName: String,
@@ -711,9 +713,10 @@ interface SomeChat {
 
 @Serializable @Stable
 data class Chat (
+  val remoteHostId: Long? = null,
   val chatInfo: ChatInfo,
   val chatItems: List<ChatItem>,
-  val chatStats: ChatStats = ChatStats(),
+  val chatStats: ChatStats = ChatStats()
 ) {
   val userCanSend: Boolean
     get() = when (chatInfo) {

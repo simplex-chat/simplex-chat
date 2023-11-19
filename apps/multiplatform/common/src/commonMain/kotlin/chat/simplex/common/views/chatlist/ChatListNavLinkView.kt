@@ -62,7 +62,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
       val contactNetworkStatus = chatModel.contactNetworkStatus(chat.chatInfo.contact)
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, stopped, linkMode, inProgress = false, progressByTimeout = false) },
-        click = { directChatAction(chat.chatInfo.contact, chatModel) },
+        click = { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) },
         dropdownMenuItems = { ContactMenuItems(chat, chat.chatInfo.contact, chatModel, showMenu, showMarkRead) },
         showMenu,
         stopped,
@@ -72,7 +72,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     is ChatInfo.Group ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, stopped, linkMode, inProgress.value, progressByTimeout) },
-        click = { if (!inProgress.value) groupChatAction(chat.chatInfo.groupInfo, chatModel, inProgress) },
+        click = { if (!inProgress.value) groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel, inProgress) },
         dropdownMenuItems = { GroupMenuItems(chat, chat.chatInfo.groupInfo, chatModel, showMenu, inProgress, showMarkRead) },
         showMenu,
         stopped,
@@ -81,8 +81,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     is ChatInfo.ContactRequest ->
       ChatListNavLinkLayout(
         chatLinkPreview = { ContactRequestView(chat.chatInfo) },
-        click = { contactRequestAlertDialog(chat.chatInfo, chatModel) },
-        dropdownMenuItems = { ContactRequestMenuItems(chat.chatInfo, chatModel, showMenu) },
+        click = { contactRequestAlertDialog(chat.remoteHostId, chat.chatInfo, chatModel) },
+        dropdownMenuItems = { ContactRequestMenuItems(chat.remoteHostId, chat.chatInfo, chatModel, showMenu) },
         showMenu,
         stopped,
         selectedChat
@@ -94,10 +94,10 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
           ModalManager.center.closeModals()
           ModalManager.end.closeModals()
           ModalManager.center.showModalCloseable(true, showClose = appPlatform.isAndroid) { close ->
-            ContactConnectionInfoView(chatModel, chat.chatInfo.contactConnection.connReqInv, chat.chatInfo.contactConnection, false, close)
+            ContactConnectionInfoView(chatModel, chat.remoteHostId, chat.chatInfo.contactConnection.connReqInv, chat.chatInfo.contactConnection, false, close)
           }
         },
-        dropdownMenuItems = { ContactConnectionMenuItems(chat.chatInfo, chatModel, showMenu) },
+        dropdownMenuItems = { ContactConnectionMenuItems(chat.remoteHostId, chat.chatInfo, chatModel, showMenu) },
         showMenu,
         stopped,
         selectedChat
@@ -119,38 +119,38 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
   }
 }
 
-fun directChatAction(contact: Contact, chatModel: ChatModel) {
+fun directChatAction(rhId: Long?, contact: Contact, chatModel: ChatModel) {
   when {
-    contact.activeConn == null && contact.profile.contactLink != null -> askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, contact, close = null, openChat = true)
-    else -> withBGApi { openChat(ChatInfo.Direct(contact), chatModel) }
+    contact.activeConn == null && contact.profile.contactLink != null -> askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, rhId, contact, close = null, openChat = true)
+    else -> withBGApi { openChat(rhId, ChatInfo.Direct(contact), chatModel) }
   }
 }
 
-fun groupChatAction(groupInfo: GroupInfo, chatModel: ChatModel, inProgress: MutableState<Boolean>? = null) {
+fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, inProgress: MutableState<Boolean>? = null) {
   when (groupInfo.membership.memberStatus) {
-    GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(groupInfo, chatModel, inProgress)
+    GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(rhId, groupInfo, chatModel, inProgress)
     GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert()
-    else -> withBGApi { openChat(ChatInfo.Group(groupInfo), chatModel) }
+    else -> withBGApi { openChat(rhId, ChatInfo.Group(groupInfo), chatModel) }
   }
 }
 
-suspend fun openDirectChat(contactId: Long, chatModel: ChatModel) {
-  val chat = chatModel.controller.apiGetChat(ChatType.Direct, contactId)
+suspend fun openDirectChat(rhId: Long?, contactId: Long, chatModel: ChatModel) {
+  val chat = chatModel.controller.apiGetChat(rhId, ChatType.Direct, contactId)
   if (chat != null) {
     openLoadedChat(chat, chatModel)
   }
 }
 
-suspend fun openGroupChat(groupId: Long, chatModel: ChatModel) {
-  val chat = chatModel.controller.apiGetChat(ChatType.Group, groupId)
+suspend fun openGroupChat(rhId: Long?, groupId: Long, chatModel: ChatModel) {
+  val chat = chatModel.controller.apiGetChat(rhId, ChatType.Group, groupId)
   if (chat != null) {
     openLoadedChat(chat, chatModel)
   }
 }
 
-suspend fun openChat(chatInfo: ChatInfo, chatModel: ChatModel) {
+suspend fun openChat(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatModel) {
   Log.d(TAG, "TODOCHAT: openChat: opening ${chatInfo.id}, current chatId ${ChatModel.chatId.value}, size ${ChatModel.chatItems.size}")
-  val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId)
+  val chat = chatModel.controller.apiGetChat(rhId, chatInfo.chatType, chatInfo.apiId)
   if (chat != null) {
     openLoadedChat(chat, chatModel)
     Log.d(TAG, "TODOCHAT: openChat: opened ${chatInfo.id}, current chatId ${ChatModel.chatId.value}, size ${ChatModel.chatItems.size}")
@@ -164,22 +164,24 @@ fun openLoadedChat(chat: Chat, chatModel: ChatModel) {
   chatModel.chatId.value = chat.chatInfo.id
 }
 
-suspend fun apiLoadPrevMessages(chatInfo: ChatInfo, chatModel: ChatModel, beforeChatItemId: Long, search: String) {
+suspend fun apiLoadPrevMessages(ch: Chat, chatModel: ChatModel, beforeChatItemId: Long, search: String) {
+  val chatInfo = ch.chatInfo
   val pagination = ChatPagination.Before(beforeChatItemId, ChatPagination.PRELOAD_COUNT)
-  val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
+  val chat = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, pagination, search) ?: return
   if (chatModel.chatId.value != chat.id) return
   chatModel.chatItems.addAll(0, chat.chatItems)
 }
 
-suspend fun apiFindMessages(chatInfo: ChatInfo, chatModel: ChatModel, search: String) {
-  val chat = chatModel.controller.apiGetChat(chatInfo.chatType, chatInfo.apiId, search = search) ?: return
+suspend fun apiFindMessages(ch: Chat, chatModel: ChatModel, search: String) {
+  val chatInfo = ch.chatInfo
+  val chat = chatModel.controller.apiGetChat(ch.remoteHostId, chatInfo.chatType, chatInfo.apiId, search = search) ?: return
   if (chatModel.chatId.value != chat.id) return
   chatModel.chatItems.clear()
   chatModel.chatItems.addAll(0, chat.chatItems)
 }
 
-suspend fun setGroupMembers(groupInfo: GroupInfo, chatModel: ChatModel) {
-  val groupMembers = chatModel.controller.apiListMembers(groupInfo.groupId)
+suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
+  val groupMembers = chatModel.controller.apiListMembers(rhId, groupInfo.groupId)
   val currentMembers = chatModel.groupMembers
   val newMembers = groupMembers.map { newMember ->
     val currentMember = currentMembers.find { it.id == newMember.id }
@@ -230,7 +232,7 @@ fun GroupMenuItems(
     }
     GroupMemberStatus.MemAccepted -> {
       if (groupInfo.membership.memberCurrent) {
-        LeaveGroupAction(groupInfo, chatModel, showMenu)
+        LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
       if (groupInfo.canDelete) {
         DeleteGroupAction(chat, groupInfo, chatModel, showMenu)
@@ -246,7 +248,7 @@ fun GroupMenuItems(
       ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
       ClearChatAction(chat, chatModel, showMenu)
       if (groupInfo.membership.memberCurrent) {
-        LeaveGroupAction(groupInfo, chatModel, showMenu)
+        LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
       if (groupInfo.canDelete) {
         DeleteGroupAction(chat, groupInfo, chatModel, showMenu)
@@ -310,7 +312,7 @@ fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boo
     stringResource(MR.strings.clear_chat_menu_action),
     painterResource(MR.images.ic_settings_backup_restore),
     onClick = {
-      clearChatDialog(chat.chatInfo, chatModel)
+      clearChatDialog(chat, chatModel)
       showMenu.value = false
     },
     color = WarningOrange
@@ -323,7 +325,7 @@ fun DeleteContactAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState
     stringResource(MR.strings.delete_contact_menu_action),
     painterResource(MR.images.ic_delete),
     onClick = {
-      deleteContactDialog(chat.chatInfo, chatModel)
+      deleteContactDialog(chat, chatModel)
       showMenu.value = false
     },
     color = Color.Red
@@ -336,7 +338,7 @@ fun DeleteGroupAction(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, sh
     stringResource(MR.strings.delete_group_menu_action),
     painterResource(MR.images.ic_delete),
     onClick = {
-      deleteGroupDialog(chat.chatInfo, groupInfo, chatModel)
+      deleteGroupDialog(chat, groupInfo, chatModel)
       showMenu.value = false
     },
     color = Color.Red
@@ -354,7 +356,7 @@ fun JoinGroupAction(
   val joinGroup: () -> Unit = {
     withApi {
       inProgress.value = true
-      chatModel.controller.apiJoinGroup(groupInfo.groupId)
+      chatModel.controller.apiJoinGroup(chat.remoteHostId, groupInfo.groupId)
       inProgress.value = false
     }
   }
@@ -370,12 +372,12 @@ fun JoinGroupAction(
 }
 
 @Composable
-fun LeaveGroupAction(groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun LeaveGroupAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.leave_group_button),
     painterResource(MR.images.ic_logout),
     onClick = {
-      leaveGroupDialog(groupInfo, chatModel)
+      leaveGroupDialog(rhId, groupInfo, chatModel)
       showMenu.value = false
     },
     color = Color.Red
@@ -383,13 +385,13 @@ fun LeaveGroupAction(groupInfo: GroupInfo, chatModel: ChatModel, showMenu: Mutab
 }
 
 @Composable
-fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun ContactRequestMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactRequest, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.accept_contact_button),
     painterResource(MR.images.ic_check),
     color = MaterialTheme.colors.onBackground,
     onClick = {
-      acceptContactRequest(incognito = false, chatInfo.apiId, chatInfo, true, chatModel)
+      acceptContactRequest(rhId, incognito = false, chatInfo.apiId, chatInfo, true, chatModel)
       showMenu.value = false
     }
   )
@@ -398,7 +400,7 @@ fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatMo
     painterResource(MR.images.ic_theater_comedy),
     color = MaterialTheme.colors.onBackground,
     onClick = {
-      acceptContactRequest(incognito = true, chatInfo.apiId, chatInfo, true, chatModel)
+      acceptContactRequest(rhId, incognito = true, chatInfo.apiId, chatInfo, true, chatModel)
       showMenu.value = false
     }
   )
@@ -406,7 +408,7 @@ fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatMo
     stringResource(MR.strings.reject_contact_button),
     painterResource(MR.images.ic_close),
     onClick = {
-      rejectContactRequest(chatInfo, chatModel)
+      rejectContactRequest(rhId, chatInfo, chatModel)
       showMenu.value = false
     },
     color = Color.Red
@@ -414,7 +416,7 @@ fun ContactRequestMenuItems(chatInfo: ChatInfo.ContactRequest, chatModel: ChatMo
 }
 
 @Composable
-fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.set_contact_name),
     painterResource(MR.images.ic_edit),
@@ -422,7 +424,7 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
       ModalManager.center.closeModals()
       ModalManager.end.closeModals()
       ModalManager.center.showModalCloseable(true, showClose = appPlatform.isAndroid) { close ->
-        ContactConnectionInfoView(chatModel, chatInfo.contactConnection.connReqInv, chatInfo.contactConnection, true, close)
+        ContactConnectionInfoView(chatModel, rhId, chatInfo.contactConnection.connReqInv, chatInfo.contactConnection, true, close)
       }
       showMenu.value = false
     },
@@ -431,7 +433,7 @@ fun ContactConnectionMenuItems(chatInfo: ChatInfo.ContactConnection, chatModel: 
     stringResource(MR.strings.delete_verb),
     painterResource(MR.images.ic_delete),
     onClick = {
-      deleteContactConnectionAlert(chatInfo.contactConnection, chatModel) {
+      deleteContactConnectionAlert(rhId, chatInfo.contactConnection, chatModel) {
         if (chatModel.chatId.value == null) {
           ModalManager.center.closeModals()
           ModalManager.end.closeModals()
@@ -473,6 +475,7 @@ fun markChatRead(c: Chat, chatModel: ChatModel) {
       val minUnreadItemId = chat.chatStats.minUnreadItemId
       chatModel.markChatItemsRead(chat.chatInfo)
       chatModel.controller.apiChatRead(
+        chat.remoteHostId,
         chat.chatInfo.chatType,
         chat.chatInfo.apiId,
         CC.ItemRange(minUnreadItemId, chat.chatItems.last().id)
@@ -481,6 +484,7 @@ fun markChatRead(c: Chat, chatModel: ChatModel) {
     }
     if (chat.chatStats.unreadChat) {
       val success = chatModel.controller.apiChatUnread(
+        chat.remoteHostId,
         chat.chatInfo.chatType,
         chat.chatInfo.apiId,
         false
@@ -498,6 +502,7 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
 
   withApi {
     val success = chatModel.controller.apiChatUnread(
+      chat.remoteHostId,
       chat.chatInfo.chatType,
       chat.chatInfo.apiId,
       true
@@ -508,7 +513,7 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
   }
 }
 
-fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
+fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.accept_connection_request__question),
     text = AnnotatedString(generalGetString(MR.strings.if_you_choose_to_reject_the_sender_will_not_be_notified)),
@@ -516,19 +521,19 @@ fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel
       Column {
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptContactRequest(incognito = false, contactRequest.apiId, contactRequest, true, chatModel)
+          acceptContactRequest(rhId, incognito = false, contactRequest.apiId, contactRequest, true, chatModel)
         }) {
           Text(generalGetString(MR.strings.accept_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptContactRequest(incognito = true, contactRequest.apiId, contactRequest, true, chatModel)
+          acceptContactRequest(rhId, incognito = true, contactRequest.apiId, contactRequest, true, chatModel)
         }) {
           Text(generalGetString(MR.strings.accept_contact_incognito_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
-          rejectContactRequest(contactRequest, chatModel)
+          rejectContactRequest(rhId, contactRequest, chatModel)
         }) {
           Text(generalGetString(MR.strings.reject_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
         }
@@ -537,24 +542,24 @@ fun contactRequestAlertDialog(contactRequest: ChatInfo.ContactRequest, chatModel
   )
 }
 
-fun acceptContactRequest(incognito: Boolean, apiId: Long, contactRequest: ChatInfo.ContactRequest?, isCurrentUser: Boolean, chatModel: ChatModel) {
+fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRequest: ChatInfo.ContactRequest?, isCurrentUser: Boolean, chatModel: ChatModel) {
   withApi {
-    val contact = chatModel.controller.apiAcceptContactRequest(incognito, apiId)
+    val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, apiId)
     if (contact != null && isCurrentUser && contactRequest != null) {
-      val chat = Chat(ChatInfo.Direct(contact), listOf())
+      val chat = Chat(remoteHostId = rhId, ChatInfo.Direct(contact), listOf())
       chatModel.replaceChat(contactRequest.id, chat)
     }
   }
 }
 
-fun rejectContactRequest(contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
+fun rejectContactRequest(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
   withApi {
-    chatModel.controller.apiRejectContactRequest(contactRequest.apiId)
+    chatModel.controller.apiRejectContactRequest(rhId, contactRequest.apiId)
     chatModel.removeChat(contactRequest.id)
   }
 }
 
-fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel: ChatModel, onSuccess: () -> Unit) {
+fun deleteContactConnectionAlert(rhId: Long?, connection: PendingContactConnection, chatModel: ChatModel, onSuccess: () -> Unit) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.delete_pending_connection__question),
     text = generalGetString(
@@ -565,7 +570,7 @@ fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel
     onConfirm = {
       withApi {
         AlertManager.shared.hideAlert()
-        if (chatModel.controller.apiDeleteChat(ChatType.ContactConnection, connection.apiId)) {
+        if (chatModel.controller.apiDeleteChat(rhId, ChatType.ContactConnection, connection.apiId)) {
           chatModel.removeChat(connection.id)
           onSuccess()
         }
@@ -575,14 +580,15 @@ fun deleteContactConnectionAlert(connection: PendingContactConnection, chatModel
   )
 }
 
-fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
+// TODO why is it not used
+fun pendingContactAlertDialog(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatModel) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.alert_title_contact_connection_pending),
     text = generalGetString(MR.strings.alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry),
     confirmText = generalGetString(MR.strings.button_delete_contact),
     onConfirm = {
       withApi {
-        val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
+        val r = chatModel.controller.apiDeleteChat(rhId, chatInfo.chatType, chatInfo.apiId)
         if (r) {
           chatModel.removeChat(chatInfo.id)
           if (chatModel.chatId.value == chatInfo.id) {
@@ -599,6 +605,7 @@ fun pendingContactAlertDialog(chatInfo: ChatInfo, chatModel: ChatModel) {
 
 fun askCurrentOrIncognitoProfileConnectContactViaAddress(
   chatModel: ChatModel,
+  rhId: Long?,
   contact: Contact,
   close: (() -> Unit)?,
   openChat: Boolean
@@ -611,9 +618,9 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
           AlertManager.shared.hideAlert()
           withApi {
             close?.invoke()
-            val ok = connectContactViaAddress(chatModel, contact.contactId, incognito = false)
+            val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = false)
             if (ok && openChat) {
-              openDirectChat(contact.contactId, chatModel)
+              openDirectChat(rhId, contact.contactId, chatModel)
             }
           }
         }) {
@@ -623,9 +630,9 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
           AlertManager.shared.hideAlert()
           withApi {
             close?.invoke()
-            val ok = connectContactViaAddress(chatModel, contact.contactId, incognito = true)
+            val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = true)
             if (ok && openChat) {
-              openDirectChat(contact.contactId, chatModel)
+              openDirectChat(rhId, contact.contactId, chatModel)
             }
           }
         }) {
@@ -641,8 +648,8 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
   )
 }
 
-suspend fun connectContactViaAddress(chatModel: ChatModel, contactId: Long, incognito: Boolean): Boolean {
-  val contact = chatModel.controller.apiConnectContactViaAddress(incognito, contactId)
+suspend fun connectContactViaAddress(chatModel: ChatModel, rhId: Long?, contactId: Long, incognito: Boolean): Boolean {
+  val contact = chatModel.controller.apiConnectContactViaAddress(rhId, incognito, contactId)
   if (contact != null) {
     chatModel.updateContact(contact)
     AlertManager.shared.showAlertMsg(
@@ -654,7 +661,7 @@ suspend fun connectContactViaAddress(chatModel: ChatModel, contactId: Long, inco
   return false
 }
 
-fun acceptGroupInvitationAlertDialog(groupInfo: GroupInfo, chatModel: ChatModel, inProgress: MutableState<Boolean>? = null) {
+fun acceptGroupInvitationAlertDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, inProgress: MutableState<Boolean>? = null) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.join_group_question),
     text = generalGetString(MR.strings.you_are_invited_to_group_join_to_connect_with_group_members),
@@ -662,12 +669,12 @@ fun acceptGroupInvitationAlertDialog(groupInfo: GroupInfo, chatModel: ChatModel,
     onConfirm = {
       withApi {
         inProgress?.value = true
-        chatModel.controller.apiJoinGroup(groupInfo.groupId)
+        chatModel.controller.apiJoinGroup(rhId, groupInfo.groupId)
         inProgress?.value = false
       }
     },
     dismissText = generalGetString(MR.strings.delete_verb),
-    onDismiss = { deleteGroup(groupInfo, chatModel) }
+    onDismiss = { deleteGroup(rhId, groupInfo, chatModel) }
   )
 }
 
@@ -679,9 +686,9 @@ fun cantInviteIncognitoAlert() {
   )
 }
 
-fun deleteGroup(groupInfo: GroupInfo, chatModel: ChatModel) {
+fun deleteGroup(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
   withApi {
-    val r = chatModel.controller.apiDeleteChat(ChatType.Group, groupInfo.apiId)
+    val r = chatModel.controller.apiDeleteChat(rhId, ChatType.Group, groupInfo.apiId)
     if (r) {
       chatModel.removeChat(groupInfo.id)
       if (chatModel.chatId.value == groupInfo.id) {
@@ -723,10 +730,10 @@ fun updateChatSettings(chat: Chat, chatSettings: ChatSettings, chatModel: ChatMo
   withApi {
     val res = when (newChatInfo) {
       is ChatInfo.Direct -> with(newChatInfo) {
-        chatModel.controller.apiSetSettings(chatType, apiId, contact.chatSettings)
+        chatModel.controller.apiSetSettings(chat.remoteHostId, chatType, apiId, contact.chatSettings)
       }
       is ChatInfo.Group -> with(newChatInfo) {
-        chatModel.controller.apiSetSettings(chatType, apiId, groupInfo.chatSettings)
+        chatModel.controller.apiSetSettings(chat.remoteHostId, chatType, apiId, groupInfo.chatSettings)
       }
       else -> false
     }

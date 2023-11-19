@@ -99,7 +99,7 @@ fun PrivacySettingsView(
       fun setSendReceiptsContacts(enable: Boolean, clearOverrides: Boolean) {
         withApi {
           val mrs = UserMsgReceiptSettings(enable, clearOverrides)
-          chatModel.controller.apiSetUserContactReceipts(currentUser.userId, mrs)
+          chatModel.controller.apiSetUserContactReceipts(currentUser, mrs)
           chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
           chatModel.currentUser.value = currentUser.copy(sendRcptsContacts = enable)
           if (clearOverrides) {
@@ -122,7 +122,7 @@ fun PrivacySettingsView(
       fun setSendReceiptsGroups(enable: Boolean, clearOverrides: Boolean) {
         withApi {
           val mrs = UserMsgReceiptSettings(enable, clearOverrides)
-          chatModel.controller.apiSetUserGroupReceipts(currentUser.userId, mrs)
+          chatModel.controller.apiSetUserGroupReceipts(currentUser, mrs)
           chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
           chatModel.currentUser.value = currentUser.copy(sendRcptsSmallGroups = enable)
           if (clearOverrides) {

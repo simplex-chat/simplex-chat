@@ -351,9 +351,10 @@ fun ComposeView(
     }
   }
 
-  suspend fun send(rhId: Long?, cInfo: ChatInfo, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?): ChatItem? {
+  suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?): ChatItem? {
+    val cInfo = chat.chatInfo
     val aChatItem = chatModel.controller.apiSendMessage(
-      rhId = rhId,
+      rh = chat.remoteHostId,
       type = cInfo.chatType,
       id = cInfo.apiId,
       file = file,
@@ -410,16 +411,18 @@ fun ComposeView(
 
     suspend fun sendMemberContactInvitation() {
       val mc = checkLinkPreview()
-      val contact = chatModel.controller.apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
+      val contact = chatModel.controller.apiSendMemberContactInvitation(chat.remoteHostId, chat.chatInfo.apiId, mc)
       if (contact != null) {
         chatModel.updateContact(contact)
       }
     }
 
-    suspend fun updateMessage(ei: ChatItem, cInfo: ChatInfo, live: Boolean): ChatItem? {
+    suspend fun updateMessage(ei: ChatItem, chat: Chat, live: Boolean): ChatItem? {
+      val cInfo = chat.chatInfo
       val oldMsgContent = ei.content.msgContent
       if (oldMsgContent != null) {
         val updatedItem = chatModel.controller.apiUpdateChatItem(
+          rh = chat.remoteHostId,
           type = cInfo.chatType,
           id = cInfo.apiId,
           itemId = ei.meta.itemId,
@@ -444,9 +447,9 @@ fun ComposeView(
       sent = null
     } else if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem
-      sent = updateMessage(ei, cInfo, live)
+      sent = updateMessage(ei, chat, live)
     } else if (liveMessage != null && liveMessage.sent) {
-      sent = updateMessage(liveMessage.chatItem, cInfo, live)
+      sent = updateMessage(liveMessage.chatItem, chat, live)
     } else {
       val msgs: ArrayList<MsgContent> = ArrayList()
       val files: ArrayList<CryptoFile> = ArrayList()
@@ -528,7 +531,7 @@ fun ComposeView(
             localPath = file.filePath
           )
         }
-        sent = send(remoteHost?.remoteHostId, cInfo, content, if (index == 0) quotedItemId else null, file,
+        sent = send(chat, content, if (index == 0) quotedItemId else null, file,
           live = if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false,
           ttl = ttl
         )
@@ -538,7 +541,7 @@ fun ComposeView(
             cs.preview is ComposePreview.FilePreview ||
             cs.preview is ComposePreview.VoicePreview)
       ) {
-        sent = send(remoteHost?.remoteHostId, cInfo, MsgContent.MCText(msgText), quotedItemId, null, live, ttl)
+        sent = send(chat, MsgContent.MCText(msgText), quotedItemId, null, live, ttl)
       }
     }
     clearState(live)
@@ -573,7 +576,7 @@ fun ComposeView(
   fun allowVoiceToContact() {
     val contact = (chat.chatInfo as ChatInfo.Direct?)?.contact ?: return
     withApi {
-      chatModel.controller.allowFeatureToContact(contact, ChatFeature.Voice)
+      chatModel.controller.allowFeatureToContact(chat.remoteHostId, contact, ChatFeature.Voice)
     }
   }
 

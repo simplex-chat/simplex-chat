@@ -41,9 +41,10 @@ import kotlinx.coroutines.launch
 const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 
 @Composable
-fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit) {
+fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLink: String?, groupLinkMemberRole: GroupMemberRole?, onGroupLinkUpdated: (Pair<String, GroupMemberRole>?) -> Unit, close: () -> Unit) {
   BackHandler(onBack = close)
-  val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
+  // TODO derivedStateOf?
+  val chat = chatModel.chats.firstOrNull { ch -> ch.id == chatId && ch.remoteHostId == rhId }
   val currentUser = chatModel.currentUser.value
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null && chat.chatInfo is ChatInfo.Group && currentUser != null) {
@@ -68,25 +69,25 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberR
       groupLink,
       addMembers = {
         withApi {
-          setGroupMembers(groupInfo, chatModel)
+          setGroupMembers(rhId, groupInfo, chatModel)
           ModalManager.end.showModalCloseable(true) { close ->
-            AddGroupMembersView(groupInfo, false, chatModel, close)
+            AddGroupMembersView(rhId, groupInfo, false, chatModel, close)
           }
         }
       },
       showMemberInfo = { member ->
         withApi {
-          val r = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
+          val r = chatModel.controller.apiGroupMemberInfo(rhId, groupInfo.groupId, member.groupMemberId)
           val stats = r?.second
           val (_, code) = if (member.memberActive) {
-            val memCode = chatModel.controller.apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId)
+            val memCode = chatModel.controller.apiGetGroupMemberCode(rhId, groupInfo.apiId, member.groupMemberId)
             member to memCode?.second
           } else {
             member to null
           }
           ModalManager.end.showModalCloseable(true) { closeCurrent ->
             remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
-              GroupMemberInfoView(groupInfo, mem, stats, code, chatModel, closeCurrent) {
+              GroupMemberInfoView(rhId, groupInfo, mem, stats, code, chatModel, closeCurrent) {
                 closeCurrent()
                 close()
               }
@@ -95,31 +96,33 @@ fun GroupChatInfoView(chatModel: ChatModel, groupLink: String?, groupLinkMemberR
         }
       },
       editGroupProfile = {
-        ModalManager.end.showCustomModal { close -> GroupProfileView(groupInfo, chatModel, close) }
+        ModalManager.end.showCustomModal { close -> GroupProfileView(rhId, groupInfo, chatModel, close) }
       },
       addOrEditWelcomeMessage = {
-        ModalManager.end.showCustomModal { close -> GroupWelcomeView(chatModel, groupInfo, close) }
+        ModalManager.end.showCustomModal { close -> GroupWelcomeView(chatModel, rhId, groupInfo, close) }
       },
       openPreferences = {
         ModalManager.end.showCustomModal { close ->
           GroupPreferencesView(
             chatModel,
+            rhId,
             chat.id,
             close
           )
         }
       },
-      deleteGroup = { deleteGroupDialog(chat.chatInfo, groupInfo, chatModel, close) },
-      clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
-      leaveGroup = { leaveGroupDialog(groupInfo, chatModel, close) },
+      deleteGroup = { deleteGroupDialog(chat, groupInfo, chatModel, close) },
+      clearChat = { clearChatDialog(chat, chatModel, close) },
+      leaveGroup = { leaveGroupDialog(rhId, groupInfo, chatModel, close) },
       manageGroupLink = {
-          ModalManager.end.showModal { GroupLinkView(chatModel, groupInfo, groupLink, groupLinkMemberRole, onGroupLinkUpdated) }
+          ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, groupLinkMemberRole, onGroupLinkUpdated) }
       }
     )
   }
 }
 
-fun deleteGroupDialog(chatInfo: ChatInfo, groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  val chatInfo = chat.chatInfo
   val alertTextKey =
     if (groupInfo.membership.memberCurrent) MR.strings.delete_group_for_all_members_cannot_undo_warning
     else MR.strings.delete_group_for_self_cannot_undo_warning
@@ -129,7 +132,7 @@ fun deleteGroupDialog(chatInfo: ChatInfo, groupInfo: GroupInfo, chatModel: ChatM
     confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = {
       withApi {
-        val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId)
+        val r = chatModel.controller.apiDeleteChat(chat.remoteHostId, chatInfo.chatType, chatInfo.apiId)
         if (r) {
           chatModel.removeChat(chatInfo.id)
           if (chatModel.chatId.value == chatInfo.id) {
@@ -145,14 +148,14 @@ fun deleteGroupDialog(chatInfo: ChatInfo, groupInfo: GroupInfo, chatModel: ChatM
   )
 }
 
-fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.leave_group_question),
     text = generalGetString(MR.strings.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved),
     confirmText = generalGetString(MR.strings.leave_group_button),
     onConfirm = {
       withApi {
-        chatModel.controller.leaveGroup(groupInfo.groupId)
+        chatModel.controller.leaveGroup(rhId, groupInfo.groupId)
         close?.invoke()
       }
     },
@@ -160,14 +163,14 @@ fun leaveGroupDialog(groupInfo: GroupInfo, chatModel: ChatModel, close: (() -> U
   )
 }
 
-private fun removeMemberAlert(groupInfo: GroupInfo, mem: GroupMember) {
+private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMember) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.button_remove_member_question),
     text = generalGetString(MR.strings.member_will_be_removed_from_group_cannot_be_undone),
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
       withApi {
-        val updatedMember = chatModel.controller.apiRemoveMember(groupInfo.groupId, mem.groupMemberId)
+        val updatedMember = chatModel.controller.apiRemoveMember(rhId, groupInfo.groupId, mem.groupMemberId)
         if (updatedMember != null) {
           chatModel.upsertGroupMember(groupInfo, updatedMember)
         }
@@ -260,7 +263,7 @@ fun GroupChatInfoLayout(
       Divider()
       val showMenu = remember { mutableStateOf(false) }
       SectionItemViewLongClickable({ showMemberInfo(member) }, { showMenu.value = true }, minHeight = 54.dp) {
-        DropDownMenuForMember(member, groupInfo, showMenu)
+        DropDownMenuForMember(chat.remoteHostId, member, groupInfo, showMenu)
         MemberRow(member, onClick = { showMemberInfo(member) })
       }
     }
@@ -413,22 +416,22 @@ private fun MemberVerifiedShield() {
 }
 
 @Composable
-private fun DropDownMenuForMember(member: GroupMember, groupInfo: GroupInfo, showMenu: MutableState<Boolean>) {
+private fun DropDownMenuForMember(rhId: Long?, member: GroupMember, groupInfo: GroupInfo, showMenu: MutableState<Boolean>) {
   DefaultDropdownMenu(showMenu) {
     if (member.canBeRemoved(groupInfo)) {
       ItemAction(stringResource(MR.strings.remove_member_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
-        removeMemberAlert(groupInfo, member)
+        removeMemberAlert(rhId, groupInfo, member)
         showMenu.value = false
       })
     }
     if (member.memberSettings.showMessages) {
       ItemAction(stringResource(MR.strings.block_member_button), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, onClick = {
-        blockMemberAlert(groupInfo, member)
+        blockMemberAlert(rhId, groupInfo, member)
         showMenu.value = false
       })
     } else {
       ItemAction(stringResource(MR.strings.unblock_member_button), painterResource(MR.images.ic_do_not_touch), onClick = {
-        unblockMemberAlert(groupInfo, member)
+        unblockMemberAlert(rhId, groupInfo, member)
         showMenu.value = false
       })
     }

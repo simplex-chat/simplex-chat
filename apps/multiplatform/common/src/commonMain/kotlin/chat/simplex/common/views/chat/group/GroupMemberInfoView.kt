@@ -40,6 +40,7 @@ import kotlinx.datetime.Clock
 
 @Composable
 fun GroupMemberInfoView(
+  rhId: Long?,
   groupInfo: GroupInfo,
   member: GroupMember,
   connectionStats: ConnectionStats?,
@@ -49,7 +50,7 @@ fun GroupMemberInfoView(
   closeAll: () -> Unit, // Close all open windows up to ChatView
 ) {
   BackHandler(onBack = close)
-  val chat = chatModel.chats.firstOrNull { it.id == chatModel.chatId.value }
+  val chat = chatModel.chats.firstOrNull { ch -> ch.id == chatModel.chatId.value && ch.remoteHostId == rhId }
   val connStats = remember { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   var progressIndicator by remember { mutableStateOf(false) }
@@ -66,7 +67,7 @@ fun GroupMemberInfoView(
       getContactChat = { chatModel.getContactChat(it) },
       openDirectChat = {
         withApi {
-          val c = chatModel.controller.apiGetChat(ChatType.Direct, it)
+          val c = chatModel.controller.apiGetChat(rhId, ChatType.Direct, it)
           if (c != null) {
             if (chatModel.getContactChat(it) == null) {
               chatModel.addChat(c)
@@ -82,9 +83,9 @@ fun GroupMemberInfoView(
       createMemberContact = {
         withApi {
           progressIndicator = true
-          val memberContact = chatModel.controller.apiCreateMemberContact(groupInfo.apiId, member.groupMemberId)
+          val memberContact = chatModel.controller.apiCreateMemberContact(rhId, groupInfo.apiId, member.groupMemberId)
           if (memberContact != null) {
-            val memberChat = Chat(ChatInfo.Direct(memberContact), chatItems = arrayListOf())
+            val memberChat = Chat(remoteHostId = rhId, ChatInfo.Direct(memberContact), chatItems = arrayListOf())
             chatModel.addChat(memberChat)
             openLoadedChat(memberChat, chatModel)
             closeAll()
@@ -94,11 +95,11 @@ fun GroupMemberInfoView(
         }
       },
       connectViaAddress = { connReqUri ->
-        connectViaMemberAddressAlert(connReqUri)
+        connectViaMemberAddressAlert(rhId, connReqUri)
       },
-      blockMember = { blockMemberAlert(groupInfo, member) },
-      unblockMember = { unblockMemberAlert(groupInfo, member) },
-      removeMember = { removeMemberDialog(groupInfo, member, chatModel, close) },
+      blockMember = { blockMemberAlert(rhId, groupInfo, member) },
+      unblockMember = { unblockMemberAlert(rhId, groupInfo, member) },
+      removeMember = { removeMemberDialog(rhId, groupInfo, member, chatModel, close) },
       onRoleSelected = {
         if (it == newRole.value) return@GroupMemberInfoLayout
         val prevValue = newRole.value
@@ -108,7 +109,7 @@ fun GroupMemberInfoView(
         }) {
           withApi {
             kotlin.runCatching {
-              val mem = chatModel.controller.apiMemberRole(groupInfo.groupId, member.groupMemberId, it)
+              val mem = chatModel.controller.apiMemberRole(rhId, groupInfo.groupId, member.groupMemberId, it)
               chatModel.upsertGroupMember(groupInfo, mem)
             }.onFailure {
               newRole.value = prevValue
@@ -119,7 +120,7 @@ fun GroupMemberInfoView(
       switchMemberAddress = {
         showSwitchAddressAlert(switchAddress = {
           withApi {
-            val r = chatModel.controller.apiSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+            val r = chatModel.controller.apiSwitchGroupMember(rhId, groupInfo.apiId, member.groupMemberId)
             if (r != null) {
               connStats.value = r.second
               chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, r.second)
@@ -131,7 +132,7 @@ fun GroupMemberInfoView(
       abortSwitchMemberAddress = {
         showAbortSwitchAddressAlert(abortSwitchAddress = {
           withApi {
-            val r = chatModel.controller.apiAbortSwitchGroupMember(groupInfo.apiId, member.groupMemberId)
+            val r = chatModel.controller.apiAbortSwitchGroupMember(rhId, groupInfo.apiId, member.groupMemberId)
             if (r != null) {
               connStats.value = r.second
               chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, r.second)
@@ -142,7 +143,7 @@ fun GroupMemberInfoView(
       },
       syncMemberConnection = {
         withApi {
-          val r = chatModel.controller.apiSyncGroupMemberRatchet(groupInfo.apiId, member.groupMemberId, force = false)
+          val r = chatModel.controller.apiSyncGroupMemberRatchet(rhId, groupInfo.apiId, member.groupMemberId, force = false)
           if (r != null) {
             connStats.value = r.second
             chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, r.second)
@@ -153,7 +154,7 @@ fun GroupMemberInfoView(
       syncMemberConnectionForce = {
         showSyncConnectionForceAlert(syncConnectionForce = {
           withApi {
-            val r = chatModel.controller.apiSyncGroupMemberRatchet(groupInfo.apiId, member.groupMemberId, force = true)
+            val r = chatModel.controller.apiSyncGroupMemberRatchet(rhId, groupInfo.apiId, member.groupMemberId, force = true)
             if (r != null) {
               connStats.value = r.second
               chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, r.second)
@@ -170,7 +171,7 @@ fun GroupMemberInfoView(
               connectionCode,
               mem.verified,
               verify = { code ->
-                chatModel.controller.apiVerifyGroupMember(mem.groupId, mem.groupMemberId, code)?.let { r ->
+                chatModel.controller.apiVerifyGroupMember(rhId, mem.groupId, mem.groupMemberId, code)?.let { r ->
                   val (verified, existingCode) = r
                   chatModel.upsertGroupMember(
                     groupInfo,
@@ -196,14 +197,14 @@ fun GroupMemberInfoView(
   }
 }
 
-fun removeMemberDialog(groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.button_remove_member),
     text = generalGetString(MR.strings.member_will_be_removed_from_group_cannot_be_undone),
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
       withApi {
-        val removedMember = chatModel.controller.apiRemoveMember(member.groupId, member.groupMemberId)
+        val removedMember = chatModel.controller.apiRemoveMember(rhId, member.groupId, member.groupMemberId)
         if (removedMember != null) {
           chatModel.upsertGroupMember(groupInfo, removedMember)
         }
@@ -500,11 +501,11 @@ private fun updateMemberRoleDialog(
   )
 }
 
-fun connectViaMemberAddressAlert(connReqUri: String) {
+fun connectViaMemberAddressAlert(rhId: Long?, connReqUri: String) {
   try {
     val uri = URI(connReqUri)
     withApi {
-      planAndConnect(chatModel, uri, incognito = null, close = { ModalManager.closeAllModalsEverywhere() })
+      planAndConnect(chatModel, rhId, uri, incognito = null, close = { ModalManager.closeAllModalsEverywhere() })
     }
   } catch (e: RuntimeException) {
     AlertManager.shared.showAlertMsg(
@@ -514,37 +515,37 @@ fun connectViaMemberAddressAlert(connReqUri: String) {
   }
 }
 
-fun blockMemberAlert(gInfo: GroupInfo, mem: GroupMember) {
+fun blockMemberAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.block_member_question),
     text = generalGetString(MR.strings.block_member_desc).format(mem.chatViewName),
     confirmText = generalGetString(MR.strings.block_member_confirmation),
     onConfirm = {
-      toggleShowMemberMessages(gInfo, mem, false)
+      toggleShowMemberMessages(rhId, gInfo, mem, false)
     },
     destructive = true,
   )
 }
 
-fun unblockMemberAlert(gInfo: GroupInfo, mem: GroupMember) {
+fun unblockMemberAlert(rhId: Long?, gInfo: GroupInfo, mem: GroupMember) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.unblock_member_question),
     text = generalGetString(MR.strings.unblock_member_desc).format(mem.chatViewName),
     confirmText = generalGetString(MR.strings.unblock_member_confirmation),
     onConfirm = {
-      toggleShowMemberMessages(gInfo, mem, true)
+      toggleShowMemberMessages(rhId, gInfo, mem, true)
     },
   )
 }
 
-fun toggleShowMemberMessages(gInfo: GroupInfo, member: GroupMember, showMessages: Boolean) {
+fun toggleShowMemberMessages(rhId: Long?, gInfo: GroupInfo, member: GroupMember, showMessages: Boolean) {
   val updatedMemberSettings = member.memberSettings.copy(showMessages = showMessages)
-  updateMemberSettings(gInfo, member, updatedMemberSettings)
+  updateMemberSettings(rhId, gInfo, member, updatedMemberSettings)
 }
 
-fun updateMemberSettings(gInfo: GroupInfo, member: GroupMember, memberSettings: GroupMemberSettings) {
+fun updateMemberSettings(rhId: Long?, gInfo: GroupInfo, member: GroupMember, memberSettings: GroupMemberSettings) {
   withBGApi {
-    val success = ChatController.apiSetMemberSettings(gInfo.groupId, member.groupMemberId, memberSettings)
+    val success = ChatController.apiSetMemberSettings(rhId, gInfo.groupId, member.groupMemberId, memberSettings)
     if (success) {
       ChatModel.upsertGroupMember(gInfo, member.copy(memberSettings = memberSettings))
     }

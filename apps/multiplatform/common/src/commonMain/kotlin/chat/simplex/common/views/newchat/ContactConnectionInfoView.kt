@@ -30,6 +30,7 @@ import chat.simplex.res.MR
 @Composable
 fun ContactConnectionInfoView(
   chatModel: ChatModel,
+  rhId: Long?,
   connReqInvitation: String?,
   contactConnection: PendingContactConnection,
   focusAlias: Boolean,
@@ -55,8 +56,8 @@ fun ContactConnectionInfoView(
     connReq = connReqInvitation,
     contactConnection = contactConnection,
     focusAlias = focusAlias,
-    deleteConnection = { deleteContactConnectionAlert(contactConnection, chatModel, close) },
-    onLocalAliasChanged = { setContactAlias(contactConnection, it, chatModel) },
+    deleteConnection = { deleteContactConnectionAlert(rhId, contactConnection, chatModel, close) },
+    onLocalAliasChanged = { setContactAlias(rhId, contactConnection, it, chatModel) },
     share = { if (connReqInvitation != null) clipboard.shareText(connReqInvitation) },
     learnMore = {
       ModalManager.center.showModal {
@@ -165,8 +166,8 @@ fun DeleteButton(onClick: () -> Unit) {
   )
 }
 
-private fun setContactAlias(contactConnection: PendingContactConnection, localAlias: String, chatModel: ChatModel) = withApi {
-  chatModel.controller.apiSetConnectionAlias(contactConnection.pccConnId, localAlias)?.let {
+private fun setContactAlias(rhId: Long?, contactConnection: PendingContactConnection, localAlias: String, chatModel: ChatModel) = withApi {
+  chatModel.controller.apiSetConnectionAlias(rhId, contactConnection.pccConnId, localAlias)?.let {
     chatModel.updateContactConnection(it)
   }
 }
