@@ -56,8 +56,9 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
   rh <- readTVarIO $ currentRemoteHost cc
   let bs = encodeUtf8 $ T.pack s
       cmd = parseChatCommand bs
+      rh' = if either (const False) allowRemoteCommand cmd then rh else Nothing
   unless (isMessage cmd) $ echo s
-  r <- runReaderT (execChatCommand rh bs) cc
+  r <- runReaderT (execChatCommand rh' bs) cc
   processResp s cmd r
   printRespToTerminal ct cc False rh r
   startLiveMessage cmd r
