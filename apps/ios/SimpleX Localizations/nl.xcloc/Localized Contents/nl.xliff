@@ -139,7 +139,7 @@
       </trans-unit>
       <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve" approved="no">
         <source>%@, %@ and %lld other members connected</source>
-        <target state="translated">%@, %@ en %lld andere gebruikers hebben verbinding gemaakt</target>
+        <target state="translated">%@, %@ en %lld andere leden hebben verbinding gemaakt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@:" xml:space="preserve">
@@ -209,7 +209,7 @@
       </trans-unit>
       <trans-unit id="%lld members" xml:space="preserve" approved="no">
         <source>%lld members</source>
-        <target state="translated">%lld gebruikers</target>
+        <target state="translated">%lld leden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld messages blocked" xml:space="preserve" approved="no">
@@ -372,7 +372,7 @@
 - delivery receipts (up to 20 members).
 - faster and more stable.</source>
         <target state="translated">- verbinding maken met [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)! 
-- ontvangst bevestiging(tot 20 gebruikers). 
+- ontvangst bevestiging(tot 20 leden). 
 - sneller en stabieler.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -621,7 +621,7 @@
       </trans-unit>
       <trans-unit id="All group members will remain connected." xml:space="preserve" approved="no">
         <source>All group members will remain connected.</source>
-        <target state="translated">Alle gebruikers blijven verbonden.</target>
+        <target state="translated">Alle groepsleden blijven verbonden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
@@ -676,7 +676,7 @@
       </trans-unit>
       <trans-unit id="Allow sending direct messages to members." xml:space="preserve" approved="no">
         <source>Allow sending direct messages to members.</source>
-        <target state="translated">Sta het verzenden van directe berichten naar gebruikers toe.</target>
+        <target state="translated">Sta het verzenden van directe berichten naar leden toe.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sending disappearing messages." xml:space="preserve">
@@ -891,12 +891,12 @@
       </trans-unit>
       <trans-unit id="Block member" xml:space="preserve" approved="no">
         <source>Block member</source>
-        <target state="translated">Gebruiker blokkeren</target>
+        <target state="translated">Lid blokkeren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block member?" xml:space="preserve" approved="no">
         <source>Block member?</source>
-        <target state="translated">Gebruiker blokkeren?</target>
+        <target state="translated">Lid blokkeren?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -1646,7 +1646,7 @@ Dit kan niet ongedaan gemaakt worden!</target>
       </trans-unit>
       <trans-unit id="Delete member message?" xml:space="preserve" approved="no">
         <source>Delete member message?</source>
-        <target state="translated">Bericht van gebruiker verwijderen?</target>
+        <target state="translated">Bericht van lid verwijderen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete message?" xml:space="preserve">
@@ -1766,7 +1766,7 @@ Dit kan niet ongedaan gemaakt worden!</target>
       </trans-unit>
       <trans-unit id="Direct messages between members are prohibited in this group." xml:space="preserve" approved="no">
         <source>Direct messages between members are prohibited in this group.</source>
-        <target state="translated">Directe berichten tussen gebruikers zijn verboden in deze groep.</target>
+        <target state="translated">Directe berichten tussen leden zijn verboden in deze groep.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Disable (keep overrides)" xml:space="preserve">
@@ -2436,7 +2436,7 @@ Dit kan niet ongedaan gemaakt worden!</target>
       </trans-unit>
       <trans-unit id="Fix not supported by group member" xml:space="preserve" approved="no">
         <source>Fix not supported by group member</source>
-        <target state="translated">Herstel wordt niet ondersteund door gebruiker</target>
+        <target state="translated">Herstel wordt niet ondersteund door groepslid</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="For console" xml:space="preserve">
@@ -2541,32 +2541,32 @@ Dit kan niet ongedaan gemaakt worden!</target>
       </trans-unit>
       <trans-unit id="Group members can add message reactions." xml:space="preserve" approved="no">
         <source>Group members can add message reactions.</source>
-        <target state="translated">Gebruikers kunnen berichtreacties toevoegen.</target>
+        <target state="translated">Groepsleden kunnen berichtreacties toevoegen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can irreversibly delete sent messages." xml:space="preserve" approved="no">
         <source>Group members can irreversibly delete sent messages.</source>
-        <target state="translated">Gebruikers kunnen verzonden berichten onherroepelijk verwijderen.</target>
+        <target state="translated">Groepsleden kunnen verzonden berichten onherroepelijk verwijderen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can send direct messages." xml:space="preserve" approved="no">
         <source>Group members can send direct messages.</source>
-        <target state="translated">Gebruikers kunnen directe berichten sturen.</target>
+        <target state="translated">Groepsleden kunnen directe berichten sturen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can send disappearing messages." xml:space="preserve" approved="no">
         <source>Group members can send disappearing messages.</source>
-        <target state="translated">Gebruikers kunnen verdwijnende berichten sturen.</target>
+        <target state="translated">Groepsleden kunnen verdwijnende berichten sturen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can send files and media." xml:space="preserve" approved="no">
         <source>Group members can send files and media.</source>
-        <target state="translated">Gebruikers kunnen bestanden en media verzenden.</target>
+        <target state="translated">Groepsleden kunnen bestanden en media verzenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group members can send voice messages." xml:space="preserve" approved="no">
         <source>Group members can send voice messages.</source>
-        <target state="translated">Gebruikers kunnen spraak berichten verzenden.</target>
+        <target state="translated">Groepsleden kunnen spraak berichten verzenden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group message:" xml:space="preserve">
@@ -2591,7 +2591,7 @@ Dit kan niet ongedaan gemaakt worden!</target>
       </trans-unit>
       <trans-unit id="Group profile is stored on members' devices, not on the servers." xml:space="preserve" approved="no">
         <source>Group profile is stored on members' devices, not on the servers.</source>
-        <target state="translated">Groep profiel wordt opgeslagen op de apparaten van de gebruikers, niet op de servers.</target>
+        <target state="translated">Groep profiel wordt opgeslagen op de apparaten van de leden, niet op de servers.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group welcome message" xml:space="preserve">
@@ -2601,7 +2601,7 @@ Dit kan niet ongedaan gemaakt worden!</target>
       </trans-unit>
       <trans-unit id="Group will be deleted for all members - this cannot be undone!" xml:space="preserve" approved="no">
         <source>Group will be deleted for all members - this cannot be undone!</source>
-        <target state="translated">Groep wordt verwijderd voor alle gebruikers, dit kan niet ongedaan worden gemaakt!</target>
+        <target state="translated">Groep wordt verwijderd voor alle leden, dit kan niet ongedaan worden gemaakt!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group will be deleted for you - this cannot be undone!" xml:space="preserve">
@@ -2873,7 +2873,7 @@ Dit kan niet ongedaan gemaakt worden!</target>
       </trans-unit>
       <trans-unit id="Invite members" xml:space="preserve" approved="no">
         <source>Invite members</source>
-        <target state="translated">Nodig gebruikers uit</target>
+        <target state="translated">Nodig leden uit</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invite to group" xml:space="preserve">
@@ -3121,12 +3121,12 @@ Dit is jouw link voor groep %@!</target>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". All group members will be notified.</source>
-        <target state="translated">De rol van gebruiker wordt gewijzigd in "%@". Alle gebruikers worden op de hoogte gebracht.</target>
+        <target state="translated">De rol van gebruiker wordt gewijzigd in "%@". Alle groepsleden worden op de hoogte gebracht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". The member will receive a new invitation.</source>
-        <target state="translated">De rol van gebruiker wordt gewijzigd in "%@". De gebruiker ontvangt een nieuwe uitnodiging.</target>
+        <target state="translated">De rol van gebruiker wordt gewijzigd in "%@". Het lid ontvangt een nieuwe uitnodiging.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
@@ -3311,7 +3311,7 @@ Dit is jouw link voor groep %@!</target>
       </trans-unit>
       <trans-unit id="New member role" xml:space="preserve" approved="no">
         <source>New member role</source>
-        <target state="translated">Nieuwe gebruikers rol</target>
+        <target state="translated">Nieuwe leden rol</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New message" xml:space="preserve">
@@ -3394,7 +3394,7 @@ Dit is jouw link voor groep %@!</target>
 - delete members' messages.
 - disable members ("observer" role)</source>
         <target state="translated">Nu kunnen beheerders: 
-- berichten van gebruikers verwijderen.
+- berichten van leden verwijderen.
 - schakel leden uit ("waarnemer" rol)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3785,7 +3785,7 @@ Dit is jouw link voor groep %@!</target>
       </trans-unit>
       <trans-unit id="Prohibit sending direct messages to members." xml:space="preserve" approved="no">
         <source>Prohibit sending direct messages to members.</source>
-        <target state="translated">Verbied het sturen van directe berichten naar gebruikers.</target>
+        <target state="translated">Verbied het sturen van directe berichten naar leden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending disappearing messages." xml:space="preserve">
@@ -4120,7 +4120,7 @@ Dit is jouw link voor groep %@!</target>
       </trans-unit>
       <trans-unit id="Save and notify group members" xml:space="preserve" approved="no">
         <source>Save and notify group members</source>
-        <target state="translated">Opslaan en gebruikers melden</target>
+        <target state="translated">Opslaan en groep leden melden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save and update group profile" xml:space="preserve">
@@ -4445,7 +4445,7 @@ Dit is jouw link voor groep %@!</target>
       </trans-unit>
       <trans-unit id="Set the message shown to new members!" xml:space="preserve" approved="no">
         <source>Set the message shown to new members!</source>
-        <target state="translated">Stel het getoonde bericht in voor nieuwe gebruikers!</target>
+        <target state="translated">Stel het getoonde bericht in voor nieuwe leden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set timeouts for proxy/VPN" xml:space="preserve">
@@ -4832,12 +4832,12 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve" approved="no">
         <source>The message will be deleted for all members.</source>
-        <target state="translated">Het bericht wordt verwijderd voor alle gebruikers.</target>
+        <target state="translated">Het bericht wordt verwijderd voor alle leden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The message will be marked as moderated for all members." xml:space="preserve" approved="no">
         <source>The message will be marked as moderated for all members.</source>
-        <target state="translated">Het bericht wordt gemarkeerd als gemodereerd voor alle gebruikers.</target>
+        <target state="translated">Het bericht wordt gemarkeerd als gemodereerd voor alle leden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The next generation of private messaging" xml:space="preserve">
@@ -4912,7 +4912,7 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
       </trans-unit>
       <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve" approved="no">
         <source>This group has over %lld members, delivery receipts are not sent.</source>
-        <target state="translated">Deze groep heeft meer dan %lld -gebruikers, ontvangstbevestigingen worden niet verzonden.</target>
+        <target state="translated">Deze groep heeft meer dan %lld -leden, ontvangstbevestigingen worden niet verzonden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group no longer exists." xml:space="preserve">
@@ -5034,12 +5034,12 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
       </trans-unit>
       <trans-unit id="Unblock member" xml:space="preserve" approved="no">
         <source>Unblock member</source>
-        <target state="translated">Gebruiker deblokkeren</target>
+        <target state="translated">Lid deblokkeren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unblock member?" xml:space="preserve" approved="no">
         <source>Unblock member?</source>
-        <target state="translated">Gebruiker deblokkeren?</target>
+        <target state="translated">Lid deblokkeren?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unexpected error: %@" xml:space="preserve">
@@ -5478,7 +5478,7 @@ Deelnameverzoek herhalen?</target>
       </trans-unit>
       <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve" approved="no">
         <source>You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.</source>
-        <target state="translated">U kunt een link of een QR-code delen. Iedereen kan lid worden van de groep. U verliest geen gebruikers van de groep als u deze later verwijdert.</target>
+        <target state="translated">U kunt een link of een QR-code delen. Iedereen kan lid worden van de groep. U verliest geen leden van de groep als u deze later verwijdert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share this address with your contacts to let them connect with **%@**." xml:space="preserve">
@@ -5555,7 +5555,7 @@ Verbindingsverzoek herhalen?</target>
       </trans-unit>
       <trans-unit id="You joined this group. Connecting to inviting group member." xml:space="preserve" approved="no">
         <source>You joined this group. Connecting to inviting group member.</source>
-        <target state="translated">Je bent lid geworden van deze groep. Verbinding maken met uitnodigend gebruiker.</target>
+        <target state="translated">Je bent lid geworden van deze groep. Verbinding maken met uitnodigend groepslid.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You must use the most recent version of your chat database on one device ONLY, otherwise you may stop receiving the messages from some contacts." xml:space="preserve">
