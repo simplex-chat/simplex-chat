@@ -452,8 +452,20 @@ allowRemoteCommand = \case
   APIStopChat -> False
   APIActivateChat -> False
   APISuspendChat _ -> False
-  SetTempFolder _ -> False
   QuitChat -> False
+  SetTempFolder _ -> False
+  SetFilesFolder _ -> False
+  SetRemoteHostsFolder _ -> False
+  APISetXFTPConfig _ -> False
+  APISetEncryptLocalFiles _ -> False
+  APIExportArchive _ -> False
+  APIImportArchive _ -> False
+  ExportArchive -> False
+  APIDeleteStorage -> False
+  APIStorageEncryption _ -> False
+  APISetNetworkConfig _ -> False
+  APIGetNetworkConfig -> False
+  SetLocalDeviceName _ -> False
   ListRemoteHosts -> False
   StartRemoteHost _ -> False
   SwitchRemoteHost {} -> False
@@ -1052,6 +1064,7 @@ data RemoteHostError
   | RHETimeout
   | RHEBadState -- ^ Illegal state transition
   | RHEBadVersion {appVersion :: AppVersion}
+  | RHELocalCommand -- ^ Command not allowed for remote execution
   | RHEDisconnected {reason :: Text} -- TODO should be sent when disconnected?
   | RHEProtocolError RemoteProtocolError
   deriving (Show, Exception)
