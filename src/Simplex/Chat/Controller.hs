@@ -463,8 +463,6 @@ allowRemoteCommand = \case
   ExportArchive -> False
   APIDeleteStorage -> False
   APIStorageEncryption _ -> False
-  ExecChatStoreSQL _ -> False
-  ExecAgentStoreSQL _ -> False
   APISetNetworkConfig _ -> False
   APIGetNetworkConfig -> False
   SetLocalDeviceName _ -> False
@@ -1066,6 +1064,7 @@ data RemoteHostError
   | RHETimeout
   | RHEBadState -- ^ Illegal state transition
   | RHEBadVersion {appVersion :: AppVersion}
+  | RHELocalCommand -- ^ Command not allowed for remote execution
   | RHEDisconnected {reason :: Text} -- TODO should be sent when disconnected?
   | RHEProtocolError RemoteProtocolError
   deriving (Show, Exception)
