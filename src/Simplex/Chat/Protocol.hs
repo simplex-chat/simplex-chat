@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
@@ -12,6 +11,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE StrictData #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
@@ -24,6 +24,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.:?), (.=))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.KeyMap as JM
+import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
@@ -41,13 +42,12 @@ import Data.Typeable (Typeable)
 import Data.Word (Word32)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
-import GHC.Generics (Generic)
 import Simplex.Chat.Call
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstToLower, parseAll, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
 
@@ -79,11 +79,9 @@ data ConnectionEntity
   | SndFileConnection {entityConnection :: Connection, sndFileTransfer :: SndFileTransfer}
   | RcvFileConnection {entityConnection :: Connection, rcvFileTransfer :: RcvFileTransfer}
   | UserContactConnection {entityConnection :: Connection, userContact :: UserContact}
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show)
 
-instance ToJSON ConnectionEntity where
-  toJSON = J.genericToJSON $ sumTypeJSON fstToLower
-  toEncoding = J.genericToEncoding $ sumTypeJSON fstToLower
+$(JQ.deriveJSON (sumTypeJSON fstToLower) ''ConnectionEntity)
 
 updateEntityConnStatus :: ConnectionEntity -> ConnStatus -> ConnectionEntity
 updateEntityConnStatus connEntity connStatus = case connEntity of
@@ -110,8 +108,6 @@ instance MsgEncodingI 'Binary where encoding = SBinary
 
 instance MsgEncodingI 'Json where encoding = SJson
 
-data ACMEventTag = forall e. MsgEncodingI e => ACMEventTag (SMsgEncoding e) (CMEventTag e)
-
 instance TestEquality SMsgEncoding where
   testEquality SBinary SBinary = Just Refl
   testEquality SJson SJson = Just Refl
@@ -133,17 +129,12 @@ data AppMessageJson = AppMessageJson
     event :: Text,
     params :: J.Object
   }
-  deriving (Eq, Show, Generic, FromJSON)
 
 data AppMessageBinary = AppMessageBinary
   { msgId :: Maybe SharedMsgId,
     tag :: Char,
     body :: ByteString
   }
-
-instance ToJSON AppMessageJson where
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
 
 instance StrEncoding AppMessageBinary where
   strEncode AppMessageBinary {tag, msgId, body} = smpEncode (tag, msgId', Tail body)
@@ -173,20 +164,42 @@ instance ToJSON SharedMsgId where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+$(JQ.deriveJSON defaultJSON ''AppMessageJson)
+
 data MsgRef = MsgRef
   { msgId :: Maybe SharedMsgId,
     sentAt :: UTCTime,
     sent :: Bool,
     memberId :: Maybe MemberId -- must be present in all group message references, both referencing sent and received
   }
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show)
 
-instance FromJSON MsgRef where
-  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
+$(JQ.deriveJSON defaultJSON ''MsgRef)
 
-instance ToJSON MsgRef where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData, content :: Maybe LinkContent}
+  deriving (Eq, Show)
+
+data LinkContent = LCPage | LCImage | LCVideo {duration :: Maybe Int} | LCUnknown {tag :: Text, json :: J.Object}
+  deriving (Eq, Show)
+
+$(pure [])
+
+instance FromJSON LinkContent where
+  parseJSON v@(J.Object j) =
+    $(JQ.mkParseJSON (taggedObjectJSON $ dropPrefix "LC") ''LinkContent) v
+      <|> LCUnknown <$> j .: "type" <*> pure j
+  parseJSON invalid =
+    JT.prependFailure "bad LinkContent, " (JT.typeMismatch "Object" invalid)
+
+instance ToJSON LinkContent where
+  toJSON = \case
+    LCUnknown _ j -> J.Object j
+    v -> $(JQ.mkToJSON (taggedObjectJSON $ dropPrefix "LC") ''LinkContent) v
+  toEncoding = \case
+    LCUnknown _ j -> JE.value $ J.Object j
+    v -> $(JQ.mkToEncoding (taggedObjectJSON $ dropPrefix "LC") ''LinkContent) v
+
+$(JQ.deriveJSON defaultJSON ''LinkPreview)
 
 data ChatMessage e = ChatMessage
   { chatVRange :: VersionRange,
@@ -196,19 +209,6 @@ data ChatMessage e = ChatMessage
   deriving (Eq, Show)
 
 data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMessage e)
-
-instance MsgEncodingI e => StrEncoding (ChatMessage e) where
-  strEncode msg = case chatToAppMessage msg of
-    AMJson m -> LB.toStrict $ J.encode m
-    AMBinary m -> strEncode m
-  strP = (\(ACMsg _ m) -> checkEncoding m) <$?> strP
-
-instance StrEncoding AChatMessage where
-  strEncode (ACMsg _ m) = strEncode m
-  strP =
-    A.peekChar' >>= \case
-      '{' -> ACMsg SJson <$> ((appJsonToCM <=< J.eitherDecodeStrict') <$?> A.takeByteString)
-      _ -> ACMsg SBinary <$> (appBinaryToCM <$?> strP)
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
@@ -361,11 +361,7 @@ instance Encoding InlineFileChunk where
         pure FileChunk {chunkNo = fromIntegral $ c2w c, chunkBytes}
 
 data QuotedMsg = QuotedMsg {msgRef :: MsgRef, content :: MsgContent}
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON QuotedMsg where
-  toEncoding = J.genericToEncoding J.defaultOptions
-  toJSON = J.genericToJSON J.defaultOptions
+  deriving (Eq, Show)
 
 cmToQuotedMsg :: AChatMsgEvent -> Maybe QuotedMsg
 cmToQuotedMsg = \case
@@ -418,34 +414,6 @@ isQuote = \case
   MCQuote {} -> True
   _ -> False
 
-data LinkPreview = LinkPreview {uri :: Text, title :: Text, description :: Text, image :: ImageData, content :: Maybe LinkContent}
-  deriving (Eq, Show, Generic)
-
-data LinkContent = LCPage | LCImage | LCVideo {duration :: Maybe Int} | LCUnknown {tag :: Text, json :: J.Object}
-  deriving (Eq, Show, Generic)
-
-instance FromJSON LinkPreview where
-  parseJSON = J.genericParseJSON J.defaultOptions {J.omitNothingFields = True}
-
-instance ToJSON LinkPreview where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
-
-instance FromJSON LinkContent where
-  parseJSON v@(J.Object j) =
-    J.genericParseJSON (taggedObjectJSON $ dropPrefix "LC") v
-      <|> LCUnknown <$> j .: "type" <*> pure j
-  parseJSON invalid =
-    JT.prependFailure "bad LinkContent, " (JT.typeMismatch "Object" invalid)
-
-instance ToJSON LinkContent where
-  toJSON = \case
-    LCUnknown _ j -> J.Object j
-    v -> J.genericToJSON (taggedObjectJSON $ dropPrefix "LC") v
-  toEncoding = \case
-    LCUnknown _ j -> JE.value $ J.Object j
-    v -> J.genericToEncoding (taggedObjectJSON $ dropPrefix "LC") v
-
 data MsgContent
   = MCText Text
   | MCLink {text :: Text, preview :: LinkPreview}
@@ -497,6 +465,21 @@ msgContentTag = \case
 
 data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: Maybe FileInvitation, ttl :: Maybe Int, live :: Maybe Bool}
   deriving (Eq, Show)
+
+$(JQ.deriveJSON defaultJSON ''QuotedMsg)
+
+instance MsgEncodingI e => StrEncoding (ChatMessage e) where
+  strEncode msg = case chatToAppMessage msg of
+    AMJson m -> LB.toStrict $ J.encode m
+    AMBinary m -> strEncode m
+  strP = (\(ACMsg _ m) -> checkEncoding m) <$?> strP
+
+instance StrEncoding AChatMessage where
+  strEncode (ACMsg _ m) = strEncode m
+  strP =
+    A.peekChar' >>= \case
+      '{' -> ACMsg SJson <$> ((appJsonToCM <=< J.eitherDecodeStrict') <$?> A.takeByteString)
+      _ -> ACMsg SBinary <$> (appBinaryToCM <$?> strP)
 
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =
@@ -576,6 +559,8 @@ instance ToField MsgContent where
 
 instance FromField MsgContent where
   fromField = fromTextField_ decodeJSON
+
+data ACMEventTag = forall e. MsgEncodingI e => ACMEventTag (SMsgEncoding e) (CMEventTag e)
 
 data CMEventTag (e :: MsgEncoding) where
   XMsgNew_ :: CMEventTag 'Json

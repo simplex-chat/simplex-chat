@@ -26,12 +26,12 @@ fun SetDeliveryReceiptsView(m: ChatModel) {
       if (currentUser != null) {
         withApi {
           try {
-            m.controller.apiSetAllContactReceipts(enable = true)
+            m.controller.apiSetAllContactReceipts(currentUser.remoteHostId, enable = true)
             m.currentUser.value = currentUser.copy(sendRcptsContacts = true)
             m.setDeliveryReceipts.value = false
             m.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
             try {
-              val users = m.controller.listUsers()
+              val users = m.controller.listUsers(currentUser.remoteHostId)
               m.users.clear()
               m.users.addAll(users)
             } catch (e: Exception) {

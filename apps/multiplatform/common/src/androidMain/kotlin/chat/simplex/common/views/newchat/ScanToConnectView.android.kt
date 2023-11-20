@@ -7,13 +7,14 @@ import chat.simplex.common.model.ChatModel
 import com.google.accompanist.permissions.rememberPermissionState
 
 @Composable
-actual fun ScanToConnectView(chatModel: ChatModel, close: () -> Unit) {
+actual fun ScanToConnectView(chatModel: ChatModel, rhId: Long?, close: () -> Unit) {
   val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
   LaunchedEffect(Unit) {
     cameraPermissionState.launchPermissionRequest()
   }
   ConnectContactLayout(
     chatModel = chatModel,
+    rhId = rhId,
     incognitoPref = chatModel.controller.appPrefs.incognito,
     close = close
   )

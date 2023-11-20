@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -12,6 +11,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 
@@ -24,7 +24,7 @@ module Simplex.Chat.Types.Preferences where
 
 import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON (..), ToJSON (..))
-import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Data.Maybe (fromMaybe, isJust)
@@ -32,11 +32,10 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
-import GHC.Generics (Generic)
 import GHC.Records.Compat
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON)
 import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 
 data ChatFeature
@@ -45,7 +44,7 @@ data ChatFeature
   | CFReactions
   | CFVoice
   | CFCalls
-  deriving (Show, Generic)
+  deriving (Show)
 
 data SChatFeature (f :: ChatFeature) where
   SCFTimedMessages :: SChatFeature 'CFTimedMessages
@@ -70,13 +69,6 @@ chatFeatureNameText = \case
 
 chatFeatureNameText' :: SChatFeature f -> Text
 chatFeatureNameText' = chatFeatureNameText . chatFeature
-
-instance ToJSON ChatFeature where
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CF"
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CF"
-
-instance FromJSON ChatFeature where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CF"
 
 allChatFeatures :: [AChatFeature]
 allChatFeatures =
@@ -149,17 +141,7 @@ data Preferences = Preferences
     voice :: Maybe VoicePreference,
     calls :: Maybe CallsPreference
   }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON Preferences where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
-
-instance ToField Preferences where
-  toField = toField . encodeJSON
-
-instance FromField Preferences where
-  fromField = fromTextField_ decodeJSON
+  deriving (Eq, Show)
 
 data GroupFeature
   = GFTimedMessages
@@ -168,7 +150,7 @@ data GroupFeature
   | GFReactions
   | GFVoice
   | GFFiles
-  deriving (Show, Generic)
+  deriving (Show)
 
 data SGroupFeature (f :: GroupFeature) where
   SGFTimedMessages :: SGroupFeature 'GFTimedMessages
@@ -199,13 +181,6 @@ groupFeatureNameText' = groupFeatureNameText . toGroupFeature
 groupFeatureAllowed' :: GroupFeatureI f => SGroupFeature f -> FullGroupPreferences -> Bool
 groupFeatureAllowed' feature prefs =
   getField @"enable" (getGroupPreference feature prefs) == FEOn
-
-instance ToJSON GroupFeature where
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "GF"
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "GF"
-
-instance FromJSON GroupFeature where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "GF"
 
 allGroupFeatures :: [AGroupFeature]
 allGroupFeatures =
@@ -263,17 +238,7 @@ data GroupPreferences = GroupPreferences
     voice :: Maybe VoiceGroupPreference,
     files :: Maybe FilesGroupPreference
   }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON GroupPreferences where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
-
-instance ToField GroupPreferences where
-  toField = toField . encodeJSON
-
-instance FromField GroupPreferences where
-  fromField = fromTextField_ decodeJSON
+  deriving (Eq, Show)
 
 setGroupPreference :: forall f. GroupFeatureI f => SGroupFeature f -> GroupFeatureEnabled -> Maybe GroupPreferences -> GroupPreferences
 setGroupPreference f enable prefs_ = setGroupPreference_ f pref prefs
@@ -312,9 +277,7 @@ data FullPreferences = FullPreferences
     voice :: VoicePreference,
     calls :: CallsPreference
   }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON FullPreferences where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 -- full collection of group preferences defined in the app - it is used to ensure we include all preferences and to simplify processing
 -- if some of the preferences are not defined in GroupPreferences, defaults from defaultGroupPrefs are used here.
@@ -326,9 +289,7 @@ data FullGroupPreferences = FullGroupPreferences
     voice :: VoiceGroupPreference,
     files :: FilesGroupPreference
   }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON FullGroupPreferences where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 -- merged preferences of user for a given contact - they differentiate between specific preferences for the contact and global user preferences
 data ContactUserPreferences = ContactUserPreferences
@@ -338,25 +299,17 @@ data ContactUserPreferences = ContactUserPreferences
     voice :: ContactUserPreference VoicePreference,
     calls :: ContactUserPreference CallsPreference
   }
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show)
 
 data ContactUserPreference p = ContactUserPreference
   { enabled :: PrefEnabled,
     userPreference :: ContactUserPref p,
     contactPreference :: p
   }
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show)
 
 data ContactUserPref p = CUPContact {preference :: p} | CUPUser {preference :: p}
-  deriving (Eq, Show, Generic)
-
-instance ToJSON ContactUserPreferences where toEncoding = J.genericToEncoding J.defaultOptions
-
-instance ToJSON p => ToJSON (ContactUserPreference p) where toEncoding = J.genericToEncoding J.defaultOptions
-
-instance ToJSON p => ToJSON (ContactUserPref p) where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "CUP"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "CUP"
+  deriving (Eq, Show)
 
 toChatPrefs :: FullPreferences -> Preferences
 toChatPrefs FullPreferences {timedMessages, fullDelete, reactions, voice, calls} =
@@ -399,31 +352,19 @@ data TimedMessagesPreference = TimedMessagesPreference
   { allow :: FeatureAllowed,
     ttl :: Maybe Int
   }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON TimedMessagesPreference where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Eq, Show)
 
 data FullDeletePreference = FullDeletePreference {allow :: FeatureAllowed}
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON FullDeletePreference where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 data ReactionsPreference = ReactionsPreference {allow :: FeatureAllowed}
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON ReactionsPreference where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 data VoicePreference = VoicePreference {allow :: FeatureAllowed}
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON VoicePreference where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 data CallsPreference = CallsPreference {allow :: FeatureAllowed}
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON CallsPreference where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 class (Eq (FeaturePreference f), HasField "allow" (FeaturePreference f) FeatureAllowed) => FeatureI f where
   type FeaturePreference (f :: ChatFeature) = p | p -> f
@@ -472,47 +413,33 @@ instance FeatureI 'CFCalls where
 
 data GroupPreference = GroupPreference
   {enable :: GroupFeatureEnabled}
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show)
 
 data TimedMessagesGroupPreference = TimedMessagesGroupPreference
   { enable :: GroupFeatureEnabled,
     ttl :: Maybe Int
   }
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show)
 
 data DirectMessagesGroupPreference = DirectMessagesGroupPreference
   {enable :: GroupFeatureEnabled}
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show)
 
 data FullDeleteGroupPreference = FullDeleteGroupPreference
   {enable :: GroupFeatureEnabled}
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show)
 
 data ReactionsGroupPreference = ReactionsGroupPreference
   {enable :: GroupFeatureEnabled}
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show)
 
 data VoiceGroupPreference = VoiceGroupPreference
   {enable :: GroupFeatureEnabled}
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show)
 
 data FilesGroupPreference = FilesGroupPreference
   {enable :: GroupFeatureEnabled}
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON GroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
-
-instance ToJSON TimedMessagesGroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
-
-instance ToJSON DirectMessagesGroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
-
-instance ToJSON ReactionsGroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
-
-instance ToJSON FullDeleteGroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
-
-instance ToJSON VoiceGroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
-
-instance ToJSON FilesGroupPreference where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 class (Eq (GroupFeaturePreference f), HasField "enable" (GroupFeaturePreference f) GroupFeatureEnabled) => GroupFeatureI f where
   type GroupFeaturePreference (f :: GroupFeature) = p | p -> f
@@ -614,7 +541,7 @@ data FeatureAllowed
   = FAAlways -- allow unconditionally
   | FAYes -- allow, if peer allows it
   | FANo -- do not allow
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show)
 
 instance FromField FeatureAllowed where fromField = fromBlobField_ strDecode
 
@@ -640,7 +567,7 @@ instance ToJSON FeatureAllowed where
   toEncoding = strToJEncoding
 
 data GroupFeatureEnabled = FEOn | FEOff
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show)
 
 instance FromField GroupFeatureEnabled where fromField = fromBlobField_ strDecode
 
@@ -713,11 +640,7 @@ toGroupPreferences groupPreferences =
     pref f = Just $ getGroupPreference f groupPreferences
 
 data PrefEnabled = PrefEnabled {forUser :: Bool, forContact :: Bool}
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON PrefEnabled where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 prefEnabled :: FeatureI f => Bool -> FeaturePreference f -> FeaturePreference f -> PrefEnabled
 prefEnabled asymmetric user contact = case (getField @"allow" user, getField @"allow" contact) of
@@ -779,3 +702,69 @@ getContactUserPreference f ps = case f of
   SCFReactions -> ps.reactions
   SCFVoice -> ps.voice
   SCFCalls -> ps.calls
+
+$(J.deriveJSON (enumJSON $ dropPrefix "CF") ''ChatFeature)
+
+$(J.deriveJSON (enumJSON $ dropPrefix "GF") ''GroupFeature)
+
+$(J.deriveJSON defaultJSON ''TimedMessagesPreference)
+
+$(J.deriveJSON defaultJSON ''FullDeletePreference)
+
+$(J.deriveJSON defaultJSON ''ReactionsPreference)
+
+$(J.deriveJSON defaultJSON ''VoicePreference)
+
+$(J.deriveJSON defaultJSON ''CallsPreference)
+
+$(J.deriveJSON defaultJSON ''Preferences)
+
+instance ToField Preferences where
+  toField = toField . encodeJSON
+
+instance FromField Preferences where
+  fromField = fromTextField_ decodeJSON
+
+$(J.deriveJSON defaultJSON ''GroupPreference)
+
+$(J.deriveJSON defaultJSON ''TimedMessagesGroupPreference)
+
+$(J.deriveJSON defaultJSON ''DirectMessagesGroupPreference)
+
+$(J.deriveJSON defaultJSON ''ReactionsGroupPreference)
+
+$(J.deriveJSON defaultJSON ''FullDeleteGroupPreference)
+
+$(J.deriveJSON defaultJSON ''VoiceGroupPreference)
+
+$(J.deriveJSON defaultJSON ''FilesGroupPreference)
+
+$(J.deriveJSON defaultJSON ''GroupPreferences)
+
+instance ToField GroupPreferences where
+  toField = toField . encodeJSON
+
+instance FromField GroupPreferences where
+  fromField = fromTextField_ decodeJSON
+
+$(J.deriveJSON defaultJSON ''FullPreferences)
+
+$(J.deriveJSON defaultJSON ''FullGroupPreferences)
+
+$(J.deriveJSON defaultJSON ''PrefEnabled)
+
+instance FromJSON p => FromJSON (ContactUserPref p) where
+  parseJSON = $(J.mkParseJSON (sumTypeJSON $ dropPrefix "CUP") ''ContactUserPref)
+
+instance ToJSON p => ToJSON (ContactUserPref p) where
+  toJSON = $(J.mkToJSON (sumTypeJSON $ dropPrefix "CUP") ''ContactUserPref)
+  toEncoding = $(J.mkToEncoding (sumTypeJSON $ dropPrefix "CUP") ''ContactUserPref)
+
+instance FromJSON p => FromJSON (ContactUserPreference p) where
+  parseJSON = $(J.mkParseJSON defaultJSON ''ContactUserPreference)
+
+instance ToJSON p => ToJSON (ContactUserPreference p) where
+  toJSON = $(J.mkToJSON defaultJSON ''ContactUserPreference)
+  toEncoding = $(J.mkToEncoding defaultJSON ''ContactUserPreference)
+
+$(J.deriveJSON defaultJSON ''ContactUserPreferences)

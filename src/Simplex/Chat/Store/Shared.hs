@@ -1,11 +1,11 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Simplex.Chat.Store.Shared where
@@ -16,8 +16,7 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG, randomBytesGenerate)
-import Data.Aeson (ToJSON)
-import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as J
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
@@ -28,9 +27,9 @@ import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query, SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as SQL
 import Database.SQLite.Simple.QQ (sql)
-import GHC.Generics (Generic)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
+import Simplex.Chat.Remote.Types
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, UserId)
@@ -101,11 +100,14 @@ data StoreError
   | SEContactNotFoundByFileId {fileId :: FileTransferId}
   | SENoGroupSndStatus {itemId :: ChatItemId, groupMemberId :: GroupMemberId}
   | SEDuplicateGroupMessage {groupId :: Int64, sharedMsgId :: SharedMsgId, authorGroupMemberId :: Maybe GroupMemberId, forwardedByGroupMemberId :: Maybe GroupMemberId}
-  deriving (Show, Exception, Generic)
+  | SERemoteHostNotFound {remoteHostId :: RemoteHostId}
+  | SERemoteHostUnknown -- ^ attempting to store KnownHost without a known fingerprint
+  | SERemoteHostDuplicateCA
+  | SERemoteCtrlNotFound {remoteCtrlId :: RemoteCtrlId}
+  | SERemoteCtrlDuplicateCA
+  deriving (Show, Exception)
 
-instance ToJSON StoreError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SE"
+$(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)
 
 insertedRowId :: DB.Connection -> IO Int64
 insertedRowId db = fromOnly . head <$> DB.query_ db "SELECT last_insert_rowid()"

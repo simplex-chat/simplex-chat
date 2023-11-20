@@ -1107,7 +1107,7 @@ toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir,
     ciMeta content status =
       let itemDeleted' = case itemDeleted of
             DBCINotDeleted -> Nothing
-            DBCIBlocked -> Just (CIBlocked @'CTGroup deletedTs)
+            DBCIBlocked -> Just (CIBlocked deletedTs)
             _ -> Just (maybe (CIDeleted @'CTGroup deletedTs) (CIModerated deletedTs) deletedByGroupMember_)
           itemEdited' = fromMaybe False itemEdited
        in mkCIMeta itemId content itemText status sharedMsgId itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt

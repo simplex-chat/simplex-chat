@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -32,10 +32,12 @@ library
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Core
+      Simplex.Chat.Files
       Simplex.Chat.Help
       Simplex.Chat.Markdown
       Simplex.Chat.Messages
       Simplex.Chat.Messages.CIContent
+      Simplex.Chat.Messages.CIContent.Events
       Simplex.Chat.Migrations.M20220101_initial
       Simplex.Chat.Migrations.M20220122_v1_1
       Simplex.Chat.Migrations.M20220205_chat_item_status
@@ -121,6 +123,7 @@ library
       Simplex.Chat.Migrations.M20231030_xgrplinkmem_received
       Simplex.Chat.Migrations.M20231107_indexes
       Simplex.Chat.Migrations.M20231113_group_forward
+      Simplex.Chat.Migrations.M20231114_remote_control
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
@@ -128,6 +131,13 @@ library
       Simplex.Chat.Options
       Simplex.Chat.ProfileGenerator
       Simplex.Chat.Protocol
+      Simplex.Chat.Remote
+      Simplex.Chat.Remote.AppVersion
+      Simplex.Chat.Remote.Multicast
+      Simplex.Chat.Remote.Protocol
+      Simplex.Chat.Remote.RevHTTP
+      Simplex.Chat.Remote.Transport
+      Simplex.Chat.Remote.Types
       Simplex.Chat.Store
       Simplex.Chat.Store.Connections
       Simplex.Chat.Store.Direct
@@ -136,6 +146,7 @@ library
       Simplex.Chat.Store.Messages
       Simplex.Chat.Store.Migrations
       Simplex.Chat.Store.Profiles
+      Simplex.Chat.Store.Remote
       Simplex.Chat.Store.Shared
       Simplex.Chat.Styled
       Simplex.Chat.Terminal
@@ -164,15 +175,18 @@ library
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite ==0.30.*
+    , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
+    , http2 >=4.2.2 && <4.3
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
+    , network-transport ==0.5.6
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -186,6 +200,7 @@ library
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -212,15 +227,18 @@ executable simplex-bot
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite ==0.30.*
+    , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
+    , http2 >=4.2.2 && <4.3
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
+    , network-transport ==0.5.6
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -235,6 +253,7 @@ executable simplex-bot
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -261,15 +280,18 @@ executable simplex-bot-advanced
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite ==0.30.*
+    , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
+    , http2 >=4.2.2 && <4.3
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
+    , network-transport ==0.5.6
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -284,6 +306,7 @@ executable simplex-bot-advanced
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -312,15 +335,18 @@ executable simplex-broadcast-bot
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite ==0.30.*
+    , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
+    , http2 >=4.2.2 && <4.3
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
+    , network-transport ==0.5.6
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -335,6 +361,7 @@ executable simplex-broadcast-bot
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -362,15 +389,18 @@ executable simplex-chat
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite ==0.30.*
+    , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
+    , http2 >=4.2.2 && <4.3
     , memory ==0.18.*
     , mtl ==2.3.*
     , network ==3.1.*
+    , network-transport ==0.5.6
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -385,6 +415,7 @@ executable simplex-chat
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , websockets ==0.12.*
@@ -416,15 +447,18 @@ executable simplex-directory-service
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite ==0.30.*
+    , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
     , http-types ==0.12.*
+    , http2 >=4.2.2 && <4.3
     , memory ==0.18.*
     , mtl ==2.3.*
     , network >=3.1.2.7 && <3.2
+    , network-transport ==0.5.6
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -439,6 +473,7 @@ executable simplex-directory-service
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -459,9 +494,11 @@ test-suite simplex-chat-test
       ChatTests.Groups
       ChatTests.Profiles
       ChatTests.Utils
+      JSONTests
       MarkdownTests
       MobileTests
       ProtocolTests
+      RemoteTests
       SchemaDump
       ValidNames
       ViewTests
@@ -479,7 +516,8 @@ test-suite simplex-chat-test
       apps/simplex-directory-service/src
   ghc-options: -Wall -Wcompat -Werror=incomplete-patterns -Wredundant-constraints -Wincomplete-record-updates -Wincomplete-uni-patterns -Wunused-type-patterns -threaded
   build-depends:
-      aeson ==2.2.*
+      QuickCheck ==2.14.*
+    , aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*
     , attoparsec ==0.14.*
@@ -490,17 +528,21 @@ test-suite simplex-chat-test
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , cryptonite ==0.30.*
+    , data-default ==0.7.*
     , deepseq ==1.4.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
     , email-validate ==2.3.*
     , exceptions ==0.10.*
     , filepath ==1.4.*
+    , generic-random ==1.5.*
     , hspec ==2.11.*
     , http-types ==0.12.*
+    , http2 >=4.2.2 && <4.3
     , memory ==0.18.*
     , mtl ==2.3.*
     , network ==3.1.*
+    , network-transport ==0.5.6
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -516,6 +558,7 @@ test-suite simplex-chat-test
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
+    , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*

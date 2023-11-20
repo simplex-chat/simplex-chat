@@ -16,6 +16,7 @@ typedef long* chat_ctrl;
 
 extern char *chat_migrate_init(const char *path, const char *key, const char *confirm, chat_ctrl *ctrl);
 extern char *chat_send_cmd(chat_ctrl ctrl, const char *cmd);
+extern char *chat_send_remote_cmd(chat_ctrl ctrl, const int rhId, const char *cmd);
 extern char *chat_recv_msg(chat_ctrl ctrl); // deprecated
 extern char *chat_recv_msg_wait(chat_ctrl ctrl, const int wait);
 extern char *chat_parse_markdown(const char *str);
@@ -94,6 +95,14 @@ JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatSendCmd(JNIEnv *env, jclass clazz, jlong controller, jstring msg) {
     const char *_msg = encode_to_utf8_chars(env, msg);
     jstring res = decode_to_utf8_string(env, chat_send_cmd((void*)controller, _msg));
+    (*env)->ReleaseStringUTFChars(env, msg, _msg);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatSendRemoteCmd(JNIEnv *env, jclass clazz, jlong controller, jint rhId, jstring msg) {
+    const char *_msg = encode_to_utf8_chars(env, msg);
+    jstring res = decode_to_utf8_string(env, chat_send_remote_cmd((void*)controller, rhId, _msg));
     (*env)->ReleaseStringUTFChars(env, msg, _msg);
     return res;
 }
