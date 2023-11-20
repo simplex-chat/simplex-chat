@@ -387,10 +387,10 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     testViewChats chats = [sShow $ map toChatView chats]
       where
         toChatView :: AChat -> (Text, Text, Maybe ConnStatus)
-        toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items Nothing, connStatus <$> activeConn)
-        toChatView (AChat _ (Chat (GroupChat GroupInfo {membership, localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items (Just membership), Nothing)
-        toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items Nothing, Nothing)
-        toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items Nothing, Just pccConnStatus)
+        toChatView (AChat _ (Chat _ (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items Nothing, connStatus <$> activeConn)
+        toChatView (AChat _ (Chat _ (GroupChat GroupInfo {membership, localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items (Just membership), Nothing)
+        toChatView (AChat _ (Chat _ (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items Nothing, Nothing)
+        toChatView (AChat _ (Chat _ (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items Nothing, Just pccConnStatus)
         toCIPreview :: [CChatItem c] -> Maybe GroupMember -> Text
         toCIPreview (ci : _) membership_ = testViewItem ci membership_
         toCIPreview _ _ = ""
@@ -496,7 +496,7 @@ viewHostEvent p h = map toUpper (B.unpack $ strEncode p) <> " host " <> B.unpack
 viewChats :: CurrentTime -> TimeZone -> [AChat] -> [StyledString]
 viewChats ts tz = concatMap chatPreview . reverse
   where
-    chatPreview (AChat _ (Chat chat items _)) = case items of
+    chatPreview (AChat _ (Chat _ chat items _)) = case items of
       CChatItem _ ci : _ -> case viewChatItem chat ci True ts tz of
         s : _ -> [let s' = sTake 120 s in if sLength s' < sLength s then s' <> "..." else s']
         _ -> chatName

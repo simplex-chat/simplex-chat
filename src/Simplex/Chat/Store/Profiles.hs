@@ -504,7 +504,7 @@ getProtocolServers db User {userId} =
     toServerCfg :: (NonEmpty TransportHost, String, C.KeyHash, Maybe Text, Bool, Maybe Bool, Bool) -> ServerCfg p
     toServerCfg (host, port, keyHash, auth_, preset, tested, enabled) =
       let server = ProtoServerWithAuth (ProtocolServer protocol host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
-       in ServerCfg {server, preset, tested, enabled}
+       in ServerCfg {remoteHostId = Nothing, server, preset, tested, enabled}
 
 overwriteProtocolServers :: forall p. ProtocolTypeI p => DB.Connection -> User -> [ServerCfg p] -> ExceptT StoreError IO ()
 overwriteProtocolServers db User {userId} servers =
@@ -555,7 +555,7 @@ getCalls db =
       |]
   where
     toCall :: (ContactId, CallId, ChatItemId, CallState, UTCTime) -> Call
-    toCall (contactId, callId, chatItemId, callState, callTs) = Call {contactId, callId, chatItemId, callState, callTs}
+    toCall (contactId, callId, chatItemId, callState, callTs) = Call {remoteHostId = Nothing, contactId, callId, chatItemId, callState, callTs}
 
 createCommand :: DB.Connection -> User -> Maybe Int64 -> CommandFunction -> IO CommandId
 createCommand db User {userId} connId commandFunction = do

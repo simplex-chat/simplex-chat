@@ -1069,7 +1069,7 @@ processChatCommand = \case
               callState = CallInvitationSent {localCallType = callType, localDhPrivKey = snd <$> dhKeyPair}
           (msg, _) <- sendDirectContactMessage ct (XCallInv callId invitation)
           ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndCall CISCallPending 0)
-          let call' = Call {contactId, callId, chatItemId = chatItemId' ci, callState, callTs = chatItemTs' ci}
+          let call' = Call {remoteHostId = Nothing, contactId, callId, chatItemId = chatItemId' ci, callState, callTs = chatItemTs' ci}
           call_ <- atomically $ TM.lookupInsert contactId call' calls
           forM_ call_ $ \call -> updateCallItemStatus user ct call WCSDisconnected Nothing
           toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
@@ -1141,7 +1141,7 @@ processChatCommand = \case
       rcvCallInvitation (contactId, callTs, peerCallType, sharedKey) = runExceptT . withStore $ \db -> do
         user <- getUserByContactId db contactId
         contact <- getContact db user contactId
-        pure RcvCallInvitation {user, contact, callType = peerCallType, sharedKey, callTs}
+        pure RcvCallInvitation {remoteHostId = Nothing, user, contact, callType = peerCallType, sharedKey, callTs}
   APIGetNetworkStatuses -> withUser $ \_ ->
     CRNetworkStatuses Nothing . map (uncurry ConnNetworkStatus) . M.toList <$> chatReadVar connNetworkStatuses
   APICallStatus contactId receivedStatus ->
@@ -1186,7 +1186,7 @@ processChatCommand = \case
         servers' = fromMaybe (L.map toServerCfg defServers) $ nonEmpty servers
     pure $ CRUserProtoServers user $ AUPS $ UserProtoServers p servers' defServers
     where
-      toServerCfg server = ServerCfg {server, preset = True, tested = Nothing, enabled = True}
+      toServerCfg server = ServerCfg {remoteHostId = Nothing, server, preset = True, tested = Nothing, enabled = True}
   GetUserProtoServers aProtocol -> withUser $ \User {userId} ->
     processChatCommand $ APIGetUserProtoServers userId aProtocol
   APISetUserProtoServers userId (APSC p (ProtoServersConfig servers)) -> withUserId userId $ \user -> withServerProtocol p $
@@ -4766,7 +4766,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           ci <- saveCallItem CISCallPending
           let sharedKey = C.Key . C.dhBytes' <$> (C.dh' <$> callDhPubKey <*> (snd <$> dhKeyPair))
               callState = CallInvitationReceived {peerCallType = callType, localDhPubKey = fst <$> dhKeyPair, sharedKey}
-              call' = Call {contactId, callId, chatItemId = chatItemId' ci, callState, callTs = chatItemTs' ci}
+              call' = Call {remoteHostId = Nothing, contactId, callId, chatItemId = chatItemId' ci, callState, callTs = chatItemTs' ci}
           calls <- asks currentCalls
           -- theoretically, the new call invitation for the current contact can mark the in-progress call as ended
           -- (and replace it in ChatController)
@@ -4774,7 +4774,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           withStore' $ \db -> createCall db user call' $ chatItemTs' ci
           call_ <- atomically (TM.lookupInsert contactId call' calls)
           forM_ call_ $ \call -> updateCallItemStatus user ct call WCSDisconnected Nothing
-          toView $ CRCallInvitation RcvCallInvitation {user, contact = ct, callType, sharedKey, callTs = chatItemTs' ci}
+          toView $ CRCallInvitation RcvCallInvitation {remoteHostId = Nothing, user, contact = ct, callType, sharedKey, callTs = chatItemTs' ci}
           toView $ CRNewChatItem user $ AChatItem SCTDirect SMDRcv (DirectChat ct) ci
         else featureRejected CFCalls
       where
@@ -6314,7 +6314,7 @@ chatCommandP =
         (Just <$> (AutoAccept <$> (" incognito=" *> onOffP <|> pure False) <*> optional (A.space *> msgContentP)))
         (pure Nothing)
     srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
-    toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
+    toServerCfg server = ServerCfg {remoteHostId = Nothing, server, preset = False, tested = Nothing, enabled = True}
     char_ = optional . A.char
 
 adminContactReq :: ConnReqContact
