@@ -24,6 +24,8 @@ expect val agentDatabaseFileName: String
 * */
 expect val databaseExportDir: File
 
+expect val remoteHostsDir: File
+
 expect fun desktopOpenDatabaseDir()
 
 fun copyFileToFile(from: File, to: URI, finally: () -> Unit) {
@@ -59,14 +61,20 @@ fun copyBytesToFile(bytes: ByteArrayInputStream, to: URI, finally: () -> Unit) {
 }
 
 fun getAppFilePath(fileName: String): String {
-  return appFilesDir.absolutePath + File.separator + fileName
+  val rh = chatModel.currentRemoteHost.value
+  val s = File.separator
+  return if (rh == null) {
+    appFilesDir.absolutePath + s + fileName
+  } else {
+    remoteHostsDir.absolutePath + s + rh.storePath + s + "simplex_v1_files" + s + fileName
+  }
 }
 
 fun getLoadedFilePath(file: CIFile?): String? {
   val f = file?.fileSource?.filePath
   return if (f != null && file.loaded) {
     val filePath = getAppFilePath(f)
-    if (File(filePath).exists()) filePath else null
+    if (fileReady(file, filePath)) filePath else null
   } else {
     null
   }
@@ -76,11 +84,16 @@ fun getLoadedFileSource(file: CIFile?): CryptoFile? {
   val f = file?.fileSource?.filePath
   return if (f != null && file.loaded) {
     val filePath = getAppFilePath(f)
-    if (File(filePath).exists()) file.fileSource else null
+    if (fileReady(file, filePath)) file.fileSource else null
   } else {
     null
   }
 }
+
+private fun fileReady(file: CIFile, filePath: String) =
+  File(filePath).exists() &&
+  !CIFile.cachedRemoteFileRequests.contains(file.fileSource)
+  && File(filePath).length() >= file.fileSize
 
 /**
 * [rememberedValue] is used in `remember(rememberedValue)`. So when the value changes, file saver will update a callback function

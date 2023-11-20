@@ -43,6 +43,7 @@ class CallManager(val chatModel: ChatModel) {
   private fun justAcceptIncomingCall(invitation: RcvCallInvitation) {
     with (chatModel) {
       activeCall.value = Call(
+        remoteHostId = invitation.remoteHostId,
         contact = invitation.contact,
         callState = CallState.InvitationAccepted,
         localMedia = invitation.callType.media,
@@ -76,7 +77,7 @@ class CallManager(val chatModel: ChatModel) {
         Log.d(TAG, "CallManager.endCall: ending call...")
         callCommand.add(WCallCommand.End)
         showCallView.value = false
-        controller.apiEndCall(call.contact)
+        controller.apiEndCall(call.remoteHostId, call.contact)
         activeCall.value = null
       }
     }
@@ -90,7 +91,7 @@ class CallManager(val chatModel: ChatModel) {
         ntfManager.cancelCallNotification()
       }
       withApi {
-        if (!controller.apiRejectCall(invitation.contact)) {
+        if (!controller.apiRejectCall(invitation.remoteHostId, invitation.contact)) {
           Log.e(TAG, "apiRejectCall error")
         }
       }

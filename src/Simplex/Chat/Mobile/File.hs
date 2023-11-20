@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 
 module Simplex.Chat.Mobile.File
@@ -17,8 +17,9 @@ module Simplex.Chat.Mobile.File
 where
 
 import Control.Monad.Except
-import Data.Aeson (ToJSON)
+import Control.Monad.IO.Class
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy as LB
@@ -30,7 +31,6 @@ import Foreign.C
 import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr
 import Foreign.Storable (poke, pokeByteOff)
-import GHC.Generics (Generic)
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Util (chunkSize, encryptFile)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..), CryptoFileHandle, FTCryptoError (..))
@@ -43,9 +43,8 @@ import UnliftIO (Handle, IOMode (..), withFile)
 data WriteFileResult
   = WFResult {cryptoArgs :: CryptoFileArgs}
   | WFError {writeError :: String}
-  deriving (Generic)
 
-instance ToJSON WriteFileResult where toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "WF"
+$(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "WF") ''WriteFileResult)
 
 cChatWriteFile :: CString -> Ptr Word8 -> CInt -> IO CJSONString
 cChatWriteFile cPath ptr len = do
@@ -64,9 +63,6 @@ chatWriteFile path s = do
 data ReadFileResult
   = RFResult {fileSize :: Int}
   | RFError {readError :: String}
-  deriving (Generic)
-
-instance ToJSON ReadFileResult where toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RF"
 
 cChatReadFile :: CString -> CString -> CString -> IO (Ptr Word8)
 cChatReadFile cPath cKey cNonce = do
@@ -102,7 +98,7 @@ chatEncryptFile fromPath toPath =
   either WFError WFResult <$> runCatchExceptT encrypt
   where
     encrypt = do
-      cfArgs <- liftIO $ CF.randomArgs
+      cfArgs <- liftIO CF.randomArgs
       encryptFile fromPath toPath cfArgs
       pure cfArgs
 
@@ -139,3 +135,5 @@ chatDecryptFile fromPath keyStr nonceStr toPath = fromLeft "" <$> runCatchExcept
 
 runCatchExceptT :: ExceptT String IO a -> IO (Either String a)
 runCatchExceptT action = runExceptT action `catchAll` (pure . Left . show)
+
+$(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "RF") ''ReadFileResult)
