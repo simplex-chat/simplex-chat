@@ -122,7 +122,7 @@ object ChatModel {
   }
 
   private fun getUserIndex(user: User): Int =
-    users.indexOfFirst { it.user.userId == user.userId }
+    users.indexOfFirst { it.user.userId == user.userId && it.user.remoteHostId == user.remoteHostId }
 
   fun updateUser(user: User) {
     val i = getUserIndex(user)
