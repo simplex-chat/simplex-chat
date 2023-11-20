@@ -105,8 +105,14 @@ chatGroupTests = do
     it "invited member replaces member contact reference if it already exists" testMemberContactInvitedConnectionReplaced
     it "share incognito profile" testMemberContactIncognito
     it "sends and updates profile when creating contact" testMemberContactProfileUpdate
-  describe "forwarding messages" $ do
-    it "admin should forward messages between invitee and introduced" testGroupMsgForward
+  describe "group message forwarding" $ do
+    it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForward
+    it "forward message edit (x.msg.update)" testGroupMsgForwardEdit
+    it "forward message reaction (x.msg.react)" testGroupMsgForwardReaction
+    it "forward message deletion (x.msg.del)" testGroupMsgForwardDeletion
+    it "forward file (x.msg.file.descr)" testGroupMsgForwardFile
+    it "forward role change (x.grp.mem.role)" testGroupMsgForwardChangeRole
+    it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -3902,18 +3908,9 @@ testMemberContactProfileUpdate =
 
 testGroupMsgForward :: HasCallStack => FilePath -> IO ()
 testGroupMsgForward =
-  testChatCfg4 cfg aliceProfile bobProfile cathProfile danProfile $
-    \alice bob cath dan -> withXFTPServer $ do
-      createGroup3 "team" alice bob cath
-
-      threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
-
-      void $ withCCTransaction bob $ \db ->
-        DB.execute_ db "UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3"
-      void $ withCCTransaction cath $ \db ->
-        DB.execute_ db "UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3"
-      void $ withCCTransaction alice $ \db ->
-        DB.execute_ db "UPDATE group_member_intros SET intro_status='fwd'"
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath ->  do
+      setupGroupForwarding3 "team" alice bob cath
 
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
@@ -3937,22 +3934,80 @@ testGroupMsgForward =
       cath <# "#team bob> hi there [>>]"
       cath <# "#team hey team"
 
+setupGroupForwarding3 :: String -> TestCC -> TestCC -> TestCC -> IO ()
+setupGroupForwarding3 gName alice bob cath = do
+  createGroup3 gName alice bob cath
+
+  threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
+
+  void $ withCCTransaction bob $ \db ->
+    DB.execute_ db "UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3"
+  void $ withCCTransaction cath $ \db ->
+    DB.execute_ db "UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3"
+  void $ withCCTransaction alice $ \db ->
+    DB.execute_ db "UPDATE group_member_intros SET intro_status='fwd'"
+
+testGroupMsgForwardEdit :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardEdit =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath ->  do
+      setupGroupForwarding3 "team" alice bob cath
+
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
+
       bob ##> "! #team hello there"
       bob <# "#team [edited] hello there"
       alice <# "#team bob> [edited] hello there"
       cath <# "#team bob> [edited] hello there" -- TODO show as forwarded
 
-      cath ##> "+1 #team hello there"
+      alice ##> "/tail #team 1"
+      alice <# "#team bob> hello there"
+
+      bob ##> "/tail #team 1"
+      bob <# "#team hello there"
+
+      cath ##> "/tail #team 1"
+      cath <# "#team bob> hello there [>>]"
+
+testGroupMsgForwardReaction :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardReaction =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath ->  do
+      setupGroupForwarding3 "team" alice bob cath
+
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
+
+      cath ##> "+1 #team hi there"
       cath <## "added 👍"
-      alice <# "#team cath> > bob hello there"
+      alice <# "#team cath> > bob hi there"
       alice <## "    + 👍"
-      bob <# "#team cath> > bob hello there"
+      bob <# "#team cath> > bob hi there"
       bob <## "    + 👍"
 
-      bob ##> "\\ #team hello there"
+testGroupMsgForwardDeletion :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardDeletion =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath ->  do
+      setupGroupForwarding3 "team" alice bob cath
+
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
+
+      bob ##> "\\ #team hi there"
       bob <## "message marked deleted"
-      alice <# "#team bob> [marked deleted] hello there"
-      cath <# "#team bob> [marked deleted] hello there" -- TODO show as forwarded
+      alice <# "#team bob> [marked deleted] hi there"
+      cath <# "#team bob> [marked deleted] hi there" -- TODO show as forwarded
+
+testGroupMsgForwardFile :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardFile =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      setupGroupForwarding3 "team" alice bob cath
 
       bob #> "/f #team ./tests/fixtures/test.jpg"
       bob <## "use /fc 1 to cancel sending"
@@ -3972,11 +4027,25 @@ testGroupMsgForward =
       src <- B.readFile "./tests/fixtures/test.jpg"
       dest <- B.readFile "./tests/tmp/test.jpg"
       dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testGroupMsgForwardChangeRole :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardChangeRole =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath ->  do
+      setupGroupForwarding3 "team" alice bob cath
 
       cath ##> "/mr #team bob member"
       cath <## "#team: you changed the role of bob from admin to member"
       alice <## "#team: cath changed the role of bob from admin to member"
       bob <## "#team: cath changed your role from admin to member" -- TODO show as forwarded
+
+testGroupMsgForwardNewMember :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardNewMember =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan ->  do
+      setupGroupForwarding3 "team" alice bob cath
 
       connectUsers cath dan
       cath ##> "/a #team dan"
@@ -3994,14 +4063,21 @@ testGroupMsgForward =
           bob <## "#team: cath added dan (Daniel) to the group (connecting...)", -- TODO show as forwarded
           dan <## "#team: member alice (Alice) is connected"
         ]
+
       dan #> "#team hello all"
       alice <# "#team dan> hello all"
       -- bob <# "#team dan> hello all [>>]"
       cath <# "#team dan> hello all"
-      
+
       bob #> "#team hi all"
       alice <# "#team bob> hi all"
       cath <# "#team bob> hi all [>>]"
-      -- dan <# "#team bob> hi all"
-  where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+      -- dan <# "#team bob> hi all [>>]"
+
+      bob ##> "/ms team"
+      bob
+        <### [ "alice (Alice): owner, host, connected",
+               "bob (Bob): admin, you, connected",
+               "cath (Catherine): admin, connected",
+               "dan (Daniel): member"
+             ]
