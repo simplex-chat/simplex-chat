@@ -579,6 +579,7 @@ fun PreviewActiveCallOverlayVideo() {
   SimpleXTheme {
     ActiveCallOverlayLayout(
       call = Call(
+        remoteHostId = null,
         contact = Contact.sampleData,
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Video,
@@ -604,6 +605,7 @@ fun PreviewActiveCallOverlayAudio() {
   SimpleXTheme {
     ActiveCallOverlayLayout(
       call = Call(
+        remoteHostId = null,
         contact = Contact.sampleData,
         callState = CallState.Negotiated,
         localMedia = CallMediaType.Audio,

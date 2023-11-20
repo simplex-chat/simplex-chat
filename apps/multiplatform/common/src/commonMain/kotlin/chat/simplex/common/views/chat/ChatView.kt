@@ -1418,6 +1418,7 @@ fun PreviewChatLayout() {
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
       chat = Chat(
+        remoteHostId = null,
         chatInfo = ChatInfo.Direct.sampleData,
         chatItems = chatItems,
         chatStats = Chat.ChatStats()
@@ -1490,6 +1491,7 @@ fun PreviewGroupChatLayout() {
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
       chat = Chat(
+        remoteHostId = null,
         chatInfo = ChatInfo.Group.sampleData,
         chatItems = chatItems,
         chatStats = Chat.ChatStats()

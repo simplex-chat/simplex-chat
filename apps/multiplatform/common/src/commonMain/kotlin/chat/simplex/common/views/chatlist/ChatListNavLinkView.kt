@@ -772,6 +772,7 @@ fun PreviewChatListNavLinkDirect() {
       chatLinkPreview = {
         ChatPreviewView(
           chat = Chat(
+            remoteHostId = null,
             chatInfo = ChatInfo.Direct.sampleData,
             chatItems = listOf(
               ChatItem.getSampleData(
@@ -815,6 +816,7 @@ fun PreviewChatListNavLinkGroup() {
       chatLinkPreview = {
         ChatPreviewView(
           Chat(
+            remoteHostId = null,
             chatInfo = ChatInfo.Group.sampleData,
             chatItems = listOf(
               ChatItem.getSampleData(
