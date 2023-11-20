@@ -13,10 +13,10 @@ import chat.simplex.common.views.newchat.QRCodeScanner
 import chat.simplex.res.MR
 
 @Composable
-expect fun ScanProtocolServer(onNext: (ServerCfg) -> Unit)
+expect fun ScanProtocolServer(rhId: Long?, onNext: (ServerCfg) -> Unit)
 
 @Composable
-fun ScanProtocolServerLayout(onNext: (ServerCfg) -> Unit) {
+fun ScanProtocolServerLayout(rhId: Long?, onNext: (ServerCfg) -> Unit) {
   Column(
     Modifier
       .fillMaxSize()
@@ -32,7 +32,7 @@ fun ScanProtocolServerLayout(onNext: (ServerCfg) -> Unit) {
       QRCodeScanner { text ->
         val res = parseServerAddress(text)
         if (res != null) {
-          onNext(ServerCfg(text, false, null, true))
+          onNext(ServerCfg(remoteHostId = rhId, text, false, null, true))
         } else {
           AlertManager.shared.showAlertMsg(
             title = generalGetString(MR.strings.smp_servers_invalid_address),

@@ -53,7 +53,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
   } else if (startChat) {
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
     if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)
-    val user = chatController.apiGetActiveUser()
+    val user = chatController.apiGetActiveUser(null)
     if (user == null) {
       chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
       chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)

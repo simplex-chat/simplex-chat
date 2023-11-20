@@ -84,7 +84,7 @@ fun UserPicker(
       .filter { it }
       .collect {
         try {
-          val updatedUsers = chatModel.controller.listUsers().sortedByDescending { it.user.activeUser }
+          val updatedUsers = chatModel.controller.listUsers(chatModel.remoteHostId).sortedByDescending { it.user.activeUser }
           var same = users.size == updatedUsers.size
           if (same) {
             for (i in 0 until minOf(users.size, updatedUsers.size)) {
@@ -129,7 +129,7 @@ fun UserPicker(
               switchingUsersAndHosts.value = true
             }
             ModalManager.closeAllModalsEverywhere()
-            chatModel.controller.changeActiveUser(u.user.userId, null)
+            chatModel.controller.changeActiveUser(u.user.remoteHostId, u.user.userId, null)
             job.cancel()
             switchingUsersAndHosts.value = false
           }

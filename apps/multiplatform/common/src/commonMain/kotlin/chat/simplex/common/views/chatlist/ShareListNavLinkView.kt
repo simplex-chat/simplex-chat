@@ -20,13 +20,13 @@ fun ShareListNavLinkView(chat: Chat, chatModel: ChatModel) {
     is ChatInfo.Direct ->
       ShareListNavLinkLayout(
         chatLinkPreview = { SharePreviewView(chat) },
-        click = { directChatAction(chat.chatInfo.contact, chatModel) },
+        click = { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) },
         stopped
       )
     is ChatInfo.Group ->
       ShareListNavLinkLayout(
         chatLinkPreview = { SharePreviewView(chat) },
-        click = { groupChatAction(chat.chatInfo.groupInfo, chatModel) },
+        click = { groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel) },
         stopped
       )
     is ChatInfo.ContactRequest, is ChatInfo.ContactConnection, is ChatInfo.InvalidJSON -> {}

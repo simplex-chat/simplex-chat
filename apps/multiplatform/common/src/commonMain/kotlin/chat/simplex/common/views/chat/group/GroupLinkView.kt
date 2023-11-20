@@ -25,6 +25,7 @@ import chat.simplex.res.MR
 @Composable
 fun GroupLinkView(
   chatModel: ChatModel,
+  rhId: Long?,
   groupInfo: GroupInfo,
   connReqContact: String?,
   memberRole: GroupMemberRole?,
@@ -38,7 +39,7 @@ fun GroupLinkView(
   fun createLink() {
     creatingLink = true
     withApi {
-      val link = chatModel.controller.apiCreateGroupLink(groupInfo.groupId)
+      val link = chatModel.controller.apiCreateGroupLink(rhId, groupInfo.groupId)
       if (link != null) {
         groupLink = link.first
         groupLinkMemberRole.value = link.second
@@ -62,7 +63,7 @@ fun GroupLinkView(
       val role = groupLinkMemberRole.value
       if (role != null) {
         withBGApi {
-          val link = chatModel.controller.apiGroupLinkMemberRole(groupInfo.groupId, role)
+          val link = chatModel.controller.apiGroupLinkMemberRole(rhId, groupInfo.groupId, role)
           if (link != null) {
             groupLink = link.first
             groupLinkMemberRole.value = link.second
@@ -78,7 +79,7 @@ fun GroupLinkView(
         confirmText = generalGetString(MR.strings.delete_verb),
         onConfirm = {
           withApi {
-            val r = chatModel.controller.apiDeleteGroupLink(groupInfo.groupId)
+            val r = chatModel.controller.apiDeleteGroupLink(rhId, groupInfo.groupId)
             if (r) {
               groupLink = null
               onGroupLinkUpdated?.invoke(null)

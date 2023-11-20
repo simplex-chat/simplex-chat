@@ -138,7 +138,7 @@ fun MainScreen() {
       }
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
       onboarding == OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
-      onboarding == OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel)
+      onboarding == OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel, null)
       onboarding == OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
     }
     if (appPlatform.isAndroid) {

@@ -53,7 +53,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     val url = chatModel.appOpenUrl.value
     if (url != null) {
       chatModel.appOpenUrl.value = null
-      connectIfOpenedViaUri(url, chatModel)
+      connectIfOpenedViaUri(chatModel.remoteHostId, url, chatModel)
     }
   }
   if (appPlatform.isDesktop) {
@@ -117,7 +117,8 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   }
   if (searchInList.isEmpty()) {
     DesktopActiveCallOverlayLayout(newChatSheetState)
-    NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
+    // TODO disable this button and sheet for the duration of the switch
+    NewChatSheet(chatModel, chatModel.remoteHostId, newChatSheetState, stopped, hideNewChatSheet)
   }
   if (appPlatform.isAndroid) {
     UserPicker(chatModel, userPickerState, switchingUsersAndHosts) {
@@ -317,13 +318,13 @@ private fun ProgressIndicator() {
 @Composable
 expect fun DesktopActiveCallOverlayLayout(newChatSheetState: MutableStateFlow<AnimatedViewState>)
 
-fun connectIfOpenedViaUri(uri: URI, chatModel: ChatModel) {
+fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
     chatModel.appOpenUrl.value = uri
   } else {
     withApi {
-      planAndConnect(chatModel, uri, incognito = null, close = null)
+      planAndConnect(chatModel, rhId, uri, incognito = null, close = null)
     }
   }
 }

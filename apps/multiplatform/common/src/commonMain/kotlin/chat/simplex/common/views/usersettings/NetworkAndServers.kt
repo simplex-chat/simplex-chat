@@ -168,9 +168,9 @@ fun NetworkAndServersView(
   ) {
     AppBarTitle(stringResource(MR.strings.network_and_servers))
     SectionView(generalGetString(MR.strings.settings_section_title_messages)) {
-      SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.smp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.SMP, close) })
+      SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.smp_servers), showCustomModal { m, close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.SMP, close) })
 
-      SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, ServerProtocol.XFTP, close) })
+      SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.XFTP, close) })
 
       UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showSettingsModal)
       UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
