@@ -3252,10 +3252,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         pure $ updateEntityConnStatus acEntity connStatus
       Nothing -> pure acEntity
 
-    isMember :: MemberId -> GroupInfo -> [GroupMember] -> Bool
-    isMember memId GroupInfo {membership} members =
-      sameMemberId memId membership || isJust (find (sameMemberId memId) members)
-
     agentMsgConnStatus :: ACommand 'Agent e -> Maybe ConnStatus
     agentMsgConnStatus = \case
       CONF {} -> Just ConnRequested
@@ -3533,7 +3529,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           _ -> messageError "INFO from member must have x.grp.mem.info, x.info or x.ok"
         pure ()
       CON -> do
-        members <- withStore' $ \db -> getGroupMembers db user gInfo
         withStore' $ \db -> do
           updateGroupMemberStatus db userId m GSMemConnected
           unless (memberActive membership) $
@@ -3553,6 +3548,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             toView $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected}
             let Connection {viaUserContactLink} = conn
             when (isJust viaUserContactLink && isNothing (memberContactId m)) sendXGrpLinkMem
+            members <- withStore' $ \db -> getGroupMembers db user gInfo
             intros <- withStore' $ \db -> createIntroductions db members m
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             forM_ intros $ \intro ->
@@ -4943,11 +4939,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> RcvMessage -> UTCTime -> m ()
     xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ memberProfile) msg brokerTs = do
       checkHostRole m memRole
-      members <- withStore' $ \db -> getGroupMembers db user gInfo
       unless (sameMemberId memId $ membership gInfo) $
-        if isMember memId gInfo members
-          then messageError "x.grp.mem.new error: member already exists"
-          else do
+        withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
+          Right _ -> messageError "x.grp.mem.new error: member already exists"
+          Left _ -> do
             newMember@GroupMember {groupMemberId} <- withStore $ \db -> createNewGroupMember db user gInfo m memInfo GCPostMember GSMemAnnounced
             ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs (CIRcvGroupEvent $ RGEMemberAdded groupMemberId memberProfile)
             groupMsgToView gInfo ci
@@ -4956,11 +4951,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> m ()
     xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _) = do
       case memberCategory m of
-        GCHostMember -> do
-          members <- withStore' $ \db -> getGroupMembers db user gInfo
-          if isMember memId gInfo members
-            then messageWarning "x.grp.mem.intro ignored: member already exists"
-            else do
+        GCHostMember ->
+          withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
+            Right _ -> messageError "x.grp.mem.intro ignored: member already exists"
+            Left _ -> do
               when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
               subMode <- chatReadVar subscriptionMode
               -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
@@ -4986,11 +4980,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     xGrpMemInv :: GroupInfo -> GroupMember -> MemberId -> IntroInvitation -> m ()
     xGrpMemInv gInfo@GroupInfo {groupId} m memId introInv = do
       case memberCategory m of
-        GCInviteeMember -> do
-          members <- withStore' $ \db -> getGroupMembers db user gInfo
-          case find (sameMemberId memId) members of
-            Nothing -> messageError "x.grp.mem.inv error: referenced member does not exist"
-            Just reMember -> do
+        GCInviteeMember ->
+          withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
+            Left _ -> messageError "x.grp.mem.inv error: referenced member does not exist"
+            Right reMember -> do
               GroupMemberIntro {introId} <- withStore $ \db -> saveIntroInvitation db reMember m introInv
               void . sendGroupMessage' user [reMember] (XGrpMemFwd (memberInfo m) introInv) groupId (Just introId) $
                 withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
@@ -4999,14 +4992,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
     xGrpMemFwd gInfo@GroupInfo {membership, chatSettings} m memInfo@(MemberInfo memId memRole memChatVRange _) introInv@IntroInvitation {groupConnReq, directConnReq} = do
       checkHostRole m memRole
-      members <- withStore' $ \db -> getGroupMembers db user gInfo
-      toMember <- case find (sameMemberId memId) members of
-        -- TODO if the missed messages are correctly sent as soon as there is connection before anything else is sent
-        -- the situation when member does not exist is an error
-        -- member receiving x.grp.mem.fwd should have also received x.grp.mem.new prior to that.
-        -- For now, this branch compensates for the lack of delayed message delivery.
-        Nothing -> withStore $ \db -> createNewGroupMember db user gInfo m memInfo GCPostMember GSMemAnnounced
-        Just m' -> pure m'
+      toMember <-
+        withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
+          -- TODO if the missed messages are correctly sent as soon as there is connection before anything else is sent
+          -- the situation when member does not exist is an error
+          -- member receiving x.grp.mem.fwd should have also received x.grp.mem.new prior to that.
+          -- For now, this branch compensates for the lack of delayed message delivery.
+          Left _ -> withStore $ \db -> createNewGroupMember db user gInfo m memInfo GCPostMember GSMemAnnounced
+          Right m' -> pure m'
       withStore' $ \db -> saveMemberInvitation db toMember introInv
       subMode <- chatReadVar subscriptionMode
       -- [incognito] send membership incognito profile, create direct connection as incognito
@@ -5023,11 +5016,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       | membership.memberId == memId =
         let gInfo' = gInfo {membership = membership {memberRole = memRole}}
          in changeMemberRole gInfo' membership $ RGEUserRole memRole
-      | otherwise = do
-        members <- withStore' $ \db -> getGroupMembers db user gInfo
-        case find (sameMemberId memId) members of
-          Just member -> changeMemberRole gInfo member $ RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
-          _ -> messageError "x.grp.mem.role with unknown member ID"
+      | otherwise =
+        withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
+          Right member -> changeMemberRole gInfo member $ RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
+          Left _ -> messageError "x.grp.mem.role with unknown member ID"
       where
         changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} gEvent
           | senderRole < GRAdmin || senderRole < fromRole = messageError "x.grp.mem.role with insufficient member permissions"
@@ -5081,25 +5073,26 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> UTCTime -> m ()
     xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId msg brokerTs = do
-      members <- withStore' $ \db -> getGroupMembers db user gInfo
       if membership.memberId == memId
         then checkRole membership $ do
           deleteGroupLinkIfExists user gInfo
           -- member records are not deleted to keep history
+          members <- withStore' $ \db -> getGroupMembers db user gInfo
           deleteMembersConnections user members
           withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
           deleteMemberItem RGEUserDeleted
           toView $ CRDeletedMemberUser user gInfo {membership = membership {memberStatus = GSMemRemoved}} m
-        else case find (sameMemberId memId) members of
-          Nothing -> messageError "x.grp.mem.del with unknown member ID"
-          Just member@GroupMember {groupMemberId, memberProfile} ->
-            checkRole member $ do
-              -- ? prohibit deleting member if it's the sender - sender should use x.grp.leave
-              deleteMemberConnection user member
-              -- undeleted "member connected" chat item will prevent deletion of member record
-              deleteOrUpdateMemberRecord user member
-              deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
-              toView $ CRDeletedMember user gInfo m member {memberStatus = GSMemRemoved}
+        else
+          withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
+            Left _ -> messageError "x.grp.mem.del with unknown member ID"
+            Right member@GroupMember {groupMemberId, memberProfile} ->
+              checkRole member $ do
+                -- ? prohibit deleting member if it's the sender - sender should use x.grp.leave
+                deleteMemberConnection user member
+                -- undeleted "member connected" chat item will prevent deletion of member record
+                deleteOrUpdateMemberRecord user member
+                deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
+                toView $ CRDeletedMember user gInfo m member {memberStatus = GSMemRemoved}
       where
         checkRole GroupMember {memberRole} a
           | senderRole < GRAdmin || senderRole < memberRole =
