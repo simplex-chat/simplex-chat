@@ -32,7 +32,8 @@ import kotlinx.coroutines.launch
 import java.net.URI
 
 @Composable
-fun AddGroupView(chatModel: ChatModel, rhId: Long?, close: () -> Unit) {
+fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
+  val rhId = rh?.remoteHostId
   AddGroupLayout(
     createGroup = { incognito, groupProfile ->
       withApi {

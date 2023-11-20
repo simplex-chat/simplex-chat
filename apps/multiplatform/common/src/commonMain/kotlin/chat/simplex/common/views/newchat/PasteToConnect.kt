@@ -14,8 +14,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.SharedPreference
+import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.IncognitoView
@@ -24,12 +23,12 @@ import chat.simplex.res.MR
 import java.net.URI
 
 @Composable
-fun PasteToConnectView(chatModel: ChatModel, rhId: Long?, close: () -> Unit) {
+fun PasteToConnectView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
   val connectionLink = remember { mutableStateOf("") }
   val clipboard = LocalClipboardManager.current
   PasteToConnectLayout(
     chatModel = chatModel,
-    rhId = rhId,
+    rh = rh,
     incognitoPref = chatModel.controller.appPrefs.incognito,
     connectionLink = connectionLink,
     pasteFromClipboard = {
@@ -42,14 +41,14 @@ fun PasteToConnectView(chatModel: ChatModel, rhId: Long?, close: () -> Unit) {
 @Composable
 fun PasteToConnectLayout(
   chatModel: ChatModel,
-  rhId: Long?,
+  rh: RemoteHostInfo?,
   incognitoPref: SharedPreference<Boolean>,
   connectionLink: MutableState<String>,
   pasteFromClipboard: () -> Unit,
   close: () -> Unit
 ) {
   val incognito = remember { mutableStateOf(incognitoPref.get()) }
-
+  val rhId = rh?.remoteHostId
   fun connectViaLink(connReqUri: String) {
     try {
       val uri = URI(connReqUri)
@@ -126,7 +125,7 @@ fun PreviewPasteToConnectTextbox() {
   SimpleXTheme {
     PasteToConnectLayout(
       chatModel = ChatModel,
-      rhId = null,
+      rh = null,
       incognitoPref = SharedPreference({ false }, {}),
       connectionLink = remember { mutableStateOf("") },
       pasteFromClipboard = {},

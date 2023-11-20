@@ -118,7 +118,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   if (searchInList.isEmpty()) {
     DesktopActiveCallOverlayLayout(newChatSheetState)
     // TODO disable this button and sheet for the duration of the switch
-    NewChatSheet(chatModel, chatModel.remoteHostId, newChatSheetState, stopped, hideNewChatSheet)
+    NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
   }
   if (appPlatform.isAndroid) {
     UserPicker(chatModel, userPickerState, switchingUsersAndHosts) {
