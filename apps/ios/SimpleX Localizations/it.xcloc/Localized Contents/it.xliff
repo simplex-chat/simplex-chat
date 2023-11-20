@@ -89,6 +89,7 @@
       </trans-unit>
       <trans-unit id="%@ and %@" xml:space="preserve">
         <source>%@ and %@</source>
+        <target>%@ e %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ and %@ connected" xml:space="preserve">
@@ -103,6 +104,7 @@
       </trans-unit>
       <trans-unit id="%@ connected" xml:space="preserve">
         <source>%@ connected</source>
+        <target>%@ si è connesso/a</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
@@ -132,6 +134,7 @@
       </trans-unit>
       <trans-unit id="%@, %@ and %lld members" xml:space="preserve">
         <source>%@, %@ and %lld members</source>
+        <target>%@, %@ e %lld membri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve">
@@ -201,6 +204,7 @@
       </trans-unit>
       <trans-unit id="%lld group events" xml:space="preserve">
         <source>%lld group events</source>
+        <target>%lld eventi del gruppo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld members" xml:space="preserve">
@@ -210,14 +214,17 @@
       </trans-unit>
       <trans-unit id="%lld messages blocked" xml:space="preserve">
         <source>%lld messages blocked</source>
+        <target>%lld messaggi bloccati</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld messages marked deleted" xml:space="preserve">
         <source>%lld messages marked deleted</source>
+        <target>%lld messaggi contrassegnati eliminati</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld messages moderated by %@" xml:space="preserve">
         <source>%lld messages moderated by %@</source>
+        <target>%lld messaggi moderati da %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld minutes" xml:space="preserve">
@@ -394,6 +401,7 @@
       </trans-unit>
       <trans-unit id="0 sec" xml:space="preserve">
         <source>0 sec</source>
+        <target>0 sec</target>
         <note>time to disappear</note>
       </trans-unit>
       <trans-unit id="0s" xml:space="preserve">
@@ -623,6 +631,7 @@
       </trans-unit>
       <trans-unit id="All new messages from %@ will be hidden!" xml:space="preserve">
         <source>All new messages from %@ will be hidden!</source>
+        <target>Tutti i nuovi messaggi da %@ verrranno nascosti!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All your contacts will remain connected." xml:space="preserve">
@@ -732,10 +741,12 @@
       </trans-unit>
       <trans-unit id="Already connecting!" xml:space="preserve">
         <source>Already connecting!</source>
+        <target>Già in connessione!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Already joining the group!" xml:space="preserve">
         <source>Already joining the group!</source>
+        <target>Già in ingresso nel gruppo!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Always use relay" xml:space="preserve">
@@ -875,14 +886,17 @@
       </trans-unit>
       <trans-unit id="Block" xml:space="preserve">
         <source>Block</source>
+        <target>Blocca</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block member" xml:space="preserve">
         <source>Block member</source>
+        <target>Blocca membro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block member?" xml:space="preserve">
         <source>Block member?</source>
+        <target>Bloccare il membro?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -1153,20 +1167,26 @@
       </trans-unit>
       <trans-unit id="Connect to yourself?" xml:space="preserve">
         <source>Connect to yourself?</source>
+        <target>Connettersi a te stesso?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to yourself?&#10;This is your own SimpleX address!" xml:space="preserve">
         <source>Connect to yourself?
 This is your own SimpleX address!</source>
+        <target>Connettersi a te stesso?
+Questo è il tuo indirizzo SimpleX!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to yourself?&#10;This is your own one-time link!" xml:space="preserve">
         <source>Connect to yourself?
 This is your own one-time link!</source>
+        <target>Connettersi a te stesso?
+Questo è il tuo link una tantum!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via contact address" xml:space="preserve">
         <source>Connect via contact address</source>
+        <target>Connettere via indirizzo del contatto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect via link" xml:space="preserve">
@@ -1186,6 +1206,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Connect with %@" xml:space="preserve">
         <source>Connect with %@</source>
+        <target>Connettersi con %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
@@ -1285,6 +1306,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Correct name to %@?" xml:space="preserve">
         <source>Correct name to %@?</source>
+        <target>Correggere il nome a %@?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create" xml:space="preserve">
@@ -1309,6 +1331,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Create group" xml:space="preserve">
         <source>Create group</source>
+        <target>Crea gruppo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create group link" xml:space="preserve">
@@ -1333,6 +1356,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Create profile" xml:space="preserve">
         <source>Create profile</source>
+        <target>Crea profilo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create queue" xml:space="preserve">
@@ -1495,6 +1519,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Delete %lld messages?" xml:space="preserve">
         <source>Delete %lld messages?</source>
+        <target>Eliminare %lld messaggi?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete Contact" xml:space="preserve">
@@ -1524,6 +1549,7 @@ This is your own one-time link!</source>
       </trans-unit>
       <trans-unit id="Delete and notify contact" xml:space="preserve">
         <source>Delete and notify contact</source>
+        <target>Elimina e avvisa il contatto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete archive" xml:space="preserve">
@@ -1559,6 +1585,8 @@ This is your own one-time link!</source>
       <trans-unit id="Delete contact?&#10;This cannot be undone!" xml:space="preserve">
         <source>Delete contact?
 This cannot be undone!</source>
+        <target>Eliminare il contatto?
+Non è reversibile!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete database" xml:space="preserve">
@@ -1966,6 +1994,14 @@ This cannot be undone!</source>
         <target>Messaggio crittografato: errore imprevisto</target>
         <note>notification</note>
       </trans-unit>
+      <trans-unit id="Encryption re-negotiation error" xml:space="preserve">
+        <source>Encryption re-negotiation error</source>
+        <note>message decrypt error item</note>
+      </trans-unit>
+      <trans-unit id="Encryption re-negotiation failed." xml:space="preserve">
+        <source>Encryption re-negotiation failed.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enter Passcode" xml:space="preserve">
         <source>Enter Passcode</source>
         <target>Inserisci il codice di accesso</target>
@@ -1978,6 +2014,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Enter group name…" xml:space="preserve">
         <source>Enter group name…</source>
+        <target>Inserisci il nome del gruppo…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter passphrase…" xml:space="preserve">
@@ -2007,6 +2044,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Enter your name…" xml:space="preserve">
         <source>Enter your name…</source>
+        <target>Inserisci il tuo nome…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error" xml:space="preserve">
@@ -2286,6 +2324,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Expand" xml:space="preserve">
         <source>Expand</source>
+        <target>Espandi</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
@@ -2435,6 +2474,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Fully decentralized – visible only to members." xml:space="preserve">
         <source>Fully decentralized – visible only to members.</source>
+        <target>Completamente decentralizzato: visibile solo ai membri.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fully re-implemented - work in background!" xml:space="preserve">
@@ -2459,10 +2499,12 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Group already exists" xml:space="preserve">
         <source>Group already exists</source>
+        <target>Il gruppo esiste già</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group already exists!" xml:space="preserve">
         <source>Group already exists!</source>
+        <target>Il gruppo esiste già!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group display name" xml:space="preserve">
@@ -2814,6 +2856,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Invalid name!" xml:space="preserve">
         <source>Invalid name!</source>
+        <target>Nome non valido!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid server address!" xml:space="preserve">
@@ -2909,6 +2952,7 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Join group?" xml:space="preserve">
         <source>Join group?</source>
+        <target>Entrare nel gruppo?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join incognito" xml:space="preserve">
@@ -2918,11 +2962,14 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Join with current profile" xml:space="preserve">
         <source>Join with current profile</source>
+        <target>Entra con il profilo attuale</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join your group?&#10;This is your link for group %@!" xml:space="preserve">
         <source>Join your group?
 This is your link for group %@!</source>
+        <target>Entrare nel tuo gruppo?
+Questo è il tuo link per il gruppo %@!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Joining group" xml:space="preserve">
@@ -3142,6 +3189,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Messages from %@ will be shown!" xml:space="preserve">
         <source>Messages from %@ will be shown!</source>
+        <target>I messaggi da %@ verranno mostrati!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Migrating database archive…" xml:space="preserve">
@@ -3495,6 +3543,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Open group" xml:space="preserve">
         <source>Open group</source>
+        <target>Apri gruppo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Open user profiles" xml:space="preserve">
@@ -3704,10 +3753,12 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Profile name" xml:space="preserve">
         <source>Profile name</source>
+        <target>Nome del profilo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile name:" xml:space="preserve">
         <source>Profile name:</source>
+        <target>Nome del profilo:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Profile password" xml:space="preserve">
@@ -3957,10 +4008,12 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Repeat connection request?" xml:space="preserve">
         <source>Repeat connection request?</source>
+        <target>Ripetere la richiesta di connessione?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Repeat join request?" xml:space="preserve">
         <source>Repeat join request?</source>
+        <target>Ripetere la richiesta di ingresso?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reply" xml:space="preserve">
@@ -4680,6 +4733,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Tap to Connect" xml:space="preserve">
         <source>Tap to Connect</source>
+        <target>Tocca per connettere</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap to activate profile." xml:space="preserve">
@@ -4876,10 +4930,12 @@ Può accadere a causa di qualche bug o quando la connessione è compromessa.</ta
       </trans-unit>
       <trans-unit id="This is your own SimpleX address!" xml:space="preserve">
         <source>This is your own SimpleX address!</source>
+        <target>Questo è il tuo indirizzo SimpleX!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This is your own one-time link!" xml:space="preserve">
         <source>This is your own one-time link!</source>
+        <target>Questo è il tuo link una tantum!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
@@ -4981,14 +5037,17 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
       </trans-unit>
       <trans-unit id="Unblock" xml:space="preserve">
         <source>Unblock</source>
+        <target>Sblocca</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unblock member" xml:space="preserve">
         <source>Unblock member</source>
+        <target>Sblocca membro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unblock member?" xml:space="preserve">
         <source>Unblock member?</source>
+        <target>Sbloccare il membro?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unexpected error: %@" xml:space="preserve">
@@ -5340,31 +5399,39 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       </trans-unit>
       <trans-unit id="You are already connecting to %@." xml:space="preserve">
         <source>You are already connecting to %@.</source>
+        <target>Ti stai già connettendo a %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connecting via this one-time link!" xml:space="preserve">
         <source>You are already connecting via this one-time link!</source>
+        <target>Ti stai già connettendo tramite questo link una tantum!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already in group %@." xml:space="preserve">
         <source>You are already in group %@.</source>
+        <target>Sei già nel gruppo %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already joining the group %@." xml:space="preserve">
         <source>You are already joining the group %@.</source>
+        <target>Stai già entrando nel gruppo %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already joining the group via this link!" xml:space="preserve">
         <source>You are already joining the group via this link!</source>
+        <target>Stai già entrando nel gruppo tramite questo link!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already joining the group via this link." xml:space="preserve">
         <source>You are already joining the group via this link.</source>
+        <target>Stai già entrando nel gruppo tramite questo link.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already joining the group!&#10;Repeat join request?" xml:space="preserve">
         <source>You are already joining the group!
 Repeat join request?</source>
+        <target>Stai già entrando nel gruppo!
+Ripetere la richiesta di ingresso?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve">
@@ -5464,11 +5531,14 @@ Repeat join request?</source>
       </trans-unit>
       <trans-unit id="You have already requested connection via this address!" xml:space="preserve">
         <source>You have already requested connection via this address!</source>
+        <target>Hai già richiesto la connessione tramite questo indirizzo!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You have already requested connection!&#10;Repeat connection request?" xml:space="preserve">
         <source>You have already requested connection!
 Repeat connection request?</source>
+        <target>Hai già richiesto la connessione!
+Ripetere la richiesta di connessione?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You have no chats" xml:space="preserve">
@@ -5523,6 +5593,7 @@ Repeat connection request?</source>
       </trans-unit>
       <trans-unit id="You will be connected when group link host's device is online, please wait or check later!" xml:space="preserve">
         <source>You will be connected when group link host's device is online, please wait or check later!</source>
+        <target>Verrai connesso/a quando il dispositivo dell'host del gruppo sarà in linea, attendi o controlla più tardi!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will be connected when your connection request is accepted, please wait or check later!" xml:space="preserve">
@@ -5542,6 +5613,7 @@ Repeat connection request?</source>
       </trans-unit>
       <trans-unit id="You will connect to all group members." xml:space="preserve">
         <source>You will connect to all group members.</source>
+        <target>Ti connetterai a tutti i membri del gruppo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You will still receive calls and notifications from muted profiles when they are active." xml:space="preserve">
@@ -5665,6 +5737,7 @@ Puoi modificarlo nelle impostazioni.</target>
       </trans-unit>
       <trans-unit id="Your profile" xml:space="preserve">
         <source>Your profile</source>
+        <target>Il tuo profilo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile **%@** will be shared." xml:space="preserve">
@@ -5761,6 +5834,7 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
       </trans-unit>
       <trans-unit id="and %lld other events" xml:space="preserve">
         <source>and %lld other events</source>
+        <target>e altri %lld eventi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve">
@@ -5780,6 +5854,7 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
       </trans-unit>
       <trans-unit id="blocked" xml:space="preserve">
         <source>blocked</source>
+        <target>bloccato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="bold" xml:space="preserve">
@@ -5814,7 +5889,7 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
       </trans-unit>
       <trans-unit id="changed role of %@ to %@" xml:space="preserve">
         <source>changed role of %1$@ to %2$@</source>
-        <target>cambiato il ruolo di %1$@ in %2$@</target>
+        <target>ha cambiato il ruolo di %1$@ in %2$@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="changed your role to %@" xml:space="preserve">
@@ -5954,6 +6029,7 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
       </trans-unit>
       <trans-unit id="deleted contact" xml:space="preserve">
         <source>deleted contact</source>
+        <target>contatto eliminato</target>
         <note>rcv direct event chat item</note>
       </trans-unit>
       <trans-unit id="deleted group" xml:space="preserve">
