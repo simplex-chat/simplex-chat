@@ -1608,7 +1608,7 @@ object ChatController {
         if (active(r.user)) {
           chatModel.addChatItem(rhId, cInfo, cItem)
         } else if (cItem.isRcvNew && cInfo.ntfsEnabled) {
-          chatModel.increaseUnreadCounter(r.user)
+          chatModel.increaseUnreadCounter(rhId, r.user)
         }
         val file = cItem.file
         val mc = cItem.content.msgContent
@@ -1619,7 +1619,7 @@ object ChatController {
                 || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
           withApi { receiveFile(rhId, r.user, file.fileId, encrypted = cItem.encryptLocalFile && chatController.appPrefs.privacyEncryptLocalFiles.get(), auto = true) }
         }
-        if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id)) {
+        if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id || chatModel.remoteHostId != rhId)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
         }
       }
@@ -1640,7 +1640,7 @@ object ChatController {
       is CR.ChatItemDeleted -> {
         if (!active(r.user)) {
           if (r.toChatItem == null && r.deletedChatItem.chatItem.isRcvNew && r.deletedChatItem.chatInfo.ntfsEnabled) {
-            chatModel.decreaseUnreadCounter(r.user)
+            chatModel.decreaseUnreadCounter(rhId, r.user)
           }
           return
         }
@@ -1901,7 +1901,7 @@ object ChatController {
   }
 
   private fun activeUser(rhId: Long?, user: UserLike): Boolean =
-    rhId == chatModel.currentRemoteHost.value?.remoteHostId && user.userId == chatModel.currentUser.value?.userId
+    rhId == chatModel.remoteHostId && user.userId == chatModel.currentUser.value?.userId
 
   private fun withCall(r: CR, contact: Contact, perform: (Call) -> Unit) {
     val call = chatModel.activeCall.value

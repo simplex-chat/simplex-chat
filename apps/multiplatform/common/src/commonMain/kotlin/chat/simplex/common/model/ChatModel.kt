@@ -226,7 +226,7 @@ object ChatModel {
         chatStats =
           if (cItem.meta.itemStatus is CIStatus.RcvNew) {
             val minUnreadId = if(chat.chatStats.minUnreadItemId == 0L) cItem.id else chat.chatStats.minUnreadItemId
-            increaseUnreadCounter(currentUser.value!!)
+            increaseUnreadCounter(rhId, currentUser.value!!)
             chat.chatStats.copy(unreadCount = chat.chatStats.unreadCount + 1, minUnreadItemId = minUnreadId)
           }
           else
@@ -343,7 +343,7 @@ object ChatModel {
     // clear preview
     val i = getChatIndex(rhId, cInfo.id)
     if (i >= 0) {
-      decreaseUnreadCounter(currentUser.value!!, chats[i].chatStats.unreadCount)
+      decreaseUnreadCounter(rhId, currentUser.value!!, chats[i].chatStats.unreadCount)
       chats[i] = chats[i].copy(chatItems = arrayListOf(), chatStats = Chat.ChatStats(), chatInfo = cInfo)
     }
     // clear current chat
@@ -390,7 +390,7 @@ object ChatModel {
       val lastId = chat.chatItems.lastOrNull()?.id
       if (lastId != null) {
         val unreadCount = unreadCountAfter ?: if (range != null) chat.chatStats.unreadCount - markedRead else 0
-        decreaseUnreadCounter(currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
+        decreaseUnreadCounter(chat.remoteHostId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
         chats[chatIdx] = chat.copy(
           chatStats = chat.chatStats.copy(
             unreadCount = unreadCount,
@@ -433,7 +433,7 @@ object ChatModel {
 
     val chat = chats[chatIndex]
     val unreadCount = kotlin.math.max(chat.chatStats.unreadCount - 1, 0)
-    decreaseUnreadCounter(currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
+    decreaseUnreadCounter(rhId, currentUser.value!!, chat.chatStats.unreadCount - unreadCount)
     chats[chatIndex] = chat.copy(
       chatStats = chat.chatStats.copy(
         unreadCount = unreadCount,
@@ -441,16 +441,16 @@ object ChatModel {
     )
   }
 
-  fun increaseUnreadCounter(user: UserLike) {
-    changeUnreadCounter(user, 1)
+  fun increaseUnreadCounter(rhId: Long?, user: UserLike) {
+    changeUnreadCounter(rhId, user, 1)
   }
 
-  fun decreaseUnreadCounter(user: UserLike, by: Int = 1) {
-    changeUnreadCounter(user, -by)
+  fun decreaseUnreadCounter(rhId: Long?, user: UserLike, by: Int = 1) {
+    changeUnreadCounter(rhId, user, -by)
   }
 
-  private fun changeUnreadCounter(user: UserLike, by: Int) {
-    val i = users.indexOfFirst { it.user.userId == user.userId }
+  private fun changeUnreadCounter(rhId: Long?, user: UserLike, by: Int) {
+    val i = users.indexOfFirst { it.user.userId == user.userId && it.user.remoteHostId == rhId }
     if (i != -1) {
       users[i] = users[i].copy(unreadCount = users[i].unreadCount + by)
     }
