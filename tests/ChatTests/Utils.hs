@@ -36,6 +36,9 @@ import Test.Hspec
 defaultPrefs :: Maybe Preferences
 defaultPrefs = Just $ toChatPrefs defaultChatPrefs
 
+aliceDesktopProfile :: Profile
+aliceDesktopProfile = Profile {displayName = "alice_desktop", fullName = "Alice Desktop", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
+
 aliceProfile :: Profile
 aliceProfile = Profile {displayName = "alice", fullName = "Alice", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
@@ -323,6 +326,9 @@ cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 
 ($<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
 (cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine cc) `shouldReturn` line
+
+(^<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
+(cc, p) ^<# line = (dropTime . dropStrPrefix p <$> getTermLine cc) `shouldReturn` line
 
 (⩗) :: HasCallStack => TestCC -> String -> Expectation
 cc ⩗ line = (dropTime . dropReceipt <$> getTermLine cc) `shouldReturn` line

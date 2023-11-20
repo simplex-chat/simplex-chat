@@ -30,16 +30,9 @@ BUILD_DIR=dist-newstyle/build/$ARCH-$OS/ghc-*/simplex-chat-*
 cd $root_dir
 mkdir dist-newstyle 2>/dev/null || true
 
-if [ ! -f dist-newstyle/openssl-1.1.1w/libcrypto-1_1-x64.dll ]; then
-	cd dist-newstyle
-    curl https://www.openssl.org/source/openssl-1.1.1w.tar.gz -o openssl.tar.gz
-    $WINDIR\\System32\\tar.exe -xvzf openssl.tar.gz
-	cd openssl-1.1.1w
-	./Configure mingw64
-	make
-	cd ../../
-fi
-openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-1.1.1w | sed 's#/\([a-z]\)#\1:#' | sed 's#/#\\#g')
+scripts/desktop/prepare-openssl-windows.sh
+
+openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-1.1.1w | sed 's#/\([a-zA-Z]\)#\1:#' | sed 's#/#\\#g')
 rm -rf $BUILD_DIR 2>/dev/null || true
 # Existence of this directory produces build error: cabal's bug
 rm -rf dist-newstyle/src/direct-sq* 2>/dev/null || true

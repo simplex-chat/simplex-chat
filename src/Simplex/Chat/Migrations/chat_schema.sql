@@ -527,6 +527,28 @@ CREATE TABLE IF NOT EXISTS "received_probes"(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL)
 );
+CREATE TABLE remote_hosts(
+  -- e.g., mobiles known to a desktop app
+  remote_host_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  host_device_name TEXT NOT NULL,
+  store_path TEXT NOT NULL, -- relative folder name for host files
+  ca_key BLOB NOT NULL,
+  ca_cert BLOB NOT NULL,
+  id_key BLOB NOT NULL, -- long-term/identity signing key
+  host_fingerprint BLOB NOT NULL, -- remote host CA cert fingerprint, set when connected
+  host_dh_pub BLOB NOT NULL -- last session DH key
+);
+CREATE TABLE remote_controllers(
+  -- e.g., desktops known to a mobile app
+  remote_ctrl_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ctrl_device_name TEXT NOT NULL,
+  ca_key BLOB NOT NULL,
+  ca_cert BLOB NOT NULL,
+  ctrl_fingerprint BLOB NOT NULL, -- remote controller CA cert fingerprint, set when connected
+  id_pub BLOB NOT NULL, -- remote controller long-term/identity key to verify signatures
+  dh_priv_key BLOB NOT NULL, -- last session DH key
+  prev_dh_priv_key BLOB -- previous session DH key
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -777,4 +799,10 @@ CREATE INDEX idx_messages_group_id_shared_msg_id ON messages(
 );
 CREATE INDEX idx_chat_items_forwarded_by_group_member_id ON chat_items(
   forwarded_by_group_member_id
+);
+CREATE UNIQUE INDEX idx_remote_hosts_host_fingerprint ON remote_hosts(
+  host_fingerprint
+);
+CREATE UNIQUE INDEX idx_remote_controllers_ctrl_fingerprint ON remote_controllers(
+  ctrl_fingerprint
 );

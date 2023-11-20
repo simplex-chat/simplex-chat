@@ -83,7 +83,7 @@ runChatServer ChatServerConfig {chatPort, clientQSize} cc = do
         >>= processCommand
         >>= atomically . writeTBQueue sndQ
     output ChatClient {sndQ} = forever $ do
-      (_, resp) <- atomically . readTBQueue $ outputQ cc
+      (_, _, resp) <- atomically . readTBQueue $ outputQ cc
       atomically $ writeTBQueue sndQ ChatSrvResponse {corrId = Nothing, resp}
     receive ws ChatClient {rcvQ, sndQ} = forever $ do
       s <- WS.receiveData ws

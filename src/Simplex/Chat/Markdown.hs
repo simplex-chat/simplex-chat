@@ -1,8 +1,9 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use newtype instead of data" #-}
@@ -10,8 +11,9 @@
 module Simplex.Chat.Markdown where
 
 import Control.Applicative (optional, (<|>))
-import Data.Aeson (ToJSON)
+import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
 import Data.Char (isDigit, isPunctuation)
@@ -26,12 +28,11 @@ import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import GHC.Generics
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqScheme (..), ConnReqUriData (..), ConnectionRequestUri (..), SMPQueue (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fstToLower, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
 import Simplex.Messaging.Util (safeDecodeUtf8)
 import System.Console.ANSI.Types
@@ -51,24 +52,16 @@ data Format
   | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, smpHosts :: NonEmpty Text}
   | Email
   | Phone
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show)
 
 data SimplexLinkType = XLContact | XLInvitation | XLGroup
-  deriving (Eq, Show, Generic)
-
-instance ToJSON SimplexLinkType where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "XL"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "XL"
+  deriving (Eq, Show)
 
 colored :: Color -> Format
 colored = Colored . FormatColor
 
 markdown :: Format -> Text -> Markdown
 markdown = Markdown . Just
-
-instance ToJSON Format where
-  toJSON = J.genericToJSON $ sumTypeJSON fstToLower
-  toEncoding = J.genericToEncoding $ sumTypeJSON fstToLower
 
 instance Semigroup Markdown where
   m <> (Markdown _ "") = m
@@ -91,6 +84,18 @@ instance IsString Markdown where fromString = unmarked . T.pack
 newtype FormatColor = FormatColor Color
   deriving (Eq, Show)
 
+instance FromJSON FormatColor where
+  parseJSON = J.withText "FormatColor" $ fmap FormatColor . \case
+    "red" -> pure Red
+    "green" -> pure Green
+    "blue" -> pure Blue
+    "yellow" -> pure Yellow
+    "cyan" -> pure Cyan
+    "magenta" -> pure Magenta
+    "black" -> pure Black
+    "white" -> pure White
+    unexpected -> fail $ "unexpected FormatColor: " <> show unexpected
+
 instance ToJSON FormatColor where
   toJSON (FormatColor c) = case c of
     Red -> "red"
@@ -103,10 +108,7 @@ instance ToJSON FormatColor where
     White -> "white"
 
 data FormattedText = FormattedText {format :: Maybe Format, text :: Text}
-  deriving (Eq, Show, Generic)
-
-instance ToJSON FormattedText where
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Eq, Show)
 
 instance IsString FormattedText where
   fromString = FormattedText Nothing . T.pack
@@ -114,11 +116,6 @@ instance IsString FormattedText where
 type MarkdownList = [FormattedText]
 
 data ParsedMarkdown = ParsedMarkdown {formattedText :: Maybe MarkdownList}
-  deriving (Generic)
-
-instance ToJSON ParsedMarkdown where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
 
 unmarked :: Text -> Markdown
 unmarked = Markdown Nothing
@@ -129,7 +126,7 @@ parseMaybeMarkdownList s
   | otherwise = Just . reverse $ foldl' acc [] ml
   where
     ml = intercalate ["\n"] . map (markdownToList . parseMarkdown) $ T.lines s
-    acc [] m = [m] 
+    acc [] m = [m]
     acc ms@(FormattedText f t : ms') ft@(FormattedText f' t')
       | f == f' = FormattedText f (t <> t') : ms'
       | otherwise = ft : ms
@@ -242,3 +239,11 @@ markdownP = mconcat <$> A.many' fragmentP
         linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
           Just (CRDataGroup _) -> XLGroup
           Nothing -> XLContact
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "XL") ''SimplexLinkType)
+
+$(JQ.deriveJSON (sumTypeJSON fstToLower) ''Format)
+
+$(JQ.deriveJSON defaultJSON ''FormattedText)
+
+$(JQ.deriveToJSON defaultJSON ''ParsedMarkdown)

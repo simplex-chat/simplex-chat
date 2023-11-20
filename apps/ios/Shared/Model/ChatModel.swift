@@ -85,6 +85,8 @@ final class ChatModel: ObservableObject {
     @Published var activeCall: Call?
     @Published var callCommand: WCallCommand?
     @Published var showCallView = false
+    // remote desktop
+    @Published var remoteCtrlSession: RemoteCtrlSession?
     // currently showing QR code
     @Published var connReqInv: String?
     // audio recording and playback
@@ -108,6 +110,10 @@ final class ChatModel: ObservableObject {
 
     var ntfEnablePeriodic: Bool {
         notificationMode == .periodic || ntfEnablePeriodicGroupDefault.get()
+    }
+
+    var activeRemoteCtrl: Bool {
+        remoteCtrlSession?.active ?? false
     }
 
     func getUser(_ userId: Int64) -> User? {
@@ -761,4 +767,33 @@ final class GMember: ObservableObject, Identifiable {
     var displayName: String { wrapped.displayName }
     var viewId: String { get { "\(wrapped.id) \(created.timeIntervalSince1970)" } }
     static let sampleData = GMember(GroupMember.sampleData)
+}
+
+struct RemoteCtrlSession {
+    var ctrlAppInfo: CtrlAppInfo
+    var appVersion: String
+    var sessionState: UIRemoteCtrlSessionState
+
+    func updateState(_ state: UIRemoteCtrlSessionState) -> RemoteCtrlSession {
+        RemoteCtrlSession(ctrlAppInfo: ctrlAppInfo, appVersion: appVersion, sessionState: state)
+    }
+
+    var active: Bool {
+        if case .connected = sessionState { true } else { false }
+    }
+
+    var sessionCode: String? {
+        switch sessionState {
+        case let .pendingConfirmation(_, sessionCode): sessionCode
+        case let .connected(_, sessionCode): sessionCode
+        default: nil
+        }
+    }
+}
+
+enum UIRemoteCtrlSessionState {
+    case starting
+    case connecting(remoteCtrl_: RemoteCtrlInfo?)
+    case pendingConfirmation(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
+    case connected(remoteCtrl: RemoteCtrlInfo, sessionCode: String)
 }

@@ -52,12 +52,14 @@ getKey =
 runInputLoop :: ChatTerminal -> ChatController -> IO ()
 runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
   s <- atomically . readTBQueue $ inputQ cc
+  rh <- readTVarIO $ currentRemoteHost cc
   let bs = encodeUtf8 $ T.pack s
       cmd = parseChatCommand bs
+      rh' = if either (const False) allowRemoteCommand cmd then rh else Nothing
   unless (isMessage cmd) $ echo s
-  r <- runReaderT (execChatCommand bs) cc
+  r <- runReaderT (execChatCommand rh' bs) cc
   processResp s cmd r
-  printRespToTerminal ct cc False r
+  printRespToTerminal ct cc False rh r
   startLiveMessage cmd r
   where
     echo s = printToTerminal ct [plain s]
@@ -145,7 +147,7 @@ runTerminalInput ct cc = withChatTerm ct $ do
   receiveFromTTY cc ct
 
 receiveFromTTY :: forall m. MonadTerminal m => ChatController -> ChatTerminal -> m ()
-receiveFromTTY cc@ChatController {inputQ, currentUser, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState, activeTo} =
+receiveFromTTY cc@ChatController {inputQ, currentUser, currentRemoteHost, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState, activeTo} =
   forever $ getKey >>= liftIO . processKey >> withTermLock ct (updateInput ct)
   where
     processKey :: (Key, Modifiers) -> IO ()
@@ -177,7 +179,8 @@ receiveFromTTY cc@ChatController {inputQ, currentUser, chatStore} ct@ChatTermina
       kill promptThreadId
       atomically $ writeTVar liveMessageState Nothing
       r <- sendUpdatedLiveMessage cc sentMsg lm False
-      printRespToTerminal ct cc False r
+      rh <- readTVarIO currentRemoteHost -- XXX: should be inherited from live message state
+      printRespToTerminal ct cc False rh r
       where
         kill sel = deRefWeak (sel lm) >>= mapM_ killThread
 

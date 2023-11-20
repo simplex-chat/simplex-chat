@@ -24,11 +24,12 @@ import chat.simplex.res.MR
 import java.net.URI
 
 @Composable
-fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
+fun PasteToConnectView(chatModel: ChatModel, rhId: Long?, close: () -> Unit) {
   val connectionLink = remember { mutableStateOf("") }
   val clipboard = LocalClipboardManager.current
   PasteToConnectLayout(
     chatModel = chatModel,
+    rhId = rhId,
     incognitoPref = chatModel.controller.appPrefs.incognito,
     connectionLink = connectionLink,
     pasteFromClipboard = {
@@ -41,6 +42,7 @@ fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
 @Composable
 fun PasteToConnectLayout(
   chatModel: ChatModel,
+  rhId: Long?,
   incognitoPref: SharedPreference<Boolean>,
   connectionLink: MutableState<String>,
   pasteFromClipboard: () -> Unit,
@@ -52,7 +54,7 @@ fun PasteToConnectLayout(
     try {
       val uri = URI(connReqUri)
       withApi {
-        planAndConnect(chatModel, uri, incognito = incognito.value, close)
+        planAndConnect(chatModel, rhId, uri, incognito = incognito.value, close)
       }
     } catch (e: RuntimeException) {
       AlertManager.shared.showAlertMsg(
@@ -124,6 +126,7 @@ fun PreviewPasteToConnectTextbox() {
   SimpleXTheme {
     PasteToConnectLayout(
       chatModel = ChatModel,
+      rhId = null,
       incognitoPref = SharedPreference({ false }, {}),
       connectionLink = remember { mutableStateOf("") },
       pasteFromClipboard = {},

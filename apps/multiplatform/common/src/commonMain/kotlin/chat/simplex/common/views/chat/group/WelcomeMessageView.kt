@@ -30,7 +30,7 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
 @Composable
-fun GroupWelcomeView(m: ChatModel, groupInfo: GroupInfo, close: () -> Unit) {
+fun GroupWelcomeView(m: ChatModel, rhId: Long?, groupInfo: GroupInfo, close: () -> Unit) {
   var gInfo by remember { mutableStateOf(groupInfo) }
   val welcomeText = remember { mutableStateOf(gInfo.groupProfile.description ?: "") }
 
@@ -41,10 +41,10 @@ fun GroupWelcomeView(m: ChatModel, groupInfo: GroupInfo, close: () -> Unit) {
         welcome = null
       }
       val groupProfileUpdated = gInfo.groupProfile.copy(description = welcome)
-      val res = m.controller.apiUpdateGroup(gInfo.groupId, groupProfileUpdated)
+      val res = m.controller.apiUpdateGroup(rhId, gInfo.groupId, groupProfileUpdated)
       if (res != null) {
         gInfo = res
-        m.updateGroup(res)
+        m.updateGroup(rhId, res)
         welcomeText.value = welcome ?: ""
       }
       afterSave()

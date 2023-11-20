@@ -21,6 +21,8 @@ actual val agentDatabaseFileName: String = "simplex_v1_agent.db"
 
 actual val databaseExportDir: File = tmpDir
 
+actual val remoteHostsDir: File = File(dataDir.absolutePath + File.separator + "remote_hosts")
+
 actual fun desktopOpenDatabaseDir() {
   if (Desktop.isDesktopSupported()) {
     try {
