@@ -100,14 +100,11 @@ instance FromField AgentUserId where fromField f = AgentUserId <$> fromField f
 
 instance ToField AgentUserId where toField (AgentUserId uId) = toField uId
 
-type RemoteHostId = Int64
-
 aUserId :: User -> UserId
 aUserId User {agentUserId = AgentUserId uId} = uId
 
 data User = User
-  { remoteHostId :: Maybe RemoteHostId,
-    userId :: UserId,
+  { userId :: UserId,
     agentUserId :: AgentUserId,
     userContactId :: ContactId,
     localDisplayName :: ContactName,
@@ -1524,8 +1521,7 @@ data XGrpMemIntroCont = XGrpMemIntroCont
   deriving (Show)
 
 data ServerCfg p = ServerCfg
-  { remoteHostId :: Maybe RemoteHostId,
-    server :: ProtoServerWithAuth p,
+  { server :: ProtoServerWithAuth p,
     preset :: Bool,
     tested :: Maybe Bool,
     enabled :: Bool

@@ -266,8 +266,7 @@ data NewChatItem d = NewChatItem
 
 -- | type to show one chat with messages
 data Chat c = Chat
-  { remoteHostId :: Maybe RemoteHostId,
-    chatInfo :: ChatInfo c,
+  { chatInfo :: ChatInfo c,
     chatItems :: [CChatItem c],
     chatStats :: ChatStats
   }

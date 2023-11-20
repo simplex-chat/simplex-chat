@@ -18,7 +18,6 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.RemoteControl.Types
 import UnliftIO
-import Simplex.Chat.Types (RemoteHostId)
 
 insertRemoteHost :: DB.Connection -> Text -> FilePath -> RCHostPairing -> ExceptT StoreError IO RemoteHostId
 insertRemoteHost db hostDeviceName storePath RCHostPairing {caKey, caCert, idPrivKey, knownHost = kh_} = do

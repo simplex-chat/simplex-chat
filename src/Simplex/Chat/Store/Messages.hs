@@ -572,7 +572,7 @@ getDirectChatPreviews_ db user@User {userId} = do
       let contact = toContact user $ contactRow :. connRow
           ci_ = toDirectChatItemList currentTs ciRow_
           stats = toChatStats statsRow
-       in AChat SCTDirect $ Chat Nothing (DirectChat contact) ci_ stats
+       in AChat SCTDirect $ Chat (DirectChat contact) ci_ stats
 
 getGroupChatPreviews_ :: DB.Connection -> User -> IO [AChat]
 getGroupChatPreviews_ db User {userId, userContactId} = do
@@ -645,7 +645,7 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
       let groupInfo = toGroupInfo userContactId groupInfoRow
           ci_ = toGroupChatItemList currentTs userContactId ciRow_
           stats = toChatStats statsRow
-       in AChat SCTGroup $ Chat Nothing (GroupChat groupInfo) ci_ stats
+       in AChat SCTGroup $ Chat (GroupChat groupInfo) ci_ stats
 
 getContactRequestChatPreviews_ :: DB.Connection -> User -> IO [AChat]
 getContactRequestChatPreviews_ db User {userId} =
@@ -669,7 +669,7 @@ getContactRequestChatPreviews_ db User {userId} =
     toContactRequestChatPreview cReqRow =
       let cReq = toContactRequest cReqRow
           stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-       in AChat SCTContactRequest $ Chat Nothing (ContactRequest cReq) [] stats
+       in AChat SCTContactRequest $ Chat (ContactRequest cReq) [] stats
 
 getContactConnectionChatPreviews_ :: DB.Connection -> User -> Bool -> IO [AChat]
 getContactConnectionChatPreviews_ _ _ False = pure []
@@ -688,7 +688,7 @@ getContactConnectionChatPreviews_ db User {userId} _ =
     toContactConnectionChatPreview connRow =
       let conn = toPendingContactConnection connRow
           stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-       in AChat SCTContactConnection $ Chat Nothing (ContactConnection conn) [] stats
+       in AChat SCTContactConnection $ Chat (ContactConnection conn) [] stats
 
 getDirectChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChat db user contactId pagination search_ = do
@@ -703,7 +703,7 @@ getDirectChatLast_ :: DB.Connection -> User -> Contact -> Int -> String -> Excep
 getDirectChatLast_ db user ct@Contact {contactId} count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItems <- getDirectChatItemsLast db user contactId count search
-  pure $ Chat Nothing (DirectChat ct) (reverse chatItems) stats
+  pure $ Chat (DirectChat ct) (reverse chatItems) stats
 
 -- the last items in reverse order (the last item in the conversation is the first in the returned list)
 getDirectChatItemsLast :: DB.Connection -> User -> ContactId -> Int -> String -> ExceptT StoreError IO [CChatItem 'CTDirect]
@@ -733,7 +733,7 @@ getDirectChatAfter_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int -> 
 getDirectChatAfter_ db User {userId} ct@Contact {contactId} afterChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItems <- ExceptT getDirectChatItemsAfter_
-  pure $ Chat Nothing (DirectChat ct) chatItems stats
+  pure $ Chat (DirectChat ct) chatItems stats
   where
     getDirectChatItemsAfter_ :: IO (Either StoreError [CChatItem 'CTDirect])
     getDirectChatItemsAfter_ = do
@@ -763,7 +763,7 @@ getDirectChatBefore_ :: DB.Connection -> User -> Contact -> ChatItemId -> Int ->
 getDirectChatBefore_ db User {userId} ct@Contact {contactId} beforeChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItems <- ExceptT getDirectChatItemsBefore_
-  pure $ Chat Nothing (DirectChat ct) (reverse chatItems) stats
+  pure $ Chat (DirectChat ct) (reverse chatItems) stats
   where
     getDirectChatItemsBefore_ :: IO (Either StoreError [CChatItem 'CTDirect])
     getDirectChatItemsBefore_ = do
@@ -803,7 +803,7 @@ getGroupChatLast_ db user@User {userId} g@GroupInfo {groupId} count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItemIds <- liftIO getGroupChatItemIdsLast_
   chatItems <- mapM (getGroupCIWithReactions db user g) chatItemIds
-  pure $ Chat Nothing (GroupChat g) (reverse chatItems) stats
+  pure $ Chat (GroupChat g) (reverse chatItems) stats
   where
     getGroupChatItemIdsLast_ :: IO [ChatItemId]
     getGroupChatItemIdsLast_ =
@@ -841,7 +841,7 @@ getGroupChatAfter_ db user@User {userId} g@GroupInfo {groupId} afterChatItemId c
   afterChatItem <- getGroupChatItem db user groupId afterChatItemId
   chatItemIds <- liftIO $ getGroupChatItemIdsAfter_ (chatItemTs afterChatItem)
   chatItems <- mapM (getGroupCIWithReactions db user g) chatItemIds
-  pure $ Chat Nothing (GroupChat g) chatItems stats
+  pure $ Chat (GroupChat g) chatItems stats
   where
     getGroupChatItemIdsAfter_ :: UTCTime -> IO [ChatItemId]
     getGroupChatItemIdsAfter_ afterChatItemTs =
@@ -864,7 +864,7 @@ getGroupChatBefore_ db user@User {userId} g@GroupInfo {groupId} beforeChatItemId
   beforeChatItem <- getGroupChatItem db user groupId beforeChatItemId
   chatItemIds <- liftIO $ getGroupChatItemIdsBefore_ (chatItemTs beforeChatItem)
   chatItems <- mapM (getGroupCIWithReactions db user g) chatItemIds
-  pure $ Chat Nothing (GroupChat g) (reverse chatItems) stats
+  pure $ Chat (GroupChat g) (reverse chatItems) stats
   where
     getGroupChatItemIdsBefore_ :: UTCTime -> IO [ChatItemId]
     getGroupChatItemIdsBefore_ beforeChatItemTs =

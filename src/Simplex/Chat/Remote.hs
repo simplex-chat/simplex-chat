@@ -225,7 +225,7 @@ startRemoteHost rh_ = do
     pollEvents rhId rhClient = do
       oq <- asks outputQ
       forever $ do
-        r_ <- liftRH rhId $ remoteRecv rhId rhClient 10000000
+        r_ <- liftRH rhId $ remoteRecv rhClient 10000000
         forM r_ $ \r -> atomically $ writeTBQueue oq (Nothing, Just rhId, r)
     httpError :: RemoteHostId -> HTTP2ClientError -> ChatError
     httpError rhId = ChatErrorRemoteHost (RHId rhId) . RHEProtocolError . RPEHTTP2 . tshow
@@ -359,13 +359,13 @@ processRemoteCommand :: ChatMonad m => RemoteHostId -> RemoteHostClient -> ChatC
 processRemoteCommand remoteHostId c cmd s = case cmd of
   SendFile chatName f -> sendFile "/f" chatName f
   SendImage chatName f -> sendFile "/img" chatName f
-  _ -> liftRH remoteHostId $ remoteSend remoteHostId c s
+  _ -> liftRH remoteHostId $ remoteSend c s
   where
     sendFile cmdName chatName (CryptoFile path cfArgs) = do
       -- don't encrypt in host if already encrypted locally
       CryptoFile path' cfArgs' <- storeRemoteFile remoteHostId (cfArgs $> False) path
       let f = CryptoFile path' (cfArgs <|> cfArgs') -- use local or host encryption
-      liftRH remoteHostId $ remoteSend remoteHostId c $ B.unwords [cmdName, B.pack (chatNameStr chatName), cryptoFileStr f]
+      liftRH remoteHostId $ remoteSend c $ B.unwords [cmdName, B.pack (chatNameStr chatName), cryptoFileStr f]
     cryptoFileStr CryptoFile {filePath, cryptoArgs} =
       maybe "" (\(CFArgs key nonce) -> "key=" <> strEncode key <> " nonce=" <> strEncode nonce <> " ") cryptoArgs
         <> encodeUtf8 (T.pack filePath)
