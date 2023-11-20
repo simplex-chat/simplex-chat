@@ -318,18 +318,18 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
     editable :: Bool,
-    forwardedByGroupMemberId :: Maybe GroupMemberId,
+    forwardedByMember :: Maybe GroupMemberId,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
   deriving (Show)
 
 mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByGroupMemberId createdAt updatedAt =
+mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
   let editable = case itemContent of
         CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, forwardedByGroupMemberId, createdAt, updatedAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, forwardedByMember, createdAt, updatedAt}
 
 data CITimed = CITimed
   { ttl :: Int, -- seconds
@@ -784,8 +784,8 @@ data RcvMessage = RcvMessage
     chatMsgEvent :: AChatMsgEvent,
     sharedMsgId_ :: Maybe SharedMsgId,
     msgBody :: MsgBody,
-    authorGroupMemberId :: Maybe GroupMemberId,
-    forwardedByGroupMemberId :: Maybe GroupMemberId
+    authorMember :: Maybe GroupMemberId,
+    forwardedByMember :: Maybe GroupMemberId
   }
 
 data PendingGroupMessage = PendingGroupMessage
