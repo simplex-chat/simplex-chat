@@ -449,7 +449,7 @@ viewChats ts tz = concatMap chatPreview . reverse
 
 viewChatItem :: forall c d. MsgDirectionI d => ChatInfo c -> ChatItem c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
 viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} doShow ts tz =
-  withItemDeleted <$> case chat of
+  withGroupMsgForwarded . withItemDeleted <$> (case chat of
     DirectChat c -> case chatDir of
       CIDirectSnd -> case content of
         CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to quote mc
@@ -483,11 +483,14 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
           from = ttyFromGroup g m
       where
         quote = maybe [] (groupQuote g) quotedItem
-    _ -> []
+    _ -> [])
   where
     withItemDeleted item = case chatItemDeletedText ci (chatInfoMembership chat) of
       Nothing -> item
       Just t -> item <> styled (colored Red) (" [" <> t <> "]")
+    withGroupMsgForwarded item = case forwardedByGroupMemberId (meta :: CIMeta c d) of
+      Nothing -> item
+      Just _ -> item <> styled (colored Yellow) (" [>>]" :: String)
     withSndFile = withFile viewSentFileInvitation
     withRcvFile = withFile viewReceivedFileInvitation
     withFile view dir l = maybe l (\f -> l <> view dir f ts tz meta) file

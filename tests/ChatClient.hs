@@ -68,7 +68,8 @@ testOpts =
             logServerHosts = False,
             logAgent = Nothing,
             logFile = Nothing,
-            tbqSize = 16
+            tbqSize = 16,
+            highlyAvailable = False
           },
       chatCmd = "",
       chatCmdDelay = 3,

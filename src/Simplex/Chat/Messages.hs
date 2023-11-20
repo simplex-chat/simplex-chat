@@ -159,7 +159,7 @@ isMention ChatItem {chatDir, quotedItem} = case chatDir of
         CIQDirectSnd -> True
         CIQGroupSnd -> True
         _ -> False
-    
+
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv
@@ -338,17 +338,18 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
     editable :: Bool,
+    forwardedByGroupMemberId :: Maybe GroupMemberId,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
   deriving (Show, Generic)
 
-mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive currentTs itemTs createdAt updatedAt =
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByGroupMemberId createdAt updatedAt =
   let editable = case itemContent of
         CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, createdAt, updatedAt}
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, forwardedByGroupMemberId, createdAt, updatedAt}
 
 instance ToJSON (CIMeta c d) where toEncoding = J.genericToEncoding J.defaultOptions
 
@@ -811,7 +812,9 @@ data RcvMessage = RcvMessage
   { msgId :: MessageId,
     chatMsgEvent :: AChatMsgEvent,
     sharedMsgId_ :: Maybe SharedMsgId,
-    msgBody :: MsgBody
+    msgBody :: MsgBody,
+    authorGroupMemberId :: Maybe GroupMemberId,
+    forwardedByGroupMemberId :: Maybe GroupMemberId
   }
 
 data PendingGroupMessage = PendingGroupMessage
