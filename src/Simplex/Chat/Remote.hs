@@ -205,7 +205,7 @@ startRemoteHost rh_ = do
         cr -> throwError $ RPEUnexpectedResponse {response = tshow cr}
       pollAction <- async $ pollEvents remoteHostId rhClient
       withRemoteHostSession rhKey' sseq $ \case
-        RHSessionConfirmed _ RHPendingSession {rchClient} -> Right ((), RHSessionConnected {tls, rhClient, pollAction, storePath, hostUser_})
+        RHSessionConfirmed _ RHPendingSession {rchClient} -> Right ((), RHSessionConnected {rchClient, tls, rhClient, pollAction, storePath, hostUser_})
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
       chatWriteVar currentRemoteHost $ Just remoteHostId -- this is required for commands to be passed to remote host
       toView $ CRRemoteHostConnected rhi {sessionState = Just RHSConnected {sessionCode}}
