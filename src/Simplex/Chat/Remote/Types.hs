@@ -56,6 +56,8 @@ data RemoteSignatures
       sessPubKey :: C.PublicKeyEd25519
     }
 
+type SessionSeq = Int
+
 data RHPendingSession = RHPendingSession
   { rhKey :: RHKey,
     rchClient :: RCHostClient,

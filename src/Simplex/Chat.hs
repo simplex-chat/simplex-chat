@@ -215,6 +215,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   currentCalls <- atomically TM.empty
   localDeviceName <- newTVarIO "" -- TODO set in config
   multicastSubscribers <- newTMVarIO 0
+  remoteSessionSeq <- newTVarIO 0
   remoteHostSessions <- atomically TM.empty
   remoteHostsFolder <- newTVarIO Nothing
   remoteCtrlSession <- newTVarIO Nothing
@@ -250,6 +251,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
         currentCalls,
         localDeviceName,
         multicastSubscribers,
+        remoteSessionSeq,
         remoteHostSessions,
         remoteHostsFolder,
         remoteCtrlSession,
@@ -377,8 +379,8 @@ restoreCalls = do
 
 stopChatController :: forall m. MonadUnliftIO m => ChatController -> m ()
 stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
-  readTVarIO remoteHostSessions >>= mapM_ (liftIO . cancelRemoteHost False)
-  atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (liftIO . cancelRemoteCtrl False)
+  readTVarIO remoteHostSessions >>= mapM_ (liftIO . cancelRemoteHost False . snd)
+  atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (liftIO . cancelRemoteCtrl False . snd)
   disconnectAgentClient smpAgent
   readTVarIO s >>= mapM_ (\(a1, a2) -> uninterruptibleCancel a1 >> mapM_ uninterruptibleCancel a2)
   closeFiles sndFiles

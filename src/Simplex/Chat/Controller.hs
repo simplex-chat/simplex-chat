@@ -184,9 +184,10 @@ data ChatController = ChatController
     currentCalls :: TMap ContactId Call,
     localDeviceName :: TVar Text,
     multicastSubscribers :: TMVar Int,
-    remoteHostSessions :: TMap RHKey RemoteHostSession, -- All the active remote hosts
+    remoteSessionSeq :: TVar Int,
+    remoteHostSessions :: TMap RHKey (SessionSeq, RemoteHostSession), -- All the active remote hosts
     remoteHostsFolder :: TVar (Maybe FilePath), -- folder for remote hosts data
-    remoteCtrlSession :: TVar (Maybe RemoteCtrlSession), -- Supervisor process for hosted controllers
+    remoteCtrlSession :: TVar (Maybe (SessionSeq, RemoteCtrlSession)), -- Supervisor process for hosted controllers
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
     expireCIThreads :: TMap UserId (Maybe (Async ())),
@@ -1196,7 +1197,7 @@ toView event = do
   session <- asks remoteCtrlSession
   atomically $
     readTVar session >>= \case
-      Just RCSessionConnected {remoteOutputQ} | allowRemoteEvent event ->
+      Just (_, RCSessionConnected {remoteOutputQ}) | allowRemoteEvent event ->
         writeTBQueue remoteOutputQ event
       -- TODO potentially, it should hold some events while connecting
       _ -> writeTBQueue localQ (Nothing, Nothing, event)
