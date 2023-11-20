@@ -9,6 +9,7 @@ module Simplex.Chat.Archive
     importArchive,
     deleteStorage,
     sqlCipherExport,
+    archiveFilesFolder,
   )
 where
 

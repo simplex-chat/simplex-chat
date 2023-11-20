@@ -41,6 +41,7 @@ typedef long* chat_ctrl;
 
 extern char *chat_migrate_init(const char *path, const char *key, const char *confirm, chat_ctrl *ctrl);
 extern char *chat_send_cmd(chat_ctrl ctrl, const char *cmd);
+extern char *chat_send_remote_cmd(chat_ctrl ctrl, const int rhId, const char *cmd);
 extern char *chat_recv_msg(chat_ctrl ctrl); // deprecated
 extern char *chat_recv_msg_wait(chat_ctrl ctrl, const int wait);
 extern char *chat_parse_markdown(const char *str);
@@ -82,6 +83,14 @@ Java_chat_simplex_common_platform_CoreKt_chatSendCmd(JNIEnv *env, __unused jclas
     //for (int i = 0; i < length; ++i)
     //    __android_log_print(ANDROID_LOG_ERROR, "simplex", "%d: %02x\n", i, _msg[i]);
     jstring res = (*env)->NewStringUTF(env, chat_send_cmd((void*)controller, _msg));
+    (*env)->ReleaseStringUTFChars(env, msg, _msg);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatSendRemoteCmd(JNIEnv *env, __unused jclass clazz, jlong controller, jint rhId, jstring msg) {
+    const char *_msg = (*env)->GetStringUTFChars(env, msg, JNI_FALSE);
+    jstring res = (*env)->NewStringUTF(env, chat_send_remote_cmd((void*)controller, rhId, _msg));
     (*env)->ReleaseStringUTFChars(env, msg, _msg);
     return res;
 }

@@ -167,7 +167,7 @@ actual fun getAppFileUri(fileName: String): URI =
   FileProvider.getUriForFile(androidAppContext, "$APPLICATION_ID.provider", if (File(fileName).isAbsolute) File(fileName) else File(getAppFilePath(fileName))).toURI()
 
 // https://developer.android.com/training/data-storage/shared/documents-files#bitmap
-actual fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
+actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
   val filePath = getLoadedFilePath(file)
   return if (filePath != null && file != null) {
     try {
@@ -295,7 +295,7 @@ actual suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
   return try {
     val ext = if (asPng) "png" else "jpg"
     tmpDir.mkdir()
-    return File(tmpDir.absolutePath + File.separator + generateNewFileName("IMG", ext)).apply {
+    return File(tmpDir.absolutePath + File.separator + generateNewFileName("IMG", ext, tmpDir)).apply {
       outputStream().use { out ->
         image.asAndroidBitmap().compress(if (asPng) Bitmap.CompressFormat.PNG else Bitmap.CompressFormat.JPEG, 85, out)
         out.flush()

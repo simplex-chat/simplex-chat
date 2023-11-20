@@ -57,7 +57,7 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
         ModalManager.end.closeModals()
       }
       withBGApi {
-        m.controller.changeActiveUser(user.userId, userViewPassword(user, searchTextOrPassword.value.trim()))
+        m.controller.changeActiveUser(user.remoteHostId, user.userId, userViewPassword(user, searchTextOrPassword.value.trim()))
       }
     },
     removeUser = { user ->
@@ -106,24 +106,24 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
         ModalManager.start.showModalCloseable(true) { close ->
           ProfileActionView(UserProfileAction.UNHIDE, user) { pwd ->
             withBGApi {
-              setUserPrivacy(m) { m.controller.apiUnhideUser(user.userId, pwd) }
+              setUserPrivacy(m) { m.controller.apiUnhideUser(user, pwd) }
               close()
             }
           }
         }
       } else {
-        withBGApi { setUserPrivacy(m) { m.controller.apiUnhideUser(user.userId, searchTextOrPassword.value.trim()) } }
+        withBGApi { setUserPrivacy(m) { m.controller.apiUnhideUser(user, searchTextOrPassword.value.trim()) } }
       }
     },
     muteUser = { user ->
       withBGApi {
         setUserPrivacy(m, onSuccess = {
           if (m.controller.appPrefs.showMuteProfileAlert.get()) showMuteProfileAlert(m.controller.appPrefs.showMuteProfileAlert)
-        }) { m.controller.apiMuteUser(user.userId) }
+        }) { m.controller.apiMuteUser(user) }
       }
     },
     unmuteUser = { user ->
-      withBGApi { setUserPrivacy(m) { m.controller.apiUnmuteUser(user.userId) } }
+      withBGApi { setUserPrivacy(m) { m.controller.apiUnmuteUser(user) } }
     },
     showHiddenProfile = { user ->
       ModalManager.start.showModalCloseable(true) { close ->
@@ -348,14 +348,14 @@ private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, de
   if (users.size < 2) return
 
   suspend fun deleteUser(user: User) {
-    m.controller.apiDeleteUser(user.userId, delSMPQueues, viewPwd)
+    m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
     m.removeUser(user)
   }
   try {
     if (user.activeUser) {
       val newActive = users.firstOrNull { u -> !u.activeUser && !u.hidden }
       if (newActive != null) {
-        m.controller.changeActiveUser_(newActive.userId, null)
+        m.controller.changeActiveUser_(newActive.remoteHostId, newActive.userId, null)
         deleteUser(user.copy(activeUser = false))
       }
     } else {

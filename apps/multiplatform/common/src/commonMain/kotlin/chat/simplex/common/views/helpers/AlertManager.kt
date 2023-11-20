@@ -188,6 +188,25 @@ class AlertManager {
       )
     }
   }
+
+  fun showAlertMsgWithProgress(
+    title: String,
+    text: String? = null
+  ) {
+    showAlert {
+      AlertDialog(
+        onDismissRequest = this::hideAlert,
+        title = alertTitle(title),
+        text = alertText(text),
+        buttons = {
+          Box(Modifier.fillMaxWidth().height(72.dp).padding(bottom = DEFAULT_PADDING * 2), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = MaterialTheme.colors.secondary, strokeWidth = 3.dp)
+          }
+        }
+      )
+    }
+  }
+
   fun showAlertMsg(
     title: StringResource,
     text: StringResource? = null,

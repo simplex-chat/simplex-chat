@@ -11,10 +11,7 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-expect fun ScanCodeView(verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit, close: () -> Unit)
-
-@Composable
-fun ScanCodeLayout(verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit, close: () -> Unit) {
+fun ScanCodeView(verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit, close: () -> Unit) {
   Column(
     Modifier
       .fillMaxSize()

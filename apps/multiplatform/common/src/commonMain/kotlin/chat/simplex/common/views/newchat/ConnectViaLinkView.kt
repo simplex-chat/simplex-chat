@@ -8,4 +8,4 @@ enum class ConnectViaLinkTab {
 }
 
 @Composable
-expect fun ConnectViaLinkView(m: ChatModel, close: () -> Unit)
+expect fun ConnectViaLinkView(m: ChatModel, rhId: Long?, close: () -> Unit)

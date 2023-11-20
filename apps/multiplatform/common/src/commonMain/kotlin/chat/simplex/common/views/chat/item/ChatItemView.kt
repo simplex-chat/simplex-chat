@@ -194,19 +194,34 @@ fun ChatItemView(
                   })
                 }
                 val clipboard = LocalClipboardManager.current
-                ItemAction(stringResource(MR.strings.share_verb), painterResource(MR.images.ic_share), onClick = {
-                  val fileSource = getLoadedFileSource(cItem.file)
-                  when {
-                    fileSource != null -> shareFile(cItem.text, fileSource)
-                    else -> clipboard.shareText(cItem.content.text)
-                  }
-                  showMenu.value = false
-                })
-                ItemAction(stringResource(MR.strings.copy_verb), painterResource(MR.images.ic_content_copy), onClick = {
-                  copyItemToClipboard(cItem, clipboard)
-                  showMenu.value = false
-                })
-                if ((cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) && getLoadedFilePath(cItem.file) != null) {
+                val cachedRemoteReqs = remember { CIFile.cachedRemoteFileRequests }
+                val copyAndShareAllowed = cItem.file == null || !chatModel.connectedToRemote() || getLoadedFilePath(cItem.file) != null || !cachedRemoteReqs.contains(cItem.file.fileSource)
+                if (copyAndShareAllowed) {
+                  ItemAction(stringResource(MR.strings.share_verb), painterResource(MR.images.ic_share), onClick = {
+                    var fileSource = getLoadedFileSource(cItem.file)
+                    val shareIfExists = {
+                      when (val f = fileSource) {
+                        null -> clipboard.shareText(cItem.content.text)
+                        else -> shareFile(cItem.text, f)
+                      }
+                      showMenu.value = false
+                    }
+                    if (chatModel.connectedToRemote() && fileSource == null) {
+                      withBGApi {
+                        cItem.file?.loadRemoteFile(true)
+                        fileSource = getLoadedFileSource(cItem.file)
+                        shareIfExists()
+                      }
+                    } else shareIfExists()
+                  })
+                }
+                if (copyAndShareAllowed) {
+                  ItemAction(stringResource(MR.strings.copy_verb), painterResource(MR.images.ic_content_copy), onClick = {
+                    copyItemToClipboard(cItem, clipboard)
+                    showMenu.value = false
+                  })
+                }
+                if ((cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) && (getLoadedFilePath(cItem.file) != null || (chatModel.connectedToRemote() && !cachedRemoteReqs.contains(cItem.file?.fileSource)))) {
                   SaveContentItemAction(cItem, saveFileLauncher, showMenu)
                 }
                 if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {
@@ -590,7 +605,7 @@ private fun ShrinkItemAction(revealed: MutableState<Boolean>, showMenu: MutableS
 }
 
 @Composable
-fun ItemAction(text: String, icon: Painter, onClick: () -> Unit, color: Color = Color.Unspecified) {
+fun ItemAction(text: String, icon: Painter, color: Color = Color.Unspecified, onClick: () -> Unit) {
   val finalColor = if (color == Color.Unspecified) {
     if (isInDarkTheme()) MenuTextColorDark else Color.Black
   } else color

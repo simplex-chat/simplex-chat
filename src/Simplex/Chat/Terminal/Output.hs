@@ -25,6 +25,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent (CIContent(..), SMsgDirection (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..), msgContentText)
+import Simplex.Chat.Remote.Types (RemoteHostId)
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Notification (Notification (..), initializeNotifications)
 import Simplex.Chat.Types
@@ -137,7 +138,7 @@ withTermLock ChatTerminal {termLock} action = do
 runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
 runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = do
   forever $ do
-    (_, r) <- atomically $ readTBQueue outputQ
+    (_, outputRH, r) <- atomically $ readTBQueue outputQ
     case r of
       CRNewChatItem u ci -> markChatItemRead u ci
       CRChatItemUpdated u ci -> markChatItemRead u ci
@@ -146,7 +147,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
           Just path -> if logResponseToFile r then logResponse path else printToTerminal ct
           _ -> printToTerminal ct
     liveItems <- readTVarIO showLiveItems
-    responseString cc liveItems r >>= printResp
+    responseString cc liveItems outputRH r >>= printResp
     responseNotification ct cc r
   where
     markChatItemRead u (AChatItem _ _ chat ci@ChatItem {chatDir, meta = CIMeta {itemStatus}}) =
@@ -252,15 +253,16 @@ whenCurrUser cc u a = do
   where
     sameUser User {userId = uId} = maybe False $ \User {userId} -> userId == uId
 
-printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> ChatResponse -> IO ()
-printRespToTerminal ct cc liveItems r = responseString cc liveItems r >>= printToTerminal ct
+printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> ChatResponse -> IO ()
+printRespToTerminal ct cc liveItems outputRH r = responseString cc liveItems outputRH r >>= printToTerminal ct
 
-responseString :: ChatController -> Bool -> ChatResponse -> IO [StyledString]
-responseString cc liveItems r = do
-  user <- readTVarIO $ currentUser cc
+responseString :: ChatController -> Bool -> Maybe RemoteHostId -> ChatResponse -> IO [StyledString]
+responseString cc liveItems outputRH r = do
+  currentRH <- readTVarIO $ currentRemoteHost cc
+  user <- readTVarIO $ currentUser cc -- XXX: local user, should be subsumed by remote when connected
   ts <- getCurrentTime
   tz <- getCurrentTimeZone
-  pure $ responseToView user (config cc) liveItems ts tz r
+  pure $ responseToView (currentRH, user) (config cc) liveItems ts tz outputRH r
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =
