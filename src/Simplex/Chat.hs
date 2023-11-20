@@ -3529,19 +3529,19 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   forM_ (invitedByGroupMemberId membership) $ \hostId -> do
                     host <- withStore $ \db -> getGroupMember db user groupId hostId
                     forM_ (memberConn host) $ \hostConn ->
-                      void $ sendDirectMessage hostConn (XGrpMemCon m.memberId) (GroupId groupId)
+                      void $ sendDirectMessage hostConn (XGrpMemCon $ memberId (m :: GroupMember)) (GroupId groupId)
                 GCPostMember ->
                   forM_ (invitedByGroupMemberId m) $ \invitingMemberId -> do
                     im <- withStore $ \db -> getGroupMember db user groupId invitingMemberId
                     forM_ (memberConn im) $ \imConn ->
-                      void $ sendDirectMessage imConn (XGrpMemCon m.memberId) (GroupId groupId)
+                      void $ sendDirectMessage imConn (XGrpMemCon $ memberId (m :: GroupMember)) (GroupId groupId)
                 _ -> messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
       MSG msgMeta _msgFlags msgBody -> do
         cmdId <- createAckCmd conn
         tryChatError (processChatMessage cmdId) >>= \case
           Right (ACMsg _ chatMsg, withRcpt) -> do
             ackMsg agentConnId cmdId msgMeta $ if withRcpt then Just "" else Nothing
-            when (membership.memberRole >= GRAdmin) $ forwardMsg_ chatMsg
+            when (memberRole (membership :: GroupMember) >= GRAdmin) $ forwardMsg_ chatMsg
           Left e -> ackMsg agentConnId cmdId msgMeta Nothing >> throwError e
         where
           processChatMessage :: Int64 -> m (AChatMessage, Bool)
@@ -3619,7 +3619,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               -- invited members to which this member was introduced
               invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db user m highlyAvailable
               let ms = introducedMembers <> invitedMembers
-                  msg = XGrpMsgForward m.memberId chatMsg' brokerTs
+                  msg = XGrpMsgForward (memberId (m :: GroupMember)) chatMsg' brokerTs
               unless (null ms) $
                 void $ sendGroupMessage user gInfo ms msg
       RCVD msgMeta msgRcpt ->
@@ -5135,8 +5135,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
     xGrpMsgForward :: GroupInfo -> GroupMember -> MemberId -> ChatMessage 'Json -> UTCTime -> m ()
-    xGrpMsgForward gInfo@GroupInfo {groupId} m memberId msg msgTs = do
-      when (m.memberRole < GRAdmin) $ throwChatError (CEGroupContactRole m.localDisplayName)
+    xGrpMsgForward gInfo@GroupInfo {groupId} m@GroupMember {memberRole, localDisplayName} memberId msg msgTs = do
+      when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole localDisplayName)
       author <- withStore $ \db -> getGroupMemberByMemberId db user gInfo memberId
       processForwardedMsg author msg
       where
@@ -5502,7 +5502,7 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
         forwardSupported = do
           let mcvr = memberChatVRange' m
           isCompatibleRange mcvr groupForwardVRange && invitingMemberSupportsForward
-        invitingMemberSupportsForward = case m.invitedByGroupMemberId of
+        invitingMemberSupportsForward = case invitedByGroupMemberId m of
           Just invMemberId ->
             -- can be optimized for large groups by replacing [GroupMember] with Map GroupMemberId GroupMember
             case find (\m' -> groupMemberId' m' == invMemberId) members of
@@ -5547,13 +5547,13 @@ saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta 
   let agentMsgId = fst $ recipient agentMsgMeta
       newMsg = NewMessage {chatMsgEvent, msgBody}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId}
-      amId = Just am'.groupMemberId
+      amId = Just $ groupMemberId' am'
   msg <- withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ rcvMsgDelivery amId)
     `catchChatError` \e -> case e of
       ChatErrorStore (SEDuplicateGroupMessage _ _ _ (Just forwardedByGroupMemberId)) -> do
         fm <- withStore $ \db -> getGroupMember db user groupId forwardedByGroupMemberId
         forM_ (memberConn fm) $ \fmConn ->
-          void $ sendDirectMessage fmConn (XGrpMemCon am'.memberId) (GroupId groupId)
+          void $ sendDirectMessage fmConn (XGrpMemCon $ memberId (am' :: GroupMember)) (GroupId groupId)
         throwError e
       _ -> throwError e
   pure (am', conn', msg)
@@ -5567,9 +5567,9 @@ saveGroupFwdRcvMsg user groupId forwardingMember refAuthorMember msgBody ChatMes
     `catchChatError` \e -> case e of
       ChatErrorStore (SEDuplicateGroupMessage _ _ (Just authorGroupMemberId) Nothing) -> do
         am <- withStore $ \db -> getGroupMember db user groupId authorGroupMemberId
-        if sameMemberId refAuthorMember.memberId am
+        if sameMemberId (memberId (refAuthorMember :: GroupMember)) am
           then forM_ (memberConn forwardingMember) $ \fmConn ->
-            void $ sendDirectMessage fmConn (XGrpMemCon am.memberId) (GroupId groupId)
+            void $ sendDirectMessage fmConn (XGrpMemCon $ memberId (am :: GroupMember)) (GroupId groupId)
           else toView $ CRMessageError user "error" "saveGroupFwdRcvMsg: referenced author member id doesn't match message member id"
         throwError e
       _ -> throwError e
@@ -5599,7 +5599,7 @@ saveRcvChatItem' user cd msg sharedMsgId_ brokerTs content ciFile itemTimed live
     (ciId, quotedItem) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     pure (ciId, quotedItem)
-  liftIO $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemTimed live brokerTs msg.forwardedByGroupMemberId createdAt
+  liftIO $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemTimed live brokerTs (forwardedByGroupMemberId (msg :: RcvMessage)) createdAt
 
 mkChatItem :: forall c d. MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CITimed -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> IO (ChatItem c d)
 mkChatItem cd ciId content file quotedItem sharedMsgId itemTimed live itemTs forwardedByGroupMemberId currentTs = do

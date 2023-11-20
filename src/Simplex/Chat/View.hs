@@ -488,7 +488,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta, content, quotedItem, file} 
     withItemDeleted item = case chatItemDeletedText ci (chatInfoMembership chat) of
       Nothing -> item
       Just t -> item <> styled (colored Red) (" [" <> t <> "]")
-    withGroupMsgForwarded item = case meta.forwardedByGroupMemberId of
+    withGroupMsgForwarded item = case forwardedByGroupMemberId (meta :: CIMeta c d) of
       Nothing -> item
       Just _ -> item <> styled (colored Yellow) (" [>>]" :: String)
     withSndFile = withFile viewSentFileInvitation
