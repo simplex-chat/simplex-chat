@@ -1,10 +1,14 @@
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 module JSONTests where
 
+import Control.Monad (join)
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
+import Data.ByteString.Builder (toLazyByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import GHC.Generics (Generic)
 import Generic.Random (genericArbitraryU)
@@ -14,11 +18,6 @@ import Simplex.Messaging.Parsers
 import Test.Hspec
 import Test.Hspec.QuickCheck (modifyMaxSuccess)
 import Test.QuickCheck (Arbitrary (..), property)
-
-jsonTests :: Spec
-jsonTests = describe "owsf2tagged" $ do
-  it "should convert chat types" owsf2TaggedJSONTest
-  describe "SomeType" owsf2TaggedSomeTypeTests
 
 owsf2TaggedJSONTest :: IO ()
 owsf2TaggedJSONTest = do
@@ -50,6 +49,17 @@ data SomeType
   | List [Int]
   deriving (Eq, Show, Generic)
 
+$(pure [])
+
+thToJSON :: SomeType -> J.Value
+thToJSON = $(JQ.mkToJSON (singleFieldJSON_ (Just SingleFieldJSONTag) id) ''SomeType)
+
+thToEncoding :: SomeType -> J.Encoding
+thToEncoding = $(JQ.mkToEncoding (singleFieldJSON_ (Just SingleFieldJSONTag) id) ''SomeType)
+
+thParseJSON :: J.Value -> JT.Parser SomeType
+thParseJSON = $(JQ.mkParseJSON (taggedObjectJSON id) ''SomeType)
+
 instance Arbitrary SomeType where arbitrary = genericArbitraryU
 
 instance ToJSON SomeType where
@@ -60,6 +70,17 @@ instance FromJSON SomeType where
   parseJSON = J.genericParseJSON $ taggedObjectJSON id
 
 owsf2TaggedSomeTypeTests :: Spec
-owsf2TaggedSomeTypeTests =
-  modifyMaxSuccess (const 10000) $ it "should convert to tagged" $ property $ \x ->
+owsf2TaggedSomeTypeTests = modifyMaxSuccess (const 10000) $ do
+  it "should convert to tagged" $ property $ \x ->
     (JT.parseMaybe J.parseJSON . owsf2tagged . J.toJSON) x == Just (x :: SomeType)
+  it "should convert to tagged via encoding" $ property $ \x ->
+    (join . fmap (JT.parseMaybe J.parseJSON . owsf2tagged) . J.decode . J.encode) x == Just (x :: SomeType)
+  it "should convert to tagged via TH" $ property $ \x ->
+    (JT.parseMaybe thParseJSON . owsf2tagged . thToJSON) x == Just (x :: SomeType)
+  it "should convert to tagged via TH encoding" $ property $ \x ->
+    (join . fmap (JT.parseMaybe thParseJSON . owsf2tagged) . J.decode . toLazyByteString . J.fromEncoding . thToEncoding) x == Just (x :: SomeType)
+
+jsonTests :: Spec
+jsonTests = describe "owsf2tagged" $ do
+  it "should convert chat types" owsf2TaggedJSONTest
+  describe "SomeType" owsf2TaggedSomeTypeTests

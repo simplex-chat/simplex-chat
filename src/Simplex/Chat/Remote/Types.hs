@@ -3,6 +3,7 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -18,12 +19,12 @@ import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Simplex.Chat.Remote.AppVersion
-import Simplex.Chat.Types (User)
+import Simplex.Chat.Types (User, verificationCode)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile)
 import Simplex.Messaging.Crypto.SNTRUP761 (KEMHybridSecret)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Transport (TLS)
+import Simplex.Messaging.Transport (TLS (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Types
@@ -55,6 +56,8 @@ data RemoteSignatures
       sessPubKey :: C.PublicKeyEd25519
     }
 
+type SessionSeq = Int
+
 data RHPendingSession = RHPendingSession
   { rhKey :: RHKey,
     rchClient :: RCHostClient,
@@ -64,15 +67,36 @@ data RHPendingSession = RHPendingSession
 
 data RemoteHostSession
   = RHSessionStarting
-  | RHSessionConnecting {rhPendingSession :: RHPendingSession}
+  | RHSessionConnecting {invitation :: Text, rhPendingSession :: RHPendingSession}
+  | RHSessionPendingConfirmation {sessionCode :: Text, tls :: TLS, rhPendingSession :: RHPendingSession}
   | RHSessionConfirmed {tls :: TLS, rhPendingSession :: RHPendingSession}
   | RHSessionConnected
-      { tls :: TLS,
-        rhClient :: RemoteHostClient,
-        pollAction :: Async (),
-        storePath :: FilePath,
-        hostUser_ :: Maybe User
-      }
+    { rchClient :: RCHostClient,
+      tls :: TLS,
+      rhClient :: RemoteHostClient,
+      pollAction :: Async (),
+      storePath :: FilePath,
+      hostUser_ :: Maybe User
+    }
+
+data RemoteHostSessionState
+  = RHSStarting
+  | RHSConnecting {invitation :: Text}
+  | RHSPendingConfirmation {sessionCode :: Text}
+  | RHSConfirmed {sessionCode :: Text}
+  | RHSConnected {sessionCode :: Text}
+  deriving (Show)
+
+rhsSessionState :: RemoteHostSession -> RemoteHostSessionState
+rhsSessionState = \case
+  RHSessionStarting -> RHSStarting
+  RHSessionConnecting {invitation} -> RHSConnecting {invitation}
+  RHSessionPendingConfirmation {tls} -> RHSPendingConfirmation {sessionCode = tlsSessionCode tls}
+  RHSessionConfirmed {tls} -> RHSConfirmed {sessionCode = tlsSessionCode tls}
+  RHSessionConnected {tls} -> RHSConnected {sessionCode = tlsSessionCode tls}
+
+tlsSessionCode :: TLS -> Text
+tlsSessionCode = verificationCode . tlsUniq
 
 data RemoteProtocolError
   = -- | size prefix is malformed
@@ -103,7 +127,7 @@ data RHKey = RHNew | RHId {remoteHostId :: RemoteHostId}
 -- | Storable/internal remote host data
 data RemoteHost = RemoteHost
   { remoteHostId :: RemoteHostId,
-    hostName :: Text,
+    hostDeviceName :: Text,
     storePath :: FilePath,
     hostPairing :: RCHostPairing
   }
@@ -111,9 +135,9 @@ data RemoteHost = RemoteHost
 -- | UI-accessible remote host information
 data RemoteHostInfo = RemoteHostInfo
   { remoteHostId :: RemoteHostId,
-    hostName :: Text,
+    hostDeviceName :: Text,
     storePath :: FilePath,
-    sessionActive :: Bool
+    sessionState :: Maybe RemoteHostSessionState
   }
   deriving (Show)
 
@@ -122,17 +146,12 @@ type RemoteCtrlId = Int64
 -- | Storable/internal remote controller data
 data RemoteCtrl = RemoteCtrl
   { remoteCtrlId :: RemoteCtrlId,
-    ctrlName :: Text,
+    ctrlDeviceName :: Text,
     ctrlPairing :: RCCtrlPairing
   }
 
--- | UI-accessible remote controller information
-data RemoteCtrlInfo = RemoteCtrlInfo
-  { remoteCtrlId :: RemoteCtrlId,
-    ctrlName :: Text,
-    sessionActive :: Bool
-  }
-  deriving (Show)
+remoteCtrlId' :: RemoteCtrl -> RemoteCtrlId
+remoteCtrlId' = remoteCtrlId
 
 data PlatformEncoding
   = PESwift
@@ -158,6 +177,7 @@ data CtrlAppInfo = CtrlAppInfo
   { appVersionRange :: AppVersionRange,
     deviceName :: Text
   }
+  deriving (Show)
 
 data HostAppInfo = HostAppInfo
   { appVersion :: AppVersion,
@@ -174,9 +194,9 @@ $(J.deriveJSON (sumTypeJSON $ dropPrefix "RH") ''RHKey)
 
 $(J.deriveJSON (enumJSON $ dropPrefix "PE") ''PlatformEncoding)
 
-$(J.deriveJSON defaultJSON ''RemoteHostInfo)
+$(J.deriveJSON (sumTypeJSON $ dropPrefix "RHS") ''RemoteHostSessionState)
 
-$(J.deriveJSON defaultJSON ''RemoteCtrlInfo)
+$(J.deriveJSON defaultJSON ''RemoteHostInfo)
 
 $(J.deriveJSON defaultJSON ''CtrlAppInfo)
 

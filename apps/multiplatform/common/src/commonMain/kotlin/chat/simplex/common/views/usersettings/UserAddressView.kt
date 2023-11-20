@@ -33,10 +33,12 @@ import chat.simplex.res.MR
 @Composable
 fun UserAddressView(
   chatModel: ChatModel,
+  rhId: Long?,
   viaCreateLinkView: Boolean = false,
   shareViaProfile: Boolean = false,
   close: () -> Unit
 ) {
+  // TODO close when remote host changes
   val shareViaProfile = remember { mutableStateOf(shareViaProfile) }
   var progressIndicator by remember { mutableStateOf(false) }
   val onCloseHandler: MutableState<(close: () -> Unit) -> Unit> = remember { mutableStateOf({ _ -> }) }
@@ -45,7 +47,7 @@ fun UserAddressView(
     progressIndicator = true
     withBGApi {
       try {
-        val u = chatModel.controller.apiSetProfileAddress(on)
+        val u = chatModel.controller.apiSetProfileAddress(rhId, on)
         if (u != null) {
           chatModel.updateUser(u)
         }
@@ -67,7 +69,7 @@ fun UserAddressView(
       createAddress = {
         withApi {
           progressIndicator = true
-          val connReqContact = chatModel.controller.apiCreateUserAddress()
+          val connReqContact = chatModel.controller.apiCreateUserAddress(rhId)
           if (connReqContact != null) {
             chatModel.userAddress.value = UserContactLinkRec(connReqContact)
 
@@ -112,7 +114,7 @@ fun UserAddressView(
           onConfirm = {
             progressIndicator = true
             withApi {
-              val u = chatModel.controller.apiDeleteUserAddress()
+              val u = chatModel.controller.apiDeleteUserAddress(rhId)
               if (u != null) {
                 chatModel.userAddress.value = null
                 chatModel.updateUser(u)
@@ -126,7 +128,7 @@ fun UserAddressView(
       },
       saveAas = { aas: AutoAcceptState, savedAAS: MutableState<AutoAcceptState> ->
         withBGApi {
-          val address = chatModel.controller.userAddressAutoAccept(aas.autoAccept)
+          val address = chatModel.controller.userAddressAutoAccept(rhId, aas.autoAccept)
           if (address != null) {
             chatModel.userAddress.value = address
             savedAAS.value = aas

@@ -4,6 +4,7 @@
 
 module Simplex.Chat.Remote.AppVersion
   ( AppVersionRange (minVersion, maxVersion),
+    pattern AppVersionRange,
     AppVersion (..),
     pattern AppCompatible,
     mkAppVersionRange,
@@ -22,7 +23,7 @@ import qualified Data.Version as V
 import Simplex.Messaging.Parsers (defaultJSON)
 import Text.ParserCombinators.ReadP (readP_to_S)
 
-newtype AppVersion = AppVersion V.Version
+newtype AppVersion = AppVersion {appVersion :: V.Version}
   deriving (Eq, Ord, Show)
 
 instance ToJSON AppVersion where
@@ -40,6 +41,12 @@ data AppVersionRange = AppVRange
   { minVersion :: AppVersion,
     maxVersion :: AppVersion
   }
+  deriving (Show)
+
+pattern AppVersionRange :: AppVersion -> AppVersion -> AppVersionRange
+pattern AppVersionRange v1 v2 <- AppVRange v1 v2
+
+{-# COMPLETE AppVersionRange #-}
 
 mkAppVersionRange :: AppVersion -> AppVersion -> AppVersionRange
 mkAppVersionRange v1 v2

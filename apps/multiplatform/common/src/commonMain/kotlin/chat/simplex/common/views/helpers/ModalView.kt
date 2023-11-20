@@ -12,6 +12,7 @@ import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.math.min
 
 @Composable
 fun ModalView(
@@ -86,7 +87,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   fun closeModal() {
     if (modalViews.isNotEmpty()) {
       if (modalViews.lastOrNull()?.first == false) modalViews.removeAt(modalViews.lastIndex)
-      else runAtomically { toRemove.add(modalViews.lastIndex - toRemove.size) }
+      else runAtomically { toRemove.add(modalViews.lastIndex - min(toRemove.size, modalViews.lastIndex)) }
     }
     modalCount.value = modalViews.size - toRemove.size
   }

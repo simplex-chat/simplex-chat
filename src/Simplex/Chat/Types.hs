@@ -591,9 +591,9 @@ data MemberInfo = MemberInfo
 
 memberInfo :: GroupMember -> MemberInfo
 memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
-  MemberInfo memberId memberRole memberChatVRange (fromLocalProfile memberProfile)
+  MemberInfo memberId memberRole cvr (fromLocalProfile memberProfile)
   where
-    memberChatVRange = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn
+    cvr = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -615,6 +615,7 @@ data GroupMember = GroupMember
     memberStatus :: GroupMemberStatus,
     memberSettings :: GroupMemberSettings,
     invitedBy :: InvitedBy,
+    invitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
     -- for membership, memberProfile can be either user's profile or incognito profile, based on memberIncognito test.
     -- for other members it's whatever profile the local user can see (there is no info about whether it's main or incognito profile for remote users).
@@ -624,7 +625,10 @@ data GroupMember = GroupMember
     -- for membership it would always point to user's contact
     -- it is used to test for incognito status by comparing with ID in memberProfile
     memberContactProfileId :: ProfileId,
-    activeConn :: Maybe Connection
+    activeConn :: Maybe Connection,
+    -- member chat protocol version range; if member has active connection, its version range is preferred;
+    -- for membership current supportedChatVRange is set, it's not updated on protocol version increase
+    memberChatVRange :: JVersionRange
   }
   deriving (Eq, Show)
 
@@ -636,10 +640,16 @@ groupMemberRef GroupMember {groupMemberId, memberProfile = p} =
   GroupMemberRef {groupMemberId, profile = fromLocalProfile p}
 
 memberConn :: GroupMember -> Maybe Connection
-memberConn GroupMember{activeConn} = activeConn
+memberConn GroupMember {activeConn} = activeConn
 
 memberConnId :: GroupMember -> Maybe ConnId
 memberConnId GroupMember {activeConn} = aConnId <$> activeConn
+
+memberChatVRange' :: GroupMember -> VersionRange
+memberChatVRange' GroupMember {activeConn, memberChatVRange} =
+  fromJVersionRange $ case activeConn of
+    Just Connection {peerChatVRange} -> peerChatVRange
+    Nothing -> memberChatVRange
 
 groupMemberId' :: GroupMember -> GroupMemberId
 groupMemberId' GroupMember {groupMemberId} = groupMemberId
@@ -664,6 +674,7 @@ data NewGroupMember = NewGroupMember
     memCategory :: GroupMemberCategory,
     memStatus :: GroupMemberStatus,
     memInvitedBy :: InvitedBy,
+    memInvitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
     memProfileId :: Int64,
     memContactId :: Maybe Int64
@@ -1360,7 +1371,7 @@ data GroupMemberIntroStatus
   | GMIntroReConnected
   | GMIntroToConnected
   | GMIntroConnected
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance FromField GroupMemberIntroStatus where fromField = fromTextField_ introStatusT
 

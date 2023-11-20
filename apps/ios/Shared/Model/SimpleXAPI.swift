@@ -905,28 +905,34 @@ func apiCancelFile(fileId: Int64) async -> AChatItem? {
     }
 }
 
-func startRemoteCtrl() async throws {
-    try await sendCommandOkResp(.startRemoteCtrl)
+func setLocalDeviceName(_ displayName: String) throws {
+    try sendCommandOkRespSync(.setLocalDeviceName(displayName: displayName))
 }
 
-func registerRemoteCtrl(_ remoteCtrlOOB: RemoteCtrlOOB) async throws -> RemoteCtrlInfo {
-    let r = await chatSendCmd(.registerRemoteCtrl(remoteCtrlOOB: remoteCtrlOOB))
-    if case let .remoteCtrlRegistered(rcInfo) = r { return rcInfo }
+func connectRemoteCtrl(desktopAddress: String) async throws -> (RemoteCtrlInfo?, CtrlAppInfo, String) {
+    let r = await chatSendCmd(.connectRemoteCtrl(xrcpInvitation: desktopAddress))
+    if case let .remoteCtrlConnecting(rc_, ctrlAppInfo, v) = r { return (rc_, ctrlAppInfo, v) }
     throw r
 }
 
-func listRemoteCtrls() async throws -> [RemoteCtrlInfo] {
-    let r = await chatSendCmd(.listRemoteCtrls)
+func findKnownRemoteCtrl() async throws {
+    try await sendCommandOkResp(.findKnownRemoteCtrl)
+}
+
+func confirmRemoteCtrl(_ rcId: Int64) async throws {
+    try await sendCommandOkResp(.confirmRemoteCtrl(remoteCtrlId: rcId))
+}
+
+func verifyRemoteCtrlSession(_ sessCode: String) async throws -> RemoteCtrlInfo {
+    let r = await chatSendCmd(.verifyRemoteCtrlSession(sessionCode: sessCode))
+    if case let .remoteCtrlConnected(rc) = r { return rc }
+    throw r
+}
+
+func listRemoteCtrls() throws -> [RemoteCtrlInfo] {
+    let r = chatSendCmdSync(.listRemoteCtrls)
     if case let .remoteCtrlList(rcInfo) = r { return rcInfo }
     throw r
-}
-
-func acceptRemoteCtrl(_ rcId: Int64) async throws {
-    try await sendCommandOkResp(.acceptRemoteCtrl(remoteCtrlId: rcId))
-}
-
-func rejectRemoteCtrl(_ rcId: Int64) async throws {
-    try await sendCommandOkResp(.rejectRemoteCtrl(remoteCtrlId: rcId))
 }
 
 func stopRemoteCtrl() async throws {
@@ -1061,6 +1067,12 @@ func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
 
 private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     let r = await chatSendCmd(cmd)
+    if case .cmdOk = r { return }
+    throw r
+}
+
+private func sendCommandOkRespSync(_ cmd: ChatCommand) throws {
+    let r = chatSendCmdSync(cmd)
     if case .cmdOk = r { return }
     throw r
 }
@@ -1702,6 +1714,26 @@ func processReceivedMsg(_ res: ChatResponse) async {
         await MainActor.run {
             m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
         }
+    case let .remoteCtrlFound(remoteCtrl):
+        // TODO multicast
+        logger.debug("\(String(describing: remoteCtrl))")
+    case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode):
+        await MainActor.run {
+            let state = UIRemoteCtrlSessionState.pendingConfirmation(remoteCtrl_: remoteCtrl_, sessionCode: sessionCode)
+            m.remoteCtrlSession = m.remoteCtrlSession?.updateState(state)
+        }
+    case let .remoteCtrlConnected(remoteCtrl):
+        // TODO currently it is returned in response to command, so it is redundant
+        await MainActor.run {
+            let state = UIRemoteCtrlSessionState.connected(remoteCtrl: remoteCtrl, sessionCode: m.remoteCtrlSession?.sessionCode ?? "")
+            m.remoteCtrlSession = m.remoteCtrlSession?.updateState(state)
+        }
+    case .remoteCtrlStopped:
+        // This delay is needed to cancel the session that fails on network failure,
+        // e.g. when user did not grant permission to access local network yet.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            switchToLocalSession()
+        }
     default:
         logger.debug("unsupported event: \(res.responseType)")
     }
@@ -1712,6 +1744,19 @@ func processReceivedMsg(_ res: ChatResponse) async {
         } else {
             logger.debug("processReceivedMsg: ignoring \(res.responseType), not in call with the contact \(contact.id)")
         }
+    }
+}
+
+func switchToLocalSession() {
+    let m = ChatModel.shared
+    m.remoteCtrlSession = nil
+    do {
+        m.users = try listUsers()
+        try getUserChatData()
+        let statuses = (try apiGetNetworkStatuses()).map { s in (s.agentConnId, s.networkStatus) }
+        m.networkStatuses = Dictionary(uniqueKeysWithValues: statuses)
+    } catch let error {
+        logger.debug("error updating chat data: \(responseError(error))")
     }
 }
 

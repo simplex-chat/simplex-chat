@@ -1966,6 +1966,14 @@ This cannot be undone!</source>
         <target>Mensaje cifrado: error inesperado</target>
         <note>notification</note>
       </trans-unit>
+      <trans-unit id="Encryption re-negotiation error" xml:space="preserve">
+        <source>Encryption re-negotiation error</source>
+        <note>message decrypt error item</note>
+      </trans-unit>
+      <trans-unit id="Encryption re-negotiation failed." xml:space="preserve">
+        <source>Encryption re-negotiation failed.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enter Passcode" xml:space="preserve">
         <source>Enter Passcode</source>
         <target>Introduce Código</target>

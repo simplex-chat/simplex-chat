@@ -5,8 +5,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
-import chat.simplex.common.model.CIFile
-import chat.simplex.common.model.readCryptoFile
+import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.simplexWindowState
 import chat.simplex.res.MR
@@ -88,15 +87,30 @@ actual fun escapedHtmlToAnnotatedString(text: String, density: Density): Annotat
   AnnotatedString(text)
 }
 
-actual fun getAppFileUri(fileName: String): URI =
-  URI(appFilesDir.toURI().toString() + "/" + fileName)
+actual fun getAppFileUri(fileName: String): URI {
+  val rh = chatModel.currentRemoteHost.value
+  return if (rh == null) {
+    URI(appFilesDir.toURI().toString() + "/" + fileName)
+  } else {
+    URI(dataDir.absolutePath + "/remote_hosts/" + rh.storePath + "/simplex_v1_files/" + fileName)
+  }
+}
 
-actual fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
-  val filePath = getLoadedFilePath(file)
+actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? {
+  var filePath = getLoadedFilePath(file)
+  if (chatModel.connectedToRemote() && filePath == null) {
+    file?.loadRemoteFile(false)
+    filePath = getLoadedFilePath(file)
+  }
   return if (filePath != null) {
-    val data = if (file?.fileSource?.cryptoArgs != null) readCryptoFile(filePath, file.fileSource.cryptoArgs) else File(filePath).readBytes()
-    val bitmap = getBitmapFromByteArray(data, false)
-    if (bitmap != null) bitmap to data else null
+    try {
+      val data = if (file?.fileSource?.cryptoArgs != null) readCryptoFile(filePath, file.fileSource.cryptoArgs) else File(filePath).readBytes()
+      val bitmap = getBitmapFromByteArray(data, false)
+      if (bitmap != null) bitmap to data else null
+    } catch (e: Exception) {
+      Log.e(TAG, "Unable to read crypto file: " + e.stackTraceToString())
+      null
+    }
   } else {
     null
   }
@@ -136,7 +150,7 @@ actual suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
   return if (file != null) {
     try {
       val ext = if (asPng) "png" else "jpg"
-      val newFile = File(file.absolutePath + File.separator + generateNewFileName("IMG", ext))
+      val newFile = File(file.absolutePath + File.separator + generateNewFileName("IMG", ext, File(getAppFilePath(""))))
       // LALAL FILE IS EMPTY
       ImageIO.write(image.toAwtImage(), ext.uppercase(), newFile.outputStream())
       newFile

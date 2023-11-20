@@ -30,15 +30,15 @@ import kotlinx.coroutines.launch
 import java.net.URI
 
 @Composable
-fun GroupProfileView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
+fun GroupProfileView(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
   GroupProfileLayout(
     close = close,
     groupProfile = groupInfo.groupProfile,
     saveProfile = { p ->
       withApi {
-        val gInfo = chatModel.controller.apiUpdateGroup(groupInfo.groupId, p)
+        val gInfo = chatModel.controller.apiUpdateGroup(rhId, groupInfo.groupId, p)
         if (gInfo != null) {
-          chatModel.updateGroup(gInfo)
+          chatModel.updateGroup(rhId, gInfo)
           close.invoke()
         }
       }
