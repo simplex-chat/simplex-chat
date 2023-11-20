@@ -133,7 +133,7 @@ startRemoteHost rh_ = do
     Nothing -> (RHNew,False,Nothing,) <$> rcNewHostPairing
   withRemoteHostSession_ rhKey $ maybe (Right ((), Just RHSessionStarting)) (\_ -> Left $ ChatErrorRemoteHost rhKey RHEBusy)
   ctrlAppInfo <- mkCtrlAppInfo
-  (invitation, rchClient, vars) <- withAgent $ \a -> rcConnectHost a pairing (J.toJSON ctrlAppInfo) multicast
+  (invitation, rchClient, vars) <- handleConnectError rhKey . withAgent $ \a -> rcConnectHost a pairing (J.toJSON ctrlAppInfo) multicast
   cmdOk <- newEmptyTMVarIO
   rhsWaitSession <- async $ do
     rhKeyVar <- newTVarIO rhKey
@@ -157,6 +157,11 @@ startRemoteHost rh_ = do
       unless (isAppCompatible appVersion ctrlAppVersionRange) $ throwError $ RHEBadVersion appVersion
       when (encoding == PEKotlin && localEncoding == PESwift) $ throwError $ RHEProtocolError RPEIncompatibleEncoding
       pure hostInfo
+    handleConnectError :: ChatMonad m => RHKey -> m a -> m a
+    handleConnectError rhKey action = action `catchChatError` \err -> do
+      logError $ "startRemoteHost.rcConnectHost crashed: " <> tshow err
+      cancelRemoteHostSession True rhKey
+      throwError err
     handleHostError :: ChatMonad m => TVar RHKey -> m () -> m ()
     handleHostError rhKeyVar action = action `catchChatError` \err -> do
       logError $ "startRemoteHost.waitForHostSession crashed: " <> tshow err
