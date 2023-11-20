@@ -19,7 +19,7 @@ import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Simplex.Chat.Remote.AppVersion
-import Simplex.Chat.Types (verificationCode)
+import Simplex.Chat.Types (verificationCode, RemoteHostId)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.SNTRUP761 (KEMHybridSecret)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
@@ -117,8 +117,6 @@ data RemoteProtocolError
   | RPEHTTP2 {http2Error :: Text}
   | RPEException {someException :: Text}
   deriving (Show, Exception)
-
-type RemoteHostId = Int64
 
 data RHKey = RHNew | RHId {remoteHostId :: RemoteHostId}
   deriving (Eq, Ord, Show)

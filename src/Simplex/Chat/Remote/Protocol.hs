@@ -8,6 +8,7 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-ambiguous-fields #-}
 
 module Simplex.Chat.Remote.Protocol where
 
@@ -34,9 +35,12 @@ import Data.Word (Word32)
 import qualified Network.HTTP.Types as N
 import qualified Network.HTTP2.Client as H
 import Network.Transport.Internal (decodeWord32, encodeWord32)
+import Simplex.Chat.Call (RcvCallInvitation (..))
 import Simplex.Chat.Controller
+import Simplex.Chat.Messages (AChat (..), Chat (..))
 import Simplex.Chat.Remote.Transport
 import Simplex.Chat.Remote.Types
+import Simplex.Chat.Types (RemoteHostId, User (..), UserInfo (..), ServerCfg (..))
 import Simplex.FileTransfer.Description (FileDigest (..))
 import Simplex.Messaging.Agent.Client (agentDRG)
 import qualified Simplex.Messaging.Crypto as C
@@ -105,17 +109,231 @@ closeRemoteHostClient RemoteHostClient {httpClient} = liftIO $ closeHTTP2Client 
 
 -- ** Commands
 
-remoteSend :: RemoteHostClient -> ByteString -> ExceptT RemoteProtocolError IO ChatResponse
-remoteSend c cmd =
+remoteSend :: RemoteHostId -> RemoteHostClient -> ByteString -> ExceptT RemoteProtocolError IO ChatResponse
+remoteSend rhId c cmd =
   sendRemoteCommand' c Nothing RCSend {command = decodeUtf8 cmd} >>= \case
-    RRChatResponse cr -> pure cr
+    RRChatResponse cr -> pure $ enrichCRRemoteHostId cr rhId
     r -> badResponse r
 
-remoteRecv :: RemoteHostClient -> Int -> ExceptT RemoteProtocolError IO (Maybe ChatResponse)
-remoteRecv c ms =
+remoteRecv :: RemoteHostId -> RemoteHostClient -> Int -> ExceptT RemoteProtocolError IO (Maybe ChatResponse)
+remoteRecv rhId c ms =
   sendRemoteCommand' c Nothing RCRecv {wait = ms} >>= \case
-    RRChatEvent cr_ -> pure cr_
+    RRChatEvent cr_ -> pure $ (`enrichCRRemoteHostId` rhId) <$> cr_
     r -> badResponse r
+
+enrichCRRemoteHostId :: ChatResponse -> RemoteHostId -> ChatResponse
+enrichCRRemoteHostId cr rhId = case cr of
+  CRActiveUser {user} -> CRActiveUser {user = enrichUser user}
+  CRUsersList {users} -> CRUsersList {users = map enrichUserInfo users}
+  CRChatStarted -> cr
+  CRChatRunning -> cr
+  CRChatStopped -> cr
+  CRChatSuspended -> cr
+  CRApiChats {user, chats} -> CRApiChats {user = enrichUser user, chats = map enrichAChat chats}
+  CRChats {chats} -> CRChats {chats = map enrichAChat chats}
+  CRApiChat {user, chat} -> CRApiChat {user = enrichUser user, chat = enrichAChat chat}
+  CRChatItems {user, chatName_, chatItems} -> CRChatItems {user = enrichUser user, chatName_, chatItems}
+  CRChatItemInfo {user, chatItem, chatItemInfo} -> CRChatItemInfo {user = enrichUser user, chatItem, chatItemInfo}
+  CRChatItemId user chatItemId_ -> CRChatItemId (enrichUser user) chatItemId_
+  CRApiParsedMarkdown {formattedText = _ft} -> cr
+  CRUserProtoServers {user, servers} -> CRUserProtoServers {user = enrichUser user, servers = enrichAUserProtoServers servers}
+  CRServerTestResult {user, testServer, testFailure} -> CRServerTestResult {user = enrichUser user, testServer, testFailure}
+  CRChatItemTTL {user, chatItemTTL} -> CRChatItemTTL {user = enrichUser user, chatItemTTL}
+  CRNetworkConfig {networkConfig = _nc} -> cr
+  CRContactInfo {user, contact, connectionStats_, customUserProfile} -> CRContactInfo {user = enrichUser user, contact, connectionStats_, customUserProfile}
+  CRGroupInfo {user, groupInfo, groupSummary} -> CRGroupInfo {user = enrichUser user, groupInfo, groupSummary}
+  CRGroupMemberInfo {user, groupInfo, member, connectionStats_} -> CRGroupMemberInfo {user = enrichUser user, groupInfo, member, connectionStats_}
+  CRContactSwitchStarted {user, contact, connectionStats} -> CRContactSwitchStarted {user = enrichUser user, contact, connectionStats}
+  CRGroupMemberSwitchStarted {user, groupInfo, member, connectionStats} -> CRGroupMemberSwitchStarted {user = enrichUser user, groupInfo, member, connectionStats}
+  CRContactSwitchAborted {user, contact, connectionStats} -> CRContactSwitchAborted {user = enrichUser user, contact, connectionStats}
+  CRGroupMemberSwitchAborted {user, groupInfo, member, connectionStats} -> CRGroupMemberSwitchAborted {user = enrichUser user, groupInfo, member, connectionStats}
+  CRContactSwitch {user, contact, switchProgress} -> CRContactSwitch {user = enrichUser user, contact, switchProgress}
+  CRGroupMemberSwitch {user, groupInfo, member, switchProgress} -> CRGroupMemberSwitch {user = enrichUser user, groupInfo, member, switchProgress}
+  CRContactRatchetSyncStarted {user, contact, connectionStats} -> CRContactRatchetSyncStarted {user = enrichUser user, contact, connectionStats}
+  CRGroupMemberRatchetSyncStarted {user, groupInfo, member, connectionStats} -> CRGroupMemberRatchetSyncStarted {user = enrichUser user, groupInfo, member, connectionStats}
+  CRContactRatchetSync {user, contact, ratchetSyncProgress} -> CRContactRatchetSync {user = enrichUser user, contact, ratchetSyncProgress}
+  CRGroupMemberRatchetSync {user, groupInfo, member, ratchetSyncProgress} -> CRGroupMemberRatchetSync {user = enrichUser user, groupInfo, member, ratchetSyncProgress}
+  CRContactVerificationReset {user, contact} -> CRContactVerificationReset {user = enrichUser user, contact}
+  CRGroupMemberVerificationReset {user, groupInfo, member} -> CRGroupMemberVerificationReset {user = enrichUser user, groupInfo, member}
+  CRContactCode {user, contact, connectionCode} -> CRContactCode {user = enrichUser user, contact, connectionCode}
+  CRGroupMemberCode {user, groupInfo, member, connectionCode} -> CRGroupMemberCode {user = enrichUser user, groupInfo, member, connectionCode}
+  CRConnectionVerified {user, verified, expectedCode} -> CRConnectionVerified {user = enrichUser user, verified, expectedCode}
+  CRNewChatItem {user, chatItem} -> CRNewChatItem {user = enrichUser user, chatItem}
+  CRChatItemStatusUpdated {user, chatItem} -> CRChatItemStatusUpdated {user = enrichUser user, chatItem}
+  CRChatItemUpdated {user, chatItem} -> CRChatItemUpdated {user = enrichUser user, chatItem}
+  CRChatItemNotChanged {user, chatItem} -> CRChatItemNotChanged {user = enrichUser user, chatItem}
+  CRChatItemReaction {user, added, reaction} -> CRChatItemReaction {user = enrichUser user, added, reaction}
+  CRChatItemDeleted {user, deletedChatItem, toChatItem, byUser, timed} -> CRChatItemDeleted {user = enrichUser user, deletedChatItem, toChatItem, byUser, timed}
+  CRChatItemDeletedNotFound {user, contact, sharedMsgId} -> CRChatItemDeletedNotFound {user = enrichUser user, contact, sharedMsgId}
+  CRBroadcastSent {user, msgContent, successes, failures, timestamp} -> CRBroadcastSent {user = enrichUser user, msgContent, successes, failures, timestamp}
+  CRMsgIntegrityError {user, msgError} -> CRMsgIntegrityError {user = enrichUser user, msgError}
+  CRCmdAccepted {corr = _corr} -> cr
+  CRCmdOk {user_} -> CRCmdOk {user_ = enrichUser <$> user_}
+  CRChatHelp {helpSection = _hs} -> cr
+  CRWelcome {user} -> CRWelcome {user = enrichUser user}
+  CRGroupCreated {user, groupInfo} -> CRGroupCreated {user = enrichUser user, groupInfo}
+  CRGroupMembers {user, group} -> CRGroupMembers {user = enrichUser user, group}
+  CRContactsList {user, contacts} -> CRContactsList {user = enrichUser user, contacts}
+  CRUserContactLink {user, contactLink} -> CRUserContactLink {user = enrichUser user, contactLink}
+  CRUserContactLinkUpdated {user, contactLink} -> CRUserContactLinkUpdated {user = enrichUser user, contactLink}
+  CRContactRequestRejected {user, contactRequest} -> CRContactRequestRejected {user = enrichUser user, contactRequest}
+  CRUserAcceptedGroupSent {user, groupInfo, hostContact} -> CRUserAcceptedGroupSent {user = enrichUser user, groupInfo, hostContact}
+  CRGroupLinkConnecting {user, groupInfo, hostMember} -> CRGroupLinkConnecting {user = enrichUser user, groupInfo, hostMember}
+  CRUserDeletedMember {user, groupInfo, member} -> CRUserDeletedMember {user = enrichUser user, groupInfo, member}
+  CRGroupsList {user, groups} -> CRGroupsList {user = enrichUser user, groups}
+  CRSentGroupInvitation {user, groupInfo, contact, member} -> CRSentGroupInvitation {user = enrichUser user, groupInfo, contact, member}
+  CRFileTransferStatus user ftStatus -> CRFileTransferStatus (enrichUser user) ftStatus
+  CRFileTransferStatusXFTP user chatItem -> CRFileTransferStatusXFTP (enrichUser user) chatItem
+  CRUserProfile {user, profile} -> CRUserProfile {user = enrichUser user, profile}
+  CRUserProfileNoChange {user} -> CRUserProfileNoChange {user = enrichUser user}
+  CRUserPrivacy {user, updatedUser} -> CRUserPrivacy {user = enrichUser user, updatedUser = enrichUser updatedUser}
+  CRVersionInfo {versionInfo = _v, chatMigrations = _cm, agentMigrations = _am} -> cr
+  CRInvitation {user, connReqInvitation, connection} -> CRInvitation {user = enrichUser user, connReqInvitation, connection}
+  CRConnectionIncognitoUpdated {user, toConnection} -> CRConnectionIncognitoUpdated {user = enrichUser user, toConnection}
+  CRConnectionPlan {user, connectionPlan} -> CRConnectionPlan {user = enrichUser user, connectionPlan}
+  CRSentConfirmation {user} -> CRSentConfirmation {user = enrichUser user}
+  CRSentInvitation {user, customUserProfile} -> CRSentInvitation {user = enrichUser user, customUserProfile}
+  CRSentInvitationToContact {user, contact, customUserProfile} -> CRSentInvitationToContact {user = enrichUser user, contact, customUserProfile}
+  CRContactUpdated {user, fromContact, toContact} -> CRContactUpdated {user = enrichUser user, fromContact, toContact}
+  CRGroupMemberUpdated {user, groupInfo, fromMember, toMember} -> CRGroupMemberUpdated {user = enrichUser user, groupInfo, fromMember, toMember}
+  CRContactsMerged {user, intoContact, mergedContact, updatedContact} -> CRContactsMerged {user = enrichUser user, intoContact, mergedContact, updatedContact}
+  CRContactDeleted {user, contact} -> CRContactDeleted {user = enrichUser user, contact}
+  CRContactDeletedByContact {user, contact} -> CRContactDeletedByContact {user = enrichUser user, contact}
+  CRChatCleared {user, chatInfo} -> CRChatCleared {user = enrichUser user, chatInfo}
+  CRUserContactLinkCreated {user, connReqContact} -> CRUserContactLinkCreated {user = enrichUser user, connReqContact}
+  CRUserContactLinkDeleted {user} -> CRUserContactLinkDeleted {user = enrichUser user}
+  CRReceivedContactRequest {user, contactRequest} -> CRReceivedContactRequest {user = enrichUser user, contactRequest}
+  CRAcceptingContactRequest {user, contact} -> CRAcceptingContactRequest {user = enrichUser user, contact}
+  CRContactAlreadyExists {user, contact} -> CRContactAlreadyExists {user = enrichUser user, contact}
+  CRContactRequestAlreadyAccepted {user, contact} -> CRContactRequestAlreadyAccepted {user = enrichUser user, contact}
+  CRLeftMemberUser {user, groupInfo} -> CRLeftMemberUser {user = enrichUser user, groupInfo}
+  CRGroupDeletedUser {user, groupInfo} -> CRGroupDeletedUser {user = enrichUser user, groupInfo}
+  CRRcvFileDescrReady {user, chatItem} -> CRRcvFileDescrReady {user = enrichUser user, chatItem}
+  CRRcvFileAccepted {user, chatItem} -> CRRcvFileAccepted {user = enrichUser user, chatItem}
+  CRRcvFileAcceptedSndCancelled {user, rcvFileTransfer} -> CRRcvFileAcceptedSndCancelled {user = enrichUser user, rcvFileTransfer}
+  CRRcvFileDescrNotReady {user, chatItem} -> CRRcvFileDescrNotReady {user = enrichUser user, chatItem}
+  CRRcvFileStart {user, chatItem} -> CRRcvFileStart {user = enrichUser user, chatItem}
+  CRRcvFileProgressXFTP {user, chatItem, receivedSize, totalSize} -> CRRcvFileProgressXFTP {user = enrichUser user, chatItem, receivedSize, totalSize}
+  CRRcvFileComplete {user, chatItem} -> CRRcvFileComplete {user = enrichUser user, chatItem}
+  CRRcvFileCancelled {user, chatItem, rcvFileTransfer} -> CRRcvFileCancelled {user = enrichUser user, chatItem, rcvFileTransfer}
+  CRRcvFileSndCancelled {user, chatItem, rcvFileTransfer} -> CRRcvFileSndCancelled {user = enrichUser user, chatItem, rcvFileTransfer}
+  CRRcvFileError {user, chatItem, agentError} -> CRRcvFileError {user = enrichUser user, chatItem, agentError}
+  CRSndFileStart {user, chatItem, sndFileTransfer} -> CRSndFileStart {user = enrichUser user, chatItem, sndFileTransfer}
+  CRSndFileComplete {user, chatItem, sndFileTransfer} -> CRSndFileComplete {user = enrichUser user, chatItem, sndFileTransfer}
+  CRSndFileRcvCancelled {user, chatItem, sndFileTransfer} -> CRSndFileRcvCancelled {user = enrichUser user, chatItem, sndFileTransfer}
+  CRSndFileCancelled {user, chatItem, fileTransferMeta, sndFileTransfers} -> CRSndFileCancelled {user = enrichUser user, chatItem, fileTransferMeta, sndFileTransfers}
+  CRSndFileStartXFTP {user, chatItem, fileTransferMeta} -> CRSndFileStartXFTP {user = enrichUser user, chatItem, fileTransferMeta}
+  CRSndFileProgressXFTP {user, chatItem, fileTransferMeta, sentSize, totalSize} -> CRSndFileProgressXFTP {user = enrichUser user, chatItem, fileTransferMeta, sentSize, totalSize}
+  CRSndFileCompleteXFTP {user, chatItem, fileTransferMeta} -> CRSndFileCompleteXFTP {user = enrichUser user, chatItem, fileTransferMeta}
+  CRSndFileCancelledXFTP {user, chatItem, fileTransferMeta} -> CRSndFileCancelledXFTP {user = enrichUser user, chatItem, fileTransferMeta}
+  CRSndFileError {user, chatItem} -> CRSndFileError {user = enrichUser user, chatItem}
+  CRUserProfileUpdated {user, fromProfile, toProfile, updateSummary} -> CRUserProfileUpdated {user = enrichUser user, fromProfile, toProfile, updateSummary}
+  CRUserProfileImage {user, profile} -> CRUserProfileImage {user = enrichUser user, profile}
+  CRContactAliasUpdated {user, toContact} -> CRContactAliasUpdated {user = enrichUser user, toContact}
+  CRConnectionAliasUpdated {user, toConnection} -> CRConnectionAliasUpdated {user = enrichUser user, toConnection}
+  CRContactPrefsUpdated {user, fromContact, toContact} -> CRContactPrefsUpdated {user = enrichUser user, fromContact, toContact}
+  CRContactConnecting {user, contact} -> CRContactConnecting {user = enrichUser user, contact}
+  CRContactConnected {user, contact, userCustomProfile} -> CRContactConnected {user = enrichUser user, contact, userCustomProfile}
+  CRContactAnotherClient {user, contact} -> CRContactAnotherClient {user = enrichUser user, contact}
+  CRSubscriptionEnd {user, connectionEntity} -> CRSubscriptionEnd {user = enrichUser user, connectionEntity}
+  CRContactsDisconnected {server = _srv, contactRefs = _cr} -> cr
+  CRContactsSubscribed {server = _srv, contactRefs = _cr} -> cr
+  CRContactSubError {user, contact, chatError} -> CRContactSubError {user = enrichUser user, contact, chatError}
+  CRContactSubSummary {user, contactSubscriptions} -> CRContactSubSummary {user = enrichUser user, contactSubscriptions}
+  CRUserContactSubSummary {user, userContactSubscriptions} -> CRUserContactSubSummary {user = enrichUser user, userContactSubscriptions}
+  CRNetworkStatus {networkStatus = _ns, connections = _cns} -> cr
+  CRNetworkStatuses {user_, networkStatuses} -> CRNetworkStatuses {user_ = enrichUser <$> user_, networkStatuses}
+  CRHostConnected {protocol = _p, transportHost = _th} -> cr
+  CRHostDisconnected {protocol = _p, transportHost = _th} -> cr
+  CRGroupInvitation {user, groupInfo} -> CRGroupInvitation {user = enrichUser user, groupInfo}
+  CRReceivedGroupInvitation {user, groupInfo, contact, fromMemberRole, memberRole} -> CRReceivedGroupInvitation {user = enrichUser user, groupInfo, contact, fromMemberRole, memberRole}
+  CRUserJoinedGroup {user, groupInfo, hostMember} -> CRUserJoinedGroup {user = enrichUser user, groupInfo, hostMember}
+  CRJoinedGroupMember {user, groupInfo, member} -> CRJoinedGroupMember {user = enrichUser user, groupInfo, member}
+  CRJoinedGroupMemberConnecting {user, groupInfo, hostMember, member} -> CRJoinedGroupMemberConnecting {user = enrichUser user, groupInfo, hostMember, member}
+  CRMemberRole {user, groupInfo, byMember, member, fromRole, toRole} -> CRMemberRole {user = enrichUser user, groupInfo, byMember, member, fromRole, toRole}
+  CRMemberRoleUser {user, groupInfo, member, fromRole, toRole} -> CRMemberRoleUser {user = enrichUser user, groupInfo, member, fromRole, toRole}
+  CRConnectedToGroupMember {user, groupInfo, member, memberContact} -> CRConnectedToGroupMember {user = enrichUser user, groupInfo, member, memberContact}
+  CRDeletedMember {user, groupInfo, byMember, deletedMember} -> CRDeletedMember {user = enrichUser user, groupInfo, byMember, deletedMember}
+  CRDeletedMemberUser {user, groupInfo, member} -> CRDeletedMemberUser {user = enrichUser user, groupInfo, member}
+  CRLeftMember {user, groupInfo, member} -> CRLeftMember {user = enrichUser user, groupInfo, member}
+  CRGroupEmpty {user, groupInfo} -> CRGroupEmpty {user = enrichUser user, groupInfo}
+  CRGroupRemoved {user, groupInfo} -> CRGroupRemoved {user = enrichUser user, groupInfo}
+  CRGroupDeleted {user, groupInfo, member} -> CRGroupDeleted {user = enrichUser user, groupInfo, member}
+  CRGroupUpdated {user, fromGroup, toGroup, member_} -> CRGroupUpdated {user = enrichUser user, fromGroup, toGroup, member_}
+  CRGroupProfile {user, groupInfo} -> CRGroupProfile {user = enrichUser user, groupInfo}
+  CRGroupDescription {user, groupInfo} -> CRGroupDescription {user = enrichUser user, groupInfo}
+  CRGroupLinkCreated {user, groupInfo, connReqContact, memberRole} -> CRGroupLinkCreated {user = enrichUser user, groupInfo, connReqContact, memberRole}
+  CRGroupLink {user, groupInfo, connReqContact, memberRole} -> CRGroupLink {user = enrichUser user, groupInfo, connReqContact, memberRole}
+  CRGroupLinkDeleted {user, groupInfo} -> CRGroupLinkDeleted {user = enrichUser user, groupInfo}
+  CRAcceptingGroupJoinRequest {user, groupInfo, contact} -> CRAcceptingGroupJoinRequest {user = enrichUser user, groupInfo, contact}
+  CRAcceptingGroupJoinRequestMember {user, groupInfo, member} -> CRAcceptingGroupJoinRequestMember {user = enrichUser user, groupInfo, member}
+  CRNoMemberContactCreating {user, groupInfo, member} -> CRNoMemberContactCreating {user = enrichUser user, groupInfo, member}
+  CRNewMemberContact {user, contact, groupInfo, member} -> CRNewMemberContact {user = enrichUser user, contact, groupInfo, member}
+  CRNewMemberContactSentInv {user, contact, groupInfo, member} -> CRNewMemberContactSentInv {user = enrichUser user, contact, groupInfo, member}
+  CRNewMemberContactReceivedInv {user, contact, groupInfo, member} -> CRNewMemberContactReceivedInv {user = enrichUser user, contact, groupInfo, member}
+  CRContactAndMemberAssociated {user, contact, groupInfo, member, updatedContact} -> CRContactAndMemberAssociated {user = enrichUser user, contact, groupInfo, member, updatedContact}
+  CRMemberSubError {user, groupInfo, member, chatError} -> CRMemberSubError {user = enrichUser user, groupInfo, member, chatError}
+  CRMemberSubSummary {user, memberSubscriptions} -> CRMemberSubSummary {user = enrichUser user, memberSubscriptions}
+  CRGroupSubscribed {user, groupInfo} -> CRGroupSubscribed {user = enrichUser user, groupInfo}
+  CRPendingSubSummary {user, pendingSubscriptions} -> CRPendingSubSummary {user = enrichUser user, pendingSubscriptions}
+  CRSndFileSubError {user, sndFileTransfer, chatError} -> CRSndFileSubError {user = enrichUser user, sndFileTransfer, chatError}
+  CRRcvFileSubError {user, rcvFileTransfer, chatError} -> CRRcvFileSubError {user = enrichUser user, rcvFileTransfer, chatError}
+  CRCallInvitation {callInvitation} -> CRCallInvitation {callInvitation = enrichRcvCallInvitation callInvitation}
+  CRCallOffer {user, contact, callType, offer, sharedKey, askConfirmation} -> CRCallOffer {user = enrichUser user, contact, callType, offer, sharedKey, askConfirmation}
+  CRCallAnswer {user, contact, answer} -> CRCallAnswer {user = enrichUser user, contact, answer}
+  CRCallExtraInfo {user, contact, extraInfo} -> CRCallExtraInfo {user = enrichUser user, contact, extraInfo}
+  CRCallEnded {user, contact} -> CRCallEnded {user = enrichUser user, contact}
+  CRCallInvitations {callInvitations} -> CRCallInvitations {callInvitations = map enrichRcvCallInvitation callInvitations}
+  CRUserContactLinkSubscribed -> cr
+  CRUserContactLinkSubError {chatError = _ce} -> cr
+  CRNtfTokenStatus {status = _s} -> cr
+  CRNtfToken {token = _t, status = _s, ntfMode = _nm} -> cr
+  CRNtfMessages {user_, connEntity, msgTs, ntfMessages} -> CRNtfMessages {user_ = enrichUser <$> user_, connEntity, msgTs, ntfMessages}
+  CRNewContactConnection {user, connection} -> CRNewContactConnection {user = enrichUser user, connection}
+  CRContactConnectionDeleted {user, connection} -> CRContactConnectionDeleted {user = enrichUser user, connection}
+  CRRemoteHostList {remoteHosts = _rh} -> cr
+  CRCurrentRemoteHost {remoteHost_ = _rh} -> cr
+  CRRemoteHostStarted {remoteHost_ = _rh, invitation = _i} -> cr
+  CRRemoteHostSessionCode {remoteHost_ = _rh, sessionCode = _sc} -> cr
+  CRNewRemoteHost {remoteHost = _rh} -> cr
+  CRRemoteHostConnected {remoteHost = _rh} -> cr
+  CRRemoteHostStopped {remoteHostId_ = _rh} -> cr
+  CRRemoteFileStored {remoteHostId = _rhId, remoteFileSource = _rfs} -> cr
+  CRRemoteCtrlList {remoteCtrls = _rc} -> cr
+  CRRemoteCtrlFound {remoteCtrl = _rc} -> cr
+  CRRemoteCtrlConnecting {remoteCtrl_ = _rc, ctrlAppInfo = _cai, appVersion = _av} -> cr
+  CRRemoteCtrlSessionCode {remoteCtrl_ = _rc, sessionCode = _sc} -> cr
+  CRRemoteCtrlConnected {remoteCtrl = _rc} -> cr
+  CRRemoteCtrlStopped -> cr
+  CRSQLResult {rows = _r} -> cr
+  CRSlowSQLQueries {chatQueries = _cq, agentQueries = _aq} -> cr
+  CRDebugLocks {chatLockName = _cl, agentLocks = _al} -> cr
+  CRAgentStats {agentStats = _as} -> cr
+  CRAgentSubs {activeSubs = _as, pendingSubs = _ps, removedSubs = _rs} -> cr
+  CRAgentSubsDetails {agentSubs = _as} -> cr
+  CRConnectionDisabled {connectionEntity = _ce} -> cr
+  CRAgentRcvQueueDeleted {agentConnId = _acId, server = _srv, agentQueueId = _aqId, agentError_ = _ae} -> cr
+  CRAgentConnDeleted {agentConnId = _acId} -> cr
+  CRAgentUserDeleted {agentUserId = _auId} -> cr
+  CRMessageError {user, severity, errorMessage} -> CRMessageError {user = enrichUser user, severity, errorMessage}
+  CRChatCmdError {user_, chatError} -> CRChatCmdError {user_ = enrichUser <$> user_, chatError}
+  CRChatError {user_, chatError} -> CRChatError {user_ = enrichUser <$> user_, chatError}
+  CRArchiveImported {archiveErrors = _ae} -> cr
+  CRTimedAction {action = _a, durationMilliseconds = _dm} -> cr
+  where
+    enrichUser :: User -> User
+    enrichUser u = u {remoteHostId = Just rhId}
+    enrichUserInfo :: UserInfo -> UserInfo
+    enrichUserInfo uInfo@UserInfo {user} = uInfo {user = enrichUser user}
+    enrichAChat :: AChat -> AChat
+    enrichAChat (AChat cType chat) = AChat cType chat {remoteHostId = Just rhId}
+    enrichServerCfg :: ServerCfg p -> ServerCfg p
+    enrichServerCfg cfg = cfg {remoteHostId = Just rhId}
+    enrichAUserProtoServers :: AUserProtoServers -> AUserProtoServers
+    enrichAUserProtoServers (AUPS ups@UserProtoServers {protoServers}) = AUPS ups {protoServers = fmap enrichServerCfg protoServers}
+    enrichRcvCallInvitation :: RcvCallInvitation -> RcvCallInvitation
+    enrichRcvCallInvitation rci = rci {remoteHostId = Just rhId}
+
 
 remoteStoreFile :: RemoteHostClient -> FilePath -> FilePath -> ExceptT RemoteProtocolError IO FilePath
 remoteStoreFile c localPath fileName = do
@@ -140,7 +358,7 @@ sendRemoteCommand' c attachment_ rc = snd <$> sendRemoteCommand c attachment_ rc
 
 sendRemoteCommand :: RemoteHostClient -> Maybe (Handle, Word32) -> RemoteCommand -> ExceptT RemoteProtocolError IO (Int -> IO ByteString, RemoteResponse)
 sendRemoteCommand RemoteHostClient {httpClient, hostEncoding, encryption} file_ cmd = do
-  encFile_ <- mapM (prepareEncryptedFile encryption) file_ 
+  encFile_ <- mapM (prepareEncryptedFile encryption) file_
   req <- httpRequest encFile_ <$> encryptEncodeHTTP2Body encryption (J.encode cmd)
   HTTP2Response {response, respBody} <- liftEitherError (RPEHTTP2 . tshow) $ sendRequestDirect httpClient req Nothing
   (header, getNext) <- parseDecryptHTTP2Body encryption response respBody

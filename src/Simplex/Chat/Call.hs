@@ -20,14 +20,15 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
-import Simplex.Chat.Types (Contact, ContactId, User)
+import Simplex.Chat.Types (Contact, ContactId, User, RemoteHostId)
 import Simplex.Chat.Types.Util (decodeJSON, encodeJSON)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON)
 
 data Call = Call
-  { contactId :: ContactId,
+  { remoteHostId :: Maybe RemoteHostId,
+    contactId :: ContactId,
     callId :: CallId,
     chatItemId :: Int64,
     callState :: CallState,
@@ -107,7 +108,8 @@ instance FromField CallId where fromField f = CallId <$> fromField f
 instance ToField CallId where toField (CallId m) = toField m
 
 data RcvCallInvitation = RcvCallInvitation
-  { user :: User,
+  { remoteHostId :: Maybe RemoteHostId,
+    user :: User,
     contact :: Contact,
     callType :: CallType,
     sharedKey :: Maybe C.Key,
