@@ -26,7 +26,7 @@ import chat.simplex.res.MR
 import java.net.URI
 
 @Composable
-expect fun ScanToConnectView(chatModel: ChatModel, rhId: Long?, close: () -> Unit)
+expect fun ScanToConnectView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit)
 
 enum class ConnectionLinkType {
   INVITATION, CONTACT, GROUP
@@ -428,7 +428,7 @@ fun openKnownGroup(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, grou
 @Composable
 fun ConnectContactLayout(
   chatModel: ChatModel,
-  rhId: Long?,
+  rh: RemoteHostInfo?,
   incognitoPref: SharedPreference<Boolean>,
   close: () -> Unit
 ) {
@@ -440,7 +440,7 @@ fun ConnectContactLayout(
       try {
         val uri = URI(connReqUri)
         withApi {
-          planAndConnect(chatModel, rhId, uri, incognito = incognito.value, close)
+          planAndConnect(chatModel, rh?.remoteHostId, uri, incognito = incognito.value, close)
         }
       } catch (e: RuntimeException) {
         AlertManager.shared.showAlertMsg(
@@ -492,7 +492,7 @@ fun PreviewConnectContactLayout() {
   SimpleXTheme {
     ConnectContactLayout(
       chatModel = ChatModel,
-      rhId = null,
+      rh = null,
       incognitoPref = SharedPreference({ false }, {}),
       close = {},
     )
