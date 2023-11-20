@@ -686,17 +686,29 @@ data ChatResponse
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   deriving (Show)
 
+-- some of these can only be used as command responses
 allowRemoteEvent :: ChatResponse -> Bool
 allowRemoteEvent = \case
-  CRRemoteHostList {} -> False
-  CRRemoteHostConnected {} -> False
-  CRRemoteHostStopped {} -> False
-  CRRemoteCtrlList {} -> False
-  CRRemoteCtrlFound {} -> False
+  CRChatStarted -> False
+  CRChatRunning -> False
+  CRChatStopped -> False
+  CRChatSuspended -> False
+  CRRemoteHostList _ -> False
+  CRCurrentRemoteHost _ -> False
+  CRRemoteHostStarted {} -> False
+  CRRemoteHostSessionCode {} -> False
+  CRNewRemoteHost _ -> False
+  CRRemoteHostConnected _ -> False
+  CRRemoteHostStopped _ -> False
+  CRRemoteFileStored {} -> False
+  CRRemoteCtrlList _ -> False
+  CRRemoteCtrlFound _ -> False
   CRRemoteCtrlConnecting {} -> False
   CRRemoteCtrlSessionCode {} -> False
-  CRRemoteCtrlConnected {} -> False
+  CRRemoteCtrlConnected _ -> False
   CRRemoteCtrlStopped -> False
+  CRSQLResult _ -> False
+  CRSlowSQLQueries {} -> False
   _ -> True
 
 logResponseToFile :: ChatResponse -> Bool
