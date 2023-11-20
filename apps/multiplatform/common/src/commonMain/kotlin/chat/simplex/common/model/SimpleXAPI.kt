@@ -434,7 +434,7 @@ object ChatController {
 
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
-      chatModel.addTerminalItem(TerminalItem.cmd(cmd.obfuscated))
+      chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
       Log.d(TAG, "sendCmd: ${cmd.cmdType}")
       val json = if (rhId == null) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId.toInt(), c)
       val r = APIResponse.decodeStr(json)
@@ -442,7 +442,7 @@ object ChatController {
       if (r.resp is CR.Response || r.resp is CR.Invalid) {
         Log.d(TAG, "sendCmd response json $json")
       }
-      chatModel.addTerminalItem(TerminalItem.resp(r.resp))
+      chatModel.addTerminalItem(TerminalItem.resp(rhId, r.resp))
       r.resp
     }
   }
@@ -1505,7 +1505,7 @@ object ChatController {
     val r = apiResp.resp
     val rhId = apiResp.remoteHostId
     fun active(user: UserLike): Boolean = activeUser(rhId, user)
-    chatModel.addTerminalItem(TerminalItem.resp(r))
+    chatModel.addTerminalItem(TerminalItem.resp(rhId, r))
     when (r) {
       is CR.NewContactConnection -> {
         if (active(r.user)) {
@@ -1838,9 +1838,11 @@ object ChatController {
         switchUIRemoteHost(r.remoteHost.remoteHostId)
       }
       is CR.RemoteHostStopped -> {
-        chatModel.currentRemoteHost.value = null
         chatModel.newRemoteHostPairing.value = null
-        switchUIRemoteHost(null)
+        if (chatModel.currentRemoteHost.value != null) {
+          chatModel.currentRemoteHost.value = null
+          switchUIRemoteHost(null)
+        }
       }
       is CR.RemoteCtrlFound -> {
         // TODO multicast
@@ -4125,28 +4127,29 @@ sealed class GroupLinkPlan {
 
 abstract class TerminalItem {
   abstract val id: Long
+  abstract val remoteHostId: Long?
   val date: Instant = Clock.System.now()
   abstract val label: String
   abstract val details: String
 
-  class Cmd(override val id: Long, val cmd: CC): TerminalItem() {
+  class Cmd(override val id: Long, override val remoteHostId: Long?, val cmd: CC): TerminalItem() {
     override val label get() = "> ${cmd.cmdString}"
     override val details get() = cmd.cmdString
   }
 
-  class Resp(override val id: Long, val resp: CR): TerminalItem() {
+  class Resp(override val id: Long, override val remoteHostId: Long?, val resp: CR): TerminalItem() {
     override val label get() = "< ${resp.responseType}"
     override val details get() = resp.details
   }
 
   companion object {
     val sampleData = listOf(
-        Cmd(0, CC.ShowActiveUser()),
-        Resp(1, CR.ActiveUser(User.sampleData))
+        Cmd(0, null, CC.ShowActiveUser()),
+        Resp(1, null, CR.ActiveUser(User.sampleData))
     )
 
-    fun cmd(c: CC) = Cmd(System.currentTimeMillis(), c)
-    fun resp(r: CR) = Resp(System.currentTimeMillis(), r)
+    fun cmd(rhId: Long?, c: CC) = Cmd(System.currentTimeMillis(), rhId, c)
+    fun resp(rhId: Long?, r: CR) = Resp(System.currentTimeMillis(), rhId, r)
   }
 }
 
