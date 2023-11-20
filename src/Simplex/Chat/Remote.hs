@@ -403,8 +403,8 @@ findKnownRemoteCtrl = do
       Just rc  -> pure rc
     atomically $ putTMVar foundCtrl (rc, inv)
     toView CRRemoteCtrlFound {remoteCtrl = remoteCtrlInfo rc (Just RCSSearching)}
-  withRemoteCtrlSession sseq $ \case
-    RCSessionStarting -> Right ((), RCSessionSearching {action, foundCtrl})
+  updateRemoteCtrlSession sseq $ \case
+    RCSessionStarting -> Right RCSessionSearching {action, foundCtrl}
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   atomically $ putTMVar cmdOk ()
 
@@ -449,8 +449,8 @@ connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) 
   rcsWaitSession <- async $ do
     atomically $ takeTMVar cmdOk
     handleCtrlError sseq "waitForCtrlSession" $ waitForCtrlSession rc_ ctrlDeviceName rcsClient vars
-  withRemoteCtrlSession sseq $ \case
-    RCSessionStarting -> Right ((), RCSessionConnecting {remoteCtrlId_ = remoteCtrlId' <$> rc_, rcsClient, rcsWaitSession})
+  updateRemoteCtrlSession sseq $ \case
+    RCSessionStarting -> Right RCSessionConnecting {remoteCtrlId_ = remoteCtrlId' <$> rc_, rcsClient, rcsWaitSession}
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   atomically $ putTMVar cmdOk ()
   pure ((`remoteCtrlInfo` Just RCSConnecting) <$> rc_, ctrlInfo)
@@ -461,10 +461,10 @@ connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) 
     waitForCtrlSession rc_ ctrlName rcsClient vars = do
       (uniq, tls, rcsWaitConfirmation) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) networkIOTimeout $ takeRCStep vars
       let sessionCode = verificationCode uniq
-      withRemoteCtrlSession sseq $ \case
+      updateRemoteCtrlSession sseq $ \case
         RCSessionConnecting {rcsWaitSession} ->
           let remoteCtrlId_ = remoteCtrlId' <$> rc_
-           in Right ((), RCSessionPendingConfirmation {remoteCtrlId_, ctrlDeviceName = ctrlName, rcsClient, tls, sessionCode, rcsWaitSession, rcsWaitConfirmation})
+           in Right RCSessionPendingConfirmation {remoteCtrlId_, ctrlDeviceName = ctrlName, rcsClient, tls, sessionCode, rcsWaitSession, rcsWaitConfirmation}
         _ -> Left $ ChatErrorRemoteCtrl RCEBadState
       toView CRRemoteCtrlSessionCode {remoteCtrl_ = (`remoteCtrlInfo` Just RCSPendingConfirmation {sessionCode}) <$> rc_, sessionCode}
     parseCtrlAppInfo ctrlAppInfo = do
@@ -607,8 +607,8 @@ verifyRemoteCtrlSession execChatCommand sessCode' = do
     encryption <- mkCtrlRemoteCrypto sessionKeys $ tlsUniq tls
     http2Server <- async $ attachHTTP2Server tls $ handleRemoteCommand execChatCommand encryption remoteOutputQ
     void . forkIO $ monitor sseq http2Server
-    withRemoteCtrlSession sseq $ \case
-      RCSessionPendingConfirmation {} -> Right ((), RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, tls, http2Server, remoteOutputQ})
+    updateRemoteCtrlSession sseq $ \case
+      RCSessionPendingConfirmation {} -> Right RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, tls, http2Server, remoteOutputQ}
       _ -> Left $ ChatErrorRemoteCtrl RCEBadState
     pure $ remoteCtrlInfo rc $ Just RCSConnected {sessionCode = tlsSessionCode tls}
   where
@@ -678,17 +678,17 @@ checkNoRemoteCtrlSession =
   chatReadVar remoteCtrlSession >>= maybe (pure ()) (\_ -> throwError $ ChatErrorRemoteCtrl RCEBusy)
 
 -- | Transition controller to a new state, unless session update key is stale
-withRemoteCtrlSession :: ChatMonad m => SessionSeq -> (RemoteCtrlSession -> Either ChatError (a, RemoteCtrlSession)) -> m a
-withRemoteCtrlSession sseq f = do
+updateRemoteCtrlSession :: ChatMonad m => SessionSeq -> (RemoteCtrlSession -> Either ChatError RemoteCtrlSession) -> m ()
+updateRemoteCtrlSession sseq state = do
   session <- asks remoteCtrlSession
   r <- atomically $ do
     readTVar session >>= \case
       Nothing -> pure . Left $ ChatErrorRemoteCtrl RCEInactive
       Just (oldSeq, st)
         | oldSeq /= sseq -> pure . Left $ ChatErrorRemoteCtrl RCEBadState
-        | otherwise -> case f st of
-        Left ce -> pure $ Left ce
-        Right (r, st') -> Right r <$ writeTVar session (Just (oldSeq, st'))
+        | otherwise -> case state st of
+            Left ce -> pure $ Left ce
+            Right st' -> Right () <$ writeTVar session (Just (sseq, st'))
   liftEither r
 
 utf8String :: [Char] -> ByteString
