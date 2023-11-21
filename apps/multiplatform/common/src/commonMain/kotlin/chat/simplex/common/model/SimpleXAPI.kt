@@ -423,8 +423,15 @@ object ChatController {
           receiverStarted = false
           break
         }
-        val msg = recvMsg(ctrl)
-        if (msg != null) processReceivedMsg(msg)
+        try {
+          val msg = recvMsg(ctrl)
+          if (msg != null) processReceivedMsg(msg)
+        } catch (e: Exception) {
+          Log.e(TAG, "ChatController recvMsg/processReceivedMsg exception: " + e.stackTraceToString());
+        } catch (e: Throwable) {
+          Log.e(TAG, "ChatController recvMsg/processReceivedMsg throwable: " + e.stackTraceToString())
+          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.stackTraceToString())
+        }
       }
     }
   }
@@ -3558,7 +3565,7 @@ class APIResponse(val resp: CR, val remoteHostId: Long?, val corr: String? = nul
     fun decodeStr(str: String): APIResponse {
       return try {
         json.decodeFromString(str)
-      } catch(e: Exception) {
+      } catch(e: Throwable) {
         try {
           Log.d(TAG, e.localizedMessage ?: "")
           val data = json.parseToJsonElement(str).jsonObject
@@ -3587,10 +3594,17 @@ class APIResponse(val resp: CR, val remoteHostId: Long?, val corr: String? = nul
               return APIResponse(CR.ChatRespError(user, ChatError.ChatErrorInvalidJSON(json.encodeToString(resp["chatError"]))), remoteHostId, corr)
             }
           } catch (e: Exception) {
-            Log.e(TAG, "Error while parsing chat(s): " + e.stackTraceToString())
+            Log.e(TAG, "Exception while parsing chat(s): " + e.stackTraceToString())
+          } catch (e: Throwable) {
+            Log.e(TAG, "Throwable while parsing chat(s): " + e.stackTraceToString())
+            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.stackTraceToString())
           }
           APIResponse(CR.Response(type, json.encodeToString(data)), remoteHostId, corr)
         } catch(e: Exception) {
+          APIResponse(CR.Invalid(str), remoteHostId = null)
+        } catch(e: Throwable) {
+          Log.e(TAG, "Throwable2 while parsing chat(s): " + e.stackTraceToString())
+          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.stackTraceToString())
           APIResponse(CR.Invalid(str), remoteHostId = null)
         }
       }
