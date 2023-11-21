@@ -77,3 +77,6 @@ website/package-lock.json
 website/.cache
 website/test/stubs-layout-cache/_includes/*.js
 apps/android/app/release
+
+# Editor specific
+.idea/
