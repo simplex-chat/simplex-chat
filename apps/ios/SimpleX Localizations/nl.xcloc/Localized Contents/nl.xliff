@@ -297,14 +297,14 @@
         <target>(</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="(new)" xml:space="preserve" approved="no">
+      <trans-unit id="(new)" xml:space="preserve">
         <source>(new)</source>
-        <target state="translated">(nieuw)</target>
+        <target>(nieuw)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="(this device v%@)" xml:space="preserve" approved="no">
+      <trans-unit id="(this device v%@)" xml:space="preserve">
         <source>(this device v%@)</source>
-        <target state="translated">(dit apparaat v%@)</target>
+        <target>(dit apparaat v%@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=")" xml:space="preserve">
@@ -395,9 +395,9 @@
 - en meer!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- optionally notify deleted contacts.&#10;- spaces in profile names.&#10;- and more!" xml:space="preserve">
+      <trans-unit id="- optionally notify deleted contacts.&#10;- profile names with spaces.&#10;- and more!" xml:space="preserve">
         <source>- optionally notify deleted contacts.
-- spaces in profile names.
+- profile names with spaces.
 - and more!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -885,9 +885,9 @@
         <target>Terug</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bad desktop address" xml:space="preserve" approved="no">
+      <trans-unit id="Bad desktop address" xml:space="preserve">
         <source>Bad desktop address</source>
-        <target state="translated">Onjuist desktopadres</target>
+        <target>Onjuist desktopadres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Bad message ID" xml:space="preserve">
@@ -1194,9 +1194,9 @@
         <target>Verbind incognito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect to desktop" xml:space="preserve" approved="no">
+      <trans-unit id="Connect to desktop" xml:space="preserve">
         <source>Connect to desktop</source>
-        <target state="translated">Verbinden met desktop</target>
+        <target>Verbinden met desktop</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to yourself?" xml:space="preserve">
@@ -1243,14 +1243,14 @@ Dit is uw eigen eenmalige link!</target>
         <target>Verbonden met %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connected desktop" xml:space="preserve" approved="no">
+      <trans-unit id="Connected desktop" xml:space="preserve">
         <source>Connected desktop</source>
-        <target state="translated">Verbonden desktop</target>
+        <target>Verbonden desktop</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connected to desktop" xml:space="preserve" approved="no">
+      <trans-unit id="Connected to desktop" xml:space="preserve">
         <source>Connected to desktop</source>
-        <target state="translated">Verbonden met desktop</target>
+        <target>Verbonden met desktop</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
@@ -1263,9 +1263,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Verbinden met server... (fout: %@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connecting to desktop" xml:space="preserve" approved="no">
+      <trans-unit id="Connecting to desktop" xml:space="preserve">
         <source>Connecting to desktop</source>
-        <target state="translated">Verbinding maken met desktop</target>
+        <target>Verbinding maken met desktop</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection" xml:space="preserve">
@@ -1288,9 +1288,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Verbindingsverzoek verzonden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection terminated" xml:space="preserve" approved="no">
+      <trans-unit id="Connection terminated" xml:space="preserve">
         <source>Connection terminated</source>
-        <target state="translated">Verbinding beëindigd</target>
+        <target>Verbinding beëindigd</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection timeout" xml:space="preserve">
@@ -1787,19 +1787,19 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Beschrijving</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Desktop address" xml:space="preserve" approved="no">
+      <trans-unit id="Desktop address" xml:space="preserve">
         <source>Desktop address</source>
-        <target state="translated">Desktop adres</target>
+        <target>Desktop adres</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Desktop app version %@ is not compatible with this app." xml:space="preserve" approved="no">
+      <trans-unit id="Desktop app version %@ is not compatible with this app." xml:space="preserve">
         <source>Desktop app version %@ is not compatible with this app.</source>
-        <target state="translated">Desktop-app-versie %@ is niet compatibel met deze app.</target>
+        <target>Desktop-app-versie %@ is niet compatibel met deze app.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Desktop devices" xml:space="preserve" approved="no">
+      <trans-unit id="Desktop devices" xml:space="preserve">
         <source>Desktop devices</source>
-        <target state="translated">Desktop apparaten</target>
+        <target>Desktop apparaten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Develop" xml:space="preserve">
@@ -1892,9 +1892,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>verbinding verbreken</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Disconnect desktop?" xml:space="preserve" approved="no">
+      <trans-unit id="Disconnect desktop?" xml:space="preserve">
         <source>Disconnect desktop?</source>
-        <target state="translated">Desktop loskoppelen?</target>
+        <target>Desktop loskoppelen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Discover and join groups" xml:space="preserve">
@@ -1902,9 +1902,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Ontdek en sluit je aan bij groepen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Discover on network" xml:space="preserve" approved="no">
+      <trans-unit id="Discover on network" xml:space="preserve">
         <source>Discover on network</source>
-        <target state="translated">Ontdek via netwerk</target>
+        <target>Ontdek via netwerk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
@@ -2077,14 +2077,14 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Versleuteld bericht: onverwachte fout</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encryption re-negotiation error" xml:space="preserve" approved="no">
+      <trans-unit id="Encryption re-negotiation error" xml:space="preserve">
         <source>Encryption re-negotiation error</source>
-        <target state="translated">Fout bij heronderhandeling van codering</target>
+        <target>Fout bij heronderhandeling van codering</target>
         <note>message decrypt error item</note>
       </trans-unit>
-      <trans-unit id="Encryption re-negotiation failed." xml:space="preserve" approved="no">
+      <trans-unit id="Encryption re-negotiation failed." xml:space="preserve">
         <source>Encryption re-negotiation failed.</source>
-        <target state="translated">Opnieuw onderhandelen over de codering is mislukt.</target>
+        <target>Opnieuw onderhandelen over de codering is mislukt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter Passcode" xml:space="preserve">
@@ -2117,9 +2117,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Voer de server handmatig in</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter this device name…" xml:space="preserve" approved="no">
+      <trans-unit id="Enter this device name…" xml:space="preserve">
         <source>Enter this device name…</source>
-        <target state="translated">Voer deze apparaatnaam in…</target>
+        <target>Voer deze apparaatnaam in…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter welcome message…" xml:space="preserve">
@@ -2905,9 +2905,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Incompatibele database versie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incompatible version" xml:space="preserve" approved="no">
+      <trans-unit id="Incompatible version" xml:space="preserve">
         <source>Incompatible version</source>
-        <target state="translated">Incompatibele versie</target>
+        <target>Incompatibele versie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incorrect passcode" xml:space="preserve">
@@ -3080,9 +3080,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Deel nemen aan groep</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Keep the app open to use it from desktop" xml:space="preserve" approved="no">
+      <trans-unit id="Keep the app open to use it from desktop" xml:space="preserve">
         <source>Keep the app open to use it from desktop</source>
-        <target state="translated">Houd de app geopend om deze vanaf de desktop te gebruiken</target>
+        <target>Houd de app geopend om deze vanaf de desktop te gebruiken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
@@ -3151,12 +3151,12 @@ Dit is jouw link voor groep %@!</target>
       </trans-unit>
       <trans-unit id="Linked desktop options" xml:space="preserve">
         <source>Linked desktop options</source>
-        <target state="translated">Gekoppelde desktop opties</target>
+        <target>Gekoppelde desktop opties</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Linked desktops" xml:space="preserve" approved="no">
+      <trans-unit id="Linked desktops" xml:space="preserve">
         <source>Linked desktops</source>
-        <target state="translated">Gelinkte desktops</target>
+        <target>Gelinkte desktops</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Live message!" xml:space="preserve">
@@ -3728,9 +3728,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Plakken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste desktop address" xml:space="preserve" approved="no">
+      <trans-unit id="Paste desktop address" xml:space="preserve">
         <source>Paste desktop address</source>
-        <target state="translated">Desktopadres plakken</target>
+        <target>Desktopadres plakken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste image" xml:space="preserve">
@@ -4328,9 +4328,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Scan QR-code</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan QR code from desktop" xml:space="preserve" approved="no">
+      <trans-unit id="Scan QR code from desktop" xml:space="preserve">
         <source>Scan QR code from desktop</source>
-        <target state="translated">Scan QR-code vanaf uw desktop</target>
+        <target>Scan QR-code vanaf uw desktop</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Scan code" xml:space="preserve">
@@ -4553,9 +4553,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Session code" xml:space="preserve" approved="no">
+      <trans-unit id="Session code" xml:space="preserve">
         <source>Session code</source>
-        <target state="translated">Sessie code</target>
+        <target>Sessie code</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set 1 day" xml:space="preserve">
@@ -5055,9 +5055,9 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>Deze actie kan niet ongedaan worden gemaakt. Uw profiel, contacten, berichten en bestanden gaan onomkeerbaar verloren.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This device name" xml:space="preserve" approved="no">
+      <trans-unit id="This device name" xml:space="preserve">
         <source>This device name</source>
-        <target state="translated">Deze apparaatnaam</target>
+        <target>Deze apparaatnaam</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve">
@@ -5258,14 +5258,14 @@ To connect, please ask your contact to create another connection link and check 
 Om verbinding te maken, vraagt u uw contact om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unlink" xml:space="preserve" approved="no">
+      <trans-unit id="Unlink" xml:space="preserve">
         <source>Unlink</source>
-        <target state="translated">Ontkoppelen</target>
+        <target>Ontkoppelen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unlink desktop?" xml:space="preserve" approved="no">
+      <trans-unit id="Unlink desktop?" xml:space="preserve">
         <source>Unlink desktop?</source>
-        <target state="translated">Desktop ontkoppelen?</target>
+        <target>Desktop ontkoppelen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unlock" xml:space="preserve">
@@ -5358,9 +5358,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Gebruik voor nieuwe verbindingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use from desktop" xml:space="preserve" approved="no">
+      <trans-unit id="Use from desktop" xml:space="preserve">
         <source>Use from desktop</source>
-        <target state="translated">Gebruik vanaf desktop</target>
+        <target>Gebruik vanaf desktop</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use iOS call interface" xml:space="preserve">
@@ -5393,14 +5393,14 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>SimpleX Chat servers gebruiken.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify code with desktop" xml:space="preserve" approved="no">
+      <trans-unit id="Verify code with desktop" xml:space="preserve">
         <source>Verify code with desktop</source>
-        <target state="translated">Code verifiëren met desktop</target>
+        <target>Code verifiëren met desktop</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify connection" xml:space="preserve" approved="no">
+      <trans-unit id="Verify connection" xml:space="preserve">
         <source>Verify connection</source>
-        <target state="translated">Controleer de verbinding</target>
+        <target>Controleer de verbinding</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify connection security" xml:space="preserve">
@@ -5408,9 +5408,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Controleer de verbindingsbeveiliging</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify connections" xml:space="preserve" approved="no">
+      <trans-unit id="Verify connections" xml:space="preserve">
         <source>Verify connections</source>
-        <target state="translated">Controleer verbindingen</target>
+        <target>Controleer verbindingen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify security code" xml:space="preserve">
@@ -6604,9 +6604,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>bijgewerkt groep profiel</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="v%@" xml:space="preserve" approved="no">
+      <trans-unit id="v%@" xml:space="preserve">
         <source>v%@</source>
-        <target state="translated">v%@</target>
+        <target>v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="v%@ (%@)" xml:space="preserve">
@@ -6746,9 +6746,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>SimpleX gebruikt Face-ID voor lokale authenticatie</target>
         <note>Privacy - Face ID Usage Description</note>
       </trans-unit>
-      <trans-unit id="NSLocalNetworkUsageDescription" xml:space="preserve" approved="no">
+      <trans-unit id="NSLocalNetworkUsageDescription" xml:space="preserve">
         <source>SimpleX uses local network access to allow using user chat profile via desktop app on the same network.</source>
-        <target state="translated">SimpleX maakt gebruik van lokale netwerktoegang om het gebruik van een gebruikerschatprofiel via de desktop-app op hetzelfde netwerk mogelijk te maken.</target>
+        <target>SimpleX maakt gebruik van lokale netwerktoegang om het gebruik van een gebruikerschatprofiel via de desktop-app op hetzelfde netwerk mogelijk te maken.</target>
         <note>Privacy - Local Network Usage Description</note>
       </trans-unit>
       <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve">
