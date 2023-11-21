@@ -9,8 +9,7 @@ import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.PendingContactConnection
+import chat.simplex.common.model.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.res.MR
@@ -20,7 +19,7 @@ enum class CreateLinkTab {
 }
 
 @Composable
-fun CreateLinkView(m: ChatModel, rhId: Long?, initialSelection: CreateLinkTab) {
+fun CreateLinkView(m: ChatModel, rh: RemoteHostInfo?, initialSelection: CreateLinkTab) {
   val selection = remember { mutableStateOf(initialSelection) }
   val connReqInvitation = rememberSaveable { m.connReqInv }
   val contactConnection: MutableState<PendingContactConnection?> = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(null) }
@@ -32,7 +31,7 @@ fun CreateLinkView(m: ChatModel, rhId: Long?, initialSelection: CreateLinkTab) {
       && contactConnection.value == null
       && !creatingConnReq.value
     ) {
-      createInvitation(m, rhId, creatingConnReq, connReqInvitation, contactConnection)
+      createInvitation(m, rh?.remoteHostId, creatingConnReq, connReqInvitation, contactConnection)
     }
   }
   /** When [AddContactView] is open, we don't need to drop [chatModel.connReqInv].
@@ -65,10 +64,10 @@ fun CreateLinkView(m: ChatModel, rhId: Long?, initialSelection: CreateLinkTab) {
     Column(Modifier.weight(1f)) {
       when (selection.value) {
         CreateLinkTab.ONE_TIME -> {
-          AddContactView(m, rhId,connReqInvitation.value ?: "", contactConnection)
+          AddContactView(m, rh,connReqInvitation.value ?: "", contactConnection)
         }
         CreateLinkTab.LONG_TERM -> {
-          UserAddressView(m, rhId, viaCreateLinkView = true, close = {})
+          UserAddressView(m, rh?.remoteHostId, viaCreateLinkView = true, close = {})
         }
       }
     }
