@@ -1070,6 +1070,10 @@
         <target>サーバのアドレスを確認してから再度試してください。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Checking SimpleX links" xml:space="preserve">
+        <source>Checking SimpleX links</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chinese and Spanish interface" xml:space="preserve">
         <source>Chinese and Spanish interface</source>
         <target>中国語とスペイン語UI</target>
@@ -1154,6 +1158,10 @@
         <source>Connect</source>
         <target>接続</target>
         <note>server test step</note>
+      </trans-unit>
+      <trans-unit id="Connect desktop and mobile!" xml:space="preserve">
+        <source>Connect desktop and mobile!</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect incognito" xml:space="preserve">
         <source>Connect incognito</source>
@@ -1343,6 +1351,10 @@ This is your own one-time link!</source>
       <trans-unit id="Create group link" xml:space="preserve">
         <source>Create group link</source>
         <target>グループのリンクを生成する</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create groups incognito, block group members, faster join via link, and more." xml:space="preserve">
+        <source>Create groups incognito, block group members, faster join via link, and more.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create link" xml:space="preserve">
@@ -1740,6 +1752,10 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Desktop devices" xml:space="preserve">
         <source>Desktop devices</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Detection of previously used and your own SimpleX links." xml:space="preserve">
+        <source>Detection of previously used and your own SimpleX links.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Develop" xml:space="preserve">
@@ -2537,6 +2553,10 @@ This cannot be undone!</source>
       <trans-unit id="Group image" xml:space="preserve">
         <source>Group image</source>
         <target>グループ画像</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Group improvements" xml:space="preserve">
+        <source>Group improvements</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group invitation" xml:space="preserve">
@@ -3421,6 +3441,10 @@ This is your link for group %@!</source>
       <trans-unit id="Notifications are disabled!" xml:space="preserve">
         <source>Notifications are disabled!</source>
         <target>通知が無効になっています!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Notify about contact deletion" xml:space="preserve">
+        <source>Notify about contact deletion</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve">
@@ -4640,6 +4664,10 @@ This is your link for group %@!</source>
         <target>誰か</target>
         <note>notification title</note>
       </trans-unit>
+      <trans-unit id="Spaces in profile names" xml:space="preserve">
+        <source>Spaces in profile names</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Start a new chat" xml:space="preserve">
         <source>Start a new chat</source>
         <target>新しいチャットを開始する</target>
@@ -5249,6 +5277,10 @@ To connect, please ask your contact to create another connection link and check 
         <target>サーバを使う</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use your mobile app chat profile via [desktop app](https://simplex.chat/downloads/)." xml:space="preserve">
+        <source>Use your mobile app chat profile via [desktop app](https://simplex.chat/downloads/).</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="User profile" xml:space="preserve">
         <source>User profile</source>
         <target>ユーザープロフィール</target>
@@ -5510,10 +5542,18 @@ Repeat join request?</source>
         <target>ユーザープロファイルを右にスワイプすると、非表示またはミュートにすることができます。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You can now add spaces to your profile name." xml:space="preserve">
+        <source>You can now add spaces to your profile name.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
         <source>You can now send messages to %@</source>
         <target>%@ にメッセージを送信できるようになりました</target>
         <note>notification body</note>
+      </trans-unit>
+      <trans-unit id="You can optionally notify contacts when deleting them." xml:space="preserve">
+        <source>You can optionally notify contacts when deleting them.</source>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
         <source>You can set lock screen notification preview via settings.</source>
