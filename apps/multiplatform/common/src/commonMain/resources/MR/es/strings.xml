@@ -1423,7 +1423,7 @@
     <string name="connect_plan_group_already_exists">¡El grupo ya existe!</string>
     <string name="connect_plan_already_connecting">¡Ya está en proceso de conexión!</string>
     <string name="desktop_incompatible_version">Versión incompatible</string>
-    <string name="new_desktop"><i>(nuevo)</i></string>
+    <string name="new_desktop"><![CDATA[<i>(nuevo)</i>]]></string>
     <string name="linked_desktop_options">Opciones escritorio enlazado</string>
     <string name="linked_desktops">Desktop enlazados</string>
     <string name="discover_on_network">Descubrir en red</string>
@@ -1450,7 +1450,7 @@
     <string name="delete_and_notify_contact">Eliminar y notificar contacto</string>
     <string name="connect_plan_open_group">Grupo abierto</string>
     <string name="desktop_connection_terminated">Conexión terminada</string>
-    <string name="this_device_version"><i>(este dispositivo v%s)</i></string>
+    <string name="this_device_version"><![CDATA[<i>(este dispositivo v%s)</i>]]></string>
     <string name="unblock_member_desc">¡Los mensajes de %s serán mostrados!</string>
     <string name="enter_this_device_name">Introduce el nombre de este dispositivo…</string>
     <string name="error">Error</string>

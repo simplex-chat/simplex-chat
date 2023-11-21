@@ -1463,9 +1463,9 @@
     <string name="new_mobile_device">Nieuw mobiel apparaat</string>
     <string name="desktop_address">Desktop adres</string>
     <string name="only_one_device_can_work_at_the_same_time">Er kan slechts één apparaat tegelijkertijd werken</string>
-    <string name="open_on_mobile_and_scan_qr_code">Open <i>Gebruik vanaf desktop</i> in de mobiele app en scan de QR-code</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Open <i>Gebruik vanaf desktop</i> in de mobiele app en scan de QR-code]]></string>
     <string name="desktop_incompatible_version">Incompatibele versie</string>
-    <string name="new_desktop"><i>(nieuw)</i></string>
+    <string name="new_desktop"><![CDATA[<i>(nieuw)</i>]]></string>
     <string name="unlink_desktop_question">Desktop ontkoppelen?</string>
     <string name="linked_desktop_options">Gekoppelde desktop opties</string>
     <string name="linked_desktops">Gelinkte desktops</string>
@@ -1483,7 +1483,7 @@
     <string name="connected_mobile">Verbonden mobiel</string>
     <string name="session_code">Sessie code</string>
     <string name="desktop_connection_terminated">Verbinding beëindigd</string>
-    <string name="this_device_version"><i>(dit apparaat v%s)</i></string>
+    <string name="this_device_version"><![CDATA[<i>(dit apparaat v%s)</i>]]></string>
     <string name="unlink_desktop">Ontkoppelen</string>
     <string name="this_device_name_shared_with_mobile">De apparaatnaam wordt gedeeld met de verbonden mobiele client.</string>
     <string name="verify_code_on_mobile">Verifieer de code op mobiel</string>

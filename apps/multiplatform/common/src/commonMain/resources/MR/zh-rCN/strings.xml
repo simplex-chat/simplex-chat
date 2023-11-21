@@ -1465,9 +1465,9 @@
     <string name="new_mobile_device">新移动设备</string>
     <string name="desktop_address">桌面地址</string>
     <string name="only_one_device_can_work_at_the_same_time">同一时刻只有一台设备可以工作</string>
-    <string name="open_on_mobile_and_scan_qr_code">在移动应用中打开<i>从桌面使用</i>并扫描二维码</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[在移动应用中打开<i>从桌面使用</i>并扫描二维码]]></string>
     <string name="desktop_incompatible_version">不兼容的版本</string>
-    <string name="new_desktop"><i>(新)</i></string>
+    <string name="new_desktop"><![CDATA[<i>(新)</i>]]></string>
     <string name="unlink_desktop_question">取消链接桌面端？</string>
     <string name="linked_desktop_options">已链接桌面选项</string>
     <string name="linked_desktops">已链接桌面</string>
@@ -1485,7 +1485,7 @@
     <string name="connected_mobile">已连接的移动设备</string>
     <string name="session_code">会话码</string>
     <string name="desktop_connection_terminated">连接被终止</string>
-    <string name="this_device_version"><i>(此设备 v%s)</i></string>
+    <string name="this_device_version"><![CDATA[<i>(此设备 v%s)</i>]]></string>
     <string name="unlink_desktop">取消链接</string>
     <string name="this_device_name_shared_with_mobile">将和已连接的移动设备分享设备名。</string>
     <string name="verify_code_on_mobile">在移动端验证代码</string>
