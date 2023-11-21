@@ -360,8 +360,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRAgentConnDeleted acId -> ["completed deleting connection, agent connection id: " <> sShow acId | logLevel <= CLLInfo]
   CRAgentUserDeleted auId -> ["completed deleting user" <> if logLevel <= CLLInfo then ", agent user id: " <> sShow auId else ""]
   CRMessageError u prefix err -> ttyUser u [plain prefix <> ": " <> plain err | prefix == "error" || logLevel <= CLLWarning]
-  CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError logLevel e
-  CRChatError u e -> ttyUser' u $ viewChatError logLevel e
+  CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError logLevel testView e
+  CRChatError u e -> ttyUser' u $ viewChatError logLevel testView e
   CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRTimedAction _ _ -> []
   where
@@ -1737,8 +1737,8 @@ viewRemoteCtrl :: RemoteCtrlInfo -> StyledString
 viewRemoteCtrl RemoteCtrlInfo {remoteCtrlId, ctrlDeviceName} =
   plain $ tshow remoteCtrlId <> ". " <> ctrlDeviceName
 
-viewChatError :: ChatLogLevel -> ChatError -> [StyledString]
-viewChatError logLevel = \case
+viewChatError :: ChatLogLevel -> Bool -> ChatError -> [StyledString]
+viewChatError logLevel testView = \case
   ChatError err -> case err of
     CENoActiveUser -> ["error: active user is required"]
     CENoConnectionUser agentConnId -> ["error: message user not found, conn id: " <> sShow agentConnId | logLevel <= CLLError]
@@ -1848,6 +1848,9 @@ viewChatError logLevel = \case
     SEGroupLinkNotFound g -> ["no group link, to create: " <> highlight ("/create link #" <> viewGroupName g)]
     SERemoteCtrlNotFound rcId -> ["no remote controller " <> sShow rcId]
     SERemoteHostNotFound rhId -> ["no remote host " <> sShow rhId]
+    SEDuplicateGroupMessage {groupId, sharedMsgId}
+      | testView -> ["duplicate group message, group id: " <> sShow groupId <> ", message id: " <> sShow sharedMsgId]
+      | otherwise -> []
     e -> ["chat db error: " <> sShow e]
   ChatErrorDatabase err -> case err of
     DBErrorEncrypted -> ["error: chat database is already encrypted"]
