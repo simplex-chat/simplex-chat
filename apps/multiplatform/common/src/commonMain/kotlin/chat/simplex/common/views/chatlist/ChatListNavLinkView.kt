@@ -129,7 +129,7 @@ fun directChatAction(rhId: Long?, contact: Contact, chatModel: ChatModel) {
 fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, inProgress: MutableState<Boolean>? = null) {
   when (groupInfo.membership.memberStatus) {
     GroupMemberStatus.MemInvited -> acceptGroupInvitationAlertDialog(rhId, groupInfo, chatModel, inProgress)
-    GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert()
+    GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert(rhId)
     else -> withBGApi { openChat(rhId, ChatInfo.Group(groupInfo), chatModel) }
   }
 }
@@ -538,7 +538,8 @@ fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactReque
           Text(generalGetString(MR.strings.reject_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
         }
       }
-    }
+    },
+    hostDevice = hostDevice(rhId),
   )
 }
 
@@ -644,7 +645,8 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
           Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
       }
-    }
+    },
+    hostDevice = hostDevice(rhId),
   )
 }
 
@@ -654,7 +656,8 @@ suspend fun connectContactViaAddress(chatModel: ChatModel, rhId: Long?, contactI
     chatModel.updateContact(rhId, contact)
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.connection_request_sent),
-      text = generalGetString(MR.strings.you_will_be_connected_when_your_connection_request_is_accepted)
+      text = generalGetString(MR.strings.you_will_be_connected_when_your_connection_request_is_accepted),
+      hostDevice = hostDevice(rhId),
     )
     return true
   }
@@ -674,7 +677,8 @@ fun acceptGroupInvitationAlertDialog(rhId: Long?, groupInfo: GroupInfo, chatMode
       }
     },
     dismissText = generalGetString(MR.strings.delete_verb),
-    onDismiss = { deleteGroup(rhId, groupInfo, chatModel) }
+    onDismiss = { deleteGroup(rhId, groupInfo, chatModel) },
+    hostDevice = hostDevice(rhId),
   )
 }
 
@@ -700,10 +704,11 @@ fun deleteGroup(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
   }
 }
 
-fun groupInvitationAcceptedAlert() {
+fun groupInvitationAcceptedAlert(rhId: Long?) {
   AlertManager.shared.showAlertMsg(
     generalGetString(MR.strings.joining_group),
-    generalGetString(MR.strings.youve_accepted_group_invitation_connecting_to_inviting_group_member)
+    generalGetString(MR.strings.youve_accepted_group_invitation_connecting_to_inviting_group_member),
+    hostDevice = hostDevice(rhId),
   )
 }
 
