@@ -282,8 +282,12 @@ cc <##.. ls = do
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
 
-data ConsoleResponse = ConsoleString String | WithTime String | EndsWith String | StartsWith String
-  deriving (Show)
+data ConsoleResponse
+  = ConsoleString String
+  | WithTime String
+  | EndsWith String
+  | StartsWith String
+  | Predicate (String -> Bool)
 
 instance IsString ConsoleResponse where fromString = ConsoleString
 
@@ -303,6 +307,7 @@ getInAnyOrder f cc ls = do
       WithTime s -> dropTime_ l == Just s
       EndsWith s -> s `isSuffixOf` l
       StartsWith s -> s `isPrefixOf` l
+      Predicate p -> p l
     filterFirst :: (a -> Bool) -> [a] -> [a]
     filterFirst _ [] = []
     filterFirst p (x:xs)
