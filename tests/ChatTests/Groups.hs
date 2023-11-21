@@ -3963,7 +3963,7 @@ testGroupMsgForwardDeduplicate =
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
       cath
-        <### [ Predicate isInfixOf "#team bob> hi there",
+        <### [ Predicate ("#team bob> hi there" `isInfixOf`),
                StartsWith "duplicate group message, group id: 1"
              ]
 

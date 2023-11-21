@@ -287,7 +287,7 @@ data ConsoleResponse
   | WithTime String
   | EndsWith String
   | StartsWith String
-  | Predicate (String -> String -> Bool) String
+  | Predicate (String -> Bool)
 
 instance IsString ConsoleResponse where fromString = ConsoleString
 
@@ -307,7 +307,7 @@ getInAnyOrder f cc ls = do
       WithTime s -> dropTime_ l == Just s
       EndsWith s -> s `isSuffixOf` l
       StartsWith s -> s `isPrefixOf` l
-      Predicate p s -> p s l
+      Predicate p -> p l
     filterFirst :: (a -> Bool) -> [a] -> [a]
     filterFirst _ [] = []
     filterFirst p (x:xs)
