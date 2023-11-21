@@ -1608,6 +1608,25 @@
   <string name="v5_3_simpler_incognito_mode_descr">Toggle incognito when connecting.</string>
   <string name="v5_3_new_interface_languages">6 new interface languages</string>
   <string name="v5_3_new_interface_languages_descr">Arabic, Bulgarian, Finnish, Hebrew, Thai and Ukrainian - thanks to the users and Weblate.</string>
+  <string name="v5_4_connect_desktop_mobile">Connect desktop and mobile!</string>
+  <string name="v5_4_connect_desktop_mobile_descr">Use your mobile app chat profile via desktop app.</string>
+  <string name="v5_4_group_improvements">Group improvements</string>
+  <string name="v5_4_group_improvements_descr">Create groups incognito, block group members, faster join via link, and more.</string>
+  <string name="v5_4_notify_contact_deletion">Notify about contact deletion</string>
+  <string name="v5_4_notify_contact_deletion_descr">You can optionally notify contacts when deleting them.</string>
+  <string name="v5_4_checking_simplex_links">Checking SimpleX links</string>
+  <string name="v5_4_checking_simplex_links_descr">Detection of previously used and your own SimpleX links.</string>
+  <string name="v5_4_spaces_in_profile_names">Spaces in profile names</string>
+  <string name="v5_4_spaces_in_profile_names_descr">You can now add spaces to your profile name.</string>
+  <string name="v5_4_link_mobile_desktop">Link mobile and desktop apps! 🔗</string>
+  <string name="v5_4_link_mobile_desktop_descr">Via secure quantum resistant protocol.</string>
+  <string name="v5_4_better_groups">Better groups</string>
+  <string name="v5_4_better_groups_descr">Faster joining and more reliable messages.</string>
+  <string name="v5_4_incognito_groups">Incognito groups</string>
+  <string name="v5_4_incognito_groups_descr">Create a group using a random profile.</string>
+  <string name="v5_4_block_group_members">Block group members</string>
+  <string name="v5_4_block_group_members_descr">To hide unwanted messages.</string>
+  <string name="v5_4_more_things_descr">- optionally notify deleted contacts.\n- profile names with spaces.\n- and more!</string>
 
   <!-- CustomTimePicker -->
   <string name="custom_time_unit_seconds">seconds</string>
