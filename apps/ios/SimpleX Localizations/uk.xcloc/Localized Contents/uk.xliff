@@ -382,6 +382,12 @@
 - і багато іншого!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="- optionally notify deleted contacts.&#10;- profile names with spaces.&#10;- and more!" xml:space="preserve">
+        <source>- optionally notify deleted contacts.
+- profile names with spaces.
+- and more!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve">
         <source>- voice messages up to 5 minutes.
 - custom time to disappear.
@@ -875,6 +881,10 @@
         <target>Поганий хеш повідомлення</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Better groups" xml:space="preserve">
+        <source>Better groups</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Better messages" xml:space="preserve">
         <source>Better messages</source>
         <target>Кращі повідомлення</target>
@@ -882,6 +892,10 @@
       </trans-unit>
       <trans-unit id="Block" xml:space="preserve">
         <source>Block</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Block group members" xml:space="preserve">
+        <source>Block group members</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block member" xml:space="preserve">
@@ -1321,6 +1335,10 @@ This is your own one-time link!</source>
       <trans-unit id="Create SimpleX address" xml:space="preserve">
         <source>Create SimpleX address</source>
         <target>Створіть адресу SimpleX</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create a group using a random profile." xml:space="preserve">
+        <source>Create a group using a random profile.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create an address to let people connect with you." xml:space="preserve">
@@ -2369,6 +2387,10 @@ This cannot be undone!</source>
         <target>Швидко і без очікування, поки відправник буде онлайн!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Faster joining and more reliable messages." xml:space="preserve">
+        <source>Faster joining and more reliable messages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Favorite" xml:space="preserve">
         <source>Favorite</source>
         <target>Улюблений</target>
@@ -2786,6 +2808,10 @@ This cannot be undone!</source>
         <target>Інкогніто</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Incognito groups" xml:space="preserve">
+        <source>Incognito groups</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Incognito mode" xml:space="preserve">
         <source>Incognito mode</source>
         <target>Режим інкогніто</target>
@@ -3047,6 +3073,10 @@ This is your link for group %@!</source>
       <trans-unit id="Limitations" xml:space="preserve">
         <source>Limitations</source>
         <target>Обмеження</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Link mobile and desktop apps! 🔗" xml:space="preserve">
+        <source>Link mobile and desktop apps! 🔗</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Linked desktop options" xml:space="preserve">
@@ -4976,6 +5006,10 @@ It can happen because of some bug or when the connection is compromised.</source
         <target>Щоб підключитися, ваш контакт може відсканувати QR-код або скористатися посиланням у додатку.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To hide unwanted messages." xml:space="preserve">
+        <source>To hide unwanted messages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To make a new connection" xml:space="preserve">
         <source>To make a new connection</source>
         <target>Щоб створити нове з'єднання</target>
@@ -5288,6 +5322,10 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Via browser" xml:space="preserve">
         <source>Via browser</source>
         <target>Через браузер</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Via secure quantum resistant protocol." xml:space="preserve">
+        <source>Via secure quantum resistant protocol.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Video call" xml:space="preserve">
