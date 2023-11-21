@@ -2531,7 +2531,7 @@ data class UserProtocolServers(
 
 @Serializable
 data class ServerCfg(
-  val remoteHostId: Long? = null,
+  val remoteHostId: Long?,
   val server: String,
   val preset: Boolean,
   val tested: Boolean? = null,
@@ -2549,7 +2549,7 @@ data class ServerCfg(
     get() = server.isBlank()
 
   companion object {
-    val empty = ServerCfg(server = "", preset = false, tested = null, enabled = true)
+    val empty = ServerCfg(remoteHostId = null, server = "", preset = false, tested = null, enabled = true)
 
     class SampleData(
       val preset: ServerCfg,
@@ -2559,18 +2559,21 @@ data class ServerCfg(
 
     val sampleData = SampleData(
       preset = ServerCfg(
+        remoteHostId = null,
         server = "smp://abcd@smp8.simplex.im",
         preset = true,
         tested = true,
         enabled = true
       ),
       custom = ServerCfg(
+        remoteHostId = null,
         server = "smp://abcd@smp9.simplex.im",
         preset = false,
         tested = false,
         enabled = false
       ),
       untested = ServerCfg(
+        remoteHostId = null,
         server = "smp://abcd@smp10.simplex.im",
         preset = false,
         tested = null,

@@ -15,7 +15,7 @@ import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
 import qualified Network.TLS as TLS
 import Simplex.Chat.Archive (archiveFilesFolder)
-import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..))
+import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..), versionNumber)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Remote.Types
@@ -120,12 +120,12 @@ remoteHandshakeRejectTest = testChat3 aliceProfile aliceDesktopProfile bobProfil
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobileBob ##> ("/connect remote ctrl " <> inv)
-  mobileBob <## "connecting new remote controller: My desktop, v5.4.0.3"
+  mobileBob <## ("connecting new remote controller: My desktop, v" <> versionNumber)
   mobileBob <## "remote controller stopped"
 
   -- the server remains active after rejecting invalid client
   mobile ##> ("/connect remote ctrl " <> inv)
-  mobile <## "connecting remote controller 1: My desktop, v5.4.0.3"
+  mobile <## ("connecting remote controller 1: My desktop, v" <> versionNumber)
   desktop <## "remote host 1 connecting"
   desktop <## "Compare session code with host:"
   sessId <- getTermLine desktop
@@ -429,7 +429,7 @@ startRemote mobile desktop = do
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobile ##> ("/connect remote ctrl " <> inv)
-  mobile <## "connecting new remote controller: My desktop, v5.4.0.3"
+  mobile <## ("connecting new remote controller: My desktop, v" <> versionNumber)
   desktop <## "new remote host connecting"
   mobile <## "new remote controller connected"
   verifyRemoteCtrl mobile desktop
@@ -444,7 +444,7 @@ startRemoteStored mobile desktop = do
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobile ##> ("/connect remote ctrl " <> inv)
-  mobile <## "connecting remote controller 1: My desktop, v5.4.0.3"
+  mobile <## ("connecting remote controller 1: My desktop, v" <> versionNumber)
   desktop <## "remote host 1 connecting"
   mobile <## "remote controller 1 connected"
   verifyRemoteCtrl mobile desktop
@@ -463,7 +463,7 @@ startRemoteDiscover mobile desktop = do
   mobile <## "1. My desktop"
   mobile ##> "/confirm remote ctrl 1"
 
-  mobile <## "connecting remote controller 1: My desktop, v5.4.0.3"
+  mobile <## ("connecting remote controller 1: My desktop, v" <> versionNumber)
   desktop <## "remote host 1 connecting"
   mobile <## "remote controller 1 connected"
   verifyRemoteCtrl mobile desktop

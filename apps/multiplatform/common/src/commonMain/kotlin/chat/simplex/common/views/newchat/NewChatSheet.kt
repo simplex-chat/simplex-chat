@@ -33,7 +33,7 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
-fun NewChatSheet(chatModel: ChatModel, rhId: Long?, newChatSheetState: StateFlow<AnimatedViewState>, stopped: Boolean, closeNewChatSheet: (animated: Boolean) -> Unit) {
+fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedViewState>, stopped: Boolean, closeNewChatSheet: (animated: Boolean) -> Unit) {
   // TODO close new chat if remote host changes in model
   if (newChatSheetState.collectAsState().value.isVisible()) BackHandler { closeNewChatSheet(true) }
   NewChatSheetLayout(
@@ -42,17 +42,17 @@ fun NewChatSheet(chatModel: ChatModel, rhId: Long?, newChatSheetState: StateFlow
     addContact = {
       closeNewChatSheet(false)
       ModalManager.center.closeModals()
-      ModalManager.center.showModal { CreateLinkView(chatModel, rhId, CreateLinkTab.ONE_TIME) }
+      ModalManager.center.showModal { CreateLinkView(chatModel, chatModel.currentRemoteHost.value, CreateLinkTab.ONE_TIME) }
     },
     connectViaLink = {
       closeNewChatSheet(false)
       ModalManager.center.closeModals()
-      ModalManager.center.showModalCloseable { close -> ConnectViaLinkView(chatModel, rhId, close) }
+      ModalManager.center.showModalCloseable { close -> ConnectViaLinkView(chatModel, chatModel.currentRemoteHost.value, close) }
     },
     createGroup = {
       closeNewChatSheet(false)
       ModalManager.center.closeModals()
-      ModalManager.center.showCustomModal { close -> AddGroupView(chatModel, rhId, close) }
+      ModalManager.center.showCustomModal { close -> AddGroupView(chatModel, chatModel.currentRemoteHost.value, close) }
     },
     closeNewChatSheet,
   )
