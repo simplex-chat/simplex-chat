@@ -431,6 +431,38 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       )
     )
   ),
+  VersionDescription(
+    version = "v5.4",
+    post = "https://simplex.chat/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html", // TODO link
+    features = listOf(
+      FeatureDescription(
+        icon = MR.images.ic_desktop,
+        titleId = MR.strings.v5_4_connect_desktop_mobile,
+        descrId = MR.strings.v5_4_connect_desktop_mobile_descr,
+        link = "https://simplex.chat/downloads/"
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_group,
+        titleId = MR.strings.v5_4_group_improvements,
+        descrId = MR.strings.v5_4_group_improvements_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_notifications,
+        titleId = MR.strings.v5_4_notify_contact_deletion,
+        descrId = MR.strings.v5_4_notify_contact_deletion_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_link,
+        titleId = MR.strings.v5_4_checking_simplex_links,
+        descrId = MR.strings.v5_4_checking_simplex_links_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_edit,
+        titleId = MR.strings.v5_4_spaces_in_profile_names,
+        descrId = MR.strings.v5_4_spaces_in_profile_names_descr
+      )
+    )
+  ),
 )
 
 private val lastVersion = versionDescriptions.last().version
