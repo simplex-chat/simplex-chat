@@ -21,7 +21,6 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.model.ChatModel
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -30,6 +29,7 @@ import kotlinx.coroutines.delay
 import java.awt.Image
 import java.awt.Toolkit
 import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.UnsupportedFlavorException
 import java.awt.image.BufferedImage
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -125,46 +125,40 @@ actual fun PlatformTextField(
             ((it.isCtrlPressed && !desktopPlatform.isMac()) || (it.isMetaPressed && desktopPlatform.isMac()))) {
             if (parseToFiles(clipboard.getText()).isNotEmpty()) {
               onFilesPasted(parseToFiles(clipboard.getText()))
+              true
             } else {
-              // check if clipboard contains image
-              var transferable = Toolkit.getDefaultToolkit().systemClipboard.getContents(null)
-              var isFlavorSupported = transferable.isDataFlavorSupported(DataFlavor.imageFlavor)
+              // It's much faster to getData instead of getting transferable first
+              val image = try {
+                Toolkit.getDefaultToolkit().systemClipboard.getData(DataFlavor.imageFlavor) as Image
+              } catch (e: UnsupportedFlavorException) {
+                null
+              }
+              if (image != null) {
+                try {
+                  // create BufferedImage from Image
+                  val bi = BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_ARGB)
+                  val bgr = bi.createGraphics()
+                  bgr.drawImage(image, 0, 0, null)
+                  bgr.dispose()
+                  // create byte array from BufferedImage
+                  val baos = ByteArrayOutputStream()
+                  ImageIO.write(bi, "png", baos)
+                  val bytes = baos.toByteArray()
+                  withBGApi {
+                    val tempFile = File(tmpDir, "${UUID.randomUUID()}.png")
+                    chatModel.filesToDelete.add(tempFile)
 
-              if (transferable != null && isFlavorSupported) {
-                var data = transferable.getTransferData(DataFlavor.imageFlavor) as Image
-
-                // create BufferedImage from Image
-                var bi = BufferedImage(data.getWidth(null), data.getHeight(null), BufferedImage.TYPE_INT_ARGB)
-                var bgr = bi.createGraphics()
-                bgr.drawImage(data, 0, 0, null)
-                bgr.dispose()
-
-                // create byte array from BufferedImage
-                val baos = ByteArrayOutputStream()
-                ImageIO.write(bi, "png", baos)
-                val bytes = baos.toByteArray()
-
-                val bitmap = getBitmapFromByteArray(bytes, false)
-
-                if (bitmap != null) {
-                  val imagePreview = resizeImageToStrSize(bitmap, maxDataSize = 14000)
-                  val fileName = UUID.randomUUID().toString()
-                  val tempFile = File(tmpDir, "$fileName.png")
-                  tempFile.writeBytes(bytes)
-
-                  // handle deleting the temp file when program exits
-                  val content = ArrayList<UploadContent>()
-                  content.add(UploadContent.SimpleImage(tempFile.toURI()))
-                  ChatModel.filesToDelete.add(tempFile)
-
-                  val uri = tempFile.toURI()
-                  composeState.value = composeState.value.copy(preview = ComposePreview.MediaPreview(listOf(imagePreview), content))
+                    tempFile.writeBytes(bytes)
+                    composeState.processPickedMedia(listOf(tempFile.toURI()), composeState.value.message)
+                  }
+                } catch (e: Exception) {
+                  Log.e(TAG, "Pasting image exception: ${e.stackTraceToString()}")
                 }
-
+                true
+              } else {
+                false
               }
             }
-
-            false
           }
         else false
       },
