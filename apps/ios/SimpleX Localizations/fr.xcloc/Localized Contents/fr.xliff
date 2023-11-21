@@ -393,9 +393,9 @@
 - et bien d'autres choses encore !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- optionally notify deleted contacts.&#10;- spaces in profile names.&#10;- and more!" xml:space="preserve">
+      <trans-unit id="- optionally notify deleted contacts.&#10;- profile names with spaces.&#10;- and more!" xml:space="preserve">
         <source>- optionally notify deleted contacts.
-- spaces in profile names.
+- profile names with spaces.
 - and more!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
