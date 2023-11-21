@@ -283,6 +283,37 @@ private let versionDescriptions: [VersionDescription] = [
             ),
         ]
     ),
+    VersionDescription(
+        version: "v5.4",
+        post: URL(string: "https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html"),
+        features: [
+            FeatureDescription(
+                icon: "desktopcomputer",
+                title: "Link mobile and desktop apps! 🔗",
+                description: "Via secure quantum resistant protocol."
+            ),
+            FeatureDescription(
+                icon: "person.2",
+                title: "Better groups",
+                description: "Faster joining and more reliable messages."
+            ),
+            FeatureDescription(
+                icon: "theatermasks",
+                title: "Incognito groups",
+                description: "Create a group using a random profile."
+            ),
+            FeatureDescription(
+                icon: "hand.raised",
+                title: "Block group members",
+                description: "To hide unwanted messages."
+            ),
+            FeatureDescription(
+                icon: "gift",
+                title: "A few more things",
+                description: "- optionally notify deleted contacts.\n- profile names with spaces.\n- and more!"
+            ),
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version

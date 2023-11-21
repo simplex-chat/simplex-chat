@@ -11,6 +11,7 @@ import java.util.*
 import kotlin.collections.ArrayList
 
 data class Call(
+  val remoteHostId: Long?,
   val contact: Contact,
   val callState: CallState,
   val localMedia: CallMediaType,
@@ -95,7 +96,14 @@ sealed class WCallResponse {
 @Serializable data class WebRTCSession(val rtcSession: String, val rtcIceCandidates: String)
 @Serializable data class WebRTCExtraInfo(val rtcIceCandidates: String)
 @Serializable data class CallType(val media: CallMediaType, val capabilities: CallCapabilities)
-@Serializable data class RcvCallInvitation(val user: User, val contact: Contact, val callType: CallType, val sharedKey: String? = null, val callTs: Instant) {
+@Serializable data class RcvCallInvitation(
+  val remoteHostId: Long?,
+  val user: User,
+  val contact: Contact,
+  val callType: CallType,
+  val sharedKey: String? = null,
+  val callTs: Instant
+) {
   val callTypeText: String get() = generalGetString(when(callType.media) {
     CallMediaType.Video -> if (sharedKey == null) MR.strings.video_call_no_encryption else MR.strings.encrypted_video_call
     CallMediaType.Audio -> if (sharedKey == null) MR.strings.audio_call_no_encryption else MR.strings.encrypted_audio_call

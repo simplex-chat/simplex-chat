@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
@@ -9,8 +10,9 @@ module MobileTests where
 import ChatTests.Utils
 import Control.Monad.Except
 import Crypto.Random (getRandomBytes)
-import Data.Aeson (FromJSON (..))
+import Data.Aeson (FromJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BS
@@ -256,9 +258,11 @@ testMediaCApi _ = do
       (f cKeyStr ptr cLen >>= peekCAString) `shouldReturn` ""
       getByteString ptr cLen
 
-instance FromJSON WriteFileResult where parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "WF"
+instance FromJSON WriteFileResult where
+  parseJSON = $(JQ.mkParseJSON (sumTypeJSON $ dropPrefix "WF") ''WriteFileResult)
 
-instance FromJSON ReadFileResult where parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RF"
+instance FromJSON ReadFileResult where
+  parseJSON = $(JQ.mkParseJSON (sumTypeJSON $ dropPrefix "RF") ''ReadFileResult)
 
 testFileCApi :: FilePath -> FilePath -> IO ()
 testFileCApi fileName tmp = do

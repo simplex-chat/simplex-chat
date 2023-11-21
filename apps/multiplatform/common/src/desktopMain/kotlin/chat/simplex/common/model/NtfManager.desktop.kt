@@ -113,7 +113,7 @@ object NtfManager {
 
   private fun prepareIconPath(icon: ImageBitmap?): String? = if (icon != null) {
     tmpDir.mkdir()
-    val newFile = File(tmpDir.absolutePath + File.separator + generateNewFileName("IMG", "png"))
+    val newFile = File(tmpDir.absolutePath + File.separator + generateNewFileName("IMG", "png", tmpDir))
     try {
       ImageIO.write(icon.toAwtImage(), "PNG", newFile.outputStream())
       newFile.absolutePath

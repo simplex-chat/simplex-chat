@@ -1,5 +1,6 @@
 package chat.simplex.common.views.newchat
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.util.Log
 import android.view.ViewGroup
@@ -19,6 +20,7 @@ import boofcv.android.ConvertCameraImage
 import boofcv.factory.fiducial.FactoryFiducial
 import boofcv.struct.image.GrayU8
 import chat.simplex.common.platform.TAG
+import com.google.accompanist.permissions.rememberPermissionState
 import com.google.common.util.concurrent.ListenableFuture
 import java.util.concurrent.*
 
@@ -26,6 +28,10 @@ import java.util.concurrent.*
 
 @Composable
 actual fun QRCodeScanner(onBarcode: (String) -> Unit) {
+  val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
+  LaunchedEffect(Unit) {
+    cameraPermissionState.launchPermissionRequest()
+  }
   val context = LocalContext.current
   val lifecycleOwner = LocalLifecycleOwner.current
   var preview by remember { mutableStateOf<Preview?>(null) }

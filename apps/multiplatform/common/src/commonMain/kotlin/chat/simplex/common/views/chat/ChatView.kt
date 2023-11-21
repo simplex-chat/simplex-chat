@@ -100,11 +100,12 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
     }
   }
   val view = LocalMultiplatformView()
-  if (activeChat.value == null || user == null) {
+  val chat = activeChat.value
+  if (chat == null || user == null) {
     chatModel.chatId.value = null
     ModalManager.end.closeModals()
   } else {
-    val chat = activeChat.value!!
+    val chatRh = chat.remoteHostId
     // We need to have real unreadCount value for displaying it inside top right button
     // Having activeChat reloaded on every change in it is inefficient (UI lags)
     val unreadCount = remember {
@@ -166,11 +167,11 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           var preloadedCode: String? = null
           var preloadedLink: Pair<String, GroupMemberRole>? = null
           if (chat.chatInfo is ChatInfo.Direct) {
-            preloadedContactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
-            preloadedCode = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId)?.second
+            preloadedContactInfo = chatModel.controller.apiContactInfo(chatRh, chat.chatInfo.apiId)
+            preloadedCode = chatModel.controller.apiGetContactCode(chatRh, chat.chatInfo.apiId)?.second
           } else if (chat.chatInfo is ChatInfo.Group) {
-            setGroupMembers(chat.chatInfo.groupInfo, chatModel)
-            preloadedLink = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
+            setGroupMembers(chatRh, chat.chatInfo.groupInfo, chatModel)
+            preloadedLink = chatModel.controller.apiGetGroupLink(chatRh, chat.chatInfo.groupInfo.groupId)
           }
           ModalManager.end.showModalCloseable(true) { close ->
             val chat = remember { activeChat }.value
@@ -178,20 +179,20 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
               var code: String? by remember { mutableStateOf(preloadedCode) }
               KeyChangeEffect(chat.id, ChatModel.networkStatuses.toMap()) {
-                contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
+                contactInfo = chatModel.controller.apiContactInfo(chatRh, chat.chatInfo.apiId)
                 preloadedContactInfo = contactInfo
-                code = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId)?.second
+                code = chatModel.controller.apiGetContactCode(chatRh, chat.chatInfo.apiId)?.second
                 preloadedCode = code
               }
               ChatInfoView(chatModel, (chat.chatInfo as ChatInfo.Direct).contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
             } else if (chat?.chatInfo is ChatInfo.Group) {
               var link: Pair<String, GroupMemberRole>? by remember(chat.id) { mutableStateOf(preloadedLink) }
               KeyChangeEffect(chat.id) {
-                setGroupMembers((chat.chatInfo as ChatInfo.Group).groupInfo, chatModel)
-                link = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
+                setGroupMembers(chatRh, (chat.chatInfo as ChatInfo.Group).groupInfo, chatModel)
+                link = chatModel.controller.apiGetGroupLink(chatRh, chat.chatInfo.groupInfo.groupId)
                 preloadedLink = link
               }
-              GroupChatInfoView(chatModel, link?.first, link?.second, {
+              GroupChatInfoView(chatModel, chatRh, chat.id, link?.first, link?.second, {
                 link = it
                 preloadedLink = it
               }, close)
@@ -202,19 +203,19 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->
         hideKeyboard(view)
         withApi {
-          val r = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
+          val r = chatModel.controller.apiGroupMemberInfo(chatRh, groupInfo.groupId, member.groupMemberId)
           val stats = r?.second
           val (_, code) = if (member.memberActive) {
-            val memCode = chatModel.controller.apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId)
+            val memCode = chatModel.controller.apiGetGroupMemberCode(chatRh, groupInfo.apiId, member.groupMemberId)
             member to memCode?.second
           } else {
             member to null
           }
-          setGroupMembers(groupInfo, chatModel)
+          setGroupMembers(chatRh, groupInfo, chatModel)
           ModalManager.end.closeModals()
           ModalManager.end.showModalCloseable(true) { close ->
             remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
-              GroupMemberInfoView(groupInfo, mem, stats, code, chatModel, close, close)
+              GroupMemberInfoView(chatRh, groupInfo, mem, stats, code, chatModel, close, close)
             }
           }
         }
@@ -225,7 +226,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         if (c != null && firstId != null) {
           withApi {
             Log.d(TAG, "TODOCHAT: loadPrevMessages: loading for ${c.id}, current chatId ${ChatModel.chatId.value}, size was ${ChatModel.chatItems.size}")
-            apiLoadPrevMessages(c.chatInfo, chatModel, firstId, searchText.value)
+            apiLoadPrevMessages(c, chatModel, firstId, searchText.value)
             Log.d(TAG, "TODOCHAT: loadPrevMessages: loaded for ${c.id}, current chatId ${ChatModel.chatId.value}, size now ${ChatModel.chatItems.size}")
           }
         }
@@ -241,6 +242,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           val toChatItem: ChatItem?
           if (mode == CIDeleteMode.cidmBroadcast && groupInfo != null && groupMember != null) {
             val r = chatModel.controller.apiDeleteMemberChatItem(
+              chatRh,
               groupId = groupInfo.groupId,
               groupMemberId = groupMember.groupMemberId,
               itemId = itemId
@@ -249,6 +251,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             toChatItem = r?.second
           } else {
             val r = chatModel.controller.apiDeleteChatItem(
+              chatRh,
               type = cInfo.chatType,
               id = cInfo.apiId,
               itemId = itemId,
@@ -258,9 +261,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             toChatItem = r?.toChatItem?.chatItem
           }
           if (toChatItem == null && deletedChatItem != null) {
-            chatModel.removeChatItem(cInfo, deletedChatItem)
+            chatModel.removeChatItem(chatRh, cInfo, deletedChatItem)
           } else if (toChatItem != null) {
-            chatModel.upsertChatItem(cInfo, toChatItem)
+            chatModel.upsertChatItem(chatRh, cInfo, toChatItem)
           }
         }
       },
@@ -271,27 +274,27 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             val deletedItems: ArrayList<ChatItem> = arrayListOf()
             for (itemId in itemIds) {
               val di = chatModel.controller.apiDeleteChatItem(
-                chatInfo.chatType, chatInfo.apiId, itemId, CIDeleteMode.cidmInternal
+                chatRh, chatInfo.chatType, chatInfo.apiId, itemId, CIDeleteMode.cidmInternal
               )?.deletedChatItem?.chatItem
               if (di != null) {
                 deletedItems.add(di)
               }
             }
             for (di in deletedItems) {
-              chatModel.removeChatItem(chatInfo, di)
+              chatModel.removeChatItem(chatRh, chatInfo, di)
             }
           }
         }
       },
       receiveFile = { fileId, encrypted ->
-        withApi { chatModel.controller.receiveFile(user, fileId, encrypted) }
+        withApi { chatModel.controller.receiveFile(chatRh, user, fileId, encrypted) }
       },
       cancelFile = { fileId ->
-        withApi { chatModel.controller.cancelFile(user, fileId) }
+        withApi { chatModel.controller.cancelFile(chatRh, user, fileId) }
       },
       joinGroup = { groupId, onComplete ->
         withApi {
-          chatModel.controller.apiJoinGroup(groupId)
+          chatModel.controller.apiJoinGroup(chatRh, groupId)
           onComplete.invoke()
         }
       },
@@ -299,7 +302,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         withBGApi {
           val cInfo = chat.chatInfo
           if (cInfo is ChatInfo.Direct) {
-            chatModel.activeCall.value = Call(contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
+            chatModel.activeCall.value = Call(remoteHostId = chatRh, contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
             chatModel.showCallView.value = true
             chatModel.callCommand.add(WCallCommand.Capabilities(media))
           }
@@ -320,48 +323,48 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       },
       acceptFeature = { contact, feature, param ->
         withApi {
-          chatModel.controller.allowFeatureToContact(contact, feature, param)
+          chatModel.controller.allowFeatureToContact(chatRh, contact, feature, param)
         }
       },
       openDirectChat = { contactId ->
         withApi {
-          openDirectChat(contactId, chatModel)
+          openDirectChat(chatRh, contactId, chatModel)
         }
       },
       updateContactStats = { contact ->
         withApi {
-          val r = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
+          val r = chatModel.controller.apiContactInfo(chatRh, chat.chatInfo.apiId)
           if (r != null) {
             val contactStats = r.first
             if (contactStats != null)
-            chatModel.updateContactConnectionStats(contact, contactStats)
+            chatModel.updateContactConnectionStats(chatRh, contact, contactStats)
           }
         }
       },
       updateMemberStats = { groupInfo, member ->
         withApi {
-          val r = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
+          val r = chatModel.controller.apiGroupMemberInfo(chatRh, groupInfo.groupId, member.groupMemberId)
           if (r != null) {
             val memStats = r.second
             if (memStats != null) {
-              chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, memStats)
+              chatModel.updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, memStats)
             }
           }
         }
       },
       syncContactConnection = { contact ->
         withApi {
-          val cStats = chatModel.controller.apiSyncContactRatchet(contact.contactId, force = false)
+          val cStats = chatModel.controller.apiSyncContactRatchet(chatRh, contact.contactId, force = false)
           if (cStats != null) {
-            chatModel.updateContactConnectionStats(contact, cStats)
+            chatModel.updateContactConnectionStats(chatRh, contact, cStats)
           }
         }
       },
       syncMemberConnection = { groupInfo, member ->
         withApi {
-          val r = chatModel.controller.apiSyncGroupMemberRatchet(groupInfo.apiId, member.groupMemberId, force = false)
+          val r = chatModel.controller.apiSyncGroupMemberRatchet(chatRh, groupInfo.apiId, member.groupMemberId, force = false)
           if (r != null) {
-            chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, r.second)
+            chatModel.updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, r.second)
           }
         }
       },
@@ -374,6 +377,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       setReaction = { cInfo, cItem, add, reaction ->
         withApi {
           val updatedCI = chatModel.controller.apiChatItemReaction(
+            rh = chatRh,
             type = cInfo.chatType,
             id = cInfo.apiId,
             itemId = cItem.id,
@@ -387,10 +391,10 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       },
       showItemDetails = { cInfo, cItem ->
         withApi {
-          val ciInfo = chatModel.controller.apiGetChatItemInfo(cInfo.chatType, cInfo.apiId, cItem.id)
+          val ciInfo = chatModel.controller.apiGetChatItemInfo(chatRh, cInfo.chatType, cInfo.apiId, cItem.id)
           if (ciInfo != null) {
             if (chat.chatInfo is ChatInfo.Group) {
-              setGroupMembers(chat.chatInfo.groupInfo, chatModel)
+              setGroupMembers(chatRh, chat.chatInfo.groupInfo, chatModel)
             }
             ModalManager.end.closeModals()
             ModalManager.end.showModal(endButtons = { ShareButton {
@@ -404,28 +408,29 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       addMembers = { groupInfo ->
         hideKeyboard(view)
         withApi {
-          setGroupMembers(groupInfo, chatModel)
+          setGroupMembers(chatRh, groupInfo, chatModel)
           ModalManager.end.closeModals()
           ModalManager.end.showModalCloseable(true) { close ->
-            AddGroupMembersView(groupInfo, false, chatModel, close)
+            AddGroupMembersView(chatRh, groupInfo, false, chatModel, close)
           }
         }
       },
       openGroupLink = { groupInfo ->
         hideKeyboard(view)
         withApi {
-          val link = chatModel.controller.apiGetGroupLink(groupInfo.groupId)
+          val link = chatModel.controller.apiGetGroupLink(chatRh, groupInfo.groupId)
           ModalManager.end.closeModals()
           ModalManager.end.showModalCloseable(true) {
-            GroupLinkView(chatModel, groupInfo, link?.first, link?.second, onGroupLinkUpdated = null)
+            GroupLinkView(chatModel, chatRh, groupInfo, link?.first, link?.second, onGroupLinkUpdated = null)
           }
         }
       },
       markRead = { range, unreadCountAfter ->
-        chatModel.markChatItemsRead(chat.chatInfo, range, unreadCountAfter)
+        chatModel.markChatItemsRead(chat, range, unreadCountAfter)
         ntfManager.cancelNotificationsForChat(chat.id)
         withBGApi {
           chatModel.controller.apiChatRead(
+            chatRh,
             chat.chatInfo.chatType,
             chat.chatInfo.apiId,
             range
@@ -437,7 +442,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         if (searchText.value == value) return@ChatLayout
         val c = chatModel.getChat(chat.chatInfo.id) ?: return@ChatLayout
         withApi {
-          apiFindMessages(c.chatInfo, chatModel, value)
+          apiFindMessages(c, chatModel, value)
           searchText.value = value
         }
       },
@@ -498,6 +503,7 @@ fun ChatLayout(
         enabled = !attachmentDisabled.value && rememberUpdatedState(chat.userCanSend).value,
         onFiles = { paths -> composeState.onFilesAttached(paths.map { URI.create(it) }) },
         onImage = {
+          // TODO: file is not saved anywhere?!
           val tmpFile = File.createTempFile("image", ".bmp", tmpDir)
           tmpFile.deleteOnExit()
           chatModel.filesToDelete.add(tmpFile)
@@ -1252,14 +1258,16 @@ private fun markUnreadChatAsRead(activeChat: MutableState<Chat?>, chatModel: Cha
   val chat = activeChat.value
   if (chat?.chatStats?.unreadChat != true) return
   withApi {
+    val chatRh = chat.remoteHostId
     val success = chatModel.controller.apiChatUnread(
+      chatRh,
       chat.chatInfo.chatType,
       chat.chatInfo.apiId,
       false
     )
     if (success && chat.id == activeChat.value?.id) {
       activeChat.value = chat.copy(chatStats = chat.chatStats.copy(unreadChat = false))
-      chatModel.replaceChat(chat.id, activeChat.value!!)
+      chatModel.replaceChat(chatRh, chat.id, activeChat.value!!)
     }
   }
 }
@@ -1299,7 +1307,7 @@ private fun providerForGallery(
   scrollTo: (Int) -> Unit
 ): ImageGalleryProvider {
   fun canShowMedia(item: ChatItem): Boolean =
-    (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && getLoadedFilePath(item.file) != null)
+    (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && (getLoadedFilePath(item.file) != null || chatModel.connectedToRemote()))
 
   fun item(skipInternalIndex: Int, initialChatId: Long): Pair<Int, ChatItem>? {
     var processedInternalIndex = -skipInternalIndex.sign
@@ -1326,7 +1334,7 @@ private fun providerForGallery(
       val item = item(internalIndex, initialChatId)?.second ?: return null
       return when (item.content.msgContent) {
         is MsgContent.MCImage -> {
-          val res = getLoadedImage(item.file)
+          val res = runBlocking { getLoadedImage(item.file) }
           val filePath = getLoadedFilePath(item.file)
           if (res != null && filePath != null) {
             val (imageBitmap: ImageBitmap, data: ByteArray) = res
@@ -1334,7 +1342,7 @@ private fun providerForGallery(
           } else null
         }
         is MsgContent.MCVideo -> {
-          val filePath = getLoadedFilePath(item.file)
+          val filePath = if (chatModel.connectedToRemote() && item.file?.loaded == true) getAppFilePath(item.file.fileName) else getLoadedFilePath(item.file)
           if (filePath != null) {
             val uri = getAppFileUri(filePath.substringAfterLast(File.separator))
             ProviderMedia.Video(uri, (item.content.msgContent as MsgContent.MCVideo).image)
@@ -1410,6 +1418,7 @@ fun PreviewChatLayout() {
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
       chat = Chat(
+        remoteHostId = null,
         chatInfo = ChatInfo.Direct.sampleData,
         chatItems = chatItems,
         chatStats = Chat.ChatStats()
@@ -1482,6 +1491,7 @@ fun PreviewGroupChatLayout() {
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
       chat = Chat(
+        remoteHostId = null,
         chatInfo = ChatInfo.Group.sampleData,
         chatItems = chatItems,
         chatStats = Chat.ChatStats()

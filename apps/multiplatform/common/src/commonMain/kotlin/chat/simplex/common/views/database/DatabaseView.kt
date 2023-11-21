@@ -65,6 +65,8 @@ fun DatabaseView(
   Box(
     Modifier.fillMaxSize(),
   ) {
+    val user = m.currentUser.value
+    val rhId = user?.remoteHostId
     DatabaseLayout(
       progressIndicator.value,
       remember { m.chatRunning }.value != false,
@@ -80,7 +82,7 @@ fun DatabaseView(
       chatLastStart,
       appFilesCountAndSize,
       chatItemTTL,
-      m.currentUser.value,
+      user,
       m.users,
       startChat = { startChat(m, chatLastStart, m.chatDbChanged) },
       stopChatAlert = { stopChatAlert(m) },
@@ -91,9 +93,9 @@ fun DatabaseView(
         val oldValue = chatItemTTL.value
         chatItemTTL.value = it
         if (it < oldValue) {
-          setChatItemTTLAlert(m, chatItemTTL, progressIndicator, appFilesCountAndSize)
+          setChatItemTTLAlert(m, rhId, chatItemTTL, progressIndicator, appFilesCountAndSize)
         } else if (it != oldValue) {
-          setCiTTL(m, chatItemTTL, progressIndicator, appFilesCountAndSize)
+          setCiTTL(m, rhId, chatItemTTL, progressIndicator, appFilesCountAndSize)
         }
       },
       showSettingsModal
@@ -265,7 +267,7 @@ fun DatabaseLayout(
 }
 
 private fun setChatItemTTLAlert(
-  m: ChatModel, selectedChatItemTTL: MutableState<ChatItemTTL>,
+  m: ChatModel, rhId: Long?, selectedChatItemTTL: MutableState<ChatItemTTL>,
   progressIndicator: MutableState<Boolean>,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
 ) {
@@ -273,7 +275,7 @@ private fun setChatItemTTLAlert(
     title = generalGetString(MR.strings.enable_automatic_deletion_question),
     text = generalGetString(MR.strings.enable_automatic_deletion_message),
     confirmText = generalGetString(MR.strings.delete_messages),
-    onConfirm = { setCiTTL(m, selectedChatItemTTL, progressIndicator, appFilesCountAndSize) },
+    onConfirm = { setCiTTL(m, rhId, selectedChatItemTTL, progressIndicator, appFilesCountAndSize) },
     onDismiss = { selectedChatItemTTL.value = m.chatItemTTL.value },
     destructive = true,
   )
@@ -592,6 +594,7 @@ private fun deleteChat(m: ChatModel, progressIndicator: MutableState<Boolean>) {
 
 private fun setCiTTL(
   m: ChatModel,
+  rhId: Long?,
   chatItemTTL: MutableState<ChatItemTTL>,
   progressIndicator: MutableState<Boolean>,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
@@ -600,7 +603,7 @@ private fun setCiTTL(
   progressIndicator.value = true
   withApi {
     try {
-      m.controller.setChatItemTTL(chatItemTTL.value)
+      m.controller.setChatItemTTL(rhId, chatItemTTL.value)
       // Update model on success
       m.chatItemTTL.value = chatItemTTL.value
       afterSetCiTTL(m, progressIndicator, appFilesCountAndSize)
@@ -623,7 +626,8 @@ private fun afterSetCiTTL(
   withApi {
     try {
       updatingChatsMutex.withLock {
-        val chats = m.controller.apiGetChats()
+        // this is using current remote host on purpose - if it changes during update, it will load correct chats
+        val chats = m.controller.apiGetChats(m.remoteHostId)
         m.updateChats(chats)
       }
     } catch (e: Exception) {

@@ -154,6 +154,9 @@
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
                     (pkgs.pkgsCross.mingwW64.openssl) #.override) # { static = true; enableKTLS = false; })
                   ];
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.pkgsCross.mingwW64.openssl) #.override) # { static = true; enableKTLS = false; })
+                  ];
                   packages.unix-time.postPatch = ''
                     sed -i 's/mingwex//g' unix-time.cabal
                   '';
@@ -183,6 +186,9 @@
                     ./scripts/nix/direct-sqlcipher-2.3.27-win.patch
                   ];
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
+                    pkgs.pkgsCross.mingwW64.openssl
+                  ];
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     pkgs.pkgsCross.mingwW64.openssl
                   ];
                   packages.unix-time.postPatch = ''
@@ -253,7 +259,17 @@
                 # we also do not want to have any dependencies listed (especially no rts!)
                 enableStatic = false;
 
-                setupBuildFlags = p.component.setupBuildFlags ++ map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsupport.so" ];
+                # This used to work with 8.10.7...
+                # setupBuildFlags = p.component.setupBuildFlags ++ map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsupport.so" ];
+                # ... but now with 9.6+
+                # we have to do the -shared thing by hand.
+                postBuild = ''
+                  armv7a-unknown-linux-androideabi-ghc -shared -o libsupport.so \
+                    -optl-Wl,-u,setLineBuffering \
+                    -optl-Wl,-u,pipe_std_to_socket \
+                    dist/build/*.a
+                '';
+
                 postInstall = ''
 
                   mkdir -p $out/_pkg
@@ -309,6 +325,9 @@
                   packages.direct-sqlcipher.patches = [
                     ./scripts/nix/direct-sqlcipher-android-log.patch
                   ];
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (android32Pkgs.openssl.override { static = true; enableKTLS = false; })
+                  ];
                   # 32 bit patches
                   packages.basement.patches = [
                     ./scripts/nix/basement-pr-573.patch
@@ -354,6 +373,7 @@
                   "chat_recv_msg"
                   "chat_recv_msg_wait"
                   "chat_send_cmd"
+                  "chat_send_remote_cmd"
                   "chat_valid_name"
                   "chat_write_file"
                 ];
@@ -412,6 +432,9 @@
                   packages.direct-sqlcipher.patches = [
                     ./scripts/nix/direct-sqlcipher-android-log.patch
                   ];
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (androidPkgs.openssl.override { static = true; })
+                  ];
                 }];
               }).simplex-chat.components.library.override (p: {
                 smallAddressSpace = true;
@@ -452,6 +475,7 @@
                   "chat_recv_msg"
                   "chat_recv_msg_wait"
                   "chat_send_cmd"
+                  "chat_send_remote_cmd"
                   "chat_valid_name"
                   "chat_write_file"
                 ];
@@ -507,9 +531,13 @@
               "aarch64-darwin-ios:lib:simplex-chat" = (drv' {
                 pkgs' = pkgs;
                 extra-modules = [{
+                  packages.simplex-chat.flags.swift = true;
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.openssl.override { static = true; })
+                  ];
                 }];
               }).simplex-chat.components.library.override (
                 iosOverrides "pkg-ios-aarch64-swift-json"
@@ -520,6 +548,9 @@
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.openssl.override { static = true; })
+                  ];
                 }];
               }).simplex-chat.components.library.override (
                 iosOverrides "pkg-ios-aarch64-tagged-json"
@@ -530,9 +561,13 @@
               "x86_64-darwin-ios:lib:simplex-chat" = (drv' {
                 pkgs' = pkgs;
                 extra-modules = [{
+                  packages.simplex-chat.flags.swift = true;
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.openssl.override { static = true; })
+                  ];
                 }];
               }).simplex-chat.components.library.override (
                 iosOverrides "pkg-ios-x86_64-swift-json"
@@ -543,6 +578,9 @@
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.openssl.override { static = true; })
+                  ];
                 }];
               }).simplex-chat.components.library.override (
                 iosOverrides "pkg-ios-x86_64-tagged-json"

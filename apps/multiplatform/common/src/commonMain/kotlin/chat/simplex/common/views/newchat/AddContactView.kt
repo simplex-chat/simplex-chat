@@ -25,11 +25,13 @@ import chat.simplex.res.MR
 @Composable
 fun AddContactView(
   chatModel: ChatModel,
+  rh: RemoteHostInfo?,
   connReqInvitation: String,
   contactConnection: MutableState<PendingContactConnection?>
 ) {
   val clipboard = LocalClipboardManager.current
   AddContactLayout(
+    rh = rh,
     chatModel = chatModel,
     incognitoPref = chatModel.controller.appPrefs.incognito,
     connReq = connReqInvitation,
@@ -52,6 +54,7 @@ fun AddContactView(
 @Composable
 fun AddContactLayout(
   chatModel: ChatModel,
+  rh: RemoteHostInfo?,
   incognitoPref: SharedPreference<Boolean>,
   connReq: String,
   contactConnection: MutableState<PendingContactConnection?>,
@@ -63,9 +66,9 @@ fun AddContactLayout(
     withApi {
       val contactConnVal = contactConnection.value
       if (contactConnVal != null) {
-        chatModel.controller.apiSetConnectionIncognito(contactConnVal.pccConnId, incognito.value)?.let {
+        chatModel.controller.apiSetConnectionIncognito(rh?.remoteHostId, contactConnVal.pccConnId, incognito.value)?.let {
           contactConnection.value = it
-          chatModel.updateContactConnection(it)
+          chatModel.updateContactConnection(rh?.remoteHostId, it)
         }
       }
     }
@@ -172,6 +175,7 @@ fun sharedProfileInfo(
 fun PreviewAddContactView() {
   SimpleXTheme {
     AddContactLayout(
+      rh = null,
       chatModel = ChatModel,
       incognitoPref = SharedPreference({ false }, {}),
       connReq = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D",
