@@ -283,6 +283,37 @@ private let versionDescriptions: [VersionDescription] = [
             ),
         ]
     ),
+    VersionDescription(
+        version: "v5.4",
+        post: URL(string: "https://simplex.chat/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html"), // TODO link
+        features: [
+            FeatureDescription(
+                icon: "desktopcomputer",
+                title: "Connect desktop and mobile!",
+                description: "Use your mobile app chat profile via [desktop app](https://simplex.chat/downloads/)."
+            ),
+            FeatureDescription(
+                icon: "person.2",
+                title: "Group improvements",
+                description: "Create groups incognito, block group members, faster join via link, and more."
+            ),
+            FeatureDescription(
+                icon: "person.badge.minus",
+                title: "Notify about contact deletion",
+                description: "You can optionally notify contacts when deleting them."
+            ),
+            FeatureDescription(
+                icon: "link",
+                title: "Checking SimpleX links",
+                description: "Detection of previously used and your own SimpleX links."
+            ),
+            FeatureDescription(
+                icon: "highlighter",
+                title: "Spaces in profile names",
+                description: "You can now add spaces to your profile name."
+            ),
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
