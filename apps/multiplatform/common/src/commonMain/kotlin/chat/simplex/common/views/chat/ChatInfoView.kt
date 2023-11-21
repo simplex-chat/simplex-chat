@@ -718,6 +718,7 @@ fun PreviewChatInfoLayout() {
   SimpleXTheme {
     ChatInfoLayout(
       chat = Chat(
+        remoteHostId = null,
         chatInfo = ChatInfo.Direct.sampleData,
         chatItems = arrayListOf()
       ),

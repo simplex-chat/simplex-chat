@@ -524,6 +524,7 @@ fun PreviewGroupChatInfoLayout() {
   SimpleXTheme {
     GroupChatInfoLayout(
       chat = Chat(
+        remoteHostId = null,
         chatInfo = ChatInfo.Direct.sampleData,
         chatItems = arrayListOf()
       ),

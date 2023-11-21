@@ -122,7 +122,7 @@ object ChatModel {
   }
 
   private fun getUserIndex(user: User): Int =
-    users.indexOfFirst { it.user.userId == user.userId }
+    users.indexOfFirst { it.user.userId == user.userId && it.user.remoteHostId == user.remoteHostId }
 
   fun updateUser(user: User) {
     val i = getUserIndex(user)
@@ -616,7 +616,7 @@ enum class ChatType(val type: String) {
 
 @Serializable
 data class User(
-  val remoteHostId: Long? = null,
+  val remoteHostId: Long?,
   override val userId: Long,
   val userContactId: Long,
   val localDisplayName: String,
@@ -639,6 +639,7 @@ data class User(
 
   companion object {
     val sampleData = User(
+      remoteHostId = null,
       userId = 1,
       userContactId = 1,
       localDisplayName = "alice",
@@ -715,8 +716,8 @@ interface SomeChat {
 }
 
 @Serializable @Stable
-data class Chat (
-  val remoteHostId: Long? = null,
+data class Chat(
+  val remoteHostId: Long?,
   val chatInfo: ChatInfo,
   val chatItems: List<ChatItem>,
   val chatStats: ChatStats = ChatStats()
@@ -749,6 +750,7 @@ data class Chat (
 
   companion object {
     val sampleData = Chat(
+      remoteHostId = null,
       chatInfo = ChatInfo.Direct.sampleData,
       chatItems = arrayListOf(ChatItem.getSampleData())
     )

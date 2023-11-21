@@ -290,6 +290,14 @@
         <target>(</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="(new)" xml:space="preserve">
+        <source>(new)</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="(this device v%@)" xml:space="preserve">
+        <source>(this device v%@)</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id=")" xml:space="preserve">
         <source>)</source>
         <target>)</target>
@@ -858,6 +866,10 @@
         <target>返回</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Bad desktop address" xml:space="preserve">
+        <source>Bad desktop address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Bad message ID" xml:space="preserve">
         <source>Bad message ID</source>
         <target>错误消息 ID</target>
@@ -1151,6 +1163,10 @@
         <target>在隐身状态下连接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connect to desktop" xml:space="preserve">
+        <source>Connect to desktop</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connect to yourself?" xml:space="preserve">
         <source>Connect to yourself?</source>
         <note>No comment provided by engineer.</note>
@@ -1188,6 +1204,14 @@ This is your own one-time link!</source>
         <source>Connect with %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connected desktop" xml:space="preserve">
+        <source>Connected desktop</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connected to desktop" xml:space="preserve">
+        <source>Connected to desktop</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
         <source>Connecting to server…</source>
         <target>连接服务器中……</target>
@@ -1196,6 +1220,10 @@ This is your own one-time link!</source>
       <trans-unit id="Connecting server… (error: %@)" xml:space="preserve">
         <source>Connecting to server… (error: %@)</source>
         <target>连接服务器中……（错误：%@）</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connecting to desktop" xml:space="preserve">
+        <source>Connecting to desktop</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection" xml:space="preserve">
@@ -1216,6 +1244,10 @@ This is your own one-time link!</source>
       <trans-unit id="Connection request sent!" xml:space="preserve">
         <source>Connection request sent!</source>
         <target>已发送连接请求！</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connection terminated" xml:space="preserve">
+        <source>Connection terminated</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection timeout" xml:space="preserve">
@@ -1701,6 +1733,18 @@ This cannot be undone!</source>
         <target>描述</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Desktop address" xml:space="preserve">
+        <source>Desktop address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Desktop app version %@ is not compatible with this app." xml:space="preserve">
+        <source>Desktop app version %@ is not compatible with this app.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Desktop devices" xml:space="preserve">
+        <source>Desktop devices</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Develop" xml:space="preserve">
         <source>Develop</source>
         <target>开发</target>
@@ -1791,9 +1835,17 @@ This cannot be undone!</source>
         <target>断开连接</target>
         <note>server test step</note>
       </trans-unit>
+      <trans-unit id="Disconnect desktop?" xml:space="preserve">
+        <source>Disconnect desktop?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Discover and join groups" xml:space="preserve">
         <source>Discover and join groups</source>
         <target>发现和加入群组</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Discover on network" xml:space="preserve">
+        <source>Discover on network</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
@@ -2001,6 +2053,10 @@ This cannot be undone!</source>
       <trans-unit id="Enter server manually" xml:space="preserve">
         <source>Enter server manually</source>
         <target>手动输入服务器</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enter this device name…" xml:space="preserve">
+        <source>Enter this device name…</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter welcome message…" xml:space="preserve">
@@ -2773,6 +2829,10 @@ This cannot be undone!</source>
         <target>数据库版本不兼容</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Incompatible version" xml:space="preserve">
+        <source>Incompatible version</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Incorrect passcode" xml:space="preserve">
         <source>Incorrect passcode</source>
         <target>密码错误</target>
@@ -2938,6 +2998,10 @@ This is your link for group %@!</source>
         <target>加入群组中</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Keep the app open to use it from desktop" xml:space="preserve">
+        <source>Keep the app open to use it from desktop</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
         <source>Keep your connections</source>
         <target>保持连接</target>
@@ -2996,6 +3060,14 @@ This is your link for group %@!</source>
       <trans-unit id="Limitations" xml:space="preserve">
         <source>Limitations</source>
         <target>限制</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Linked desktop options" xml:space="preserve">
+        <source>Linked desktop options</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Linked desktops" xml:space="preserve">
+        <source>Linked desktops</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Live message!" xml:space="preserve">
@@ -3563,6 +3635,10 @@ This is your link for group %@!</source>
       <trans-unit id="Paste" xml:space="preserve">
         <source>Paste</source>
         <target>粘贴</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Paste desktop address" xml:space="preserve">
+        <source>Paste desktop address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste image" xml:space="preserve">
@@ -4156,6 +4232,10 @@ This is your link for group %@!</source>
         <target>扫描二维码</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Scan QR code from desktop" xml:space="preserve">
+        <source>Scan QR code from desktop</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Scan code" xml:space="preserve">
         <source>Scan code</source>
         <target>扫码</target>
@@ -4374,6 +4454,10 @@ This is your link for group %@!</source>
       <trans-unit id="Servers" xml:space="preserve">
         <source>Servers</source>
         <target>服务器</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Session code" xml:space="preserve">
+        <source>Session code</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set 1 day" xml:space="preserve">
@@ -4872,6 +4956,10 @@ It can happen because of some bug or when the connection is compromised.</source
         <target>此操作无法撤消——您的个人资料、联系人、消息和文件将不可撤回地丢失。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="This device name" xml:space="preserve">
+        <source>This device name</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve">
         <source>This group has over %lld members, delivery receipts are not sent.</source>
         <target>该组有超过 %lld 个成员，不发送送货单。</target>
@@ -5061,6 +5149,14 @@ To connect, please ask your contact to create another connection link and check 
 如果要连接，请让您的联系人创建另一个连接链接，并检查您的网络连接是否稳定。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unlink" xml:space="preserve">
+        <source>Unlink</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unlink desktop?" xml:space="preserve">
+        <source>Unlink desktop?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Unlock" xml:space="preserve">
         <source>Unlock</source>
         <target>解锁</target>
@@ -5151,6 +5247,10 @@ To connect, please ask your contact to create another connection link and check 
         <target>用于新连接</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use from desktop" xml:space="preserve">
+        <source>Use from desktop</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use iOS call interface" xml:space="preserve">
         <source>Use iOS call interface</source>
         <target>使用 iOS 通话界面</target>
@@ -5181,9 +5281,21 @@ To connect, please ask your contact to create another connection link and check 
         <target>使用 SimpleX Chat 服务器。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Verify code with desktop" xml:space="preserve">
+        <source>Verify code with desktop</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Verify connection" xml:space="preserve">
+        <source>Verify connection</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Verify connection security" xml:space="preserve">
         <source>Verify connection security</source>
         <target>验证连接安全</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Verify connections" xml:space="preserve">
+        <source>Verify connections</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify security code" xml:space="preserve">
@@ -6356,6 +6468,10 @@ SimpleX 服务器无法看到您的资料。</target>
         <target>已更新的群组资料</target>
         <note>rcv group event chat item</note>
       </trans-unit>
+      <trans-unit id="v%@" xml:space="preserve">
+        <source>v%@</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="v%@ (%@)" xml:space="preserve">
         <source>v%@ (%@)</source>
         <target>v%@ (%@)</target>
@@ -6492,6 +6608,10 @@ SimpleX 服务器无法看到您的资料。</target>
         <source>SimpleX uses Face ID for local authentication</source>
         <target>SimpleX 使用Face ID进行本地身份验证</target>
         <note>Privacy - Face ID Usage Description</note>
+      </trans-unit>
+      <trans-unit id="NSLocalNetworkUsageDescription" xml:space="preserve">
+        <source>SimpleX uses local network access to allow using user chat profile via desktop app on the same network.</source>
+        <note>Privacy - Local Network Usage Description</note>
       </trans-unit>
       <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve">
         <source>SimpleX needs microphone access for audio and video calls, and to record voice messages.</source>

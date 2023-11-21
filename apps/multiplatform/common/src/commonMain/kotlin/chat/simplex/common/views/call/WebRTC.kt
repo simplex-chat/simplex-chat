@@ -11,7 +11,7 @@ import java.util.*
 import kotlin.collections.ArrayList
 
 data class Call(
-  val remoteHostId: Long? = null,
+  val remoteHostId: Long?,
   val contact: Contact,
   val callState: CallState,
   val localMedia: CallMediaType,
@@ -97,7 +97,7 @@ sealed class WCallResponse {
 @Serializable data class WebRTCExtraInfo(val rtcIceCandidates: String)
 @Serializable data class CallType(val media: CallMediaType, val capabilities: CallCapabilities)
 @Serializable data class RcvCallInvitation(
-  val remoteHostId: Long? = null,
+  val remoteHostId: Long?,
   val user: User,
   val contact: Contact,
   val callType: CallType,
