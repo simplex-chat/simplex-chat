@@ -423,8 +423,8 @@ object ChatController {
           receiverStarted = false
           break
         }
-        val msg = recvMsg(ctrl)
-        if (msg != null) processReceivedMsg(msg)
+        val msg = try { recvMsg(ctrl) } catch (e: Exception) { Log.e(TAG, "ChatController startReceiver recvMsg failed: $e"); null }
+        if (msg != null) try { processReceivedMsg(msg) } catch (e: Exception) { Log.e(TAG, "ChatController startReceiver processReceivedMsg failed: $e") }
       }
     }
   }
