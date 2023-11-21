@@ -9,6 +9,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (when, void)
 import qualified Data.ByteString as B
+import Data.List (isInfixOf)
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..))
 import Simplex.Chat.Protocol (supportedChatVRange)
@@ -107,6 +108,7 @@ chatGroupTests = do
     it "sends and updates profile when creating contact" testMemberContactProfileUpdate
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForward
+    it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
     it "forward message edit (x.msg.update)" testGroupMsgForwardEdit
     it "forward message reaction (x.msg.react)" testGroupMsgForwardReaction
     it "forward message deletion (x.msg.del)" testGroupMsgForwardDeletion
@@ -3946,6 +3948,44 @@ setupGroupForwarding3 gName alice bob cath = do
     DB.execute_ db "UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3"
   void $ withCCTransaction alice $ \db ->
     DB.execute_ db "UPDATE group_member_intros SET intro_status='fwd'"
+
+testGroupMsgForwardDeduplicate :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardDeduplicate =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
+
+      void $ withCCTransaction alice $ \db ->
+        DB.execute_ db "UPDATE group_member_intros SET intro_status='fwd'"
+
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath
+        <### [ Predicate isInfixOf "#team bob> hi there",
+               StartsWith "duplicate group message, group id: 1"
+             ]
+
+      threadDelay 1000000
+
+      -- cath sends x.grp.mem.con on deduplication, so alice doesn't forward anymore
+
+      cath #> "#team hey team"
+      alice <# "#team cath> hey team"
+      bob <# "#team cath> hey team"
+
+      alice ##> "/tail #team 2"
+      alice <# "#team bob> hi there"
+      alice <# "#team cath> hey team"
+
+      bob ##> "/tail #team 2"
+      bob <# "#team hi there"
+      bob <# "#team cath> hey team"
+
+      cath ##> "/tail #team 2"
+      cath <#. "#team bob> hi there"
+      cath <# "#team hey team"
 
 testGroupMsgForwardEdit :: HasCallStack => FilePath -> IO ()
 testGroupMsgForwardEdit =
