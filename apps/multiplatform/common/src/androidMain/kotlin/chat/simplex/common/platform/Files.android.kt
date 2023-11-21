@@ -23,6 +23,8 @@ actual val agentDatabaseFileName: String = "files_agent.db"
 
 actual val databaseExportDir: File = androidAppContext.cacheDir
 
+actual val remoteHostsDir: File = File(tmpDir.absolutePath + File.separator + "remote_hosts")
+
 actual fun desktopOpenDatabaseDir() {}
 
 @Composable

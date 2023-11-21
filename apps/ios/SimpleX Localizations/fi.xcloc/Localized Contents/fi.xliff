@@ -290,6 +290,14 @@
         <target>(</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="(new)" xml:space="preserve">
+        <source>(new)</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="(this device v%@)" xml:space="preserve">
+        <source>(this device v%@)</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id=")" xml:space="preserve">
         <source>)</source>
         <target>)</target>
@@ -854,6 +862,10 @@
         <target>Takaisin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Bad desktop address" xml:space="preserve">
+        <source>Bad desktop address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Bad message ID" xml:space="preserve">
         <source>Bad message ID</source>
         <target>Virheellinen viestin tunniste</target>
@@ -1146,6 +1158,10 @@
         <target>Yhdistä Incognito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connect to desktop" xml:space="preserve">
+        <source>Connect to desktop</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connect to yourself?" xml:space="preserve">
         <source>Connect to yourself?</source>
         <note>No comment provided by engineer.</note>
@@ -1183,6 +1199,14 @@ This is your own one-time link!</source>
         <source>Connect with %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Connected desktop" xml:space="preserve">
+        <source>Connected desktop</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connected to desktop" xml:space="preserve">
+        <source>Connected to desktop</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connecting server…" xml:space="preserve">
         <source>Connecting to server…</source>
         <target>Yhteyden muodostaminen palvelimeen…</target>
@@ -1191,6 +1215,10 @@ This is your own one-time link!</source>
       <trans-unit id="Connecting server… (error: %@)" xml:space="preserve">
         <source>Connecting to server… (error: %@)</source>
         <target>Yhteyden muodostaminen palvelimeen... (virhe: %@)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connecting to desktop" xml:space="preserve">
+        <source>Connecting to desktop</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection" xml:space="preserve">
@@ -1211,6 +1239,10 @@ This is your own one-time link!</source>
       <trans-unit id="Connection request sent!" xml:space="preserve">
         <source>Connection request sent!</source>
         <target>Yhteyspyyntö lähetetty!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Connection terminated" xml:space="preserve">
+        <source>Connection terminated</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connection timeout" xml:space="preserve">
@@ -1696,6 +1728,18 @@ This cannot be undone!</source>
         <target>Kuvaus</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Desktop address" xml:space="preserve">
+        <source>Desktop address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Desktop app version %@ is not compatible with this app." xml:space="preserve">
+        <source>Desktop app version %@ is not compatible with this app.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Desktop devices" xml:space="preserve">
+        <source>Desktop devices</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Develop" xml:space="preserve">
         <source>Develop</source>
         <target>Kehitä</target>
@@ -1786,9 +1830,17 @@ This cannot be undone!</source>
         <target>Katkaise</target>
         <note>server test step</note>
       </trans-unit>
+      <trans-unit id="Disconnect desktop?" xml:space="preserve">
+        <source>Disconnect desktop?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Discover and join groups" xml:space="preserve">
         <source>Discover and join groups</source>
         <target>Löydä ryhmiä ja liity niihin</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Discover on network" xml:space="preserve">
+        <source>Discover on network</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
@@ -1960,6 +2012,14 @@ This cannot be undone!</source>
         <target>Salattu viesti: odottamaton virhe</target>
         <note>notification</note>
       </trans-unit>
+      <trans-unit id="Encryption re-negotiation error" xml:space="preserve">
+        <source>Encryption re-negotiation error</source>
+        <note>message decrypt error item</note>
+      </trans-unit>
+      <trans-unit id="Encryption re-negotiation failed." xml:space="preserve">
+        <source>Encryption re-negotiation failed.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enter Passcode" xml:space="preserve">
         <source>Enter Passcode</source>
         <target>Syötä pääsykoodi</target>
@@ -1987,6 +2047,10 @@ This cannot be undone!</source>
       <trans-unit id="Enter server manually" xml:space="preserve">
         <source>Enter server manually</source>
         <target>Syötä palvelin manuaalisesti</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enter this device name…" xml:space="preserve">
+        <source>Enter this device name…</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enter welcome message…" xml:space="preserve">
@@ -2757,6 +2821,10 @@ This cannot be undone!</source>
         <target>Yhteensopimaton tietokantaversio</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Incompatible version" xml:space="preserve">
+        <source>Incompatible version</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Incorrect passcode" xml:space="preserve">
         <source>Incorrect passcode</source>
         <target>Väärä pääsykoodi</target>
@@ -2922,6 +2990,10 @@ This is your link for group %@!</source>
         <target>Liittyy ryhmään</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Keep the app open to use it from desktop" xml:space="preserve">
+        <source>Keep the app open to use it from desktop</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
         <source>Keep your connections</source>
         <target>Pidä kontaktisi</target>
@@ -2980,6 +3052,14 @@ This is your link for group %@!</source>
       <trans-unit id="Limitations" xml:space="preserve">
         <source>Limitations</source>
         <target>Rajoitukset</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Linked desktop options" xml:space="preserve">
+        <source>Linked desktop options</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Linked desktops" xml:space="preserve">
+        <source>Linked desktops</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Live message!" xml:space="preserve">
@@ -3545,6 +3625,10 @@ This is your link for group %@!</source>
       <trans-unit id="Paste" xml:space="preserve">
         <source>Paste</source>
         <target>Liitä</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Paste desktop address" xml:space="preserve">
+        <source>Paste desktop address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste image" xml:space="preserve">
@@ -4138,6 +4222,10 @@ This is your link for group %@!</source>
         <target>Skannaa QR-koodi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Scan QR code from desktop" xml:space="preserve">
+        <source>Scan QR code from desktop</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Scan code" xml:space="preserve">
         <source>Scan code</source>
         <target>Skannaa koodi</target>
@@ -4355,6 +4443,10 @@ This is your link for group %@!</source>
       <trans-unit id="Servers" xml:space="preserve">
         <source>Servers</source>
         <target>Palvelimet</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Session code" xml:space="preserve">
+        <source>Session code</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set 1 day" xml:space="preserve">
@@ -4852,6 +4944,10 @@ Tämä voi johtua jostain virheestä tai siitä, että yhteys on vaarantunut.</t
         <target>Tätä toimintoa ei voi kumota - profiilisi, kontaktisi, viestisi ja tiedostosi poistuvat peruuttamattomasti.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="This device name" xml:space="preserve">
+        <source>This device name</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve">
         <source>This group has over %lld members, delivery receipts are not sent.</source>
         <target>Tässä ryhmässä on yli %lld jäsentä, lähetyskuittauksia ei lähetetä.</target>
@@ -5040,6 +5136,14 @@ To connect, please ask your contact to create another connection link and check 
 Jos haluat muodostaa yhteyden, pyydä kontaktiasi luomaan toinen yhteyslinkki ja tarkista, että verkkoyhteytesi on vakaa.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Unlink" xml:space="preserve">
+        <source>Unlink</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Unlink desktop?" xml:space="preserve">
+        <source>Unlink desktop?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Unlock" xml:space="preserve">
         <source>Unlock</source>
         <target>Avaa</target>
@@ -5130,6 +5234,10 @@ Jos haluat muodostaa yhteyden, pyydä kontaktiasi luomaan toinen yhteyslinkki ja
         <target>Käytä uusiin yhteyksiin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Use from desktop" xml:space="preserve">
+        <source>Use from desktop</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Use iOS call interface" xml:space="preserve">
         <source>Use iOS call interface</source>
         <target>Käytä iOS:n puhelujen käyttöliittymää</target>
@@ -5160,9 +5268,21 @@ Jos haluat muodostaa yhteyden, pyydä kontaktiasi luomaan toinen yhteyslinkki ja
         <target>Käyttää SimpleX Chat -palvelimia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Verify code with desktop" xml:space="preserve">
+        <source>Verify code with desktop</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Verify connection" xml:space="preserve">
+        <source>Verify connection</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Verify connection security" xml:space="preserve">
         <source>Verify connection security</source>
         <target>Tarkista yhteyden suojaus</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Verify connections" xml:space="preserve">
+        <source>Verify connections</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Verify security code" xml:space="preserve">
@@ -6333,6 +6453,10 @@ SimpleX-palvelimet eivät näe profiiliasi.</target>
         <target>päivitetty ryhmäprofiili</target>
         <note>rcv group event chat item</note>
       </trans-unit>
+      <trans-unit id="v%@" xml:space="preserve">
+        <source>v%@</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="v%@ (%@)" xml:space="preserve">
         <source>v%@ (%@)</source>
         <target>v%@ (%@)</target>
@@ -6469,6 +6593,10 @@ SimpleX-palvelimet eivät näe profiiliasi.</target>
         <source>SimpleX uses Face ID for local authentication</source>
         <target>SimpleX käyttää Face ID:tä paikalliseen todennukseen</target>
         <note>Privacy - Face ID Usage Description</note>
+      </trans-unit>
+      <trans-unit id="NSLocalNetworkUsageDescription" xml:space="preserve">
+        <source>SimpleX uses local network access to allow using user chat profile via desktop app on the same network.</source>
+        <note>Privacy - Local Network Usage Description</note>
       </trans-unit>
       <trans-unit id="NSMicrophoneUsageDescription" xml:space="preserve">
         <source>SimpleX needs microphone access for audio and video calls, and to record voice messages.</source>

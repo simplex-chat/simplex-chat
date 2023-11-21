@@ -80,7 +80,7 @@ fun SetupDatabasePassphrase(m: ChatModel) {
     onDispose {
       if (m.chatRunning.value != true) {
         withBGApi {
-          val user = chatController.apiGetActiveUser()
+          val user = chatController.apiGetActiveUser(null)
           if (user != null) {
             m.controller.startChat(user)
           }

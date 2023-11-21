@@ -38,7 +38,7 @@ actual class RecorderNative: RecorderInterface {
     rec.setAudioSamplingRate(16000)
     rec.setAudioEncodingBitRate(32000)
     rec.setMaxDuration(MAX_VOICE_MILLIS_FOR_SENDING)
-    val fileToSave = File.createTempFile(generateNewFileName("voice", "${RecorderInterface.extension}_"), ".tmp", tmpDir)
+    val fileToSave = File.createTempFile(generateNewFileName("voice", "${RecorderInterface.extension}_", tmpDir), ".tmp", tmpDir)
     fileToSave.deleteOnExit()
     val path = fileToSave.absolutePath
     filePath = path

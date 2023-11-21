@@ -61,6 +61,7 @@ fun ChatInfoView(
     val contactNetworkStatus = remember(chatModel.networkStatuses.toMap(), contact) {
       mutableStateOf(chatModel.contactNetworkStatus(contact))
     }
+    val chatRh = chat.remoteHostId
     val sendReceipts = remember(contact.id) { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
     ChatInfoLayout(
       chat,
@@ -81,25 +82,25 @@ fun ChatInfoView(
       connectionCode,
       developerTools,
       onLocalAliasChanged = {
-        setContactAlias(chat.chatInfo.apiId, it, chatModel)
+        setContactAlias(chat, it, chatModel)
       },
       openPreferences = {
         ModalManager.end.showCustomModal { close ->
           val user = chatModel.currentUser.value
           if (user != null) {
-            ContactPreferencesView(chatModel, user, contact.contactId, close)
+            ContactPreferencesView(chatModel, user, chatRh, contact.contactId, close)
           }
         }
       },
-      deleteContact = { deleteContactDialog(chat.chatInfo, chatModel, close) },
-      clearChat = { clearChatDialog(chat.chatInfo, chatModel, close) },
+      deleteContact = { deleteContactDialog(chat, chatModel, close) },
+      clearChat = { clearChatDialog(chat, chatModel, close) },
       switchContactAddress = {
         showSwitchAddressAlert(switchAddress = {
           withApi {
-            val cStats = chatModel.controller.apiSwitchContact(contact.contactId)
+            val cStats = chatModel.controller.apiSwitchContact(chatRh, contact.contactId)
             connStats.value = cStats
             if (cStats != null) {
-              chatModel.updateContactConnectionStats(contact, cStats)
+              chatModel.updateContactConnectionStats(chatRh, contact, cStats)
             }
             close.invoke()
           }
@@ -108,20 +109,20 @@ fun ChatInfoView(
       abortSwitchContactAddress = {
         showAbortSwitchAddressAlert(abortSwitchAddress = {
           withApi {
-            val cStats = chatModel.controller.apiAbortSwitchContact(contact.contactId)
+            val cStats = chatModel.controller.apiAbortSwitchContact(chatRh, contact.contactId)
             connStats.value = cStats
             if (cStats != null) {
-              chatModel.updateContactConnectionStats(contact, cStats)
+              chatModel.updateContactConnectionStats(chatRh, contact, cStats)
             }
           }
         })
       },
       syncContactConnection = {
         withApi {
-          val cStats = chatModel.controller.apiSyncContactRatchet(contact.contactId, force = false)
+          val cStats = chatModel.controller.apiSyncContactRatchet(chatRh, contact.contactId, force = false)
           connStats.value = cStats
           if (cStats != null) {
-            chatModel.updateContactConnectionStats(contact, cStats)
+            chatModel.updateContactConnectionStats(chatRh, contact, cStats)
           }
           close.invoke()
         }
@@ -129,10 +130,10 @@ fun ChatInfoView(
       syncContactConnectionForce = {
         showSyncConnectionForceAlert(syncConnectionForce = {
           withApi {
-            val cStats = chatModel.controller.apiSyncContactRatchet(contact.contactId, force = true)
+            val cStats = chatModel.controller.apiSyncContactRatchet(chatRh, contact.contactId, force = true)
             connStats.value = cStats
             if (cStats != null) {
-              chatModel.updateContactConnectionStats(contact, cStats)
+              chatModel.updateContactConnectionStats(chatRh, contact, cStats)
             }
             close.invoke()
           }
@@ -146,9 +147,10 @@ fun ChatInfoView(
               connectionCode,
               ct.verified,
               verify = { code ->
-                chatModel.controller.apiVerifyContact(ct.contactId, code)?.let { r ->
+                chatModel.controller.apiVerifyContact(chatRh, ct.contactId, code)?.let { r ->
                   val (verified, existingCode) = r
                   chatModel.updateContact(
+                    chatRh,
                     ct.copy(
                       activeConn = ct.activeConn?.copy(
                         connectionCode = if (verified) SecurityCode(existingCode, Clock.System.now()) else null
@@ -195,7 +197,8 @@ sealed class SendReceipts {
   }
 }
 
-fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun deleteContactDialog(chat: Chat, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  val chatInfo = chat.chatInfo
   AlertManager.shared.showAlertDialogButtonsColumn(
     title = generalGetString(MR.strings.delete_contact_question),
     text = AnnotatedString(generalGetString(MR.strings.delete_contact_all_messages_deleted_cannot_undo_warning)),
@@ -206,7 +209,7 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> 
           SectionItemView({
             AlertManager.shared.hideAlert()
             withApi {
-              deleteContact(chatInfo, chatModel, close, notify = true)
+              deleteContact(chat, chatModel, close, notify = true)
             }
           }) {
             Text(generalGetString(MR.strings.delete_and_notify_contact), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
@@ -215,7 +218,7 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> 
           SectionItemView({
             AlertManager.shared.hideAlert()
             withApi {
-              deleteContact(chatInfo, chatModel, close, notify = false)
+              deleteContact(chat, chatModel, close, notify = false)
             }
           }) {
             Text(generalGetString(MR.strings.delete_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
@@ -225,7 +228,7 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> 
           SectionItemView({
             AlertManager.shared.hideAlert()
             withApi {
-              deleteContact(chatInfo, chatModel, close)
+              deleteContact(chat, chatModel, close)
             }
           }) {
             Text(generalGetString(MR.strings.delete_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
@@ -242,11 +245,13 @@ fun deleteContactDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> 
   )
 }
 
-fun deleteContact(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)?, notify: Boolean? = null) {
+fun deleteContact(chat: Chat, chatModel: ChatModel, close: (() -> Unit)?, notify: Boolean? = null) {
+  val chatInfo = chat.chatInfo
   withApi {
-    val r = chatModel.controller.apiDeleteChat(chatInfo.chatType, chatInfo.apiId, notify)
+    val chatRh = chat.remoteHostId
+    val r = chatModel.controller.apiDeleteChat(chatRh, chatInfo.chatType, chatInfo.apiId, notify)
     if (r) {
-      chatModel.removeChat(chatInfo.id)
+      chatModel.removeChat(chatRh, chatInfo.id)
       if (chatModel.chatId.value == chatInfo.id) {
         chatModel.chatId.value = null
         ModalManager.end.closeModals()
@@ -257,16 +262,18 @@ fun deleteContact(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)?
   }
 }
 
-fun clearChatDialog(chatInfo: ChatInfo, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun clearChatDialog(chat: Chat, chatModel: ChatModel, close: (() -> Unit)? = null) {
+  val chatInfo = chat.chatInfo
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.clear_chat_question),
     text = generalGetString(MR.strings.clear_chat_warning),
     confirmText = generalGetString(MR.strings.clear_verb),
     onConfirm = {
       withApi {
-        val updatedChatInfo = chatModel.controller.apiClearChat(chatInfo.chatType, chatInfo.apiId)
+        val chatRh = chat.remoteHostId
+        val updatedChatInfo = chatModel.controller.apiClearChat(chatRh, chatInfo.chatType, chatInfo.apiId)
         if (updatedChatInfo != null) {
-          chatModel.clearChat(updatedChatInfo)
+          chatModel.clearChat(chatRh, updatedChatInfo)
           ntfManager.cancelNotificationsForChat(chatInfo.id)
           close?.invoke()
         }
@@ -669,9 +676,10 @@ fun ShareAddressButton(onClick: () -> Unit) {
   )
 }
 
-private fun setContactAlias(contactApiId: Long, localAlias: String, chatModel: ChatModel) = withApi {
-  chatModel.controller.apiSetContactAlias(contactApiId, localAlias)?.let {
-    chatModel.updateContact(it)
+private fun setContactAlias(chat: Chat, localAlias: String, chatModel: ChatModel) = withApi {
+  val chatRh = chat.remoteHostId
+  chatModel.controller.apiSetContactAlias(chatRh, chat.chatInfo.apiId, localAlias)?.let {
+    chatModel.updateContact(chatRh, it)
   }
 }
 
@@ -710,6 +718,7 @@ fun PreviewChatInfoLayout() {
   SimpleXTheme {
     ChatInfoLayout(
       chat = Chat(
+        remoteHostId = null,
         chatInfo = ChatInfo.Direct.sampleData,
         chatItems = arrayListOf()
       ),

@@ -21,6 +21,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import dev.icerock.moko.resources.StringResource
+import kotlinx.coroutines.flow.*
 import java.io.File
 import java.net.URI
 
@@ -37,10 +38,21 @@ fun CIVideoView(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID),
     contentAlignment = Alignment.TopEnd
   ) {
-    val filePath = remember(file) { getLoadedFilePath(file) }
     val preview = remember(image) { base64ToBitmap(image) }
-    if (file != null && filePath != null) {
-      val uri = remember(filePath) { getAppFileUri(filePath.substringAfterLast(File.separator))  }
+    val filePath = remember(file, CIFile.cachedRemoteFileRequests.toList()) { mutableStateOf(getLoadedFilePath(file)) }
+    if (chatModel.connectedToRemote()) {
+      LaunchedEffect(file) {
+        withBGApi {
+          if (file != null && file.loaded && getLoadedFilePath(file) == null) {
+            file.loadRemoteFile(false)
+            filePath.value = getLoadedFilePath(file)
+          }
+        }
+      }
+    }
+    val f = filePath.value
+    if (file != null && f != null) {
+      val uri = remember(filePath) { getAppFileUri(f.substringAfterLast(File.separator))  }
       val view = LocalMultiplatformView()
       VideoView(uri, file, preview, duration * 1000L, showMenu, onClick = {
         hideKeyboard(view)

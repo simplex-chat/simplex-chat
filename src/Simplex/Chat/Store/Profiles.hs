@@ -1,9 +1,10 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
@@ -62,8 +63,7 @@ where
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
-import Data.Aeson (ToJSON)
-import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as J
 import Data.Functor (($>))
 import Data.Int (Int64)
 import qualified Data.List.NonEmpty as L
@@ -74,7 +74,6 @@ import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
-import GHC.Generics (Generic)
 import Simplex.Chat.Call
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
@@ -87,6 +86,7 @@ import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolTypeI (..), SubscriptionMode)
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (safeDecodeUtf8, eitherToMaybe)
@@ -401,17 +401,17 @@ data UserContactLink = UserContactLink
   { connReqContact :: ConnReqContact,
     autoAccept :: Maybe AutoAccept
   }
-  deriving (Show, Generic)
-
-instance ToJSON UserContactLink where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show)
 
 data AutoAccept = AutoAccept
   { acceptIncognito :: IncognitoEnabled,
     autoReply :: Maybe MsgContent
   }
-  deriving (Show, Generic)
+  deriving (Show)
 
-instance ToJSON AutoAccept where toEncoding = J.genericToEncoding J.defaultOptions
+$(J.deriveJSON defaultJSON ''AutoAccept)
+
+$(J.deriveJSON defaultJSON ''UserContactLink)
 
 toUserContactLink :: (ConnReqContact, Bool, IncognitoEnabled, Maybe MsgContent) -> UserContactLink
 toUserContactLink (connReq, autoAccept, acceptIncognito, autoReply) =

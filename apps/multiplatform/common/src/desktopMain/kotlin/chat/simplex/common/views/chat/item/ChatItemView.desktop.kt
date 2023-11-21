@@ -34,35 +34,51 @@ actual fun ReactionIcon(text: String, fontSize: TextUnit) {
 @Composable
 actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserLauncher, showMenu: MutableState<Boolean>) {
   ItemAction(stringResource(MR.strings.save_verb), painterResource(if (cItem.file?.fileSource?.cryptoArgs == null) MR.images.ic_download else MR.images.ic_lock_open_right), onClick = {
-    when (cItem.content.msgContent) {
-      is MsgContent.MCImage, is MsgContent.MCFile, is MsgContent.MCVoice, is MsgContent.MCVideo -> withApi { saveFileLauncher.launch(cItem.file?.fileName ?: "") }
-      else -> {}
+    val saveIfExists = {
+      when (cItem.content.msgContent) {
+        is MsgContent.MCImage, is MsgContent.MCFile, is MsgContent.MCVoice, is MsgContent.MCVideo -> withApi { saveFileLauncher.launch(cItem.file?.fileName ?: "") }
+        else -> {}
+      }
+      showMenu.value = false
     }
-    showMenu.value = false
+    var fileSource = getLoadedFileSource(cItem.file)
+    if (chatModel.connectedToRemote() && fileSource == null) {
+      withBGApi {
+        cItem.file?.loadRemoteFile(true)
+        fileSource = getLoadedFileSource(cItem.file)
+        saveIfExists()
+      }
+    } else saveIfExists()
   })
 }
 
-actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) {
-  val fileSource = getLoadedFileSource(cItem.file)
+actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) = withBGApi {
+  var fileSource = getLoadedFileSource(cItem.file)
+  if (chatModel.connectedToRemote() && fileSource == null) {
+    cItem.file?.loadRemoteFile(true)
+    fileSource = getLoadedFileSource(cItem.file)
+  }
+
   if (fileSource != null) {
     val filePath: String = if (fileSource.cryptoArgs != null) {
       val tmpFile = File(tmpDir, fileSource.filePath)
       tmpFile.deleteOnExit()
       try {
-        decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs, tmpFile.absolutePath)
+        decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs ?: return@withBGApi, tmpFile.absolutePath)
       } catch (e: Exception) {
         Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
-        return
+        return@withBGApi
       }
       tmpFile.absolutePath
     } else {
       getAppFilePath(fileSource.filePath)
     }
-    when  {
+    when {
       desktopPlatform.isWindows() -> clipboard.setText(AnnotatedString("\"${File(filePath).absolutePath}\""))
       else -> clipboard.setText(AnnotatedString(filePath))
     }
   } else {
     clipboard.setText(AnnotatedString(cItem.content.text))
   }
-}
+  showToast(MR.strings.copied.localized())
+}.run {}

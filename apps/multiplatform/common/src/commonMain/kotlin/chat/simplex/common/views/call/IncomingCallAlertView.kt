@@ -106,6 +106,7 @@ fun PreviewIncomingCallAlertLayout() {
   SimpleXTheme {
     IncomingCallAlertLayout(
       invitation = RcvCallInvitation(
+        remoteHostId = null,
         user = User.sampleData,
         contact = Contact.sampleData,
         callType = CallType(media = CallMediaType.Audio, capabilities = CallCapabilities(encryption = false)),

@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
@@ -10,6 +9,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
@@ -17,12 +17,14 @@
 module Simplex.Chat.Messages where
 
 import Control.Applicative ((<|>))
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON, ToJSON, (.:))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
+import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Char (isSpace)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
@@ -33,7 +35,6 @@ import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
-import GHC.Generics (Generic)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
@@ -43,19 +44,17 @@ import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), MsgReceiptSta
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fromTextField_, parseAll, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, parseAll, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
 data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection
-  deriving (Eq, Show, Ord, Generic)
+  deriving (Eq, Show, Ord)
 
 data ChatName = ChatName {chatType :: ChatType, chatName :: Text}
-  deriving (Show, Generic)
+  deriving (Show)
 
-instance ToJSON ChatName where toEncoding = J.genericToEncoding J.defaultOptions
-
-chatTypeStr :: ChatType -> String
+chatTypeStr :: ChatType -> Text
 chatTypeStr = \case
   CTDirect -> "@"
   CTGroup -> "#"
@@ -63,14 +62,10 @@ chatTypeStr = \case
   CTContactConnection -> ":"
 
 chatNameStr :: ChatName -> String
-chatNameStr (ChatName cType name) = chatTypeStr cType <> T.unpack name
+chatNameStr (ChatName cType name) = T.unpack $ chatTypeStr cType <> if T.any isSpace name then "'" <> name <> "'" else name
 
 data ChatRef = ChatRef ChatType Int64
   deriving (Eq, Show, Ord)
-
-instance ToJSON ChatType where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CT"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CT"
 
 data ChatInfo (c :: ChatType) where
   DirectChat :: Contact -> ChatInfo 'CTDirect
@@ -110,11 +105,11 @@ data JSONChatInfo
   | JCInfoGroup {groupInfo :: GroupInfo}
   | JCInfoContactRequest {contactRequest :: UserContactRequest}
   | JCInfoContactConnection {contactConnection :: PendingContactConnection}
-  deriving (Generic)
 
-instance ToJSON JSONChatInfo where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCInfo"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCInfo"
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JCInfo") ''JSONChatInfo)
+
+instance ChatTypeI c => FromJSON (ChatInfo c) where
+  parseJSON v = (\(AChatInfo _ c) -> checkChatType c) <$?> J.parseJSON v
 
 instance ToJSON (ChatInfo c) where
   toJSON = J.toJSON . jsonChatInfo
@@ -127,9 +122,19 @@ jsonChatInfo = \case
   ContactRequest g -> JCInfoContactRequest g
   ContactConnection c -> JCInfoContactConnection c
 
-data AChatInfo = forall c. AChatInfo (SChatType c) (ChatInfo c)
+data AChatInfo = forall c. ChatTypeI c => AChatInfo (SChatType c) (ChatInfo c)
 
 deriving instance Show AChatInfo
+
+jsonAChatInfo :: JSONChatInfo -> AChatInfo
+jsonAChatInfo = \case
+  JCInfoDirect c -> AChatInfo SCTDirect $ DirectChat c
+  JCInfoGroup g -> AChatInfo SCTGroup $ GroupChat g
+  JCInfoContactRequest g -> AChatInfo SCTContactRequest $ ContactRequest g
+  JCInfoContactConnection c -> AChatInfo SCTContactConnection $ ContactConnection c
+
+instance FromJSON AChatInfo where
+  parseJSON v = jsonAChatInfo <$> J.parseJSON v
 
 instance ToJSON AChatInfo where
   toJSON (AChatInfo _ c) = J.toJSON c
@@ -144,11 +149,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
     reactions :: [CIReactionCount],
     file :: Maybe (CIFile d)
   }
-  deriving (Show, Generic)
-
-instance MsgDirectionI d => ToJSON (ChatItem c d) where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Show)
 
 isMention :: ChatItem c d -> Bool
 isMention ChatItem {chatDir, quotedItem} = case chatDir of
@@ -162,7 +163,7 @@ isMention ChatItem {chatDir, quotedItem} = case chatDir of
         CIQDirectSnd -> True
         CIQGroupSnd -> True
         _ -> False
-    
+
 data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectSnd :: CIDirection 'CTDirect 'MDSnd
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv
@@ -171,20 +172,16 @@ data CIDirection (c :: ChatType) (d :: MsgDirection) where
 
 deriving instance Show (CIDirection c d)
 
+data CCIDirection c = forall d. MsgDirectionI d => CCID (SMsgDirection d) (CIDirection c d)
+
+data ACIDirection = forall c d. (ChatTypeI c, MsgDirectionI d) => ACID (SChatType c) (SMsgDirection d) (CIDirection c d)
+
 data JSONCIDirection
   = JCIDirectSnd
   | JCIDirectRcv
   | JCIGroupSnd
   | JCIGroupRcv {groupMember :: GroupMember}
-  deriving (Generic, Show)
-
-instance ToJSON JSONCIDirection where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCI"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCI"
-
-instance ToJSON (CIDirection c d) where
-  toJSON = J.toJSON . jsonCIDirection
-  toEncoding = J.toEncoding . jsonCIDirection
+  deriving (Show)
 
 jsonCIDirection :: CIDirection c d -> JSONCIDirection
 jsonCIDirection = \case
@@ -193,18 +190,19 @@ jsonCIDirection = \case
   CIGroupSnd -> JCIGroupSnd
   CIGroupRcv m -> JCIGroupRcv m
 
-data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
-  deriving (Show, Generic)
+jsonACIDirection :: JSONCIDirection -> ACIDirection
+jsonACIDirection = \case
+  JCIDirectSnd -> ACID SCTDirect SMDSnd CIDirectSnd
+  JCIDirectRcv -> ACID SCTDirect SMDRcv CIDirectRcv
+  JCIGroupSnd -> ACID SCTGroup SMDSnd CIGroupSnd
+  JCIGroupRcv m -> ACID SCTGroup SMDRcv $ CIGroupRcv m
 
-instance ToJSON CIReactionCount where toEncoding = J.genericToEncoding J.defaultOptions
+data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
+  deriving (Show)
 
 data CChatItem c = forall d. MsgDirectionI d => CChatItem (SMsgDirection d) (ChatItem c d)
 
 deriving instance Show (CChatItem c)
-
-instance ToJSON (CChatItem c) where
-  toJSON (CChatItem _ ci) = J.toJSON ci
-  toEncoding (CChatItem _ ci) = J.toEncoding ci
 
 cchatItemId :: CChatItem c -> ChatItemId
 cchatItemId (CChatItem _ ci) = chatItemId' ci
@@ -272,42 +270,25 @@ data Chat c = Chat
     chatItems :: [CChatItem c],
     chatStats :: ChatStats
   }
-  deriving (Show, Generic)
+  deriving (Show)
 
-instance ToJSON (Chat c) where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
-
-data AChat = forall c. AChat (SChatType c) (Chat c)
+data AChat = forall c. ChatTypeI c => AChat (SChatType c) (Chat c)
 
 deriving instance Show AChat
-
-instance ToJSON AChat where
-  toJSON (AChat _ c) = J.toJSON c
-  toEncoding (AChat _ c) = J.toEncoding c
 
 data ChatStats = ChatStats
   { unreadCount :: Int,
     minUnreadItemId :: ChatItemId,
     unreadChat :: Bool
   }
-  deriving (Show, Generic)
-
-instance ToJSON ChatStats where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show)
 
 -- | type to show a mix of messages from multiple chats
-data AChatItem = forall c d. MsgDirectionI d => AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
+data AChatItem = forall c d. (ChatTypeI c, MsgDirectionI d) => AChatItem (SChatType c) (SMsgDirection d) (ChatInfo c) (ChatItem c d)
 
 deriving instance Show AChatItem
 
-instance ToJSON AChatItem where
-  toJSON (AChatItem _ _ chat item) = J.toJSON $ JSONAnyChatItem chat item
-  toEncoding (AChatItem _ _ chat item) = J.toEncoding $ JSONAnyChatItem chat item
-
 data JSONAnyChatItem c d = JSONAnyChatItem {chatInfo :: ChatInfo c, chatItem :: ChatItem c d}
-  deriving (Generic)
 
 aChatItems :: AChat -> [AChatItem]
 aChatItems (AChat ct Chat {chatInfo, chatItems}) = map aChatItem chatItems
@@ -325,10 +306,6 @@ updateFileStatus ci@ChatItem {file} status = case file of
   Just f -> ci {file = Just (f :: CIFile d) {fileStatus = status}}
   Nothing -> ci
 
-instance MsgDirectionI d => ToJSON (JSONAnyChatItem c d) where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
-
 -- This type is not saved to DB, so all JSON encodings are platform-specific
 data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
   { itemId :: ChatItemId,
@@ -341,27 +318,24 @@ data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
     itemTimed :: Maybe CITimed,
     itemLive :: Maybe Bool,
     editable :: Bool,
+    forwardedByMember :: Maybe GroupMemberId,
     createdAt :: UTCTime,
     updatedAt :: UTCTime
   }
-  deriving (Show, Generic)
+  deriving (Show)
 
-mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> UTCTime -> UTCTime -> CIMeta c d
-mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive currentTs itemTs createdAt updatedAt =
+mkCIMeta :: ChatItemId -> CIContent d -> Text -> CIStatus d -> Maybe SharedMsgId -> Maybe (CIDeleted c) -> Bool -> Maybe CITimed -> Maybe Bool -> UTCTime -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> UTCTime -> CIMeta c d
+mkCIMeta itemId itemContent itemText itemStatus itemSharedMsgId itemDeleted itemEdited itemTimed itemLive currentTs itemTs forwardedByMember createdAt updatedAt =
   let editable = case itemContent of
         CISndMsgContent _ -> diffUTCTime currentTs itemTs < nominalDay && isNothing itemDeleted
         _ -> False
-   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, createdAt, updatedAt}
-
-instance ToJSON (CIMeta c d) where toEncoding = J.genericToEncoding J.defaultOptions
+   in CIMeta {itemId, itemTs, itemText, itemStatus, itemSharedMsgId, itemDeleted, itemEdited, itemTimed, itemLive, editable, forwardedByMember, createdAt, updatedAt}
 
 data CITimed = CITimed
   { ttl :: Int, -- seconds
     deleteAt :: Maybe UTCTime -- this is initially Nothing for received items, the timer starts when they are read
   }
-  deriving (Show, Generic)
-
-instance ToJSON CITimed where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Show)
 
 ttl' :: CITimed -> Int
 ttl' CITimed {ttl} = ttl
@@ -395,11 +369,7 @@ data CIQuote (c :: ChatType) = CIQuote
     content :: MsgContent,
     formattedText :: Maybe MarkdownList
   }
-  deriving (Show, Generic)
-
-instance ToJSON (CIQuote c) where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Show)
 
 data CIReaction (c :: ChatType) (d :: MsgDirection) = CIReaction
   { chatDir :: CIDirection c d,
@@ -407,26 +377,15 @@ data CIReaction (c :: ChatType) (d :: MsgDirection) = CIReaction
     sentAt :: UTCTime,
     reaction :: MsgReaction
   }
-  deriving (Show, Generic)
+  deriving (Show)
 
-instance ToJSON (CIReaction c d) where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+data AnyCIReaction = forall c d. ChatTypeI c => ACIR (SChatType c) (SMsgDirection d) (CIReaction c d)
 
-data ACIReaction = forall c d. ACIReaction (SChatType c) (SMsgDirection d) (ChatInfo c) (CIReaction c d)
+data ACIReaction = forall c d. ChatTypeI c => ACIReaction (SChatType c) (SMsgDirection d) (ChatInfo c) (CIReaction c d)
 
 deriving instance Show ACIReaction
 
-instance ToJSON ACIReaction where
-  toJSON (ACIReaction _ _ chat reaction) = J.toJSON $ JSONCIReaction chat reaction
-  toEncoding (ACIReaction _ _ chat reaction) = J.toEncoding $ JSONCIReaction chat reaction
-
 data JSONCIReaction c d = JSONCIReaction {chatInfo :: ChatInfo c, chatReaction :: CIReaction c d}
-  deriving (Generic)
-
-instance ToJSON (JSONCIReaction c d) where
-  toJSON = J.genericToJSON J.defaultOptions
-  toEncoding = J.genericToEncoding J.defaultOptions
 
 data CIQDirection (c :: ChatType) where
   CIQDirectSnd :: CIQDirection 'CTDirect
@@ -436,9 +395,7 @@ data CIQDirection (c :: ChatType) where
 
 deriving instance Show (CIQDirection c)
 
-instance ToJSON (CIQDirection c) where
-  toJSON = J.toJSON . jsonCIQDirection
-  toEncoding = J.toEncoding . jsonCIQDirection
+data ACIQDirection = forall c. ChatTypeI c => ACIQDirection (SChatType c) (CIQDirection c)
 
 jsonCIQDirection :: CIQDirection c -> Maybe JSONCIDirection
 jsonCIQDirection = \case
@@ -447,6 +404,14 @@ jsonCIQDirection = \case
   CIQGroupSnd -> Just JCIGroupSnd
   CIQGroupRcv (Just m) -> Just $ JCIGroupRcv m
   CIQGroupRcv Nothing -> Nothing
+
+jsonACIQDirection :: Maybe JSONCIDirection -> ACIQDirection
+jsonACIQDirection = \case
+  Just JCIDirectSnd -> ACIQDirection SCTDirect CIQDirectSnd
+  Just JCIDirectRcv -> ACIQDirection SCTDirect CIQDirectRcv
+  Just JCIGroupSnd -> ACIQDirection SCTGroup CIQGroupSnd
+  Just (JCIGroupRcv m) -> ACIQDirection SCTGroup $ CIQGroupRcv (Just m)
+  Nothing -> ACIQDirection SCTGroup $ CIQGroupRcv Nothing
 
 quoteMsgDirection :: CIQDirection c -> MsgDirection
 quoteMsgDirection = \case
@@ -463,11 +428,7 @@ data CIFile (d :: MsgDirection) = CIFile
     fileStatus :: CIFileStatus d,
     fileProtocol :: FileProtocol
   }
-  deriving (Show, Generic)
-
-instance MsgDirectionI d => ToJSON (CIFile d) where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Show)
 
 data FileProtocol = FPSMP | FPXFTP
   deriving (Eq, Show, Ord)
@@ -475,6 +436,9 @@ data FileProtocol = FPSMP | FPXFTP
 instance FromField FileProtocol where fromField = fromTextField_ textDecode
 
 instance ToField FileProtocol where toField = toField . textEncode
+
+instance FromJSON FileProtocol where
+  parseJSON = textParseJSON "FileProtocol"
 
 instance ToJSON FileProtocol where
   toJSON = J.String . textEncode
@@ -521,14 +485,6 @@ ciFileEnded = \case
   CIFSRcvComplete -> True
   CIFSRcvError -> True
   CIFSInvalid {} -> True
-
-instance ToJSON (CIFileStatus d) where
-  toJSON = J.toJSON . jsonCIFileStatus
-  toEncoding = J.toEncoding . jsonCIFileStatus
-
-instance MsgDirectionI d => ToField (CIFileStatus d) where toField = toField . decodeLatin1 . strEncode
-
-instance FromField ACIFileStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
 data ACIFileStatus = forall d. MsgDirectionI d => AFS (SMsgDirection d) (CIFileStatus d)
 
@@ -587,11 +543,6 @@ data JSONCIFileStatus
   | JCIFSRcvCancelled
   | JCIFSRcvError
   | JCIFSInvalid {text :: Text}
-  deriving (Generic)
-
-instance ToJSON JSONCIFileStatus where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIFS"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIFS"
 
 jsonCIFileStatus :: CIFileStatus d -> JSONCIFileStatus
 jsonCIFileStatus = \case
@@ -653,16 +604,6 @@ deriving instance Eq (CIStatus d)
 
 deriving instance Show (CIStatus d)
 
-instance ToJSON (CIStatus d) where
-  toJSON = J.toJSON . jsonCIStatus
-  toEncoding = J.toEncoding . jsonCIStatus
-
-instance MsgDirectionI d => ToField (CIStatus d) where toField = toField . decodeLatin1 . strEncode
-
-instance (Typeable d, MsgDirectionI d) => FromField (CIStatus d) where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
-
-instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
-
 data ACIStatus = forall d. MsgDirectionI d => ACIStatus (SMsgDirection d) (CIStatus d)
 
 deriving instance Show ACIStatus
@@ -705,11 +646,7 @@ data JSONCIStatus
   | JCISRcvNew
   | JCISRcvRead
   | JCISInvalid {text :: Text}
-  deriving (Show, Generic)
-
-instance ToJSON JSONCIStatus where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCIS"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCIS"
+  deriving (Show)
 
 jsonCIStatus :: CIStatus d -> JSONCIStatus
 jsonCIStatus = \case
@@ -721,6 +658,17 @@ jsonCIStatus = \case
   CISRcvNew -> JCISRcvNew
   CISRcvRead -> JCISRcvRead
   CISInvalid text -> JCISInvalid text
+
+jsonACIStatus :: JSONCIStatus -> ACIStatus
+jsonACIStatus = \case
+  JCISSndNew -> ACIStatus SMDSnd CISSndNew
+  JCISSndSent sndProgress -> ACIStatus SMDSnd $ CISSndSent sndProgress
+  JCISSndRcvd msgRcptStatus sndProgress -> ACIStatus SMDSnd $ CISSndRcvd msgRcptStatus sndProgress
+  JCISSndErrorAuth -> ACIStatus SMDSnd CISSndErrorAuth
+  JCISSndError e -> ACIStatus SMDSnd $ CISSndError e
+  JCISRcvNew -> ACIStatus SMDRcv CISRcvNew
+  JCISRcvRead -> ACIStatus SMDRcv CISRcvRead
+  JCISInvalid text -> ACIStatus SMDSnd $ CISInvalid text
 
 ciStatusNew :: forall d. MsgDirectionI d => CIStatus d
 ciStatusNew = case msgDirection @d of
@@ -750,11 +698,7 @@ membersGroupItemStatus memStatusCounts
 data SndCIStatusProgress
   = SSPPartial
   | SSPComplete
-  deriving (Eq, Show, Generic)
-
-instance ToJSON SndCIStatusProgress where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "SSP"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "SSP"
+  deriving (Eq, Show)
 
 instance StrEncoding SndCIStatusProgress where
   strEncode = \case
@@ -791,12 +735,37 @@ instance TestEquality SChatType where
   testEquality SCTContactConnection SCTContactConnection = Just Refl
   testEquality _ _ = Nothing
 
+data AChatType = forall c. ChatTypeI c => ACT (SChatType c)
+
 class ChatTypeI (c :: ChatType) where
   chatTypeI :: SChatType c
 
 instance ChatTypeI 'CTDirect where chatTypeI = SCTDirect
 
 instance ChatTypeI 'CTGroup where chatTypeI = SCTGroup
+
+instance ChatTypeI 'CTContactRequest where chatTypeI = SCTContactRequest
+
+instance ChatTypeI 'CTContactConnection where chatTypeI = SCTContactConnection
+
+toChatType :: SChatType c -> ChatType
+toChatType = \case
+  SCTDirect -> CTDirect
+  SCTGroup -> CTGroup
+  SCTContactRequest -> CTContactRequest
+  SCTContactConnection -> CTContactConnection
+
+aChatType :: ChatType -> AChatType
+aChatType = \case
+  CTDirect -> ACT SCTDirect
+  CTGroup -> ACT SCTGroup
+  CTContactRequest -> ACT SCTContactRequest
+  CTContactConnection -> ACT SCTContactConnection
+
+checkChatType :: forall t c c'. (ChatTypeI c, ChatTypeI c') => t c' -> Either String (t c)
+checkChatType x = case testEquality (chatTypeI @c) (chatTypeI @c') of
+  Just Refl -> Right x
+  Nothing -> Left "bad chat type"
 
 data NewMessage e = NewMessage
   { chatMsgEvent :: ChatMsgEvent e,
@@ -814,7 +783,9 @@ data RcvMessage = RcvMessage
   { msgId :: MessageId,
     chatMsgEvent :: AChatMsgEvent,
     sharedMsgId_ :: Maybe SharedMsgId,
-    msgBody :: MsgBody
+    msgBody :: MsgBody,
+    authorMember :: Maybe GroupMemberId,
+    forwardedByMember :: Maybe GroupMemberId
   }
 
 data PendingGroupMessage = PendingGroupMessage
@@ -850,9 +821,7 @@ data MsgMetaJSON = MsgMetaJSON
     serverTs :: UTCTime,
     sndId :: Int64
   }
-  deriving (Eq, Show, FromJSON, Generic)
-
-instance ToJSON MsgMetaJSON where toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Eq, Show)
 
 msgMetaToJson :: MsgMeta -> MsgMetaJSON
 msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId, serverTs), sndMsgId = sndId} =
@@ -864,9 +833,6 @@ msgMetaToJson MsgMeta {integrity, recipient = (rcvId, rcvTs), broker = (serverId
       serverTs,
       sndId
     }
-
-msgMetaJson :: MsgMeta -> Text
-msgMetaJson = decodeLatin1 . LB.toStrict . J.encode . msgMetaToJson
 
 data MsgDeliveryStatus (d :: MsgDirection) where
   MDSRcvAgent :: MsgDeliveryStatus 'MDRcv
@@ -915,37 +881,32 @@ msgDeliveryStatusT' s =
       Just Refl -> Just st
       _ -> Nothing
 
-checkDirection :: forall t d d'. (MsgDirectionI d, MsgDirectionI d') => t d' -> Either String (t d)
-checkDirection x = case testEquality (msgDirection @d) (msgDirection @d') of
-  Just Refl -> Right x
-  Nothing -> Left "bad direction"
-
 data CIDeleted (c :: ChatType) where
   CIDeleted :: Maybe UTCTime -> CIDeleted c
-  CIBlocked :: Maybe UTCTime -> CIDeleted c
+  CIBlocked :: Maybe UTCTime -> CIDeleted 'CTGroup
   CIModerated :: Maybe UTCTime -> GroupMember -> CIDeleted 'CTGroup
 
 deriving instance Show (CIDeleted c)
 
-instance ToJSON (CIDeleted d) where
-  toJSON = J.toJSON . jsonCIDeleted
-  toEncoding = J.toEncoding . jsonCIDeleted
+data ACIDeleted = forall c. ChatTypeI c => ACIDeleted (SChatType c) (CIDeleted c)
 
 data JSONCIDeleted
-  = JCIDDeleted {deletedTs :: Maybe UTCTime}
+  = JCIDDeleted {deletedTs :: Maybe UTCTime, chatType :: ChatType}
   | JCIDBlocked {deletedTs :: Maybe UTCTime}
   | JCIDModerated {deletedTs :: Maybe UTCTime, byGroupMember :: GroupMember}
-  deriving (Show, Generic)
+  deriving (Show)
 
-instance ToJSON JSONCIDeleted where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCID"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCID"
-
-jsonCIDeleted :: CIDeleted d -> JSONCIDeleted
+jsonCIDeleted :: forall d. ChatTypeI d => CIDeleted d -> JSONCIDeleted
 jsonCIDeleted = \case
-  CIDeleted ts -> JCIDDeleted ts
+  CIDeleted ts -> JCIDDeleted ts (toChatType $ chatTypeI @d)
   CIBlocked ts -> JCIDBlocked ts
   CIModerated ts m -> JCIDModerated ts m
+
+jsonACIDeleted :: JSONCIDeleted -> ACIDeleted
+jsonACIDeleted = \case
+  JCIDDeleted ts cType -> case aChatType cType of ACT c -> ACIDeleted c $ CIDeleted ts
+  JCIDBlocked ts -> ACIDeleted SCTGroup $ CIBlocked ts
+  JCIDModerated ts m -> ACIDeleted SCTGroup (CIModerated ts m)
 
 itemDeletedTs :: CIDeleted d -> Maybe UTCTime
 itemDeletedTs = \case
@@ -957,9 +918,7 @@ data ChatItemInfo = ChatItemInfo
   { itemVersions :: [ChatItemVersion],
     memberDeliveryStatuses :: Maybe [MemberDeliveryStatus]
   }
-  deriving (Eq, Show, Generic)
-
-instance ToJSON ChatItemInfo where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 data ChatItemVersion = ChatItemVersion
   { chatItemVersionId :: Int64,
@@ -968,9 +927,7 @@ data ChatItemVersion = ChatItemVersion
     itemVersionTs :: UTCTime,
     createdAt :: UTCTime
   }
-  deriving (Eq, Show, Generic)
-
-instance ToJSON ChatItemVersion where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 mkItemVersion :: ChatItem c d -> Maybe ChatItemVersion
 mkItemVersion ChatItem {content, meta} = version <$> ciMsgContent content
@@ -989,9 +946,7 @@ data MemberDeliveryStatus = MemberDeliveryStatus
   { groupMemberId :: GroupMemberId,
     memberDeliveryStatus :: CIStatus 'MDSnd
   }
-  deriving (Eq, Show, Generic)
-
-instance ToJSON MemberDeliveryStatus where toEncoding = J.genericToEncoding J.defaultOptions
+  deriving (Eq, Show)
 
 data CIModeration = CIModeration
   { moderationId :: Int64,
@@ -1000,3 +955,187 @@ data CIModeration = CIModeration
     moderatedAt :: UTCTime
   }
   deriving (Show)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "CT") ''ChatType)
+
+instance ChatTypeI c => FromJSON (SChatType c) where
+  parseJSON v = (\(ACT t) -> checkChatType t) . aChatType <$?> J.parseJSON v
+
+instance ToJSON (SChatType c) where
+  toJSON = J.toJSON . toChatType
+  toEncoding = J.toEncoding . toChatType
+
+$(JQ.deriveJSON defaultJSON ''ChatName)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JCID") ''JSONCIDeleted)
+
+instance ChatTypeI c => FromJSON (CIDeleted c) where
+  parseJSON v = (\(ACIDeleted _ x) -> checkChatType x) . jsonACIDeleted <$?> J.parseJSON v
+
+instance ChatTypeI c => ToJSON (CIDeleted c) where
+  toJSON = J.toJSON . jsonCIDeleted
+  toEncoding = J.toEncoding . jsonCIDeleted
+
+$(JQ.deriveJSON defaultJSON ''CITimed)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "SSP") ''SndCIStatusProgress)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JCIS") ''JSONCIStatus)
+
+instance MsgDirectionI d => FromJSON (CIStatus d) where
+  parseJSON v = (\(ACIStatus _ s) -> checkDirection s) . jsonACIStatus <$?> J.parseJSON v
+
+instance ToJSON (CIStatus d) where
+  toJSON = J.toJSON . jsonCIStatus
+  toEncoding = J.toEncoding . jsonCIStatus
+
+instance MsgDirectionI d => ToField (CIStatus d) where toField = toField . decodeLatin1 . strEncode
+
+instance (Typeable d, MsgDirectionI d) => FromField (CIStatus d) where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
+
+instance FromField ACIStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
+
+$(JQ.deriveJSON defaultJSON ''MemberDeliveryStatus)
+
+$(JQ.deriveJSON defaultJSON ''ChatItemVersion)
+
+$(JQ.deriveJSON defaultJSON ''ChatItemInfo)
+
+instance (ChatTypeI c, MsgDirectionI d) => FromJSON (CIMeta c d) where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''CIMeta)
+
+instance ChatTypeI c => ToJSON (CIMeta c d) where
+  toJSON = $(JQ.mkToJSON defaultJSON ''CIMeta)
+  toEncoding = $(JQ.mkToEncoding defaultJSON ''CIMeta)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JCIFS") ''JSONCIFileStatus)
+
+instance MsgDirectionI d => FromJSON (CIFileStatus d) where
+  parseJSON v = (\(AFS _ s) -> checkDirection s) . aciFileStatusJSON <$?> J.parseJSON v
+
+instance ToJSON (CIFileStatus d) where
+  toJSON = J.toJSON . jsonCIFileStatus
+  toEncoding = J.toEncoding . jsonCIFileStatus
+
+instance MsgDirectionI d => ToField (CIFileStatus d) where toField = toField . decodeLatin1 . strEncode
+
+instance FromField ACIFileStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
+
+instance MsgDirectionI d => FromJSON (CIFile d) where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''CIFile)
+
+instance MsgDirectionI d => ToJSON (CIFile d) where
+  toJSON = $(JQ.mkToJSON defaultJSON ''CIFile)
+  toEncoding = $(JQ.mkToEncoding defaultJSON ''CIFile)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JCI") ''JSONCIDirection)
+
+instance (ChatTypeI c, MsgDirectionI d) => FromJSON (CIDirection c d) where
+  parseJSON v = (\(CCID _ x') -> checkDirection x') <$?> J.parseJSON v
+
+instance ToJSON (CIDirection c d) where
+  toJSON = J.toJSON . jsonCIDirection
+  toEncoding = J.toEncoding . jsonCIDirection
+
+instance ChatTypeI c => FromJSON (CCIDirection c) where
+  parseJSON v = (\(ACID _ d x) -> checkChatType (CCID d x)) <$?> J.parseJSON v
+
+instance FromJSON ACIDirection where
+  parseJSON v = jsonACIDirection <$> J.parseJSON v
+
+instance ChatTypeI c => FromJSON (CIQDirection c) where
+  parseJSON v = (\(ACIQDirection _ x) -> checkChatType x) . jsonACIQDirection <$?> J.parseJSON v
+
+instance ToJSON (CIQDirection c) where
+  toJSON = J.toJSON . jsonCIQDirection
+  toEncoding = J.toEncoding . jsonCIQDirection
+
+instance ChatTypeI c => FromJSON (CIQuote c) where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''CIQuote)
+
+$(JQ.deriveToJSON defaultJSON ''CIQuote)
+
+$(JQ.deriveJSON defaultJSON ''CIReactionCount)
+
+instance (ChatTypeI c, MsgDirectionI d) => FromJSON (ChatItem c d) where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''ChatItem)
+
+instance (ChatTypeI c, MsgDirectionI d) => ToJSON (ChatItem c d) where
+  toJSON = $(JQ.mkToJSON defaultJSON ''ChatItem)
+  toEncoding = $(JQ.mkToEncoding defaultJSON ''ChatItem)
+
+instance (ChatTypeI c, MsgDirectionI d) => ToJSON (JSONAnyChatItem c d) where
+  toJSON = $(JQ.mkToJSON defaultJSON ''JSONAnyChatItem)
+  toEncoding = $(JQ.mkToEncoding defaultJSON ''JSONAnyChatItem)
+
+instance FromJSON AChatItem where
+  parseJSON = J.withObject "AChatItem" $ \o -> do
+    AChatInfo c chatInfo <- o .: "chatInfo"
+    CChatItem d chatItem <- o .: "chatItem"
+    pure $ AChatItem c d chatInfo chatItem
+
+instance ToJSON AChatItem where
+  toJSON (AChatItem _ _ chat item) = J.toJSON $ JSONAnyChatItem chat item
+  toEncoding (AChatItem _ _ chat item) = J.toEncoding $ JSONAnyChatItem chat item
+
+instance forall c. ChatTypeI c => FromJSON (CChatItem c) where
+  parseJSON v = J.withObject "CChatItem" parse v
+    where
+      parse o = do
+        CCID d (_ :: CIDirection c d) <- o .: "chatDir"
+        ci <- J.parseJSON @(ChatItem c d) v
+        pure $ CChatItem d ci
+
+instance ChatTypeI c => ToJSON (CChatItem c) where
+  toJSON (CChatItem _ ci) = J.toJSON ci
+  toEncoding (CChatItem _ ci) = J.toEncoding ci
+
+$(JQ.deriveJSON defaultJSON ''ChatStats)
+
+instance ChatTypeI c => ToJSON (Chat c) where
+  toJSON = $(JQ.mkToJSON defaultJSON ''Chat)
+  toEncoding = $(JQ.mkToEncoding defaultJSON ''Chat)
+
+instance FromJSON AChat where
+  parseJSON = J.withObject "AChat" $ \o -> do
+    AChatInfo c chatInfo <- o .: "chatInfo"
+    chatItems <- o .: "chatItems"
+    chatStats <- o .: "chatStats"
+    pure $ AChat c Chat {chatInfo, chatItems, chatStats}
+
+instance ToJSON AChat where
+  toJSON (AChat _ c) = J.toJSON c
+  toEncoding (AChat _ c) = J.toEncoding c
+
+instance (ChatTypeI c, MsgDirectionI d) => FromJSON (CIReaction c d) where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''CIReaction)
+
+instance ChatTypeI c => ToJSON (CIReaction c d) where
+  toJSON = $(JQ.mkToJSON defaultJSON ''CIReaction)
+  toEncoding = $(JQ.mkToEncoding defaultJSON ''CIReaction)
+
+instance FromJSON AnyCIReaction where
+  parseJSON v = J.withObject "AnyCIReaction" parse v
+    where
+      parse o = do
+        ACID c d (_ :: CIDirection c d) <- o .: "chatDir"
+        ACIR c d <$> J.parseJSON @(CIReaction c d) v
+
+instance ChatTypeI c => ToJSON (JSONCIReaction c d) where
+  toJSON = $(JQ.mkToJSON defaultJSON ''JSONCIReaction)
+  toEncoding = $(JQ.mkToEncoding defaultJSON ''JSONCIReaction)
+
+instance FromJSON ACIReaction where
+  parseJSON = J.withObject "ACIReaction" $ \o -> do
+    ACIR c d reaction <- o .: "chatReaction"
+    cInfo <- o .: "chatInfo"
+    pure $ ACIReaction c d cInfo reaction
+
+instance ToJSON ACIReaction where
+  toJSON (ACIReaction _ _ cInfo reaction) = J.toJSON $ JSONCIReaction cInfo reaction
+  toEncoding (ACIReaction _ _ cInfo reaction) = J.toEncoding $ JSONCIReaction cInfo reaction
+
+$(JQ.deriveJSON defaultJSON ''MsgMetaJSON)
+
+msgMetaJson :: MsgMeta -> Text
+msgMetaJson = decodeLatin1 . LB.toStrict . J.encode . msgMetaToJson
