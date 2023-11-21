@@ -68,5 +68,12 @@ fun initHaskell() {
   s.acquire()
   pipeStdOutToSocket(socketName)
 
-  initHS()
+  var inited = false
+  thread(name = "initHs", isDaemon = true) {
+    initHS()
+    inited = true
+  }
+  while (!inited) {
+    Thread.sleep(2)
+  }
 }

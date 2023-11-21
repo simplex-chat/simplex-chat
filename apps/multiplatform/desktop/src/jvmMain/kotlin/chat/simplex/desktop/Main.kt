@@ -3,10 +3,7 @@ package chat.simplex.desktop
 import chat.simplex.common.platform.*
 import chat.simplex.common.showApp
 import java.io.File
-import java.nio.file.*
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.attribute.FileTime
-import kotlin.io.path.setLastModifiedTime
+import kotlin.concurrent.thread
 
 fun main() {
   initHaskell()
@@ -30,7 +27,14 @@ private fun initHaskell() {
   //System.load(File(File(vlcDir, "vlc"), libXcb).absolutePath)
   System.setProperty("jna.library.path", vlcDir.absolutePath)
   //discoverVlcLibs(File(File(vlcDir, "vlc"), "plugins").absolutePath)
-  initHS()
+  var inited = false
+  thread(name = "initHs", isDaemon = true) {
+    initHS()
+    inited = true
+  }
+  while (!inited) {
+    Thread.sleep(2)
+  }
 }
 
 private fun windowsLoadRequiredLibs(libsTmpDir: File, vlcDir: File) {
