@@ -4,7 +4,6 @@ import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.AnnotatedString
 import chat.simplex.common.model.*
-import chat.simplex.common.views.helpers.getAppFileUri
 import chat.simplex.common.views.helpers.withApi
 import java.io.File
 import java.net.URI

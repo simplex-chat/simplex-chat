@@ -19,7 +19,6 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import java.io.File
-import java.util.*
 
 @Composable
 actual fun ReactionIcon(text: String, fontSize: TextUnit) {

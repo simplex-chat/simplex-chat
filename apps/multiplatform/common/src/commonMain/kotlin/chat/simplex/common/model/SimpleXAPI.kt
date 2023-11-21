@@ -4,7 +4,6 @@ import chat.simplex.common.views.helpers.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import chat.simplex.common.model.ChatModel.remoteHostId
 import chat.simplex.common.model.ChatModel.updatingChatsMutex
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
@@ -423,8 +422,15 @@ object ChatController {
           receiverStarted = false
           break
         }
-        val msg = recvMsg(ctrl)
-        if (msg != null) processReceivedMsg(msg)
+        try {
+          val msg = recvMsg(ctrl)
+          if (msg != null) processReceivedMsg(msg)
+        } catch (e: Exception) {
+          Log.e(TAG, "ChatController recvMsg/processReceivedMsg exception: " + e.stackTraceToString());
+        } catch (e: Throwable) {
+          Log.e(TAG, "ChatController recvMsg/processReceivedMsg throwable: " + e.stackTraceToString())
+          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.stackTraceToString())
+        }
       }
     }
   }
@@ -1838,7 +1844,13 @@ object ChatController {
         switchUIRemoteHost(r.remoteHost.remoteHostId)
       }
       is CR.RemoteHostStopped -> {
+        val disconnectedHost = chatModel.remoteHosts.firstOrNull { it.remoteHostId == r.remoteHostId_ }
         chatModel.newRemoteHostPairing.value = null
+        if (disconnectedHost != null) {
+          showToast(
+            generalGetString(MR.strings.remote_host_was_disconnected_toast).format(disconnectedHost.hostDeviceName.ifEmpty { disconnectedHost.remoteHostId.toString() })
+          )
+        }
         if (chatModel.currentRemoteHost.value != null) {
           chatModel.currentRemoteHost.value = null
           switchUIRemoteHost(null)
@@ -1961,6 +1973,9 @@ object ChatController {
   suspend fun switchUIRemoteHost(rhId: Long?) {
     // TODO lock the switch so that two switches can't run concurrently?
     chatModel.chatId.value = null
+    ModalManager.center.closeModals()
+    ModalManager.end.closeModals()
+    AlertManager.shared.alertViews.clear()
     chatModel.currentRemoteHost.value = switchRemoteHost(rhId)
     reloadRemoteHosts()
     val user = apiGetActiveUser(rhId)
@@ -3558,7 +3573,7 @@ class APIResponse(val resp: CR, val remoteHostId: Long?, val corr: String? = nul
     fun decodeStr(str: String): APIResponse {
       return try {
         json.decodeFromString(str)
-      } catch(e: Exception) {
+      } catch(e: Throwable) {
         try {
           Log.d(TAG, e.localizedMessage ?: "")
           val data = json.parseToJsonElement(str).jsonObject
@@ -3587,10 +3602,17 @@ class APIResponse(val resp: CR, val remoteHostId: Long?, val corr: String? = nul
               return APIResponse(CR.ChatRespError(user, ChatError.ChatErrorInvalidJSON(json.encodeToString(resp["chatError"]))), remoteHostId, corr)
             }
           } catch (e: Exception) {
-            Log.e(TAG, "Error while parsing chat(s): " + e.stackTraceToString())
+            Log.e(TAG, "Exception while parsing chat(s): " + e.stackTraceToString())
+          } catch (e: Throwable) {
+            Log.e(TAG, "Throwable while parsing chat(s): " + e.stackTraceToString())
+            AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.stackTraceToString())
           }
           APIResponse(CR.Response(type, json.encodeToString(data)), remoteHostId, corr)
         } catch(e: Exception) {
+          APIResponse(CR.Invalid(str), remoteHostId = null)
+        } catch(e: Throwable) {
+          Log.e(TAG, "Throwable2 while parsing chat(s): " + e.stackTraceToString())
+          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.stackTraceToString())
           APIResponse(CR.Invalid(str), remoteHostId = null)
         }
       }
@@ -4609,7 +4631,7 @@ sealed class AgentErrorType {
   @Serializable @SerialName("SMP") class SMP(val smpErr: SMPErrorType): AgentErrorType()
   // @Serializable @SerialName("NTF") class NTF(val ntfErr: SMPErrorType): AgentErrorType()
   @Serializable @SerialName("XFTP") class XFTP(val xftpErr: XFTPErrorType): AgentErrorType()
-  @Serializable @SerialName("XFTP") class RCP(val rcpErr: RCErrorType): AgentErrorType()
+  @Serializable @SerialName("RCP") class RCP(val rcpErr: RCErrorType): AgentErrorType()
   @Serializable @SerialName("BROKER") class BROKER(val brokerAddress: String, val brokerErr: BrokerErrorType): AgentErrorType()
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
