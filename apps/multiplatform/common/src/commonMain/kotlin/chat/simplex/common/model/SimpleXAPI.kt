@@ -4,7 +4,6 @@ import chat.simplex.common.views.helpers.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
-import chat.simplex.common.model.ChatModel.remoteHostId
 import chat.simplex.common.model.ChatModel.updatingChatsMutex
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
@@ -1845,7 +1844,13 @@ object ChatController {
         switchUIRemoteHost(r.remoteHost.remoteHostId)
       }
       is CR.RemoteHostStopped -> {
+        val disconnectedHost = chatModel.remoteHosts.firstOrNull { it.remoteHostId == r.remoteHostId_ }
         chatModel.newRemoteHostPairing.value = null
+        if (disconnectedHost != null) {
+          showToast(
+            generalGetString(MR.strings.remote_host_was_disconnected_toast).format(disconnectedHost.hostDeviceName.ifEmpty { disconnectedHost.remoteHostId.toString() })
+          )
+        }
         if (chatModel.currentRemoteHost.value != null) {
           chatModel.currentRemoteHost.value = null
           switchUIRemoteHost(null)
@@ -1968,6 +1973,8 @@ object ChatController {
   suspend fun switchUIRemoteHost(rhId: Long?) {
     // TODO lock the switch so that two switches can't run concurrently?
     chatModel.chatId.value = null
+    ModalManager.center.closeModals()
+    ModalManager.end.closeModals()
     chatModel.currentRemoteHost.value = switchRemoteHost(rhId)
     reloadRemoteHosts()
     val user = apiGetActiveUser(rhId)
