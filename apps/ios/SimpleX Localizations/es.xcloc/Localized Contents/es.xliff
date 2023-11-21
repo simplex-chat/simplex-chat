@@ -386,6 +386,12 @@
 - ¡y más!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="- optionally notify deleted contacts.&#10;- spaces in profile names.&#10;- and more!" xml:space="preserve">
+        <source>- optionally notify deleted contacts.
+- spaces in profile names.
+- and more!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve">
         <source>- voice messages up to 5 minutes.
 - custom time to disappear.
@@ -880,6 +886,10 @@
         <target>Hash de mensaje incorrecto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Better groups" xml:space="preserve">
+        <source>Better groups</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Better messages" xml:space="preserve">
         <source>Better messages</source>
         <target>Mensajes mejorados</target>
@@ -887,6 +897,10 @@
       </trans-unit>
       <trans-unit id="Block" xml:space="preserve">
         <source>Block</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Block group members" xml:space="preserve">
+        <source>Block group members</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block member" xml:space="preserve">
@@ -1073,10 +1087,6 @@
         <target>Comprueba la dirección del servidor e inténtalo de nuevo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Checking SimpleX links" xml:space="preserve">
-        <source>Checking SimpleX links</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Chinese and Spanish interface" xml:space="preserve">
         <source>Chinese and Spanish interface</source>
         <target>Interfaz en chino y español</target>
@@ -1161,10 +1171,6 @@
         <source>Connect</source>
         <target>Conectar</target>
         <note>server test step</note>
-      </trans-unit>
-      <trans-unit id="Connect desktop and mobile!" xml:space="preserve">
-        <source>Connect desktop and mobile!</source>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect incognito" xml:space="preserve">
         <source>Connect incognito</source>
@@ -1337,6 +1343,10 @@ This is your own one-time link!</source>
         <target>Crear tu dirección SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Create a group using a random profile." xml:space="preserve">
+        <source>Create a group using a random profile.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Create an address to let people connect with you." xml:space="preserve">
         <source>Create an address to let people connect with you.</source>
         <target>Crea una dirección para que otras personas puedan conectar contigo.</target>
@@ -1354,10 +1364,6 @@ This is your own one-time link!</source>
       <trans-unit id="Create group link" xml:space="preserve">
         <source>Create group link</source>
         <target>Crear enlace de grupo</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Create groups incognito, block group members, faster join via link, and more." xml:space="preserve">
-        <source>Create groups incognito, block group members, faster join via link, and more.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create link" xml:space="preserve">
@@ -1755,10 +1761,6 @@ This cannot be undone!</source>
       </trans-unit>
       <trans-unit id="Desktop devices" xml:space="preserve">
         <source>Desktop devices</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Detection of previously used and your own SimpleX links." xml:space="preserve">
-        <source>Detection of previously used and your own SimpleX links.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Develop" xml:space="preserve">
@@ -2398,6 +2400,10 @@ This cannot be undone!</source>
         <target>¡Rápido y sin necesidad de esperar a que el remitente esté en línea!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Faster joining and more reliable messages." xml:space="preserve">
+        <source>Faster joining and more reliable messages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Favorite" xml:space="preserve">
         <source>Favorite</source>
         <target>Favoritos</target>
@@ -2558,10 +2564,6 @@ This cannot be undone!</source>
       <trans-unit id="Group image" xml:space="preserve">
         <source>Group image</source>
         <target>Imágen del grupo</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Group improvements" xml:space="preserve">
-        <source>Group improvements</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group invitation" xml:space="preserve">
@@ -2817,6 +2819,10 @@ This cannot be undone!</source>
       <trans-unit id="Incognito" xml:space="preserve">
         <source>Incognito</source>
         <target>Incógnito</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Incognito groups" xml:space="preserve">
+        <source>Incognito groups</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito mode" xml:space="preserve">
@@ -3080,6 +3086,10 @@ This is your link for group %@!</source>
       <trans-unit id="Limitations" xml:space="preserve">
         <source>Limitations</source>
         <target>Limitaciones</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Link mobile and desktop apps! 🔗" xml:space="preserve">
+        <source>Link mobile and desktop apps! 🔗</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Linked desktop options" xml:space="preserve">
@@ -3447,10 +3457,6 @@ This is your link for group %@!</source>
       <trans-unit id="Notifications are disabled!" xml:space="preserve">
         <source>Notifications are disabled!</source>
         <target>¡Las notificaciones están desactivadas!</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Notify about contact deletion" xml:space="preserve">
-        <source>Notify about contact deletion</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Now admins can:&#10;- delete members' messages.&#10;- disable members (&quot;observer&quot; role)" xml:space="preserve">
@@ -4679,10 +4685,6 @@ This is your link for group %@!</source>
         <target>Alguien</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="Spaces in profile names" xml:space="preserve">
-        <source>Spaces in profile names</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Start a new chat" xml:space="preserve">
         <source>Start a new chat</source>
         <target>Iniciar chat nuevo</target>
@@ -5021,6 +5023,10 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>Para conectarse, tu contacto puede escanear el código QR o usar el enlace en la aplicación.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To hide unwanted messages." xml:space="preserve">
+        <source>To hide unwanted messages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To make a new connection" xml:space="preserve">
         <source>To make a new connection</source>
         <target>Para hacer una conexión nueva</target>
@@ -5295,10 +5301,6 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
         <target>Usar servidor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use your mobile app chat profile via [desktop app](https://simplex.chat/downloads/)." xml:space="preserve">
-        <source>Use your mobile app chat profile via [desktop app](https://simplex.chat/downloads/).</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="User profile" xml:space="preserve">
         <source>User profile</source>
         <target>Perfil de usuario</target>
@@ -5339,6 +5341,10 @@ Para conectarte, pide a tu contacto que cree otro enlace de conexión y comprueb
       <trans-unit id="Via browser" xml:space="preserve">
         <source>Via browser</source>
         <target>Mediante navegador</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Via secure quantum resistant protocol." xml:space="preserve">
+        <source>Via secure quantum resistant protocol.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Video call" xml:space="preserve">
@@ -5560,18 +5566,10 @@ Repeat join request?</source>
         <target>Puedes ocultar o silenciar un perfil deslizándolo a la derecha.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now add spaces to your profile name." xml:space="preserve">
-        <source>You can now add spaces to your profile name.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
         <source>You can now send messages to %@</source>
         <target>Ya puedes enviar mensajes a %@</target>
         <note>notification body</note>
-      </trans-unit>
-      <trans-unit id="You can optionally notify contacts when deleting them." xml:space="preserve">
-        <source>You can optionally notify contacts when deleting them.</source>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
         <source>You can set lock screen notification preview via settings.</source>

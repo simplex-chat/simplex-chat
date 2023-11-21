@@ -433,33 +433,32 @@ private val versionDescriptions: List<VersionDescription> = listOf(
   ),
   VersionDescription(
     version = "v5.4",
-    post = "https://simplex.chat/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html", // TODO link
+    post = "https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html",
     features = listOf(
       FeatureDescription(
         icon = MR.images.ic_desktop,
-        titleId = MR.strings.v5_4_connect_desktop_mobile,
-        descrId = MR.strings.v5_4_connect_desktop_mobile_descr,
-        link = "https://simplex.chat/downloads/"
+        titleId = MR.strings.v5_4_link_mobile_desktop,
+        descrId = MR.strings.v5_4_link_mobile_desktop_descr
       ),
       FeatureDescription(
         icon = MR.images.ic_group,
-        titleId = MR.strings.v5_4_group_improvements,
-        descrId = MR.strings.v5_4_group_improvements_descr
+        titleId = MR.strings.v5_4_better_groups,
+        descrId = MR.strings.v5_4_better_groups_descr
       ),
       FeatureDescription(
-        icon = MR.images.ic_notifications,
-        titleId = MR.strings.v5_4_notify_contact_deletion,
-        descrId = MR.strings.v5_4_notify_contact_deletion_descr
+        icon = MR.images.ic_theater_comedy,
+        titleId = MR.strings.v5_4_incognito_groups,
+        descrId = MR.strings.v5_4_incognito_groups_descr
       ),
       FeatureDescription(
-        icon = MR.images.ic_link,
-        titleId = MR.strings.v5_4_checking_simplex_links,
-        descrId = MR.strings.v5_4_checking_simplex_links_descr
+        icon = MR.images.ic_back_hand,
+        titleId = MR.strings.v5_4_block_group_members,
+        descrId = MR.strings.v5_4_block_group_members_descr
       ),
       FeatureDescription(
-        icon = MR.images.ic_edit,
-        titleId = MR.strings.v5_4_spaces_in_profile_names,
-        descrId = MR.strings.v5_4_spaces_in_profile_names_descr
+        icon = MR.images.ic_redeem,
+        titleId = MR.strings.v5_2_more_things,
+        descrId = MR.strings.v5_4_more_things_descr
       )
     )
   ),

@@ -285,32 +285,32 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v5.4",
-        post: URL(string: "https://simplex.chat/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html"), // TODO link
+        post: URL(string: "https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html"),
         features: [
             FeatureDescription(
                 icon: "desktopcomputer",
-                title: "Connect desktop and mobile!",
-                description: "Use your mobile app chat profile via [desktop app](https://simplex.chat/downloads/)."
+                title: "Link mobile and desktop apps! 🔗",
+                description: "Via secure quantum resistant protocol."
             ),
             FeatureDescription(
                 icon: "person.2",
-                title: "Group improvements",
-                description: "Create groups incognito, block group members, faster join via link, and more."
+                title: "Better groups",
+                description: "Faster joining and more reliable messages."
             ),
             FeatureDescription(
-                icon: "person.badge.minus",
-                title: "Notify about contact deletion",
-                description: "You can optionally notify contacts when deleting them."
+                icon: "theatermasks",
+                title: "Incognito groups",
+                description: "Create a group using a random profile."
             ),
             FeatureDescription(
-                icon: "link",
-                title: "Checking SimpleX links",
-                description: "Detection of previously used and your own SimpleX links."
+                icon: "hand.raised",
+                title: "Block group members",
+                description: "To hide unwanted messages."
             ),
             FeatureDescription(
-                icon: "highlighter",
-                title: "Spaces in profile names",
-                description: "You can now add spaces to your profile name."
+                icon: "gift",
+                title: "A few more things",
+                description: "- optionally notify deleted contacts.\n- profile names with spaces.\n- and more!"
             ),
         ]
     ),
