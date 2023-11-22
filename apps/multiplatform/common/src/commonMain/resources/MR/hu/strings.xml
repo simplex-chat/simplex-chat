@@ -4,4 +4,19 @@
     <string name="alert_text_decryption_error_too_many_skipped">%1$d üzenetek kihagyva.</string>
     <string name="integrity_msg_skipped">%1$d kihagyott üzenet(ek)</string>
     <string name="group_info_section_title_num_members">%1$s TAGOK</string>
+    <string name="chat_item_ttl_month">1 hónap</string>
+    <string name="chat_item_ttl_week">1 hét</string>
+    <string name="v5_3_new_interface_languages">6 új kezelőfelület nyelv</string>
+    <string name="send_disappearing_message_5_minutes">5 perc</string>
+    <string name="send_disappearing_message_1_minute">1 perc</string>
+    <string name="learn_more_about_address">A SimpleX azonosítóról</string>
+    <string name="abort_switch_receiving_address_question">Címváltoztatás megszakítása?</string>
+    <string name="abort_switch_receiving_address_confirm">Megszakítás</string>
+    <string name="send_disappearing_message_30_seconds">30 másodperc</string>
+    <string name="one_time_link_short">Egyszer használatos link</string>
+    <string name="contact_wants_to_connect_via_call">%1$s szeretne kapcsolatba lépni veled</string>
+    <string name="about_simplex_chat">A SimpleX chatről</string>
+    <string name="chat_item_ttl_day">1 nap</string>
+    <string name="abort_switch_receiving_address">Címváltoztatás megszakítása</string>
+    <string name="about_simplex">A SimpleX-ről</string>
 </resources>
