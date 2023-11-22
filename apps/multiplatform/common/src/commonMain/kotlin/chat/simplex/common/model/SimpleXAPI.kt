@@ -1392,10 +1392,10 @@ object ChatController {
     chatModel.remoteHosts.addAll(hosts)
   }
 
-  suspend fun startRemoteHost(rhId: Long?, multicast: Boolean = false): Pair<RemoteHostInfo?, String>? {
+  suspend fun startRemoteHost(rhId: Long?, multicast: Boolean = false): Triple<RemoteHostInfo?, String, String>? {
     val r = sendCmd(null, CC.StartRemoteHost(rhId, multicast))
-    if (r is CR.RemoteHostStarted) return r.remoteHost_ to r.invitation
-    apiErrorAlert("listRemoteHosts", generalGetString(MR.strings.error_alert_title), r)
+    if (r is CR.RemoteHostStarted) return Triple(r.remoteHost_, r.invitation, r.ctrlPort)
+    apiErrorAlert("startRemoteHost", generalGetString(MR.strings.error_alert_title), r)
     return null
   }
 
@@ -1851,7 +1851,7 @@ object ChatController {
             generalGetString(MR.strings.remote_host_was_disconnected_toast).format(disconnectedHost.hostDeviceName.ifEmpty { disconnectedHost.remoteHostId.toString() })
           )
         }
-        if (chatModel.remoteHostId == r.remoteHostId_) {
+        if (chatModel.remoteHostId() == r.remoteHostId_) {
           chatModel.currentRemoteHost.value = null
           switchUIRemoteHost(null)
         }
@@ -3774,7 +3774,7 @@ sealed class CR {
   // remote events (desktop)
   @Serializable @SerialName("remoteHostList") class RemoteHostList(val remoteHosts: List<RemoteHostInfo>): CR()
   @Serializable @SerialName("currentRemoteHost") class CurrentRemoteHost(val remoteHost_: RemoteHostInfo?): CR()
-  @Serializable @SerialName("remoteHostStarted") class RemoteHostStarted(val remoteHost_: RemoteHostInfo?, val invitation: String): CR()
+  @Serializable @SerialName("remoteHostStarted") class RemoteHostStarted(val remoteHost_: RemoteHostInfo?, val invitation: String, val ctrlPort: String): CR()
   @Serializable @SerialName("remoteHostSessionCode") class RemoteHostSessionCode(val remoteHost_: RemoteHostInfo?, val sessionCode: String): CR()
   @Serializable @SerialName("newRemoteHost") class NewRemoteHost(val remoteHost: RemoteHostInfo): CR()
   @Serializable @SerialName("remoteHostConnected") class RemoteHostConnected(val remoteHost: RemoteHostInfo): CR()

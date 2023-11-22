@@ -1465,7 +1465,7 @@
     <string name="new_mobile_device">新移动设备</string>
     <string name="desktop_address">桌面地址</string>
     <string name="only_one_device_can_work_at_the_same_time">同一时刻只有一台设备可以工作</string>
-    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[在移动应用中打开<i>从桌面使用</i>并扫描二维码]]></string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[在移动应用中打开<i>从桌面使用</i>并扫描二维码.]]></string>
     <string name="desktop_incompatible_version">不兼容的版本</string>
     <string name="new_desktop"><![CDATA[<i>(新)</i>]]></string>
     <string name="unlink_desktop_question">取消链接桌面端？</string>
