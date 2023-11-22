@@ -8,7 +8,10 @@ void hs_init_with_rtsopts(int * argc, char **argv[]);
 
 JNIEXPORT void JNICALL
 Java_chat_simplex_common_platform_CoreKt_initHS(JNIEnv *env, jclass clazz) {
-    hs_init_with_rtsopts(NULL, NULL);
+    int argc = 4;
+    char *argv[] = {"simplex", "+RTS", "-A128m", "-H128m", NULL};
+    char **pargv = argv;
+    hs_init_with_rtsopts(&argc, &pargv);
 }
 
 // from simplex-chat
