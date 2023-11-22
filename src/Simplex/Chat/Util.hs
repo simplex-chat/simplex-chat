@@ -1,15 +1,12 @@
-module Simplex.Chat.Util (week, encryptFile, chunkSize, shuffle) where
+module Simplex.Chat.Util (week, encryptFile, chunkSize) where
 
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import qualified Data.ByteString.Lazy as LB
-import Data.List (sortOn)
 import Data.Time (NominalDiffTime)
-import Data.Word (Word16)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
-import System.Random (randomRIO)
 import UnliftIO.IO (IOMode (..), withFile)
 
 week :: NominalDiffTime
@@ -33,11 +30,3 @@ encryptFile fromPath toPath cfArgs = do
 chunkSize :: Num a => a
 chunkSize = 65536
 {-# INLINE chunkSize #-}
-
-shuffle :: [a] -> IO [a]
-shuffle xs = do
-  randomNumbers <- mapM (\_ -> randomRIO (0, 65535) :: IO Word16) xs
-  let zipped = zip randomNumbers xs
-      sorted = sortOn fst zipped
-      shuffled = map snd sorted
-  pure shuffled

@@ -39,19 +39,20 @@ import Data.Either (fromRight, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, foldl', isSuffixOf, partition, sortOn)
+import Data.List (find, foldl', isSuffixOf, partition, sortBy, sortOn)
 import Data.List.NonEmpty (NonEmpty, nonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing, listToMaybe, mapMaybe, maybeToList)
+import Data.Ord (comparing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Time (NominalDiffTime, addUTCTime, defaultTimeLocale, formatTime)
 import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDay, nominalDiffTimeToSeconds)
 import Data.Time.Clock.System (SystemTime, systemToUTCTime)
-import Data.Word (Word32)
+import Data.Word (Word16, Word32)
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
 import Simplex.Chat.Call
@@ -77,7 +78,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
-import Simplex.Chat.Util (encryptFile, shuffle)
+import Simplex.Chat.Util (encryptFile)
 import Simplex.FileTransfer.Client.Main (maxFileSize)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
@@ -3551,7 +3552,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             members <- withStore' $ \db -> getGroupMembers db user gInfo
             intros <- withStore' $ \db -> createIntroductions db members m
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
-            shuffledIntros <- liftIO $ shuffleIntros intros
+            shuffledIntros <- liftIO $ shuffleMembers intros $ \GroupMemberIntro {reMember = GroupMember {memberRole}} -> memberRole
             forM_ shuffledIntros $ \intro ->
               processIntro intro `catchChatError` (toView . CRChatError (Just user))
             where
@@ -3559,14 +3560,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                     profileToSend = profileToSendOnAccept user profileMode
                 void $ sendDirectMessage conn (XGrpLinkMem profileToSend) (GroupId groupId)
-              shuffleIntros :: [GroupMemberIntro] -> IO [GroupMemberIntro]
-              shuffleIntros is = do
-                let (prioIs, otherIs) = partition isPrioIntro is
-                prioIs' <- shuffle prioIs
-                otherIs' <- shuffle otherIs
-                pure $ prioIs' <> otherIs'
-                where
-                  isPrioIntro GroupMemberIntro {reMember = GroupMember {memberRole}} = memberRole == GRAdmin || memberRole == GROwner
               processIntro intro@GroupMemberIntro {introId} = do
                 void $ sendDirectMessage conn (XGrpMemIntro $ memberInfo (reMember intro)) (GroupId groupId)
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
@@ -5533,20 +5526,12 @@ sendGroupMessage' :: forall e m. (MsgEncodingI e, ChatMonad m) => User -> [Group
 sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
   msg <- createSndMessage chatMsgEvent (GroupId groupId)
   -- TODO collect failed deliveries into a single error
-  recipientMembers <- liftIO $ shuffleMembers $ filter memberCurrent members
+  recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members) $ \GroupMember {memberRole} -> memberRole
   rs <- forM recipientMembers $ \m ->
     messageMember m msg `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
   let sentToMembers = catMaybes rs
   pure (msg, sentToMembers)
   where
-    shuffleMembers :: [GroupMember] -> IO [GroupMember]
-    shuffleMembers ms = do
-      let (prioMs, otherMs) = partition isPrioMember ms
-      prioMs' <- shuffle prioMs
-      otherMs' <- shuffle otherMs
-      pure $ prioMs' <> otherMs'
-      where
-        isPrioMember GroupMember {memberRole} = memberRole == GRAdmin || memberRole == GROwner
     messageMember :: GroupMember -> SndMessage -> m (Maybe GroupMember)
     messageMember m@GroupMember {groupMemberId} SndMessage {msgId, msgBody} = case memberConn m of
       Nothing -> pendingOrForwarded
@@ -5579,6 +5564,15 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
         isXGrpMsgForward ev = case ev of
           XGrpMsgForward {} -> True
           _ -> False
+
+shuffleMembers :: [a] -> (a -> GroupMemberRole) -> IO [a]
+shuffleMembers ms role = do
+  let (adminMs, otherMs) = partition ((GRAdmin <=) . role) ms
+  liftM2 (<>) (shuffle adminMs) (shuffle otherMs)
+  where
+    random :: IO Word16
+    random = randomRIO (0, 65535)
+    shuffle xs = map snd . sortBy (comparing fst) <$> mapM (\x -> (,x) <$> random) xs
 
 sendPendingGroupMessages :: ChatMonad m => User -> GroupMember -> Connection -> m ()
 sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn = do
