@@ -32,6 +32,7 @@ import System.FilePath (combine)
 
 data ChatOpts = ChatOpts
   { coreOptions :: CoreChatOpts,
+    deviceName :: Maybe Text,
     chatCmd :: String,
     chatCmdDelay :: Int,
     chatServerPort :: Maybe String,
@@ -200,6 +201,14 @@ coreChatOptsP appDir defaultDbFileName = do
 chatOptsP :: FilePath -> FilePath -> Parser ChatOpts
 chatOptsP appDir defaultDbFileName = do
   coreOptions <- coreChatOptsP appDir defaultDbFileName
+  deviceName <-
+    optional $
+      strOption
+        ( long "device-name"
+            <> short 'e'
+            <> metavar "DEVICE"
+            <> help "Device name to use in connections with remote hosts and controller"
+        )
   chatCmd <-
     strOption
       ( long "execute"
@@ -268,6 +277,7 @@ chatOptsP appDir defaultDbFileName = do
   pure
     ChatOpts
       { coreOptions,
+        deviceName,
         chatCmd,
         chatCmdDelay,
         chatServerPort,
