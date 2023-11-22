@@ -2853,17 +2853,17 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
       let connIds = map aConnId' pcs
       pure (connIds, M.fromList $ zip connIds pcs)
     contactSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId Contact -> Bool -> m ()
-    contactSubsToView rs cts ce = ifM (asks $ coreApi . config) notifyAPI notifyCLI
+    contactSubsToView rs cts ce = do
+      chatModifyVar connNetworkStatuses $ M.union (M.fromList statuses)
+      ifM (asks $ coreApi . config) (notifyAPI statuses) notifyCLI
       where
         notifyCLI = do
           let cRs = resultsFor rs cts
               cErrors = sortOn (\(Contact {localDisplayName = n}, _) -> n) $ filterErrors cRs
           toView . CRContactSubSummary user $ map (uncurry ContactSubStatus) cRs
           when ce $ mapM_ (toView . uncurry (CRContactSubError user)) cErrors
-        notifyAPI = do
-          let statuses = M.foldrWithKey' addStatus [] cts
-          chatModifyVar connNetworkStatuses $ M.union (M.fromList statuses)
-          toView $ CRNetworkStatuses (Just user) $ map (uncurry ConnNetworkStatus) statuses
+        notifyAPI = toView . CRNetworkStatuses (Just user) . map (uncurry ConnNetworkStatus)
+        statuses = M.foldrWithKey' addStatus [] cts 
           where
             addStatus :: ConnId -> Contact -> [(AgentConnId, NetworkStatus)] -> [(AgentConnId, NetworkStatus)]
             addStatus _ Contact {activeConn = Nothing} nss = nss
@@ -3084,12 +3084,12 @@ processAgentMessageNoConn = \case
   where
     hostEvent :: ChatResponse -> m ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
-    serverEvent srv conns nsStatus event = ifM (asks $ coreApi . config) notifyAPI notifyCLI
+    serverEvent srv conns nsStatus event = do
+      chatModifyVar connNetworkStatuses $ \m -> foldl' (\m' cId -> M.insert cId nsStatus m') m connIds
+      ifM (asks $ coreApi . config) (notifyAPI connIds) notifyCLI
       where
-        notifyAPI = do
-          let connIds = map AgentConnId conns
-          chatModifyVar connNetworkStatuses $ \m -> foldl' (\m' cId -> M.insert cId nsStatus m') m connIds
-          toView $ CRNetworkStatus nsStatus connIds
+        connIds = map AgentConnId conns
+        notifyAPI = toView . CRNetworkStatus nsStatus
         notifyCLI = do
           cs <- withStore' (`getConnectionsContacts` conns)
           toView $ event srv cs
