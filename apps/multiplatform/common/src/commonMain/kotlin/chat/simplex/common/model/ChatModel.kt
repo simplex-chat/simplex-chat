@@ -1253,7 +1253,7 @@ data class GroupMember (
   fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
     if (!canBeRemoved(groupInfo)) null
     else groupInfo.membership.memberRole.let { userRole ->
-      GroupMemberRole.values().filter { it <= userRole }
+      GroupMemberRole.values().filter { it <= userRole && it != GroupMemberRole.Author }
     }
 
   val memberIncognito = memberProfile.profileId != memberContactProfileId
@@ -1295,12 +1295,14 @@ data class GroupMemberIds(
 @Serializable
 enum class GroupMemberRole(val memberRole: String) {
   @SerialName("observer") Observer("observer"), // order matters in comparisons
+  @SerialName("author") Author("author"),
   @SerialName("member") Member("member"),
   @SerialName("admin") Admin("admin"),
   @SerialName("owner") Owner("owner");
 
   val text: String get() = when (this) {
     Observer -> generalGetString(MR.strings.group_member_role_observer)
+    Author -> generalGetString(MR.strings.group_member_role_author)
     Member -> generalGetString(MR.strings.group_member_role_member)
     Admin -> generalGetString(MR.strings.group_member_role_admin)
     Owner -> generalGetString(MR.strings.group_member_role_owner)
