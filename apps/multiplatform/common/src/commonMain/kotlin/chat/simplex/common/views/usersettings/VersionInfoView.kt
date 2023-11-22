@@ -18,7 +18,7 @@ fun VersionInfoView(info: CoreVersionInfo) {
   Column(
     Modifier.padding(horizontal = DEFAULT_PADDING),
   ) {
-    AppBarTitle(stringResource(MR.strings.app_version_title), false)
+    AppBarTitle(stringResource(MR.strings.app_version_title), withPadding = false)
     if (appPlatform.isAndroid) {
       Text(String.format(stringResource(MR.strings.app_version_name), BuildConfigCommon.ANDROID_VERSION_NAME))
       Text(String.format(stringResource(MR.strings.app_version_code), BuildConfigCommon.ANDROID_VERSION_CODE))
