@@ -53,6 +53,7 @@ fun ConnectDesktopView(close: () -> Unit) {
   ModalView(close = closeWithAlert) {
     ConnectDesktopLayout(
       deviceName = deviceName.value!!,
+      close
     )
   }
   val ntfModeService = remember { chatModel.controller.appPrefs.notificationsMode.get() == NotificationsMode.SERVICE }
@@ -67,7 +68,7 @@ fun ConnectDesktopView(close: () -> Unit) {
 }
 
 @Composable
-private fun ConnectDesktopLayout(deviceName: String) {
+private fun ConnectDesktopLayout(deviceName: String, close: () -> Unit) {
   val sessionAddress = remember { mutableStateOf("") }
   val remoteCtrls = remember { mutableStateListOf<RemoteCtrlInfo>() }
   val session = remember { chatModel.remoteCtrlSession }.value
@@ -89,7 +90,7 @@ private fun ConnectDesktopLayout(deviceName: String) {
           }
         }
 
-        is UIRemoteCtrlSessionState.Connected -> ActiveSession(session, session.sessionState.remoteCtrl)
+        is UIRemoteCtrlSessionState.Connected -> ActiveSession(session, session.sessionState.remoteCtrl, close)
       }
     } else {
       ConnectDesktop(deviceName, remoteCtrls, sessionAddress)
@@ -205,7 +206,7 @@ private fun CtrlDeviceVersionText(session: RemoteCtrlSession) {
 }
 
 @Composable
-private fun ActiveSession(session: RemoteCtrlSession, rc: RemoteCtrlInfo) {
+private fun ActiveSession(session: RemoteCtrlSession, rc: RemoteCtrlInfo, close: () -> Unit) {
   AppBarTitle(stringResource(MR.strings.connected_to_desktop))
   SectionView(stringResource(MR.strings.connected_desktop).uppercase(), padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
     Text(rc.deviceViewName)
@@ -223,7 +224,7 @@ private fun ActiveSession(session: RemoteCtrlSession, rc: RemoteCtrlInfo) {
   SectionSpacer()
 
   SectionView {
-    DisconnectButton(::disconnectDesktop)
+    DisconnectButton { disconnectDesktop(close) }
   }
 }
 
