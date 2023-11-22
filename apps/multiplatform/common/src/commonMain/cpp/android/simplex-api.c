@@ -5,7 +5,7 @@
 //#include <android/log.h>
 
 // from the RTS
-void hs_init(int * argc, char **argv[]);
+void hs_init_with_rtsopts(int * argc, char **argv[]);
 
 // from android-support
 void setLineBuffering(void);
@@ -32,7 +32,17 @@ Java_chat_simplex_common_platform_CoreKt_pipeStdOutToSocket(JNIEnv *env, __unuse
 
 JNIEXPORT void JNICALL
 Java_chat_simplex_common_platform_CoreKt_initHS(__unused JNIEnv *env, __unused jclass clazz) {
-    hs_init(NULL, NULL);
+    int argc = 5;
+    char *argv[] = {
+        "simplex",
+        "+RTS", // requires `hs_init_with_rtsopts`
+        "-A16m", // chunk size for new allocations
+        "-H64m", // initial heap size
+        "-xn", // non-moving GC
+        NULL
+    };
+    char **pargv = argv;
+    hs_init_with_rtsopts(&argc, &pargv);
     setLineBuffering();
 }
 
