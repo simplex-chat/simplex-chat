@@ -1524,4 +1524,5 @@
     <string name="v5_4_spaces_in_profile_names_descr">U kunt nu spaties aan uw profielnaam toevoegen.</string>
     <string name="v5_4_notify_contact_deletion">Informeer over het verwijderen van contacten</string>
     <string name="v5_4_group_improvements">Groepsverbeteringen</string>
+    <string name="remote_host_was_disconnected_toast">De verbinding met de externe host is verbroken: <b>%s</b></string>
 </resources>
