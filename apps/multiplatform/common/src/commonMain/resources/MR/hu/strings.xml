@@ -1,2 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources></resources>
+<resources>
+    <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d az üzenetek visszafejtése sikertelen</string>
+    <string name="alert_text_decryption_error_too_many_skipped">%1$d üzenetek kihagyva.</string>
+    <string name="integrity_msg_skipped">%1$d kihagyott üzenet(ek)</string>
+    <string name="group_info_section_title_num_members">%1$s TAGOK</string>
+</resources>
