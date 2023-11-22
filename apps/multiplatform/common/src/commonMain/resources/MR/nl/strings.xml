@@ -1505,24 +1505,14 @@
     <string name="verify_connection">Controleer de verbinding</string>
     <string name="v5_4_block_group_members">Groepsleden blokkeren</string>
     <string name="v5_4_incognito_groups_descr">Maak een groep met een willekeurig profiel.</string>
-    <string name="v5_4_connect_desktop_mobile">Verbind desktop en mobiel!</string>
     <string name="v5_4_link_mobile_desktop">Koppel mobiele en desktop-apps! 🔗</string>
     <string name="v5_4_link_mobile_desktop_descr">Via een beveiligd kwantumbestendig protocol.</string>
-    <string name="v5_4_spaces_in_profile_names">Spaties in profielnamen</string>
     <string name="v5_4_block_group_members_descr">Om ongewenste berichten te verbergen.</string>
     <string name="v5_4_better_groups">Betere groepen</string>
-    <string name="v5_4_connect_desktop_mobile_descr">Use your mobile app chat profile via desktop app.</string>
     <string name="v5_4_incognito_groups">Incognitogroepen</string>
-    <string name="v5_4_notify_contact_deletion_descr">U kunt optioneel contactpersonen op de hoogte stellen wanneer u ze verwijdert.</string>
     <string name="v5_4_better_groups_descr">Snellere deelname en betrouwbaardere berichten.</string>
-    <string name="v5_4_checking_simplex_links">SimpleX links controleren</string>
-    <string name="v5_4_checking_simplex_links_descr">Detectie van eerder gebruikte en uw eigen SimpleX links.</string>
-    <string name="v5_4_group_improvements_descr">Maak incognito groepen, blokkeer groepsleden, word sneller lid via een link en meer.</string>
     <string name="v5_4_more_things_descr">- optioneel verwijderde contacten op de hoogte stellen.
 \n- profielnamen met spaties.
 \n- en meer!</string>
-    <string name="v5_4_spaces_in_profile_names_descr">U kunt nu spaties aan uw profielnaam toevoegen.</string>
-    <string name="v5_4_notify_contact_deletion">Informeer over het verwijderen van contacten</string>
-    <string name="v5_4_group_improvements">Groepsverbeteringen</string>
     <string name="remote_host_was_disconnected_toast">De verbinding met de externe host is verbroken: <b>%s</b></string>
 </resources>
