@@ -657,7 +657,7 @@ data ChatResponse
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRCurrentRemoteHost {remoteHost_ :: Maybe RemoteHostInfo}
-  | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text}
+  | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text, ctrlPort :: String}
   | CRRemoteHostSessionCode {remoteHost_ :: Maybe RemoteHostInfo, sessionCode :: Text}
   | CRNewRemoteHost {remoteHost :: RemoteHostInfo}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
