@@ -77,7 +77,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
-import Simplex.Chat.Util (encryptFile)
+import Simplex.Chat.Util (encryptFile, shuffle)
 import Simplex.FileTransfer.Client.Main (maxFileSize)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
@@ -3551,13 +3551,22 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             members <- withStore' $ \db -> getGroupMembers db user gInfo
             intros <- withStore' $ \db -> createIntroductions db members m
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
-            forM_ intros $ \intro ->
+            shuffledIntros <- liftIO $ shuffleIntros intros
+            forM_ shuffledIntros $ \intro ->
               processIntro intro `catchChatError` (toView . CRChatError (Just user))
             where
               sendXGrpLinkMem = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                     profileToSend = profileToSendOnAccept user profileMode
                 void $ sendDirectMessage conn (XGrpLinkMem profileToSend) (GroupId groupId)
+              shuffleIntros :: [GroupMemberIntro] -> IO [GroupMemberIntro]
+              shuffleIntros is = do
+                let (prioIs, otherIs) = partition isPrioIntro is
+                prioIs' <- shuffle prioIs
+                otherIs' <- shuffle otherIs
+                pure $ prioIs' <> otherIs'
+                where
+                  isPrioIntro GroupMemberIntro {reMember = GroupMember {memberRole}} = memberRole == GRAdmin || memberRole == GROwner
               processIntro intro@GroupMemberIntro {introId} = do
                 void $ sendDirectMessage conn (XGrpMemIntro $ memberInfo (reMember intro)) (GroupId groupId)
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
@@ -5524,11 +5533,20 @@ sendGroupMessage' :: forall e m. (MsgEncodingI e, ChatMonad m) => User -> [Group
 sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
   msg <- createSndMessage chatMsgEvent (GroupId groupId)
   -- TODO collect failed deliveries into a single error
-  rs <- forM (filter memberCurrent members) $ \m ->
+  recipientMembers <- liftIO $ shuffleMembers $ filter memberCurrent members
+  rs <- forM recipientMembers $ \m ->
     messageMember m msg `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
   let sentToMembers = catMaybes rs
   pure (msg, sentToMembers)
   where
+    shuffleMembers :: [GroupMember] -> IO [GroupMember]
+    shuffleMembers ms = do
+      let (prioMs, otherMs) = partition isPrioMember ms
+      prioMs' <- shuffle prioMs
+      otherMs' <- shuffle otherMs
+      pure $ prioMs' <> otherMs'
+      where
+        isPrioMember GroupMember {memberRole} = memberRole == GRAdmin || memberRole == GROwner
     messageMember :: GroupMember -> SndMessage -> m (Maybe GroupMember)
     messageMember m@GroupMember {groupMemberId} SndMessage {msgId, msgBody} = case memberConn m of
       Nothing -> pendingOrForwarded
