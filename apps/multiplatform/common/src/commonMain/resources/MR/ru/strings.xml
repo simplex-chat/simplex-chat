@@ -7,7 +7,7 @@
     <string name="connect_via_invitation_link">Соединиться через одноразовую ссылку?</string>
     <string name="connect_via_group_link">Вступить в группу?</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Ваш профиль будет отправлен контакту, от которого Вы получили эту ссылку.</string>
-    <string name="you_will_join_group">Вы вступите в группу, на которую ссылается эта ссылка.</string>
+    <string name="you_will_join_group">Вы соединитесь со всеми членами группы.</string>
     <string name="connect_via_link_verb">Соединиться</string>
     <!-- Server info - ChatModel.kt -->
     <string name="server_connected">соединено</string>
@@ -1567,4 +1567,36 @@
     <string name="block_member_desc">Все новые сообщения от %s будут скрыты!</string>
     <string name="desktop_app_version_is_incompatible">Версия настольного приложения %s несовместима с этим приложением.</string>
     <string name="blocked_item_description">заблокировано</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName">Вы уже соединяетесь с %1$s.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Вы уже вступаете в группу по этой ссылке.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName">Вы уже вступаете в группу %1$s.</string>
+    <string name="connect_plan_this_is_your_own_one_time_link">Это ваша собственная одноразовая ссылка!</string>
+    <string name="v5_4_link_mobile_desktop_descr">Через безопасный квантово-устойчивый протокол.</string>
+    <string name="v5_4_block_group_members_descr">Чтобы скрыть нежелательные сообщения.</string>
+    <string name="unlink_desktop_question">Забыть компьютер?</string>
+    <string name="video_decoding_exception_desc">Видео невозможно декодировать. Пожалуйста, попробуйте другое видео или свяжитесь с разработчиками.</string>
+    <string name="rcv_group_event_1_member_connected">%@ соединен(а)</string>
+    <string name="group_members_n">%s, %s и %d членов группы</string>
+    <string name="this_device">Это устройство</string>
+    <string name="unblock_member_button">Разблокировать члена группы</string>
+    <string name="contact_tap_to_connect">Нажмите чтобы соединиться</string>
+    <string name="this_device_name">Имя этого устройства</string>
+    <string name="connect_plan_you_are_already_in_group_vName">Вы уже состоите в группе %1$s.</string>
+    <string name="connect_plan_this_is_your_own_simplex_address">Это ваш собственный адрес SimpleX!</string>
+    <string name="unblock_member_question">Разблокировать члена группы?</string>
+    <string name="settings_section_title_use_from_desktop">Использовать с компьютера</string>
+    <string name="session_code">Код сессии</string>
+    <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">Вы уже соединяетесь по этой одноразовой ссылке!</string>
+    <string name="unlink_desktop">Забыть</string>
+    <string name="this_device_name_shared_with_mobile">Имя устройства будет доступно подключенному мобильному клиенту.</string>
+    <string name="verify_code_on_mobile">Сверьте код на мобильном</string>
+    <string name="non_content_uri_alert_text">Указан неверный путь к файлу. Сообщите о проблеме разработчикам приложения.</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName">Это ваша ссылка на группу %1$s!</string>
+    <string name="verify_code_with_desktop">Сверьте код с компьютером</string>
+    <string name="scan_qr_code_from_desktop">Сканировать QR код с компьютера</string>
+    <string name="unblock_member_confirmation">Разблокировать</string>
+    <string name="connect_plan_you_have_already_requested_connection_via_this_address">Вы уже запросили соединение через этот адрес!</string>
+    <string name="terminal_always_visible">Показывать консоль в новом окне</string>
+    <string name="verify_connections">Проверять соединения</string>
+    <string name="verify_connection">Проверить соединение</string>
 </resources>
