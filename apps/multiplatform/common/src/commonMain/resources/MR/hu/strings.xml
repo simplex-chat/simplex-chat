@@ -19,4 +19,14 @@
     <string name="chat_item_ttl_day">1 nap</string>
     <string name="abort_switch_receiving_address">Címváltoztatás megszakítása</string>
     <string name="about_simplex">A SimpleX-ről</string>
+    <string name="color_primary">Kiemelőszín</string>
+    <string name="callstatus_accepted">elfogadott hívás</string>
+    <string name="network_enable_socks_info">Kapcsolódás a szerverekhez SOCKS proxy segítségével a %d? porton? A proxyt el kell indítani mielőtt bekapcsolná ezt az opciót.</string>
+    <string name="accept_feature">Elfogad</string>
+    <string name="accept_call_on_lock_screen">Elfogad</string>
+    <string name="above_then_preposition_continuation">felül, majd pedig:</string>
+    <string name="accept_contact_incognito_button">Elfogadás inkognítóban</string>
+    <string name="accept_connection_request__question">Elfogadod a kapcsolatfelvételt?</string>
+    <string name="accept_contact_button">Elfogad</string>
+    <string name="accept">Elfogad</string>
 </resources>
