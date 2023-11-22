@@ -1505,4 +1505,26 @@
     <string name="loading_remote_file_desc">从已链接移动设备加载文件时请稍候片刻</string>
     <string name="desktop_app_version_is_incompatible">桌面应用版本 %s 不兼容此应用。</string>
     <string name="verify_connection">验证连接</string>
+    <string name="v5_4_block_group_members">屏蔽群组成员</string>
+    <string name="v5_4_incognito_groups_descr">使用随机身份创建群组</string>
+    <string name="v5_4_connect_desktop_mobile">桌面端与移动端互联</string>
+    <string name="v5_4_link_mobile_desktop">连接移动端和桌面端应用程序！🔗</string>
+    <string name="v5_4_link_mobile_desktop_descr">通过安全的、抗量子计算机破解的协议。</string>
+    <string name="v5_4_spaces_in_profile_names">配置文件名称中可带空格</string>
+    <string name="v5_4_block_group_members_descr">隐藏不需要的信息。</string>
+    <string name="v5_4_better_groups">更佳的群组</string>
+    <string name="v5_4_connect_desktop_mobile_descr">通过桌面应用程序使用您的移动应用程序聊天配置文件。</string>
+    <string name="v5_4_incognito_groups">匿名群组</string>
+    <string name="remote_host_was_disconnected_toast">远程主机已断开连接：<b>%s</b></string>
+    <string name="v5_4_notify_contact_deletion_descr">您可以选择在删除联系人时通知他们。</string>
+    <string name="v5_4_better_groups_descr">加入速度更快、信息更可靠。</string>
+    <string name="v5_4_checking_simplex_links">查看 SimpleX 链接</string>
+    <string name="v5_4_checking_simplex_links_descr">检测以前使用过的和您自己的 SimpleX 链接。</string>
+    <string name="v5_4_group_improvements_descr">隐身创建群组、屏蔽群组成员、通过链接更快地加入群组等。</string>
+    <string name="v5_4_more_things_descr">- 可选择通知已删除的联系人。
+\n- 带空格的个人资料名称。
+\n- 以及更多！</string>
+    <string name="v5_4_spaces_in_profile_names_descr">您现在可以在个人档案名称中添加空格。</string>
+    <string name="v5_4_notify_contact_deletion">删除联系人时通知他们</string>
+    <string name="v5_4_group_improvements">群组方面的改进</string>
 </resources>
