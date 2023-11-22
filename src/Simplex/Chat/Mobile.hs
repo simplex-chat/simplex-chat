@@ -181,6 +181,7 @@ mobileChatOpts dbFilePrefix dbKey =
             tbqSize = 1024,
             highlyAvailable = False
           },
+      deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,
@@ -197,7 +198,8 @@ defaultMobileConfig =
   defaultChatConfig
     { confirmMigrations = MCYesUp,
       logLevel = CLLError,
-      coreApi = True
+      coreApi = True,
+      deviceNameForRemote = "Mobile"
     }
 
 getActiveUser_ :: SQLiteStore -> IO (Maybe User)
