@@ -27,7 +27,8 @@ struct SimpleXApp: App {
 
     init() {
         DispatchQueue.global(qos: .background).sync {
-            hs_init(0, nil)
+            haskell_init()
+//            hs_init(0, nil)
         }
         UserDefaults.standard.register(defaults: appDefaults)
         setGroupDefaults()

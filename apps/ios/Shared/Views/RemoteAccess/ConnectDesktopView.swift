@@ -382,7 +382,7 @@ struct ConnectDesktopView: View {
 
     private func disconnectButton() -> some View {
         Button {
-            disconnectDesktop()
+            disconnectDesktop(.dismiss)
         } label: {
             Label("Disconnect", systemImage: "multiply")
         }
