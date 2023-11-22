@@ -1515,4 +1515,5 @@
 \n- profielnamen met spaties.
 \n- en meer!</string>
     <string name="remote_host_was_disconnected_toast">De verbinding met de externe host is verbroken: <b>%s</b></string>
+    <string name="group_member_role_author">auteur</string>
 </resources>
