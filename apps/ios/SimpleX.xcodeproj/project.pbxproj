@@ -118,6 +118,8 @@
 		5CCB939C297EFCB100399E78 /* NavStackCompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCB939B297EFCB100399E78 /* NavStackCompat.swift */; };
 		5CCD403427A5F6DF00368C90 /* AddContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403327A5F6DF00368C90 /* AddContactView.swift */; };
 		5CCD403727A5F9A200368C90 /* ScanToConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403627A5F9A200368C90 /* ScanToConnectView.swift */; };
+		5CD67B8F2B0E858A00C510B1 /* hs_init.h in Headers */ = {isa = PBXBuildFile; fileRef = 5CD67B8D2B0E858A00C510B1 /* hs_init.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		5CD67B902B0E858A00C510B1 /* hs_init.c in Sources */ = {isa = PBXBuildFile; fileRef = 5CD67B8E2B0E858A00C510B1 /* hs_init.c */; };
 		5CDCAD482818589900503DA2 /* NotificationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CDCAD472818589900503DA2 /* NotificationService.swift */; };
 		5CE2BA702845308900EC33A6 /* SimpleXChat.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; };
 		5CE2BA712845308900EC33A6 /* SimpleXChat.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -399,6 +401,8 @@
 		5CCB939B297EFCB100399E78 /* NavStackCompat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavStackCompat.swift; sourceTree = "<group>"; };
 		5CCD403327A5F6DF00368C90 /* AddContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddContactView.swift; sourceTree = "<group>"; };
 		5CCD403627A5F9A200368C90 /* ScanToConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanToConnectView.swift; sourceTree = "<group>"; };
+		5CD67B8D2B0E858A00C510B1 /* hs_init.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hs_init.h; sourceTree = "<group>"; };
+		5CD67B8E2B0E858A00C510B1 /* hs_init.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = hs_init.c; sourceTree = "<group>"; };
 		5CDCAD452818589900503DA2 /* SimpleX NSE.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "SimpleX NSE.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
 		5CDCAD472818589900503DA2 /* NotificationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationService.swift; sourceTree = "<group>"; };
 		5CDCAD492818589900503DA2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -808,6 +812,8 @@
 				5CE2BA8A2845332200EC33A6 /* SimpleX.h */,
 				5CE2BA78284530CC00EC33A6 /* SimpleXChat.docc */,
 				5CE2BA96284537A800EC33A6 /* dummy.m */,
+				5CD67B8D2B0E858A00C510B1 /* hs_init.h */,
+				5CD67B8E2B0E858A00C510B1 /* hs_init.c */,
 			);
 			path = SimpleXChat;
 			sourceTree = "<group>";
@@ -892,6 +898,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5CE2BA77284530BF00EC33A6 /* SimpleXChat.h in Headers */,
+				5CD67B8F2B0E858A00C510B1 /* hs_init.h in Headers */,
 				5CE2BA952845354B00EC33A6 /* SimpleX.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1262,6 +1269,7 @@
 				5C00168128C4FE760094D739 /* KeyChain.swift in Sources */,
 				5CE2BA97284537A800EC33A6 /* dummy.m in Sources */,
 				5CE2BA922845340900EC33A6 /* FileUtils.swift in Sources */,
+				5CD67B902B0E858A00C510B1 /* hs_init.c in Sources */,
 				5CE2BA91284533A300EC33A6 /* Notifications.swift in Sources */,
 				5CE2BA79284530CC00EC33A6 /* SimpleXChat.docc in Sources */,
 				5CE2BA90284533A300EC33A6 /* JSON.swift in Sources */,
