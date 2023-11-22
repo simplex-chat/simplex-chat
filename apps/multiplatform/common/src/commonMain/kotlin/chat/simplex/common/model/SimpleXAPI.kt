@@ -1392,7 +1392,7 @@ object ChatController {
     chatModel.remoteHosts.addAll(hosts)
   }
 
-  suspend fun startRemoteHost(rhId: Long?, multicast: Boolean = false): Triple<RemoteHostInfo?, String, String>? {
+  suspend fun startRemoteHost(rhId: Long?, multicast: Boolean = true): Triple<RemoteHostInfo?, String, String>? {
     val r = sendCmd(null, CC.StartRemoteHost(rhId, multicast))
     if (r is CR.RemoteHostStarted) return Triple(r.remoteHost_, r.invitation, r.ctrlPort)
     apiErrorAlert("startRemoteHost", generalGetString(MR.strings.error_alert_title), r)

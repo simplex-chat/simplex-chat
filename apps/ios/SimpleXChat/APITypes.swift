@@ -1546,6 +1546,7 @@ public struct RemoteCtrlInfo: Decodable {
 
 public enum RemoteCtrlSessionState: Decodable {
     case starting
+    case searching
     case connecting
     case pendingConfirmation(sessionCode: String)
     case connected(sessionCode: String)

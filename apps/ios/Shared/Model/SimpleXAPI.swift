@@ -919,8 +919,10 @@ func findKnownRemoteCtrl() async throws {
     try await sendCommandOkResp(.findKnownRemoteCtrl)
 }
 
-func confirmRemoteCtrl(_ rcId: Int64) async throws {
-    try await sendCommandOkResp(.confirmRemoteCtrl(remoteCtrlId: rcId))
+func confirmRemoteCtrl(_ rcId: Int64) async throws -> (RemoteCtrlInfo?, CtrlAppInfo, String) {
+    let r = await chatSendCmd(.confirmRemoteCtrl(remoteCtrlId: rcId))
+    if case let .remoteCtrlConnecting(rc_, ctrlAppInfo, v) = r { return (rc_, ctrlAppInfo, v) }
+    throw r
 }
 
 func verifyRemoteCtrlSession(_ sessCode: String) async throws -> RemoteCtrlInfo {
@@ -1715,8 +1717,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
             m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
         }
     case let .remoteCtrlFound(remoteCtrl):
-        // TODO multicast
-        logger.debug("\(String(describing: remoteCtrl))")
+        await MainActor.run {
+            m.foundRemoteCtrl = remoteCtrl
+        }
     case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode):
         await MainActor.run {
             let state = UIRemoteCtrlSessionState.pendingConfirmation(remoteCtrl_: remoteCtrl_, sessionCode: sessionCode)
@@ -1732,6 +1735,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         // This delay is needed to cancel the session that fails on network failure,
         // e.g. when user did not grant permission to access local network yet.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            m.foundRemoteCtrl = nil
             switchToLocalSession()
         }
     default:
@@ -1750,6 +1754,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
 func switchToLocalSession() {
     let m = ChatModel.shared
     m.remoteCtrlSession = nil
+    m.foundRemoteCtrl = nil
     do {
         m.users = try listUsers()
         try getUserChatData()

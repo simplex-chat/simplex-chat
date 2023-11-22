@@ -56,7 +56,7 @@ let DEFAULT_SHOW_UNREAD_AND_FAVORITES = "showUnreadAndFavorites"
 let DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS = "deviceNameForRemoteAccess"
 let DEFAULT_CONFIRM_REMOTE_SESSIONS = "confirmRemoteSessions"
 let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST = "connectRemoteViaMulticast"
-let DEFAULT_OFFER_REMOTE_MULTICAST = "offerRemoteMulticast"
+let DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "connectRemoteViaMulticastAuto"
 
 let appDefaults: [String: Any] = [
     DEFAULT_SHOW_LA_NOTICE: false,
@@ -91,8 +91,8 @@ let appDefaults: [String: Any] = [
     DEFAULT_CUSTOM_DISAPPEARING_MESSAGE_TIME: 300,
     DEFAULT_SHOW_UNREAD_AND_FAVORITES: false,
     DEFAULT_CONFIRM_REMOTE_SESSIONS: false,
-    DEFAULT_CONNECT_REMOTE_VIA_MULTICAST: false,
-    DEFAULT_OFFER_REMOTE_MULTICAST: true
+    DEFAULT_CONNECT_REMOTE_VIA_MULTICAST: true,
+    DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: false,
 ]
 
 enum SimpleXLinkMode: String, Identifiable {

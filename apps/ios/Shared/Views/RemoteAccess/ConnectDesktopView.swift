@@ -16,12 +16,17 @@ struct ConnectDesktopView: View {
     var viaSettings = false
     @AppStorage(DEFAULT_DEVICE_NAME_FOR_REMOTE_ACCESS) private var deviceName = UIDevice.current.name
     @AppStorage(DEFAULT_CONFIRM_REMOTE_SESSIONS) private var confirmRemoteSessions = false
-    @AppStorage(DEFAULT_CONNECT_REMOTE_VIA_MULTICAST) private var connectRemoteViaMulticast = false
-    @AppStorage(DEFAULT_OFFER_REMOTE_MULTICAST) private var offerRemoteMulticast = true
+    @AppStorage(DEFAULT_CONNECT_REMOTE_VIA_MULTICAST) private var connectRemoteViaMulticast = true
+    @AppStorage(DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO) private var connectRemoteViaMulticastAuto = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var sessionAddress: String = ""
     @State private var remoteCtrls: [RemoteCtrlInfo] = []
     @State private var alert: ConnectDesktopAlert?
+    @State private var showQRCodeScanner = false
+
+    private var useMulticast: Bool {
+        connectRemoteViaMulticast && !remoteCtrls.isEmpty
+    }
 
     private enum ConnectDesktopAlert: Identifiable {
         case unlinkDesktop(rc: RemoteCtrlInfo)
@@ -86,16 +91,27 @@ struct ConnectDesktopView: View {
             }
         }
         .onAppear {
+            m.foundRemoteCtrl = nil
             setDeviceName(deviceName)
             updateRemoteCtrls()
+            if useMulticast {
+                findKnownDesktop()
+            }
         }
         .onDisappear {
-            if m.remoteCtrlSession != nil {
+            if m.remoteCtrlSession != nil || useMulticast {
                 disconnectDesktop()
             }
         }
         .onChange(of: deviceName) {
             setDeviceName($0)
+        }
+        .onChange(of: connectRemoteViaMulticast) { mc in
+            if mc {
+                disconnectDesktop()
+            } else {
+                findKnownDesktop()
+            }
         }
         .onChange(of: m.activeRemoteCtrl) {
             UIApplication.shared.isIdleTimerDisabled = $0
@@ -139,7 +155,12 @@ struct ConnectDesktopView: View {
             Section("This device name") {
                 devicesView()
             }
-            scanDesctopAddressView()
+            if useMulticast {
+                foundDesktopView()
+            }
+            if !useMulticast || showQRCodeScanner {
+                scanDesctopAddressView()
+            }
             if developerTools {
                 desktopAddressView()
             }
@@ -247,6 +268,32 @@ struct ConnectDesktopView: View {
         }
     }
 
+    private func foundDesktopView() -> some View {
+        Section("Found desktop") {
+            if let rc = m.foundRemoteCtrl {
+                Text(rc.deviceViewName)
+                Button {
+                    confirmKnownDesktop(rc)
+                } label: {
+                    Label("Connect", systemImage: "checkmark")
+                }
+                .onAppear {
+                    if connectRemoteViaMulticastAuto {
+                        confirmKnownDesktop(rc)
+                    }
+                }
+            } else {
+                Text("Waiting for desktop...").italic()
+                Button {
+                    showQRCodeScanner = true
+                } label: {
+                    Label("Scan QR code", systemImage: "qrcode")
+                }
+                .disabled(showQRCodeScanner)
+            }
+        }
+    }
+
     private func scanDesctopAddressView() -> some View {
         Section("Scan QR code from desktop") {
             CodeScannerView(codeTypes: [.qr], completion: processDesktopQRCode)
@@ -301,7 +348,8 @@ struct ConnectDesktopView: View {
 
             Section("Linked desktop options") {
                 Toggle("Verify connections", isOn: $confirmRemoteSessions)
-                Toggle("Discover on network", isOn: $connectRemoteViaMulticast).disabled(true)
+                Toggle("Discover on network", isOn: $connectRemoteViaMulticast)
+                Toggle("Connect automatically", isOn: $connectRemoteViaMulticastAuto)
             }
         }
         .navigationTitle("Linked desktops")
@@ -335,10 +383,34 @@ struct ConnectDesktopView: View {
         }
     }
 
-    private func connectDesktopAddress(_ addr: String) {
+    private func findKnownDesktop() {
         Task {
             do {
-                let (rc_, ctrlAppInfo, v) = try await connectRemoteCtrl(desktopAddress: addr)
+                try await findKnownRemoteCtrl()
+            } catch let e {
+                await MainActor.run {
+                    errorAlert(e)
+                }
+            }
+        }
+    }
+
+    private func confirmKnownDesktop(_ rc: RemoteCtrlInfo) {
+        connectDesktop_ {
+            try await confirmRemoteCtrl(rc.remoteCtrlId)
+        }
+    }
+
+    private func connectDesktopAddress(_ addr: String) {
+        connectDesktop_ {
+            try await connectRemoteCtrl(desktopAddress: addr)
+        }
+    }
+
+    private func connectDesktop_(_ connect: @escaping () async throws -> (RemoteCtrlInfo?, CtrlAppInfo, String)) {
+        Task {
+            do {
+                let (rc_, ctrlAppInfo, v) = try await connect()
                 await MainActor.run {
                     sessionAddress = ""
                     m.remoteCtrlSession = RemoteCtrlSession(

@@ -87,6 +87,7 @@ final class ChatModel: ObservableObject {
     @Published var showCallView = false
     // remote desktop
     @Published var remoteCtrlSession: RemoteCtrlSession?
+    @Published var foundRemoteCtrl: RemoteCtrlInfo?
     // currently showing QR code
     @Published var connReqInv: String?
     // audio recording and playback
