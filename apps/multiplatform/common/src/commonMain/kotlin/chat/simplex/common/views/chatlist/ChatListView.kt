@@ -53,7 +53,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     val url = chatModel.appOpenUrl.value
     if (url != null) {
       chatModel.appOpenUrl.value = null
-      connectIfOpenedViaUri(chatModel.remoteHostId, url, chatModel)
+      connectIfOpenedViaUri(chatModel.remoteHostId(), url, chatModel)
     }
   }
   if (appPlatform.isDesktop) {

@@ -36,12 +36,10 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-fun ConnectMobileView(
-  m: ChatModel
-) {
+fun ConnectMobileView() {
   val connecting = rememberSaveable() { mutableStateOf(false) }
   val remoteHosts = remember { chatModel.remoteHosts }
-  val deviceName = m.controller.appPrefs.deviceNameForRemoteAccess
+  val deviceName = chatModel.controller.appPrefs.deviceNameForRemoteAccess
   LaunchedEffect(Unit) {
     controller.reloadRemoteHosts()
   }
@@ -49,11 +47,11 @@ fun ConnectMobileView(
     deviceName = remember { deviceName.state },
     remoteHosts = remoteHosts,
     connecting,
-    connectedHost = remember { m.currentRemoteHost },
+    connectedHost = remember { chatModel.currentRemoteHost },
     updateDeviceName = {
       withBGApi {
         if (it != "") {
-          m.controller.setLocalDeviceName(it)
+          chatModel.controller.setLocalDeviceName(it)
           deviceName.set(it)
         }
       }

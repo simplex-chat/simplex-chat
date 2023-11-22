@@ -1625,7 +1625,7 @@ object ChatController {
                 || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
           withApi { receiveFile(rhId, r.user, file.fileId, encrypted = cItem.encryptLocalFile && chatController.appPrefs.privacyEncryptLocalFiles.get(), auto = true) }
         }
-        if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id || chatModel.remoteHostId != rhId)) {
+        if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id || chatModel.remoteHostId() != rhId)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
         }
       }
@@ -1913,7 +1913,7 @@ object ChatController {
   }
 
   private fun activeUser(rhId: Long?, user: UserLike): Boolean =
-    rhId == chatModel.remoteHostId && user.userId == chatModel.currentUser.value?.userId
+    rhId == chatModel.remoteHostId() && user.userId == chatModel.currentUser.value?.userId
 
   private fun withCall(r: CR, contact: Contact, perform: (Call) -> Unit) {
     val call = chatModel.activeCall.value

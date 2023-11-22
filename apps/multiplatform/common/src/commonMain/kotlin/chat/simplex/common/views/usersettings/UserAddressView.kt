@@ -65,6 +65,7 @@ fun UserAddressView(
     UserAddressLayout(
       userAddress = userAddress.value,
       shareViaProfile,
+      rhId,
       onCloseHandler,
       createAddress = {
         withApi {
@@ -169,6 +170,7 @@ fun UserAddressView(
 private fun UserAddressLayout(
   userAddress: UserContactLinkRec?,
   shareViaProfile: MutableState<Boolean>,
+  rhId: Long?,
   onCloseHandler: MutableState<(close: () -> Unit) -> Unit>,
   createAddress: () -> Unit,
   learnMore: () -> Unit,
@@ -181,7 +183,7 @@ private fun UserAddressLayout(
   Column(
     Modifier.verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(MR.strings.simplex_address), false)
+    AppBarTitle(stringResource(MR.strings.simplex_address), hostDevice(rhId), withPadding = false)
     Column(
       Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF),
       horizontalAlignment = Alignment.CenterHorizontally,
@@ -438,6 +440,7 @@ fun PreviewUserAddressLayoutNoAddress() {
       setProfileAddress = { _ -> },
       learnMore = {},
       shareViaProfile = remember { mutableStateOf(false) },
+      rhId = null,
       onCloseHandler = remember { mutableStateOf({}) },
       sendEmail = {},
     )
@@ -471,6 +474,7 @@ fun PreviewUserAddressLayoutAddressCreated() {
       setProfileAddress = { _ -> },
       learnMore = {},
       shareViaProfile = remember { mutableStateOf(false) },
+      rhId = null,
       onCloseHandler = remember { mutableStateOf({}) },
       sendEmail = {},
     )

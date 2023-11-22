@@ -88,7 +88,7 @@ class AlertManager {
         onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
         title = alertTitle(title),
         buttons = {
-          AlertContent(text, hostDevice) {
+          AlertContent(text, hostDevice, true) {
             Row(
               Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
               horizontalArrangement = Arrangement.SpaceBetween
