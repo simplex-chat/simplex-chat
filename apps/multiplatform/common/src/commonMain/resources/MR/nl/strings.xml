@@ -1516,4 +1516,5 @@
 \n- en meer!</string>
     <string name="remote_host_was_disconnected_toast">De verbinding met de externe host is verbroken: <b>%s</b></string>
     <string name="group_member_role_author">auteur</string>
+    <string name="waiting_for_mobile_to_connect_on_port">Wachten tot mobiel verbinding maakt op poort <i>%s</i></string>
 </resources>
