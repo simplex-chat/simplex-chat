@@ -29,4 +29,6 @@
     <string name="accept_connection_request__question">Elfogadod a kapcsolatfelvételt?</string>
     <string name="accept_contact_button">Elfogad</string>
     <string name="accept">Elfogad</string>
+    <string name="add_address_to_your_profile">Add hozzá az azonosítót a profilodhoz, így a kapcsolataid megosztatják azt más emberekkel. A profilod változtatásai így frissítésre kerülnek a kapcsolataidnál is!</string>
+    <string name="color_primary_variant">További kiemelőszín</string>
 </resources>
