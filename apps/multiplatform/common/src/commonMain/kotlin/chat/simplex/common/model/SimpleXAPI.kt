@@ -1851,7 +1851,7 @@ object ChatController {
             generalGetString(MR.strings.remote_host_was_disconnected_toast).format(disconnectedHost.hostDeviceName.ifEmpty { disconnectedHost.remoteHostId.toString() })
           )
         }
-        if (chatModel.currentRemoteHost.value != null) {
+        if (chatModel.remoteHostId == r.remoteHostId_) {
           chatModel.currentRemoteHost.value = null
           switchUIRemoteHost(null)
         }
