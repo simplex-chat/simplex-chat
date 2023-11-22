@@ -104,6 +104,7 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
+import Simplex.RemoteControl.Invitation (RCSignedInvitation (..), RCInvitation (..))
 import System.Exit (ExitCode, exitFailure, exitSuccess)
 import System.FilePath (takeFileName, (</>))
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, stdout)
@@ -1966,8 +1967,8 @@ processChatCommand = \case
   ListRemoteHosts -> withUser_ $ CRRemoteHostList <$> listRemoteHosts
   SwitchRemoteHost rh_ -> withUser_ $ CRCurrentRemoteHost <$> switchRemoteHost rh_
   StartRemoteHost rh_ -> withUser_ $ do
-    (remoteHost_, inv) <- startRemoteHost rh_
-    pure CRRemoteHostStarted {remoteHost_, invitation = decodeLatin1 $ strEncode inv}
+    (remoteHost_, inv@RCSignedInvitation {invitation = RCInvitation {port}}) <- startRemoteHost rh_
+    pure CRRemoteHostStarted {remoteHost_, invitation = decodeLatin1 $ strEncode inv, ctrlPort = show port}
   StopRemoteHost rh_ -> withUser_ $ closeRemoteHost rh_ >> ok_
   DeleteRemoteHost rh -> withUser_ $ deleteRemoteHost rh >> ok_
   StoreRemoteFile rh encrypted_ localPath -> withUser_ $ CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
