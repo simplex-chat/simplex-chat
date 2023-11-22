@@ -1663,7 +1663,7 @@
   <string name="disconnect_desktop_question">Disconnect desktop?</string>
   <string name="only_one_device_can_work_at_the_same_time">Only one device can work at the same time</string>
   <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Open <i>Use from desktop</i> in mobile app and scan QR code.]]></string>
-  <string name="waiting_for_mobile_to_connect_on_port"><![CDATA[Waiting for mobile to connect on port <i>%s</i>. Open this port in firewall settings.]]></string>
+  <string name="waiting_for_mobile_to_connect_on_port"><![CDATA[Waiting for mobile to connect on port <i>%s</i>]]></string>
   <string name="bad_desktop_address">Bad desktop address</string>
   <string name="desktop_incompatible_version">Incompatible version</string>
   <string name="desktop_app_version_is_incompatible">Desktop app version %s is not compatible with this app.</string>
