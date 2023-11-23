@@ -382,7 +382,7 @@ struct ConnectDesktopView: View {
 
             Section("Linked desktop options") {
                 Toggle("Verify connections", isOn: $confirmRemoteSessions)
-                Toggle("Discover on network", isOn: $connectRemoteViaMulticast)
+                Toggle("Discover on local network", isOn: $connectRemoteViaMulticast)
                 if connectRemoteViaMulticast {
                     Toggle("Connect automatically", isOn: $connectRemoteViaMulticastAuto)
                 }
