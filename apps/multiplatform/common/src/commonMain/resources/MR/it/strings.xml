@@ -1512,9 +1512,11 @@
     <string name="v5_4_block_group_members_descr">Per nascondere messaggi indesiderati.</string>
     <string name="v5_4_better_groups">Gruppi migliorati</string>
     <string name="v5_4_incognito_groups">Gruppi in incognito</string>
-    <string name="remote_host_was_disconnected_toast">L\'host remoto è stato disconnesso: <b>%s</b></string>
+    <string name="remote_host_was_disconnected_toast">Il cellulare <b>%s</b> è stato disconnesso</string>
     <string name="v5_4_better_groups_descr">Ingresso più veloce e messaggi più affidabili.</string>
     <string name="v5_4_more_things_descr">- avvisa facoltativamente i contatti eliminati.
 \n- nomi del profilo con spazi.
 \n- e molto altro!</string>
+    <string name="waiting_for_mobile_to_connect_on_port">In attesa che il cellulare si connetta alla porta <i>%s</i></string>
+    <string name="group_member_role_author">autore</string>
 </resources>
