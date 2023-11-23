@@ -284,11 +284,13 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
         rhi_
     ]
   CRRemoteHostList hs -> viewRemoteHosts hs
-  CRRemoteHostStarted {remoteHost_, invitation} ->
-    [ maybe "new remote host started" (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> sShow rhId <> " started") remoteHost_,
+  CRRemoteHostStarted {remoteHost_, invitation, ctrlPort} ->
+    [ plain $ maybe ("new remote host" <> started) (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> show rhId <> started) remoteHost_,
       "Remote session invitation:",
       plain invitation
     ]
+    where
+      started = " started on port " <> ctrlPort
   CRRemoteHostSessionCode {remoteHost_, sessionCode} ->
     [ maybe "new remote host connecting" (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> sShow rhId <> " connecting") remoteHost_,
       "Compare session code with host:",
@@ -303,18 +305,16 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     [plain $ "file " <> filePath <> " stored on remote host " <> show rhId]
       <> maybe [] ((: []) . plain . cryptoFileArgsStr testView) cfArgs_
   CRRemoteCtrlList cs -> viewRemoteCtrls cs
-  CRRemoteCtrlFound rc ->
-    ["remote controller found:", viewRemoteCtrl rc]
-  CRRemoteCtrlConnecting {remoteCtrl_, ctrlAppInfo = CtrlAppInfo {deviceName, appVersionRange = AppVersionRange _ (AppVersion ctrlVersion)}, appVersion = AppVersion v} ->
-    [ (maybe "connecting new remote controller" (\RemoteCtrlInfo {remoteCtrlId} -> "connecting remote controller " <> sShow remoteCtrlId) remoteCtrl_ <> ": ")
-        <> (if T.null deviceName then "" else plain deviceName <> ", ")
-        <> ("v" <> plain (V.showVersion ctrlVersion) <> ctrlVersionInfo)
+  CRRemoteCtrlFound {remoteCtrl = RemoteCtrlInfo {remoteCtrlId, ctrlDeviceName}, ctrlAppInfo_, appVersion, compatible} ->
+    [ "remote controller " <> sShow remoteCtrlId <> " found: "
+        <> maybe (deviceName <> "not compatible") (\info -> viewRemoteCtrl info appVersion compatible) ctrlAppInfo_
     ]
     where
-      ctrlVersionInfo
-        | ctrlVersion < v = " (older than this app - upgrade controller)"
-        | ctrlVersion > v = " (newer than this app - upgrade it)"
-        | otherwise = ""
+      deviceName = if T.null ctrlDeviceName then "" else plain ctrlDeviceName <> ", " 
+  CRRemoteCtrlConnecting {remoteCtrl_, ctrlAppInfo, appVersion} ->
+    [ (maybe "connecting new remote controller" (\RemoteCtrlInfo {remoteCtrlId} -> "connecting remote controller " <> sShow remoteCtrlId) remoteCtrl_ <> ": ")
+        <> viewRemoteCtrl ctrlAppInfo appVersion True
+    ]
   CRRemoteCtrlSessionCode {remoteCtrl_, sessionCode} ->
     [ maybe "new remote controller connected" (\RemoteCtrlInfo {remoteCtrlId} -> "remote controller " <> sShow remoteCtrlId <> " connected") remoteCtrl_,
       "Compare session code with controller and use:",
@@ -1728,10 +1728,16 @@ viewRemoteCtrls = \case
       RCSPendingConfirmation {sessionCode} -> " (pending confirmation, code: " <> sessionCode <> ")"
       RCSConnected _ -> " (connected)"
 
--- TODO fingerprint, accepted?
-viewRemoteCtrl :: RemoteCtrlInfo -> StyledString
-viewRemoteCtrl RemoteCtrlInfo {remoteCtrlId, ctrlDeviceName} =
-  plain $ tshow remoteCtrlId <> ". " <> ctrlDeviceName
+viewRemoteCtrl :: CtrlAppInfo -> AppVersion -> Bool -> StyledString
+viewRemoteCtrl CtrlAppInfo {deviceName, appVersionRange = AppVersionRange _ (AppVersion ctrlVersion)} (AppVersion v) compatible =
+  (if T.null deviceName then "" else plain deviceName <> ", ")
+    <> ("v" <> plain (V.showVersion ctrlVersion) <> ctrlVersionInfo)
+  where
+    ctrlVersionInfo
+      | ctrlVersion < v = " (older than this app - upgrade controller" <> showCompatible <> ")"
+      | ctrlVersion > v = " (newer than this app - upgrade it" <> showCompatible <> ")"
+      | otherwise = ""
+    showCompatible = if compatible then "" else ", " <> bold' "not compatible"
 
 viewChatError :: ChatLogLevel -> Bool -> ChatError -> [StyledString]
 viewChatError logLevel testView = \case

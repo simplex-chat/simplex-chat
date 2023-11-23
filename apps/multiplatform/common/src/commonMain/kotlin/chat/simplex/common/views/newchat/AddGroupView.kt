@@ -58,6 +58,7 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
       }
     },
     incognitoPref = chatModel.controller.appPrefs.incognito,
+    rhId,
     close
   )
 }
@@ -66,6 +67,7 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
 fun AddGroupLayout(
   createGroup: (Boolean, GroupProfile) -> Unit,
   incognitoPref: SharedPreference<Boolean>,
+  rhId: Long?,
   close: () -> Unit
 ) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
@@ -98,7 +100,7 @@ fun AddGroupLayout(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = DEFAULT_PADDING)
         ) {
-          AppBarTitle(stringResource(MR.strings.create_secret_group_title))
+          AppBarTitle(stringResource(MR.strings.create_secret_group_title), hostDevice(rhId))
           Box(
             Modifier
               .fillMaxWidth()
@@ -174,7 +176,8 @@ fun PreviewAddGroupLayout() {
     AddGroupLayout(
       createGroup = { _, _ -> },
       incognitoPref = SharedPreference({ false }, {}),
-      close = {}
+      close = {},
+      rhId = null,
     )
   }
 }

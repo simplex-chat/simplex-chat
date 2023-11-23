@@ -29,13 +29,12 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: ServerProtocol, close: () -> Unit) {
-  // TODO close if remote host changes
-  var presetServers by remember { mutableStateOf(emptyList<String>()) }
-  var servers by remember {
+  var presetServers by remember(rhId) { mutableStateOf(emptyList<String>()) }
+  var servers by remember(rhId) {
     mutableStateOf(m.userSMPServersUnsaved.value ?: emptyList())
   }
-  val currServers = remember { mutableStateOf(servers) }
-  val testing = rememberSaveable { mutableStateOf(false) }
+  val currServers = remember(rhId) { mutableStateOf(servers) }
+  val testing = rememberSaveable(rhId) { mutableStateOf(false) }
   val serversUnchanged = remember { derivedStateOf { servers == currServers.value || testing.value } }
   val allServersDisabled = remember { derivedStateOf { servers.all { !it.enabled } } }
   val saveDisabled = remember {
@@ -51,7 +50,12 @@ fun ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: ServerProtoco
     }
   }
 
-  LaunchedEffect(Unit) {
+  KeyChangeEffect(rhId) {
+    m.userSMPServersUnsaved.value = null
+    servers = emptyList()
+  }
+
+  LaunchedEffect(rhId) {
     val res = m.controller.getUserProtoServers(rhId, serverProtocol)
     if (res != null) {
       currServers.value = res.protoServers

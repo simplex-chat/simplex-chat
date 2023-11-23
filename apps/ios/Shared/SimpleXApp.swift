@@ -26,7 +26,10 @@ struct SimpleXApp: App {
     @State private var showInitializationView = false
 
     init() {
-        hs_init(0, nil)
+        DispatchQueue.global(qos: .background).sync {
+            haskell_init()
+//            hs_init(0, nil)
+        }
         UserDefaults.standard.register(defaults: appDefaults)
         setGroupDefaults()
         registerGroupDefaults()

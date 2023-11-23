@@ -67,7 +67,7 @@ fun PasteToConnectLayout(
     Modifier.verticalScroll(rememberScrollState()).padding(horizontal = DEFAULT_PADDING),
     verticalArrangement = Arrangement.SpaceBetween,
   ) {
-    AppBarTitle(stringResource(MR.strings.connect_via_link), false)
+    AppBarTitle(stringResource(MR.strings.connect_via_link), hostDevice(rhId), withPadding = false)
 
     Box(Modifier.padding(top = DEFAULT_PADDING, bottom = 6.dp)) {
       TextEditor(
