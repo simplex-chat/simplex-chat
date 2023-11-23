@@ -1910,7 +1910,7 @@ Das kann nicht rückgängig gemacht werden!</target>
       </trans-unit>
       <trans-unit id="Discover on network" xml:space="preserve" approved="no">
         <source>Discover on network</source>
-        <target state="translated">Netzwerk durchsuchen</target>
+        <target state="translated">Lokales Netzwerk durchsuchen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
