@@ -4,7 +4,6 @@ import SectionBottomSpacer
 import SectionItemView
 import SectionTextFooter
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import chat.simplex.common.platform.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -17,7 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.TAG
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
@@ -65,6 +64,7 @@ suspend fun planAndConnect(
               confirmText = if (incognito) generalGetString(MR.strings.connect_via_link_incognito) else generalGetString(MR.strings.connect_via_link_verb),
               onConfirm = { withApi { connectViaUri(chatModel, rhId, uri, incognito, connectionPlan, close) } },
               destructive = true,
+              hostDevice = hostDevice(rhId),
             )
           } else {
             askCurrentOrIncognitoProfileAlert(
@@ -82,12 +82,14 @@ suspend fun planAndConnect(
             openKnownContact(chatModel, rhId, close, contact)
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.contact_already_exists),
-              String.format(generalGetString(MR.strings.connect_plan_you_are_already_connecting_to_vName), contact.displayName)
+              String.format(generalGetString(MR.strings.connect_plan_you_are_already_connecting_to_vName), contact.displayName),
+              hostDevice = hostDevice(rhId),
             )
           } else {
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.connect_plan_already_connecting),
-              generalGetString(MR.strings.connect_plan_you_are_already_connecting_via_this_one_time_link)
+              generalGetString(MR.strings.connect_plan_you_are_already_connecting_via_this_one_time_link),
+              hostDevice = hostDevice(rhId),
             )
           }
         }
@@ -97,7 +99,8 @@ suspend fun planAndConnect(
           openKnownContact(chatModel, rhId, close, contact)
           AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.contact_already_exists),
-            String.format(generalGetString(MR.strings.you_are_already_connected_to_vName_via_this_link), contact.displayName)
+            String.format(generalGetString(MR.strings.you_are_already_connected_to_vName_via_this_link), contact.displayName),
+            hostDevice = hostDevice(rhId),
           )
         }
       }
@@ -124,6 +127,7 @@ suspend fun planAndConnect(
               confirmText = if (incognito) generalGetString(MR.strings.connect_via_link_incognito) else generalGetString(MR.strings.connect_via_link_verb),
               onConfirm = { withApi { connectViaUri(chatModel, rhId, uri, incognito, connectionPlan, close) } },
               destructive = true,
+              hostDevice = hostDevice(rhId),
             )
           } else {
             askCurrentOrIncognitoProfileAlert(
@@ -143,6 +147,7 @@ suspend fun planAndConnect(
               confirmText = if (incognito) generalGetString(MR.strings.connect_via_link_incognito) else generalGetString(MR.strings.connect_via_link_verb),
               onConfirm = { withApi { connectViaUri(chatModel, rhId, uri, incognito, connectionPlan, close) } },
               destructive = true,
+              hostDevice = hostDevice(rhId),
             )
           } else {
             askCurrentOrIncognitoProfileAlert(
@@ -159,7 +164,8 @@ suspend fun planAndConnect(
           openKnownContact(chatModel, rhId, close, contact)
           AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.contact_already_exists),
-            String.format(generalGetString(MR.strings.connect_plan_you_are_already_connecting_to_vName), contact.displayName)
+            String.format(generalGetString(MR.strings.connect_plan_you_are_already_connecting_to_vName), contact.displayName),
+            hostDevice = hostDevice(rhId),
           )
         }
         is ContactAddressPlan.Known -> {
@@ -168,7 +174,8 @@ suspend fun planAndConnect(
           openKnownContact(chatModel, rhId, close, contact)
           AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.contact_already_exists),
-            String.format(generalGetString(MR.strings.you_are_already_connected_to_vName_via_this_link), contact.displayName)
+            String.format(generalGetString(MR.strings.you_are_already_connected_to_vName_via_this_link), contact.displayName),
+            hostDevice = hostDevice(rhId),
           )
         }
         is ContactAddressPlan.ContactViaAddress -> {
@@ -190,7 +197,8 @@ suspend fun planAndConnect(
               title = generalGetString(MR.strings.connect_via_group_link),
               text = generalGetString(MR.strings.you_will_join_group),
               confirmText = if (incognito) generalGetString(MR.strings.join_group_incognito_button) else generalGetString(MR.strings.join_group_button),
-              onConfirm = { withApi { connectViaUri(chatModel, rhId, uri, incognito, connectionPlan, close) } }
+              onConfirm = { withApi { connectViaUri(chatModel, rhId, uri, incognito, connectionPlan, close) } },
+              hostDevice = hostDevice(rhId),
             )
           } else {
             askCurrentOrIncognitoProfileAlert(
@@ -215,6 +223,7 @@ suspend fun planAndConnect(
               confirmText = if (incognito) generalGetString(MR.strings.join_group_incognito_button) else generalGetString(MR.strings.join_group_button),
               onConfirm = { withApi { connectViaUri(chatModel, rhId, uri, incognito, connectionPlan, close) } },
               destructive = true,
+              hostDevice = hostDevice(rhId),
             )
           } else {
             askCurrentOrIncognitoProfileAlert(
@@ -236,7 +245,8 @@ suspend fun planAndConnect(
           } else {
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.connect_plan_already_joining_the_group),
-              generalGetString(MR.strings.connect_plan_you_are_already_joining_the_group_via_this_link)
+              generalGetString(MR.strings.connect_plan_you_are_already_joining_the_group_via_this_link),
+              hostDevice = hostDevice(rhId),
             )
           }
         }
@@ -246,7 +256,8 @@ suspend fun planAndConnect(
           openKnownGroup(chatModel, rhId, close, groupInfo)
           AlertManager.shared.showAlertMsg(
             generalGetString(MR.strings.connect_plan_group_already_exists),
-            String.format(generalGetString(MR.strings.connect_plan_you_are_already_in_group_vName), groupInfo.displayName)
+            String.format(generalGetString(MR.strings.connect_plan_you_are_already_in_group_vName), groupInfo.displayName),
+            hostDevice = hostDevice(rhId),
           )
         }
       }
@@ -284,7 +295,8 @@ suspend fun connectViaUri(
         ConnectionLinkType.CONTACT -> generalGetString(MR.strings.you_will_be_connected_when_your_connection_request_is_accepted)
         ConnectionLinkType.INVITATION -> generalGetString(MR.strings.you_will_be_connected_when_your_contacts_device_is_online)
         ConnectionLinkType.GROUP -> generalGetString(MR.strings.you_will_be_connected_when_group_host_device_is_online)
-      }
+      },
+      hostDevice = hostDevice(rhId),
     )
   }
   return r
@@ -336,7 +348,8 @@ fun askCurrentOrIncognitoProfileAlert(
           Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
       }
-    }
+    },
+    hostDevice = hostDevice(rhId),
   )
 }
 
@@ -411,7 +424,8 @@ fun ownGroupLinkConfirmConnect(
           Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
       }
-    }
+    },
+    hostDevice = hostDevice(rhId),
   )
 }
 
@@ -455,7 +469,7 @@ fun ConnectContactLayout(
     Modifier.verticalScroll(rememberScrollState()).padding(horizontal = DEFAULT_PADDING),
     verticalArrangement = Arrangement.SpaceBetween
   ) {
-    AppBarTitle(stringResource(MR.strings.scan_QR_code), false)
+    AppBarTitle(stringResource(MR.strings.scan_QR_code), hostDevice(rh?.remoteHostId), withPadding = false)
     Box(
       Modifier
         .fillMaxWidth()

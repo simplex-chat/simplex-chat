@@ -17,7 +17,7 @@ fun ScanCodeView(verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit, close: ()
       .fillMaxSize()
       .padding(horizontal = DEFAULT_PADDING)
   ) {
-    AppBarTitle(stringResource(MR.strings.scan_code), false)
+    AppBarTitle(stringResource(MR.strings.scan_code), withPadding = false)
     Box(
       Modifier
         .fillMaxWidth()

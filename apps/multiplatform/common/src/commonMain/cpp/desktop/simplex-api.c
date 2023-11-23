@@ -4,11 +4,14 @@
 #include <stdint.h>
 
 // from the RTS
-void hs_init(int * argc, char **argv[]);
+void hs_init_with_rtsopts(int * argc, char **argv[]);
 
 JNIEXPORT void JNICALL
 Java_chat_simplex_common_platform_CoreKt_initHS(JNIEnv *env, jclass clazz) {
-    hs_init(NULL, NULL);
+    int argc = 5;
+    char *argv[] = {"simplex", "+RTS", "-A16m", "-H64m", "-xn", NULL}; // see android/simplex-api.c for details
+    char **pargv = argv;
+    hs_init_with_rtsopts(&argc, &pargv);
 }
 
 // from simplex-chat
