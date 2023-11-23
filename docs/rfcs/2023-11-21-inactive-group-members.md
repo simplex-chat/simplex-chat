@@ -61,3 +61,50 @@ Perhaps an acceptable way to solve this problem is to add a task to cleanup mana
 \***
 
 Additionally we could consider group member connection as disabled with smaller AUTH error count. Currently it's 10 messages, could be 1.
+
+### Delivery suspension notice
+
+When receiving side comes back online, replies and continues to receive messages, it has no way of knowing there was a gap in messages from sending member. To notify receiving member about delivery suspension, sending member should send notice containing shared message id of the last sent message (new protocol event) to them:
+
+```haskell
+XGrpMemSuspended :: SharedMsgId -> ChatMsgEvent 'Json
+```
+
+Sending side additionally tracks:
+- xgrpmemsuspended_sent flag - to only send it once.
+
+When processing it, receiving member creates a "gap" chat item (e.g. event saying "member x suspended delivery to you due to your inactivity, there may be a gap in messages").
+
+After receiving member signals activity by sending any reply, sending member may send message history before continuing normal delivery.
+
+Starting point for message history: either receiving member could request history starting from specific shared message id (received in XGrpMemSuspended) with another new protocol event, or sending member can remember it instead of just flag.
+
+### Sending message history
+
+New protocol event:
+
+```haskell
+XGrpMsgHistory :: [ChatMessage 'Json] -> ChatMsgEvent 'Json
+```
+
+Sending member builds messages history starting starting from requested/remembered shared message id:
+- `messages` table is periodically cleaned up, so messages would be retrieved from `chat_items`.
+- if chat item for starting shared message id is not found (it may have been deleted manually or as a disappearing message), abort?
+  - sending member could track number of skipped messages per member, but again if any chat items were deleted, older (previously successfully sent) chat items would be retrieved, resulting in duplicate messages. If receiving member has also cleaned up records in `messages` table, they wouldn't be deduplicated.
+  - sending member could track timestamp of first unsent message instead of shared msg id.
+- sending member should probably limit maximum number of messages sent as history (100?).
+- only XMsgNew events should be sent in XGrpMsgHistory (chat items to be transformed back into text messages).
+  - updates, deletions would be reflected in chat item list.
+  - reactions would be omitted.
+  - files would be likely expired by the time of sending history, so only file name and size may be sent in FileInvitation, with invitation being practically not acceptable.
+    - add new flag to CIFile "expired" for receiving member to mark chat items created based on such invitations.
+    - FileInvitation in MsgContainer could also contain this flag as optional to explicitly communicate that only file metadata is sent.
+    - alternatively sending member could re-upload files, but this seems excessive.
+  - XMsgNew events don't include message timestamps (instead usually broker ts is retrieved from agent message meta), so receiving member wouldn't be able to restore them from history. Perhaps history should include XGrpMsgForward events containing XMsgNew events instead.
+- XGrpMsgHistory is likely to exceed message block limit.
+  - either multiple messages comprising a history can be batched as a single message on chat level until the block size is exceeded.
+  - or large history messages could be batched on agent level.
+
+\***
+
+Same XGrpMsgHistory protocol event could be sent by host to new members, after sending introductions.
