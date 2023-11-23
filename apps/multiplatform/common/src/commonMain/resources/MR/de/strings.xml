@@ -1547,7 +1547,7 @@
     <string name="connected_desktop">Verbundener Desktop</string>
     <string name="desktop_address">Desktop-Adresse</string>
     <string name="v5_4_better_groups">Bessere Gruppen</string>
-    <string name="discover_on_network">Netzwerk durchsuchen</string>
+    <string name="discover_on_network">Lokales Netzwerk durchsuchen</string>
     <string name="desktop_device">Desktop</string>
     <string name="connected_to_desktop">Mit dem Desktop verbunden</string>
     <string name="connecting_to_desktop">Mit dem Desktop verbinden</string>
@@ -1600,4 +1600,9 @@
     <string name="verify_connections">Verbindungen überprüfen</string>
     <string name="loading_remote_file_desc">Bitte warten Sie, solange die Datei von dem verknüpften Mobiltelefon geladen wird</string>
     <string name="verify_connection">Verbindung überprüfen</string>
+    <string name="multicast_connect_automatically">Automatisch verbinden</string>
+    <string name="waiting_for_desktop">Auf Desktop warten…</string>
+    <string name="found_desktop">Gefundener Desktop</string>
+    <string name="not_compatible">Nicht kompatibel!</string>
+    <string name="multicast_discoverable_via_local_network">Über das lokale Netzwerk auffindbar</string>
 </resources>
