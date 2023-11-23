@@ -25,7 +25,6 @@ struct ConnectDesktopView: View {
     @State private var showConnectScreen = true
     @State private var showQRCodeScanner = true
     @State private var firstAppearance = true
-    @State private var showingLinkedDevices = false
 
     private var useMulticast: Bool {
         connectRemoteViaMulticast && !remoteCtrls.isEmpty
@@ -75,7 +74,10 @@ struct ConnectDesktopView: View {
 
     var viewBody: some View {
         Group {
-            if let session = m.remoteCtrlSession {
+            let discovery = m.remoteCtrlSession?.discovery
+            if discovery == true || (discovery == nil && !showConnectScreen) {
+                searchingDesktopView()
+            } else if let session = m.remoteCtrlSession {
                 switch session.sessionState {
                 case .starting: connectingDesktopView(session, nil)
                 case .searching: searchingDesktopView()
@@ -91,8 +93,6 @@ struct ConnectDesktopView: View {
                     }
                 case let .connected(rc, _): activeSessionView(session, rc)
                 }
-            } else if !showConnectScreen {
-                searchingDesktopView()
             // The hack below prevents camera freezing when exiting linked devices view.
             // Using showQRCodeScanner inside connectDesktopView or passing it as parameter still results in freezing.
             } else if showQRCodeScanner || firstAppearance {
@@ -105,10 +105,10 @@ struct ConnectDesktopView: View {
             setDeviceName(deviceName)
             updateRemoteCtrls()
             showConnectScreen = !useMulticast
-            if m.remoteCtrlSession == nil && useMulticast {
-                findKnownDesktop()
-            } else if m.remoteCtrlSession != nil && !useMulticast {
+            if m.remoteCtrlSession != nil {
                 disconnectDesktop()
+            } else if useMulticast {
+                findKnownDesktop()
             }
             // The hack below prevents camera freezing when exiting linked devices view.
             // `firstAppearance` prevents camera flicker when the view first opens.
@@ -120,7 +120,8 @@ struct ConnectDesktopView: View {
             }
         }
         .onDisappear {
-            if m.remoteCtrlSession != nil && !showingLinkedDevices {
+            if m.remoteCtrlSession != nil {
+                showConnectScreen = false
                 disconnectDesktop()
             }
         }
@@ -207,7 +208,7 @@ struct ConnectDesktopView: View {
             Section("Found desktop") {
                 Text("Waiting for desktop...").italic()
                 Button {
-                    disconnectDesktop()
+                    disconnectDesktop(.dismiss)
                 } label: {
                     Label("Scan QR code", systemImage: "qrcode")
                 }
@@ -389,12 +390,6 @@ struct ConnectDesktopView: View {
             }
         }
         .navigationTitle("Linked desktops")
-        .onAppear {
-            showingLinkedDevices = true
-        }
-        .onDisappear {
-            showingLinkedDevices = false
-        }
     }
 
     private func remoteCtrlView(_ rc: RemoteCtrlInfo) -> some View {
@@ -511,7 +506,6 @@ struct ConnectDesktopView: View {
     }
 
     private func disconnectDesktop(_ action: UserDisconnectAction? = nil) {
-        showConnectScreen = false
         Task {
             do {
                 try await stopRemoteCtrl()
@@ -524,7 +518,7 @@ struct ConnectDesktopView: View {
                     switch action {
                     case .back: dismiss()
                     case .dismiss: dismiss()
-                    case .none: showConnectScreen = true
+                    case .none: ()
                     }
                 }
             } catch let e {

@@ -782,6 +782,10 @@ struct RemoteCtrlSession {
         if case .connected = sessionState { true } else { false }
     }
 
+    var discovery: Bool {
+        if case .searching = sessionState { true } else { false }
+    }
+
     var sessionCode: String? {
         switch sessionState {
         case let .pendingConfirmation(_, sessionCode): sessionCode
