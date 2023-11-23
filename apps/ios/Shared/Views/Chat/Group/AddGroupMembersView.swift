@@ -157,7 +157,7 @@ struct AddGroupMembersViewCommon: View {
     private func rolePicker() -> some View {
         Picker("New member role", selection: $selectedRole) {
             ForEach(GroupMemberRole.allCases) { role in
-                if role <= groupInfo.membership.memberRole {
+                if role <= groupInfo.membership.memberRole && role != .author {
                     Text(role.text)
                 }
             }

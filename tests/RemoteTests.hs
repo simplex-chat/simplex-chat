@@ -116,7 +116,7 @@ remoteHandshakeRejectTest = testChat3 aliceProfile aliceDesktopProfile bobProfil
   mobileBob ##> "/set device name MobileBob"
   mobileBob <## "ok"
   desktop ##> "/start remote host 1"
-  desktop <## "remote host 1 started"
+  desktop <##. "remote host 1 started on port "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobileBob ##> ("/connect remote ctrl " <> inv)
@@ -425,7 +425,7 @@ startRemote mobile desktop = do
   mobile ##> "/set device name Mobile"
   mobile <## "ok"
   desktop ##> "/start remote host new"
-  desktop <## "new remote host started"
+  desktop <##. "new remote host started on port "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobile ##> ("/connect remote ctrl " <> inv)
@@ -440,7 +440,7 @@ startRemote mobile desktop = do
 startRemoteStored :: TestCC -> TestCC -> IO ()
 startRemoteStored mobile desktop = do
   desktop ##> "/start remote host 1"
-  desktop <## "remote host 1 started"
+  desktop <##. "remote host 1 started on port "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobile ##> ("/connect remote ctrl " <> inv)
@@ -454,7 +454,7 @@ startRemoteStored mobile desktop = do
 startRemoteDiscover :: TestCC -> TestCC -> IO ()
 startRemoteDiscover mobile desktop = do
   desktop ##> "/start remote host 1 multicast=on"
-  desktop <## "remote host 1 started"
+  desktop <##. "remote host 1 started on port "
   desktop <## "Remote session invitation:"
   _inv <- getTermLine desktop -- will use multicast instead
   mobile ##> "/find remote ctrl"

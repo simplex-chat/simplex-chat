@@ -26,8 +26,7 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.remote.ConnectDesktopView
-import chat.simplex.common.views.remote.connectMobileDevice
+import chat.simplex.common.views.remote.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.delay
@@ -84,7 +83,7 @@ fun UserPicker(
       .filter { it }
       .collect {
         try {
-          val updatedUsers = chatModel.controller.listUsers(chatModel.remoteHostId).sortedByDescending { it.user.activeUser }
+          val updatedUsers = chatModel.controller.listUsers(chatModel.remoteHostId()).sortedByDescending { it.user.activeUser }
           var same = users.size == updatedUsers.size
           if (same) {
             for (i in 0 until minOf(users.size, updatedUsers.size)) {
@@ -209,6 +208,14 @@ fun UserPicker(
         UseFromDesktopPickerItem {
           ModalManager.start.showCustomModal { close ->
             ConnectDesktopView(close)
+          }
+          userPickerState.value = AnimatedViewState.GONE
+        }
+        Divider(Modifier.requiredHeight(1.dp))
+      } else if (remoteHosts.isEmpty()) {
+        LinkAMobilePickerItem {
+          ModalManager.start.showModal {
+            ConnectMobileView()
           }
           userPickerState.value = AnimatedViewState.GONE
         }
@@ -379,6 +386,16 @@ private fun UseFromDesktopPickerItem(onClick: () -> Unit) {
   SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
     Icon(painterResource(MR.images.ic_desktop), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
+    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+  }
+}
+
+@Composable
+private fun LinkAMobilePickerItem(onClick: () -> Unit) {
+  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
+    val text = generalGetString(MR.strings.link_a_mobile)
+    Icon(painterResource(MR.images.ic_smartphone_300), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
   }

@@ -285,11 +285,13 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
         rhi_
     ]
   CRRemoteHostList hs -> viewRemoteHosts hs
-  CRRemoteHostStarted {remoteHost_, invitation} ->
-    [ maybe "new remote host started" (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> sShow rhId <> " started") remoteHost_,
+  CRRemoteHostStarted {remoteHost_, invitation, ctrlPort} ->
+    [ plain $ maybe ("new remote host" <> started) (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> show rhId <> started) remoteHost_,
       "Remote session invitation:",
       plain invitation
     ]
+    where
+      started = " started on port " <> ctrlPort
   CRRemoteHostSessionCode {remoteHost_, sessionCode} ->
     [ maybe "new remote host connecting" (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> sShow rhId <> " connecting") remoteHost_,
       "Compare session code with host:",

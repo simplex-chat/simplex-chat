@@ -44,6 +44,12 @@
 "(" = "(";
 
 /* No comment provided by engineer. */
+"(new)" = "(nieuw)";
+
+/* No comment provided by engineer. */
+"(this device v%@)" = "(dit apparaat v%@)";
+
+/* No comment provided by engineer. */
 ")" = ")";
 
 /* No comment provided by engineer. */
@@ -548,6 +554,9 @@
 /* No comment provided by engineer. */
 "Back" = "Terug";
 
+/* No comment provided by engineer. */
+"Bad desktop address" = "Onjuist desktopadres";
+
 /* integrity error chat item */
 "bad message hash" = "Onjuiste bericht hash";
 
@@ -772,6 +781,9 @@
 "Connect incognito" = "Verbind incognito";
 
 /* No comment provided by engineer. */
+"Connect to desktop" = "Verbinden met desktop";
+
+/* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "maak verbinding met SimpleX Chat-ontwikkelaars.";
 
 /* No comment provided by engineer. */
@@ -801,8 +813,14 @@
 /* No comment provided by engineer. */
 "connected" = "verbonden";
 
+/* No comment provided by engineer. */
+"Connected desktop" = "Verbonden desktop";
+
 /* rcv group event chat item */
 "connected directly" = "direct verbonden";
+
+/* No comment provided by engineer. */
+"Connected to desktop" = "Verbonden met desktop";
 
 /* No comment provided by engineer. */
 "connecting" = "Verbinden";
@@ -828,6 +846,9 @@
 /* No comment provided by engineer. */
 "Connecting server… (error: %@)" = "Verbinden met server... (fout: %@)";
 
+/* No comment provided by engineer. */
+"Connecting to desktop" = "Verbinding maken met desktop";
+
 /* chat list item title */
 "connecting…" = "Verbinden…";
 
@@ -845,6 +866,9 @@
 
 /* No comment provided by engineer. */
 "Connection request sent!" = "Verbindingsverzoek verzonden!";
+
+/* No comment provided by engineer. */
+"Connection terminated" = "Verbinding beëindigd";
 
 /* No comment provided by engineer. */
 "Connection timeout" = "Timeout verbinding";
@@ -1174,6 +1198,15 @@
 "Description" = "Beschrijving";
 
 /* No comment provided by engineer. */
+"Desktop address" = "Desktop adres";
+
+/* No comment provided by engineer. */
+"Desktop app version %@ is not compatible with this app." = "Desktop-app-versie %@ is niet compatibel met deze app.";
+
+/* No comment provided by engineer. */
+"Desktop devices" = "Desktop apparaten";
+
+/* No comment provided by engineer. */
 "Develop" = "Ontwikkelen";
 
 /* No comment provided by engineer. */
@@ -1237,7 +1270,13 @@
 "Disconnect" = "verbinding verbreken";
 
 /* No comment provided by engineer. */
+"Disconnect desktop?" = "Desktop loskoppelen?";
+
+/* No comment provided by engineer. */
 "Discover and join groups" = "Ontdek en sluit je aan bij groepen";
+
+/* No comment provided by engineer. */
+"Discover on network" = "Ontdek via netwerk";
 
 /* No comment provided by engineer. */
 "Do it later" = "Doe het later";
@@ -1374,6 +1413,12 @@
 /* chat item text */
 "encryption re-negotiation allowed for %@" = "versleuteling heronderhandeling toegestaan voor % @";
 
+/* message decrypt error item */
+"Encryption re-negotiation error" = "Fout bij heronderhandeling van codering";
+
+/* No comment provided by engineer. */
+"Encryption re-negotiation failed." = "Opnieuw onderhandelen over de codering is mislukt.";
+
 /* chat item text */
 "encryption re-negotiation required" = "heronderhandeling van versleuteling vereist";
 
@@ -1403,6 +1448,9 @@
 
 /* No comment provided by engineer. */
 "Enter server manually" = "Voer de server handmatig in";
+
+/* No comment provided by engineer. */
+"Enter this device name…" = "Voer deze apparaatnaam in…";
 
 /* placeholder */
 "Enter welcome message…" = "Welkomst bericht invoeren…";
@@ -1893,6 +1941,9 @@
 /* No comment provided by engineer. */
 "Incompatible database version" = "Incompatibele database versie";
 
+/* No comment provided by engineer. */
+"Incompatible version" = "Incompatibele versie";
+
 /* PIN entry */
 "Incorrect passcode" = "Onjuiste toegangscode";
 
@@ -2029,6 +2080,9 @@
 "Joining group" = "Deel nemen aan groep";
 
 /* No comment provided by engineer. */
+"Keep the app open to use it from desktop" = "Houd de app geopend om deze vanaf de desktop te gebruiken";
+
+/* No comment provided by engineer. */
 "Keep your connections" = "Behoud uw verbindingen";
 
 /* No comment provided by engineer. */
@@ -2063,6 +2117,12 @@
 
 /* No comment provided by engineer. */
 "Limitations" = "Beperkingen";
+
+/* No comment provided by engineer. */
+"Linked desktop options" = "Gekoppelde desktop opties";
+
+/* No comment provided by engineer. */
+"Linked desktops" = "Gelinkte desktops";
 
 /* No comment provided by engineer. */
 "LIVE" = "LIVE";
@@ -2463,6 +2523,9 @@
 "Paste" = "Plakken";
 
 /* No comment provided by engineer. */
+"Paste desktop address" = "Desktopadres plakken";
+
+/* No comment provided by engineer. */
 "Paste image" = "Afbeelding plakken";
 
 /* No comment provided by engineer. */
@@ -2847,6 +2910,9 @@
 "Scan QR code" = "Scan QR-code";
 
 /* No comment provided by engineer. */
+"Scan QR code from desktop" = "Scan QR-code vanaf uw desktop";
+
+/* No comment provided by engineer. */
 "Scan security code from your contact's app." = "Scan de beveiligingscode van de app van uw contact.";
 
 /* No comment provided by engineer. */
@@ -2989,6 +3055,9 @@
 
 /* No comment provided by engineer. */
 "Servers" = "Servers";
+
+/* No comment provided by engineer. */
+"Session code" = "Sessie code";
 
 /* No comment provided by engineer. */
 "Set 1 day" = "Stel 1 dag in";
@@ -3300,6 +3369,9 @@
 "this contact" = "dit contact";
 
 /* No comment provided by engineer. */
+"This device name" = "Deze apparaatnaam";
+
+/* No comment provided by engineer. */
 "This group has over %lld members, delivery receipts are not sent." = "Deze groep heeft meer dan %lld -leden, ontvangstbevestigingen worden niet verzonden.";
 
 /* No comment provided by engineer. */
@@ -3417,6 +3489,12 @@
 "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Tenzij uw contact de verbinding heeft verwijderd of deze link al is gebruikt, kan het een bug zijn. Meld het alstublieft.\nOm verbinding te maken, vraagt u uw contact om een andere verbinding link te maken en te controleren of u een stabiele netwerkverbinding heeft.";
 
 /* No comment provided by engineer. */
+"Unlink" = "Ontkoppelen";
+
+/* No comment provided by engineer. */
+"Unlink desktop?" = "Desktop ontkoppelen?";
+
+/* No comment provided by engineer. */
 "Unlock" = "Ontgrendelen";
 
 /* authentication reason */
@@ -3471,6 +3549,9 @@
 "Use for new connections" = "Gebruik voor nieuwe verbindingen";
 
 /* No comment provided by engineer. */
+"Use from desktop" = "Gebruik vanaf desktop";
+
+/* No comment provided by engineer. */
 "Use iOS call interface" = "De iOS-oproepinterface gebruiken";
 
 /* No comment provided by engineer. */
@@ -3492,10 +3573,22 @@
 "Using SimpleX Chat servers." = "SimpleX Chat servers gebruiken.";
 
 /* No comment provided by engineer. */
+"v%@" = "v%@";
+
+/* No comment provided by engineer. */
 "v%@ (%@)" = "v%@ (%@)";
 
 /* No comment provided by engineer. */
+"Verify code with desktop" = "Code verifiëren met desktop";
+
+/* No comment provided by engineer. */
+"Verify connection" = "Controleer de verbinding";
+
+/* No comment provided by engineer. */
 "Verify connection security" = "Controleer de verbindingsbeveiliging";
+
+/* No comment provided by engineer. */
+"Verify connections" = "Controleer verbindingen";
 
 /* No comment provided by engineer. */
 "Verify security code" = "Controleer de beveiligingscode";

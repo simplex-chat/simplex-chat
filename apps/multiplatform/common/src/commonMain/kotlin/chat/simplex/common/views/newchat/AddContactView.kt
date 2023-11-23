@@ -79,7 +79,7 @@ fun AddContactLayout(
       .verticalScroll(rememberScrollState()),
     verticalArrangement = Arrangement.SpaceBetween,
   ) {
-    AppBarTitle(stringResource(MR.strings.add_contact))
+    AppBarTitle(stringResource(MR.strings.add_contact), hostDevice(rh?.remoteHostId))
 
     SectionView(stringResource(MR.strings.one_time_link_short).uppercase()) {
       if (connReq.isNotEmpty()) {

@@ -1,6 +1,5 @@
 package chat.simplex.common.views.helpers
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,10 +13,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
+import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
+import dev.icerock.moko.resources.compose.painterResource
 
 class AlertManager {
   var alertViews = mutableStateListOf<(@Composable () -> Unit)>()
@@ -40,8 +41,11 @@ class AlertManager {
       AlertDialog(
         onDismissRequest = this::hideAlert,
         title = alertTitle(title),
-        text = alertText(text),
-        buttons = buttons,
+        buttons = {
+          AlertContent(text, null, extraPadding = true) {
+            buttons()
+          }
+        },
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
@@ -51,30 +55,16 @@ class AlertManager {
     title: String,
     text: AnnotatedString? = null,
     onDismissRequest: (() -> Unit)? = null,
+    hostDevice: Pair<Long?, String>? = null,
     buttons: @Composable () -> Unit,
   ) {
     showAlert {
       AlertDialog(
         onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
-        title = {
-          Text(
-            title,
-            Modifier.fillMaxWidth().padding(vertical = DEFAULT_PADDING),
-            textAlign = TextAlign.Center,
-            fontSize = 20.sp
-          )
-        },
+        title = alertTitle(title),
         buttons = {
-          Column(
-            Modifier
-              .padding(bottom = DEFAULT_PADDING)
-          ) {
-            CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
-              if (text != null) {
-                Text(text, Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f), fontSize = 16.sp, textAlign = TextAlign.Center, color = MaterialTheme.colors.secondary)
-              }
-              buttons()
-            }
+          AlertContent(text, hostDevice, extraPadding = true) {
+            buttons()
           }
         },
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
@@ -90,30 +80,32 @@ class AlertManager {
     dismissText: String = generalGetString(MR.strings.cancel_verb),
     onDismiss: (() -> Unit)? = null,
     onDismissRequest: (() -> Unit)? = null,
-    destructive: Boolean = false
+    destructive: Boolean = false,
+    hostDevice: Pair<Long?, String>? = null,
   ) {
     showAlert {
       AlertDialog(
         onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
         title = alertTitle(title),
-        text = alertText(text),
         buttons = {
-          Row (
-            Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING_HALF),
-            horizontalArrangement = Arrangement.SpaceBetween
-          ) {
-            val focusRequester = remember { FocusRequester() }
-            LaunchedEffect(Unit) {
-              focusRequester.requestFocus()
+          AlertContent(text, hostDevice, true) {
+            Row(
+              Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
+              horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+              val focusRequester = remember { FocusRequester() }
+              LaunchedEffect(Unit) {
+                focusRequester.requestFocus()
+              }
+              TextButton(onClick = {
+                onDismiss?.invoke()
+                hideAlert()
+              }) { Text(dismissText) }
+              TextButton(onClick = {
+                onConfirm?.invoke()
+                hideAlert()
+              }, Modifier.focusRequester(focusRequester)) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
             }
-            TextButton(onClick = {
-              onDismiss?.invoke()
-              hideAlert()
-            }) { Text(dismissText) }
-            TextButton(onClick = {
-              onConfirm?.invoke()
-              hideAlert()
-            }, Modifier.focusRequester(focusRequester)) { Text(confirmText, color = if (destructive) MaterialTheme.colors.error else Color.Unspecified) }
           }
         },
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
@@ -135,20 +127,21 @@ class AlertManager {
       AlertDialog(
         onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
         title = alertTitle(title),
-        text = alertText(text),
         buttons = {
-          Column(
-            Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING_HALF).padding(top = DEFAULT_PADDING, bottom = 2.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-          ) {
-            TextButton(onClick = {
-              onDismiss?.invoke()
-              hideAlert()
-            }) { Text(dismissText) }
-            TextButton(onClick = {
-              onConfirm?.invoke()
-              hideAlert()
-            }) { Text(confirmText, color = if (destructive) Color.Red else Color.Unspecified, textAlign = TextAlign.End) }
+          AlertContent(text, null) {
+            Column(
+              Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING_HALF).padding(top = DEFAULT_PADDING, bottom = 2.dp),
+              horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+              TextButton(onClick = {
+                onDismiss?.invoke()
+                hideAlert()
+              }) { Text(dismissText) }
+              TextButton(onClick = {
+                onConfirm?.invoke()
+                hideAlert()
+              }) { Text(confirmText, color = if (destructive) Color.Red else Color.Unspecified, textAlign = TextAlign.End) }
+            }
           }
         },
         shape = RoundedCornerShape(corner = CornerSize(25.dp))
@@ -158,29 +151,31 @@ class AlertManager {
 
   fun showAlertMsg(
     title: String, text: String? = null,
-    confirmText: String = generalGetString(MR.strings.ok)
+    confirmText: String = generalGetString(MR.strings.ok),
+    hostDevice: Pair<Long?, String>? = null,
   ) {
     showAlert {
       AlertDialog(
         onDismissRequest = this::hideAlert,
         title = alertTitle(title),
-        text = alertText(text),
         buttons = {
-          val focusRequester = remember { FocusRequester() }
-          LaunchedEffect(Unit) {
-            focusRequester.requestFocus()
-          }
-          Row(
-            Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING_HALF),
-            horizontalArrangement = Arrangement.Center
-          ) {
-            TextButton(
-              onClick = {
-                hideAlert()
-              },
-              Modifier.focusRequester(focusRequester)
+          AlertContent(text, hostDevice, extraPadding = true) {
+            val focusRequester = remember { FocusRequester() }
+            LaunchedEffect(Unit) {
+              focusRequester.requestFocus()
+            }
+            Row(
+              Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
+              horizontalArrangement = Arrangement.Center
             ) {
-              Text(confirmText, color = Color.Unspecified)
+              TextButton(
+                onClick = {
+                  hideAlert()
+                },
+                Modifier.focusRequester(focusRequester)
+              ) {
+                Text(confirmText, color = Color.Unspecified)
+              }
             }
           }
         },
@@ -191,16 +186,17 @@ class AlertManager {
 
   fun showAlertMsgWithProgress(
     title: String,
-    text: String? = null
+    text: String? = null,
   ) {
     showAlert {
       AlertDialog(
         onDismissRequest = this::hideAlert,
         title = alertTitle(title),
-        text = alertText(text),
         buttons = {
-          Box(Modifier.fillMaxWidth().height(72.dp).padding(bottom = DEFAULT_PADDING * 2), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = MaterialTheme.colors.secondary, strokeWidth = 3.dp)
+          AlertContent(text, null) {
+            Box(Modifier.fillMaxWidth().height(72.dp).padding(bottom = DEFAULT_PADDING * 2), contentAlignment = Alignment.Center) {
+              CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = MaterialTheme.colors.secondary, strokeWidth = 3.dp)
+            }
           }
         }
       )
@@ -211,7 +207,8 @@ class AlertManager {
     title: StringResource,
     text: StringResource? = null,
     confirmText: StringResource = MR.strings.ok,
-  ) = showAlertMsg(generalGetString(title), if (text != null) generalGetString(text) else null, generalGetString(confirmText))
+    hostDevice: Pair<Long?, String>? = null,
+  ) = showAlertMsg(generalGetString(title), if (text != null) generalGetString(text) else null, generalGetString(confirmText), hostDevice)
 
   @Composable
   fun showInView() {
@@ -234,18 +231,75 @@ private fun alertTitle(title: String): (@Composable () -> Unit)? {
   }
 }
 
-private fun alertText(text: String?): (@Composable () -> Unit)? {
-  return if (text == null) {
-    null
+@Composable
+private fun AlertContent(text: String?, hostDevice: Pair<Long?, String>?, extraPadding: Boolean = false, content: @Composable (() -> Unit)) {
+  Column(
+    Modifier
+      .padding(bottom = if (appPlatform.isDesktop) DEFAULT_PADDING else DEFAULT_PADDING_HALF)
+  ) {
+    if (appPlatform.isDesktop) {
+      HostDeviceTitle(hostDevice, extraPadding = extraPadding)
+    } else {
+      Spacer(Modifier.size(DEFAULT_PADDING_HALF))
+    }
+    CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
+      if (text != null) {
+        Text(
+          escapedHtmlToAnnotatedString(text, LocalDensity.current),
+          Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f),
+          fontSize = 16.sp,
+          textAlign = TextAlign.Center,
+          color = MaterialTheme.colors.secondary
+        )
+      }
+    }
+    content()
+  }
+}
+
+@Composable
+private fun AlertContent(text: AnnotatedString?, hostDevice: Pair<Long?, String>?, extraPadding: Boolean = false, content: @Composable (() -> Unit)) {
+  Column(
+    Modifier
+      .padding(bottom = if (appPlatform.isDesktop) DEFAULT_PADDING else DEFAULT_PADDING_HALF)
+  ) {
+    if (appPlatform.isDesktop) {
+      HostDeviceTitle(hostDevice, extraPadding = extraPadding)
+    } else {
+      Spacer(Modifier.size(DEFAULT_PADDING_HALF))
+    }
+    CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
+      if (text != null) {
+        Text(
+          text,
+          Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f),
+          fontSize = 16.sp,
+          textAlign = TextAlign.Center,
+          color = MaterialTheme.colors.secondary
+        )
+      }
+    }
+    content()
+  }
+}
+
+fun hostDevice(rhId: Long?): Pair<Long?, String>? = if (rhId == null && chatModel.remoteHosts.isNotEmpty()) {
+  null to ChatModel.controller.appPrefs.deviceNameForRemoteAccess.get()!!
+} else if (rhId == null) {
+  null
+} else {
+  rhId to (chatModel.remoteHosts.firstOrNull { it.remoteHostId == rhId }?.hostDeviceName?.ifEmpty { rhId.toString() } ?: rhId.toString())
+}
+
+@Composable
+private fun HostDeviceTitle(hostDevice: Pair<Long?, String>?, extraPadding: Boolean = false) {
+  if (hostDevice != null) {
+    Row(Modifier.fillMaxWidth().padding(top = 5.dp, bottom = if (extraPadding) DEFAULT_PADDING * 2 else DEFAULT_PADDING_HALF), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+      Icon(painterResource(if (hostDevice.first == null) MR.images.ic_desktop else MR.images.ic_smartphone_300), null, Modifier.size(15.dp), tint = MaterialTheme.colors.secondary)
+      Spacer(Modifier.width(10.dp))
+      Text(hostDevice.second, color = MaterialTheme.colors.secondary)
+    }
   } else {
-    ({
-      Text(
-        escapedHtmlToAnnotatedString(text, LocalDensity.current),
-        Modifier.fillMaxWidth(),
-        textAlign = TextAlign.Center,
-        fontSize = 16.sp,
-        color = MaterialTheme.colors.secondary
-      )
-    })
+    Spacer(Modifier.height(if (extraPadding) DEFAULT_PADDING * 2 else 0.dp))
   }
 }

@@ -22,7 +22,7 @@ fun ScanProtocolServerLayout(rhId: Long?, onNext: (ServerCfg) -> Unit) {
       .fillMaxSize()
       .padding(horizontal = DEFAULT_PADDING)
   ) {
-    AppBarTitle(stringResource(MR.strings.smp_servers_scan_qr), false)
+    AppBarTitle(stringResource(MR.strings.smp_servers_scan_qr), withPadding = false)
     Box(
       Modifier
         .fillMaxWidth()

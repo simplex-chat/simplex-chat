@@ -383,6 +383,12 @@
 - ja paljon muuta!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="- optionally notify deleted contacts.&#10;- profile names with spaces.&#10;- and more!" xml:space="preserve">
+        <source>- optionally notify deleted contacts.
+- profile names with spaces.
+- and more!</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve">
         <source>- voice messages up to 5 minutes.
 - custom time to disappear.
@@ -876,6 +882,10 @@
         <target>Virheellinen viestin tarkiste</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Better groups" xml:space="preserve">
+        <source>Better groups</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Better messages" xml:space="preserve">
         <source>Better messages</source>
         <target>Parempia viestejä</target>
@@ -883,6 +893,10 @@
       </trans-unit>
       <trans-unit id="Block" xml:space="preserve">
         <source>Block</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Block group members" xml:space="preserve">
+        <source>Block group members</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block member" xml:space="preserve">
@@ -1322,6 +1336,10 @@ This is your own one-time link!</source>
       <trans-unit id="Create SimpleX address" xml:space="preserve">
         <source>Create SimpleX address</source>
         <target>Luo SimpleX-osoite</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Create a group using a random profile." xml:space="preserve">
+        <source>Create a group using a random profile.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create an address to let people connect with you." xml:space="preserve">
@@ -2374,6 +2392,10 @@ This cannot be undone!</source>
         <target>Nopea ja ei odotusta, kunnes lähettäjä on online-tilassa!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Faster joining and more reliable messages." xml:space="preserve">
+        <source>Faster joining and more reliable messages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Favorite" xml:space="preserve">
         <source>Favorite</source>
         <target>Suosikki</target>
@@ -2791,6 +2813,10 @@ This cannot be undone!</source>
         <target>Incognito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Incognito groups" xml:space="preserve">
+        <source>Incognito groups</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Incognito mode" xml:space="preserve">
         <source>Incognito mode</source>
         <target>Incognito-tila</target>
@@ -3052,6 +3078,10 @@ This is your link for group %@!</source>
       <trans-unit id="Limitations" xml:space="preserve">
         <source>Limitations</source>
         <target>Rajoitukset</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Link mobile and desktop apps! 🔗" xml:space="preserve">
+        <source>Link mobile and desktop apps! 🔗</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Linked desktop options" xml:space="preserve">
@@ -4981,6 +5011,10 @@ Tämä voi johtua jostain virheestä tai siitä, että yhteys on vaarantunut.</t
         <target>Kontaktisi voi muodostaa yhteyden skannaamalla QR-koodin tai käyttämällä sovelluksessa olevaa linkkiä.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="To hide unwanted messages." xml:space="preserve">
+        <source>To hide unwanted messages.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="To make a new connection" xml:space="preserve">
         <source>To make a new connection</source>
         <target>Uuden yhteyden luominen</target>
@@ -5293,6 +5327,10 @@ Jos haluat muodostaa yhteyden, pyydä kontaktiasi luomaan toinen yhteyslinkki ja
       <trans-unit id="Via browser" xml:space="preserve">
         <source>Via browser</source>
         <target>Selaimella</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Via secure quantum resistant protocol." xml:space="preserve">
+        <source>Via secure quantum resistant protocol.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Video call" xml:space="preserve">
