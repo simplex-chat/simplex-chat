@@ -1542,7 +1542,7 @@
     <string name="blocked_item_description">blockiert</string>
     <string name="encryption_renegotiation_error">Fehler bei der Neuverhandlung der Verschlüsselung</string>
     <string name="alert_text_encryption_renegotiation_failed">Neuverhandlung der Verschlüsselung fehlgeschlagen</string>
-    <string name="v5_4_block_group_members">Gruppenmitglieder blocken</string>
+    <string name="v5_4_block_group_members">Gruppenmitglieder blockieren</string>
     <string name="v5_4_incognito_groups_descr">Erstellen Sie eine Gruppe mit einem zufälligen Profil.</string>
     <string name="connected_desktop">Verbundener Desktop</string>
     <string name="desktop_address">Desktop-Adresse</string>
@@ -1564,4 +1564,40 @@
     <string name="devices">Geräte</string>
     <string name="disconnect_desktop_question">Desktop-Verbindung trennen?</string>
     <string name="desktop_app_version_is_incompatible">Desktop-App-Version %s ist mit dieser App nicht kompatibel.</string>
+    <string name="new_mobile_device">Neues Mobiltelefon-Gerät</string>
+    <string name="only_one_device_can_work_at_the_same_time">Nur ein Gerät kann gleichzeitig genutzt werden</string>
+    <string name="v5_4_link_mobile_desktop">Verknüpfe Mobiltelefon- und Desktop-Apps! 🔗</string>
+    <string name="v5_4_link_mobile_desktop_descr">Über ein sicheres quantenbeständiges Protokoll</string>
+    <string name="open_on_mobile_and_scan_qr_code">Öffnen Sie in den Einstellungen der Mobiltelefon-App <i>Vom Desktop aus nutzen</i> und scannen Sie den QR-Code.</string>
+    <string name="v5_4_block_group_members_descr">Um unerwünschte Nachrichten zu verbergen.</string>
+    <string name="desktop_incompatible_version">Inkompatible Version</string>
+    <string name="new_desktop"><i>(Neu)</i></string>
+    <string name="unlink_desktop_question">Desktop entkoppeln?</string>
+    <string name="linked_desktop_options">Verknüpfte Desktop-Optionen</string>
+    <string name="linked_desktops">Verknüpfte Desktops</string>
+    <string name="v5_4_incognito_groups">Inkognito-Gruppen</string>
+    <string name="this_device">Dieses Gerät</string>
+    <string name="remote_host_was_disconnected_toast">Mobiltelefon <b>%s</b> wurde getrennt</string>
+    <string name="v5_4_better_groups_descr">Schnellerer Gruppenbeitritt und zuverlässigere Nachrichtenzustellung.</string>
+    <string name="linked_mobiles">Verknüpfte Mobiltelefone</string>
+    <string name="this_device_name">Dieser Gerätename</string>
+    <string name="waiting_for_mobile_to_connect_on_port">Auf die Mobiltelefonverbindung über Port <i>%s</i> warten</string>
+    <string name="loading_remote_file_title">Laden der Datei</string>
+    <string name="link_a_mobile">Zu einem Mobiltelefon verbinden</string>
+    <string name="settings_section_title_use_from_desktop">Vom Desktop aus nutzen</string>
+    <string name="session_code">Sitzungscode</string>
+    <string name="this_device_version"><i>(Dieses Gerät hat v%s)</i></string>
+    <string name="unlink_desktop">Entkoppeln</string>
+    <string name="this_device_name_shared_with_mobile">Der Gerätename wird mit dem verbundenen Mobiltelefon-Client geteilt.</string>
+    <string name="verify_code_on_mobile">Code auf dem Mobiltelefon überprüfen</string>
+    <string name="paste_desktop_address">Desktop-Adresse einfügen</string>
+    <string name="verify_code_with_desktop">Code mit dem Desktop überprüfen</string>
+    <string name="scan_qr_code_from_desktop">Den QR-Code vom Desktop scannen</string>
+    <string name="v5_4_more_things_descr">- Optionale Benachrichtigung von gelöschten Kontakten.
+\n- Profilnamen mit Leerzeichen.
+\n- Und mehr!</string>
+    <string name="scan_from_mobile">Vom Mobiltelefon scannen</string>
+    <string name="verify_connections">Verbindungen überprüfen</string>
+    <string name="loading_remote_file_desc">Bitte warten Sie, solange die Datei von dem verknüpften Mobiltelefon geladen wird</string>
+    <string name="verify_connection">Verbindung überprüfen</string>
 </resources>
