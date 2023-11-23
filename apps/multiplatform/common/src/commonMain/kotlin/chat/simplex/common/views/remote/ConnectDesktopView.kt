@@ -42,9 +42,6 @@ import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
-private val showConnectScreen = mutableStateOf(true)
-private var showingLinkedDevices = false
-
 @Composable
 fun ConnectDesktopView(close: () -> Unit) {
   val deviceName = remember { controller.appPrefs.deviceNameForRemoteAccess.state }
@@ -74,13 +71,17 @@ fun ConnectDesktopView(close: () -> Unit) {
 
 @Composable
 private fun ConnectDesktopLayout(deviceName: String, close: () -> Unit) {
+  val showConnectScreen = remember { mutableStateOf(true) }
   val sessionAddress = remember { mutableStateOf("") }
   val remoteCtrls = remember { mutableStateListOf<RemoteCtrlInfo>() }
   val session = remember { chatModel.remoteCtrlSession }.value
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
-    if (session != null) {
+    val discovery = if (session == null) null else session.sessionState is UIRemoteCtrlSessionState.Searching
+    if (discovery == true || (discovery == null && !showConnectScreen.value)) {
+      SearchingDesktop(deviceName, remoteCtrls)
+    } else if (session != null) {
       when (session.sessionState) {
         is UIRemoteCtrlSessionState.Starting -> ConnectingDesktop(session, null)
         is UIRemoteCtrlSessionState.Searching -> SearchingDesktop(deviceName, remoteCtrls)
@@ -99,10 +100,8 @@ private fun ConnectDesktopLayout(deviceName: String, close: () -> Unit) {
 
         is UIRemoteCtrlSessionState.Connected -> ActiveSession(session, session.sessionState.remoteCtrl, close)
       }
-    } else if (remember { showConnectScreen }.value) {
-      ConnectDesktop(deviceName, remoteCtrls, sessionAddress)
     } else {
-      SearchingDesktop(deviceName, remoteCtrls)
+      ConnectDesktop(deviceName, remoteCtrls, sessionAddress)
     }
     SectionBottomSpacer()
   }
@@ -111,15 +110,16 @@ private fun ConnectDesktopLayout(deviceName: String, close: () -> Unit) {
     updateRemoteCtrls(remoteCtrls)
     val useMulticast = useMulticast(remoteCtrls)
     showConnectScreen.value = !useMulticast
-    if (chatModel.remoteCtrlSession.value == null && useMulticast) {
-      findKnownDesktop()
-    } else if (chatModel.remoteCtrlSession.value != null && !useMulticast) {
+    if (chatModel.remoteCtrlSession.value != null) {
       disconnectDesktop()
+    } else if (useMulticast) {
+      findKnownDesktop(showConnectScreen)
     }
   }
   DisposableEffect(Unit) {
     onDispose {
-      if (chatModel.remoteCtrlSession.value != null && !showingLinkedDevices) {
+      if (chatModel.remoteCtrlSession.value != null) {
+        showConnectScreen.value = false
         disconnectDesktop()
       }
     }
@@ -217,13 +217,15 @@ private fun FoundDesktop(
 
   SectionSpacer()
 
-  SectionItemView({ confirmKnownDesktop(sessionAddress, rc) }) {
-    Icon(painterResource(MR.images.ic_check), generalGetString(MR.strings.connect_button), tint = MaterialTheme.colors.secondary)
-    TextIconSpaced(false)
-    Text(generalGetString(MR.strings.connect_button))
+  if (compatible) {
+    SectionItemView({ confirmKnownDesktop(sessionAddress, rc) }) {
+      Icon(painterResource(MR.images.ic_check), generalGetString(MR.strings.connect_button), tint = MaterialTheme.colors.secondary)
+      TextIconSpaced(false)
+      Text(generalGetString(MR.strings.connect_button))
+    }
   }
 
-  if (compatible && !connectRemoteViaMulticastAuto.value) {
+  if (!compatible || !connectRemoteViaMulticastAuto.value) {
     DisconnectButton(stringResource(MR.strings.cancel_verb), onClick = ::disconnectDesktop)
   }
 
@@ -327,9 +329,7 @@ private fun SessionCodeText(code: String) {
 private fun DevicesView(deviceName: String, remoteCtrls: SnapshotStateList<RemoteCtrlInfo>, updateDeviceName: (String) -> Unit) {
   DeviceNameField(deviceName) { updateDeviceName(it) }
   if (remoteCtrls.isNotEmpty()) {
-    SectionItemView({
-      showingLinkedDevices = true
-      ModalManager.start.showModal { LinkedDesktopsView(remoteCtrls) }
+    SectionItemView({ ModalManager.start.showModal { LinkedDesktopsView(remoteCtrls) }
     }) {
       Text(generalGetString(MR.strings.linked_desktops))
     }
@@ -434,11 +434,6 @@ private fun LinkedDesktopsView(remoteCtrls: SnapshotStateList<RemoteCtrlInfo>) {
     }
     SectionBottomSpacer()
   }
-  DisposableEffect(Unit) {
-    onDispose {
-      showingLinkedDevices = false
-    }
-  }
 }
 
 @Composable
@@ -464,7 +459,7 @@ private fun processDesktopQRCode(sessionAddress: MutableState<String>, resp: Str
   connectDesktopAddress(sessionAddress, resp)
 }
 
-private fun findKnownDesktop() {
+private fun findKnownDesktop(showConnectScreen: MutableState<Boolean>) {
   withBGApi {
     if (controller.findKnownRemoteCtrl()) {
       chatModel.remoteCtrlSession.value = RemoteCtrlSession(
@@ -541,7 +536,6 @@ private fun useMulticast(remoteCtrls: List<RemoteCtrlInfo>): Boolean =
   controller.appPrefs.connectRemoteViaMulticast.get() && remoteCtrls.isNotEmpty()
 
 private fun disconnectDesktop(close: (() -> Unit)? = null) {
-  showConnectScreen.value = false
   withBGApi {
     controller.stopRemoteCtrl()
     if (chatModel.remoteCtrlSession.value?.sessionState is UIRemoteCtrlSessionState.Connected) {
@@ -549,11 +543,7 @@ private fun disconnectDesktop(close: (() -> Unit)? = null) {
     } else {
       chatModel.remoteCtrlSession.value = null
     }
-    showConnectScreen.value = true
     close?.invoke()
-    if (close == null) {
-      showConnectScreen.value = true
-    }
   }
 }
 
