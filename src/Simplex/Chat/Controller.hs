@@ -662,14 +662,14 @@ data ChatResponse
   | CRRemoteHostSessionCode {remoteHost_ :: Maybe RemoteHostInfo, sessionCode :: Text}
   | CRNewRemoteHost {remoteHost :: RemoteHostInfo}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
-  | CRRemoteHostStopped {remoteHostId_ :: Maybe RemoteHostId}
+  | CRRemoteHostStopped {remoteHostId_ :: Maybe RemoteHostId, rhsState :: RemoteHostSessionState, rhsStopReason :: RHSStopReason}
   | CRRemoteFileStored {remoteHostId :: RemoteHostId, remoteFileSource :: CryptoFile}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
   | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo, ctrlAppInfo_ :: Maybe CtrlAppInfo, appVersion :: AppVersion, compatible :: Bool}
   | CRRemoteCtrlConnecting {remoteCtrl_ :: Maybe RemoteCtrlInfo, ctrlAppInfo :: CtrlAppInfo, appVersion :: AppVersion}
   | CRRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
-  | CRRemoteCtrlStopped
+  | CRRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcsStopReason :: RCSStopReason}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
@@ -700,14 +700,14 @@ allowRemoteEvent = \case
   CRRemoteHostSessionCode {} -> False
   CRNewRemoteHost _ -> False
   CRRemoteHostConnected _ -> False
-  CRRemoteHostStopped _ -> False
+  CRRemoteHostStopped {} -> False
   CRRemoteFileStored {} -> False
   CRRemoteCtrlList _ -> False
   CRRemoteCtrlFound {} -> False
   CRRemoteCtrlConnecting {} -> False
   CRRemoteCtrlSessionCode {} -> False
   CRRemoteCtrlConnected _ -> False
-  CRRemoteCtrlStopped -> False
+  CRRemoteCtrlStopped {} -> False
   CRSQLResult _ -> False
   CRSlowSQLQueries {} -> False
   _ -> True
@@ -1083,6 +1083,12 @@ data RemoteHostError
   | RHEProtocolError RemoteProtocolError
   deriving (Show, Exception)
 
+data RHSStopReason
+  = RHSConnectionFailed ChatError
+  | RHSCrashed ChatError
+  | RHSDisconnected
+  deriving (Show, Exception)
+
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteCtrlError
   = RCEInactive -- ^ No session is running
@@ -1096,6 +1102,13 @@ data RemoteCtrlError
   | RCEBadVersion {appVersion :: AppVersion}
   | RCEHTTP2Error {http2Error :: Text} -- TODO currently not used
   | RCEProtocolError {protocolError :: RemoteProtocolError}
+  deriving (Show, Exception)
+
+data RCSStopReason
+  = RCSDiscoverFailed ChatError
+  | RCSConnectionFailed ChatError
+  | RCSSetupFailed ChatError
+  | RCSDisconnected
   deriving (Show, Exception)
 
 data ArchiveError
@@ -1322,6 +1335,10 @@ instance ToJSON AUserProtoServers where
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCS") ''RemoteCtrlSessionState)
 
 $(JQ.deriveJSON defaultJSON ''RemoteCtrlInfo)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCS") ''RCSStopReason)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHS") ''RHSStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 
