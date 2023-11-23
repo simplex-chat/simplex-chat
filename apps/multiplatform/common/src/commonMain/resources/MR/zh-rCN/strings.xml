@@ -1512,9 +1512,11 @@
     <string name="v5_4_block_group_members_descr">隐藏不需要的信息。</string>
     <string name="v5_4_better_groups">更佳的群组</string>
     <string name="v5_4_incognito_groups">匿名群组</string>
-    <string name="remote_host_was_disconnected_toast">远程主机已断开连接：<b>%s</b></string>
+    <string name="remote_host_was_disconnected_toast">远程主机 <b>%s</b> 已断开连接</string>
     <string name="v5_4_better_groups_descr">加入速度更快、信息更可靠。</string>
     <string name="v5_4_more_things_descr">- 可选择通知已删除的联系人。
 \n- 带空格的个人资料名称。
 \n- 以及更多！</string>
+    <string name="waiting_for_mobile_to_connect_on_port">正等待移动设备在端口 <i>%s</i> 进行连接</string>
+    <string name="group_member_role_author">作者</string>
 </resources>
