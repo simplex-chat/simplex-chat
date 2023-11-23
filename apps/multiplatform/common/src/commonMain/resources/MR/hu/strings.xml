@@ -283,7 +283,7 @@
     <string name="chat_database_imported">Chat adatbázis importálva</string>
     <string name="chat_archive_section">CHAT ARCHÍVUM</string>
     <string name="delete_messages">Üzenetek törlése?</string>
-    <string name="clear_chat_menu_action">Kitörlés</string>
+    <string name="clear_chat_menu_action">Kiürítés</string>
     <string name="icon_descr_close_button">Bezárás gomb</string>
     <string name="chat_is_stopped">A chat szolgáltatás leállt (nem fut)</string>
     <string name="item_info_current">(jelenlegi)</string>
@@ -342,7 +342,7 @@
     <string name="delete_image">Kép törlése</string>
     <string name="smp_server_test_create_file">Fájl létrehozása</string>
     <string name="create_secret_group_title">Tikos csoport létrehozása</string>
-    <string name="clear_contacts_selection_button">Kitörlés</string>
+    <string name="clear_contacts_selection_button">Kiürítés</string>
     <string name="delete_contact_question">Ismerős törlése?</string>
     <string name="clear_verb">Kiürítés</string>
     <string name="create_address_and_let_people_connect">Hozz létre egy azonosítót, hogy az ismerősök kapcsolatba léphessenek veled.</string>
@@ -351,4 +351,9 @@
     <string name="your_chats">Chatek</string>
     <string name="delete_message__question">Üzenet törlése?</string>
     <string name="delete_pending_connection__question">Függő kapcsolatfelvételi kérés törlése?</string>
+    <string name="database_encrypted">Adatbázis titkosítva!</string>
+    <string name="clear_chat_question">Chat kiürítése?</string>
+    <string name="database_downgrade">Adatbázis downgrade?</string>
+    <string name="clear_chat_button">Chat kiürítése</string>
+    <string name="database_passphrase_will_be_updated">Adatbázis titkosítási jelmondat meg lesz változtatva.</string>
 </resources>
