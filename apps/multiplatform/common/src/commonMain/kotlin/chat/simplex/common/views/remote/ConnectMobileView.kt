@@ -235,7 +235,7 @@ private fun showAddingMobileDevice(connecting: MutableState<Boolean>) {
   ModalManager.start.showModalCloseable { close ->
     val invitation = rememberSaveable { mutableStateOf<String?>(null) }
     val port = rememberSaveable { mutableStateOf<String?>(null) }
-    val pairing = remember { chatModel.newRemoteHostPairing }
+    val pairing = remember { chatModel.remoteHostPairing }
     val sessionCode = when (val state = pairing.value?.second) {
       is RemoteHostSessionState.PendingConfirmation -> state.sessionCode
       else -> null
@@ -271,6 +271,7 @@ private fun showAddingMobileDevice(connecting: MutableState<Boolean>) {
           connecting.value = true
           invitation.value = r.second
           port.value = r.third
+          chatModel.remoteHostPairing.value = null to RemoteHostSessionState.Starting
         }
       }
       onDispose {
@@ -279,7 +280,7 @@ private fun showAddingMobileDevice(connecting: MutableState<Boolean>) {
             chatController.stopRemoteHost(null)
           }
         }
-        chatModel.newRemoteHostPairing.value = null
+        chatModel.remoteHostPairing.value = null
       }
     }
   }
@@ -287,7 +288,7 @@ private fun showAddingMobileDevice(connecting: MutableState<Boolean>) {
 
 private fun showConnectMobileDevice(rh: RemoteHostInfo, connecting: MutableState<Boolean>) {
   ModalManager.start.showModalCloseable { close ->
-    val pairing = remember { chatModel.newRemoteHostPairing }
+    val pairing = remember { chatModel.remoteHostPairing }
     val invitation = rememberSaveable { mutableStateOf<String?>(null) }
     val port = rememberSaveable { mutableStateOf<String?>(null) }
     val sessionCode = when (val state = pairing.value?.second) {
@@ -315,6 +316,7 @@ private fun showConnectMobileDevice(rh: RemoteHostInfo, connecting: MutableState
         remoteHostId = rh_?.remoteHostId
         invitation.value = inv
         port.value = r.third
+        chatModel.remoteHostPairing.value = null to RemoteHostSessionState.Starting
       }
     }
     LaunchedEffect(remember { chatModel.currentRemoteHost }.value) {
@@ -334,7 +336,7 @@ private fun showConnectMobileDevice(rh: RemoteHostInfo, connecting: MutableState
             chatController.stopRemoteHost(remoteHostId)
           }
         }
-        chatModel.newRemoteHostPairing.value = null
+        chatModel.remoteHostPairing.value = null
       }
     }
   }
