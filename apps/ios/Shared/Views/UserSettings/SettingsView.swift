@@ -92,7 +92,7 @@ let appDefaults: [String: Any] = [
     DEFAULT_SHOW_UNREAD_AND_FAVORITES: false,
     DEFAULT_CONFIRM_REMOTE_SESSIONS: false,
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST: true,
-    DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: false,
+    DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: true,
 ]
 
 enum SimpleXLinkMode: String, Identifiable {

@@ -87,7 +87,6 @@ final class ChatModel: ObservableObject {
     @Published var showCallView = false
     // remote desktop
     @Published var remoteCtrlSession: RemoteCtrlSession?
-    @Published var foundRemoteCtrl: RemoteCtrlInfo?
     // currently showing QR code
     @Published var connReqInv: String?
     // audio recording and playback
@@ -771,7 +770,7 @@ final class GMember: ObservableObject, Identifiable {
 }
 
 struct RemoteCtrlSession {
-    var ctrlAppInfo: CtrlAppInfo
+    var ctrlAppInfo: CtrlAppInfo?
     var appVersion: String
     var sessionState: UIRemoteCtrlSessionState
 
@@ -794,6 +793,8 @@ struct RemoteCtrlSession {
 
 enum UIRemoteCtrlSessionState {
     case starting
+    case searching
+    case found(remoteCtrl: RemoteCtrlInfo, compatible: Bool)
     case connecting(remoteCtrl_: RemoteCtrlInfo?)
     case pendingConfirmation(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
     case connected(remoteCtrl: RemoteCtrlInfo, sessionCode: String)

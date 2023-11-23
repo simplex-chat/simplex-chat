@@ -1716,9 +1716,16 @@ func processReceivedMsg(_ res: ChatResponse) async {
         await MainActor.run {
             m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
         }
-    case let .remoteCtrlFound(remoteCtrl):
+    case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible):
         await MainActor.run {
-            m.foundRemoteCtrl = remoteCtrl
+            if let sess = m.remoteCtrlSession, case .searching = sess.sessionState {
+                let state = UIRemoteCtrlSessionState.found(remoteCtrl: remoteCtrl, compatible: compatible)
+                m.remoteCtrlSession = RemoteCtrlSession(
+                    ctrlAppInfo: ctrlAppInfo_,
+                    appVersion: appVersion,
+                    sessionState: state
+                )
+            }
         }
     case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode):
         await MainActor.run {
@@ -1734,9 +1741,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
     case .remoteCtrlStopped:
         // This delay is needed to cancel the session that fails on network failure,
         // e.g. when user did not grant permission to access local network yet.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            m.foundRemoteCtrl = nil
-            switchToLocalSession()
+        if let sess = m.remoteCtrlSession {
+            m.remoteCtrlSession = nil
+            if case .connected = sess.sessionState {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    switchToLocalSession()
+                }
+            }
         }
     default:
         logger.debug("unsupported event: \(res.responseType)")
@@ -1754,7 +1765,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
 func switchToLocalSession() {
     let m = ChatModel.shared
     m.remoteCtrlSession = nil
-    m.foundRemoteCtrl = nil
     do {
         m.users = try listUsers()
         try getUserChatData()
