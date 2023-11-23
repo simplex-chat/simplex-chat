@@ -8,15 +8,12 @@ import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.UriHandler
-import androidx.core.content.FileProvider
-import androidx.core.net.toUri
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.views.helpers.*
 import java.io.BufferedOutputStream
 import java.io.File
 import chat.simplex.res.MR
-import java.io.ByteArrayOutputStream
 
 actual fun ClipboardManager.shareText(text: String) {
   val sendIntent: Intent = Intent().apply {

@@ -54,7 +54,7 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
     withApi {
       // show "in progress"
       // TODO show active remote host in chat console?
-      chatModel.controller.sendCmd(chatModel.remoteHostId, CC.Console(s))
+      chatModel.controller.sendCmd(chatModel.remoteHostId(), CC.Console(s))
       composeState.value = ComposeState(useLinkPreviews = false)
       // hide "in progress"
     }

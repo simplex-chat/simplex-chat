@@ -36,12 +36,10 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-fun ConnectMobileView(
-  m: ChatModel
-) {
+fun ConnectMobileView() {
   val connecting = rememberSaveable() { mutableStateOf(false) }
   val remoteHosts = remember { chatModel.remoteHosts }
-  val deviceName = m.controller.appPrefs.deviceNameForRemoteAccess
+  val deviceName = chatModel.controller.appPrefs.deviceNameForRemoteAccess
   LaunchedEffect(Unit) {
     controller.reloadRemoteHosts()
   }
@@ -49,11 +47,11 @@ fun ConnectMobileView(
     deviceName = remember { deviceName.state },
     remoteHosts = remoteHosts,
     connecting,
-    connectedHost = remember { m.currentRemoteHost },
+    connectedHost = remember { chatModel.currentRemoteHost },
     updateDeviceName = {
       withBGApi {
         if (it != "") {
-          m.controller.setLocalDeviceName(it)
+          chatModel.controller.setLocalDeviceName(it)
           deviceName.set(it)
         }
       }
@@ -163,7 +161,8 @@ private fun ConnectMobileViewLayout(
   title: String,
   invitation: String?,
   deviceName: String?,
-  sessionCode: String?
+  sessionCode: String?,
+  port: String?
 ) {
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
@@ -171,13 +170,14 @@ private fun ConnectMobileViewLayout(
   ) {
     AppBarTitle(title)
     SectionView {
-      if (invitation != null && sessionCode == null) {
+      if (invitation != null && sessionCode == null && port != null) {
         QRCode(
           invitation, Modifier
             .padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING_HALF)
             .aspectRatio(1f)
         )
         SectionTextFooter(annotatedStringResource(MR.strings.open_on_mobile_and_scan_qr_code))
+        SectionTextFooter(annotatedStringResource(MR.strings.waiting_for_mobile_to_connect_on_port, port))
 
         if (remember { controller.appPrefs.developerTools.state }.value) {
           val clipboard = LocalClipboardManager.current
@@ -234,6 +234,7 @@ fun connectMobileDevice(rh: RemoteHostInfo, connecting: MutableState<Boolean>) {
 private fun showAddingMobileDevice(connecting: MutableState<Boolean>) {
   ModalManager.start.showModalCloseable { close ->
     val invitation = rememberSaveable { mutableStateOf<String?>(null) }
+    val port = rememberSaveable { mutableStateOf<String?>(null) }
     val pairing = remember { chatModel.newRemoteHostPairing }
     val sessionCode = when (val state = pairing.value?.second) {
       is RemoteHostSessionState.PendingConfirmation -> state.sessionCode
@@ -249,7 +250,8 @@ private fun showAddingMobileDevice(connecting: MutableState<Boolean>) {
       title = if (cachedSessionCode == null) stringResource(MR.strings.link_a_mobile) else stringResource(MR.strings.verify_connection),
       invitation = invitation.value,
       deviceName = remoteDeviceName,
-      sessionCode = cachedSessionCode
+      sessionCode = cachedSessionCode,
+      port = port.value
     )
     val oldRemoteHostId by remember { mutableStateOf(chatModel.currentRemoteHost.value?.remoteHostId) }
     LaunchedEffect(remember { chatModel.currentRemoteHost }.value) {
@@ -268,6 +270,7 @@ private fun showAddingMobileDevice(connecting: MutableState<Boolean>) {
         if (r != null) {
           connecting.value = true
           invitation.value = r.second
+          port.value = r.third
         }
       }
       onDispose {
@@ -286,6 +289,7 @@ private fun showConnectMobileDevice(rh: RemoteHostInfo, connecting: MutableState
   ModalManager.start.showModalCloseable { close ->
     val pairing = remember { chatModel.newRemoteHostPairing }
     val invitation = rememberSaveable { mutableStateOf<String?>(null) }
+    val port = rememberSaveable { mutableStateOf<String?>(null) }
     val sessionCode = when (val state = pairing.value?.second) {
       is RemoteHostSessionState.PendingConfirmation -> state.sessionCode
       else -> null
@@ -300,6 +304,7 @@ private fun showConnectMobileDevice(rh: RemoteHostInfo, connecting: MutableState
       invitation = invitation.value,
       deviceName = pairing.value?.first?.hostDeviceName ?: rh.hostDeviceName,
       sessionCode = cachedSessionCode,
+      port = port.value
     )
     var remoteHostId by rememberSaveable { mutableStateOf<Long?>(null) }
     LaunchedEffect(Unit) {
@@ -309,6 +314,7 @@ private fun showConnectMobileDevice(rh: RemoteHostInfo, connecting: MutableState
         connecting.value = true
         remoteHostId = rh_?.remoteHostId
         invitation.value = inv
+        port.value = r.third
       }
     }
     LaunchedEffect(remember { chatModel.currentRemoteHost }.value) {
@@ -345,7 +351,8 @@ private fun showConnectedMobileDevice(rh: RemoteHostInfo, disconnectHost: () -> 
         title = stringResource(MR.strings.connected_to_mobile),
         invitation = null,
         deviceName = rh.hostDeviceName,
-        sessionCode = sessionCode
+        sessionCode = sessionCode,
+        port = null,
       )
       Spacer(Modifier.height(DEFAULT_PADDING_HALF))
       SectionItemView(disconnectHost) {

@@ -158,7 +158,7 @@ fun SettingsLayout(
         SettingsActionItem(painterResource(MR.images.ic_qr_code), stringResource(MR.strings.your_simplex_contact_address), showCustomModal { it, close -> UserAddressView(it, it.currentUser.value?.remoteHostId, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped, extraPadding = true)
         ChatPreferencesItem(showCustomModal, stopped = stopped)
         if (appPlatform.isDesktop) {
-          SettingsActionItem(painterResource(MR.images.ic_smartphone), stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles), showModal { ConnectMobileView(it) }, disabled = stopped, extraPadding = true)
+          SettingsActionItem(painterResource(MR.images.ic_smartphone), stringResource(if (remember { chatModel.remoteHosts }.isEmpty()) MR.strings.link_a_mobile else MR.strings.linked_mobiles), showModal { ConnectMobileView() }, disabled = stopped, extraPadding = true)
         } else {
           SettingsActionItem(painterResource(MR.images.ic_desktop), stringResource(MR.strings.settings_section_title_use_from_desktop), showCustomModal{ it, close -> ConnectDesktopView(close) }, disabled = stopped, extraPadding = true)
         }

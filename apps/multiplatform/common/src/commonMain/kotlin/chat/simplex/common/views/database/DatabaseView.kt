@@ -627,7 +627,7 @@ private fun afterSetCiTTL(
     try {
       updatingChatsMutex.withLock {
         // this is using current remote host on purpose - if it changes during update, it will load correct chats
-        val chats = m.controller.apiGetChats(m.remoteHostId)
+        val chats = m.controller.apiGetChats(m.remoteHostId())
         m.updateChats(chats)
       }
     } catch (e: Exception) {

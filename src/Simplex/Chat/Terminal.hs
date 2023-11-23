@@ -35,7 +35,8 @@ terminalChatConfig =
             ntf = ["ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im,ntg7jdjy2i3qbib3sykiho3enekwiaqg3icctliqhtqcg6jmoh6cxiad.onion"],
             xftp = defaultXFTPServers,
             netCfg = defaultNetworkConfig
-          }
+          },
+      deviceNameForRemote = "SimpleX CLI"
     }
 
 simplexChatTerminal :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()

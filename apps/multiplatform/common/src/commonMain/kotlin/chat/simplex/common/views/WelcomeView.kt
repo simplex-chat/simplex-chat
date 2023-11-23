@@ -170,7 +170,7 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
 
 fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: () -> Unit) {
   withApi {
-    val rhId = chatModel.remoteHostId
+    val rhId = chatModel.remoteHostId()
     val user = chatModel.controller.apiCreateActiveUser(
       rhId, Profile(displayName.trim(), "", null)
     ) ?: return@withApi
