@@ -306,10 +306,12 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     [plain $ "file " <> filePath <> " stored on remote host " <> show rhId]
       <> maybe [] ((: []) . plain . cryptoFileArgsStr testView) cfArgs_
   CRRemoteCtrlList cs -> viewRemoteCtrls cs
-  CRRemoteCtrlFound {remoteCtrl = RemoteCtrlInfo {remoteCtrlId}, ctrlAppInfo, appVersion, compatible} ->
+  CRRemoteCtrlFound {remoteCtrl = RemoteCtrlInfo {remoteCtrlId, ctrlDeviceName}, ctrlAppInfo_, appVersion, compatible} ->
     [ "remote controller " <> sShow remoteCtrlId <> " found: "
-        <> viewRemoteCtrl ctrlAppInfo appVersion compatible
+        <> maybe (deviceName <> "not compatible") (\info -> viewRemoteCtrl info appVersion compatible) ctrlAppInfo_
     ]
+    where
+      deviceName = if T.null ctrlDeviceName then "" else plain ctrlDeviceName <> ", " 
   CRRemoteCtrlConnecting {remoteCtrl_, ctrlAppInfo, appVersion} ->
     [ (maybe "connecting new remote controller" (\RemoteCtrlInfo {remoteCtrlId} -> "connecting remote controller " <> sShow remoteCtrlId) remoteCtrl_ <> ": ")
         <> viewRemoteCtrl ctrlAppInfo appVersion True

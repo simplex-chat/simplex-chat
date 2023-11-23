@@ -399,13 +399,13 @@ findKnownRemoteCtrl = do
     atomically $ takeTMVar cmdOk
     (RCCtrlPairing {ctrlFingerprint}, inv@(RCVerifiedInvitation RCInvitation {app})) <-
       timeoutThrow (ChatErrorRemoteCtrl RCETimeout) discoveryTimeout . withAgent $ \a -> rcDiscoverCtrl a pairings
-    ctrlAppInfo <- parseCtrlAppInfo app
+    ctrlAppInfo_ <- (Just <$> parseCtrlAppInfo app) `catchChatError` const (pure Nothing)
     rc <- withStore' (`getRemoteCtrlByFingerprint` ctrlFingerprint) >>= \case
       Nothing -> throwChatError $ CEInternalError "connecting with a stored ctrl"
       Just rc  -> pure rc
     atomically $ putTMVar foundCtrl (rc, inv)
-    let compatible = isJust $ compatibleAppVersion hostAppVersionRange (appVersionRange ctrlAppInfo)
-    toView CRRemoteCtrlFound {remoteCtrl = remoteCtrlInfo rc (Just RCSSearching), ctrlAppInfo, appVersion = currentAppVersion, compatible}
+    let compatible = isJust $ compatibleAppVersion hostAppVersionRange . appVersionRange =<< ctrlAppInfo_
+    toView CRRemoteCtrlFound {remoteCtrl = remoteCtrlInfo rc (Just RCSSearching), ctrlAppInfo_, appVersion = currentAppVersion, compatible}
   updateRemoteCtrlSession sseq $ \case
     RCSessionStarting -> Right RCSessionSearching {action, foundCtrl}
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
