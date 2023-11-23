@@ -609,7 +609,7 @@ public enum ChatResponse: Decodable, Error {
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
     // remote desktop responses/events
     case remoteCtrlList(remoteCtrls: [RemoteCtrlInfo])
-    case remoteCtrlFound(remoteCtrl: RemoteCtrlInfo)
+    case remoteCtrlFound(remoteCtrl: RemoteCtrlInfo, ctrlAppInfo_: CtrlAppInfo?, appVersion: String, compatible: Bool)
     case remoteCtrlConnecting(remoteCtrl_: RemoteCtrlInfo?, ctrlAppInfo: CtrlAppInfo, appVersion: String)
     case remoteCtrlSessionCode(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
     case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
@@ -903,7 +903,7 @@ public enum ChatResponse: Decodable, Error {
             case let .newContactConnection(u, connection): return withUser(u, String(describing: connection))
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
             case let .remoteCtrlList(remoteCtrls): return String(describing: remoteCtrls)
-            case let .remoteCtrlFound(remoteCtrl): return String(describing: remoteCtrl)
+            case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible): return "remoteCtrl:\n\(String(describing: remoteCtrl))\nctrlAppInfo_:\n\(String(describing: ctrlAppInfo_))\nappVersion: \(appVersion)\ncompatible: \(compatible)"
             case let .remoteCtrlConnecting(remoteCtrl_, ctrlAppInfo, appVersion): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nctrlAppInfo:\n\(String(describing: ctrlAppInfo))\nappVersion: \(appVersion)"
             case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nsessionCode: \(sessionCode)"
             case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
@@ -1546,6 +1546,7 @@ public struct RemoteCtrlInfo: Decodable {
 
 public enum RemoteCtrlSessionState: Decodable {
     case starting
+    case searching
     case connecting
     case pendingConfirmation(sessionCode: String)
     case connected(sessionCode: String)
