@@ -2918,7 +2918,7 @@ enum class NotificationPreviewMode {
 }
 
 data class RemoteCtrlSession(
-  val ctrlAppInfo: CtrlAppInfo,
+  val ctrlAppInfo: CtrlAppInfo?,
   val appVersion: String,
   val sessionState: UIRemoteCtrlSessionState
 ) {
@@ -2936,6 +2936,7 @@ data class RemoteCtrlSession(
 @Serializable
 sealed class RemoteCtrlSessionState {
   @Serializable @SerialName("starting") object Starting: RemoteCtrlSessionState()
+  @Serializable @SerialName("searching") object Searching: RemoteCtrlSessionState()
   @Serializable @SerialName("connecting") object Connecting: RemoteCtrlSessionState()
   @Serializable @SerialName("pendingConfirmation") data class PendingConfirmation(val sessionCode: String): RemoteCtrlSessionState()
   @Serializable @SerialName("connected") data class Connected(val sessionCode: String): RemoteCtrlSessionState()
@@ -2943,6 +2944,8 @@ sealed class RemoteCtrlSessionState {
 
 sealed class UIRemoteCtrlSessionState {
   @Serializable @SerialName("starting") object Starting: UIRemoteCtrlSessionState()
+  @Serializable @SerialName("searching") object Searching: UIRemoteCtrlSessionState()
+  @Serializable @SerialName("found") data class Found(val remoteCtrl: RemoteCtrlInfo, val compatible: Boolean): UIRemoteCtrlSessionState()
   @Serializable @SerialName("connecting") data class Connecting(val remoteCtrl_: RemoteCtrlInfo? = null): UIRemoteCtrlSessionState()
   @Serializable @SerialName("pendingConfirmation") data class PendingConfirmation(val remoteCtrl_: RemoteCtrlInfo? = null, val sessionCode: String): UIRemoteCtrlSessionState()
   @Serializable @SerialName("connected") data class Connected(val remoteCtrl: RemoteCtrlInfo, val sessionCode: String): UIRemoteCtrlSessionState()

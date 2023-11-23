@@ -1670,6 +1670,8 @@
   <string name="desktop_connection_terminated">Connection terminated</string>
   <string name="session_code">Session code</string>
   <string name="connecting_to_desktop">Connecting to desktop</string>
+  <string name="waiting_for_desktop">Waiting for desktop…</string>
+  <string name="found_desktop">Found desktop</string>
   <string name="connect_to_desktop">Connect to desktop</string>
   <string name="connected_to_desktop">Connected to desktop</string>
   <string name="connected_desktop">Connected desktop</string>
@@ -1682,8 +1684,11 @@
   <string name="desktop_address">Desktop address</string>
   <string name="verify_connections">Verify connections</string>
   <string name="discover_on_network">Discover on network</string>
+  <string name="multicast_discoverable_via_local_network">Discoverable via local network</string>
+  <string name="multicast_connect_automatically">Connect automatically</string>
   <string name="paste_desktop_address">Paste desktop address</string>
   <string name="desktop_device">Desktop</string>
+  <string name="not_compatible">Not compatible!</string>
 
   <!-- Under development -->
   <string name="in_developing_title">Coming soon!</string>

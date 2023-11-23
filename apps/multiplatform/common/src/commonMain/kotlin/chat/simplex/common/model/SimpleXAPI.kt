@@ -170,6 +170,7 @@ class AppPreferences {
 
   val confirmRemoteSessions = mkBoolPreference(SHARED_PREFS_CONFIRM_REMOTE_SESSIONS, false)
   val connectRemoteViaMulticast = mkBoolPreference(SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST, false)
+  val connectRemoteViaMulticastAuto = mkBoolPreference(SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST_AUTO, true)
   val offerRemoteMulticast = mkBoolPreference(SHARED_PREFS_OFFER_REMOTE_MULTICAST, true)
 
   private fun mkIntPreference(prefName: String, default: Int) =
@@ -314,6 +315,7 @@ class AppPreferences {
     private const val SHARED_PREFS_DEVICE_NAME_FOR_REMOTE_ACCESS = "DeviceNameForRemoteAccess"
     private const val SHARED_PREFS_CONFIRM_REMOTE_SESSIONS = "ConfirmRemoteSessions"
     private const val SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST = "ConnectRemoteViaMulticast"
+    private const val SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "ConnectRemoteViaMulticastAuto"
     private const val SHARED_PREFS_OFFER_REMOTE_MULTICAST = "OfferRemoteMulticast"
   }
 }
@@ -1432,14 +1434,25 @@ object ChatController {
 
   suspend fun connectRemoteCtrl(desktopAddress: String): Pair<SomeRemoteCtrl?, CR.ChatCmdError?> {
     val r = sendCmd(null, CC.ConnectRemoteCtrl(desktopAddress))
-    if (r is CR.RemoteCtrlConnecting) return SomeRemoteCtrl(r.remoteCtrl_, r.ctrlAppInfo, r.appVersion) to null
-    else if (r is CR.ChatCmdError) return null to r
-    else throw Exception("connectRemoteCtrl error: ${r.responseType} ${r.details}")
+    return if (r is CR.RemoteCtrlConnecting) SomeRemoteCtrl(r.remoteCtrl_, r.ctrlAppInfo, r.appVersion) to null
+    else if (r is CR.ChatCmdError) null to r
+    else {
+      apiErrorAlert("connectRemoteCtrl", generalGetString(MR.strings.error_alert_title), r)
+      null to null
+    }
   }
 
   suspend fun findKnownRemoteCtrl(): Boolean = sendCommandOkResp(null, CC.FindKnownRemoteCtrl())
 
-  suspend fun confirmRemoteCtrl(rcId: Long): Boolean = sendCommandOkResp(null, CC.ConfirmRemoteCtrl(rcId))
+  suspend fun confirmRemoteCtrl(rcId: Long): Pair<SomeRemoteCtrl?, CR.ChatCmdError?> {
+    val r = sendCmd(null, CC.ConfirmRemoteCtrl(remoteCtrlId = rcId))
+    return if (r is CR.RemoteCtrlConnecting) SomeRemoteCtrl(r.remoteCtrl_, r.ctrlAppInfo, r.appVersion) to null
+    else if (r is CR.ChatCmdError) null to r
+    else {
+      apiErrorAlert("confirmRemoteCtrl", generalGetString(MR.strings.error_alert_title), r)
+      null to null
+    }
+  }
 
   suspend fun verifyRemoteCtrlSession(sessionCode: String): RemoteCtrlInfo? {
     val r = sendCmd(null, CC.VerifyRemoteCtrlSession(sessionCode))
@@ -1857,8 +1870,15 @@ object ChatController {
         }
       }
       is CR.RemoteCtrlFound -> {
-        // TODO multicast
-        Log.d(TAG, "RemoteCtrlFound: ${r.remoteCtrl}")
+        val sess = chatModel.remoteCtrlSession.value
+        if (sess != null && sess.sessionState is UIRemoteCtrlSessionState.Searching) {
+          val state = UIRemoteCtrlSessionState.Found(remoteCtrl = r.remoteCtrl, compatible = r.compatible)
+          chatModel.remoteCtrlSession.value = RemoteCtrlSession(
+            ctrlAppInfo = r.ctrlAppInfo_,
+            appVersion = r.appVersion,
+            sessionState = state
+          )
+        }
       }
       is CR.RemoteCtrlSessionCode -> {
         val state = UIRemoteCtrlSessionState.PendingConfirmation(remoteCtrl_ = r.remoteCtrl_, sessionCode = r.sessionCode)
@@ -1870,7 +1890,13 @@ object ChatController {
         chatModel.remoteCtrlSession.value = chatModel.remoteCtrlSession.value?.copy(sessionState = state)
       }
       is CR.RemoteCtrlStopped -> {
-        switchToLocalSession()
+        val sess = chatModel.remoteCtrlSession.value
+        if (sess != null) {
+          chatModel.remoteCtrlSession.value = null
+          if (sess.sessionState is UIRemoteCtrlSessionState.Connected) {
+            switchToLocalSession()
+          }
+        }
       }
       else ->
         Log.d(TAG , "unsupported event: ${r.responseType}")
@@ -3782,7 +3808,7 @@ sealed class CR {
   @Serializable @SerialName("remoteFileStored") class RemoteFileStored(val remoteHostId: Long, val remoteFileSource: CryptoFile): CR()
   // remote events (mobile)
   @Serializable @SerialName("remoteCtrlList") class RemoteCtrlList(val remoteCtrls: List<RemoteCtrlInfo>): CR()
-  @Serializable @SerialName("remoteCtrlFound") class RemoteCtrlFound(val remoteCtrl: RemoteCtrlInfo): CR()
+  @Serializable @SerialName("remoteCtrlFound") class RemoteCtrlFound(val remoteCtrl: RemoteCtrlInfo, val ctrlAppInfo_: CtrlAppInfo?, val appVersion: String, val compatible: Boolean): CR()
   @Serializable @SerialName("remoteCtrlConnecting") class RemoteCtrlConnecting(val remoteCtrl_: RemoteCtrlInfo?, val ctrlAppInfo: CtrlAppInfo, val appVersion: String): CR()
   @Serializable @SerialName("remoteCtrlSessionCode") class RemoteCtrlSessionCode(val remoteCtrl_: RemoteCtrlInfo?, val sessionCode: String): CR()
   @Serializable @SerialName("remoteCtrlConnected") class RemoteCtrlConnected(val remoteCtrl: RemoteCtrlInfo): CR()
@@ -4080,7 +4106,11 @@ sealed class CR {
     is RemoteHostStopped -> "remote host ID: $remoteHostId_"
     is RemoteFileStored -> "remote host ID: $remoteHostId\nremoteFileSource:\n" + json.encodeToString(remoteFileSource)
     is RemoteCtrlList -> json.encodeToString(remoteCtrls)
-    is RemoteCtrlFound -> json.encodeToString(remoteCtrl)
+    is RemoteCtrlFound -> "remote ctrl: " + json.encodeToString(remoteCtrl) +
+        "\nctrlAppInfo: " +
+        (if (ctrlAppInfo_ == null) "null" else json.encodeToString(ctrlAppInfo_)) +
+        "\nappVersion: $appVersion" +
+        "\ncompatible: $compatible"
     is RemoteCtrlConnecting ->
       "remote ctrl: " +
           (if (remoteCtrl_ == null) "null" else json.encodeToString(remoteCtrl_)) +

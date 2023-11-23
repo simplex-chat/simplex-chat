@@ -30,6 +30,7 @@ import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.QRCode
+import chat.simplex.common.views.usersettings.PreferenceToggle
 import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -90,6 +91,9 @@ fun ConnectMobileLayout(
     SectionView(generalGetString(MR.strings.this_device_name).uppercase()) {
       DeviceNameField(deviceName.value ?: "") { updateDeviceName(it) }
       SectionTextFooter(generalGetString(MR.strings.this_device_name_shared_with_mobile))
+      PreferenceToggle(stringResource(MR.strings.multicast_discoverable_via_local_network), remember { controller.appPrefs.offerRemoteMulticast.state }.value) {
+        controller.appPrefs.offerRemoteMulticast.set(it)
+      }
       SectionDividerSpaced(maxBottomPadding = false)
     }
     SectionView(stringResource(MR.strings.devices).uppercase()) {
@@ -266,7 +270,7 @@ private fun showAddingMobileDevice(connecting: MutableState<Boolean>) {
     }
     DisposableEffect(Unit) {
       withBGApi {
-        val r = chatModel.controller.startRemoteHost(null)
+        val r = chatModel.controller.startRemoteHost(null, controller.appPrefs.offerRemoteMulticast.get())
         if (r != null) {
           connecting.value = true
           invitation.value = r.second
@@ -308,7 +312,7 @@ private fun showConnectMobileDevice(rh: RemoteHostInfo, connecting: MutableState
     )
     var remoteHostId by rememberSaveable { mutableStateOf<Long?>(null) }
     LaunchedEffect(Unit) {
-      val r = chatModel.controller.startRemoteHost(rh.remoteHostId)
+      val r = chatModel.controller.startRemoteHost(rh.remoteHostId, controller.appPrefs.offerRemoteMulticast.get())
       if (r != null) {
         val (rh_, inv) = r
         connecting.value = true
