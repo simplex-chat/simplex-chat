@@ -227,14 +227,15 @@ struct ConnectDesktopView: View {
                 ctrlDeviceVersionText(session)
                 if !compatible {
                     Text("Not compatible!").foregroundColor(.red)
-                }
-                Button {
-                    confirmKnownDesktop(rc)
-                } label: {
-                    Label("Connect", systemImage: "checkmark")
+                } else if !connectRemoteViaMulticastAuto {
+                    Button {
+                        confirmKnownDesktop(rc)
+                    } label: {
+                        Label("Connect", systemImage: "checkmark")
+                    }
                 }
             }
-            if compatible && !connectRemoteViaMulticastAuto {
+            if !compatible && !connectRemoteViaMulticastAuto {
                 Section {
                     disconnectButton("Cancel")
                 }
