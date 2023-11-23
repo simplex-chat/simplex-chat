@@ -1836,7 +1836,7 @@ object ChatController {
       is CR.GroupMemberRatchetSync ->
         chatModel.updateGroupMemberConnectionStats(rhId, r.groupInfo, r.member, r.ratchetSyncProgress.connectionStats)
       is CR.RemoteHostSessionCode -> {
-        chatModel.newRemoteHostPairing.value = r.remoteHost_ to RemoteHostSessionState.PendingConfirmation(r.sessionCode)
+        chatModel.remoteHostPairing.value = r.remoteHost_ to RemoteHostSessionState.PendingConfirmation(r.sessionCode)
       }
       is CR.RemoteHostConnected -> {
         // TODO needs to update it instead in sessions
@@ -1845,7 +1845,7 @@ object ChatController {
       }
       is CR.RemoteHostStopped -> {
         val disconnectedHost = chatModel.remoteHosts.firstOrNull { it.remoteHostId == r.remoteHostId_ }
-        chatModel.newRemoteHostPairing.value = null
+        chatModel.remoteHostPairing.value = null
         if (disconnectedHost != null) {
           showToast(
             generalGetString(MR.strings.remote_host_was_disconnected_toast).format(disconnectedHost.hostDeviceName.ifEmpty { disconnectedHost.remoteHostId.toString() })

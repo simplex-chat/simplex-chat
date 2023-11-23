@@ -113,7 +113,7 @@ object ChatModel {
   val currentRemoteHost = mutableStateOf<RemoteHostInfo?>(null)
   val remoteHostId: Long? @Composable get() = remember { currentRemoteHost }.value?.remoteHostId
   fun remoteHostId(): Long? = currentRemoteHost.value?.remoteHostId
-  val newRemoteHostPairing = mutableStateOf<Pair<RemoteHostInfo?, RemoteHostSessionState>?>(null)
+  val remoteHostPairing = mutableStateOf<Pair<RemoteHostInfo?, RemoteHostSessionState>?>(null)
   val remoteCtrlSession = mutableStateOf<RemoteCtrlSession?>(null)
 
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
