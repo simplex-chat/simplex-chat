@@ -638,6 +638,9 @@ data class User(
 
   val addressShared: Boolean = profile.contactLink != null
 
+  fun updateRemoteHostId(rh: Long?): User =
+    if (rh == null) this else this.copy(remoteHostId = rh)
+
   companion object {
     val sampleData = User(
       remoteHostId = null,

@@ -468,7 +468,7 @@ object ChatController {
 
   suspend fun apiGetActiveUser(rh: Long?): User? {
     val r = sendCmd(rh, CC.ShowActiveUser())
-    if (r is CR.ActiveUser) return r.user
+    if (r is CR.ActiveUser) return r.user.updateRemoteHostId(rh)
     Log.d(TAG, "apiGetActiveUser: ${r.responseType} ${r.details}")
     chatModel.userCreated.value = false
     return null
@@ -476,7 +476,7 @@ object ChatController {
 
   suspend fun apiCreateActiveUser(rh: Long?, p: Profile?, sameServers: Boolean = false, pastTimestamp: Boolean = false): User? {
     val r = sendCmd(rh, CC.CreateActiveUser(p, sameServers = sameServers, pastTimestamp = pastTimestamp))
-    if (r is CR.ActiveUser) return r.user
+    if (r is CR.ActiveUser) return r.user.updateRemoteHostId(rh)
     else if (
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorStore && r.chatError.storeError is StoreError.DuplicateName ||
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat && r.chatError.errorType is ChatErrorType.UserExists
@@ -501,7 +501,7 @@ object ChatController {
 
   suspend fun apiSetActiveUser(rh: Long?, userId: Long, viewPwd: String?): User {
     val r = sendCmd(rh, CC.ApiSetActiveUser(userId, viewPwd))
-    if (r is CR.ActiveUser) return if (rh == null) r.user else r.user.copy(remoteHostId = rh)
+    if (r is CR.ActiveUser) return r.user.updateRemoteHostId(rh)
     Log.d(TAG, "apiSetActiveUser: ${r.responseType} ${r.details}")
     throw Exception("failed to set the user as active ${r.responseType} ${r.details}")
   }
@@ -538,7 +538,7 @@ object ChatController {
 
   private suspend fun setUserPrivacy(rh: Long?, cmd: CC): User {
     val r = sendCmd(rh, cmd)
-    if (r is CR.UserPrivacy) return if (rh == null) r.updatedUser else r.updatedUser.copy(remoteHostId = rh)
+    if (r is CR.UserPrivacy) return r.updatedUser.updateRemoteHostId(rh)
     else throw Exception("Failed to change user privacy: ${r.responseType} ${r.details}")
   }
 
