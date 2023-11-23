@@ -397,12 +397,15 @@ findKnownRemoteCtrl = do
   cmdOk <- newEmptyTMVarIO
   action <- async $ handleCtrlError sseq "findKnownRemoteCtrl.discover" $ do
     atomically $ takeTMVar cmdOk
-    (RCCtrlPairing {ctrlFingerprint}, inv) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) discoveryTimeout . withAgent $ \a -> rcDiscoverCtrl a pairings
+    (RCCtrlPairing {ctrlFingerprint}, inv@(RCVerifiedInvitation RCInvitation {app})) <-
+      timeoutThrow (ChatErrorRemoteCtrl RCETimeout) discoveryTimeout . withAgent $ \a -> rcDiscoverCtrl a pairings
+    ctrlAppInfo <- parseCtrlAppInfo app
     rc <- withStore' (`getRemoteCtrlByFingerprint` ctrlFingerprint) >>= \case
       Nothing -> throwChatError $ CEInternalError "connecting with a stored ctrl"
       Just rc  -> pure rc
     atomically $ putTMVar foundCtrl (rc, inv)
-    toView CRRemoteCtrlFound {remoteCtrl = remoteCtrlInfo rc (Just RCSSearching)}
+    let compatible = isJust $ compatibleAppVersion hostAppVersionRange (appVersionRange ctrlAppInfo)
+    toView CRRemoteCtrlFound {remoteCtrl = remoteCtrlInfo rc (Just RCSSearching), ctrlAppInfo, appVersion = currentAppVersion, compatible}
   updateRemoteCtrlSession sseq $ \case
     RCSessionStarting -> Right RCSessionSearching {action, foundCtrl}
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
@@ -439,7 +442,8 @@ startRemoteCtrlSession = do
 
 connectRemoteCtrl :: ChatMonad m => RCVerifiedInvitation -> SessionSeq -> m (Maybe RemoteCtrlInfo, CtrlAppInfo)
 connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) sseq = handleCtrlError sseq "connectRemoteCtrl" $ do
-  (ctrlInfo@CtrlAppInfo {deviceName = ctrlDeviceName}, v) <- parseCtrlAppInfo app
+  ctrlInfo@CtrlAppInfo {deviceName = ctrlDeviceName} <- parseCtrlAppInfo app
+  v <- checkAppVersion ctrlInfo
   rc_ <- withStore' $ \db -> getRemoteCtrlByFingerprint db ca
   mapM_ (validateRemoteCtrl inv) rc_
   hostAppInfo <- getHostAppInfo v
@@ -467,17 +471,18 @@ connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) 
            in Right RCSessionPendingConfirmation {remoteCtrlId_, ctrlDeviceName = ctrlName, rcsClient, tls, sessionCode, rcsWaitSession, rcsWaitConfirmation}
         _ -> Left $ ChatErrorRemoteCtrl RCEBadState
       toView CRRemoteCtrlSessionCode {remoteCtrl_ = (`remoteCtrlInfo` Just RCSPendingConfirmation {sessionCode}) <$> rc_, sessionCode}
-    parseCtrlAppInfo ctrlAppInfo = do
-      ctrlInfo@CtrlAppInfo {appVersionRange} <-
-        liftEitherWith (const $ ChatErrorRemoteCtrl RCEBadInvitation) $ JT.parseEither J.parseJSON ctrlAppInfo
-      v <- case compatibleAppVersion hostAppVersionRange appVersionRange of
+    checkAppVersion CtrlAppInfo {appVersionRange} =
+      case compatibleAppVersion hostAppVersionRange appVersionRange of
         Just (AppCompatible v) -> pure v
         Nothing -> throwError $ ChatErrorRemoteCtrl $ RCEBadVersion $ maxVersion appVersionRange
-      pure (ctrlInfo, v)
     getHostAppInfo appVersion = do
       hostDeviceName <- chatReadVar localDeviceName
       encryptFiles <- chatReadVar encryptLocalFiles
       pure HostAppInfo {appVersion, deviceName = hostDeviceName, encoding = localEncoding, encryptFiles}
+
+parseCtrlAppInfo :: ChatMonad m => JT.Value -> m CtrlAppInfo
+parseCtrlAppInfo ctrlAppInfo = do
+  liftEitherWith (const $ ChatErrorRemoteCtrl RCEBadInvitation) $ JT.parseEither J.parseJSON ctrlAppInfo
 
 handleRemoteCommand :: forall m. ChatMonad m => (ByteString -> m ChatResponse) -> RemoteCrypto -> TBQueue ChatResponse -> HTTP2Request -> m ()
 handleRemoteCommand execChatCommand encryption remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do

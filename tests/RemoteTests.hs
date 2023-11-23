@@ -459,8 +459,7 @@ startRemoteDiscover mobile desktop = do
   _inv <- getTermLine desktop -- will use multicast instead
   mobile ##> "/find remote ctrl"
   mobile <## "ok"
-  mobile <## "remote controller found:"
-  mobile <## "1. My desktop"
+  mobile <## ("remote controller 1 found: My desktop, v" <> versionNumber)
   mobile ##> "/confirm remote ctrl 1"
 
   mobile <## ("connecting remote controller 1: My desktop, v" <> versionNumber)
