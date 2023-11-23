@@ -199,4 +199,47 @@
     <string name="connect_via_member_address_alert_title">Kapcsolódás közvetlenül?</string>
     <string name="smp_server_test_connect">Kapcsolódás</string>
     <string name="rcv_group_event_member_created_contact">közvetlenül kapcsolódva</string>
+    <string name="connection_local_display_name">kapcsolat %1$d</string>
+    <string name="status_contact_has_e2e_encryption">az ismerősnél az e2e titkosítás elérhető</string>
+    <string name="v5_4_incognito_groups_descr">Csoport létrehozása véletlenszerűen létrehozott profillal.</string>
+    <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Az ismerős és az összes üzenet törlésre kerül - ez visszafordíthatatlan!</string>
+    <string name="contacts_can_mark_messages_for_deletion">Ismerősök megjelölhetik az üzeneteket törlendőként; de láthatod azokat.</string>
+    <string name="connect_via_invitation_link">Kapcsolódás egy Egyszer használatos linkkel?</string>
+    <string name="connect_via_link_or_qr">Kapcsolódás egy link / QR-kód által</string>
+    <string name="connection_error_auth">Kapcsolódási hiba (AUTH)</string>
+    <string name="notification_preview_mode_contact">Ismerős neve</string>
+    <string name="connect_via_contact_link">Kapcsolódás ismerős azonosítója által?</string>
+    <string name="create_address">Azonosító létrehozása</string>
+    <string name="copy_verb">Másolás</string>
+    <string name="continue_to_next_step">Folytatás</string>
+    <string name="connect_plan_connect_via_link">Kapcsolódás egy linken keresztül?</string>
+    <string name="contact_already_exists">Az ismerős már létezik</string>
+    <string name="core_version">Fő verzió: v%s</string>
+    <string name="icon_descr_contact_checked">Ismerős ellenőrizve</string>
+    <string name="connect_plan_connect_to_yourself">Kapcsolódás saját magához?</string>
+    <string name="copied">Kimásolva a vágólapra</string>
+    <string name="connection_request_sent">Kapcsolódási kérés elküldve!</string>
+    <string name="connecting_to_desktop">Kapcsolódás az asztalhoz</string>
+    <string name="network_session_mode_entity">Kapcsolat</string>
+    <string name="correct_name_to">Név helyesbítése erre: %s?</string>
+    <string name="connection_timeout">Kapcsolat időtúllépés</string>
+    <string name="connect_with_contact_name_question">Kapcsolódás %1$s által?</string>
+    <string name="create_profile_button">Létrehozás</string>
+    <string name="contact_preferences">Ismerős beállításai</string>
+    <string name="info_row_connection">Kapcsolat</string>
+    <string name="desktop_connection_terminated">Kapcsolat megszakítva</string>
+    <string name="display_name_connection_established">Kapcsolat létrehozva</string>
+    <string name="status_contact_has_no_e2e_encryption">az ismerősnél az e2e titkosítás nem elérhető</string>
+    <string name="chat_preferences_contact_allows">Az ismerős engedélyezi</string>
+    <string name="notification_preview_somebody">Ismerős elrejtve:</string>
+    <string name="connect_to_desktop">Kapcsolódás az asztalhoz</string>
+    <string name="icon_descr_context">Kontextus ikon</string>
+    <string name="connect_via_link">Kapcsolódás egy linken keresztül</string>
+    <string name="receipts_section_contacts">Ismerősök</string>
+    <string name="connection_error">Kapcsolódási hiba</string>
+    <string name="alert_title_contact_connection_pending">Az ismerős még nem kapcsolódott!</string>
+    <string name="v5_3_discover_join_groups_descr">- kapcsolódás könyvtár szolgáltatáshoz (BÉTA)!
+\n- kézbesítési igazolások (20 tagig).
+\n- gyorsabb és stabilabb</string>
+    <string name="contribute">Hozzájárulás</string>
 </resources>
