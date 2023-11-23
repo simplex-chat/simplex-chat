@@ -2946,10 +2946,10 @@ sealed class RemoteCtrlSessionState {
 }
 
 sealed class UIRemoteCtrlSessionState {
-  @Serializable @SerialName("starting") object Starting: UIRemoteCtrlSessionState()
-  @Serializable @SerialName("searching") object Searching: UIRemoteCtrlSessionState()
-  @Serializable @SerialName("found") data class Found(val remoteCtrl: RemoteCtrlInfo, val compatible: Boolean): UIRemoteCtrlSessionState()
-  @Serializable @SerialName("connecting") data class Connecting(val remoteCtrl_: RemoteCtrlInfo? = null): UIRemoteCtrlSessionState()
-  @Serializable @SerialName("pendingConfirmation") data class PendingConfirmation(val remoteCtrl_: RemoteCtrlInfo? = null, val sessionCode: String): UIRemoteCtrlSessionState()
-  @Serializable @SerialName("connected") data class Connected(val remoteCtrl: RemoteCtrlInfo, val sessionCode: String): UIRemoteCtrlSessionState()
+  object Starting: UIRemoteCtrlSessionState()
+  object Searching: UIRemoteCtrlSessionState()
+  data class Found(val remoteCtrl: RemoteCtrlInfo, val compatible: Boolean): UIRemoteCtrlSessionState()
+  data class Connecting(val remoteCtrl_: RemoteCtrlInfo? = null): UIRemoteCtrlSessionState()
+  data class PendingConfirmation(val remoteCtrl_: RemoteCtrlInfo? = null, val sessionCode: String): UIRemoteCtrlSessionState()
+  data class Connected(val remoteCtrl: RemoteCtrlInfo, val sessionCode: String): UIRemoteCtrlSessionState()
 }
