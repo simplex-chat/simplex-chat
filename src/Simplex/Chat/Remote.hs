@@ -659,7 +659,8 @@ cancelActiveRemoteCtrl sseq_ = handleAny (logError . tshow) $ do
 cancelRemoteCtrl :: Bool -> RemoteCtrlSession -> IO ()
 cancelRemoteCtrl handlingError = \case
   RCSessionStarting -> pure ()
-  RCSessionSearching {action} -> uninterruptibleCancel action
+  RCSessionSearching {action} ->
+    unless handlingError $ uninterruptibleCancel action
   RCSessionConnecting {rcsClient, rcsWaitSession} -> do
     unless handlingError $ uninterruptibleCancel rcsWaitSession
     cancelCtrlClient rcsClient
