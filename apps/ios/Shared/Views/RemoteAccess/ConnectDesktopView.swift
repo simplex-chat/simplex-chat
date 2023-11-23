@@ -23,6 +23,8 @@ struct ConnectDesktopView: View {
     @State private var remoteCtrls: [RemoteCtrlInfo] = []
     @State private var alert: ConnectDesktopAlert?
     @State private var showConnectScreen = true
+    @State private var showQRCodeScanner = true
+    @State private var firstAppearance = true
     @State private var showingLinkedDevices = false
 
     private var useMulticast: Bool {
@@ -89,10 +91,14 @@ struct ConnectDesktopView: View {
                     }
                 case let .connected(rc, _): activeSessionView(session, rc)
                 }
-            } else if showConnectScreen {
+            } else if !showConnectScreen {
+                searchingDesktopView()
+            // The hack below prevents camera freezing when exiting linked devices view.
+            // Using showQRCodeScanner inside connectDesktopView or passing it as parameter still results in freezing.
+            } else if showQRCodeScanner || firstAppearance {
                 connectDesktopView()
             } else {
-                searchingDesktopView()
+                connectDesktopView(showScanner: false)
             }
         }
         .onAppear {
@@ -103,6 +109,14 @@ struct ConnectDesktopView: View {
                 findKnownDesktop()
             } else if m.remoteCtrlSession != nil && !useMulticast {
                 disconnectDesktop()
+            }
+            // The hack below prevents camera freezing when exiting linked devices view.
+            // `firstAppearance` prevents camera flicker when the view first opens.
+            // moving `showQRCodeScanner = false` to `onDisappear` (to avoid `firstAppearance`) does not prevent freeze.
+            showQRCodeScanner = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                firstAppearance = false
+                showQRCodeScanner = true
             }
         }
         .onDisappear {
@@ -150,12 +164,14 @@ struct ConnectDesktopView: View {
         .interactiveDismissDisabled(m.activeRemoteCtrl)
     }
 
-    private func connectDesktopView() -> some View {
+    private func connectDesktopView(showScanner: Bool = true) -> some View {
         List {
             Section("This device name") {
                 devicesView()
             }
-            scanDesctopAddressView()
+            if showScanner {
+                scanDesctopAddressView()
+            }
             if developerTools {
                 desktopAddressView()
             }
