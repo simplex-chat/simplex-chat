@@ -1683,7 +1683,7 @@
   <string name="scan_qr_code_from_desktop">Scan QR code from desktop</string>
   <string name="desktop_address">Desktop address</string>
   <string name="verify_connections">Verify connections</string>
-  <string name="discover_on_network">Discover on network</string>
+  <string name="discover_on_network">Discover via local network</string>
   <string name="multicast_discoverable_via_local_network">Discoverable via local network</string>
   <string name="multicast_connect_automatically">Connect automatically</string>
   <string name="paste_desktop_address">Paste desktop address</string>
