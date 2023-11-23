@@ -86,9 +86,15 @@ ctrlAppVersionRange = mkAppVersionRange minRemoteHostVersion currentAppVersion
 hostAppVersionRange :: AppVersionRange
 hostAppVersionRange = mkAppVersionRange minRemoteCtrlVersion currentAppVersion
 
+-- | Timeout for network exchanges
 networkIOTimeout :: Int
 networkIOTimeout = 15000000
 
+-- | Time for user to do things in UI/other device
+interactiveTimeout :: Int
+interactiveTimeout = 60000000
+
+-- | Time to listen for multicast announcements
 discoveryTimeout :: Int
 discoveryTimeout = 60000000
 
@@ -177,14 +183,14 @@ startRemoteHost rh_ = do
       readTVarIO rhKeyVar >>= cancelRemoteHostSession (Just sessSeq)
     waitForHostSession :: ChatMonad m => Maybe RemoteHostInfo -> RHKey -> SessionSeq -> TVar RHKey -> RCStepTMVar (ByteString, TLS, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> m ()
     waitForHostSession remoteHost_ rhKey sseq rhKeyVar vars = do
-      (sessId, tls, vars') <- timeoutThrow (ChatErrorRemoteHost rhKey RHETimeout) 60000000 $ takeRCStep vars
+      (sessId, tls, vars') <- timeoutThrow (ChatErrorRemoteHost rhKey RHETimeout) interactiveTimeout $ takeRCStep vars
       let sessionCode = verificationCode sessId
       withRemoteHostSession rhKey sseq $ \case
         RHSessionConnecting _inv rhs' -> Right ((), RHSessionPendingConfirmation sessionCode tls rhs')
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
       let rh_' = (\rh -> (rh :: RemoteHostInfo) {sessionState = Just RHSPendingConfirmation {sessionCode}}) <$> remoteHost_
       toView $ CRRemoteHostSessionCode {remoteHost_ = rh_', sessionCode}
-      (RCHostSession {sessionKeys}, rhHello, pairing') <- timeoutThrow (ChatErrorRemoteHost rhKey RHETimeout) 60000000 $ takeRCStep vars'
+      (RCHostSession {sessionKeys}, rhHello, pairing') <- timeoutThrow (ChatErrorRemoteHost rhKey RHETimeout) interactiveTimeout $ takeRCStep vars'
       hostInfo@HostAppInfo {deviceName = hostDeviceName} <-
         liftError (ChatErrorRemoteHost rhKey) $ parseHostAppInfo rhHello
       withRemoteHostSession rhKey sseq $ \case
@@ -398,7 +404,7 @@ findKnownRemoteCtrl = do
   action <- async $ handleCtrlError sseq "findKnownRemoteCtrl.discover" $ do
     atomically $ takeTMVar cmdOk
     (RCCtrlPairing {ctrlFingerprint}, inv@(RCVerifiedInvitation RCInvitation {app})) <-
-      timeoutThrow (ChatErrorRemoteCtrl RCETimeout) discoveryTimeout . withAgent $ \a -> rcDiscoverCtrl a pairings
+      withAgent $ \a -> rcDiscoverCtrl a pairings discoveryTimeout
     ctrlAppInfo_ <- (Just <$> parseCtrlAppInfo app) `catchChatError` const (pure Nothing)
     rc <- withStore' (`getRemoteCtrlByFingerprint` ctrlFingerprint) >>= \case
       Nothing -> throwChatError $ CEInternalError "connecting with a stored ctrl"
