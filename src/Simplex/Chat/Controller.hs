@@ -662,14 +662,14 @@ data ChatResponse
   | CRRemoteHostSessionCode {remoteHost_ :: Maybe RemoteHostInfo, sessionCode :: Text}
   | CRNewRemoteHost {remoteHost :: RemoteHostInfo}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
-  | CRRemoteHostStopped {remoteHostId_ :: Maybe RemoteHostId, rhsState :: RemoteHostSessionState, rhsStopReason :: RHSStopReason}
+  | CRRemoteHostStopped {remoteHostId_ :: Maybe RemoteHostId, rhsState :: RemoteHostSessionState, rhStopReason :: RemoteHostStopReason}
   | CRRemoteFileStored {remoteHostId :: RemoteHostId, remoteFileSource :: CryptoFile}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
   | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo, ctrlAppInfo_ :: Maybe CtrlAppInfo, appVersion :: AppVersion, compatible :: Bool}
   | CRRemoteCtrlConnecting {remoteCtrl_ :: Maybe RemoteCtrlInfo, ctrlAppInfo :: CtrlAppInfo, appVersion :: AppVersion}
   | CRRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
-  | CRRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcsStopReason :: RCSStopReason}
+  | CRRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcStopReason :: RemoteCtrlStopReason}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
@@ -1083,10 +1083,10 @@ data RemoteHostError
   | RHEProtocolError RemoteProtocolError
   deriving (Show, Exception)
 
-data RHSStopReason
-  = RHSConnectionFailed ChatError
-  | RHSCrashed ChatError
-  | RHSDisconnected
+data RemoteHostStopReason
+  = RHSRConnectionFailed ChatError
+  | RHSRCrashed ChatError
+  | RHSRDisconnected
   deriving (Show, Exception)
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
@@ -1104,11 +1104,11 @@ data RemoteCtrlError
   | RCEProtocolError {protocolError :: RemoteProtocolError}
   deriving (Show, Exception)
 
-data RCSStopReason
-  = RCSDiscoverFailed ChatError
-  | RCSConnectionFailed ChatError
-  | RCSSetupFailed ChatError
-  | RCSDisconnected
+data RemoteCtrlStopReason
+  = RCSRDiscoveryFailed ChatError
+  | RCSRConnectionFailed ChatError
+  | RCSRSetupFailed ChatError
+  | RCSRDisconnected
   deriving (Show, Exception)
 
 data ArchiveError
@@ -1336,9 +1336,9 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCS") ''RemoteCtrlSessionState)
 
 $(JQ.deriveJSON defaultJSON ''RemoteCtrlInfo)
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCS") ''RCSStopReason)
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCSR") ''RemoteCtrlStopReason)
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHS") ''RHSStopReason)
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 

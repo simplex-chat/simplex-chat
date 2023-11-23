@@ -169,12 +169,12 @@ startRemoteHost rh_ = do
     handleConnectError :: ChatMonad m => RHKey -> SessionSeq -> m a -> m a
     handleConnectError rhKey sessSeq action = action `catchChatError` \err -> do
       logError $ "startRemoteHost.rcConnectHost crashed: " <> tshow err
-      cancelRemoteHostSession (Just (sessSeq, RHSConnectionFailed err)) rhKey
+      cancelRemoteHostSession (Just (sessSeq, RHSRConnectionFailed err)) rhKey
       throwError err
     handleHostError :: ChatMonad m => SessionSeq -> TVar RHKey -> m () -> m ()
     handleHostError sessSeq rhKeyVar action = action `catchChatError` \err -> do
       logError $ "startRemoteHost.waitForHostSession crashed: " <> tshow err
-      readTVarIO rhKeyVar >>= cancelRemoteHostSession (Just (sessSeq, RHSCrashed err))
+      readTVarIO rhKeyVar >>= cancelRemoteHostSession (Just (sessSeq, RHSRCrashed err))
     waitForHostSession :: ChatMonad m => Maybe RemoteHostInfo -> RHKey -> SessionSeq -> TVar RHKey -> RCStepTMVar (ByteString, TLS, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> m ()
     waitForHostSession remoteHost_ rhKey sseq rhKeyVar vars = do
       (sessId, tls, vars') <- timeoutThrow (ChatErrorRemoteHost rhKey RHETimeout) 60000000 $ takeRCStep vars
@@ -220,7 +220,7 @@ startRemoteHost rh_ = do
     onDisconnected :: ChatMonad m => RHKey -> SessionSeq -> m ()
     onDisconnected rhKey sseq = do
       logDebug $ "HTTP2 client disconnected: " <> tshow (rhKey, sseq)
-      cancelRemoteHostSession (Just (sseq, RHSDisconnected)) rhKey
+      cancelRemoteHostSession (Just (sseq, RHSRDisconnected)) rhKey
     pollEvents :: ChatMonad m => RemoteHostId -> RemoteHostClient -> m ()
     pollEvents rhId rhClient = do
       oq <- asks outputQ
@@ -246,7 +246,7 @@ closeRemoteHost rhKey = do
   logNote $ "Closing remote host session for " <> tshow rhKey
   cancelRemoteHostSession Nothing rhKey
 
-cancelRemoteHostSession :: ChatMonad m => Maybe (SessionSeq, RHSStopReason) -> RHKey -> m ()
+cancelRemoteHostSession :: ChatMonad m => Maybe (SessionSeq, RemoteHostStopReason) -> RHKey -> m ()
 cancelRemoteHostSession handlerInfo_ rhKey = do
   sessions <- asks remoteHostSessions
   crh <- asks currentRemoteHost
@@ -260,8 +260,8 @@ cancelRemoteHostSession handlerInfo_ rhKey = do
         pure $ Just rhs
   forM_ deregistered $ \session -> do
     liftIO $ cancelRemoteHost handlingError session `catchAny` (logError . tshow)
-    forM_ (snd <$> handlerInfo_) $ \rhsStopReason ->
-      toView $ CRRemoteHostStopped {remoteHostId_, rhsState = rhsSessionState session, rhsStopReason}
+    forM_ (snd <$> handlerInfo_) $ \rhStopReason ->
+      toView $ CRRemoteHostStopped {remoteHostId_, rhsState = rhsSessionState session, rhStopReason}
   where
     handlingError = isJust handlerInfo_
     remoteHostId_ = case rhKey of
@@ -396,7 +396,7 @@ findKnownRemoteCtrl = do
   sseq <- startRemoteCtrlSession
   foundCtrl <- newEmptyTMVarIO
   cmdOk <- newEmptyTMVarIO
-  action <- async $ handleCtrlError sseq RCSDiscoverFailed "findKnownRemoteCtrl.discover" $ do
+  action <- async $ handleCtrlError sseq RCSRDiscoveryFailed "findKnownRemoteCtrl.discover" $ do
     atomically $ takeTMVar cmdOk
     (RCCtrlPairing {ctrlFingerprint}, inv@(RCVerifiedInvitation RCInvitation {app})) <-
       timeoutThrow (ChatErrorRemoteCtrl RCETimeout) discoveryTimeout . withAgent $ \a -> rcDiscoverCtrl a pairings
@@ -442,7 +442,7 @@ startRemoteCtrlSession = do
         Right sseq <$ writeTVar session (Just (sseq, RCSessionStarting))
 
 connectRemoteCtrl :: ChatMonad m => RCVerifiedInvitation -> SessionSeq -> m (Maybe RemoteCtrlInfo, CtrlAppInfo)
-connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) sseq = handleCtrlError sseq RCSConnectionFailed "connectRemoteCtrl" $ do
+connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) sseq = handleCtrlError sseq RCSRConnectionFailed "connectRemoteCtrl" $ do
   ctrlInfo@CtrlAppInfo {deviceName = ctrlDeviceName} <- parseCtrlAppInfo app
   v <- checkAppVersion ctrlInfo
   rc_ <- withStore' $ \db -> getRemoteCtrlByFingerprint db ca
@@ -453,7 +453,7 @@ connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) 
   cmdOk <- newEmptyTMVarIO
   rcsWaitSession <- async $ do
     atomically $ takeTMVar cmdOk
-    handleCtrlError sseq RCSConnectionFailed "waitForCtrlSession" $ waitForCtrlSession rc_ ctrlDeviceName rcsClient vars
+    handleCtrlError sseq RCSRConnectionFailed "waitForCtrlSession" $ waitForCtrlSession rc_ ctrlDeviceName rcsClient vars
   updateRemoteCtrlSession sseq $ \case
     RCSessionStarting -> Right RCSessionConnecting {remoteCtrlId_ = remoteCtrlId' <$> rc_, rcsClient, rcsWaitSession}
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
@@ -603,7 +603,7 @@ verifyRemoteCtrlSession execChatCommand sessCode' = do
       Nothing -> throwError $ ChatErrorRemoteCtrl RCEInactive
       Just (sseq, RCSessionPendingConfirmation {rcsClient, ctrlDeviceName = ctrlName, sessionCode, rcsWaitConfirmation}) -> pure (sseq, rcsClient, ctrlName, sessionCode, rcsWaitConfirmation)
       _ -> throwError $ ChatErrorRemoteCtrl RCEBadState
-  handleCtrlError sseq RCSSetupFailed "verifyRemoteCtrlSession" $ do
+  handleCtrlError sseq RCSRSetupFailed "verifyRemoteCtrlSession" $ do
     let verified = sameVerificationCode sessCode' sessionCode
     timeoutThrow (ChatErrorRemoteCtrl RCETimeout) networkIOTimeout . liftIO $ confirmCtrlSession client verified -- signal verification result before crashing
     unless verified $ throwError $ ChatErrorRemoteCtrl $ RCEProtocolError PRESessionCode
@@ -631,12 +631,12 @@ verifyRemoteCtrlSession execChatCommand sessCode' = do
     monitor sseq server = do
       res <- waitCatch server
       logInfo $ "HTTP2 server stopped: " <> tshow res
-      cancelActiveRemoteCtrl $ Just (sseq, RCSDisconnected)
+      cancelActiveRemoteCtrl $ Just (sseq, RCSRDisconnected)
 
 stopRemoteCtrl :: ChatMonad m => m ()
 stopRemoteCtrl = cancelActiveRemoteCtrl Nothing
 
-handleCtrlError :: ChatMonad m => SessionSeq -> (ChatError -> RCSStopReason) -> Text -> m a -> m a
+handleCtrlError :: ChatMonad m => SessionSeq -> (ChatError -> RemoteCtrlStopReason) -> Text -> m a -> m a
 handleCtrlError sseq mkReason name action =
   action `catchChatError` \e -> do
     logError $ name <> " remote ctrl error: " <> tshow e
@@ -644,7 +644,7 @@ handleCtrlError sseq mkReason name action =
     throwError e
 
 -- | Stop session controller, unless session update key is present but stale
-cancelActiveRemoteCtrl :: ChatMonad m => Maybe (SessionSeq, RCSStopReason) -> m ()
+cancelActiveRemoteCtrl :: ChatMonad m => Maybe (SessionSeq, RemoteCtrlStopReason) -> m ()
 cancelActiveRemoteCtrl handlerInfo_ = handleAny (logError . tshow) $ do
   var <- asks remoteCtrlSession
   session_ <- atomically $ readTVar var >>= \case
@@ -653,8 +653,8 @@ cancelActiveRemoteCtrl handlerInfo_ = handleAny (logError . tshow) $ do
     Just (_, s) -> Just s <$ writeTVar var Nothing
   forM_ session_ $ \session -> do
     liftIO $ cancelRemoteCtrl handlingError session
-    forM_ (snd <$> handlerInfo_) $ \rcsStopReason ->
-      toView CRRemoteCtrlStopped {rcsState = rcsSessionState session, rcsStopReason}
+    forM_ (snd <$> handlerInfo_) $ \rcStopReason ->
+      toView CRRemoteCtrlStopped {rcsState = rcsSessionState session, rcStopReason}
   where
     handlingError = isJust handlerInfo_
 
