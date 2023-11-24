@@ -1169,6 +1169,10 @@
         <target>接続</target>
         <note>server test step</note>
       </trans-unit>
+      <trans-unit id="Connect automatically" xml:space="preserve">
+        <source>Connect automatically</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connect incognito" xml:space="preserve">
         <source>Connect incognito</source>
         <target>シークレットモードで接続</target>
@@ -1859,8 +1863,8 @@ This cannot be undone!</source>
         <target>グループを見つけて参加する</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Discover on network" xml:space="preserve">
-        <source>Discover on network</source>
+      <trans-unit id="Discover via local network" xml:space="preserve">
+        <source>Discover via local network</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
@@ -2492,6 +2496,10 @@ This cannot be undone!</source>
       <trans-unit id="For console" xml:space="preserve">
         <source>For console</source>
         <target>コンソール</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Found desktop" xml:space="preserve">
+        <source>Found desktop</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="French interface" xml:space="preserve">
@@ -3441,6 +3449,10 @@ This is your link for group %@!</source>
       <trans-unit id="No received or sent files" xml:space="preserve">
         <source>No received or sent files</source>
         <target>送受信済みのファイルがありません</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Not compatible!" xml:space="preserve">
+        <source>Not compatible!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
@@ -5379,6 +5391,10 @@ To connect, please ask your contact to create another connection link and check 
         <target>音声メッセージ…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Waiting for desktop..." xml:space="preserve">
+        <source>Waiting for desktop...</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Waiting for file" xml:space="preserve">
         <source>Waiting for file</source>
         <target>ファイル待ち</target>
@@ -5908,6 +5924,10 @@ SimpleX サーバーはあなたのプロファイルを参照できません。
         <source>audio call (not e2e encrypted)</source>
         <target>音声通話 (エンドツーエンド暗号化なし）</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="author" xml:space="preserve">
+        <source>author</source>
+        <note>member role</note>
       </trans-unit>
       <trans-unit id="bad message ID" xml:space="preserve">
         <source>bad message ID</source>

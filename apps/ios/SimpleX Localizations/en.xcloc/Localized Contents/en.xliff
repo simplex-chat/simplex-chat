@@ -1194,6 +1194,11 @@
         <target>Connect</target>
         <note>server test step</note>
       </trans-unit>
+      <trans-unit id="Connect automatically" xml:space="preserve">
+        <source>Connect automatically</source>
+        <target>Connect automatically</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connect incognito" xml:space="preserve">
         <source>Connect incognito</source>
         <target>Connect incognito</target>
@@ -1908,9 +1913,9 @@ This cannot be undone!</target>
         <target>Discover and join groups</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Discover on network" xml:space="preserve">
-        <source>Discover on network</source>
-        <target>Discover on network</target>
+      <trans-unit id="Discover via local network" xml:space="preserve">
+        <source>Discover via local network</source>
+        <target>Discover via local network</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
@@ -2551,6 +2556,11 @@ This cannot be undone!</target>
       <trans-unit id="For console" xml:space="preserve">
         <source>For console</source>
         <target>For console</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Found desktop" xml:space="preserve">
+        <source>Found desktop</source>
+        <target>Found desktop</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="French interface" xml:space="preserve">
@@ -3516,6 +3526,11 @@ This is your link for group %@!</target>
       <trans-unit id="No received or sent files" xml:space="preserve">
         <source>No received or sent files</source>
         <target>No received or sent files</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Not compatible!" xml:space="preserve">
+        <source>Not compatible!</source>
+        <target>Not compatible!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
@@ -5488,6 +5503,11 @@ To connect, please ask your contact to create another connection link and check 
         <target>Voice message…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Waiting for desktop..." xml:space="preserve">
+        <source>Waiting for desktop...</source>
+        <target>Waiting for desktop...</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Waiting for file" xml:space="preserve">
         <source>Waiting for file</source>
         <target>Waiting for file</target>
@@ -6032,6 +6052,11 @@ SimpleX servers cannot see your profile.</target>
         <source>audio call (not e2e encrypted)</source>
         <target>audio call (not e2e encrypted)</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="author" xml:space="preserve">
+        <source>author</source>
+        <target>author</target>
+        <note>member role</note>
       </trans-unit>
       <trans-unit id="bad message ID" xml:space="preserve">
         <source>bad message ID</source>

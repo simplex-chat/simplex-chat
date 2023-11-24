@@ -1471,7 +1471,7 @@
     <string name="unlink_desktop_question">取消链接桌面端？</string>
     <string name="linked_desktop_options">已链接桌面选项</string>
     <string name="linked_desktops">已链接桌面</string>
-    <string name="discover_on_network">网络发现</string>
+    <string name="discover_on_network">通过本地网络发现</string>
     <string name="this_device">此设备</string>
     <string name="linked_mobiles">已链接的移动设备</string>
     <string name="desktop_device">桌面</string>
@@ -1505,4 +1505,23 @@
     <string name="loading_remote_file_desc">从已链接移动设备加载文件时请稍候片刻</string>
     <string name="desktop_app_version_is_incompatible">桌面应用版本 %s 不兼容此应用。</string>
     <string name="verify_connection">验证连接</string>
+    <string name="v5_4_block_group_members">屏蔽群组成员</string>
+    <string name="v5_4_incognito_groups_descr">使用随机身份创建群组</string>
+    <string name="v5_4_link_mobile_desktop">连接移动端和桌面端应用程序！🔗</string>
+    <string name="v5_4_link_mobile_desktop_descr">通过安全的、抗量子计算机破解的协议。</string>
+    <string name="v5_4_block_group_members_descr">隐藏不需要的信息。</string>
+    <string name="v5_4_better_groups">更佳的群组</string>
+    <string name="v5_4_incognito_groups">匿名群组</string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[远程主机 <b>%s</b> 已断开连接]]></string>
+    <string name="v5_4_better_groups_descr">加入速度更快、信息更可靠。</string>
+    <string name="v5_4_more_things_descr">- 可选择通知已删除的联系人。
+\n- 带空格的个人资料名称。
+\n- 以及更多！</string>
+    <string name="waiting_for_mobile_to_connect_on_port"><![CDATA[正等待移动设备在端口 <i>%s</i> 进行连接]]></string>
+    <string name="group_member_role_author">作者</string>
+    <string name="multicast_connect_automatically">自动连接</string>
+    <string name="waiting_for_desktop">等待桌面中…</string>
+    <string name="found_desktop">找到了桌面</string>
+    <string name="not_compatible">不兼容！</string>
+    <string name="multicast_discoverable_via_local_network">可通过本地网络发现</string>
 </resources>

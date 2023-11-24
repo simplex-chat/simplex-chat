@@ -26,6 +26,9 @@
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- recapito dei messaggi più stabile.\n- gruppi un po' migliorati.\n- e altro ancora!";
 
 /* No comment provided by engineer. */
+"- optionally notify deleted contacts.\n- profile names with spaces.\n- and more!" = "- avvisa facoltativamente i contatti eliminati.\n- nomi del profilo con spazi.\n- e molto altro!";
+
+/* No comment provided by engineer. */
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- messaggi vocali fino a 5 minuti.\n- tempo di scomparsa personalizzato.\n- cronologia delle modifiche.";
 
 /* No comment provided by engineer. */
@@ -570,10 +573,16 @@
 "Bad message ID" = "ID del messaggio errato";
 
 /* No comment provided by engineer. */
+"Better groups" = "Gruppi migliorati";
+
+/* No comment provided by engineer. */
 "Better messages" = "Messaggi migliorati";
 
 /* No comment provided by engineer. */
 "Block" = "Blocca";
+
+/* No comment provided by engineer. */
+"Block group members" = "Blocca i membri dei gruppi";
 
 /* No comment provided by engineer. */
 "Block member" = "Blocca membro";
@@ -925,6 +934,9 @@
 "Create" = "Crea";
 
 /* No comment provided by engineer. */
+"Create a group using a random profile." = "Crea un gruppo usando un profilo casuale.";
+
+/* No comment provided by engineer. */
 "Create an address to let people connect with you." = "Crea un indirizzo per consentire alle persone di connettersi con te.";
 
 /* server test step */
@@ -1274,9 +1286,6 @@
 
 /* No comment provided by engineer. */
 "Discover and join groups" = "Scopri ed unisciti ai gruppi";
-
-/* No comment provided by engineer. */
-"Discover on network" = "Trova nella rete";
 
 /* No comment provided by engineer. */
 "Do it later" = "Fallo dopo";
@@ -1654,6 +1663,9 @@
 "Fast and no wait until the sender is online!" = "Veloce e senza aspettare che il mittente sia in linea!";
 
 /* No comment provided by engineer. */
+"Faster joining and more reliable messages." = "Ingresso più veloce e messaggi più affidabili.";
+
+/* No comment provided by engineer. */
 "Favorite" = "Preferito";
 
 /* No comment provided by engineer. */
@@ -1915,6 +1927,9 @@
 "Incognito" = "Incognito";
 
 /* No comment provided by engineer. */
+"Incognito groups" = "Gruppi in incognito";
+
+/* No comment provided by engineer. */
 "Incognito mode" = "Modalità incognito";
 
 /* No comment provided by engineer. */
@@ -2117,6 +2132,9 @@
 
 /* No comment provided by engineer. */
 "Limitations" = "Limitazioni";
+
+/* No comment provided by engineer. */
+"Link mobile and desktop apps! 🔗" = "Collega le app mobile e desktop! 🔗";
 
 /* No comment provided by engineer. */
 "Linked desktop options" = "Opzioni del desktop collegato";
@@ -3393,6 +3411,9 @@
 "To connect, your contact can scan QR code or use the link in the app." = "Per connettervi, il tuo contatto può scansionare il codice QR o usare il link nell'app.";
 
 /* No comment provided by engineer. */
+"To hide unwanted messages." = "Per nascondere messaggi indesiderati.";
+
+/* No comment provided by engineer. */
 "To make a new connection" = "Per creare una nuova connessione";
 
 /* No comment provided by engineer. */
@@ -3607,6 +3628,9 @@
 
 /* No comment provided by engineer. */
 "via relay" = "via relay";
+
+/* No comment provided by engineer. */
+"Via secure quantum resistant protocol." = "Tramite protocollo sicuro resistente alla quantistica.";
 
 /* No comment provided by engineer. */
 "Video call" = "Videochiamata";
