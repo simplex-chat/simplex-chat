@@ -34,6 +34,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.View
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import System.Console.ANSI.Types
@@ -52,7 +53,7 @@ data ChatTerminal = ChatTerminal
     termLock :: TMVar (),
     sendNotification :: Maybe (Notification -> IO ()),
     activeTo :: TVar String,
-    currentHostUser :: TM.TMap RemoteHostId User
+    currentRemoteUsers :: TMap RemoteHostId User
   }
 
 data TerminalState = TerminalState
@@ -107,7 +108,7 @@ newChatTerminal t opts = do
   nextMessageRow <- newTVarIO lastRow
   sendNotification <- if muteNotifications opts then pure Nothing else Just <$> initializeNotifications
   activeTo <- newTVarIO ""
-  currentHostUser <- newTVarIO mempty
+  currentRemoteUsers <- newTVarIO mempty
   -- threadDelay 500000 -- this delay is the same as timeout in getTerminalSize
   pure
     ChatTerminal
@@ -119,7 +120,7 @@ newChatTerminal t opts = do
         termLock,
         sendNotification,
         activeTo,
-        currentHostUser
+        currentRemoteUsers
       }
 
 mkTermState :: TerminalState
@@ -149,7 +150,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
       CRNewChatItem u ci -> markChatItemRead u ci
       CRChatItemUpdated u ci -> markChatItemRead u ci
       CRRemoteHostConnected {remoteHost = RemoteHostInfo {remoteHostId}} -> getRemoteUser remoteHostId
-      CRRemoteHostStopped {remoteHostId_} -> forM_ remoteHostId_ removeRemoteUser
+      CRRemoteHostStopped {remoteHostId_} -> mapM_ removeRemoteUser remoteHostId_
       _ -> pure ()
     let printResp = case logFilePath of
           Just path -> if logResponseToFile r then logResponse path else printToTerminal ct
@@ -169,7 +170,7 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
     getRemoteUser rhId = runReaderT (execChatCommand (Just rhId) "/user") cc >>= \case
       CRActiveUser {user} -> updateRemoteUser ct user rhId
       cr -> logError $ "Unexpected reply while getting remote user: " <> tshow cr
-    removeRemoteUser rhId = atomically $ TM.delete rhId (currentHostUser ct)
+    removeRemoteUser rhId = atomically $ TM.delete rhId (currentRemoteUsers ct)
 
 responseNotification :: ChatTerminal -> ChatController -> ChatResponse -> IO ()
 responseNotification t@ChatTerminal {sendNotification} cc = \case
@@ -276,7 +277,7 @@ responseString ct cc liveItems outputRH r = do
   pure $ responseToView cu (config cc) liveItems ts tz outputRH r
 
 updateRemoteUser :: ChatTerminal -> User -> RemoteHostId -> IO ()
-updateRemoteUser ct user rhId = atomically $ TM.insert rhId user (currentHostUser ct)
+updateRemoteUser ct user rhId = atomically $ TM.insert rhId user (currentRemoteUsers ct)
 
 getCurrentUser :: ChatTerminal -> ChatController -> IO (Maybe RemoteHostId, Maybe User)
 getCurrentUser ct cc = atomically $ do
@@ -286,7 +287,7 @@ getCurrentUser ct cc = atomically $ do
     Just rhId ->
       TM.lookup (RHId rhId) (remoteHostSessions cc) >>= \case
         Just (_, RHSessionConnected {}) -> do
-          hostUser_ <- TM.lookup rhId (currentHostUser ct)
+          hostUser_ <- TM.lookup rhId (currentRemoteUsers ct)
           pure (Just rhId, hostUser_)
         _ -> pure (Nothing, localUser_)
 
