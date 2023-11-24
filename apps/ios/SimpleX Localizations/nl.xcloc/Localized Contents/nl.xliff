@@ -1194,9 +1194,9 @@
         <target>Verbind</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Connect automatically" xml:space="preserve" approved="no">
+      <trans-unit id="Connect automatically" xml:space="preserve">
         <source>Connect automatically</source>
-        <target state="translated">Automatisch verbinden</target>
+        <target>Automatisch verbinden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect incognito" xml:space="preserve">
@@ -1913,9 +1913,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Ontdek en sluit je aan bij groepen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Discover via local network" xml:space="preserve" approved="no">
+      <trans-unit id="Discover via local network" xml:space="preserve">
         <source>Discover via local network</source>
-        <target state="translated">Ontdek via het lokale netwerk</target>
+        <target>Ontdek via het lokale netwerk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
@@ -2558,9 +2558,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Voor console</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Found desktop" xml:space="preserve" approved="no">
+      <trans-unit id="Found desktop" xml:space="preserve">
         <source>Found desktop</source>
-        <target state="translated">Desktop gevonden</target>
+        <target>Desktop gevonden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="French interface" xml:space="preserve">
@@ -3528,9 +3528,9 @@ Dit is jouw link voor groep %@!</target>
         <target>Geen ontvangen of verzonden bestanden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Not compatible!" xml:space="preserve" approved="no">
+      <trans-unit id="Not compatible!" xml:space="preserve">
         <source>Not compatible!</source>
-        <target state="translated">Niet compatibel!</target>
+        <target>Niet compatibel!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
@@ -5503,9 +5503,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Spraakbericht…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Waiting for desktop..." xml:space="preserve" approved="no">
+      <trans-unit id="Waiting for desktop..." xml:space="preserve">
         <source>Waiting for desktop...</source>
-        <target state="translated">Wachten op desktop...</target>
+        <target>Wachten op desktop...</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Waiting for file" xml:space="preserve">
@@ -6053,9 +6053,9 @@ SimpleX servers kunnen uw profiel niet zien.</target>
         <target>audio oproep (niet e2e versleuteld)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="author" xml:space="preserve" approved="no">
+      <trans-unit id="author" xml:space="preserve">
         <source>author</source>
-        <target state="translated">auteur</target>
+        <target>auteur</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="bad message ID" xml:space="preserve">
