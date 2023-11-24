@@ -40,7 +40,7 @@ fun DatabaseView(
   m: ChatModel,
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
-  val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
+  val currentRemoteHost by remember { chatModel.currentRemoteHost }
   val progressIndicator = remember { mutableStateOf(false) }
   val prefs = m.controller.appPrefs
   val useKeychain = remember { mutableStateOf(prefs.storeDBPassphrase.get()) }
