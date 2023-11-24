@@ -1489,7 +1489,7 @@
     <string name="error_sending_message_contact_invitation">Ошибка отправки приглашения</string>
     <string name="member_contact_send_direct_message">Послать прямое сообщение</string>
     <string name="rcv_group_event_member_created_contact">соединен напрямую</string>
-    <string name="expand_verb">Расширить</string>
+    <string name="expand_verb">Раскрыть</string>
     <string name="v5_4_block_group_members">Блокируйте членов группы</string>
     <string name="connect_plan_repeat_connection_request">Повторить запрос на соединение?</string>
     <string name="encryption_renegotiation_error">Ошибка нового соглашения о шифровании</string>
@@ -1505,23 +1505,23 @@
     <string name="only_one_device_can_work_at_the_same_time">Одновременно может работать только одно устройство</string>
     <string name="connect_plan_join_your_group">Вступить в вашу группу?</string>
     <string name="v5_4_link_mobile_desktop">Свяжите мобильное и настольное приложения! 🔗</string>
-    <string name="marked_deleted_items_description">%d сообщений помечено удаленными</string>
+    <string name="marked_deleted_items_description">%d сообщений помечено удалёнными</string>
     <string name="connect_plan_group_already_exists">Группа уже существует!</string>
     <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Откройте <i>Использовать с компьютера</i> в мобильном приложении и сосканируйте QR код]]></string>
     <string name="connect_plan_already_connecting">Уже соединяется!</string>
     <string name="desktop_incompatible_version">Несовместимая версия</string>
     <string name="new_desktop"><![CDATA[<i>(новое)</i>]]></string>
     <string name="v5_4_better_groups">Улучшенные группы</string>
-    <string name="linked_desktop_options">Опции связанного компьютера</string>
+    <string name="linked_desktop_options">Опции связанных компьютеров</string>
     <string name="linked_desktops">Связанные компьютеры</string>
-    <string name="discover_on_network">Обнаружение по сети</string>
+    <string name="discover_on_network">Обнаружение по локальной сети</string>
     <string name="rcv_group_and_other_events">и %d других событий</string>
     <string name="connect_plan_connect_via_link">Соединиться через ссылку?</string>
     <string name="v5_4_incognito_groups">Инкогнито группы</string>
     <string name="connect_plan_already_joining_the_group">Вступление в группу уже начато!</string>
     <string name="moderated_items_description">%d сообщений модерировано членом %s</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[Удаленный хост был отключен: <b>%s</b>]]></string>
-    <string name="v5_4_better_groups_descr">Более быстрое вступление и более надежные сообщения.</string>
+    <string name="v5_4_better_groups_descr">Быстрое вступление и надежная доставка сообщений.</string>
     <string name="connect_plan_connect_to_yourself">Соединиться с самим собой?</string>
     <string name="linked_mobiles">Связанные мобильные</string>
     <string name="desktop_device">Компьютер</string>
@@ -1557,7 +1557,7 @@
     <string name="bad_desktop_address">Неверный адрес компьютера</string>
     <string name="paste_desktop_address">Вставить адрес компьютера</string>
     <string name="devices">Устройства</string>
-    <string name="v5_4_more_things_descr">- опционально уведомляйте удаленные контакты.
+    <string name="v5_4_more_things_descr">- опционально уведомляйте удалённые контакты.
 \n- имена профилей с пробелами.
 \n- и прочее!</string>
     <string name="non_content_uri_alert_title">Неверный путь к файлу</string>
