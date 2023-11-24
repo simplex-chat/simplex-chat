@@ -1469,7 +1469,7 @@
     <string name="unlink_desktop_question">Desktop ontkoppelen?</string>
     <string name="linked_desktop_options">Gekoppelde desktop opties</string>
     <string name="linked_desktops">Gelinkte desktops</string>
-    <string name="discover_on_network">Ontdek via netwerk</string>
+    <string name="discover_on_network">Ontdek via het lokale netwerk</string>
     <string name="this_device">Dit apparaat</string>
     <string name="linked_mobiles">Gekoppelde mobiele apparaten</string>
     <string name="desktop_device">Desktop</string>
@@ -1517,4 +1517,9 @@
     <string name="remote_host_was_disconnected_toast">Mobiele verbinding <b>%s</b> is verbroken</string>
     <string name="group_member_role_author">auteur</string>
     <string name="waiting_for_mobile_to_connect_on_port">Wachten tot mobiel verbinding maakt op poort <i>%s</i></string>
+    <string name="multicast_connect_automatically">Automatisch verbinden</string>
+    <string name="waiting_for_desktop">Wachten op desktop…</string>
+    <string name="found_desktop">Desktop gevonden</string>
+    <string name="not_compatible">Niet compatibel!</string>
+    <string name="multicast_discoverable_via_local_network">Vindbaar via lokaal netwerk</string>
 </resources>
