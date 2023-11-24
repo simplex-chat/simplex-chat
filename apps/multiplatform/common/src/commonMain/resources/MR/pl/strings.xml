@@ -1461,4 +1461,20 @@
     <string name="terminal_always_visible">Pokaż konsolę w nowym oknie</string>
     <string name="encryption_renegotiation_error">Błąd renegocjacji szyfrowania</string>
     <string name="alert_text_encryption_renegotiation_failed">Renegocjacja szyfrowania nie powiodła się.</string>
+    <string name="v5_4_block_group_members">Blokuj członków grupy</string>
+    <string name="v5_4_incognito_groups_descr">Utwórz grupę używając losowego profilu</string>
+    <string name="connected_desktop">Połączony komputer</string>
+    <string name="multicast_connect_automatically">Łącz automatycznie</string>
+    <string name="desktop_address">Adres komputera</string>
+    <string name="v5_4_better_groups">Lepsze grupy</string>
+    <string name="desktop_device">Komputer</string>
+    <string name="connected_to_desktop">Połączony do komputera</string>
+    <string name="connecting_to_desktop">Łączenie z komputerem</string>
+    <string name="connected_mobile">Połączony telefon</string>
+    <string name="desktop_connection_terminated">Połączenie przerwane</string>
+    <string name="connect_to_desktop">Połącz do komputera</string>
+    <string name="group_member_role_author">autor</string>
+    <string name="connected_to_mobile">Połączony do telefonu</string>
+    <string name="bad_desktop_address">Zły adres komputera</string>
+    <string name="desktop_app_version_is_incompatible">Aplikacja komputerowa %s nie jest kompatybilna z tą aplikacją.</string>
 </resources>
