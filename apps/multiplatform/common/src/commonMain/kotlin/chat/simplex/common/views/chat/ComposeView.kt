@@ -850,6 +850,7 @@ fun ComposeView(
           deleteUnusedFiles()
         }
         chatModel.removeLiveDummy()
+        CIFile.cachedRemoteFileRequests.clear()
       }
 
       val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }

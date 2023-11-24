@@ -58,13 +58,15 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       rh' = if either (const False) allowRemoteCommand cmd then rh else Nothing
   unless (isMessage cmd) $ echo s
   r <- runReaderT (execChatCommand rh' bs) cc
-  processResp s cmd r
+  processResp s cmd rh r
   printRespToTerminal ct cc False rh r
   startLiveMessage cmd r
   where
     echo s = printToTerminal ct [plain s]
-    processResp s cmd = \case
-      CRActiveUser _ -> setActive ct ""
+    processResp s cmd rh = \case
+      CRActiveUser u -> case rh of
+        Nothing -> setActive ct ""
+        Just rhId -> updateRemoteUser ct u rhId
       CRChatItems u chatName_ _ -> whenCurrUser cc u $ mapM_ (setActive ct . chatActiveTo) chatName_
       CRNewChatItem u (AChatItem _ SMDSnd cInfo _) -> whenCurrUser cc u $ setActiveChat ct cInfo
       CRChatItemUpdated u (AChatItem _ SMDSnd cInfo _) -> whenCurrUser cc u $ setActiveChat ct cInfo

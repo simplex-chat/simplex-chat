@@ -3,6 +3,7 @@ package chat.simplex.common.model
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
@@ -27,7 +28,6 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 import java.io.File
 import java.net.URI
-import java.net.URLDecoder
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.*
@@ -113,7 +113,7 @@ object ChatModel {
   val currentRemoteHost = mutableStateOf<RemoteHostInfo?>(null)
   val remoteHostId: Long? @Composable get() = remember { currentRemoteHost }.value?.remoteHostId
   fun remoteHostId(): Long? = currentRemoteHost.value?.remoteHostId
-  val newRemoteHostPairing = mutableStateOf<Pair<RemoteHostInfo?, RemoteHostSessionState>?>(null)
+  val remoteHostPairing = mutableStateOf<Pair<RemoteHostInfo?, RemoteHostSessionState>?>(null)
   val remoteCtrlSession = mutableStateOf<RemoteCtrlSession?>(null)
 
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
@@ -637,6 +637,9 @@ data class User(
   val hidden: Boolean = viewPwdHash != null
 
   val addressShared: Boolean = profile.contactLink != null
+
+  fun updateRemoteHostId(rh: Long?): User =
+    if (rh == null) this else this.copy(remoteHostId = rh)
 
   companion object {
     val sampleData = User(
@@ -2301,7 +2304,7 @@ data class CIFile(
       sent = fileStatus.sent,
       fileSource = fileSource
     )
-    cachedRemoteFileRequests.add(fileSource)
+    cachedRemoteFileRequests[fileSource] = false
     val showAlert = fileSize > 5_000_000 && allowToShowAlert
     if (showAlert) {
       AlertManager.shared.showAlertMsgWithProgress(
@@ -2310,7 +2313,7 @@ data class CIFile(
       )
     }
     val res = chatModel.controller.getRemoteFile(rh.remoteHostId, rf)
-    cachedRemoteFileRequests.remove(fileSource)
+    cachedRemoteFileRequests[fileSource] = res
     if (showAlert) {
       AlertManager.shared.hideAlert()
     }
@@ -2327,7 +2330,7 @@ data class CIFile(
     ): CIFile =
       CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, fileSource = if (filePath == null) null else CryptoFile.plain(filePath), fileStatus = fileStatus, fileProtocol = FileProtocol.XFTP)
 
-    val cachedRemoteFileRequests = SnapshotStateList<CryptoFile>()
+    val cachedRemoteFileRequests = SnapshotStateMap<CryptoFile, Boolean>()
   }
 }
 
@@ -2360,7 +2363,7 @@ data class CryptoFile(
   companion object {
     fun plain(f: String): CryptoFile = CryptoFile(f, null)
 
-    fun desktopPlain(f: URI): CryptoFile = CryptoFile(URLDecoder.decode(f.rawPath, "UTF-8"), null)
+    fun desktopPlain(f: URI): CryptoFile = CryptoFile(f.toFile().absolutePath, null)
   }
 }
 
@@ -2918,7 +2921,7 @@ enum class NotificationPreviewMode {
 }
 
 data class RemoteCtrlSession(
-  val ctrlAppInfo: CtrlAppInfo,
+  val ctrlAppInfo: CtrlAppInfo?,
   val appVersion: String,
   val sessionState: UIRemoteCtrlSessionState
 ) {
@@ -2936,14 +2939,17 @@ data class RemoteCtrlSession(
 @Serializable
 sealed class RemoteCtrlSessionState {
   @Serializable @SerialName("starting") object Starting: RemoteCtrlSessionState()
+  @Serializable @SerialName("searching") object Searching: RemoteCtrlSessionState()
   @Serializable @SerialName("connecting") object Connecting: RemoteCtrlSessionState()
   @Serializable @SerialName("pendingConfirmation") data class PendingConfirmation(val sessionCode: String): RemoteCtrlSessionState()
   @Serializable @SerialName("connected") data class Connected(val sessionCode: String): RemoteCtrlSessionState()
 }
 
 sealed class UIRemoteCtrlSessionState {
-  @Serializable @SerialName("starting") object Starting: UIRemoteCtrlSessionState()
-  @Serializable @SerialName("connecting") data class Connecting(val remoteCtrl_: RemoteCtrlInfo? = null): UIRemoteCtrlSessionState()
-  @Serializable @SerialName("pendingConfirmation") data class PendingConfirmation(val remoteCtrl_: RemoteCtrlInfo? = null, val sessionCode: String): UIRemoteCtrlSessionState()
-  @Serializable @SerialName("connected") data class Connected(val remoteCtrl: RemoteCtrlInfo, val sessionCode: String): UIRemoteCtrlSessionState()
+  object Starting: UIRemoteCtrlSessionState()
+  object Searching: UIRemoteCtrlSessionState()
+  data class Found(val remoteCtrl: RemoteCtrlInfo, val compatible: Boolean): UIRemoteCtrlSessionState()
+  data class Connecting(val remoteCtrl_: RemoteCtrlInfo? = null): UIRemoteCtrlSessionState()
+  data class PendingConfirmation(val remoteCtrl_: RemoteCtrlInfo? = null, val sessionCode: String): UIRemoteCtrlSessionState()
+  data class Connected(val remoteCtrl: RemoteCtrlInfo, val sessionCode: String): UIRemoteCtrlSessionState()
 }

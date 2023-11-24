@@ -135,6 +135,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     HSIncognito -> incognitoHelpInfo
     HSMessages -> messagesHelpInfo
     HSMarkdown -> markdownInfo
+    HSRemote -> remoteHelpInfo
     HSSettings -> settingsInfo
     HSDatabase -> databaseHelpInfo
   CRWelcome user -> chatWelcome user
@@ -298,8 +299,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     ]
   CRNewRemoteHost RemoteHostInfo {remoteHostId = rhId, hostDeviceName} -> ["new remote host " <> sShow rhId <> " added: " <> plain hostDeviceName]
   CRRemoteHostConnected RemoteHostInfo {remoteHostId = rhId} -> ["remote host " <> sShow rhId <> " connected"]
-  CRRemoteHostStopped rhId_ ->
-    [ maybe "new remote host" (mappend "remote host " . sShow) rhId_ <> " stopped"
+  CRRemoteHostStopped {remoteHostId_} ->
+    [ maybe "new remote host" (mappend "remote host " . sShow) remoteHostId_ <> " stopped"
     ]
   CRRemoteFileStored rhId (CryptoFile filePath cfArgs_) ->
     [plain $ "file " <> filePath <> " stored on remote host " <> show rhId]
@@ -309,8 +310,9 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     [ "remote controller " <> sShow remoteCtrlId <> " found: "
         <> maybe (deviceName <> "not compatible") (\info -> viewRemoteCtrl info appVersion compatible) ctrlAppInfo_
     ]
+      <> [ "use " <> highlight ("/confirm remote ctrl " <> show remoteCtrlId) <> " to connect" | isJust ctrlAppInfo_ && compatible]
     where
-      deviceName = if T.null ctrlDeviceName then "" else plain ctrlDeviceName <> ", " 
+      deviceName = if T.null ctrlDeviceName then "" else plain ctrlDeviceName <> ", "
   CRRemoteCtrlConnecting {remoteCtrl_, ctrlAppInfo, appVersion} ->
     [ (maybe "connecting new remote controller" (\RemoteCtrlInfo {remoteCtrlId} -> "connecting remote controller " <> sShow remoteCtrlId) remoteCtrl_ <> ": ")
         <> viewRemoteCtrl ctrlAppInfo appVersion True
@@ -322,7 +324,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     ]
   CRRemoteCtrlConnected RemoteCtrlInfo {remoteCtrlId = rcId, ctrlDeviceName} ->
     ["remote controller " <> sShow rcId <> " session started with " <> plain ctrlDeviceName]
-  CRRemoteCtrlStopped -> ["remote controller stopped"]
+  CRRemoteCtrlStopped {} -> ["remote controller stopped"]
   CRSQLResult rows -> map plain rows
   CRSlowSQLQueries {chatQueries, agentQueries} ->
     let viewQuery SlowSQLQuery {query, queryStats = SlowQueryStats {count, timeMax, timeAvg}} =

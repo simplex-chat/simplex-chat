@@ -52,7 +52,7 @@ actual class VideoPlayer actual constructor(
   private fun start(seek: Long? = null, onProgressUpdate: (position: Long?, state: TrackState) -> Unit): Boolean {
     val filepath = getAppFilePath(uri)
     if (filepath == null || !File(filepath).exists()) {
-      Log.e(TAG, "No such file: $uri")
+      Log.e(TAG, "No such file: $filepath")
       brokenVideo.value = true
       return false
     }
@@ -62,10 +62,9 @@ actual class VideoPlayer actual constructor(
     }
     AudioPlayer.stop()
     VideoPlayerHolder.stopAll()
-    val playerFilePath = uri.toString().replaceFirst("file:", "file://")
     if (listener.value == null) {
       runCatching {
-        player.media().prepare(playerFilePath)
+        player.media().prepare(uri.toFile().absolutePath)
         if (seek != null) {
           player.seekTo(seek.toInt())
         }
@@ -217,12 +216,12 @@ actual class VideoPlayer actual constructor(
     suspend fun getBitmapFromVideo(defaultPreview: ImageBitmap?, uri: URI?, withAlertOnException: Boolean = true): VideoPlayerInterface.PreviewAndDuration = withContext(playerThread.asCoroutineDispatcher()) {
       val mediaComponent = getOrCreateHelperPlayer()
       val player = mediaComponent.mediaPlayer()
-      if (uri == null || !File(uri.rawPath).exists()) {
+      if (uri == null || !uri.toFile().exists()) {
         if (withAlertOnException) showVideoDecodingException()
 
         return@withContext VideoPlayerInterface.PreviewAndDuration(preview = defaultPreview, timestamp = 0L, duration = 0L)
       }
-      player.media().startPaused(uri.toString().replaceFirst("file:", "file://"))
+      player.media().startPaused(uri.toFile().absolutePath)
       val start = System.currentTimeMillis()
       var snap: BufferedImage? = null
       while (snap == null && start + 5000 > System.currentTimeMillis()) {
