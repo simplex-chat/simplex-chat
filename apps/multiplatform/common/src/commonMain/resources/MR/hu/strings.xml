@@ -398,7 +398,6 @@
     <string name="ttl_w">%dhét</string>
     <string name="discover_on_network">Felfedezés helyi hálózatomn keresztül</string>
     <string name="v5_3_discover_join_groups">Helyi csoportok felfedezése és csatolakozás</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"></string>
     <string name="moderated_items_description">%d üzenet moderálva %s által</string>
     <string name="disappearing_message">Eltűnő üzenet</string>
     <string name="dont_create_address">Ne hozz létre azonosítót</string>
