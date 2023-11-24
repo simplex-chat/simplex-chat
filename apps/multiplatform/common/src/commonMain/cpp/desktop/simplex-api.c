@@ -17,6 +17,13 @@ Java_chat_simplex_common_platform_CoreKt_initHS(JNIEnv *env, jclass clazz) {
 // from simplex-chat
 typedef long* chat_ctrl;
 
+/*
+   When you start using any new function from Haskell libraries,
+   you have to add the function name to the file libsimplex.dll.def in the root directory.
+   And do the same by adding it into flake.nix file in the root directory,
+   Otherwise, Windows and Android libraries cannot be built.
+*/
+
 extern char *chat_migrate_init(const char *path, const char *key, const char *confirm, chat_ctrl *ctrl);
 extern char *chat_send_cmd(chat_ctrl ctrl, const char *cmd);
 extern char *chat_send_remote_cmd(chat_ctrl ctrl, const int rhId, const char *cmd);
