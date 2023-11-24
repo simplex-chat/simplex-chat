@@ -395,11 +395,11 @@
 - e altro ancora!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- optionally notify deleted contacts.&#10;- profile names with spaces.&#10;- and more!" xml:space="preserve" approved="no">
+      <trans-unit id="- optionally notify deleted contacts.&#10;- profile names with spaces.&#10;- and more!" xml:space="preserve">
         <source>- optionally notify deleted contacts.
 - profile names with spaces.
 - and more!</source>
-        <target state="translated">- avvisa facoltativamente i contatti eliminati.
+        <target>- avvisa facoltativamente i contatti eliminati.
 - nomi del profilo con spazi.
 - e molto altro!</target>
         <note>No comment provided by engineer.</note>
@@ -903,9 +903,9 @@
         <target>Hash del messaggio errato</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Better groups" xml:space="preserve" approved="no">
+      <trans-unit id="Better groups" xml:space="preserve">
         <source>Better groups</source>
-        <target state="translated">Gruppi migliorati</target>
+        <target>Gruppi migliorati</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Better messages" xml:space="preserve">
@@ -918,9 +918,9 @@
         <target>Blocca</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Block group members" xml:space="preserve" approved="no">
+      <trans-unit id="Block group members" xml:space="preserve">
         <source>Block group members</source>
-        <target state="translated">Blocca i membri dei gruppi</target>
+        <target>Blocca i membri dei gruppi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Block member" xml:space="preserve">
@@ -1194,6 +1194,10 @@
         <target>Connetti</target>
         <note>server test step</note>
       </trans-unit>
+      <trans-unit id="Connect automatically" xml:space="preserve">
+        <source>Connect automatically</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Connect incognito" xml:space="preserve">
         <source>Connect incognito</source>
         <target>Connetti in incognito</target>
@@ -1378,9 +1382,9 @@ Questo è il tuo link una tantum!</target>
         <target>Crea indirizzo SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create a group using a random profile." xml:space="preserve" approved="no">
+      <trans-unit id="Create a group using a random profile." xml:space="preserve">
         <source>Create a group using a random profile.</source>
-        <target state="translated">Crea un gruppo usando un profilo casuale.</target>
+        <target>Crea un gruppo usando un profilo casuale.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create an address to let people connect with you." xml:space="preserve">
@@ -1908,9 +1912,8 @@ Non è reversibile!</target>
         <target>Scopri ed unisciti ai gruppi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Discover on network" xml:space="preserve">
-        <source>Discover on network</source>
-        <target>Trova nella rete</target>
+      <trans-unit id="Discover via local network" xml:space="preserve">
+        <source>Discover via local network</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
@@ -2453,9 +2456,9 @@ Non è reversibile!</target>
         <target>Veloce e senza aspettare che il mittente sia in linea!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Faster joining and more reliable messages." xml:space="preserve" approved="no">
+      <trans-unit id="Faster joining and more reliable messages." xml:space="preserve">
         <source>Faster joining and more reliable messages.</source>
-        <target state="translated">Ingresso più veloce e messaggi più affidabili.</target>
+        <target>Ingresso più veloce e messaggi più affidabili.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Favorite" xml:space="preserve">
@@ -2551,6 +2554,10 @@ Non è reversibile!</target>
       <trans-unit id="For console" xml:space="preserve">
         <source>For console</source>
         <target>Per console</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Found desktop" xml:space="preserve">
+        <source>Found desktop</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="French interface" xml:space="preserve">
@@ -2878,9 +2885,9 @@ Non è reversibile!</target>
         <target>Incognito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Incognito groups" xml:space="preserve" approved="no">
+      <trans-unit id="Incognito groups" xml:space="preserve">
         <source>Incognito groups</source>
-        <target state="translated">Gruppi in incognito</target>
+        <target>Gruppi in incognito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Incognito mode" xml:space="preserve">
@@ -3153,9 +3160,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Limitazioni</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Link mobile and desktop apps! 🔗" xml:space="preserve" approved="no">
+      <trans-unit id="Link mobile and desktop apps! 🔗" xml:space="preserve">
         <source>Link mobile and desktop apps! 🔗</source>
-        <target state="translated">Collega le app mobile e desktop! 🔗</target>
+        <target>Collega le app mobile e desktop! 🔗</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Linked desktop options" xml:space="preserve">
@@ -3516,6 +3523,10 @@ Questo è il tuo link per il gruppo %@!</target>
       <trans-unit id="No received or sent files" xml:space="preserve">
         <source>No received or sent files</source>
         <target>Nessun file ricevuto o inviato</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Not compatible!" xml:space="preserve">
+        <source>Not compatible!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
@@ -5104,9 +5115,9 @@ Può accadere a causa di qualche bug o quando la connessione è compromessa.</ta
         <target>Per connettervi, il tuo contatto può scansionare il codice QR o usare il link nell'app.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To hide unwanted messages." xml:space="preserve" approved="no">
+      <trans-unit id="To hide unwanted messages." xml:space="preserve">
         <source>To hide unwanted messages.</source>
-        <target state="translated">Per nascondere messaggi indesiderati.</target>
+        <target>Per nascondere messaggi indesiderati.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To make a new connection" xml:space="preserve">
@@ -5433,9 +5444,9 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Via browser</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Via secure quantum resistant protocol." xml:space="preserve" approved="no">
+      <trans-unit id="Via secure quantum resistant protocol." xml:space="preserve">
         <source>Via secure quantum resistant protocol.</source>
-        <target state="translated">Tramite protocollo sicuro resistente alla quantistica.</target>
+        <target>Tramite protocollo sicuro resistente alla quantistica.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Video call" xml:space="preserve">
@@ -5486,6 +5497,10 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       <trans-unit id="Voice message…" xml:space="preserve">
         <source>Voice message…</source>
         <target>Messaggio vocale…</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Waiting for desktop..." xml:space="preserve">
+        <source>Waiting for desktop...</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Waiting for file" xml:space="preserve">
@@ -6032,6 +6047,10 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <source>audio call (not e2e encrypted)</source>
         <target>chiamata audio (non crittografata e2e)</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="author" xml:space="preserve">
+        <source>author</source>
+        <note>member role</note>
       </trans-unit>
       <trans-unit id="bad message ID" xml:space="preserve">
         <source>bad message ID</source>
