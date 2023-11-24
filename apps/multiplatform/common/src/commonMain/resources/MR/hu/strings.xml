@@ -360,4 +360,7 @@
     <string name="database_error">Adatbázis hiba</string>
     <string name="database_encryption_will_be_updated_in_settings">Adatbázis titkosítási jelmondat frissül és eltárolásra kerül a beállításokban.</string>
     <string name="info_row_database_id">Adatbázis ID</string>
+    <string name="share_text_database_id">Adatbázis ID: %d</string>
+    <string name="developer_options">Adatbázis</string>
+    <string name="database_encryption_will_be_updated">Az adatbázis titkosítás jelmondata megváltoztatásra és elmentésre kerül a Keystore-ban.</string>
 </resources>
