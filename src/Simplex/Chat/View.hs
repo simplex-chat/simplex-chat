@@ -136,6 +136,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     HSIncognito -> incognitoHelpInfo
     HSMessages -> messagesHelpInfo
     HSMarkdown -> markdownInfo
+    HSRemote -> remoteHelpInfo
     HSSettings -> settingsInfo
     HSDatabase -> databaseHelpInfo
   CRWelcome user -> chatWelcome user
@@ -310,6 +311,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     [ "remote controller " <> sShow remoteCtrlId <> " found: "
         <> maybe (deviceName <> "not compatible") (\info -> viewRemoteCtrl info appVersion compatible) ctrlAppInfo_
     ]
+      <> [ "use " <> highlight ("/confirm remote ctrl " <> show remoteCtrlId) <> " to connect" | isJust ctrlAppInfo_ && compatible]
     where
       deviceName = if T.null ctrlDeviceName then "" else plain ctrlDeviceName <> ", "
   CRRemoteCtrlConnecting {remoteCtrl_, ctrlAppInfo, appVersion} ->
