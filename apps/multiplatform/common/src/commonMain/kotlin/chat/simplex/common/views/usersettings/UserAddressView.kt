@@ -33,7 +33,6 @@ import chat.simplex.res.MR
 @Composable
 fun UserAddressView(
   chatModel: ChatModel,
-  rhId: Long?,
   viaCreateLinkView: Boolean = false,
   shareViaProfile: Boolean = false,
   close: () -> Unit
@@ -42,12 +41,13 @@ fun UserAddressView(
   val shareViaProfile = remember { mutableStateOf(shareViaProfile) }
   var progressIndicator by remember { mutableStateOf(false) }
   val onCloseHandler: MutableState<(close: () -> Unit) -> Unit> = remember { mutableStateOf({ _ -> }) }
+  var user by remember(close) { chatModel.currentUser }
 
   fun setProfileAddress(on: Boolean) {
     progressIndicator = true
     withBGApi {
       try {
-        val u = chatModel.controller.apiSetProfileAddress(rhId, on)
+        val u = chatModel.controller.apiSetProfileAddress(user?.remoteHostId, on)
         if (u != null) {
           chatModel.updateUser(u)
         }
@@ -63,14 +63,14 @@ fun UserAddressView(
   val uriHandler = LocalUriHandler.current
   val showLayout = @Composable {
     UserAddressLayout(
+      user = user,
       userAddress = userAddress.value,
       shareViaProfile,
-      rhId,
       onCloseHandler,
       createAddress = {
         withApi {
           progressIndicator = true
-          val connReqContact = chatModel.controller.apiCreateUserAddress(rhId)
+          val connReqContact = chatModel.controller.apiCreateUserAddress(user?.remoteHostId)
           if (connReqContact != null) {
             chatModel.userAddress.value = UserContactLinkRec(connReqContact)
 
@@ -115,7 +115,7 @@ fun UserAddressView(
           onConfirm = {
             progressIndicator = true
             withApi {
-              val u = chatModel.controller.apiDeleteUserAddress(rhId)
+              val u = chatModel.controller.apiDeleteUserAddress(user?.remoteHostId)
               if (u != null) {
                 chatModel.userAddress.value = null
                 chatModel.updateUser(u)
@@ -129,7 +129,7 @@ fun UserAddressView(
       },
       saveAas = { aas: AutoAcceptState, savedAAS: MutableState<AutoAcceptState> ->
         withBGApi {
-          val address = chatModel.controller.userAddressAutoAccept(rhId, aas.autoAccept)
+          val address = chatModel.controller.userAddressAutoAccept(user?.remoteHostId, aas.autoAccept)
           if (address != null) {
             chatModel.userAddress.value = address
             savedAAS.value = aas
@@ -168,9 +168,9 @@ fun UserAddressView(
 
 @Composable
 private fun UserAddressLayout(
+  user: User?,
   userAddress: UserContactLinkRec?,
   shareViaProfile: MutableState<Boolean>,
-  rhId: Long?,
   onCloseHandler: MutableState<(close: () -> Unit) -> Unit>,
   createAddress: () -> Unit,
   learnMore: () -> Unit,
@@ -183,7 +183,7 @@ private fun UserAddressLayout(
   Column(
     Modifier.verticalScroll(rememberScrollState()),
   ) {
-    AppBarTitle(stringResource(MR.strings.simplex_address), hostDevice(rhId), withPadding = false)
+    AppBarTitle(stringResource(MR.strings.simplex_address), hostDevice(user?.remoteHostId), withPadding = false)
     Column(
       Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF),
       horizontalAlignment = Alignment.CenterHorizontally,
@@ -432,6 +432,7 @@ private fun SaveAASButton(disabled: Boolean, onClick: () -> Unit) {
 fun PreviewUserAddressLayoutNoAddress() {
   SimpleXTheme {
     UserAddressLayout(
+      user = User.sampleData,
       userAddress = null,
       createAddress = {},
       share = { _ -> },
@@ -440,7 +441,6 @@ fun PreviewUserAddressLayoutNoAddress() {
       setProfileAddress = { _ -> },
       learnMore = {},
       shareViaProfile = remember { mutableStateOf(false) },
-      rhId = null,
       onCloseHandler = remember { mutableStateOf({}) },
       sendEmail = {},
     )
@@ -466,6 +466,7 @@ private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
 fun PreviewUserAddressLayoutAddressCreated() {
   SimpleXTheme {
     UserAddressLayout(
+      user = User.sampleData,
       userAddress = UserContactLinkRec("https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"),
       createAddress = {},
       share = { _ -> },
@@ -474,7 +475,6 @@ fun PreviewUserAddressLayoutAddressCreated() {
       setProfileAddress = { _ -> },
       learnMore = {},
       shareViaProfile = remember { mutableStateOf(false) },
-      rhId = null,
       onCloseHandler = remember { mutableStateOf({}) },
       sendEmail = {},
     )
