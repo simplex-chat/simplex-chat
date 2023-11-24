@@ -460,6 +460,7 @@ startRemoteDiscover mobile desktop = do
   mobile ##> "/find remote ctrl"
   mobile <## "ok"
   mobile <## ("remote controller 1 found: My desktop, v" <> versionNumber)
+  mobile <## "use /confirm remote ctrl 1 to connect"
   mobile ##> "/confirm remote ctrl 1"
 
   mobile <## ("connecting remote controller 1: My desktop, v" <> versionNumber)
