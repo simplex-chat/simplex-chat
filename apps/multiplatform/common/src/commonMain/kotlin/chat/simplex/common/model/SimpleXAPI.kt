@@ -2348,7 +2348,7 @@ sealed class CC {
     is DeleteRemoteHost -> "/delete remote host $remoteHostId"
     is StoreRemoteFile ->
       "/store remote file $remoteHostId " +
-          (if (storeEncrypted == null) "" else " encrypt=${onOff(storeEncrypted)} ") +
+          (if (storeEncrypted == null) "" else "encrypt=${onOff(storeEncrypted)} ") +
           localPath
     is GetRemoteFile -> "/get remote file $remoteHostId ${json.encodeToString(file)}"
     is ConnectRemoteCtrl -> "/connect remote ctrl $xrcpInvitation"
