@@ -356,4 +356,8 @@
     <string name="database_downgrade">Adatbázis downgrade?</string>
     <string name="clear_chat_button">Chat kiürítése</string>
     <string name="database_passphrase_will_be_updated">Adatbázis titkosítási jelmondat meg lesz változtatva.</string>
+    <string name="multicast_connect_automatically">Kapcsolódás automatikusan</string>
+    <string name="database_error">Adatbázis hiba</string>
+    <string name="database_encryption_will_be_updated_in_settings">Adatbázis titkosítási jelmondat frissül és eltárolásra kerül a beállításokban.</string>
+    <string name="info_row_database_id">Adatbázis ID</string>
 </resources>
