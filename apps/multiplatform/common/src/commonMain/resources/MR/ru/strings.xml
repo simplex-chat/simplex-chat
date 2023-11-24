@@ -1507,7 +1507,7 @@
     <string name="v5_4_link_mobile_desktop">Свяжите мобильное и настольное приложения! 🔗</string>
     <string name="marked_deleted_items_description">%d сообщений помечено удалёнными</string>
     <string name="connect_plan_group_already_exists">Группа уже существует!</string>
-    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Откройте <i>Использовать с компьютера</i> в мобильном приложении и сосканируйте QR код]]></string>
+    <string name="open_on_mobile_and_scan_qr_code">Откройте <i>Использовать с компьютера</i> в мобильном приложении и сосканируйте QR код.</string>
     <string name="connect_plan_already_connecting">Уже соединяется!</string>
     <string name="desktop_incompatible_version">Несовместимая версия</string>
     <string name="new_desktop"><![CDATA[<i>(новое)</i>]]></string>
@@ -1520,7 +1520,7 @@
     <string name="v5_4_incognito_groups">Инкогнито группы</string>
     <string name="connect_plan_already_joining_the_group">Вступление в группу уже начато!</string>
     <string name="moderated_items_description">%d сообщений модерировано членом %s</string>
-    <string name="remote_host_was_disconnected_toast"><![CDATA[Удаленный хост был отключен: <b>%s</b>]]></string>
+    <string name="remote_host_was_disconnected_toast">Мобильный <b>%s</b> был отключен</string>
     <string name="v5_4_better_groups_descr">Быстрое вступление и надежная доставка сообщений.</string>
     <string name="connect_plan_connect_to_yourself">Соединиться с самим собой?</string>
     <string name="linked_mobiles">Связанные мобильные</string>
@@ -1599,4 +1599,11 @@
     <string name="terminal_always_visible">Показывать консоль в новом окне</string>
     <string name="verify_connections">Проверять соединения</string>
     <string name="verify_connection">Проверить соединение</string>
+    <string name="multicast_connect_automatically">Соединяться автоматически</string>
+    <string name="waiting_for_desktop">Ожидается подключение…</string>
+    <string name="waiting_for_mobile_to_connect_on_port">Ожидается подключение мобильного через порт <i>%s</i></string>
+    <string name="found_desktop">Компьютер найден</string>
+    <string name="not_compatible">Несовместимая версия!</string>
+    <string name="group_member_role_author">автор</string>
+    <string name="multicast_discoverable_via_local_network">Найти через локальную сеть</string>
 </resources>
