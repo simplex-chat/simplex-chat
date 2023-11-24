@@ -501,7 +501,7 @@ fun ChatLayout(
       .fillMaxWidth()
       .desktopOnExternalDrag(
         enabled = !attachmentDisabled.value && rememberUpdatedState(chat.userCanSend).value,
-        onFiles = { paths -> composeState.onFilesAttached(paths.map { URI.create(it) }) },
+        onFiles = { paths -> composeState.onFilesAttached(paths.map { it.toURI() }) },
         onImage = {
           // TODO: file is not saved anywhere?!
           val tmpFile = File.createTempFile("image", ".bmp", tmpDir)
