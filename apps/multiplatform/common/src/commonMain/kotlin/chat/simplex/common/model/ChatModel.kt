@@ -3,6 +3,7 @@ package chat.simplex.common.model
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.*
@@ -2303,7 +2304,7 @@ data class CIFile(
       sent = fileStatus.sent,
       fileSource = fileSource
     )
-    cachedRemoteFileRequests.add(fileSource)
+    cachedRemoteFileRequests[fileSource] = false
     val showAlert = fileSize > 5_000_000 && allowToShowAlert
     if (showAlert) {
       AlertManager.shared.showAlertMsgWithProgress(
@@ -2312,7 +2313,7 @@ data class CIFile(
       )
     }
     val res = chatModel.controller.getRemoteFile(rh.remoteHostId, rf)
-    cachedRemoteFileRequests.remove(fileSource)
+    cachedRemoteFileRequests[fileSource] = res
     if (showAlert) {
       AlertManager.shared.hideAlert()
     }
@@ -2329,7 +2330,7 @@ data class CIFile(
     ): CIFile =
       CIFile(fileId = fileId, fileName = fileName, fileSize = fileSize, fileSource = if (filePath == null) null else CryptoFile.plain(filePath), fileStatus = fileStatus, fileProtocol = FileProtocol.XFTP)
 
-    val cachedRemoteFileRequests = SnapshotStateList<CryptoFile>()
+    val cachedRemoteFileRequests = SnapshotStateMap<CryptoFile, Boolean>()
   }
 }
 
