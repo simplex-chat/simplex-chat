@@ -1465,7 +1465,7 @@
     <string name="new_mobile_device">Nuovo dispositivo mobile</string>
     <string name="desktop_address">Indirizzo desktop</string>
     <string name="only_one_device_can_work_at_the_same_time">Solo un dispositivo può funzionare nello stesso momento</string>
-    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Apri <i>Usa dal desktop</i> nell\'app mobile e scansiona il codice QR]]></string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Apri <i>Usa dal desktop</i> nell\'app mobile e scansiona il codice QR.]]></string>
     <string name="desktop_incompatible_version">Versione incompatibile</string>
     <string name="new_desktop"><![CDATA[<i>(nuovo)</i>]]></string>
     <string name="unlink_desktop_question">Scollegare il desktop?</string>

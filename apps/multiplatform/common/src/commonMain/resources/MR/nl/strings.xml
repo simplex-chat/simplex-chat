@@ -1463,7 +1463,7 @@
     <string name="new_mobile_device">Nieuw mobiel apparaat</string>
     <string name="desktop_address">Desktop adres</string>
     <string name="only_one_device_can_work_at_the_same_time">Er kan slechts één apparaat tegelijkertijd werken</string>
-    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Open <i>Gebruik vanaf desktop</i> in de mobiele app en scan de QR-code]]></string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Open <i>Gebruik vanaf desktop</i> in de mobiele app en scan de QR-code.]]></string>
     <string name="desktop_incompatible_version">Incompatibele versie</string>
     <string name="new_desktop"><![CDATA[<i>(nieuw)</i>]]></string>
     <string name="unlink_desktop_question">Desktop ontkoppelen?</string>

@@ -135,7 +135,8 @@ data ChatConfig = ChatConfig
     cleanupManagerStepDelay :: Int64,
     ciExpirationInterval :: Int64, -- microseconds
     coreApi :: Bool,
-    highlyAvailable :: Bool
+    highlyAvailable :: Bool,
+    deviceNameForRemote :: Text
   }
 
 data DefaultAgentServers = DefaultAgentServers
@@ -657,18 +658,18 @@ data ChatResponse
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRCurrentRemoteHost {remoteHost_ :: Maybe RemoteHostInfo}
-  | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text}
+  | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text, ctrlPort :: String}
   | CRRemoteHostSessionCode {remoteHost_ :: Maybe RemoteHostInfo, sessionCode :: Text}
   | CRNewRemoteHost {remoteHost :: RemoteHostInfo}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}
-  | CRRemoteHostStopped {remoteHostId_ :: Maybe RemoteHostId}
+  | CRRemoteHostStopped {remoteHostId_ :: Maybe RemoteHostId, rhsState :: RemoteHostSessionState, rhStopReason :: RemoteHostStopReason}
   | CRRemoteFileStored {remoteHostId :: RemoteHostId, remoteFileSource :: CryptoFile}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
-  | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo} -- registered fingerprint, may connect
+  | CRRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo, ctrlAppInfo_ :: Maybe CtrlAppInfo, appVersion :: AppVersion, compatible :: Bool}
   | CRRemoteCtrlConnecting {remoteCtrl_ :: Maybe RemoteCtrlInfo, ctrlAppInfo :: CtrlAppInfo, appVersion :: AppVersion}
   | CRRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}
   | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
-  | CRRemoteCtrlStopped
+  | CRRemoteCtrlStopped {rcsState :: RemoteCtrlSessionState, rcStopReason :: RemoteCtrlStopReason}
   | CRSQLResult {rows :: [Text]}
   | CRSlowSQLQueries {chatQueries :: [SlowSQLQuery], agentQueries :: [SlowSQLQuery]}
   | CRDebugLocks {chatLockName :: Maybe String, agentLocks :: AgentLocks}
@@ -699,14 +700,14 @@ allowRemoteEvent = \case
   CRRemoteHostSessionCode {} -> False
   CRNewRemoteHost _ -> False
   CRRemoteHostConnected _ -> False
-  CRRemoteHostStopped _ -> False
+  CRRemoteHostStopped {} -> False
   CRRemoteFileStored {} -> False
   CRRemoteCtrlList _ -> False
-  CRRemoteCtrlFound _ -> False
+  CRRemoteCtrlFound {} -> False
   CRRemoteCtrlConnecting {} -> False
   CRRemoteCtrlSessionCode {} -> False
   CRRemoteCtrlConnected _ -> False
-  CRRemoteCtrlStopped -> False
+  CRRemoteCtrlStopped {} -> False
   CRSQLResult _ -> False
   CRSlowSQLQueries {} -> False
   _ -> True
@@ -1082,6 +1083,12 @@ data RemoteHostError
   | RHEProtocolError RemoteProtocolError
   deriving (Show, Exception)
 
+data RemoteHostStopReason
+  = RHSRConnectionFailed ChatError
+  | RHSRCrashed ChatError
+  | RHSRDisconnected
+  deriving (Show, Exception)
+
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteCtrlError
   = RCEInactive -- ^ No session is running
@@ -1095,6 +1102,13 @@ data RemoteCtrlError
   | RCEBadVersion {appVersion :: AppVersion}
   | RCEHTTP2Error {http2Error :: Text} -- TODO currently not used
   | RCEProtocolError {protocolError :: RemoteProtocolError}
+  deriving (Show, Exception)
+
+data RemoteCtrlStopReason
+  = RCSRDiscoveryFailed ChatError
+  | RCSRConnectionFailed ChatError
+  | RCSRSetupFailed ChatError
+  | RCSRDisconnected
   deriving (Show, Exception)
 
 data ArchiveError
@@ -1321,6 +1335,10 @@ instance ToJSON AUserProtoServers where
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCS") ''RemoteCtrlSessionState)
 
 $(JQ.deriveJSON defaultJSON ''RemoteCtrlInfo)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RCSR") ''RemoteCtrlStopReason)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RHSR") ''RemoteHostStopReason)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CR") ''ChatResponse)
 

@@ -26,7 +26,7 @@ fun HowItWorks(user: User?, onboardingStage: SharedPreference<OnboardingStage>? 
     .fillMaxWidth()
     .padding(horizontal = DEFAULT_PADDING),
   ) {
-    AppBarTitle(stringResource(MR.strings.how_simplex_works), false)
+    AppBarTitle(stringResource(MR.strings.how_simplex_works), withPadding = false)
     ReadableText(MR.strings.many_people_asked_how_can_it_deliver)
     ReadableText(MR.strings.to_protect_privacy_simplex_has_ids_for_queues)
     ReadableText(MR.strings.you_control_servers_to_receive_your_contacts_to_send)

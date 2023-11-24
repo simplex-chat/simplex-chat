@@ -56,7 +56,7 @@ fun annotatedStringResource(id: StringResource): AnnotatedString {
 fun annotatedStringResource(id: StringResource, vararg args: Any?): AnnotatedString {
   val density = LocalDensity.current
   return remember(id) {
-    escapedHtmlToAnnotatedString(id.localized().format(args), density)
+    escapedHtmlToAnnotatedString(id.localized().format(args = args), density)
   }
 }
 
@@ -373,7 +373,7 @@ inline fun <reified T> serializableSaver(): Saver<T, *> = Saver(
 fun UriHandler.openVerifiedSimplexUri(uri: String) {
   val URI = try { URI.create(uri) } catch (e: Exception) { null }
   if (URI != null) {
-    connectIfOpenedViaUri(chatModel.remoteHostId, URI, ChatModel)
+    connectIfOpenedViaUri(chatModel.remoteHostId(), URI, ChatModel)
   }
 }
 

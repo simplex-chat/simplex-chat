@@ -63,7 +63,7 @@ private fun VerifyCodeLayout(
       .verticalScroll(rememberScrollState())
       .padding(horizontal = DEFAULT_PADDING)
   ) {
-    AppBarTitle(stringResource(MR.strings.security_code), false)
+    AppBarTitle(stringResource(MR.strings.security_code), withPadding = false)
     val splitCode = splitToParts(connectionCode, 24)
     Row(Modifier.fillMaxWidth().padding(bottom = DEFAULT_PADDING_HALF), horizontalArrangement = Arrangement.Center) {
       if (connectionVerified) {

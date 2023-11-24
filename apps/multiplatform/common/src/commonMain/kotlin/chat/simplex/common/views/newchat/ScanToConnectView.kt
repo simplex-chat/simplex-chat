@@ -469,7 +469,7 @@ fun ConnectContactLayout(
     Modifier.verticalScroll(rememberScrollState()).padding(horizontal = DEFAULT_PADDING),
     verticalArrangement = Arrangement.SpaceBetween
   ) {
-    AppBarTitle(stringResource(MR.strings.scan_QR_code), false)
+    AppBarTitle(stringResource(MR.strings.scan_QR_code), hostDevice(rh?.remoteHostId), withPadding = false)
     Box(
       Modifier
         .fillMaxWidth()

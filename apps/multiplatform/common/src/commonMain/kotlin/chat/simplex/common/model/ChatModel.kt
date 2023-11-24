@@ -111,8 +111,9 @@ object ChatModel {
   // remote controller
   val remoteHosts = mutableStateListOf<RemoteHostInfo>()
   val currentRemoteHost = mutableStateOf<RemoteHostInfo?>(null)
-  val remoteHostId: Long? get() = currentRemoteHost?.value?.remoteHostId
-  val newRemoteHostPairing = mutableStateOf<Pair<RemoteHostInfo?, RemoteHostSessionState>?>(null)
+  val remoteHostId: Long? @Composable get() = remember { currentRemoteHost }.value?.remoteHostId
+  fun remoteHostId(): Long? = currentRemoteHost.value?.remoteHostId
+  val remoteHostPairing = mutableStateOf<Pair<RemoteHostInfo?, RemoteHostSessionState>?>(null)
   val remoteCtrlSession = mutableStateOf<RemoteCtrlSession?>(null)
 
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
@@ -636,6 +637,9 @@ data class User(
   val hidden: Boolean = viewPwdHash != null
 
   val addressShared: Boolean = profile.contactLink != null
+
+  fun updateRemoteHostId(rh: Long?): User =
+    if (rh == null) this else this.copy(remoteHostId = rh)
 
   companion object {
     val sampleData = User(
@@ -1252,7 +1256,7 @@ data class GroupMember (
   fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
     if (!canBeRemoved(groupInfo)) null
     else groupInfo.membership.memberRole.let { userRole ->
-      GroupMemberRole.values().filter { it <= userRole }
+      GroupMemberRole.values().filter { it <= userRole && it != GroupMemberRole.Author }
     }
 
   val memberIncognito = memberProfile.profileId != memberContactProfileId
@@ -1294,12 +1298,14 @@ data class GroupMemberIds(
 @Serializable
 enum class GroupMemberRole(val memberRole: String) {
   @SerialName("observer") Observer("observer"), // order matters in comparisons
+  @SerialName("author") Author("author"),
   @SerialName("member") Member("member"),
   @SerialName("admin") Admin("admin"),
   @SerialName("owner") Owner("owner");
 
   val text: String get() = when (this) {
     Observer -> generalGetString(MR.strings.group_member_role_observer)
+    Author -> generalGetString(MR.strings.group_member_role_author)
     Member -> generalGetString(MR.strings.group_member_role_member)
     Admin -> generalGetString(MR.strings.group_member_role_admin)
     Owner -> generalGetString(MR.strings.group_member_role_owner)
@@ -2915,7 +2921,7 @@ enum class NotificationPreviewMode {
 }
 
 data class RemoteCtrlSession(
-  val ctrlAppInfo: CtrlAppInfo,
+  val ctrlAppInfo: CtrlAppInfo?,
   val appVersion: String,
   val sessionState: UIRemoteCtrlSessionState
 ) {
@@ -2933,14 +2939,17 @@ data class RemoteCtrlSession(
 @Serializable
 sealed class RemoteCtrlSessionState {
   @Serializable @SerialName("starting") object Starting: RemoteCtrlSessionState()
+  @Serializable @SerialName("searching") object Searching: RemoteCtrlSessionState()
   @Serializable @SerialName("connecting") object Connecting: RemoteCtrlSessionState()
   @Serializable @SerialName("pendingConfirmation") data class PendingConfirmation(val sessionCode: String): RemoteCtrlSessionState()
   @Serializable @SerialName("connected") data class Connected(val sessionCode: String): RemoteCtrlSessionState()
 }
 
 sealed class UIRemoteCtrlSessionState {
-  @Serializable @SerialName("starting") object Starting: UIRemoteCtrlSessionState()
-  @Serializable @SerialName("connecting") data class Connecting(val remoteCtrl_: RemoteCtrlInfo? = null): UIRemoteCtrlSessionState()
-  @Serializable @SerialName("pendingConfirmation") data class PendingConfirmation(val remoteCtrl_: RemoteCtrlInfo? = null, val sessionCode: String): UIRemoteCtrlSessionState()
-  @Serializable @SerialName("connected") data class Connected(val remoteCtrl: RemoteCtrlInfo, val sessionCode: String): UIRemoteCtrlSessionState()
+  object Starting: UIRemoteCtrlSessionState()
+  object Searching: UIRemoteCtrlSessionState()
+  data class Found(val remoteCtrl: RemoteCtrlInfo, val compatible: Boolean): UIRemoteCtrlSessionState()
+  data class Connecting(val remoteCtrl_: RemoteCtrlInfo? = null): UIRemoteCtrlSessionState()
+  data class PendingConfirmation(val remoteCtrl_: RemoteCtrlInfo? = null, val sessionCode: String): UIRemoteCtrlSessionState()
+  data class Connected(val remoteCtrl: RemoteCtrlInfo, val sessionCode: String): UIRemoteCtrlSessionState()
 }

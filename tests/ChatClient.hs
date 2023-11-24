@@ -74,6 +74,7 @@ testOpts =
             tbqSize = 16,
             highlyAvailable = False
           },
+      deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,
