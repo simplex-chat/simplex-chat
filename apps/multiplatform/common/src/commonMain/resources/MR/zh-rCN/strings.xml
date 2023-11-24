@@ -1471,7 +1471,7 @@
     <string name="unlink_desktop_question">取消链接桌面端？</string>
     <string name="linked_desktop_options">已链接桌面选项</string>
     <string name="linked_desktops">已链接桌面</string>
-    <string name="discover_on_network">网络发现</string>
+    <string name="discover_on_network">通过本地网络发现</string>
     <string name="this_device">此设备</string>
     <string name="linked_mobiles">已链接的移动设备</string>
     <string name="desktop_device">桌面</string>
@@ -1519,4 +1519,9 @@
 \n- 以及更多！</string>
     <string name="waiting_for_mobile_to_connect_on_port">正等待移动设备在端口 <i>%s</i> 进行连接</string>
     <string name="group_member_role_author">作者</string>
+    <string name="multicast_connect_automatically">自动连接</string>
+    <string name="waiting_for_desktop">等待桌面中…</string>
+    <string name="found_desktop">找到了桌面</string>
+    <string name="not_compatible">不兼容！</string>
+    <string name="multicast_discoverable_via_local_network">可通过本地网络发现</string>
 </resources>
