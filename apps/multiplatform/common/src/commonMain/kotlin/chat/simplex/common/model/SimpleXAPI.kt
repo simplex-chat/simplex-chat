@@ -1430,7 +1430,7 @@ object ChatController {
     return null
   }
 
-  suspend fun getRemoteFile(rhId: Long, file: RemoteFile): Boolean = sendCommandOkResp(null, CC.GetRemoteFile(rhId, file))
+  suspend fun getRemoteFile(rhId: Long, file: RemoteFile): Boolean = sendCmd(null, CC.GetRemoteFile(rhId, file)) is CR.CmdOk
 
   suspend fun connectRemoteCtrl(desktopAddress: String): Pair<SomeRemoteCtrl?, CR.ChatCmdError?> {
     val r = sendCmd(null, CC.ConnectRemoteCtrl(desktopAddress))

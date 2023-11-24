@@ -98,7 +98,7 @@ fun getLoadedFileSource(file: CIFile?): CryptoFile? {
 
 private fun fileReady(file: CIFile, filePath: String) =
   File(filePath).exists() &&
-  !CIFile.cachedRemoteFileRequests.contains(file.fileSource)
+  CIFile.cachedRemoteFileRequests[file.fileSource] != false
   && File(filePath).length() >= file.fileSize
 
 /**
