@@ -10,6 +10,7 @@
 module Simplex.Chat.Terminal.Output where
 
 import Control.Concurrent (ThreadId)
+import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Catch (MonadMask)
 import Control.Monad.Except
@@ -19,21 +20,22 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
-import Simplex.Chat (processChatCommand)
+import Simplex.Chat (execChatCommand, processChatCommand)
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent (CIContent(..), SMsgDirection (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..), msgContentText)
-import Simplex.Chat.Remote.Types (RemoteHostId)
+import Simplex.Chat.Remote.Types (RHKey (..), RemoteHostId, RemoteHostInfo (..), RemoteHostSession (..))
 import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Notification (Notification (..), initializeNotifications)
 import Simplex.Chat.Types
 import Simplex.Chat.View
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Util (safeDecodeUtf8)
+import qualified Simplex.Messaging.TMap as TM
+import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
 import System.Console.ANSI.Types
 import System.IO (IOMode (..), hPutStrLn, withFile)
 import System.Mem.Weak (Weak)
@@ -49,7 +51,8 @@ data ChatTerminal = ChatTerminal
     nextMessageRow :: TVar Int,
     termLock :: TMVar (),
     sendNotification :: Maybe (Notification -> IO ()),
-    activeTo :: TVar String
+    activeTo :: TVar String,
+    currentHostUser :: TM.TMap RemoteHostId User
   }
 
 data TerminalState = TerminalState
@@ -104,6 +107,7 @@ newChatTerminal t opts = do
   nextMessageRow <- newTVarIO lastRow
   sendNotification <- if muteNotifications opts then pure Nothing else Just <$> initializeNotifications
   activeTo <- newTVarIO ""
+  currentHostUser <- newTVarIO mempty
   -- threadDelay 500000 -- this delay is the same as timeout in getTerminalSize
   pure
     ChatTerminal
@@ -114,7 +118,8 @@ newChatTerminal t opts = do
         nextMessageRow,
         termLock,
         sendNotification,
-        activeTo
+        activeTo,
+        currentHostUser
       }
 
 mkTermState :: TerminalState
@@ -143,12 +148,14 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
     case r of
       CRNewChatItem u ci -> markChatItemRead u ci
       CRChatItemUpdated u ci -> markChatItemRead u ci
+      CRRemoteHostConnected {remoteHost = RemoteHostInfo {remoteHostId}} -> getRemoteUser remoteHostId
+      CRRemoteHostStopped {remoteHostId_} -> forM_ remoteHostId_ removeRemoteUser
       _ -> pure ()
     let printResp = case logFilePath of
           Just path -> if logResponseToFile r then logResponse path else printToTerminal ct
           _ -> printToTerminal ct
     liveItems <- readTVarIO showLiveItems
-    responseString cc liveItems outputRH r >>= printResp
+    responseString ct cc liveItems outputRH r >>= printResp
     responseNotification ct cc r
   where
     markChatItemRead u (AChatItem _ _ chat ci@ChatItem {chatDir, meta = CIMeta {itemStatus}}) =
@@ -159,6 +166,10 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
           void $ runReaderT (runExceptT $ processChatCommand (APIChatRead chatRef (Just (itemId, itemId)))) cc
         _ -> pure ()
     logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
+    getRemoteUser rhId = runReaderT (execChatCommand (Just rhId) "/user") cc >>= \case
+      CRActiveUser {user} -> updateRemoteUser ct user rhId
+      cr -> logError $ "Unexpected reply while getting remote user: " <> tshow cr
+    removeRemoteUser rhId = atomically $ TM.delete rhId (currentHostUser ct)
 
 responseNotification :: ChatTerminal -> ChatController -> ChatResponse -> IO ()
 responseNotification t@ChatTerminal {sendNotification} cc = \case
@@ -255,15 +266,29 @@ whenCurrUser cc u a = do
     sameUser User {userId = uId} = maybe False $ \User {userId} -> userId == uId
 
 printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> ChatResponse -> IO ()
-printRespToTerminal ct cc liveItems outputRH r = responseString cc liveItems outputRH r >>= printToTerminal ct
+printRespToTerminal ct cc liveItems outputRH r = responseString ct cc liveItems outputRH r >>= printToTerminal ct
 
-responseString :: ChatController -> Bool -> Maybe RemoteHostId -> ChatResponse -> IO [StyledString]
-responseString cc liveItems outputRH r = do
-  currentRH <- readTVarIO $ currentRemoteHost cc
-  user <- readTVarIO $ currentUser cc -- XXX: local user, should be subsumed by remote when connected
+responseString :: ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> ChatResponse -> IO [StyledString]
+responseString ct cc liveItems outputRH r = do
+  cu <- getCurrentUser ct cc
   ts <- getCurrentTime
   tz <- getCurrentTimeZone
-  pure $ responseToView (currentRH, user) (config cc) liveItems ts tz outputRH r
+  pure $ responseToView cu (config cc) liveItems ts tz outputRH r
+
+updateRemoteUser :: ChatTerminal -> User -> RemoteHostId -> IO ()
+updateRemoteUser ct user rhId = atomically $ TM.insert rhId user (currentHostUser ct)
+
+getCurrentUser :: ChatTerminal -> ChatController -> IO (Maybe RemoteHostId, Maybe User)
+getCurrentUser ct cc = atomically $ do
+  localUser_ <- readTVar (currentUser cc)
+  readTVar (currentRemoteHost cc) >>= \case
+    Nothing -> pure (Nothing, localUser_)
+    Just rhId ->
+      TM.lookup (RHId rhId) (remoteHostSessions cc) >>= \case
+        Just (_, RHSessionConnected {}) -> do
+          hostUser_ <- TM.lookup rhId (currentHostUser ct)
+          pure (Just rhId, hostUser_)
+        _ -> pure (Nothing, localUser_)
 
 printToTerminal :: ChatTerminal -> [StyledString] -> IO ()
 printToTerminal ct s =
