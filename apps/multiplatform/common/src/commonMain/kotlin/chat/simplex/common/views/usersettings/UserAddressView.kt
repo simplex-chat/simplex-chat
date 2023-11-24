@@ -41,13 +41,15 @@ fun UserAddressView(
   val shareViaProfile = remember { mutableStateOf(shareViaProfile) }
   var progressIndicator by remember { mutableStateOf(false) }
   val onCloseHandler: MutableState<(close: () -> Unit) -> Unit> = remember { mutableStateOf({ _ -> }) }
-  var user by remember(close) { chatModel.currentUser }
-
+  val user = remember { chatModel.currentUser }
+  KeyChangeEffect(user.value?.remoteHostId, user.value?.userId) {
+    close()
+  }
   fun setProfileAddress(on: Boolean) {
     progressIndicator = true
     withBGApi {
       try {
-        val u = chatModel.controller.apiSetProfileAddress(user?.remoteHostId, on)
+        val u = chatModel.controller.apiSetProfileAddress(user?.value?.remoteHostId, on)
         if (u != null) {
           chatModel.updateUser(u)
         }
@@ -63,14 +65,14 @@ fun UserAddressView(
   val uriHandler = LocalUriHandler.current
   val showLayout = @Composable {
     UserAddressLayout(
-      user = user,
+      user = user.value,
       userAddress = userAddress.value,
       shareViaProfile,
       onCloseHandler,
       createAddress = {
         withApi {
           progressIndicator = true
-          val connReqContact = chatModel.controller.apiCreateUserAddress(user?.remoteHostId)
+          val connReqContact = chatModel.controller.apiCreateUserAddress(user?.value?.remoteHostId)
           if (connReqContact != null) {
             chatModel.userAddress.value = UserContactLinkRec(connReqContact)
 
@@ -115,7 +117,7 @@ fun UserAddressView(
           onConfirm = {
             progressIndicator = true
             withApi {
-              val u = chatModel.controller.apiDeleteUserAddress(user?.remoteHostId)
+              val u = chatModel.controller.apiDeleteUserAddress(user?.value?.remoteHostId)
               if (u != null) {
                 chatModel.userAddress.value = null
                 chatModel.updateUser(u)
@@ -129,7 +131,7 @@ fun UserAddressView(
       },
       saveAas = { aas: AutoAcceptState, savedAAS: MutableState<AutoAcceptState> ->
         withBGApi {
-          val address = chatModel.controller.userAddressAutoAccept(user?.remoteHostId, aas.autoAccept)
+          val address = chatModel.controller.userAddressAutoAccept(user?.value?.remoteHostId, aas.autoAccept)
           if (address != null) {
             chatModel.userAddress.value = address
             savedAAS.value = aas
