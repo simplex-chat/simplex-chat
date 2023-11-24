@@ -1469,10 +1469,10 @@
     <string name="only_one_device_can_work_at_the_same_time">Un seul appareil peut fonctionner en même temps</string>
     <string name="v5_4_link_mobile_desktop">Liez vos applications mobiles et de bureau ! 🔗</string>
     <string name="v5_4_link_mobile_desktop_descr">Via un protocole sécurisé de cryptographie post-quantique.</string>
-    <string name="open_on_mobile_and_scan_qr_code">Ouvrez <i>Utiliser depuis le bureau</i> dans l\'application mobile et scannez le code QR.</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Ouvrez <i>Utiliser depuis le bureau</i> dans l\'application mobile et scannez le code QR.]]></string>
     <string name="v5_4_block_group_members_descr">Pour cacher les messages indésirables.</string>
     <string name="desktop_incompatible_version">Version incompatible</string>
-    <string name="new_desktop"><i>(nouveau)</i></string>
+    <string name="new_desktop"><![CDATA[<i>(nouveau)</i>]]></string>
     <string name="unlink_desktop_question">Délier le bureau ?</string>
     <string name="v5_4_better_groups">Des groupes plus performants</string>
     <string name="linked_desktop_options">Options de bureau lié</string>
@@ -1480,13 +1480,13 @@
     <string name="discover_on_network">Rechercher sur le réseau</string>
     <string name="v5_4_incognito_groups">Groupes incognito</string>
     <string name="this_device">Cet appareil</string>
-    <string name="remote_host_was_disconnected_toast">Le mobile <b>%s</b> a été déconnecté</string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[Le mobile <b>%s</b> a été déconnecté]]></string>
     <string name="v5_4_better_groups_descr">Connexion plus rapide et messages plus fiables.</string>
     <string name="linked_mobiles">Mobiles liés</string>
     <string name="desktop_device">Bureau</string>
     <string name="connected_to_desktop">Connecté au bureau</string>
     <string name="this_device_name">Ce nom d\'appareil</string>
-    <string name="waiting_for_mobile_to_connect_on_port">En attente d\'une connexion mobile sur le port <i>%s</i></string>
+    <string name="waiting_for_mobile_to_connect_on_port"><![CDATA[En attente d\'une connexion mobile sur le port <i>%s</i>]]></string>
     <string name="loading_remote_file_title">Chargement du fichier</string>
     <string name="connecting_to_desktop">Connexion au bureau</string>
     <string name="desktop_devices">Appareils de bureau</string>
@@ -1495,7 +1495,7 @@
     <string name="connected_mobile">Mobile connecté</string>
     <string name="session_code">Code de session</string>
     <string name="desktop_connection_terminated">Connexion terminée</string>
-    <string name="this_device_version"><i>(cet appareil v%s)</i></string>
+    <string name="this_device_version"><![CDATA[<i>(cet appareil v%s)</i>]]></string>
     <string name="unlink_desktop">Délier</string>
     <string name="this_device_name_shared_with_mobile">Le nom de l\'appareil sera partagé avec le client mobile connecté.</string>
     <string name="verify_code_on_mobile">Vérifier le code sur le mobile</string>

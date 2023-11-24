@@ -1507,10 +1507,10 @@
     <string name="v5_4_link_mobile_desktop">Свяжите мобильное и настольное приложения! 🔗</string>
     <string name="marked_deleted_items_description">%d сообщений помечено удаленными</string>
     <string name="connect_plan_group_already_exists">Группа уже существует!</string>
-    <string name="open_on_mobile_and_scan_qr_code">Откройте <i>Использовать с компьютера</i> в мобильном приложении и сосканируйте QR код</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Откройте <i>Использовать с компьютера</i> в мобильном приложении и сосканируйте QR код]]></string>
     <string name="connect_plan_already_connecting">Уже соединяется!</string>
     <string name="desktop_incompatible_version">Несовместимая версия</string>
-    <string name="new_desktop"><i>(новое)</i></string>
+    <string name="new_desktop"><![CDATA[<i>(новое)</i>]]></string>
     <string name="v5_4_better_groups">Улучшенные группы</string>
     <string name="linked_desktop_options">Опции связанного компьютера</string>
     <string name="linked_desktops">Связанные компьютеры</string>
@@ -1520,7 +1520,7 @@
     <string name="v5_4_incognito_groups">Инкогнито группы</string>
     <string name="connect_plan_already_joining_the_group">Вступление в группу уже начато!</string>
     <string name="moderated_items_description">%d сообщений модерировано членом %s</string>
-    <string name="remote_host_was_disconnected_toast">Удаленный хост был отключен: <b>%s</b></string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[Удаленный хост был отключен: <b>%s</b>]]></string>
     <string name="v5_4_better_groups_descr">Более быстрое вступление и более надежные сообщения.</string>
     <string name="connect_plan_connect_to_yourself">Соединиться с самим собой?</string>
     <string name="linked_mobiles">Связанные мобильные</string>
@@ -1544,7 +1544,7 @@
     <string name="delete_and_notify_contact">Удалить и уведомить контакт</string>
     <string name="connect_plan_open_group">Открыть группу</string>
     <string name="desktop_connection_terminated">Подключение прервано</string>
-    <string name="this_device_version"><i>(это устройство v%s)</i></string>
+    <string name="this_device_version"><![CDATA[<i>(это устройство v%s)</i>]]></string>
     <string name="unblock_member_desc">Сообщения от %s будут показаны!</string>
     <string name="enter_this_device_name">Введите имя этого устройства…</string>
     <string name="error">Ошибка</string>

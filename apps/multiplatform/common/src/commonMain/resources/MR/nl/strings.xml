@@ -1514,9 +1514,9 @@
     <string name="v5_4_more_things_descr">- optioneel verwijderde contacten op de hoogte stellen.
 \n- profielnamen met spaties.
 \n- en meer!</string>
-    <string name="remote_host_was_disconnected_toast">Mobiele verbinding <b>%s</b> is verbroken</string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[Mobiele verbinding <b>%s</b> is verbroken]]></string>
     <string name="group_member_role_author">auteur</string>
-    <string name="waiting_for_mobile_to_connect_on_port">Wachten tot mobiel verbinding maakt op poort <i>%s</i></string>
+    <string name="waiting_for_mobile_to_connect_on_port"><![CDATA[Wachten tot mobiel verbinding maakt op poort <i>%s</i>]]></string>
     <string name="multicast_connect_automatically">Automatisch verbinden</string>
     <string name="waiting_for_desktop">Wachten op desktop…</string>
     <string name="found_desktop">Desktop gevonden</string>
