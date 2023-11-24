@@ -8,7 +8,7 @@ void hs_init_with_rtsopts(int * argc, char **argv[]);
 
 JNIEXPORT void JNICALL
 Java_chat_simplex_common_platform_CoreKt_initHS(JNIEnv *env, jclass clazz) {
-#ifdef WINDOWS
+#ifdef _WIN32
     int argc = 4;
     char *argv[] = {"simplex", "+RTS", "-A16m", "-H64m", NULL}; // non-moving GC is broken on windows with GHC 9.4-9.6.3
 #else
