@@ -1575,7 +1575,7 @@
     <string name="v5_4_block_group_members_descr">Чтобы скрыть нежелательные сообщения.</string>
     <string name="unlink_desktop_question">Забыть компьютер?</string>
     <string name="video_decoding_exception_desc">Видео невозможно декодировать. Пожалуйста, попробуйте другое видео или свяжитесь с разработчиками.</string>
-    <string name="rcv_group_event_1_member_connected">%@ соединен(а)</string>
+    <string name="rcv_group_event_1_member_connected">%s соединен(а)</string>
     <string name="group_members_n">%s, %s и %d членов группы</string>
     <string name="this_device">Это устройство</string>
     <string name="unblock_member_button">Разблокировать члена группы</string>
