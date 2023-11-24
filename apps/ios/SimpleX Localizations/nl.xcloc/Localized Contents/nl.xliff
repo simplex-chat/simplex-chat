@@ -1196,6 +1196,7 @@
       </trans-unit>
       <trans-unit id="Connect automatically" xml:space="preserve">
         <source>Connect automatically</source>
+        <target>Automatisch verbinden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect incognito" xml:space="preserve">
@@ -1914,6 +1915,7 @@ Dit kan niet ongedaan gemaakt worden!</target>
       </trans-unit>
       <trans-unit id="Discover via local network" xml:space="preserve">
         <source>Discover via local network</source>
+        <target>Ontdek via het lokale netwerk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do NOT use SimpleX for emergency calls." xml:space="preserve">
@@ -2558,6 +2560,7 @@ Dit kan niet ongedaan gemaakt worden!</target>
       </trans-unit>
       <trans-unit id="Found desktop" xml:space="preserve">
         <source>Found desktop</source>
+        <target>Desktop gevonden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="French interface" xml:space="preserve">
@@ -3527,6 +3530,7 @@ Dit is jouw link voor groep %@!</target>
       </trans-unit>
       <trans-unit id="Not compatible!" xml:space="preserve">
         <source>Not compatible!</source>
+        <target>Niet compatibel!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Notifications" xml:space="preserve">
@@ -5501,6 +5505,7 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
       </trans-unit>
       <trans-unit id="Waiting for desktop..." xml:space="preserve">
         <source>Waiting for desktop...</source>
+        <target>Wachten op desktop...</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Waiting for file" xml:space="preserve">
@@ -6050,6 +6055,7 @@ SimpleX servers kunnen uw profiel niet zien.</target>
       </trans-unit>
       <trans-unit id="author" xml:space="preserve">
         <source>author</source>
+        <target>auteur</target>
         <note>member role</note>
       </trans-unit>
       <trans-unit id="bad message ID" xml:space="preserve">
