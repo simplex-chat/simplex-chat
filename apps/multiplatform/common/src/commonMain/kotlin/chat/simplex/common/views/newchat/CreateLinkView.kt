@@ -67,7 +67,7 @@ fun CreateLinkView(m: ChatModel, rh: RemoteHostInfo?, initialSelection: CreateLi
           AddContactView(m, rh,connReqInvitation.value ?: "", contactConnection)
         }
         CreateLinkTab.LONG_TERM -> {
-          UserAddressView(m, rh?.remoteHostId, viaCreateLinkView = true, close = {})
+          UserAddressView(m, viaCreateLinkView = true, close = {})
         }
       }
     }

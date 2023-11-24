@@ -7,6 +7,8 @@ import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 import java.io.*
 import java.net.URI
+import java.net.URLDecoder
+import java.net.URLEncoder
 
 expect val dataDir: File
 expect val tmpDir: File
@@ -27,6 +29,10 @@ expect val databaseExportDir: File
 expect val remoteHostsDir: File
 
 expect fun desktopOpenDatabaseDir()
+
+fun createURIFromPath(absolutePath: String): URI = URI.create(URLEncoder.encode(absolutePath, "UTF-8"))
+
+fun URI.toFile(): File = File(URLDecoder.decode(rawPath, "UTF-8").removePrefix("file:"))
 
 fun copyFileToFile(from: File, to: URI, finally: () -> Unit) {
   try {

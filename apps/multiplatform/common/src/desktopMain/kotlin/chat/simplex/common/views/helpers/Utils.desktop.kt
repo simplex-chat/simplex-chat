@@ -8,14 +8,12 @@ import androidx.compose.ui.unit.Density
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.simplexWindowState
-import chat.simplex.res.MR
 import java.io.ByteArrayInputStream
 import java.io.File
 import java.net.URI
 import javax.imageio.ImageIO
 import kotlin.io.encoding.Base64
 import kotlin.io.encoding.ExperimentalEncodingApi
-import kotlin.io.path.toPath
 
 private val bStyle = SpanStyle(fontWeight = FontWeight.Bold)
 private val iStyle = SpanStyle(fontStyle = FontStyle.Italic)
@@ -90,9 +88,9 @@ actual fun escapedHtmlToAnnotatedString(text: String, density: Density): Annotat
 actual fun getAppFileUri(fileName: String): URI {
   val rh = chatModel.currentRemoteHost.value
   return if (rh == null) {
-    URI(appFilesDir.toURI().toString() + "/" + fileName)
+    createURIFromPath(appFilesDir.absolutePath + "/" + fileName)
   } else {
-    URI(dataDir.absolutePath + "/remote_hosts/" + rh.storePath + "/simplex_v1_files/" + fileName)
+    createURIFromPath(dataDir.absolutePath + "/remote_hosts/" + rh.storePath + "/simplex_v1_files/" + fileName)
   }
 }
 
@@ -116,11 +114,11 @@ actual suspend fun getLoadedImage(file: CIFile?): Pair<ImageBitmap, ByteArray>? 
   }
 }
 
-actual fun getFileName(uri: URI): String? = uri.toPath().toFile().name
+actual fun getFileName(uri: URI): String? = uri.toFile().name
 
-actual fun getAppFilePath(uri: URI): String? = uri.path
+actual fun getAppFilePath(uri: URI): String? = uri.toFile().absolutePath
 
-actual fun getFileSize(uri: URI): Long? = uri.toPath().toFile().length()
+actual fun getFileSize(uri: URI): Long? = uri.toFile().length()
 
 actual fun getBitmapFromUri(uri: URI, withAlertOnException: Boolean): ImageBitmap? =
   try {
