@@ -28,7 +28,6 @@ import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ClickableText
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.model.*
 import chat.simplex.common.views.helpers.annotatedStringResource
 import chat.simplex.res.MR
 
@@ -39,6 +38,7 @@ fun NetworkAndServersView(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
 ) {
+  val currentRemoteHost by remember { chatModel.currentRemoteHost }
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
   val netCfg = remember { chatModel.controller.getNetCfg() }
   val networkUseSocksProxy: MutableState<Boolean> = remember { mutableStateOf(netCfg.useSocksProxy) }
@@ -52,6 +52,7 @@ fun NetworkAndServersView(
 
   val proxyPort = remember { derivedStateOf { chatModel.controller.appPrefs.networkProxyHostPort.state.value?.split(":")?.lastOrNull()?.toIntOrNull() ?: 9050 } }
   NetworkAndServersLayout(
+    currentRemoteHost = currentRemoteHost,
     developerTools = developerTools,
     networkUseSocksProxy = networkUseSocksProxy,
     onionHosts = onionHosts,
@@ -150,6 +151,7 @@ fun NetworkAndServersView(
 }
 
 @Composable fun NetworkAndServersLayout(
+  currentRemoteHost: RemoteHostInfo?,
   developerTools: Boolean,
   networkUseSocksProxy: MutableState<Boolean>,
   onionHosts: MutableState<OnionHosts>,
@@ -172,14 +174,16 @@ fun NetworkAndServersView(
 
       SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.XFTP, close) })
 
-      UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showSettingsModal)
-      UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
-      if (developerTools) {
-        SessionModePicker(sessionMode, showSettingsModal, updateSessionMode)
+      if (currentRemoteHost == null) {
+        UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showSettingsModal)
+        UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
+        if (developerTools) {
+          SessionModePicker(sessionMode, showSettingsModal, updateSessionMode)
+        }
+        SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
       }
-      SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
     }
-    if (networkUseSocksProxy.value) {
+    if (currentRemoteHost == null && networkUseSocksProxy.value) {
       SectionCustomFooter {
         Column {
           Text(annotatedStringResource(MR.strings.disable_onion_hosts_when_not_supported))
@@ -448,6 +452,7 @@ private fun showUpdateNetworkSettingsDialog(
 fun PreviewNetworkAndServersLayout() {
   SimpleXTheme {
     NetworkAndServersLayout(
+      currentRemoteHost = null,
       developerTools = true,
       networkUseSocksProxy = remember { mutableStateOf(true) },
       proxyPort = remember { mutableStateOf(9050) },

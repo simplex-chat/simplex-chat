@@ -44,6 +44,7 @@ remoteTests = describe "Remote" $ do
     it "should send files from CLI without /store" remoteCLIFileTest
   it "switches remote hosts" switchRemoteHostTest
   it "indicates remote hosts" indicateRemoteHostTest
+  it "works with multiple profiles" multipleProfilesTest
 
 -- * Chat commands
 
@@ -416,6 +417,55 @@ indicateRemoteHostTest = testChat4 aliceProfile aliceDesktopProfile bobProfile c
   desktop <##> cath
   cath <##> desktop
 
+multipleProfilesTest :: FilePath -> IO ()
+multipleProfilesTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cathProfile $ \mobile desktop bob cath -> do
+  connectUsers desktop cath
+
+  desktop ##> "/create user desk_bottom"
+  desktop <## "user profile: desk_bottom"
+  desktop <## "use /p <display name> to change it"
+  desktop <## "(the updated profile will be sent to all your contacts)"
+  desktop ##> "/users"
+  desktop <## "alice_desktop (Alice Desktop)"
+  desktop <## "desk_bottom (active)"
+
+  startRemote mobile desktop
+  contactBob desktop bob
+  desktop ##> "/users"
+  desktop <## "alice (Alice) (active)"
+
+  desktop ##> "/create user alt_alice"
+  desktop <## "user profile: alt_alice"
+  desktop <## "use /p <display name> to change it"
+  desktop <## "(the updated profile will be sent to all your contacts)"
+
+  desktop ##> "/users"
+  desktop <## "alice (Alice)"
+  desktop <## "alt_alice (active)"
+
+  desktop ##> "/user"
+  desktop <## "user profile: alt_alice"
+  desktop <## "use /p <display name> to change it"
+  desktop <## "(the updated profile will be sent to all your contacts)"
+
+  bob #> "@alice hi"
+  (desktop, "[user: alice] ") ^<# "bob> hi"
+
+  cath #> "@alice_desktop hello"
+  (desktop, "[local, user: alice_desktop] ") ^<# "cath> hello"
+
+  desktop ##> "/switch remote host local"
+  desktop <## "Using local profile"
+  desktop ##> "/user"
+  desktop <## "user profile: desk_bottom"
+  desktop <## "use /p <display name> to change it"
+  desktop <## "(the updated profile will be sent to all your contacts)"
+
+  bob #> "@alice hey"
+  (desktop, "[remote: 1, user: alice] ") ^<# "bob> hey"
+
+  stopDesktop mobile desktop
+
 -- * Utils
 
 startRemote :: TestCC -> TestCC -> IO ()
@@ -460,6 +510,7 @@ startRemoteDiscover mobile desktop = do
   mobile ##> "/find remote ctrl"
   mobile <## "ok"
   mobile <## ("remote controller 1 found: My desktop, v" <> versionNumber)
+  mobile <## "use /confirm remote ctrl 1 to connect"
   mobile ##> "/confirm remote ctrl 1"
 
   mobile <## ("connecting remote controller 1: My desktop, v" <> versionNumber)

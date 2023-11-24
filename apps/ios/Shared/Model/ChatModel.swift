@@ -770,7 +770,7 @@ final class GMember: ObservableObject, Identifiable {
 }
 
 struct RemoteCtrlSession {
-    var ctrlAppInfo: CtrlAppInfo
+    var ctrlAppInfo: CtrlAppInfo?
     var appVersion: String
     var sessionState: UIRemoteCtrlSessionState
 
@@ -780,6 +780,10 @@ struct RemoteCtrlSession {
 
     var active: Bool {
         if case .connected = sessionState { true } else { false }
+    }
+
+    var discovery: Bool {
+        if case .searching = sessionState { true } else { false }
     }
 
     var sessionCode: String? {
@@ -793,6 +797,8 @@ struct RemoteCtrlSession {
 
 enum UIRemoteCtrlSessionState {
     case starting
+    case searching
+    case found(remoteCtrl: RemoteCtrlInfo, compatible: Bool)
     case connecting(remoteCtrl_: RemoteCtrlInfo?)
     case pendingConfirmation(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
     case connected(remoteCtrl: RemoteCtrlInfo, sessionCode: String)

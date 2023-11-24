@@ -104,5 +104,5 @@ private fun fileFilterDescription(input: String): String = when(input) {
   else -> ""
 }
 
-actual fun URI.inputStream(): InputStream? = File(URI("file:" + toString().removePrefix("file:"))).inputStream()
-actual fun URI.outputStream(): OutputStream = File(URI("file:" + toString().removePrefix("file:"))).outputStream()
+actual fun URI.inputStream(): InputStream? = toFile().inputStream()
+actual fun URI.outputStream(): OutputStream = toFile().outputStream()

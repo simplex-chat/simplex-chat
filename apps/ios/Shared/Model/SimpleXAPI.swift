@@ -919,8 +919,10 @@ func findKnownRemoteCtrl() async throws {
     try await sendCommandOkResp(.findKnownRemoteCtrl)
 }
 
-func confirmRemoteCtrl(_ rcId: Int64) async throws {
-    try await sendCommandOkResp(.confirmRemoteCtrl(remoteCtrlId: rcId))
+func confirmRemoteCtrl(_ rcId: Int64) async throws -> (RemoteCtrlInfo?, CtrlAppInfo, String) {
+    let r = await chatSendCmd(.confirmRemoteCtrl(remoteCtrlId: rcId))
+    if case let .remoteCtrlConnecting(rc_, ctrlAppInfo, v) = r { return (rc_, ctrlAppInfo, v) }
+    throw r
 }
 
 func verifyRemoteCtrlSession(_ sessCode: String) async throws -> RemoteCtrlInfo {
@@ -1714,9 +1716,17 @@ func processReceivedMsg(_ res: ChatResponse) async {
         await MainActor.run {
             m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
         }
-    case let .remoteCtrlFound(remoteCtrl):
-        // TODO multicast
-        logger.debug("\(String(describing: remoteCtrl))")
+    case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible):
+        await MainActor.run {
+            if let sess = m.remoteCtrlSession, case .searching = sess.sessionState {
+                let state = UIRemoteCtrlSessionState.found(remoteCtrl: remoteCtrl, compatible: compatible)
+                m.remoteCtrlSession = RemoteCtrlSession(
+                    ctrlAppInfo: ctrlAppInfo_,
+                    appVersion: appVersion,
+                    sessionState: state
+                )
+            }
+        }
     case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode):
         await MainActor.run {
             let state = UIRemoteCtrlSessionState.pendingConfirmation(remoteCtrl_: remoteCtrl_, sessionCode: sessionCode)
@@ -1731,8 +1741,13 @@ func processReceivedMsg(_ res: ChatResponse) async {
     case .remoteCtrlStopped:
         // This delay is needed to cancel the session that fails on network failure,
         // e.g. when user did not grant permission to access local network yet.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            switchToLocalSession()
+        if let sess = m.remoteCtrlSession {
+            m.remoteCtrlSession = nil
+            if case .connected = sess.sessionState {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    switchToLocalSession()
+                }
+            }
         }
     default:
         logger.debug("unsupported event: \(res.responseType)")

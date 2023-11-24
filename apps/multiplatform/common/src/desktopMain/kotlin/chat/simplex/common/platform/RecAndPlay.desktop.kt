@@ -37,7 +37,7 @@ actual object AudioPlayer: AudioPlayerInterface {
 
   // Returns real duration of the track
   private fun start(fileSource: CryptoFile, seek: Int? = null, onProgressUpdate: (position: Int?, state: TrackState) -> Unit): Int? {
-    val absoluteFilePath = if (fileSource.isAbsolutePath) fileSource.filePath else  getAppFilePath(fileSource.filePath)
+    val absoluteFilePath = if (fileSource.isAbsolutePath) fileSource.filePath else getAppFilePath(fileSource.filePath)
     if (!File(absoluteFilePath).exists()) {
       Log.e(TAG, "No such file: ${fileSource.filePath}")
       return null
@@ -46,16 +46,16 @@ actual object AudioPlayer: AudioPlayerInterface {
     VideoPlayerHolder.stopAll()
     RecorderInterface.stopRecording?.invoke()
     val current = currentlyPlaying.value
-    if (current == null || current.first != fileSource) {
+    if (current == null || current.first != fileSource || !player.status().isPlayable) {
       stopListener()
       player.stop()
       runCatching {
         if (fileSource.cryptoArgs != null) {
           val tmpFile = fileSource.createTmpFileIfNeeded()
           decryptCryptoFile(absoluteFilePath, fileSource.cryptoArgs, tmpFile.absolutePath)
-          player.media().prepare(tmpFile.toURI().toString().replaceFirst("file:", "file://"))
+          player.media().prepare(tmpFile.absolutePath)
         } else {
-          player.media().prepare(File(absoluteFilePath).toURI().toString().replaceFirst("file:", "file://"))
+          player.media().prepare(absoluteFilePath)
         }
       }.onFailure {
         Log.e(TAG, it.stackTraceToString())
@@ -171,7 +171,7 @@ actual object AudioPlayer: AudioPlayerInterface {
     var res: Int? = null
     try {
       val helperPlayer = AudioPlayerComponent().mediaPlayer()
-      helperPlayer.media().startPaused(File(unencryptedFilePath).toURI().toString().replaceFirst("file:", "file://"))
+      helperPlayer.media().startPaused(unencryptedFilePath)
       res = helperPlayer.duration
       helperPlayer.stop()
       helperPlayer.release()
