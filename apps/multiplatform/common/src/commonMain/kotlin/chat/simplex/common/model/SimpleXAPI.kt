@@ -991,7 +991,7 @@ object ChatController {
     val userId = try { currentUserId("apiSetProfileAddress") } catch (e: Exception) { return null }
     return when (val r = sendCmd(rh, CC.ApiSetProfileAddress(userId, on))) {
       is CR.UserProfileNoChange -> null
-      is CR.UserProfileUpdated -> r.user
+      is CR.UserProfileUpdated -> r.user.updateRemoteHostId(rh)
       else -> throw Exception("failed to set profile address: ${r.responseType} ${r.details}")
     }
   }
@@ -1034,7 +1034,7 @@ object ChatController {
   suspend fun apiDeleteUserAddress(rh: Long?): User? {
     val userId = try { currentUserId("apiDeleteUserAddress") } catch (e: Exception) { return null }
     val r = sendCmd(rh, CC.ApiDeleteMyAddress(userId))
-    if (r is CR.UserContactLinkDeleted) return r.user
+    if (r is CR.UserContactLinkDeleted) return r.user.updateRemoteHostId(rh)
     Log.e(TAG, "apiDeleteUserAddress bad response: ${r.responseType} ${r.details}")
     return null
   }
