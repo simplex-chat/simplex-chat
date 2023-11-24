@@ -1404,4 +1404,12 @@
     <string name="v5_3_simpler_incognito_mode_descr">فعّل وضع التخفي عند الاتصال.</string>
     <string name="member_contact_send_direct_message">أرسل رسالة مباشرة</string>
     <string name="rcv_group_event_member_created_contact">متصل مباشرةً</string>
+    <string name="connect_plan_already_connecting">جارٍ الاتصال بالفعل!</string>
+    <string name="v5_4_better_groups">مجموعات أفضل</string>
+    <string name="rcv_group_and_other_events">و%d أحداث أخرى</string>
+    <string name="connect_plan_already_joining_the_group">جارٍ انضمام بالفعل إلى المجموعة!</string>
+    <string name="block_member_confirmation">حجب</string>
+    <string name="bad_desktop_address">عنوان سطح المكتب غير صالح</string>
+    <string name="block_member_desc">سيتم إخفاء كافة الرسائل الجديدة من %s!</string>
+    <string name="blocked_item_description">محجوب</string>
 </resources>
