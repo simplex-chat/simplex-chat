@@ -1048,4 +1048,27 @@
     <string name="users_delete_data_only">Sadece yerel profil verisi</string>
     <string name="info_row_local_name">Yerel ad</string>
     <string name="only_you_can_add_message_reactions">Sadece sen mesaj tepkileri ekleyebilirsin.</string>
+    <string name="stop_file__confirm">Durdur</string>
+    <string name="stop_file__action">Dosyayı durdur</string>
+    <string name="error_alert_title">Hata</string>
+    <string name="create_another_profile_button">ProfilProfil oluştur</string>
+    <string name="stop_chat_to_enable_database_actions">Veri tabanı eylemlerini etkinleştirmek için sohbeti durdur.</string>
+    <string name="stop_snd_file__title">Dosya göndermeyi durdur?</string>
+    <string name="auth_stop_chat">Sohbeti durdur</string>
+    <string name="connect_use_current_profile">Mevcut profili kullan</string>
+    <string name="la_mode_system">Sistem</string>
+    <string name="settings_section_title_support">SIMPLEX CHAT\'İ DESTEKLE</string>
+    <string name="stop_chat_to_export_import_or_delete_chat_database">Sohbet veri tabanını dışa aktarmak, içe aktarmak veya silmek için sohbeti durdur. Sohbet durdurulduğunda mesaj alamaz ve gönderemezsiniz.</string>
+    <string name="desktop_device">Masaüstü</string>
+    <string name="contact_tap_to_connect">Bağlanmak için dokun</string>
+    <string name="block_member_confirmation">Engelle</string>
+    <string name="tap_to_activate_profile">Profili etkinleştirmek için dokun.</string>
+    <string name="stop_chat_confirmation">Durdur</string>
+    <string name="stop_sharing_address">Adres paylaşmayı durdur?</string>
+    <string name="send_receipts_disabled">kapalı</string>
+    <string name="turn_off_battery_optimization_button">İzin ver</string>
+    <string name="error">Hata</string>
+    <string name="stop_sharing">Paylaşmayı durdur</string>
+    <string name="stop_rcv_file__title">Dosya almayı durdur?</string>
+    <string name="stop_chat_question">Sohbeti durdur?</string>
 </resources>

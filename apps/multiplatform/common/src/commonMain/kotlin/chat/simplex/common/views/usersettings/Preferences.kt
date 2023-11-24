@@ -21,7 +21,10 @@ import chat.simplex.res.MR
 fun PreferencesView(m: ChatModel, user: User, close: () -> Unit,) {
   var preferences by rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(user.fullPreferences) }
   var currentPreferences by rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(preferences) }
-
+  val u = remember { m.currentUser }
+  KeyChangeEffect(u.value?.remoteHostId, u.value?.userId) {
+    close()
+  }
   fun savePrefs(afterSave: () -> Unit = {}) {
     withApi {
       val newProfile = user.profile.toProfile().copy(preferences = preferences.toPreferences())

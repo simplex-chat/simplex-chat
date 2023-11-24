@@ -29,7 +29,11 @@ import java.net.URI
 
 @Composable
 fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
-  val user = chatModel.currentUser.value
+  val u = remember {chatModel.currentUser}
+  val user = u.value
+  KeyChangeEffect(u.value?.remoteHostId, u.value?.userId) {
+    close()
+  }
   if (user != null) {
     var profile by remember { mutableStateOf(user.profile.toProfile()) }
     UserProfileLayout(
