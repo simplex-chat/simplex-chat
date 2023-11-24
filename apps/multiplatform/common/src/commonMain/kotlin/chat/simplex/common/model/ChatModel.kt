@@ -27,7 +27,6 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
 import java.io.File
 import java.net.URI
-import java.net.URLDecoder
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.*
@@ -2363,7 +2362,7 @@ data class CryptoFile(
   companion object {
     fun plain(f: String): CryptoFile = CryptoFile(f, null)
 
-    fun desktopPlain(f: URI): CryptoFile = CryptoFile(URLDecoder.decode(f.rawPath, "UTF-8"), null)
+    fun desktopPlain(f: URI): CryptoFile = CryptoFile(f.toFile().absolutePath, null)
   }
 }
 

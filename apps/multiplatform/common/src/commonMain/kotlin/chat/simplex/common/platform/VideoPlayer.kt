@@ -43,16 +43,13 @@ object VideoPlayerHolder {
   ): VideoPlayer =
     players.getOrPut(uri to gallery) { VideoPlayer(uri, gallery, defaultPreview, defaultDuration, soundEnabled) }
 
-  fun enableSound(enable: Boolean, fileName: String?, gallery: Boolean): Boolean =
-    player(fileName, gallery)?.enableSound(enable) == true
-
-  private fun player(fileName: String?, gallery: Boolean): VideoPlayer? {
-    fileName ?: return null
-    return players.values.firstOrNull { player -> player.uri.path?.endsWith(fileName) == true && player.gallery == gallery }
+  private fun player(uri: URI?, gallery: Boolean): VideoPlayer? {
+    uri ?: return null
+    return players.values.firstOrNull { player -> player.uri == uri && player.gallery == gallery }
   }
 
   fun release(uri: URI, gallery: Boolean, remove: Boolean) =
-    player(uri.path, gallery)?.release(remove).run { }
+    player(uri, gallery)?.release(remove).run { }
 
   fun stopAll() {
     players.values.forEach { it.stop() }
