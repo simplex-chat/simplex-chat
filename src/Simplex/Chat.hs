@@ -1989,7 +1989,7 @@ processChatCommand = \case
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
     -- simplexmqCommitQ makes iOS builds crash m(
-    let versionInfo = coreVersionInfo "" -- $(simplexmqCommitQ)
+    let versionInfo = coreVersionInfo $(simplexmqCommitQ)
     chatMigrations <- map upMigration <$> withStore' (Migrations.getCurrent . DB.conn)
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
