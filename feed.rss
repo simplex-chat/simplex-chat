@@ -7,6 +7,117 @@
         <description>It allows you to stay up to date with the latest Blogs from SimpleX Chat.</description>
         <language>en</language>
             <item>
+                <title>SimpleX Chat v5.4 - link mobile and desktop apps via quantum resistant protocol, and much better groups.</title>
+                <link>https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html</link>
+                <description>&lt;h1 id=&quot;simplex-chat-v54-link-mobile-and-desktop-apps-via-quantum-resistant-protocol-and-much-better-groups&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v5.4 - link mobile and desktop apps via quantum resistant protocol, and much better groups.&lt;/h1&gt;
+&lt;p&gt;&lt;strong&gt;Published:&lt;/strong&gt; Nov 25, 2023&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;What&#39;s new in v5.4:&lt;/strong&gt;&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol&quot;&gt;Link mobile and desktop apps via secure quantum-resistant protocol&lt;/a&gt;.
+&lt;ul&gt;
+&lt;li&gt;⚡️ Quick start - how to use it.&lt;/li&gt;
+&lt;li&gt;How does it work?&lt;/li&gt;
+&lt;li&gt;🤖 Connecting to remote CLI.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#better-groups&quot;&gt;Better groups&lt;/a&gt;.
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#faster-to-join-with-more-reliable-message-delivery&quot;&gt;Faster to join and more reliable&lt;/a&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#new-group-features&quot;&gt;New group features&lt;/a&gt;:
+&lt;ul&gt;
+&lt;li&gt;create groups with incognito profile,&lt;/li&gt;
+&lt;li&gt;block group members to reduce noise,&lt;/li&gt;
+&lt;li&gt;prohibit files and media in a group.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#better-calls&quot;&gt;Better calls&lt;/a&gt;: faster to connect, with screen sharing on desktop.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;There are many &lt;a href=&quot;https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#other-improvements&quot;&gt;other improvements&lt;/a&gt; and fixes in this release:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;profile names now allow spaces.&lt;/li&gt;
+&lt;li&gt;when you delete contacts, they are optionally notified.&lt;/li&gt;
+&lt;li&gt;previously used and your own SimpleX links are recognized by the app.&lt;/li&gt;
+&lt;li&gt;and more - see the &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/releases/tag/v5.4.0&quot;&gt;release notes&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;h2 id=&quot;link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol&quot; tabindex=&quot;-1&quot;&gt;Link mobile and desktop apps via secure quantum-resistant protocol&lt;/h2&gt;
+&lt;p&gt;This release allows to use chat profiles you have in mobile app from desktop app.&lt;/p&gt;
+&lt;p&gt;This is only possible when both devices are connected to the same local network. To send and receive messages mobile app has to be connected to the Internet.&lt;/p&gt;
+&lt;h3 id=&quot;quick-start-how-to-use-it&quot; tabindex=&quot;-1&quot;&gt;⚡️ Quick start - how to use it&lt;/h3&gt;
+&lt;p&gt;&lt;strong&gt;On desktop&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;If you don&#39;t have desktop app installed yet, &lt;a href=&quot;https://simplex.chat/downloads/&quot;&gt;download it&lt;/a&gt; and create any chat profile - you don&#39;t need to use it, and when you create it there are no server requests sent and no accounts are created. Think about it as about user profile on your computer.&lt;/p&gt;
+&lt;p&gt;Then in desktop app settings choose &lt;em&gt;Link a mobile&lt;/em&gt; - it will show a QR code.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20231125-desktop1.png&quot; width=&quot;170&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/arrow.png&quot; width=&quot;24&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20231125-desktop2.png&quot; width=&quot;170&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/arrow.png&quot; width=&quot;24&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20231125-desktop3.png&quot; width=&quot;170&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/arrow.png&quot; width=&quot;24&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20231125-desktop4.png&quot; width=&quot;510&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;On mobile&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;In mobile app settings choose &lt;em&gt;Use from desktop&lt;/em&gt;, scan the QR code and verify session code when it appears on both devices - it should be the same. Verifying session code confirms that the devices are connected directly via a secure encrypted connection. There is an option to verify this code on subsequent connections too, but by default it is only required once.&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20231125-mobile1.png&quot; width=&quot;170&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/arrow.png&quot; width=&quot;24&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20231125-mobile1a.png&quot; width=&quot;170&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/arrow.png&quot; width=&quot;24&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20231125-mobile2.png&quot; width=&quot;170&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/arrow.png&quot; width=&quot;24&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20231125-mobile3.png&quot; width=&quot;170&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/arrow.png&quot; width=&quot;24&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20231125-mobile4.png&quot; width=&quot;170&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;The devices are now paired, and you can continue using all mobile profiles from desktop.&lt;/p&gt;
+&lt;p&gt;If it is an Android app, you can move the app to background, but iOS app has to remain open. In both cases, while you are using mobile profiles from desktop, you won&#39;t be able to use mobile app.&lt;/p&gt;
+&lt;p&gt;The subsequent connections happen much faster - by default, the desktop app broadcasts its session address to the network, in encrypted form, and mobile app connects to it once you choose &lt;em&gt;Use from desktop&lt;/em&gt; in mobile app settings.&lt;/p&gt;
+&lt;h3 id=&quot;how-does-it-work&quot; tabindex=&quot;-1&quot;&gt;How does it work?&lt;/h3&gt;
+&lt;p&gt;The way we designed this solution avoided any security compromises, and the end-to-end encryption remained as secure as it was - it uses &lt;a href=&quot;https://simplex.chat/blog/docs/glossary.html#double-ratchet-algorithm&quot;&gt;double-ratchet algorithm&lt;/a&gt;, with &lt;a href=&quot;https://simplex.chat/blog/docs/glossary.html#forward-secrecy&quot;&gt;perfect forward secrecy&lt;/a&gt;, &lt;a href=&quot;https://simplex.chat/blog/docs/glossary.html#post-compromise-security&quot;&gt;post-compromise security&lt;/a&gt; and deniability.&lt;/p&gt;
+&lt;p&gt;This solution is similar to WhatsApp and WeChat. But unlike these apps, no server is involved in the connection between mobile and desktop. The connection itself uses a new SimpleX Remote Control Protocol (XRCP) based on secure TLS 1.3 and additional quantum-resistant encryption inside TLS. You can read XRCP protocol specification and threat model in &lt;a href=&quot;https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2023-10-25-remote-control.md&quot;&gt;this document&lt;/a&gt;. We will soon be &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/blob/master/docs/rfcs/2023-09-30-pq-double-ratchet.md&quot;&gt;augmenting double ratchet&lt;/a&gt; to be resistant to quantum computers as well.&lt;/p&gt;
+&lt;p&gt;The downside of this approach is that mobile device has to be connected to the same local network as desktop. But the upside is that the connection is secure, and you do not need to have a copy of all your data on desktop, which usually has lower security than mobile.&lt;/p&gt;
+&lt;p&gt;Please note, that the files you send, save or play from desktop app, and also images you view are automatically saved on your desktop device (encrypted by default except videos). To remove all these files you can unlink the paired mobile device from the desktop app settings – there will be an option soon allowing to remove the files without unlinking the mobile.&lt;/p&gt;
+&lt;h3 id=&quot;connecting-to-remote-simplex-cli&quot; tabindex=&quot;-1&quot;&gt;🤖 Connecting to remote SimpleX CLI&lt;/h3&gt;
+&lt;p&gt;&lt;em&gt;Warning&lt;/em&gt;: this section is for technically advanced users!&lt;/p&gt;
+&lt;p&gt;If you run SimpleX CLI on a computer in another network - e.g., in the cloud VM or on a Raspberry Pi at home while you are at work, you can also use if from desktop via SSH tunnel. Below assumes that you have remote machine connected via SSH and CLI running there - you can use &lt;code&gt;tmux&lt;/code&gt; for it to keep running when you are not connected via ssh.&lt;/p&gt;
+&lt;p&gt;Follow these steps to use remote CLI from desktop app:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;On the remote machine add the IP address of your desktop to the firewall rules, so that when CLI tries to connect to this address, it connects to &lt;code&gt;localhost&lt;/code&gt; instead: &lt;code&gt;iptables -t nat -A OUTPUT -p all -d 192.168.1.100 -j DNAT --to-destination 127.0.0.1&lt;/code&gt; (replace &lt;code&gt;192.168.1.100&lt;/code&gt; with the actual address of your desktop, and make sure it is not needed for something else on your remote machine).&lt;/li&gt;
+&lt;li&gt;Also on the remote machine, run Simplex CLI with the option &lt;code&gt;--device-name &#39;SimpleX CLI&#39;&lt;/code&gt;, or any other name you like. You can also use the command &lt;code&gt;/set device name &amp;lt;name&amp;gt;&lt;/code&gt; to set it for the CLI.&lt;/li&gt;
+&lt;li&gt;Choose &lt;em&gt;Link a mobile&lt;/em&gt; in desktop app settings, note the port it shows under the QR code, and click &amp;quot;Share link&amp;quot;.&lt;/li&gt;
+&lt;li&gt;Run ssh port forwarding on desktop computer to let your remote machine connect to desktop app: &lt;code&gt;ssh -R 12345:127.0.0.1:12345 -N user@example.com&lt;/code&gt; where &lt;code&gt;12345&lt;/code&gt; is the port on which desktop app is listening for the connections from step 3, &lt;code&gt;example.com&lt;/code&gt; is the hostname or IP address of your remote machine, and &lt;code&gt;user&lt;/code&gt; is some username on remote machine. You can run port forwarding in the background by adding &lt;code&gt;-f&lt;/code&gt; option.&lt;/li&gt;
+&lt;li&gt;On the remote machine, run CLI command &lt;code&gt;/connect remote ctrl &amp;lt;link&amp;gt;&lt;/code&gt;, where &lt;code&gt;&amp;lt;link&amp;gt;&lt;/code&gt; is the desktop session address copied in step 3. You should run this command within 1 minute from choosing &lt;em&gt;Link a mobile&lt;/em&gt;.&lt;/li&gt;
+&lt;li&gt;If the connection is successful, the CLI will ask you to verify the session code (you need to copy and paste the command) with the one shown in desktop app. Once you use &lt;code&gt;/verify remote ctrl &amp;lt;code&amp;gt;&lt;/code&gt; command, CLI can be used from desktop app.&lt;/li&gt;
+&lt;li&gt;To stop remote session use &lt;code&gt;/stop remote ctrl&lt;/code&gt; command.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;h2 id=&quot;better-groups&quot; tabindex=&quot;-1&quot;&gt;Better groups&lt;/h2&gt;
+&lt;h3 id=&quot;faster-to-join-with-more-reliable-message-delivery&quot; tabindex=&quot;-1&quot;&gt;Faster to join, with more reliable message delivery&lt;/h3&gt;
+&lt;p&gt;We improved the protocols for groups, by making joining groups much faster, and also by adding message forwarding. Previously, the problem was that until a new member connects directly with each existing group member, they did not see each other messages in the group. The problem is explained in detail in &lt;a href=&quot;https://www.youtube.com/watch?v=7yjQFmhAftE&amp;amp;t=1104s&quot;&gt;this video&lt;/a&gt; at 18:23.&lt;/p&gt;
+&lt;p&gt;With v5.4, the admin who added members to the group forwards messages to and from the new members until they connect to the existing members. So you should no longer miss any messages and be surprised with replies to messages you have never seen once you and new group members upgrade.&lt;/p&gt;
+&lt;h3 id=&quot;new-group-features&quot; tabindex=&quot;-1&quot;&gt;New group features&lt;/h3&gt;
+&lt;p&gt;&lt;img src=&quot;https://simplex.chat/blog/images/20231125-group1.png&quot; width=&quot;220&quot; class=&quot;float-to-left&quot; /&gt; &lt;img src=&quot;https://simplex.chat/blog/images/20231125-block.png&quot; width=&quot;220&quot; class=&quot;float-to-left&quot; /&gt;&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Create groups with incognito profile&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Previously, you could only create groups with your main profile. This version allows creating groups with incognito profile directly. You will not be able to add your contacts, they can only join via group link.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Block group members to reduce noise&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;You now can block messages from group members that send too many messages, or the messages you don&#39;t won&#39;t to see. Blocked members won&#39;t know that you blocked their messages. When they send messages they will appear in the conversation as one line, showing how many messages were blocked. You can reveal them, or delete all sequential blocked messages at once.&lt;/p&gt;
+&lt;p&gt;&lt;strong&gt;Prohibit files and media in a group&lt;/strong&gt;&lt;/p&gt;
+&lt;p&gt;Group owners now have an option to prohibit sending files and media. This can be useful if you don&#39;t won&#39;t any images shared, and only want to allow text messages.&lt;/p&gt;
+&lt;h2 id=&quot;better-calls&quot; tabindex=&quot;-1&quot;&gt;Better calls&lt;/h2&gt;
+&lt;p&gt;Calls in SimpleX Chat still require a lot of work to become stable, but this version improved the speed of connecting calls, and they should work for more users.&lt;/p&gt;
+&lt;p&gt;We also added screen sharing in video calls to desktop app.&lt;/p&gt;
+&lt;h2 id=&quot;other-improvements&quot; tabindex=&quot;-1&quot;&gt;Other improvements&lt;/h2&gt;
+&lt;p&gt;This version also has many small and large improvements to make the app more usable and reliable.&lt;/p&gt;
+&lt;p&gt;The new users and group profiles now allow spaces in the names, to make them more readable. To message these contacts in CLI you need to use quotes, for example, &lt;code&gt;@&#39;John Doe&#39; Hello!&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;When you delete contacts, you can notify them - to let them know they can&#39;t message you.&lt;/p&gt;
+&lt;p&gt;When you try to connect to the same contact or join the same group, or connect via your own link, the app will recognize it and warn you, or simply open the correct conversation.&lt;/p&gt;
+&lt;p&gt;You can find the full list of fixed bugs and small improvements in the &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/releases/tag/v5.4.0&quot;&gt;release notes&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;simplex-platform&quot; tabindex=&quot;-1&quot;&gt;SimpleX platform&lt;/h2&gt;
+&lt;p&gt;Some links to answer the most common questions:&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers&quot;&gt;How can SimpleX deliver messages without user identifiers&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://simplex.chat/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users&quot;&gt;What are the risks to have identifiers assigned to the users&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/simplex-chat/simplex-chat#privacy-technical-details-and-limitations&quot;&gt;Technical details and limitations&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions&quot;&gt;How SimpleX is different from Session, Matrix, Signal, etc.&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Please also see our &lt;a href=&quot;https://simplex.chat/&quot;&gt;website&lt;/a&gt;.&lt;/p&gt;
+&lt;h2 id=&quot;help-us-with-donations&quot; tabindex=&quot;-1&quot;&gt;Help us with donations&lt;/h2&gt;
+&lt;p&gt;Huge thank you to everybody who donated to SimpleX Chat!&lt;/p&gt;
+&lt;p&gt;We are prioritizing users privacy and security - it would be impossible without your support.&lt;/p&gt;
+&lt;p&gt;Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.&lt;/p&gt;
+&lt;p&gt;Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.&lt;/p&gt;
+&lt;p&gt;See &lt;a href=&quot;https://github.com/simplex-chat/simplex-chat/tree/master#help-us-with-donations&quot;&gt;this section&lt;/a&gt; for the ways to donate.&lt;/p&gt;
+&lt;p&gt;Thank you,&lt;/p&gt;
+&lt;p&gt;Evgeny&lt;/p&gt;
+&lt;p&gt;SimpleX Chat founder&lt;/p&gt;
+</description>
+                
+                
+                <pubDate>25 Nov 2023</pubDate>
+                <dc:creator>SimpleX Chat</dc:creator>
+                <guid>https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html</guid>
+            </item>
+            <item>
                 <title>SimpleX Chat v5.3 released: desktop app, local file encryption and improved groups with directory service</title>
                 <link>https://simplex.chat/blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.html</link>
                 <description>&lt;h1 id=&quot;simplex-chat-v53-released-desktop-app-local-file-encryption-and-improved-groups&quot; tabindex=&quot;-1&quot;&gt;SimpleX Chat v5.3 released: desktop app, local file encryption and improved groups&lt;/h1&gt;
