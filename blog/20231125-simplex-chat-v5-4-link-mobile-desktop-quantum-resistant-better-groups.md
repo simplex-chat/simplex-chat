@@ -4,7 +4,6 @@ title: "SimpleX Chat v5.4 - link mobile and desktop apps via quantum resistant p
 date: 2023-11-25
 preview: SimpleX Chat v5.4 - link mobile and desktop apps via quantum resistant protocol, and much better groups.
 # image: images/20231125-remote-desktop.jpg
-draft: true
 imageWide: true
 permalink: "/blog/20231125-simplex-chat-v5-4-quantum-resistant-mobile-from-desktop-better-groups.html"
 ---
@@ -19,9 +18,10 @@ permalink: "/blog/20231125-simplex-chat-v5-4-quantum-resistant-mobile-from-deskt
   - How does it work?
 - [Better groups](#better-groups)
   - [Faster to join and more reliable](#faster-to-join-with-more-reliable-message-delivery).
-  - [Create groups with incognito profile](#create-groups-with-incognito-profile).
-  - [Block group members to reduce noise](#block-group-members-to-reduce-noise).
-  - [Optionally, prohibit files and media in a group](#prohibit-files-and-media-in-a-group).
+  - [New group features](#new-group-features):
+    - create groups with incognito profile,
+    - block group members to reduce noise,
+    - prohibit files and media in a group.
 - [Better calls](#better-calls)
   - Improved stability and reduced connection time.
   - Screen sharing in video calls in desktop app.
@@ -37,15 +37,21 @@ This release allows to use chat profiles you have in mobile app from desktop app
 
 This is only possible when both devices are connected to the same local network. To send and receive messages mobile app has to be connected to the Internet.
 
-### Quick start - how to use it
+### ⚡️ Quick start - how to use it
 
-TODO screenshots
+**On desktop**
 
-If you don't have desktop app installed yet, [download it](https://simplex.chat/downloads/) and create any chat profile - you don't need to use it, and when you create it there are no server requests and no accounts are created. Think about it as about user profile on your computer.
+If you don't have desktop app installed yet, [download it](https://simplex.chat/downloads/) and create any chat profile - you don't need to use it, and when you create it there are no server requests sent and no accounts are created. Think about it as about user profile on your computer.
 
 Then in desktop app settings choose *Link a mobile* - it will show a QR code.
 
+<img src="./images/20231125-desktop1.png" width="170"> <img src="./images/arrow.png" width="24"> <img src="./images/20231125-desktop2.png" width="170"> <img src="./images/arrow.png" width="24"> <img src="./images/20231125-desktop3.png" width="170"> <img src="./images/arrow.png" width="24"> <img src="./images/20231125-desktop4.png" width="510">
+
+**On mobile**
+
 In mobile app settings choose *Use from desktop*, scan the QR code and verify session code when it appears on both devices - it should be the same. Verifying session code confirms that the devices are connected directly via a secure encrypted connection. There is an option to verify this code on subsequent connections too, but by default it is only required once.
+
+<img src="./images/20231125-mobile1.png" width="170"> <img src="./images/arrow.png" width="24"> <img src="./images/20231125-mobile1a.png" width="170"> <img src="./images/arrow.png" width="24"> <img src="./images/20231125-mobile2.png" width="170"> <img src="./images/arrow.png" width="24"> <img src="./images/20231125-mobile3.png" width="170"> <img src="./images/arrow.png" width="24"> <img src="./images/20231125-mobile4.png" width="170">
 
 The devices are now paired, and you can continue using all mobile profiles from desktop.
 
@@ -63,6 +69,21 @@ The downside of this approach is that mobile device has to be connected to the s
 
 Please note, that the files you send, save or play from desktop app, and also images you view are automatically saved on your desktop device - with the exception of videos, they are locally encrypted in case mobile app has local encryption enabled (which is the default). To remove all these files you can unlink the paired mobile device from the desktop app settings – there will be an option soon allowing to remove the files without unlinking the mobile.
 
+### 🤖 Connecting to remote SimpleX CLI
+
+*Warning*: this section is for technically advanced users!
+
+If you run SimpleX CLI on a computer in another network - e.g., in the cloud VM or on a Raspberry Pi at home while you are at work, you can also use if from desktop via SSH tunnel. Below assumes that you have remote machine connected via SSH and CLI running there - you can use `tmux` for it to keep running when you are not connected via ssh.
+
+Follow these steps to use remote CLI from desktop app:
+1. On the remote machine add the IP address of your desktop to the firewall rules, so that when CLI tries to connect to this address, it connects to `localhost` instead: `iptables -t nat -A OUTPUT -p all -d 192.168.1.100 -j DNAT --to-destination 127.0.0.1` (replace `192.168.1.100` with the actual address of your desktop, and make sure it is not needed for something else on your remote machine).
+2. Also on the remote machine, run Simplex CLI with the option `--device-name 'SimpleX CLI'`, or any other name you like. You can also use the command `/set device name <name>` to set it for the CLI.
+3. Choose *Link a mobile* in desktop app settings, note the port it shows under the QR code, and click "Share link".
+4. Run ssh port forwarding on desktop computer to let your remote machine connect to desktop app: `ssh -R 12345:127.0.0.1:12345 -N user@example.com` where `12345` is the port on which desktop app is listening for the connections from step 3, `example.com` is the hostname or IP address of your remote machine, and `user` is some username on remote machine. You can run port forwarding in the background by adding `-f` option.
+5. On the remote machine, run CLI command `/connect remote ctrl <link>`, where `<link>` is the desktop session address copied in step 3. You should run this command within 1 minute from choosing *Link a mobile*.
+6. If the connection is successful, the CLI will ask you to verify the session code (you need to copy and paste the command) with the one shown in desktop app. Once you use `/verify remote ctrl <code>` command, CLI can be used from desktop app.
+7. To stop remote session use `/stop remote ctrl` command.
+
 ## Better groups
 
 ### Faster to join, with more reliable message delivery
@@ -71,15 +92,19 @@ We improved the protocols for groups, by making joining groups much faster, and 
 
 With v5.4, the admin who added members to the group forwards messages to and from the new members until they connect to the existing members. So you should no longer miss any messages and be surprised with replies to messages you have never seen once you and new group members upgrade.
 
-### Create groups with incognito profile
+### New group features
+
+<img src="./images/20231125-group1.png" width="220" class="float-to-left"> <img src="./images/20231125-block.png" width="220" class="float-to-left">
+
+**Create groups with incognito profile**
 
 Previously, you could only create groups with your main profile. You could, as a workaround, add yourself to this group with an incognito profile, make this new member an owner, and then group creator could leave the group. This version allows creating groups with incognito profile directly. You will not be able to add your contacts, they can only join via group link.
 
-### Block group members to reduce noise.
+**Block group members to reduce noise**
 
 You now can block messages from group members that send too many messages, or the messages you don't won't to see. It won't affect other group members, and blocked members won't know that you blocked their messages. When they send messages they will appear in the conversation as one line, showing how many messages were blocked. You can reveal them, or delete all sequential blocked messages at once.
 
-### Prohibit files and media in a group
+**Prohibit files and media in a group**
 
 Group owners now have an option to prohibiting sending files and media. This can be useful if you don't won't any images shared, and only want to allow text messages.
 
