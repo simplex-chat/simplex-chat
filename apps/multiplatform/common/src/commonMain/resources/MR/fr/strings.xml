@@ -1519,4 +1519,9 @@
     <string name="loading_remote_file_desc">Veuillez patienter le temps que le fichier soit chargé depuis le mobile lié.</string>
     <string name="desktop_app_version_is_incompatible">La version de l\'application de bureau %s n\'est pas compatible avec cette application.</string>
     <string name="verify_connection">Vérifier la connexion</string>
+    <string name="multicast_connect_automatically">Connexion automatique</string>
+    <string name="waiting_for_desktop">En attente du bureau…</string>
+    <string name="found_desktop">Bureau trouvé</string>
+    <string name="not_compatible">Non compatible !</string>
+    <string name="multicast_discoverable_via_local_network">Accessible via le réseau local</string>
 </resources>
