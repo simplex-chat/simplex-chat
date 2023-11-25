@@ -11,12 +11,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.platform.desktopPlatform
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.TerminalView

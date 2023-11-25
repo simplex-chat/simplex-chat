@@ -1,6 +1,5 @@
 package chat.simplex.common
 
-import androidx.compose.ui.window.WindowState
 import chat.simplex.common.platform.desktopPlatform
 import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
