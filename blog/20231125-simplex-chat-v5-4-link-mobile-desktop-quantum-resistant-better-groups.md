@@ -66,7 +66,7 @@ This solution is similar to WhatsApp and WeChat. But unlike these apps, no serve
 
 The downside of this approach is that mobile device has to be connected to the same local network as desktop. But the upside is that the connection is secure, and you do not need to have a copy of all your data on desktop, which usually has lower security than mobile.
 
-Please note, that the files you send, save or play from desktop app, and also images you view are automatically saved on your desktop device - with the exception of videos, they are locally encrypted in case mobile app has local encryption enabled (which is the default). To remove all these files you can unlink the paired mobile device from the desktop app settings – there will be an option soon allowing to remove the files without unlinking the mobile.
+Please note, that the files you send, save or play from desktop app, and also images you view are automatically saved on your desktop device (encrypted by default except videos). To remove all these files you can unlink the paired mobile device from the desktop app settings – there will be an option soon allowing to remove the files without unlinking the mobile.
 
 ### 🤖 Connecting to remote SimpleX CLI
 
@@ -105,7 +105,7 @@ You now can block messages from group members that send too many messages, or th
 
 **Prohibit files and media in a group**
 
-Group owners now have an option to prohibiting sending files and media. This can be useful if you don't won't any images shared, and only want to allow text messages.
+Group owners now have an option to prohibit sending files and media. This can be useful if you don't won't any images shared, and only want to allow text messages.
 
 ## Better calls
 
