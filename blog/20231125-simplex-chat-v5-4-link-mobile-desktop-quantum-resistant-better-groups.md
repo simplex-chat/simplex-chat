@@ -20,7 +20,7 @@ permalink: "/blog/20231125-simplex-chat-v5-4-quantum-resistant-mobile-from-deskt
 - [Better groups](#better-groups)
   - [Faster to join and more reliable](#faster-to-join-with-more-reliable-message-delivery).
   - [Create groups with incognito profile](#create-groups-with-incognito-profile).
-  - [Block group members to reduce spam](#block-group-members-to-reduce-spam).
+  - [Block group members to reduce noise](#block-group-members-to-reduce-noise).
   - [Optionally, prohibit files and media in a group](#prohibit-files-and-media-in-a-group).
 - [Better calls](#better-calls)
   - Improved stability and reduced connection time.
@@ -51,15 +51,15 @@ The devices are now paired, and you can continue using all mobile profiles from 
 
 If it is an Android app, you can move the app to background, but iOS app has to remain open. In both cases, while you are using mobile profiles from desktop, you won't be able to use mobile app.
 
-The subsequent connections happen much faster - by default, the desktop app broadcasts its session address to the network, in encrypted form, and mobile app connect to it once you choose *Use from desktop* in mobile app settings.
+The subsequent connections happen much faster - by default, the desktop app broadcasts its session address to the network, in encrypted form, and mobile app connects to it once you choose *Use from desktop* in mobile app settings.
 
 ### How does it work?
 
 The way we designed this solution avoided any security compromises, and the end-to-end encryption remained as secure as it was - it uses [double-ratchet algorithm](../docs/GLOSSARY.md#double-ratchet-algorithm), with [perfect forward secrecy](../docs/GLOSSARY.md#forward-secrecy), [post-compromise security](../docs/GLOSSARY.md#post-compromise-security) and deniability.
 
-This solution is similar to WhatsApp and WeChat. But unlike these apps, no server is involved in the connection between mobile and desktop. The connection itself uses a new SimpleX Remote Control Protocol (XRCP) based on secure TLS 1.3 and additional quantum-resistant encryption inside TLS. You can read XRCP protocol specification and threat model in [this document](https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2023-10-25-remote-control.md). We will soon be [augmenting double ratchet](https://github.com/simplex-chat/simplex-chat/pull/3463) to be resistant to quantum computers as well.
+This solution is similar to WhatsApp and WeChat. But unlike these apps, no server is involved in the connection between mobile and desktop. The connection itself uses a new SimpleX Remote Control Protocol (XRCP) based on secure TLS 1.3 and additional quantum-resistant encryption inside TLS. You can read XRCP protocol specification and threat model in [this document](https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2023-10-25-remote-control.md). We will soon be [augmenting double ratchet](https://github.com/simplex-chat/simplex-chat/blob/master/docs/rfcs/2023-09-30-pq-double-ratchet.md) to be resistant to quantum computers as well.
 
-The downside of this approach is that mobile device has to be connected to the same local network. But the upside is that the connection is secure, and you do not need to have a copy of all your data on desktop, which usually has lower security than mobile.
+The downside of this approach is that mobile device has to be connected to the same local network as desktop. But the upside is that the connection is secure, and you do not need to have a copy of all your data on desktop, which usually has lower security than mobile.
 
 Please note, that the files you send, save or play from desktop app, and also images you view are automatically saved on your desktop device - with the exception of videos, they are locally encrypted in case mobile app has local encryption enabled (which is the default). To remove all these files you can unlink the paired mobile device from the desktop app settings – there will be an option soon allowing to remove the files without unlinking the mobile.
 
