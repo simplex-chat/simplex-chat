@@ -2,10 +2,9 @@
 layout: layouts/article.html
 title: "SimpleX Chat v5.4 - link mobile and desktop apps via quantum resistant protocol, and much better groups."
 date: 2023-11-25
-preview: SimpleX Chat v5.4 - link mobile and desktop apps via quantum resistant protocol, and much better groups.
-# image: images/20231125-remote-desktop.jpg
-imageWide: true
-permalink: "/blog/20231125-simplex-chat-v5-4-quantum-resistant-mobile-from-desktop-better-groups.html"
+previewBody: blog_previews/20231125.html
+image: images/20231125-mobile2.png
+permalink: "/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html"
 ---
 
 # SimpleX Chat v5.4 - link mobile and desktop apps via quantum resistant protocol, and much better groups.
@@ -14,22 +13,22 @@ permalink: "/blog/20231125-simplex-chat-v5-4-quantum-resistant-mobile-from-deskt
 
 **What's new in v5.4:**
 - [Link mobile and desktop apps via secure quantum-resistant protocol](#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol).
-  - Quick start - how to use it
+  - ⚡️ Quick start - how to use it.
   - How does it work?
-- [Better groups](#better-groups)
+  - 🤖 Connecting to remote CLI.
+- [Better groups](#better-groups).
   - [Faster to join and more reliable](#faster-to-join-with-more-reliable-message-delivery).
   - [New group features](#new-group-features):
     - create groups with incognito profile,
     - block group members to reduce noise,
     - prohibit files and media in a group.
-- [Better calls](#better-calls)
-  - Improved stability and reduced connection time.
-  - Screen sharing in video calls in desktop app.
-- [Other improvements]
-  - profile names now allow spaces
+- [Better calls](#better-calls): faster to connect, with screen sharing on desktop.
+
+There are many [other improvements](#other-improvements) and fixes in this release:
+  - profile names now allow spaces.
   - when you delete contacts, they are optionally notified.
   - previously used and your own SimpleX links are recognized by the app.
-  - many fixes and improvements.
+  - and more - see the [release notes](https://github.com/simplex-chat/simplex-chat/releases/tag/v5.4.0).
 
 ## Link mobile and desktop apps via secure quantum-resistant protocol
 
@@ -98,11 +97,11 @@ With v5.4, the admin who added members to the group forwards messages to and fro
 
 **Create groups with incognito profile**
 
-Previously, you could only create groups with your main profile. You could, as a workaround, add yourself to this group with an incognito profile, make this new member an owner, and then group creator could leave the group. This version allows creating groups with incognito profile directly. You will not be able to add your contacts, they can only join via group link.
+Previously, you could only create groups with your main profile. This version allows creating groups with incognito profile directly. You will not be able to add your contacts, they can only join via group link.
 
 **Block group members to reduce noise**
 
-You now can block messages from group members that send too many messages, or the messages you don't won't to see. It won't affect other group members, and blocked members won't know that you blocked their messages. When they send messages they will appear in the conversation as one line, showing how many messages were blocked. You can reveal them, or delete all sequential blocked messages at once.
+You now can block messages from group members that send too many messages, or the messages you don't won't to see. Blocked members won't know that you blocked their messages. When they send messages they will appear in the conversation as one line, showing how many messages were blocked. You can reveal them, or delete all sequential blocked messages at once.
 
 **Prohibit files and media in a group**
 
