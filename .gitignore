@@ -67,6 +67,7 @@ website/api-docs/
 # Ignore folders from source code editors
 website/.vscode
 website/.idea
+.idea
 
 # Ignore eleventy output when doing manual tests
 website/_site/

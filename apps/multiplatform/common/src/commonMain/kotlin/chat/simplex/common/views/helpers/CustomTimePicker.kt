@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.model.CustomTimeUnit
 import chat.simplex.common.model.timeText
@@ -21,42 +20,13 @@ import com.sd.lib.compose.wheel_picker.*
 @Composable
 fun CustomTimePicker(
   selection: MutableState<Int>,
-  timeUnitsLimits: List<TimeUnitLimits> = TimeUnitLimits.defaultUnitsLimits
+  timeUnitsLimits: List<TimeUnitLimits> = TimeUnitLimits.defaultUnitsLimits,
+  confirmButtonAction: (Int) -> Unit,
+  confirmButtonText: String,
+  selectedUnit: MutableState<CustomTimeUnit>,
+  selectedUnitValues: MutableState<List<Int>>,
+  selectedDuration: MutableState<Int>,
 ) {
-  fun getUnitValues(unit: CustomTimeUnit, selectedValue: Int): List<Int> {
-    val unitLimits = timeUnitsLimits.firstOrNull { it.timeUnit == unit } ?: TimeUnitLimits.defaultUnitLimits(unit)
-    val regularUnitValues = (unitLimits.minValue..unitLimits.maxValue).toList()
-    return regularUnitValues + if (regularUnitValues.contains(selectedValue)) emptyList() else listOf(selectedValue)
-  }
-
-  val (unit, duration) = CustomTimeUnit.toTimeUnit(selection.value)
-  val selectedUnit: MutableState<CustomTimeUnit> = remember { mutableStateOf(unit) }
-  val selectedDuration = remember { mutableStateOf(duration) }
-  val selectedUnitValues = remember { mutableStateOf(getUnitValues(selectedUnit.value, selectedDuration.value)) }
-  val isTriggered = remember { mutableStateOf(false) }
-
-  LaunchedEffect(selectedUnit.value) {
-    // on initial composition, if passed selection doesn't fit into picker bounds, so that selectedDuration is bigger than selectedUnit maxValue
-    // (e.g., for selection = 121 seconds: selectedUnit would be Second, selectedDuration would be 121 > selectedUnit maxValue of 120),
-    // selectedDuration would've been replaced by maxValue - isTriggered check prevents this by skipping LaunchedEffect on initial composition
-    if (isTriggered.value) {
-      val maxValue = timeUnitsLimits.firstOrNull { it.timeUnit == selectedUnit.value }?.maxValue
-      if (maxValue != null && selectedDuration.value > maxValue) {
-        selectedDuration.value = maxValue
-        selectedUnitValues.value = getUnitValues(selectedUnit.value, selectedDuration.value)
-      } else {
-        selectedUnitValues.value = getUnitValues(selectedUnit.value, selectedDuration.value)
-        selection.value = selectedUnit.value.toSeconds * selectedDuration.value
-      }
-    } else {
-      isTriggered.value = true
-    }
-  }
-
-  LaunchedEffect(selectedDuration.value) {
-    selection.value = selectedUnit.value.toSeconds * selectedDuration.value
-  }
-
   Row(
     Modifier
       .fillMaxWidth()
@@ -110,6 +80,16 @@ fun CustomTimePicker(
       }
     }
   }
+
+  TextButton(
+    onClick = { confirmButtonAction(selection.value) }
+  ) {
+    Text(
+      confirmButtonText,
+      fontSize = 18.sp,
+      color = MaterialTheme.colors.primary
+    )
+  }
 }
 
 data class TimeUnitLimits(
@@ -140,6 +120,17 @@ data class TimeUnitLimits(
       )
   }
 }
+
+@Composable
+expect fun CustomTimePickerOrDropdown(
+  selection: MutableState<Int>,
+  timeUnitsLimits: List<TimeUnitLimits> = TimeUnitLimits.defaultUnitsLimits,
+  confirmButtonAction: (Int) -> Unit,
+  confirmButtonText: String,
+  selectedUnit: MutableState<CustomTimeUnit>,
+  selectedUnitValues: MutableState<List<Int>>,
+  selectedDuration: MutableState<Int>,
+)
 
 @Composable
 fun CustomTimePickerDialog(
@@ -183,18 +174,41 @@ fun CustomTimePickerDialog(
             )
           }
 
-          CustomTimePicker(
-            selection,
-            timeUnitsLimits
-          )
 
-          TextButton(onClick = { confirmButtonAction(selection.value) }) {
-            Text(
-              confirmButtonText,
-              fontSize = 18.sp,
-              color = MaterialTheme.colors.primary
-            )
+          fun getUnitValues(unit: CustomTimeUnit, selectedValue: Int): List<Int> {
+            val unitLimits = timeUnitsLimits.firstOrNull { it.timeUnit == unit } ?: TimeUnitLimits.defaultUnitLimits(unit)
+            val regularUnitValues = (unitLimits.minValue..unitLimits.maxValue).toList()
+            return regularUnitValues + if (regularUnitValues.contains(selectedValue)) emptyList() else listOf(selectedValue)
           }
+
+          var (unit, duration) = CustomTimeUnit.toTimeUnit(selection.value)
+          var selectedUnit = remember { mutableStateOf(unit) }
+          var selectedDuration = remember { mutableStateOf(duration) }
+          val selectedUnitValues = remember { mutableStateOf(getUnitValues(selectedUnit.value, selectedDuration.value)) }
+          val isTriggered = remember { mutableStateOf(false) }
+
+          LaunchedEffect(selectedUnit.value) {
+            // on initial composition, if passed selection doesn't fit into picker bounds, so that selectedDuration is bigger than selectedUnit maxValue
+            // (e.g., for selection = 121 seconds: selectedUnit would be Second, selectedDuration would be 121 > selectedUnit maxValue of 120),
+            // selectedDuration would've been replaced by maxValue - isTriggered check prevents this by skipping LaunchedEffect on initial composition
+            if (isTriggered.value) {
+              val maxValue = timeUnitsLimits.firstOrNull { it.timeUnit == selectedUnit.value }?.maxValue
+              if (maxValue != null && selectedDuration.value > maxValue) {
+                selectedDuration.value = maxValue
+                selectedUnitValues.value = getUnitValues(selectedUnit.value, selectedDuration.value)
+              } else {
+                selectedUnitValues.value = getUnitValues(selectedUnit.value, selectedDuration.value)
+                selection.value = selectedUnit.value.toSeconds * selectedDuration.value
+              }
+            } else {
+              isTriggered.value = true
+            }
+          }
+
+          LaunchedEffect(selectedDuration.value) {
+            selection.value = selectedUnit.value.toSeconds * selectedDuration.value
+          }
+          CustomTimePickerOrDropdown(selection, timeUnitsLimits, confirmButtonAction, confirmButtonText, selectedUnit, selectedUnitValues, selectedDuration)
         }
       }
     }
