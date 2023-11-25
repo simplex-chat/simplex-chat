@@ -124,9 +124,13 @@ fun showApp() = application {
     var hiddenUntilRestart by remember { mutableStateOf(false) }
     if (!hiddenUntilRestart) {
       val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH, height = 768.dp)
-      Window(state = cWindowState, onCloseRequest = ::exitApplication, title = stringResource(MR.strings.chat_console)) {
-        SimpleXTheme {
-          TerminalView(ChatModel) { hiddenUntilRestart = true }
+      val isRunning = remember { mutableStateOf(true) }
+
+      if (isRunning.value) {
+        Window(state = cWindowState, onCloseRequest = { isRunning.value = false }, title = stringResource(MR.strings.chat_console)) {
+          SimpleXTheme {
+            TerminalView(ChatModel) { hiddenUntilRestart = true }
+          }
         }
       }
     }
