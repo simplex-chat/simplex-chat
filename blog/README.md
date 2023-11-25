@@ -1,5 +1,27 @@
 # Blog
 
+Nov 25, 2023 [SimpleX Chat v5.4 released](./20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md)
+
+- Link mobile and desktop apps via secure quantum-resistant protocol. 🔗
+- Better groups:
+  - faster to join and more reliable.
+  - create groups with incognito profile.
+  - block group members to reduce noise.
+  - prohibit files and media in a group.
+- Better calls: faster to connect, with screen sharing on desktop.
+- Many other improvements.
+
+---
+
+Sep 25, 2023 [SimpleX Chat v5.3 released](./20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.md)
+
+- new desktop app! 💻
+- directory service and other group improvements.
+- encrypted local files and media with forward secrecy.
+- simplified incognito mode.
+
+---
+
 July 22, 2023 [SimpleX Chat v5.2 released](./20230722-simplex-chat-v5-2-message-delivery-receipts.md)
 
 **What's new in v5.2:**
