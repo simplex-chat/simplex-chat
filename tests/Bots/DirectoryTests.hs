@@ -11,6 +11,7 @@ import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (finally)
 import Control.Monad (forM_)
+import Directory.Events (viewName)
 import Directory.Options
 import Directory.Service
 import Directory.Store
@@ -28,6 +29,7 @@ directoryServiceTests = do
   it "should register group" testDirectoryService
   it "should suspend and resume group" testSuspendResume
   it "should join found group via link" testJoinGroup
+  it "should support group names with spaces" testGroupNameWithSpaces
   describe "de-listing the group" $ do
     it "should de-list if owner leaves the group" testDelistedOwnerLeaves
     it "should de-list if owner is removed from the group" testDelistedOwnerRemoved
@@ -242,6 +244,24 @@ testJoinGroup tmp =
                 cath <## "#privacy: bob added dan (Daniel) to the group (connecting...)"
                 cath <## "#privacy: new member dan is connected"
             ]
+
+testGroupNameWithSpaces :: HasCallStack => FilePath -> IO ()
+testGroupNameWithSpaces tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      bob `connectVia` dsLink
+      registerGroup superUser bob "Privacy & Security" ""
+      groupFound bob "Privacy & Security"
+      superUser #> "@SimpleX-Directory /suspend 1:'Privacy & Security'"
+      superUser <# "SimpleX-Directory> > /suspend 1:'Privacy & Security'"
+      superUser <## "      Group suspended!"
+      bob <# "SimpleX-Directory> The group ID 1 (Privacy & Security) is suspended and hidden from directory. Please contact the administrators."
+      groupNotFound bob "privacy"
+      superUser #> "@SimpleX-Directory /resume 1:'Privacy & Security'"
+      superUser <# "SimpleX-Directory> > /resume 1:'Privacy & Security'"
+      superUser <## "      Group listing resumed!"
+      bob <# "SimpleX-Directory> The group ID 1 (Privacy & Security) is listed in the directory again!"
+      groupFound bob "Privacy & Security"
 
 testDelistedOwnerLeaves :: HasCallStack => FilePath -> IO ()
 testDelistedOwnerLeaves tmp =
@@ -840,16 +860,16 @@ registerGroupId su u n fn gId ugId = do
 
 submitGroup :: TestCC -> String -> String -> IO ()
 submitGroup u n fn = do
-  u ##> ("/g " <> n <> " " <> fn)
-  u <## ("group #" <> n <> " (" <> fn <> ") is created")
-  u <## ("to add members use /a " <> n <> " <name> or /create link #" <> n)
-  u ##> ("/a " <> n <> " SimpleX-Directory admin")
-  u <## ("invitation to join the group #" <> n <> " sent to SimpleX-Directory")
+  u ##> ("/g " <> viewName n <> if null fn then "" else " " <> fn)
+  u <## ("group #" <> viewName n <> (if null fn then "" else " (" <> fn <> ")") <> " is created")
+  u <## ("to add members use /a " <> viewName n <> " <name> or /create link #" <> viewName n)
+  u ##> ("/a " <> viewName n <> " SimpleX-Directory admin")
+  u <## ("invitation to join the group #" <> viewName n <> " sent to SimpleX-Directory")
 
 groupAccepted :: TestCC -> String -> IO String
 groupAccepted u n = do
   u <# ("SimpleX-Directory> Joining the group " <> n <> "…")
-  u <## ("#" <> n <> ": SimpleX-Directory joined the group")
+  u <## ("#" <> viewName n <> ": SimpleX-Directory joined the group")
   u <# ("SimpleX-Directory> Joined the group " <> n <> ", creating the link…")
   u <# "SimpleX-Directory> Created the public link to join the group via this directory service that is always online."
   u <## ""
@@ -869,7 +889,7 @@ completeRegistrationId su u n fn welcomeWithLink gId ugId = do
 
 updateProfileWithLink :: TestCC -> String -> String -> Int -> IO ()
 updateProfileWithLink u n welcomeWithLink ugId = do
-  u ##> ("/set welcome " <> n <> " " <> welcomeWithLink)
+  u ##> ("/set welcome " <> viewName n <> " " <> welcomeWithLink)
   u <## "description changed to:"
   u <## welcomeWithLink
   u <# ("SimpleX-Directory> Thank you! The group link for ID " <> show ugId <> " (" <> n <> ") is added to the welcome message.")
@@ -879,13 +899,13 @@ notifySuperUser :: TestCC -> TestCC -> String -> String -> String -> Int -> IO (
 notifySuperUser su u n fn welcomeWithLink gId = do
   uName <- userName u
   su <# ("SimpleX-Directory> " <> uName <> " submitted the group ID " <> show gId <> ":")
-  su <## (n <> " (" <> fn <> ")")
+  su <## (n <> if null fn then "" else " (" <> fn <> ")")
   su <## "Welcome message:"
   su <## welcomeWithLink
   su .<## "members"
   su <## ""
   su <## "To approve send:"
-  let approve = "/approve " <> show gId <> ":" <> n <> " 1"
+  let approve = "/approve " <> show gId <> ":" <> viewName n <> " 1"
   su <# ("SimpleX-Directory> " <> approve)
 
 approveRegistration :: TestCC -> TestCC -> String -> Int -> IO ()
@@ -894,7 +914,7 @@ approveRegistration su u n gId =
 
 approveRegistrationId :: TestCC -> TestCC -> String -> Int -> Int -> IO ()
 approveRegistrationId su u n gId ugId = do
-  let approve = "/approve " <> show gId <> ":" <> n <> " 1"
+  let approve = "/approve " <> show gId <> ":" <> viewName n <> " 1"
   su #> ("@SimpleX-Directory " <> approve)
   su <# ("SimpleX-Directory> > " <> approve)
   su <## "      Group approved!"
@@ -948,7 +968,7 @@ groupFoundN count u name = do
   u #> ("@SimpleX-Directory " <> name)
   u <# ("SimpleX-Directory> > " <> name)
   u <## "      Found 1 group(s)"
-  u <#. ("SimpleX-Directory> " <> name <> " (")
+  u <#. ("SimpleX-Directory> " <> name)
   u <## "Welcome message:"
   u <##. "Link to join the group "
   u <## (show count <> " members")

@@ -208,7 +208,7 @@ struct ConnectDesktopView: View {
             Section("Found desktop") {
                 Text("Waiting for desktop...").italic()
                 Button {
-                    disconnectDesktop(.dismiss)
+                    disconnectDesktop()
                 } label: {
                     Label("Scan QR code", systemImage: "qrcode")
                 }
