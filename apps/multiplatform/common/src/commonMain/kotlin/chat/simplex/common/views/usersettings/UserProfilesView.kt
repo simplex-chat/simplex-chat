@@ -21,14 +21,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.chatPasswordHash
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.UserProfilePickerItem
 import chat.simplex.common.views.chatlist.UserProfileRow
 import chat.simplex.common.views.database.PassphraseField
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.platform.appPlatform
 import chat.simplex.common.views.CreateProfile
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
@@ -138,6 +137,9 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
       }
     }
   )
+  KeyChangeEffect(remember { m.currentRemoteHost }.value) {
+    ModalManager.start.closeModal()
+  }
 }
 
 @Composable
@@ -169,7 +171,7 @@ private fun UserProfilesLayout(
       }
       SectionSpacer()
     }
-    AppBarTitle(stringResource(MR.strings.your_chat_profiles))
+    AppBarTitle(stringResource(MR.strings.your_chat_profiles), hostDevice(remember { chatModel.remoteHostId() }))
 
     SectionView {
       for (user in filteredUsers) {

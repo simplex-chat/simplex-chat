@@ -26,6 +26,9 @@
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- stabielere berichtbezorging.\n- een beetje betere groepen.\n- en meer!";
 
 /* No comment provided by engineer. */
+"- optionally notify deleted contacts.\n- profile names with spaces.\n- and more!" = "- optioneel verwijderde contacten op de hoogte stellen.\n- profielnamen met spaties.\n- en meer!";
+
+/* No comment provided by engineer. */
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- spraakberichten tot 5 minuten.\n- aangepaste tijd om te verdwijnen.\n- bewerkingsgeschiedenis.";
 
 /* No comment provided by engineer. */
@@ -542,6 +545,9 @@
 /* No comment provided by engineer. */
 "Authentication unavailable" = "Verificatie niet beschikbaar";
 
+/* member role */
+"author" = "auteur";
+
 /* No comment provided by engineer. */
 "Auto-accept" = "Automatisch accepteren";
 
@@ -570,10 +576,16 @@
 "Bad message ID" = "Onjuiste bericht-ID";
 
 /* No comment provided by engineer. */
+"Better groups" = "Betere groepen";
+
+/* No comment provided by engineer. */
 "Better messages" = "Betere berichten";
 
 /* No comment provided by engineer. */
 "Block" = "Blokkeren";
+
+/* No comment provided by engineer. */
+"Block group members" = "Groepsleden blokkeren";
 
 /* No comment provided by engineer. */
 "Block member" = "Lid blokkeren";
@@ -778,6 +790,9 @@
 "Connect" = "Verbind";
 
 /* No comment provided by engineer. */
+"Connect automatically" = "Automatisch verbinden";
+
+/* No comment provided by engineer. */
 "Connect incognito" = "Verbind incognito";
 
 /* No comment provided by engineer. */
@@ -923,6 +938,9 @@
 
 /* No comment provided by engineer. */
 "Create" = "Maak";
+
+/* No comment provided by engineer. */
+"Create a group using a random profile." = "Maak een groep met een willekeurig profiel.";
 
 /* No comment provided by engineer. */
 "Create an address to let people connect with you." = "Maak een adres aan zodat mensen contact met je kunnen opnemen.";
@@ -1276,7 +1294,7 @@
 "Discover and join groups" = "Ontdek en sluit je aan bij groepen";
 
 /* No comment provided by engineer. */
-"Discover on network" = "Ontdek via netwerk";
+"Discover via local network" = "Ontdek via het lokale netwerk";
 
 /* No comment provided by engineer. */
 "Do it later" = "Doe het later";
@@ -1654,6 +1672,9 @@
 "Fast and no wait until the sender is online!" = "Snel en niet wachten tot de afzender online is!";
 
 /* No comment provided by engineer. */
+"Faster joining and more reliable messages." = "Snellere deelname en betrouwbaardere berichten.";
+
+/* No comment provided by engineer. */
 "Favorite" = "Favoriet";
 
 /* No comment provided by engineer. */
@@ -1709,6 +1730,9 @@
 
 /* No comment provided by engineer. */
 "For console" = "Voor console";
+
+/* No comment provided by engineer. */
+"Found desktop" = "Desktop gevonden";
 
 /* No comment provided by engineer. */
 "French interface" = "Franse interface";
@@ -1915,6 +1939,9 @@
 "Incognito" = "Incognito";
 
 /* No comment provided by engineer. */
+"Incognito groups" = "Incognitogroepen";
+
+/* No comment provided by engineer. */
 "Incognito mode" = "Incognito modus";
 
 /* No comment provided by engineer. */
@@ -2117,6 +2144,9 @@
 
 /* No comment provided by engineer. */
 "Limitations" = "Beperkingen";
+
+/* No comment provided by engineer. */
+"Link mobile and desktop apps! 🔗" = "Koppel mobiele en desktop-apps! 🔗";
 
 /* No comment provided by engineer. */
 "Linked desktop options" = "Gekoppelde desktop opties";
@@ -2378,6 +2408,9 @@
 
 /* copied message info in history */
 "no text" = "geen tekst";
+
+/* No comment provided by engineer. */
+"Not compatible!" = "Niet compatibel!";
 
 /* No comment provided by engineer. */
 "Notifications" = "Meldingen";
@@ -3393,6 +3426,9 @@
 "To connect, your contact can scan QR code or use the link in the app." = "Om verbinding te maken, kan uw contact de QR-code scannen of de link in de app gebruiken.";
 
 /* No comment provided by engineer. */
+"To hide unwanted messages." = "Om ongewenste berichten te verbergen.";
+
+/* No comment provided by engineer. */
 "To make a new connection" = "Om een nieuwe verbinding te maken";
 
 /* No comment provided by engineer. */
@@ -3609,6 +3645,9 @@
 "via relay" = "via relais";
 
 /* No comment provided by engineer. */
+"Via secure quantum resistant protocol." = "Via een beveiligd kwantumbestendig protocol.";
+
+/* No comment provided by engineer. */
 "Video call" = "video oproep";
 
 /* No comment provided by engineer. */
@@ -3646,6 +3685,9 @@
 
 /* No comment provided by engineer. */
 "waiting for confirmation…" = "Wachten op bevestiging…";
+
+/* No comment provided by engineer. */
+"Waiting for desktop..." = "Wachten op desktop...";
 
 /* No comment provided by engineer. */
 "Waiting for file" = "Wachten op bestand";
