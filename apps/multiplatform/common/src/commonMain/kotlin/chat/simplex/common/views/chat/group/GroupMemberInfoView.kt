@@ -492,9 +492,9 @@ private fun updateMemberRoleDialog(
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.change_member_role_question),
     text = if (member.memberCurrent)
-      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification).replace("\\", ""), newRole.text)
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_notification), newRole.text)
     else
-      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_invitation).replace("\\", ""), newRole.text),
+      String.format(generalGetString(MR.strings.member_role_will_be_changed_with_invitation), newRole.text),
     confirmText = generalGetString(MR.strings.change_verb),
     onDismiss = onDismiss,
     onConfirm = onConfirm,
