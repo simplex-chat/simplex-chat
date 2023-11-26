@@ -4,6 +4,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeOperators #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Store.Connections
   ( getConnectionEntity,
@@ -22,11 +23,11 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..))
 import Database.SQLite.Simple (Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
+import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
-import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ConnId)
@@ -154,8 +155,9 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
 
 getConnectionEntityByConnReq :: DB.Connection -> User -> (ConnReqInvitation, ConnReqInvitation) -> IO (Maybe ConnectionEntity)
 getConnectionEntityByConnReq db user@User {userId} (cReqSchema1, cReqSchema2) = do
-  connId_ <- maybeFirstRow fromOnly $
-    DB.query db "SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_req_inv IN (?,?) LIMIT 1" (userId, cReqSchema1, cReqSchema2)
+  connId_ <-
+    maybeFirstRow fromOnly $
+      DB.query db "SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_req_inv IN (?,?) LIMIT 1" (userId, cReqSchema1, cReqSchema2)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db user) connId_
 
 -- search connection for connection plan:
@@ -164,21 +166,22 @@ getConnectionEntityByConnReq db user@User {userId} (cReqSchema1, cReqSchema2) = 
 -- deleted connections are filtered out to allow re-connecting via same contact address
 getContactConnEntityByConnReqHash :: DB.Connection -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe ConnectionEntity)
 getContactConnEntityByConnReqHash db user@User {userId} (cReqHash1, cReqHash2) = do
-  connId_ <- maybeFirstRow fromOnly $
-    DB.query
-      db
-      [sql|
-        SELECT agent_conn_id FROM (
-          SELECT
-            agent_conn_id,
-            (CASE WHEN contact_id IS NOT NULL THEN 1 ELSE 0 END) AS conn_ord
-          FROM connections
-          WHERE user_id = ? AND via_contact_uri_hash IN (?,?) AND conn_status != ?
-          ORDER BY conn_ord DESC, created_at DESC
-          LIMIT 1
-        )
-      |]
-      (userId, cReqHash1, cReqHash2, ConnDeleted)
+  connId_ <-
+    maybeFirstRow fromOnly $
+      DB.query
+        db
+        [sql|
+          SELECT agent_conn_id FROM (
+            SELECT
+              agent_conn_id,
+              (CASE WHEN contact_id IS NOT NULL THEN 1 ELSE 0 END) AS conn_ord
+            FROM connections
+            WHERE user_id = ? AND via_contact_uri_hash IN (?,?) AND conn_status != ?
+            ORDER BY conn_ord DESC, created_at DESC
+            LIMIT 1
+          )
+        |]
+        (userId, cReqHash1, cReqHash2, ConnDeleted)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db user) connId_
 
 getConnectionsToSubscribe :: DB.Connection -> IO ([ConnId], [ConnectionEntity])

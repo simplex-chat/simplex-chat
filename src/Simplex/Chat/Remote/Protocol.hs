@@ -6,8 +6,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TupleSections #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.Remote.Protocol where
 
@@ -41,16 +41,16 @@ import Simplex.FileTransfer.Description (FileDigest (..))
 import Simplex.Messaging.Agent.Client (agentDRG)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
-import Simplex.Messaging.Crypto.Lazy  (LazyByteString)
+import Simplex.Messaging.Crypto.Lazy (LazyByteString)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON, pattern SingleFieldJSONTag, pattern TaggedObjectJSONData, pattern TaggedObjectJSONTag)
 import Simplex.Messaging.Transport.Buffer (getBuffered)
 import Simplex.Messaging.Transport.HTTP2 (HTTP2Body (..), HTTP2BodyChunk, getBodyChunk)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client, HTTP2Response (..), closeHTTP2Client, sendRequestDirect)
 import Simplex.Messaging.Util (liftEitherError, liftEitherWith, liftError, tshow)
-import Simplex.RemoteControl.Types (CtrlSessKeys (..), HostSessKeys (..), RCErrorType (..), SessionCode)
 import Simplex.RemoteControl.Client (xrcpBlockSize)
 import qualified Simplex.RemoteControl.Client as RC
+import Simplex.RemoteControl.Types (CtrlSessKeys (..), HostSessKeys (..), RCErrorType (..), SessionCode)
 import System.FilePath (takeFileName, (</>))
 import UnliftIO
 
@@ -64,10 +64,10 @@ data RemoteCommand
 
 data RemoteResponse
   = RRChatResponse {chatResponse :: ChatResponse}
-  | RRChatEvent {chatEvent :: Maybe ChatResponse} -- ^ 'Nothing' on poll timeout
+  | RRChatEvent {chatEvent :: Maybe ChatResponse} -- 'Nothing' on poll timeout
   | RRFileStored {filePath :: String}
   | RRFile {fileSize :: Word32, fileDigest :: FileDigest} -- provides attachment , fileDigest :: FileDigest
-  | RRProtocolError {remoteProcotolError :: RemoteProtocolError} -- ^ The protocol error happened on the server side
+  | RRProtocolError {remoteProcotolError :: RemoteProtocolError} -- The protocol error happened on the server side
   deriving (Show)
 
 -- Force platform-independent encoding as the types aren't UI-visible
@@ -126,7 +126,7 @@ remoteStoreFile c localPath fileName = do
     r -> badResponse r
 
 remoteGetFile :: RemoteHostClient -> FilePath -> RemoteFile -> ExceptT RemoteProtocolError IO ()
-remoteGetFile c@RemoteHostClient{encryption} destDir rf@RemoteFile {fileSource = CryptoFile {filePath}} =
+remoteGetFile c@RemoteHostClient {encryption} destDir rf@RemoteFile {fileSource = CryptoFile {filePath}} =
   sendRemoteCommand c Nothing RCGetFile {file = rf} >>= \case
     (getChunk, RRFile {fileSize, fileDigest}) -> do
       -- TODO we could optimize by checking size and hash before receiving the file
@@ -140,7 +140,7 @@ sendRemoteCommand' c attachment_ rc = snd <$> sendRemoteCommand c attachment_ rc
 
 sendRemoteCommand :: RemoteHostClient -> Maybe (Handle, Word32) -> RemoteCommand -> ExceptT RemoteProtocolError IO (Int -> IO ByteString, RemoteResponse)
 sendRemoteCommand RemoteHostClient {httpClient, hostEncoding, encryption} file_ cmd = do
-  encFile_ <- mapM (prepareEncryptedFile encryption) file_ 
+  encFile_ <- mapM (prepareEncryptedFile encryption) file_
   req <- httpRequest encFile_ <$> encryptEncodeHTTP2Body encryption (J.encode cmd)
   HTTP2Response {response, respBody} <- liftEitherError (RPEHTTP2 . tshow) $ sendRequestDirect httpClient req Nothing
   (header, getNext) <- parseDecryptHTTP2Body encryption response respBody

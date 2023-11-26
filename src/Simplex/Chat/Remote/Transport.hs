@@ -5,15 +5,15 @@ module Simplex.Chat.Remote.Transport where
 
 import Control.Monad
 import Control.Monad.Except
-import Data.ByteString.Builder (Builder, byteString)
 import Data.ByteString (ByteString)
+import Data.ByteString.Builder (Builder, byteString)
 import qualified Data.ByteString.Lazy as LB
 import Data.Word (Word32)
-import Simplex.FileTransfer.Description (FileDigest (..))
 import Simplex.Chat.Remote.Types
+import Simplex.FileTransfer.Description (FileDigest (..))
+import Simplex.FileTransfer.Transport (ReceiveFileError (..), receiveSbFile, sendEncFile)
 import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.Lazy as LC
-import Simplex.FileTransfer.Transport (ReceiveFileError (..), receiveSbFile, sendEncFile)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Util (liftEitherError, liftEitherWith)
 import Simplex.RemoteControl.Types (RCErrorType (..))

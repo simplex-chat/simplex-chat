@@ -225,4 +225,3 @@ instance FromField CallState where
   fromField = fromTextField_ decodeJSON
 
 $(J.deriveJSON defaultJSON ''RcvCallInvitation)
-

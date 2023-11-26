@@ -10,6 +10,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Store.Messages
   ( getContactConnIds_,
@@ -195,40 +196,41 @@ createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMs
     createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent currentTs
   pure msg
 
-createNewRcvMessage :: forall e. (MsgEncodingI e) => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
-createNewRcvMessage db connOrGroupId NewMessage{chatMsgEvent, msgBody} sharedMsgId_ authorMember forwardedByMember =
+createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
+createNewRcvMessage db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMsgId_ authorMember forwardedByMember =
   case connOrGroupId of
     ConnectionId connId -> liftIO $ insertRcvMsg (Just connId) Nothing
     GroupId groupId -> case sharedMsgId_ of
-      Just sharedMsgId -> liftIO (duplicateGroupMsgMemberIds groupId sharedMsgId) >>= \case
-        Just (duplAuthorId, duplFwdMemberId) ->
-          throwError $ SEDuplicateGroupMessage groupId sharedMsgId duplAuthorId duplFwdMemberId
-        Nothing -> liftIO $ insertRcvMsg Nothing $ Just groupId
+      Just sharedMsgId ->
+        liftIO (duplicateGroupMsgMemberIds groupId sharedMsgId) >>= \case
+          Just (duplAuthorId, duplFwdMemberId) ->
+            throwError $ SEDuplicateGroupMessage groupId sharedMsgId duplAuthorId duplFwdMemberId
+          Nothing -> liftIO $ insertRcvMsg Nothing $ Just groupId
       Nothing -> liftIO $ insertRcvMsg Nothing $ Just groupId
- where
-  duplicateGroupMsgMemberIds :: Int64 -> SharedMsgId -> IO (Maybe (Maybe GroupMemberId, Maybe GroupMemberId))
-  duplicateGroupMsgMemberIds groupId sharedMsgId =
-    maybeFirstRow id
-      $ DB.query
+  where
+    duplicateGroupMsgMemberIds :: Int64 -> SharedMsgId -> IO (Maybe (Maybe GroupMemberId, Maybe GroupMemberId))
+    duplicateGroupMsgMemberIds groupId sharedMsgId =
+      maybeFirstRow id $
+        DB.query
+          db
+          [sql|
+            SELECT author_group_member_id, forwarded_by_group_member_id
+            FROM messages
+            WHERE group_id = ? AND shared_msg_id = ? LIMIT 1
+          |]
+          (groupId, sharedMsgId)
+    insertRcvMsg connId_ groupId_ = do
+      currentTs <- getCurrentTime
+      DB.execute
         db
         [sql|
-          SELECT author_group_member_id, forwarded_by_group_member_id
-          FROM messages
-          WHERE group_id = ? AND shared_msg_id = ? LIMIT 1
+          INSERT INTO messages
+            (msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id, shared_msg_id, author_group_member_id, forwarded_by_group_member_id)
+          VALUES (?,?,?,?,?,?,?,?,?,?)
         |]
-        (groupId, sharedMsgId)
-  insertRcvMsg connId_ groupId_ = do
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      [sql|
-        INSERT INTO messages
-          (msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id, shared_msg_id, author_group_member_id, forwarded_by_group_member_id)
-        VALUES (?,?,?,?,?,?,?,?,?,?)
-      |]
-      (MDRcv, toCMEventTag chatMsgEvent, msgBody, currentTs, currentTs, connId_, groupId_, sharedMsgId_, authorMember, forwardedByMember)
-    msgId <- insertedRowId db
-    pure RcvMessage{msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody, authorMember, forwardedByMember}
+        (MDRcv, toCMEventTag chatMsgEvent, msgBody, currentTs, currentTs, connId_, groupId_, sharedMsgId_, authorMember, forwardedByMember)
+      msgId <- insertedRowId db
+      pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody, authorMember, forwardedByMember}
 
 createSndMsgDeliveryEvent :: DB.Connection -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> ExceptT StoreError IO ()
 createSndMsgDeliveryEvent db connId agentMsgId sndMsgDeliveryStatus = do
@@ -1798,22 +1800,22 @@ getDirectReactions db ct itemSharedMId sent =
 setDirectReaction :: DB.Connection -> Contact -> SharedMsgId -> Bool -> MsgReaction -> Bool -> MessageId -> UTCTime -> IO ()
 setDirectReaction db ct itemSharedMId sent reaction add msgId reactionTs
   | add =
-    DB.execute
-      db
-      [sql|
-        INSERT INTO chat_item_reactions
-          (contact_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
-          VALUES (?,?,?,?,?,?)
-      |]
-      (contactId' ct, itemSharedMId, sent, reaction, msgId, reactionTs)
+      DB.execute
+        db
+        [sql|
+          INSERT INTO chat_item_reactions
+            (contact_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
+            VALUES (?,?,?,?,?,?)
+        |]
+        (contactId' ct, itemSharedMId, sent, reaction, msgId, reactionTs)
   | otherwise =
-    DB.execute
-      db
-      [sql|
-        DELETE FROM chat_item_reactions
-        WHERE contact_id = ? AND shared_msg_id = ? AND reaction_sent = ? AND reaction = ?
-      |]
-      (contactId' ct, itemSharedMId, sent, reaction)
+      DB.execute
+        db
+        [sql|
+          DELETE FROM chat_item_reactions
+          WHERE contact_id = ? AND shared_msg_id = ? AND reaction_sent = ? AND reaction = ?
+        |]
+        (contactId' ct, itemSharedMId, sent, reaction)
 
 getGroupReactions :: DB.Connection -> GroupInfo -> GroupMember -> MemberId -> SharedMsgId -> Bool -> IO [MsgReaction]
 getGroupReactions db GroupInfo {groupId} m itemMemberId itemSharedMId sent =
@@ -1830,22 +1832,22 @@ getGroupReactions db GroupInfo {groupId} m itemMemberId itemSharedMId sent =
 setGroupReaction :: DB.Connection -> GroupInfo -> GroupMember -> MemberId -> SharedMsgId -> Bool -> MsgReaction -> Bool -> MessageId -> UTCTime -> IO ()
 setGroupReaction db GroupInfo {groupId} m itemMemberId itemSharedMId sent reaction add msgId reactionTs
   | add =
-    DB.execute
-      db
-      [sql|
-        INSERT INTO chat_item_reactions
-          (group_id, group_member_id, item_member_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
-          VALUES (?,?,?,?,?,?,?,?)
-      |]
-      (groupId, groupMemberId' m, itemMemberId, itemSharedMId, sent, reaction, msgId, reactionTs)
+      DB.execute
+        db
+        [sql|
+          INSERT INTO chat_item_reactions
+            (group_id, group_member_id, item_member_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
+            VALUES (?,?,?,?,?,?,?,?)
+        |]
+        (groupId, groupMemberId' m, itemMemberId, itemSharedMId, sent, reaction, msgId, reactionTs)
   | otherwise =
-    DB.execute
-      db
-      [sql|
-        DELETE FROM chat_item_reactions
-        WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id = ? AND reaction_sent = ? AND reaction = ?
-      |]
-      (groupId, groupMemberId' m, itemSharedMId, itemMemberId, sent, reaction)
+      DB.execute
+        db
+        [sql|
+          DELETE FROM chat_item_reactions
+          WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id = ? AND reaction_sent = ? AND reaction = ?
+        |]
+        (groupId, groupMemberId' m, itemSharedMId, itemMemberId, sent, reaction)
 
 getTimedItems :: DB.Connection -> User -> UTCTime -> IO [((ChatRef, ChatItemId), UTCTime)]
 getTimedItems db User {userId} startTimedThreadCutoff =
