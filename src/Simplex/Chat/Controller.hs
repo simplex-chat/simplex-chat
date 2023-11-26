@@ -1084,8 +1084,8 @@ data RemoteHostError
   deriving (Show, Exception)
 
 data RemoteHostStopReason
-  = RHSRConnectionFailed ChatError
-  | RHSRCrashed ChatError
+  = RHSRConnectionFailed {chatError :: ChatError}
+  | RHSRCrashed {chatError :: ChatError}
   | RHSRDisconnected
   deriving (Show, Exception)
 
@@ -1106,9 +1106,9 @@ data RemoteCtrlError
   deriving (Show, Exception)
 
 data RemoteCtrlStopReason
-  = RCSRDiscoveryFailed ChatError
-  | RCSRConnectionFailed ChatError
-  | RCSRSetupFailed ChatError
+  = RCSRDiscoveryFailed {chatError :: ChatError}
+  | RCSRConnectionFailed {chatError :: ChatError}
+  | RCSRSetupFailed {chatError :: ChatError}
   | RCSRDisconnected
   deriving (Show, Exception)
 
