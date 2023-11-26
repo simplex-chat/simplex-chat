@@ -545,6 +545,9 @@
 /* No comment provided by engineer. */
 "Authentication unavailable" = "Authentifizierung nicht verfügbar";
 
+/* member role */
+"author" = "Autor";
+
 /* No comment provided by engineer. */
 "Auto-accept" = "Automatisch akzeptieren";
 
@@ -785,6 +788,9 @@
 
 /* server test step */
 "Connect" = "Verbinden";
+
+/* No comment provided by engineer. */
+"Connect automatically" = "Automatisch verbinden";
 
 /* No comment provided by engineer. */
 "Connect incognito" = "Inkognito verbinden";
@@ -1288,6 +1294,9 @@
 "Discover and join groups" = "Gruppen entdecken und ihnen beitreten";
 
 /* No comment provided by engineer. */
+"Discover via local network" = "Lokales Netzwerk durchsuchen";
+
+/* No comment provided by engineer. */
 "Do it later" = "Später wiederholen";
 
 /* No comment provided by engineer. */
@@ -1721,6 +1730,9 @@
 
 /* No comment provided by engineer. */
 "For console" = "Für Konsole";
+
+/* No comment provided by engineer. */
+"Found desktop" = "Gefundener Desktop";
 
 /* No comment provided by engineer. */
 "French interface" = "Französische Bedienoberfläche";
@@ -2396,6 +2408,9 @@
 
 /* copied message info in history */
 "no text" = "Kein Text";
+
+/* No comment provided by engineer. */
+"Not compatible!" = "Nicht kompatibel!";
 
 /* No comment provided by engineer. */
 "Notifications" = "Benachrichtigungen";
@@ -3670,6 +3685,9 @@
 
 /* No comment provided by engineer. */
 "waiting for confirmation…" = "Warten auf Bestätigung…";
+
+/* No comment provided by engineer. */
+"Waiting for desktop..." = "Es wird auf den Desktop gewartet...";
 
 /* No comment provided by engineer. */
 "Waiting for file" = "Warte auf Datei";
