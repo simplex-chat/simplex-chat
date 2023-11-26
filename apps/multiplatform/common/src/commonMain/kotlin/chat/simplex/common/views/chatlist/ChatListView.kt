@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
+import androidx.compose.material.icons.Icons
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -24,6 +25,7 @@ import chat.simplex.common.views.onboarding.WhatsNewView
 import chat.simplex.common.views.onboarding.shouldShowWhatsNew
 import chat.simplex.common.views.usersettings.SettingsView
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.localauth.VerticalDivider
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
@@ -40,6 +42,9 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     if (animated) newChatSheetState.value = AnimatedViewState.HIDING
     else newChatSheetState.value = AnimatedViewState.GONE
   }
+
+  val inDMs = remember { mutableStateOf(true) }
+
   LaunchedEffect(Unit) {
     if (shouldShowWhatsNew(chatModel)) {
       delay(1000L)
@@ -102,8 +107,59 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
         modifier = Modifier
           .fillMaxSize()
       ) {
+
+        // Direct Messages or Groups toggle
+        Box (
+          modifier = Modifier.fillMaxWidth().height(48.dp)
+        ){
+          Row(
+            modifier = Modifier
+              .fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center
+          ) {
+            IconButton(
+              modifier = Modifier.size(48.dp).weight(1f),
+              onClick = { inDMs.value = true }
+            ) {
+              Icon(
+                painterResource(MR.images.ic_person),
+                contentDescription = null,
+                tint = if (inDMs.value) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+                modifier = Modifier
+                  .padding(3.dp)
+                  .padding(3.dp)
+                  .size(34.dp)
+                  .weight(1f)
+              )
+            }
+
+            VerticalDivider(
+              startIndent = 8.dp
+            )
+
+            IconButton(
+              modifier = Modifier.size(48.dp).weight(1f),
+              onClick = { inDMs.value = false }
+            ) {
+              Icon(
+                painterResource(MR.images.ic_group),
+                contentDescription = null,
+                tint = if (!inDMs.value) MaterialTheme.colors.primary else MaterialTheme.colors.secondary,
+                modifier = Modifier
+                  .padding(3.dp)
+                  .padding(3.dp)
+                  .size(34.dp)
+                  .weight(1f)
+              )
+            }
+          }
+        }
+        Divider()
+
+
+        // Chat list
         if (chatModel.chats.isNotEmpty()) {
-          ChatList(chatModel, search = searchInList)
+          ChatList(chatModel, search = searchInList, inDMs=inDMs.value)
         } else if (!switchingUsersAndHosts.value) {
           Box(Modifier.fillMaxSize()) {
             if (!stopped && !newChatSheetState.collectAsState().value.isVisible()) {
@@ -332,7 +388,7 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
 private var lazyListState = 0 to 0
 
 @Composable
-private fun ChatList(chatModel: ChatModel, search: String) {
+private fun ChatList(chatModel: ChatModel, search: String, inDMs: Boolean) {
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   DisposableEffect(Unit) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
@@ -348,7 +404,15 @@ private fun ChatList(chatModel: ChatModel, search: String) {
     listState
   ) {
     items(chats) { chat ->
-      ChatListNavLinkView(chat, chatModel)
+      if (inDMs) {
+        if (chat.chatInfo.chatType == ChatType.Direct) {
+          ChatListNavLinkView(chat, chatModel)
+        }
+      } else {
+        if (chat.chatInfo.chatType == ChatType.Group) {
+          ChatListNavLinkView(chat, chatModel)
+        }
+      }
     }
   }
   if (chats.isEmpty() && !chatModel.chats.isEmpty()) {
