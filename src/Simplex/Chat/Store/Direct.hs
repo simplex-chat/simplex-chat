@@ -2,10 +2,12 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Store.Direct
   ( updateContact_,
@@ -305,14 +307,14 @@ deleteUnusedProfile_ db userId profileId =
 updateContactProfile :: DB.Connection -> User -> Contact -> Profile -> ExceptT StoreError IO Contact
 updateContactProfile db user@User {userId} c p'
   | displayName == newName = do
-    liftIO $ updateContactProfile_ db userId profileId p'
-    pure c {profile, mergedPreferences}
+      liftIO $ updateContactProfile_ db userId profileId p'
+      pure c {profile, mergedPreferences}
   | otherwise =
-    ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
-      currentTs <- getCurrentTime
-      updateContactProfile_' db userId profileId p' currentTs
-      updateContact_ db userId contactId localDisplayName ldn currentTs
-      pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
+      ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
+        currentTs <- getCurrentTime
+        updateContactProfile_' db userId profileId p' currentTs
+        updateContact_ db userId contactId localDisplayName ldn currentTs
+        pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
   where
     Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}, userPreferences} = c
     Profile {displayName = newName, preferences} = p'
@@ -779,10 +781,8 @@ updateConnectionStatus :: DB.Connection -> Connection -> ConnStatus -> IO ()
 updateConnectionStatus db Connection {connId} connStatus = do
   currentTs <- getCurrentTime
   if connStatus == ConnReady
-    then
-      DB.execute db "UPDATE connections SET conn_status = ?, updated_at = ?, conn_req_inv = NULL WHERE connection_id = ?" (connStatus, currentTs, connId)
-    else
-      DB.execute db "UPDATE connections SET conn_status = ?, updated_at = ? WHERE connection_id = ?" (connStatus, currentTs, connId)
+    then DB.execute db "UPDATE connections SET conn_status = ?, updated_at = ?, conn_req_inv = NULL WHERE connection_id = ?" (connStatus, currentTs, connId)
+    else DB.execute db "UPDATE connections SET conn_status = ?, updated_at = ? WHERE connection_id = ?" (connStatus, currentTs, connId)
 
 updateContactSettings :: DB.Connection -> User -> Int64 -> ChatSettings -> IO ()
 updateContactSettings db User {userId} contactId ChatSettings {enableNtfs, sendRcpts, favorite} =
@@ -811,4 +811,3 @@ resetContactConnInitiated db User {userId} Connection {connId} = do
       WHERE user_id = ? AND connection_id = ?
     |]
     (updatedAt, userId, connId)
-

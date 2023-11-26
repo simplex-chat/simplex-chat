@@ -7,7 +7,7 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad (when, void)
+import Control.Monad (void, when)
 import qualified Data.ByteString as B
 import Data.List (isInfixOf)
 import qualified Data.Text as T
@@ -122,7 +122,8 @@ chatGroupTests = do
     -- because host uses current code and sends version in MemberInfo
     testNoDirect vrMem2 vrMem3 noConns =
       it
-        ( "host " <> vRangeStr supportedChatVRange
+        ( "host "
+            <> vRangeStr supportedChatVRange
             <> (", 2nd mem " <> vRangeStr vrMem2)
             <> (", 3rd mem " <> vRangeStr vrMem3)
             <> (if noConns then " : 2 <!!> 3" else " : 2 <##> 3")
@@ -3859,11 +3860,9 @@ testMemberContactProfileUpdate =
       bob #> "#team hello too"
       alice <# "#team rob> hello too"
       cath <# "#team bob> hello too" -- not updated profile
-
       cath #> "#team hello there"
       alice <# "#team kate> hello there"
       bob <# "#team cath> hello there" -- not updated profile
-
       bob `send` "@cath hi"
       bob
         <### [ "member #team cath does not have direct connection, creating",
@@ -3903,7 +3902,6 @@ testMemberContactProfileUpdate =
       bob #> "#team hello too"
       alice <# "#team rob> hello too"
       cath <# "#team rob> hello too" -- updated profile
-
       cath #> "#team hello there"
       alice <# "#team kate> hello there"
       bob <# "#team kate> hello there" -- updated profile
@@ -3911,7 +3909,7 @@ testMemberContactProfileUpdate =
 testGroupMsgForward :: HasCallStack => FilePath -> IO ()
 testGroupMsgForward =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath ->  do
+    \alice bob cath -> do
       setupGroupForwarding3 "team" alice bob cath
 
       bob #> "#team hi there"
@@ -3941,7 +3939,6 @@ setupGroupForwarding3 gName alice bob cath = do
   createGroup3 gName alice bob cath
 
   threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
-
   void $ withCCTransaction bob $ \db ->
     DB.execute_ db "UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3"
   void $ withCCTransaction cath $ \db ->
@@ -3956,7 +3953,6 @@ testGroupMsgForwardDeduplicate =
       createGroup3 "team" alice bob cath
 
       threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
-
       void $ withCCTransaction alice $ \db ->
         DB.execute_ db "UPDATE group_member_intros SET intro_status='fwd'"
 
@@ -3990,7 +3986,7 @@ testGroupMsgForwardDeduplicate =
 testGroupMsgForwardEdit :: HasCallStack => FilePath -> IO ()
 testGroupMsgForwardEdit =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath ->  do
+    \alice bob cath -> do
       setupGroupForwarding3 "team" alice bob cath
 
       bob #> "#team hi there"
@@ -4001,7 +3997,6 @@ testGroupMsgForwardEdit =
       bob <# "#team [edited] hello there"
       alice <# "#team bob> [edited] hello there"
       cath <# "#team bob> [edited] hello there" -- TODO show as forwarded
-
       alice ##> "/tail #team 1"
       alice <# "#team bob> hello there"
 
@@ -4014,7 +4009,7 @@ testGroupMsgForwardEdit =
 testGroupMsgForwardReaction :: HasCallStack => FilePath -> IO ()
 testGroupMsgForwardReaction =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath ->  do
+    \alice bob cath -> do
       setupGroupForwarding3 "team" alice bob cath
 
       bob #> "#team hi there"
@@ -4031,7 +4026,7 @@ testGroupMsgForwardReaction =
 testGroupMsgForwardDeletion :: HasCallStack => FilePath -> IO ()
 testGroupMsgForwardDeletion =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath ->  do
+    \alice bob cath -> do
       setupGroupForwarding3 "team" alice bob cath
 
       bob #> "#team hi there"
@@ -4073,7 +4068,7 @@ testGroupMsgForwardFile =
 testGroupMsgForwardChangeRole :: HasCallStack => FilePath -> IO ()
 testGroupMsgForwardChangeRole =
   testChat3 aliceProfile bobProfile cathProfile $
-    \alice bob cath ->  do
+    \alice bob cath -> do
       setupGroupForwarding3 "team" alice bob cath
 
       cath ##> "/mr #team bob member"
@@ -4084,7 +4079,7 @@ testGroupMsgForwardChangeRole =
 testGroupMsgForwardNewMember :: HasCallStack => FilePath -> IO ()
 testGroupMsgForwardNewMember =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
-    \alice bob cath dan ->  do
+    \alice bob cath dan -> do
       setupGroupForwarding3 "team" alice bob cath
 
       connectUsers cath dan

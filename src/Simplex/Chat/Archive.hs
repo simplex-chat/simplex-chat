@@ -21,7 +21,7 @@ import qualified Data.Text as T
 import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
 import Simplex.Messaging.Agent.Client (agentClientStore)
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), sqlString, closeSQLiteStore)
+import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), closeSQLiteStore, sqlString)
 import Simplex.Messaging.Util
 import System.FilePath
 import UnliftIO.Directory

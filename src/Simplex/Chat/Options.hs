@@ -206,7 +206,6 @@ chatOptsP appDir defaultDbFileName = do
     optional $
       strOption
         ( long "device-name"
-            <> short 'e'
             <> metavar "DEVICE"
             <> help "Device name to use in connections with remote hosts and controller"
         )
