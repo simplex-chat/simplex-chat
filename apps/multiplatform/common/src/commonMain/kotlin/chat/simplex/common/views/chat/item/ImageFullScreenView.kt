@@ -32,7 +32,12 @@ interface ImageGalleryProvider {
 @Composable
 fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> Unit) {
   val provider = remember { imageProvider() }
-  val pagerState = rememberPagerState(provider.initialIndex)
+  val pagerState = rememberPagerState(
+    initialPage = provider.initialIndex,
+    initialPageOffsetFraction = 0f
+  ) {
+    provider.totalMediaSize.value
+  }
   val goBack = { provider.onDismiss(pagerState.currentPage); close() }
   BackHandler(onBack = goBack)
   // Pager doesn't ask previous page at initialization step who knows why. By not doing this, prev page is not checked and can be blank,
@@ -138,7 +143,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
     }
   }
   if (appPlatform.isAndroid) {
-    HorizontalPager(pageCount = remember { provider.totalMediaSize }.value, state = pagerState) { index -> Content(index) }
+    HorizontalPager(state = pagerState) { index -> Content(index) }
   } else {
     Content(pagerState.currentPage)
   }
@@ -158,12 +163,11 @@ private fun VideoView(modifier: Modifier, uri: URI, defaultPreview: ImageBitmap,
     player.stop()
   }
   LaunchedEffect(Unit) {
-    player.enableSound(true)
     snapshotFlow { isCurrentPage.value }
       .distinctUntilChanged()
       .collect {
-        // Do not autoplay on desktop because it needs workaround
-        if (it && appPlatform.isAndroid) play() else if (!it) stop()
+        if (it) play() else stop()
+        player.enableSound(true)
       }
   }
 

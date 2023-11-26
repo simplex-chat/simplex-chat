@@ -50,6 +50,7 @@ actual fun PlatformTextField(
   userIsObserver: Boolean,
   onMessageChange: (String) -> Unit,
   onUpArrow: () -> Unit,
+  onFilesPasted: (List<URI>) -> Unit,
   onDone: () -> Unit,
 ) {
   val cs = composeState.value

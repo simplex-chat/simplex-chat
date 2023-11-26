@@ -24,7 +24,7 @@ import Text.Read
 main :: IO ()
 main = do
   opts <- welcomeGetOpts
-  simplexChatCore terminalChatConfig opts Nothing mySquaringBot
+  simplexChatCore terminalChatConfig opts mySquaringBot
 
 welcomeGetOpts :: IO ChatOpts
 welcomeGetOpts = do
@@ -41,7 +41,7 @@ mySquaringBot :: User -> ChatController -> IO ()
 mySquaringBot _user cc = do
   initializeBotAddress cc
   race_ (forever $ void getLine) . forever $ do
-    (_, resp) <- atomically . readTBQueue $ outputQ cc
+    (_, _, resp) <- atomically . readTBQueue $ outputQ cc
     case resp of
       CRContactConnected _ contact _ -> do
         contactConnected contact

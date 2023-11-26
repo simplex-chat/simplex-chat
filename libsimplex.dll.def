@@ -1,0 +1,19 @@
+LIBRARY libsimplex
+EXPORTS
+    hs_init
+    hs_init_with_rtsopts
+    chat_migrate_init
+    chat_send_cmd
+    chat_send_remote_cmd
+    chat_recv_msg
+    chat_recv_msg_wait
+    chat_parse_markdown
+    chat_parse_server
+    chat_password_hash
+    chat_valid_name
+    chat_encrypt_media
+    chat_decrypt_media
+    chat_write_file
+    chat_read_file
+    chat_encrypt_file
+    chat_decrypt_file

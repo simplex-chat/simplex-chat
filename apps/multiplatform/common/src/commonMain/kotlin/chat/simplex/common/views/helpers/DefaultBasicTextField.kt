@@ -125,7 +125,7 @@ fun DefaultConfigurableTextField(
   keyboardType: KeyboardType = KeyboardType.Text,
   dependsOn: State<Any?>? = null,
 ) {
-  var valid by remember { mutableStateOf(validKey(state.value.text)) }
+  var valid by remember { mutableStateOf(isValid(state.value.text)) }
   var showKey by remember { mutableStateOf(false) }
   val icon = if (valid) {
     if (showKey) painterResource(MR.images.ic_visibility_off_filled) else painterResource(MR.images.ic_visibility_filled)

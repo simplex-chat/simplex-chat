@@ -38,7 +38,7 @@ actual class RecorderNative: RecorderInterface {
     rec.setAudioSamplingRate(16000)
     rec.setAudioEncodingBitRate(32000)
     rec.setMaxDuration(MAX_VOICE_MILLIS_FOR_SENDING)
-    val fileToSave = File.createTempFile(generateNewFileName("voice", "${RecorderInterface.extension}_"), ".tmp", tmpDir)
+    val fileToSave = File.createTempFile(generateNewFileName("voice", "${RecorderInterface.extension}_", tmpDir), ".tmp", tmpDir)
     fileToSave.deleteOnExit()
     val path = fileToSave.absolutePath
     filePath = path
@@ -48,6 +48,7 @@ actual class RecorderNative: RecorderInterface {
     recStartedAt = System.currentTimeMillis()
     progressJob = CoroutineScope(Dispatchers.Default).launch {
       while(isActive) {
+        keepScreenOn(true)
         onProgressUpdate(progress(), false)
         delay(50)
       }
@@ -84,6 +85,7 @@ actual class RecorderNative: RecorderInterface {
     progressJob = null
     filePath = null
     recorder = null
+    keepScreenOn(false)
     return (realDuration(path) ?: 0).also { recStartedAt = null }
   }
 
@@ -170,6 +172,7 @@ actual object AudioPlayer: AudioPlayerInterface {
     progressJob = CoroutineScope(Dispatchers.Default).launch {
       onProgressUpdate(player.currentPosition, TrackState.PLAYING)
       while(isActive && player.isPlaying) {
+        keepScreenOn(true)
         // Even when current position is equal to duration, the player has isPlaying == true for some time,
         // so help to make the playback stopped in UI immediately
         if (player.currentPosition == player.duration) {
@@ -187,6 +190,7 @@ actual object AudioPlayer: AudioPlayerInterface {
       if (isActive) {
         onProgressUpdate(player.duration, TrackState.PAUSED)
       }
+      keepScreenOn(false)
       onProgressUpdate(null, TrackState.PAUSED)
     }
     return player.duration
@@ -196,6 +200,7 @@ actual object AudioPlayer: AudioPlayerInterface {
     progressJob?.cancel()
     progressJob = null
     player.pause()
+    keepScreenOn(false)
     return player.currentPosition
   }
 
@@ -203,6 +208,7 @@ actual object AudioPlayer: AudioPlayerInterface {
     if (currentlyPlaying.value == null) return
     player.stop()
     stopListener()
+    keepScreenOn(false)
   }
 
   override fun stop(item: ChatItem) = stop(item.file?.fileName)
@@ -263,6 +269,7 @@ actual object AudioPlayer: AudioPlayerInterface {
   override fun pause(audioPlaying: MutableState<Boolean>, pro: MutableState<Int>) {
     pro.value = pause()
     audioPlaying.value = false
+    keepScreenOn(false)
   }
 
   override fun seekTo(ms: Int, pro: MutableState<Int>, filePath: String?) {
@@ -277,9 +284,11 @@ actual object AudioPlayer: AudioPlayerInterface {
     kotlin.runCatching {
       helperPlayer.setDataSource(unencryptedFilePath)
       helperPlayer.prepare()
-      helperPlayer.start()
-      helperPlayer.stop()
-      res = helperPlayer.duration
+      if (helperPlayer.duration <= 0) {
+        Log.e(TAG, "Duration of audio is incorrect: ${helperPlayer.duration}")
+      } else {
+        res = helperPlayer.duration
+      }
       helperPlayer.reset()
     }
     return res

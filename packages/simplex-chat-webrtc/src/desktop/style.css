@@ -1,0 +1,127 @@
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background-color: black;
+}
+
+#remote-video-stream {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#local-video-stream {
+  position: absolute;
+  width: 20%;
+  max-width: 20%;
+  object-fit: cover;
+  margin: 16px;
+  border-radius: 16px;
+  top: 0;
+  right: 0;
+}
+
+*::-webkit-media-controls {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
+*::-webkit-media-controls-panel {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
+*::-webkit-media-controls-play-button {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
+*::-webkit-media-controls-start-playback-button {
+  display: none !important;
+  -webkit-appearance: none !important;
+}
+
+#manage-call {
+  position: absolute;
+  width: fit-content;
+  top: 90%;
+  left: 50%;
+  transform: translate(-50%, 0);
+  display: grid;
+  grid-auto-flow: column;
+  grid-column-gap: 30px;
+}
+
+#manage-call button {
+  border: none;
+  cursor: pointer;
+  appearance: none;
+  background-color: inherit;
+}
+
+#progress {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: -52px;
+  margin-top: -52px;
+  border-radius: 50%;
+  border-top: 5px solid white;
+  border-right: 5px solid white;
+  border-bottom: 5px solid white;
+  border-left: 5px solid black;
+  width: 100px;
+  height: 100px;
+  -webkit-animation: spin 2s linear infinite;
+  animation: spin 2s linear infinite;
+}
+
+@-webkit-keyframes spin {
+  0% {
+    -webkit-transform: rotate(0deg);
+  }
+  100% {
+    -webkit-transform: rotate(360deg);
+  }
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+#info-block {
+  position: absolute;
+  color: white;
+  line-height: 10px;
+  opacity: 0.8;
+  width: 200px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#info-block.audio {
+  text-align: center;
+  left: 50%;
+  top: 50%;
+  margin-left: -100px;
+  margin-top: 100px;
+}
+
+#info-block.video {
+  left: 16px;
+  top: 2px;
+}
+
+#audio-call-icon {
+  position: absolute;
+  display: none;
+  left: 50%;
+  top: 50%;
+  margin-left: -50px;
+  margin-top: -44px;
+  width: 100px;
+  height: 100px;
+}

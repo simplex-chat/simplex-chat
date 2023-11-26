@@ -9,10 +9,12 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatModel
+import chat.simplex.common.model.RemoteHostInfo
 import chat.simplex.res.MR
 
 @Composable
-actual fun ConnectViaLinkView(m: ChatModel, close: () -> Unit) {
+actual fun ConnectViaLinkView(m: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
+  // TODO this should close if remote host changes in model
   val selection = remember {
     mutableStateOf(
       runCatching { ConnectViaLinkTab.valueOf(m.controller.appPrefs.connectViaLinkTab.get()!!) }.getOrDefault(ConnectViaLinkTab.SCAN)
@@ -31,10 +33,10 @@ actual fun ConnectViaLinkView(m: ChatModel, close: () -> Unit) {
     Column(Modifier.weight(1f)) {
       when (selection.value) {
         ConnectViaLinkTab.SCAN -> {
-          ScanToConnectView(m, close)
+          ScanToConnectView(m, rh, close)
         }
         ConnectViaLinkTab.PASTE -> {
-          PasteToConnectView(m, close)
+          PasteToConnectView(m, rh, close)
         }
       }
     }

@@ -15,6 +15,8 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.model.ChatModel.filesToDelete
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.Indigo
 import chat.simplex.common.ui.theme.isSystemInDarkTheme
@@ -159,6 +161,17 @@ expect fun AttachmentSelection(
   processPickedMedia: (List<URI>, String?) -> Unit
 )
 
+fun MutableState<ComposeState>.onFilesAttached(uris: List<URI>) {
+  val groups =  uris.groupBy { isImage(it) }
+  val images = groups[true] ?: emptyList()
+  val files = groups[false] ?: emptyList()
+  if (images.isNotEmpty()) {
+    CoroutineScope(Dispatchers.IO).launch { processPickedMedia(images, null) }
+  } else if (files.isNotEmpty()) {
+    processPickedFile(uris.first(), null)
+  }
+}
+
 fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
   if (uri != null) {
     val fileSize = getFileSize(uri)
@@ -167,11 +180,13 @@ fun MutableState<ComposeState>.processPickedFile(uri: URI?, text: String?) {
       if (fileName != null) {
         value = value.copy(message = text ?: value.message, preview = ComposePreview.FilePreview(fileName, uri))
       }
-    } else {
+    } else if (fileSize != null) {
       AlertManager.shared.showAlertMsg(
         generalGetString(MR.strings.large_file),
         String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
       )
+    } else {
+      showWrongUriAlert()
     }
   }
 }
@@ -185,7 +200,8 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
       isImage(uri) -> {
         // Image
         val drawable = getDrawableFromUri(uri)
-        bitmap = getBitmapFromUri(uri)
+        // Do not show alert in case it's already shown from the function above
+        bitmap = getBitmapFromUri(uri, withAlertOnException = AlertManager.shared.alertViews.isEmpty())
         if (isAnimImage(uri, drawable)) {
           // It's a gif or webp
           val fileSize = getFileSize(uri)
@@ -198,13 +214,13 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
               String.format(generalGetString(MR.strings.maximum_supported_file_size), formatBytes(maxFileSize))
             )
           }
-        } else {
+        } else if (bitmap != null) {
           content.add(UploadContent.SimpleImage(uri))
         }
       }
       else -> {
         // Video
-        val res = getBitmapFromVideo(uri)
+        val res = getBitmapFromVideo(uri, withAlertOnException = true)
         bitmap = res.preview
         val durationMs = res.duration
         content.add(UploadContent.Video(uri, durationMs?.div(1000)?.toInt() ?: 0))
@@ -313,12 +329,32 @@ fun ComposeView(
   }
 
   fun deleteUnusedFiles() {
-    chatModel.filesToDelete.forEach { it.delete() }
-    chatModel.filesToDelete.clear()
+    val shared = chatModel.sharedContent.value
+    if (shared == null) {
+      chatModel.filesToDelete.forEach { it.delete() }
+      chatModel.filesToDelete.clear()
+    } else {
+      val sharedPaths = when (shared) {
+        is SharedContent.Media -> shared.uris.map { it.toString() }
+        is SharedContent.File -> listOf(shared.uri.toString())
+        is SharedContent.Text -> emptyList()
+      }
+      // When sharing a file and pasting it in SimpleX itself, the file shouldn't be deleted before sending or before leaving the chat after sharing
+      chatModel.filesToDelete.removeAll { file ->
+        if (sharedPaths.any { it.endsWith(file.name) }) {
+          false
+        } else {
+          file.delete()
+          true
+        }
+      }
+    }
   }
 
-  suspend fun send(cInfo: ChatInfo, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?): ChatItem? {
+  suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?): ChatItem? {
+    val cInfo = chat.chatInfo
     val aChatItem = chatModel.controller.apiSendMessage(
+      rh = chat.remoteHostId,
       type = cInfo.chatType,
       id = cInfo.apiId,
       file = file,
@@ -328,7 +364,7 @@ fun ComposeView(
       ttl = ttl
     )
     if (aChatItem != null) {
-      chatModel.addChatItem(cInfo, aChatItem.chatItem)
+      chatModel.addChatItem(chat.remoteHostId, cInfo, aChatItem.chatItem)
       return aChatItem.chatItem
     }
     if (file != null) removeFile(file.filePath)
@@ -375,23 +411,25 @@ fun ComposeView(
 
     suspend fun sendMemberContactInvitation() {
       val mc = checkLinkPreview()
-      val contact = chatModel.controller.apiSendMemberContactInvitation(chat.chatInfo.apiId, mc)
+      val contact = chatModel.controller.apiSendMemberContactInvitation(chat.remoteHostId, chat.chatInfo.apiId, mc)
       if (contact != null) {
-        chatModel.updateContact(contact)
+        chatModel.updateContact(chat.remoteHostId, contact)
       }
     }
 
-    suspend fun updateMessage(ei: ChatItem, cInfo: ChatInfo, live: Boolean): ChatItem? {
+    suspend fun updateMessage(ei: ChatItem, chat: Chat, live: Boolean): ChatItem? {
+      val cInfo = chat.chatInfo
       val oldMsgContent = ei.content.msgContent
       if (oldMsgContent != null) {
         val updatedItem = chatModel.controller.apiUpdateChatItem(
+          rh = chat.remoteHostId,
           type = cInfo.chatType,
           id = cInfo.apiId,
           itemId = ei.meta.itemId,
           mc = updateMsgContent(oldMsgContent),
           live = live
         )
-        if (updatedItem != null) chatModel.upsertChatItem(cInfo, updatedItem.chatItem)
+        if (updatedItem != null) chatModel.upsertChatItem(chat.remoteHostId, cInfo, updatedItem.chatItem)
         return updatedItem?.chatItem
       }
       return null
@@ -409,21 +447,29 @@ fun ComposeView(
       sent = null
     } else if (cs.contextItem is ComposeContextItem.EditingItem) {
       val ei = cs.contextItem.chatItem
-      sent = updateMessage(ei, cInfo, live)
+      sent = updateMessage(ei, chat, live)
     } else if (liveMessage != null && liveMessage.sent) {
-      sent = updateMessage(liveMessage.chatItem, cInfo, live)
+      sent = updateMessage(liveMessage.chatItem, chat, live)
     } else {
       val msgs: ArrayList<MsgContent> = ArrayList()
       val files: ArrayList<CryptoFile> = ArrayList()
+      val remoteHost = chatModel.currentRemoteHost.value
       when (val preview = cs.preview) {
         ComposePreview.NoPreview -> msgs.add(MsgContent.MCText(msgText))
         is ComposePreview.CLinkPreview -> msgs.add(checkLinkPreview())
         is ComposePreview.MediaPreview -> {
           preview.content.forEachIndexed { index, it ->
+            val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
             val file = when (it) {
-              is UploadContent.SimpleImage -> saveImage(it.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get())
-              is UploadContent.AnimatedImage -> saveAnimImage(it.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get())
-              is UploadContent.Video -> saveFileFromUri(it.uri, encrypted = false)
+              is UploadContent.SimpleImage ->
+                if (remoteHost == null) saveImage(it.uri, encrypted = encrypted)
+                else desktopSaveImageInTmp(it.uri)
+              is UploadContent.AnimatedImage ->
+                if (remoteHost == null) saveAnimImage(it.uri, encrypted = encrypted)
+                else CryptoFile.desktopPlain(it.uri)
+              is UploadContent.Video ->
+                if (remoteHost == null) saveFileFromUri(it.uri, encrypted = false)
+                else CryptoFile.desktopPlain(it.uri)
             }
             if (file != null) {
               files.add(file)
@@ -438,22 +484,32 @@ fun ComposeView(
         is ComposePreview.VoicePreview -> {
           val tmpFile = File(preview.voice)
           AudioPlayer.stop(tmpFile.absolutePath)
-          val actualFile = File(getAppFilePath(tmpFile.name.replaceAfter(RecorderInterface.extension, "")))
-          files.add(withContext(Dispatchers.IO) {
-            if (chatController.appPrefs.privacyEncryptLocalFiles.get()) {
-              val args = encryptCryptoFile(tmpFile.absolutePath, actualFile.absolutePath)
-              tmpFile.delete()
-              CryptoFile(actualFile.name, args)
-            } else {
-              Files.move(tmpFile.toPath(), actualFile.toPath())
-              CryptoFile.plain(actualFile.name)
-            }
-          })
-          deleteUnusedFiles()
+          if (remoteHost == null) {
+            val actualFile = File(getAppFilePath(tmpFile.name.replaceAfter(RecorderInterface.extension, "")))
+            files.add(withContext(Dispatchers.IO) {
+              if (chatController.appPrefs.privacyEncryptLocalFiles.get()) {
+                val args = encryptCryptoFile(tmpFile.absolutePath, actualFile.absolutePath)
+                tmpFile.delete()
+                CryptoFile(actualFile.name, args)
+              } else {
+                Files.move(tmpFile.toPath(), actualFile.toPath())
+                CryptoFile.plain(actualFile.name)
+              }
+            })
+            deleteUnusedFiles()
+          } else {
+            files.add(CryptoFile.plain(tmpFile.absolutePath))
+            // It will be deleted on JVM shutdown or next start (if the app crashes unexpectedly)
+            filesToDelete.remove(tmpFile)
+          }
           msgs.add(MsgContent.MCVoice(if (msgs.isEmpty()) msgText else "", preview.durationMs / 1000))
         }
         is ComposePreview.FilePreview -> {
-          val file = saveFileFromUri(preview.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get())
+          val file = if (remoteHost == null) {
+            saveFileFromUri(preview.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get())
+          } else {
+            CryptoFile.desktopPlain(preview.uri)
+          }
           if (file != null) {
             files.add((file))
             msgs.add(MsgContent.MCFile(if (msgs.isEmpty()) msgText else ""))
@@ -467,7 +523,15 @@ fun ComposeView(
       sent = null
       msgs.forEachIndexed { index, content ->
         if (index > 0) delay(100)
-        sent = send(cInfo, content, if (index == 0) quotedItemId else null, files.getOrNull(index),
+        var file = files.getOrNull(index)
+        if (remoteHost != null && file != null) {
+          file = controller.storeRemoteFile(
+            rhId = remoteHost.remoteHostId,
+            storeEncrypted = if (content is MsgContent.MCVideo) false else null,
+            localPath = file.filePath
+          )
+        }
+        sent = send(chat, content, if (index == 0) quotedItemId else null, file,
           live = if (content !is MsgContent.MCVoice && index == msgs.lastIndex) live else false,
           ttl = ttl
         )
@@ -477,7 +541,7 @@ fun ComposeView(
             cs.preview is ComposePreview.FilePreview ||
             cs.preview is ComposePreview.VoicePreview)
       ) {
-        sent = send(cInfo, MsgContent.MCText(msgText), quotedItemId, null, live, ttl)
+        sent = send(chat, MsgContent.MCText(msgText), quotedItemId, null, live, ttl)
       }
     }
     clearState(live)
@@ -512,7 +576,7 @@ fun ComposeView(
   fun allowVoiceToContact() {
     val contact = (chat.chatInfo as ChatInfo.Direct?)?.contact ?: return
     withApi {
-      chatModel.controller.allowFeatureToContact(contact, ChatFeature.Voice)
+      chatModel.controller.allowFeatureToContact(chat.remoteHostId, contact, ChatFeature.Voice)
     }
   }
 
@@ -744,7 +808,11 @@ fun ComposeView(
           .collect {
             when(it) {
               is RecordingState.Started -> onAudioAdded(it.filePath, it.progressMs, false)
-              is RecordingState.Finished -> onAudioAdded(it.filePath, it.durationMs, true)
+              is RecordingState.Finished -> if (it.durationMs > 300) {
+                onAudioAdded(it.filePath, it.durationMs, true)
+              } else {
+                cancelVoice()
+              }
               is RecordingState.NotStarted -> {}
             }
           }
@@ -782,6 +850,7 @@ fun ComposeView(
           deleteUnusedFiles()
         }
         chatModel.removeLiveDummy()
+        CIFile.cachedRemoteFileRequests.clear()
       }
 
       val timedMessageAllowed = remember(chat.chatInfo) { chat.chatInfo.featureEnabled(ChatFeature.TimedMessages) }
@@ -816,6 +885,7 @@ fun ComposeView(
           chatModel.removeLiveDummy()
         },
         editPrevMessage = ::editPrevMessage,
+        onFilesPasted = { composeState.onFilesAttached(it) },
         onMessageChange = ::onMessageChange,
         textStyle = textStyle
       )

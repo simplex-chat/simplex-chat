@@ -9,7 +9,7 @@
 #ifndef SimpleX_h
 #define SimpleX_h
 
-#endif /* SimpleX_h */
+#include "hs_init.h"
 
 extern void hs_init(int argc, char **argv[]);
 
@@ -24,6 +24,7 @@ extern char *chat_recv_msg_wait(chat_ctrl ctl, int wait);
 extern char *chat_parse_markdown(char *str);
 extern char *chat_parse_server(char *str);
 extern char *chat_password_hash(char *pwd, char *salt);
+extern char *chat_valid_name(char *name);
 extern char *chat_encrypt_media(char *key, char *frame, int len);
 extern char *chat_decrypt_media(char *key, char *frame, int len);
 
@@ -41,3 +42,5 @@ extern char *chat_encrypt_file(char *fromPath, char *toPath);
 
 // chat_decrypt_file returns null-terminated string with the error message
 extern char *chat_decrypt_file(char *fromPath, char *key, char *nonce, char *toPath);
+
+#endif /* SimpleX_h */

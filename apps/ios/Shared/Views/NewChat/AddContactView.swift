@@ -21,7 +21,7 @@ struct AddContactView: View {
             List {
                 Section {
                     if connReqInvitation != "" {
-                        QRCode(uri: connReqInvitation)
+                        SimpleXLinkQRCode(uri: connReqInvitation)
                     } else {
                         ProgressView()
                             .progressViewStyle(.circular)
@@ -48,7 +48,7 @@ struct AddContactView: View {
                        let conn = try await apiSetConnectionIncognito(connId: contactConn.pccConnId, incognito: incognito) {
                         await MainActor.run {
                             contactConnection = conn
-                            ChatModel.shared.updateContactConnection(conn)
+                            chatModel.updateContactConnection(conn)
                         }
                     }
                 } catch {
@@ -99,7 +99,7 @@ func sharedProfileInfo(_ incognito: Bool) -> Text {
 
 func shareLinkButton(_ connReqInvitation: String) -> some View {
     Button {
-        showShareSheet(items: [connReqInvitation])
+        showShareSheet(items: [simplexChatLink(connReqInvitation)])
     } label: {
         settingsRow("square.and.arrow.up") {
             Text("Share 1-time link")

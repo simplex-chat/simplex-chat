@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct CIVoiceView: View {
+    @ObservedObject var chat: Chat
     var chatItem: ChatItem
     let recordingFile: CIFile?
     let duration: Int
@@ -91,7 +92,7 @@ struct CIVoiceView: View {
     }
 
     private func metaView() -> some View {
-        CIMetaView(chatItem: chatItem)
+        CIMetaView(chat: chat, chatItem: chatItem)
     }
 }
 
@@ -219,7 +220,7 @@ struct VoiceMessagePlayer: View {
     private func downloadButton(_ recordingFile: CIFile) -> some View {
         Button {
             Task {
-                if let user = ChatModel.shared.currentUser {
+                if let user = chatModel.currentUser {
                     await receiveFile(user: user, fileId: recordingFile.fileId, encrypted: privacyEncryptLocalFilesGroupDefault.get())
                 }
             }
@@ -284,6 +285,7 @@ struct CIVoiceView_Previews: PreviewProvider {
         )
         Group {
             CIVoiceView(
+                chat: Chat.sampleData,
                 chatItem: ChatItem.getVoiceMsgContentSample(),
                 recordingFile: CIFile.getSample(fileName: "voice.m4a", fileSize: 65536, fileStatus: .rcvComplete),
                 duration: 30,
@@ -292,12 +294,11 @@ struct CIVoiceView_Previews: PreviewProvider {
                 playbackTime: .constant(TimeInterval(20)),
                 allowMenu: Binding.constant(true)
             )
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: sentVoiceMessage, revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(), revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
-            ChatItemView(chatInfo: ChatInfo.sampleData.direct, chatItem: voiceMessageWtFile, revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
+            ChatItemView(chat: Chat.sampleData, chatItem: sentVoiceMessage, revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(), revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
+            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
+            ChatItemView(chat: Chat.sampleData, chatItem: voiceMessageWtFile, revealed: Binding.constant(false), allowMenu: .constant(true), playbackState: .constant(.noPlayback), playbackTime: .constant(nil))
         }
         .previewLayout(.fixed(width: 360, height: 360))
-        .environmentObject(Chat.sampleData)
     }
 }

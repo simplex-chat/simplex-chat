@@ -99,12 +99,12 @@ struct ChatInfoView: View {
     @Binding var connectionCode: String?
     @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: ChatInfoViewAlert? = nil
+    @State private var showDeleteContactActionSheet = false
     @State private var sendReceipts = SendReceipts.userDefault(true)
     @State private var sendReceiptsUserDefault = true
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
 
     enum ChatInfoViewAlert: Identifiable {
-        case deleteContactAlert
         case clearChatAlert
         case networkStatusAlert
         case switchAddressAlert
@@ -114,7 +114,6 @@ struct ChatInfoView: View {
 
         var id: String {
             switch self {
-            case .deleteContactAlert: return "deleteContactAlert"
             case .clearChatAlert: return "clearChatAlert"
             case .networkStatusAlert: return "networkStatusAlert"
             case .switchAddressAlert: return "switchAddressAlert"
@@ -164,13 +163,13 @@ struct ChatInfoView: View {
 //                        synchronizeConnectionButtonForce()
 //                    }
                 }
-                .disabled(!contact.ready)
+                .disabled(!contact.ready || !contact.active)
 
                 if let contactLink = contact.contactLink {
                     Section {
-                        QRCode(uri: contactLink)
+                        SimpleXLinkQRCode(uri: contactLink)
                         Button {
-                            showShareSheet(items: [contactLink])
+                            showShareSheet(items: [simplexChatLink(contactLink)])
                         } label: {
                             Label("Share address", systemImage: "square.and.arrow.up")
                         }
@@ -181,7 +180,7 @@ struct ChatInfoView: View {
                     }
                 }
 
-                if contact.ready {
+                if contact.ready && contact.active {
                     Section("Servers") {
                         networkStatusRow()
                             .onTapGesture {
@@ -192,8 +191,7 @@ struct ChatInfoView: View {
                                 alert = .switchAddressAlert
                             }
                             .disabled(
-                                !contact.ready
-                                || connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
+                                connStats.rcvQueuesInfo.contains { $0.rcvSwitchStatus != nil }
                                 || connStats.ratchetSyncSendProhibited
                             )
                             if connStats.rcvQueuesInfo.contains(where: { $0.rcvSwitchStatus != nil }) {
@@ -234,13 +232,32 @@ struct ChatInfoView: View {
         }
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
-            case .deleteContactAlert: return deleteContactAlert()
             case .clearChatAlert: return clearChatAlert()
             case .networkStatusAlert: return networkStatusAlert()
             case .switchAddressAlert: return switchAddressAlert(switchContactAddress)
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchContactAddress)
             case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncContactConnection(force: true) })
             case let .error(title, error): return mkAlert(title: title, message: error)
+            }
+        }
+        .actionSheet(isPresented: $showDeleteContactActionSheet) {
+            if contact.ready && contact.active {
+                return ActionSheet(
+                    title: Text("Delete contact?\nThis cannot be undone!"),
+                    buttons: [
+                        .destructive(Text("Delete and notify contact")) { deleteContact(notify: true) },
+                        .destructive(Text("Delete")) { deleteContact(notify: false) },
+                        .cancel()
+                    ]
+                )
+            } else {
+                return ActionSheet(
+                    title: Text("Delete contact?\nThis cannot be undone!"),
+                    buttons: [
+                        .destructive(Text("Delete")) { deleteContact() },
+                        .cancel()
+                    ]
+                )
             }
         }
     }
@@ -321,7 +338,7 @@ struct ChatInfoView: View {
                 verify: { code in
                     if let r = apiVerifyContact(chat.chatInfo.apiId, connectionCode: code) {
                         let (verified, existingCode) = r
-                        contact.activeConn.connectionCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
+                        contact.activeConn?.connectionCode = verified ? SecurityCode(securityCode: existingCode, verifiedAt: .now) : nil
                         connectionCode = existingCode
                         DispatchQueue.main.async {
                             chat.chatInfo = .direct(contact: contact)
@@ -415,7 +432,7 @@ struct ChatInfoView: View {
 
     private func deleteContactButton() -> some View {
         Button(role: .destructive) {
-            alert = .deleteContactAlert
+            showDeleteContactActionSheet = true
         } label: {
             Label("Delete contact", systemImage: "trash")
                 .foregroundColor(Color.red)
@@ -431,30 +448,23 @@ struct ChatInfoView: View {
         }
     }
 
-    private func deleteContactAlert() -> Alert {
-        Alert(
-            title: Text("Delete contact?"),
-            message: Text("Contact and all messages will be deleted - this cannot be undone!"),
-            primaryButton: .destructive(Text("Delete")) {
-                Task {
-                    do {
-                        try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId)
-                        await MainActor.run {
-                            dismiss()
-                            chatModel.chatId = nil
-                            chatModel.removeChat(chat.chatInfo.id)
-                        }
-                    } catch let error {
-                        logger.error("deleteContactAlert apiDeleteChat error: \(responseError(error))")
-                        let a = getErrorAlert(error, "Error deleting contact")
-                        await MainActor.run {
-                            alert = .error(title: a.title, error: a.message)
-                        }
-                    }
+    private func deleteContact(notify: Bool? = nil) {
+        Task {
+            do {
+                try await apiDeleteChat(type: chat.chatInfo.chatType, id: chat.chatInfo.apiId, notify: notify)
+                await MainActor.run {
+                    dismiss()
+                    chatModel.chatId = nil
+                    chatModel.removeChat(chat.chatInfo.id)
                 }
-            },
-            secondaryButton: .cancel()
-        )
+            } catch let error {
+                logger.error("deleteContactAlert apiDeleteChat error: \(responseError(error))")
+                let a = getErrorAlert(error, "Error deleting contact")
+                await MainActor.run {
+                    alert = .error(title: a.title, error: a.message)
+                }
+            }
+        }
     }
 
     private func clearChatAlert() -> Alert {

@@ -1,16 +1,15 @@
 package chat.simplex.common.platform
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import chat.simplex.common.model.*
-import chat.simplex.common.views.helpers.AlertManager
-import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import uk.co.caprica.vlcj.player.base.MediaPlayer
 import uk.co.caprica.vlcj.player.base.State
 import uk.co.caprica.vlcj.player.component.AudioPlayerComponent
 import java.io.File
+import java.util.*
 import kotlin.math.max
 
 actual class RecorderNative: RecorderInterface {
@@ -38,7 +37,7 @@ actual object AudioPlayer: AudioPlayerInterface {
 
   // Returns real duration of the track
   private fun start(fileSource: CryptoFile, seek: Int? = null, onProgressUpdate: (position: Int?, state: TrackState) -> Unit): Int? {
-    val absoluteFilePath = getAppFilePath(fileSource.filePath)
+    val absoluteFilePath = if (fileSource.isAbsolutePath) fileSource.filePath else getAppFilePath(fileSource.filePath)
     if (!File(absoluteFilePath).exists()) {
       Log.e(TAG, "No such file: ${fileSource.filePath}")
       return null
@@ -47,19 +46,20 @@ actual object AudioPlayer: AudioPlayerInterface {
     VideoPlayerHolder.stopAll()
     RecorderInterface.stopRecording?.invoke()
     val current = currentlyPlaying.value
-    if (current == null || current.first != fileSource) {
+    if (current == null || current.first != fileSource || !player.status().isPlayable) {
       stopListener()
       player.stop()
       runCatching {
         if (fileSource.cryptoArgs != null) {
           val tmpFile = fileSource.createTmpFileIfNeeded()
           decryptCryptoFile(absoluteFilePath, fileSource.cryptoArgs, tmpFile.absolutePath)
-          player.media().prepare("file://${tmpFile.absolutePath}")
+          player.media().prepare(tmpFile.absolutePath)
         } else {
-          player.media().prepare("file://$absoluteFilePath")
+          player.media().prepare(absoluteFilePath)
         }
       }.onFailure {
         Log.e(TAG, it.stackTraceToString())
+        fileSource.deleteTmpFile()
         AlertManager.shared.showAlertMsg(generalGetString(MR.strings.unknown_error), it.message)
         return null
       }
@@ -171,7 +171,7 @@ actual object AudioPlayer: AudioPlayerInterface {
     var res: Int? = null
     try {
       val helperPlayer = AudioPlayerComponent().mediaPlayer()
-      helperPlayer.media().startPaused("file://$unencryptedFilePath")
+      helperPlayer.media().startPaused(unencryptedFilePath)
       res = helperPlayer.duration
       helperPlayer.stop()
       helperPlayer.release()
@@ -208,6 +208,25 @@ val MediaPlayer.duration: Int
   get() = media().info().duration().toInt()
 
 actual object SoundPlayer: SoundPlayerInterface {
-  override fun start(scope: CoroutineScope, sound: Boolean) { /*LALAL*/ }
-  override fun stop() { /*LALAL*/ }
+  var playing = false
+
+  override fun start(scope: CoroutineScope, sound: Boolean) {
+    withBGApi {
+      val tmpFile = File(tmpDir, UUID.randomUUID().toString())
+      tmpFile.deleteOnExit()
+      SoundPlayer::class.java.getResource("/media/ring_once.mp3").openStream()!!.use { it.copyTo(tmpFile.outputStream()) }
+      playing = true
+      while (playing) {
+        if (sound) {
+          AudioPlayer.play(CryptoFile.plain(tmpFile.absolutePath), mutableStateOf(true), mutableStateOf(0), mutableStateOf(0), true)
+        }
+        delay(3500)
+      }
+    }
+  }
+
+  override fun stop() {
+    playing = false
+    AudioPlayer.stop()
+  }
 }

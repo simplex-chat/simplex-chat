@@ -19,26 +19,26 @@ import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.ProfileNameField
+import chat.simplex.common.views.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.isValidDisplayName
 import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.net.URI
 
 @Composable
-fun GroupProfileView(groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
+fun GroupProfileView(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, close: () -> Unit) {
   GroupProfileLayout(
     close = close,
     groupProfile = groupInfo.groupProfile,
     saveProfile = { p ->
       withApi {
-        val gInfo = chatModel.controller.apiUpdateGroup(groupInfo.groupId, p)
+        val gInfo = chatModel.controller.apiUpdateGroup(rhId, groupInfo.groupId, p)
         if (gInfo != null) {
-          chatModel.updateGroup(gInfo)
+          chatModel.updateGroup(rhId, gInfo)
           close.invoke()
         }
       }
@@ -65,13 +65,13 @@ fun GroupProfileLayout(
         fullName.value == groupProfile.fullName &&
         groupProfile.image == profileImage.value
   val closeWithAlert = {
-    if (dataUnchanged || !(displayName.value.isNotEmpty() && isValidDisplayName(displayName.value))) {
+    if (dataUnchanged || !canUpdateProfile(displayName.value, groupProfile)) {
       close()
     } else {
       showUnsavedChangesAlert({
         saveProfile(
           groupProfile.copy(
-            displayName = displayName.value,
+            displayName = displayName.value.trim(),
             fullName = fullName.value,
             image = profileImage.value
           )
@@ -125,32 +125,32 @@ fun GroupProfileLayout(
                 stringResource(MR.strings.group_display_name_field),
                 fontSize = 16.sp
               )
-              if (!isValidDisplayName(displayName.value)) {
+              if (!isValidNewProfileName(displayName.value, groupProfile)) {
                 Spacer(Modifier.size(DEFAULT_PADDING_HALF))
-                Text(
-                  stringResource(MR.strings.no_spaces),
-                  fontSize = 16.sp,
-                  color = Color.Red
-                )
+                IconButton({ showInvalidNameAlert(mkValidName(displayName.value), displayName) }, Modifier.size(20.dp)) {
+                  Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
+                }
               }
             }
-            ProfileNameField(displayName, "", ::isValidDisplayName, focusRequester)
+            ProfileNameField(displayName, "", { isValidNewProfileName(it, groupProfile) }, focusRequester)
+            if (groupProfile.fullName.isNotEmpty() && groupProfile.fullName != groupProfile.displayName) {
+              Spacer(Modifier.height(DEFAULT_PADDING))
+              Text(
+                stringResource(MR.strings.group_full_name_field),
+                fontSize = 16.sp,
+                modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
+              )
+              ProfileNameField(fullName)
+            }
             Spacer(Modifier.height(DEFAULT_PADDING))
-            Text(
-              stringResource(MR.strings.group_full_name_field),
-              fontSize = 16.sp,
-              modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
-            )
-            ProfileNameField(fullName)
-            Spacer(Modifier.height(DEFAULT_PADDING))
-            val enabled = !dataUnchanged && displayName.value.isNotEmpty() && isValidDisplayName(displayName.value)
+            val enabled = !dataUnchanged && canUpdateProfile(displayName.value, groupProfile)
             if (enabled) {
               Text(
                 stringResource(MR.strings.save_group_profile),
                 modifier = Modifier.clickable {
                   saveProfile(
                     groupProfile.copy(
-                      displayName = displayName.value,
+                      displayName = displayName.value.trim(),
                       fullName = fullName.value,
                       image = profileImage.value
                     )
@@ -177,6 +177,12 @@ fun GroupProfileLayout(
     }
   }
 }
+
+private fun canUpdateProfile(displayName: String, groupProfile: GroupProfile): Boolean =
+  displayName.trim().isNotEmpty() && isValidNewProfileName(displayName, groupProfile)
+
+private fun isValidNewProfileName(displayName: String, groupProfile: GroupProfile): Boolean =
+  displayName == groupProfile.displayName || isValidDisplayName(displayName.trim())
 
 private fun showUnsavedChangesAlert(save: () -> Unit, revert: () -> Unit) {
   AlertManager.shared.showAlertDialogStacked(

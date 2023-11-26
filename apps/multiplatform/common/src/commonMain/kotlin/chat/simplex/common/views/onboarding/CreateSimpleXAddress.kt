@@ -18,18 +18,19 @@ import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.newchat.QRCode
+import chat.simplex.common.views.newchat.SimpleXLinkQRCode
+import chat.simplex.common.views.newchat.simplexChatLink
 import chat.simplex.res.MR
 
 @Composable
-fun CreateSimpleXAddress(m: ChatModel) {
+fun CreateSimpleXAddress(m: ChatModel, rhId: Long?) {
   var progressIndicator by remember { mutableStateOf(false) }
   val userAddress = remember { m.userAddress }
   val clipboard = LocalClipboardManager.current
   val uriHandler = LocalUriHandler.current
 
   LaunchedEffect(Unit) {
-    prepareChatBeforeAddressCreation()
+    prepareChatBeforeAddressCreation(rhId)
   }
 
   CreateSimpleXAddressLayout(
@@ -38,17 +39,17 @@ fun CreateSimpleXAddress(m: ChatModel) {
     sendEmail = { address ->
       uriHandler.sendEmail(
         generalGetString(MR.strings.email_invite_subject),
-        generalGetString(MR.strings.email_invite_body).format(address.connReqContact)
+        generalGetString(MR.strings.email_invite_body).format(simplexChatLink(address.connReqContact))
       )
     },
     createAddress = {
       withApi {
         progressIndicator = true
-        val connReqContact = m.controller.apiCreateUserAddress()
+        val connReqContact = m.controller.apiCreateUserAddress(rhId)
         if (connReqContact != null) {
           m.userAddress.value = UserContactLinkRec(connReqContact)
           try {
-            val u = m.controller.apiSetProfileAddress(true)
+            val u = m.controller.apiSetProfileAddress(rhId, true)
             if (u != null) {
               m.updateUser(u)
             }
@@ -91,8 +92,8 @@ private fun CreateSimpleXAddressLayout(
     Spacer(Modifier.weight(1f))
 
     if (userAddress != null) {
-      QRCode(userAddress.connReqContact, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
-      ShareAddressButton { share(userAddress.connReqContact) }
+      SimpleXLinkQRCode(userAddress.connReqContact, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+      ShareAddressButton { share(simplexChatLink(userAddress.connReqContact)) }
       Spacer(Modifier.weight(1f))
       ShareViaEmailButton { sendEmail(userAddress) }
       Spacer(Modifier.weight(1f))
@@ -175,18 +176,18 @@ private fun ProgressIndicator() {
   }
 }
 
-private fun prepareChatBeforeAddressCreation() {
+private fun prepareChatBeforeAddressCreation(rhId: Long?) {
   if (chatModel.users.isNotEmpty()) return
   withApi {
-    val user = chatModel.controller.apiGetActiveUser() ?: return@withApi
+    val user = chatModel.controller.apiGetActiveUser(rhId) ?: return@withApi
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
       chatModel.controller.startChat(user)
     } else {
-      val users = chatModel.controller.listUsers()
+      val users = chatModel.controller.listUsers(rhId)
       chatModel.users.clear()
       chatModel.users.addAll(users)
-      chatModel.controller.getUserChatData()
+      chatModel.controller.getUserChatData(rhId)
     }
   }
 }

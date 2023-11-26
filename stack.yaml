@@ -49,9 +49,9 @@ extra-deps:
   # - simplexmq-1.0.0@sha256:34b2004728ae396e3ae449cd090ba7410781e2b3cefc59259915f4ca5daa9ea8,8561
   # - ../simplexmq
   - github: simplex-chat/simplexmq
-    commit: 53c793d5590d3c781aa3fbf72993eee262c7aa83
+    commit: 281bdebcb82aed4c8c2c08438b9cafc7908183a1
   - github: kazu-yamamoto/http2
-    commit: b5a1b7200cf5bc7044af34ba325284271f6dff25
+    commit: f5525b755ff2418e6e6ecc69e877363b0d0bcaeb
   # - ../direct-sqlcipher
   - github: simplex-chat/direct-sqlcipher
     commit: 34309410eb2069b029b8fc1872deb1e0db123294
@@ -60,7 +60,7 @@ extra-deps:
     commit: 5e154a2aeccc33ead6c243ec07195ab673137221
   # - terminal-0.2.0.0@sha256:de6770ecaae3197c66ac1f0db5a80cf5a5b1d3b64a66a05b50f442de5ad39570,2977
   - github: simplex-chat/aeson
-    commit: 3eb66f9a68f103b5f1489382aad89f5712a64db7
+    commit: aab7b5a14d6c5ea64c64dcaee418de1bb00dcc2b
   - github: simplex-chat/haskell-terminal
     commit: f708b00009b54890172068f168bf98508ffcd495
 #

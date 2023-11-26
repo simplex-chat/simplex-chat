@@ -25,7 +25,7 @@ private func typing(_ w: Font.Weight = .light) -> Text {
 }
 
 struct MsgContentView: View {
-    @EnvironmentObject var chat: Chat
+    @ObservedObject var chat: Chat
     var text: String
     var formattedText: [FormattedText]? = nil
     var sender: String? = nil
@@ -121,13 +121,11 @@ private func formatText(_ ft: FormattedText, _ preview: Bool) -> Text {
         case .secret: return Text(t).foregroundColor(.clear).underline(color: .primary)
         case let .colored(color): return Text(t).foregroundColor(color.uiColor)
         case .uri: return linkText(t, t, preview, prefix: "")
-        case let .simplexLink(linkType, simplexUri, trustedUri, smpHosts):
+        case let .simplexLink(linkType, simplexUri, smpHosts):
             switch privacySimplexLinkModeDefault.get() {
             case .description: return linkText(simplexLinkText(linkType, smpHosts), simplexUri, preview, prefix: "")
             case .full: return linkText(t, simplexUri, preview, prefix: "")
-            case .browser: return trustedUri
-                                    ? linkText(t, t, preview, prefix: "")
-                                    : linkText(t, t, preview, prefix: "", color: .red, uiColor: .red)
+            case .browser: return linkText(t, simplexUri, preview, prefix: "")
             }
         case .email: return linkText(t, t, preview, prefix: "mailto:")
         case .phone: return linkText(t, t.replacingOccurrences(of: " ", with: ""), preview, prefix: "tel:")
@@ -154,6 +152,7 @@ struct MsgContentView_Previews: PreviewProvider {
     static var previews: some View {
         let chatItem = ChatItem.getSample(1, .directSnd, .now, "hello")
         return MsgContentView(
+            chat: Chat.sampleData,
             text: chatItem.text,
             formattedText: chatItem.formattedText,
             sender: chatItem.memberDisplayName,

@@ -7,16 +7,23 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
+import Control.Monad.Except
+import qualified Data.Attoparsec.ByteString.Char8 as A
+import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
-import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..))
+import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), Profile (..))
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec
+import Simplex.Chat.Store.Shared (createContact)
+import Control.Monad
+import Simplex.Messaging.Encoding.String (StrEncoding(..))
 
 chatProfileTests :: SpecWith FilePath
 chatProfileTests = do
   describe "user profiles" $ do
     it "update user profile and notify contacts" testUpdateProfile
     it "update user profile with image" testUpdateProfileImage
+    it "use multiword profile names" testMultiWordProfileNames
   describe "user contact link" $ do
     it "create and connect via contact link" testUserContactLink
     it "add contact link to profile" testProfileLink
@@ -27,6 +34,12 @@ chatProfileTests = do
     it "delete connection requests when contact link deleted" testDeleteConnectionRequests
     it "auto-reply message" testAutoReplyMessage
     it "auto-reply message in incognito" testAutoReplyMessageInIncognito
+  describe "contact address connection plan" $ do
+    it "contact address ok to connect; known contact" testPlanAddressOkKnown
+    it "own contact address" testPlanAddressOwn
+    it "connecting via contact address" testPlanAddressConnecting
+    it "re-connect with deleted contact" testPlanAddressContactDeletedReconnected
+    it "contact via address" testPlanAddressContactViaAddress
   describe "incognito" $ do
     it "connect incognito via invitation link" testConnectIncognitoInvitationLink
     it "connect incognito via contact address" testConnectIncognitoContactAddress
@@ -62,7 +75,7 @@ testUpdateProfile =
       createGroup3 "team" alice bob cath
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
-      alice <## "use /p <display name> [<full name>] to change it"
+      alice <## "use /p <display name> to change it"
       alice <## "(the updated profile will be sent to all your contacts)"
       alice ##> "/p alice"
       concurrentlyN_
@@ -116,6 +129,76 @@ testUpdateProfileImage =
       bob <## "contact alice changed to alice2"
       bob <## "use @alice2 <message> to send messages"
       (bob </)
+
+testMultiWordProfileNames :: HasCallStack => FilePath -> IO ()
+testMultiWordProfileNames =
+  testChat3 aliceProfile' bobProfile' cathProfile' $
+    \alice bob cath -> do
+      alice ##> "/c"
+      inv <- getInvitation alice
+      bob ##> ("/c " <> inv)
+      bob <## "confirmation sent!"
+      concurrently_
+        (bob <## "'Alice Jones': contact is connected")
+        (alice <## "'Bob James': contact is connected")
+      alice #> "@'Bob James' hi"
+      bob <# "'Alice Jones'> hi"
+      alice ##> "/g 'Our Team'"
+      alice <## "group #'Our Team' is created"
+      alice <## "to add members use /a 'Our Team' <name> or /create link #'Our Team'"
+      alice ##> "/a 'Our Team' 'Bob James' admin"
+      alice <## "invitation to join the group #'Our Team' sent to 'Bob James'"
+      bob <## "#'Our Team': 'Alice Jones' invites you to join the group as admin"
+      bob <## "use /j 'Our Team' to accept"
+      bob ##> "/j 'Our Team'"
+      bob <## "#'Our Team': you joined the group"
+      alice <## "#'Our Team': 'Bob James' joined the group"
+      bob ##> "/c"
+      inv' <- getInvitation bob
+      cath ##> ("/c " <> inv')
+      cath <## "confirmation sent!"
+      concurrently_
+        (cath <## "'Bob James': contact is connected")
+        (bob <## "'Cath Johnson': contact is connected")
+      bob ##> "/a 'Our Team' 'Cath Johnson'"
+      bob <## "invitation to join the group #'Our Team' sent to 'Cath Johnson'"
+      cath <## "#'Our Team': 'Bob James' invites you to join the group as member"
+      cath <## "use /j 'Our Team' to accept"
+      cath ##> "/j 'Our Team'"
+      concurrentlyN_
+        [ bob <## "#'Our Team': 'Cath Johnson' joined the group",
+          do
+            cath <## "#'Our Team': you joined the group"
+            cath <## "#'Our Team': member 'Alice Jones' is connected",
+          do
+            alice <## "#'Our Team': 'Bob James' added 'Cath Johnson' to the group (connecting...)"
+            alice <## "#'Our Team': new member 'Cath Johnson' is connected"
+        ]
+      bob #> "#'Our Team' hi"
+      alice <# "#'Our Team' 'Bob James'> hi"
+      cath <# "#'Our Team' 'Bob James'> hi"
+      alice `send` "@'Cath Johnson' hello"
+      alice <## "member #'Our Team' 'Cath Johnson' does not have direct connection, creating"
+      alice <## "contact for member #'Our Team' 'Cath Johnson' is created"
+      alice <## "sent invitation to connect directly to member #'Our Team' 'Cath Johnson'"
+      alice <# "@'Cath Johnson' hello"
+      cath <## "#'Our Team' 'Alice Jones' is creating direct contact 'Alice Jones' with you"
+      cath <# "'Alice Jones'> hello"
+      cath <## "'Alice Jones': contact is connected"
+      alice <## "'Cath Johnson': contact is connected"
+      cath ##> "/p 'Cath J'"
+      cath <## "user profile is changed to 'Cath J' (your 2 contacts are notified)"
+      alice <## "contact 'Cath Johnson' changed to 'Cath J'"
+      alice <## "use @'Cath J' <message> to send messages"
+      bob <## "contact 'Cath Johnson' changed to 'Cath J'"
+      bob <## "use @'Cath J' <message> to send messages"
+      alice #> "@'Cath J' hi"
+      cath <# "'Alice Jones'> hi"
+  where
+    aliceProfile' = baseProfile {displayName = "Alice Jones"}
+    bobProfile' = baseProfile {displayName = "Bob James"}
+    cathProfile' = baseProfile {displayName = "Cath Johnson"}
+    baseProfile = Profile {displayName = "", fullName = "", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
 testUserContactLink :: HasCallStack => FilePath -> IO ()
 testUserContactLink =
@@ -298,7 +381,8 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
       (alice <## "bob (Bob): contact is connected")
 
     bob ##> ("/c " <> cLink)
-    bob <## "alice (Alice): contact already exists"
+    bob <## "contact address: known contact alice"
+    bob <## "use @alice <message> to send messages"
     alice @@@ [("@bob", lastChatFeature)]
     bob @@@ [("@alice", lastChatFeature), (":2", ""), (":1", "")]
     bob ##> "/_delete :1"
@@ -311,7 +395,8 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     bob @@@ [("@alice", "hey")]
 
     bob ##> ("/c " <> cLink)
-    bob <## "alice (Alice): contact already exists"
+    bob <## "contact address: known contact alice"
+    bob <## "use @alice <message> to send messages"
 
     alice <##> bob
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (0, "hey"), (1, "hi"), (0, "hey")])
@@ -369,7 +454,8 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
       (alice <## "robert (Robert): contact is connected")
 
     bob ##> ("/c " <> cLink)
-    bob <## "alice (Alice): contact already exists"
+    bob <## "contact address: known contact alice"
+    bob <## "use @alice <message> to send messages"
     alice @@@ [("@robert", lastChatFeature)]
     bob @@@ [("@alice", lastChatFeature), (":3", ""), (":2", ""), (":1", "")]
     bob ##> "/_delete :1"
@@ -384,7 +470,8 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     bob @@@ [("@alice", "hey")]
 
     bob ##> ("/c " <> cLink)
-    bob <## "alice (Alice): contact already exists"
+    bob <## "contact address: known contact alice"
+    bob <## "use @alice <message> to send messages"
 
     alice <##> bob
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (0, "hey"), (1, "hi"), (0, "hey")])
@@ -495,6 +582,246 @@ testAutoReplyMessageInIncognito = testChat2 aliceProfile bobProfile $
                  ]
       ]
 
+testPlanAddressOkKnown :: HasCallStack => FilePath -> IO ()
+testPlanAddressOkKnown =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/ad"
+      cLink <- getContactLink alice True
+
+      bob ##> ("/_connect plan 1 " <> cLink)
+      bob <## "contact address: ok to connect"
+
+      bob ##> ("/c " <> cLink)
+      alice <#? bob
+      alice @@@ [("<@bob", "")]
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request..."
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice <##> bob
+
+      bob ##> ("/_connect plan 1 " <> cLink)
+      bob <## "contact address: known contact alice"
+      bob <## "use @alice <message> to send messages"
+
+      let cLinkSchema2 = linkAnotherSchema cLink
+      bob ##> ("/_connect plan 1 " <> cLinkSchema2)
+      bob <## "contact address: known contact alice"
+      bob <## "use @alice <message> to send messages"
+
+      bob ##> ("/c " <> cLink)
+      bob <## "contact address: known contact alice"
+      bob <## "use @alice <message> to send messages"
+
+testPlanAddressOwn :: HasCallStack => FilePath -> IO ()
+testPlanAddressOwn tmp =
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    alice ##> "/ad"
+    cLink <- getContactLink alice True
+
+    alice ##> ("/_connect plan 1 " <> cLink)
+    alice <## "contact address: own address"
+
+    let cLinkSchema2 = linkAnotherSchema cLink
+    alice ##> ("/_connect plan 1 " <> cLinkSchema2)
+    alice <## "contact address: own address"
+
+    alice ##> ("/c " <> cLink)
+    alice <## "connection request sent!"
+    alice <## "alice_1 (Alice) wants to connect to you!"
+    alice <## "to accept: /ac alice_1"
+    alice <## "to reject: /rc alice_1 (the sender will NOT be notified)"
+    alice @@@ [("<@alice_1", ""), (":2","")]
+    alice ##> "/ac alice_1"
+    alice <## "alice_1 (Alice): accepting contact request..."
+    alice
+      <### [ "alice_1 (Alice): contact is connected",
+             "alice_2 (Alice): contact is connected"
+           ]
+
+    alice @@@ [("@alice_1", lastChatFeature), ("@alice_2", lastChatFeature)]
+    alice `send` "@alice_2 hi"
+    alice
+      <### [ WithTime "@alice_2 hi",
+             WithTime "alice_1> hi"
+           ]
+    alice `send` "@alice_1 hey"
+    alice
+      <### [ WithTime "@alice_1 hey",
+             WithTime "alice_2> hey"
+           ]
+    alice @@@ [("@alice_1", "hey"), ("@alice_2", "hey")]
+
+    alice ##> ("/_connect plan 1 " <> cLink)
+    alice <## "contact address: own address"
+
+    alice ##> ("/c " <> cLink)
+    alice <## "alice_2 (Alice): contact already exists"
+
+testPlanAddressConnecting :: HasCallStack => FilePath -> IO ()
+testPlanAddressConnecting tmp = do
+  cLink <- withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    alice ##> "/ad"
+    getContactLink alice True
+  withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    threadDelay 100000
+
+    bob ##> ("/c " <> cLink)
+    bob <## "connection request sent!"
+
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: connecting, allowed to reconnect"
+
+    let cLinkSchema2 = linkAnotherSchema cLink
+    bob ##> ("/_connect plan 1 " <> cLinkSchema2)
+    bob <## "contact address: connecting, allowed to reconnect"
+
+    threadDelay 100000
+  withTestChat tmp "alice" $ \alice -> do
+    alice <## "Your address is active! To show: /sa"
+    alice <## "bob (Bob) wants to connect to you!"
+    alice <## "to accept: /ac bob"
+    alice <## "to reject: /rc bob (the sender will NOT be notified)"
+    alice ##> "/ac bob"
+    alice <## "bob (Bob): accepting contact request..."
+  withTestChat tmp "bob" $ \bob -> do
+    threadDelay 500000
+    bob @@@ [("@alice", "")]
+    bob ##> ("/_connect plan 1 " <> cLink)
+    bob <## "contact address: connecting to contact alice"
+
+    let cLinkSchema2 = linkAnotherSchema cLink
+    bob ##> ("/_connect plan 1 " <> cLinkSchema2)
+    bob <## "contact address: connecting to contact alice"
+
+    bob ##> ("/c " <> cLink)
+    bob <## "contact address: connecting to contact alice"
+
+testPlanAddressContactDeletedReconnected :: HasCallStack => FilePath -> IO ()
+testPlanAddressContactDeletedReconnected =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/ad"
+      cLink <- getContactLink alice True
+
+      bob ##> ("/c " <> cLink)
+      alice <#? bob
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request..."
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+      alice <##> bob
+
+      bob ##> ("/_connect plan 1 " <> cLink)
+      bob <## "contact address: known contact alice"
+      bob <## "use @alice <message> to send messages"
+
+      bob ##> ("/c " <> cLink)
+      bob <## "contact address: known contact alice"
+      bob <## "use @alice <message> to send messages"
+
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      bob ##> ("/_connect plan 1 " <> cLink)
+      bob <## "contact address: ok to connect"
+
+      let cLinkSchema2 = linkAnotherSchema cLink
+      bob ##> ("/_connect plan 1 " <> cLinkSchema2)
+      bob <## "contact address: ok to connect"
+
+      bob ##> ("/c " <> cLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request..."
+      concurrently_
+        (bob <## "alice_1 (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+
+      alice #> "@bob hi"
+      bob <# "alice_1> hi"
+      bob #> "@alice_1 hey"
+      alice <# "bob> hey"
+
+      bob ##> ("/_connect plan 1 " <> cLink)
+      bob <## "contact address: known contact alice_1"
+      bob <## "use @alice_1 <message> to send messages"
+
+      bob ##> ("/_connect plan 1 " <> cLinkSchema2)
+      bob <## "contact address: known contact alice_1"
+      bob <## "use @alice_1 <message> to send messages"
+
+      bob ##> ("/c " <> cLink)
+      bob <## "contact address: known contact alice_1"
+      bob <## "use @alice_1 <message> to send messages"
+
+testPlanAddressContactViaAddress :: HasCallStack => FilePath -> IO ()
+testPlanAddressContactViaAddress =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      alice ##> "/ad"
+      cLink <- getContactLink alice True
+
+      alice ##> "/pa on" -- not necessary, without it bob would receive profile update removing contact link
+      alice <## "new contact address set"
+
+      case A.parseOnly strP (B.pack cLink) of
+        Left _ -> error "error parsing contact link"
+        Right cReq -> do
+          let profile = aliceProfile {contactLink = Just cReq}
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          bob @@@ [("@alice", "")]
+
+          bob ##> "/delete @alice"
+          bob <## "alice: contact is deleted"
+
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          bob @@@ [("@alice", "")]
+
+          bob ##> ("/_connect plan 1 " <> cLink)
+          bob <## "contact address: known contact without connection alice"
+
+          let cLinkSchema2 = linkAnotherSchema cLink
+          bob ##> ("/_connect plan 1 " <> cLinkSchema2)
+          bob <## "contact address: known contact without connection alice"
+
+          -- terminal api
+          bob ##> ("/c " <> cLink)
+          connecting alice bob
+
+          bob ##> "/_delete @2 notify=off"
+          bob <## "alice: contact is deleted"
+          alice ##> "/_delete @2 notify=off"
+          alice <## "bob: contact is deleted"
+
+          void $ withCCUser bob $ \user -> withCCTransaction bob $ \db -> runExceptT $ createContact db user profile
+          bob @@@ [("@alice", "")]
+
+          -- GUI api
+          bob ##> "/_connect contact 1 2"
+          connecting alice bob
+  where
+    connecting alice bob = do
+      bob <## "connection request sent!"
+      alice <## "bob (Bob) wants to connect to you!"
+      alice <## "to accept: /ac bob"
+      alice <## "to reject: /rc bob (the sender will NOT be notified)"
+      alice ##> "/ac bob"
+      alice <## "bob (Bob): accepting contact request..."
+      concurrently_
+        (bob <## "alice (Alice): contact is connected")
+        (alice <## "bob (Bob): contact is connected")
+
+      alice <##> bob
+      bob @@@ [("@alice", "hey")]
+
 testConnectIncognitoInvitationLink :: HasCallStack => FilePath -> IO ()
 testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfile $
   \alice bob cath -> do
@@ -558,6 +885,7 @@ testConnectIncognitoInvitationLink = testChat3 aliceProfile bobProfile cathProfi
     -- alice deletes contact, incognito profile is deleted
     alice ##> ("/d " <> bobIncognito)
     alice <## (bobIncognito <> ": contact is deleted")
+    bob <## (aliceIncognito <> " deleted contact with you")
     alice ##> "/contacts"
     alice <## "cath (Catherine)"
     alice `hasContactProfiles` ["alice", "cath"]
@@ -601,6 +929,7 @@ testConnectIncognitoContactAddress = testChat2 aliceProfile bobProfile $
     -- delete contact, incognito profile is deleted
     bob ##> "/d alice"
     bob <## "alice: contact is deleted"
+    alice <## (bobIncognito <> " deleted contact with you")
     bob ##> "/contacts"
     (bob </)
     bob `hasContactProfiles` ["bob"]
@@ -633,6 +962,7 @@ testAcceptContactRequestIncognito = testChat3 aliceProfile bobProfile cathProfil
     -- delete contact, incognito profile is deleted
     alice ##> "/d bob"
     alice <## "bob: contact is deleted"
+    bob <## (aliceIncognitoBob <> " deleted contact with you")
     alice ##> "/contacts"
     (alice </)
     alice `hasContactProfiles` ["alice"]
@@ -822,7 +1152,7 @@ testJoinGroupIncognito =
         ]
       -- cath cannot invite to the group because her membership is incognito
       cath ##> "/a secret_club dan"
-      cath <## "you've connected to this group using an incognito profile - prohibited to invite contacts"
+      cath <## "you are using an incognito profile for this group - prohibited to invite contacts"
       -- alice invites dan
       alice ##> "/a secret_club dan admin"
       concurrentlyN_
@@ -1063,6 +1393,7 @@ testDeleteContactThenGroupDeletesIncognitoProfile = testChat2 aliceProfile bobPr
     -- delete contact
     bob ##> "/d alice"
     bob <## "alice: contact is deleted"
+    alice <## (bobIncognito <> " deleted contact with you")
     bob ##> "/contacts"
     (bob </)
     bob `hasContactProfiles` ["alice", "bob", T.pack bobIncognito]
@@ -1125,6 +1456,7 @@ testDeleteGroupThenContactDeletesIncognitoProfile = testChat2 aliceProfile bobPr
     -- delete contact
     bob ##> "/d alice"
     bob <## "alice: contact is deleted"
+    alice <## (bobIncognito <> " deleted contact with you")
     bob ##> "/contacts"
     (bob </)
     bob `hasContactProfiles` ["bob"]

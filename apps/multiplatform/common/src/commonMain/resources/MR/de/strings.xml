@@ -3,11 +3,11 @@
     <string name="app_name">SimpleX</string>
     <string name="thousand_abbreviation">k</string>
     <!-- Connect via Link - MainActivity.kt -->
-    <string name="connect_via_contact_link">Über den Kontakt-Link verbinden?</string>
-    <string name="connect_via_invitation_link">Über den Einladungslink verbinden\?</string>
-    <string name="connect_via_group_link">Über den Gruppen-Link verbinden?</string>
+    <string name="connect_via_contact_link">Über die Kontakt-Adresse verbinden?</string>
+    <string name="connect_via_invitation_link">Über den Einmal-Link verbinden?</string>
+    <string name="connect_via_group_link">Der Gruppe beitreten?</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Ihr Profil wird an den Kontakt gesendet, von dem Sie diesen Link erhalten haben.</string>
-    <string name="you_will_join_group">Sie werden der Gruppe beitreten, auf die sich dieser Link bezieht, und sich mit deren Gruppenmitgliedern verbinden.</string>
+    <string name="you_will_join_group">Sie werden mit allen Gruppenmitgliedern verbunden.</string>
     <string name="connect_via_link_verb">Verbinden</string>
     <!-- Server info - ChatModel.kt -->
     <string name="server_connected">Verbunden</string>
@@ -21,7 +21,7 @@
     <string name="marked_deleted_description">als gelöscht markiert</string>
     <string name="sending_files_not_yet_supported">Das Senden von Dateien wird noch nicht unterstützt</string>
     <string name="receiving_files_not_yet_supported">Der Empfang von Dateien wird noch nicht unterstützt</string>
-    <string name="sender_you_pronoun">Meine Daten</string>
+    <string name="sender_you_pronoun">Ihre Daten</string>
     <string name="unknown_message_format">Unbekanntes Nachrichtenformat</string>
     <string name="invalid_message_format">Unzulässiges Nachrichtenformat</string>
     <!-- PendingContactConnection - ChatModel.kt -->
@@ -344,8 +344,8 @@
     <string name="create_one_time_link">Einmal-Einladungslink erstellen</string>
     <string name="one_time_link">Einmal-Einladungslink</string>
     <!-- settings - SettingsView.kt -->
-    <string name="your_settings">Meine Einstellungen</string>
-    <string name="your_simplex_contact_address">Meine SimpleX-Adresse</string>
+    <string name="your_settings">Ihre Einstellungen</string>
+    <string name="your_simplex_contact_address">Ihre SimpleX-Adresse</string>
     <string name="database_passphrase_and_export">Datenbank-Passwort &amp; -Export</string>
     <string name="about_simplex_chat">Über SimpleX Chat</string>
     <string name="how_to_use_simplex_chat">Wie man SimpleX nutzt</string>
@@ -418,7 +418,7 @@
     <string name="share_link">Link teilen</string>
     <string name="delete_address">Adresse löschen</string>
     <!-- User profile details - UserProfileView.kt -->
-    <string name="display_name__field">Angezeigter Name:</string>
+    <string name="display_name__field">Profilname:</string>
     <string name="full_name__field">Vollständiger Name:</string>
     <string name="your_current_profile">Mein aktuelles Chat-Profil</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ihr Profil wird auf Ihrem Gerät gespeichert und nur mit Ihren Kontakten geteilt. SimpleX-Server können Ihr Profil nicht sehen.</string>
@@ -437,8 +437,7 @@
     <string name="your_profile_is_stored_on_your_device">Ihr Profil, Ihre Kontakte und zugestellten Nachrichten werden auf Ihrem Gerät gespeichert.</string>
     <string name="profile_is_only_shared_with_your_contacts">Das Profil wird nur mit Ihren Kontakten geteilt.</string>
     <string name="display_name_cannot_contain_whitespace">Der angezeigte Name darf keine Leerzeichen enthalten.</string>
-    <string name="display_name">Angezeigter Name</string>
-    <string name="full_name_optional__prompt">Vollständiger Name (optional)</string>
+    <string name="display_name">Geben Sie Ihren Namen ein:</string>
     <string name="create_profile_button">Erstellen</string>
     <string name="about_simplex">Über SimpleX</string>
     <!-- markdown demo - MarkdownHelpView.kt -->
@@ -554,7 +553,7 @@
 \n3. Die Verbindung wurde kompromittiert.</string>
     <!-- Privacy settings -->
     <string name="privacy_and_security">Datenschutz &amp; Sicherheit</string>
-    <string name="your_privacy">Meine Privatsphäre</string>
+    <string name="your_privacy">Ihre Privatsphäre</string>
     <string name="protect_app_screen">App-Bildschirm schützen</string>
     <string name="auto_accept_images">Bilder automatisch akzeptieren</string>
     <string name="send_link_previews">Link-Vorschau senden</string>
@@ -713,7 +712,7 @@
     <string name="group_invitation_expired">Die Gruppeneinladung ist abgelaufen</string>
     <!-- Group event chat items -->
     <string name="rcv_group_event_member_added">hat %1$s eingeladen.</string>
-    <string name="rcv_group_event_member_connected">beigetreten</string>
+    <string name="rcv_group_event_member_connected">verbunden</string>
     <string name="rcv_group_event_member_left">hat die Gruppe verlassen</string>
     <string name="rcv_group_event_changed_member_role">änderte die Rolle von %s auf %s</string>
     <string name="rcv_group_event_changed_your_role">änderte Ihre Rolle auf %s</string>
@@ -814,8 +813,8 @@
     <string name="switch_receiving_address">Empfängeradresse wechseln</string>
     <!-- AddGroupView.kt -->
     <string name="create_secret_group_title">Geheime Gruppe erstellen</string>
-    <string name="group_is_decentralized">Die Gruppe ist vollständig dezentralisiert – sie ist nur für Mitglieder sichtbar.</string>
-    <string name="group_display_name_field">Anzeigename der Gruppe:</string>
+    <string name="group_is_decentralized">Vollständig dezentralisiert – nur für Mitglieder sichtbar.</string>
+    <string name="group_display_name_field">Geben Sie den Gruppennamen ein:</string>
     <string name="group_full_name_field">Vollständiger Gruppenname:</string>
     <string name="group_main_profile_sent">Ihr Chat-Profil wird an die Gruppenmitglieder gesendet</string>
     <!-- GroupProfileView.kt -->
@@ -1002,7 +1001,7 @@
     <string name="network_session_mode_transport_isolation">Transport-Isolation</string>
     <string name="users_delete_question">Chat-Profil löschen\?</string>
     <string name="error_deleting_user">Fehler beim Löschen des Benutzerprofils</string>
-    <string name="your_chat_profiles">Meine Chat-Profile</string>
+    <string name="your_chat_profiles">Ihre Chat-Profile</string>
     <string name="network_session_mode_entity">Verbindung</string>
     <string name="network_session_mode_user">Chat-Profil</string>
     <string name="delete_files_and_media_for_all_users">Dateien für alle Chat-Profile löschen</string>
@@ -1085,7 +1084,7 @@
     <string name="you_will_still_receive_calls_and_ntfs">Sie können Anrufe und Benachrichtigungen auch von stummgeschalteten Profilen empfangen, solange diese aktiv sind.</string>
     <string name="group_welcome_title">Begrüßungsmeldung</string>
     <string name="you_can_hide_or_mute_user_profile">Sie können ein Benutzerprofil verbergen oder stummschalten – für das Menü gedrückt halten.</string>
-    <string name="to_reveal_profile_enter_password">Geben Sie ein vollständiges Passwort in das Suchfeld auf der Seite \"Meine Chat-Profile\" ein, um Ihr verborgenes Profil zu sehen.</string>
+    <string name="to_reveal_profile_enter_password">Geben Sie ein vollständiges Passwort in das Suchfeld auf der Seite \"Ihre Chat-Profile\" ein, um Ihr verborgenes Profil zu sehen.</string>
     <string name="invalid_migration_confirmation">Migrations-Bestätigung ungültig</string>
     <string name="upgrade_and_open_chat">Aktualisieren und den Chat öffnen</string>
     <string name="confirm_database_upgrades">Datenbank-Aktualisierungen bestätigen</string>
@@ -1190,7 +1189,6 @@
     <string name="stop_snd_file__message">Das Senden der Datei wird beendet.</string>
     <string name="stop_file__action">Datei beenden</string>
     <string name="revoke_file__message">Die Datei wird von den Servern gelöscht.</string>
-    <string name="no_spaces">Keine Leerzeichen!</string>
     <string name="revoke_file__confirm">Widerrufen</string>
     <string name="revoke_file__action">Datei widerrufen</string>
     <string name="revoke_file__title">Datei widerrufen\?</string>
@@ -1453,9 +1451,9 @@
     <string name="system_restricted_background_desc">SimpleX kann nicht im Hintergrund ablaufen. Sie erhalten Benachrichtigungen nur dann, solange die App läuft.</string>
     <string name="system_restricted_background_in_call_desc">Die App kann nach einer Minute im Hintergrund geschlossen werden.</string>
     <string name="system_restricted_background_warn"><![CDATA[Wählen Sie bitte in den App-Einstellungen <b>App-Akkuverbrauch</b> / <b>Unbeschränkt</b> , um Benachrichtigungen zu aktivieren.]]></string>
-    <string name="rcv_group_event_n_members_connected">%s, %s und %d weitere Mitglieder wurden verbunden</string>
-    <string name="rcv_group_event_2_members_connected">%s und %s wurden verbunden</string>
-    <string name="rcv_group_event_3_members_connected">%s, %s und %s wurden verbunden</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s und %d weitere Mitglieder wurden mit Ihnen verbunden</string>
+    <string name="rcv_group_event_2_members_connected">%s und %s wurden mit Ihnen verbunden</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s und %s wurden mit Ihnen verbunden</string>
     <string name="privacy_message_draft">Nachrichtenentwurf</string>
     <string name="privacy_show_last_messages">Letzte Nachrichten anzeigen</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Die Datenbank wird verschlüsselt und das Passwort in den Einstellungen gespeichert.</string>
@@ -1472,4 +1470,139 @@
     <string name="settings_is_storing_in_clear_text">Das Passwort wurde in Klartext in den Einstellungen gespeichert.</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Bitte beachten Sie</b>: Die Nachrichten- und Dateirelais sind per SOCKS Proxy verbunden. Anrufe und gesendete Link-Vorschaubilder nutzen eine direkte Verbindung.]]></string>
     <string name="encrypt_local_files">Lokale Dateien verschlüsseln</string>
+    <string name="rcv_group_event_open_chat">Öffnen</string>
+    <string name="v5_3_encrypt_local_files">Gespeicherte Dateien &amp; Medien verschlüsseln</string>
+    <string name="error_creating_member_contact">Fehler beim Anlegen eines Mitglied-Kontaktes</string>
+    <string name="v5_3_new_desktop_app">Neue Desktop-App!</string>
+    <string name="v5_3_new_interface_languages">6 neue Sprachen für die Bedienoberfläche</string>
+    <string name="v5_3_encrypt_local_files_descr">Neue lokale Dateien (außer Video-Dateien) werden von der App verschlüsselt.</string>
+    <string name="compose_send_direct_message_to_connect">Eine Direktnachricht zum Verbinden senden</string>
+    <string name="v5_3_discover_join_groups">Gruppen entdecken und ihnen beitreten</string>
+    <string name="v5_3_simpler_incognito_mode">Vereinfachter Inkognito-Modus</string>
+    <string name="v5_3_new_interface_languages_descr">Arabisch, Bulgarisch, Finnisch, Hebräisch, Thailändisch und Ukrainisch - Dank der Nutzer und Weblate.</string>
+    <string name="v5_3_new_desktop_app_descr">Erstellen eines neuen Profils in der Desktop-App. 💻</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Inkognito beim Verbinden einschalten.</string>
+    <string name="v5_3_discover_join_groups_descr">- Verbindung mit dem Directory-Service (BETA)!
+\n- Empfangsbestätigungen (für bis zu 20 Mitglieder).
+\n- Schneller und stabiler.</string>
+    <string name="member_contact_send_direct_message">Direktnachricht senden</string>
+    <string name="rcv_group_event_member_created_contact">Direkt miteinander verbunden</string>
+    <string name="expand_verb">Erweitern</string>
+    <string name="connect_plan_repeat_connection_request">Verbindungsanfrage wiederholen?</string>
+    <string name="rcv_direct_event_contact_deleted">Gelöschter Kontakt</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName">Sie sind bereits mit %1$s verbunden.</string>
+    <string name="error_alert_title">Fehler</string>
+    <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Sie sind über diesen Link bereits Mitglied der Gruppe.</string>
+    <string name="create_group_button">Gruppe erstellen</string>
+    <string name="create_another_profile_button">Profil erstellen</string>
+    <string name="group_members_2">%s und %s</string>
+    <string name="connect_plan_join_your_group">Ihrer Gruppe beitreten?</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName">Sie sind bereits Mitglied in der Gruppe %1$s.</string>
+    <string name="connect_plan_this_is_your_own_one_time_link">Das ist Ihr eigener Einmal-Link!</string>
+    <string name="marked_deleted_items_description">%d Nachrichten als gelöscht markiert</string>
+    <string name="connect_plan_group_already_exists">Gruppe besteht bereits!</string>
+    <string name="connect_plan_already_connecting">Bereits verbunden!</string>
+    <string name="video_decoding_exception_desc">Das Video kann nicht dekodiert werden. Bitte probieren Sie ein anderes Video aus, oder kontaktieren Sie die Entwickler.</string>
+    <string name="rcv_group_event_1_member_connected">%s wurde mit Ihnen verbunden</string>
+    <string name="rcv_group_and_other_events">und %d weitere Ereignisse</string>
+    <string name="connect_plan_connect_via_link">Über einen Link verbinden?</string>
+    <string name="connect_plan_already_joining_the_group">Sie sind bereits Mitglied der Gruppe!</string>
+    <string name="group_members_n">%s, %s und %d Mitglieder</string>
+    <string name="moderated_items_description">%d Nachrichten von %s moderiert</string>
+    <string name="unblock_member_button">Mitglied freigeben</string>
+    <string name="connect_plan_connect_to_yourself">Mit Ihnen selbst verbinden?</string>
+    <string name="contact_tap_to_connect">Zum Verbinden antippen</string>
+    <string name="connect_plan_you_are_already_in_group_vName">Sie sind bereits Mitglied in der Gruppe %1$s.</string>
+    <string name="connect_plan_this_is_your_own_simplex_address">Das ist Ihre eigene SimpleX-Adresse!</string>
+    <string name="correct_name_to">Richtiger Name für %s?</string>
+    <string name="delete_messages__question">%d Nachrichten löschen?</string>
+    <string name="connect_with_contact_name_question">Mit %1$s verbinden?</string>
+    <string name="remove_member_button">Mitglied entfernen</string>
+    <string name="block_member_confirmation">Blockieren</string>
+    <string name="unblock_member_question">Mitglied freigeben?</string>
+    <string name="blocked_items_description">%d Nachrichten blockiert</string>
+    <string name="block_member_button">Mitglied blockieren</string>
+    <string name="connect_plan_repeat_join_request">Verbindungsanfrage wiederholen?</string>
+    <string name="button_remove_member_question">Mitglied entfernen?</string>
+    <string name="delete_and_notify_contact">Kontakt löschen und benachrichtigen</string>
+    <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">Sie sind bereits über diesen Einmal-Link verbunden!</string>
+    <string name="connect_plan_open_group">Gruppe öffnen</string>
+    <string name="unblock_member_desc">Die Nachrichten von %s werden angezeigt!</string>
+    <string name="error_sending_message_contact_invitation">Fehler beim Senden der Einladung</string>
+    <string name="non_content_uri_alert_text">Sie haben einen ungültigen Datei-Pfad geteilt. Bitte melden Sie diesen Fehler den App-Entwicklern.</string>
+    <string name="block_member_question">Mitglied blockieren?</string>
+    <string name="rcv_group_events_count">%d Gruppenereignisse</string>
+    <string name="invalid_name">Ungültiger Name!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName">Das ist Ihr Link für die Gruppe %1$s!</string>
+    <string name="unblock_member_confirmation">Freigeben</string>
+    <string name="non_content_uri_alert_title">Ungültiger Datei-Pfad</string>
+    <string name="connect_plan_you_have_already_requested_connection_via_this_address">Sie haben über diese Adresse bereits eine Verbindung beantragt!</string>
+    <string name="terminal_always_visible">Die Konsole in einem neuen Fenster anzeigen</string>
+    <string name="block_member_desc">Alle neuen Nachrichten von %s werden ausgeblendet!</string>
+    <string name="blocked_item_description">blockiert</string>
+    <string name="encryption_renegotiation_error">Fehler bei der Neuverhandlung der Verschlüsselung</string>
+    <string name="alert_text_encryption_renegotiation_failed">Neuverhandlung der Verschlüsselung fehlgeschlagen</string>
+    <string name="v5_4_block_group_members">Gruppenmitglieder blockieren</string>
+    <string name="v5_4_incognito_groups_descr">Erstellen Sie eine Gruppe mit einem zufälligen Profil.</string>
+    <string name="connected_desktop">Verbundener Desktop</string>
+    <string name="desktop_address">Desktop-Adresse</string>
+    <string name="v5_4_better_groups">Bessere Gruppen</string>
+    <string name="discover_on_network">Lokales Netzwerk durchsuchen</string>
+    <string name="desktop_device">Desktop</string>
+    <string name="connected_to_desktop">Mit dem Desktop verbunden</string>
+    <string name="connecting_to_desktop">Mit dem Desktop verbinden</string>
+    <string name="desktop_devices">Desktop-Geräte</string>
+    <string name="connected_mobile">Verbundenes Mobiltelefon</string>
+    <string name="desktop_connection_terminated">Verbindung beendet</string>
+    <string name="enter_this_device_name">Geben Sie diesen Gerätenamen ein…</string>
+    <string name="error">Fehler</string>
+    <string name="connect_to_desktop">Mit dem Desktop verbinden</string>
+    <string name="disconnect_remote_host">Trenne Verbindung</string>
+    <string name="group_member_role_author">Autor</string>
+    <string name="connected_to_mobile">Mit dem Mobiltelefon verbunden</string>
+    <string name="bad_desktop_address">Falsche Desktop-Adresse</string>
+    <string name="devices">Geräte</string>
+    <string name="disconnect_desktop_question">Desktop-Verbindung trennen?</string>
+    <string name="desktop_app_version_is_incompatible">Desktop-App-Version %s ist mit dieser App nicht kompatibel.</string>
+    <string name="new_mobile_device">Neues Mobiltelefon-Gerät</string>
+    <string name="only_one_device_can_work_at_the_same_time">Nur ein Gerät kann gleichzeitig genutzt werden</string>
+    <string name="v5_4_link_mobile_desktop">Verknüpfe Mobiltelefon- und Desktop-Apps! 🔗</string>
+    <string name="v5_4_link_mobile_desktop_descr">Über ein sicheres quantenbeständiges Protokoll</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Öffnen Sie in den Einstellungen der Mobiltelefon-App <i>Vom Desktop aus nutzen</i> und scannen Sie den QR-Code.]]></string>
+    <string name="v5_4_block_group_members_descr">Um unerwünschte Nachrichten zu verbergen.</string>
+    <string name="desktop_incompatible_version">Inkompatible Version</string>
+    <string name="new_desktop"><![CDATA[<i>(Neu)</i>]]></string>
+    <string name="unlink_desktop_question">Desktop entkoppeln?</string>
+    <string name="linked_desktop_options">Verknüpfte Desktop-Optionen</string>
+    <string name="linked_desktops">Verknüpfte Desktops</string>
+    <string name="v5_4_incognito_groups">Inkognito-Gruppen</string>
+    <string name="this_device">Dieses Gerät</string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[Mobiltelefon <b>%s</b> wurde getrennt]]></string>
+    <string name="v5_4_better_groups_descr">Schnellerer Gruppenbeitritt und zuverlässigere Nachrichtenzustellung.</string>
+    <string name="linked_mobiles">Verknüpfte Mobiltelefone</string>
+    <string name="this_device_name">Dieser Gerätename</string>
+    <string name="waiting_for_mobile_to_connect_on_port"><![CDATA[Auf die Mobiltelefonverbindung über Port <i>%s</i> warten]]></string>
+    <string name="loading_remote_file_title">Laden der Datei</string>
+    <string name="link_a_mobile">Zu einem Mobiltelefon verbinden</string>
+    <string name="settings_section_title_use_from_desktop">Vom Desktop aus nutzen</string>
+    <string name="session_code">Sitzungscode</string>
+    <string name="this_device_version"><![CDATA[<i>(Dieses Gerät hat v%s)</i>]]></string>
+    <string name="unlink_desktop">Entkoppeln</string>
+    <string name="this_device_name_shared_with_mobile">Der Gerätename wird mit dem verbundenen Mobiltelefon-Client geteilt.</string>
+    <string name="verify_code_on_mobile">Code auf dem Mobiltelefon überprüfen</string>
+    <string name="paste_desktop_address">Desktop-Adresse einfügen</string>
+    <string name="verify_code_with_desktop">Code mit dem Desktop überprüfen</string>
+    <string name="scan_qr_code_from_desktop">Den QR-Code vom Desktop scannen</string>
+    <string name="v5_4_more_things_descr">- Optionale Benachrichtigung von gelöschten Kontakten.
+\n- Profilnamen mit Leerzeichen.
+\n- Und mehr!</string>
+    <string name="scan_from_mobile">Vom Mobiltelefon scannen</string>
+    <string name="verify_connections">Verbindungen überprüfen</string>
+    <string name="loading_remote_file_desc">Bitte warten Sie, solange die Datei von dem verknüpften Mobiltelefon geladen wird</string>
+    <string name="verify_connection">Verbindung überprüfen</string>
+    <string name="multicast_connect_automatically">Automatisch verbinden</string>
+    <string name="waiting_for_desktop">Auf Desktop warten…</string>
+    <string name="found_desktop">Gefundener Desktop</string>
+    <string name="not_compatible">Nicht kompatibel!</string>
+    <string name="multicast_discoverable_via_local_network">Über das lokale Netzwerk auffindbar</string>
 </resources>

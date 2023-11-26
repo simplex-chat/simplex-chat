@@ -10,14 +10,19 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.*
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.platform.defaultLocale
 import chat.simplex.common.platform.desktopPlatform
+import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
+import chat.simplex.common.views.TerminalView
 import chat.simplex.common.views.helpers.FileDialogChooser
+import chat.simplex.common.views.helpers.escapedHtmlToAnnotatedString
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import java.awt.event.WindowEvent
 import java.awt.event.WindowFocusListener
@@ -26,10 +31,6 @@ import java.io.File
 val simplexWindowState = SimplexWindowState()
 
 fun showApp() = application {
-  // TODO: remove after update to compose 1.5.0+
-  // See: https://github.com/JetBrains/compose-multiplatform/issues/3366#issuecomment-1643799976
-  System.setProperty("compose.scrolling.smooth.enabled", "false")
-
   // For some reason on Linux actual width will be 10.dp less after specifying it here. If we specify 1366,
   // it will show 1356. But after that we can still update it to 1366 by changing window state. Just making it +10 now here
   val width = if (desktopPlatform.isLinux()) 1376.dp else 1366.dp
@@ -81,7 +82,7 @@ fun showApp() = application {
         if (toast != null) {
           Box(Modifier.fillMaxSize().padding(bottom = 20.dp), contentAlignment = Alignment.BottomCenter) {
             Text(
-              toast.first,
+              escapedHtmlToAnnotatedString(toast.first, LocalDensity.current),
               Modifier.background(MaterialTheme.colors.primary, RoundedCornerShape(100)).padding(vertical = 5.dp, horizontal = 10.dp),
               color = MaterialTheme.colors.onPrimary,
               style = MaterialTheme.typography.body1
@@ -115,6 +116,18 @@ fun showApp() = application {
             AppLock.appWasHidden()
           }
         })
+      }
+    }
+  }
+  // Reload all strings in all @Composable's after language change at runtime
+  if (remember { ChatController.appPrefs.terminalAlwaysVisible.state }.value && remember { ChatController.appPrefs.appLanguage.state }.value != "") {
+    var hiddenUntilRestart by remember { mutableStateOf(false) }
+    if (!hiddenUntilRestart) {
+      val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH, height = 768.dp)
+      Window(state = cWindowState, onCloseRequest = ::exitApplication, title = stringResource(MR.strings.chat_console)) {
+        SimpleXTheme {
+          TerminalView(ChatModel) { hiddenUntilRestart = true }
+        }
       }
     }
   }

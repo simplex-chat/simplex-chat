@@ -57,7 +57,7 @@ fun CIRcvDecryptionError(
   if (cInfo is ChatInfo.Direct) {
     val modelCInfo = findModelChat(cInfo.id)?.chatInfo
     if (modelCInfo is ChatInfo.Direct) {
-      val modelContactStats = modelCInfo.contact.activeConn.connectionStats
+      val modelContactStats = modelCInfo.contact.activeConn?.connectionStats
       if (modelContactStats != null) {
         if (modelContactStats.ratchetSyncAllowed) {
           DecryptionErrorItemFixButton(
@@ -218,5 +218,7 @@ private fun alertMessage(msgDecryptError: MsgDecryptError, msgCount: UInt): Stri
 
     MsgDecryptError.Other -> String.format(generalGetString(MR.strings.alert_text_decryption_error_n_messages_failed_to_decrypt), msgCount.toLong()) + "\n" +
         generalGetString(MR.strings.alert_text_fragment_encryption_out_of_sync_old_database)
+
+    MsgDecryptError.RatchetSync -> generalGetString(MR.strings.alert_text_encryption_renegotiation_failed)
   }
 }

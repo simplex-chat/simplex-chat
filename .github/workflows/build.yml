@@ -263,11 +263,38 @@ jobs:
       # * In powershell multiline commands do not fail if individual commands fail - https://github.community/t/multiline-commands-on-windows-do-not-fail-if-individual-commands-fail/16753
       # * And GitHub Actions does not support parameterizing shell in a matrix job - https://github.community/t/using-matrix-to-specify-shell-is-it-possible/17065
 
+      - name: 'Setup MSYS2'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ucrt64
+          update: true
+          install: >-
+            git
+            perl
+            make
+          pacboy: >-
+            toolchain:p
+            cmake:p
+
+
       - name: Windows build
         id: windows_build
         if: matrix.os == 'windows-latest'
-        shell: cmd
+        shell: msys2 {0}
         run: |
+          export PATH=$PATH:/c/ghcup/bin
+          scripts/desktop/prepare-openssl-windows.sh
+          openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-1.1.1w | sed 's#/\([a-zA-Z]\)#\1:#' | sed 's#/#\\#g')
+          rm cabal.project.local 2>/dev/null || true
+          echo "ignore-project: False" >> cabal.project.local
+          echo "package direct-sqlcipher" >> cabal.project.local
+          echo "    flags: +openssl" >> cabal.project.local
+          echo "    extra-include-dirs: $openssl_windows_style_path\include" >> cabal.project.local
+          echo "    extra-lib-dirs: $openssl_windows_style_path" >> cabal.project.local
+
+          rm -rf dist-newstyle/src/direct-sq*
+          sed -i "s/, unix /--, unix /" simplex-chat.cabal
           cabal build --enable-tests
           rm -rf dist-newstyle/src/direct-sq*
           path=$(cabal list-bin simplex-chat | tail -n 1)
@@ -292,5 +319,37 @@ jobs:
           append_body: true
           body: |
             ${{ steps.windows_build.outputs.bin_hash }}
+
+      - name: Windows build desktop
+        id: windows_desktop_build
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        shell: msys2 {0}
+        run: |
+          export PATH=$PATH:/c/ghcup/bin
+          scripts/desktop/build-lib-windows.sh
+          cd apps/multiplatform
+          ./gradlew packageMsi
+          path=$(echo $PWD/release/main/msi/*imple*.msi | sed 's#/\([a-z]\)#\1:#' | sed 's#/#\\#g')
+          echo "package_path=$path" >> $GITHUB_OUTPUT
+          echo "package_hash=$(echo SHA2-512\(${{ matrix.desktop_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+      
+      - name: Windows upload desktop package to release
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ steps.windows_desktop_build.outputs.package_path }}
+          asset_name: ${{ matrix.desktop_asset_name }}
+          tag: ${{ github.ref }}
+
+      - name: Windows update desktop package hash
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          append_body: true
+          body: |
+            ${{ steps.windows_desktop_build.outputs.package_hash }}
 
       # Windows /

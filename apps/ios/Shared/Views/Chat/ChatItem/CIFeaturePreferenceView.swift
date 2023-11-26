@@ -10,7 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct CIFeaturePreferenceView: View {
-    @EnvironmentObject var chat: Chat
+    @ObservedObject var chat: Chat
     var chatItem: ChatItem
     var feature: ChatFeature
     var allowed: FeatureAllowed
@@ -80,7 +80,6 @@ struct CIFeaturePreferenceView_Previews: PreviewProvider {
             quotedItem: nil,
             file: nil
         )
-        CIFeaturePreferenceView(chatItem: chatItem, feature: ChatFeature.timedMessages, allowed: .yes, param: 30)
-            .environmentObject(Chat.sampleData)
+        CIFeaturePreferenceView(chat: Chat.sampleData, chatItem: chatItem, feature: ChatFeature.timedMessages, allowed: .yes, param: 30)
     }
 }

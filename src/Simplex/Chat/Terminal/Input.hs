@@ -52,18 +52,34 @@ getKey =
 runInputLoop :: ChatTerminal -> ChatController -> IO ()
 runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
   s <- atomically . readTBQueue $ inputQ cc
+  rh <- readTVarIO $ currentRemoteHost cc
   let bs = encodeUtf8 $ T.pack s
       cmd = parseChatCommand bs
+      rh' = if either (const False) allowRemoteCommand cmd then rh else Nothing
   unless (isMessage cmd) $ echo s
-  r <- runReaderT (execChatCommand bs) cc
-  case r of
-    CRChatCmdError _ _ -> when (isMessage cmd) $ echo s
-    CRChatError _ _ -> when (isMessage cmd) $ echo s
-    _ -> pure ()
-  printRespToTerminal ct cc False r
+  r <- runReaderT (execChatCommand rh' bs) cc
+  processResp s cmd rh r
+  printRespToTerminal ct cc False rh r
   startLiveMessage cmd r
   where
     echo s = printToTerminal ct [plain s]
+    processResp s cmd rh = \case
+      CRActiveUser u -> case rh of
+        Nothing -> setActive ct ""
+        Just rhId -> updateRemoteUser ct u rhId
+      CRChatItems u chatName_ _ -> whenCurrUser cc u $ mapM_ (setActive ct . chatActiveTo) chatName_
+      CRNewChatItem u (AChatItem _ SMDSnd cInfo _) -> whenCurrUser cc u $ setActiveChat ct cInfo
+      CRChatItemUpdated u (AChatItem _ SMDSnd cInfo _) -> whenCurrUser cc u $ setActiveChat ct cInfo
+      CRChatItemDeleted u (AChatItem _ _ cInfo _) _ _ _ -> whenCurrUser cc u $ setActiveChat ct cInfo
+      CRContactDeleted u c -> whenCurrUser cc u $ unsetActiveContact ct c
+      CRGroupDeletedUser u g -> whenCurrUser cc u $ unsetActiveGroup ct g
+      CRSentGroupInvitation u g _ _ -> whenCurrUser cc u $ setActiveGroup ct g
+      CRChatCmdError _ _ -> when (isMessage cmd) $ echo s
+      CRChatError _ _ -> when (isMessage cmd) $ echo s
+      CRCmdOk _ -> case cmd of
+        Right APIDeleteUser {} -> setActive ct ""
+        _ -> pure ()
+      _ -> pure ()
     isMessage = \case
       Right SendMessage {} -> True
       Right SendLiveMessage {} -> True
@@ -133,7 +149,7 @@ runTerminalInput ct cc = withChatTerm ct $ do
   receiveFromTTY cc ct
 
 receiveFromTTY :: forall m. MonadTerminal m => ChatController -> ChatTerminal -> m ()
-receiveFromTTY cc@ChatController {inputQ, activeTo, currentUser, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState} =
+receiveFromTTY cc@ChatController {inputQ, currentUser, currentRemoteHost, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState, activeTo} =
   forever $ getKey >>= liftIO . processKey >> withTermLock ct (updateInput ct)
   where
     processKey :: (Key, Modifiers) -> IO ()
@@ -152,11 +168,11 @@ receiveFromTTY cc@ChatController {inputQ, activeTo, currentUser, chatStore} ct@C
       when (inputString ts /= "" || isLive) $
         atomically (submitInput live ts) >>= mapM_ (uncurry endLiveMessage)
     update key = do
-      ac <- readTVarIO activeTo
+      chatPrefix <- readTVarIO activeTo
       live <- isJust <$> readTVarIO liveMessageState
       ts <- readTVarIO termState
       user_ <- readTVarIO currentUser
-      ts' <- updateTermState user_ chatStore ac live (width termSize) key ts
+      ts' <- updateTermState user_ chatStore chatPrefix live (width termSize) key ts
       atomically $ writeTVar termState $! ts'
 
     endLiveMessage :: String -> LiveMessage -> IO ()
@@ -165,7 +181,8 @@ receiveFromTTY cc@ChatController {inputQ, activeTo, currentUser, chatStore} ct@C
       kill promptThreadId
       atomically $ writeTVar liveMessageState Nothing
       r <- sendUpdatedLiveMessage cc sentMsg lm False
-      printRespToTerminal ct cc False r
+      rh <- readTVarIO currentRemoteHost -- XXX: should be inherited from live message state
+      printRespToTerminal ct cc False rh r
       where
         kill sel = deRefWeak (sel lm) >>= mapM_ killThread
 
@@ -202,8 +219,8 @@ data AutoComplete
   | ACCommand Text
   | ACNone
 
-updateTermState :: Maybe User -> SQLiteStore -> ActiveTo -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> IO TerminalState
-updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p, autoComplete = acp} = case key of
+updateTermState :: Maybe User -> SQLiteStore -> String -> Bool -> Int -> (Key, Modifiers) -> TerminalState -> IO TerminalState
+updateTermState user_ st chatPrefix live tw (key, ms) ts@TerminalState {inputString = s, inputPosition = p, autoComplete = acp} = case key of
   CharKey c
     | ms == mempty || ms == shiftKey -> pure $ insertChars $ charsWithContact [c]
     | ms == altKey && c == 'b' -> pure $ setPosition prevWordPos
@@ -325,17 +342,13 @@ updateTermState user_ st ac live tw (key, ms) ts@TerminalState {inputString = s,
     charsWithContact cs
       | live = cs
       | null s && cs /= "@" && cs /= "#" && cs /= "/" && cs /= ">" && cs /= "\\" && cs /= "!" && cs /= "+" && cs /= "-" =
-        contactPrefix <> cs
+        chatPrefix <> cs
       | (s == ">" || s == "\\" || s == "!") && cs == " " =
-        cs <> contactPrefix
+        cs <> chatPrefix
       | otherwise = cs
     insertChars = ts' . if p >= length s then append else insert
     append cs = let s' = s <> cs in (s', length s')
     insert cs = let (b, a) = splitAt p s in (b <> cs <> a, p + length cs)
-    contactPrefix = case ac of
-      ActiveNone -> ""
-      ActiveC c -> "@" <> T.unpack c <> " "
-      ActiveG g -> "#" <> T.unpack g <> " "
     backDeleteChar
       | p == 0 || null s = ts
       | p >= length s = ts' (init s, length s - 1)

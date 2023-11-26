@@ -6,6 +6,7 @@
 import Foundation
 import SwiftUI
 import AVKit
+import Combine
 
 struct VideoPlayerView: UIViewRepresentable {
 
@@ -37,6 +38,14 @@ struct VideoPlayerView: UIViewRepresentable {
             player.seek(to: CMTime.zero)
             player.play()
         }
+        var played = false
+        context.coordinator.publisher = player.publisher(for: \.timeControlStatus).sink { status in
+            if played || status == .playing {
+                AppDelegate.keepScreenOn(status == .playing)
+                AudioPlayer.changeAudioSession(status == .playing)
+            }
+            played = status == .playing
+        }
         return controller.view
     }
 
@@ -50,12 +59,13 @@ struct VideoPlayerView: UIViewRepresentable {
     class Coordinator: NSObject {
         var controller: AVPlayerViewController?
         var timeObserver: Any? = nil
+        var publisher: AnyCancellable? = nil
 
         deinit {
-            print("deinit coordinator of VideoPlayer")
             if let timeObserver = timeObserver {
                 NotificationCenter.default.removeObserver(timeObserver)
             }
+            publisher?.cancel()
         }
     }
 }

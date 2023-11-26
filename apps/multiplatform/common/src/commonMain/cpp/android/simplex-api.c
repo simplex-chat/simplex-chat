@@ -5,7 +5,7 @@
 //#include <android/log.h>
 
 // from the RTS
-void hs_init(int * argc, char **argv[]);
+void hs_init_with_rtsopts(int * argc, char **argv[]);
 
 // from android-support
 void setLineBuffering(void);
@@ -32,20 +32,39 @@ Java_chat_simplex_common_platform_CoreKt_pipeStdOutToSocket(JNIEnv *env, __unuse
 
 JNIEXPORT void JNICALL
 Java_chat_simplex_common_platform_CoreKt_initHS(__unused JNIEnv *env, __unused jclass clazz) {
-    hs_init(NULL, NULL);
+    int argc = 5;
+    char *argv[] = {
+        "simplex",
+        "+RTS", // requires `hs_init_with_rtsopts`
+        "-A16m", // chunk size for new allocations
+        "-H64m", // initial heap size
+        "-xn", // non-moving GC
+        NULL
+    };
+    char **pargv = argv;
+    hs_init_with_rtsopts(&argc, &pargv);
     setLineBuffering();
 }
 
 // from simplex-chat
 typedef long* chat_ctrl;
 
+/*
+   When you start using any new function from Haskell libraries,
+   you have to add the function name to the file libsimplex.dll.def in the root directory.
+   And do the same by adding it into flake.nix file in the root directory,
+   Otherwise, Windows and Android libraries cannot be built.
+*/
+
 extern char *chat_migrate_init(const char *path, const char *key, const char *confirm, chat_ctrl *ctrl);
 extern char *chat_send_cmd(chat_ctrl ctrl, const char *cmd);
+extern char *chat_send_remote_cmd(chat_ctrl ctrl, const int rhId, const char *cmd);
 extern char *chat_recv_msg(chat_ctrl ctrl); // deprecated
 extern char *chat_recv_msg_wait(chat_ctrl ctrl, const int wait);
 extern char *chat_parse_markdown(const char *str);
 extern char *chat_parse_server(const char *str);
 extern char *chat_password_hash(const char *pwd, const char *salt);
+extern char *chat_valid_name(const char *name);
 extern char *chat_write_file(const char *path, char *ptr, int length);
 extern char *chat_read_file(const char *path, const char *key, const char *nonce);
 extern char *chat_encrypt_file(const char *from_path, const char *to_path);
@@ -86,6 +105,14 @@ Java_chat_simplex_common_platform_CoreKt_chatSendCmd(JNIEnv *env, __unused jclas
 }
 
 JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatSendRemoteCmd(JNIEnv *env, __unused jclass clazz, jlong controller, jint rhId, jstring msg) {
+    const char *_msg = (*env)->GetStringUTFChars(env, msg, JNI_FALSE);
+    jstring res = (*env)->NewStringUTF(env, chat_send_remote_cmd((void*)controller, rhId, _msg));
+    (*env)->ReleaseStringUTFChars(env, msg, _msg);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatRecvMsg(JNIEnv *env, __unused jclass clazz, jlong controller) {
     return (*env)->NewStringUTF(env, chat_recv_msg((void*)controller));
 }
@@ -118,6 +145,14 @@ Java_chat_simplex_common_platform_CoreKt_chatPasswordHash(JNIEnv *env, __unused 
     jstring res = (*env)->NewStringUTF(env, chat_password_hash(_pwd, _salt));
     (*env)->ReleaseStringUTFChars(env, pwd, _pwd);
     (*env)->ReleaseStringUTFChars(env, salt, _salt);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatValidName(JNIEnv *env, jclass clazz, jstring name) {
+    const char *_name = (*env)->GetStringUTFChars(env, name, JNI_FALSE);
+    jstring res = (*env)->NewStringUTF(env, chat_valid_name(_name));
+    (*env)->ReleaseStringUTFChars(env, name, _name);
     return res;
 }
 

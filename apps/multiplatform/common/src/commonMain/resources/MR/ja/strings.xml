@@ -538,7 +538,6 @@
     <string name="full_name__field">フルネーム：</string>
     <string name="create_profile_button">作成</string>
     <string name="display_name">表示の名前</string>
-    <string name="full_name_optional__prompt">フルネーム (任意)：</string>
     <string name="colored_text">色付き</string>
     <string name="callstate_received_answer">応答</string>
     <string name="decentralized">分散型</string>
@@ -1109,7 +1108,6 @@
     <string name="downgrade_and_open_chat">ダウングレードしてチャットを開く</string>
     <string name="la_please_remember_to_store_password">パスワードを覚えるか、安全に保管してください。失われたパスワードを回復する方法はありません。</string>
     <string name="smp_server_test_download_file">ファイルをダウンロード</string>
-    <string name="no_spaces">空き容量がありません</string>
     <string name="you_can_hide_or_mute_user_profile">ユーザープロフィールを非表示またはミュートすることができます（メニューを長押し）。</string>
     <string name="v4_6_group_moderation">グループのモデレーション</string>
     <string name="email_invite_body">こんにちは！
@@ -1391,4 +1389,18 @@
     <string name="settings_is_storing_in_clear_text">パスフレーズは平文として設定に保存されます。</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>注意</b>: メッセージとファイルのリレーは SOCKS プロキシ経由で接続されます。 通話とリンク プレビューの送信には直接接続が使用されます。]]></string>
     <string name="encrypt_local_files">ローカルファイルを暗号化する</string>
+    <string name="rcv_group_event_open_chat">開く</string>
+    <string name="v5_3_encrypt_local_files">保存されたファイルとメディアを暗号化する</string>
+    <string name="error_creating_member_contact">メンバー連絡先の作成中にエラーが発生</string>
+    <string name="v5_3_new_desktop_app">新しいデスクトップアプリ！</string>
+    <string name="v5_3_new_interface_languages">6つの新しいインターフェース言語</string>
+    <string name="v5_3_encrypt_local_files_descr">アプリは新しいローカルファイル（ビデオを除く）を暗号化します。</string>
+    <string name="compose_send_direct_message_to_connect">ダイレクトメッセージを送信して接続する</string>
+    <string name="v5_3_discover_join_groups">グループを見つけて参加する</string>
+    <string name="v5_3_simpler_incognito_mode">シークレットモードの簡素化</string>
+    <string name="v5_3_new_interface_languages_descr">アラビア語、ブルガリア語、フィンランド語、ヘブライ語、タイ語、ウクライナ語 - ユーザーとWeblateに感謝します。</string>
+    <string name="v5_3_new_desktop_app_descr">デスクトップアプリで新しいプロファイルを作成します。 💻</string>
+    <string name="v5_3_simpler_incognito_mode_descr">接続時にシークレットモードを切り替えます。</string>
+    <string name="member_contact_send_direct_message">ダイレクトメッセージを送る</string>
+    <string name="rcv_group_event_member_created_contact">直接接続中</string>
 </resources>
