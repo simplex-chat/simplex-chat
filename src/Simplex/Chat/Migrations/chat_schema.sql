@@ -71,6 +71,7 @@ CREATE TABLE contacts(
   contact_group_member_id INTEGER
   REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   contact_grp_inv_sent INTEGER NOT NULL DEFAULT 0,
+  contact_status TEXT NOT NULL DEFAULT 'active',
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -116,7 +117,8 @@ CREATE TABLE groups(
   unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL),
   chat_ts TEXT,
   favorite INTEGER NOT NULL DEFAULT 0,
-  send_rcpts INTEGER, -- received
+  send_rcpts INTEGER,
+  via_group_link_uri_hash BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -143,6 +145,11 @@ CREATE TABLE group_members(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   member_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
+  show_messages INTEGER NOT NULL DEFAULT 1,
+  xgrplinkmem_received INTEGER NOT NULL DEFAULT 0,
+  invited_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
+  peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -157,7 +164,8 @@ CREATE TABLE group_member_intros(
   direct_queue_info BLOB,
   intro_status TEXT NOT NULL,
   created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL), -- see GroupMemberIntroStatus
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3, -- see GroupMemberIntroStatus
   UNIQUE(re_group_member_id, to_group_member_id)
 );
 CREATE TABLE files(
@@ -263,6 +271,7 @@ CREATE TABLE connections(
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   to_subscribe INTEGER DEFAULT 0 NOT NULL,
+  contact_conn_initiated INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -317,7 +326,9 @@ CREATE TABLE messages(
   connection_id INTEGER DEFAULT NULL REFERENCES connections ON DELETE CASCADE,
   group_id INTEGER DEFAULT NULL REFERENCES groups ON DELETE CASCADE,
   shared_msg_id BLOB,
-  shared_msg_id_user INTEGER
+  shared_msg_id_user INTEGER,
+  author_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
 );
 CREATE TABLE msg_deliveries(
   msg_delivery_id INTEGER PRIMARY KEY,
@@ -367,7 +378,8 @@ CREATE TABLE chat_items(
   timed_delete_at TEXT,
   item_live INTEGER,
   item_deleted_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  item_deleted_ts TEXT
+  item_deleted_ts TEXT,
+  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -515,14 +527,33 @@ CREATE TABLE IF NOT EXISTS "received_probes"(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL)
 );
+CREATE TABLE remote_hosts(
+  -- e.g., mobiles known to a desktop app
+  remote_host_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  host_device_name TEXT NOT NULL,
+  store_path TEXT NOT NULL, -- relative folder name for host files
+  ca_key BLOB NOT NULL,
+  ca_cert BLOB NOT NULL,
+  id_key BLOB NOT NULL, -- long-term/identity signing key
+  host_fingerprint BLOB NOT NULL, -- remote host CA cert fingerprint, set when connected
+  host_dh_pub BLOB NOT NULL -- last session DH key
+);
+CREATE TABLE remote_controllers(
+  -- e.g., desktops known to a mobile app
+  remote_ctrl_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ctrl_device_name TEXT NOT NULL,
+  ca_key BLOB NOT NULL,
+  ca_cert BLOB NOT NULL,
+  ctrl_fingerprint BLOB NOT NULL, -- remote controller CA cert fingerprint, set when connected
+  id_pub BLOB NOT NULL, -- remote controller long-term/identity key to verify signatures
+  dh_priv_key BLOB NOT NULL, -- last session DH key
+  prev_dh_priv_key BLOB -- previous session DH key
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
 );
 CREATE INDEX idx_groups_inv_queue_info ON groups(inv_queue_info);
-CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
-  via_contact_uri_hash
-);
 CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(xcontact_id);
 CREATE INDEX idx_contacts_xcontact_id ON contacts(xcontact_id);
 CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
@@ -731,3 +762,47 @@ CREATE INDEX idx_received_probes_user_id ON received_probes(user_id);
 CREATE INDEX idx_received_probes_contact_id ON received_probes(contact_id);
 CREATE INDEX idx_received_probes_probe ON received_probes(probe);
 CREATE INDEX idx_received_probes_probe_hash ON received_probes(probe_hash);
+CREATE INDEX idx_sent_probes_created_at ON sent_probes(created_at);
+CREATE INDEX idx_sent_probe_hashes_created_at ON sent_probe_hashes(created_at);
+CREATE INDEX idx_received_probes_created_at ON received_probes(created_at);
+CREATE INDEX idx_connections_conn_req_inv ON connections(
+  user_id,
+  conn_req_inv
+);
+CREATE INDEX idx_groups_via_group_link_uri_hash ON groups(
+  user_id,
+  via_group_link_uri_hash
+);
+CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
+  user_id,
+  via_contact_uri_hash
+);
+CREATE INDEX idx_contact_profiles_contact_link ON contact_profiles(
+  user_id,
+  contact_link
+);
+CREATE INDEX idx_group_member_intros_re_group_member_id ON group_member_intros(
+  re_group_member_id
+);
+CREATE INDEX idx_group_members_invited_by_group_member_id ON group_members(
+  invited_by_group_member_id
+);
+CREATE INDEX idx_messages_author_group_member_id ON messages(
+  author_group_member_id
+);
+CREATE INDEX idx_messages_forwarded_by_group_member_id ON messages(
+  forwarded_by_group_member_id
+);
+CREATE INDEX idx_messages_group_id_shared_msg_id ON messages(
+  group_id,
+  shared_msg_id
+);
+CREATE INDEX idx_chat_items_forwarded_by_group_member_id ON chat_items(
+  forwarded_by_group_member_id
+);
+CREATE UNIQUE INDEX idx_remote_hosts_host_fingerprint ON remote_hosts(
+  host_fingerprint
+);
+CREATE UNIQUE INDEX idx_remote_controllers_ctrl_fingerprint ON remote_controllers(
+  ctrl_fingerprint
+);

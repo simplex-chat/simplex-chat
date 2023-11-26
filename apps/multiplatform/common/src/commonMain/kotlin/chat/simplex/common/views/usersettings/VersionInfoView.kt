@@ -18,12 +18,13 @@ fun VersionInfoView(info: CoreVersionInfo) {
   Column(
     Modifier.padding(horizontal = DEFAULT_PADDING),
   ) {
-    AppBarTitle(stringResource(MR.strings.app_version_title), false)
+    AppBarTitle(stringResource(MR.strings.app_version_title), withPadding = false)
     if (appPlatform.isAndroid) {
       Text(String.format(stringResource(MR.strings.app_version_name), BuildConfigCommon.ANDROID_VERSION_NAME))
       Text(String.format(stringResource(MR.strings.app_version_code), BuildConfigCommon.ANDROID_VERSION_CODE))
     } else {
       Text(String.format(stringResource(MR.strings.app_version_name), BuildConfigCommon.DESKTOP_VERSION_NAME))
+      Text(String.format(stringResource(MR.strings.app_version_code), BuildConfigCommon.DESKTOP_VERSION_CODE))
     }
     Text(String.format(stringResource(MR.strings.core_version), info.version))
     val simplexmqCommit = if (info.simplexmqCommit.length >= 7) info.simplexmqCommit.substring(startIndex = 0, endIndex = 7) else info.simplexmqCommit

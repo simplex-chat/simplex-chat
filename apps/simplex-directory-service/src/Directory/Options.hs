@@ -72,6 +72,7 @@ mkChatOpts :: DirectoryOpts -> ChatOpts
 mkChatOpts DirectoryOpts {coreOptions} =
   ChatOpts
     { coreOptions,
+      deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,

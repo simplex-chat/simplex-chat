@@ -94,13 +94,19 @@ fun CIFileView(
               )
           }
         is CIFileStatus.RcvComplete -> {
-          val filePath = getLoadedFilePath(file)
-          if (filePath != null) {
-            withApi {
-              saveFileLauncher.launch(file.fileName)
+          withBGApi {
+            var filePath = getLoadedFilePath(file)
+            if (chatModel.connectedToRemote() && filePath == null) {
+              file.loadRemoteFile(true)
+              filePath = getLoadedFilePath(file)
             }
-          } else {
-            showToast(generalGetString(MR.strings.file_not_found))
+            if (filePath != null) {
+              withApi {
+                saveFileLauncher.launch(file.fileName)
+              }
+            } else {
+              showToast(generalGetString(MR.strings.file_not_found))
+            }
           }
         }
         else -> {}
@@ -214,7 +220,13 @@ fun rememberSaveFileLauncher(ciFile: CIFile?): FileChooserLauncher =
     if (filePath != null && to != null) {
       if (ciFile?.fileSource?.cryptoArgs != null) {
         createTmpFileAndDelete { tmpFile ->
-          decryptCryptoFile(filePath, ciFile.fileSource.cryptoArgs, tmpFile.absolutePath)
+          try {
+            decryptCryptoFile(filePath, ciFile.fileSource.cryptoArgs, tmpFile.absolutePath)
+          } catch (e: Exception) {
+            Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
+            tmpFile.delete()
+            return@createTmpFileAndDelete
+          }
           copyFileToFile(tmpFile, to) {}
           tmpFile.delete()
         }

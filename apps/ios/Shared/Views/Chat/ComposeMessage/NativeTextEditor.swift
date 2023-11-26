@@ -14,20 +14,28 @@ import PhotosUI
 struct NativeTextEditor: UIViewRepresentable {
     @Binding var text: String
     @Binding var disableEditing: Bool
-    let height: CGFloat
-    let font: UIFont
+    @Binding var height: CGFloat
     @Binding var focused: Bool
     let alignment: TextAlignment
     let onImagesAdded: ([UploadContent]) -> Void
     
+    private let minHeight: CGFloat = 37
+
+    private let defaultHeight: CGFloat = {
+        let field = CustomUITextField(height: Binding.constant(0))
+        field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
+        return min(max(field.sizeThatFits(CGSizeMake(field.frame.size.width, CGFloat.greatestFiniteMagnitude)).height, 37), 360).rounded(.down)
+    }()
+    
     func makeUIView(context: Context) -> UITextView {
-        let field = CustomUITextField()
+        let field = CustomUITextField(height: _height)
         field.text = text
-        field.font = font
         field.textAlignment = alignment == .leading ? .left : .right
         field.autocapitalizationType = .sentences
         field.setOnTextChangedListener { newText, images in
             if !disableEditing {
+                // Speed up the process of updating layout, reduce jumping content on screen
+                if !isShortEmoji(newText) { updateHeight(field) }
                 text = newText
             } else {
                 field.text = text
@@ -39,24 +47,72 @@ struct NativeTextEditor: UIViewRepresentable {
         field.setOnFocusChangedListener { focused = $0 }
         field.delegate = field
         field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
+        updateFont(field)
+        updateHeight(field)
         return field
     }
     
     func updateUIView(_ field: UITextView, context: Context) {
         field.text = text
-        field.font = font
         field.textAlignment = alignment == .leading ? .left : .right
+        updateFont(field)
+        updateHeight(field)
+    }
+
+    private func updateHeight(_ field: UITextView) {
+        let maxHeight = min(360, field.font!.lineHeight * 12)
+        // When having emoji in text view and then removing it, sizeThatFits shows previous size (too big for empty text view), so using work around with default size
+        let newHeight = field.text == ""
+        ? defaultHeight
+        : min(max(field.sizeThatFits(CGSizeMake(field.frame.size.width, CGFloat.greatestFiniteMagnitude)).height, minHeight), maxHeight).rounded(.down)
+
+        if field.frame.size.height != newHeight {
+            field.frame.size = CGSizeMake(field.frame.size.width, newHeight)
+            (field as! CustomUITextField).invalidateIntrinsicContentHeight(newHeight)
+        }
+    }
+
+    private func updateFont(_ field: UITextView) {
+        field.font = isShortEmoji(field.text)
+        ? (field.text.count < 4 ? largeEmojiUIFont : mediumEmojiUIFont)
+        : UIFont.preferredFont(forTextStyle: .body)
     }
 }
 
 private class CustomUITextField: UITextView, UITextViewDelegate {
+    var height: Binding<CGFloat>
+    var newHeight: CGFloat = 0
     var onTextChanged: (String, [UploadContent]) -> Void = { newText, image in }
     var onFocusChanged: (Bool) -> Void = { focused in }
     
+    init(height: Binding<CGFloat>) {
+        self.height = height
+        super.init(frame: .zero, textContainer: nil)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("Not implemented")
+    }
+
+    // This func here needed because using frame.size.height in intrinsicContentSize while loading a screen with text (for example. when you have a draft),
+    // produces incorrect height because at that point intrinsicContentSize has old value of frame.size.height even if it was set to new value right before the call
+    // (who knows why...)
+    func invalidateIntrinsicContentHeight(_ newHeight: CGFloat) {
+        self.newHeight = newHeight
+        invalidateIntrinsicContentSize()
+    }
+
+    override var intrinsicContentSize: CGSize {
+        if height.wrappedValue != newHeight {
+            DispatchQueue.main.asyncAfter(deadline: .now(), execute: { self.height.wrappedValue = self.newHeight })
+        }
+        return CGSizeMake(0, newHeight)
+    }
+
     func setOnTextChangedListener(onTextChanged: @escaping (String, [UploadContent]) -> Void) {
         self.onTextChanged = onTextChanged
     }
-    
+
     func setOnFocusChangedListener(onFocusChanged: @escaping (Bool) -> Void) {
         self.onFocusChanged = onFocusChanged
     }
@@ -144,14 +200,14 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
 
 struct NativeTextEditor_Previews: PreviewProvider{
     static var previews: some View {
-        return NativeTextEditor(
+        NativeTextEditor(
             text: Binding.constant("Hello, world!"),
             disableEditing: Binding.constant(false),
-            height: 100,
-            font: UIFont.preferredFont(forTextStyle: .body),
+            height: Binding.constant(100),
             focused: Binding.constant(false),
             alignment: TextAlignment.leading,
             onImagesAdded: { _ in }
         )
+        .fixedSize(horizontal: false, vertical: true)
     }
 }

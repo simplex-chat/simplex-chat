@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
 import com.google.accompanist.insets.navigationBarsWithImePadding
+import java.io.File
 
 actual fun Modifier.navigationBarsWithImePadding(): Modifier = navigationBarsWithImePadding()
 
@@ -19,7 +20,9 @@ actual fun ProvideWindowInsets(
 @Composable
 actual fun Modifier.desktopOnExternalDrag(
   enabled: Boolean,
-  onFiles: (List<String>) -> Unit,
+  onFiles: (List<File>) -> Unit,
   onImage: (Painter) -> Unit,
   onText: (String) -> Unit
 ): Modifier = this
+
+actual fun Modifier.onRightClick(action: () -> Unit): Modifier = this

@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE KindSignatures #-}
@@ -9,54 +8,39 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.Messages.CIContent where
 
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
 import Data.Type.Equality
-import Data.Typeable (Typeable)
 import Data.Word (Word32)
-import Database.SQLite.Simple (ResultError (..), SQLData (..))
-import Database.SQLite.Simple.FromField (Field, FromField (..), returnError)
-import Database.SQLite.Simple.Internal (Field (..))
-import Database.SQLite.Simple.Ok
+import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
-import GHC.Generics (Generic)
+import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (MsgErrorType (..), RatchetSyncState (..), SwitchPhase (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, enumJSON, fstToLower, singleFieldJSON, sumTypeJSON)
-import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, singleFieldJSON, sumTypeJSON)
+import Simplex.Messaging.Util (safeDecodeUtf8, tshow, (<$?>))
 
 data MsgDirection = MDRcv | MDSnd
-  deriving (Eq, Show, Generic)
+  deriving (Eq, Show)
 
-instance FromJSON MsgDirection where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MD"
-
-instance ToJSON MsgDirection where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "MD"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "MD"
+$(JQ.deriveJSON (enumJSON $ dropPrefix "MD") ''MsgDirection)
 
 instance FromField AMsgDirection where fromField = fromIntField_ $ fmap fromMsgDirection . msgDirectionIntP
 
 instance ToField MsgDirection where toField = toField . msgDirectionInt
-
-fromIntField_ :: Typeable a => (Int64 -> Maybe a) -> Field -> Ok a
-fromIntField_ fromInt = \case
-  f@(Field (SQLInteger i) _) ->
-    case fromInt i of
-      Just x -> Ok x
-      _ -> returnError ConversionFailed f ("invalid integer: " <> show i)
-  f -> returnError ConversionFailed f "expecting SQLInteger column type"
 
 data SMsgDirection (d :: MsgDirection) where
   SMDRcv :: SMsgDirection 'MDRcv
@@ -68,6 +52,13 @@ instance TestEquality SMsgDirection where
   testEquality SMDRcv SMDRcv = Just Refl
   testEquality SMDSnd SMDSnd = Just Refl
   testEquality _ _ = Nothing
+
+instance MsgDirectionI d => FromJSON (SMsgDirection d) where
+  parseJSON v = (\(AMsgDirection d) -> checkDirection d) . fromMsgDirection <$?> J.parseJSON v
+
+instance ToJSON (SMsgDirection d) where
+  toJSON = J.toJSON . toMsgDirection
+  toEncoding = J.toEncoding . toMsgDirection
 
 instance ToField (SMsgDirection d) where toField = toField . msgDirectionInt . toMsgDirection
 
@@ -92,6 +83,11 @@ instance MsgDirectionI 'MDRcv where msgDirection = SMDRcv
 
 instance MsgDirectionI 'MDSnd where msgDirection = SMDSnd
 
+checkDirection :: forall t d d'. (MsgDirectionI d, MsgDirectionI d') => t d' -> Either String (t d)
+checkDirection x = case testEquality (msgDirection @d) (msgDirection @d') of
+  Just Refl -> Right x
+  Nothing -> Left "bad direction"
+
 msgDirectionInt :: MsgDirection -> Int
 msgDirectionInt = \case
   MDRcv -> 0
@@ -104,14 +100,9 @@ msgDirectionIntP = \case
   _ -> Nothing
 
 data CIDeleteMode = CIDMBroadcast | CIDMInternal
-  deriving (Show, Generic)
+  deriving (Show)
 
-instance ToJSON CIDeleteMode where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CIDM"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CIDM"
-
-instance FromJSON CIDeleteMode where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CIDM"
+$(JQ.deriveJSON (enumJSON $ dropPrefix "CIDM") ''CIDeleteMode)
 
 ciDeleteModeToText :: CIDeleteMode -> Text
 ciDeleteModeToText = \case
@@ -132,6 +123,7 @@ data CIContent (d :: MsgDirection) where
   CIRcvDecryptionError :: MsgDecryptError -> Word32 -> CIContent 'MDRcv
   CIRcvGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDRcv
   CISndGroupInvitation :: CIGroupInvitation -> GroupMemberRole -> CIContent 'MDSnd
+  CIRcvDirectEvent :: RcvDirectEvent -> CIContent 'MDRcv
   CIRcvGroupEvent :: RcvGroupEvent -> CIContent 'MDRcv
   CISndGroupEvent :: SndGroupEvent -> CIContent 'MDSnd
   CIRcvConnEvent :: RcvConnEvent -> CIContent 'MDRcv
@@ -159,15 +151,13 @@ ciMsgContent = \case
   CIRcvMsgContent mc -> Just mc
   _ -> Nothing
 
-data MsgDecryptError = MDERatchetHeader | MDETooManySkipped | MDERatchetEarlier | MDEOther
-  deriving (Eq, Show, Generic)
-
-instance ToJSON MsgDecryptError where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "MDE"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "MDE"
-
-instance FromJSON MsgDecryptError where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "MDE"
+data MsgDecryptError
+  = MDERatchetHeader
+  | MDETooManySkipped
+  | MDERatchetEarlier
+  | MDEOther
+  | MDERatchetSync
+  deriving (Eq, Show)
 
 ciRequiresAttention :: forall d. MsgDirectionI d => CIContent d -> Bool
 ciRequiresAttention content = case msgDirection @d of
@@ -179,6 +169,7 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvIntegrityError _ -> True
     CIRcvDecryptionError {} -> True
     CIRcvGroupInvitation {} -> True
+    CIRcvDirectEvent _ -> False
     CIRcvGroupEvent rge -> case rge of
       RGEMemberAdded {} -> False
       RGEMemberConnected -> False
@@ -200,114 +191,14 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvModerated -> True
     CIInvalidJSON _ -> False
 
-data RcvGroupEvent
-  = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
-  | RGEMemberConnected -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
-  | RGEMemberLeft -- CRLeftMember
-  | RGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
-  | RGEUserRole {role :: GroupMemberRole}
-  | RGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRDeletedMember
-  | RGEUserDeleted -- CRDeletedMemberUser
-  | RGEGroupDeleted -- CRGroupDeleted
-  | RGEGroupUpdated {groupProfile :: GroupProfile} -- CRGroupUpdated
-  -- RGEInvitedViaGroupLink chat items are not received - they're created when sending group invitations,
-  -- but being RcvGroupEvent allows them to be assigned to the respective member (and so enable "send direct message")
-  -- and be created as unread without adding / working around new status for sent items
-  | RGEInvitedViaGroupLink -- CRSentGroupInvitationViaLink
-  | RGEMemberCreatedContact -- CRNewMemberContactReceivedInv
-  deriving (Show, Generic)
-
-instance FromJSON RcvGroupEvent where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RGE"
-
-instance ToJSON RcvGroupEvent where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RGE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RGE"
-
-newtype DBRcvGroupEvent = RGE RcvGroupEvent
-
-instance FromJSON DBRcvGroupEvent where
-  parseJSON v = RGE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "RGE") v
-
-instance ToJSON DBRcvGroupEvent where
-  toJSON (RGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "RGE") v
-  toEncoding (RGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "RGE") v
-
-data SndGroupEvent
-  = SGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
-  | SGEUserRole {role :: GroupMemberRole}
-  | SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMember
-  | SGEUserLeft -- CRLeftMemberUser
-  | SGEGroupUpdated {groupProfile :: GroupProfile} -- CRGroupUpdated
-  deriving (Show, Generic)
-
-instance FromJSON SndGroupEvent where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "SGE"
-
-instance ToJSON SndGroupEvent where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SGE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SGE"
-
-newtype DBSndGroupEvent = SGE SndGroupEvent
-
-instance FromJSON DBSndGroupEvent where
-  parseJSON v = SGE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "SGE") v
-
-instance ToJSON DBSndGroupEvent where
-  toJSON (SGE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SGE") v
-  toEncoding (SGE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SGE") v
-
-data RcvConnEvent
-  = RCESwitchQueue {phase :: SwitchPhase}
-  | RCERatchetSync {syncStatus :: RatchetSyncState}
-  | RCEVerificationCodeReset
-  deriving (Show, Generic)
-
-data SndConnEvent
-  = SCESwitchQueue {phase :: SwitchPhase, member :: Maybe GroupMemberRef}
-  | SCERatchetSync {syncStatus :: RatchetSyncState, member :: Maybe GroupMemberRef}
-  deriving (Show, Generic)
-
-instance FromJSON RcvConnEvent where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "RCE"
-
-instance ToJSON RcvConnEvent where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "RCE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "RCE"
-
-newtype DBRcvConnEvent = RCE RcvConnEvent
-
-instance FromJSON DBRcvConnEvent where
-  parseJSON v = RCE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "RCE") v
-
-instance ToJSON DBRcvConnEvent where
-  toJSON (RCE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "RCE") v
-  toEncoding (RCE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "RCE") v
-
-instance FromJSON SndConnEvent where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "SCE"
-
-instance ToJSON SndConnEvent where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SCE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SCE"
-
-newtype DBSndConnEvent = SCE SndConnEvent
-
-instance FromJSON DBSndConnEvent where
-  parseJSON v = SCE <$> J.genericParseJSON (singleFieldJSON $ dropPrefix "SCE") v
-
-instance ToJSON DBSndConnEvent where
-  toJSON (SCE v) = J.genericToJSON (singleFieldJSON $ dropPrefix "SCE") v
-  toEncoding (SCE v) = J.genericToEncoding (singleFieldJSON $ dropPrefix "SCE") v
-
 newtype DBMsgErrorType = DBME MsgErrorType
 
 instance FromJSON DBMsgErrorType where
-  parseJSON v = DBME <$> J.genericParseJSON (singleFieldJSON fstToLower) v
+  parseJSON v = DBME <$> $(JQ.mkParseJSON (singleFieldJSON fstToLower) ''MsgErrorType) v
 
 instance ToJSON DBMsgErrorType where
-  toJSON (DBME v) = J.genericToJSON (singleFieldJSON fstToLower) v
-  toEncoding (DBME v) = J.genericToEncoding (singleFieldJSON fstToLower) v
+  toJSON (DBME v) = $(JQ.mkToJSON (singleFieldJSON fstToLower) ''MsgErrorType) v
+  toEncoding (DBME v) = $(JQ.mkToEncoding (singleFieldJSON fstToLower) ''MsgErrorType) v
 
 data CIGroupInvitation = CIGroupInvitation
   { groupId :: GroupId,
@@ -316,25 +207,14 @@ data CIGroupInvitation = CIGroupInvitation
     groupProfile :: GroupProfile,
     status :: CIGroupInvitationStatus
   }
-  deriving (Eq, Show, Generic, FromJSON)
-
-instance ToJSON CIGroupInvitation where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}
+  deriving (Eq, Show)
 
 data CIGroupInvitationStatus
   = CIGISPending
   | CIGISAccepted
   | CIGISRejected
   | CIGISExpired
-  deriving (Eq, Show, Generic)
-
-instance FromJSON CIGroupInvitationStatus where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CIGIS"
-
-instance ToJSON CIGroupInvitationStatus where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CIGIS"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CIGIS"
+  deriving (Eq, Show)
 
 ciContentToText :: CIContent d -> Text
 ciContentToText = \case
@@ -348,6 +228,7 @@ ciContentToText = \case
   CIRcvDecryptionError err n -> msgDecryptErrorText err n
   CIRcvGroupInvitation groupInvitation memberRole -> "received " <> ciGroupInvitationToText groupInvitation memberRole
   CISndGroupInvitation groupInvitation memberRole -> "sent " <> ciGroupInvitationToText groupInvitation memberRole
+  CIRcvDirectEvent event -> rcvDirectEventToText event
   CIRcvGroupEvent event -> rcvGroupEventToText event
   CISndGroupEvent event -> sndGroupEventToText event
   CIRcvConnEvent event -> rcvConnEventToText event
@@ -367,6 +248,10 @@ ciContentToText = \case
 ciGroupInvitationToText :: CIGroupInvitation -> GroupMemberRole -> Text
 ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayName, fullName}} role =
   "invitation to join group " <> displayName <> optionalFullName displayName fullName <> " as " <> (decodeLatin1 . strEncode $ role)
+
+rcvDirectEventToText :: RcvDirectEvent -> Text
+rcvDirectEventToText = \case
+  RDEContactDeleted -> "contact deleted"
 
 rcvGroupEventToText :: RcvGroupEvent -> Text
 rcvGroupEventToText = \case
@@ -442,6 +327,7 @@ msgDecryptErrorText err n =
       MDETooManySkipped -> Just $ "too many skipped messages" <> counter
       MDERatchetEarlier -> Just $ "earlier message" <> counter
       MDEOther -> counter_
+      MDERatchetSync -> Just "synchronization error"
     counter_ = if n == 1 then Nothing else Just $ tshow n <> " messages"
     counter = maybe "" (", " <>) counter_
 
@@ -453,26 +339,9 @@ msgDirToModeratedContent_ = \case
 ciModeratedText :: Text
 ciModeratedText = "moderated"
 
--- platform independent
-instance MsgDirectionI d => ToField (CIContent d) where
-  toField = toField . encodeJSON . dbJsonCIContent
-
--- platform specific
-instance MsgDirectionI d => ToJSON (CIContent d) where
-  toJSON = J.toJSON . jsonCIContent
-  toEncoding = J.toEncoding . jsonCIContent
-
 data ACIContent = forall d. MsgDirectionI d => ACIContent (SMsgDirection d) (CIContent d)
 
 deriving instance Show ACIContent
-
--- platform independent
-dbParseACIContent :: Text -> Either String ACIContent
-dbParseACIContent = fmap aciContentDBJSON . J.eitherDecodeStrict' . encodeUtf8
-
--- platform specific
-instance FromJSON ACIContent where
-  parseJSON = fmap aciContentJSON . J.parseJSON
 
 -- platform specific
 data JSONCIContent
@@ -486,6 +355,7 @@ data JSONCIContent
   | JCIRcvDecryptionError {msgDecryptError :: MsgDecryptError, msgCount :: Word32}
   | JCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | JCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
+  | JCIRcvDirectEvent {rcvDirectEvent :: RcvDirectEvent}
   | JCIRcvGroupEvent {rcvGroupEvent :: RcvGroupEvent}
   | JCISndGroupEvent {sndGroupEvent :: SndGroupEvent}
   | JCIRcvConnEvent {rcvConnEvent :: RcvConnEvent}
@@ -501,14 +371,6 @@ data JSONCIContent
   | JCISndModerated
   | JCIRcvModerated
   | JCIInvalidJSON {direction :: MsgDirection, json :: Text}
-  deriving (Generic)
-
-instance FromJSON JSONCIContent where
-  parseJSON = J.genericParseJSON . sumTypeJSON $ dropPrefix "JCI"
-
-instance ToJSON JSONCIContent where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "JCI"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "JCI"
 
 jsonCIContent :: forall d. MsgDirectionI d => CIContent d -> JSONCIContent
 jsonCIContent = \case
@@ -522,6 +384,7 @@ jsonCIContent = \case
   CIRcvDecryptionError err n -> JCIRcvDecryptionError err n
   CIRcvGroupInvitation groupInvitation memberRole -> JCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> JCISndGroupInvitation {groupInvitation, memberRole}
+  CIRcvDirectEvent rcvDirectEvent -> JCIRcvDirectEvent {rcvDirectEvent}
   CIRcvGroupEvent rcvGroupEvent -> JCIRcvGroupEvent {rcvGroupEvent}
   CISndGroupEvent sndGroupEvent -> JCISndGroupEvent {sndGroupEvent}
   CIRcvConnEvent rcvConnEvent -> JCIRcvConnEvent {rcvConnEvent}
@@ -535,7 +398,7 @@ jsonCIContent = \case
   CIRcvChatFeatureRejected feature -> JCIRcvChatFeatureRejected {feature}
   CIRcvGroupFeatureRejected groupFeature -> JCIRcvGroupFeatureRejected {groupFeature}
   CISndModerated -> JCISndModerated
-  CIRcvModerated -> JCISndModerated
+  CIRcvModerated -> JCIRcvModerated
   CIInvalidJSON json -> JCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentJSON :: JSONCIContent -> ACIContent
@@ -550,6 +413,7 @@ aciContentJSON = \case
   JCIRcvDecryptionError err n -> ACIContent SMDRcv $ CIRcvDecryptionError err n
   JCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   JCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
+  JCIRcvDirectEvent {rcvDirectEvent} -> ACIContent SMDRcv $ CIRcvDirectEvent rcvDirectEvent
   JCIRcvGroupEvent {rcvGroupEvent} -> ACIContent SMDRcv $ CIRcvGroupEvent rcvGroupEvent
   JCISndGroupEvent {sndGroupEvent} -> ACIContent SMDSnd $ CISndGroupEvent sndGroupEvent
   JCIRcvConnEvent {rcvConnEvent} -> ACIContent SMDRcv $ CIRcvConnEvent rcvConnEvent
@@ -579,6 +443,7 @@ data DBJSONCIContent
   | DBJCIRcvDecryptionError {msgDecryptError :: MsgDecryptError, msgCount :: Word32}
   | DBJCIRcvGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
   | DBJCISndGroupInvitation {groupInvitation :: CIGroupInvitation, memberRole :: GroupMemberRole}
+  | DBJCIRcvDirectEvent {rcvDirectEvent :: DBRcvDirectEvent}
   | DBJCIRcvGroupEvent {rcvGroupEvent :: DBRcvGroupEvent}
   | DBJCISndGroupEvent {sndGroupEvent :: DBSndGroupEvent}
   | DBJCIRcvConnEvent {rcvConnEvent :: DBRcvConnEvent}
@@ -594,14 +459,6 @@ data DBJSONCIContent
   | DBJCISndModerated
   | DBJCIRcvModerated
   | DBJCIInvalidJSON {direction :: MsgDirection, json :: Text}
-  deriving (Generic)
-
-instance FromJSON DBJSONCIContent where
-  parseJSON = J.genericParseJSON . singleFieldJSON $ dropPrefix "DBJCI"
-
-instance ToJSON DBJSONCIContent where
-  toJSON = J.genericToJSON . singleFieldJSON $ dropPrefix "DBJCI"
-  toEncoding = J.genericToEncoding . singleFieldJSON $ dropPrefix "DBJCI"
 
 dbJsonCIContent :: forall d. MsgDirectionI d => CIContent d -> DBJSONCIContent
 dbJsonCIContent = \case
@@ -615,6 +472,7 @@ dbJsonCIContent = \case
   CIRcvDecryptionError err n -> DBJCIRcvDecryptionError err n
   CIRcvGroupInvitation groupInvitation memberRole -> DBJCIRcvGroupInvitation {groupInvitation, memberRole}
   CISndGroupInvitation groupInvitation memberRole -> DBJCISndGroupInvitation {groupInvitation, memberRole}
+  CIRcvDirectEvent rde -> DBJCIRcvDirectEvent $ RDE rde
   CIRcvGroupEvent rge -> DBJCIRcvGroupEvent $ RGE rge
   CISndGroupEvent sge -> DBJCISndGroupEvent $ SGE sge
   CIRcvConnEvent rce -> DBJCIRcvConnEvent $ RCE rce
@@ -643,6 +501,7 @@ aciContentDBJSON = \case
   DBJCIRcvDecryptionError err n -> ACIContent SMDRcv $ CIRcvDecryptionError err n
   DBJCIRcvGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDRcv $ CIRcvGroupInvitation groupInvitation memberRole
   DBJCISndGroupInvitation {groupInvitation, memberRole} -> ACIContent SMDSnd $ CISndGroupInvitation groupInvitation memberRole
+  DBJCIRcvDirectEvent (RDE rde) -> ACIContent SMDRcv $ CIRcvDirectEvent rde
   DBJCIRcvGroupEvent (RGE rge) -> ACIContent SMDRcv $ CIRcvGroupEvent rge
   DBJCISndGroupEvent (SGE sge) -> ACIContent SMDSnd $ CISndGroupEvent sge
   DBJCIRcvConnEvent (RCE rce) -> ACIContent SMDRcv $ CIRcvConnEvent rce
@@ -669,14 +528,7 @@ data CICallStatus
   | CISCallProgress
   | CISCallEnded
   | CISCallError
-  deriving (Show, Generic)
-
-instance FromJSON CICallStatus where
-  parseJSON = J.genericParseJSON . enumJSON $ dropPrefix "CISCall"
-
-instance ToJSON CICallStatus where
-  toJSON = J.genericToJSON . enumJSON $ dropPrefix "CISCall"
-  toEncoding = J.genericToEncoding . enumJSON $ dropPrefix "CISCall"
+  deriving (Show)
 
 ciCallInfoText :: CICallStatus -> Int -> Text
 ciCallInfoText status duration = case status of
@@ -688,3 +540,37 @@ ciCallInfoText status duration = case status of
   CISCallProgress -> "in progress " <> durationText duration
   CISCallEnded -> "ended " <> durationText duration
   CISCallError -> "error"
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "MDE") ''MsgDecryptError)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "CIGIS") ''CIGroupInvitationStatus)
+
+$(JQ.deriveJSON defaultJSON ''CIGroupInvitation)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "CISCall") ''CICallStatus)
+
+-- platform specific
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JCI") ''JSONCIContent)
+
+-- platform independent
+$(JQ.deriveJSON (singleFieldJSON $ dropPrefix "DBJCI") ''DBJSONCIContent)
+
+-- platform independent
+instance MsgDirectionI d => ToField (CIContent d) where
+  toField = toField . encodeJSON . dbJsonCIContent
+
+-- platform specific
+instance MsgDirectionI d => ToJSON (CIContent d) where
+  toJSON = J.toJSON . jsonCIContent
+  toEncoding = J.toEncoding . jsonCIContent
+
+instance MsgDirectionI d => FromJSON (CIContent d) where
+  parseJSON v = (\(ACIContent _ c) -> checkDirection c) <$?> J.parseJSON v
+
+-- platform independent
+dbParseACIContent :: Text -> Either String ACIContent
+dbParseACIContent = fmap aciContentDBJSON . J.eitherDecodeStrict' . encodeUtf8
+
+-- platform specific
+instance FromJSON ACIContent where
+  parseJSON = fmap aciContentJSON . J.parseJSON

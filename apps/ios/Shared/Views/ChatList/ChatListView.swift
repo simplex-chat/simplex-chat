@@ -15,6 +15,7 @@ struct ChatListView: View {
     @State private var searchText = ""
     @State private var showAddChat = false
     @State private var userPickerVisible = false
+    @State private var showConnectDesktop = false
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
@@ -29,7 +30,7 @@ struct ChatListView: View {
         ZStack(alignment: .topLeading) {
             NavStackCompat(
                 isActive: Binding(
-                    get: { ChatModel.shared.chatId != nil },
+                    get: { chatModel.chatId != nil },
                     set: { _ in }
                 ),
                 destination: chatView
@@ -48,7 +49,14 @@ struct ChatListView: View {
                     }
                 }
             }
-            UserPicker(showSettings: $showSettings, userPickerVisible: $userPickerVisible)
+            UserPicker(
+                showSettings: $showSettings,
+                showConnectDesktop: $showConnectDesktop,
+                userPickerVisible: $userPickerVisible
+            )
+        }
+        .sheet(isPresented: $showConnectDesktop) {
+            ConnectDesktopView()
         }
     }
 
@@ -176,13 +184,6 @@ struct ChatListView: View {
             connectButton("Tap to start a new chat") {
                 showAddChat = true
             }
-
-            connectButton("or chat with the developers") {
-                DispatchQueue.main.async {
-                    UIApplication.shared.open(simplexTeamURL)
-                }
-            }
-            .padding(.top, 10)
 
             Spacer()
             Text("You have no chats")

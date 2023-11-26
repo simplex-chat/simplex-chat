@@ -6,6 +6,8 @@ import boofcv.struct.image.GrayU8
 import chat.simplex.res.MR
 import org.jetbrains.skia.Image
 import java.awt.RenderingHints
+import java.awt.geom.AffineTransform
+import java.awt.image.AffineTransformOp
 import java.awt.image.BufferedImage
 import java.io.*
 import java.net.URI
@@ -155,7 +157,7 @@ actual fun ImageBitmap.scale(width: Int, height: Int): ImageBitmap {
 
 // LALAL
 actual fun isImage(uri: URI): Boolean {
-  val path = uri.path.lowercase()
+  val path = uri.toFile().path.lowercase()
   return path.endsWith(".gif") ||
       path.endsWith(".webp") ||
       path.endsWith(".png") ||
@@ -164,10 +166,43 @@ actual fun isImage(uri: URI): Boolean {
 }
 
 actual fun isAnimImage(uri: URI, drawable: Any?): Boolean {
-  val path = uri.path.lowercase()
+  val path = uri.toFile().path.lowercase()
   return path.endsWith(".gif") || path.endsWith(".webp")
 }
 
-@Suppress("NewApi")
 actual fun loadImageBitmap(inputStream: InputStream): ImageBitmap =
-  Image.makeFromEncoded(inputStream.readAllBytes()).toComposeImageBitmap()
+  Image.makeFromEncoded(inputStream.readBytes()).toComposeImageBitmap()
+
+// https://stackoverflow.com/a/68926993
+fun BufferedImage.rotate(angle: Double): BufferedImage {
+  val sin = Math.abs(Math.sin(Math.toRadians(angle)))
+  val cos = Math.abs(Math.cos(Math.toRadians(angle)))
+  val w = width
+  val h = height
+  val neww = Math.floor(w * cos + h * sin).toInt()
+  val newh = Math.floor(h * cos + w * sin).toInt()
+  val rotated = BufferedImage(neww, newh, type)
+  val graphic = rotated.createGraphics()
+  graphic.translate((neww - w) / 2, (newh - h) / 2)
+  graphic.rotate(Math.toRadians(angle), (w / 2).toDouble(), (h / 2).toDouble())
+  graphic.drawRenderedImage(this, null)
+  graphic.dispose()
+  return rotated
+}
+
+// https://stackoverflow.com/a/9559043
+fun BufferedImage.flip(vertically: Boolean, horizontally: Boolean): BufferedImage {
+  if (!vertically && !horizontally) return this
+  val tx: AffineTransform
+  if (vertically && horizontally) {
+    tx = AffineTransform.getScaleInstance(-1.0, -1.0)
+    tx.translate(-width.toDouble(), -height.toDouble())
+  } else if (vertically) {
+    tx = AffineTransform.getScaleInstance(1.0, -1.0)
+    tx.translate(0.0, -height.toDouble())
+  } else {
+    tx = AffineTransform.getScaleInstance(-1.0, 1.0)
+    tx.translate(-width.toDouble(), 0.0)
+  }
+  return AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR).filter(this, null)
+}

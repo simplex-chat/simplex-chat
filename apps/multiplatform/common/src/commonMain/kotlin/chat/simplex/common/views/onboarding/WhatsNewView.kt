@@ -431,6 +431,37 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       )
     )
   ),
+  VersionDescription(
+    version = "v5.4",
+    post = "https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html",
+    features = listOf(
+      FeatureDescription(
+        icon = MR.images.ic_desktop,
+        titleId = MR.strings.v5_4_link_mobile_desktop,
+        descrId = MR.strings.v5_4_link_mobile_desktop_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_group,
+        titleId = MR.strings.v5_4_better_groups,
+        descrId = MR.strings.v5_4_better_groups_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_theater_comedy,
+        titleId = MR.strings.v5_4_incognito_groups,
+        descrId = MR.strings.v5_4_incognito_groups_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_back_hand,
+        titleId = MR.strings.v5_4_block_group_members,
+        descrId = MR.strings.v5_4_block_group_members_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_redeem,
+        titleId = MR.strings.v5_2_more_things,
+        descrId = MR.strings.v5_4_more_things_descr
+      )
+    )
+  ),
 )
 
 private val lastVersion = versionDescriptions.last().version

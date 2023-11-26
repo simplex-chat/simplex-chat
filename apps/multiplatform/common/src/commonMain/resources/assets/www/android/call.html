@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link href="./style.css" rel="stylesheet" />
+    <script src="../lz-string.min.js"></script>
+  </head>
+  <body>
+    <video
+      id="remote-video-stream"
+      autoplay
+      playsinline
+      poster="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAQAAAAnOwc2AAAAEUlEQVR42mNk+M+AARiHsiAAcCIKAYwFoQ8AAAAASUVORK5CYII="
+      onclick="javascript:toggleRemoteVideoFitFill()"
+    ></video>
+    <video
+      id="local-video-stream"
+      muted
+      autoplay
+      playsinline
+      poster="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAQAAAAnOwc2AAAAEUlEQVR42mNk+M+AARiHsiAAcCIKAYwFoQ8AAAAASUVORK5CYII="
+    ></video>
+  </body>
+  <footer>
+    <script src="../call.js"></script>
+  </footer>
+</html>

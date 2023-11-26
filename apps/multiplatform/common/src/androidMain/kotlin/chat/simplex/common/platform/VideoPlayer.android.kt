@@ -1,13 +1,10 @@
 package chat.simplex.common.platform
 
-import android.media.MediaMetadataRetriever
 import android.media.session.PlaybackState
 import android.net.Uri
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
-import chat.simplex.common.helpers.toUri
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import com.google.android.exoplayer2.*
@@ -74,7 +71,7 @@ actual class VideoPlayer actual constructor(
   private fun start(seek: Long? = null, onProgressUpdate: (position: Long?, state: TrackState) -> Unit): Boolean {
     val filepath = getAppFilePath(uri)
     if (filepath == null || !File(filepath).exists()) {
-      Log.e(TAG, "No such file: $uri")
+      Log.e(TAG, "No such file: $filepath")
       brokenVideo.value = true
       return false
     }
@@ -134,6 +131,7 @@ actual class VideoPlayer actual constructor(
     player.addListener(object: Player.Listener{
       override fun onIsPlayingChanged(isPlaying: Boolean) {
         super.onIsPlayingChanged(isPlaying)
+        keepScreenOn(isPlaying)
         // Produce non-ideal transition from stopped to playing state while showing preview image in ChatView
         //        videoPlaying.value = isPlaying
       }
@@ -192,6 +190,7 @@ actual class VideoPlayer actual constructor(
 
   override fun release(remove: Boolean) {
     player.release()
+    keepScreenOn(false)
     if (remove) {
       VideoPlayerHolder.players.remove(uri to gallery)
     }
@@ -200,7 +199,7 @@ actual class VideoPlayer actual constructor(
   private fun setPreviewAndDuration() {
     // It freezes main thread, doing it in IO thread
     CoroutineScope(Dispatchers.IO).launch {
-      val previewAndDuration = VideoPlayerHolder.previewsAndDurations.getOrPut(uri) { getBitmapFromVideo(uri) }
+      val previewAndDuration = VideoPlayerHolder.previewsAndDurations.getOrPut(uri) { getBitmapFromVideo(uri, withAlertOnException = false) }
       withContext(Dispatchers.Main) {
         preview.value = previewAndDuration.preview ?: defaultPreview
         duration.value = (previewAndDuration.duration ?: 0)

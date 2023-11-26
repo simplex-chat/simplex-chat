@@ -1,22 +1,20 @@
 {-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Simplex.Chat.Store.Shared where
 
-import Control.Concurrent.STM (stateTVar)
 import Control.Exception (Exception)
 import qualified Control.Exception as E
 import Control.Monad.Except
 import Crypto.Random (ChaChaDRG, randomBytesGenerate)
-import Data.Aeson (ToJSON)
-import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as J
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
@@ -27,9 +25,9 @@ import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), Query, SQLError, (:.) (..))
 import qualified Database.SQLite.Simple as SQL
 import Database.SQLite.Simple.QQ (sql)
-import GHC.Generics (Generic)
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
+import Simplex.Chat.Remote.Types
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, UserId)
@@ -99,11 +97,15 @@ data StoreError
   | SEHostMemberIdNotFound {groupId :: Int64}
   | SEContactNotFoundByFileId {fileId :: FileTransferId}
   | SENoGroupSndStatus {itemId :: ChatItemId, groupMemberId :: GroupMemberId}
-  deriving (Show, Exception, Generic)
+  | SEDuplicateGroupMessage {groupId :: Int64, sharedMsgId :: SharedMsgId, authorGroupMemberId :: Maybe GroupMemberId, forwardedByGroupMemberId :: Maybe GroupMemberId}
+  | SERemoteHostNotFound {remoteHostId :: RemoteHostId}
+  | SERemoteHostUnknown -- ^ attempting to store KnownHost without a known fingerprint
+  | SERemoteHostDuplicateCA
+  | SERemoteCtrlNotFound {remoteCtrlId :: RemoteCtrlId}
+  | SERemoteCtrlDuplicateCA
+  deriving (Show, Exception)
 
-instance ToJSON StoreError where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "SE"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "SE"
+$(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)
 
 insertedRowId :: DB.Connection -> IO Int64
 insertedRowId db = fromOnly . head <$> DB.query_ db "SELECT last_insert_rowid()"
@@ -137,16 +139,16 @@ toFileInfo (fileId, fileStatus, filePath) = CIFileInfo {fileId, fileStatus, file
 
 type EntityIdsRow = (Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64, Maybe Int64)
 
-type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, Bool, Maybe GroupLinkId, Maybe Int64, ConnStatus, ConnType, LocalAlias) :. EntityIdsRow :. (UTCTime, Maybe Text, Maybe UTCTime, Int, Version, Version)
+type ConnectionRow = (Int64, ConnId, Int, Maybe Int64, Maybe Int64, Bool, Maybe GroupLinkId, Maybe Int64, ConnStatus, ConnType, Bool, LocalAlias) :. EntityIdsRow :. (UTCTime, Maybe Text, Maybe UTCTime, Int, Version, Version)
 
-type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe Bool, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe Int, Maybe Version, Maybe Version)
+type MaybeConnectionRow = (Maybe Int64, Maybe ConnId, Maybe Int, Maybe Int64, Maybe Int64, Maybe Bool, Maybe GroupLinkId, Maybe Int64, Maybe ConnStatus, Maybe ConnType, Maybe Bool, Maybe LocalAlias) :. EntityIdsRow :. (Maybe UTCTime, Maybe Text, Maybe UTCTime, Maybe Int, Maybe Version, Maybe Version)
 
 toConnection :: ConnectionRow -> Connection
-toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, authErrCounter, minVer, maxVer)) =
+toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, authErrCounter, minVer, maxVer)) =
   let entityId = entityId_ connType
       connectionCode = SecurityCode <$> code_ <*> verifiedAt_
       peerChatVRange = JVersionRange $ fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
-   in Connection {connId, agentConnId = AgentConnId acId, peerChatVRange, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias, entityId, connectionCode, authErrCounter, createdAt}
+   in Connection {connId, agentConnId = AgentConnId acId, peerChatVRange, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias, entityId, connectionCode, authErrCounter, createdAt}
   where
     entityId_ :: ConnType -> Maybe Int64
     entityId_ ConnContact = contactId
@@ -156,8 +158,8 @@ toConnection ((connId, acId, connLevel, viaContact, viaUserContactLink, viaGroup
     entityId_ ConnUserContact = userContactLinkId
 
 toMaybeConnection :: MaybeConnectionRow -> Maybe Connection
-toMaybeConnection ((Just connId, Just agentConnId, Just connLevel, viaContact, viaUserContactLink, Just viaGroupLink, groupLinkId, customUserProfileId, Just connStatus, Just connType, Just localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (Just createdAt, code_, verifiedAt_, Just authErrCounter, Just minVer, Just maxVer)) =
-  Just $ toConnection ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, authErrCounter, minVer, maxVer))
+toMaybeConnection ((Just connId, Just agentConnId, Just connLevel, viaContact, viaUserContactLink, Just viaGroupLink, groupLinkId, customUserProfileId, Just connStatus, Just connType, Just contactConnInitiated, Just localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (Just createdAt, code_, verifiedAt_, Just authErrCounter, Just minVer, Just maxVer)) =
+  Just $ toConnection ((connId, agentConnId, connLevel, viaContact, viaUserContactLink, viaGroupLink, groupLinkId, customUserProfileId, connStatus, connType, contactConnInitiated, localAlias) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId) :. (createdAt, code_, verifiedAt_, authErrCounter, minVer, maxVer))
 toMaybeConnection _ = Nothing
 
 createConnection_ :: DB.Connection -> UserId -> ConnType -> Maybe Int64 -> ConnId -> VersionRange -> Maybe ContactId -> Maybe Int64 -> Maybe ProfileId -> Int -> UTCTime -> SubscriptionMode -> IO Connection
@@ -179,9 +181,20 @@ createConnection_ db userId connType entityId acId peerChatVRange@(VersionRange 
         :. (minV, maxV, subMode == SMOnlyCreate)
     )
   connId <- insertedRowId db
-  pure Connection {connId, agentConnId = AgentConnId acId, peerChatVRange = JVersionRange peerChatVRange, connType, entityId, viaContact, viaUserContactLink, viaGroupLink, groupLinkId = Nothing, customUserProfileId, connLevel, connStatus = ConnNew, localAlias = "", createdAt = currentTs, connectionCode = Nothing, authErrCounter = 0}
+  pure Connection {connId, agentConnId = AgentConnId acId, peerChatVRange = JVersionRange peerChatVRange, connType, contactConnInitiated = False, entityId, viaContact, viaUserContactLink, viaGroupLink, groupLinkId = Nothing, customUserProfileId, connLevel, connStatus = ConnNew, localAlias = "", createdAt = currentTs, connectionCode = Nothing, authErrCounter = 0}
   where
     ent ct = if connType == ct then entityId else Nothing
+
+createIncognitoProfile_ :: DB.Connection -> UserId -> UTCTime -> Profile -> IO Int64
+createIncognitoProfile_ db userId createdAt Profile {displayName, fullName, image} = do
+  DB.execute
+    db
+    [sql|
+      INSERT INTO contact_profiles (display_name, full_name, image, user_id, incognito, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?)
+    |]
+    (displayName, fullName, image, userId, Just True, createdAt, createdAt)
+  insertedRowId db
 
 setPeerChatVRange :: DB.Connection -> Int64 -> VersionRange -> IO ()
 setPeerChatVRange db connId (VersionRange minVer maxVer) =
@@ -193,6 +206,17 @@ setPeerChatVRange db connId (VersionRange minVer maxVer) =
       WHERE connection_id = ?
     |]
     (minVer, maxVer, connId)
+
+setMemberChatVRange :: DB.Connection -> GroupMemberId -> VersionRange -> IO ()
+setMemberChatVRange db mId (VersionRange minVer maxVer) =
+  DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET peer_chat_min_version = ?, peer_chat_max_version = ?
+      WHERE group_member_id = ?
+    |]
+    (minVer, maxVer, mId)
 
 setCommandConnId :: DB.Connection -> User -> CommandId -> Int64 -> IO ()
 setCommandConnId db User {userId} cmdId connId = do
@@ -206,8 +230,13 @@ setCommandConnId db User {userId} cmdId connId = do
     |]
     (connId, updatedAt, userId, cmdId)
 
-createContact_ :: DB.Connection -> UserId -> Int64 -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> Maybe UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
-createContact_ db userId connId Profile {displayName, fullName, image, contactLink, preferences} localAlias viaGroup currentTs chatTs =
+createContact :: DB.Connection -> User -> Profile -> ExceptT StoreError IO ()
+createContact db User {userId} profile = do
+  currentTs <- liftIO getCurrentTime
+  void $ createContact_ db userId profile "" Nothing currentTs Nothing
+
+createContact_ :: DB.Connection -> UserId -> Profile -> LocalAlias -> Maybe Int64 -> UTCTime -> Maybe UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
+createContact_ db userId Profile {displayName, fullName, image, contactLink, preferences} localAlias viaGroup currentTs chatTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     DB.execute
       db
@@ -219,7 +248,6 @@ createContact_ db userId connId Profile {displayName, fullName, image, contactLi
       "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?)"
       (profileId, ldn, userId, viaGroup, currentTs, currentTs, chatTs)
     contactId <- insertedRowId db
-    DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
     pure $ Right (ldn, contactId, profileId)
 
 deleteUnusedIncognitoProfileById_ :: DB.Connection -> User -> ProfileId -> IO ()
@@ -240,25 +268,16 @@ deleteUnusedIncognitoProfileById_ db User {userId} profileId =
     |]
     [":user_id" := userId, ":profile_id" := profileId]
 
-type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Bool) :. (Maybe Bool, Maybe Bool, Bool, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime, Maybe GroupMemberId, Bool)
+type ContactRow = (ContactId, ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe ImageData, Maybe ConnReqContact, LocalAlias, Bool, ContactStatus) :. (Maybe MsgFilter, Maybe Bool, Bool, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime, Maybe GroupMemberId, Bool)
 
-toContact :: User -> ContactRow :. ConnectionRow -> Contact
-toContact user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent)) :. connRow) =
+toContact :: User -> ContactRow :. MaybeConnectionRow -> Contact
+toContact user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
-      activeConn = toConnection connRow
-      chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_, sendRcpts, favorite}
-      mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent}
-
-toContactOrError :: User -> ContactRow :. MaybeConnectionRow -> Either StoreError Contact
-toContactOrError user (((contactId, profileId, localDisplayName, viaGroup, displayName, fullName, image, contactLink, localAlias, contactUsed) :. (enableNtfs_, sendRcpts, favorite, preferences, userPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent)) :. connRow) =
-  let profile = LocalProfile {profileId, displayName, fullName, image, contactLink, preferences, localAlias}
-      chatSettings = ChatSettings {enableNtfs = fromMaybe True enableNtfs_, sendRcpts, favorite}
-   in case toMaybeConnection connRow of
-        Just activeConn ->
-          let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito activeConn
-           in Right Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent}
-        _ -> Left $ SEContactNotReady localDisplayName
+      activeConn = toMaybeConnection connRow
+      chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
+      incognito = maybe False connIncognito activeConn
+      mergedPreferences = contactUserPreferences user userPreferences preferences incognito
+   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, contactGroupMemberId, contactGrpInvSent}
 
 getProfileById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO LocalProfile
 getProfileById db userId profileId =

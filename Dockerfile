@@ -8,12 +8,12 @@ RUN a=$(arch); curl https://downloads.haskell.org/~ghcup/$a-linux-ghcup -o /usr/
     chmod +x /usr/bin/ghcup
 
 # Install ghc
-RUN ghcup install ghc 8.10.7
+RUN ghcup install ghc 9.6.3
 # Install cabal
-RUN ghcup install cabal
+RUN ghcup install cabal 3.10.1.0
 # Set both as default
-RUN ghcup set ghc 8.10.7 && \
-    ghcup set cabal
+RUN ghcup set ghc 9.6.3 && \
+    ghcup set cabal 3.10.1.0
 
 COPY . /project
 WORKDIR /project

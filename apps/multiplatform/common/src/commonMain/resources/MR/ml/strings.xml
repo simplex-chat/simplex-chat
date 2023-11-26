@@ -54,7 +54,6 @@
     <string name="accept_contact_button">സ്വീകരിക്കുക</string>
     <string name="accept">സ്വീകരിക്കുക</string>
     <string name="reject_contact_button">നിരസിക്കുക</string>
-    <string name="full_name_optional__prompt">മുഴുവൻ പേര് (ഇഷ്ടാനുസൃതമായ)</string>
     <string name="v4_6_chinese_spanish_interface_descr">ഉപയോക്താക്കൾക്ക് നന്ദി - Weblate വഴി സംഭാവന ചെയ്യുക!</string>
     <string name="v5_0_polish_interface_descr">ഉപയോക്താക്കൾക്ക് നന്ദി - Weblate വഴി സംഭാവന ചെയ്യുക!</string>
     <string name="whats_new_thanks_to_users_contribute_weblate">ഉപയോക്താക്കൾക്ക് നന്ദി - Weblate വഴി സംഭാവന ചെയ്യുക!</string>
@@ -113,7 +112,6 @@
     <string name="smp_servers_add">സെർവർ ചേർക്കുക…</string>
     <string name="smp_servers_add_to_another_device">മറ്റൊരു ഉപകരണത്തിലേക്ക് ചേർക്കുക</string>
     <string name="auto_accept_contact">സ്വയമേവ സ്വീകരിക്കുക</string>
-    <string name="no_spaces">സ്ഥലമില്ല!</string>
     <string name="callstate_waiting_for_confirmation">സ്ഥിരീകരണത്തിനായി കാത്തിരിക്കുന്നു…</string>
     <string name="ignore">അവഗണിക്കുക</string>
     <string name="open_verb">തുറക്കുക</string>

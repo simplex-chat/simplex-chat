@@ -12,6 +12,7 @@ import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import chat.simplex.common.platform.onRightClick
 import chat.simplex.common.platform.windowWidth
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -92,6 +93,34 @@ fun SectionItemView(
     .sizeIn(minHeight = minHeight)
   Row(
     if (click == null || disabled) modifier.padding(padding) else modifier.clickable(onClick = click).padding(padding),
+    verticalAlignment = Alignment.CenterVertically
+  ) {
+    content()
+  }
+}
+
+@Composable
+fun SectionItemViewLongClickable(
+  click: () -> Unit,
+  longClick: () -> Unit,
+  minHeight: Dp = 46.dp,
+  disabled: Boolean = false,
+  extraPadding: Boolean = false,
+  padding: PaddingValues = if (extraPadding)
+    PaddingValues(start = DEFAULT_PADDING * 1.7f, end = DEFAULT_PADDING)
+  else
+    PaddingValues(horizontal = DEFAULT_PADDING),
+  content: (@Composable RowScope.() -> Unit)
+) {
+  val modifier = Modifier
+    .fillMaxWidth()
+    .sizeIn(minHeight = minHeight)
+  Row(
+    if (disabled) {
+      modifier.padding(padding)
+    } else {
+      modifier.combinedClickable(onClick = click, onLongClick = longClick).onRightClick(longClick).padding(padding)
+    },
     verticalAlignment = Alignment.CenterVertically
   ) {
     content()

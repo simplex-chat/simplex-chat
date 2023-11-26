@@ -35,7 +35,7 @@ broadcastBot :: BroadcastBotOpts -> User -> ChatController -> IO ()
 broadcastBot BroadcastBotOpts {publishers, welcomeMessage, prohibitedMessage} _user cc = do
   initializeBotAddress cc
   race_ (forever $ void getLine) . forever $ do
-    (_, resp) <- atomically . readTBQueue $ outputQ cc
+    (_, _, resp) <- atomically . readTBQueue $ outputQ cc
     case resp of
       CRContactConnected _ ct _ -> do
         contactConnected ct
@@ -62,7 +62,8 @@ broadcastBot BroadcastBotOpts {publishers, welcomeMessage, prohibitedMessage} _u
             MCLink {} -> True
             MCImage {} -> True
             _ -> False
-          broadcastTo ct'@Contact {activeConn = conn@Connection {connStatus}} =
+          broadcastTo Contact {activeConn = Nothing} = False
+          broadcastTo ct'@Contact {activeConn = Just conn@Connection {connStatus}} =
             (connStatus == ConnSndReady || connStatus == ConnReady)
               && not (connDisabled conn)
               && contactId' ct' /= contactId' ct

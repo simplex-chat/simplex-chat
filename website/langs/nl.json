@@ -28,8 +28,8 @@
     "hero-overlay-1-title": "Hoe werkt SimpleX?",
     "hero-overlay-2-title": "Waarom zijn gebruikers-ID's slecht voor de privacy?",
     "feature-1-title": "E2E-versleutelde berichten met markdown en bewerking",
-    "feature-2-title": "E2E-versleutelde<br>afbeeldingen en bestanden",
-    "feature-3-title": "Gedecentraliseerde geheime groepen -<br>alleen gebruikers weten dat ze bestaan",
+    "feature-2-title": "E2E-versleutelde<br>afbeeldingen,videos en bestanden",
+    "feature-3-title": "E2E-gecodeerde gedecentraliseerde groepen - alleen gebruikers weten dat ze bestaan",
     "feature-4-title": "E2E-versleutelde spraakberichten",
     "feature-5-title": "Verdwijnende geheime gesprekken",
     "feature-6-title": "E2E-versleutelde<br>audio- en videogesprekken",
@@ -60,7 +60,7 @@
     "hero-p-1": "Andere apps hebben gebruikers-ID's: Signal, Matrix, Session, Briar, Jami, Cwtch, enz.<br> SimpleX niet, <strong>zelfs geen willekeurige getallen</strong>.<br> Dit verbetert uw privacy.",
     "hero-2-header-desc": "De video laat zien hoe je verbinding maakt met een vriend via een persoonlijk of videolink gedeelde eenmalige QR-code. U kunt ook verbinding maken door een uitnodigingslink te delen.",
     "hero-header": "Privacy opnieuw gedefinieerd",
-    "feature-7-title": "Portable versleutelde database &mdash; verplaats je profiel naar een ander apparaat",
+    "feature-7-title": "Draagbare gecodeerde app-opslag - profiel naar een ander apparaat verplaatsen",
     "simplex-private-card-1-point-1": "Protocol met double-ratchet -<br>OTR-berichten met perfecte voorwaartse geheimhouding en inbraak herstel.",
     "simplex-private-6-title": "Out-of-band<br>sleuteluitwisseling",
     "simplex-private-7-title": "Bericht integriteit<br>verificatie",
@@ -243,5 +243,12 @@
     "releases-to-this-repo-are-done-1-2-days-later": "De releases voor deze repository vinden 1-2 dagen later plaats",
     "f-droid-page-f-droid-org-repo-section-text": "SimpleX Chat- en F-Droid.org-repository's ondertekenen builds met de verschillende sleutels. Om over te stappen, alstublieft <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>exporteer</a> de chatdatabase en installeer de app opnieuw.",
     "docs-dropdown-8": "SimpleX Directory Service",
-    "comparison-section-list-point-4a": "SimpleX relais kunnen de e2e-versleuteling niet in gevaar brengen. Controleer de beveiligingscode om aanvallen op out-of-band kanalen te beperken"
+    "comparison-section-list-point-4a": "SimpleX relais kunnen de e2e-versleuteling niet in gevaar brengen. Controleer de beveiligingscode om aanvallen op out-of-band kanalen te beperken",
+    "hero-overlay-3-title": "Beveiligings beoordeling",
+    "hero-overlay-card-3-p-2": "Trail of Bits heeft in november 2022 de cryptografie en netwerkcomponenten van het SimpleX-platform beoordeeld.",
+    "hero-overlay-card-3-p-3": "Lees meer in <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">de aankondiging</a>.",
+    "jobs": "Sluit je aan bij het team",
+    "hero-overlay-3-textlink": "Beveiligings beoordeling",
+    "hero-overlay-card-3-p-1": "<a href=\"https://www.trailofbits.com/about/\">Trail of Bits</a> is een toonaangevend beveiligings- en technologieadviesbureau met klanten onder meer grote technologiebedrijven, overheidsinstanties en grote blockchain-projecten.",
+    "docs-dropdown-9": "Downloads"
 }

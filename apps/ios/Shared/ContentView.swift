@@ -31,11 +31,11 @@ struct ContentView: View {
     @State private var chatListActionSheet: ChatListActionSheet? = nil
 
     private enum ChatListActionSheet: Identifiable {
-        case connectViaUrl(action: ConnReqType, link: String)
+        case planAndConnectSheet(sheet: PlanAndConnectActionSheet)
 
         var id: String {
             switch self {
-            case let .connectViaUrl(_, link): return "connectViaUrl \(link)"
+            case let .planAndConnectSheet(sheet): return sheet.id
             }
         }
     }
@@ -93,7 +93,7 @@ struct ContentView: View {
                 mainView()
                 .actionSheet(item: $chatListActionSheet) { sheet in
                     switch sheet {
-                    case let .connectViaUrl(action, link): return connectViaUrlSheet(action, link)
+                    case let .planAndConnectSheet(sheet): return planAndConnectActionSheet(sheet, dismiss: false)
                     }
                 }
             } else {
@@ -290,12 +290,16 @@ struct ContentView: View {
             if let url = m.appOpenUrl {
                 m.appOpenUrl = nil
                 var path = url.path
-                logger.debug("ContentView.connectViaUrl path: \(path)")
                 if (path == "/contact" || path == "/invitation") {
                     path.removeFirst()
-                    let action: ConnReqType = path == "contact" ? .contact : .invitation
                     let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
-                    chatListActionSheet = .connectViaUrl(action: action, link: link)
+                    planAndConnect(
+                        link,
+                        showAlert: showPlanAndConnectAlert,
+                        showActionSheet: { chatListActionSheet = .planAndConnectSheet(sheet: $0) },
+                        dismiss: false,
+                        incognito: nil
+                    )
                 } else {
                     AlertManager.shared.showAlert(Alert(title: Text("Error: URL is invalid")))
                 }
@@ -303,20 +307,8 @@ struct ContentView: View {
         }
     }
 
-    private func connectViaUrlSheet(_ action: ConnReqType, _ link: String) -> ActionSheet {
-        let title: LocalizedStringKey
-        switch action {
-        case .contact: title = "Connect via contact link"
-        case .invitation: title = "Connect via one-time link"
-        }
-        return ActionSheet(
-            title: Text(title),
-            buttons: [
-                .default(Text("Use current profile")) { connectViaLink(link, incognito: false) },
-                .default(Text("Use new incognito profile")) { connectViaLink(link, incognito: true) },
-                .cancel()
-            ]
-        )
+    private func showPlanAndConnectAlert(_ alert: PlanAndConnectAlert) {
+        AlertManager.shared.showAlert(planAndConnectAlert(alert, dismiss: false))
     }
 }
 

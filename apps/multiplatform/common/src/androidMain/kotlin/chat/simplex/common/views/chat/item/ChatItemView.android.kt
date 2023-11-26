@@ -5,6 +5,8 @@ import android.os.Build
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.ui.platform.ClipboardManager
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatItem
@@ -40,4 +42,8 @@ actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
     }
     showMenu.value = false
   })
+}
+
+actual fun copyItemToClipboard(cItem: ChatItem, clipboard: ClipboardManager) {
+  clipboard.setText(AnnotatedString(cItem.content.text))
 }

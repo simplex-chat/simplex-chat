@@ -17,12 +17,14 @@ import Data.List (isPrefixOf, isSuffixOf)
 import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
+import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
-import Simplex.Messaging.Agent.Store.SQLite (withTransaction)
+import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
@@ -33,6 +35,9 @@ import Test.Hspec
 
 defaultPrefs :: Maybe Preferences
 defaultPrefs = Just $ toChatPrefs defaultChatPrefs
+
+aliceDesktopProfile :: Profile
+aliceDesktopProfile = Profile {displayName = "alice_desktop", fullName = "Alice Desktop", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
 aliceProfile :: Profile
 aliceProfile = Profile {displayName = "alice", fullName = "Alice", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
@@ -277,8 +282,12 @@ cc <##.. ls = do
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
 
-data ConsoleResponse = ConsoleString String | WithTime String | EndsWith String
-  deriving (Show)
+data ConsoleResponse
+  = ConsoleString String
+  | WithTime String
+  | EndsWith String
+  | StartsWith String
+  | Predicate (String -> Bool)
 
 instance IsString ConsoleResponse where fromString = ConsoleString
 
@@ -287,7 +296,7 @@ getInAnyOrder :: HasCallStack => (String -> String) -> TestCC -> [ConsoleRespons
 getInAnyOrder _ _ [] = pure ()
 getInAnyOrder f cc ls = do
   line <- f <$> getTermLine cc
-  let rest = filter (not . expected line) ls
+  let rest = filterFirst (expected line) ls
   if length rest < length ls
     then getInAnyOrder f cc rest
     else error $ "unexpected output: " <> line
@@ -297,6 +306,13 @@ getInAnyOrder f cc ls = do
       ConsoleString s -> l == s
       WithTime s -> dropTime_ l == Just s
       EndsWith s -> s `isSuffixOf` l
+      StartsWith s -> s `isPrefixOf` l
+      Predicate p -> p l
+    filterFirst :: (a -> Bool) -> [a] -> [a]
+    filterFirst _ [] = []
+    filterFirst p (x:xs)
+      | p x = xs
+      | otherwise = x : filterFirst p xs
 
 (<###) :: HasCallStack => TestCC -> [ConsoleResponse] -> Expectation
 (<###) = getInAnyOrder id
@@ -315,6 +331,9 @@ cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 
 ($<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
 (cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine cc) `shouldReturn` line
+
+(^<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
+(cc, p) ^<# line = (dropTime . dropStrPrefix p <$> getTermLine cc) `shouldReturn` line
 
 (⩗) :: HasCallStack => TestCC -> String -> Expectation
 cc ⩗ line = (dropTime . dropReceipt <$> getTermLine cc) `shouldReturn` line
@@ -427,6 +446,23 @@ getContactProfiles cc = do
       profiles <- withTransaction (chatStore $ chatController cc) $ \db -> getUserContactProfiles db user
       pure $ map (\Profile {displayName} -> displayName) profiles
 
+withCCUser :: TestCC -> (User -> IO a) -> IO a
+withCCUser cc action = do
+  user_ <- readTVarIO (currentUser $ chatController cc)
+  case user_ of
+    Nothing -> error "no user"
+    Just user -> action user
+
+withCCTransaction :: TestCC -> (DB.Connection -> IO a) -> IO a
+withCCTransaction cc action =
+  withTransaction (chatStore $ chatController cc) $ \db -> action db
+
+getProfilePictureByName :: TestCC -> String -> IO (Maybe String)
+getProfilePictureByName cc displayName =
+  withTransaction (chatStore $ chatController cc) $ \db ->
+    maybeFirstRow fromOnly $
+      DB.query db "SELECT image FROM contact_profiles WHERE display_name = ? LIMIT 1" (Only displayName)
+
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do
   cc ##> "/last_item_id"
@@ -435,7 +471,7 @@ lastItemId cc = do
 showActiveUser :: HasCallStack => TestCC -> String -> Expectation
 showActiveUser cc name = do
   cc <## ("user profile: " <> name)
-  cc <## "use /p <display name> [<full name>] to change it"
+  cc <## "use /p <display name> to change it"
   cc <## "(the updated profile will be sent to all your contacts)"
 
 connectUsers :: HasCallStack => TestCC -> TestCC -> IO ()
@@ -456,8 +492,11 @@ showName (TestCC ChatController {currentUser} _ _ _ _ _) = do
   pure . T.unpack $ localDisplayName <> optionalFullName localDisplayName fullName
 
 createGroup2 :: HasCallStack => String -> TestCC -> TestCC -> IO ()
-createGroup2 gName cc1 cc2 = do
-  connectUsers cc1 cc2
+createGroup2 gName cc1 cc2 = createGroup2' gName cc1 cc2 True
+
+createGroup2' :: HasCallStack => String -> TestCC -> TestCC -> Bool -> IO ()
+createGroup2' gName cc1 cc2 doConnectUsers = do
+  when doConnectUsers $ connectUsers cc1 cc2
   name2 <- userName cc2
   cc1 ##> ("/g " <> gName)
   cc1 <## ("group #" <> gName <> " is created")
@@ -486,6 +525,24 @@ createGroup3 gName cc1 cc2 cc3 = do
       do
         cc2 <## ("#" <> gName <> ": " <> name1 <> " added " <> sName3 <> " to the group (connecting...)")
         cc2 <## ("#" <> gName <> ": new member " <> name3 <> " is connected")
+    ]
+
+create2Groups3 :: HasCallStack => String -> String -> TestCC -> TestCC -> TestCC -> IO ()
+create2Groups3 gName1 gName2 cc1 cc2 cc3 = do
+  createGroup3 gName1 cc1 cc2 cc3
+  createGroup2' gName2 cc1 cc2 False
+  name1 <- userName cc1
+  name3 <- userName cc3
+  addMember gName2 cc1 cc3 GRAdmin
+  cc3 ##> ("/j " <> gName2)
+  concurrentlyN_
+    [ cc1 <## ("#" <> gName2 <> ": " <> name3 <> " joined the group"),
+      do
+        cc3 <## ("#" <> gName2 <> ": you joined the group")
+        cc3 <##. ("#" <> gName2 <> ": member "), -- "#gName2: member sName2 is connected"
+      do
+        cc2 <##. ("#" <> gName2 <> ": " <> name1 <> " added ") -- "#gName2: name1 added sName3 to the group (connecting...)"
+        cc2 <##. ("#" <> gName2 <> ": new member ") -- "#gName2: new member name3 is connected"
     ]
 
 addMember :: HasCallStack => String -> TestCC -> TestCC -> GroupMemberRole -> IO ()
@@ -532,3 +589,11 @@ currentChatVRangeInfo =
 
 vRangeStr :: VersionRange -> String
 vRangeStr (VersionRange minVer maxVer) = "(" <> show minVer <> ", " <> show maxVer <> ")"
+
+linkAnotherSchema :: String -> String
+linkAnotherSchema link
+  | "https://simplex.chat/" `isPrefixOf` link =
+    T.unpack $ T.replace "https://simplex.chat/" "simplex:/" $ T.pack link
+  | "simplex:/" `isPrefixOf` link =
+    T.unpack $ T.replace "simplex:/" "https://simplex.chat/" $ T.pack link
+  | otherwise = error "link starts with neither https://simplex.chat/ nor simplex:/"

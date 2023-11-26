@@ -33,7 +33,6 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.platform.AudioPlayer
-import chat.simplex.common.views.usersettings.showInDevelopingAlert
 import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
@@ -66,11 +65,13 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
     launch {
       snapshotFlow { chatModel.chatId.value }
         .distinctUntilChanged()
+        .onEach { Log.d(TAG, "TODOCHAT: chatId: activeChatId ${activeChat.value?.id} == new chatId $it ${activeChat.value?.id == it} ") }
         .filter { it != null && activeChat.value?.id != it }
         .collect { chatId ->
           // Redisplay the whole hierarchy if the chat is different to make going from groups to direct chat working correctly
           // Also for situation when chatId changes after clicking in notification, etc
           activeChat.value = chatModel.getChat(chatId!!)
+          Log.d(TAG, "TODOCHAT: chatId: activeChatId became ${activeChat.value?.id}")
           markUnreadChatAsRead(activeChat, chatModel)
         }
     }
@@ -89,17 +90,22 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         }
       }
         .distinctUntilChanged()
+        .onEach { Log.d(TAG, "TODOCHAT: chats: activeChatId ${activeChat.value?.id} == new chatId ${it?.id} ${activeChat.value?.id == it?.id} ") }
         // Only changed chatInfo is important thing. Other properties can be skipped for reducing recompositions
         .filter { it != null && it?.chatInfo != activeChat.value?.chatInfo }
-        .collect { activeChat.value = it }
+        .collect {
+          activeChat.value = it
+          Log.d(TAG, "TODOCHAT: chats: activeChatId became ${activeChat.value?.id}")
+        }
     }
   }
   val view = LocalMultiplatformView()
-  if (activeChat.value == null || user == null) {
+  val chat = activeChat.value
+  if (chat == null || user == null) {
     chatModel.chatId.value = null
     ModalManager.end.closeModals()
   } else {
-    val chat = activeChat.value!!
+    val chatRh = chat.remoteHostId
     // We need to have real unreadCount value for displaying it inside top right button
     // Having activeChat reloaded on every change in it is inefficient (UI lags)
     val unreadCount = remember {
@@ -118,7 +124,12 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           Modifier.fillMaxWidth(),
           horizontalAlignment = Alignment.CenterHorizontally
         ) {
-          if (chat.chatInfo is ChatInfo.Direct && !chat.chatInfo.contact.ready && !chat.chatInfo.contact.nextSendGrpInv) {
+          if (
+            chat.chatInfo is ChatInfo.Direct
+            && !chat.chatInfo.contact.ready
+            && chat.chatInfo.contact.active
+            && !chat.chatInfo.contact.nextSendGrpInv
+          ) {
             Text(
               generalGetString(MR.strings.contact_connection_pending),
               Modifier.padding(top = 4.dp),
@@ -142,6 +153,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         hideKeyboard(view)
         AudioPlayer.stop()
         chatModel.chatId.value = null
+        chatModel.groupMembers.clear()
       },
       info = {
         if (ModalManager.end.hasModalsOpen()) {
@@ -151,36 +163,36 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         hideKeyboard(view)
         withApi {
           // The idea is to preload information before showing a modal because large groups can take time to load all members
-          var preloadedContactInfo: Pair<ConnectionStats, Profile?>? = null
+          var preloadedContactInfo: Pair<ConnectionStats?, Profile?>? = null
           var preloadedCode: String? = null
           var preloadedLink: Pair<String, GroupMemberRole>? = null
           if (chat.chatInfo is ChatInfo.Direct) {
-            preloadedContactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
-            preloadedCode = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId)?.second
+            preloadedContactInfo = chatModel.controller.apiContactInfo(chatRh, chat.chatInfo.apiId)
+            preloadedCode = chatModel.controller.apiGetContactCode(chatRh, chat.chatInfo.apiId)?.second
           } else if (chat.chatInfo is ChatInfo.Group) {
-            setGroupMembers(chat.chatInfo.groupInfo, chatModel)
-            preloadedLink = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
+            setGroupMembers(chatRh, chat.chatInfo.groupInfo, chatModel)
+            preloadedLink = chatModel.controller.apiGetGroupLink(chatRh, chat.chatInfo.groupInfo.groupId)
           }
           ModalManager.end.showModalCloseable(true) { close ->
             val chat = remember { activeChat }.value
             if (chat?.chatInfo is ChatInfo.Direct) {
-              var contactInfo: Pair<ConnectionStats, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
+              var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
               var code: String? by remember { mutableStateOf(preloadedCode) }
               KeyChangeEffect(chat.id, ChatModel.networkStatuses.toMap()) {
-                contactInfo = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
+                contactInfo = chatModel.controller.apiContactInfo(chatRh, chat.chatInfo.apiId)
                 preloadedContactInfo = contactInfo
-                code = chatModel.controller.apiGetContactCode(chat.chatInfo.apiId)?.second
+                code = chatModel.controller.apiGetContactCode(chatRh, chat.chatInfo.apiId)?.second
                 preloadedCode = code
               }
               ChatInfoView(chatModel, (chat.chatInfo as ChatInfo.Direct).contact, contactInfo?.first, contactInfo?.second, chat.chatInfo.localAlias, code, close)
             } else if (chat?.chatInfo is ChatInfo.Group) {
               var link: Pair<String, GroupMemberRole>? by remember(chat.id) { mutableStateOf(preloadedLink) }
               KeyChangeEffect(chat.id) {
-                setGroupMembers((chat.chatInfo as ChatInfo.Group).groupInfo, chatModel)
-                link = chatModel.controller.apiGetGroupLink(chat.chatInfo.groupInfo.groupId)
+                setGroupMembers(chatRh, (chat.chatInfo as ChatInfo.Group).groupInfo, chatModel)
+                link = chatModel.controller.apiGetGroupLink(chatRh, chat.chatInfo.groupInfo.groupId)
                 preloadedLink = link
               }
-              GroupChatInfoView(chatModel, link?.first, link?.second, {
+              GroupChatInfoView(chatModel, chatRh, chat.id, link?.first, link?.second, {
                 link = it
                 preloadedLink = it
               }, close)
@@ -191,19 +203,19 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       showMemberInfo = { groupInfo: GroupInfo, member: GroupMember ->
         hideKeyboard(view)
         withApi {
-          val r = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
+          val r = chatModel.controller.apiGroupMemberInfo(chatRh, groupInfo.groupId, member.groupMemberId)
           val stats = r?.second
           val (_, code) = if (member.memberActive) {
-            val memCode = chatModel.controller.apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId)
+            val memCode = chatModel.controller.apiGetGroupMemberCode(chatRh, groupInfo.apiId, member.groupMemberId)
             member to memCode?.second
           } else {
             member to null
           }
-          setGroupMembers(groupInfo, chatModel)
+          setGroupMembers(chatRh, groupInfo, chatModel)
           ModalManager.end.closeModals()
           ModalManager.end.showModalCloseable(true) { close ->
-            remember { derivedStateOf { chatModel.groupMembers.firstOrNull { it.memberId == member.memberId } } }.value?.let { mem ->
-              GroupMemberInfoView(groupInfo, mem, stats, code, chatModel, close, close)
+            remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
+              GroupMemberInfoView(chatRh, groupInfo, mem, stats, code, chatModel, close, close)
             }
           }
         }
@@ -213,7 +225,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         val firstId = chatModel.chatItems.firstOrNull()?.id
         if (c != null && firstId != null) {
           withApi {
-            apiLoadPrevMessages(c.chatInfo, chatModel, firstId, searchText.value)
+            Log.d(TAG, "TODOCHAT: loadPrevMessages: loading for ${c.id}, current chatId ${ChatModel.chatId.value}, size was ${ChatModel.chatItems.size}")
+            apiLoadPrevMessages(c, chatModel, firstId, searchText.value)
+            Log.d(TAG, "TODOCHAT: loadPrevMessages: loaded for ${c.id}, current chatId ${ChatModel.chatId.value}, size now ${ChatModel.chatItems.size}")
           }
         }
       },
@@ -228,6 +242,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           val toChatItem: ChatItem?
           if (mode == CIDeleteMode.cidmBroadcast && groupInfo != null && groupMember != null) {
             val r = chatModel.controller.apiDeleteMemberChatItem(
+              chatRh,
               groupId = groupInfo.groupId,
               groupMemberId = groupMember.groupMemberId,
               itemId = itemId
@@ -236,6 +251,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             toChatItem = r?.second
           } else {
             val r = chatModel.controller.apiDeleteChatItem(
+              chatRh,
               type = cInfo.chatType,
               id = cInfo.apiId,
               itemId = itemId,
@@ -245,85 +261,110 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             toChatItem = r?.toChatItem?.chatItem
           }
           if (toChatItem == null && deletedChatItem != null) {
-            chatModel.removeChatItem(cInfo, deletedChatItem)
+            chatModel.removeChatItem(chatRh, cInfo, deletedChatItem)
           } else if (toChatItem != null) {
-            chatModel.upsertChatItem(cInfo, toChatItem)
+            chatModel.upsertChatItem(chatRh, cInfo, toChatItem)
+          }
+        }
+      },
+      deleteMessages = { itemIds ->
+        if (itemIds.isNotEmpty()) {
+          val chatInfo = chat.chatInfo
+          withBGApi {
+            val deletedItems: ArrayList<ChatItem> = arrayListOf()
+            for (itemId in itemIds) {
+              val di = chatModel.controller.apiDeleteChatItem(
+                chatRh, chatInfo.chatType, chatInfo.apiId, itemId, CIDeleteMode.cidmInternal
+              )?.deletedChatItem?.chatItem
+              if (di != null) {
+                deletedItems.add(di)
+              }
+            }
+            for (di in deletedItems) {
+              chatModel.removeChatItem(chatRh, chatInfo, di)
+            }
           }
         }
       },
       receiveFile = { fileId, encrypted ->
-        withApi { chatModel.controller.receiveFile(user, fileId, encrypted) }
+        withApi { chatModel.controller.receiveFile(chatRh, user, fileId, encrypted) }
       },
       cancelFile = { fileId ->
-        withApi { chatModel.controller.cancelFile(user, fileId) }
+        withApi { chatModel.controller.cancelFile(chatRh, user, fileId) }
       },
-      joinGroup = { groupId ->
-        withApi { chatModel.controller.apiJoinGroup(groupId) }
+      joinGroup = { groupId, onComplete ->
+        withApi {
+          chatModel.controller.apiJoinGroup(chatRh, groupId)
+          onComplete.invoke()
+        }
       },
       startCall = out@ { media ->
-        if (appPlatform.isDesktop) {
-          return@out showInDevelopingAlert()
-        }
         withBGApi {
           val cInfo = chat.chatInfo
           if (cInfo is ChatInfo.Direct) {
-            chatModel.activeCall.value = Call(contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
+            chatModel.activeCall.value = Call(remoteHostId = chatRh, contact = cInfo.contact, callState = CallState.WaitCapabilities, localMedia = media)
             chatModel.showCallView.value = true
-            chatModel.callCommand.value = WCallCommand.Capabilities
+            chatModel.callCommand.add(WCallCommand.Capabilities(media))
           }
         }
+      },
+      endCall = {
+        val call = chatModel.activeCall.value
+        if (call != null) withApi { chatModel.callManager.endCall(call) }
       },
       acceptCall = { contact ->
         hideKeyboard(view)
         val invitation = chatModel.callInvitations.remove(contact.id)
         if (invitation == null) {
-          AlertManager.shared.showAlertMsg("Call already ended!")
+          AlertManager.shared.showAlertMsg(generalGetString(MR.strings.call_already_ended))
         } else {
           chatModel.callManager.acceptIncomingCall(invitation = invitation)
         }
       },
       acceptFeature = { contact, feature, param ->
         withApi {
-          chatModel.controller.allowFeatureToContact(contact, feature, param)
+          chatModel.controller.allowFeatureToContact(chatRh, contact, feature, param)
         }
       },
       openDirectChat = { contactId ->
         withApi {
-          openDirectChat(contactId, chatModel)
+          openDirectChat(chatRh, contactId, chatModel)
         }
       },
       updateContactStats = { contact ->
         withApi {
-          val r = chatModel.controller.apiContactInfo(chat.chatInfo.apiId)
+          val r = chatModel.controller.apiContactInfo(chatRh, chat.chatInfo.apiId)
           if (r != null) {
-            chatModel.updateContactConnectionStats(contact, r.first)
+            val contactStats = r.first
+            if (contactStats != null)
+            chatModel.updateContactConnectionStats(chatRh, contact, contactStats)
           }
         }
       },
       updateMemberStats = { groupInfo, member ->
         withApi {
-          val r = chatModel.controller.apiGroupMemberInfo(groupInfo.groupId, member.groupMemberId)
+          val r = chatModel.controller.apiGroupMemberInfo(chatRh, groupInfo.groupId, member.groupMemberId)
           if (r != null) {
             val memStats = r.second
             if (memStats != null) {
-              chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, memStats)
+              chatModel.updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, memStats)
             }
           }
         }
       },
       syncContactConnection = { contact ->
         withApi {
-          val cStats = chatModel.controller.apiSyncContactRatchet(contact.contactId, force = false)
+          val cStats = chatModel.controller.apiSyncContactRatchet(chatRh, contact.contactId, force = false)
           if (cStats != null) {
-            chatModel.updateContactConnectionStats(contact, cStats)
+            chatModel.updateContactConnectionStats(chatRh, contact, cStats)
           }
         }
       },
       syncMemberConnection = { groupInfo, member ->
         withApi {
-          val r = chatModel.controller.apiSyncGroupMemberRatchet(groupInfo.apiId, member.groupMemberId, force = false)
+          val r = chatModel.controller.apiSyncGroupMemberRatchet(chatRh, groupInfo.apiId, member.groupMemberId, force = false)
           if (r != null) {
-            chatModel.updateGroupMemberConnectionStats(groupInfo, r.first, r.second)
+            chatModel.updateGroupMemberConnectionStats(chatRh, groupInfo, r.first, r.second)
           }
         }
       },
@@ -336,6 +377,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       setReaction = { cInfo, cItem, add, reaction ->
         withApi {
           val updatedCI = chatModel.controller.apiChatItemReaction(
+            rh = chatRh,
             type = cInfo.chatType,
             id = cInfo.apiId,
             itemId = cItem.id,
@@ -349,10 +391,10 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       },
       showItemDetails = { cInfo, cItem ->
         withApi {
-          val ciInfo = chatModel.controller.apiGetChatItemInfo(cInfo.chatType, cInfo.apiId, cItem.id)
+          val ciInfo = chatModel.controller.apiGetChatItemInfo(chatRh, cInfo.chatType, cInfo.apiId, cItem.id)
           if (ciInfo != null) {
             if (chat.chatInfo is ChatInfo.Group) {
-              setGroupMembers(chat.chatInfo.groupInfo, chatModel)
+              setGroupMembers(chatRh, chat.chatInfo.groupInfo, chatModel)
             }
             ModalManager.end.closeModals()
             ModalManager.end.showModal(endButtons = { ShareButton {
@@ -366,18 +408,29 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       addMembers = { groupInfo ->
         hideKeyboard(view)
         withApi {
-          setGroupMembers(groupInfo, chatModel)
+          setGroupMembers(chatRh, groupInfo, chatModel)
           ModalManager.end.closeModals()
           ModalManager.end.showModalCloseable(true) { close ->
-            AddGroupMembersView(groupInfo, false, chatModel, close)
+            AddGroupMembersView(chatRh, groupInfo, false, chatModel, close)
+          }
+        }
+      },
+      openGroupLink = { groupInfo ->
+        hideKeyboard(view)
+        withApi {
+          val link = chatModel.controller.apiGetGroupLink(chatRh, groupInfo.groupId)
+          ModalManager.end.closeModals()
+          ModalManager.end.showModalCloseable(true) {
+            GroupLinkView(chatModel, chatRh, groupInfo, link?.first, link?.second, onGroupLinkUpdated = null)
           }
         }
       },
       markRead = { range, unreadCountAfter ->
-        chatModel.markChatItemsRead(chat.chatInfo, range, unreadCountAfter)
+        chatModel.markChatItemsRead(chat, range, unreadCountAfter)
         ntfManager.cancelNotificationsForChat(chat.id)
         withBGApi {
           chatModel.controller.apiChatRead(
+            chatRh,
             chat.chatInfo.chatType,
             chat.chatInfo.apiId,
             range
@@ -389,7 +442,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         if (searchText.value == value) return@ChatLayout
         val c = chatModel.getChat(chat.chatInfo.id) ?: return@ChatLayout
         withApi {
-          apiFindMessages(c.chatInfo, chatModel, value)
+          apiFindMessages(c, chatModel, value)
           searchText.value = value
         }
       },
@@ -416,10 +469,12 @@ fun ChatLayout(
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
+  deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long, Boolean) -> Unit,
   cancelFile: (Long) -> Unit,
-  joinGroup: (Long) -> Unit,
+  joinGroup: (Long, () -> Unit) -> Unit,
   startCall: (CallMediaType) -> Unit,
+  endCall: () -> Unit,
   acceptCall: (Contact) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
   openDirectChat: (Long) -> Unit,
@@ -432,6 +487,7 @@ fun ChatLayout(
   setReaction: (ChatInfo, ChatItem, Boolean, MsgReaction) -> Unit,
   showItemDetails: (ChatInfo, ChatItem) -> Unit,
   addMembers: (GroupInfo) -> Unit,
+  openGroupLink: (GroupInfo) -> Unit,
   markRead: (CC.ItemRange, unreadCountAfter: Int?) -> Unit,
   changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
@@ -445,18 +501,9 @@ fun ChatLayout(
       .fillMaxWidth()
       .desktopOnExternalDrag(
         enabled = !attachmentDisabled.value && rememberUpdatedState(chat.userCanSend).value,
-        onFiles = { paths ->
-          val uris = paths.map { URI.create(it) }
-          val groups =  uris.groupBy { isImage(it) }
-          val images = groups[true] ?: emptyList()
-          val files = groups[false] ?: emptyList()
-          if (images.isNotEmpty()) {
-            CoroutineScope(Dispatchers.IO).launch { composeState.processPickedMedia(images, null) }
-          } else if (files.isNotEmpty()) {
-            composeState.processPickedFile(uris.first(), null)
-          }
-        },
+        onFiles = { paths -> composeState.onFilesAttached(paths.map { it.toURI() }) },
         onImage = {
+          // TODO: file is not saved anywhere?!
           val tmpFile = File.createTempFile("image", ".bmp", tmpDir)
           tmpFile.deleteOnExit()
           chatModel.filesToDelete.add(tmpFile)
@@ -488,7 +535,7 @@ fun ChatLayout(
         }
 
         Scaffold(
-          topBar = { ChatInfoToolbar(chat, back, info, startCall, addMembers, changeNtfsState, onSearchValueChanged) },
+          topBar = { ChatInfoToolbar(chat, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged) },
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = { floatingButton.value() },
@@ -499,7 +546,7 @@ fun ChatLayout(
           ) {
             ChatItemsList(
               chat, unreadCount, composeState, chatItems, searchValue,
-              useLinkPreviews, linkMode, showMemberInfo, loadPrevMessages, deleteMessage,
+              useLinkPreviews, linkMode, showMemberInfo, loadPrevMessages, deleteMessage, deleteMessages,
               receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat,
               updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
               setReaction, showItemDetails, markRead, setFloatingButton, onComposed, developerTools,
@@ -517,7 +564,9 @@ fun ChatInfoToolbar(
   back: () -> Unit,
   info: () -> Unit,
   startCall: (CallMediaType) -> Unit,
+  endCall: () -> Unit,
   addMembers: (GroupInfo) -> Unit,
+  openGroupLink: (GroupInfo) -> Unit,
   changeNtfsState: (Boolean, currentValue: MutableState<Boolean>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
 ) {
@@ -537,6 +586,7 @@ fun ChatInfoToolbar(
   }
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val menuItems = arrayListOf<@Composable () -> Unit>()
+  val activeCall by remember { chatModel.activeCall }
   menuItems.add {
     ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
       showMenu.value = false
@@ -545,38 +595,100 @@ fun ChatInfoToolbar(
   }
 
   if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.allowsFeature(ChatFeature.Calls)) {
-    barButtons.add {
-      IconButton({
-        showMenu.value = false
-        startCall(CallMediaType.Audio)
-      },
-      enabled = chat.chatInfo.contact.ready) {
-        Icon(
-          painterResource(MR.images.ic_call_500),
-          stringResource(MR.strings.icon_descr_more_button),
-          tint = if (chat.chatInfo.contact.ready) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
-        )
+    if (activeCall == null) {
+      barButtons.add {
+        if (appPlatform.isAndroid) {
+          IconButton({
+            showMenu.value = false
+            startCall(CallMediaType.Audio)
+          }, enabled = chat.chatInfo.contact.ready && chat.chatInfo.contact.active
+          ) {
+            Icon(
+              painterResource(MR.images.ic_call_500),
+              stringResource(MR.strings.icon_descr_audio_call).capitalize(Locale.current),
+              tint = if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+            )
+          }
+        } else {
+          IconButton({
+            showMenu.value = false
+            startCall(CallMediaType.Video)
+          }, enabled = chat.chatInfo.contact.ready && chat.chatInfo.contact.active
+          ) {
+            Icon(
+              painterResource(MR.images.ic_videocam),
+              stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current),
+              tint = if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+            )
+          }
+        }
       }
-    }
-    if (chat.chatInfo.contact.ready) {
-      menuItems.add {
-        ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(MR.images.ic_videocam), onClick = {
+    } else if (activeCall?.contact?.id == chat.id) {
+      barButtons.add {
+        val call = remember { chatModel.activeCall }.value
+        val connectedAt = call?.connectedAt
+        if (connectedAt != null) {
+          val time = remember { mutableStateOf(durationText(0)) }
+          LaunchedEffect(Unit) {
+            while (true) {
+              time.value = durationText((Clock.System.now() - connectedAt).inWholeSeconds.toInt())
+              delay(250)
+            }
+          }
+          val sp50 = with(LocalDensity.current) { 50.sp.toDp() }
+          Text(time.value, Modifier.widthIn(min = sp50))
+        }
+      }
+      barButtons.add {
+        IconButton({
           showMenu.value = false
-          startCall(CallMediaType.Video)
-        })
+          endCall()
+        }) {
+          Icon(
+            painterResource(MR.images.ic_call_end_filled),
+            null,
+            tint = MaterialTheme.colors.error
+          )
+        }
       }
     }
-  } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.canAddMembers && !chat.chatInfo.incognito) {
-    barButtons.add {
-      IconButton({
-        showMenu.value = false
-        addMembers(chat.chatInfo.groupInfo)
-      }) {
-        Icon(painterResource(MR.images.ic_person_add_500), stringResource(MR.strings.icon_descr_add_members), tint = MaterialTheme.colors.primary)
+    if (chat.chatInfo.contact.ready && chat.chatInfo.contact.active && activeCall == null) {
+      menuItems.add {
+        if (appPlatform.isAndroid) {
+          ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(MR.images.ic_videocam), onClick = {
+            showMenu.value = false
+            startCall(CallMediaType.Video)
+          })
+        } else {
+          ItemAction(stringResource(MR.strings.icon_descr_audio_call).capitalize(Locale.current), painterResource(MR.images.ic_call_500), onClick = {
+            showMenu.value = false
+            startCall(CallMediaType.Audio)
+          })
+        }
+      }
+    }
+  } else if (chat.chatInfo is ChatInfo.Group && chat.chatInfo.groupInfo.canAddMembers) {
+    if (!chat.chatInfo.incognito) {
+      barButtons.add {
+        IconButton({
+          showMenu.value = false
+          addMembers(chat.chatInfo.groupInfo)
+        }) {
+          Icon(painterResource(MR.images.ic_person_add_500), stringResource(MR.strings.icon_descr_add_members), tint = MaterialTheme.colors.primary)
+        }
+      }
+    } else {
+      barButtons.add {
+        IconButton({
+          showMenu.value = false
+          openGroupLink(chat.chatInfo.groupInfo)
+        }) {
+          Icon(painterResource(MR.images.ic_add_link), stringResource(MR.strings.group_link), tint = MaterialTheme.colors.primary)
+        }
       }
     }
   }
-  if ((chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.ready) || chat.chatInfo is ChatInfo.Group) {
+  if ((chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.ready && chat.chatInfo.contact.active) || chat.chatInfo is ChatInfo.Group) {
     val ntfsEnabled = remember { mutableStateOf(chat.chatInfo.ntfsEnabled) }
     menuItems.add {
       ItemAction(
@@ -680,9 +792,10 @@ fun BoxWithConstraintsScope.ChatItemsList(
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
   loadPrevMessages: (ChatInfo) -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
+  deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long, Boolean) -> Unit,
   cancelFile: (Long) -> Unit,
-  joinGroup: (Long) -> Unit,
+  joinGroup: (Long, () -> Unit) -> Unit,
   acceptCall: (Contact) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
   openDirectChat: (Long) -> Unit,
@@ -782,31 +895,27 @@ fun BoxWithConstraintsScope.ChatItemsList(
             }
           }
         }
-        val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null
-        if (chat.chatInfo is ChatInfo.Group) {
-          if (cItem.chatDir is CIDirection.GroupRcv) {
-            val prevItem = if (i < reversedChatItems.lastIndex) reversedChatItems[i + 1] else null
-            val nextItem = if (i - 1 >= 0) reversedChatItems[i - 1] else null
-            fun getConnectedMemberNames(): List<String> {
-              val ns = mutableListOf<String>()
-              var idx = i
-              while (idx < reversedChatItems.size) {
-                val m = reversedChatItems[idx].memberConnected
-                if (m != null) {
-                  ns.add(m.displayName)
-                } else {
-                  break
-                }
-                idx++
-              }
-              return ns
-            }
-            if (cItem.memberConnected != null && nextItem?.memberConnected != null) {
-              // memberConnected events are aggregated at the last chat item in a row of such events, see ChatItemView
-              Box(Modifier.size(0.dp)) {}
-            } else {
+
+        val revealed = remember { mutableStateOf(false) }
+
+        @Composable
+        fun ChatItemViewShortHand(cItem: ChatItem, range: IntRange?) {
+          ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, range = range, deleteMessage = deleteMessage, deleteMessages = deleteMessages, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools)
+        }
+
+        @Composable
+        fun ChatItemView(cItem: ChatItem, range: IntRange?, prevItem: ChatItem?) {
+          val voiceWithTransparentBack = cItem.content.msgContent is MsgContent.MCVoice && cItem.content.text.isEmpty() && cItem.quotedItem == null
+          if (chat.chatInfo is ChatInfo.Group) {
+            if (cItem.chatDir is CIDirection.GroupRcv) {
               val member = cItem.chatDir.groupMember
-              if (showMemberImage(member, prevItem)) {
+              val (prevMember, memCount) =
+                if (range != null) {
+                  chatModel.getPrevHiddenMember(member, range)
+                } else {
+                  null to 1
+                }
+              if (prevItem == null || showMemberImage(member, prevItem) || prevMember != null) {
                 Column(
                   Modifier
                     .padding(top = 8.dp)
@@ -816,7 +925,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                 ) {
                   if (cItem.content.showMemberName) {
                     Text(
-                      member.displayName,
+                      memberNames(member, prevMember, memCount),
                       Modifier.padding(start = MEMBER_IMAGE_SIZE + 10.dp),
                       style = TextStyle(fontSize = 13.5.sp, color = CurrentColors.value.colors.secondary)
                     )
@@ -834,7 +943,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     ) {
                       MemberImage(member)
                     }
-                    ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, getConnectedMemberNames = ::getConnectedMemberNames, developerTools = developerTools)
+                    ChatItemViewShortHand(cItem, range)
                   }
                 }
               } else {
@@ -843,28 +952,45 @@ fun BoxWithConstraintsScope.ChatItemsList(
                     .padding(start = 8.dp + MEMBER_IMAGE_SIZE + 4.dp, end = if (voiceWithTransparentBack) 12.dp else 66.dp)
                     .then(swipeableModifier)
                 ) {
-                  ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, getConnectedMemberNames = ::getConnectedMemberNames, developerTools = developerTools)
+                  ChatItemViewShortHand(cItem, range)
                 }
               }
+            } else {
+              Box(
+                Modifier
+                  .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp)
+                  .then(swipeableModifier)
+              ) {
+                ChatItemViewShortHand(cItem, range)
+              }
             }
-          } else {
+          } else { // direct message
+            val sent = cItem.chatDir.sent
             Box(
-              Modifier
-                .padding(start = if (voiceWithTransparentBack) 12.dp else 104.dp, end = 12.dp)
-                .then(swipeableModifier)
+              Modifier.padding(
+                start = if (sent && !voiceWithTransparentBack) 76.dp else 12.dp,
+                end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
+              ).then(swipeableModifier)
             ) {
-              ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = {}, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools)
+              ChatItemViewShortHand(cItem, range)
             }
           }
-        } else { // direct message
-          val sent = cItem.chatDir.sent
-          Box(
-            Modifier.padding(
-              start = if (sent && !voiceWithTransparentBack) 76.dp else 12.dp,
-              end = if (sent || voiceWithTransparentBack) 12.dp else 76.dp,
-            ).then(swipeableModifier)
-          ) {
-            ChatItemView(chat.chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, deleteMessage = deleteMessage, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, setReaction = setReaction, showItemDetails = showItemDetails, developerTools = developerTools)
+        }
+
+        val (currIndex, nextItem) = chatModel.getNextChatItem(cItem)
+        val ciCategory = cItem.mergeCategory
+        if (ciCategory != null && ciCategory == nextItem?.mergeCategory) {
+          // memberConnected events and deleted items are aggregated at the last chat item in a row, see ChatItemView
+        } else {
+          val (prevHidden, prevItem) = chatModel.getPrevShownChatItem(currIndex, ciCategory)
+          val range = chatViewItemsRange(currIndex, prevHidden)
+          if (revealed.value && range != null) {
+            reversedChatItems.subList(range.first, range.last + 1).forEachIndexed { index, ci ->
+              val prev = if (index + range.first == prevHidden) prevItem else reversedChatItems[index + range.first + 1]
+              ChatItemView(ci, null, prev)
+            }
+          } else {
+            ChatItemView(cItem, range, prevItem)
           }
         }
 
@@ -1042,10 +1168,12 @@ fun PreloadItems(
   }
 }
 
-fun showMemberImage(member: GroupMember, prevItem: ChatItem?): Boolean {
-  return prevItem == null || prevItem.chatDir is CIDirection.GroupSnd ||
-      (prevItem.chatDir is CIDirection.GroupRcv && prevItem.chatDir.groupMember.groupMemberId != member.groupMemberId)
-}
+private fun showMemberImage(member: GroupMember, prevItem: ChatItem?): Boolean =
+  when (val dir = prevItem?.chatDir) {
+    is CIDirection.GroupSnd -> true
+    is CIDirection.GroupRcv -> dir.groupMember.groupMemberId != member.groupMemberId
+    else -> false
+  }
 
 val MEMBER_IMAGE_SIZE: Dp = 38.dp
 
@@ -1130,17 +1258,42 @@ private fun markUnreadChatAsRead(activeChat: MutableState<Chat?>, chatModel: Cha
   val chat = activeChat.value
   if (chat?.chatStats?.unreadChat != true) return
   withApi {
+    val chatRh = chat.remoteHostId
     val success = chatModel.controller.apiChatUnread(
+      chatRh,
       chat.chatInfo.chatType,
       chat.chatInfo.apiId,
       false
     )
     if (success && chat.id == activeChat.value?.id) {
       activeChat.value = chat.copy(chatStats = chat.chatStats.copy(unreadChat = false))
-      chatModel.replaceChat(chat.id, activeChat.value!!)
+      chatModel.replaceChat(chatRh, chat.id, activeChat.value!!)
     }
   }
 }
+
+@Composable
+private fun memberNames(member: GroupMember, prevMember: GroupMember?, memCount: Int): String {
+  val name = member.displayName
+  val prevName = prevMember?.displayName
+  return if (prevName != null) {
+    if (memCount > 2) {
+      stringResource(MR.strings.group_members_n).format(name, prevName, memCount - 2)
+    } else {
+      stringResource(MR.strings.group_members_2).format(name, prevName)
+    }
+  } else {
+    name
+  }
+}
+
+fun chatViewItemsRange(currIndex: Int?, prevHidden: Int?): IntRange? =
+  if (currIndex != null && prevHidden != null && prevHidden > currIndex) {
+    currIndex..prevHidden
+  } else {
+    null
+  }
+
 
 sealed class ProviderMedia {
   data class Image(val data: ByteArray, val image: ImageBitmap): ProviderMedia()
@@ -1154,7 +1307,7 @@ private fun providerForGallery(
   scrollTo: (Int) -> Unit
 ): ImageGalleryProvider {
   fun canShowMedia(item: ChatItem): Boolean =
-    (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && getLoadedFilePath(item.file) != null)
+    (item.content.msgContent is MsgContent.MCImage || item.content.msgContent is MsgContent.MCVideo) && (item.file?.loaded == true && (getLoadedFilePath(item.file) != null || chatModel.connectedToRemote()))
 
   fun item(skipInternalIndex: Int, initialChatId: Long): Pair<Int, ChatItem>? {
     var processedInternalIndex = -skipInternalIndex.sign
@@ -1181,7 +1334,7 @@ private fun providerForGallery(
       val item = item(internalIndex, initialChatId)?.second ?: return null
       return when (item.content.msgContent) {
         is MsgContent.MCImage -> {
-          val res = getLoadedImage(item.file)
+          val res = runBlocking { getLoadedImage(item.file) }
           val filePath = getLoadedFilePath(item.file)
           if (res != null && filePath != null) {
             val (imageBitmap: ImageBitmap, data: ByteArray) = res
@@ -1189,7 +1342,7 @@ private fun providerForGallery(
           } else null
         }
         is MsgContent.MCVideo -> {
-          val filePath = getLoadedFilePath(item.file)
+          val filePath = if (chatModel.connectedToRemote() && item.file?.loaded == true) getAppFilePath(item.file.fileName) else getLoadedFilePath(item.file)
           if (filePath != null) {
             val uri = getAppFileUri(filePath.substringAfterLast(File.separator))
             ProviderMedia.Video(uri, (item.content.msgContent as MsgContent.MCVideo).image)
@@ -1265,6 +1418,7 @@ fun PreviewChatLayout() {
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
       chat = Chat(
+        remoteHostId = null,
         chatInfo = ChatInfo.Direct.sampleData,
         chatItems = chatItems,
         chatStats = Chat.ChatStats()
@@ -1283,10 +1437,12 @@ fun PreviewChatLayout() {
       showMemberInfo = { _, _ -> },
       loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
+      deleteMessages = { _ -> },
       receiveFile = { _, _ -> },
       cancelFile = {},
-      joinGroup = {},
+      joinGroup = { _, _ -> },
       startCall = {},
+      endCall = {},
       acceptCall = { _ -> },
       acceptFeature = { _, _, _ -> },
       openDirectChat = { _ -> },
@@ -1299,6 +1455,7 @@ fun PreviewChatLayout() {
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
       addMembers = { _ -> },
+      openGroupLink = {},
       markRead = { _, _ -> },
       changeNtfsState = { _, _ -> },
       onSearchValueChanged = {},
@@ -1334,6 +1491,7 @@ fun PreviewGroupChatLayout() {
     val searchValue = remember { mutableStateOf("") }
     ChatLayout(
       chat = Chat(
+        remoteHostId = null,
         chatInfo = ChatInfo.Group.sampleData,
         chatItems = chatItems,
         chatStats = Chat.ChatStats()
@@ -1352,10 +1510,12 @@ fun PreviewGroupChatLayout() {
       showMemberInfo = { _, _ -> },
       loadPrevMessages = { _ -> },
       deleteMessage = { _, _ -> },
+      deleteMessages = {},
       receiveFile = { _, _ -> },
       cancelFile = {},
-      joinGroup = {},
+      joinGroup = { _, _ -> },
       startCall = {},
+      endCall = {},
       acceptCall = { _ -> },
       acceptFeature = { _, _, _ -> },
       openDirectChat = { _ -> },
@@ -1368,6 +1528,7 @@ fun PreviewGroupChatLayout() {
       setReaction = { _, _, _, _ -> },
       showItemDetails = { _, _ -> },
       addMembers = { _ -> },
+      openGroupLink = {},
       markRead = { _, _ -> },
       changeNtfsState = { _, _ -> },
       onSearchValueChanged = {},

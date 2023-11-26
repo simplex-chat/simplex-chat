@@ -709,19 +709,10 @@
 "Connect" = "Підключіться";
 
 /* No comment provided by engineer. */
-"Connect directly" = "Підключіться безпосередньо";
-
-/* No comment provided by engineer. */
 "Connect incognito" = "Підключайтеся інкогніто";
 
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "зв'язатися з розробниками SimpleX Chat.";
-
-/* No comment provided by engineer. */
-"Connect via contact link" = "Підключіться за контактним посиланням";
-
-/* No comment provided by engineer. */
-"Connect via group link?" = "Підключитися за груповим посиланням?";
 
 /* No comment provided by engineer. */
 "Connect via link" = "Підключіться за посиланням";
@@ -788,9 +779,6 @@
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Контакт вже існує";
-
-/* No comment provided by engineer. */
-"Contact and all messages will be deleted - this cannot be undone!" = "Контакт і всі повідомлення будуть видалені - це неможливо скасувати!";
 
 /* No comment provided by engineer. */
 "contact has e2e encryption" = "контакт має шифрування e2e";
@@ -994,9 +982,6 @@
 "Delete Contact" = "Видалити контакт";
 
 /* No comment provided by engineer. */
-"Delete contact?" = "Видалити контакт?";
-
-/* No comment provided by engineer. */
 "Delete database" = "Видалити базу даних";
 
 /* server test step */
@@ -1148,12 +1133,6 @@
 
 /* server test step */
 "Disconnect" = "Від'єднати";
-
-/* No comment provided by engineer. */
-"Display name" = "Відображуване ім'я";
-
-/* No comment provided by engineer. */
-"Display name:" = "Відображуване ім'я:";
 
 /* No comment provided by engineer. */
 "Do it later" = "Зробіть це пізніше";
@@ -2197,7 +2176,8 @@
 "observer" = "спостерігач";
 
 /* enabled status
-   group pref value */
+   group pref value
+   time to disappear */
 "off" = "вимкнено";
 
 /* No comment provided by engineer. */
@@ -2295,12 +2275,6 @@
 
 /* No comment provided by engineer. */
 "Opening database…" = "Відкриття бази даних…";
-
-/* No comment provided by engineer. */
-"Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "Відкриття посилання в браузері може знизити конфіденційність і безпеку з'єднання. Ненадійні посилання SimpleX будуть червоного кольору.";
-
-/* No comment provided by engineer. */
-"or chat with the developers" = "або поспілкуйтеся з розробниками";
 
 /* member role */
 "owner" = "власник";
@@ -3083,9 +3057,6 @@
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Шифрування працює і нова угода про шифрування не потрібна. Це може призвести до помилок з'єднання!";
 
 /* No comment provided by engineer. */
-"The group is fully decentralized – it is visible only to the members." = "Група повністю децентралізована - її бачать лише учасники.";
-
-/* No comment provided by engineer. */
 "The hash of the previous message is different." = "Хеш попереднього повідомлення відрізняється.";
 
 /* No comment provided by engineer. */
@@ -3575,9 +3546,6 @@
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Вам потрібно буде пройти автентифікацію при запуску або відновленні програми після 30 секунд роботи у фоновому режимі.";
 
 /* No comment provided by engineer. */
-"You will join a group this link refers to and connect to its group members." = "Ви приєднаєтеся до групи, на яку посилається це посилання, і з'єднаєтеся з її учасниками.";
-
-/* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "Ви все одно отримуватимете дзвінки та сповіщення від вимкнених профілів, якщо вони активні.";
 
 /* No comment provided by engineer. */
@@ -3606,9 +3574,6 @@
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Ваша база даних чату не зашифрована - встановіть ключову фразу, щоб зашифрувати її.";
-
-/* No comment provided by engineer. */
-"Your chat profile will be sent to group members" = "Ваш профіль у чаті буде надіслано учасникам групи";
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Ваші профілі чату";
