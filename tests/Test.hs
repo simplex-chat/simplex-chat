@@ -13,8 +13,8 @@ import RemoteTests
 import SchemaDump
 import Test.Hspec
 import UnliftIO.Temporary (withTempDirectory)
-import ViewTests
 import ValidNames
+import ViewTests
 import WebRTCTests
 
 main :: IO ()

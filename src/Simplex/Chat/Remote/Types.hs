@@ -21,13 +21,13 @@ import Data.Text (Text)
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Types (verificationCode)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.File (CryptoFile)
 import Simplex.Messaging.Crypto.SNTRUP761 (KEMHybridSecret)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
+import Simplex.Messaging.Transport (TLS (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Types
-import Simplex.Messaging.Crypto.File (CryptoFile)
-import Simplex.Messaging.Transport (TLS (..))
 
 data RemoteHostClient = RemoteHostClient
   { hostEncoding :: PlatformEncoding,
@@ -48,13 +48,13 @@ data RemoteCrypto = RemoteCrypto
 
 data RemoteSignatures
   = RSSign
-    { idPrivKey :: C.PrivateKeyEd25519,
-      sessPrivKey :: C.PrivateKeyEd25519
-    }
+      { idPrivKey :: C.PrivateKeyEd25519,
+        sessPrivKey :: C.PrivateKeyEd25519
+      }
   | RSVerify
-    { idPubKey :: C.PublicKeyEd25519,
-      sessPubKey :: C.PublicKeyEd25519
-    }
+      { idPubKey :: C.PublicKeyEd25519,
+        sessPubKey :: C.PublicKeyEd25519
+      }
 
 type SessionSeq = Int
 
@@ -71,12 +71,12 @@ data RemoteHostSession
   | RHSessionPendingConfirmation {sessionCode :: Text, tls :: TLS, rhPendingSession :: RHPendingSession}
   | RHSessionConfirmed {tls :: TLS, rhPendingSession :: RHPendingSession}
   | RHSessionConnected
-    { rchClient :: RCHostClient,
-      tls :: TLS,
-      rhClient :: RemoteHostClient,
-      pollAction :: Async (),
-      storePath :: FilePath
-    }
+      { rchClient :: RCHostClient,
+        tls :: TLS,
+        rhClient :: RemoteHostClient,
+        pollAction :: Async (),
+        storePath :: FilePath
+      }
 
 data RemoteHostSessionState
   = RHSStarting

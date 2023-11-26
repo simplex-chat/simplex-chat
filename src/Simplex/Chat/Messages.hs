@@ -11,7 +11,6 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
-
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Messages where
@@ -44,7 +43,7 @@ import Simplex.Messaging.Agent.Protocol (AgentMsgId, MsgMeta (..), MsgReceiptSta
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, parseAll, enumJSON, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, parseAll, sumTypeJSON)
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
@@ -345,7 +344,7 @@ contactTimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessag
   | forUser enabled && forContact enabled = Just ttl
   | otherwise = Nothing
   where
-    TimedMessagesPreference {ttl} =  userPreference.preference
+    TimedMessagesPreference {ttl} = userPreference.preference
 
 groupTimedTTL :: GroupInfo -> Maybe (Maybe Int)
 groupTimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}

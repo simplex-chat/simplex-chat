@@ -6,8 +6,8 @@ module Simplex.Chat.Bot.KnownContacts where
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Int (Int64)
 import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Options.Applicative
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Util (safeDecodeUtf8)

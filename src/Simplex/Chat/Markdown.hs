@@ -19,7 +19,7 @@ import qualified Data.Attoparsec.Text as A
 import Data.Char (isDigit, isPunctuation)
 import Data.Either (fromRight)
 import Data.Functor (($>))
-import Data.List (intercalate, foldl')
+import Data.List (foldl', intercalate)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe, isNothing)
@@ -85,16 +85,18 @@ newtype FormatColor = FormatColor Color
   deriving (Eq, Show)
 
 instance FromJSON FormatColor where
-  parseJSON = J.withText "FormatColor" $ fmap FormatColor . \case
-    "red" -> pure Red
-    "green" -> pure Green
-    "blue" -> pure Blue
-    "yellow" -> pure Yellow
-    "cyan" -> pure Cyan
-    "magenta" -> pure Magenta
-    "black" -> pure Black
-    "white" -> pure White
-    unexpected -> fail $ "unexpected FormatColor: " <> show unexpected
+  parseJSON =
+    J.withText "FormatColor" $
+      fmap FormatColor . \case
+        "red" -> pure Red
+        "green" -> pure Green
+        "blue" -> pure Blue
+        "yellow" -> pure Yellow
+        "cyan" -> pure Cyan
+        "magenta" -> pure Magenta
+        "black" -> pure Black
+        "white" -> pure White
+        unexpected -> fail $ "unexpected FormatColor: " <> show unexpected
 
 instance ToJSON FormatColor where
   toJSON (FormatColor c) = case c of
@@ -167,14 +169,14 @@ markdownP = mconcat <$> A.many' fragmentP
     md :: Char -> Format -> Text -> Markdown
     md c f s
       | T.null s || T.head s == ' ' || T.last s == ' ' =
-        unmarked $ c `T.cons` s `T.snoc` c
+          unmarked $ c `T.cons` s `T.snoc` c
       | otherwise = markdown f s
     secretP :: Parser Markdown
     secretP = secret <$> A.takeWhile (== '#') <*> A.takeTill (== '#') <*> A.takeWhile (== '#')
     secret :: Text -> Text -> Text -> Markdown
     secret b s a
       | T.null a || T.null s || T.head s == ' ' || T.last s == ' ' =
-        unmarked $ '#' `T.cons` ss
+          unmarked $ '#' `T.cons` ss
       | otherwise = markdown Secret $ T.init ss
       where
         ss = b <> s <> a
@@ -215,9 +217,9 @@ markdownP = mconcat <$> A.many' fragmentP
     wordMD s
       | T.null s = unmarked s
       | isUri s =
-        let t = T.takeWhileEnd isPunctuation s
-            uri = uriMarkdown $ T.dropWhileEnd isPunctuation s
-         in if T.null t then uri else uri :|: unmarked t
+          let t = T.takeWhileEnd isPunctuation s
+              uri = uriMarkdown $ T.dropWhileEnd isPunctuation s
+           in if T.null t then uri else uri :|: unmarked t
       | isEmail s = markdown Email s
       | otherwise = unmarked s
     uriMarkdown s = case strDecode $ encodeUtf8 s of

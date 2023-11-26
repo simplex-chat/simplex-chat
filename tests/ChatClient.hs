@@ -5,7 +5,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeApplications #-}
-
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module ChatClient where
@@ -276,7 +275,7 @@ getTermLine cc =
     Just s -> do
       -- remove condition to always echo virtual terminal
       when (printOutput cc) $ do
-      -- when True $ do
+        -- when True $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s

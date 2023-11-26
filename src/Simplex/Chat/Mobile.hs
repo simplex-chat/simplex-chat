@@ -4,13 +4,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
-
 {-# OPTIONS_GHC -fobject-code #-}
 
 module Simplex.Chat.Mobile where
 
 import Control.Concurrent.STM
-import Control.Exception (catch, SomeException)
+import Control.Exception (SomeException, catch)
 import Control.Monad.Except
 import Control.Monad.Reader
 import qualified Data.Aeson as J
@@ -31,7 +30,7 @@ import Foreign.C.Types (CInt (..))
 import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (poke)
-import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
+import GHC.IO.Encoding (setFileSystemEncoding, setForeignEncoding, setLocaleEncoding)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList)
@@ -219,7 +218,7 @@ chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
       ExceptT $
         (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey confirmMigrations)
           `catch` (pure . checkDBError)
-            `catchAll` (pure . dbError)
+          `catchAll` (pure . dbError)
       where
         checkDBError e = case sqlError e of
           DB.ErrorNotADatabase -> Left $ DBMErrorNotADatabase dbFile
@@ -233,7 +232,7 @@ chatCloseStore ChatController {chatStore, smpAgent} = handleErr $ do
 
 handleErr :: IO () -> IO String
 handleErr a = (a $> "") `catch` (pure . show @SomeException)
-  
+
 chatSendCmd :: ChatController -> B.ByteString -> IO JSONByteString
 chatSendCmd cc = chatSendRemoteCmd cc Nothing
 

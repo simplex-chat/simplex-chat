@@ -97,24 +97,26 @@ discoveryTimeout = 60000000
 getRemoteHostClient :: ChatMonad m => RemoteHostId -> m RemoteHostClient
 getRemoteHostClient rhId = do
   sessions <- asks remoteHostSessions
-  liftIOEither . atomically $ TM.lookup rhKey sessions >>= \case
-    Just (_, RHSessionConnected {rhClient}) -> pure $ Right rhClient
-    Just _ -> pure . Left $ ChatErrorRemoteHost rhKey RHEBadState
-    Nothing -> pure . Left $ ChatErrorRemoteHost rhKey RHEMissing
+  liftIOEither . atomically $
+    TM.lookup rhKey sessions >>= \case
+      Just (_, RHSessionConnected {rhClient}) -> pure $ Right rhClient
+      Just _ -> pure . Left $ ChatErrorRemoteHost rhKey RHEBadState
+      Nothing -> pure . Left $ ChatErrorRemoteHost rhKey RHEMissing
   where
     rhKey = RHId rhId
 
 withRemoteHostSession :: ChatMonad m => RHKey -> SessionSeq -> (RemoteHostSession -> Either ChatError (a, RemoteHostSession)) -> m a
 withRemoteHostSession rhKey sseq f = do
   sessions <- asks remoteHostSessions
-  r <- atomically $
-    TM.lookup rhKey sessions >>= \case
-      Nothing -> pure . Left $ ChatErrorRemoteHost rhKey RHEMissing
-      Just (stateSeq, state)
-        | stateSeq /= sseq -> pure . Left $ ChatErrorRemoteHost rhKey RHEBadState
-        | otherwise -> case f state of
-            Right (r, newState) -> Right r <$ TM.insert rhKey (sseq, newState) sessions
-            Left ce -> pure $ Left ce
+  r <-
+    atomically $
+      TM.lookup rhKey sessions >>= \case
+        Nothing -> pure . Left $ ChatErrorRemoteHost rhKey RHEMissing
+        Just (stateSeq, state)
+          | stateSeq /= sseq -> pure . Left $ ChatErrorRemoteHost rhKey RHEBadState
+          | otherwise -> case f state of
+              Right (r, newState) -> Right r <$ TM.insert rhKey (sseq, newState) sessions
+              Left ce -> pure $ Left ce
   liftEither r
 
 -- | Transition session state with a 'RHNew' ID to an assigned 'RemoteHostId'
@@ -167,14 +169,16 @@ startRemoteHost rh_ = do
       when (encoding == PEKotlin && localEncoding == PESwift) $ throwError $ RHEProtocolError RPEIncompatibleEncoding
       pure hostInfo
     handleConnectError :: ChatMonad m => RHKey -> SessionSeq -> m a -> m a
-    handleConnectError rhKey sessSeq action = action `catchChatError` \err -> do
-      logError $ "startRemoteHost.rcConnectHost crashed: " <> tshow err
-      cancelRemoteHostSession (Just (sessSeq, RHSRConnectionFailed err)) rhKey
-      throwError err
+    handleConnectError rhKey sessSeq action =
+      action `catchChatError` \err -> do
+        logError $ "startRemoteHost.rcConnectHost crashed: " <> tshow err
+        cancelRemoteHostSession (Just (sessSeq, RHSRConnectionFailed err)) rhKey
+        throwError err
     handleHostError :: ChatMonad m => SessionSeq -> TVar RHKey -> m () -> m ()
-    handleHostError sessSeq rhKeyVar action = action `catchChatError` \err -> do
-      logError $ "startRemoteHost.waitForHostSession crashed: " <> tshow err
-      readTVarIO rhKeyVar >>= cancelRemoteHostSession (Just (sessSeq, RHSRCrashed err))
+    handleHostError sessSeq rhKeyVar action =
+      action `catchChatError` \err -> do
+        logError $ "startRemoteHost.waitForHostSession crashed: " <> tshow err
+        readTVarIO rhKeyVar >>= cancelRemoteHostSession (Just (sessSeq, RHSRCrashed err))
     waitForHostSession :: ChatMonad m => Maybe RemoteHostInfo -> RHKey -> SessionSeq -> TVar RHKey -> RCStepTMVar (ByteString, TLS, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> m ()
     waitForHostSession remoteHost_ rhKey sseq rhKeyVar vars = do
       (sessId, tls, vars') <- timeoutThrow (ChatErrorRemoteHost rhKey RHETimeout) 60000000 $ takeRCStep vars
@@ -250,14 +254,15 @@ cancelRemoteHostSession :: ChatMonad m => Maybe (SessionSeq, RemoteHostStopReaso
 cancelRemoteHostSession handlerInfo_ rhKey = do
   sessions <- asks remoteHostSessions
   crh <- asks currentRemoteHost
-  deregistered <- atomically $
-    TM.lookup rhKey sessions >>= \case
-      Nothing -> pure Nothing
-      Just (sessSeq, _) | maybe False (/= sessSeq) (fst <$> handlerInfo_) -> pure Nothing -- ignore cancel from a ghost session handler
-      Just (_, rhs) -> do
-        TM.delete rhKey sessions
-        modifyTVar' crh $ \cur -> if (RHId <$> cur) == Just rhKey then Nothing else cur -- only wipe the closing RH
-        pure $ Just rhs
+  deregistered <-
+    atomically $
+      TM.lookup rhKey sessions >>= \case
+        Nothing -> pure Nothing
+        Just (sessSeq, _) | maybe False (/= sessSeq) (fst <$> handlerInfo_) -> pure Nothing -- ignore cancel from a ghost session handler
+        Just (_, rhs) -> do
+          TM.delete rhKey sessions
+          modifyTVar' crh $ \cur -> if (RHId <$> cur) == Just rhKey then Nothing else cur -- only wipe the closing RH
+          pure $ Just rhs
   forM_ deregistered $ \session -> do
     liftIO $ cancelRemoteHost handlingError session `catchAny` (logError . tshow)
     forM_ (snd <$> handlerInfo_) $ \rhStopReason ->
@@ -401,9 +406,10 @@ findKnownRemoteCtrl = do
     (RCCtrlPairing {ctrlFingerprint}, inv@(RCVerifiedInvitation RCInvitation {app})) <-
       timeoutThrow (ChatErrorRemoteCtrl RCETimeout) discoveryTimeout . withAgent $ \a -> rcDiscoverCtrl a pairings
     ctrlAppInfo_ <- (Just <$> parseCtrlAppInfo app) `catchChatError` const (pure Nothing)
-    rc <- withStore' (`getRemoteCtrlByFingerprint` ctrlFingerprint) >>= \case
-      Nothing -> throwChatError $ CEInternalError "connecting with a stored ctrl"
-      Just rc  -> pure rc
+    rc <-
+      withStore' (`getRemoteCtrlByFingerprint` ctrlFingerprint) >>= \case
+        Nothing -> throwChatError $ CEInternalError "connecting with a stored ctrl"
+        Just rc -> pure rc
     atomically $ putTMVar foundCtrl (rc, inv)
     let compatible = isJust $ compatibleAppVersion hostAppVersionRange . appVersionRange =<< ctrlAppInfo_
     toView CRRemoteCtrlFound {remoteCtrl = remoteCtrlInfo rc (Just RCSSearching), ctrlAppInfo_, appVersion = currentAppVersion, compatible}
@@ -422,7 +428,7 @@ confirmRemoteCtrl rcId = do
         pure $ Right (sseq, action, foundCtrl)
       _ -> pure . Left $ ChatErrorRemoteCtrl RCEBadState
   uninterruptibleCancel listener
-  (RemoteCtrl{remoteCtrlId = foundRcId}, verifiedInv) <- atomically $ takeTMVar found
+  (RemoteCtrl {remoteCtrlId = foundRcId}, verifiedInv) <- atomically $ takeTMVar found
   unless (rcId == foundRcId) $ throwError $ ChatErrorRemoteCtrl RCEBadController
   connectRemoteCtrl verifiedInv sseq >>= \case
     (Nothing, _) -> throwChatError $ CEInternalError "connecting with a stored ctrl"
@@ -647,10 +653,12 @@ handleCtrlError sseq mkReason name action =
 cancelActiveRemoteCtrl :: ChatMonad m => Maybe (SessionSeq, RemoteCtrlStopReason) -> m ()
 cancelActiveRemoteCtrl handlerInfo_ = handleAny (logError . tshow) $ do
   var <- asks remoteCtrlSession
-  session_ <- atomically $ readTVar var >>= \case
-    Nothing -> pure Nothing
-    Just (oldSeq, _) | maybe False (/= oldSeq) (fst <$> handlerInfo_) -> pure Nothing
-    Just (_, s) -> Just s <$ writeTVar var Nothing
+  session_ <-
+    atomically $
+      readTVar var >>= \case
+        Nothing -> pure Nothing
+        Just (oldSeq, _) | (maybe False ((oldSeq /=) . fst) handlerInfo_) -> pure Nothing
+        Just (_, s) -> Just s <$ writeTVar var Nothing
   forM_ session_ $ \session -> do
     liftIO $ cancelRemoteCtrl handlingError session
     forM_ (snd <$> handlerInfo_) $ \rcStopReason ->
