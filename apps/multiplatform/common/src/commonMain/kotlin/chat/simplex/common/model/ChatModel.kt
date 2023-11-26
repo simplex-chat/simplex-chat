@@ -2945,6 +2945,14 @@ sealed class RemoteCtrlSessionState {
   @Serializable @SerialName("connected") data class Connected(val sessionCode: String): RemoteCtrlSessionState()
 }
 
+@Serializable
+sealed class RemoteCtrlStopReason {
+  @Serializable @SerialName("discoveryFailed") class DiscoveryFailed(val chatError: ChatError): RemoteCtrlStopReason()
+  @Serializable @SerialName("connectionFailed") class ConnectionFailed(val chatError: ChatError): RemoteCtrlStopReason()
+  @Serializable @SerialName("setupFailed") class SetupFailed(val chatError: ChatError): RemoteCtrlStopReason()
+  @Serializable @SerialName("disconnected") object Disconnected: RemoteCtrlStopReason()
+}
+
 sealed class UIRemoteCtrlSessionState {
   object Starting: UIRemoteCtrlSessionState()
   object Searching: UIRemoteCtrlSessionState()
