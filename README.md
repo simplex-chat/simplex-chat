@@ -232,6 +232,8 @@ You can use SimpleX with your own servers and still communicate with people usin
 
 Recent and important updates:
 
+[Nov 25, 2023. SimpleX Chat v5.4 released: link mobile and desktop apps via quantum resistant protocol, and much better groups](./blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.md).
+
 [Sep 25, 2023. SimpleX Chat v5.3 released: desktop app, local file encryption, improved groups and directory service](./blog/20230925-simplex-chat-v5-3-desktop-app-local-file-encryption-directory-service.md).
 
 [Jul 22, 2023. SimpleX Chat: v5.2 released with message delivery receipts](./blog/20230722-simplex-chat-v5-2-message-delivery-receipts.md).
@@ -366,13 +368,13 @@ Please also join [#simplex-devs](https://simplex.chat/contact#/?v=1-2&smp=smp%3A
 - ✅ Message delivery confirmation (with sender opt-out per contact).
 - ✅ Desktop client.
 - ✅ Encryption of local files stored in the app.
-- 🏗 Using mobile profiles from the desktop app.
+- ✅ Using mobile profiles from the desktop app.
+- 🏗 Improve experience for the new users.
+- 🏗 Post-quantum resistant key exchange in double ratchet protocol.
+- 🏗 Large groups, communities and public channels.
 - Message delivery relay for senders (to conceal IP address from the recipients' servers and to reduce the traffic).
-- Post-quantum resistant key exchange in double ratchet protocol.
-- Large groups, communities and public channels.
 - Privacy & security slider - a simple way to set all settings at once.
 - Improve sending videos (including encryption of locally stored videos).
-- Improve experience for the new users.
 - SMP queue redundancy and rotation (manual is supported).
 - Include optional message into connection request sent via contact address.
 - Improved navigation and search in the conversation (expand and scroll to quoted message, scroll to search results, etc.).

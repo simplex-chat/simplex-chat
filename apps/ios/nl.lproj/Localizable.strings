@@ -545,6 +545,9 @@
 /* No comment provided by engineer. */
 "Authentication unavailable" = "Verificatie niet beschikbaar";
 
+/* member role */
+"author" = "auteur";
+
 /* No comment provided by engineer. */
 "Auto-accept" = "Automatisch accepteren";
 
@@ -785,6 +788,9 @@
 
 /* server test step */
 "Connect" = "Verbind";
+
+/* No comment provided by engineer. */
+"Connect automatically" = "Automatisch verbinden";
 
 /* No comment provided by engineer. */
 "Connect incognito" = "Verbind incognito";
@@ -1288,6 +1294,9 @@
 "Discover and join groups" = "Ontdek en sluit je aan bij groepen";
 
 /* No comment provided by engineer. */
+"Discover via local network" = "Ontdek via het lokale netwerk";
+
+/* No comment provided by engineer. */
 "Do it later" = "Doe het later";
 
 /* No comment provided by engineer. */
@@ -1721,6 +1730,9 @@
 
 /* No comment provided by engineer. */
 "For console" = "Voor console";
+
+/* No comment provided by engineer. */
+"Found desktop" = "Desktop gevonden";
 
 /* No comment provided by engineer. */
 "French interface" = "Franse interface";
@@ -2396,6 +2408,9 @@
 
 /* copied message info in history */
 "no text" = "geen tekst";
+
+/* No comment provided by engineer. */
+"Not compatible!" = "Niet compatibel!";
 
 /* No comment provided by engineer. */
 "Notifications" = "Meldingen";
@@ -3670,6 +3685,9 @@
 
 /* No comment provided by engineer. */
 "waiting for confirmation…" = "Wachten op bevestiging…";
+
+/* No comment provided by engineer. */
+"Waiting for desktop..." = "Wachten op desktop...";
 
 /* No comment provided by engineer. */
 "Waiting for file" = "Wachten op bestand";

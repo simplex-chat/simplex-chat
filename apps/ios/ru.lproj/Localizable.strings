@@ -545,6 +545,9 @@
 /* No comment provided by engineer. */
 "Authentication unavailable" = "Аутентификация недоступна";
 
+/* member role */
+"author" = "автор";
+
 /* No comment provided by engineer. */
 "Auto-accept" = "Автоприем";
 
@@ -785,6 +788,9 @@
 
 /* server test step */
 "Connect" = "Соединиться";
+
+/* No comment provided by engineer. */
+"Connect automatically" = "Соединяться автоматически";
 
 /* No comment provided by engineer. */
 "Connect incognito" = "Соединиться Инкогнито";
@@ -1288,6 +1294,9 @@
 "Discover and join groups" = "Найдите и вступите в группы";
 
 /* No comment provided by engineer. */
+"Discover via local network" = "Обнаружение по локальной сети";
+
+/* No comment provided by engineer. */
 "Do it later" = "Отложить";
 
 /* No comment provided by engineer. */
@@ -1721,6 +1730,9 @@
 
 /* No comment provided by engineer. */
 "For console" = "Для консоли";
+
+/* No comment provided by engineer. */
+"Found desktop" = "Компьютер найден";
 
 /* No comment provided by engineer. */
 "French interface" = "Французский интерфейс";
@@ -2396,6 +2408,9 @@
 
 /* copied message info in history */
 "no text" = "нет текста";
+
+/* No comment provided by engineer. */
+"Not compatible!" = "Несовместимая версия!";
 
 /* No comment provided by engineer. */
 "Notifications" = "Уведомления";
@@ -3670,6 +3685,9 @@
 
 /* No comment provided by engineer. */
 "waiting for confirmation…" = "ожидается подтверждение…";
+
+/* No comment provided by engineer. */
+"Waiting for desktop..." = "Ожидается подключение компьютера...";
 
 /* No comment provided by engineer. */
 "Waiting for file" = "Ожидается прием файла";

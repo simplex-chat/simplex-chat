@@ -156,7 +156,7 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
         askConfirmation = do
           ugrId <- addGroupReg st ct g GRSPendingConfirmation
           sendMessage cc ct $ T.unpack $ "The group " <> displayName <> " (" <> fullName <> ") is already submitted to the directory.\nTo confirm the registration, please send:"
-          sendMessage cc ct $ "/confirm " <> show ugrId <> ":" <> T.unpack displayName
+          sendMessage cc ct $ "/confirm " <> show ugrId <> ":" <> viewName (T.unpack displayName)
 
     badRolesMsg :: GroupRolesStatus -> Maybe String
     badRolesMsg = \case
@@ -301,7 +301,7 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
           msg = maybe (MCText text) (\image -> MCImage {text, image}) image'
       withSuperUsers $ \cId -> do
         sendComposedMessage' cc cId Nothing msg
-        sendMessage' cc cId $ "/approve " <> show dbGroupId <> ":" <> T.unpack displayName <> " " <> show gaId
+        sendMessage' cc cId $ "/approve " <> show dbGroupId <> ":" <> viewName (T.unpack displayName) <> " " <> show gaId
 
     deContactRoleChanged :: GroupInfo -> ContactId -> GroupMemberRole -> IO ()
     deContactRoleChanged g@GroupInfo {membership = GroupMember {memberRole = serviceRole}} ctId contactRole =

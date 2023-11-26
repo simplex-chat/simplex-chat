@@ -14,6 +14,7 @@ module Directory.Events
     DirectoryRole (..),
     SDirectoryRole (..),
     crDirectoryEvent,
+    viewName,
   )
 where
 
@@ -158,4 +159,13 @@ directoryCmdP =
       DCListLastGroups_ -> DCListLastGroups <$> (A.space *> A.decimal <|> pure 10)
       DCExecuteCommand_ -> DCExecuteCommand . T.unpack <$> (A.space *> A.takeText)
       where
-        gc f = f <$> (A.space *> A.decimal <* A.char ':') <*> A.takeTill (== ' ')
+        gc f = f <$> (A.space *> A.decimal <* A.char ':') <*> displayNameP
+        displayNameP = quoted '\'' <|> takeNameTill (== ' ')
+        takeNameTill p =
+          A.peekChar' >>= \c ->
+            if refChar c then A.takeTill p else fail "invalid first character in display name"
+        quoted c = A.char c *> takeNameTill (== c) <* A.char c
+        refChar c = c > ' ' && c /= '#' && c /= '@'
+
+viewName :: String -> String
+viewName n = if ' ' `elem` n then "'" <> n <> "'" else n
