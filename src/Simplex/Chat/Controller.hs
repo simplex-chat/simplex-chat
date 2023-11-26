@@ -1,5 +1,5 @@
-{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE ConstraintKinds #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -426,19 +426,19 @@ data ChatCommand
   | SetGroupTimedMessages GroupName (Maybe Int)
   | SetLocalDeviceName Text
   | ListRemoteHosts
-  | StartRemoteHost (Maybe (RemoteHostId, Bool)) -- ^ Start new or known remote host with optional multicast for known host
-  | SwitchRemoteHost (Maybe RemoteHostId) -- ^ Switch current remote host
-  | StopRemoteHost RHKey -- ^ Shut down a running session
-  | DeleteRemoteHost RemoteHostId -- ^ Unregister remote host and remove its data
+  | StartRemoteHost (Maybe (RemoteHostId, Bool)) -- Start new or known remote host with optional multicast for known host
+  | SwitchRemoteHost (Maybe RemoteHostId) -- Switch current remote host
+  | StopRemoteHost RHKey -- Shut down a running session
+  | DeleteRemoteHost RemoteHostId -- Unregister remote host and remove its data
   | StoreRemoteFile {remoteHostId :: RemoteHostId, storeEncrypted :: Maybe Bool, localPath :: FilePath}
   | GetRemoteFile {remoteHostId :: RemoteHostId, file :: RemoteFile}
-  | ConnectRemoteCtrl RCSignedInvitation -- ^ Connect new or existing controller via OOB data
-  | FindKnownRemoteCtrl -- ^ Start listening for announcements from all existing controllers
-  | ConfirmRemoteCtrl RemoteCtrlId -- ^ Confirm the connection with found controller
-  | VerifyRemoteCtrlSession Text -- ^ Verify remote controller session
+  | ConnectRemoteCtrl RCSignedInvitation -- Connect new or existing controller via OOB data
+  | FindKnownRemoteCtrl -- Start listening for announcements from all existing controllers
+  | ConfirmRemoteCtrl RemoteCtrlId -- Confirm the connection with found controller
+  | VerifyRemoteCtrlSession Text -- Verify remote controller session
   | ListRemoteCtrls
-  | StopRemoteCtrl -- ^ Stop listening for announcements or terminate an active session
-  | DeleteRemoteCtrl RemoteCtrlId -- ^ Remove all local data associated with a remote controller session
+  | StopRemoteCtrl -- Stop listening for announcements or terminate an active session
+  | DeleteRemoteCtrl RemoteCtrlId -- Remove all local data associated with a remote controller session
   | QuitChat
   | ShowVersion
   | DebugLocks
@@ -1072,13 +1072,13 @@ throwDBError = throwError . ChatErrorDatabase
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteHostError
-  = RHEMissing -- ^ No remote session matches this identifier
-  | RHEInactive -- ^ A session exists, but not active
-  | RHEBusy -- ^ A session is already running
+  = RHEMissing -- No remote session matches this identifier
+  | RHEInactive -- A session exists, but not active
+  | RHEBusy -- A session is already running
   | RHETimeout
-  | RHEBadState -- ^ Illegal state transition
+  | RHEBadState -- Illegal state transition
   | RHEBadVersion {appVersion :: AppVersion}
-  | RHELocalCommand -- ^ Command not allowed for remote execution
+  | RHELocalCommand -- Command not allowed for remote execution
   | RHEDisconnected {reason :: Text} -- TODO should be sent when disconnected?
   | RHEProtocolError RemoteProtocolError
   deriving (Show, Exception)
@@ -1091,13 +1091,14 @@ data RemoteHostStopReason
 
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteCtrlError
-  = RCEInactive -- ^ No session is running
-  | RCEBadState -- ^ A session is in a wrong state for the current operation
-  | RCEBusy -- ^ A session is already running
+  = RCEInactive -- No session is running
+  | RCEBadState -- A session is in a wrong state for the current operation
+  | RCEBusy -- A session is already running
   | RCETimeout
-  | RCENoKnownControllers -- ^ No previously-contacted controllers to discover
-  | RCEBadController -- ^ Attempting to confirm a found controller with another ID
-  | RCEDisconnected {remoteCtrlId :: RemoteCtrlId, reason :: Text} -- ^ A session disconnected by a controller
+  | RCENoKnownControllers -- No previously-contacted controllers to discover
+  | RCEBadController -- Attempting to confirm a found controller with another ID
+  | -- | A session disconnected by a controller
+    RCEDisconnected {remoteCtrlId :: RemoteCtrlId, reason :: Text}
   | RCEBadInvitation
   | RCEBadVersion {appVersion :: AppVersion}
   | RCEHTTP2Error {http2Error :: Text} -- TODO currently not used
@@ -1223,8 +1224,8 @@ toView event = do
   session <- asks remoteCtrlSession
   atomically $
     readTVar session >>= \case
-      Just (_, RCSessionConnected {remoteOutputQ}) | allowRemoteEvent event ->
-        writeTBQueue remoteOutputQ event
+      Just (_, RCSessionConnected {remoteOutputQ})
+        | allowRemoteEvent event -> writeTBQueue remoteOutputQ event
       -- TODO potentially, it should hold some events while connecting
       _ -> writeTBQueue localQ (Nothing, Nothing, event)
 
