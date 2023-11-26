@@ -32,7 +32,7 @@ import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
-import Data.Word (Word32)
+import Data.Word (Word16, Word32)
 import qualified Network.HTTP.Types as N
 import Network.HTTP2.Server (responseStreaming)
 import qualified Paths_simplex_chat as SC
@@ -58,6 +58,7 @@ import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport (TLS, closeConnection, tlsUniq)
+import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2ClientError, closeHTTP2Client)
 import Simplex.Messaging.Transport.HTTP2.Server (HTTP2Request (..))
 import Simplex.Messaging.Util
@@ -135,8 +136,8 @@ setNewRemoteHostId sseq rhId = do
   where
     err = pure . Left . ChatErrorRemoteHost RHNew
 
-startRemoteHost :: ChatMonad m => Maybe (RemoteHostId, Bool) -> m (Maybe RemoteHostInfo, RCSignedInvitation)
-startRemoteHost rh_ = do
+startRemoteHost :: ChatMonad m => Maybe (RemoteHostId, Bool) -> Maybe Text -> Maybe TransportHost -> Maybe Word16 -> m (Maybe RemoteHostInfo, RCSignedInvitation)
+startRemoteHost rh_ iface_ addr_ port_ = do
   (rhKey, multicast, remoteHost_, pairing) <- case rh_ of
     Just (rhId, multicast) -> do
       rh@RemoteHost {hostPairing} <- withStore $ \db -> getRemoteHost db rhId
@@ -144,12 +145,12 @@ startRemoteHost rh_ = do
     Nothing -> (RHNew,False,Nothing,) <$> rcNewHostPairing
   sseq <- startRemoteHostSession rhKey
   ctrlAppInfo <- mkCtrlAppInfo
-  (invitation, rchClient, vars) <- handleConnectError rhKey sseq . withAgent $ \a -> rcConnectHost a pairing (J.toJSON ctrlAppInfo) multicast
+  (invitation, rchClient, vars) <- handleConnectError rhKey sseq . withAgent $ \a -> rcConnectHost a pairing (J.toJSON ctrlAppInfo) multicast -- TODO: iface_ addr_ port_
   cmdOk <- newEmptyTMVarIO
   rhsWaitSession <- async $ do
     rhKeyVar <- newTVarIO rhKey
     atomically $ takeTMVar cmdOk
-    handleHostError sseq rhKeyVar $ waitForHostSession remoteHost_ rhKey sseq rhKeyVar vars
+    handleHostError sseq rhKeyVar $ waitForHostSession remoteHost_ rhKey sseq rhKeyVar vars -- TODO: store bindings (in upsertRemoteHost or somewhere else)
   let rhs = RHPendingSession {rhKey, rchClient, rhsWaitSession, remoteHost_}
   withRemoteHostSession rhKey sseq $ \case
     RHSessionStarting ->
@@ -317,8 +318,8 @@ switchRemoteHost rhId_ = do
   rhi_ <$ chatWriteVar currentRemoteHost rhId_
 
 remoteHostInfo :: RemoteHost -> Maybe RemoteHostSessionState -> RemoteHostInfo
-remoteHostInfo RemoteHost {remoteHostId, storePath, hostDeviceName} sessionState =
-  RemoteHostInfo {remoteHostId, storePath, hostDeviceName, sessionState}
+remoteHostInfo RemoteHost {remoteHostId, storePath, hostDeviceName, bindIface, bindAddr, bindPort} sessionState =
+  RemoteHostInfo {remoteHostId, storePath, hostDeviceName, bindIface, bindAddr, bindPort, sessionState}
 
 deleteRemoteHost :: ChatMonad m => RemoteHostId -> m ()
 deleteRemoteHost rhId = do

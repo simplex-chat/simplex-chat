@@ -38,6 +38,7 @@ remoteTests = describe "Remote" $ do
     it "connects with stored pairing" remoteHandshakeStoredTest
     it "connects with multicast discovery" remoteHandshakeDiscoverTest
     it "refuses invalid client cert" remoteHandshakeRejectTest
+    fit "connects with stored server bindings" storedBindingsTest
   it "sends messages" remoteMessageTest
   describe "remote files" $ do
     it "store/get/send/receive files" remoteStoreFileTest
@@ -137,6 +138,15 @@ remoteHandshakeRejectTest = testChat3 aliceProfile aliceDesktopProfile bobProfil
   mobile <## "remote controller 1 session started with My desktop"
   desktop <## "remote host 1 connected"
   stopMobile mobile desktop
+
+storedBindingsTest :: HasCallStack => FilePath -> IO ()
+storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+  desktop ##> "/start remote host new iface=lo addr=??? port=52230"
+  desktop <##. "remote host 1 started on port 52230" -- TODO: show ip?
+  desktop <## "Remote session invitation:"
+  inv <- getTermLine desktop
+  error "TODO: connect"
+  -- TODO: more parser tests
 
 remoteMessageTest :: HasCallStack => FilePath -> IO ()
 remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do

@@ -1713,8 +1713,12 @@ viewRemoteHosts = \case
   [] -> ["No remote hosts"]
   hs -> "Remote hosts: " : map viewRemoteHostInfo hs
   where
-    viewRemoteHostInfo RemoteHostInfo {remoteHostId, hostDeviceName, sessionState} =
-      plain $ tshow remoteHostId <> ". " <> hostDeviceName <> maybe "" viewSessionState sessionState
+    viewRemoteHostInfo RemoteHostInfo {remoteHostId, hostDeviceName, sessionState, bindIface, bindAddr, bindPort} =
+      plain $ tshow remoteHostId <> ". " <> hostDeviceName <> todo'viewBinds bindIface bindAddr bindPort <> maybe "" viewSessionState sessionState
+    todo'viewBinds iface_ addr_ port_ =
+      if isJust iface_ || isJust addr_ || isJust port_
+        then " iface=lo addr=127.0.0.1 port=52230" -- alternatively: bind=lo,127.0.0.1:52230
+        else ""
     viewSessionState = \case
       RHSStarting -> " (starting)"
       RHSConnecting _ -> " (connecting)"

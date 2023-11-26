@@ -8,6 +8,7 @@ module Simplex.Chat.Store.Remote where
 import Control.Monad.Except
 import Data.Int (Int64)
 import Data.Text (Text)
+import Data.Word (Word16)
 import Database.SQLite.Simple (Only (..))
 import qualified Database.SQLite.Simple as SQL
 import Database.SQLite.Simple.QQ (sql)
@@ -52,13 +53,13 @@ getRemoteHostByFingerprint db fingerprint =
 remoteHostQuery :: SQL.Query
 remoteHostQuery =
   [sql|
-    SELECT remote_host_id, host_device_name, store_path, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub
+    SELECT remote_host_id, host_device_name, store_path, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub, bind_iface, bind_addr, bind_port
     FROM remote_hosts
   |]
 
-toRemoteHost :: (Int64, Text, FilePath, C.APrivateSignKey, C.SignedObject C.Certificate, C.PrivateKeyEd25519, C.KeyHash, C.PublicKeyX25519) -> RemoteHost
-toRemoteHost (remoteHostId, hostDeviceName, storePath, caKey, C.SignedObject caCert, idPrivKey, hostFingerprint, hostDhPubKey) =
-  RemoteHost {remoteHostId, hostDeviceName, storePath, hostPairing}
+toRemoteHost :: (Int64, Text, FilePath, C.APrivateSignKey, C.SignedObject C.Certificate, C.PrivateKeyEd25519, C.KeyHash, C.PublicKeyX25519, Maybe Text, Maybe Text, Maybe Word16) -> RemoteHost
+toRemoteHost (remoteHostId, hostDeviceName, storePath, caKey, C.SignedObject caCert, idPrivKey, hostFingerprint, hostDhPubKey, bindIface, bindAddr, bindPort) =
+  RemoteHost {remoteHostId, hostDeviceName, storePath, hostPairing, bindIface, bindAddr, bindPort}
   where
     hostPairing = RCHostPairing {caKey, caCert, idPrivKey, knownHost = Just knownHost}
     knownHost = KnownHostPairing {hostFingerprint, hostDhPubKey}
@@ -73,6 +74,11 @@ updateHostPairing db rhId hostDeviceName hostDhPubKey =
       WHERE remote_host_id = ?
     |]
     (hostDeviceName, hostDhPubKey, rhId)
+
+-- XXX: merge with updateHostPairing?
+-- XXX: add to insertRemoteHost (commit on RHNew, then never change)?
+updateHostBinds :: DB.Connection -> RemoteHostId -> Maybe Text -> Maybe Text -> Maybe Word16 -> IO ()
+updateHostBinds db rhId bindIface bindAddr bindPort = error "TODO: updateHostBinds"
 
 deleteRemoteHostRecord :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (Only remoteHostId)
