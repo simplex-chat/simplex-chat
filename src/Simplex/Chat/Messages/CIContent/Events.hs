@@ -46,9 +46,9 @@ data SndConnEvent
   | SCERatchetSync {syncStatus :: RatchetSyncState, member :: Maybe GroupMemberRef}
   deriving (Show)
 
-data RcvDirectEvent =
-  -- RDEProfileChanged {...}
-  RDEContactDeleted
+data RcvDirectEvent
+  = -- RDEProfileChanged {...}
+    RDEContactDeleted
   deriving (Show)
 
 -- platform-specific JSON encoding (used in API)

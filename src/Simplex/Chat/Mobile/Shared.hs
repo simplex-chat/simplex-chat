@@ -6,8 +6,8 @@ import qualified Data.ByteString as B
 import Data.ByteString.Internal (ByteString (..), memcpy)
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.ByteString.Lazy.Internal as LB
-import Foreign.C (CInt, CString)
 import Foreign
+import Foreign.C (CInt, CString)
 
 type CJSONString = CString
 

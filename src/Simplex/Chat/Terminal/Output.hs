@@ -24,7 +24,7 @@ import Simplex.Chat (execChatCommand, processChatCommand)
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.CIContent (CIContent(..), SMsgDirection (..))
+import Simplex.Chat.Messages.CIContent (CIContent (..), SMsgDirection (..))
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..), msgContentText)
 import Simplex.Chat.Remote.Types (RHKey (..), RemoteHostId, RemoteHostInfo (..), RemoteHostSession (..))
@@ -167,9 +167,10 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = d
           void $ runReaderT (runExceptT $ processChatCommand (APIChatRead chatRef (Just (itemId, itemId)))) cc
         _ -> pure ()
     logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
-    getRemoteUser rhId = runReaderT (execChatCommand (Just rhId) "/user") cc >>= \case
-      CRActiveUser {user} -> updateRemoteUser ct user rhId
-      cr -> logError $ "Unexpected reply while getting remote user: " <> tshow cr
+    getRemoteUser rhId =
+      runReaderT (execChatCommand (Just rhId) "/user") cc >>= \case
+        CRActiveUser {user} -> updateRemoteUser ct user rhId
+        cr -> logError $ "Unexpected reply while getting remote user: " <> tshow cr
     removeRemoteUser rhId = atomically $ TM.delete rhId (currentRemoteUsers ct)
 
 responseNotification :: ChatTerminal -> ChatController -> ChatResponse -> IO ()
@@ -326,9 +327,9 @@ updateInput ChatTerminal {termSize = Size {height, width}, termState, nextMessag
     clearLines from till
       | from >= till = return ()
       | otherwise = do
-        setCursorPosition $ Position {row = from, col = 0}
-        eraseInLine EraseForward
-        clearLines (from + 1) till
+          setCursorPosition $ Position {row = from, col = 0}
+          eraseInLine EraseForward
+          clearLines (from + 1) till
     inputHeight :: TerminalState -> Int
     inputHeight ts = length (autoCompletePrefix ts <> inputPrompt ts <> inputString ts) `div` width + 1
     autoCompletePrefix :: TerminalState -> String

@@ -6,10 +6,8 @@ import Network.Socket
 
 #include <HsNet.h>
 
-{- | Toggle multicast group membership.
-
-NB: Group membership is per-host, not per-process. A socket is only used to access system interface for groups.
--}
+-- | Toggle multicast group membership.
+-- NB: Group membership is per-host, not per-process. A socket is only used to access system interface for groups.
 setMembership :: Socket -> HostAddress -> Bool -> IO (Either CInt ())
 setMembership sock group membership = allocaBytes #{size struct ip_mreq} $ \mReqPtr -> do
   #{poke struct ip_mreq, imr_multiaddr} mReqPtr group

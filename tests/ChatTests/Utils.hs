@@ -310,7 +310,7 @@ getInAnyOrder f cc ls = do
       Predicate p -> p l
     filterFirst :: (a -> Bool) -> [a] -> [a]
     filterFirst _ [] = []
-    filterFirst p (x:xs)
+    filterFirst p (x : xs)
       | p x = xs
       | otherwise = x : filterFirst p xs
 
@@ -593,7 +593,7 @@ vRangeStr (VersionRange minVer maxVer) = "(" <> show minVer <> ", " <> show maxV
 linkAnotherSchema :: String -> String
 linkAnotherSchema link
   | "https://simplex.chat/" `isPrefixOf` link =
-    T.unpack $ T.replace "https://simplex.chat/" "simplex:/" $ T.pack link
+      T.unpack $ T.replace "https://simplex.chat/" "simplex:/" $ T.pack link
   | "simplex:/" `isPrefixOf` link =
-    T.unpack $ T.replace "simplex:/" "https://simplex.chat/" $ T.pack link
+      T.unpack $ T.replace "simplex:/" "https://simplex.chat/" $ T.pack link
   | otherwise = error "link starts with neither https://simplex.chat/ nor simplex:/"

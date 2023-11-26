@@ -6,8 +6,8 @@ module Simplex.Chat.Files where
 import Control.Monad.IO.Class
 import Simplex.Chat.Controller
 import Simplex.Messaging.Util (ifM)
-import System.FilePath (splitExtensions, combine)
-import UnliftIO.Directory (doesFileExist, getTemporaryDirectory, getHomeDirectory, doesDirectoryExist)
+import System.FilePath (combine, splitExtensions)
+import UnliftIO.Directory (doesDirectoryExist, doesFileExist, getHomeDirectory, getTemporaryDirectory)
 
 uniqueCombine :: MonadIO m => FilePath -> String -> m FilePath
 uniqueCombine fPath fName = tryCombine (0 :: Int)
