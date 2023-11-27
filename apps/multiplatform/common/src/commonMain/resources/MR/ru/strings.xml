@@ -802,8 +802,8 @@
     <string name="change_verb">Поменять</string>
     <string name="switch_verb">Переключить</string>
     <string name="change_member_role_question">Поменять роль в группе?</string>
-    <string name="member_role_will_be_changed_with_notification">Роль будет изменена на \"%s\". Все в группе получат сообщение.</string>
-    <string name="member_role_will_be_changed_with_invitation">Роль будет изменена на \"%s\". Будет отправлено новое приглашение.</string>
+    <string name="member_role_will_be_changed_with_notification">Роль будет изменена на %s. Все в группе получат сообщение.</string>
+    <string name="member_role_will_be_changed_with_invitation">Роль будет изменена на %s. Будет отправлено новое приглашение.</string>
     <string name="error_removing_member">Ошибка при удалении члена группы</string>
     <string name="error_changing_role">Ошибка при изменении роли</string>
     <string name="info_row_group">Группа</string>
