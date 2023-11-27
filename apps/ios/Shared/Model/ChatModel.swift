@@ -267,17 +267,19 @@ final class ChatModel: ObservableObject {
     func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update previews
         if let i = getChatIndex(cInfo.id) {
-            switch cInfo {
+            chats[i].chatItems = switch cInfo {
             case .group:
                 if let currentPreviewItem = chats[i].chatItems.first {
                     if cItem.meta.itemTs >= currentPreviewItem.meta.itemTs {
-                        chats[i].chatItems = [cItem]
+                        [cItem]
+                    } else {
+                        [currentPreviewItem]
                     }
                 } else {
-                    chats[i].chatItems = [cItem]
+                    [cItem]
                 }
             default:
-                chats[i].chatItems = [cItem]
+                [cItem]
             }
             if case .rcvNew = cItem.meta.itemStatus {
                 chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount + 1
