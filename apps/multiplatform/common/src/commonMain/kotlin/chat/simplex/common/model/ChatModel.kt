@@ -222,8 +222,24 @@ object ChatModel {
     val chat: Chat
     if (i >= 0) {
       chat = chats[i]
+      val newPreviewItem = when (cInfo) {
+        // for direct chats createdAt would be used, but updating is unnecessary because events already occur in createdAt order
+        is ChatInfo.Group -> {
+          val currentPreviewItem = chat.chatItems.firstOrNull()
+          if (currentPreviewItem != null) {
+            if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) {
+              cItem
+            } else {
+              currentPreviewItem
+            }
+          } else {
+            cItem
+          }
+        }
+        else -> cItem
+      }
       chats[i] = chat.copy(
-        chatItems = arrayListOf(cItem),
+        chatItems = arrayListOf(newPreviewItem),
         chatStats =
           if (cItem.meta.itemStatus is CIStatus.RcvNew) {
             val minUnreadId = if(chat.chatStats.minUnreadItemId == 0L) cItem.id else chat.chatStats.minUnreadItemId
