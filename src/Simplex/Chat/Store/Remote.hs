@@ -8,7 +8,7 @@ module Simplex.Chat.Store.Remote where
 import Control.Monad.Except
 import Data.Int (Int64)
 import Data.Text (Text)
-import Data.Text.Encoding (encodeUtf8)
+import Data.Text.Encoding (encodeUtf8, decodeASCII)
 import Data.Word (Word16)
 import Database.SQLite.Simple (Only (..))
 import qualified Database.SQLite.Simple as SQL
@@ -65,24 +65,19 @@ toRemoteHost (remoteHostId, hostDeviceName, storePath, caKey, C.SignedObject caC
   where
     hostPairing = RCHostPairing {caKey, caCert, idPrivKey, knownHost = Just knownHost}
     knownHost = KnownHostPairing {hostFingerprint, hostDhPubKey}
-    bindAddress_ = RemoteCtrlAddress <$> (decodeAddr <$> ifaceAddr_) <*> ifaceName_
+    bindAddress_ = RCCtrlAddress <$> (decodeAddr <$> ifaceAddr_) <*> ifaceName_
     decodeAddr = either (error "Error parsing TransportHost") id . strDecode . encodeUtf8
 
-updateHostPairing :: DB.Connection -> RemoteHostId -> Text -> C.PublicKeyX25519 -> IO ()
-updateHostPairing db rhId hostDeviceName hostDhPubKey =
+updateHostPairing :: DB.Connection -> RemoteHostId -> Text -> C.PublicKeyX25519 -> RCCtrlAddress -> Maybe Word16 -> IO ()
+updateHostPairing db rhId hostDeviceName hostDhPubKey RCCtrlAddress {address, interface} port_ =
   DB.execute
     db
     [sql|
       UPDATE remote_hosts
-      SET host_device_name = ?, host_dh_pub = ?
+      SET host_device_name = ?, host_dh_pub = ?, bind_addr = ?, bind_iface = ?, bind_port = ?
       WHERE remote_host_id = ?
     |]
-    (hostDeviceName, hostDhPubKey, rhId)
-
--- XXX: merge with updateHostPairing?
--- XXX: add to insertRemoteHost (commit on RHNew, then never change)?
-updateHostBinds :: DB.Connection -> RemoteHostId -> Maybe RemoteCtrlAddress -> Maybe Word16 -> IO ()
-updateHostBinds db rhId addr_ port_ = error "TODO: updateHostBinds"
+    (hostDeviceName, hostDhPubKey, decodeASCII $ strEncode address, interface, port_, rhId)
 
 deleteRemoteHostRecord :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (Only remoteHostId)

@@ -427,7 +427,7 @@ data ChatCommand
   | SetGroupTimedMessages GroupName (Maybe Int)
   | SetLocalDeviceName Text
   | ListRemoteHosts
-  | StartRemoteHost (Maybe (RemoteHostId, Bool)) (Maybe RemoteCtrlAddress) (Maybe Word16) -- Start new or known remote host with optional multicast for known host
+  | StartRemoteHost (Maybe (RemoteHostId, Bool)) (Maybe RCCtrlAddress) (Maybe Word16) -- Start new or known remote host with optional multicast for known host
   | SwitchRemoteHost (Maybe RemoteHostId) -- Switch current remote host
   | StopRemoteHost RHKey -- Shut down a running session
   | DeleteRemoteHost RemoteHostId -- Unregister remote host and remove its data
@@ -659,7 +659,7 @@ data ChatResponse
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRCurrentRemoteHost {remoteHost_ :: Maybe RemoteHostInfo}
-  | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text, ctrlPort :: String}
+  | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text, ctrlPort :: String, localAddrs :: NonEmpty RCCtrlAddress}
   | CRRemoteHostSessionCode {remoteHost_ :: Maybe RemoteHostInfo, sessionCode :: Text}
   | CRNewRemoteHost {remoteHost :: RemoteHostInfo}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}

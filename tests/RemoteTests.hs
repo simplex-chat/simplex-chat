@@ -141,11 +141,11 @@ remoteHandshakeRejectTest = testChat3 aliceProfile aliceDesktopProfile bobProfil
 
 storedBindingsTest :: HasCallStack => FilePath -> IO ()
 storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
-  desktop ##> "/start remote host new iface=lo addr=??? port=52230"
-  desktop <##. "remote host 1 started on port 52230" -- TODO: show ip?
+  desktop ##> "/start remote host new addr=127.0.0.1 iface=lo port=52230"
+  desktop <##. "new remote host started on port 52230" -- TODO: show ip?
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
-  error "TODO: connect"
+  error $ "TODO: /connect " <> inv
   -- TODO: more parser tests
 
 remoteMessageTest :: HasCallStack => FilePath -> IO ()
