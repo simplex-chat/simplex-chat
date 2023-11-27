@@ -268,7 +268,6 @@ final class ChatModel: ObservableObject {
         // update previews
         if let i = getChatIndex(cInfo.id) {
             switch cInfo {
-            // for direct chats createdAt would be used, but updating is unnecessary because events already occur in createdAt order
             case .group:
                 if let currentPreviewItem = chats[i].chatItems.first {
                     if cItem.meta.itemTs >= currentPreviewItem.meta.itemTs {
