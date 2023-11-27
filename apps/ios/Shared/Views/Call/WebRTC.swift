@@ -358,26 +358,12 @@ struct ConnectionInfo: Codable, Equatable {
             return "\(local?.rawValue ?? unknown) / \(remote?.rawValue ?? unknown)"
         }
     }
-
-    var protocolText: String {
-        let unknown = NSLocalizedString("unknown", comment: "connection info")
-        let local = localCandidate?.protocol?.uppercased() ?? unknown
-        let localRelay = localCandidate?.relayProtocol?.uppercased() ?? unknown
-        let remote = remoteCandidate?.protocol?.uppercased() ?? unknown
-        let localText = localRelay == local || localCandidate?.relayProtocol == nil
-                        ? local
-                        : "\(local) (\(localRelay))"
-        return local == remote
-                ? localText
-                : "\(localText) / \(remote)"
-    }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate
 struct RTCIceCandidate: Codable, Equatable {
     var candidateType: RTCIceCandidateType?
     var `protocol`: String?
-    var relayProtocol: String?
     var sdpMid: String?
     var sdpMLineIndex: Int?
     var candidate: String

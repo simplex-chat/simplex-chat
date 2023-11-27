@@ -370,7 +370,6 @@ fun CallInfoView(call: Call, alignment: Alignment.Horizontal) {
     InfoText(call.callState.text)
 
     val connInfo = call.connectionInfo
-    //    val connInfoText = if (connInfo == null) ""  else " (${connInfo.text}, ${connInfo.protocolText})"
     val connInfoText = if (connInfo == null) ""  else " (${connInfo.text})"
     InfoText(call.encryptionStatus + connInfoText)
   }
@@ -585,8 +584,8 @@ fun PreviewActiveCallOverlayVideo() {
         localMedia = CallMediaType.Video,
         peerMedia = CallMediaType.Video,
         connectionInfo = ConnectionInfo(
-          RTCIceCandidate(RTCIceCandidateType.Host, "tcp", null),
-          RTCIceCandidate(RTCIceCandidateType.Host, "tcp", null)
+          RTCIceCandidate(RTCIceCandidateType.Host, "tcp"),
+          RTCIceCandidate(RTCIceCandidateType.Host, "tcp")
         )
       ),
       speakerCanBeEnabled = true,
@@ -611,8 +610,8 @@ fun PreviewActiveCallOverlayAudio() {
         localMedia = CallMediaType.Audio,
         peerMedia = CallMediaType.Audio,
         connectionInfo = ConnectionInfo(
-          RTCIceCandidate(RTCIceCandidateType.Host, "udp", null),
-          RTCIceCandidate(RTCIceCandidateType.Host, "udp", null)
+          RTCIceCandidate(RTCIceCandidateType.Host, "udp"),
+          RTCIceCandidate(RTCIceCandidateType.Host, "udp")
         )
       ),
       speakerCanBeEnabled = true,
