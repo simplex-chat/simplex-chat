@@ -222,8 +222,23 @@ object ChatModel {
     val chat: Chat
     if (i >= 0) {
       chat = chats[i]
+      val newPreviewItem = when (cInfo) {
+        is ChatInfo.Group -> {
+          val currentPreviewItem = chat.chatItems.firstOrNull()
+          if (currentPreviewItem != null) {
+            if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) {
+              cItem
+            } else {
+              currentPreviewItem
+            }
+          } else {
+            cItem
+          }
+        }
+        else -> cItem
+      }
       chats[i] = chat.copy(
-        chatItems = arrayListOf(cItem),
+        chatItems = arrayListOf(newPreviewItem),
         chatStats =
           if (cItem.meta.itemStatus is CIStatus.RcvNew) {
             val minUnreadId = if(chat.chatStats.minUnreadItemId == 0L) cItem.id else chat.chatStats.minUnreadItemId
@@ -2943,6 +2958,14 @@ sealed class RemoteCtrlSessionState {
   @Serializable @SerialName("connecting") object Connecting: RemoteCtrlSessionState()
   @Serializable @SerialName("pendingConfirmation") data class PendingConfirmation(val sessionCode: String): RemoteCtrlSessionState()
   @Serializable @SerialName("connected") data class Connected(val sessionCode: String): RemoteCtrlSessionState()
+}
+
+@Serializable
+sealed class RemoteCtrlStopReason {
+  @Serializable @SerialName("discoveryFailed") class DiscoveryFailed(val chatError: ChatError): RemoteCtrlStopReason()
+  @Serializable @SerialName("connectionFailed") class ConnectionFailed(val chatError: ChatError): RemoteCtrlStopReason()
+  @Serializable @SerialName("setupFailed") class SetupFailed(val chatError: ChatError): RemoteCtrlStopReason()
+  @Serializable @SerialName("disconnected") object Disconnected: RemoteCtrlStopReason()
 }
 
 sealed class UIRemoteCtrlSessionState {
