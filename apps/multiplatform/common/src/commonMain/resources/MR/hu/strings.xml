@@ -482,7 +482,6 @@
     <string name="group_invitation_expired">A csoport meghívó lejárt</string>
     <string name="error_saving_ICE_servers">Hiba az ICE szerverek elmentésekor</string>
     <string name="error_alert_title">Hiba</string>
-    <string name="error_creating_member_contact"></string>
     <string name="icon_descr_server_status_error">Hiba</string>
     <string name="error_loading_xftp_servers">Hiba az XFTP szerverek betöltésekor</string>
     <string name="error_loading_smp_servers">Hiba az SMP szerverek betöltésekor</string>
