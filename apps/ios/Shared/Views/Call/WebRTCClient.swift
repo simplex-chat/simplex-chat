@@ -244,6 +244,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
                 resp = .ok
             }
         case .end:
+            // TODO possibly, endCall should be called before returning .ok
             await sendCallResponse(.init(corrId: nil, resp: .ok, command: command))
             endCall()
         }
@@ -253,7 +254,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     }
 
     func getInitialIceCandidates() async -> [RTCIceCandidate] {
-        await untilIceComplete(timeoutMs: 750, stepMs: 100) {}
+        await untilIceComplete(timeoutMs: 750, stepMs: 150) {}
         let candidates = await activeCall.wrappedValue?.iceCandidates.getAndClear() ?? []
         logger.debug("WebRTCClient: sending initial ice candidates: \(candidates.count)")
         return candidates
@@ -423,12 +424,12 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     }
 
     func untilIceComplete(timeoutMs: UInt64, stepMs: UInt64, action: @escaping () async -> Void) async {
-        var wait = timeoutMs
+        var t: UInt64 = 0
         repeat {
             _ = try? await Task.sleep(nanoseconds: stepMs * 1000000)
-            wait -= stepMs
+            t += stepMs
             await action()
-        } while wait > 0 && activeCall.wrappedValue?.connection.iceGatheringState == .complete
+        } while t <= timeoutMs && activeCall.wrappedValue?.connection.iceGatheringState != .complete
     }
 }
 

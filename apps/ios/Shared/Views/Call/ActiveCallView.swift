@@ -52,7 +52,12 @@ struct ActiveCallView: View {
             AppDelegate.keepScreenOn(false)
             client?.endCall()
         }
-        .onChange(of: m.callCommand) { _ in sendCommandToClient()}
+        .onChange(of: m.callCommand) { cmd in
+            if let cmd = cmd {
+                m.callCommand = nil
+                sendCommandToClient(cmd)
+            }
+        }
         .background(.black)
         .preferredColorScheme(.dark)
     }
@@ -60,16 +65,17 @@ struct ActiveCallView: View {
     private func createWebRTCClient() {
         if client == nil && canConnectCall {
             client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
-            sendCommandToClient()
+            if let cmd = m.callCommand {
+                m.callCommand = nil
+                sendCommandToClient(cmd)
+            }
         }
     }
 
-    private func sendCommandToClient() {
+    private func sendCommandToClient(_ cmd: WCallCommand) {
         if call == m.activeCall,
            m.activeCall != nil,
-           let client = client,
-           let cmd = m.callCommand {
-            m.callCommand = nil
+           let client = client {
             logger.debug("sendCallCommand: \(cmd.cmdType)")
             Task {
                 await client.sendCallCommand(command: cmd)
