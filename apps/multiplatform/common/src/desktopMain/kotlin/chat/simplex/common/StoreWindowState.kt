@@ -6,6 +6,8 @@ import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
 import java.io.File
 
+val defaultWindowStateJson = """{"width"\:1768,"height"\:936,"x"\:51,"y"\:259}"""
+
 @Serializable
 data class WindowPositionSize(
   val width: Int = if (desktopPlatform.isLinux()) 1376 else 1366,
@@ -15,9 +17,19 @@ data class WindowPositionSize(
 )
 
 fun getStoredWindowState() : WindowPositionSize {
-  return Json.decodeFromString<WindowPositionSize>(appPreferences.windowState.get() ?: "{}")
+  return try {
+    Json.decodeFromString<WindowPositionSize>(appPreferences.windowState.get() ?: defaultWindowStateJson)
+  } catch (e: Throwable) {
+    WindowPositionSize()
+  }
 }
 
 fun storeWindowState(data: WindowPositionSize) {
-  appPreferences.windowState.set(Json.encodeToString<WindowPositionSize>(data))
+  appPreferences.windowState.set(
+    try {
+      Json.encodeToString<WindowPositionSize>(data)
+    } catch (e: Throwable) {
+      defaultWindowStateJson
+    }
+  )
 }
