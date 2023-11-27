@@ -1370,9 +1370,9 @@
     <string name="system_restricted_background_desc">SimpleX non può funzionare in secondo piano. Riceverai le notifiche solo quando l\'app è aperta.</string>
     <string name="system_restricted_background_warn"><![CDATA[Per attivare le notifiche, scegli <b>Utilizzo batteria dell\'app</b> / <b>Senza restrizioni</b> nelle impostazioni.]]></string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Per effettuare chiamate in secondo piano, scegli <b>Utilizzo batteria dell\'app</b> / <b>Senza restrizioni</b> nelle impostazioni.]]></string>
-    <string name="rcv_group_event_2_members_connected">%s e %s sono connessi/e</string>
-    <string name="rcv_group_event_n_members_connected">%s, %s e altri %d membri sono connessi</string>
-    <string name="rcv_group_event_3_members_connected">%s, %s e %s sono connessi/e</string>
+    <string name="rcv_group_event_2_members_connected">%s e %s si sono connessi/e</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s e altri %d membri si sono connessi</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s e %s si sono connessi/e</string>
     <string name="privacy_message_draft">Bozza</string>
     <string name="privacy_show_last_messages">Mostra gli ultimi messaggi</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Il database verrà crittografato e la password conservata nelle impostazioni.</string>
@@ -1471,7 +1471,7 @@
     <string name="unlink_desktop_question">Scollegare il desktop?</string>
     <string name="linked_desktop_options">Opzioni del desktop collegato</string>
     <string name="linked_desktops">Desktop collegati</string>
-    <string name="discover_on_network">Trova nella rete</string>
+    <string name="discover_on_network">Individua via rete locale</string>
     <string name="this_device">Questo dispositivo</string>
     <string name="linked_mobiles">Cellulari collegati</string>
     <string name="desktop_device">Desktop</string>
@@ -1519,4 +1519,9 @@
 \n- e molto altro!</string>
     <string name="waiting_for_mobile_to_connect">In attesa che il cellulare si connette:</string>
     <string name="group_member_role_author">autore</string>
+    <string name="multicast_connect_automatically">Connetti automaticamente</string>
+    <string name="waiting_for_desktop">In attesa del desktop…</string>
+    <string name="found_desktop">Desktop trovato</string>
+    <string name="not_compatible">Non compatibile!</string>
+    <string name="multicast_discoverable_via_local_network">individuabile via rete locale</string>
 </resources>
