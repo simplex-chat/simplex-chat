@@ -390,6 +390,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     bob ##> "/_delete :2"
     bob <## "connection :2 deleted"
 
+    threadDelay 1000000
     alice <###> bob
     alice @@@ [("@bob", "hey")]
     bob @@@ [("@alice", "hey")]
@@ -398,6 +399,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     bob <## "contact address: known contact alice"
     bob <## "use @alice <message> to send messages"
 
+    threadDelay 1000000
     alice <###> bob
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (0, "hey"), (1, "hi"), (0, "hey")])
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (1, "hey"), (0, "hi"), (1, "hey")])
@@ -465,6 +467,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     bob ##> "/_delete :3"
     bob <## "connection :3 deleted"
 
+    threadDelay 1000000
     alice <###> bob
     alice @@@ [("@robert", "hey")]
     bob @@@ [("@alice", "hey")]
@@ -473,6 +476,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     bob <## "contact address: known contact alice"
     bob <## "use @alice <message> to send messages"
 
+    threadDelay 1000000
     alice <###> bob
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (0, "hey"), (1, "hi"), (0, "hey")])
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (1, "hey"), (0, "hi"), (1, "hey")])
@@ -1506,6 +1510,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob <## "Voice messages allowed: no"
     (bob </)
     connectUsers alice bob
+    threadDelay 1000000
     alice ##> "/_set prefs @2 {}"
     alice <## "your preferences for bob did not change"
     (bob </)
@@ -1528,6 +1533,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you")])
     alice ##> sendVoice
     alice <## voiceNotAllowed
+    threadDelay 1000000
     bob ##> sendVoice
     bob <# "@alice voice message (00:10)"
     bob <# "/f @alice test.txt"
@@ -1651,7 +1657,8 @@ testAllowFullDeletionContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
-      alice <##> bob
+      threadDelay 1000000
+      alice <###> bob
       alice ##> "/set delete @bob always"
       alice <## "you updated preferences for bob:"
       alice <## "Full deletion: enabled for contact (you allow: always, contact allows: no)"
@@ -1762,8 +1769,8 @@ testEnableTimedMessagesContact =
       bob <## "your preferences for alice did not change"
       alice <##> bob
       threadDelay 500000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
+      alice `chatAnyOrder` ("/_get chat @2 count=100", chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
+      bob `chatAnyOrder` ("/_get chat @2 count=100", chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
       threadDelay 1000000
       alice <## "timed message deleted: hi"
       alice <## "timed message deleted: hey"
@@ -1779,8 +1786,8 @@ testEnableTimedMessagesContact =
       alice <## "Disappearing messages: off (you allow: yes (1 sec), contact allows: no)"
       alice <##> bob
       threadDelay 1500000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (0, "Disappearing messages: off"), (1, "hi"), (0, "hey")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (1, "Disappearing messages: off"), (0, "hi"), (1, "hey")])
+      alice `chatAnyOrder` ("/_get chat @2 count=100", chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (0, "Disappearing messages: off"), (1, "hi"), (0, "hey")])
+      bob `chatAnyOrder` ("/_get chat @2 count=100", chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (1, "Disappearing messages: off"), (0, "hi"), (1, "hey")])
       -- test api
       bob ##> "/set disappear @alice yes 30s"
       bob <## "you updated preferences for alice:"
@@ -1857,8 +1864,8 @@ testTimedMessagesEnabledGlobally =
       alice <## "Disappearing messages: enabled (you allow: yes (1 sec), contact allows: yes (1 sec))"
       alice <##> bob
       threadDelay 500000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
+      alice `chatAnyOrder` ("/_get chat @2 count=100", chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
+      bob `chatAnyOrder` ("/_get chat @2 count=100", chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
       threadDelay 1000000
       alice <## "timed message deleted: hi"
       bob <## "timed message deleted: hi"

@@ -360,6 +360,7 @@ testGroup2 =
       connectUsers alice cath
       connectUsers bob dan
       connectUsers alice dan
+      threadDelay 1000000
       alice ##> "/g club"
       alice <## "group #club is created"
       alice <## "to add members use /a club <name> or /create link #club"
@@ -1562,9 +1563,7 @@ testGroupDelayedModeration tmp = do
                ]
         alice #$> ("/_get chat #1 count=1", chat, [(0, "hi [marked deleted by you]")])
         cath #$> ("/_get chat #1 count=2", chat, [(1, "hi [marked deleted by alice]"), (0, "connected")])
-        bob ##> "/_get chat #1 count=2"
-        r <- chat <$> getTermLine bob
-        r `shouldMatchList` [(0, "connected"), (0, "hi [marked deleted by alice]")]
+        bob `chatAnyOrder` ("/_get chat #1 count=2", [(0, "connected"), (0, "hi [marked deleted by alice]")])
   where
     cfg = testCfgCreateGroupDirect
 
@@ -1619,9 +1618,7 @@ testGroupDelayedModerationFullDelete tmp = do
                ]
         alice #$> ("/_get chat #1 count=2", chat, [(0, "hi [marked deleted by you]"), (1, "Full deletion: on")])
         cath #$> ("/_get chat #1 count=3", chat, [(1, "hi [marked deleted by alice]"), (0, "Full deletion: on"), (0, "connected")])
-        bob ##> "/_get chat #1 count=3"
-        r <- chat <$> getTermLine bob
-        r `shouldMatchList` [(0, "Full deletion: on"), (0, "connected"), (0, "moderated [deleted by alice]")]
+        bob `chatAnyOrder` ("/_get chat #1 count=3", [(0, "Full deletion: on"), (0, "connected"), (0, "moderated [deleted by alice]")])
   where
     cfg = testCfgCreateGroupDirect
 

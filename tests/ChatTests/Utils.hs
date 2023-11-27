@@ -186,6 +186,12 @@ cc #$> (cmd, f, res) = do
   cc ##> cmd
   (f <$> getTermLine cc) `shouldReturn` res
 
+chatAnyOrder :: HasCallStack => TestCC -> (String, [(Int, String)]) -> Expectation
+chatAnyOrder cc (cmd, res) = do
+  cc ##> cmd
+  r <- chat <$> getTermLine cc
+  r `shouldMatchList` res
+
 chat :: String -> [(Int, String)]
 chat = map (\(a, _, _) -> a) . chat''
 
