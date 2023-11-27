@@ -223,7 +223,6 @@ object ChatModel {
     if (i >= 0) {
       chat = chats[i]
       val newPreviewItem = when (cInfo) {
-        // for direct chats createdAt would be used, but updating is unnecessary because events already occur in createdAt order
         is ChatInfo.Group -> {
           val currentPreviewItem = chat.chatItems.firstOrNull()
           if (currentPreviewItem != null) {
