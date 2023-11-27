@@ -216,7 +216,7 @@ testUserContactLink =
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
       alice @@@ [("@bob", lastChatFeature)]
-      alice <###> bob
+      alice <##> bob
 
       cath ##> ("/c " <> cLink)
       alice <#? cath
@@ -326,7 +326,7 @@ testUserContactLinkAutoAccept =
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
       alice @@@ [("@bob", lastChatFeature)]
-      alice <###> bob
+      alice <##> bob
 
       alice ##> "/auto_accept on"
       alice <## "auto_accept on"
@@ -339,7 +339,7 @@ testUserContactLinkAutoAccept =
         (alice <## "cath (Catherine): contact is connected")
       threadDelay 100000
       alice @@@ [("@cath", lastChatFeature), ("@bob", "hey")]
-      alice <###> cath
+      alice <##> cath
 
       alice ##> "/auto_accept off"
       alice <## "auto_accept off"
@@ -390,7 +390,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     bob ##> "/_delete :2"
     bob <## "connection :2 deleted"
 
-    alice <###> bob
+    alice <##> bob
     alice @@@ [("@bob", "hey")]
     bob @@@ [("@alice", "hey")]
 
@@ -398,7 +398,7 @@ testDeduplicateContactRequests = testChat3 aliceProfile bobProfile cathProfile $
     bob <## "contact address: known contact alice"
     bob <## "use @alice <message> to send messages"
 
-    alice <###> bob
+    alice <##> bob
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (0, "hey"), (1, "hi"), (0, "hey")])
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (1, "hey"), (0, "hi"), (1, "hey")])
 
@@ -465,7 +465,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     bob ##> "/_delete :3"
     bob <## "connection :3 deleted"
 
-    alice <###> bob
+    alice <##> bob
     alice @@@ [("@robert", "hey")]
     bob @@@ [("@alice", "hey")]
 
@@ -473,7 +473,7 @@ testDeduplicateContactRequestsProfileChange = testChat3 aliceProfile bobProfile 
     bob <## "contact address: known contact alice"
     bob <## "use @alice <message> to send messages"
 
-    alice <###> bob
+    alice <##> bob
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (0, "hey"), (1, "hi"), (0, "hey")])
     bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (1, "hey"), (0, "hi"), (1, "hey")])
 
@@ -647,7 +647,6 @@ testPlanAddressOwn tmp =
       <### [ WithTime "@alice_2 hi",
              WithTime "alice_1> hi"
            ]
-    threadDelay 1000000
     alice `send` "@alice_1 hey"
     alice
       <### [ WithTime "@alice_1 hey",
