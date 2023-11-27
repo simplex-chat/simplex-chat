@@ -157,7 +157,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
                         ),
                         command: command)
                     )
-                    self.waitForMoreIceCandidates()
+                    await self.waitForMoreIceCandidates()
                 }
             }
         case let .offer(offer, iceCandidates, media, aesKey, iceServers, relay):
@@ -185,7 +185,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
                                     ),
                                     command: command)
                                 )
-                                self.waitForMoreIceCandidates()
+                                await self.waitForMoreIceCandidates()
                             }
 //                            }
                         }
@@ -239,37 +239,30 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     }
 
     func getInitialIceCandidates() async -> [RTCIceCandidate] {
-        await waitWithTimeout(750, stepMs: 100, until: {
-            activeCall.wrappedValue?.connection.iceGatheringState == .complete
-        })
+        await untilIceComplete(timeoutMs: 750, stepMs: 100) {}
         let candidates = activeCall.wrappedValue?.iceCandidates ?? []
         activeCall.wrappedValue?.iceCandidates.removeAll()
         logger.debug("WebRTCClient: sending initial ice candidates: \(candidates.count)")
         return candidates
     }
 
-    func waitForMoreIceCandidates() {
-        Task {
-            await waitWithTimeout(12000, stepMs: 1500, until: {
-                let candidates = self.activeCall.wrappedValue?.iceCandidates ?? []
-                self.activeCall.wrappedValue?.iceCandidates.removeAll()
-                if candidates.count > 0 {
-                    logger.debug("WebRTCClient: sending more ice candidates: \(candidates.count)")
-                    self.sendIceCandidates(candidates)
-                }
-                return activeCall.wrappedValue?.connection.iceGatheringState == .complete
-            })
+    func waitForMoreIceCandidates() async {
+        await untilIceComplete(timeoutMs: 12000, stepMs: 1500) {
+            let candidates = self.activeCall.wrappedValue?.iceCandidates ?? []
+            self.activeCall.wrappedValue?.iceCandidates.removeAll()
+            if candidates.count > 0 {
+                logger.debug("WebRTCClient: sending more ice candidates: \(candidates.count)")
+                await self.sendIceCandidates(candidates)
+            }
         }
     }
 
-    func sendIceCandidates(_ candidates: [RTCIceCandidate]) {
-        Task {
-            await self.sendCallResponse(.init(
-                corrId: nil,
-                resp: .ice(iceCandidates: compressToBase64(input: encodeJSON(candidates))),
-                command: nil)
-            )
-        }
+    func sendIceCandidates(_ candidates: [RTCIceCandidate]) async {
+        await self.sendCallResponse(.init(
+            corrId: nil,
+            resp: .ice(iceCandidates: compressToBase64(input: encodeJSON(candidates))),
+            command: nil)
+        )
     }
 
     func enableMedia(_ media: CallMediaType, _ enable: Bool) {
@@ -417,11 +410,13 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         audioSessionToDefaults()
     }
 
-    func waitWithTimeout(_ timeoutMs: UInt64, stepMs: UInt64, until success: () -> Bool) async {
-        let startedAt = DispatchTime.now()
-        while !success() && startedAt.uptimeNanoseconds + timeoutMs * 1000000 > DispatchTime.now().uptimeNanoseconds {
-            guard let _ = try? await Task.sleep(nanoseconds: stepMs * 1000000) else { break }
-        }
+    func untilIceComplete(timeoutMs: UInt64, stepMs: UInt64, action: @escaping () async -> Void) async {
+        var wait = timeoutMs
+        repeat {
+            _ = try? await Task.sleep(nanoseconds: stepMs * 1000000)
+            wait -= stepMs
+            await action()
+        } while wait > 0 && activeCall.wrappedValue?.connection.iceGatheringState == .complete
     }
 }
 
