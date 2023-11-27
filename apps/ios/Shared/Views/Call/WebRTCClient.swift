@@ -521,20 +521,20 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
 
     func peerConnection(_ connection: RTCPeerConnection, didGenerate candidate: WebRTC.RTCIceCandidate) {
 //        logger.debug("Connection generated candidate \(candidate.debugDescription)")
+        var candidateType: RTCIceCandidateType? = nil
+        var candidateProtocol: String? = nil
         connection.statistics { (stats: RTCStatisticsReport) in
             stats.statistics.values.forEach { stat in
 //                logger.debug("Stat \(stat.debugDescription)")
                 if stat.type == "local-candidate",
                     candidate.sdp.contains("\((stat.values["ip"] as? String ?? "--")) \((stat.values["port"] as? Int)?.description ?? "--")")
                 {
-                    self.activeCall.wrappedValue?.iceCandidates.append(candidate.toCandidate(
-                        RTCIceCandidateType.init(rawValue: stat.values["candidateType"] as! String),
-                        stat.values["protocol"] as? String,
-                        stat.values["relayProtocol"] as? String
-                    ))
+                    candidateType = RTCIceCandidateType.init(rawValue: stat.values["candidateType"] as! String)
+                    candidateProtocol = stat.values["protocol"] as? String
                 }
             }
         }
+        self.activeCall.wrappedValue?.iceCandidates.append(candidate.toCandidate(candidateType, candidateProtocol))
     }
 
     func peerConnection(_ connection: RTCPeerConnection, didRemove candidates: [WebRTC.RTCIceCandidate]) {
@@ -568,7 +568,6 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
                                 localCandidate: RTCIceCandidate(
                                     candidateType: RTCIceCandidateType.init(rawValue: localStats.values["candidateType"] as! String),
                                     protocol: localStats.values["protocol"] as? String,
-                                    relayProtocol: localStats.values["relayProtocol"] as? String,
                                     sdpMid: nil,
                                     sdpMLineIndex: nil,
                                     candidate: ""
@@ -576,7 +575,6 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
                                 remoteCandidate: RTCIceCandidate(
                                     candidateType: RTCIceCandidateType.init(rawValue: remoteStats.values["candidateType"] as! String),
                                     protocol: remoteStats.values["protocol"] as? String,
-                                    relayProtocol: remoteStats.values["relayProtocol"] as? String,
                                     sdpMid: nil,
                                     sdpMLineIndex: nil,
                                     candidate: ""))),
@@ -679,11 +677,10 @@ extension RTCIceCandidate {
 }
 
 extension WebRTC.RTCIceCandidate {
-    func toCandidate(_ candidateType: RTCIceCandidateType?, _ protocol: String?, _ relayProtocol: String?) -> RTCIceCandidate {
+    func toCandidate(_ candidateType: RTCIceCandidateType?, _ protocol: String?) -> RTCIceCandidate {
         RTCIceCandidate(
             candidateType: candidateType,
             protocol: `protocol`,
-            relayProtocol: relayProtocol,
             sdpMid: sdpMid,
             sdpMLineIndex: Int(sdpMLineIndex),
             candidate: sdp
