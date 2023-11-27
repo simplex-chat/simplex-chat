@@ -6,7 +6,7 @@ import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
 import java.io.File
 
-val defaultWindowStateJson = """{"width"\:1768,"height"\:936,"x"\:51,"y"\:259}"""
+val defaultWindowStateJson = """{"width"\:1370,"height"\:780,"x"\:0,"y"\:0}"""
 
 @Serializable
 data class WindowPositionSize(
