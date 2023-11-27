@@ -148,22 +148,17 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
             activeCall.wrappedValue = call
             call.connection.offer { answer in
                 Task {
-                    let gotCandidates = await self.waitWithTimeout(10_000, stepMs: 1000, until: { self.activeCall.wrappedValue?.iceCandidates.count ?? 0 > 0 })
-                    if gotCandidates {
-                        await self.sendCallResponse(.init(
-                            corrId: nil,
-                            resp: .offer(
-                                offer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: answer.type.toSdpType(), sdp: answer.sdp))),
-                                iceCandidates: compressToBase64(input: encodeJSON(self.activeCall.wrappedValue?.iceCandidates ?? [])),
-                                capabilities: CallCapabilities(encryption: encryption)
-                            ),
-                            command: command)
-                        )
-                    } else {
-                        self.endCall()
-                    }
+                    await self.sendCallResponse(.init(
+                        corrId: nil,
+                        resp: .offer(
+                            offer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: answer.type.toSdpType(), sdp: answer.sdp))),
+                            iceCandidates: compressToBase64(input: encodeJSON(await self.getInitialIceCandidates())),
+                            capabilities: CallCapabilities(encryption: encryption)
+                        ),
+                        command: command)
+                    )
+                    self.waitForMoreIceCandidates()
                 }
-
             }
         case let .offer(offer, iceCandidates, media, aesKey, iceServers, relay):
             if activeCall.wrappedValue != nil {
@@ -186,10 +181,11 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
                                     corrId: nil,
                                     resp: .answer(
                                         answer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: answer.type.toSdpType(), sdp: answer.sdp))),
-                                        iceCandidates: compressToBase64(input: encodeJSON(call.iceCandidates))
+                                        iceCandidates: compressToBase64(input: encodeJSON(await self.getInitialIceCandidates()))
                                     ),
                                     command: command)
                                 )
+                                self.waitForMoreIceCandidates()
                             }
 //                            }
                         }
@@ -239,6 +235,40 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         }
         if let resp = resp {
             await sendCallResponse(.init(corrId: nil, resp: resp, command: command))
+        }
+    }
+
+    func getInitialIceCandidates() async -> [RTCIceCandidate] {
+        await waitWithTimeout(750, stepMs: 100, until: {
+            activeCall.wrappedValue?.connection.iceGatheringState == .complete
+        })
+        let candidates = activeCall.wrappedValue?.iceCandidates ?? []
+        activeCall.wrappedValue?.iceCandidates.removeAll()
+        logger.debug("WebRTCClient: sending initial ice candidates: \(candidates.count)")
+        return candidates
+    }
+
+    func waitForMoreIceCandidates() {
+        Task {
+            await waitWithTimeout(12000, stepMs: 1500, until: {
+                let candidates = self.activeCall.wrappedValue?.iceCandidates ?? []
+                self.activeCall.wrappedValue?.iceCandidates.removeAll()
+                if candidates.count > 0 {
+                    logger.debug("WebRTCClient: sending more ice candidates: \(candidates.count)")
+                    self.sendIceCandidates(candidates)
+                }
+                return activeCall.wrappedValue?.connection.iceGatheringState == .complete
+            })
+        }
+    }
+
+    func sendIceCandidates(_ candidates: [RTCIceCandidate]) {
+        Task {
+            await self.sendCallResponse(.init(
+                corrId: nil,
+                resp: .ice(iceCandidates: compressToBase64(input: encodeJSON(candidates))),
+                command: nil)
+            )
         }
     }
 
@@ -387,12 +417,11 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         audioSessionToDefaults()
     }
 
-    func waitWithTimeout(_ timeoutMs: UInt64, stepMs: UInt64, until success: () -> Bool) async -> Bool {
+    func waitWithTimeout(_ timeoutMs: UInt64, stepMs: UInt64, until success: () -> Bool) async {
         let startedAt = DispatchTime.now()
         while !success() && startedAt.uptimeNanoseconds + timeoutMs * 1000000 > DispatchTime.now().uptimeNanoseconds {
             guard let _ = try? await Task.sleep(nanoseconds: stepMs * 1000000) else { break }
         }
-        return success()
     }
 }
 
@@ -479,6 +508,7 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
                 default: enableSpeaker = false
                 }
                 setSpeakerEnabledAndConfigureSession(enableSpeaker)
+            case .connected: sendConnectedEvent(connection)
             case .disconnected, .failed: endCall()
             default: do {}
             }
@@ -491,24 +521,17 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
 
     func peerConnection(_ connection: RTCPeerConnection, didGenerate candidate: WebRTC.RTCIceCandidate) {
 //        logger.debug("Connection generated candidate \(candidate.debugDescription)")
-        activeCall.wrappedValue?.iceCandidates.append(candidate.toCandidate(nil, nil, nil))
         connection.statistics { (stats: RTCStatisticsReport) in
             stats.statistics.values.forEach { stat in
 //                logger.debug("Stat \(stat.debugDescription)")
                 if stat.type == "local-candidate",
                     candidate.sdp.contains("\((stat.values["ip"] as? String ?? "--")) \((stat.values["port"] as? Int)?.description ?? "--")")
                 {
-                    Task {
-                        await self.sendCallResponse(.init(
-                            corrId: nil,
-                            resp: .ice(iceCandidates: compressToBase64(input: encodeJSON([candidate.toCandidate(
-                                RTCIceCandidateType.init(rawValue: stat.values["candidateType"] as! String),
-                                stat.values["protocol"] as? String,
-                                stat.values["relayProtocol"] as? String
-                            )]))),
-                            command: nil)
-                        )
-                    }
+                    self.activeCall.wrappedValue?.iceCandidates.append(candidate.toCandidate(
+                        RTCIceCandidateType.init(rawValue: stat.values["candidateType"] as! String),
+                        stat.values["protocol"] as? String,
+                        stat.values["relayProtocol"] as? String
+                    ))
                 }
             }
         }
@@ -526,10 +549,9 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
                         lastReceivedMs lastDataReceivedMs: Int32,
                         changeReason reason: String) {
 //        logger.debug("Connection changed candidate \(reason) \(remote.debugDescription) \(remote.description)")
-        sendConnectedEvent(connection, local: local, remote: remote)
     }
 
-    func sendConnectedEvent(_ connection: WebRTC.RTCPeerConnection, local: WebRTC.RTCIceCandidate, remote: WebRTC.RTCIceCandidate) {
+    func sendConnectedEvent(_ connection: WebRTC.RTCPeerConnection) {
         connection.statistics { (stats: RTCStatisticsReport) in
             stats.statistics.values.forEach { stat in
 //                logger.debug("Stat \(stat.debugDescription)")
@@ -537,24 +559,27 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
                    let localId = stat.values["localCandidateId"] as? String,
                    let remoteId = stat.values["remoteCandidateId"] as? String,
                    let localStats = stats.statistics[localId],
-                   let remoteStats = stats.statistics[remoteId],
-                   local.sdp.contains("\((localStats.values["ip"] as? String ?? "--")) \(((localStats.values["port"] as? Int)?.description ?? "--"))") &&
-                   remote.sdp.contains("\((remoteStats.values["ip"] as? String ?? "--")) \(((remoteStats.values["port"] as? Int)?.description ?? "--"))")
+                   let remoteStats = stats.statistics[remoteId]
                 {
                     Task {
                         await self.sendCallResponse(.init(
                             corrId: nil,
                             resp: .connected(connectionInfo: ConnectionInfo(
-                                localCandidate: local.toCandidate(
-                                    RTCIceCandidateType.init(rawValue: localStats.values["candidateType"] as! String),
-                                    localStats.values["protocol"] as? String,
-                                    localStats.values["relayProtocol"] as? String
+                                localCandidate: RTCIceCandidate(
+                                    candidateType: RTCIceCandidateType.init(rawValue: localStats.values["candidateType"] as! String),
+                                    protocol: localStats.values["protocol"] as? String,
+                                    relayProtocol: localStats.values["relayProtocol"] as? String,
+                                    sdpMid: nil,
+                                    sdpMLineIndex: nil,
+                                    candidate: ""
                                 ),
-                                remoteCandidate: remote.toCandidate(
-                                    RTCIceCandidateType.init(rawValue: remoteStats.values["candidateType"] as! String),
-                                    remoteStats.values["protocol"] as? String,
-                                    remoteStats.values["relayProtocol"] as? String
-                                ))),
+                                remoteCandidate: RTCIceCandidate(
+                                    candidateType: RTCIceCandidateType.init(rawValue: remoteStats.values["candidateType"] as! String),
+                                    protocol: remoteStats.values["protocol"] as? String,
+                                    relayProtocol: remoteStats.values["relayProtocol"] as? String,
+                                    sdpMid: nil,
+                                    sdpMLineIndex: nil,
+                                    candidate: ""))),
                             command: nil)
                         )
                     }
