@@ -136,7 +136,7 @@ testAddContact = versionTestMatrix2 runTestAddContact
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
-      threadDelay 100000
+      threadDelay 1000000
       chatsEmpty alice bob
       alice #> "@bob hello there 🙂"
       bob <# "alice> hello there 🙂"
@@ -147,6 +147,7 @@ testAddContact = versionTestMatrix2 runTestAddContact
       chatsOneMessage alice bob
       bob #> "@alice hello there"
       alice <# "bob> hello there"
+      threadDelay 1000000
       bob #> "@alice how are you?"
       alice <# "bob> how are you?"
       chatsManyMessages alice bob
@@ -191,9 +192,10 @@ testDuplicateContactsSeparate =
         (alice <## "bob_1 (Bob): contact is connected")
         (bob <## "alice_1 (Alice): contact is connected")
 
-      alice <##> bob
+      alice <###> bob
       alice #> "@bob_1 1"
       bob <# "alice_1> 1"
+      threadDelay 1000000
       bob #> "@alice_1 2"
       alice <# "bob_1> 2"
 
@@ -288,6 +290,7 @@ testPlanInvitationLinkOwn tmp =
       <### [ WithTime "@alice_2 hi",
              WithTime "alice_1> hi"
            ]
+    threadDelay 1000000
     alice `send` "@alice_1 hey"
     alice
       <### [ WithTime "@alice_1 hey",
@@ -556,6 +559,7 @@ testDirectMessageDelete =
       bob <# "alice> hello 🙂"
 
       -- alice, bob: msg id 2
+      threadDelay 1000000
       bob `send` "> @alice (hello 🙂) hey alic"
       bob <# "@alice > hello 🙂"
       bob <## "      hey alic"
@@ -1392,7 +1396,7 @@ testMultipleUserAddresses =
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
       alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", lastChatFeature)])
-      alice <##> bob
+      alice <###> bob
 
       bob #> "@alice hey alice"
       (alice, "alice") $<# "bob> hey alice"

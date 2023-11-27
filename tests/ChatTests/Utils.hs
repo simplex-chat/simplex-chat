@@ -156,6 +156,16 @@ cc1 <##> cc2 = do
   cc2 #> ("@" <> name1 <> " hey")
   cc1 <# (name2 <> "> hey")
 
+(<###>) :: HasCallStack => TestCC -> TestCC -> IO ()
+cc1 <###> cc2 = do
+  name1 <- userName cc1
+  name2 <- userName cc2
+  cc1 #> ("@" <> name2 <> " hi")
+  cc2 <# (name1 <> "> hi")
+  threadDelay 1000000
+  cc2 #> ("@" <> name1 <> " hey")
+  cc1 <# (name2 <> "> hey")
+
 (##>) :: HasCallStack => TestCC -> String -> IO ()
 cc ##> cmd = do
   cc `send` cmd

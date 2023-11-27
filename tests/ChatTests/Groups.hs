@@ -144,6 +144,7 @@ testGroupShared :: HasCallStack => TestCC -> TestCC -> TestCC -> Bool -> IO ()
 testGroupShared alice bob cath checkMessages = do
   connectUsers alice bob
   connectUsers alice cath
+  when checkMessages $ threadDelay 1000000
   alice ##> "/g team"
   alice <## "group #team is created"
   alice <## "to add members use /a team <name> or /create link #team"
@@ -193,7 +194,7 @@ testGroupShared alice bob cath checkMessages = do
     (alice <# "#team cath> hey team")
     (bob <# "#team cath> hey team")
   msgItem2 <- lastItemId alice
-  bob <##> cath
+  bob <###> cath
   when checkMessages $ getReadChats msgItem1 msgItem2
   -- list groups
   alice ##> "/gs"
@@ -250,7 +251,7 @@ testGroupShared alice bob cath checkMessages = do
     (cath </)
   cath ##> "#team hello"
   cath <## "you are no longer a member of the group"
-  bob <##> cath
+  bob <###> cath
   -- delete contact
   alice ##> "/d bob"
   alice <## "bob: contact is deleted"
@@ -1807,7 +1808,7 @@ testGroupLink =
       -- contacts connected via group link are not in chat previews
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
-      alice <##> bob
+      alice <###> bob
       alice @@@ [("@bob", "hey"), ("#team", "connected")]
 
       -- user address doesn't interfere
@@ -2815,7 +2816,7 @@ testGroupLinkNoContactExistingContactMerged =
       threadDelay 100000
       alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
 
-      alice <##> bob
+      alice <###> bob
 
       alice @@@ [("#team", "connected"), ("@bob", "hey")]
       bob @@@ [("#team", "connected"), ("@alice", "hey")]
@@ -3735,7 +3736,7 @@ testMemberContactInvitedConnectionReplaced tmp = do
       cc <## (show n <> " contacts connected (use /cs for the list)")
       cc <## "#team: connected to server(s)"
     checkConnectionsWork alice bob = do
-      alice <##> bob
+      alice <###> bob
       alice @@@ [("@bob", "hey"), ("@cath", "sent invitation to join group team as admin"), ("#team", "connected")]
       bob @@@ [("@alice", "hey"), ("#team", "started direct connection with you")]
 

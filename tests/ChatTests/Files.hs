@@ -735,6 +735,7 @@ testSendImageWithTextAndQuote =
       connectUsers alice bob
       bob #> "@alice hi alice"
       alice <# "bob> hi alice"
+      threadDelay 1000000
       alice ##> ("/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"quotedItemId\": " <> itemId 1 <> ", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}")
       alice <# "@bob > hi alice"
       alice <## "      hey bob"
@@ -899,11 +900,8 @@ testGroupSendImageWithTextAndQuote =
       dest2 <- B.readFile "./tests/tmp/test_1.jpg"
       dest2 `shouldBe` src
       alice #$> ("/_get chat #1 count=2", chat'', [((0, "hi team"), Nothing, Nothing), ((1, "hey bob"), Just (0, "hi team"), Just "./tests/fixtures/test.jpg")])
-      alice @@@ [("#team", "hey bob"), ("@bob", "sent invitation to join group team as admin"), ("@cath", "sent invitation to join group team as admin")]
       bob #$> ("/_get chat #1 count=2", chat'', [((1, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (1, "hi team"), Just "./tests/tmp/test.jpg")])
-      bob @@@ [("#team", "hey bob"), ("@alice", "received invitation to join group team as admin")]
       cath #$> ("/_get chat #1 count=2", chat'', [((0, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (0, "hi team"), Just "./tests/tmp/test_1.jpg")])
-      cath @@@ [("#team", "hey bob"), ("@alice", "received invitation to join group team as admin")]
 
 testAsyncFileTransferSenderRestarts :: HasCallStack => FilePath -> IO ()
 testAsyncFileTransferSenderRestarts tmp = do

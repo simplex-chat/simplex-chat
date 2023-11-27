@@ -528,12 +528,12 @@ getDirectChatPreviews_ db user@User {userId} = do
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
         LEFT JOIN connections c ON c.contact_id = ct.contact_id
         LEFT JOIN (
-          SELECT contact_id, MAX(chat_item_id) AS MaxId
+          SELECT contact_id, chat_item_id, MAX(item_ts)
           FROM chat_items
           GROUP BY contact_id
-        ) MaxIds ON MaxIds.contact_id = ct.contact_id
-        LEFT JOIN chat_items i ON i.contact_id = MaxIds.contact_id
-                               AND i.chat_item_id = MaxIds.MaxId
+        ) LatestItems ON LatestItems.contact_id = ct.contact_id
+        LEFT JOIN chat_items i ON i.contact_id = LatestItems.contact_id
+                               AND i.chat_item_id = LatestItems.chat_item_id
         LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
@@ -615,12 +615,12 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
         JOIN group_members mu ON mu.group_id = g.group_id
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
         LEFT JOIN (
-          SELECT group_id, MAX(chat_item_id) AS MaxId
+          SELECT group_id, chat_item_id, MAX(item_ts)
           FROM chat_items
           GROUP BY group_id
-        ) MaxIds ON MaxIds.group_id = g.group_id
-        LEFT JOIN chat_items i ON i.group_id = MaxIds.group_id
-                               AND i.chat_item_id = MaxIds.MaxId
+        ) LatestItems ON LatestItems.group_id = g.group_id
+        LEFT JOIN chat_items i ON i.group_id = LatestItems.group_id
+                               AND i.chat_item_id = LatestItems.chat_item_id
         LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
