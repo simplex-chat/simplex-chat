@@ -724,7 +724,7 @@ getDirectChatItemsLast db User {userId} contactId count search = ExceptT $ do
         LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
         LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
         WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
-        ORDER BY i.item_ts DESC, i.chat_item_id DESC
+        ORDER BY i.chat_item_id DESC
         LIMIT ?
       |]
       (userId, contactId, search, count)
@@ -754,7 +754,7 @@ getDirectChatAfter_ db User {userId} ct@Contact {contactId} afterChatItemId coun
             LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
             WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
               AND i.chat_item_id > ?
-            ORDER BY i.item_ts ASC, i.chat_item_id ASC
+            ORDER BY i.chat_item_id ASC
             LIMIT ?
           |]
           (userId, contactId, search, afterChatItemId, count)
@@ -784,7 +784,7 @@ getDirectChatBefore_ db User {userId} ct@Contact {contactId} beforeChatItemId co
             LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
             WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
               AND i.chat_item_id < ?
-            ORDER BY i.item_ts DESC, i.chat_item_id DESC
+            ORDER BY i.chat_item_id DESC
             LIMIT ?
           |]
           (userId, contactId, search, beforeChatItemId, count)

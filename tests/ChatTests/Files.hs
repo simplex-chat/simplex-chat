@@ -556,7 +556,6 @@ runTestGroupFileSndCancelBeforeTransfer alice bob cath = do
 runTestMessageWithFile :: HasCallStack => TestCC -> TestCC -> IO ()
 runTestMessageWithFile alice bob = do
   connectUsers alice bob
-  threadDelay 1000000
   alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}"
   alice <# "@bob hi, sending a file"
   alice <# "/f @bob ./tests/fixtures/test.jpg"
@@ -583,7 +582,6 @@ testSendImage =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
-      threadDelay 1000000
       alice ##> "/_send @2 json {\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
       alice <# "/f @bob ./tests/fixtures/test.jpg"
       alice <## "use /fc 1 to cancel sending"
@@ -644,7 +642,6 @@ testFilesFoldersSendImage =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
-      threadDelay 1000000
       alice #$> ("/_files_folder ./tests/fixtures", id, "ok")
       bob #$> ("/_files_folder ./tests/tmp/app_files", id, "ok")
       alice ##> "/_send @2 json {\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
@@ -736,7 +733,6 @@ testSendImageWithTextAndQuote =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
       connectUsers alice bob
-      threadDelay 1000000
       bob #> "@alice hi alice"
       alice <# "bob> hi alice"
       threadDelay 1000000
