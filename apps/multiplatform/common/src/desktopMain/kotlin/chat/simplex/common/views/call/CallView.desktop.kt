@@ -50,22 +50,23 @@ actual fun ActiveCallView() {
     val call = chatModel.activeCall.value
     if (call != null) {
       Log.d(TAG, "has active call $call")
+      val callRh = call.remoteHostId
       when (val r = apiMsg.resp) {
         is WCallResponse.Capabilities -> withBGApi {
           val callType = CallType(call.localMedia, r.capabilities)
-          chatModel.controller.apiSendCallInvitation(call.contact, callType)
+          chatModel.controller.apiSendCallInvitation(callRh, call.contact, callType)
           chatModel.activeCall.value = call.copy(callState = CallState.InvitationSent, localCapabilities = r.capabilities)
         }
         is WCallResponse.Offer -> withBGApi {
-          chatModel.controller.apiSendCallOffer(call.contact, r.offer, r.iceCandidates, call.localMedia, r.capabilities)
+          chatModel.controller.apiSendCallOffer(callRh, call.contact, r.offer, r.iceCandidates, call.localMedia, r.capabilities)
           chatModel.activeCall.value = call.copy(callState = CallState.OfferSent, localCapabilities = r.capabilities)
         }
         is WCallResponse.Answer -> withBGApi {
-          chatModel.controller.apiSendCallAnswer(call.contact, r.answer, r.iceCandidates)
+          chatModel.controller.apiSendCallAnswer(callRh, call.contact, r.answer, r.iceCandidates)
           chatModel.activeCall.value = call.copy(callState = CallState.Negotiated)
         }
         is WCallResponse.Ice -> withBGApi {
-          chatModel.controller.apiSendCallExtraInfo(call.contact, r.iceCandidates)
+          chatModel.controller.apiSendCallExtraInfo(callRh, call.contact, r.iceCandidates)
         }
         is WCallResponse.Connection ->
           try {
@@ -73,7 +74,7 @@ actual fun ActiveCallView() {
             if (callStatus == WebRTCCallStatus.Connected) {
               chatModel.activeCall.value = call.copy(callState = CallState.Connected, connectedAt = Clock.System.now())
             }
-            withBGApi { chatModel.controller.apiCallStatus(call.contact, callStatus) }
+            withBGApi { chatModel.controller.apiCallStatus(callRh, call.contact, callStatus) }
           } catch (e: Error) {
             Log.d(TAG, "call status ${r.state.connectionState} not used")
           }
@@ -189,12 +190,11 @@ fun startServer(onResponse: (WVAPIMessage) -> Unit): NanoWSD {
   val server = object: NanoWSD(SERVER_HOST, SERVER_PORT) {
     override fun openWebSocket(session: IHTTPSession): WebSocket = MyWebSocket(onResponse, session)
 
-    @Suppress("NewApi")
     fun resourcesToResponse(path: String): Response {
       val uri = Class.forName("chat.simplex.common.AppKt").getResource("/assets/www$path") ?: return resourceNotFound
       val response = newFixedLengthResponse(
         Status.OK, getMimeTypeForFile(uri.file),
-        uri.openStream().readAllBytes()
+        uri.openStream().readBytes()
       )
       response.setKeepAlive(true)
       response.setUseGzip(true)

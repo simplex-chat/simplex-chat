@@ -2,6 +2,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -71,6 +72,7 @@ module Simplex.Chat.Store.Files
     getSndFileTransfer,
     getSndFileTransfers,
     getContactFileInfo,
+    getLocalCryptoFile,
     updateDirectCIFileStatus,
   )
 where
@@ -107,7 +109,7 @@ import Simplex.Messaging.Protocol (SubscriptionMode (..))
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
 getLiveSndFileTransfers db User {userId} = do
-  cutoffTs <- addUTCTime (- week) <$> getCurrentTime
+  cutoffTs <- addUTCTime (-week) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
       <$> DB.query
@@ -130,7 +132,7 @@ getLiveSndFileTransfers db User {userId} = do
 
 getLiveRcvFileTransfers :: DB.Connection -> User -> IO [RcvFileTransfer]
 getLiveRcvFileTransfers db user@User {userId} = do
-  cutoffTs <- addUTCTime (- week) <$> getCurrentTime
+  cutoffTs <- addUTCTime (-week) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
       <$> DB.query
@@ -232,11 +234,12 @@ createSndGroupInlineFT db GroupMember {groupMemberId, localDisplayName = n} Conn
 
 updateSndDirectFTDelivery :: DB.Connection -> Contact -> FileTransferMeta -> Int64 -> ExceptT StoreError IO ()
 updateSndDirectFTDelivery _ Contact {localDisplayName, activeConn = Nothing} _ _ = throwError $ SEContactNotReady localDisplayName
-updateSndDirectFTDelivery db Contact {activeConn = Just Connection {connId}} FileTransferMeta {fileId} msgDeliveryId = liftIO $
-  DB.execute
-    db
-    "UPDATE snd_files SET last_inline_msg_delivery_id = ? WHERE connection_id = ? AND file_id = ? AND file_inline IS NOT NULL"
-    (msgDeliveryId, connId, fileId)
+updateSndDirectFTDelivery db Contact {activeConn = Just Connection {connId}} FileTransferMeta {fileId} msgDeliveryId =
+  liftIO $
+    DB.execute
+      db
+      "UPDATE snd_files SET last_inline_msg_delivery_id = ? WHERE connection_id = ? AND file_id = ? AND file_inline IS NOT NULL"
+      (msgDeliveryId, connId, fileId)
 
 updateSndGroupFTDelivery :: DB.Connection -> GroupMember -> Connection -> FileTransferMeta -> Int64 -> IO ()
 updateSndGroupFTDelivery db GroupMember {groupMemberId} Connection {connId} FileTransferMeta {fileId} msgDeliveryId =
@@ -604,7 +607,10 @@ getRcvFileTransferById db fileId = do
   (user,) <$> getRcvFileTransfer db user fileId
 
 getRcvFileTransfer :: DB.Connection -> User -> FileTransferId -> ExceptT StoreError IO RcvFileTransfer
-getRcvFileTransfer db User {userId} fileId = do
+getRcvFileTransfer db User {userId} = getRcvFileTransfer_ db userId
+
+getRcvFileTransfer_ :: DB.Connection -> UserId -> FileTransferId -> ExceptT StoreError IO RcvFileTransfer
+getRcvFileTransfer_ db userId fileId = do
   rftRow <-
     ExceptT . firstRow id (SERcvFileNotFound fileId) $
       DB.query
@@ -719,7 +725,7 @@ removeFileCryptoArgs db fileId = do
 
 getRcvFilesToReceive :: DB.Connection -> User -> IO [RcvFileTransfer]
 getRcvFilesToReceive db user@User {userId} = do
-  cutoffTs <- addUTCTime (- (2 * nominalDay)) <$> getCurrentTime
+  cutoffTs <- addUTCTime (-(2 * nominalDay)) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
       <$> DB.query
@@ -763,20 +769,20 @@ createRcvFileChunk db RcvFileTransfer {fileId, fileInvitation = FileInvitation {
       pure $ case map fromOnly ns of
         []
           | chunkNo == 1 ->
-            if chunkSize >= fileSize
-              then RcvChunkFinal
-              else RcvChunkOk
+              if chunkSize >= fileSize
+                then RcvChunkFinal
+                else RcvChunkOk
           | otherwise -> RcvChunkError
         n : _
           | chunkNo == n -> RcvChunkDuplicate
           | chunkNo == n + 1 ->
-            let prevSize = n * chunkSize
-             in if prevSize >= fileSize
-                  then RcvChunkError
-                  else
-                    if prevSize + chunkSize >= fileSize
-                      then RcvChunkFinal
-                      else RcvChunkOk
+              let prevSize = n * chunkSize
+               in if prevSize >= fileSize
+                    then RcvChunkError
+                    else
+                      if prevSize + chunkSize >= fileSize
+                        then RcvChunkFinal
+                        else RcvChunkOk
           | otherwise -> RcvChunkError
 
 updatedRcvFileChunkStored :: DB.Connection -> RcvFileTransfer -> Integer -> IO ()
@@ -810,25 +816,26 @@ getFileTransferProgress db user fileId = do
 
 getFileTransfer :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO FileTransfer
 getFileTransfer db user@User {userId} fileId =
-  fileTransfer =<< liftIO getFileTransferRow
+  fileTransfer =<< liftIO (getFileTransferRow_ db userId fileId)
   where
     fileTransfer :: [(Maybe Int64, Maybe Int64)] -> ExceptT StoreError IO FileTransfer
     fileTransfer [(Nothing, Just _)] = FTRcv <$> getRcvFileTransfer db user fileId
     fileTransfer _ = do
       (ftm, fts) <- getSndFileTransfer db user fileId
       pure $ FTSnd {fileTransferMeta = ftm, sndFileTransfers = fts}
-    getFileTransferRow :: IO [(Maybe Int64, Maybe Int64)]
-    getFileTransferRow =
-      DB.query
-        db
-        [sql|
-          SELECT s.file_id, r.file_id
-          FROM files f
-          LEFT JOIN snd_files s ON s.file_id = f.file_id
-          LEFT JOIN rcv_files r ON r.file_id = f.file_id
-          WHERE user_id = ? AND f.file_id = ?
-        |]
-        (userId, fileId)
+
+getFileTransferRow_ :: DB.Connection -> UserId -> Int64 -> IO [(Maybe Int64, Maybe Int64)]
+getFileTransferRow_ db userId fileId =
+  DB.query
+    db
+    [sql|
+      SELECT s.file_id, r.file_id
+      FROM files f
+      LEFT JOIN snd_files s ON s.file_id = f.file_id
+      LEFT JOIN rcv_files r ON r.file_id = f.file_id
+      WHERE user_id = ? AND f.file_id = ?
+    |]
+    (userId, fileId)
 
 getSndFileTransfer :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO (FileTransferMeta, [SndFileTransfer])
 getSndFileTransfer db user fileId = do
@@ -863,7 +870,10 @@ getSndFileTransfers_ db userId fileId =
         Nothing -> Left $ SESndFileInvalid fileId
 
 getFileTransferMeta :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO FileTransferMeta
-getFileTransferMeta db User {userId} fileId =
+getFileTransferMeta db User {userId} = getFileTransferMeta_ db userId
+
+getFileTransferMeta_ :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO FileTransferMeta
+getFileTransferMeta_ db userId fileId =
   ExceptT . firstRow fileTransferMeta (SEFileNotFound fileId) $
     DB.query
       db
@@ -884,6 +894,20 @@ getContactFileInfo :: DB.Connection -> User -> Contact -> IO [CIFileInfo]
 getContactFileInfo db User {userId} Contact {contactId} =
   map toFileInfo
     <$> DB.query db (fileInfoQuery <> " WHERE i.user_id = ? AND i.contact_id = ?") (userId, contactId)
+
+getLocalCryptoFile :: DB.Connection -> UserId -> Int64 -> Bool -> ExceptT StoreError IO CryptoFile
+getLocalCryptoFile db userId fileId sent =
+  liftIO (getFileTransferRow_ db userId fileId) >>= \case
+    [(Nothing, Just _)] -> do
+      when sent $ throwError $ SEFileNotFound fileId
+      RcvFileTransfer {fileStatus, cryptoArgs} <- getRcvFileTransfer_ db userId fileId
+      case fileStatus of
+        RFSComplete RcvFileInfo {filePath} -> pure $ CryptoFile filePath cryptoArgs
+        _ -> throwError $ SEFileNotFound fileId
+    _ -> do
+      unless sent $ throwError $ SEFileNotFound fileId
+      FileTransferMeta {filePath, xftpSndFile} <- getFileTransferMeta_ db userId fileId
+      pure $ CryptoFile filePath $ xftpSndFile >>= \f -> f.cryptoArgs
 
 updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
 updateDirectCIFileStatus db user fileId fileStatus = do

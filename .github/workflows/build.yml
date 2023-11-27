@@ -81,7 +81,7 @@ jobs:
       - name: Setup Haskell
         uses: haskell-actions/setup@v2
         with:
-          ghc-version: "9.6.2"
+          ghc-version: "9.6.3"
           cabal-version: "3.10.1.0"
 
       - name: Cache dependencies
@@ -261,11 +261,36 @@ jobs:
       # / Windows
       # rm -rf dist-newstyle/src/direct-sq* is here because of the bug in cabal's dependency which prevents second build from finishing
 
+      - name: 'Setup MSYS2'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ucrt64
+          update: true
+          install: >-
+            git
+            perl
+            make
+          pacboy: >-
+            toolchain:p
+            cmake:p
+
+
       - name: Windows build
         id: windows_build
         if: matrix.os == 'windows-latest'
-        shell: bash
+        shell: msys2 {0}
         run: |
+          export PATH=$PATH:/c/ghcup/bin
+          scripts/desktop/prepare-openssl-windows.sh
+          openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-1.1.1w | sed 's#/\([a-zA-Z]\)#\1:#' | sed 's#/#\\#g')
+          rm cabal.project.local 2>/dev/null || true
+          echo "ignore-project: False" >> cabal.project.local
+          echo "package direct-sqlcipher" >> cabal.project.local
+          echo "    flags: +openssl" >> cabal.project.local
+          echo "    extra-include-dirs: $openssl_windows_style_path\include" >> cabal.project.local
+          echo "    extra-lib-dirs: $openssl_windows_style_path" >> cabal.project.local
+
           rm -rf dist-newstyle/src/direct-sq*
           sed -i "s/, unix /--, unix /" simplex-chat.cabal
           cabal build --enable-tests
@@ -296,10 +321,9 @@ jobs:
       - name: Windows build desktop
         id: windows_desktop_build
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
-        env:
-          SIMPLEX_CI_REPO_URL: ${{ secrets.SIMPLEX_CI_REPO_URL }}
-        shell: bash
+        shell: msys2 {0}
         run: |
+          export PATH=$PATH:/c/ghcup/bin
           scripts/desktop/build-lib-windows.sh
           cd apps/multiplatform
           ./gradlew packageMsi

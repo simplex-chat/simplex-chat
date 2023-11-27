@@ -59,7 +59,7 @@ welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
   opts@DirectoryOpts {coreOptions = CoreChatOpts {dbFilePrefix}, testing} <- getDirectoryOpts appDir "simplex_directory_service"
-  unless testing $ do  
+  unless testing $ do
     putStrLn $ "SimpleX Directory Service Bot v" ++ versionNumber
     putStrLn $ "db: " <> dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
   pure opts
@@ -68,7 +68,7 @@ directoryService :: DirectoryStore -> DirectoryOpts -> User -> ChatController ->
 directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {userId} cc = do
   initializeBotAddress' (not testing) cc
   race_ (forever $ void getLine) . forever $ do
-    (_, resp) <- atomically . readTBQueue $ outputQ cc
+    (_, _, resp) <- atomically . readTBQueue $ outputQ cc
     forM_ (crDirectoryEvent resp) $ \case
       DEContactConnected ct -> deContactConnected ct
       DEGroupInvitation {contact = ct, groupInfo = g, fromMemberRole, memberRole} -> deGroupInvitation ct g fromMemberRole memberRole
@@ -156,12 +156,12 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
         askConfirmation = do
           ugrId <- addGroupReg st ct g GRSPendingConfirmation
           sendMessage cc ct $ T.unpack $ "The group " <> displayName <> " (" <> fullName <> ") is already submitted to the directory.\nTo confirm the registration, please send:"
-          sendMessage cc ct $ "/confirm " <> show ugrId <> ":" <> T.unpack displayName
+          sendMessage cc ct $ "/confirm " <> show ugrId <> ":" <> viewName (T.unpack displayName)
 
     badRolesMsg :: GroupRolesStatus -> Maybe String
     badRolesMsg = \case
       GRSOk -> Nothing
-      GRSServiceNotAdmin -> Just "You must have a group *owner* role to register the group" 
+      GRSServiceNotAdmin -> Just "You must have a group *owner* role to register the group"
       GRSContactNotOwner -> Just "You must grant directory service *admin* role to register the group"
       GRSBadRoles -> Just "You must have a group *owner* role and you must grant directory service *admin* role to register the group"
 
@@ -301,7 +301,7 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
           msg = maybe (MCText text) (\image -> MCImage {text, image}) image'
       withSuperUsers $ \cId -> do
         sendComposedMessage' cc cId Nothing msg
-        sendMessage' cc cId $ "/approve " <> show dbGroupId <> ":" <> T.unpack displayName <> " " <> show gaId
+        sendMessage' cc cId $ "/approve " <> show dbGroupId <> ":" <> viewName (T.unpack displayName) <> " " <> show gaId
 
     deContactRoleChanged :: GroupInfo -> ContactId -> GroupMemberRole -> IO ()
     deContactRoleChanged g@GroupInfo {membership = GroupMember {memberRole = serviceRole}} ctId contactRole =
@@ -352,7 +352,7 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
         groupRef = groupReference g
         srvRole = "*" <> B.unpack (strEncode serviceRole) <> "*"
         suSrvRole = "(" <> serviceName <> " role is changed to " <> srvRole <> ")."
-        whenContactIsOwner gr action = 
+        whenContactIsOwner gr action =
           getGroupMember gr >>=
             mapM_ (\cm@GroupMember {memberRole} -> when (memberRole == GROwner && memberActive cm) action)
 
@@ -494,7 +494,7 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
           sendChatCmdStr cc cmdStr >>= \r -> do
             ts <- getCurrentTime
             tz <- getCurrentTimeZone
-            sendReply $ serializeChatResponse (Just user) ts tz r
+            sendReply $ serializeChatResponse (Nothing, Just user) ts tz Nothing r
         DCCommandError tag -> sendReply $ "Command error: " <> show tag
       | otherwise = sendReply "You are not allowed to use this command"
       where

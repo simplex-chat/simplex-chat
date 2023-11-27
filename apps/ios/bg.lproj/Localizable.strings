@@ -721,19 +721,10 @@
 "Connect" = "Свързване";
 
 /* No comment provided by engineer. */
-"Connect directly" = "Свързване директно";
-
-/* No comment provided by engineer. */
 "Connect incognito" = "Свързване инкогнито";
 
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "свържете се с разработчиците на SimpleX Chat.";
-
-/* No comment provided by engineer. */
-"Connect via contact link" = "Свързване чрез линк на контакта";
-
-/* No comment provided by engineer. */
-"Connect via group link?" = "Свързване чрез групов линк?";
 
 /* No comment provided by engineer. */
 "Connect via link" = "Свърване чрез линк";
@@ -746,6 +737,9 @@
 
 /* No comment provided by engineer. */
 "connected" = "свързан";
+
+/* rcv group event chat item */
+"connected directly" = "свързан директно";
 
 /* No comment provided by engineer. */
 "connecting" = "свързване";
@@ -800,9 +794,6 @@
 
 /* No comment provided by engineer. */
 "Contact already exists" = "Контактът вече съществува";
-
-/* No comment provided by engineer. */
-"Contact and all messages will be deleted - this cannot be undone!" = "Контактът и всички съобщения ще бъдат изтрити - това не може да бъде отменено!";
 
 /* No comment provided by engineer. */
 "contact has e2e encryption" = "контактът има e2e криптиране";
@@ -1009,9 +1000,6 @@
 "Delete Contact" = "Изтрий контакт";
 
 /* No comment provided by engineer. */
-"Delete contact?" = "Изтрий контакт?";
-
-/* No comment provided by engineer. */
 "Delete database" = "Изтрий базата данни";
 
 /* server test step */
@@ -1166,12 +1154,6 @@
 
 /* No comment provided by engineer. */
 "Discover and join groups" = "Открийте и се присъединете към групи";
-
-/* No comment provided by engineer. */
-"Display name" = "Показвано Име";
-
-/* No comment provided by engineer. */
-"Display name:" = "Показвано име:";
 
 /* No comment provided by engineer. */
 "Do it later" = "Отложи";
@@ -1378,6 +1360,9 @@
 "Error creating group link" = "Грешка при създаване на групов линк";
 
 /* No comment provided by engineer. */
+"Error creating member contact" = "Грешка при създаване на контакт с член";
+
+/* No comment provided by engineer. */
 "Error creating profile!" = "Грешка при създаване на профил!";
 
 /* No comment provided by engineer. */
@@ -1454,6 +1439,9 @@
 
 /* No comment provided by engineer. */
 "Error sending email" = "Грешка при изпращане на имейл";
+
+/* No comment provided by engineer. */
+"Error sending member contact invitation" = "Грешка при изпращане на съобщение за покана за контакт";
 
 /* No comment provided by engineer. */
 "Error sending message" = "Грешка при изпращане на съобщение";
@@ -2227,7 +2215,8 @@
 "observer" = "наблюдател";
 
 /* enabled status
-   group pref value */
+   group pref value
+   time to disappear */
 "off" = "изключено";
 
 /* No comment provided by engineer. */
@@ -2309,6 +2298,9 @@
 "Only your contact can send voice messages." = "Само вашият контакт може да изпраща гласови съобщения.";
 
 /* No comment provided by engineer. */
+"Open" = "Отвори";
+
+/* No comment provided by engineer. */
 "Open chat" = "Отвори чат";
 
 /* authentication reason */
@@ -2325,12 +2317,6 @@
 
 /* No comment provided by engineer. */
 "Opening database…" = "Отваряне на база данни…";
-
-/* No comment provided by engineer. */
-"Opening the link in the browser may reduce connection privacy and security. Untrusted SimpleX links will be red." = "Отварянето на линка в браузъра може да намали поверителността и сигурността на връзката. Несигурните SimpleX линкове ще бъдат червени.";
-
-/* No comment provided by engineer. */
-"or chat with the developers" = "или пишете на разработчиците";
 
 /* member role */
 "owner" = "собственик";
@@ -2783,7 +2769,13 @@
 "Send delivery receipts to" = "Изпращайте потвърждениe за доставка на";
 
 /* No comment provided by engineer. */
+"send direct message" = "изпрати лично съобщение";
+
+/* No comment provided by engineer. */
 "Send direct message" = "Изпрати лично съобщение";
+
+/* No comment provided by engineer. */
+"Send direct message to connect" = "Изпрати лично съобщение за свързване";
 
 /* No comment provided by engineer. */
 "Send disappearing message" = "Изпрати изчезващо съобщение";
@@ -3114,9 +3106,6 @@
 
 /* No comment provided by engineer. */
 "The encryption is working and the new encryption agreement is not required. It may result in connection errors!" = "Криптирането работи и новото споразумение за криптиране не е необходимо. Това може да доведе до грешки при свързване!";
-
-/* No comment provided by engineer. */
-"The group is fully decentralized – it is visible only to the members." = "Групата е напълно децентрализирана – видима е само за членовете.";
 
 /* No comment provided by engineer. */
 "The hash of the previous message is different." = "Хешът на предишното съобщение е различен.";
@@ -3611,9 +3600,6 @@
 "You will be required to authenticate when you start or resume the app after 30 seconds in background." = "Ще трябва да се идентифицирате, когато стартирате или възобновите приложението след 30 секунди във фонов режим.";
 
 /* No comment provided by engineer. */
-"You will join a group this link refers to and connect to its group members." = "Ще се присъедините към групата, към която този линк препраща, и ще се свържете с нейните членове.";
-
-/* No comment provided by engineer. */
 "You will still receive calls and notifications from muted profiles when they are active." = "Все още ще получавате обаждания и известия от заглушени профили, когато са активни.";
 
 /* No comment provided by engineer. */
@@ -3642,9 +3628,6 @@
 
 /* No comment provided by engineer. */
 "Your chat database is not encrypted - set passphrase to encrypt it." = "Вашата чат база данни не е криптирана - задайте парола, за да я криптирате.";
-
-/* No comment provided by engineer. */
-"Your chat profile will be sent to group members" = "Вашият чат профил ще бъде изпратен на членовете на групата";
 
 /* No comment provided by engineer. */
 "Your chat profiles" = "Вашите чат профили";

@@ -170,18 +170,19 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
 
 fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: () -> Unit) {
   withApi {
+    val rhId = chatModel.remoteHostId()
     val user = chatModel.controller.apiCreateActiveUser(
-      Profile(displayName.trim(), "", null)
+      rhId, Profile(displayName.trim(), "", null)
     ) ?: return@withApi
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
       chatModel.controller.startChat(user)
       chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
     } else {
-      val users = chatModel.controller.listUsers()
+      val users = chatModel.controller.listUsers(rhId)
       chatModel.users.clear()
       chatModel.users.addAll(users)
-      chatModel.controller.getUserChatData()
+      chatModel.controller.getUserChatData(rhId)
       close()
     }
   }
@@ -190,7 +191,7 @@ fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: ()
 fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: () -> Unit) {
   withApi {
     chatModel.controller.apiCreateActiveUser(
-      Profile(displayName.trim(), "", null)
+      null, Profile(displayName.trim(), "", null)
     ) ?: return@withApi
     val onboardingStage = chatModel.controller.appPrefs.onboardingStage
     if (chatModel.users.isEmpty()) {

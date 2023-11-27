@@ -4,7 +4,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE TypeOperators #-}
-
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Store.Connections
@@ -25,11 +24,11 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..))
 import Database.SQLite.Simple (Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
+import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
-import Simplex.Chat.Protocol
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ConnId)
@@ -98,13 +97,13 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
               -- GroupInfo
               g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.description, gp.image, g.host_conn_custom_user_profile_id, g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, g.created_at, g.updated_at, g.chat_ts,
               -- GroupInfo {membership}
-              mu.group_member_id, mu.group_id, mu.member_id, mu.member_role, mu.member_category,
-              mu.member_status, mu.show_messages, mu.invited_by, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+              mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+              mu.member_status, mu.show_messages, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
               -- GroupInfo {membership = GroupMember {memberProfile}}
               pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
               -- from GroupMember
-              m.group_member_id, m.group_id, m.member_id, m.member_role, m.member_category, m.member_status, m.show_messages,
-              m.invited_by, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences
+              m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages,
+              m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
             JOIN groups g ON g.group_id = m.group_id
@@ -157,8 +156,9 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
 
 getConnectionEntityByConnReq :: DB.Connection -> User -> (ConnReqInvitation, ConnReqInvitation) -> IO (Maybe ConnectionEntity)
 getConnectionEntityByConnReq db user@User {userId} (cReqSchema1, cReqSchema2) = do
-  connId_ <- maybeFirstRow fromOnly $
-    DB.query db "SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_req_inv IN (?,?) LIMIT 1" (userId, cReqSchema1, cReqSchema2)
+  connId_ <-
+    maybeFirstRow fromOnly $
+      DB.query db "SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_req_inv IN (?,?) LIMIT 1" (userId, cReqSchema1, cReqSchema2)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db user) connId_
 
 -- search connection for connection plan:
@@ -167,21 +167,22 @@ getConnectionEntityByConnReq db user@User {userId} (cReqSchema1, cReqSchema2) = 
 -- deleted connections are filtered out to allow re-connecting via same contact address
 getContactConnEntityByConnReqHash :: DB.Connection -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe ConnectionEntity)
 getContactConnEntityByConnReqHash db user@User {userId} (cReqHash1, cReqHash2) = do
-  connId_ <- maybeFirstRow fromOnly $
-    DB.query
-      db
-      [sql|
-        SELECT agent_conn_id FROM (
-          SELECT
-            agent_conn_id,
-            (CASE WHEN contact_id IS NOT NULL THEN 1 ELSE 0 END) AS conn_ord
-          FROM connections
-          WHERE user_id = ? AND via_contact_uri_hash IN (?,?) AND conn_status != ?
-          ORDER BY conn_ord DESC, created_at DESC
-          LIMIT 1
-        )
-      |]
-      (userId, cReqHash1, cReqHash2, ConnDeleted)
+  connId_ <-
+    maybeFirstRow fromOnly $
+      DB.query
+        db
+        [sql|
+          SELECT agent_conn_id FROM (
+            SELECT
+              agent_conn_id,
+              (CASE WHEN contact_id IS NOT NULL THEN 1 ELSE 0 END) AS conn_ord
+            FROM connections
+            WHERE user_id = ? AND via_contact_uri_hash IN (?,?) AND conn_status != ?
+            ORDER BY conn_ord DESC, created_at DESC
+            LIMIT 1
+          )
+        |]
+        (userId, cReqHash1, cReqHash2, ConnDeleted)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db user) connId_
 
 getConnectionsToSubscribe :: DB.Connection -> IO ([ConnId], [ConnectionEntity])

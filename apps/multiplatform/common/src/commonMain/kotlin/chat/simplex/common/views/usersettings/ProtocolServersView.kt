@@ -28,13 +28,13 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.launch
 
 @Composable
-fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () -> Unit) {
-  var presetServers by remember { mutableStateOf(emptyList<String>()) }
-  var servers by remember {
+fun ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: ServerProtocol, close: () -> Unit) {
+  var presetServers by remember(rhId) { mutableStateOf(emptyList<String>()) }
+  var servers by remember(rhId) {
     mutableStateOf(m.userSMPServersUnsaved.value ?: emptyList())
   }
-  val currServers = remember { mutableStateOf(servers) }
-  val testing = rememberSaveable { mutableStateOf(false) }
+  val currServers = remember(rhId) { mutableStateOf(servers) }
+  val testing = rememberSaveable(rhId) { mutableStateOf(false) }
   val serversUnchanged = remember { derivedStateOf { servers == currServers.value || testing.value } }
   val allServersDisabled = remember { derivedStateOf { servers.all { !it.enabled } } }
   val saveDisabled = remember {
@@ -50,8 +50,13 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
     }
   }
 
-  LaunchedEffect(Unit) {
-    val res = m.controller.getUserProtoServers(serverProtocol)
+  KeyChangeEffect(rhId) {
+    m.userSMPServersUnsaved.value = null
+    servers = emptyList()
+  }
+
+  LaunchedEffect(rhId) {
+    val res = m.controller.getUserProtoServers(rhId, serverProtocol)
     if (res != null) {
       currServers.value = res.protoServers
       presetServers = res.presetServers
@@ -90,7 +95,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
   ModalView(
     close = {
       if (saveDisabled.value) close()
-      else showUnsavedChangesAlert({ saveServers(serverProtocol, currServers, servers, m, close) }, close)
+      else showUnsavedChangesAlert({ saveServers(rhId, serverProtocol, currServers, servers, m, close) }, close)
     },
   ) {
     ProtocolServersLayout(
@@ -118,7 +123,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
                 SectionItemView({
                   AlertManager.shared.hideAlert()
                   ModalManager.start.showModalCloseable { close ->
-                    ScanProtocolServer {
+                    ScanProtocolServer(rhId) {
                       close()
                       servers = servers + it
                       m.userSMPServersUnsaved.value = servers
@@ -133,7 +138,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
               if (!hasAllPresets) {
                 SectionItemView({
                   AlertManager.shared.hideAlert()
-                  servers = (servers + addAllPresets(presetServers, servers, m)).sortedByDescending { it.preset }
+                  servers = (servers + addAllPresets(rhId, presetServers, servers, m)).sortedByDescending { it.preset }
                 }) {
                   Text(stringResource(MR.strings.smp_servers_preset_add), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
                 }
@@ -155,7 +160,7 @@ fun ProtocolServersView(m: ChatModel, serverProtocol: ServerProtocol, close: () 
         m.userSMPServersUnsaved.value = null
       },
       saveSMPServers = {
-        saveServers(serverProtocol, currServers, servers, m)
+        saveServers(rhId, serverProtocol, currServers, servers, m)
       },
       showServer = ::showServer,
     )
@@ -289,11 +294,11 @@ private fun uniqueAddress(s: ServerCfg, address: ServerAddress, servers: List<Se
 private fun hasAllPresets(presetServers: List<String>, servers: List<ServerCfg>, m: ChatModel): Boolean =
   presetServers.all { hasPreset(it, servers) } ?: true
 
-private fun addAllPresets(presetServers: List<String>, servers: List<ServerCfg>, m: ChatModel): List<ServerCfg> {
+private fun addAllPresets(rhId: Long?, presetServers: List<String>, servers: List<ServerCfg>, m: ChatModel): List<ServerCfg> {
   val toAdd = ArrayList<ServerCfg>()
   for (srv in presetServers) {
     if (!hasPreset(srv, servers)) {
-      toAdd.add(ServerCfg(srv, preset = true, tested = null, enabled = true))
+      toAdd.add(ServerCfg(remoteHostId = rhId, srv, preset = true, tested = null, enabled = true))
     }
   }
   return toAdd
@@ -346,9 +351,9 @@ private suspend fun runServersTest(servers: List<ServerCfg>, m: ChatModel, onUpd
   return fs
 }
 
-private fun saveServers(protocol: ServerProtocol, currServers: MutableState<List<ServerCfg>>, servers: List<ServerCfg>, m: ChatModel, afterSave: () -> Unit = {}) {
+private fun saveServers(rhId: Long?, protocol: ServerProtocol, currServers: MutableState<List<ServerCfg>>, servers: List<ServerCfg>, m: ChatModel, afterSave: () -> Unit = {}) {
   withApi {
-    if (m.controller.setUserProtoServers(protocol, servers)) {
+    if (m.controller.setUserProtoServers(rhId, protocol, servers)) {
       currServers.value = servers
       m.userSMPServersUnsaved.value = null
     }

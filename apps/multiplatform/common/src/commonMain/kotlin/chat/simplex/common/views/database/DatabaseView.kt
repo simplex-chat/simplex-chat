@@ -40,6 +40,7 @@ fun DatabaseView(
   m: ChatModel,
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
+  val currentRemoteHost by remember { chatModel.currentRemoteHost }
   val progressIndicator = remember { mutableStateOf(false) }
   val prefs = m.controller.appPrefs
   val useKeychain = remember { mutableStateOf(prefs.storeDBPassphrase.get()) }
@@ -65,7 +66,10 @@ fun DatabaseView(
   Box(
     Modifier.fillMaxSize(),
   ) {
+    val user = m.currentUser.value
+    val rhId = user?.remoteHostId
     DatabaseLayout(
+      currentRemoteHost = currentRemoteHost,
       progressIndicator.value,
       remember { m.chatRunning }.value != false,
       m.chatDbChanged.value,
@@ -80,7 +84,7 @@ fun DatabaseView(
       chatLastStart,
       appFilesCountAndSize,
       chatItemTTL,
-      m.currentUser.value,
+      user,
       m.users,
       startChat = { startChat(m, chatLastStart, m.chatDbChanged) },
       stopChatAlert = { stopChatAlert(m) },
@@ -91,9 +95,9 @@ fun DatabaseView(
         val oldValue = chatItemTTL.value
         chatItemTTL.value = it
         if (it < oldValue) {
-          setChatItemTTLAlert(m, chatItemTTL, progressIndicator, appFilesCountAndSize)
+          setChatItemTTLAlert(m, rhId, chatItemTTL, progressIndicator, appFilesCountAndSize)
         } else if (it != oldValue) {
-          setCiTTL(m, chatItemTTL, progressIndicator, appFilesCountAndSize)
+          setCiTTL(m, rhId, chatItemTTL, progressIndicator, appFilesCountAndSize)
         }
       },
       showSettingsModal
@@ -117,6 +121,7 @@ fun DatabaseView(
 
 @Composable
 fun DatabaseLayout(
+  currentRemoteHost: RemoteHostInfo?,
   progressIndicator: Boolean,
   runChat: Boolean,
   chatDbChanged: Boolean,
@@ -163,109 +168,113 @@ fun DatabaseLayout(
         }
       }
     )
-    SectionDividerSpaced(maxTopPadding = true)
 
-    SectionView(stringResource(MR.strings.run_chat_section)) {
-      RunChatSetting(runChat, stopped, startChat, stopChatAlert)
-    }
-    SectionTextFooter(
-      if (stopped) {
-        stringResource(MR.strings.you_must_use_the_most_recent_version_of_database)
-      } else {
-        stringResource(MR.strings.stop_chat_to_enable_database_actions)
+    if (currentRemoteHost == null) {
+      SectionDividerSpaced(maxTopPadding = true)
+
+      SectionView(stringResource(MR.strings.run_chat_section)) {
+        RunChatSetting(runChat, stopped, startChat, stopChatAlert)
       }
-    )
-    SectionDividerSpaced()
-
-    SectionView(stringResource(MR.strings.chat_database_section)) {
-      val unencrypted = chatDbEncrypted == false
-      SettingsActionItem(
-        if (unencrypted) painterResource(MR.images.ic_lock_open_right) else if (useKeyChain) painterResource(MR.images.ic_vpn_key_filled)
-        else painterResource(MR.images.ic_lock),
-        stringResource(MR.strings.database_passphrase),
-        click = showSettingsModal() { DatabaseEncryptionView(it) },
-        iconColor = if (unencrypted || (appPlatform.isDesktop && passphraseSaved)) WarningOrange else MaterialTheme.colors.secondary,
-        disabled = operationsDisabled
+      SectionTextFooter(
+        if (stopped) {
+          stringResource(MR.strings.you_must_use_the_most_recent_version_of_database)
+        } else {
+          stringResource(MR.strings.stop_chat_to_enable_database_actions)
+        }
       )
-      if (appPlatform.isDesktop && developerTools) {
+      SectionDividerSpaced()
+
+      SectionView(stringResource(MR.strings.chat_database_section)) {
+        val unencrypted = chatDbEncrypted == false
         SettingsActionItem(
-          painterResource(MR.images.ic_folder_open),
-          stringResource(MR.strings.open_database_folder),
-          ::desktopOpenDatabaseDir,
+          if (unencrypted) painterResource(MR.images.ic_lock_open_right) else if (useKeyChain) painterResource(MR.images.ic_vpn_key_filled)
+          else painterResource(MR.images.ic_lock),
+          stringResource(MR.strings.database_passphrase),
+          click = showSettingsModal() { DatabaseEncryptionView(it) },
+          iconColor = if (unencrypted || (appPlatform.isDesktop && passphraseSaved)) WarningOrange else MaterialTheme.colors.secondary,
+          disabled = operationsDisabled
+        )
+        if (appPlatform.isDesktop && developerTools) {
+          SettingsActionItem(
+            painterResource(MR.images.ic_folder_open),
+            stringResource(MR.strings.open_database_folder),
+            ::desktopOpenDatabaseDir,
+            disabled = operationsDisabled
+          )
+        }
+        SettingsActionItem(
+          painterResource(MR.images.ic_ios_share),
+          stringResource(MR.strings.export_database),
+          click = {
+            if (initialRandomDBPassphrase.get()) {
+              exportProhibitedAlert()
+            } else {
+              exportArchive()
+            }
+          },
+          textColor = MaterialTheme.colors.primary,
+          iconColor = MaterialTheme.colors.primary,
+          disabled = operationsDisabled
+        )
+        SettingsActionItem(
+          painterResource(MR.images.ic_download),
+          stringResource(MR.strings.import_database),
+          { withApi { importArchiveLauncher.launch("application/zip") } },
+          textColor = Color.Red,
+          iconColor = Color.Red,
+          disabled = operationsDisabled
+        )
+        val chatArchiveNameVal = chatArchiveName.value
+        val chatArchiveTimeVal = chatArchiveTime.value
+        val chatLastStartVal = chatLastStart.value
+        if (chatArchiveNameVal != null && chatArchiveTimeVal != null && chatLastStartVal != null) {
+          val title = chatArchiveTitle(chatArchiveTimeVal, chatLastStartVal)
+          SettingsActionItem(
+            painterResource(MR.images.ic_inventory_2),
+            title,
+            click = showSettingsModal { ChatArchiveView(it, title, chatArchiveNameVal, chatArchiveTimeVal) },
+            disabled = operationsDisabled
+          )
+        }
+        SettingsActionItem(
+          painterResource(MR.images.ic_delete_forever),
+          stringResource(MR.strings.delete_database),
+          deleteChatAlert,
+          textColor = Color.Red,
+          iconColor = Color.Red,
           disabled = operationsDisabled
         )
       }
-      SettingsActionItem(
-        painterResource(MR.images.ic_ios_share),
-        stringResource(MR.strings.export_database),
-        click = {
-          if (initialRandomDBPassphrase.get()) {
-            exportProhibitedAlert()
-          } else {
-            exportArchive()
-          }
-        },
-        textColor = MaterialTheme.colors.primary,
-        iconColor = MaterialTheme.colors.primary,
-        disabled = operationsDisabled
-      )
-      SettingsActionItem(
-        painterResource(MR.images.ic_download),
-        stringResource(MR.strings.import_database),
-        { withApi { importArchiveLauncher.launch("application/zip") }},
-        textColor = Color.Red,
-        iconColor = Color.Red,
-        disabled = operationsDisabled
-      )
-      val chatArchiveNameVal = chatArchiveName.value
-      val chatArchiveTimeVal = chatArchiveTime.value
-      val chatLastStartVal = chatLastStart.value
-      if (chatArchiveNameVal != null && chatArchiveTimeVal != null && chatLastStartVal != null) {
-        val title = chatArchiveTitle(chatArchiveTimeVal, chatLastStartVal)
-        SettingsActionItem(
-          painterResource(MR.images.ic_inventory_2),
-          title,
-          click = showSettingsModal { ChatArchiveView(it, title, chatArchiveNameVal, chatArchiveTimeVal) },
-          disabled = operationsDisabled
-        )
-      }
-      SettingsActionItem(
-        painterResource(MR.images.ic_delete_forever),
-        stringResource(MR.strings.delete_database),
-        deleteChatAlert,
-        textColor = Color.Red,
-        iconColor = Color.Red,
-        disabled = operationsDisabled
-      )
-    }
-    SectionDividerSpaced(maxTopPadding = true)
+      SectionDividerSpaced(maxTopPadding = true)
 
-    SectionView(stringResource(MR.strings.files_and_media_section).uppercase()) {
-      val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
-      SectionItemView(
-        deleteAppFilesAndMedia,
-        disabled = deleteFilesDisabled
-      ) {
-        Text(
-          stringResource(if (users.size > 1) MR.strings.delete_files_and_media_for_all_users else MR.strings.delete_files_and_media_all),
-          color = if (deleteFilesDisabled) MaterialTheme.colors.secondary else Color.Red
-        )
+      SectionView(stringResource(MR.strings.files_and_media_section).uppercase()) {
+        val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
+        SectionItemView(
+          deleteAppFilesAndMedia,
+          disabled = deleteFilesDisabled
+        ) {
+          Text(
+            stringResource(if (users.size > 1) MR.strings.delete_files_and_media_for_all_users else MR.strings.delete_files_and_media_all),
+            color = if (deleteFilesDisabled) MaterialTheme.colors.secondary else Color.Red
+          )
+        }
       }
+      val (count, size) = appFilesCountAndSize.value
+      SectionTextFooter(
+        if (count == 0) {
+          stringResource(MR.strings.no_received_app_files)
+        } else {
+          String.format(stringResource(MR.strings.total_files_count_and_size), count, formatBytes(size))
+        }
+      )
     }
-    val (count, size) = appFilesCountAndSize.value
-    SectionTextFooter(
-      if (count == 0) {
-        stringResource(MR.strings.no_received_app_files)
-      } else {
-        String.format(stringResource(MR.strings.total_files_count_and_size), count, formatBytes(size))
-      }
-    )
+
     SectionBottomSpacer()
   }
 }
 
 private fun setChatItemTTLAlert(
-  m: ChatModel, selectedChatItemTTL: MutableState<ChatItemTTL>,
+  m: ChatModel, rhId: Long?, selectedChatItemTTL: MutableState<ChatItemTTL>,
   progressIndicator: MutableState<Boolean>,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
 ) {
@@ -273,7 +282,7 @@ private fun setChatItemTTLAlert(
     title = generalGetString(MR.strings.enable_automatic_deletion_question),
     text = generalGetString(MR.strings.enable_automatic_deletion_message),
     confirmText = generalGetString(MR.strings.delete_messages),
-    onConfirm = { setCiTTL(m, selectedChatItemTTL, progressIndicator, appFilesCountAndSize) },
+    onConfirm = { setCiTTL(m, rhId, selectedChatItemTTL, progressIndicator, appFilesCountAndSize) },
     onDismiss = { selectedChatItemTTL.value = m.chatItemTTL.value },
     destructive = true,
   )
@@ -592,6 +601,7 @@ private fun deleteChat(m: ChatModel, progressIndicator: MutableState<Boolean>) {
 
 private fun setCiTTL(
   m: ChatModel,
+  rhId: Long?,
   chatItemTTL: MutableState<ChatItemTTL>,
   progressIndicator: MutableState<Boolean>,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
@@ -600,7 +610,7 @@ private fun setCiTTL(
   progressIndicator.value = true
   withApi {
     try {
-      m.controller.setChatItemTTL(chatItemTTL.value)
+      m.controller.setChatItemTTL(rhId, chatItemTTL.value)
       // Update model on success
       m.chatItemTTL.value = chatItemTTL.value
       afterSetCiTTL(m, progressIndicator, appFilesCountAndSize)
@@ -623,7 +633,8 @@ private fun afterSetCiTTL(
   withApi {
     try {
       updatingChatsMutex.withLock {
-        val chats = m.controller.apiGetChats()
+        // this is using current remote host on purpose - if it changes during update, it will load correct chats
+        val chats = m.controller.apiGetChats(m.remoteHostId())
         m.updateChats(chats)
       }
     } catch (e: Exception) {
@@ -662,6 +673,7 @@ private fun operationEnded(m: ChatModel, progressIndicator: MutableState<Boolean
 fun PreviewDatabaseLayout() {
   SimpleXTheme {
     DatabaseLayout(
+      currentRemoteHost = null,
       progressIndicator = false,
       runChat = true,
       chatDbChanged = false,

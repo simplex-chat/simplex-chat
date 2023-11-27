@@ -61,6 +61,7 @@ class AudioRecorder {
             await MainActor.run {
                 AppDelegate.keepScreenOn(false)
             }
+            try? av.setCategory(AVAudioSession.Category.soloAmbient)
             logger.error("AudioRecorder startAudioRecording error \(error.localizedDescription)")
             return .error(error.localizedDescription)
         }
@@ -76,6 +77,7 @@ class AudioRecorder {
         }
         recordingTimer = nil
         AppDelegate.keepScreenOn(false)
+        try? AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category.soloAmbient)
     }
 
     private func checkPermission() async -> Bool {
@@ -129,6 +131,9 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
                 AppDelegate.keepScreenOn(true)
                 guard let time = self.audioPlayer?.currentTime else { return }
                 self.onTimer?(time)
+                AudioPlayer.changeAudioSession(true)
+            } else {
+                AudioPlayer.changeAudioSession(false)
             }
         }
     }
@@ -157,12 +162,31 @@ class AudioPlayer: NSObject, AVAudioPlayerDelegate {
         if let player = audioPlayer {
             player.stop()
             AppDelegate.keepScreenOn(false)
+            AudioPlayer.changeAudioSession(false)
         }
         audioPlayer = nil
         if let timer = playbackTimer {
             timer.invalidate()
         }
         playbackTimer = nil
+    }
+
+    static func changeAudioSession(_ playback: Bool) {
+        // When there is a audio recording, setting any other category will disable sound
+        if AVAudioSession.sharedInstance().category == .playAndRecord {
+            return
+        }
+        if playback {
+            if AVAudioSession.sharedInstance().category != .playback {
+                logger.log("AudioSession: playback")
+                try? AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category.playback, options: .duckOthers)
+            }
+        } else {
+            if AVAudioSession.sharedInstance().category != .soloAmbient {
+                logger.log("AudioSession: soloAmbient")
+                try? AVAudioSession.sharedInstance().setCategory(AVAudioSession.Category.soloAmbient)
+            }
+        }
     }
 
     func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {

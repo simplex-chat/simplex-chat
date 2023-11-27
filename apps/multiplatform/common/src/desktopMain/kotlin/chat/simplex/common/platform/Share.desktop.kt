@@ -4,7 +4,7 @@ import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.AnnotatedString
 import chat.simplex.common.model.*
-import chat.simplex.common.views.helpers.getAppFileUri
+import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.common.views.helpers.withApi
 import java.io.File
 import java.net.URI
@@ -26,10 +26,16 @@ actual fun shareFile(text: String, fileSource: CryptoFile) {
   withApi {
     FileChooserLauncher(false) { to: URI? ->
       if (to != null) {
+        val absolutePath = if (fileSource.isAbsolutePath) fileSource.filePath else getAppFilePath(fileSource.filePath)
         if (fileSource.cryptoArgs != null) {
-          decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs, to.path)
+          try {
+            decryptCryptoFile(absolutePath, fileSource.cryptoArgs, to.toFile().absolutePath)
+            showToast(generalGetString(MR.strings.file_saved))
+          } catch (e: Exception) {
+            Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
+          }
         } else {
-          copyFileToFile(File(fileSource.filePath), to) {}
+          copyFileToFile(File(absolutePath), to) {}
         }
       }
     }.launch(fileSource.filePath)

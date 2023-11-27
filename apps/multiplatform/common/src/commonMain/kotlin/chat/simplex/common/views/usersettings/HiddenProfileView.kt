@@ -34,7 +34,7 @@ fun HiddenProfileView(
     saveProfilePassword = { hidePassword ->
       withBGApi {
         try {
-          val u = m.controller.apiHideUser(user.userId, hidePassword)
+          val u = m.controller.apiHideUser(user, hidePassword)
           m.updateUser(u)
           close()
         } catch (e: Exception) {

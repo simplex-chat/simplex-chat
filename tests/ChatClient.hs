@@ -5,7 +5,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TypeApplications #-}
-
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module ChatClient where
@@ -71,8 +70,10 @@ testOpts =
             logServerHosts = False,
             logAgent = Nothing,
             logFile = Nothing,
-            tbqSize = 16
+            tbqSize = 16,
+            highlyAvailable = False
           },
+      deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,
@@ -91,7 +92,7 @@ termSettings :: VirtualTerminalSettings
 termSettings =
   VirtualTerminalSettings
     { virtualType = "xterm",
-      virtualWindowSize = pure C.Size {height = 24, width = 1000},
+      virtualWindowSize = pure C.Size {height = 24, width = 2250},
       virtualEvent = retry,
       virtualInterrupt = retry
     }
@@ -274,7 +275,7 @@ getTermLine cc =
     Just s -> do
       -- remove condition to always echo virtual terminal
       when (printOutput cc) $ do
-      -- when True $ do
+        -- when True $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s

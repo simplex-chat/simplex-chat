@@ -1370,7 +1370,7 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var contactId: Int64
     var localDisplayName: ContactName
     public var profile: LocalProfile
-    public var activeConn: Connection
+    public var activeConn: Connection?
     public var viaGroup: Int64?
     public var contactUsed: Bool
     public var contactStatus: ContactStatus
@@ -1384,10 +1384,10 @@ public struct Contact: Identifiable, Decodable, NamedChat {
 
     public var id: ChatId { get { "@\(contactId)" } }
     public var apiId: Int64 { get { contactId } }
-    public var ready: Bool { get { activeConn.connStatus == .ready } }
+    public var ready: Bool { get { activeConn?.connStatus == .ready } }
     public var active: Bool { get { contactStatus == .active } }
     public var sendMsgEnabled: Bool { get {
-        (ready && active && !(activeConn.connectionStats?.ratchetSyncSendProhibited ?? false))
+        (ready && active && !(activeConn?.connectionStats?.ratchetSyncSendProhibited ?? false))
         || nextSendGrpInv
     } }
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
@@ -1396,14 +1396,18 @@ public struct Contact: Identifiable, Decodable, NamedChat {
     public var image: String? { get { profile.image } }
     public var contactLink: String? { get { profile.contactLink } }
     public var localAlias: String { profile.localAlias }
-    public var verified: Bool { activeConn.connectionCode != nil }
+    public var verified: Bool { activeConn?.connectionCode != nil }
 
     public var directOrUsed: Bool {
-        (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
+        if let activeConn = activeConn {
+            (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
+        } else {
+            true
+        }
     }
 
     public var contactConnIncognito: Bool {
-        activeConn.customUserProfileId != nil
+        activeConn?.customUserProfileId != nil
     }
 
     public func allowsFeature(_ feature: ChatFeature) -> Bool {
@@ -1843,7 +1847,7 @@ public struct GroupMember: Identifiable, Decodable {
     public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
         if !canBeRemoved(groupInfo: groupInfo) { return nil }
         let userRole = groupInfo.membership.memberRole
-        return GroupMemberRole.allCases.filter { $0 <= userRole }
+        return GroupMemberRole.allCases.filter { $0 <= userRole && $0 != .author }
     }
 
     public var memberIncognito: Bool {
@@ -1883,6 +1887,7 @@ public struct GroupMemberIds: Decodable {
 
 public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Decodable {
     case observer = "observer"
+    case author = "author"
     case member = "member"
     case admin = "admin"
     case owner = "owner"
@@ -1892,6 +1897,7 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Dec
     public var text: String {
         switch self {
         case .observer: return NSLocalizedString("observer", comment: "member role")
+        case .author: return NSLocalizedString("author", comment: "member role")
         case .member: return NSLocalizedString("member", comment: "member role")
         case .admin: return NSLocalizedString("admin", comment: "member role")
         case .owner: return NSLocalizedString("owner", comment: "member role")
@@ -1901,9 +1907,10 @@ public enum GroupMemberRole: String, Identifiable, CaseIterable, Comparable, Dec
     private var comparisonValue: Int {
         switch self {
         case .observer: return 0
-        case .member: return 1
-        case .admin: return 2
-        case .owner: return 3
+        case .author: return 1
+        case .member: return 2
+        case .admin: return 3
+        case .owner: return 4
         }
     }
 
@@ -2672,6 +2679,7 @@ public enum MsgDecryptError: String, Decodable {
     case tooManySkipped
     case ratchetEarlier
     case other
+    case ratchetSync
 
     var text: String {
         switch self {
@@ -2679,6 +2687,7 @@ public enum MsgDecryptError: String, Decodable {
         case .tooManySkipped: return NSLocalizedString("Permanent decryption error", comment: "message decrypt error item")
         case .ratchetEarlier: return NSLocalizedString("Decryption error", comment: "message decrypt error item")
         case .other: return NSLocalizedString("Decryption error", comment: "message decrypt error item")
+        case .ratchetSync: return NSLocalizedString("Encryption re-negotiation error", comment: "message decrypt error item")
         }
     }
 }

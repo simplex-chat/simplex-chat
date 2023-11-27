@@ -4,18 +4,34 @@
 #include <stdint.h>
 
 // from the RTS
-void hs_init(int * argc, char **argv[]);
+void hs_init_with_rtsopts(int * argc, char **argv[]);
 
 JNIEXPORT void JNICALL
 Java_chat_simplex_common_platform_CoreKt_initHS(JNIEnv *env, jclass clazz) {
-    hs_init(NULL, NULL);
+#ifdef _WIN32
+    int argc = 4;
+    char *argv[] = {"simplex", "+RTS", "-A16m", "-H64m", NULL}; // non-moving GC is broken on windows with GHC 9.4-9.6.3
+#else
+    int argc = 5;
+    char *argv[] = {"simplex", "+RTS", "-A16m", "-H64m", "-xn", NULL}; // see android/simplex-api.c for details
+#endif
+    char **pargv = argv;
+    hs_init_with_rtsopts(&argc, &pargv);
 }
 
 // from simplex-chat
 typedef long* chat_ctrl;
 
+/*
+   When you start using any new function from Haskell libraries,
+   you have to add the function name to the file libsimplex.dll.def in the root directory.
+   And do the same by adding it into flake.nix file in the root directory,
+   Otherwise, Windows and Android libraries cannot be built.
+*/
+
 extern char *chat_migrate_init(const char *path, const char *key, const char *confirm, chat_ctrl *ctrl);
 extern char *chat_send_cmd(chat_ctrl ctrl, const char *cmd);
+extern char *chat_send_remote_cmd(chat_ctrl ctrl, const int rhId, const char *cmd);
 extern char *chat_recv_msg(chat_ctrl ctrl); // deprecated
 extern char *chat_recv_msg_wait(chat_ctrl ctrl, const int wait);
 extern char *chat_parse_markdown(const char *str);
@@ -94,6 +110,14 @@ JNIEXPORT jstring JNICALL
 Java_chat_simplex_common_platform_CoreKt_chatSendCmd(JNIEnv *env, jclass clazz, jlong controller, jstring msg) {
     const char *_msg = encode_to_utf8_chars(env, msg);
     jstring res = decode_to_utf8_string(env, chat_send_cmd((void*)controller, _msg));
+    (*env)->ReleaseStringUTFChars(env, msg, _msg);
+    return res;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatSendRemoteCmd(JNIEnv *env, jclass clazz, jlong controller, jint rhId, jstring msg) {
+    const char *_msg = encode_to_utf8_chars(env, msg);
+    jstring res = decode_to_utf8_string(env, chat_send_remote_cmd((void*)controller, rhId, _msg));
     (*env)->ReleaseStringUTFChars(env, msg, _msg);
     return res;
 }

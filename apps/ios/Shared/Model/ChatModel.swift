@@ -85,6 +85,8 @@ final class ChatModel: ObservableObject {
     @Published var activeCall: Call?
     @Published var callCommand: WCallCommand?
     @Published var showCallView = false
+    // remote desktop
+    @Published var remoteCtrlSession: RemoteCtrlSession?
     // currently showing QR code
     @Published var connReqInv: String?
     // audio recording and playback
@@ -108,6 +110,10 @@ final class ChatModel: ObservableObject {
 
     var ntfEnablePeriodic: Bool {
         notificationMode == .periodic || ntfEnablePeriodicGroupDefault.get()
+    }
+
+    var activeRemoteCtrl: Bool {
+        remoteCtrlSession?.active ?? false
     }
 
     func getUser(_ userId: Int64) -> User? {
@@ -194,7 +200,7 @@ final class ChatModel: ObservableObject {
 
     func updateContactConnectionStats(_ contact: Contact, _ connectionStats: ConnectionStats) {
         var updatedConn = contact.activeConn
-        updatedConn.connectionStats = connectionStats
+        updatedConn?.connectionStats = connectionStats
         var updatedContact = contact
         updatedContact.activeConn = updatedConn
         updateContact(updatedContact)
@@ -261,7 +267,20 @@ final class ChatModel: ObservableObject {
     func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update previews
         if let i = getChatIndex(cInfo.id) {
-            chats[i].chatItems = [cItem]
+            chats[i].chatItems = switch cInfo {
+            case .group:
+                if let currentPreviewItem = chats[i].chatItems.first {
+                    if cItem.meta.itemTs >= currentPreviewItem.meta.itemTs {
+                        [cItem]
+                    } else {
+                        [currentPreviewItem]
+                    }
+                } else {
+                    [cItem]
+                }
+            default:
+                [cItem]
+            }
             if case .rcvNew = cItem.meta.itemStatus {
                 chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount + 1
                 increaseUnreadCounter(user: currentUser!)
@@ -671,11 +690,17 @@ final class ChatModel: ObservableObject {
     }
 
     func setContactNetworkStatus(_ contact: Contact, _ status: NetworkStatus) {
-        networkStatuses[contact.activeConn.agentConnId] = status
+        if let conn = contact.activeConn {
+            networkStatuses[conn.agentConnId] = status
+        }
     }
 
     func contactNetworkStatus(_ contact: Contact) -> NetworkStatus {
-        networkStatuses[contact.activeConn.agentConnId] ?? .unknown
+        if let conn = contact.activeConn {
+            networkStatuses[conn.agentConnId] ?? .unknown
+        } else {
+            .unknown
+        }
     }
 }
 
@@ -755,4 +780,39 @@ final class GMember: ObservableObject, Identifiable {
     var displayName: String { wrapped.displayName }
     var viewId: String { get { "\(wrapped.id) \(created.timeIntervalSince1970)" } }
     static let sampleData = GMember(GroupMember.sampleData)
+}
+
+struct RemoteCtrlSession {
+    var ctrlAppInfo: CtrlAppInfo?
+    var appVersion: String
+    var sessionState: UIRemoteCtrlSessionState
+
+    func updateState(_ state: UIRemoteCtrlSessionState) -> RemoteCtrlSession {
+        RemoteCtrlSession(ctrlAppInfo: ctrlAppInfo, appVersion: appVersion, sessionState: state)
+    }
+
+    var active: Bool {
+        if case .connected = sessionState { true } else { false }
+    }
+
+    var discovery: Bool {
+        if case .searching = sessionState { true } else { false }
+    }
+
+    var sessionCode: String? {
+        switch sessionState {
+        case let .pendingConfirmation(_, sessionCode): sessionCode
+        case let .connected(_, sessionCode): sessionCode
+        default: nil
+        }
+    }
+}
+
+enum UIRemoteCtrlSessionState {
+    case starting
+    case searching
+    case found(remoteCtrl: RemoteCtrlInfo, compatible: Bool)
+    case connecting(remoteCtrl_: RemoteCtrlInfo?)
+    case pendingConfirmation(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
+    case connected(remoteCtrl: RemoteCtrlInfo, sessionCode: String)
 }

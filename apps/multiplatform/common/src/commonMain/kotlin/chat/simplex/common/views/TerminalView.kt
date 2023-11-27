@@ -47,13 +47,14 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
   val s = composeState.value.message
   if (s.startsWith("/sql") && (!prefPerformLA || !developerTools)) {
     val resp = CR.ChatCmdError(null, ChatError.ChatErrorChat(ChatErrorType.CommandError("Failed reading: empty")))
-    chatModel.addTerminalItem(TerminalItem.cmd(CC.Console(s)))
-    chatModel.addTerminalItem(TerminalItem.resp(resp))
+    chatModel.addTerminalItem(TerminalItem.cmd(null, CC.Console(s)))
+    chatModel.addTerminalItem(TerminalItem.resp(null, resp))
     composeState.value = ComposeState(useLinkPreviews = false)
   } else {
     withApi {
       // show "in progress"
-      chatModel.controller.sendCmd(CC.Console(s))
+      // TODO show active remote host in chat console?
+      chatModel.controller.sendCmd(chatModel.remoteHostId(), CC.Console(s))
       composeState.value = ComposeState(useLinkPreviews = false)
       // hide "in progress"
     }
@@ -139,8 +140,10 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
   val clipboard = LocalClipboardManager.current
   LazyColumn(state = listState, reverseLayout = true) {
     items(reversedTerminalItems) { item ->
+      val rhId = item.remoteHostId
+      val rhIdStr = if (rhId == null) "" else "$rhId "
       Text(
-        "${item.date.toString().subSequence(11, 19)} ${item.label}",
+        "$rhIdStr${item.date.toString().subSequence(11, 19)} ${item.label}",
         style = TextStyle(fontFamily = FontFamily.Monospace, fontSize = 18.sp, color = MaterialTheme.colors.primary),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,

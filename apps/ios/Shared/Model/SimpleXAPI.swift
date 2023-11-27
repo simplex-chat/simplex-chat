@@ -675,6 +675,18 @@ private func connectionErrorAlert(_ r: ChatResponse) -> Alert {
     }
 }
 
+func apiConnectContactViaAddress(incognito: Bool, contactId: Int64) async -> (Contact?, Alert?) {
+    guard let userId = ChatModel.shared.currentUser?.userId else {
+        logger.error("apiConnectContactViaAddress: no current user")
+        return (nil, nil)
+    }
+    let r = await chatSendCmd(.apiConnectContactViaAddress(userId: userId, incognito: incognito, contactId: contactId))
+    if case let .sentInvitationToContact(_, contact, _) = r { return (contact, nil) }
+    logger.error("apiConnectContactViaAddress error: \(responseError(r))")
+    let alert = connectionErrorAlert(r)
+    return (nil, alert)
+}
+
 func apiDeleteChat(type: ChatType, id: Int64, notify: Bool? = nil) async throws {
     let r = await chatSendCmd(.apiDeleteChat(type: type, id: id, notify: notify), bgTask: false)
     if case .direct = type, case .contactDeleted = r { return }
@@ -893,6 +905,46 @@ func apiCancelFile(fileId: Int64) async -> AChatItem? {
     }
 }
 
+func setLocalDeviceName(_ displayName: String) throws {
+    try sendCommandOkRespSync(.setLocalDeviceName(displayName: displayName))
+}
+
+func connectRemoteCtrl(desktopAddress: String) async throws -> (RemoteCtrlInfo?, CtrlAppInfo, String) {
+    let r = await chatSendCmd(.connectRemoteCtrl(xrcpInvitation: desktopAddress))
+    if case let .remoteCtrlConnecting(rc_, ctrlAppInfo, v) = r { return (rc_, ctrlAppInfo, v) }
+    throw r
+}
+
+func findKnownRemoteCtrl() async throws {
+    try await sendCommandOkResp(.findKnownRemoteCtrl)
+}
+
+func confirmRemoteCtrl(_ rcId: Int64) async throws -> (RemoteCtrlInfo?, CtrlAppInfo, String) {
+    let r = await chatSendCmd(.confirmRemoteCtrl(remoteCtrlId: rcId))
+    if case let .remoteCtrlConnecting(rc_, ctrlAppInfo, v) = r { return (rc_, ctrlAppInfo, v) }
+    throw r
+}
+
+func verifyRemoteCtrlSession(_ sessCode: String) async throws -> RemoteCtrlInfo {
+    let r = await chatSendCmd(.verifyRemoteCtrlSession(sessionCode: sessCode))
+    if case let .remoteCtrlConnected(rc) = r { return rc }
+    throw r
+}
+
+func listRemoteCtrls() throws -> [RemoteCtrlInfo] {
+    let r = chatSendCmdSync(.listRemoteCtrls)
+    if case let .remoteCtrlList(rcInfo) = r { return rcInfo }
+    throw r
+}
+
+func stopRemoteCtrl() async throws {
+    try await sendCommandOkResp(.stopRemoteCtrl)
+}
+
+func deleteRemoteCtrl(_ rcId: Int64) async throws {
+    try await sendCommandOkResp(.deleteRemoteCtrl(remoteCtrlId: rcId))
+}
+
 func networkErrorAlert(_ r: ChatResponse) -> Alert? {
     switch r {
     case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TIMEOUT))):
@@ -1017,6 +1069,12 @@ func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
 
 private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     let r = await chatSendCmd(cmd)
+    if case .cmdOk = r { return }
+    throw r
+}
+
+private func sendCommandOkRespSync(_ cmd: ChatCommand) throws {
+    let r = chatSendCmdSync(cmd)
     if case .cmdOk = r { return }
     throw r
 }
@@ -1326,8 +1384,10 @@ func processReceivedMsg(_ res: ChatResponse) async {
         if active(user) && contact.directOrUsed {
             await MainActor.run {
                 m.updateContact(contact)
-                m.dismissConnReqView(contact.activeConn.id)
-                m.removeChat(contact.activeConn.id)
+                if let conn = contact.activeConn {
+                    m.dismissConnReqView(conn.id)
+                    m.removeChat(conn.id)
+                }
             }
         }
         if contact.directOrUsed {
@@ -1340,8 +1400,10 @@ func processReceivedMsg(_ res: ChatResponse) async {
         if active(user) && contact.directOrUsed {
             await MainActor.run {
                 m.updateContact(contact)
-                m.dismissConnReqView(contact.activeConn.id)
-                m.removeChat(contact.activeConn.id)
+                if let conn = contact.activeConn {
+                    m.dismissConnReqView(conn.id)
+                    m.removeChat(conn.id)
+                }
             }
         }
     case let .receivedContactRequest(user, contactRequest):
@@ -1480,9 +1542,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
 
         await MainActor.run {
             m.updateGroup(groupInfo)
-            if let hostContact = hostContact {
-                m.dismissConnReqView(hostContact.activeConn.id)
-                m.removeChat(hostContact.activeConn.id)
+            if let conn = hostContact?.activeConn {
+                m.dismissConnReqView(conn.id)
+                m.removeChat(conn.id)
             }
         }
     case let .groupLinkConnecting(user, groupInfo, hostMember):
@@ -1654,6 +1716,39 @@ func processReceivedMsg(_ res: ChatResponse) async {
         await MainActor.run {
             m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
         }
+    case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible):
+        await MainActor.run {
+            if let sess = m.remoteCtrlSession, case .searching = sess.sessionState {
+                let state = UIRemoteCtrlSessionState.found(remoteCtrl: remoteCtrl, compatible: compatible)
+                m.remoteCtrlSession = RemoteCtrlSession(
+                    ctrlAppInfo: ctrlAppInfo_,
+                    appVersion: appVersion,
+                    sessionState: state
+                )
+            }
+        }
+    case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode):
+        await MainActor.run {
+            let state = UIRemoteCtrlSessionState.pendingConfirmation(remoteCtrl_: remoteCtrl_, sessionCode: sessionCode)
+            m.remoteCtrlSession = m.remoteCtrlSession?.updateState(state)
+        }
+    case let .remoteCtrlConnected(remoteCtrl):
+        // TODO currently it is returned in response to command, so it is redundant
+        await MainActor.run {
+            let state = UIRemoteCtrlSessionState.connected(remoteCtrl: remoteCtrl, sessionCode: m.remoteCtrlSession?.sessionCode ?? "")
+            m.remoteCtrlSession = m.remoteCtrlSession?.updateState(state)
+        }
+    case .remoteCtrlStopped:
+        // This delay is needed to cancel the session that fails on network failure,
+        // e.g. when user did not grant permission to access local network yet.
+        if let sess = m.remoteCtrlSession {
+            m.remoteCtrlSession = nil
+            if case .connected = sess.sessionState {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    switchToLocalSession()
+                }
+            }
+        }
     default:
         logger.debug("unsupported event: \(res.responseType)")
     }
@@ -1664,6 +1759,19 @@ func processReceivedMsg(_ res: ChatResponse) async {
         } else {
             logger.debug("processReceivedMsg: ignoring \(res.responseType), not in call with the contact \(contact.id)")
         }
+    }
+}
+
+func switchToLocalSession() {
+    let m = ChatModel.shared
+    m.remoteCtrlSession = nil
+    do {
+        m.users = try listUsers()
+        try getUserChatData()
+        let statuses = (try apiGetNetworkStatuses()).map { s in (s.agentConnId, s.networkStatus) }
+        m.networkStatuses = Dictionary(uniqueKeysWithValues: statuses)
+    } catch let error {
+        logger.debug("error updating chat data: \(responseError(error))")
     }
 }
 

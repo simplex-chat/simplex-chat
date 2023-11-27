@@ -14,8 +14,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.SharedPreference
+import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.IncognitoView
@@ -24,11 +23,12 @@ import chat.simplex.res.MR
 import java.net.URI
 
 @Composable
-fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
+fun PasteToConnectView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
   val connectionLink = remember { mutableStateOf("") }
   val clipboard = LocalClipboardManager.current
   PasteToConnectLayout(
     chatModel = chatModel,
+    rh = rh,
     incognitoPref = chatModel.controller.appPrefs.incognito,
     connectionLink = connectionLink,
     pasteFromClipboard = {
@@ -41,18 +41,19 @@ fun PasteToConnectView(chatModel: ChatModel, close: () -> Unit) {
 @Composable
 fun PasteToConnectLayout(
   chatModel: ChatModel,
+  rh: RemoteHostInfo?,
   incognitoPref: SharedPreference<Boolean>,
   connectionLink: MutableState<String>,
   pasteFromClipboard: () -> Unit,
   close: () -> Unit
 ) {
   val incognito = remember { mutableStateOf(incognitoPref.get()) }
-
+  val rhId = rh?.remoteHostId
   fun connectViaLink(connReqUri: String) {
     try {
       val uri = URI(connReqUri)
       withApi {
-        planAndConnect(chatModel, uri, incognito = incognito.value, close)
+        planAndConnect(chatModel, rhId, uri, incognito = incognito.value, close)
       }
     } catch (e: RuntimeException) {
       AlertManager.shared.showAlertMsg(
@@ -66,7 +67,7 @@ fun PasteToConnectLayout(
     Modifier.verticalScroll(rememberScrollState()).padding(horizontal = DEFAULT_PADDING),
     verticalArrangement = Arrangement.SpaceBetween,
   ) {
-    AppBarTitle(stringResource(MR.strings.connect_via_link), false)
+    AppBarTitle(stringResource(MR.strings.connect_via_link), hostDevice(rhId), withPadding = false)
 
     Box(Modifier.padding(top = DEFAULT_PADDING, bottom = 6.dp)) {
       TextEditor(
@@ -124,6 +125,7 @@ fun PreviewPasteToConnectTextbox() {
   SimpleXTheme {
     PasteToConnectLayout(
       chatModel = ChatModel,
+      rh = null,
       incognitoPref = SharedPreference({ false }, {}),
       connectionLink = remember { mutableStateOf("") },
       pasteFromClipboard = {},

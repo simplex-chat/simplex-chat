@@ -36,6 +36,9 @@ import Test.Hspec
 defaultPrefs :: Maybe Preferences
 defaultPrefs = Just $ toChatPrefs defaultChatPrefs
 
+aliceDesktopProfile :: Profile
+aliceDesktopProfile = Profile {displayName = "alice_desktop", fullName = "Alice Desktop", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
+
 aliceProfile :: Profile
 aliceProfile = Profile {displayName = "alice", fullName = "Alice", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
@@ -279,8 +282,12 @@ cc <##.. ls = do
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
 
-data ConsoleResponse = ConsoleString String | WithTime String | EndsWith String | StartsWith String
-  deriving (Show)
+data ConsoleResponse
+  = ConsoleString String
+  | WithTime String
+  | EndsWith String
+  | StartsWith String
+  | Predicate (String -> Bool)
 
 instance IsString ConsoleResponse where fromString = ConsoleString
 
@@ -300,9 +307,10 @@ getInAnyOrder f cc ls = do
       WithTime s -> dropTime_ l == Just s
       EndsWith s -> s `isSuffixOf` l
       StartsWith s -> s `isPrefixOf` l
+      Predicate p -> p l
     filterFirst :: (a -> Bool) -> [a] -> [a]
     filterFirst _ [] = []
-    filterFirst p (x:xs)
+    filterFirst p (x : xs)
       | p x = xs
       | otherwise = x : filterFirst p xs
 
@@ -323,6 +331,9 @@ cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 
 ($<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
 (cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine cc) `shouldReturn` line
+
+(^<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
+(cc, p) ^<# line = (dropTime . dropStrPrefix p <$> getTermLine cc) `shouldReturn` line
 
 (⩗) :: HasCallStack => TestCC -> String -> Expectation
 cc ⩗ line = (dropTime . dropReceipt <$> getTermLine cc) `shouldReturn` line
@@ -582,7 +593,7 @@ vRangeStr (VersionRange minVer maxVer) = "(" <> show minVer <> ", " <> show maxV
 linkAnotherSchema :: String -> String
 linkAnotherSchema link
   | "https://simplex.chat/" `isPrefixOf` link =
-    T.unpack $ T.replace "https://simplex.chat/" "simplex:/" $ T.pack link
+      T.unpack $ T.replace "https://simplex.chat/" "simplex:/" $ T.pack link
   | "simplex:/" `isPrefixOf` link =
-    T.unpack $ T.replace "simplex:/" "https://simplex.chat/" $ T.pack link
+      T.unpack $ T.replace "simplex:/" "https://simplex.chat/" $ T.pack link
   | otherwise = error "link starts with neither https://simplex.chat/ nor simplex:/"

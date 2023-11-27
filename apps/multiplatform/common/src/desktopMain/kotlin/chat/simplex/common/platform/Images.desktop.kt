@@ -157,7 +157,7 @@ actual fun ImageBitmap.scale(width: Int, height: Int): ImageBitmap {
 
 // LALAL
 actual fun isImage(uri: URI): Boolean {
-  val path = uri.path.lowercase()
+  val path = uri.toFile().path.lowercase()
   return path.endsWith(".gif") ||
       path.endsWith(".webp") ||
       path.endsWith(".png") ||
@@ -166,13 +166,12 @@ actual fun isImage(uri: URI): Boolean {
 }
 
 actual fun isAnimImage(uri: URI, drawable: Any?): Boolean {
-  val path = uri.path.lowercase()
+  val path = uri.toFile().path.lowercase()
   return path.endsWith(".gif") || path.endsWith(".webp")
 }
 
-@Suppress("NewApi")
 actual fun loadImageBitmap(inputStream: InputStream): ImageBitmap =
-  Image.makeFromEncoded(inputStream.readAllBytes()).toComposeImageBitmap()
+  Image.makeFromEncoded(inputStream.readBytes()).toComposeImageBitmap()
 
 // https://stackoverflow.com/a/68926993
 fun BufferedImage.rotate(angle: Double): BufferedImage {

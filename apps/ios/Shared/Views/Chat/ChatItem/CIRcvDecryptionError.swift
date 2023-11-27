@@ -66,7 +66,7 @@ struct CIRcvDecryptionError: View {
 
     @ViewBuilder private func viewBody() -> some View {
         if case let .direct(contact) = chat.chatInfo,
-           let contactStats = contact.activeConn.connectionStats {
+           let contactStats = contact.activeConn?.connectionStats {
             if contactStats.ratchetSyncAllowed {
                 decryptionErrorItemFixButton(syncSupported: true) {
                     alert = .syncAllowedAlert { syncContactConnection(contact) }
@@ -165,6 +165,8 @@ struct CIRcvDecryptionError: View {
             message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why
         case .other:
             message = Text("\(msgCount) messages failed to decrypt.") + Text("\n") + why
+        case .ratchetSync:
+            message = Text("Encryption re-negotiation failed.")
         }
         return message
     }

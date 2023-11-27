@@ -15,6 +15,7 @@ external fun pipeStdOutToSocket(socketName: String) : Int
 typealias ChatCtrl = Long
 external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Array<Any>
 external fun chatSendCmd(ctrl: ChatCtrl, msg: String): String
+external fun chatSendRemoteCmd(ctrl: ChatCtrl, rhId: Int, msg: String): String
 external fun chatRecvMsg(ctrl: ChatCtrl): String
 external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 external fun chatParseMarkdown(str: String): String
@@ -52,7 +53,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
   } else if (startChat) {
     // If we migrated successfully means previous re-encryption process on database level finished successfully too
     if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)
-    val user = chatController.apiGetActiveUser()
+    val user = chatController.apiGetActiveUser(null)
     if (user == null) {
       chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
       chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)

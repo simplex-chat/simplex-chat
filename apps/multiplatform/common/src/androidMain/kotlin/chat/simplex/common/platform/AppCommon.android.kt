@@ -16,6 +16,8 @@ import kotlin.random.Random
 
 actual val appPlatform = AppPlatform.ANDROID
 
+actual val deviceName = android.os.Build.MODEL
+
 var isAppOnForeground: Boolean = false
 
 @Suppress("ConstantLocale")
