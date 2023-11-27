@@ -14,14 +14,16 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Environment(\.colorScheme) var colorScheme
-    @Binding var doAuthenticate: Bool
-    @Binding var userAuthorized: Bool?
-    @Binding var canConnectCall: Bool
-    @Binding var lastSuccessfulUnlock: TimeInterval?
+    @Environment(\.scenePhase) var scenePhase
+    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
+    @State private var userAuthorized: Bool?
+    @State private var doAuthenticate = false
+    @State private var enteredBackground: TimeInterval? = nil
+    @State private var canConnectCall = false
+    @State private var lastSuccessfulUnlock: TimeInterval? = nil
     @Binding var showInitializationView: Bool
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
-    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_NOTIFICATION_ALERT_SHOWN) private var notificationAlertShown = false
     @State private var showSettings = false
@@ -63,10 +65,6 @@ struct ContentView: View {
         }
         .onAppear {
             if prefPerformLA { requestNtfAuthorization() }
-            initAuthenticate()
-        }
-        .onChange(of: doAuthenticate) { _ in
-            initAuthenticate()
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
         .sheet(isPresented: $showSettings) {
@@ -75,6 +73,44 @@ struct ContentView: View {
         .confirmationDialog("SimpleX Lock mode", isPresented: $showChooseLAMode, titleVisibility: .visible) {
             Button("System authentication") { initialEnableLA() }
             Button("Passcode entry") { showSetPasscode = true }
+        }
+        .onChange(of: scenePhase) { phase in
+            logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
+            switch (phase) {
+            case .background:
+                if CallController.useCallKit() && chatModel.activeCall != nil {
+                    CallController.shared.shouldSuspendChat = true
+                } else {
+                    suspendChat()
+                    BGManager.shared.schedule()
+                }
+                if userAuthorized == true {
+                    enteredBackground = ProcessInfo.processInfo.systemUptime
+                }
+                userAuthorized = false
+                doAuthenticate = false
+                canConnectCall = false
+                NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
+            case .active:
+                if chatModel.doingAuth {
+                    chatModel.doingAuth = false
+                } else {
+                    CallController.shared.shouldSuspendChat = false
+                    let appState = appStateGroupDefault.get()
+                    startChatAndActivate()
+                    if appState.inactive && chatModel.chatRunning == true {
+                        updateChats()
+                        if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
+                            updateCallInvitations()
+                        }
+                    }
+                    doAuthenticate = authenticationExpired()
+                    canConnectCall = !(doAuthenticate && prefPerformLA) || unlockedRecently()
+                    initAuthenticate()
+                }
+            default:
+                break
+            }
         }
     }
 
@@ -89,7 +125,8 @@ struct ContentView: View {
             MigrateToAppGroupView()
         } else if let step = chatModel.onboardingStage {
             if case .onboardingComplete = step,
-               chatModel.currentUser != nil {
+               chatModel.currentUser != nil,
+               userAuthorized == true {
                 mainView()
                 .actionSheet(item: $chatListActionSheet) { sheet in
                     switch sheet {
@@ -193,6 +230,8 @@ struct ContentView: View {
             userAuthorized = false
         } else if doAuthenticate {
             runAuthenticate()
+        } else {
+            userAuthorized = true
         }
     }
 
@@ -285,10 +324,10 @@ struct ContentView: View {
     }
 
     func connectViaUrl() {
-        dismissAllSheets() {
-            let m = ChatModel.shared
-            if let url = m.appOpenUrl {
-                m.appOpenUrl = nil
+        let m = ChatModel.shared
+        if let url = m.appOpenUrl {
+            m.appOpenUrl = nil
+            dismissAllSheets(animated: false) {
                 var path = url.path
                 if (path == "/contact" || path == "/invitation") {
                     path.removeFirst()
@@ -309,6 +348,50 @@ struct ContentView: View {
 
     private func showPlanAndConnectAlert(_ alert: PlanAndConnectAlert) {
         AlertManager.shared.showAlert(planAndConnectAlert(alert, dismiss: false))
+    }
+
+    private func authenticationExpired() -> Bool {
+        if let enteredBackground = enteredBackground {
+            let delay = Double(UserDefaults.standard.integer(forKey: DEFAULT_LA_LOCK_DELAY))
+            return ProcessInfo.processInfo.systemUptime - enteredBackground >= delay
+        } else {
+            return true
+        }
+    }
+
+    private func unlockedRecently() -> Bool {
+        if let lastSuccessfulUnlock = lastSuccessfulUnlock {
+            return ProcessInfo.processInfo.systemUptime - lastSuccessfulUnlock < 2
+        } else {
+            return false
+        }
+    }
+
+    private func updateChats() {
+        do {
+            let chats = try apiGetChats()
+            chatModel.updateChats(with: chats)
+            if let id = chatModel.chatId,
+               let chat = chatModel.getChat(id) {
+                loadChat(chat: chat)
+            }
+            if let ncr = chatModel.ntfContactRequest {
+                chatModel.ntfContactRequest = nil
+                if case let .contactRequest(contactRequest) = chatModel.getChat(ncr.chatId)?.chatInfo {
+                    Task { await acceptContactRequest(incognito: ncr.incognito, contactRequest: contactRequest) }
+                }
+            }
+        } catch let error {
+            logger.error("apiGetChats: cannot update chats \(responseError(error))")
+        }
+    }
+
+    private func updateCallInvitations() {
+        do {
+            try refreshCallInvitations()
+        } catch let error {
+            logger.error("apiGetCallInvitations: cannot update call invitations \(responseError(error))")
+        }
     }
 }
 

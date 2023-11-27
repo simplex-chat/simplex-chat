@@ -37,6 +37,7 @@ struct LocalAuthRequest {
 }
 
 func authenticate(title: LocalizedStringKey? = nil, reason: String, selfDestruct: Bool = false, completed: @escaping (LAResult) -> Void) {
+    ChatModel.shared.doingAuth = true
     logger.debug("DEBUGGING: authenticate")
     switch privacyLocalAuthModeDefault.get() {
     case .system: systemAuthenticate(reason, completed)

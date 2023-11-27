@@ -95,6 +95,8 @@ final class ChatModel: ObservableObject {
     @Published var draftChatId: String?
     // tracks keyboard height via subscription in AppDelegate
     @Published var keyboardHeight: CGFloat = 0
+    // auth
+    @Published var doingAuth = false
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
