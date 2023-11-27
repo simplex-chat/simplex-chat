@@ -492,6 +492,26 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
     func peerConnection(_ connection: RTCPeerConnection, didGenerate candidate: WebRTC.RTCIceCandidate) {
 //        logger.debug("Connection generated candidate \(candidate.debugDescription)")
         activeCall.wrappedValue?.iceCandidates.append(candidate.toCandidate(nil, nil, nil))
+        connection.statistics { (stats: RTCStatisticsReport) in
+            stats.statistics.values.forEach { stat in
+//                logger.debug("Stat \(stat.debugDescription)")
+                if stat.type == "local-candidate",
+                    candidate.sdp.contains("\((stat.values["ip"] as? String ?? "--")) \((stat.values["port"] as? Int)?.description ?? "--")")
+                {
+                    Task {
+                        await self.sendCallResponse(.init(
+                            corrId: nil,
+                            resp: .ice(iceCandidates: compressToBase64(input: encodeJSON([candidate.toCandidate(
+                                RTCIceCandidateType.init(rawValue: stat.values["candidateType"] as! String),
+                                stat.values["protocol"] as? String,
+                                stat.values["relayProtocol"] as? String
+                            )]))),
+                            command: nil)
+                        )
+                    }
+                }
+            }
+        }
     }
 
     func peerConnection(_ connection: RTCPeerConnection, didRemove candidates: [WebRTC.RTCIceCandidate]) {
@@ -518,8 +538,8 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
                    let remoteId = stat.values["remoteCandidateId"] as? String,
                    let localStats = stats.statistics[localId],
                    let remoteStats = stats.statistics[remoteId],
-                   local.sdp.contains("\((localStats.values["ip"] as? String ?? "--")) \((localStats.values["port"] as? String ?? "--"))") &&
-                   remote.sdp.contains("\((remoteStats.values["ip"] as? String ?? "--")) \((remoteStats.values["port"] as? String ?? "--"))")
+                   local.sdp.contains("\((localStats.values["ip"] as? String ?? "--")) \(((localStats.values["port"] as? Int)?.description ?? "--"))") &&
+                   remote.sdp.contains("\((remoteStats.values["ip"] as? String ?? "--")) \(((remoteStats.values["port"] as? Int)?.description ?? "--"))")
                 {
                     Task {
                         await self.sendCallResponse(.init(
