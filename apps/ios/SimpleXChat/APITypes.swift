@@ -613,7 +613,7 @@ public enum ChatResponse: Decodable, Error {
     case remoteCtrlConnecting(remoteCtrl_: RemoteCtrlInfo?, ctrlAppInfo: CtrlAppInfo, appVersion: String)
     case remoteCtrlSessionCode(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
     case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
-    case remoteCtrlStopped
+    case remoteCtrlStopped(rcsState: RemoteCtrlSessionState, rcStopReason: RemoteCtrlStopReason)
     // misc
     case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
     case cmdOk(user: UserRef?)
@@ -1550,6 +1550,13 @@ public enum RemoteCtrlSessionState: Decodable {
     case connecting
     case pendingConfirmation(sessionCode: String)
     case connected(sessionCode: String)
+}
+
+public enum RemoteCtrlStopReason: Decodable {
+    case discoveryFailed(chatError: ChatError)
+    case connectionFailed(chatError: ChatError)
+    case setupFailed(chatError: ChatError)
+    case disconnected
 }
 
 public struct CtrlAppInfo: Decodable {

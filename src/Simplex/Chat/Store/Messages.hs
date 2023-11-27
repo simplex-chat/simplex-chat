@@ -526,12 +526,12 @@ getDirectChatPreviews_ db user@User {userId} = do
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
         LEFT JOIN connections c ON c.contact_id = ct.contact_id
         LEFT JOIN (
-          SELECT contact_id, MAX(chat_item_id) AS MaxId
+          SELECT contact_id, chat_item_id, MAX(created_at)
           FROM chat_items
           GROUP BY contact_id
-        ) MaxIds ON MaxIds.contact_id = ct.contact_id
-        LEFT JOIN chat_items i ON i.contact_id = MaxIds.contact_id
-                               AND i.chat_item_id = MaxIds.MaxId
+        ) LastItems ON LastItems.contact_id = ct.contact_id
+        LEFT JOIN chat_items i ON i.contact_id = LastItems.contact_id
+                               AND i.chat_item_id = LastItems.chat_item_id
         LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
@@ -613,12 +613,12 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
         JOIN group_members mu ON mu.group_id = g.group_id
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
         LEFT JOIN (
-          SELECT group_id, MAX(chat_item_id) AS MaxId
+          SELECT group_id, chat_item_id, MAX(item_ts)
           FROM chat_items
           GROUP BY group_id
-        ) MaxIds ON MaxIds.group_id = g.group_id
-        LEFT JOIN chat_items i ON i.group_id = MaxIds.group_id
-                               AND i.chat_item_id = MaxIds.MaxId
+        ) LastItems ON LastItems.group_id = g.group_id
+        LEFT JOIN chat_items i ON i.group_id = LastItems.group_id
+                               AND i.chat_item_id = LastItems.chat_item_id
         LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
@@ -722,7 +722,7 @@ getDirectChatItemsLast db User {userId} contactId count search = ExceptT $ do
         LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
         LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
         WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
-        ORDER BY i.chat_item_id DESC
+        ORDER BY i.created_at DESC, i.chat_item_id DESC
         LIMIT ?
       |]
       (userId, contactId, search, count)
@@ -752,7 +752,7 @@ getDirectChatAfter_ db User {userId} ct@Contact {contactId} afterChatItemId coun
             LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
             WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
               AND i.chat_item_id > ?
-            ORDER BY i.chat_item_id ASC
+            ORDER BY i.created_at ASC, i.chat_item_id ASC
             LIMIT ?
           |]
           (userId, contactId, search, afterChatItemId, count)
@@ -782,7 +782,7 @@ getDirectChatBefore_ db User {userId} ct@Contact {contactId} beforeChatItemId co
             LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
             WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
               AND i.chat_item_id < ?
-            ORDER BY i.chat_item_id DESC
+            ORDER BY i.created_at DESC, i.chat_item_id DESC
             LIMIT ?
           |]
           (userId, contactId, search, beforeChatItemId, count)
