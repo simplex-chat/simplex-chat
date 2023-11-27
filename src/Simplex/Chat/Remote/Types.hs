@@ -170,6 +170,7 @@ data PlatformEncoding
   deriving (Show, Eq)
 
 localEncoding :: PlatformEncoding
+
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
 localEncoding = PESwift
 #else
