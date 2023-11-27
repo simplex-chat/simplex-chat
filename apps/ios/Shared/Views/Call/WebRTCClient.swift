@@ -429,7 +429,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
             _ = try? await Task.sleep(nanoseconds: stepMs * 1000000)
             t += stepMs
             await action()
-        } while t <= timeoutMs && activeCall.wrappedValue?.connection.iceGatheringState != .complete
+        } while t < timeoutMs && activeCall.wrappedValue?.connection.iceGatheringState != .complete
     }
 }
 
