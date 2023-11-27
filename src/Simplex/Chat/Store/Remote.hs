@@ -8,6 +8,7 @@ module Simplex.Chat.Store.Remote where
 import Control.Monad.Except
 import Data.Int (Int64)
 import Data.Text (Text)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Word (Word16)
 import Database.SQLite.Simple (Only (..))
 import qualified Database.SQLite.Simple as SQL
@@ -17,6 +18,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.RemoteControl.Types
 import UnliftIO
 
@@ -58,11 +60,13 @@ remoteHostQuery =
   |]
 
 toRemoteHost :: (Int64, Text, FilePath, C.APrivateSignKey, C.SignedObject C.Certificate, C.PrivateKeyEd25519, C.KeyHash, C.PublicKeyX25519, Maybe Text, Maybe Text, Maybe Word16) -> RemoteHost
-toRemoteHost (remoteHostId, hostDeviceName, storePath, caKey, C.SignedObject caCert, idPrivKey, hostFingerprint, hostDhPubKey, bindIface, bindAddr, bindPort) =
-  RemoteHost {remoteHostId, hostDeviceName, storePath, hostPairing, bindIface, bindAddr, bindPort}
+toRemoteHost (remoteHostId, hostDeviceName, storePath, caKey, C.SignedObject caCert, idPrivKey, hostFingerprint, hostDhPubKey, ifaceName_, ifaceAddr_, bindPort_) =
+  RemoteHost {remoteHostId, hostDeviceName, storePath, hostPairing, bindAddress_, bindPort_}
   where
     hostPairing = RCHostPairing {caKey, caCert, idPrivKey, knownHost = Just knownHost}
     knownHost = KnownHostPairing {hostFingerprint, hostDhPubKey}
+    bindAddress_ = RemoteCtrlAddress <$> (decodeAddr <$> ifaceAddr_) <*> ifaceName_
+    decodeAddr = either (error "Error parsing TransportHost") id . strDecode . encodeUtf8
 
 updateHostPairing :: DB.Connection -> RemoteHostId -> Text -> C.PublicKeyX25519 -> IO ()
 updateHostPairing db rhId hostDeviceName hostDhPubKey =
@@ -77,8 +81,8 @@ updateHostPairing db rhId hostDeviceName hostDhPubKey =
 
 -- XXX: merge with updateHostPairing?
 -- XXX: add to insertRemoteHost (commit on RHNew, then never change)?
-updateHostBinds :: DB.Connection -> RemoteHostId -> Maybe Text -> Maybe Text -> Maybe Word16 -> IO ()
-updateHostBinds db rhId bindIface bindAddr bindPort = error "TODO: updateHostBinds"
+updateHostBinds :: DB.Connection -> RemoteHostId -> Maybe RemoteCtrlAddress -> Maybe Word16 -> IO ()
+updateHostBinds db rhId addr_ port_ = error "TODO: updateHostBinds"
 
 deleteRemoteHostRecord :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (Only remoteHostId)

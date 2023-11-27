@@ -26,6 +26,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile)
 import Simplex.Messaging.Crypto.SNTRUP761 (KEMHybridSecret)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Transport (TLS (..))
+import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Types
@@ -129,20 +130,24 @@ data RemoteHost = RemoteHost
   { remoteHostId :: RemoteHostId,
     hostDeviceName :: Text,
     storePath :: FilePath,
-    bindIface :: Maybe Text,
-    bindAddr :: Maybe Text,
-    bindPort :: Maybe Word16,
+    bindAddress_ :: Maybe RemoteCtrlAddress,
+    bindPort_ :: Maybe Word16,
     hostPairing :: RCHostPairing
   }
+
+data RemoteCtrlAddress = RemoteCtrlAddress
+  { address :: TransportHost, -- allows any interface when found exactly
+    interface :: Text
+  }
+  deriving (Show)
 
 -- | UI-accessible remote host information
 data RemoteHostInfo = RemoteHostInfo
   { remoteHostId :: RemoteHostId,
     hostDeviceName :: Text,
     storePath :: FilePath,
-    bindIface :: Maybe Text,
-    bindAddr :: Maybe Text,
-    bindPort :: Maybe Word16,
+    bindAddress_ :: Maybe RemoteCtrlAddress,
+    bindPort_ :: Maybe Word16,
     sessionState :: Maybe RemoteHostSessionState
   }
   deriving (Show)
@@ -201,6 +206,8 @@ $(J.deriveJSON (sumTypeJSON $ dropPrefix "RH") ''RHKey)
 $(J.deriveJSON (enumJSON $ dropPrefix "PE") ''PlatformEncoding)
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "RHS") ''RemoteHostSessionState)
+
+$(J.deriveJSON defaultJSON ''RemoteCtrlAddress)
 
 $(J.deriveJSON defaultJSON ''RemoteHostInfo)
 

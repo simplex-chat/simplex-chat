@@ -1968,9 +1968,9 @@ processChatCommand = \case
   SetLocalDeviceName name -> withUser_ $ chatWriteVar localDeviceName name >> ok_
   ListRemoteHosts -> withUser_ $ CRRemoteHostList <$> listRemoteHosts
   SwitchRemoteHost rh_ -> withUser_ $ CRCurrentRemoteHost <$> switchRemoteHost rh_
-  StartRemoteHost rh_ bi ba bp -> withUser_ $ do
-    logError $ tshow (bi, ba, bp)
-    (remoteHost_, inv@RCSignedInvitation {invitation = RCInvitation {port}}) <- startRemoteHost rh_ bi ba bp
+  StartRemoteHost rh_ ca_ bp_ -> withUser_ $ do
+    logError $ tshow (ca_, bp_)
+    (remoteHost_, inv@RCSignedInvitation {invitation = RCInvitation {port}}) <- startRemoteHost rh_ ca_ bp_
     pure CRRemoteHostStarted {remoteHost_, invitation = decodeLatin1 $ strEncode inv, ctrlPort = show port}
   StopRemoteHost rh_ -> withUser_ $ closeRemoteHost rh_ >> ok_
   DeleteRemoteHost rh -> withUser_ $ deleteRemoteHost rh >> ok_
@@ -6190,7 +6190,7 @@ chatCommandP =
       "/set device name " *> (SetLocalDeviceName <$> textP),
       "/list remote hosts" $> ListRemoteHosts,
       "/switch remote host " *> (SwitchRemoteHost <$> ("local" $> Nothing <|> (Just <$> A.decimal))),
-      "/start remote host " *> (StartRemoteHost <$> ("new" $> Nothing <|> (Just <$> ((,) <$> A.decimal <*> (" multicast=" *> onOffP <|> pure False)))) <*> optional (" iface=" *> text1P) <*> optional (" addr=" *> strP) <*> optional (" port=" *> A.decimal)),
+      "/start remote host " *> (StartRemoteHost <$> ("new" $> Nothing <|> (Just <$> ((,) <$> A.decimal <*> (" multicast=" *> onOffP <|> pure False)))) <*> optional (A.space *> remoteCtrlAddressP) <*> optional (" port=" *> A.decimal)),
       "/stop remote host " *> (StopRemoteHost <$> ("new" $> RHNew <|> RHId <$> A.decimal)),
       "/delete remote host " *> (DeleteRemoteHost <$> A.decimal),
       "/store remote file " *> (StoreRemoteFile <$> A.decimal <*> optional (" encrypt=" *> onOffP) <* A.space <*> filePath),
@@ -6264,7 +6264,6 @@ chatCommandP =
       pure GroupProfile {displayName = gName, fullName, description = Nothing, image = Nothing, groupPreferences}
     fullNameP = A.space *> textP <|> pure ""
     textP = safeDecodeUtf8 <$> A.takeByteString
-    text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     pwdP = jsonP <|> (UserPwd . safeDecodeUtf8 <$> A.takeTill (== ' '))
     verifyCodeP = safeDecodeUtf8 <$> A.takeWhile (\c -> isDigit c || c == ' ')
     msgTextP = jsonP <|> textP
@@ -6329,6 +6328,8 @@ chatCommandP =
         (pure Nothing)
     srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
     toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
+    remoteCtrlAddressP = RemoteCtrlAddress <$> ("addr=" *> strP) <*> ("iface=" *> text1P)
+    text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
 
 adminContactReq :: ConnReqContact

@@ -136,8 +136,8 @@ setNewRemoteHostId sseq rhId = do
   where
     err = pure . Left . ChatErrorRemoteHost RHNew
 
-startRemoteHost :: ChatMonad m => Maybe (RemoteHostId, Bool) -> Maybe Text -> Maybe TransportHost -> Maybe Word16 -> m (Maybe RemoteHostInfo, RCSignedInvitation)
-startRemoteHost rh_ iface_ addr_ port_ = do
+startRemoteHost :: ChatMonad m => Maybe (RemoteHostId, Bool) -> Maybe RemoteCtrlAddress -> Maybe Word16 -> m (Maybe RemoteHostInfo, RCSignedInvitation)
+startRemoteHost rh_ ctrlAddress_ port_ = do
   (rhKey, multicast, remoteHost_, pairing) <- case rh_ of
     Just (rhId, multicast) -> do
       rh@RemoteHost {hostPairing} <- withStore $ \db -> getRemoteHost db rhId
@@ -318,8 +318,8 @@ switchRemoteHost rhId_ = do
   rhi_ <$ chatWriteVar currentRemoteHost rhId_
 
 remoteHostInfo :: RemoteHost -> Maybe RemoteHostSessionState -> RemoteHostInfo
-remoteHostInfo RemoteHost {remoteHostId, storePath, hostDeviceName, bindIface, bindAddr, bindPort} sessionState =
-  RemoteHostInfo {remoteHostId, storePath, hostDeviceName, bindIface, bindAddr, bindPort, sessionState}
+remoteHostInfo RemoteHost {remoteHostId, storePath, hostDeviceName, bindAddress_, bindPort_} sessionState =
+  RemoteHostInfo {remoteHostId, storePath, hostDeviceName, bindAddress_, bindPort_, sessionState}
 
 deleteRemoteHost :: ChatMonad m => RemoteHostId -> m ()
 deleteRemoteHost rhId = do

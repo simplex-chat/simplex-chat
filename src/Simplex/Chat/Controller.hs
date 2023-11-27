@@ -427,7 +427,7 @@ data ChatCommand
   | SetGroupTimedMessages GroupName (Maybe Int)
   | SetLocalDeviceName Text
   | ListRemoteHosts
-  | StartRemoteHost (Maybe (RemoteHostId, Bool)) (Maybe Text) (Maybe TransportHost) (Maybe Word16) -- Start new or known remote host with optional multicast for known host
+  | StartRemoteHost (Maybe (RemoteHostId, Bool)) (Maybe RemoteCtrlAddress) (Maybe Word16) -- Start new or known remote host with optional multicast for known host
   | SwitchRemoteHost (Maybe RemoteHostId) -- Switch current remote host
   | StopRemoteHost RHKey -- Shut down a running session
   | DeleteRemoteHost RemoteHostId -- Unregister remote host and remove its data
