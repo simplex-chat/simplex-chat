@@ -508,7 +508,7 @@
     <string name="keychain_allows_to_receive_ntfs">Android Keystore verrà usato per memorizzare in modo sicuro la password dopo il riavvio dell\'app o la modifica della password; consentirà di ricevere le notifiche.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Nota bene</b>: NON potrai recuperare o cambiare la password se la perdi.]]></string>
     <string name="change_database_passphrase_question">Cambiare password del database\?</string>
-    <string name="confirm_new_passphrase">Conferma password nuova…</string>
+    <string name="confirm_new_passphrase">Conferma nuova password…</string>
     <string name="current_passphrase">Password attuale…</string>
     <string name="database_encrypted">Database crittografato!</string>
     <string name="database_passphrase_will_be_updated">La password di crittografia del database verrà aggiornata.</string>
@@ -623,7 +623,7 @@
     <string name="save_servers_button">Salva</string>
     <string name="saved_ICE_servers_will_be_removed">I server WebRTC ICE salvati verranno rimossi.</string>
     <string name="share_link">Condividi link</string>
-    <string name="star_on_github">Stella su GitHub</string>
+    <string name="star_on_github">Dai una stella su GitHub</string>
     <string name="update_onion_hosts_settings_question">Aggiornare l\'impostazione degli host .onion\?</string>
     <string name="network_disable_socks">Usare una connessione internet diretta\?</string>
     <string name="network_use_onion_hosts">Usa gli host .onion</string>
@@ -1382,7 +1382,7 @@
     <string name="remove_passphrase_from_settings">Rimuovere la password dalle impostazioni\?</string>
     <string name="use_random_passphrase">Usa password casuale</string>
     <string name="save_passphrase_in_settings">Salva password nelle impostazioni</string>
-    <string name="setup_database_passphrase">Configura password del database</string>
+    <string name="setup_database_passphrase">Configura la password del database</string>
     <string name="set_database_passphrase">Imposta password del database</string>
     <string name="open_database_folder">Apri cartella del database</string>
     <string name="passphrase_will_be_saved_in_settings">La password verrà conservata nelle impostazioni come testo normale dopo averla cambiata o il riavvio dell\'app.</string>
