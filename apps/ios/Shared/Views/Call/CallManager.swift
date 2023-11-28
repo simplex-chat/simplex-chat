@@ -94,6 +94,8 @@ class CallManager {
             completed()
         } else {
             logger.debug("CallManager.endCall: ending call...")
+            // TODO this command won't be executed because activeCall is assigned nil,
+            // and there is a condition in sendCommandToClient that would prevent its execution.
             m.callCommand = .end
             m.activeCall = nil
             m.showCallView = false

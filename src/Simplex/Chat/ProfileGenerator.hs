@@ -18,10 +18,10 @@ generateRandomProfile = do
     pickNoun adjective n
       | n == 0 = pick nouns
       | otherwise = do
-        noun <- pick nouns
-        if noun == adjective
-          then pickNoun adjective (n - 1)
-          else pure noun
+          noun <- pick nouns
+          if noun == adjective
+            then pickNoun adjective (n - 1)
+            else pure noun
 
 adjectives :: [Text]
 adjectives =

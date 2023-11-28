@@ -12,7 +12,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
-
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat where
@@ -105,7 +104,7 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
-import Simplex.RemoteControl.Invitation (RCSignedInvitation (..), RCInvitation (..))
+import Simplex.RemoteControl.Invitation (RCInvitation (..), RCSignedInvitation (..))
 import System.Exit (ExitCode, exitFailure, exitSuccess)
 import System.FilePath (takeFileName, (</>))
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, stdout)
@@ -113,8 +112,8 @@ import System.Random (randomRIO)
 import Text.Read (readMaybe)
 import UnliftIO.Async
 import UnliftIO.Concurrent (forkFinally, forkIO, mkWeakThreadId, threadDelay)
-import qualified UnliftIO.Exception as E
 import UnliftIO.Directory
+import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose, hSeek, hTell, openFile)
 import UnliftIO.STM
 
@@ -235,8 +234,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   contactMergeEnabled <- newTVarIO True
   pure
     ChatController
-      {
-        firstTime,
+      { firstTime,
         currentUser,
         currentRemoteHost,
         smpAgent,
@@ -445,7 +443,7 @@ processChatCommand = \case
         [] -> pure 1
         users -> do
           when (any (\User {localDisplayName = n} -> n == displayName) users) $
-            throwChatError $ CEUserExists displayName
+            throwChatError (CEUserExists displayName)
           withAgent (\a -> createUser a smp xftp)
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withStore $ \db -> createUserRecordAt db (AgentUserId auId) p True ts
@@ -458,18 +456,18 @@ processChatCommand = \case
       chooseServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> m (NonEmpty (ProtoServerWithAuth p), [ServerCfg p])
       chooseServers protocol
         | sameServers =
-          asks currentUser >>= readTVarIO >>= \case
-            Nothing -> throwChatError CENoActiveUser
-            Just user -> do
-              servers <- withStore' (`getProtocolServers` user)
-              cfg <- asks config
-              pure (activeAgentServers cfg protocol servers, servers)
+            asks currentUser >>= readTVarIO >>= \case
+              Nothing -> throwChatError CENoActiveUser
+              Just user -> do
+                servers <- withStore' (`getProtocolServers` user)
+                cfg <- asks config
+                pure (activeAgentServers cfg protocol servers, servers)
         | otherwise = do
-          defServers <- asks $ defaultServers . config
-          pure (cfgServers protocol defServers, [])
+            defServers <- asks $ defaultServers . config
+            pure (cfgServers protocol defServers, [])
       storeServers user servers =
-        unless (null servers) $
-          withStore $ \db -> overwriteProtocolServers db user servers
+        unless (null servers) . withStore $
+          \db -> overwriteProtocolServers db user servers
       coupleDaysAgo t = (`addUTCTime` t) . fromInteger . negate . (+ (2 * day)) <$> randomRIO (0, day)
       day = 86400
   ListUsers -> CRUsersList <$> withStoreCtx' (Just "ListUsers, getUsersInfo") getUsersInfo
@@ -696,18 +694,18 @@ processChatCommand = \case
           | isVoice mc && not (groupFeatureAllowed SGFVoice gInfo) = notAllowedError GFVoice
           | not (isVoice mc) && isJust file_ && not (groupFeatureAllowed SGFFiles gInfo) = notAllowedError GFFiles
           | otherwise = do
-            (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
-            timed_ <- sndGroupCITimed live gInfo itemTTL
-            (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_ membership
-            (msg@SndMessage {sharedMsgId}, sentToMembers) <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
-            ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
-            withStore' $ \db ->
-              forM_ sentToMembers $ \GroupMember {groupMemberId} ->
-                createGroupSndStatus db (chatItemId' ci) groupMemberId CISSndNew
-            mapM_ (sendGroupFileInline ms sharedMsgId) ft_
-            forM_ (timed_ >>= timedDeleteAt') $
-              startProximateTimedItemThread user (ChatRef CTGroup groupId, chatItemId' ci)
-            pure $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
+              (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
+              timed_ <- sndGroupCITimed live gInfo itemTTL
+              (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_ membership
+              (msg@SndMessage {sharedMsgId}, sentToMembers) <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
+              ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
+              withStore' $ \db ->
+                forM_ sentToMembers $ \GroupMember {groupMemberId} ->
+                  createGroupSndStatus db (chatItemId' ci) groupMemberId CISSndNew
+              mapM_ (sendGroupFileInline ms sharedMsgId) ft_
+              forM_ (timed_ >>= timedDeleteAt') $
+                startProximateTimedItemThread user (ChatRef CTGroup groupId, chatItemId' ci)
+              pure $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
         notAllowedError f = pure $ chatCmdError (Just user) ("feature not allowed " <> T.unpack (groupFeatureNameText f))
         setupSndFileTransfer :: Group -> Int -> m (Maybe (FileInvitation, CIFile 'MDSnd, FileTransferMeta))
         setupSndFileTransfer g@(Group gInfo _) n = forM file_ $ \file -> do
@@ -762,11 +760,11 @@ processChatCommand = \case
       quoteContent qmc ciFile_
         | replaceContent = MCText qTextOrFile
         | otherwise = case qmc of
-          MCImage _ image -> MCImage qTextOrFile image
-          MCFile _ -> MCFile qTextOrFile
-          -- consider same for voice messages
-          -- MCVoice _ voice -> MCVoice qTextOrFile voice
-          _ -> qmc
+            MCImage _ image -> MCImage qTextOrFile image
+            MCFile _ -> MCFile qTextOrFile
+            -- consider same for voice messages
+            -- MCVoice _ voice -> MCVoice qTextOrFile voice
+            _ -> qmc
         where
           -- if the message we're quoting with is one of the "large" MsgContents
           -- we replace the quote's content with MCText
@@ -780,7 +778,7 @@ processChatCommand = \case
             MCUnknown {} -> True
           qText = msgContentText qmc
           getFileName :: CIFile d -> String
-          getFileName CIFile{fileName} = fileName
+          getFileName CIFile {fileName} = fileName
           qFileName = maybe qText (T.pack . getFileName) ciFile_
           qTextOrFile = if T.null qText then qFileName else qText
       xftpSndFileTransfer :: User -> CryptoFile -> Integer -> Int -> ContactOrGroup -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
@@ -804,7 +802,8 @@ processChatCommand = \case
               -- we are not sending files to pending members, same as with inline files
               saveMemberFD m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
                 when ((connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn)) $
-                  withStore' $ \db -> createSndFTDescrXFTP db user (Just m) conn ft fileDescr
+                  withStore' $
+                    \db -> createSndFTDescrXFTP db user (Just m) conn ft fileDescr
               saveMemberFD _ = pure ()
         pure (fInv, ciFile, ft)
       unzipMaybe3 :: Maybe (a, b, c) -> (Maybe a, Maybe b, Maybe c)
@@ -896,9 +895,9 @@ processChatCommand = \case
       withStore (\db -> (,) <$> getContact db user chatId <*> getDirectChatItem db user chatId itemId) >>= \case
         (ct, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
           unless (featureAllowed SCFReactions forUser ct) $
-            throwChatError $ CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
+            throwChatError (CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions))
           unless (ciReactionAllowed ci) $
-            throwChatError $ CECommandError "reaction not allowed - chat item has no content"
+            throwChatError (CECommandError "reaction not allowed - chat item has no content")
           rs <- withStore' $ \db -> getDirectReactions db ct itemSharedMId True
           checkReactionAllowed rs
           (SndMessage {msgId}, _) <- sendDirectContactMessage ct $ XMsgReact itemSharedMId Nothing reaction add
@@ -914,9 +913,9 @@ processChatCommand = \case
       withStore (\db -> (,) <$> getGroup db user chatId <*> getGroupChatItem db user chatId itemId) >>= \case
         (Group g@GroupInfo {membership} ms, CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}}) -> do
           unless (groupFeatureAllowed SGFReactions g) $
-            throwChatError $ CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
+            throwChatError (CECommandError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions))
           unless (ciReactionAllowed ci) $
-            throwChatError $ CECommandError "reaction not allowed - chat item has no content"
+            throwChatError (CECommandError "reaction not allowed - chat item has no content")
           let GroupMember {memberId = itemMemberId} = chatItemMember g ci
           rs <- withStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
           checkReactionAllowed rs
@@ -934,9 +933,9 @@ processChatCommand = \case
     where
       checkReactionAllowed rs = do
         when ((reaction `elem` rs) == add) $
-          throwChatError $ CECommandError $ "reaction already " <> if add then "added" else "removed"
+          throwChatError (CECommandError $ "reaction already " <> if add then "added" else "removed")
         when (add && length rs >= maxMsgReactions) $
-          throwChatError $ CECommandError "too many reactions"
+          throwChatError (CECommandError "too many reactions")
   APIChatRead (ChatRef cType chatId) fromToIds -> withUser $ \_ -> case cType of
     CTDirect -> do
       user <- withStore $ \db -> getUserByContactId db chatId
@@ -1020,13 +1019,13 @@ processChatCommand = \case
             delete ct
               | directOrUsed ct = pure []
               | otherwise =
-                withStore' (\db -> checkContactHasGroups db user ct) >>= \case
-                  Just _ -> pure []
-                  Nothing -> do
-                    conns <- withStore' $ \db -> getContactConnections db userId ct
-                    withStore' (\db -> setContactDeleted db user ct)
-                      `catchChatError` (toView . CRChatError (Just user))
-                    pure $ map aConnId conns
+                  withStore' (\db -> checkContactHasGroups db user ct) >>= \case
+                    Just _ -> pure []
+                    Nothing -> do
+                      conns <- withStore' $ \db -> getContactConnections db userId ct
+                      withStore' (\db -> setContactDeleted db user ct)
+                        `catchChatError` (toView . CRChatError (Just user))
+                      pure $ map aConnId conns
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
     CTDirect -> do
@@ -1174,7 +1173,7 @@ processChatCommand = \case
     (NotificationInfo {ntfConnId, ntfMsgMeta}, msgs) <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
     let ntfMessages = map (\SMP.SMPMsgMeta {msgTs, msgFlags} -> NtfMsgInfo {msgTs = systemToUTCTime msgTs, msgFlags}) msgs
         getMsgTs :: SMP.NMsgMeta -> SystemTime
-        getMsgTs SMP.NMsgMeta{msgTs} = msgTs
+        getMsgTs SMP.NMsgMeta {msgTs} = msgTs
         msgTs' = systemToUTCTime . getMsgTs <$> ntfMsgMeta
         agentConnId = AgentConnId ntfConnId
     user_ <- withStore' (`getUserByAConnId` agentConnId)
@@ -1328,8 +1327,8 @@ processChatCommand = \case
           Just SecurityCode {securityCode}
             | sameVerificationCode code securityCode -> pure ct
             | otherwise -> do
-              withStore' $ \db -> setConnectionVerified db user connId Nothing
-              pure (ct :: Contact) {activeConn = Just $ (conn :: Connection) {connectionCode = Nothing}}
+                withStore' $ \db -> setConnectionVerified db user connId Nothing
+                pure (ct :: Contact) {activeConn = Just $ (conn :: Connection) {connectionCode = Nothing}}
           _ -> pure ct
         pure $ CRContactCode user ct' code
       Nothing -> throwChatError $ CEContactNotActive ct
@@ -1342,8 +1341,8 @@ processChatCommand = \case
           Just SecurityCode {securityCode}
             | sameVerificationCode code securityCode -> pure m
             | otherwise -> do
-              withStore' $ \db -> setConnectionVerified db user connId Nothing
-              pure (m :: GroupMember) {activeConn = Just $ (conn :: Connection) {connectionCode = Nothing}}
+                withStore' $ \db -> setConnectionVerified db user connId Nothing
+                pure (m :: GroupMember) {activeConn = Just $ (conn :: Connection) {connectionCode = Nothing}}
           _ -> pure m
         pure $ CRGroupMemberCode user g m' code
       _ -> throwChatError CEGroupMemberNotActive
@@ -1422,8 +1421,9 @@ processChatCommand = \case
     case conn'_ of
       Just conn' -> pure $ CRConnectionIncognitoUpdated user conn'
       Nothing -> throwChatError CEConnectionIncognitoChangeProhibited
-  APIConnectPlan userId cReqUri -> withUserId userId $ \user -> withChatLock "connectPlan" . procCmd $
-    CRConnectionPlan user <$> connectPlan user cReqUri
+  APIConnectPlan userId cReqUri -> withUserId userId $ \user ->
+    withChatLock "connectPlan" . procCmd $
+      CRConnectionPlan user <$> connectPlan user cReqUri
   APIConnect userId incognito (Just (ACR SCMInvitation cReq)) -> withUserId userId $ \user -> withChatLock "connect" . procCmd $ do
     subMode <- chatReadVar subscriptionMode
     -- [incognito] generate profile to send
@@ -1623,12 +1623,12 @@ processChatCommand = \case
         pure $ CRSentGroupInvitation user gInfo contact member
       Just member@GroupMember {groupMemberId, memberStatus, memberRole = mRole}
         | memberStatus == GSMemInvited -> do
-          unless (mRole == memRole) $ withStore' $ \db -> updateGroupMemberRole db user member memRole
-          withStore' (\db -> getMemberInvitation db user groupMemberId) >>= \case
-            Just cReq -> do
-              sendInvitation member {memberRole = memRole} cReq
-              pure $ CRSentGroupInvitation user gInfo contact member {memberRole = memRole}
-            Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo cName
+            unless (mRole == memRole) $ withStore' $ \db -> updateGroupMemberRole db user member memRole
+            withStore' (\db -> getMemberInvitation db user groupMemberId) >>= \case
+              Just cReq -> do
+                sendInvitation member {memberRole = memRole} cReq
+                pure $ CRSentGroupInvitation user gInfo contact member {memberRole = memRole}
+              Nothing -> throwChatError $ CEGroupCantResendInvitation gInfo cName
         | otherwise -> throwChatError $ CEGroupDuplicateMember cName
   APIJoinGroup groupId -> withUser $ \user@User {userId} -> do
     withChatLock "joinGroup" . procCmd $ do
@@ -1885,21 +1885,21 @@ processChatCommand = \case
         FTSnd ftm@FileTransferMeta {xftpSndFile, cancelled} fts
           | cancelled -> throwChatError $ CEFileCancel fileId "file already cancelled"
           | not (null fts) && all fileCancelledOrCompleteSMP fts ->
-            throwChatError $ CEFileCancel fileId "file transfer is complete"
+              throwChatError $ CEFileCancel fileId "file transfer is complete"
           | otherwise -> do
-            fileAgentConnIds <- cancelSndFile user ftm fts True
-            deleteAgentConnectionsAsync user fileAgentConnIds
-            sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
-            withStore (\db -> getChatRefByFileId db user fileId) >>= \case
-              ChatRef CTDirect contactId -> do
-                contact <- withStore $ \db -> getContact db user contactId
-                void . sendDirectContactMessage contact $ XFileCancel sharedMsgId
-              ChatRef CTGroup groupId -> do
-                Group gInfo ms <- withStore $ \db -> getGroup db user groupId
-                void . sendGroupMessage user gInfo ms $ XFileCancel sharedMsgId
-              _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
-            ci <- withStore $ \db -> getChatItemByFileId db user fileId
-            pure $ CRSndFileCancelled user ci ftm fts
+              fileAgentConnIds <- cancelSndFile user ftm fts True
+              deleteAgentConnectionsAsync user fileAgentConnIds
+              sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
+              withStore (\db -> getChatRefByFileId db user fileId) >>= \case
+                ChatRef CTDirect contactId -> do
+                  contact <- withStore $ \db -> getContact db user contactId
+                  void . sendDirectContactMessage contact $ XFileCancel sharedMsgId
+                ChatRef CTGroup groupId -> do
+                  Group gInfo ms <- withStore $ \db -> getGroup db user groupId
+                  void . sendGroupMessage user gInfo ms $ XFileCancel sharedMsgId
+                _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
+              ci <- withStore $ \db -> getChatItemByFileId db user fileId
+              pure $ CRSndFileCancelled user ci ftm fts
           where
             fileCancelledOrCompleteSMP SndFileTransfer {fileStatus = s} =
               s == FSCancelled || (s == FSComplete && isNothing xftpSndFile)
@@ -1907,23 +1907,23 @@ processChatCommand = \case
           | cancelled -> throwChatError $ CEFileCancel fileId "file already cancelled"
           | rcvFileComplete fileStatus -> throwChatError $ CEFileCancel fileId "file transfer is complete"
           | otherwise -> case xftpRcvFile of
-            Nothing -> do
-              cancelRcvFileTransfer user ftr >>= mapM_ (deleteAgentConnectionAsync user)
-              ci <- withStore $ \db -> getChatItemByFileId db user fileId
-              pure $ CRRcvFileCancelled user ci ftr
-            Just XFTPRcvFile {agentRcvFileId} -> do
-              forM_ (liveRcvFileTransferPath ftr) $ \filePath -> do
-                fsFilePath <- toFSFilePath filePath
-                liftIO $ removeFile fsFilePath `catchAll_` pure ()
-              forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
-                withAgent (`xftpDeleteRcvFile` aFileId)
-              ci <- withStore $ \db -> do
-                liftIO $ do
-                  updateCIFileStatus db user fileId CIFSRcvInvitation
-                  updateRcvFileStatus db fileId FSNew
-                  updateRcvFileAgentId db fileId Nothing
-                getChatItemByFileId db user fileId
-              pure $ CRRcvFileCancelled user ci ftr
+              Nothing -> do
+                cancelRcvFileTransfer user ftr >>= mapM_ (deleteAgentConnectionAsync user)
+                ci <- withStore $ \db -> getChatItemByFileId db user fileId
+                pure $ CRRcvFileCancelled user ci ftr
+              Just XFTPRcvFile {agentRcvFileId} -> do
+                forM_ (liveRcvFileTransferPath ftr) $ \filePath -> do
+                  fsFilePath <- toFSFilePath filePath
+                  liftIO $ removeFile fsFilePath `catchAll_` pure ()
+                forM_ agentRcvFileId $ \(AgentRcvFileId aFileId) ->
+                  withAgent (`xftpDeleteRcvFile` aFileId)
+                ci <- withStore $ \db -> do
+                  liftIO $ do
+                    updateCIFileStatus db user fileId CIFSRcvInvitation
+                    updateRcvFileStatus db fileId FSNew
+                    updateRcvFileAgentId db fileId Nothing
+                  getChatItemByFileId db user fileId
+                pure $ CRRcvFileCancelled user ci ftr
   FileStatus fileId -> withUser $ \user -> do
     ci@(AChatItem _ _ _ ChatItem {file}) <- withStore $ \db -> getChatItemByFileId db user fileId
     case file of
@@ -1965,16 +1965,16 @@ processChatCommand = \case
     let pref = uncurry TimedMessagesGroupPreference $ maybe (FEOff, Just 86400) (\ttl -> (FEOn, Just ttl)) ttl_
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
-  SetLocalDeviceName name -> withUser_ $ chatWriteVar localDeviceName name >> ok_
-  ListRemoteHosts -> withUser_ $ CRRemoteHostList <$> listRemoteHosts
-  SwitchRemoteHost rh_ -> withUser_ $ CRCurrentRemoteHost <$> switchRemoteHost rh_
-  StartRemoteHost rh_ -> withUser_ $ do
+  SetLocalDeviceName name -> chatWriteVar localDeviceName name >> ok_
+  ListRemoteHosts -> CRRemoteHostList <$> listRemoteHosts
+  SwitchRemoteHost rh_ -> CRCurrentRemoteHost <$> switchRemoteHost rh_
+  StartRemoteHost rh_ -> do
     (remoteHost_, inv@RCSignedInvitation {invitation = RCInvitation {port}}) <- startRemoteHost rh_
     pure CRRemoteHostStarted {remoteHost_, invitation = decodeLatin1 $ strEncode inv, ctrlPort = show port}
-  StopRemoteHost rh_ -> withUser_ $ closeRemoteHost rh_ >> ok_
-  DeleteRemoteHost rh -> withUser_ $ deleteRemoteHost rh >> ok_
-  StoreRemoteFile rh encrypted_ localPath -> withUser_ $ CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
-  GetRemoteFile rh rf -> withUser_ $ getRemoteFile rh rf >> ok_
+  StopRemoteHost rh_ -> closeRemoteHost rh_ >> ok_
+  DeleteRemoteHost rh -> deleteRemoteHost rh >> ok_
+  StoreRemoteFile rh encrypted_ localPath -> CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
+  GetRemoteFile rh rf -> getRemoteFile rh rf >> ok_
   ConnectRemoteCtrl inv -> withUser_ $ do
     (remoteCtrl_, ctrlAppInfo) <- connectRemoteCtrlURI inv
     pure CRRemoteCtrlConnecting {remoteCtrl_, ctrlAppInfo, appVersion = currentAppVersion}
@@ -1989,7 +1989,7 @@ processChatCommand = \case
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
     -- simplexmqCommitQ makes iOS builds crash m(
-    let versionInfo = coreVersionInfo "" -- $(simplexmqCommitQ)
+    let versionInfo = coreVersionInfo ""
     chatMigrations <- map upMigration <$> withStore' (Migrations.getCurrent . DB.conn)
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
@@ -2136,7 +2136,7 @@ processChatCommand = \case
       xftpCfg <- readTVarIO =<< asks userXFTPFileConfig
       fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cfArgs
       when (fromInteger fileSize > maxFileSize) $ throwChatError $ CEFileSize f
-      let chunks = - ((- fileSize) `div` fileChunkSize)
+      let chunks = -((-fileSize) `div` fileChunkSize)
           fileInline = inlineFileMode mc inlineFiles chunks n
           fileMode = case xftpCfg of
             Just cfg
@@ -2155,18 +2155,18 @@ processChatCommand = \case
     updateProfile_ user@User {profile = p@LocalProfile {displayName = n}} p'@Profile {displayName = n'} updateUser
       | p' == fromLocalProfile p = pure $ CRUserProfileNoChange user
       | otherwise = do
-        when (n /= n') $ checkValidName n'
-        -- read contacts before user update to correctly merge preferences
-        -- [incognito] filter out contacts with whom user has incognito connections
-        contacts <-
-          filter (\ct -> contactReady ct && contactActive ct && not (contactConnIncognito ct))
-            <$> withStore' (`getUserContacts` user)
-        user' <- updateUser
-        asks currentUser >>= atomically . (`writeTVar` Just user')
-        withChatLock "updateProfile" . procCmd $ do
-          ChatConfig {logLevel} <- asks config
-          summary <- foldM (processAndCount user' logLevel) (UserProfileUpdateSummary 0 0 0 []) contacts
-          pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' summary
+          when (n /= n') $ checkValidName n'
+          -- read contacts before user update to correctly merge preferences
+          -- [incognito] filter out contacts with whom user has incognito connections
+          contacts <-
+            filter (\ct -> contactReady ct && contactActive ct && not (contactConnIncognito ct))
+              <$> withStore' (`getUserContacts` user)
+          user' <- updateUser
+          asks currentUser >>= atomically . (`writeTVar` Just user')
+          withChatLock "updateProfile" . procCmd $ do
+            ChatConfig {logLevel} <- asks config
+            summary <- foldM (processAndCount user' logLevel) (UserProfileUpdateSummary 0 0 0 []) contacts
+            pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' summary
       where
         processAndCount user' ll s@UserProfileUpdateSummary {notChanged, updateSuccesses, updateFailures, changedContacts = cts} ct = do
           let mergedProfile = userProfileToSend user Nothing $ Just ct
@@ -2187,16 +2187,16 @@ processChatCommand = \case
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
       | contactUserPrefs == contactUserPrefs' = pure $ CRContactPrefsUpdated user ct ct
       | otherwise = do
-        assertDirectAllowed user MDSnd ct XInfo_
-        ct' <- withStore' $ \db -> updateContactUserPreferences db user ct contactUserPrefs'
-        incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
-        let mergedProfile = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct)
-            mergedProfile' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
-        when (mergedProfile' /= mergedProfile) $
-          withChatLock "updateProfile" $ do
-            void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchChatError` (toView . CRChatError (Just user))
-            when (directOrUsed ct') $ createSndFeatureItems user ct ct'
-        pure $ CRContactPrefsUpdated user ct ct'
+          assertDirectAllowed user MDSnd ct XInfo_
+          ct' <- withStore' $ \db -> updateContactUserPreferences db user ct contactUserPrefs'
+          incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
+          let mergedProfile = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct)
+              mergedProfile' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
+          when (mergedProfile' /= mergedProfile) $
+            withChatLock "updateProfile" $ do
+              void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchChatError` (toView . CRChatError (Just user))
+              when (directOrUsed ct') $ createSndFeatureItems user ct ct'
+          pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> m ChatResponse
     runUpdateGroupProfile user (Group g@GroupInfo {groupProfile = p@GroupProfile {displayName = n}} ms) p'@GroupProfile {displayName = n'} = do
       assertUserGroupRole g GROwner
@@ -2241,15 +2241,15 @@ processChatCommand = \case
           Nothing -> throwChatError CENoCurrentCall
           Just call@Call {contactId}
             | ctId == contactId -> do
-              call_ <- action user ct call
-              case call_ of
-                Just call' -> do
-                  unless (isRcvInvitation call') $ withStore' $ \db -> deleteCalls db user ctId
-                  atomically $ TM.insert ctId call' calls
-                _ -> do
-                  withStore' $ \db -> deleteCalls db user ctId
-                  atomically $ TM.delete ctId calls
-              ok user
+                call_ <- action user ct call
+                case call_ of
+                  Just call' -> do
+                    unless (isRcvInvitation call') $ withStore' $ \db -> deleteCalls db user ctId
+                    atomically $ TM.insert ctId call' calls
+                  _ -> do
+                    withStore' $ \db -> deleteCalls db user ctId
+                    atomically $ TM.delete ctId calls
+                ok user
             | otherwise -> throwChatError $ CECallContact contactId
     withServerProtocol :: ProtocolTypeI p => SProtocolType p -> (UserProtocol p => m a) -> m a
     withServerProtocol p action = case userProtocol p of
@@ -2314,12 +2314,12 @@ processChatCommand = \case
     setUserPrivacy :: User -> User -> m ChatResponse
     setUserPrivacy user@User {userId} user'@User {userId = userId'}
       | userId == userId' = do
-        asks currentUser >>= atomically . (`writeTVar` Just user')
-        withStore' (`updateUserPrivacy` user')
-        pure $ CRUserPrivacy {user = user', updatedUser = user'}
+          asks currentUser >>= atomically . (`writeTVar` Just user')
+          withStore' (`updateUserPrivacy` user')
+          pure $ CRUserPrivacy {user = user', updatedUser = user'}
       | otherwise = do
-        withStore' (`updateUserPrivacy` user')
-        pure $ CRUserPrivacy {user, updatedUser = user'}
+          withStore' (`updateUserPrivacy` user')
+          pure $ CRUserPrivacy {user, updatedUser = user'}
     checkDeleteChatUser :: User -> m ()
     checkDeleteChatUser user@User {userId} = do
       when (activeUser user) $ throwChatError (CECantDeleteActiveUser userId)
@@ -2353,13 +2353,13 @@ processChatCommand = \case
         Just (RcvDirectMsgConnection conn ct_) -> do
           let Connection {connStatus, contactConnInitiated} = conn
           if
-              | connStatus == ConnNew && contactConnInitiated ->
-                  pure $ CPInvitationLink ILPOwnLink
-              | not (connReady conn) ->
-                  pure $ CPInvitationLink (ILPConnecting ct_)
-              | otherwise -> case ct_ of
-                  Just ct -> pure $ CPInvitationLink (ILPKnown ct)
-                  Nothing -> throwChatError $ CEInternalError "ready RcvDirectMsgConnection connection should have associated contact"
+            | connStatus == ConnNew && contactConnInitiated ->
+                pure $ CPInvitationLink ILPOwnLink
+            | not (connReady conn) ->
+                pure $ CPInvitationLink (ILPConnecting ct_)
+            | otherwise -> case ct_ of
+                Just ct -> pure $ CPInvitationLink (ILPKnown ct)
+                Nothing -> throwChatError $ CEInternalError "ready RcvDirectMsgConnection connection should have associated contact"
         Just _ -> throwChatError $ CECommandError "found connection entity is not RcvDirectMsgConnection"
       where
         cReqSchemas :: (ConnReqInvitation, ConnReqInvitation)
@@ -2421,7 +2421,7 @@ processChatCommand = \case
 assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =
   unless (allowedChatEvent || anyDirectOrUsed ct) . unlessM directMessagesAllowed $
-    throwChatError $ CEDirectMessagesProhibited dir ct
+    throwChatError (CEDirectMessagesProhibited dir ct)
   where
     directMessagesAllowed = any (groupFeatureAllowed' SGFDirectMessages) <$> withStore' (\db -> getContactGroupPreferences db user ct)
     allowedChatEvent = case event of
@@ -2619,14 +2619,14 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
       filePath <- getRcvFilePath fileId filePath_ fName True
       inline <- receiveInline
       if
-          | inline -> do
+        | inline -> do
             -- accepting inline
             ci <- withStoreCtx (Just "acceptFile, acceptRcvInlineFT") $ \db -> acceptRcvInlineFT db user fileId filePath
             sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
             send $ XFileAcptInv sharedMsgId Nothing fName
             pure ci
-          | fileInline == Just IFMSent -> throwChatError $ CEFileAlreadyReceiving fName
-          | otherwise -> do
+        | fileInline == Just IFMSent -> throwChatError $ CEFileAlreadyReceiving fName
+        | otherwise -> do
             -- accepting via a new connection
             subMode <- chatReadVar subscriptionMode
             connIds <- createAgentConnectionAsync user cmdFunction True SCMInvitation subMode
@@ -2638,7 +2638,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
         rcvInline_ /= Just False
           && fileInline == Just IFMOffer
           && ( fileSize <= fileChunkSize * receiveChunks
-                 || (rcvInline_ == Just True && fileSize <= fileChunkSize * offerChunks)
+                || (rcvInline_ == Just True && fileSize <= fileChunkSize * offerChunks)
              )
 
 receiveViaCompleteFD :: ChatMonad m => User -> FileTransferId -> RcvFileDescr -> Maybe CryptoFileArgs -> m ()
@@ -2794,7 +2794,7 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
   rs <- withAgent $ \a -> agentBatchSubscribe a conns
   -- send connection events to view
   contactSubsToView rs cts ce
--- TODO possibly, we could either disable these events or replace with less noisy for API
+  -- TODO possibly, we could either disable these events or replace with less noisy for API
   contactLinkSubsToView rs ucs
   groupSubsToView rs gs ms ce
   sndFileSubsToView rs sfts
@@ -2865,13 +2865,13 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
           toView . CRContactSubSummary user $ map (uncurry ContactSubStatus) cRs
           when ce $ mapM_ (toView . uncurry (CRContactSubError user)) cErrors
         notifyAPI = toView . CRNetworkStatuses (Just user) . map (uncurry ConnNetworkStatus)
-        statuses = M.foldrWithKey' addStatus [] cts 
+        statuses = M.foldrWithKey' addStatus [] cts
           where
             addStatus :: ConnId -> Contact -> [(AgentConnId, NetworkStatus)] -> [(AgentConnId, NetworkStatus)]
             addStatus _ Contact {activeConn = Nothing} nss = nss
             addStatus connId Contact {activeConn = Just Connection {agentConnId}} nss =
               let ns = (agentConnId, netStatus $ resultErr connId rs)
-              in ns : nss
+               in ns : nss
             netStatus :: Maybe ChatError -> NetworkStatus
             netStatus = maybe NSConnected $ NSError . errorNetworkStatus
             errorNetworkStatus :: ChatError -> String
@@ -2879,7 +2879,7 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
               ChatErrorAgent (BROKER _ NETWORK) _ -> "network"
               ChatErrorAgent (SMP SMP.AUTH) _ -> "contact deleted"
               e -> show e
--- TODO possibly below could be replaced with less noisy events for API
+    -- TODO possibly below could be replaced with less noisy events for API
     contactLinkSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId UserContact -> m ()
     contactLinkSubsToView rs = toView . CRUserContactSubSummary user . map (uncurry UserContactSubStatus) . resultsFor rs
     groupSubsToView :: Map ConnId (Either AgentErrorType ()) -> [Group] -> Map ConnId GroupMember -> Bool -> m ()
@@ -2903,9 +2903,9 @@ subscribeUserConnections onlyNeeded agentBatchSubscribe user@User {userId} = do
             groupEvent
               | memberStatus membership == GSMemInvited = CRGroupInvitation user g
               | all (\GroupMember {activeConn} -> isNothing activeConn) members =
-                if memberActive membership
-                  then CRGroupEmpty user g
-                  else CRGroupRemoved user g
+                  if memberActive membership
+                    then CRGroupEmpty user g
+                    else CRGroupRemoved user g
               | otherwise = CRGroupSubscribed user g
     sndFileSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId SndFileTransfer -> m ()
     sndFileSubsToView rs sfts = do
@@ -2977,11 +2977,11 @@ cleanupManager = do
           `catchChatError` (toView . CRChatError (Just user))
     cleanupMessages = do
       ts <- liftIO getCurrentTime
-      let cutoffTs = addUTCTime (- (30 * nominalDay)) ts
+      let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
       withStoreCtx' (Just "cleanupManager, deleteOldMessages") (`deleteOldMessages` cutoffTs)
     cleanupProbes = do
       ts <- liftIO getCurrentTime
-      let cutoffTs = addUTCTime (- (14 * nominalDay)) ts
+      let cutoffTs = addUTCTime (-(14 * nominalDay)) ts
       withStore' (`deleteOldProbes` cutoffTs)
 
 startProximateTimedItemThread :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m ()
@@ -3159,13 +3159,13 @@ processAgentMsgSndFile _corrId aFileId msg =
             _ -> pure () -- TODO error?
         SFERR e
           | temporaryAgentError e ->
-            throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
+              throwChatError $ CEXFTPSndFile fileId (AgentSndFileId aFileId) e
           | otherwise -> do
-            ci <- withStore $ \db -> do
-              liftIO $ updateFileCancelled db user fileId CIFSSndError
-              getChatItemByFileId db user fileId
-            withAgent (`xftpDeleteSndFileInternal` aFileId)
-            toView $ CRSndFileError user ci
+              ci <- withStore $ \db -> do
+                liftIO $ updateFileCancelled db user fileId CIFSSndError
+                getChatItemByFileId db user fileId
+              withAgent (`xftpDeleteSndFileInternal` aFileId)
+              toView $ CRSndFileError user ci
       where
         fileDescrText :: FilePartyI p => ValidFileDescription p -> T.Text
         fileDescrText = safeDecodeUtf8 . strEncode
@@ -3220,13 +3220,13 @@ processAgentMsgRcvFile _corrId aFileId msg =
               toView $ CRRcvFileComplete user ci
         RFERR e
           | temporaryAgentError e ->
-            throwChatError $ CEXFTPRcvFile fileId (AgentRcvFileId aFileId) e
+              throwChatError $ CEXFTPRcvFile fileId (AgentRcvFileId aFileId) e
           | otherwise -> do
-            ci <- withStore $ \db -> do
-              liftIO $ updateFileCancelled db user fileId CIFSRcvError
-              getChatItemByFileId db user fileId
-            agentXFTPDeleteRcvFile aFileId fileId
-            toView $ CRRcvFileError user ci e
+              ci <- withStore $ \db -> do
+                liftIO $ updateFileCancelled db user fileId CIFSRcvError
+                getChatItemByFileId db user fileId
+              agentXFTPDeleteRcvFile aFileId fileId
+              toView $ CRRcvFileError user ci e
 
 processAgentMessageConn :: forall m. ChatMonad m => User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
 processAgentMessageConn user _ agentConnId END =
@@ -3504,18 +3504,18 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             case chatMsgEvent of
               XGrpAcpt memId
                 | sameMemberId memId m -> do
-                  withStore $ \db -> liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
-                  -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-                  allowAgentConnectionAsync user conn' confId XOk
+                    withStore $ \db -> liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
+                    -- [async agent commands] no continuation needed, but command should be asynchronous for stability
+                    allowAgentConnectionAsync user conn' confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
               _ -> messageError "CONF from invited member must have x.grp.acpt"
           _ ->
             case chatMsgEvent of
               XGrpMemInfo memId _memProfile
                 | sameMemberId memId m -> do
-                  -- TODO update member profile
-                  -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-                  allowAgentConnectionAsync user conn' confId $ XGrpMemInfo membership.memberId (fromLocalProfile $ memberProfile membership)
+                    -- TODO update member profile
+                    -- [async agent commands] no continuation needed, but command should be asynchronous for stability
+                    allowAgentConnectionAsync user conn' confId $ XGrpMemInfo membership.memberId (fromLocalProfile $ memberProfile membership)
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
               _ -> messageError "CONF from member must have x.grp.mem.info"
       INFO connInfo -> do
@@ -3524,8 +3524,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         case chatMsgEvent of
           XGrpMemInfo memId _memProfile
             | sameMemberId memId m -> do
-              -- TODO update member profile
-              pure ()
+                -- TODO update member profile
+                pure ()
             | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
           XInfo _ -> pure () -- sent when connecting via group link
           XOk -> pure ()
@@ -3670,15 +3670,16 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             forM_ (forwardedGroupMsg chatMsg) $ \chatMsg' -> do
               ChatConfig {highlyAvailable} <- asks config
               -- members introduced to this invited member
-              introducedMembers <- if memberCategory m == GCInviteeMember
-                then withStore' $ \db -> getForwardIntroducedMembers db user m highlyAvailable
-                else pure []
+              introducedMembers <-
+                if memberCategory m == GCInviteeMember
+                  then withStore' $ \db -> getForwardIntroducedMembers db user m highlyAvailable
+                  else pure []
               -- invited members to which this member was introduced
               invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db user m highlyAvailable
               let ms = introducedMembers <> invitedMembers
                   msg = XGrpMsgForward m.memberId chatMsg' brokerTs
-              unless (null ms) $
-                void $ sendGroupMessage user gInfo ms msg
+              unless (null ms) . void $
+                sendGroupMessage user gInfo ms msg
       RCVD msgMeta msgRcpt ->
         withAckMessage' agentConnId conn msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
@@ -3748,11 +3749,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     mdeUpdatedCI :: (MsgDecryptError, Word32) -> CChatItem c -> Maybe (ChatItem c 'MDRcv, CIContent 'MDRcv)
     mdeUpdatedCI (mde', n') (CChatItem _ ci@ChatItem {content = CIRcvDecryptionError mde n})
       | mde == mde' = case mde of
-        MDERatchetHeader -> r (n + n')
-        MDETooManySkipped -> r n' -- the numbers are not added as sequential MDETooManySkipped will have it incremented by 1
-        MDERatchetEarlier -> r (n + n')
-        MDEOther -> r (n + n')
-        MDERatchetSync -> r 0
+          MDERatchetHeader -> r (n + n')
+          MDETooManySkipped -> r n' -- the numbers are not added as sequential MDETooManySkipped will have it incremented by 1
+          MDERatchetEarlier -> r (n + n')
+          MDEOther -> r (n + n')
+          MDERatchetSync -> r 0
       | otherwise = Nothing
       where
         r n'' = Just (ci, CIRcvDecryptionError mde n'')
@@ -3770,9 +3771,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             -- TODO save XFileAcpt message
             XFileAcpt name
               | name == fileName -> do
-                withStore' $ \db -> updateSndFileStatus db ft FSAccepted
-                -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-                allowAgentConnectionAsync user conn' confId XOk
+                  withStore' $ \db -> updateSndFileStatus db ft FSAccepted
+                  -- [async agent commands] no continuation needed, but command should be asynchronous for stability
+                  allowAgentConnectionAsync user conn' confId XOk
               | otherwise -> messageError "x.file.acpt: fileName is different from expected"
             _ -> messageError "CONF from file connection must have x.file.acpt"
         CON -> do
@@ -3965,8 +3966,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       case cmdData_ of
         Just cmdData@CommandData {cmdId, cmdConnId = Just cmdConnId', cmdFunction}
           | connId == cmdConnId' && (agentMsgTag == commandExpectedResponse cmdFunction || agentMsgTag == APCT SAEConn ERR_) -> do
-            withStore' $ \db -> deleteCommand db user cmdId
-            action cmdData
+              withStore' $ \db -> deleteCommand db user cmdId
+              action cmdData
           | otherwise -> err cmdId $ "not matching connection id or unexpected response, corrId = " <> show corrId
         Just CommandData {cmdId, cmdConnId = Nothing} -> err cmdId $ "no command connection id, corrId = " <> show corrId
         Nothing -> throwChatError . CEAgentCommandError $ "command not found, corrId = " <> show corrId
@@ -4048,9 +4049,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           -- sendProbe -> sendProbeHashes (currently)
           -- sendProbeHashes -> sendProbe (reversed - change order in code, may add delay)
           sendProbe probe
-          cs <- if doProbeContacts
-            then map COMContact <$> withStore' (\db -> getMatchingContacts db user ct)
-            else pure []
+          cs <-
+            if doProbeContacts
+              then map COMContact <$> withStore' (\db -> getMatchingContacts db user ct)
+              else pure []
           ms <- map COMGroupMember <$> withStore' (\db -> getMatchingMembers db user ct)
           sendProbeHashes (cs <> ms) probe probeId
         else sendProbe . Probe =<< liftIO (encodedRandomBytes gVar 32)
@@ -4275,29 +4277,29 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       | isVoice content && not (groupFeatureAllowed SGFVoice gInfo) = rejected GFVoice
       | not (isVoice content) && isJust fInv_ && not (groupFeatureAllowed SGFFiles gInfo) = rejected GFFiles
       | otherwise = do
-        -- TODO integrity message check
-        -- check if message moderation event was received ahead of message
-        let timed_ = rcvGroupCITimed gInfo itemTTL
-            live = fromMaybe False live_
-        withStore' (\db -> getCIModeration db user gInfo memberId sharedMsgId_) >>= \case
-          Just ciModeration -> do
-            applyModeration timed_ live ciModeration
-            withStore' $ \db -> deleteCIModeration db gInfo memberId sharedMsgId_
-          Nothing -> createItem timed_ live
+          -- TODO integrity message check
+          -- check if message moderation event was received ahead of message
+          let timed_ = rcvGroupCITimed gInfo itemTTL
+              live = fromMaybe False live_
+          withStore' (\db -> getCIModeration db user gInfo memberId sharedMsgId_) >>= \case
+            Just ciModeration -> do
+              applyModeration timed_ live ciModeration
+              withStore' $ \db -> deleteCIModeration db gInfo memberId sharedMsgId_
+            Nothing -> createItem timed_ live
       where
         rejected f = void $ newChatItem (CIRcvGroupFeatureRejected f) Nothing Nothing False
         ExtMsgContent content fInv_ itemTTL live_ = mcExtMsgContent mc
         applyModeration timed_ live CIModeration {moderatorMember = moderator@GroupMember {memberRole = moderatorRole}, createdByMsgId, moderatedAt}
           | moderatorRole < GRAdmin || moderatorRole < memberRole =
-            createItem timed_ live
+              createItem timed_ live
           | groupFeatureAllowed SGFFullDelete gInfo = do
-            ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs CIRcvModerated Nothing timed_ False
-            ci' <- withStore' $ \db -> updateGroupChatItemModerated db user gInfo ci moderator moderatedAt
-            toView $ CRNewChatItem user $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci'
+              ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs CIRcvModerated Nothing timed_ False
+              ci' <- withStore' $ \db -> updateGroupChatItemModerated db user gInfo ci moderator moderatedAt
+              toView $ CRNewChatItem user $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci'
           | otherwise = do
-            file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
-            ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs (CIRcvMsgContent content) (snd <$> file_) timed_ False
-            toView =<< markGroupCIDeleted user gInfo ci createdByMsgId False (Just moderator) moderatedAt
+              file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
+              ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs (CIRcvMsgContent content) (snd <$> file_) timed_ False
+              toView =<< markGroupCIDeleted user gInfo ci createdByMsgId False (Just moderator) moderatedAt
         createItem timed_ live = do
           file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
           newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ live
@@ -4366,7 +4368,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           _ -> messageError "x.msg.del: message of another member without memberId"
         checkRole GroupMember {memberRole} a
           | senderRole < GRAdmin || senderRole < memberRole =
-            messageError "x.msg.del: message of another member with insufficient member permissions"
+              messageError "x.msg.del: message of another member with insufficient member permissions"
           | otherwise = a
         delete :: MsgDirectionI d => ChatItem 'CTGroup d -> Maybe GroupMember -> m ChatResponse
         delete ci byGroupMember
@@ -4619,17 +4621,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     processContactProfileUpdate :: Contact -> Profile -> Bool -> m Contact
     processContactProfileUpdate c@Contact {profile = p} p' createItems
       | fromLocalProfile p /= p' = do
-        c' <- withStore $ \db ->
-          if userTTL == rcvTTL
-            then updateContactProfile db user c p'
-            else do
-              c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
-              updateContactProfile db user c' p'
-        when (directOrUsed c' && createItems) $ createRcvFeatureItems user c c'
-        toView $ CRContactUpdated user c c'
-        pure c'
+          c' <- withStore $ \db ->
+            if userTTL == rcvTTL
+              then updateContactProfile db user c p'
+              else do
+                c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
+                updateContactProfile db user c' p'
+          when (directOrUsed c' && createItems) $ createRcvFeatureItems user c c'
+          toView $ CRContactUpdated user c c'
+          pure c'
       | otherwise =
-        pure c
+          pure c
       where
         Contact {userPreferences = ctUserPrefs@Preferences {timedMessages = ctUserTMPref}} = c
         userTTL = prefParam $ getPreference SCFTimedMessages ctUserPrefs
@@ -4707,8 +4709,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       when (contactMerge && not (contactOrMemberIncognito cgm1)) $ do
         cgm2Probe_ <- withStore' $ \db -> matchReceivedProbeHash db user cgm1 probeHash
         forM_ cgm2Probe_ $ \(cgm2, probe) ->
-          unless (contactOrMemberIncognito cgm2) $
-            void $ probeMatch cgm1 cgm2 probe
+          unless (contactOrMemberIncognito cgm2) . void $
+            probeMatch cgm1 cgm2 probe
 
     probeMatch :: ContactOrMember -> ContactOrMember -> Probe -> m (Maybe ContactOrMember)
     probeMatch cgm1 cgm2 probe =
@@ -4717,21 +4719,21 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           case cgm2 of
             COMContact c2@Contact {contactId = cId2, profile = p2}
               | cId1 /= cId2 && profilesMatch p1 p2 -> do
-                void . sendDirectContactMessage c1 $ XInfoProbeOk probe
-                COMContact <$$> mergeContacts c1 c2
+                  void . sendDirectContactMessage c1 $ XInfoProbeOk probe
+                  COMContact <$$> mergeContacts c1 c2
               | otherwise -> messageWarning "probeMatch ignored: profiles don't match or same contact id" >> pure Nothing
             COMGroupMember m2@GroupMember {memberProfile = p2, memberContactId}
               | isNothing memberContactId && profilesMatch p1 p2 -> do
-                void . sendDirectContactMessage c1 $ XInfoProbeOk probe
-                COMContact <$$> associateMemberAndContact c1 m2
+                  void . sendDirectContactMessage c1 $ XInfoProbeOk probe
+                  COMContact <$$> associateMemberAndContact c1 m2
               | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact" >> pure Nothing
         COMGroupMember GroupMember {activeConn = Nothing} -> pure Nothing
         COMGroupMember m1@GroupMember {groupId, memberProfile = p1, memberContactId, activeConn = Just conn} ->
           case cgm2 of
             COMContact c2@Contact {profile = p2}
               | memberCurrent m1 && isNothing memberContactId && profilesMatch p1 p2 -> do
-                void $ sendDirectMessage conn (XInfoProbeOk probe) (GroupId groupId)
-                COMContact <$$> associateMemberAndContact c2 m1
+                  void $ sendDirectMessage conn (XInfoProbeOk probe) (GroupId groupId)
+                  COMContact <$$> associateMemberAndContact c2 m1
               | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact or member not current" >> pure Nothing
             COMGroupMember _ -> messageWarning "probeMatch ignored: members are not matched with members" >> pure Nothing
 
@@ -4847,16 +4849,16 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         Just call@Call {contactId, callId, chatItemId}
           | contactId /= ctId' || callId /= callId' -> messageError $ eventName <> ": wrong contact or callId"
           | otherwise -> do
-            (call_, aciContent_) <- action call
-            case call_ of
-              Just call' -> do
-                unless (isRcvInvitation call') $ withStore' $ \db -> deleteCalls db user ctId'
-                atomically $ TM.insert ctId' call' calls
-              _ -> do
-                withStore' $ \db -> deleteCalls db user ctId'
-                atomically $ TM.delete ctId' calls
-            forM_ aciContent_ $ \aciContent ->
-              updateDirectChatItemView user ct chatItemId aciContent False $ Just msgId
+              (call_, aciContent_) <- action call
+              case call_ of
+                Just call' -> do
+                  unless (isRcvInvitation call') $ withStore' $ \db -> deleteCalls db user ctId'
+                  atomically $ TM.insert ctId' call' calls
+                _ -> do
+                  withStore' $ \db -> deleteCalls db user ctId'
+                  atomically $ TM.delete ctId' calls
+              forM_ aciContent_ $ \aciContent ->
+                updateDirectChatItemView user ct chatItemId aciContent False $ Just msgId
 
     msgCallStateError :: Text -> Call -> m ()
     msgCallStateError eventName Call {callState} =
@@ -4907,8 +4909,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     suffixOrd displayName localDisplayName
       | localDisplayName == displayName = Just 0
       | otherwise = case T.stripPrefix (displayName <> "_") localDisplayName of
-        Just suffix -> readMaybe $ T.unpack suffix
-        Nothing -> Nothing
+          Just suffix -> readMaybe $ T.unpack suffix
+          Nothing -> Nothing
 
     associateMemberWithContact :: Contact -> GroupMember -> m Contact
     associateMemberWithContact c1 m2@GroupMember {groupId} = do
@@ -4990,7 +4992,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             Right reMember -> do
               GroupMemberIntro {introId} <- withStore $ \db -> saveIntroInvitation db reMember m introInv
               void . sendGroupMessage' user [reMember] (XGrpMemFwd (memberInfo m) introInv) groupId (Just introId) $
-                withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
+                withStore' $
+                  \db -> updateIntroStatus db introId GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
@@ -5018,20 +5021,20 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> RcvMessage -> UTCTime -> m ()
     xGrpMemRole gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId memRole msg brokerTs
       | membership.memberId == memId =
-        let gInfo' = gInfo {membership = membership {memberRole = memRole}}
-         in changeMemberRole gInfo' membership $ RGEUserRole memRole
+          let gInfo' = gInfo {membership = membership {memberRole = memRole}}
+           in changeMemberRole gInfo' membership $ RGEUserRole memRole
       | otherwise =
-        withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
-          Right member -> changeMemberRole gInfo member $ RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
-          Left _ -> messageError "x.grp.mem.role with unknown member ID"
+          withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
+            Right member -> changeMemberRole gInfo member $ RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
+            Left _ -> messageError "x.grp.mem.role with unknown member ID"
       where
         changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} gEvent
           | senderRole < GRAdmin || senderRole < fromRole = messageError "x.grp.mem.role with insufficient member permissions"
           | otherwise = do
-            withStore' $ \db -> updateGroupMemberRole db user member memRole
-            ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs (CIRcvGroupEvent gEvent)
-            groupMsgToView gInfo ci
-            toView CRMemberRole {user, groupInfo = gInfo', byMember = m, member = member {memberRole = memRole}, fromRole, toRole = memRole}
+              withStore' $ \db -> updateGroupMemberRole db user member memRole
+              ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs (CIRcvGroupEvent gEvent)
+              groupMsgToView gInfo ci
+              toView CRMemberRole {user, groupInfo = gInfo', byMember = m, member = member {memberRole = memRole}, fromRole, toRole = memRole}
 
     checkHostRole :: GroupMember -> GroupMemberRole -> m ()
     checkHostRole GroupMember {memberRole, localDisplayName} memRole =
@@ -5044,9 +5047,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         (GCInviteeMember, GCInviteeMember) ->
           withStore' (\db -> runExceptT $ getIntroduction db refMember sendingMember) >>= \case
             Right intro -> inviteeXGrpMemCon intro
-            Left _ -> withStore' (\db -> runExceptT $ getIntroduction db sendingMember refMember) >>= \case
-              Right intro -> forwardMemberXGrpMemCon intro
-              Left _ -> messageWarning "x.grp.mem.con: no introduction"
+            Left _ ->
+              withStore' (\db -> runExceptT $ getIntroduction db sendingMember refMember) >>= \case
+                Right intro -> forwardMemberXGrpMemCon intro
+                Left _ -> messageWarning "x.grp.mem.con: no introduction"
         (GCInviteeMember, _) ->
           withStore' (\db -> runExceptT $ getIntroduction db refMember sendingMember) >>= \case
             Right intro -> inviteeXGrpMemCon intro
@@ -5100,7 +5104,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       where
         checkRole GroupMember {memberRole} a
           | senderRole < GRAdmin || senderRole < memberRole =
-            messageError "x.grp.mem.del with insufficient member permissions"
+              messageError "x.grp.mem.del with insufficient member permissions"
           | otherwise = a
         deleteMemberItem gEvent = do
           ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs (CIRcvGroupEvent gEvent)
@@ -5132,13 +5136,13 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     xGrpInfo g@GroupInfo {groupProfile = p} m@GroupMember {memberRole} p' msg brokerTs
       | memberRole < GROwner = messageError "x.grp.info with insufficient member permissions"
       | otherwise = unless (p == p') $ do
-        g' <- withStore $ \db -> updateGroupProfile db user g p'
-        toView $ CRGroupUpdated user g g' (Just m)
-        let cd = CDGroupRcv g' m
-        unless (sameGroupProfileInfo p p') $ do
-          ci <- saveRcvChatItem user cd msg brokerTs (CIRcvGroupEvent $ RGEGroupUpdated p')
-          groupMsgToView g' ci
-        createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
+          g' <- withStore $ \db -> updateGroupProfile db user g p'
+          toView $ CRGroupUpdated user g g' (Just m)
+          let cd = CDGroupRcv g' m
+          unless (sameGroupProfileInfo p p') $ do
+            ci <- saveRcvChatItem user cd msg brokerTs (CIRcvGroupEvent $ RGEGroupUpdated p')
+            groupMsgToView g' ci
+          createGroupFeatureChangedItems user cd CIRcvGroupFeature g g'
 
     xGrpDirectInv :: GroupInfo -> GroupMember -> Connection -> ConnReqInvitation -> Maybe MsgContent -> RcvMessage -> UTCTime -> m ()
     xGrpDirectInv g m mConn connReq mContent_ msg brokerTs = do
@@ -5236,8 +5240,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         Just (CChatItem SMDSnd ChatItem {meta = CIMeta {itemId, itemStatus}})
           | itemStatus == newStatus -> pure ()
           | otherwise -> do
-            chatItem <- withStore $ \db -> updateDirectChatItemStatus db user ct itemId newStatus
-            toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
+              chatItem <- withStore $ \db -> updateDirectChatItemStatus db user ct itemId newStatus
+              toView $ CRChatItemStatusUpdated user (AChatItem SCTDirect SMDSnd (DirectChat ct) chatItem)
         _ -> pure ()
 
     updateGroupMemSndStatus :: ChatItemId -> GroupMemberId -> CIStatus 'MDSnd -> m Bool
@@ -5378,7 +5382,7 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs} chunkNo chun
     append_ filePath = do
       fsFilePath <- toFSFilePath filePath
       h <- getFileHandle fileId fsFilePath rcvFiles AppendMode
-      liftIO (B.hPut h chunk >> hFlush h) `catchThrow` (fileErr  . show)
+      liftIO (B.hPut h chunk >> hFlush h) `catchThrow` (fileErr . show)
       withStore' $ \db -> updatedRcvFileChunkStored db ft chunkNo
       when final $ do
         closeFileHandle fileId rcvFiles
@@ -5540,17 +5544,17 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
       Just conn@Connection {connStatus}
         | connDisabled conn || connStatus == ConnDeleted -> pure Nothing
         | connStatus == ConnSndReady || connStatus == ConnReady -> do
-          let tag = toCMEventTag chatMsgEvent
-          deliverMessage conn tag msgBody msgId >> postDeliver
-          pure $ Just m
+            let tag = toCMEventTag chatMsgEvent
+            deliverMessage conn tag msgBody msgId >> postDeliver
+            pure $ Just m
         | otherwise -> pendingOrForwarded
       where
         pendingOrForwarded
           | forwardSupported && isForwardedGroupMsg chatMsgEvent = pure Nothing
           | isXGrpMsgForward chatMsgEvent = pure Nothing
           | otherwise = do
-            withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
-            pure $ Just m
+              withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
+              pure $ Just m
         forwardSupported = do
           let mcvr = memberChatVRange' m
           isCompatibleRange mcvr groupForwardVRange && invitingMemberSupportsForward
@@ -5609,14 +5613,15 @@ saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta 
       newMsg = NewMessage {chatMsgEvent, msgBody}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId}
       amId = Just am'.groupMemberId
-  msg <- withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ rcvMsgDelivery amId)
-    `catchChatError` \e -> case e of
-      ChatErrorStore (SEDuplicateGroupMessage _ _ _ (Just forwardedByGroupMemberId)) -> do
-        fm <- withStore $ \db -> getGroupMember db user groupId forwardedByGroupMemberId
-        forM_ (memberConn fm) $ \fmConn ->
-          void $ sendDirectMessage fmConn (XGrpMemCon am'.memberId) (GroupId groupId)
-        throwError e
-      _ -> throwError e
+  msg <-
+    withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ rcvMsgDelivery amId)
+      `catchChatError` \e -> case e of
+        ChatErrorStore (SEDuplicateGroupMessage _ _ _ (Just forwardedByGroupMemberId)) -> do
+          fm <- withStore $ \db -> getGroupMember db user groupId forwardedByGroupMemberId
+          forM_ (memberConn fm) $ \fmConn ->
+            void $ sendDirectMessage fmConn (XGrpMemCon am'.memberId) (GroupId groupId)
+          throwError e
+        _ -> throwError e
   pure (am', conn', msg)
 
 saveGroupFwdRcvMsg :: (MsgEncodingI e, ChatMonad m) => User -> GroupId -> GroupMember -> GroupMember -> MsgBody -> ChatMessage e -> m RcvMessage
@@ -5874,9 +5879,9 @@ getCreateActiveUser st testView = do
             Just n
               | n <= 0 || n > length users -> putStrLn "invalid user number" >> loop
               | otherwise -> do
-                let user = users !! (n - 1)
-                withTransaction st (`setActiveUser` user.userId)
-                pure user
+                  let user = users !! (n - 1)
+                  withTransaction st (`setActiveUser` user.userId)
+                  pure user
     userStr :: User -> String
     userStr User {localDisplayName, profile = LocalProfile {fullName}} =
       T.unpack $ localDisplayName <> if T.null fullName || localDisplayName == fullName then "" else " (" <> fullName <> ")"
@@ -6329,13 +6334,14 @@ adminContactReq =
   either error id $ strDecode "simplex:/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D"
 
 simplexContactProfile :: Profile
-simplexContactProfile = Profile {
-  displayName = "SimpleX Chat team",
-  fullName = "",
-  image = Just (ImageData "data:image/jpg;base64,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"),
-  contactLink = Just adminContactReq,
-  preferences = Nothing
-}
+simplexContactProfile =
+  Profile
+    { displayName = "SimpleX Chat team",
+      fullName = "",
+      image = Just (ImageData "data:image/jpg;base64,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"),
+      contactLink = Just adminContactReq,
+      preferences = Nothing
+    }
 
 timeItToView :: ChatMonad' m => String -> m a -> m a
 timeItToView s action = do
@@ -6352,15 +6358,15 @@ mkValidName = reverse . dropWhile isSpace . fst3 . foldl' addChar ("", '\NUL', 0
     fst3 (x, _, _) = x
     addChar (r, prev, punct) c = if validChar then (c' : r, c', punct') else (r, prev, punct)
       where
-      c' = if isSpace c then ' ' else c
-      punct'
-        | isPunctuation c = punct + 1
-        | isSpace c = punct
-        | otherwise = 0
-      validChar
-        | c == '\'' = False
-        | prev == '\NUL' = c > ' ' && c /= '#' && c /= '@' && validFirstChar
-        | isSpace prev = validFirstChar || (punct == 0 && isPunctuation c)
-        | isPunctuation prev = validFirstChar || isSpace c || (punct < 3 && isPunctuation c)
-        | otherwise = validFirstChar || isSpace c || isMark c || isPunctuation c
-      validFirstChar = isLetter c || isNumber c || isSymbol c
+        c' = if isSpace c then ' ' else c
+        punct'
+          | isPunctuation c = punct + 1
+          | isSpace c = punct
+          | otherwise = 0
+        validChar
+          | c == '\'' = False
+          | prev == '\NUL' = c > ' ' && c /= '#' && c /= '@' && validFirstChar
+          | isSpace prev = validFirstChar || (punct == 0 && isPunctuation c)
+          | isPunctuation prev = validFirstChar || isSpace c || (punct < 3 && isPunctuation c)
+          | otherwise = validFirstChar || isSpace c || isMark c || isPunctuation c
+        validFirstChar = isLetter c || isNumber c || isSymbol c

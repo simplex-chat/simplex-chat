@@ -1,0 +1,30 @@
+indentation: 2
+column-limit: none
+function-arrows: trailing
+comma-style: trailing
+import-export-style: trailing
+indent-wheres: true
+record-brace-space: true
+newlines-between-decls: 1
+haddock-style: single-line
+haddock-style-module: null
+let-style: inline
+in-style: right-align
+single-constraint-parens: never
+unicode: never
+respectful: true
+fixities:
+  - infixr 9 .
+  - infixr 8 .:, .:., .=
+  - infixr 6 <>
+  - infixr 5 ++
+  - infixl 4 <$>, <$, $>,  <$$>, <$?>
+  - infixl 4 <*>, <*, *>, <**>
+  - infix 4 ==, /=
+  - infixr 3 &&
+  - infixl 3 <|>
+  - infixr 2 ||
+  - infixl 1 >>, >>=
+  - infixr 1 =<<, >=>, <=<
+  - infixr 0 $, $!
+reexports: []

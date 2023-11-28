@@ -143,7 +143,7 @@ fun showApp() = application {
     var hiddenUntilRestart by remember { mutableStateOf(false) }
     if (!hiddenUntilRestart) {
       val cWindowState = rememberWindowState(placement = WindowPlacement.Floating, width = DEFAULT_START_MODAL_WIDTH, height = 768.dp)
-      Window(state = cWindowState, onCloseRequest = ::exitApplication, title = stringResource(MR.strings.chat_console)) {
+      Window(state = cWindowState, onCloseRequest = { hiddenUntilRestart = true }, title = stringResource(MR.strings.chat_console)) {
         SimpleXTheme {
           TerminalView(ChatModel) { hiddenUntilRestart = true }
         }

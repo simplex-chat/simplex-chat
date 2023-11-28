@@ -17,7 +17,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 {-# LANGUAGE UndecidableInstances #-}
-
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use newtype instead of data" #-}
@@ -40,7 +39,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
-import Database.SQLite.Simple.FromField (returnError, FromField(..))
+import Database.SQLite.Simple.FromField (FromField (..), returnError)
 import Database.SQLite.Simple.Internal (Field (..))
 import Database.SQLite.Simple.Ok
 import Database.SQLite.Simple.ToField (ToField (..))
@@ -50,7 +49,7 @@ import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.Messaging.Agent.Protocol (ACommandTag (..), ACorrId, AParty (..), APartyCmdTag (..), ConnId, ConnectionMode (..), ConnectionRequestUri, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON, taggedObjectJSON, enumJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
 import Simplex.Messaging.Util ((<$?>))
 import Simplex.Messaging.Version
@@ -498,7 +497,7 @@ data LocalProfile = LocalProfile
   deriving (Eq, Show)
 
 localProfileId :: LocalProfile -> ProfileId
-localProfileId LocalProfile{profileId} = profileId
+localProfileId LocalProfile {profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> LocalProfile
 toLocalProfile profileId Profile {displayName, fullName, image, contactLink, preferences} localAlias =

@@ -3584,6 +3584,13 @@ sealed class RemoteHostSessionState {
   @Serializable @SerialName("connected") data class Connected(val sessionCode: String): RemoteHostSessionState()
 }
 
+@Serializable
+sealed class RemoteHostStopReason {
+  @Serializable @SerialName("connectionFailed") data class ConnectionFailed(val chatError: ChatError): RemoteHostStopReason()
+  @Serializable @SerialName("crashed") data class Crashed(val chatError: ChatError): RemoteHostStopReason()
+  @Serializable @SerialName("disconnected") object Disconnected: RemoteHostStopReason()
+}
+
 val json = Json {
   prettyPrint = true
   ignoreUnknownKeys = true
@@ -3807,7 +3814,7 @@ sealed class CR {
   @Serializable @SerialName("remoteHostSessionCode") class RemoteHostSessionCode(val remoteHost_: RemoteHostInfo?, val sessionCode: String): CR()
   @Serializable @SerialName("newRemoteHost") class NewRemoteHost(val remoteHost: RemoteHostInfo): CR()
   @Serializable @SerialName("remoteHostConnected") class RemoteHostConnected(val remoteHost: RemoteHostInfo): CR()
-  @Serializable @SerialName("remoteHostStopped") class RemoteHostStopped(val remoteHostId_: Long?): CR()
+  @Serializable @SerialName("remoteHostStopped") class RemoteHostStopped(val remoteHostId_: Long?, val rhsState: RemoteHostSessionState, val rhStopReason: RemoteHostStopReason): CR()
   @Serializable @SerialName("remoteFileStored") class RemoteFileStored(val remoteHostId: Long, val remoteFileSource: CryptoFile): CR()
   // remote events (mobile)
   @Serializable @SerialName("remoteCtrlList") class RemoteCtrlList(val remoteCtrls: List<RemoteCtrlInfo>): CR()
@@ -3815,7 +3822,7 @@ sealed class CR {
   @Serializable @SerialName("remoteCtrlConnecting") class RemoteCtrlConnecting(val remoteCtrl_: RemoteCtrlInfo?, val ctrlAppInfo: CtrlAppInfo, val appVersion: String): CR()
   @Serializable @SerialName("remoteCtrlSessionCode") class RemoteCtrlSessionCode(val remoteCtrl_: RemoteCtrlInfo?, val sessionCode: String): CR()
   @Serializable @SerialName("remoteCtrlConnected") class RemoteCtrlConnected(val remoteCtrl: RemoteCtrlInfo): CR()
-  @Serializable @SerialName("remoteCtrlStopped") class RemoteCtrlStopped(): CR()
+  @Serializable @SerialName("remoteCtrlStopped") class RemoteCtrlStopped(val rcsState: RemoteCtrlSessionState, val rcStopReason: RemoteCtrlStopReason): CR()
   @Serializable @SerialName("versionInfo") class VersionInfo(val versionInfo: CoreVersionInfo, val chatMigrations: List<UpMigration>, val agentMigrations: List<UpMigration>): CR()
   @Serializable @SerialName("cmdOk") class CmdOk(val user: UserRef?): CR()
   @Serializable @SerialName("chatCmdError") class ChatCmdError(val user_: UserRef?, val chatError: ChatError): CR()

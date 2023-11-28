@@ -10,7 +10,6 @@
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators #-}
-
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Store.Messages
@@ -199,40 +198,41 @@ createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMs
     createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent currentTs
   pure msg
 
-createNewRcvMessage :: forall e. (MsgEncodingI e) => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
-createNewRcvMessage db connOrGroupId NewMessage{chatMsgEvent, msgBody} sharedMsgId_ authorMember forwardedByMember =
+createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
+createNewRcvMessage db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMsgId_ authorMember forwardedByMember =
   case connOrGroupId of
     ConnectionId connId -> liftIO $ insertRcvMsg (Just connId) Nothing
     GroupId groupId -> case sharedMsgId_ of
-      Just sharedMsgId -> liftIO (duplicateGroupMsgMemberIds groupId sharedMsgId) >>= \case
-        Just (duplAuthorId, duplFwdMemberId) ->
-          throwError $ SEDuplicateGroupMessage groupId sharedMsgId duplAuthorId duplFwdMemberId
-        Nothing -> liftIO $ insertRcvMsg Nothing $ Just groupId
+      Just sharedMsgId ->
+        liftIO (duplicateGroupMsgMemberIds groupId sharedMsgId) >>= \case
+          Just (duplAuthorId, duplFwdMemberId) ->
+            throwError $ SEDuplicateGroupMessage groupId sharedMsgId duplAuthorId duplFwdMemberId
+          Nothing -> liftIO $ insertRcvMsg Nothing $ Just groupId
       Nothing -> liftIO $ insertRcvMsg Nothing $ Just groupId
- where
-  duplicateGroupMsgMemberIds :: Int64 -> SharedMsgId -> IO (Maybe (Maybe GroupMemberId, Maybe GroupMemberId))
-  duplicateGroupMsgMemberIds groupId sharedMsgId =
-    maybeFirstRow id
-      $ DB.query
+  where
+    duplicateGroupMsgMemberIds :: Int64 -> SharedMsgId -> IO (Maybe (Maybe GroupMemberId, Maybe GroupMemberId))
+    duplicateGroupMsgMemberIds groupId sharedMsgId =
+      maybeFirstRow id $
+        DB.query
+          db
+          [sql|
+            SELECT author_group_member_id, forwarded_by_group_member_id
+            FROM messages
+            WHERE group_id = ? AND shared_msg_id = ? LIMIT 1
+          |]
+          (groupId, sharedMsgId)
+    insertRcvMsg connId_ groupId_ = do
+      currentTs <- getCurrentTime
+      DB.execute
         db
         [sql|
-          SELECT author_group_member_id, forwarded_by_group_member_id
-          FROM messages
-          WHERE group_id = ? AND shared_msg_id = ? LIMIT 1
+          INSERT INTO messages
+            (msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id, shared_msg_id, author_group_member_id, forwarded_by_group_member_id)
+          VALUES (?,?,?,?,?,?,?,?,?,?)
         |]
-        (groupId, sharedMsgId)
-  insertRcvMsg connId_ groupId_ = do
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      [sql|
-        INSERT INTO messages
-          (msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id, shared_msg_id, author_group_member_id, forwarded_by_group_member_id)
-        VALUES (?,?,?,?,?,?,?,?,?,?)
-      |]
-      (MDRcv, toCMEventTag chatMsgEvent, msgBody, currentTs, currentTs, connId_, groupId_, sharedMsgId_, authorMember, forwardedByMember)
-    msgId <- insertedRowId db
-    pure RcvMessage{msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody, authorMember, forwardedByMember}
+        (MDRcv, toCMEventTag chatMsgEvent, msgBody, currentTs, currentTs, connId_, groupId_, sharedMsgId_, authorMember, forwardedByMember)
+      msgId <- insertedRowId db
+      pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody, authorMember, forwardedByMember}
 
 createSndMsgDeliveryEvent :: DB.Connection -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> ExceptT StoreError IO ()
 createSndMsgDeliveryEvent db connId agentMsgId sndMsgDeliveryStatus = do
@@ -528,12 +528,12 @@ getDirectChatPreviews_ db user@User {userId} = do
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
         LEFT JOIN connections c ON c.contact_id = ct.contact_id
         LEFT JOIN (
-          SELECT contact_id, MAX(chat_item_id) AS MaxId
+          SELECT contact_id, chat_item_id, MAX(created_at)
           FROM chat_items
           GROUP BY contact_id
-        ) MaxIds ON MaxIds.contact_id = ct.contact_id
-        LEFT JOIN chat_items i ON i.contact_id = MaxIds.contact_id
-                               AND i.chat_item_id = MaxIds.MaxId
+        ) LastItems ON LastItems.contact_id = ct.contact_id
+        LEFT JOIN chat_items i ON i.contact_id = LastItems.contact_id
+                               AND i.chat_item_id = LastItems.chat_item_id
         LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
@@ -615,12 +615,12 @@ getGroupChatPreviews_ db User {userId, userContactId} = do
         JOIN group_members mu ON mu.group_id = g.group_id
         JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
         LEFT JOIN (
-          SELECT group_id, MAX(chat_item_id) AS MaxId
+          SELECT group_id, chat_item_id, MAX(item_ts)
           FROM chat_items
           GROUP BY group_id
-        ) MaxIds ON MaxIds.group_id = g.group_id
-        LEFT JOIN chat_items i ON i.group_id = MaxIds.group_id
-                               AND i.chat_item_id = MaxIds.MaxId
+        ) LastItems ON LastItems.group_id = g.group_id
+        LEFT JOIN chat_items i ON i.group_id = LastItems.group_id
+                               AND i.chat_item_id = LastItems.chat_item_id
         LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
@@ -724,7 +724,7 @@ getDirectChatItemsLast db User {userId} contactId count search = ExceptT $ do
         LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
         LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
         WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
-        ORDER BY i.chat_item_id DESC
+        ORDER BY i.created_at DESC, i.chat_item_id DESC
         LIMIT ?
       |]
       (userId, contactId, search, count)
@@ -754,7 +754,7 @@ getDirectChatAfter_ db User {userId} ct@Contact {contactId} afterChatItemId coun
             LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
             WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
               AND i.chat_item_id > ?
-            ORDER BY i.chat_item_id ASC
+            ORDER BY i.created_at ASC, i.chat_item_id ASC
             LIMIT ?
           |]
           (userId, contactId, search, afterChatItemId, count)
@@ -784,7 +784,7 @@ getDirectChatBefore_ db User {userId} ct@Contact {contactId} beforeChatItemId co
             LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
             WHERE i.user_id = ? AND i.contact_id = ? AND i.item_text LIKE '%' || ? || '%'
               AND i.chat_item_id < ?
-            ORDER BY i.chat_item_id DESC
+            ORDER BY i.created_at DESC, i.chat_item_id DESC
             LIMIT ?
           |]
           (userId, contactId, search, beforeChatItemId, count)
@@ -1802,22 +1802,22 @@ getDirectReactions db ct itemSharedMId sent =
 setDirectReaction :: DB.Connection -> Contact -> SharedMsgId -> Bool -> MsgReaction -> Bool -> MessageId -> UTCTime -> IO ()
 setDirectReaction db ct itemSharedMId sent reaction add msgId reactionTs
   | add =
-    DB.execute
-      db
-      [sql|
-        INSERT INTO chat_item_reactions
-          (contact_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
-          VALUES (?,?,?,?,?,?)
-      |]
-      (contactId' ct, itemSharedMId, sent, reaction, msgId, reactionTs)
+      DB.execute
+        db
+        [sql|
+          INSERT INTO chat_item_reactions
+            (contact_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
+            VALUES (?,?,?,?,?,?)
+        |]
+        (contactId' ct, itemSharedMId, sent, reaction, msgId, reactionTs)
   | otherwise =
-    DB.execute
-      db
-      [sql|
-        DELETE FROM chat_item_reactions
-        WHERE contact_id = ? AND shared_msg_id = ? AND reaction_sent = ? AND reaction = ?
-      |]
-      (contactId' ct, itemSharedMId, sent, reaction)
+      DB.execute
+        db
+        [sql|
+          DELETE FROM chat_item_reactions
+          WHERE contact_id = ? AND shared_msg_id = ? AND reaction_sent = ? AND reaction = ?
+        |]
+        (contactId' ct, itemSharedMId, sent, reaction)
 
 getGroupReactions :: DB.Connection -> GroupInfo -> GroupMember -> MemberId -> SharedMsgId -> Bool -> IO [MsgReaction]
 getGroupReactions db GroupInfo {groupId} m itemMemberId itemSharedMId sent =
@@ -1834,22 +1834,22 @@ getGroupReactions db GroupInfo {groupId} m itemMemberId itemSharedMId sent =
 setGroupReaction :: DB.Connection -> GroupInfo -> GroupMember -> MemberId -> SharedMsgId -> Bool -> MsgReaction -> Bool -> MessageId -> UTCTime -> IO ()
 setGroupReaction db GroupInfo {groupId} m itemMemberId itemSharedMId sent reaction add msgId reactionTs
   | add =
-    DB.execute
-      db
-      [sql|
-        INSERT INTO chat_item_reactions
-          (group_id, group_member_id, item_member_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
-          VALUES (?,?,?,?,?,?,?,?)
-      |]
-      (groupId, groupMemberId' m, itemMemberId, itemSharedMId, sent, reaction, msgId, reactionTs)
+      DB.execute
+        db
+        [sql|
+          INSERT INTO chat_item_reactions
+            (group_id, group_member_id, item_member_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
+            VALUES (?,?,?,?,?,?,?,?)
+        |]
+        (groupId, groupMemberId' m, itemMemberId, itemSharedMId, sent, reaction, msgId, reactionTs)
   | otherwise =
-    DB.execute
-      db
-      [sql|
-        DELETE FROM chat_item_reactions
-        WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id = ? AND reaction_sent = ? AND reaction = ?
-      |]
-      (groupId, groupMemberId' m, itemSharedMId, itemMemberId, sent, reaction)
+      DB.execute
+        db
+        [sql|
+          DELETE FROM chat_item_reactions
+          WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id = ? AND reaction_sent = ? AND reaction = ?
+        |]
+        (groupId, groupMemberId' m, itemSharedMId, itemMemberId, sent, reaction)
 
 getTimedItems :: DB.Connection -> User -> UTCTime -> IO [((ChatRef, ChatItemId), UTCTime)]
 getTimedItems db User {userId} startTimedThreadCutoff =

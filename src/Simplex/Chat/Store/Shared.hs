@@ -101,7 +101,7 @@ data StoreError
   | SENoGroupSndStatus {itemId :: ChatItemId, groupMemberId :: GroupMemberId}
   | SEDuplicateGroupMessage {groupId :: Int64, sharedMsgId :: SharedMsgId, authorGroupMemberId :: Maybe GroupMemberId, forwardedByGroupMemberId :: Maybe GroupMemberId}
   | SERemoteHostNotFound {remoteHostId :: RemoteHostId}
-  | SERemoteHostUnknown -- ^ attempting to store KnownHost without a known fingerprint
+  | SERemoteHostUnknown -- attempting to store KnownHost without a known fingerprint
   | SERemoteHostDuplicateCA
   | SERemoteCtrlNotFound {remoteCtrlId :: RemoteCtrlId}
   | SERemoteCtrlDuplicateCA

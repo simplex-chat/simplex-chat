@@ -311,7 +311,7 @@ profileToText Profile {displayName, fullName} = displayName <> optionalFullName 
 msgIntegrityError :: MsgErrorType -> Text
 msgIntegrityError = \case
   MsgSkipped fromId toId ->
-    "skipped message ID " <> tshow fromId
+    ("skipped message ID " <> tshow fromId)
       <> if fromId == toId then "" else ".." <> tshow toId
   MsgBadId msgId -> "unexpected message ID " <> tshow msgId
   MsgBadHash -> "incorrect message hash"
