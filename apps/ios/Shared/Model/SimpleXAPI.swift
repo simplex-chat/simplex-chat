@@ -1666,7 +1666,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         activateCall(invitation)
     case let .callOffer(_, contact, callType, offer, sharedKey, _):
         await withCall(contact) { call in
-            DispatchQueue.main.asyncAfter(deadline: .now()) {
+            await MainActor.run {
                 call.callState = .offerReceived
                 call.peerMedia = callType.media
                 call.sharedKey = sharedKey
@@ -1685,7 +1685,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
     case let .callAnswer(_, contact, answer):
         await withCall(contact) { call in
-            DispatchQueue.main.asyncAfter(deadline: .now()) {
+            await MainActor.run {
                 call.callState = .answerReceived
             }
             await m.callCommand.processCommand(.answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates))
