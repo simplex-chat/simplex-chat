@@ -16,6 +16,7 @@ struct ChatListView: View {
     @State private var showAddChat = false
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
+    @State private var showCreateGroupSheet = false
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
@@ -62,11 +63,7 @@ struct ChatListView: View {
 
     private var chatListView: some View {
         VStack {
-            if chatModel.chats.count > 0 {
-                chatList.searchable(text: $searchText)
-            } else {
-                chatList
-            }
+            chatList.searchable(text: $searchText)
         }
         .onDisappear() { withAnimation { userPickerVisible = false } }
         .refreshable {
@@ -88,6 +85,9 @@ struct ChatListView: View {
         .offset(x: -8)
         .listStyle(.plain)
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showCreateGroupSheet) {
+            AddGroupView()
+        }
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 let user = chatModel.currentUser ?? User.sampleData
@@ -124,11 +124,27 @@ struct ChatListView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 switch chatModel.chatRunning {
-                case .some(true): NewChatButton(showAddChat: $showAddChat)
+                // case .some(true): NewChatButton(showAddChat: $showAddChat)
+                case .some(true):
+                    HStack {
+                        createGroupButton()
+                        NewChatButton2()
+                    }
                 case .some(false): chatStoppedIcon()
                 case .none: EmptyView()
                 }
             }
+        }
+    }
+
+    private func createGroupButton() -> some View {
+        Button {
+            showCreateGroupSheet = true
+        } label: {
+            Image(systemName: "person.2")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 28, height: 28)
         }
     }
 
