@@ -38,7 +38,7 @@ remoteTests = describe "Remote" $ do
     it "connects with stored pairing" remoteHandshakeStoredTest
     it "connects with multicast discovery" remoteHandshakeDiscoverTest
     it "refuses invalid client cert" remoteHandshakeRejectTest
-    fit "connects with stored server bindings" storedBindingsTest
+    it "connects with stored server bindings" storedBindingsTest
   it "sends messages" remoteMessageTest
   describe "remote files" $ do
     it "store/get/send/receive files" remoteStoreFileTest
