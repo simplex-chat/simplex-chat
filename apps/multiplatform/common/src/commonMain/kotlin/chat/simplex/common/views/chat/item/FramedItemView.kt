@@ -286,9 +286,7 @@ fun FramedItemView(
                   CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick)
                 }
               }
-              else -> {
-                CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showMenu = showMenu)
-              }
+              else -> CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showMenu = showMenu)
             }
           }
         }
