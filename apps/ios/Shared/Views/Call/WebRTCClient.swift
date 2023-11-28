@@ -160,17 +160,16 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
             let encryption = WebRTCClient.enableEncryption
             let call = initializeCall(iceServers?.toWebRTCIceServers(), media, encryption ? aesKey : nil, relay)
             activeCall.wrappedValue = call
-            if let offer = await call.connection.offer() {
-                await self.sendCallResponse(.init(
-                    corrId: nil,
-                    resp: .offer(
-                        offer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: offer.type.toSdpType(), sdp: offer.sdp))),
-                        iceCandidates: compressToBase64(input: encodeJSON(await self.getInitialIceCandidates())),
-                        capabilities: CallCapabilities(encryption: encryption)
-                    ),
-                    command: command)
+            let (offer, error) = await call.connection.offer()
+            if let offer = offer {
+                resp = .offer(
+                    offer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: offer.type.toSdpType(), sdp: offer.sdp))),
+                    iceCandidates: compressToBase64(input: encodeJSON(await self.getInitialIceCandidates())),
+                    capabilities: CallCapabilities(encryption: encryption)
                 )
                 self.waitForMoreIceCandidates()
+            } else {
+                resp = .error(message: "offer error: \(error?.localizedDescription ?? "unknown error")")
             }
         case let .offer(offer, iceCandidates, media, aesKey, iceServers, relay):
             if activeCall.wrappedValue != nil {
@@ -184,17 +183,16 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
                 let pc = call.connection
                 if let type = offer.type, let sdp = offer.sdp {
                     if (try? await pc.setRemoteDescription(RTCSessionDescription(type: type.toWebRTCSdpType(), sdp: sdp))) != nil {
-                        if let answer = await pc.answer() {
+                        let (answer, error) = await pc.answer()
+                        if let answer = answer {
                             self.addIceCandidates(pc, remoteIceCandidates)
-                            await self.sendCallResponse(.init(
-                                corrId: nil,
-                                resp: .answer(
-                                    answer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: answer.type.toSdpType(), sdp: answer.sdp))),
-                                    iceCandidates: compressToBase64(input: encodeJSON(await self.getInitialIceCandidates()))
-                                ),
-                                command: command)
+                            resp = .answer(
+                                answer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: answer.type.toSdpType(), sdp: answer.sdp))),
+                                iceCandidates: compressToBase64(input: encodeJSON(await self.getInitialIceCandidates()))
                             )
                             self.waitForMoreIceCandidates()
+                        } else {
+                            resp = .error(message: "answer error: \(error?.localizedDescription ?? "unknown error")")
                         }
                     } else {
                         resp = .error(message: "accept: remote description is not set")
@@ -437,31 +435,33 @@ extension WebRTC.RTCPeerConnection {
             optionalConstraints: nil)
     }
 
-    func offer() async -> RTCSessionDescription? {
+    func offer() async -> (RTCSessionDescription?, Error?) {
         await withCheckedContinuation { cont in
             offer(for: mediaConstraints()) { (sdp, error) in
-                if let sdp = sdp {
-                    self.setLocalDescription(sdp, completionHandler: { (error) in
-                        cont.resume(returning: sdp)
-                    })
-                } else {
-                    cont.resume(returning: nil)
-                }
+                self.processSDP(cont, sdp, error)
             }
         }
     }
 
-    func answer() async -> RTCSessionDescription?  {
+    func answer() async -> (RTCSessionDescription?, Error?)  {
         await withCheckedContinuation { cont in
             answer(for: mediaConstraints()) { (sdp, error) in
-                if let sdp = sdp {
-                    self.setLocalDescription(sdp, completionHandler: { (error) in
-                        cont.resume(returning: sdp)
-                    })
-                } else {
-                    cont.resume(returning: nil)
-                }
+                self.processSDP(cont, sdp, error)
             }
+        }
+    }
+
+    private func processSDP(_ cont: CheckedContinuation<(RTCSessionDescription?, Error?), Never>, _ sdp: RTCSessionDescription?, _ error: Error?) {
+        if let sdp = sdp {
+            self.setLocalDescription(sdp, completionHandler: { (error) in
+                if let error = error {
+                    cont.resume(returning: (nil, error))
+                } else {
+                    cont.resume(returning: (sdp, nil))
+                }
+            })
+        } else {
+            cont.resume(returning: (nil, error))
         }
     }
 }

@@ -337,7 +337,6 @@ extension WCallResponse: Encodable {
 
 actor WebRTCCommandProcessor {
     private var client: WebRTCClient? = nil
-//    private var action: ((WCallCommand) async -> Bool)? = nil
     private var commands: [WCallCommand] = []
     private var running: Bool = false
 
