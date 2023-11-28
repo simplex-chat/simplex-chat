@@ -286,7 +286,9 @@ fun FramedItemView(
                   CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick)
                 }
               }
-              else -> CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick)
+              else -> {
+                CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showMenu = showMenu)
+              }
             }
           }
         }
@@ -304,7 +306,8 @@ fun CIMarkdownText(
   chatTTL: Int?,
   linkMode: SimplexLinkMode,
   uriHandler: UriHandler?,
-  onLinkLongClick: (link: String) -> Unit = {}
+  onLinkLongClick: (link: String) -> Unit = {},
+  showMenu: MutableState<Boolean> = mutableStateOf(false)
 ) {
   Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
     val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
@@ -312,7 +315,7 @@ fun CIMarkdownText(
       SelectionContainer(
         modifier = Modifier.onClick(
           matcher = PointerMatcher.mouse(PointerButton.Secondary),
-          onClick = {}
+          onClick = { showMenu.value = true }
         )
       ) {
       MarkdownText(
