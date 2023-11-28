@@ -50,7 +50,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     private let rtcAudioSession =  RTCAudioSession.sharedInstance()
     private let audioQueue = DispatchQueue(label: "audio")
     private var sendCallResponse: (WVAPIMessage) async -> Void
-    private var activeCall: Binding<Call?>
+    var activeCall: Binding<Call?>
     private var localRendererAspectRatio: Binding<CGFloat?>
 
     @available(*, unavailable)

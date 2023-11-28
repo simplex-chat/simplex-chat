@@ -49,7 +49,7 @@ struct ActiveCallView: View {
         }
         .onDisappear {
             logger.debug("ActiveCallView: disappear")
-            Task { await m.callCommand.setAction(action: nil) }
+            Task { await m.callCommand.setClient(nil) }
             AppDelegate.keepScreenOn(false)
             client?.endCall()
         }
@@ -61,18 +61,7 @@ struct ActiveCallView: View {
         if client == nil && canConnectCall {
             client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
             Task {
-                await m.callCommand.setAction(action: { c in
-//                    logger.debug("ActiveCallView: inside set action \(c.cmdType)  \(client == nil) \(activeCall == nil)")
-                    let allowWithoutActiveCall = switch c {
-                    case .capabilities, .start, .offer, .end: true
-                    default: false
-                    }
-                    if let client = client, (activeCall != nil || allowWithoutActiveCall) {
-                        logger.debug("ActiveCallView: sendCallCommand: \(c.cmdType)")
-                        await client.sendCallCommand(command: c)
-                        return true
-                    } else { return false }
-                })
+                await m.callCommand.setClient(client)
             }
         }
     }

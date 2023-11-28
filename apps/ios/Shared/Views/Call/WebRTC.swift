@@ -336,13 +336,15 @@ extension WCallResponse: Encodable {
 }
 
 actor WebRTCCommandProcessor {
-    private var action: ((WCallCommand) async -> Bool)? = nil
+    private var client: WebRTCClient? = nil
+//    private var action: ((WCallCommand) async -> Bool)? = nil
     private var commands: [WCallCommand] = []
+    private var running: Bool = false
 
-    func setAction(action: ((WCallCommand) async -> Bool)?) async {
-        logger.debug("WebRTC: set action, commands count \(self.commands.count)")
-        self.action = action
-        if action != nil {
+    func setClient(_ client: WebRTCClient?) async {
+        logger.debug("WebRTC: setClient, commands count \(self.commands.count)")
+        self.client = client
+        if client != nil {
             await processAllCommands()
         } else {
             commands.removeAll()
@@ -352,21 +354,28 @@ actor WebRTCCommandProcessor {
     func processCommand(_ c: WCallCommand) async {
 //        logger.debug("WebRTC: process command \(c.cmdType)")
         commands.append(c)
-        await processAllCommands()
+        if !running && client != nil {
+            await processAllCommands()
+        }
     }
 
     func processAllCommands() async {
-        logger.debug("WebRTC: process all commands, commands count \(self.commands.count), action == nil \(self.action == nil)")
-        if let action = action {
-            while let c = commands.first {
-                if await action(c) {
-                    logger.debug("WebRTC: processed cmd \(c.cmdType)")
-                    if commands.count > 0 { commands.remove(at: 0) }
-                } else {
-                    logger.debug("WebRTC: failed to process cmd \(c.cmdType)")
-                    break
-                }
+        logger.debug("WebRTC: process all commands, commands count \(self.commands.count), client == nil \(self.client == nil)")
+        if let client = client {
+            running = true
+            while let c = commands.first, shouldRunCommand(client, c) {
+                commands.remove(at: 0)
+                await client.sendCallCommand(command: c)
+                logger.debug("WebRTC: processed cmd \(c.cmdType)")
             }
+            running = false
+        }
+    }
+
+    func shouldRunCommand(_ client: WebRTCClient, _ c: WCallCommand) -> Bool {
+        switch c {
+        case .capabilities, .start, .offer, .end: true
+        default: client.activeCall.wrappedValue != nil
         }
     }
 }
