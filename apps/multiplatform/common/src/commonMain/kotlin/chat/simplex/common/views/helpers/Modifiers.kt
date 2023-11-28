@@ -27,7 +27,7 @@ fun Modifier.badgeLayout() =
 @Composable
 fun SwipeToDismissModifier(
   state: DismissState,
-  directions: Set<DismissDirection>,
+  directions: Set<DismissDirection> = setOf(DismissDirection.EndToStart, DismissDirection.StartToEnd),
   swipeDistance: Float,
 ): Modifier {
   val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
