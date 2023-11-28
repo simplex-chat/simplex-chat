@@ -25,8 +25,20 @@ fun Modifier.badgeLayout() =
   }
 
 @Composable
-expect fun SwipeToDismissModifier(
+actual fun SwipeToDismissModifier(
   state: DismissState,
-  directions: Set<DismissDirection> = setOf(DismissDirection.EndToStart, DismissDirection.StartToEnd),
+  directions: Set<DismissDirection>,
   swipeDistance: Float,
-): Modifier
+): Modifier {
+  val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+  val anchors = mutableMapOf(0f to DismissValue.Default)
+  if (DismissDirection.StartToEnd in directions) anchors += swipeDistance to DismissValue.DismissedToEnd
+  if (DismissDirection.EndToStart in directions) anchors += -swipeDistance to DismissValue.DismissedToStart
+  return Modifier.swipeable(
+    state = state,
+    anchors = anchors,
+    thresholds = { _, _ -> FractionalThreshold(0.5f) },
+    orientation = Orientation.Horizontal,
+    reverseDirection = isRtl,
+  ).offset { IntOffset(state.offset.value.roundToInt(), 0) }
+}
