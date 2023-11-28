@@ -49,14 +49,9 @@ struct ActiveCallView: View {
         }
         .onDisappear {
             logger.debug("ActiveCallView: disappear")
+            Task { await m.callCommand.setAction(action: nil) }
             AppDelegate.keepScreenOn(false)
             client?.endCall()
-        }
-        .onChange(of: m.callCommand) { cmd in
-            if let cmd = cmd {
-                m.callCommand = nil
-                sendCommandToClient(cmd)
-            }
         }
         .background(.black)
         .preferredColorScheme(.dark)
@@ -65,20 +60,19 @@ struct ActiveCallView: View {
     private func createWebRTCClient() {
         if client == nil && canConnectCall {
             client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
-            if let cmd = m.callCommand {
-                m.callCommand = nil
-                sendCommandToClient(cmd)
-            }
-        }
-    }
-
-    private func sendCommandToClient(_ cmd: WCallCommand) {
-        if call == m.activeCall,
-           m.activeCall != nil,
-           let client = client {
-            logger.debug("sendCallCommand: \(cmd.cmdType)")
             Task {
-                await client.sendCallCommand(command: cmd)
+                await m.callCommand.setAction(action: { c in
+//                    logger.debug("ActiveCallView: inside set action \(c.cmdType)  \(client == nil) \(activeCall == nil)")
+                    let allowWithoutActiveCall = switch c {
+                    case .capabilities, .start, .offer, .end: true
+                    default: false
+                    }
+                    if let client = client, (activeCall != nil || allowWithoutActiveCall) {
+                        logger.debug("ActiveCallView: sendCallCommand: \(c.cmdType)")
+                        Task { await client.sendCallCommand(command: c) }
+                        return true
+                    } else { return false }
+                })
             }
         }
     }

@@ -1673,29 +1673,31 @@ func processReceivedMsg(_ res: ChatResponse) async {
             let iceServers = getIceServers()
             logger.debug(".callOffer useRelay \(useRelay)")
             logger.debug(".callOffer iceServers \(String(describing: iceServers))")
-            m.callCommand = .offer(
-                offer: offer.rtcSession,
-                iceCandidates: offer.rtcIceCandidates,
-                media: callType.media, aesKey: sharedKey,
-                iceServers: iceServers,
-                relay: useRelay
-            )
+            Task {
+                await m.callCommand.processCommand(.offer(
+                    offer: offer.rtcSession,
+                    iceCandidates: offer.rtcIceCandidates,
+                    media: callType.media, aesKey: sharedKey,
+                    iceServers: iceServers,
+                    relay: useRelay
+                ))
+            }
         }
     case let .callAnswer(_, contact, answer):
         await withCall(contact) { call in
             call.callState = .answerReceived
-            m.callCommand = .answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates)
+            Task { await m.callCommand.processCommand(.answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates)) }
         }
     case let .callExtraInfo(_, contact, extraInfo):
         await withCall(contact) { _ in
-            m.callCommand = .ice(iceCandidates: extraInfo.rtcIceCandidates)
+            Task { await m.callCommand.processCommand(.ice(iceCandidates: extraInfo.rtcIceCandidates)) }
         }
     case let .callEnded(_, contact):
         if let invitation = await MainActor.run(body: { m.callInvitations.removeValue(forKey: contact.id) }) {
             CallController.shared.reportCallRemoteEnded(invitation: invitation)
         }
         await withCall(contact) { call in
-            m.callCommand = .end
+            Task { await m.callCommand.processCommand(.end) }
             CallController.shared.reportCallRemoteEnded(call: call)
         }
     case .chatSuspended:
