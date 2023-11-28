@@ -1172,16 +1172,13 @@ processChatCommand = \case
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) >> ok_
   APIGetNtfMessage nonce encNtfInfo -> withUser $ \_ -> do
     (NotificationInfo {ntfConnId, ntfMsgMeta}, msgs) <- withAgent $ \a -> getNotificationMessage a nonce encNtfInfo
-    let ntfMessages = map (\SMP.SMPMsgMeta {msgTs, msgFlags} -> NtfMsgInfo {msgTs = systemToUTCTime msgTs, msgFlags}) msgs
-        getMsgTs :: SMP.NMsgMeta -> SystemTime
-        getMsgTs SMP.NMsgMeta {msgTs} = msgTs
-        msgTs' = systemToUTCTime . getMsgTs <$> ntfMsgMeta
+    let msgTs' = systemToUTCTime . (\SMP.NMsgMeta {msgTs} -> msgTs) <$> ntfMsgMeta
         agentConnId = AgentConnId ntfConnId
     user_ <- withStore' (`getUserByAConnId` agentConnId)
-    connEntity <-
+    connEntity_ <-
       pure user_ $>>= \user ->
         withStore (\db -> Just <$> getConnectionEntity db user agentConnId) `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
-    pure CRNtfMessages {user_, connEntity, msgTs = msgTs', ntfMessages}
+    pure CRNtfMessages {user_, connEntity_, msgTs = msgTs', ntfMessages = map ntfMsgInfo msgs}
   APIGetUserProtoServers userId (AProtocolType p) -> withUserId userId $ \user -> withServerProtocol p $ do
     ChatConfig {defaultServers} <- asks config
     servers <- withStore' (`getProtocolServers` user)
@@ -3230,23 +3227,24 @@ processAgentMsgRcvFile _corrId aFileId msg =
               toView $ CRRcvFileError user ci e
 
 processAgentMessageConn :: forall m. ChatMonad m => User -> ACorrId -> ConnId -> ACommand 'Agent 'AEConn -> m ()
-processAgentMessageConn user _ agentConnId END =
-  withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= \case
-    RcvDirectMsgConnection _ (Just ct) -> toView $ CRContactAnotherClient user ct
-    entity -> toView $ CRSubscriptionEnd user entity
 processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
   entity <- withStore (\db -> getConnectionEntity db user $ AgentConnId agentConnId) >>= updateConnStatus
-  case entity of
-    RcvDirectMsgConnection conn contact_ ->
-      processDirectMessage agentMessage entity conn contact_
-    RcvGroupMsgConnection conn gInfo m ->
-      processGroupMessage agentMessage entity conn gInfo m
-    RcvFileConnection conn ft ->
-      processRcvFileConn agentMessage entity conn ft
-    SndFileConnection conn ft ->
-      processSndFileConn agentMessage entity conn ft
-    UserContactConnection conn uc ->
-      processUserContactRequest agentMessage entity conn uc
+  case agentMessage of
+    END -> case entity of
+      RcvDirectMsgConnection _ (Just ct) -> toView $ CRContactAnotherClient user ct
+      _ -> toView $ CRSubscriptionEnd user entity
+    MSGNTF smpMsgInfo -> toView $ CRNtfMessage user entity $ ntfMsgInfo smpMsgInfo
+    _ -> case entity of
+      RcvDirectMsgConnection conn contact_ ->
+        processDirectMessage agentMessage entity conn contact_
+      RcvGroupMsgConnection conn gInfo m ->
+        processGroupMessage agentMessage entity conn gInfo m
+      RcvFileConnection conn ft ->
+        processRcvFileConn agentMessage entity conn ft
+      SndFileConnection conn ft ->
+        processSndFileConn agentMessage entity conn ft
+      UserContactConnection conn uc ->
+        processUserContactRequest agentMessage entity conn uc
   where
     updateConnStatus :: ConnectionEntity -> m ConnectionEntity
     updateConnStatus acEntity = case agentMsgConnStatus agentMessage of
