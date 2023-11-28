@@ -26,7 +26,7 @@ fun storeWindowState(data: WindowPositionSize) {
     try {
       Json.encodeToString<WindowPositionSize>(data)
     } catch (e: Throwable) {
-      Json.encodeToString<WindowPositionSize>(WindowPositionSize())
+      null
     }
   )
 }
