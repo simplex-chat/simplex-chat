@@ -157,8 +157,10 @@ struct ActiveCallView: View {
                 }
             case let .error(message):
                 logger.debug("ActiveCallView: command error: \(message)")
+                AlertManager.shared.showAlert(Alert(title: Text("Error"), message: Text(message)))
             case let .invalid(type):
                 logger.debug("ActiveCallView: invalid response: \(type)")
+                AlertManager.shared.showAlert(Alert(title: Text("Invalid response"), message: Text(type)))
             }
         }
     }
