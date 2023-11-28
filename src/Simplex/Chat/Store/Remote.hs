@@ -22,8 +22,8 @@ import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import Simplex.RemoteControl.Types
 import UnliftIO
 
-insertRemoteHost :: DB.Connection -> Text -> FilePath -> RCHostPairing -> ExceptT StoreError IO RemoteHostId
-insertRemoteHost db hostDeviceName storePath RCHostPairing {caKey, caCert, idPrivKey, knownHost = kh_} = do
+insertRemoteHost :: DB.Connection -> Text -> FilePath -> Maybe RCCtrlAddress -> Maybe Word16 -> RCHostPairing -> ExceptT StoreError IO RemoteHostId
+insertRemoteHost db hostDeviceName storePath rcAddr_ bindPort_ RCHostPairing {caKey, caCert, idPrivKey, knownHost = kh_} = do
   KnownHostPairing {hostFingerprint, hostDhPubKey} <-
     maybe (throwError SERemoteHostUnknown) pure kh_
   checkConstraint SERemoteHostDuplicateCA . liftIO $
@@ -31,12 +31,14 @@ insertRemoteHost db hostDeviceName storePath RCHostPairing {caKey, caCert, idPri
       db
       [sql|
         INSERT INTO remote_hosts
-          (host_device_name, store_path, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub)
+          (host_device_name, store_path, bind_addr, bind_iface, bind_port, ca_key, ca_cert, id_key, host_fingerprint, host_dh_pub)
         VALUES
-          (?, ?, ?, ?, ?, ?, ?)
+          (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       |]
-      (hostDeviceName, storePath, caKey, C.SignedObject caCert, idPrivKey, hostFingerprint, hostDhPubKey)
+      (hostDeviceName, storePath, bindAddr_, bindIface_, bindPort_, caKey, C.SignedObject caCert, idPrivKey, hostFingerprint, hostDhPubKey)
   liftIO $ insertedRowId db
+  where
+    (bindAddr_, bindIface_) = rcCtrlAddressFields_ rcAddr_
 
 getRemoteHosts :: DB.Connection -> IO [RemoteHost]
 getRemoteHosts db =
@@ -68,8 +70,8 @@ toRemoteHost (remoteHostId, hostDeviceName, storePath, caKey, C.SignedObject caC
     bindAddress_ = RCCtrlAddress <$> (decodeAddr <$> ifaceAddr_) <*> ifaceName_
     decodeAddr = either (error "Error parsing TransportHost") id . strDecode . encodeUtf8
 
-updateHostPairing :: DB.Connection -> RemoteHostId -> Text -> C.PublicKeyX25519 -> RCCtrlAddress -> Maybe Word16 -> IO ()
-updateHostPairing db rhId hostDeviceName hostDhPubKey RCCtrlAddress {address, interface} port_ =
+updateHostPairing :: DB.Connection -> RemoteHostId -> Text -> C.PublicKeyX25519 -> Maybe RCCtrlAddress -> Maybe Word16 -> IO ()
+updateHostPairing db rhId hostDeviceName hostDhPubKey rcAddr_ bindPort_ =
   DB.execute
     db
     [sql|
@@ -77,7 +79,12 @@ updateHostPairing db rhId hostDeviceName hostDhPubKey RCCtrlAddress {address, in
       SET host_device_name = ?, host_dh_pub = ?, bind_addr = ?, bind_iface = ?, bind_port = ?
       WHERE remote_host_id = ?
     |]
-    (hostDeviceName, hostDhPubKey, decodeASCII $ strEncode address, interface, port_, rhId)
+    (hostDeviceName, hostDhPubKey, bindAddr_, bindIface_, bindPort_, rhId)
+  where
+    (bindAddr_, bindIface_) = rcCtrlAddressFields_ rcAddr_
+
+rcCtrlAddressFields_ :: Maybe RCCtrlAddress -> (Maybe Text, Maybe Text)
+rcCtrlAddressFields_ = maybe (Nothing, Nothing) $ \RCCtrlAddress {address, interface} -> (Just . decodeASCII $ strEncode address, Just interface)
 
 deleteRemoteHostRecord :: DB.Connection -> RemoteHostId -> IO ()
 deleteRemoteHostRecord db remoteHostId = DB.execute db "DELETE FROM remote_hosts WHERE remote_host_id = ?" (Only remoteHostId)

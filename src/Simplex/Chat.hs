@@ -1970,9 +1970,7 @@ processChatCommand = \case
   ListRemoteHosts -> withUser_ $ CRRemoteHostList <$> listRemoteHosts
   SwitchRemoteHost rh_ -> withUser_ $ CRCurrentRemoteHost <$> switchRemoteHost rh_
   StartRemoteHost rh_ ca_ bp_ -> withUser_ $ do
-    logError $ tshow ('P', ca_, bp_)
     (localAddrs, remoteHost_, inv@RCSignedInvitation {invitation = RCInvitation {port}}) <- startRemoteHost rh_ ca_ bp_
-    logError $ tshow ('F', localAddrs, remoteHost_)
     pure CRRemoteHostStarted {remoteHost_, invitation = decodeLatin1 $ strEncode inv, ctrlPort = show port, localAddrs}
   StopRemoteHost rh_ -> withUser_ $ closeRemoteHost rh_ >> ok_
   DeleteRemoteHost rh -> withUser_ $ deleteRemoteHost rh >> ok_

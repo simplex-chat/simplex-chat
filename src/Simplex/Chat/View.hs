@@ -65,6 +65,7 @@ import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (bshow, tshow)
 import Simplex.Messaging.Version hiding (version)
+import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.Console.ANSI.Types
 
 type CurrentTime = UTCTime
@@ -286,13 +287,13 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
         rhi_
     ]
   CRRemoteHostList hs -> viewRemoteHosts hs
-  CRRemoteHostStarted {remoteHost_, invitation, ctrlPort} ->
+  CRRemoteHostStarted {remoteHost_, invitation, localAddrs = RCCtrlAddress {address} :| _, ctrlPort} ->
     [ plain $ maybe ("new remote host" <> started) (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> show rhId <> started) remoteHost_,
       "Remote session invitation:",
       plain invitation
     ]
     where
-      started = " started on port " <> ctrlPort
+      started = " started on " <> B.unpack (strEncode address) <> ":" <> ctrlPort
   CRRemoteHostSessionCode {remoteHost_, sessionCode} ->
     [ maybe "new remote host connecting" (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> sShow rhId <> " connecting") remoteHost_,
       "Compare session code with host:",
@@ -1714,11 +1715,12 @@ viewRemoteHosts = \case
   hs -> "Remote hosts: " : map viewRemoteHostInfo hs
   where
     viewRemoteHostInfo RemoteHostInfo {remoteHostId, hostDeviceName, sessionState, bindAddress_, bindPort_} =
-      plain $ tshow remoteHostId <> ". " <> hostDeviceName <> todo'viewBinds bindAddress_ bindPort_ <> maybe "" viewSessionState sessionState
-    todo'viewBinds rca_ port_ =
-      if isJust rca_ || isJust port_
-        then " [addr=127.0.0.1 iface=lo port=52230]" -- alternatively: bind=lo,127.0.0.1:52230
-        else ""
+      plain $ tshow remoteHostId <> ". " <> hostDeviceName <> maybe "" viewSessionState sessionState <> ctrlBinds bindAddress_ bindPort_
+    ctrlBinds Nothing Nothing = ""
+    ctrlBinds rca_ port_ = mconcat [" [", maybe "" rca rca_, maybe "" port port_, "]"]
+      where
+        rca RCCtrlAddress {interface, address} = interface <> " " <> decodeLatin1 (strEncode address)
+        port p = ":" <> tshow p
     viewSessionState = \case
       RHSStarting -> " (starting)"
       RHSConnecting _ -> " (connecting)"

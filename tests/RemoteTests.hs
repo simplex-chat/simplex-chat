@@ -118,7 +118,7 @@ remoteHandshakeRejectTest = testChat3 aliceProfile aliceDesktopProfile bobProfil
   mobileBob ##> "/set device name MobileBob"
   mobileBob <## "ok"
   desktop ##> "/start remote host 1"
-  desktop <##. "remote host 1 started on port "
+  desktop <##. "remote host 1 started on "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobileBob ##> ("/connect remote ctrl " <> inv)
@@ -141,11 +141,33 @@ remoteHandshakeRejectTest = testChat3 aliceProfile aliceDesktopProfile bobProfil
 
 storedBindingsTest :: HasCallStack => FilePath -> IO ()
 storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+  desktop ##> "/set device name My desktop"
+  desktop <## "ok"
+  mobile ##> "/set device name Mobile"
+  mobile <## "ok"
+
   desktop ##> "/start remote host new addr=127.0.0.1 iface=lo port=52230"
-  desktop <##. "new remote host started on port 52230" -- TODO: show ip?
+  desktop <##. "new remote host started on 127.0.0.1:52230" -- TODO: show ip?
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
-  error $ "TODO: /connect " <> inv
+
+  mobile ##> ("/connect remote ctrl " <> inv)
+  mobile <## ("connecting new remote controller: My desktop, v" <> versionNumber)
+  desktop <## "new remote host connecting"
+  mobile <## "new remote controller connected"
+  verifyRemoteCtrl mobile desktop
+  mobile <## "remote controller 1 session started with My desktop"
+  desktop <## "new remote host 1 added: Mobile"
+  desktop <## "remote host 1 connected"
+
+  desktop ##> "/list remote hosts"
+  desktop <## "Remote hosts:"
+  desktop <## "1. Mobile (connected) [lo 127.0.0.1:52230]"
+  stopDesktop mobile desktop
+  desktop ##> "/list remote hosts"
+  desktop <## "Remote hosts:"
+  desktop <## "1. Mobile [lo 127.0.0.1:52230]"
+
   -- TODO: more parser tests
 
 remoteMessageTest :: HasCallStack => FilePath -> IO ()
@@ -485,7 +507,7 @@ startRemote mobile desktop = do
   mobile ##> "/set device name Mobile"
   mobile <## "ok"
   desktop ##> "/start remote host new"
-  desktop <##. "new remote host started on port "
+  desktop <##. "new remote host started on "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobile ##> ("/connect remote ctrl " <> inv)
@@ -500,7 +522,7 @@ startRemote mobile desktop = do
 startRemoteStored :: TestCC -> TestCC -> IO ()
 startRemoteStored mobile desktop = do
   desktop ##> "/start remote host 1"
-  desktop <##. "remote host 1 started on port "
+  desktop <##. "remote host 1 started on "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobile ##> ("/connect remote ctrl " <> inv)
@@ -514,7 +536,7 @@ startRemoteStored mobile desktop = do
 startRemoteDiscover :: TestCC -> TestCC -> IO ()
 startRemoteDiscover mobile desktop = do
   desktop ##> "/start remote host 1 multicast=on"
-  desktop <##. "remote host 1 started on port "
+  desktop <##. "remote host 1 started on "
   desktop <## "Remote session invitation:"
   _inv <- getTermLine desktop -- will use multicast instead
   mobile ##> "/find remote ctrl"
