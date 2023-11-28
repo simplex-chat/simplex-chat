@@ -21,7 +21,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
 
     struct Call {
         var connection: RTCPeerConnection
-        var iceCandidates: [RTCIceCandidate]
+        var iceCandidates: IceCandidates
         var localMedia: CallMediaType
         var localCamera: RTCVideoCapturer?
         var localVideoSource: RTCVideoSource?
@@ -31,6 +31,20 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         var aesKey: String?
         var frameEncryptor: RTCFrameEncryptor?
         var frameDecryptor: RTCFrameDecryptor?
+    }
+
+    actor IceCandidates {
+        private var candidates: [RTCIceCandidate] = []
+
+        func getAndClear() async -> [RTCIceCandidate] {
+            let cs = candidates
+            candidates = []
+            return cs
+        }
+
+        func append(_ c: RTCIceCandidate) async {
+            candidates.append(c)
+        }
     }
 
     private let rtcAudioSession =  RTCAudioSession.sharedInstance()
@@ -60,7 +74,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         WebRTC.RTCIceServer(urlStrings: ["turn:turn.simplex.im:443?transport=tcp"], username: "private", credential: "yleob6AVkiNI87hpR94Z"),
     ]
 
-    func initializeCall(_ iceServers: [WebRTC.RTCIceServer]?, _ remoteIceCandidates: [RTCIceCandidate], _ mediaType: CallMediaType, _ aesKey: String?, _ relay: Bool?) -> Call {
+    func initializeCall(_ iceServers: [WebRTC.RTCIceServer]?, _ mediaType: CallMediaType, _ aesKey: String?, _ relay: Bool?) -> Call {
         let connection = createPeerConnection(iceServers ?? getWebRTCIceServers() ?? defaultIceServers, relay)
         connection.delegate = self
         createAudioSender(connection)
@@ -87,7 +101,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         }
         return Call(
             connection: connection,
-            iceCandidates: remoteIceCandidates,
+            iceCandidates: IceCandidates(),
             localMedia: mediaType,
             localCamera: localCamera,
             localVideoSource: localVideoSource,
@@ -144,26 +158,21 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
             logger.debug("starting incoming call - create webrtc session")
             if activeCall.wrappedValue != nil { endCall() }
             let encryption = WebRTCClient.enableEncryption
-            let call = initializeCall(iceServers?.toWebRTCIceServers(), [], media, encryption ? aesKey : nil, relay)
+            let call = initializeCall(iceServers?.toWebRTCIceServers(), media, encryption ? aesKey : nil, relay)
             activeCall.wrappedValue = call
             call.connection.offer { answer in
                 Task {
-                    let gotCandidates = await self.waitWithTimeout(10_000, stepMs: 1000, until: { self.activeCall.wrappedValue?.iceCandidates.count ?? 0 > 0 })
-                    if gotCandidates {
-                        await self.sendCallResponse(.init(
-                            corrId: nil,
-                            resp: .offer(
-                                offer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: answer.type.toSdpType(), sdp: answer.sdp))),
-                                iceCandidates: compressToBase64(input: encodeJSON(self.activeCall.wrappedValue?.iceCandidates ?? [])),
-                                capabilities: CallCapabilities(encryption: encryption)
-                            ),
-                            command: command)
-                        )
-                    } else {
-                        self.endCall()
-                    }
+                    await self.sendCallResponse(.init(
+                        corrId: nil,
+                        resp: .offer(
+                            offer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: answer.type.toSdpType(), sdp: answer.sdp))),
+                            iceCandidates: compressToBase64(input: encodeJSON(await self.getInitialIceCandidates())),
+                            capabilities: CallCapabilities(encryption: encryption)
+                        ),
+                        command: command)
+                    )
+                    await self.waitForMoreIceCandidates()
                 }
-
             }
         case let .offer(offer, iceCandidates, media, aesKey, iceServers, relay):
             if activeCall.wrappedValue != nil {
@@ -172,7 +181,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
                 resp = .error(message: "accept: encryption is not supported")
             } else if let offer: CustomRTCSessionDescription = decodeJSON(decompressFromBase64(input: offer)),
                       let remoteIceCandidates: [RTCIceCandidate] = decodeJSON(decompressFromBase64(input: iceCandidates)) {
-                let call = initializeCall(iceServers?.toWebRTCIceServers(), remoteIceCandidates, media, WebRTCClient.enableEncryption ? aesKey : nil, relay)
+                let call = initializeCall(iceServers?.toWebRTCIceServers(), media, WebRTCClient.enableEncryption ? aesKey : nil, relay)
                 activeCall.wrappedValue = call
                 let pc = call.connection
                 if let type = offer.type, let sdp = offer.sdp {
@@ -186,10 +195,11 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
                                     corrId: nil,
                                     resp: .answer(
                                         answer: compressToBase64(input: encodeJSON(CustomRTCSessionDescription(type: answer.type.toSdpType(), sdp: answer.sdp))),
-                                        iceCandidates: compressToBase64(input: encodeJSON(call.iceCandidates))
+                                        iceCandidates: compressToBase64(input: encodeJSON(await self.getInitialIceCandidates()))
                                     ),
                                     command: command)
                                 )
+                                await self.waitForMoreIceCandidates()
                             }
 //                            }
                         }
@@ -234,12 +244,38 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
                 resp = .ok
             }
         case .end:
+            // TODO possibly, endCall should be called before returning .ok
             await sendCallResponse(.init(corrId: nil, resp: .ok, command: command))
             endCall()
         }
         if let resp = resp {
             await sendCallResponse(.init(corrId: nil, resp: resp, command: command))
         }
+    }
+
+    func getInitialIceCandidates() async -> [RTCIceCandidate] {
+        await untilIceComplete(timeoutMs: 750, stepMs: 150) {}
+        let candidates = await activeCall.wrappedValue?.iceCandidates.getAndClear() ?? []
+        logger.debug("WebRTCClient: sending initial ice candidates: \(candidates.count)")
+        return candidates
+    }
+
+    func waitForMoreIceCandidates() async {
+        await untilIceComplete(timeoutMs: 12000, stepMs: 1500) {
+            let candidates = await self.activeCall.wrappedValue?.iceCandidates.getAndClear() ?? []
+            if candidates.count > 0 {
+                logger.debug("WebRTCClient: sending more ice candidates: \(candidates.count)")
+                await self.sendIceCandidates(candidates)
+            }
+        }
+    }
+
+    func sendIceCandidates(_ candidates: [RTCIceCandidate]) async {
+        await self.sendCallResponse(.init(
+            corrId: nil,
+            resp: .ice(iceCandidates: compressToBase64(input: encodeJSON(candidates))),
+            command: nil)
+        )
     }
 
     func enableMedia(_ media: CallMediaType, _ enable: Bool) {
@@ -387,12 +423,13 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
         audioSessionToDefaults()
     }
 
-    func waitWithTimeout(_ timeoutMs: UInt64, stepMs: UInt64, until success: () -> Bool) async -> Bool {
-        let startedAt = DispatchTime.now()
-        while !success() && startedAt.uptimeNanoseconds + timeoutMs * 1000000 > DispatchTime.now().uptimeNanoseconds {
-            guard let _ = try? await Task.sleep(nanoseconds: stepMs * 1000000) else { break }
-        }
-        return success()
+    func untilIceComplete(timeoutMs: UInt64, stepMs: UInt64, action: @escaping () async -> Void) async {
+        var t: UInt64 = 0
+        repeat {
+            _ = try? await Task.sleep(nanoseconds: stepMs * 1000000)
+            t += stepMs
+            await action()
+        } while t < timeoutMs && activeCall.wrappedValue?.connection.iceGatheringState != .complete
     }
 }
 
@@ -479,6 +516,7 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
                 default: enableSpeaker = false
                 }
                 setSpeakerEnabledAndConfigureSession(enableSpeaker)
+            case .connected: sendConnectedEvent(connection)
             case .disconnected, .failed: endCall()
             default: do {}
             }
@@ -491,7 +529,9 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
 
     func peerConnection(_ connection: RTCPeerConnection, didGenerate candidate: WebRTC.RTCIceCandidate) {
 //        logger.debug("Connection generated candidate \(candidate.debugDescription)")
-        activeCall.wrappedValue?.iceCandidates.append(candidate.toCandidate(nil, nil, nil))
+        Task {
+            await self.activeCall.wrappedValue?.iceCandidates.append(candidate.toCandidate(nil, nil))
+        }
     }
 
     func peerConnection(_ connection: RTCPeerConnection, didRemove candidates: [WebRTC.RTCIceCandidate]) {
@@ -506,10 +546,9 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
                         lastReceivedMs lastDataReceivedMs: Int32,
                         changeReason reason: String) {
 //        logger.debug("Connection changed candidate \(reason) \(remote.debugDescription) \(remote.description)")
-        sendConnectedEvent(connection, local: local, remote: remote)
     }
 
-    func sendConnectedEvent(_ connection: WebRTC.RTCPeerConnection, local: WebRTC.RTCIceCandidate, remote: WebRTC.RTCIceCandidate) {
+    func sendConnectedEvent(_ connection: WebRTC.RTCPeerConnection) {
         connection.statistics { (stats: RTCStatisticsReport) in
             stats.statistics.values.forEach { stat in
 //                logger.debug("Stat \(stat.debugDescription)")
@@ -517,24 +556,25 @@ extension WebRTCClient: RTCPeerConnectionDelegate {
                    let localId = stat.values["localCandidateId"] as? String,
                    let remoteId = stat.values["remoteCandidateId"] as? String,
                    let localStats = stats.statistics[localId],
-                   let remoteStats = stats.statistics[remoteId],
-                   local.sdp.contains("\((localStats.values["ip"] as? String ?? "--")) \((localStats.values["port"] as? String ?? "--"))") &&
-                   remote.sdp.contains("\((remoteStats.values["ip"] as? String ?? "--")) \((remoteStats.values["port"] as? String ?? "--"))")
+                   let remoteStats = stats.statistics[remoteId]
                 {
                     Task {
                         await self.sendCallResponse(.init(
                             corrId: nil,
                             resp: .connected(connectionInfo: ConnectionInfo(
-                                localCandidate: local.toCandidate(
-                                    RTCIceCandidateType.init(rawValue: localStats.values["candidateType"] as! String),
-                                    localStats.values["protocol"] as? String,
-                                    localStats.values["relayProtocol"] as? String
+                                localCandidate: RTCIceCandidate(
+                                    candidateType: RTCIceCandidateType.init(rawValue: localStats.values["candidateType"] as! String),
+                                    protocol: localStats.values["protocol"] as? String,
+                                    sdpMid: nil,
+                                    sdpMLineIndex: nil,
+                                    candidate: ""
                                 ),
-                                remoteCandidate: remote.toCandidate(
-                                    RTCIceCandidateType.init(rawValue: remoteStats.values["candidateType"] as! String),
-                                    remoteStats.values["protocol"] as? String,
-                                    remoteStats.values["relayProtocol"] as? String
-                                ))),
+                                remoteCandidate: RTCIceCandidate(
+                                    candidateType: RTCIceCandidateType.init(rawValue: remoteStats.values["candidateType"] as! String),
+                                    protocol: remoteStats.values["protocol"] as? String,
+                                    sdpMid: nil,
+                                    sdpMLineIndex: nil,
+                                    candidate: ""))),
                             command: nil)
                         )
                     }
@@ -634,11 +674,10 @@ extension RTCIceCandidate {
 }
 
 extension WebRTC.RTCIceCandidate {
-    func toCandidate(_ candidateType: RTCIceCandidateType?, _ protocol: String?, _ relayProtocol: String?) -> RTCIceCandidate {
+    func toCandidate(_ candidateType: RTCIceCandidateType?, _ protocol: String?) -> RTCIceCandidate {
         RTCIceCandidate(
             candidateType: candidateType,
             protocol: `protocol`,
-            relayProtocol: relayProtocol,
             sdpMid: sdpMid,
             sdpMLineIndex: Int(sdpMLineIndex),
             candidate: sdp

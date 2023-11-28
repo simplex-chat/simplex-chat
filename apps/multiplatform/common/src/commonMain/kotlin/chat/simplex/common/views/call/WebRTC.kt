@@ -127,18 +127,10 @@ sealed class WCallResponse {
         "${local?.value ?: "unknown"} / ${remote?.value ?: "unknown"}"
     }
   }
-
-  val protocolText: String get() {
-    val local = localCandidate?.protocol?.uppercase(Locale.ROOT) ?: "unknown"
-    val localRelay = localCandidate?.relayProtocol?.uppercase(Locale.ROOT) ?: "unknown"
-    val remote = remoteCandidate?.protocol?.uppercase(Locale.ROOT) ?: "unknown"
-    val localText = if (localRelay == local || localCandidate?.relayProtocol == null) local else "$local ($localRelay)"
-    return if (local == remote) localText else "$localText / $remote"
-  }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate
-@Serializable data class RTCIceCandidate(val candidateType: RTCIceCandidateType?, val protocol: String?, val relayProtocol: String?)
+@Serializable data class RTCIceCandidate(val candidateType: RTCIceCandidateType?, val protocol: String?)
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceServer
 @Serializable data class RTCIceServer(val urls: List<String>, val username: String? = null, val credential: String? = null)
 

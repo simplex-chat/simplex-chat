@@ -105,6 +105,7 @@ import Simplex.Messaging.Transport.Client (defaultSocksProxy)
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
 import Simplex.RemoteControl.Invitation (RCInvitation (..), RCSignedInvitation (..))
+import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.Exit (ExitCode, exitFailure, exitSuccess)
 import System.FilePath (takeFileName, (</>))
 import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, stdout)
@@ -1965,16 +1966,16 @@ processChatCommand = \case
     let pref = uncurry TimedMessagesGroupPreference $ maybe (FEOff, Just 86400) (\ttl -> (FEOn, Just ttl)) ttl_
     updateGroupProfileByName gName $ \p ->
       p {groupPreferences = Just . setGroupPreference' SGFTimedMessages pref $ groupPreferences p}
-  SetLocalDeviceName name -> withUser_ $ chatWriteVar localDeviceName name >> ok_
-  ListRemoteHosts -> withUser_ $ CRRemoteHostList <$> listRemoteHosts
-  SwitchRemoteHost rh_ -> withUser_ $ CRCurrentRemoteHost <$> switchRemoteHost rh_
-  StartRemoteHost rh_ -> withUser_ $ do
-    (remoteHost_, inv@RCSignedInvitation {invitation = RCInvitation {port}}) <- startRemoteHost rh_
-    pure CRRemoteHostStarted {remoteHost_, invitation = decodeLatin1 $ strEncode inv, ctrlPort = show port}
-  StopRemoteHost rh_ -> withUser_ $ closeRemoteHost rh_ >> ok_
-  DeleteRemoteHost rh -> withUser_ $ deleteRemoteHost rh >> ok_
-  StoreRemoteFile rh encrypted_ localPath -> withUser_ $ CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
-  GetRemoteFile rh rf -> withUser_ $ getRemoteFile rh rf >> ok_
+  SetLocalDeviceName name -> chatWriteVar localDeviceName name >> ok_
+  ListRemoteHosts -> CRRemoteHostList <$> listRemoteHosts
+  SwitchRemoteHost rh_ -> CRCurrentRemoteHost <$> switchRemoteHost rh_
+  StartRemoteHost rh_ ca_ bp_ -> do
+    (localAddrs, remoteHost_, inv@RCSignedInvitation {invitation = RCInvitation {port}}) <- startRemoteHost rh_ ca_ bp_
+    pure CRRemoteHostStarted {remoteHost_, invitation = decodeLatin1 $ strEncode inv, ctrlPort = show port, localAddrs}
+  StopRemoteHost rh_ -> closeRemoteHost rh_ >> ok_
+  DeleteRemoteHost rh -> deleteRemoteHost rh >> ok_
+  StoreRemoteFile rh encrypted_ localPath -> CRRemoteFileStored rh <$> storeRemoteFile rh encrypted_ localPath
+  GetRemoteFile rh rf -> getRemoteFile rh rf >> ok_
   ConnectRemoteCtrl inv -> withUser_ $ do
     (remoteCtrl_, ctrlAppInfo) <- connectRemoteCtrlURI inv
     pure CRRemoteCtrlConnecting {remoteCtrl_, ctrlAppInfo, appVersion = currentAppVersion}
@@ -6189,7 +6190,7 @@ chatCommandP =
       "/set device name " *> (SetLocalDeviceName <$> textP),
       "/list remote hosts" $> ListRemoteHosts,
       "/switch remote host " *> (SwitchRemoteHost <$> ("local" $> Nothing <|> (Just <$> A.decimal))),
-      "/start remote host " *> (StartRemoteHost <$> ("new" $> Nothing <|> (Just <$> ((,) <$> A.decimal <*> (" multicast=" *> onOffP <|> pure False))))),
+      "/start remote host " *> (StartRemoteHost <$> ("new" $> Nothing <|> (Just <$> ((,) <$> A.decimal <*> (" multicast=" *> onOffP <|> pure False)))) <*> optional (A.space *> rcCtrlAddressP) <*> optional (" port=" *> A.decimal)),
       "/stop remote host " *> (StopRemoteHost <$> ("new" $> RHNew <|> RHId <$> A.decimal)),
       "/delete remote host " *> (DeleteRemoteHost <$> A.decimal),
       "/store remote file " *> (StoreRemoteFile <$> A.decimal <*> optional (" encrypt=" *> onOffP) <* A.space <*> filePath),
@@ -6327,6 +6328,8 @@ chatCommandP =
         (pure Nothing)
     srvCfgP = strP >>= \case AProtocolType p -> APSC p <$> (A.space *> jsonP)
     toServerCfg server = ServerCfg {server, preset = False, tested = Nothing, enabled = True}
+    rcCtrlAddressP = RCCtrlAddress <$> ("addr=" *> strP) <*> (" iface=" *> text1P)
+    text1P = safeDecodeUtf8 <$> A.takeTill (== ' ')
     char_ = optional . A.char
 
 adminContactReq :: ConnReqContact
