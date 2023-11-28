@@ -4,9 +4,6 @@ import chat.simplex.common.platform.appPreferences
 import chat.simplex.common.platform.desktopPlatform
 import kotlinx.serialization.*
 import kotlinx.serialization.json.Json
-import java.io.File
-
-val defaultWindowStateJson = """{"width"\:1370,"height"\:780,"x"\:0,"y"\:0}"""
 
 @Serializable
 data class WindowPositionSize(
@@ -18,7 +15,7 @@ data class WindowPositionSize(
 
 fun getStoredWindowState() : WindowPositionSize {
   return try {
-    Json.decodeFromString<WindowPositionSize>(appPreferences.windowState.get() ?: defaultWindowStateJson)
+    Json.decodeFromString<WindowPositionSize>(appPreferences.windowState.get() ?: "force error")
   } catch (e: Throwable) {
     WindowPositionSize()
   }
@@ -29,7 +26,7 @@ fun storeWindowState(data: WindowPositionSize) {
     try {
       Json.encodeToString<WindowPositionSize>(data)
     } catch (e: Throwable) {
-      defaultWindowStateJson
+      Json.encodeToString<WindowPositionSize>(WindowPositionSize())
     }
   )
 }
