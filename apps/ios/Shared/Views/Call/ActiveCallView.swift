@@ -49,14 +49,9 @@ struct ActiveCallView: View {
         }
         .onDisappear {
             logger.debug("ActiveCallView: disappear")
+            Task { await m.callCommand.setClient(nil) }
             AppDelegate.keepScreenOn(false)
             client?.endCall()
-        }
-        .onChange(of: m.callCommand) { cmd in
-            if let cmd = cmd {
-                m.callCommand = nil
-                sendCommandToClient(cmd)
-            }
         }
         .background(.black)
         .preferredColorScheme(.dark)
@@ -65,20 +60,8 @@ struct ActiveCallView: View {
     private func createWebRTCClient() {
         if client == nil && canConnectCall {
             client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
-            if let cmd = m.callCommand {
-                m.callCommand = nil
-                sendCommandToClient(cmd)
-            }
-        }
-    }
-
-    private func sendCommandToClient(_ cmd: WCallCommand) {
-        if call == m.activeCall,
-           m.activeCall != nil,
-           let client = client {
-            logger.debug("sendCallCommand: \(cmd.cmdType)")
             Task {
-                await client.sendCallCommand(command: cmd)
+                await m.callCommand.setClient(client)
             }
         }
     }
@@ -174,8 +157,10 @@ struct ActiveCallView: View {
                 }
             case let .error(message):
                 logger.debug("ActiveCallView: command error: \(message)")
+                AlertManager.shared.showAlert(Alert(title: Text("Error"), message: Text(message)))
             case let .invalid(type):
                 logger.debug("ActiveCallView: invalid response: \(type)")
+                AlertManager.shared.showAlert(Alert(title: Text("Invalid response"), message: Text(type)))
             }
         }
     }

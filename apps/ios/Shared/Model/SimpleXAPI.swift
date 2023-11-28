@@ -1666,36 +1666,40 @@ func processReceivedMsg(_ res: ChatResponse) async {
         activateCall(invitation)
     case let .callOffer(_, contact, callType, offer, sharedKey, _):
         await withCall(contact) { call in
-            call.callState = .offerReceived
-            call.peerMedia = callType.media
-            call.sharedKey = sharedKey
+            await MainActor.run {
+                call.callState = .offerReceived
+                call.peerMedia = callType.media
+                call.sharedKey = sharedKey
+            }
             let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
             let iceServers = getIceServers()
             logger.debug(".callOffer useRelay \(useRelay)")
             logger.debug(".callOffer iceServers \(String(describing: iceServers))")
-            m.callCommand = .offer(
+            await m.callCommand.processCommand(.offer(
                 offer: offer.rtcSession,
                 iceCandidates: offer.rtcIceCandidates,
                 media: callType.media, aesKey: sharedKey,
                 iceServers: iceServers,
                 relay: useRelay
-            )
+            ))
         }
     case let .callAnswer(_, contact, answer):
         await withCall(contact) { call in
-            call.callState = .answerReceived
-            m.callCommand = .answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates)
+            await MainActor.run {
+                call.callState = .answerReceived
+            }
+            await m.callCommand.processCommand(.answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates))
         }
     case let .callExtraInfo(_, contact, extraInfo):
         await withCall(contact) { _ in
-            m.callCommand = .ice(iceCandidates: extraInfo.rtcIceCandidates)
+            await m.callCommand.processCommand(.ice(iceCandidates: extraInfo.rtcIceCandidates))
         }
     case let .callEnded(_, contact):
         if let invitation = await MainActor.run(body: { m.callInvitations.removeValue(forKey: contact.id) }) {
             CallController.shared.reportCallRemoteEnded(invitation: invitation)
         }
         await withCall(contact) { call in
-            m.callCommand = .end
+            await m.callCommand.processCommand(.end)
             CallController.shared.reportCallRemoteEnded(call: call)
         }
     case .chatSuspended:
@@ -1753,9 +1757,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
         logger.debug("unsupported event: \(res.responseType)")
     }
 
-    func withCall(_ contact: Contact, _ perform: (Call) -> Void) async {
+    func withCall(_ contact: Contact, _ perform: (Call) async -> Void) async {
         if let call = m.activeCall, call.contact.apiId == contact.apiId {
-            await MainActor.run { perform(call) }
+            await perform(call)
         } else {
             logger.debug("processReceivedMsg: ignoring \(res.responseType), not in call with the contact \(contact.id)")
         }
