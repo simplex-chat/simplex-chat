@@ -52,6 +52,19 @@ fun FramedItemView(
   fun Color.toQuote(): Color = if (isInDarkTheme()) lighter(0.12f) else darker(0.12f)
 
   @Composable
+  fun ciQuotedMsgTextViewMarkdown(qi: CIQuote, lines: Int) {
+    MarkdownText(
+      qi.text,
+      qi.formattedText,
+      maxLines = lines,
+      overflow = TextOverflow.Ellipsis,
+      style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface),
+      linkMode = linkMode,
+      uriHandler = if (appPlatform.isDesktop) uriHandler else null
+    )
+  }
+
+  @Composable
   fun ciQuotedMsgTextView(qi: CIQuote, lines: Int) {
     if (appPlatform.isDesktop) {
       SelectionContainer(
@@ -60,26 +73,10 @@ fun FramedItemView(
           onClick = { showMenu.value = true }
         )
       ) {
-        MarkdownText(
-          qi.text,
-          qi.formattedText,
-          maxLines = lines,
-          overflow = TextOverflow.Ellipsis,
-          style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface),
-          linkMode = linkMode,
-          uriHandler = if (appPlatform.isDesktop) uriHandler else null
-        )
+        ciQuotedMsgTextViewMarkdown(qi, lines)
       }
     } else {
-      MarkdownText(
-        qi.text,
-        qi.formattedText,
-        maxLines = lines,
-        overflow = TextOverflow.Ellipsis,
-        style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface),
-        linkMode = linkMode,
-        uriHandler = if (appPlatform.isDesktop) uriHandler else null
-      )
+      ciQuotedMsgTextViewMarkdown(qi, lines)
     }
   }
 
