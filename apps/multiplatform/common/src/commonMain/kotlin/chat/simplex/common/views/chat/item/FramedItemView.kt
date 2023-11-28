@@ -296,6 +296,22 @@ fun FramedItemView(
 }
 
 @Composable
+fun CIMarkdownTextMarkdown(
+  text: String,
+  ci: ChatItem,
+  chatTTL: Int?,
+  linkMode: SimplexLinkMode,
+  uriHandler: UriHandler?,
+  onLinkLongClick: (link: String) -> Unit = {}
+) {
+  MarkdownText(
+    text, if (text.isEmpty()) emptyList() else ci.formattedText,
+    meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
+    uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
+  )
+}
+
+@Composable
 fun CIMarkdownText(
   ci: ChatItem,
   chatTTL: Int?,
@@ -313,18 +329,10 @@ fun CIMarkdownText(
           onClick = { showMenu.value = true }
         )
       ) {
-      MarkdownText(
-          text, if (text.isEmpty()) emptyList() else ci.formattedText,
-          meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
-          uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
-        )
+      CIMarkdownTextMarkdown(text, ci, chatTTL, linkMode, uriHandler, onLinkLongClick)
       }
     } else {
-      MarkdownText(
-        text, if (text.isEmpty()) emptyList() else ci.formattedText,
-        meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
-        uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
-      )
+      CIMarkdownTextMarkdown(text, ci, chatTTL, linkMode, uriHandler, onLinkLongClick)
     }
   }
 }
