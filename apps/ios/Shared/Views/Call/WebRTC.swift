@@ -336,32 +336,32 @@ extension WCallResponse: Encodable {
 }
 
 actor WebRTCCommandProcessor {
-    var action: ((WCallCommand) -> Bool)? = nil
-    var commands: [WCallCommand] = []
-    func setAction(action: ((WCallCommand) -> Bool)?) {
+    private var action: ((WCallCommand) async -> Bool)? = nil
+    private var commands: [WCallCommand] = []
+
+    func setAction(action: ((WCallCommand) async -> Bool)?) async {
         logger.debug("WebRTC: set action, commands count \(self.commands.count)")
         self.action = action
         if action != nil {
-            processAllCommands()
+            await processAllCommands()
         } else {
             commands.removeAll()
         }
     }
 
-    func processCommand(_ c: WCallCommand) {
+    func processCommand(_ c: WCallCommand) async {
 //        logger.debug("WebRTC: process command \(c.cmdType)")
         commands.append(c)
-        processAllCommands()
+        await processAllCommands()
     }
 
-    func processAllCommands() {
+    func processAllCommands() async {
         logger.debug("WebRTC: process all commands, commands count \(self.commands.count), action == nil \(self.action == nil)")
         if let action = action {
-            while !commands.isEmpty {
-                let c = commands[0]
-                if action(c) {
+            while let c = commands.first {
+                if await action(c) {
                     logger.debug("WebRTC: processed cmd \(c.cmdType)")
-                    commands.removeFirst()
+                    if commands.count > 0 { commands.remove(at: 0) }
                 } else {
                     logger.debug("WebRTC: failed to process cmd \(c.cmdType)")
                     break

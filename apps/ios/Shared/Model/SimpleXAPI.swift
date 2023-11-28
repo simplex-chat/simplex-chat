@@ -1673,31 +1673,29 @@ func processReceivedMsg(_ res: ChatResponse) async {
             let iceServers = getIceServers()
             logger.debug(".callOffer useRelay \(useRelay)")
             logger.debug(".callOffer iceServers \(String(describing: iceServers))")
-            Task {
-                await m.callCommand.processCommand(.offer(
-                    offer: offer.rtcSession,
-                    iceCandidates: offer.rtcIceCandidates,
-                    media: callType.media, aesKey: sharedKey,
-                    iceServers: iceServers,
-                    relay: useRelay
-                ))
-            }
+            await m.callCommand.processCommand(.offer(
+                offer: offer.rtcSession,
+                iceCandidates: offer.rtcIceCandidates,
+                media: callType.media, aesKey: sharedKey,
+                iceServers: iceServers,
+                relay: useRelay
+            ))
         }
     case let .callAnswer(_, contact, answer):
         await withCall(contact) { call in
             call.callState = .answerReceived
-            Task { await m.callCommand.processCommand(.answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates)) }
+            await m.callCommand.processCommand(.answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates))
         }
     case let .callExtraInfo(_, contact, extraInfo):
         await withCall(contact) { _ in
-            Task { await m.callCommand.processCommand(.ice(iceCandidates: extraInfo.rtcIceCandidates)) }
+            await m.callCommand.processCommand(.ice(iceCandidates: extraInfo.rtcIceCandidates))
         }
     case let .callEnded(_, contact):
         if let invitation = await MainActor.run(body: { m.callInvitations.removeValue(forKey: contact.id) }) {
             CallController.shared.reportCallRemoteEnded(invitation: invitation)
         }
         await withCall(contact) { call in
-            Task { await m.callCommand.processCommand(.end) }
+            await m.callCommand.processCommand(.end)
             CallController.shared.reportCallRemoteEnded(call: call)
         }
     case .chatSuspended:
@@ -1755,9 +1753,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
         logger.debug("unsupported event: \(res.responseType)")
     }
 
-    func withCall(_ contact: Contact, _ perform: (Call) -> Void) async {
+    func withCall(_ contact: Contact, _ perform: (Call) async -> Void) async {
         if let call = m.activeCall, call.contact.apiId == contact.apiId {
-            await MainActor.run { perform(call) }
+            await perform(call)
         } else {
             logger.debug("processReceivedMsg: ignoring \(res.responseType), not in call with the contact \(contact.id)")
         }

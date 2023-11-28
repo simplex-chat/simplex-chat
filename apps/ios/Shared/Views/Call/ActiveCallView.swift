@@ -69,7 +69,7 @@ struct ActiveCallView: View {
                     }
                     if let client = client, (activeCall != nil || allowWithoutActiveCall) {
                         logger.debug("ActiveCallView: sendCallCommand: \(c.cmdType)")
-                        Task { await client.sendCallCommand(command: c) }
+                        await client.sendCallCommand(command: c)
                         return true
                     } else { return false }
                 })
