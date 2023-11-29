@@ -775,7 +775,7 @@
     <string name="group_invitation_tap_to_join">Tocca per entrare</string>
     <string name="group_invitation_tap_to_join_incognito">Toccare per entrare in incognito</string>
     <string name="alert_message_no_group">Questo gruppo non esiste più.</string>
-    <string name="rcv_group_event_updated_group_profile">profilo del gruppo aggiornato</string>
+    <string name="rcv_group_event_updated_group_profile">ha aggiornato il profilo del gruppo</string>
     <string name="you_are_invited_to_group">Sei stato/a invitato/a al gruppo</string>
     <string name="snd_conn_event_switch_queue_phase_completed">hai cambiato indirizzo</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">hai cambiato l\'indirizzo per %s</string>
