@@ -63,7 +63,8 @@ struct ChatListView: View {
 
     private var chatListView: some View {
         VStack {
-            chatList.searchable(text: $searchText)
+//            chatList.searchable(text: $searchText)
+            chatList
         }
         .onDisappear() { withAnimation { userPickerVisible = false } }
         .refreshable {
@@ -82,7 +83,7 @@ struct ChatListView: View {
                 secondaryButton: .cancel()
             ))
         }
-        .offset(x: -8)
+//        .offset(x: -8)
         .listStyle(.plain)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showCreateGroupSheet) {
@@ -160,12 +161,20 @@ struct ChatListView: View {
     @ViewBuilder private var chatList: some View {
         let cs = filteredChats()
         ZStack {
-            List {
-                ForEach(cs, id: \.viewId) { chat in
-                    ChatListNavLink(chat: chat)
-                        .padding(.trailing, -16)
-                        .disabled(chatModel.chatRunning != true)
+            VStack {
+                if !chatModel.chats.isEmpty {
+                    ChatListSearchBar(text: $searchText)
+                        .listRowSeparator(.hidden, edges: .top)
+                        .frame(maxWidth: .infinity)
                 }
+                List {
+                    ForEach(cs, id: \.viewId) { chat in
+                        ChatListNavLink(chat: chat)
+                            .padding(.trailing, -16)
+                            .disabled(chatModel.chatRunning != true)
+                    }
+                }
+                .offset(x: -8)
             }
             .onChange(of: chatModel.chatId) { _ in
                 if chatModel.chatId == nil, let chatId = chatModel.chatToTop {
@@ -261,6 +270,64 @@ struct ChatListView: View {
 
         func viewNameContains(_ cInfo: ChatInfo, _ s: String) -> Bool {
             cInfo.chatViewName.localizedLowercase.contains(s)
+        }
+    }
+}
+
+struct ChatListSearchBar: View {
+    @Binding var text: String
+    @State private var showCancelButton = false
+    @State private var showScanCodeSheet = false
+
+    var body: some View {
+        VStack {
+            HStack(spacing: 8) {
+                HStack(spacing: 4) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                    TextField("Search", text: $text)
+                        .onTapGesture {
+                            showCancelButton = true
+                        }
+                }
+                .padding(.horizontal, 7)
+                .padding(.vertical, 7)
+                .background(Color(uiColor: .secondarySystemFill))
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+
+                if showCancelButton {
+                    Button {
+                        hideKeyboard()
+                        text = ""
+                        showCancelButton = false
+                    } label: {
+                        Text("Cancel")
+                            .foregroundColor(.accentColor)
+                    }
+                    .padding(.trailing, 8)
+                    .transition(.identity)
+                }
+
+                scanCodeButton()
+            }
+            Divider()
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 2)
+    }
+
+    private func scanCodeButton() -> some View {
+        Button {
+            showScanCodeSheet = true
+        } label: {
+            Image(systemName: "qrcode")
+                .resizable()
+                .scaledToFit()
+                .foregroundColor(.accentColor)
+                .frame(width: 20, height: 20)
+        }
+        .sheet(isPresented: $showScanCodeSheet) {
+            NewChatView(selection: .connect, showScanQRCodeSheet: true)
         }
     }
 }

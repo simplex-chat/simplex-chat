@@ -20,8 +20,9 @@ enum NewChatOption: Identifiable {
 struct NewChatView: View {
     @EnvironmentObject var m: ChatModel
     @State var selection: NewChatOption
-    @State var connReqInvitation: String
-    @State var contactConnection: PendingContactConnection?
+    @State var showScanQRCodeSheet = false
+    @State var connReqInvitation: String = ""
+    @State var contactConnection: PendingContactConnection? = nil
     @State private var creatingConnReq = false
 
     var body: some View {
@@ -46,14 +47,14 @@ struct NewChatView: View {
                     contactConnection: $contactConnection,
                     connReqInvitation: connReqInvitation
                 )
-                case .connect: ConnectView()
+                case .connect: ConnectView(showScanQRCodeSheet: showScanQRCodeSheet)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .padding()
             .background(Color(.systemGroupedBackground))
             .onChange(of: selection) { sel in
-                if case .connect = sel,
+                if case .invite = sel,
                    connReqInvitation == "" && contactConnection == nil && !creatingConnReq {
                     createInvitation()
                 }
@@ -156,25 +157,34 @@ struct InviteView: View {
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.top)
                     } else {
-                        Text("Creating link…")
-                            .textCase(.uppercase)
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
-
-                        VStack(alignment: .center) {
+                        VStack(alignment: .center, spacing: 4) {
                             ProgressView()
                                 .progressViewStyle(.circular)
-                                .scaleEffect(2)
-                                .frame(maxWidth: .infinity)
-                                .padding(.horizontal)
-                                .padding(.vertical, 8)
+                            Text("Creating link…")
+                                .foregroundColor(.secondary)
                         }
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(Color(uiColor: .systemBackground))
-                        )
+                        .padding(.top)
+
+//                        Text("Creating link…")
+//                            .textCase(.uppercase)
+//                            .font(.footnote)
+//                            .foregroundColor(.secondary)
+//                            .padding(.horizontal)
+//
+//                        VStack(alignment: .center) {
+//                            ProgressView()
+//                                .progressViewStyle(.circular)
+//                                .scaleEffect(2)
+//                                .frame(maxWidth: .infinity)
+//                                .padding(.horizontal)
+//                                .padding(.vertical, 14)
+//                        }
+//                        .frame(maxWidth: .infinity, alignment: .center)
+//                        .background(
+//                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+//                                .fill(Color(uiColor: .systemBackground))
+//                        )
                     }
                 }
             }
@@ -205,10 +215,10 @@ struct InviteView: View {
 
 struct ConnectView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
+    @State var showScanQRCodeSheet = false
     @State private var connectionLink: String = ""
     @State private var alert: PlanAndConnectAlert?
     @State private var sheet: PlanAndConnectActionSheet?
-    @State private var showScanQRCodeSheet = false
     @State private var scannedLink: String = ""
 
     var body: some View {
