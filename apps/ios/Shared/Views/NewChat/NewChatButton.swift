@@ -51,7 +51,8 @@ struct NewChatButton: View {
 
     func addContactAction() {
         Task {
-            if let (connReq, pcc) = await apiAddContact(incognito: incognitoGroupDefault.get()) {
+            let (r, _) = await apiAddContact(incognito: incognitoGroupDefault.get())
+            if let (connReq, pcc) = r {
                 actionSheet = .createLink(link: connReq, connection: pcc)
             }
         }

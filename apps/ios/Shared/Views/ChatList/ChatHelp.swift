@@ -11,7 +11,7 @@ import SwiftUI
 struct ChatHelp: View {
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
-    @State private var showAddChat = false
+    @State private var showNewChatSheet = false
 
     var body: some View {
         ScrollView { chatHelp() }
@@ -39,7 +39,7 @@ struct ChatHelp: View {
 
                 HStack(spacing: 8) {
                     Text("Tap button ")
-                    NewChatButton(showAddChat: $showAddChat)
+                    NewChatSheetButton(showNewChatSheet: $showNewChatSheet)
                     Text("above, then choose:")
                 }
 

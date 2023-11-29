@@ -10,6 +10,16 @@ import SwiftUI
 import SimpleXChat
 import CodeScanner
 
+enum SomeAlert: Identifiable {
+    case someAlert(alert: Alert, id: String)
+
+    var id: String {
+        switch self {
+        case let .someAlert(_, id): return id
+        }
+    }
+}
+
 enum NewChatOption: Identifiable {
     case invite
     case connect
@@ -21,175 +31,119 @@ struct NewChatView: View {
     @EnvironmentObject var m: ChatModel
     @State var selection: NewChatOption
     @State var showScanQRCodeSheet = false
-    @State var connReqInvitation: String = ""
-    @State var contactConnection: PendingContactConnection? = nil
+    @State private var connReqInvitation: String = ""
+    @State private var contactConnection: PendingContactConnection? = nil
     @State private var creatingConnReq = false
+    @State private var someAlert: SomeAlert?
 
     var body: some View {
-        NavigationView {
-            VStack(alignment: .leading) {
-                Text("Start a New Chat")
-                    .font(.largeTitle)
-                    .bold()
-                    .fixedSize(horizontal: false, vertical: true)
-                    .padding(.vertical)
+        List {
+            Group {
+                HStack {
+                    Text("New chat")
+                        .font(.largeTitle)
+                        .bold()
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.vertical)
+                    Spacer()
+                    InfoSheetButton {
+                        AddContactLearnMore(showTitle: true)
+                    }
+                }
 
                 Picker("New chat", selection: $selection) {
-                    Label("Invite", systemImage: "link")
+                    Label("Share link", systemImage: "link")
                         .tag(NewChatOption.invite)
-                    Label("Connect", systemImage: "qrcode")
+                    Label("Connect via link", systemImage: "qrcode")
                         .tag(NewChatOption.connect)
                 }
                 .pickerStyle(.segmented)
+            }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
 
-                switch selection {
-                case .invite: InviteView(
-                    contactConnection: $contactConnection,
-                    connReqInvitation: connReqInvitation
-                )
-                case .connect: ConnectView(showScanQRCodeSheet: showScanQRCodeSheet)
+            switch selection {
+            case .invite:
+                if connReqInvitation != "" {
+                    InviteView(contactConnection: $contactConnection, connReqInvitation: connReqInvitation)
+                } else if creatingConnReq {
+                    creatingLinkProgressView()
+                } else {
+                    retryButton()
                 }
+            case .connect:
+                ConnectView(showScanQRCodeSheet: showScanQRCodeSheet)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .padding()
-            .background(Color(.systemGroupedBackground))
-            .onChange(of: selection) { sel in
-                if case .invite = sel,
-                   connReqInvitation == "" && contactConnection == nil && !creatingConnReq {
-                    createInvitation()
-                }
+        }
+        .onChange(of: selection) { sel in
+            createInvitation(sel)
+        }
+        .onAppear {
+            createInvitation(selection)
+        }
+        .onDisappear { m.connReqInv = nil }
+        .alert(item: $someAlert) { a in
+            switch a {
+            case let .someAlert(alert, _): alert
             }
-            .onAppear { m.connReqInv = connReqInvitation }
-            .onDisappear { m.connReqInv = nil }
         }
     }
 
-    private func createInvitation() {
-        creatingConnReq = true
-        Task {
-            if let (connReq, pcc) = await apiAddContact(incognito: incognitoGroupDefault.get()) {
-                await MainActor.run {
-                    connReqInvitation = connReq
-                    contactConnection = pcc
-                    m.connReqInv = connReq
-                }
-            } else {
-                await MainActor.run {
-                    creatingConnReq = false
+    private func createInvitation(_ selection: NewChatOption) {
+        if case .invite = selection,
+           connReqInvitation == "" && contactConnection == nil && !creatingConnReq {
+            creatingConnReq = true
+            Task {
+                let (r, alert) = await apiAddContact(incognito: incognitoGroupDefault.get())
+                if let (connReq, pcc) = r {
+                    await MainActor.run {
+                        connReqInvitation = connReq
+                        contactConnection = pcc
+                        m.connReqInv = connReq
+                    }
+                } else {
+                    await MainActor.run {
+                        creatingConnReq = false
+                        if let alert = alert {
+                            someAlert = .someAlert(alert: alert, id: "createInvitation error")
+                        }
+                    }
                 }
             }
         }
+    }
+
+    private func creatingLinkProgressView() -> some View {
+        ProgressView("Creating link…")
+            .progressViewStyle(.circular)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+            .padding(.top)
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+    }
+
+    private func retryButton() -> some View {
+        Button {
+            createInvitation(selection)
+        } label: {
+            Text("Retry")
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .padding(.top)
+        .listRowBackground(Color.clear)
+        .listRowSeparator(.hidden)
     }
 }
 
-struct InviteView: View {
-    @EnvironmentObject private var chatModel: ChatModel
+private struct InviteView: View {
+    @EnvironmentObject var chatModel: ChatModel
     @Binding var contactConnection: PendingContactConnection?
     var connReqInvitation: String
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
 
     var body: some View {
-        GeometryReader { geo in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 8) {
-                    if connReqInvitation != "" {
-                        HStack {
-                            Text("Share this unique invite link")
-                                .textCase(.uppercase)
-                                .font(.footnote)
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Button {
-                                copyLink()
-                            } label: {
-                                Text("Copy")
-                                    .font(.footnote)
-                            }
-                        }
-                        .padding(.horizontal)
-
-                        Text(simplexChatLink(connReqInvitation))
-                            .lineLimit(2)
-                            .font(.callout)
-                            .padding(.horizontal)
-                            .padding(.vertical, 8)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Color(uiColor: .systemBackground))
-                            )
-
-                        Text("Or show this code")
-                            .textCase(.uppercase)
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
-                            .padding(.horizontal)
-                            .padding(.top, 8)
-
-                        VStack(alignment: .center) {
-                            SimpleXLinkQRCode(uri: connReqInvitation)
-                                .padding(.horizontal)
-                                .padding(.vertical, 10)
-                                .frame(width: geo.size.width * 0.8)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(Color(uiColor: .systemBackground))
-                        )
-
-                        VStack(alignment: .leading) {
-                            IncognitoToggle(incognitoEnabled: $incognitoDefault)
-                            Divider()
-                            shareLinkButton2(connReqInvitation)
-                        }
-                        .padding(.horizontal)
-                        .padding(.vertical, 8)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(Color(uiColor: .systemBackground))
-                        )
-                        .padding(.top)
-
-                        VStack(alignment: .center) {
-                            oneTimeLinkLearnMoreButton2()
-                        }
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top)
-                    } else {
-                        VStack(alignment: .center, spacing: 4) {
-                            ProgressView()
-                                .progressViewStyle(.circular)
-                            Text("Creating link…")
-                                .foregroundColor(.secondary)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top)
-
-//                        Text("Creating link…")
-//                            .textCase(.uppercase)
-//                            .font(.footnote)
-//                            .foregroundColor(.secondary)
-//                            .padding(.horizontal)
-//
-//                        VStack(alignment: .center) {
-//                            ProgressView()
-//                                .progressViewStyle(.circular)
-//                                .scaleEffect(2)
-//                                .frame(maxWidth: .infinity)
-//                                .padding(.horizontal)
-//                                .padding(.vertical, 14)
-//                        }
-//                        .frame(maxWidth: .infinity, alignment: .center)
-//                        .background(
-//                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-//                                .fill(Color(uiColor: .systemBackground))
-//                        )
-                    }
-                }
-            }
-            .padding(.vertical)
-            .onAppear { chatModel.connReqInv = connReqInvitation }
+        viewBody()
             .onChange(of: incognitoDefault) { incognito in
                 Task {
                     do {
@@ -205,15 +159,54 @@ struct InviteView: View {
                     }
                 }
             }
+    }
+
+    @ViewBuilder private func viewBody() -> some View {
+        Section("Share this 1-time invite link") {
+            shareLinkView()
+        }
+
+        qrCodeView()
+
+        Section {
+            IncognitoToggle(incognitoEnabled: $incognitoDefault)
+        } footer: {
+            sharedProfileInfo(incognitoDefault)
         }
     }
 
-    private func copyLink() {
-        UIPasteboard.general.string = simplexChatLink(connReqInvitation)
+    private func shareLinkView() -> some View {
+        HStack {
+            let link = simplexChatLink(connReqInvitation)
+            Text(link)
+                .lineLimit(1)
+                .font(.caption)
+                .truncationMode(.middle)
+            Button {
+                showShareSheet(items: [link])
+            } label: {
+                Image(systemName: "square.and.arrow.up")
+            }
+        }
+    }
+
+    private func qrCodeView() -> some View {
+        Section("Or show this code") {
+            SimpleXLinkQRCode(uri: connReqInvitation)
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(uiColor: .systemBackground))
+                )
+                .padding(.horizontal)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+        }
     }
 }
 
-struct ConnectView: View {
+private struct ConnectView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @State var showScanQRCodeSheet = false
     @State private var connectionLink: String = ""
@@ -222,130 +215,55 @@ struct ConnectView: View {
     @State private var scannedLink: String = ""
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                (
-                    Text("Paste the URL your received from your contact.")
-                    + Text("\n\n")
-                    + Text("You'll be connected to begin a private conversation with them.")
-                )
-                .font(.footnote)
-                .foregroundColor(.secondary)
-                .padding(.horizontal)
-
-                HStack {
-                    Text("Unique invite link")
-                        .textCase(.uppercase)
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                    Spacer()
-                    if (connectionLink != "") {
-                        Button {
-                            clearLink()
-                        } label: {
-                            Text("Clear")
-                                .font(.footnote)
-                        }
-                    }
+        viewBody()
+            .alert(item: $alert) { a in planAndConnectAlert(a, dismiss: true) }
+            .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: true) }
+            .sheet(isPresented: $showScanQRCodeSheet) {
+                if #available(iOS 16.0, *) {
+                    ScanConnectionCodeView(scannedLink: $scannedLink)
+                        .presentationDetents([.fraction(0.8)])
+                } else {
+                    ScanConnectionCodeView(scannedLink: $scannedLink)
                 }
-                .padding(.horizontal)
-                .padding(.top)
-
-                pasteLinkView()
-
-                Text("Or scan QR code")
-                    .textCase(.uppercase)
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal)
-                    .padding(.top, 8)
-
-                VStack(alignment: .center) {
-                    scanQRCodeButton()
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color(uiColor: .systemBackground))
-                )
-
-                VStack(alignment: .center) {
-                    oneTimeLinkLearnMoreButton2()
-                }
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top)
             }
-        }
-        .padding(.vertical)
-        .alert(item: $alert) { a in planAndConnectAlert(a, dismiss: true) }
-        .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: true) }
-        .sheet(isPresented: $showScanQRCodeSheet) {
-            if #available(iOS 16.0, *) {
-                ScanConnectionCodeView(scannedLink: $scannedLink)
-                    .presentationDetents([.fraction(0.8)])
-            } else {
-                ScanConnectionCodeView(scannedLink: $scannedLink)
+            .onChange(of: scannedLink) { link in
+                connect(link)
             }
-        }
-        .onChange(of: scannedLink) { link in
-            connect(link)
-        }
     }
 
-    private func clearLink() {
-        connectionLink = ""
+    @ViewBuilder private func viewBody() -> some View {
+        Section {
+            // TODO clear link button
+            pasteLinkView()
+        } header: {
+            Text("Paste the link you received")
+        }
+
+        Section {
+            scanQRCodeButton()
+        } header: {
+            Text("Or scan QR code")
+        }
     }
 
     @ViewBuilder private func pasteLinkView() -> some View {
         if connectionLink == "" {
-            VStack(alignment: .center) {
-                ZStack {
-                    Text("\n")
-                        .font(.callout)
-                        .padding(.horizontal)
-                        .padding(.vertical, 8)
-                        .opacity(0)
-                    Button {
-                        if let link = UIPasteboard.general.string {
-                            // TODO test pasted text is a link, alert if not
-                            connectionLink = link.trimmingCharacters(in: .whitespaces)
-                            connect(connectionLink)
-                        }
-                    } label: {
-                        Text("Click Here to Paste Link")
-                            .foregroundColor(.accentColor)
-                            .padding(.horizontal)
-                            .padding(.vertical, 8)
-                    }
+            Button {
+                if let link = UIPasteboard.general.string {
+                    // TODO test pasted text is a link, alert if not
+                    connectionLink = link.trimmingCharacters(in: .whitespaces)
+                    connect(connectionLink)
+                }
+            } label: {
+                settingsRow("doc.plaintext") {
+                    Text("Tap to paste link")
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .center)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color(uiColor: .systemBackground))
-            )
         } else {
-            VStack() {
-                ZStack {
-                    Text("\n")
-                        .font(.callout)
-                        .padding(.horizontal)
-                        .padding(.vertical, 8)
-                        .opacity(0)
-                    Text(connectionLink)
-                        .lineLimit(2)
-                        .font(.callout)
-                        .padding(.horizontal)
-                        .padding(.vertical, 8)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color(uiColor: .systemBackground))
-            )
+            Text(connectionLink)
+                .lineLimit(1)
+                .font(.caption)
+                .truncationMode(.middle)
         }
     }
 
@@ -370,7 +288,7 @@ struct ConnectView: View {
     }
 }
 
-struct ScanConnectionCodeView: View {
+private struct ScanConnectionCodeView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var scannedLink: String
 
@@ -407,34 +325,32 @@ struct ScanConnectionCodeView: View {
     }
 }
 
+struct InfoSheetButton<Content: View>: View {
+    @ViewBuilder let content: Content
+    @State private var showInfoSheet = false
+
+    var body: some View {
+        Button {
+            showInfoSheet = true
+        } label: {
+            Image(systemName: "info.circle")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 20, height: 20)
+        }
+        .sheet(isPresented: $showInfoSheet) {
+            content
+        }
+    }
+}
+
 // TODO move IncognitoToggle here
 
-// TODO move shareLinkButton here
-func shareLinkButton2(_ connReqInvitation: String) -> some View {
-    Button {
-        showShareSheet(items: [simplexChatLink(connReqInvitation)])
-    } label: {
-        settingsRow("square.and.arrow.up") {
-            Text("Share link")
-        }
-    }
-}
-
-// TODO move oneTimeLinkLearnMoreButton here
-func oneTimeLinkLearnMoreButton2() -> some View {
-    NavigationLink {
-        AddContactLearnMore()
-            .navigationTitle("One-time invitation link")
-            .navigationBarTitleDisplayMode(.large)
-    } label: {
-        settingsRow("info.circle") {
-            Text("Need Guidance?")
-                .underline()
-        }
-    }
-}
+// TODO move shareLinkButton to connection details
 
 // TODO move planAndConnect here
+
+// TODO delete NewChatButton, CreateLinkView, ScanToConnectView, PasteToConnectView, AddContactView
 
 //#Preview {
 //    NewChatView()

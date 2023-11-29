@@ -109,7 +109,7 @@ func shareLinkButton(_ connReqInvitation: String) -> some View {
 
 func oneTimeLinkLearnMoreButton() -> some View {
     NavigationLink {
-        AddContactLearnMore()
+        AddContactLearnMore(showTitle: false)
             .navigationTitle("One-time invitation link")
             .navigationBarTitleDisplayMode(.large)
     } label: {

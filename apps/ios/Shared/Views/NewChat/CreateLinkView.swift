@@ -71,7 +71,8 @@ struct CreateLinkView: View {
     private func createInvitation() {
         creatingConnReq = true
         Task {
-            if let (connReq, pcc) = await apiAddContact(incognito: incognitoGroupDefault.get()) {
+            let (r, _) = await apiAddContact(incognito: incognitoGroupDefault.get())
+            if let (connReq, pcc) = r {
                 await MainActor.run {
                     connReqInvitation = connReq
                     contactConnection = pcc

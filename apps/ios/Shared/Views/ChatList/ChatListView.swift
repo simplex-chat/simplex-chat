@@ -13,7 +13,7 @@ struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
     @State private var searchText = ""
-    @State private var showAddChat = false
+    @State private var showNewChatSheet = false
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
     @State private var showCreateGroupSheet = false
@@ -125,11 +125,10 @@ struct ChatListView: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 switch chatModel.chatRunning {
-                // case .some(true): NewChatButton(showAddChat: $showAddChat)
                 case .some(true):
                     HStack {
                         createGroupButton()
-                        NewChatButton2()
+                        NewChatSheetButton(showNewChatSheet: $showNewChatSheet)
                     }
                 case .some(false): chatStoppedIcon()
                 case .none: EmptyView()
@@ -207,7 +206,7 @@ struct ChatListView: View {
             .padding(.trailing, 12)
 
             connectButton("Tap to start a new chat") {
-                showAddChat = true
+                showNewChatSheet = true
             }
 
             Spacer()
