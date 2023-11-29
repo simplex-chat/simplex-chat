@@ -6635,9 +6635,9 @@ I server di SimpleX non possono vedere il tuo profilo.</target>
         <target>sconosciuto</target>
         <note>connection info</note>
       </trans-unit>
-      <trans-unit id="updated group profile" xml:space="preserve">
+      <trans-unit id="updated group profile" xml:space="preserve" approved="no">
         <source>updated group profile</source>
-        <target>profilo del gruppo aggiornato</target>
+        <target state="translated">ha aggiornato il profilo del gruppo</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="v%@" xml:space="preserve">
