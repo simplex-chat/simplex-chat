@@ -101,8 +101,9 @@
         <target>%1$@ at %2$@:</target>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
-      <trans-unit id="%@ connected" xml:space="preserve">
+      <trans-unit id="%@ connected" xml:space="preserve" approved="no">
         <source>%@ connected</source>
+        <target state="translated">%@ 接続中</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
@@ -212,12 +213,14 @@
         <source>%lld messages blocked</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages marked deleted" xml:space="preserve">
+      <trans-unit id="%lld messages marked deleted" xml:space="preserve" approved="no">
         <source>%lld messages marked deleted</source>
+        <target state="translated">%lld 件のメッセージが削除されました</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages moderated by %@" xml:space="preserve">
+      <trans-unit id="%lld messages moderated by %@" xml:space="preserve" approved="no">
         <source>%lld messages moderated by %@</source>
+        <target state="translated">%@ により%lld 件のメッセージが検閲されました</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld minutes" xml:space="preserve">
