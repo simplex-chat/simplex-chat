@@ -234,7 +234,7 @@ data ChatCommand
   | DeleteUser UserName Bool (Maybe UserPwd)
   | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool, startXFTPWorkers :: Bool}
   | APIStopChat
-  | APIActivateChat
+  | APIActivateChat {restoreChat :: Bool}
   | APISuspendChat {suspendTimeout :: Int}
   | ResubscribeAllConnections
   | SetTempFolder FilePath
@@ -457,7 +457,7 @@ allowRemoteCommand :: ChatCommand -> Bool -- XXX: consider using Relay/Block/For
 allowRemoteCommand = \case
   StartChat {} -> False
   APIStopChat -> False
-  APIActivateChat -> False
+  APIActivateChat _ -> False
   APISuspendChat _ -> False
   QuitChat -> False
   SetTempFolder _ -> False
