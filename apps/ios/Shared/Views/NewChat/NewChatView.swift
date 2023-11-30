@@ -178,10 +178,7 @@ private struct InviteView: View {
     private func shareLinkView() -> some View {
         HStack {
             let link = simplexChatLink(connReqInvitation)
-            Text(link)
-                .lineLimit(1)
-                .font(.caption)
-                .truncationMode(.middle)
+            linkTextView(link)
             Button {
                 showShareSheet(items: [link])
             } label: {
@@ -206,17 +203,34 @@ private struct InviteView: View {
     }
 }
 
+private enum ConnectAlert: Identifiable {
+    case planAndConnectAlert(alert: PlanAndConnectAlert)
+    case connectSomeAlert(alert: SomeAlert)
+
+    var id: String {
+        switch self {
+        case let .planAndConnectAlert(alert): return "planAndConnectAlert \(alert.id)"
+        case let .connectSomeAlert(alert): return "connectSomeAlert \(alert.id)"
+        }
+    }
+}
+
 private struct ConnectView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @State var showScanQRCodeSheet = false
     @State private var connectionLink: String = ""
-    @State private var alert: PlanAndConnectAlert?
+    @State private var alert: ConnectAlert?
     @State private var sheet: PlanAndConnectActionSheet?
     @State private var scannedLink: String = ""
 
     var body: some View {
         viewBody()
-            .alert(item: $alert) { a in planAndConnectAlert(a, dismiss: true) }
+            .alert(item: $alert) { a in
+                switch(a) {
+                case let .planAndConnectAlert(alert): return planAndConnectAlert(alert, dismiss: true)
+                case let .connectSomeAlert(.someAlert(alert, _)): return alert
+                }
+            }
             .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: true) }
             .sheet(isPresented: $showScanQRCodeSheet) {
                 if #available(iOS 16.0, *) {
@@ -232,45 +246,60 @@ private struct ConnectView: View {
     }
 
     @ViewBuilder private func viewBody() -> some View {
-        Section {
-            // TODO clear link button
+        Section("Paste the link you received") {
             pasteLinkView()
-        } header: {
-            Text("Paste the link you received")
         }
 
-        Section {
+        Section("Or scan QR code") {
             scanQRCodeButton()
-        } header: {
-            Text("Or scan QR code")
         }
     }
 
     @ViewBuilder private func pasteLinkView() -> some View {
         if connectionLink == "" {
             Button {
-                if let link = UIPasteboard.general.string {
-                    // TODO test pasted text is a link, alert if not
-                    connectionLink = link.trimmingCharacters(in: .whitespaces)
-                    connect(connectionLink)
+                if let str = UIPasteboard.general.string {
+                    let link = str.trimmingCharacters(in: .whitespaces)
+                    if checkParsedLink(link) {
+                        connectionLink = link
+                        connect(connectionLink)
+                    } else {
+                        alert = .connectSomeAlert(alert: .someAlert(
+                            alert: mkAlert(title: "Invalid link", message: "The text you pasted is not a SimpleX link."),
+                            id: "pasteLinkView checkParsedLink error"
+                        ))
+                    }
                 }
             } label: {
-                settingsRow("doc.plaintext") {
-                    Text("Tap to paste link")
+                Text("Tap to paste link")
+            }
+            .frame(maxWidth: .infinity, alignment: .center)
+        } else {
+            HStack {
+                linkTextView(connectionLink)
+                Button {
+                    connectionLink = ""
+                } label: {
+                    Image(systemName: "xmark.circle")
                 }
             }
+        }
+    }
+
+    private func checkParsedLink(_ link: String) -> Bool {
+        if let parsedMd = parseSimpleXMarkdown(link),
+           parsedMd.count == 1,
+           case .simplexLink = parsedMd[0].format {
+            return true
         } else {
-            Text(connectionLink)
-                .lineLimit(1)
-                .font(.caption)
-                .truncationMode(.middle)
+            return false
         }
     }
 
     private func connect(_ link: String) {
         planAndConnect(
             link,
-            showAlert: { alert = $0 },
+            showAlert: { alert = .planAndConnectAlert(alert: $0) },
             showActionSheet: { sheet = $0 },
             dismiss: true,
             incognito: nil
@@ -342,6 +371,13 @@ struct InfoSheetButton<Content: View>: View {
             content
         }
     }
+}
+
+private func linkTextView(_ link: String) -> some View {
+    Text(link)
+        .lineLimit(1)
+        .font(.caption)
+        .truncationMode(.middle)
 }
 
 // TODO move IncognitoToggle here
