@@ -287,9 +287,11 @@ private struct ChatListSearchBar: View {
                         .foregroundColor(.primary)
                         .frame(maxWidth: .infinity)
                         .onTapGesture {
-                            searchMode = true
+                            withAnimation {
+                                searchMode = true
+                            }
                         }
-                    
+
                     if searchMode {
                         Image(systemName: "xmark.circle.fill")
                             .opacity(searchText == "" ? 0 : 1)
@@ -307,14 +309,16 @@ private struct ChatListSearchBar: View {
                 .foregroundColor(.secondary)
                 .background(Color(.tertiarySystemFill))
                 .cornerRadius(10.0)
-                
+
                 if searchMode {
                     Text("Cancel")
                         .foregroundColor(.accentColor)
                         .onTapGesture {
                             hideKeyboard()
                             searchText = ""
-                            searchMode = false
+                            withAnimation {
+                                searchMode = false
+                            }
                         }
                         .transition(.identity)
                 }
