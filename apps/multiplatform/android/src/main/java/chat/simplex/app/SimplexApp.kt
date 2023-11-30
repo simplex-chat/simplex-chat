@@ -75,7 +75,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         Lifecycle.Event.ON_RESUME -> {
           isAppOnForeground = true
-          if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
+          if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete && chatModel.currentUser.value != null) {
             SimplexService.showBackgroundServiceNoticeIfNeeded()
           }
           /**
