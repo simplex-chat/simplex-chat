@@ -2,6 +2,7 @@ package chat.simplex.common.model
 
 import androidx.compose.material.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
@@ -50,6 +51,7 @@ object ChatModel {
   val chats = mutableStateListOf<Chat>()
   // map of connections network statuses, key is agent connection id
   val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
+  val switchingUsersAndHosts = mutableStateOf(false)
 
   // current chat
   val chatId = mutableStateOf<String?>(null)

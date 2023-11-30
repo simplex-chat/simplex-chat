@@ -82,6 +82,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
     passcodeView.value = modal
   }
 
+  val hasModalsOpen: Boolean @Composable get() = modalCount.value > 0
   fun hasModalsOpen() = modalCount.value > 0
 
   fun closeModal() {

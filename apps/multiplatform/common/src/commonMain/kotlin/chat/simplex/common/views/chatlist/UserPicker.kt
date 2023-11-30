@@ -40,7 +40,6 @@ import kotlin.math.roundToInt
 fun UserPicker(
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
-  switchingUsersAndHosts: MutableState<Boolean>,
   showSettings: Boolean = true,
   showCancel: Boolean = false,
   cancelClicked: () -> Unit = {},
@@ -125,14 +124,10 @@ fun UserPicker(
         userPickerState.value = AnimatedViewState.HIDING
         if (!u.user.activeUser) {
           scope.launch {
-            val job = launch {
-              delay(500)
-              switchingUsersAndHosts.value = true
+            controller.showProgressIfNeeded {
+              ModalManager.closeAllModalsEverywhere()
+              chatModel.controller.changeActiveUser(u.user.remoteHostId, u.user.userId, null)
             }
-            ModalManager.closeAllModalsEverywhere()
-            chatModel.controller.changeActiveUser(u.user.remoteHostId, u.user.userId, null)
-            job.cancel()
-            switchingUsersAndHosts.value = false
           }
         }
       }
@@ -178,7 +173,7 @@ fun UserPicker(
                 stopRemoteHostAndReloadHosts(currentRemoteHost, true)
               }) {
                 userPickerState.value = AnimatedViewState.HIDING
-                switchToRemoteHost(currentRemoteHost, switchingUsersAndHosts, connecting)
+                switchToRemoteHost(currentRemoteHost, connecting)
               }
             Divider(Modifier.requiredHeight(1.dp))
           }
@@ -201,7 +196,7 @@ fun UserPicker(
               stopRemoteHostAndReloadHosts(h, false)
             }) {
               userPickerState.value = AnimatedViewState.HIDING
-              switchToRemoteHost(h, switchingUsersAndHosts, connecting)
+              switchToRemoteHost(h, connecting)
           }
           Divider(Modifier.requiredHeight(1.dp))
         }
@@ -463,21 +458,15 @@ private fun switchToLocalDevice() {
   }
 }
 
-private fun switchToRemoteHost(h: RemoteHostInfo, switchingUsersAndHosts: MutableState<Boolean>, connecting: MutableState<Boolean>) {
+private fun switchToRemoteHost(h: RemoteHostInfo, connecting: MutableState<Boolean>) {
   if (!h.activeHost()) {
     withBGApi {
-      val job = launch {
-        delay(500)
-        switchingUsersAndHosts.value = true
-      }
       ModalManager.closeAllModalsEverywhere()
       if (h.sessionState != null) {
         chatModel.controller.switchUIRemoteHost(h.remoteHostId)
       } else {
         connectMobileDevice(h, connecting)
       }
-      job.cancel()
-      switchingUsersAndHosts.value = false
     }
   } else {
     connectMobileDevice(h, connecting)

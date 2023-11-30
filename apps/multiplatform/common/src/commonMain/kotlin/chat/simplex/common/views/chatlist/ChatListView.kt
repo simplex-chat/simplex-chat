@@ -68,7 +68,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   var searchInList by rememberSaveable { mutableStateOf("") }
   val scope = rememberCoroutineScope()
-  val (userPickerState, scaffoldState, switchingUsersAndHosts ) = settingsState
+  val (userPickerState, scaffoldState ) = settingsState
   Scaffold(topBar = { Box(Modifier.padding(end = endPadding)) { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } } },
     scaffoldState = scaffoldState,
     drawerContent = { SettingsView(chatModel, setPerformLA, scaffoldState.drawerState) },
@@ -104,7 +104,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       ) {
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel, search = searchInList)
-        } else if (!switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
+        } else if (!chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
           Box(Modifier.fillMaxSize()) {
             if (!stopped && !newChatSheetState.collectAsState().value.isVisible()) {
               OnboardingButtons(showNewChatSheet)
@@ -121,17 +121,9 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
   }
   if (appPlatform.isAndroid) {
-    UserPicker(chatModel, userPickerState, switchingUsersAndHosts) {
+    UserPicker(chatModel, userPickerState) {
       scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
       userPickerState.value = AnimatedViewState.GONE
-    }
-  }
-  if (switchingUsersAndHosts.value) {
-    Box(
-      Modifier.fillMaxSize().clickable(enabled = false, onClick = {}),
-      contentAlignment = Alignment.Center
-    ) {
-      ProgressIndicator()
     }
   }
 }
@@ -302,17 +294,6 @@ private fun ToggleFilterButton() {
         .size(16.dp)
     )
   }
-}
-
-@Composable
-private fun ProgressIndicator() {
-  CircularProgressIndicator(
-    Modifier
-      .padding(horizontal = 2.dp)
-      .size(30.dp),
-    color = MaterialTheme.colors.secondary,
-    strokeWidth = 2.5.dp
-  )
 }
 
 @Composable

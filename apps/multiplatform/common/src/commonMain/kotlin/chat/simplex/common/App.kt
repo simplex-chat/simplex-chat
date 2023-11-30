@@ -37,8 +37,7 @@ import kotlinx.coroutines.flow.*
 
 data class SettingsViewState(
   val userPickerState: MutableStateFlow<AnimatedViewState>,
-  val scaffoldState: ScaffoldState,
-  val switchingUsersAndHosts: MutableState<Boolean>
+  val scaffoldState: ScaffoldState
 )
 
 @Composable
@@ -123,8 +122,7 @@ fun MainScreen() {
             }
           }
           val scaffoldState = rememberScaffoldState()
-          val switchingUsersAndHosts = rememberSaveable { mutableStateOf(false) }
-          val settingsState = remember { SettingsViewState(userPickerState, scaffoldState, switchingUsersAndHosts) }
+          val settingsState = remember { SettingsViewState(userPickerState, scaffoldState) }
           if (appPlatform.isAndroid) {
             AndroidScreen(settingsState)
           } else {
@@ -199,6 +197,7 @@ fun AndroidScreen(settingsState: SettingsViewState) {
         }
     ) {
       StartPartOfScreen(settingsState)
+      SwitchingUsersView()
     }
     val scope = rememberCoroutineScope()
     val onComposed: suspend (chatId: String?) -> Unit = { chatId ->
@@ -286,9 +285,13 @@ fun DesktopScreen(settingsState: SettingsViewState) {
     // 56.dp is a size of unused space of settings drawer
     Box(Modifier.width(DEFAULT_START_MODAL_WIDTH + 56.dp)) {
       StartPartOfScreen(settingsState)
+      SwitchingUsersView()
     }
     Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH)) {
       ModalManager.start.showInView()
+      if (ModalManager.start.hasModalsOpen) {
+        SwitchingUsersView()
+      }
     }
     Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH).clipToBounds()) {
       Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
@@ -301,7 +304,7 @@ fun DesktopScreen(settingsState: SettingsViewState) {
         EndPartOfScreen()
       }
     }
-    val (userPickerState, scaffoldState, switchingUsersAndHosts ) = settingsState
+    val (userPickerState, scaffoldState ) = settingsState
     val scope = rememberCoroutineScope()
     if (scaffoldState.drawerState.isOpen) {
       Box(
@@ -315,7 +318,7 @@ fun DesktopScreen(settingsState: SettingsViewState) {
       )
     }
     VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH))
-    UserPicker(chatModel, userPickerState, switchingUsersAndHosts) {
+    UserPicker(chatModel, userPickerState) {
       scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
       userPickerState.value = AnimatedViewState.GONE
     }
@@ -337,4 +340,27 @@ fun InitializationView() {
       Text(stringResource(MR.strings.opening_database))
     }
   }
+}
+
+@Composable
+private fun SwitchingUsersView() {
+  if (remember { chatModel.switchingUsersAndHosts }.value) {
+    Box(
+      Modifier.fillMaxSize().clickable(enabled = false, onClick = {}),
+      contentAlignment = Alignment.Center
+    ) {
+      ProgressIndicator()
+    }
+  }
+}
+
+@Composable
+private fun ProgressIndicator() {
+  CircularProgressIndicator(
+    Modifier
+      .padding(horizontal = 2.dp)
+      .size(30.dp),
+    color = MaterialTheme.colors.secondary,
+    strokeWidth = 2.5.dp
+  )
 }

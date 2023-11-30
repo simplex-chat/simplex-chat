@@ -2023,7 +2023,7 @@ object ChatController {
     chatModel.setContactNetworkStatus(contact, NetworkStatus.Error(err))
   }
 
-  suspend fun switchUIRemoteHost(rhId: Long?) {
+  suspend fun switchUIRemoteHost(rhId: Long?) = showProgressIfNeeded {
     // TODO lock the switch so that two switches can't run concurrently?
     chatModel.chatId.value = null
     chatModel.chatItems.clear()
@@ -2045,6 +2045,23 @@ object ChatController {
       chatModel.networkStatuses.putAll(ss)
     }
     getUserChatData(rhId)
+  }
+
+  suspend fun showProgressIfNeeded(block: suspend () -> Unit) {
+    val job = withBGApi {
+      try {
+        delay(500)
+        chatModel.switchingUsersAndHosts.value = true
+      } catch (e: Throwable) {
+        chatModel.switchingUsersAndHosts.value = false
+      }
+    }
+    try {
+      block()
+    } finally {
+      job.cancel()
+      chatModel.switchingUsersAndHosts.value = false
+    }
   }
 
   fun getXFTPCfg(): XFTPFileConfig {
