@@ -30,15 +30,16 @@ import java.io.File
 val simplexWindowState = SimplexWindowState()
 
 fun showApp() = application {
-  val data = getStoredWindowState() // creates file if not exists; comes with proper defaults
+  val state = getStoredWindowState() // creates file if not exists; comes with proper defaults
 
   // For some reason on Linux actual width will be 10.dp less after specifying it here. If we specify 1366,
   // it will show 1356. But after that we can still update it to 1366 by changing window state. Just making it +10 now here
   val windowState: WindowState = rememberWindowState(
     placement = WindowPlacement.Floating,
-    width = data.width.dp,
-    height = data.height.dp,
-    position = WindowPosition(data.x.dp, data.y.dp))
+    width = state.width.dp,
+    height = state.height.dp,
+    position = WindowPosition(state.x.dp, state.y.dp)
+  )
 
   LaunchedEffect(
     windowState.position.x.value,

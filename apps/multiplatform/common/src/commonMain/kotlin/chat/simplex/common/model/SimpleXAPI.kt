@@ -173,7 +173,7 @@ class AppPreferences {
   val connectRemoteViaMulticastAuto = mkBoolPreference(SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST_AUTO, true)
   val offerRemoteMulticast = mkBoolPreference(SHARED_PREFS_OFFER_REMOTE_MULTICAST, true)
 
-  val windowState = mkStrPreference(SHARED_PREFS_WINDOW_STATE, null)
+  val desktopWindowState = mkStrPreference(SHARED_PREFS_DESKTOP_WINDOW_STATE, null)
   
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
@@ -319,7 +319,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST = "ConnectRemoteViaMulticast"
     private const val SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "ConnectRemoteViaMulticastAuto"
     private const val SHARED_PREFS_OFFER_REMOTE_MULTICAST = "OfferRemoteMulticast"
-    private const val SHARED_PREFS_WINDOW_STATE = "WindowState"
+    private const val SHARED_PREFS_DESKTOP_WINDOW_STATE = "DesktopWindowState"
   }
 }
 

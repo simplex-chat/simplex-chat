@@ -1,9 +1,9 @@
 package chat.simplex.common
 
+import chat.simplex.common.model.json
 import chat.simplex.common.platform.appPreferences
 import chat.simplex.common.platform.desktopPlatform
 import kotlinx.serialization.*
-import kotlinx.serialization.json.Json
 
 @Serializable
 data class WindowPositionSize(
@@ -13,20 +13,14 @@ data class WindowPositionSize(
   val y: Int = 0,
 )
 
-fun getStoredWindowState() : WindowPositionSize {
-  return try {
-    Json.decodeFromString<WindowPositionSize>(appPreferences.windowState.get() ?: "force error")
+fun getStoredWindowState() : WindowPositionSize =
+  try {
+    val str = appPreferences.desktopWindowState.get()
+    if (str == null) WindowPositionSize()
+    else json.decodeFromString(str)
   } catch (e: Throwable) {
     WindowPositionSize()
   }
-}
 
-fun storeWindowState(data: WindowPositionSize) {
-  appPreferences.windowState.set(
-    try {
-      Json.encodeToString<WindowPositionSize>(data)
-    } catch (e: Throwable) {
-      null
-    }
-  )
-}
+fun storeWindowState(state: WindowPositionSize) =
+  appPreferences.desktopWindowState.set(json.encodeToString(state))
