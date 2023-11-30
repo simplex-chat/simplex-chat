@@ -549,6 +549,7 @@ processChatCommand = \case
     ok_
   APISuspendChat t -> do
     setAllExpireCIFlags False
+    stopRemoteCtrl
     withAgent (`suspendAgent` t)
     ok_
   ResubscribeAllConnections -> withStoreCtx' (Just "ResubscribeAllConnections, getUsers") getUsers >>= subscribeUsers False >> ok_
