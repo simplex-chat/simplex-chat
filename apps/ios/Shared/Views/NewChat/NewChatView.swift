@@ -98,6 +98,8 @@ struct NewChatView: View {
                 let (r, alert) = await apiAddContact(incognito: incognitoGroupDefault.get())
                 if let (connReq, pcc) = r {
                     await MainActor.run {
+                        // TODO add connection to model if shared, or view dismissed by connected event
+                        m.updateContactConnection(pcc)
                         connReqInvitation = connReq
                         contactConnection = pcc
                         m.connReqInv = connReq
@@ -295,10 +297,13 @@ private struct ConnectView: View {
                             .aspectRatio(contentMode: .fill)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .foregroundColor(Color.clear)
-                        Image(systemName: "camera")
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(width: 72)
+                        VStack {
+                            Image(systemName: "camera")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 28)
+                            Text("Tap to scan")
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
