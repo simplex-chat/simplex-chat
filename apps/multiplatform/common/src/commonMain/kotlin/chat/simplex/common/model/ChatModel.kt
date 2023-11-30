@@ -2,7 +2,6 @@ package chat.simplex.common.model
 
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
@@ -43,7 +42,7 @@ object ChatModel {
   val setDeliveryReceipts = mutableStateOf(false)
   val currentUser = mutableStateOf<User?>(null)
   val users = mutableStateListOf<UserInfo>()
-  val userCreated = mutableStateOf<Boolean?>(null)
+  val localUserCreated = mutableStateOf<Boolean?>(null)
   val chatRunning = mutableStateOf<Boolean?>(null)
   val chatDbChanged = mutableStateOf<Boolean>(false)
   val chatDbEncrypted = mutableStateOf<Boolean?>(false)
@@ -107,6 +106,9 @@ object ChatModel {
   val simplexLinkMode by lazy { mutableStateOf(ChatController.appPrefs.simplexLinkMode.get()) }
 
   var updatingChatsMutex: Mutex = Mutex()
+
+  val desktopNoUserNoRemote: Boolean @Composable get() = appPlatform.isDesktop && currentUser.value == null && currentRemoteHost.value == null
+  fun desktopNoUserNoRemote(): Boolean = appPlatform.isDesktop && currentUser.value == null && currentRemoteHost.value == null
 
   // remote controller
   val remoteHosts = mutableStateListOf<RemoteHostInfo>()
@@ -620,6 +622,7 @@ object ChatModel {
     terminalItems.add(item)
   }
 
+  val connectedToRemote: Boolean @Composable get() = currentRemoteHost.value != null || remoteCtrlSession.value?.active == true
   fun connectedToRemote(): Boolean = currentRemoteHost.value != null || remoteCtrlSession.value?.active == true
 }
 

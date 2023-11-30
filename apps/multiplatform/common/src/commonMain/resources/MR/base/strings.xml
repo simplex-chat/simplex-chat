@@ -565,6 +565,7 @@
   <string name="your_settings">Your settings</string>
   <string name="your_simplex_contact_address">Your SimpleX address</string>
   <string name="your_chat_profiles">Your chat profiles</string>
+  <string name="create_chat_profile">Create chat profile</string>
   <string name="database_passphrase_and_export">Database passphrase &amp; export</string>
   <string name="about_simplex_chat">About SimpleX Chat</string>
   <string name="how_to_use_simplex_chat">How to use it</string>
@@ -1689,6 +1690,8 @@
   <string name="paste_desktop_address">Paste desktop address</string>
   <string name="desktop_device">Desktop</string>
   <string name="not_compatible">Not compatible!</string>
+  <string name="refresh_qr_code">Refresh</string>
+  <string name="no_connected_mobile">No connected mobile</string>
 
   <!-- Under development -->
   <string name="in_developing_title">Coming soon!</string>

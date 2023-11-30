@@ -75,7 +75,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
     drawerGesturesEnabled = appPlatform.isAndroid,
     floatingActionButton = {
-      if (searchInList.isEmpty()) {
+      if (searchInList.isEmpty() && !chatModel.desktopNoUserNoRemote) {
         FloatingActionButton(
           onClick = {
             if (!stopped) {
@@ -104,7 +104,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       ) {
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel, search = searchInList)
-        } else if (!switchingUsersAndHosts.value) {
+        } else if (!switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
           Box(Modifier.fillMaxSize()) {
             if (!stopped && !newChatSheetState.collectAsState().value.isVisible()) {
               OnboardingButtons(showNewChatSheet)
@@ -209,7 +209,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
     navigationButton = {
       if (showSearch) {
         NavigationButtonBack(hideSearchOnBack)
-      } else if (chatModel.users.isEmpty()) {
+      } else if (chatModel.users.isEmpty() && !chatModel.desktopNoUserNoRemote) {
         NavigationButtonMenu { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } }
       } else {
         val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }

@@ -102,11 +102,8 @@ fun MainScreen() {
   }
 
   Box {
-    var onboarding by remember { mutableStateOf(chatModel.controller.appPrefs.onboardingStage.get()) }
-    LaunchedEffect(Unit) {
-      snapshotFlow { chatModel.controller.appPrefs.onboardingStage.state.value }.distinctUntilChanged().collect { onboarding = it }
-    }
-    val userCreated = chatModel.userCreated.value
+    val onboarding by remember { chatModel.controller.appPrefs.onboardingStage.state }
+    val localUserCreated = chatModel.localUserCreated.value
     var showInitializationView by remember { mutableStateOf(false) }
     when {
       chatModel.chatDbStatus.value == null && showInitializationView -> InitializationView()
@@ -115,11 +112,16 @@ fun MainScreen() {
           DatabaseErrorView(chatModel.chatDbStatus, chatModel.controller.appPrefs)
         }
       }
-      remember { chatModel.chatDbEncrypted }.value == null || userCreated == null -> SplashView()
-      onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
+      remember { chatModel.chatDbEncrypted }.value == null || localUserCreated == null -> SplashView()
+      onboarding == OnboardingStage.OnboardingComplete -> {
         Box {
           showAdvertiseLAAlert = true
-          val userPickerState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(AnimatedViewState.GONE)) }
+          val userPickerState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(if (chatModel.desktopNoUserNoRemote()) AnimatedViewState.VISIBLE else AnimatedViewState.GONE)) }
+          KeyChangeEffect(chatModel.desktopNoUserNoRemote) {
+            if (chatModel.desktopNoUserNoRemote() && !ModalManager.start.hasModalsOpen()) {
+              userPickerState.value = AnimatedViewState.VISIBLE
+            }
+          }
           val scaffoldState = rememberScaffoldState()
           val switchingUsersAndHosts = rememberSaveable { mutableStateOf(false) }
           val settingsState = remember { SettingsViewState(userPickerState, scaffoldState, switchingUsersAndHosts) }
@@ -137,6 +139,7 @@ fun MainScreen() {
         }
       }
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
+      onboarding == OnboardingStage.LinkAMobile -> LinkAMobile()
       onboarding == OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
       onboarding == OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel, null)
       onboarding == OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
@@ -262,7 +265,7 @@ fun CenterPartOfScreen() {
             .background(MaterialTheme.colors.background),
           contentAlignment = Alignment.Center
         ) {
-          Text(stringResource(MR.strings.no_selected_chat))
+          Text(stringResource(if (chatModel.desktopNoUserNoRemote) MR.strings.no_connected_mobile else MR.strings.no_selected_chat))
         }
       } else {
         ModalManager.center.showInView()

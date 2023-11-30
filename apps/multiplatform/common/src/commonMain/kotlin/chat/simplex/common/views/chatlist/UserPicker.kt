@@ -26,7 +26,9 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.CreateProfile
 import chat.simplex.common.views.remote.*
+import chat.simplex.common.views.usersettings.doWithAuth
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.delay
@@ -162,13 +164,13 @@ fun UserPicker(
       val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
         if (remoteHosts.isNotEmpty()) {
-          if (currentRemoteHost == null) {
+          if (currentRemoteHost == null && chatModel.localUserCreated.value == true) {
             LocalDevicePickerItem(true) {
               userPickerState.value = AnimatedViewState.HIDING
               switchToLocalDevice()
             }
             Divider(Modifier.requiredHeight(1.dp))
-          } else {
+          } else if (currentRemoteHost != null) {
             val connecting = rememberSaveable { mutableStateOf(false) }
             RemoteHostPickerItem(currentRemoteHost,
               actionButtonClick = {
@@ -184,7 +186,7 @@ fun UserPicker(
 
         UsersView()
 
-        if (remoteHosts.isNotEmpty() && currentRemoteHost != null) {
+        if (remoteHosts.isNotEmpty() && currentRemoteHost != null && chatModel.localUserCreated.value == true) {
           LocalDevicePickerItem(false) {
             userPickerState.value = AnimatedViewState.HIDING
             switchToLocalDevice()
@@ -218,6 +220,16 @@ fun UserPicker(
             ConnectMobileView()
           }
           userPickerState.value = AnimatedViewState.GONE
+        }
+        Divider(Modifier.requiredHeight(1.dp))
+      } else if (chatModel.desktopNoUserNoRemote) {
+        CreateInitialProfile {
+          doWithAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.center.showModalCloseable { close ->
+            LaunchedEffect(Unit) {
+              userPickerState.value = AnimatedViewState.HIDING
+            }
+            CreateProfile(chat.simplex.common.platform.chatModel, close)
+          } }
         }
         Divider(Modifier.requiredHeight(1.dp))
       }
@@ -396,6 +408,16 @@ private fun LinkAMobilePickerItem(onClick: () -> Unit) {
   SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(MR.strings.link_a_mobile)
     Icon(painterResource(MR.images.ic_smartphone_300), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
+    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+  }
+}
+
+@Composable
+private fun CreateInitialProfile(onClick: () -> Unit) {
+  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
+    val text = generalGetString(MR.strings.create_chat_profile)
+    Icon(painterResource(MR.images.ic_manage_accounts), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
     Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
   }
