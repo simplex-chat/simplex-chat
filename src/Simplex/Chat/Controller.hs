@@ -29,6 +29,8 @@ import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
+import Data.ByteArray (ScrubbedBytes)
+import qualified Data.ByteArray as BA
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (ord)
@@ -829,17 +831,17 @@ deriving instance Show AUserProtoServers
 data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool, parentTempDirectory :: Maybe FilePath}
   deriving (Show)
 
-data DBEncryptionConfig = DBEncryptionConfig {currentKey :: DBEncryptionKey, newKey :: DBEncryptionKey}
+data DBEncryptionConfig = DBEncryptionConfig {currentKey :: DBEncryptionKey, newKey :: DBEncryptionKey, keepKey :: Maybe Bool}
   deriving (Show)
 
-newtype DBEncryptionKey = DBEncryptionKey String
+newtype DBEncryptionKey = DBEncryptionKey ScrubbedBytes
   deriving (Show)
 
 instance IsString DBEncryptionKey where fromString = parseString $ parseAll strP
 
 instance StrEncoding DBEncryptionKey where
-  strEncode (DBEncryptionKey s) = B.pack s
-  strP = DBEncryptionKey . B.unpack <$> A.takeWhile (\c -> c /= ' ' && ord c >= 0x21 && ord c <= 0x7E)
+  strEncode (DBEncryptionKey s) = BA.convert s
+  strP = DBEncryptionKey . BA.convert <$> A.takeWhile (\c -> c /= ' ' && ord c >= 0x21 && ord c <= 0x7E)
 
 instance FromJSON DBEncryptionKey where
   parseJSON = strParseJSON "DBEncryptionKey"
