@@ -505,8 +505,8 @@ public enum ChatResponse: Decodable, Error {
     case invitation(user: UserRef, connReqInvitation: String, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
     case connectionPlan(user: UserRef, connectionPlan: ConnectionPlan)
-    case sentConfirmation(user: UserRef)
-    case sentInvitation(user: UserRef)
+    case sentConfirmation(user: UserRef, connection: PendingContactConnection)
+    case sentInvitation(user: UserRef, connection: PendingContactConnection)
     case sentInvitationToContact(user: UserRef, contact: Contact, customUserProfile: Profile?)
     case contactAlreadyExists(user: UserRef, contact: Contact)
     case contactRequestAlreadyAccepted(user: UserRef, contact: Contact)
@@ -605,7 +605,6 @@ public enum ChatResponse: Decodable, Error {
     case ntfTokenStatus(status: NtfTknStatus)
     case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode)
     case ntfMessages(user_: User?, connEntity: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
-    case newContactConnection(user: UserRef, connection: PendingContactConnection)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
     // remote desktop responses/events
     case remoteCtrlList(remoteCtrls: [RemoteCtrlInfo])
@@ -752,7 +751,6 @@ public enum ChatResponse: Decodable, Error {
             case .ntfTokenStatus: return "ntfTokenStatus"
             case .ntfToken: return "ntfToken"
             case .ntfMessages: return "ntfMessages"
-            case .newContactConnection: return "newContactConnection"
             case .contactConnectionDeleted: return "contactConnectionDeleted"
             case .remoteCtrlList: return "remoteCtrlList"
             case .remoteCtrlFound: return "remoteCtrlFound"
@@ -900,7 +898,6 @@ public enum ChatResponse: Decodable, Error {
             case let .ntfTokenStatus(status): return String(describing: status)
             case let .ntfToken(token, status, ntfMode): return "token: \(token)\nstatus: \(status.rawValue)\nntfMode: \(ntfMode.rawValue)"
             case let .ntfMessages(u, connEntity, msgTs, ntfMessages): return withUser(u, "connEntity: \(String(describing: connEntity))\nmsgTs: \(String(describing: msgTs))\nntfMessages: \(String(describing: ntfMessages))")
-            case let .newContactConnection(u, connection): return withUser(u, String(describing: connection))
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
             case let .remoteCtrlList(remoteCtrls): return String(describing: remoteCtrls)
             case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible): return "remoteCtrl:\n\(String(describing: remoteCtrl))\nctrlAppInfo_:\n\(String(describing: ctrlAppInfo_))\nappVersion: \(appVersion)\ncompatible: \(compatible)"

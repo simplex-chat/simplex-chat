@@ -586,7 +586,12 @@ func apiAddContact(incognito: Bool) async -> (String, PendingContactConnection)?
         return nil
     }
     let r = await chatSendCmd(.apiAddContact(userId: userId, incognito: incognito), bgTask: false)
-    if case let .invitation(_, connReqInvitation, connection) = r { return (connReqInvitation, connection) }
+    if case let .invitation(_, connReqInvitation, connection) = r {
+        await MainActor.run {
+            ChatModel.shared.updateContactConnection(connection)
+        }
+        return (connReqInvitation, connection)
+    }
     AlertManager.shared.showAlert(connectionErrorAlert(r))
     return nil
 }
@@ -621,11 +626,19 @@ func apiConnect_(incognito: Bool, connReq: String) async -> (ConnReqType?, Alert
         return (nil, nil)
     }
     let r = await chatSendCmd(.apiConnect(userId: userId, incognito: incognito, connReq: connReq))
+    let m = ChatModel.shared
     switch r {
-    case .sentConfirmation: return (.invitation, nil)
-    case .sentInvitation: return (.contact, nil)
+    case let .sentConfirmation(_, connection):
+        await MainActor.run {
+            m.updateContactConnection(connection)
+        }
+        return (.invitation, nil)
+    case let .sentInvitation(_, connection):
+        await MainActor.run {
+            m.updateContactConnection(connection)
+        }
+        return (.contact, nil)
     case let .contactAlreadyExists(_, contact):
-        let m = ChatModel.shared
         if let c = m.getContactChat(contact.contactId) {
             await MainActor.run { m.chatId = c.id }
         }
@@ -1362,18 +1375,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
     let m = ChatModel.shared
     logger.debug("processReceivedMsg: \(res.responseType)")
     switch res {
-    case let .newContactConnection(user, connection):
-        if active(user) {
-            await MainActor.run {
-                m.updateContactConnection(connection)
-            }
-        }
-    case let .contactConnectionDeleted(user, connection):
-        if active(user) {
-            await MainActor.run {
-                m.removeChat(connection.id)
-            }
-        }
     case let .contactDeletedByContact(user, contact):
         if active(user) && contact.directOrUsed {
             await MainActor.run {
