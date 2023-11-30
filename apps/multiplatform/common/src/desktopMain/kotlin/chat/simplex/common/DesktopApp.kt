@@ -30,7 +30,8 @@ import java.io.File
 val simplexWindowState = SimplexWindowState()
 
 fun showApp() = application {
-  val state = getStoredWindowState() // creates file if not exists; comes with proper defaults
+  // Creates file if not exists; comes with proper defaults
+  val state = getStoredWindowState()
 
   val windowState: WindowState = rememberWindowState(
     placement = WindowPlacement.Floating,
