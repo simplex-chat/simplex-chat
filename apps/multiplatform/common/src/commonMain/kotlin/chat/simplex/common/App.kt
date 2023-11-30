@@ -144,6 +144,7 @@ fun MainScreen() {
     }
     if (appPlatform.isAndroid) {
       ModalManager.fullscreen.showInView()
+      SwitchingUsersView()
     }
 
     val unauthorized = remember { derivedStateOf { AppLock.userAuthorized.value != true } }
@@ -197,7 +198,6 @@ fun AndroidScreen(settingsState: SettingsViewState) {
         }
     ) {
       StartPartOfScreen(settingsState)
-      SwitchingUsersView()
     }
     val scope = rememberCoroutineScope()
     val onComposed: suspend (chatId: String?) -> Unit = { chatId ->
@@ -285,13 +285,10 @@ fun DesktopScreen(settingsState: SettingsViewState) {
     // 56.dp is a size of unused space of settings drawer
     Box(Modifier.width(DEFAULT_START_MODAL_WIDTH + 56.dp)) {
       StartPartOfScreen(settingsState)
-      SwitchingUsersView()
     }
     Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH)) {
       ModalManager.start.showInView()
-      if (ModalManager.start.hasModalsOpen) {
-        SwitchingUsersView()
-      }
+      SwitchingUsersView()
     }
     Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH).clipToBounds()) {
       Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
