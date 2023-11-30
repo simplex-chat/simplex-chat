@@ -41,6 +41,7 @@ import Data.String
 import Data.Text (Text)
 import Data.Time (NominalDiffTime, UTCTime)
 import Data.Version (showVersion)
+import Data.Word (Word16)
 import Language.Haskell.TH (Exp, Q, runIO)
 import Numeric.Natural
 import qualified Paths_simplex_chat as SC
@@ -426,7 +427,7 @@ data ChatCommand
   | SetGroupTimedMessages GroupName (Maybe Int)
   | SetLocalDeviceName Text
   | ListRemoteHosts
-  | StartRemoteHost (Maybe (RemoteHostId, Bool)) -- Start new or known remote host with optional multicast for known host
+  | StartRemoteHost (Maybe (RemoteHostId, Bool)) (Maybe RCCtrlAddress) (Maybe Word16) -- Start new or known remote host with optional multicast for known host
   | SwitchRemoteHost (Maybe RemoteHostId) -- Switch current remote host
   | StopRemoteHost RHKey -- Shut down a running session
   | DeleteRemoteHost RemoteHostId -- Unregister remote host and remove its data
@@ -469,7 +470,7 @@ allowRemoteCommand = \case
   APIGetNetworkConfig -> False
   SetLocalDeviceName _ -> False
   ListRemoteHosts -> False
-  StartRemoteHost _ -> False
+  StartRemoteHost {} -> False
   SwitchRemoteHost {} -> False
   StoreRemoteFile {} -> False
   GetRemoteFile {} -> False
@@ -556,8 +557,8 @@ data ChatResponse
   | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection}
   | CRConnectionPlan {user :: User, connectionPlan :: ConnectionPlan}
-  | CRSentConfirmation {user :: User}
-  | CRSentInvitation {user :: User, customUserProfile :: Maybe Profile}
+  | CRSentConfirmation {user :: User, connection :: PendingContactConnection}
+  | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CRGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
@@ -654,11 +655,10 @@ data ChatResponse
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode}
   | CRNtfMessages {user_ :: Maybe User, connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
-  | CRNewContactConnection {user :: User, connection :: PendingContactConnection}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRCurrentRemoteHost {remoteHost_ :: Maybe RemoteHostInfo}
-  | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text, ctrlPort :: String}
+  | CRRemoteHostStarted {remoteHost_ :: Maybe RemoteHostInfo, invitation :: Text, ctrlPort :: String, localAddrs :: NonEmpty RCCtrlAddress}
   | CRRemoteHostSessionCode {remoteHost_ :: Maybe RemoteHostInfo, sessionCode :: Text}
   | CRNewRemoteHost {remoteHost :: RemoteHostInfo}
   | CRRemoteHostConnected {remoteHost :: RemoteHostInfo}

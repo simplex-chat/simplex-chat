@@ -83,7 +83,7 @@ final class ChatModel: ObservableObject {
     // current WebRTC call
     @Published var callInvitations: Dictionary<ChatId, RcvCallInvitation> = [:]
     @Published var activeCall: Call?
-    @Published var callCommand: WCallCommand?
+    let callCommand: WebRTCCommandProcessor = WebRTCCommandProcessor()
     @Published var showCallView = false
     // remote desktop
     @Published var remoteCtrlSession: RemoteCtrlSession?

@@ -335,6 +335,50 @@ extension WCallResponse: Encodable {
     }
 }
 
+actor WebRTCCommandProcessor {
+    private var client: WebRTCClient? = nil
+    private var commands: [WCallCommand] = []
+    private var running: Bool = false
+
+    func setClient(_ client: WebRTCClient?) async {
+        logger.debug("WebRTC: setClient, commands count \(self.commands.count)")
+        self.client = client
+        if client != nil {
+            await processAllCommands()
+        } else {
+            commands.removeAll()
+        }
+    }
+
+    func processCommand(_ c: WCallCommand) async {
+//        logger.debug("WebRTC: process command \(c.cmdType)")
+        commands.append(c)
+        if !running && client != nil {
+            await processAllCommands()
+        }
+    }
+
+    func processAllCommands() async {
+        logger.debug("WebRTC: process all commands, commands count \(self.commands.count), client == nil \(self.client == nil)")
+        if let client = client {
+            running = true
+            while let c = commands.first, shouldRunCommand(client, c) {
+                commands.remove(at: 0)
+                await client.sendCallCommand(command: c)
+                logger.debug("WebRTC: processed cmd \(c.cmdType)")
+            }
+            running = false
+        }
+    }
+
+    func shouldRunCommand(_ client: WebRTCClient, _ c: WCallCommand) -> Bool {
+        switch c {
+        case .capabilities, .start, .offer, .end: true
+        default: client.activeCall.wrappedValue != nil
+        }
+    }
+}
+
 struct ConnectionState: Codable, Equatable {
     var connectionState: String
     var iceConnectionState: String
@@ -358,26 +402,12 @@ struct ConnectionInfo: Codable, Equatable {
             return "\(local?.rawValue ?? unknown) / \(remote?.rawValue ?? unknown)"
         }
     }
-
-    var protocolText: String {
-        let unknown = NSLocalizedString("unknown", comment: "connection info")
-        let local = localCandidate?.protocol?.uppercased() ?? unknown
-        let localRelay = localCandidate?.relayProtocol?.uppercased() ?? unknown
-        let remote = remoteCandidate?.protocol?.uppercased() ?? unknown
-        let localText = localRelay == local || localCandidate?.relayProtocol == nil
-                        ? local
-                        : "\(local) (\(localRelay))"
-        return local == remote
-                ? localText
-                : "\(localText) / \(remote)"
-    }
 }
 
 // https://developer.mozilla.org/en-US/docs/Web/API/RTCIceCandidate
 struct RTCIceCandidate: Codable, Equatable {
     var candidateType: RTCIceCandidateType?
     var `protocol`: String?
-    var relayProtocol: String?
     var sdpMid: String?
     var sdpMLineIndex: Int?
     var candidate: String

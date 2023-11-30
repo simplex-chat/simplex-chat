@@ -73,6 +73,7 @@ struct CreateLinkView: View {
         Task {
             if let (connReq, pcc) = await apiAddContact(incognito: incognitoGroupDefault.get()) {
                 await MainActor.run {
+                    m.updateContactConnection(pcc)
                     connReqInvitation = connReq
                     contactConnection = pcc
                     m.connReqInv = connReq

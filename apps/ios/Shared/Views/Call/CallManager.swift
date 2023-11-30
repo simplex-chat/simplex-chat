@@ -22,7 +22,7 @@ class CallManager {
         let m = ChatModel.shared
         if let call = m.activeCall, call.callkitUUID == callUUID {
             m.showCallView = true
-            m.callCommand = .capabilities(media: call.localMedia)
+            Task { await m.callCommand.processCommand(.capabilities(media: call.localMedia)) }
             return true
         }
         return false
@@ -57,19 +57,21 @@ class CallManager {
             m.activeCall = call
             m.showCallView = true
 
-            m.callCommand = .start(
+            Task {
+                await m.callCommand.processCommand(.start(
                 media: invitation.callType.media,
                 aesKey: invitation.sharedKey,
                 iceServers: iceServers,
                 relay: useRelay
-            )
+                ))
+            }
         }
     }
 
     func enableMedia(media: CallMediaType, enable: Bool, callUUID: UUID) -> Bool {
         if let call = ChatModel.shared.activeCall, call.callkitUUID == callUUID {
             let m = ChatModel.shared
-            m.callCommand = .media(media: media, enable: enable)
+            Task { await m.callCommand.processCommand(.media(media: media, enable: enable)) }
             return true
         }
         return false
@@ -94,11 +96,13 @@ class CallManager {
             completed()
         } else {
             logger.debug("CallManager.endCall: ending call...")
-            m.callCommand = .end
-            m.activeCall = nil
-            m.showCallView = false
-            completed()
             Task {
+                await m.callCommand.processCommand(.end)
+                await MainActor.run {
+                    m.activeCall = nil
+                    m.showCallView = false
+                    completed()
+                }
                 do {
                     try await apiEndCall(call.contact)
                 } catch {
