@@ -179,7 +179,8 @@
 		64AA1C6927EE10C800AC7277 /* ContextItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6827EE10C800AC7277 /* ContextItemView.swift */; };
 		64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */; };
 		64AEA4ED2B15D2A400334292 /* NewChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AEA4EC2B15D2A400334292 /* NewChatView.swift */; };
-		64AEA4EF2B15FEE100334292 /* NewChatSheetButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AEA4EE2B15FEE100334292 /* NewChatSheetButton.swift */; };
+		64AEA4EF2B15FEE100334292 /* NewChatInviteButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AEA4EE2B15FEE100334292 /* NewChatInviteButton.swift */; };
+		64AEA4F12B18896400334292 /* NewChatScanButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AEA4F02B18896400334292 /* NewChatScanButton.swift */; };
 		64C06EB52A0A4A7C00792D4D /* ChatItemInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C06EB42A0A4A7C00792D4D /* ChatItemInfoView.swift */; };
 		64C3B0212A0D359700E19930 /* CustomTimePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C3B0202A0D359700E19930 /* CustomTimePicker.swift */; };
 		64D0C2C029F9688300B38D5F /* UserAddressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D0C2BF29F9688300B38D5F /* UserAddressView.swift */; };
@@ -465,7 +466,8 @@
 		64AA1C6827EE10C800AC7277 /* ContextItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextItemView.swift; sourceTree = "<group>"; };
 		64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeletedItemView.swift; sourceTree = "<group>"; };
 		64AEA4EC2B15D2A400334292 /* NewChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChatView.swift; sourceTree = "<group>"; };
-		64AEA4EE2B15FEE100334292 /* NewChatSheetButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChatSheetButton.swift; sourceTree = "<group>"; };
+		64AEA4EE2B15FEE100334292 /* NewChatInviteButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChatInviteButton.swift; sourceTree = "<group>"; };
+		64AEA4F02B18896400334292 /* NewChatScanButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChatScanButton.swift; sourceTree = "<group>"; };
 		64C06EB42A0A4A7C00792D4D /* ChatItemInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemInfoView.swift; sourceTree = "<group>"; };
 		64C3B0202A0D359700E19930 /* CustomTimePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTimePicker.swift; sourceTree = "<group>"; };
 		64D0C2BF29F9688300B38D5F /* UserAddressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAddressView.swift; sourceTree = "<group>"; };
@@ -741,7 +743,8 @@
 				5CB2085228DB7CAF00D024EC /* ConnectViaLinkView.swift */,
 				64D0C2C529FAC1EC00B38D5F /* AddContactLearnMore.swift */,
 				64AEA4EC2B15D2A400334292 /* NewChatView.swift */,
-				64AEA4EE2B15FEE100334292 /* NewChatSheetButton.swift */,
+				64AEA4EE2B15FEE100334292 /* NewChatInviteButton.swift */,
+				64AEA4F02B18896400334292 /* NewChatScanButton.swift */,
 			);
 			path = NewChat;
 			sourceTree = "<group>";
@@ -1121,7 +1124,7 @@
 				5C13730B28156D2700F43030 /* ContactConnectionView.swift in Sources */,
 				644EFFE0292CFD7F00525D5B /* CIVoiceView.swift in Sources */,
 				6432857C2925443C00FBE5C8 /* GroupPreferencesView.swift in Sources */,
-				64AEA4EF2B15FEE100334292 /* NewChatSheetButton.swift in Sources */,
+				64AEA4EF2B15FEE100334292 /* NewChatInviteButton.swift in Sources */,
 				5C93293129239BED0090FFF9 /* ProtocolServerView.swift in Sources */,
 				5C9CC7AD28C55D7800BEF955 /* DatabaseEncryptionView.swift in Sources */,
 				5CBD285A295711D700EC2CF4 /* ImageUtils.swift in Sources */,
@@ -1247,6 +1250,7 @@
 				184152CEF68D2336FC2EBCB0 /* CallViewRenderers.swift in Sources */,
 				5CB634AD29E46CF70066AD6B /* LocalAuthView.swift in Sources */,
 				18415FEFE153C5920BFB7828 /* GroupWelcomeView.swift in Sources */,
+				64AEA4F12B18896400334292 /* NewChatScanButton.swift in Sources */,
 				18415F9A2D551F9757DA4654 /* CIVideoView.swift in Sources */,
 				184158C131FDB829D8A117EA /* VideoPlayerView.swift in Sources */,
 			);

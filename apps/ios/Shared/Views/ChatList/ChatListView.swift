@@ -128,7 +128,7 @@ struct ChatListView: View {
                 case .some(true):
                     HStack {
                         createGroupButton()
-                        NewChatSheetButton(showNewChatSheet: $showNewChatSheet)
+                        NewChatInviteButton(showNewChatSheet: $showNewChatSheet)
                     }
                 case .some(false): chatStoppedIcon()
                 case .none: EmptyView()
@@ -307,27 +307,12 @@ struct ChatListSearchBar: View {
                     .transition(.identity)
                 }
 
-                scanCodeButton()
+                NewChatScanButton()
             }
             Divider()
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 2)
-    }
-
-    private func scanCodeButton() -> some View {
-        Button {
-            showScanCodeSheet = true
-        } label: {
-            Image(systemName: "qrcode")
-                .resizable()
-                .scaledToFit()
-                .foregroundColor(.accentColor)
-                .frame(width: 20, height: 20)
-        }
-        .sheet(isPresented: $showScanCodeSheet) {
-            NewChatView(selection: .connect, showScanQRCodeSheet: true)
-        }
     }
 }
 

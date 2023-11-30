@@ -30,7 +30,7 @@ enum NewChatOption: Identifiable {
 struct NewChatView: View {
     @EnvironmentObject var m: ChatModel
     @State var selection: NewChatOption
-    @State var showScanQRCodeSheet = false
+    @State var showQRCodeScanner = false
     @State private var connReqInvitation: String = ""
     @State private var contactConnection: PendingContactConnection? = nil
     @State private var creatingConnReq = false
@@ -73,7 +73,7 @@ struct NewChatView: View {
                     retryButton()
                 }
             case .connect:
-                ConnectView(showScanQRCodeSheet: showScanQRCodeSheet)
+                ConnectView(showQRCodeScanner: showQRCodeScanner)
             }
         }
         .onChange(of: selection) { sel in
@@ -193,7 +193,7 @@ private struct InviteView: View {
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color(uiColor: .systemBackground))
+                        .fill(Color(uiColor: .secondarySystemGroupedBackground))
                 )
                 .padding(.horizontal)
                 .listRowBackground(Color.clear)
@@ -217,11 +217,10 @@ private enum ConnectAlert: Identifiable {
 
 private struct ConnectView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
-    @State var showScanQRCodeSheet = false
-    @State private var connectionLink: String = ""
+    @State var showQRCodeScanner = false
+    @State private var pastedLink: String = ""
     @State private var alert: ConnectAlert?
     @State private var sheet: PlanAndConnectActionSheet?
-    @State private var scannedLink: String = ""
 
     var body: some View {
         viewBody()
@@ -232,17 +231,6 @@ private struct ConnectView: View {
                 }
             }
             .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: true) }
-            .sheet(isPresented: $showScanQRCodeSheet) {
-                if #available(iOS 16.0, *) {
-                    ScanConnectionCodeView(scannedLink: $scannedLink)
-                        .presentationDetents([.fraction(0.8)])
-                } else {
-                    ScanConnectionCodeView(scannedLink: $scannedLink)
-                }
-            }
-            .onChange(of: scannedLink) { link in
-                connect(link)
-            }
     }
 
     @ViewBuilder private func viewBody() -> some View {
@@ -250,19 +238,17 @@ private struct ConnectView: View {
             pasteLinkView()
         }
 
-        Section("Or scan QR code") {
-            scanQRCodeButton()
-        }
+        scanCodeView()
     }
 
     @ViewBuilder private func pasteLinkView() -> some View {
-        if connectionLink == "" {
+        if pastedLink == "" {
             Button {
                 if let str = UIPasteboard.general.string {
                     let link = str.trimmingCharacters(in: .whitespaces)
                     if checkParsedLink(link) {
-                        connectionLink = link
-                        connect(connectionLink)
+                        pastedLink = link
+                        connect(pastedLink)
                     } else {
                         alert = .connectSomeAlert(alert: .someAlert(
                             alert: mkAlert(title: "Invalid link", message: "The text you pasted is not a SimpleX link."),
@@ -276,9 +262,9 @@ private struct ConnectView: View {
             .frame(maxWidth: .infinity, alignment: .center)
         } else {
             HStack {
-                linkTextView(connectionLink)
+                linkTextView(pastedLink)
                 Button {
-                    connectionLink = ""
+                    pastedLink = ""
                 } label: {
                     Image(systemName: "xmark.circle")
                 }
@@ -296,6 +282,49 @@ private struct ConnectView: View {
         }
     }
 
+    private func scanCodeView() -> some View {
+        Section("Or scan QR code") {
+            if showQRCodeScanner {
+                CodeScannerView(codeTypes: [.qr], completion: processQRCode)
+                    .aspectRatio(1, contentMode: .fit)
+                    .cornerRadius(12)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    .padding(.horizontal)
+            } else {
+                Button {
+                    showQRCodeScanner = true
+                } label: {
+                    Text("Tap to scan")
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+            }
+        }
+    }
+
+    // TODO scan is only attempted once
+    private func processQRCode(_ resp: Result<ScanResult, ScanError>) {
+        switch resp {
+        case let .success(r):
+            let link = r.string
+            if checkParsedLink(link) {
+                connect(link)
+            } else {
+                alert = .connectSomeAlert(alert: .someAlert(
+                    alert: mkAlert(title: "Invalid QR code", message: "The code you scanned is not a SimpleX link QR code."),
+                    id: "pasteLinkView checkParsedLink error"
+                ))
+            }
+        case let .failure(e):
+            logger.error("processQRCode QR code error: \(e.localizedDescription)")
+            alert = .connectSomeAlert(alert: .someAlert(
+                alert: mkAlert(title: "Invalid QR code", message: "Error scanning code: \(e.localizedDescription)"),
+                id: "processQRCode failure"
+            ))
+        }
+    }
+
     private func connect(_ link: String) {
         planAndConnect(
             link,
@@ -304,53 +333,6 @@ private struct ConnectView: View {
             dismiss: true,
             incognito: nil
         )
-    }
-
-    private func scanQRCodeButton() -> some View {
-        Button {
-            showScanQRCodeSheet = true
-        } label: {
-            settingsRow("qrcode") {
-                Text("Scan code")
-            }
-        }
-    }
-}
-
-private struct ScanConnectionCodeView: View {
-    @Environment(\.dismiss) var dismiss: DismissAction
-    @Binding var scannedLink: String
-
-    var body: some View {
-        VStack(alignment: .leading) {
-            Text("Scan QR code")
-                .font(.largeTitle)
-                .bold()
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.vertical)
-            
-            CodeScannerView(codeTypes: [.qr], completion: processQRCode)
-                .aspectRatio(1, contentMode: .fit)
-                .cornerRadius(12)
-                .padding(.top)
-
-            Text("If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.")
-                .padding(.top)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding()
-    }
-
-    private func processQRCode(_ resp: Result<ScanResult, ScanError>) {
-        switch resp {
-        case let .success(r):
-            scannedLink = r.string
-            dismiss()
-        case let .failure(e):
-            logger.error("ConnectContactView.processQRCode QR code error: \(e.localizedDescription)")
-            // TODO alert
-            dismiss()
-        }
     }
 }
 

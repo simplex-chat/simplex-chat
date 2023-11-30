@@ -1,5 +1,5 @@
 //
-//  NewChatSheetButton.swift
+//  NewChatInviteButton.swift
 //  SimpleX (iOS)
 //
 //  Created by spaced4ndy on 28.11.2023.
@@ -7,9 +7,8 @@
 //
 
 import SwiftUI
-import SimpleXChat
 
-struct NewChatSheetButton: View {
+struct NewChatInviteButton: View {
     @Binding var showNewChatSheet: Bool
 
     var body: some View {
@@ -28,5 +27,5 @@ struct NewChatSheetButton: View {
 }
 
 //#Preview {
-//    NewChatSheetButton()
+//    NewChatInviteButton()
 //}

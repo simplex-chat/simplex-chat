@@ -39,7 +39,7 @@ struct ChatHelp: View {
 
                 HStack(spacing: 8) {
                     Text("Tap button ")
-                    NewChatSheetButton(showNewChatSheet: $showNewChatSheet)
+                    NewChatInviteButton(showNewChatSheet: $showNewChatSheet)
                     Text("above, then choose:")
                 }
 
