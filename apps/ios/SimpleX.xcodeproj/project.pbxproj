@@ -180,7 +180,6 @@
 		64AA1C6C27F3537400AC7277 /* DeletedItemView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */; };
 		64AEA4ED2B15D2A400334292 /* NewChatView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AEA4EC2B15D2A400334292 /* NewChatView.swift */; };
 		64AEA4EF2B15FEE100334292 /* NewChatInviteButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AEA4EE2B15FEE100334292 /* NewChatInviteButton.swift */; };
-		64AEA4F12B18896400334292 /* NewChatScanButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64AEA4F02B18896400334292 /* NewChatScanButton.swift */; };
 		64C06EB52A0A4A7C00792D4D /* ChatItemInfoView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C06EB42A0A4A7C00792D4D /* ChatItemInfoView.swift */; };
 		64C3B0212A0D359700E19930 /* CustomTimePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64C3B0202A0D359700E19930 /* CustomTimePicker.swift */; };
 		64D0C2C029F9688300B38D5F /* UserAddressView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D0C2BF29F9688300B38D5F /* UserAddressView.swift */; };
@@ -467,7 +466,6 @@
 		64AA1C6B27F3537400AC7277 /* DeletedItemView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeletedItemView.swift; sourceTree = "<group>"; };
 		64AEA4EC2B15D2A400334292 /* NewChatView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChatView.swift; sourceTree = "<group>"; };
 		64AEA4EE2B15FEE100334292 /* NewChatInviteButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChatInviteButton.swift; sourceTree = "<group>"; };
-		64AEA4F02B18896400334292 /* NewChatScanButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewChatScanButton.swift; sourceTree = "<group>"; };
 		64C06EB42A0A4A7C00792D4D /* ChatItemInfoView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatItemInfoView.swift; sourceTree = "<group>"; };
 		64C3B0202A0D359700E19930 /* CustomTimePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomTimePicker.swift; sourceTree = "<group>"; };
 		64D0C2BF29F9688300B38D5F /* UserAddressView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserAddressView.swift; sourceTree = "<group>"; };
@@ -744,7 +742,6 @@
 				64D0C2C529FAC1EC00B38D5F /* AddContactLearnMore.swift */,
 				64AEA4EC2B15D2A400334292 /* NewChatView.swift */,
 				64AEA4EE2B15FEE100334292 /* NewChatInviteButton.swift */,
-				64AEA4F02B18896400334292 /* NewChatScanButton.swift */,
 			);
 			path = NewChat;
 			sourceTree = "<group>";
@@ -1250,7 +1247,6 @@
 				184152CEF68D2336FC2EBCB0 /* CallViewRenderers.swift in Sources */,
 				5CB634AD29E46CF70066AD6B /* LocalAuthView.swift in Sources */,
 				18415FEFE153C5920BFB7828 /* GroupWelcomeView.swift in Sources */,
-				64AEA4F12B18896400334292 /* NewChatScanButton.swift in Sources */,
 				18415F9A2D551F9757DA4654 /* CIVideoView.swift in Sources */,
 				184158C131FDB829D8A117EA /* VideoPlayerView.swift in Sources */,
 			);

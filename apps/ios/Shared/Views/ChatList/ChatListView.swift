@@ -12,6 +12,7 @@ import SimpleXChat
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
+    @State private var searchMode = false
     @State private var searchText = ""
     @State private var showNewChatSheet = false
     @State private var userPickerVisible = false
@@ -63,8 +64,8 @@ struct ChatListView: View {
 
     private var chatListView: some View {
         VStack {
-//            chatList.searchable(text: $searchText)
             chatList
+                .navigationBarHidden(searchMode)
         }
         .onDisappear() { withAnimation { userPickerVisible = false } }
         .refreshable {
@@ -83,7 +84,6 @@ struct ChatListView: View {
                 secondaryButton: .cancel()
             ))
         }
-//        .offset(x: -8)
         .listStyle(.plain)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showCreateGroupSheet) {
@@ -161,19 +161,19 @@ struct ChatListView: View {
         let cs = filteredChats()
         ZStack {
             VStack {
-                if !chatModel.chats.isEmpty {
-                    ChatListSearchBar(text: $searchText)
-                        .listRowSeparator(.hidden, edges: .top)
-                        .frame(maxWidth: .infinity)
-                }
                 List {
+                    if !chatModel.chats.isEmpty {
+                        ChatListSearchBar(searchMode: $searchMode, searchText: $searchText)
+                            .listRowSeparator(.hidden, edges: .top)
+                            .frame(maxWidth: .infinity)
+                    }
                     ForEach(cs, id: \.viewId) { chat in
                         ChatListNavLink(chat: chat)
                             .padding(.trailing, -16)
                             .disabled(chatModel.chatRunning != true)
                     }
+                    .offset(x: -8)
                 }
-                .offset(x: -8)
             }
             .onChange(of: chatModel.chatId) { _ in
                 if chatModel.chatId == nil, let chatId = chatModel.chatToTop {
@@ -273,46 +273,56 @@ struct ChatListView: View {
     }
 }
 
-struct ChatListSearchBar: View {
-    @Binding var text: String
-    @State private var showCancelButton = false
+private struct ChatListSearchBar: View {
+    @Binding var searchMode: Bool
+    @Binding var searchText: String
     @State private var showScanCodeSheet = false
 
     var body: some View {
-        VStack {
-            HStack(spacing: 8) {
-                HStack(spacing: 4) {
-                    Image(systemName: "magnifyingglass")
-                        .foregroundColor(.secondary)
-                    TextField("Search", text: $text)
+        HStack(spacing: 12) {
+            HStack(spacing: 4) {
+                Image(systemName: "magnifyingglass")
+                TextField("Search or paste link", text: $searchText)
+                    .foregroundColor(.primary)
+                    .frame(maxWidth: .infinity)
+                    .onTapGesture {
+                        searchMode = true
+                    }
+
+                if searchMode {
+                    Image(systemName: "xmark.circle.fill")
+                        .opacity(searchText == "" ? 0 : 1)
                         .onTapGesture {
-                            showCancelButton = true
+                            searchText = ""
+                        }
+                } else {
+                    Image(systemName: "qrcode")
+                        .onTapGesture {
+                            showScanCodeSheet = true
                         }
                 }
-                .padding(.horizontal, 7)
-                .padding(.vertical, 7)
-                .background(Color(uiColor: .secondarySystemFill))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-
-                if showCancelButton {
-                    Button {
-                        hideKeyboard()
-                        text = ""
-                        showCancelButton = false
-                    } label: {
-                        Text("Cancel")
-                            .foregroundColor(.accentColor)
-                    }
-                    .padding(.trailing, 8)
-                    .transition(.identity)
-                }
-
-                NewChatScanButton()
             }
-            Divider()
+            .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
+            .foregroundColor(.secondary)
+            .background(Color(.tertiarySystemFill))
+            .cornerRadius(10.0)
+
+            if searchMode {
+                Text("Cancel")
+                    .foregroundColor(.accentColor)
+                    .onTapGesture {
+                        hideKeyboard()
+                        searchText = ""
+                        searchMode = false
+                    }
+                    .transition(.identity)
+            }
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 2)
+        .padding(.bottom, 2)
+        .sheet(isPresented: $showScanCodeSheet) {
+            NewChatView(selection: .connect, showQRCodeScanner: true)
+                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil) // fixes .refreshable in ChatListView affecting nested view
+        }
     }
 }
 
