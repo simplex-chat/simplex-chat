@@ -173,6 +173,8 @@ class AppPreferences {
   val connectRemoteViaMulticastAuto = mkBoolPreference(SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST_AUTO, true)
   val offerRemoteMulticast = mkBoolPreference(SHARED_PREFS_OFFER_REMOTE_MULTICAST, true)
 
+  val desktopWindowState = mkStrPreference(SHARED_PREFS_DESKTOP_WINDOW_STATE, null)
+  
   private fun mkIntPreference(prefName: String, default: Int) =
     SharedPreference(
       get = fun() = settings.getInt(prefName, default),
@@ -317,6 +319,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST = "ConnectRemoteViaMulticast"
     private const val SHARED_PREFS_CONNECT_REMOTE_VIA_MULTICAST_AUTO = "ConnectRemoteViaMulticastAuto"
     private const val SHARED_PREFS_OFFER_REMOTE_MULTICAST = "OfferRemoteMulticast"
+    private const val SHARED_PREFS_DESKTOP_WINDOW_STATE = "DesktopWindowState"
   }
 }
 
@@ -891,20 +894,21 @@ object ChatController {
     return null
   }
 
-  suspend fun apiConnect(rh: Long?, incognito: Boolean, connReq: String): Boolean  {
+  suspend fun apiConnect(rh: Long?, incognito: Boolean, connReq: String): PendingContactConnection?  {
     val userId = chatModel.currentUser.value?.userId ?: run {
       Log.e(TAG, "apiConnect: no current user")
-      return false
+      return null
     }
     val r = sendCmd(rh, CC.APIConnect(userId, incognito, connReq))
     when {
-      r is CR.SentConfirmation || r is CR.SentInvitation -> return true
+      r is CR.SentConfirmation -> return r.connection
+      r is CR.SentInvitation -> return r.connection
       r is CR.ContactAlreadyExists -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.contact_already_exists),
           String.format(generalGetString(MR.strings.you_are_already_connected_to_vName_via_this_link), r.contact.displayName)
         )
-        return false
+        return null
       }
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat
           && r.chatError.errorType is ChatErrorType.InvalidConnReq -> {
@@ -912,7 +916,7 @@ object ChatController {
           generalGetString(MR.strings.invalid_connection_link),
           generalGetString(MR.strings.please_check_correct_link_and_maybe_ask_for_a_new_one)
         )
-        return false
+        return null
       }
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
           && r.chatError.agentError is AgentErrorType.SMP
@@ -921,13 +925,13 @@ object ChatController {
           generalGetString(MR.strings.connection_error_auth),
           generalGetString(MR.strings.connection_error_auth_desc)
         )
-        return false
+        return null
       }
       else -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("apiConnect", generalGetString(MR.strings.connection_error), r)
         }
-        return false
+        return null
       }
     }
   }
@@ -1526,16 +1530,6 @@ object ChatController {
     fun active(user: UserLike): Boolean = activeUser(rhId, user)
     chatModel.addTerminalItem(TerminalItem.resp(rhId, r))
     when (r) {
-      is CR.NewContactConnection -> {
-        if (active(r.user)) {
-          chatModel.updateContactConnection(rhId, r.connection)
-        }
-      }
-      is CR.ContactConnectionDeleted -> {
-        if (active(r.user)) {
-          chatModel.removeChat(rhId, r.connection.id)
-        }
-      }
       is CR.ContactDeletedByContact -> {
         if (active(r.user) && r.contact.directOrUsed) {
           chatModel.updateContact(rhId, r.contact)
@@ -3707,8 +3701,8 @@ sealed class CR {
   @Serializable @SerialName("invitation") class Invitation(val user: UserRef, val connReqInvitation: String, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionIncognitoUpdated") class ConnectionIncognitoUpdated(val user: UserRef, val toConnection: PendingContactConnection): CR()
   @Serializable @SerialName("connectionPlan") class CRConnectionPlan(val user: UserRef, val connectionPlan: ConnectionPlan): CR()
-  @Serializable @SerialName("sentConfirmation") class SentConfirmation(val user: UserRef): CR()
-  @Serializable @SerialName("sentInvitation") class SentInvitation(val user: UserRef): CR()
+  @Serializable @SerialName("sentConfirmation") class SentConfirmation(val user: UserRef, val connection: PendingContactConnection): CR()
+  @Serializable @SerialName("sentInvitation") class SentInvitation(val user: UserRef, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("sentInvitationToContact") class SentInvitationToContact(val user: UserRef, val contact: Contact, val customUserProfile: Profile?): CR()
   @Serializable @SerialName("contactAlreadyExists") class ContactAlreadyExists(val user: UserRef, val contact: Contact): CR()
   @Serializable @SerialName("contactRequestAlreadyAccepted") class ContactRequestAlreadyAccepted(val user: UserRef, val contact: Contact): CR()
@@ -3802,7 +3796,6 @@ sealed class CR {
   @Serializable @SerialName("callAnswer") class CallAnswer(val user: UserRef, val contact: Contact, val answer: WebRTCSession): CR()
   @Serializable @SerialName("callExtraInfo") class CallExtraInfo(val user: UserRef, val contact: Contact, val extraInfo: WebRTCExtraInfo): CR()
   @Serializable @SerialName("callEnded") class CallEnded(val user: UserRef, val contact: Contact): CR()
-  @Serializable @SerialName("newContactConnection") class NewContactConnection(val user: UserRef, val connection: PendingContactConnection): CR()
   @Serializable @SerialName("contactConnectionDeleted") class ContactConnectionDeleted(val user: UserRef, val connection: PendingContactConnection): CR()
   // remote events (desktop)
   @Serializable @SerialName("remoteHostList") class RemoteHostList(val remoteHosts: List<RemoteHostInfo>): CR()
@@ -3951,7 +3944,6 @@ sealed class CR {
     is CallAnswer -> "callAnswer"
     is CallExtraInfo -> "callExtraInfo"
     is CallEnded -> "callEnded"
-    is NewContactConnection -> "newContactConnection"
     is ContactConnectionDeleted -> "contactConnectionDeleted"
     is RemoteHostList -> "remoteHostList"
     is CurrentRemoteHost -> "currentRemoteHost"
@@ -4006,11 +3998,11 @@ sealed class CR {
     is ContactCode -> withUser(user, "contact: ${json.encodeToString(contact)}\nconnectionCode: $connectionCode")
     is GroupMemberCode -> withUser(user, "groupInfo: ${json.encodeToString(groupInfo)}\nmember: ${json.encodeToString(member)}\nconnectionCode: $connectionCode")
     is ConnectionVerified -> withUser(user, "verified: $verified\nconnectionCode: $expectedCode")
-    is Invitation -> withUser(user, connReqInvitation)
+    is Invitation -> withUser(user, "connReqInvitation: $connReqInvitation\nconnection: $connection")
     is ConnectionIncognitoUpdated -> withUser(user, json.encodeToString(toConnection))
     is CRConnectionPlan -> withUser(user, json.encodeToString(connectionPlan))
-    is SentConfirmation -> withUser(user, noDetails())
-    is SentInvitation -> withUser(user, noDetails())
+    is SentConfirmation -> withUser(user, json.encodeToString(connection))
+    is SentInvitation -> withUser(user, json.encodeToString(connection))
     is SentInvitationToContact -> withUser(user, json.encodeToString(contact))
     is ContactAlreadyExists -> withUser(user, json.encodeToString(contact))
     is ContactRequestAlreadyAccepted -> withUser(user, json.encodeToString(contact))
@@ -4098,7 +4090,6 @@ sealed class CR {
     is CallAnswer -> withUser(user, "contact: ${contact.id}\nanswer: ${json.encodeToString(answer)}")
     is CallExtraInfo -> withUser(user, "contact: ${contact.id}\nextraInfo: ${json.encodeToString(extraInfo)}")
     is CallEnded -> withUser(user, "contact: ${contact.id}")
-    is NewContactConnection -> withUser(user, json.encodeToString(connection))
     is ContactConnectionDeleted -> withUser(user, json.encodeToString(connection))
     // remote events (mobile)
     is RemoteHostList -> json.encodeToString(remoteHosts)

@@ -537,6 +537,10 @@ CREATE TABLE remote_hosts(
   id_key BLOB NOT NULL, -- long-term/identity signing key
   host_fingerprint BLOB NOT NULL, -- remote host CA cert fingerprint, set when connected
   host_dh_pub BLOB NOT NULL -- last session DH key
+  ,
+  bind_addr TEXT,
+  bind_iface TEXT,
+  bind_port INTEGER
 );
 CREATE TABLE remote_controllers(
   -- e.g., desktops known to a mobile app

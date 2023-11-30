@@ -283,10 +283,11 @@ suspend fun connectViaUri(
   incognito: Boolean,
   connectionPlan: ConnectionPlan?,
   close: (() -> Unit)?
-): Boolean {
-  val r = chatModel.controller.apiConnect(rhId, incognito, uri.toString())
+) {
+  val pcc = chatModel.controller.apiConnect(rhId, incognito, uri.toString())
   val connLinkType = if (connectionPlan != null) planToConnectionLinkType(connectionPlan) else ConnectionLinkType.INVITATION
-  if (r) {
+  if (pcc != null) {
+    chatModel.updateContactConnection(rhId, pcc)
     close?.invoke()
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.connection_request_sent),
@@ -299,7 +300,6 @@ suspend fun connectViaUri(
       hostDevice = hostDevice(rhId),
     )
   }
-  return r
 }
 
 fun planToConnectionLinkType(connectionPlan: ConnectionPlan): ConnectionLinkType {
