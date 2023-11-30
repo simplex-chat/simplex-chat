@@ -136,7 +136,6 @@ private fun SendStateUpdates() {
       .collect { call ->
         val state = call.callState.text
         val connInfo = call.connectionInfo
-        //    val connInfoText = if (connInfo == null) ""  else " (${connInfo.text}, ${connInfo.protocolText})"
         val connInfoText = if (connInfo == null) ""  else " (${connInfo.text})"
         val description = call.encryptionStatus + connInfoText
         chatModel.callCommand.add(WCallCommand.Description(state, description))

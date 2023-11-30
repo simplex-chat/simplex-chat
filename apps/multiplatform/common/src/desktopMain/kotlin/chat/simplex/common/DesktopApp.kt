@@ -15,7 +15,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.platform.desktopPlatform
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.common.views.TerminalView
@@ -31,10 +30,30 @@ import java.io.File
 val simplexWindowState = SimplexWindowState()
 
 fun showApp() = application {
-  // For some reason on Linux actual width will be 10.dp less after specifying it here. If we specify 1366,
-  // it will show 1356. But after that we can still update it to 1366 by changing window state. Just making it +10 now here
-  val width = if (desktopPlatform.isLinux()) 1376.dp else 1366.dp
-  val windowState = rememberWindowState(placement = WindowPlacement.Floating, width = width, height = 768.dp)
+  // Creates file if not exists; comes with proper defaults
+  val state = getStoredWindowState()
+
+  val windowState: WindowState = rememberWindowState(
+    placement = WindowPlacement.Floating,
+    width = state.width.dp,
+    height = state.height.dp,
+    position = WindowPosition(state.x.dp, state.y.dp)
+  )
+
+  LaunchedEffect(
+    windowState.position.x.value,
+    windowState.position.y.value,
+    windowState.size.width.value,
+    windowState.size.height.value
+  ) {
+    storeWindowState(WindowPositionSize(
+      x = windowState.position.x.value.toInt(),
+      y = windowState.position.y.value.toInt(),
+      width = windowState.size.width.value.toInt(),
+      height = windowState.size.height.value.toInt()
+    ))
+  }
+
   simplexWindowState.windowState = windowState
   // Reload all strings in all @Composable's after language change at runtime
   if (remember { ChatController.appPrefs.appLanguage.state }.value != "") {
