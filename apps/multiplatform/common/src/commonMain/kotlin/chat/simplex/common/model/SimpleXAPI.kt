@@ -869,10 +869,7 @@ object ChatController {
     }
     val r = sendCmd(rh, CC.APIAddContact(userId, incognito))
     return when (r) {
-      is CR.Invitation -> {
-        chatModel.updateContactConnection(rh, r.connection)
-        r.connReqInvitation to r.connection
-      }
+      is CR.Invitation -> r.connReqInvitation to r.connection
       else -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("apiAddContact", generalGetString(MR.strings.connection_error), r)
@@ -897,27 +894,21 @@ object ChatController {
     return null
   }
 
-  suspend fun apiConnect(rh: Long?, incognito: Boolean, connReq: String): Boolean  {
+  suspend fun apiConnect(rh: Long?, incognito: Boolean, connReq: String): PendingContactConnection?  {
     val userId = chatModel.currentUser.value?.userId ?: run {
       Log.e(TAG, "apiConnect: no current user")
-      return false
+      return null
     }
     val r = sendCmd(rh, CC.APIConnect(userId, incognito, connReq))
     when {
-      r is CR.SentConfirmation -> {
-        chatModel.updateContactConnection(rh, r.connection)
-        return true
-      }
-      r is CR.SentInvitation -> {
-        chatModel.updateContactConnection(rh, r.connection)
-        return true
-      }
+      r is CR.SentConfirmation -> return r.connection
+      r is CR.SentInvitation -> return r.connection
       r is CR.ContactAlreadyExists -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.contact_already_exists),
           String.format(generalGetString(MR.strings.you_are_already_connected_to_vName_via_this_link), r.contact.displayName)
         )
-        return false
+        return null
       }
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat
           && r.chatError.errorType is ChatErrorType.InvalidConnReq -> {
@@ -925,7 +916,7 @@ object ChatController {
           generalGetString(MR.strings.invalid_connection_link),
           generalGetString(MR.strings.please_check_correct_link_and_maybe_ask_for_a_new_one)
         )
-        return false
+        return null
       }
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorAgent
           && r.chatError.agentError is AgentErrorType.SMP
@@ -934,13 +925,13 @@ object ChatController {
           generalGetString(MR.strings.connection_error_auth),
           generalGetString(MR.strings.connection_error_auth_desc)
         )
-        return false
+        return null
       }
       else -> {
         if (!(networkErrorAlert(r))) {
           apiErrorAlert("apiConnect", generalGetString(MR.strings.connection_error), r)
         }
-        return false
+        return null
       }
     }
   }
