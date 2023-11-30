@@ -277,6 +277,8 @@ private struct ChatListSearchBar: View {
     @Binding var searchMode: Bool
     @Binding var searchText: String
     @State private var showScanCodeSheet = false
+    @State private var alert: PlanAndConnectAlert?
+    @State private var sheet: PlanAndConnectActionSheet?
 
     var body: some View {
         VStack(spacing: 12) {
@@ -329,6 +331,33 @@ private struct ChatListSearchBar: View {
             NewChatView(selection: .connect, showQRCodeScanner: true)
                 .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil) // fixes .refreshable in ChatListView affecting nested view
         }
+        .onChange(of: searchText) { t in
+            let link = t.trimmingCharacters(in: .whitespaces)
+            if strIsSimplexLink(link) {
+                hideKeyboard()
+                searchText = ""
+                withAnimation {
+                    searchMode = false
+                }
+                connect(link)
+            }
+        }
+        .alert(item: $alert) { a in
+            planAndConnectAlert(a, dismiss: true, onCancel: { searchText = "" })
+        }
+        .actionSheet(item: $sheet) { s in
+            planAndConnectActionSheet(s, dismiss: true, onCancel: { searchText = "" })
+        }
+    }
+
+    private func connect(_ link: String) {
+        planAndConnect(
+            link,
+            showAlert: { alert = $0 },
+            showActionSheet: { sheet = $0 },
+            dismiss: false,
+            incognito: nil
+        )
     }
 }
 

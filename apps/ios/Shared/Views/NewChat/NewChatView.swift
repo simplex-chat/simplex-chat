@@ -226,11 +226,15 @@ private struct ConnectView: View {
         viewBody()
             .alert(item: $alert) { a in
                 switch(a) {
-                case let .planAndConnectAlert(alert): return planAndConnectAlert(alert, dismiss: true, onCancel: { pastedLink = "" })
-                case let .connectSomeAlert(.someAlert(alert, _)): return alert
+                case let .planAndConnectAlert(alert):
+                    return planAndConnectAlert(alert, dismiss: true, onCancel: { pastedLink = "" })
+                case let .connectSomeAlert(.someAlert(alert, _)):
+                    return alert
                 }
             }
-            .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: true, onCancel: { pastedLink = "" }) }
+            .actionSheet(item: $sheet) { s in
+                planAndConnectActionSheet(s, dismiss: true, onCancel: { pastedLink = "" })
+            }
     }
 
     @ViewBuilder private func viewBody() -> some View {
@@ -246,9 +250,9 @@ private struct ConnectView: View {
             Button {
                 if let str = UIPasteboard.general.string {
                     let link = str.trimmingCharacters(in: .whitespaces)
-                    if checkParsedLink(link) {
+                    if strIsSimplexLink(link) {
                         pastedLink = link
-                        connect(pastedLink) // TODO clear link on cancel
+                        connect(pastedLink)
                     } else {
                         alert = .connectSomeAlert(alert: .someAlert(
                             alert: mkAlert(title: "Invalid link", message: "The text you pasted is not a SimpleX link."),
@@ -269,16 +273,6 @@ private struct ConnectView: View {
                     Image(systemName: "xmark.circle")
                 }
             }
-        }
-    }
-
-    private func checkParsedLink(_ link: String) -> Bool {
-        if let parsedMd = parseSimpleXMarkdown(link),
-           parsedMd.count == 1,
-           case .simplexLink = parsedMd[0].format {
-            return true
-        } else {
-            return false
         }
     }
 
@@ -326,7 +320,7 @@ private struct ConnectView: View {
         switch resp {
         case let .success(r):
             let link = r.string
-            if checkParsedLink(link) {
+            if strIsSimplexLink(link) {
                 connect(link)
             } else {
                 alert = .connectSomeAlert(alert: .someAlert(
@@ -354,6 +348,13 @@ private struct ConnectView: View {
     }
 }
 
+private func linkTextView(_ link: String) -> some View {
+    Text(link)
+        .lineLimit(1)
+        .font(.caption)
+        .truncationMode(.middle)
+}
+
 struct InfoSheetButton<Content: View>: View {
     @ViewBuilder let content: Content
     @State private var showInfoSheet = false
@@ -373,11 +374,14 @@ struct InfoSheetButton<Content: View>: View {
     }
 }
 
-private func linkTextView(_ link: String) -> some View {
-    Text(link)
-        .lineLimit(1)
-        .font(.caption)
-        .truncationMode(.middle)
+func strIsSimplexLink(_ str: String) -> Bool {
+    if let parsedMd = parseSimpleXMarkdown(str),
+       parsedMd.count == 1,
+       case .simplexLink = parsedMd[0].format {
+        return true
+    } else {
+        return false
+    }
 }
 
 // TODO move IncognitoToggle here
