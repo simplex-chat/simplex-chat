@@ -1524,4 +1524,7 @@
     <string name="found_desktop">Bureau trouvé</string>
     <string name="not_compatible">Non compatible !</string>
     <string name="multicast_discoverable_via_local_network">Accessible via le réseau local</string>
+    <string name="refresh_qr_code">Rafraîchir</string>
+    <string name="create_chat_profile">Créer un profil de chat</string>
+    <string name="no_connected_mobile">Pas de mobile connecté</string>
 </resources>
