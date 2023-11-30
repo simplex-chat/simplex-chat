@@ -25,6 +25,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
+import chat.simplex.common.platform.chatModel
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ClickableText
 import chat.simplex.common.views.helpers.*
@@ -169,18 +170,20 @@ fun NetworkAndServersView(
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
     AppBarTitle(stringResource(MR.strings.network_and_servers))
-    SectionView(generalGetString(MR.strings.settings_section_title_messages)) {
-      SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.smp_servers), showCustomModal { m, close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.SMP, close) })
+    if (!chatModel.desktopNoUserNoRemote) {
+      SectionView(generalGetString(MR.strings.settings_section_title_messages)) {
+        SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.smp_servers), showCustomModal { m, close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.SMP, close) })
 
-      SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.XFTP, close) })
+        SettingsActionItem(painterResource(MR.images.ic_dns), stringResource(MR.strings.xftp_servers), showCustomModal { m, close -> ProtocolServersView(m, m.remoteHostId, ServerProtocol.XFTP, close) })
 
-      if (currentRemoteHost == null) {
-        UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showSettingsModal)
-        UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
-        if (developerTools) {
-          SessionModePicker(sessionMode, showSettingsModal, updateSessionMode)
+        if (currentRemoteHost == null) {
+          UseSocksProxySwitch(networkUseSocksProxy, proxyPort, toggleSocksProxy, showSettingsModal)
+          UseOnionHosts(onionHosts, networkUseSocksProxy, showSettingsModal, useOnion)
+          if (developerTools) {
+            SessionModePicker(sessionMode, showSettingsModal, updateSessionMode)
+          }
+          SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
         }
-        SettingsActionItem(painterResource(MR.images.ic_cable), stringResource(MR.strings.network_settings), showSettingsModal { AdvancedNetworkSettingsView(it) })
       }
     }
     if (currentRemoteHost == null && networkUseSocksProxy.value) {
@@ -192,7 +195,7 @@ fun NetworkAndServersView(
         }
       }
       Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 32.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
-    } else {
+    } else if (!chatModel.desktopNoUserNoRemote) {
       Divider(Modifier.padding(start = DEFAULT_PADDING_HALF, top = 24.dp, end = DEFAULT_PADDING_HALF, bottom = 30.dp))
     }
 

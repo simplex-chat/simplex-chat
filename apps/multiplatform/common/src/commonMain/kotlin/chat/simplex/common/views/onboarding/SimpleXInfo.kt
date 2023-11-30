@@ -8,6 +8,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -99,26 +100,22 @@ private fun InfoRow(icon: Painter, titleId: StringResource, textId: StringResour
 }
 
 @Composable
-fun OnboardingActionButton(user: User?, onboardingStage: SharedPreference<OnboardingStage>, onclick: (() -> Unit)? = null) {
-  if (user == null) {
-    OnboardingActionButton(MR.strings.create_your_profile, onboarding = OnboardingStage.Step2_CreateProfile, true, onclick)
-  } else {
-    OnboardingActionButton(MR.strings.make_private_connection, onboarding = OnboardingStage.OnboardingComplete, true, onclick)
-  }
-}
+expect fun OnboardingActionButton(user: User?, onboardingStage: SharedPreference<OnboardingStage>, onclick: (() -> Unit)? = null)
 
 @Composable
 fun OnboardingActionButton(
   labelId: StringResource,
   onboarding: OnboardingStage?,
   border: Boolean,
+  icon: Painter? = null,
+  iconColor: Color = MaterialTheme.colors.primary,
   onclick: (() -> Unit)?
 ) {
   val modifier = if (border) {
     Modifier
       .border(border = BorderStroke(1.dp, MaterialTheme.colors.primary), shape = RoundedCornerShape(50))
       .padding(
-      horizontal = DEFAULT_PADDING * 2,
+      horizontal = if (icon == null) DEFAULT_PADDING * 2 else DEFAULT_PADDING_HALF,
       vertical = 4.dp
     )
   } else {
@@ -131,6 +128,9 @@ fun OnboardingActionButton(
       ChatController.appPrefs.onboardingStage.set(onboarding)
     }
   }, modifier) {
+    if (icon != null) {
+      Icon(icon, stringResource(labelId), Modifier.padding(end = DEFAULT_PADDING_HALF), tint = iconColor)
+    }
     Text(stringResource(labelId), style = MaterialTheme.typography.h2, color = MaterialTheme.colors.primary, fontSize = 20.sp)
     Icon(
       painterResource(MR.images.ic_arrow_forward_ios), "next stage", tint = MaterialTheme.colors.primary,
