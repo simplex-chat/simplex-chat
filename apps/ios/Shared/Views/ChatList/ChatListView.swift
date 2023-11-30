@@ -141,10 +141,10 @@ struct ChatListView: View {
         Button {
             showCreateGroupSheet = true
         } label: {
-            Image(systemName: "plus.message")
+            Image(systemName: "plus")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 24, height: 24)
+                .frame(width: 20, height: 20)
         }
     }
 
