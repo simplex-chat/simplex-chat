@@ -2026,8 +2026,6 @@ object ChatController {
   suspend fun switchUIRemoteHost(rhId: Long?) = showProgressIfNeeded {
     // TODO lock the switch so that two switches can't run concurrently?
     chatModel.chatId.value = null
-    chatModel.chatItems.clear()
-    chatModel.chats.clear()
     ModalManager.center.closeModals()
     ModalManager.end.closeModals()
     AlertManager.shared.alertViews.clear()
@@ -2038,6 +2036,10 @@ object ChatController {
     chatModel.users.clear()
     chatModel.users.addAll(users)
     chatModel.currentUser.value = user
+    if (user == null) {
+      chatModel.chatItems.clear()
+      chatModel.chats.clear()
+    }
     val statuses = apiGetNetworkStatuses(rhId)
     if (statuses != null) {
       chatModel.networkStatuses.clear()
