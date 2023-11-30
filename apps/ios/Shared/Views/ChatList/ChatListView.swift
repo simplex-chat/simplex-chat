@@ -125,7 +125,7 @@ struct ChatListView: View {
             ToolbarItem(placement: .navigationBarTrailing) {
                 switch chatModel.chatRunning {
                 case .some(true):
-                    HStack {
+                    HStack(spacing: 12) {
                         createGroupButton()
                         NewChatInviteButton(showNewChatSheet: $showNewChatSheet)
                     }
@@ -141,7 +141,7 @@ struct ChatListView: View {
         Button {
             showCreateGroupSheet = true
         } label: {
-            Image(systemName: "person.2.circle")
+            Image(systemName: "plus.message")
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24, height: 24)
