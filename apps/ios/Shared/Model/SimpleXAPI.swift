@@ -586,12 +586,7 @@ func apiAddContact(incognito: Bool) async -> (String, PendingContactConnection)?
         return nil
     }
     let r = await chatSendCmd(.apiAddContact(userId: userId, incognito: incognito), bgTask: false)
-    if case let .invitation(_, connReqInvitation, connection) = r {
-        await MainActor.run {
-            ChatModel.shared.updateContactConnection(connection)
-        }
-        return (connReqInvitation, connection)
-    }
+    if case let .invitation(_, connReqInvitation, connection) = r { return (connReqInvitation, connection) }
     AlertManager.shared.showAlert(connectionErrorAlert(r))
     return nil
 }
@@ -610,17 +605,17 @@ func apiConnectPlan(connReq: String) async throws -> ConnectionPlan {
     throw r
 }
 
-func apiConnect(incognito: Bool, connReq: String) async -> ConnReqType? {
-    let (connReqType, alert) = await apiConnect_(incognito: incognito, connReq: connReq)
+func apiConnect(incognito: Bool, connReq: String) async -> (ConnReqType, PendingContactConnection)? {
+    let (r, alert) = await apiConnect_(incognito: incognito, connReq: connReq)
     if let alert = alert {
         AlertManager.shared.showAlert(alert)
         return nil
     } else {
-        return connReqType
+        return r
     }
 }
 
-func apiConnect_(incognito: Bool, connReq: String) async -> (ConnReqType?, Alert?) {
+func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, PendingContactConnection)?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnect: no current user")
         return (nil, nil)
@@ -629,15 +624,9 @@ func apiConnect_(incognito: Bool, connReq: String) async -> (ConnReqType?, Alert
     let m = ChatModel.shared
     switch r {
     case let .sentConfirmation(_, connection):
-        await MainActor.run {
-            m.updateContactConnection(connection)
-        }
-        return (.invitation, nil)
+        return ((.invitation, connection), nil)
     case let .sentInvitation(_, connection):
-        await MainActor.run {
-            m.updateContactConnection(connection)
-        }
-        return (.contact, nil)
+        return ((.contact, connection), nil)
     case let .contactAlreadyExists(_, contact):
         if let c = m.getContactChat(contact.contactId) {
             await MainActor.run { m.chatId = c.id }

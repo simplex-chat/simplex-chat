@@ -52,6 +52,9 @@ struct NewChatButton: View {
     func addContactAction() {
         Task {
             if let (connReq, pcc) = await apiAddContact(incognito: incognitoGroupDefault.get()) {
+                await MainActor.run {
+                    ChatModel.shared.updateContactConnection(pcc)
+                }
                 actionSheet = .createLink(link: connReq, connection: pcc)
             }
         }
@@ -346,7 +349,10 @@ private func connectContactViaAddress_(_ contact: Contact, dismiss: Bool, incogn
 
 private func connectViaLink(_ connectionLink: String, connectionPlan: ConnectionPlan?, dismiss: Bool, incognito: Bool) {
     Task {
-        if let connReqType = await apiConnect(incognito: incognito, connReq: connectionLink) {
+        if let (connReqType, pcc) = await apiConnect(incognito: incognito, connReq: connectionLink) {
+            await MainActor.run {
+                ChatModel.shared.updateContactConnection(pcc)
+            }
             let crt: ConnReqType
             if let plan = connectionPlan {
                 crt = planToConnReqType(plan)
