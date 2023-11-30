@@ -81,7 +81,7 @@ enum PlanAndConnectAlert: Identifiable {
     }
 }
 
-func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool) -> Alert {
+func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool, onCancel: (() -> Void)? = nil) -> Alert {
     switch alert {
     case let .ownInvitationLinkConfirmConnect(connectionLink, connectionPlan, incognito):
         return Alert(
@@ -91,7 +91,7 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool) -> Alert {
                 Text(incognito ? "Connect incognito" : "Connect"),
                 action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) }
             ),
-            secondaryButton: .cancel()
+            secondaryButton: .cancel() { onCancel?() }
         )
     case .invitationLinkConnecting:
         return Alert(
@@ -106,7 +106,7 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool) -> Alert {
                 Text(incognito ? "Connect incognito" : "Connect"),
                 action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) }
             ),
-            secondaryButton: .cancel()
+            secondaryButton: .cancel() { onCancel?() }
         )
     case let .contactAddressConnectingConfirmReconnect(connectionLink, connectionPlan, incognito):
         return Alert(
@@ -116,7 +116,7 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool) -> Alert {
                 Text(incognito ? "Connect incognito" : "Connect"),
                 action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) }
             ),
-            secondaryButton: .cancel()
+            secondaryButton: .cancel() { onCancel?() }
         )
     case let .groupLinkConfirmConnect(connectionLink, connectionPlan, incognito):
         return Alert(
@@ -126,7 +126,7 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool) -> Alert {
                 Text(incognito ? "Join incognito" : "Join"),
                 action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) }
             ),
-            secondaryButton: .cancel()
+            secondaryButton: .cancel() { onCancel?() }
         )
     case let .groupLinkConnectingConfirmReconnect(connectionLink, connectionPlan, incognito):
         return Alert(
@@ -136,7 +136,7 @@ func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool) -> Alert {
                 Text(incognito ? "Join incognito" : "Join"),
                 action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) }
             ),
-            secondaryButton: .cancel()
+            secondaryButton: .cancel() { onCancel?() }
         )
     case let .groupLinkConnecting(_, groupInfo):
         if let groupInfo = groupInfo {
@@ -169,7 +169,7 @@ enum PlanAndConnectActionSheet: Identifiable {
     }
 }
 
-func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: Bool) -> ActionSheet {
+func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: Bool, onCancel: (() -> Void)? = nil) -> ActionSheet {
     switch sheet {
     case let .askCurrentOrIncognitoProfile(connectionLink, connectionPlan, title):
         return ActionSheet(
@@ -177,7 +177,7 @@ func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: Bool
             buttons: [
                 .default(Text("Use current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false) },
                 .default(Text("Use new incognito profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true) },
-                .cancel()
+                .cancel() { onCancel?() }
             ]
         )
     case let .askCurrentOrIncognitoProfileDestructive(connectionLink, connectionPlan, title):
@@ -186,7 +186,7 @@ func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: Bool
             buttons: [
                 .destructive(Text("Use current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false) },
                 .destructive(Text("Use new incognito profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true) },
-                .cancel()
+                .cancel() { onCancel?() }
             ]
         )
     case let .askCurrentOrIncognitoProfileConnectContactViaAddress(contact):
@@ -195,7 +195,7 @@ func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: Bool
             buttons: [
                 .default(Text("Use current profile")) { connectContactViaAddress_(contact, dismiss: dismiss, incognito: false) },
                 .default(Text("Use new incognito profile")) { connectContactViaAddress_(contact, dismiss: dismiss, incognito: true) },
-                .cancel()
+                .cancel() { onCancel?() }
             ]
         )
     case let .ownGroupLinkConfirmConnect(connectionLink, connectionPlan, incognito, groupInfo):
@@ -205,7 +205,7 @@ func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: Bool
                 buttons: [
                     .default(Text("Open group")) { openKnownGroup(groupInfo, dismiss: dismiss, showAlreadyExistsAlert: nil) },
                     .destructive(Text(incognito ? "Join incognito" : "Join with current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito) },
-                    .cancel()
+                    .cancel() { onCancel?() }
                 ]
             )
         } else {
@@ -215,7 +215,7 @@ func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: Bool
                     .default(Text("Open group")) { openKnownGroup(groupInfo, dismiss: dismiss, showAlreadyExistsAlert: nil) },
                     .destructive(Text("Use current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false) },
                     .destructive(Text("Use new incognito profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true) },
-                    .cancel()
+                    .cancel() { onCancel?() }
                 ]
             )
         }

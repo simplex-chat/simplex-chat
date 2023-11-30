@@ -226,11 +226,11 @@ private struct ConnectView: View {
         viewBody()
             .alert(item: $alert) { a in
                 switch(a) {
-                case let .planAndConnectAlert(alert): return planAndConnectAlert(alert, dismiss: true)
+                case let .planAndConnectAlert(alert): return planAndConnectAlert(alert, dismiss: true, onCancel: { pastedLink = "" })
                 case let .connectSomeAlert(.someAlert(alert, _)): return alert
                 }
             }
-            .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: true) }
+            .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: true, onCancel: { pastedLink = "" }) }
     }
 
     @ViewBuilder private func viewBody() -> some View {
