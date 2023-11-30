@@ -47,8 +47,6 @@ func suspendBgRefresh() {
     }
 }
 
-private var terminating = false
-
 func terminateChat() {
     logger.debug("terminateChat")
     suspendLockQueue.sync {
@@ -64,7 +62,6 @@ func terminateChat() {
         case .stopped:
             chatCloseStore()
         default:
-            terminating = true
             // the store will be closed in _chatSuspended when event is received
             _suspendChat(timeout: terminationTimeout)
         }
@@ -85,14 +82,11 @@ private func _chatSuspended() {
     if ChatModel.shared.chatRunning == true {
         ChatReceiver.shared.stop()
     }
-    if terminating {
-         chatCloseStore()
-    }
+    chatCloseStore()
 }
 
 func activateChat(appState: AppState = .active) {
     logger.debug("DEBUGGING: activateChat")
-    terminating = false
     suspendLockQueue.sync {
         appStateGroupDefault.set(appState)
         if ChatModel.ok { apiActivateChat() }
@@ -101,7 +95,6 @@ func activateChat(appState: AppState = .active) {
 }
 
 func initChatAndMigrate(refreshInvitations: Bool = true) {
-    terminating = false
     let m = ChatModel.shared
     if (!m.chatInitialized) {
         do {
@@ -114,7 +107,6 @@ func initChatAndMigrate(refreshInvitations: Bool = true) {
 }
 
 func startChatAndActivate() {
-    terminating = false
     logger.debug("DEBUGGING: startChatAndActivate")
     if ChatModel.shared.chatRunning == true {
         ChatReceiver.shared.start()
