@@ -248,7 +248,7 @@ private struct ConnectView: View {
                     let link = str.trimmingCharacters(in: .whitespaces)
                     if checkParsedLink(link) {
                         pastedLink = link
-                        connect(pastedLink)
+                        connect(pastedLink) // TODO clear link on cancel
                     } else {
                         alert = .connectSomeAlert(alert: .someAlert(
                             alert: mkAlert(title: "Invalid link", message: "The text you pasted is not a SimpleX link."),
@@ -296,9 +296,27 @@ private struct ConnectView: View {
                 Button {
                     showQRCodeScanner = true
                 } label: {
-                    Text("Tap to scan")
+                    ZStack {
+                        Rectangle()
+                            .aspectRatio(contentMode: .fill)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .foregroundColor(Color.clear)
+                        Image(systemName: "camera")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 72)
+                    }
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                .padding()
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(Color(uiColor: .secondarySystemGroupedBackground))
+                )
+                .padding(.horizontal)
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
             }
         }
     }
