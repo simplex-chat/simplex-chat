@@ -219,12 +219,14 @@ fun UserPicker(
         Divider(Modifier.requiredHeight(1.dp))
       } else if (chatModel.desktopNoUserNoRemote) {
         CreateInitialProfile {
-          doWithAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.center.showModalCloseable { close ->
-            LaunchedEffect(Unit) {
-              userPickerState.value = AnimatedViewState.HIDING
+          doWithAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) {
+            ModalManager.center.showModalCloseable { close ->
+              LaunchedEffect(Unit) {
+                userPickerState.value = AnimatedViewState.HIDING
+              }
+              CreateProfile(chat.simplex.common.platform.chatModel, close)
             }
-            CreateProfile(chat.simplex.common.platform.chatModel, close)
-          } }
+          }
         }
         Divider(Modifier.requiredHeight(1.dp))
       }
