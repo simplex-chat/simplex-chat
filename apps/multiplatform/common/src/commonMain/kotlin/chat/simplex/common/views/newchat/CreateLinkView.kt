@@ -108,6 +108,7 @@ private fun createInvitation(
   withApi {
     val r = m.controller.apiAddContact(rhId, incognito = m.controller.appPrefs.incognito.get())
     if (r != null) {
+      m.updateContactConnection(rhId, r.second)
       connReqInvitation.value = r.first
       contactConnection.value = r.second
     } else {

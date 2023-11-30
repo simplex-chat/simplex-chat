@@ -86,7 +86,6 @@ export type ChatResponse =
   | CRGroupUpdated
   | CRUserContactLinkSubscribed
   | CRUserContactLinkSubError
-  | CRNewContactConnection
   | CRContactConnectionDeleted
   | CRMessageError
   | CRChatCmdError
@@ -729,12 +728,6 @@ export interface CRUserContactLinkSubscribed extends CR {
 export interface CRUserContactLinkSubError extends CR {
   type: "userContactLinkSubError"
   chatError: ChatError
-}
-
-export interface CRNewContactConnection extends CR {
-  type: "newContactConnection"
-  user: User
-  connection: PendingContactConnection
 }
 
 export interface CRContactConnectionDeleted extends CR {

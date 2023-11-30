@@ -1403,7 +1403,6 @@ processChatCommand = \case
     subMode <- chatReadVar subscriptionMode
     (connId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing subMode
     conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnNew incognitoProfile subMode
-    toView $ CRNewContactConnection user conn
     pure $ CRInvitation user cReq conn
   AddContact incognito -> withUser $ \User {userId} ->
     processChatCommand $ APIAddContact userId incognito
@@ -1433,8 +1432,7 @@ processChatCommand = \case
     dm <- directMessage $ XInfo profileToSend
     connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm subMode
     conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode
-    toView $ CRNewContactConnection user conn
-    pure $ CRSentConfirmation user
+    pure $ CRSentConfirmation user conn
   APIConnect userId incognito (Just (ACR SCMContact cReq)) -> withUserId userId $ \user -> connectViaContact user incognito cReq
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito aCReqUri@(Just cReqUri) -> withUser $ \user@User {userId} -> do
@@ -2106,8 +2104,7 @@ processChatCommand = \case
         connect' groupLinkId cReqHash xContactId = do
           (connId, incognitoProfile, subMode) <- requestContact user incognito cReq xContactId
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId subMode
-          toView $ CRNewContactConnection user conn
-          pure $ CRSentInvitation user incognitoProfile
+          pure $ CRSentInvitation user conn incognitoProfile
     connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> ConnectionRequestUri 'CMContact -> m ChatResponse
     connectContactViaAddress user incognito ct cReq =
       withChatLock "connectViaContact" $ do
