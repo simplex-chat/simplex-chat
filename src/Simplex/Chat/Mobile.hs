@@ -72,9 +72,11 @@ $(JQ.deriveToJSON defaultJSON ''APIResponse)
 
 foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
 
+foreign export ccall "chat_migrate_init_key" cChatMigrateInitKey :: CString -> CString -> CInt -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
+
 foreign export ccall "chat_close_store" cChatCloseStore :: StablePtr ChatController -> IO CString
 
-foreign export ccall "chat_open_store" cChatReopenStore :: StablePtr ChatController -> IO CString
+foreign export ccall "chat_reopen_store" cChatReopenStore :: StablePtr ChatController -> IO CString
 
 foreign export ccall "chat_send_cmd" cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
 
@@ -106,7 +108,10 @@ foreign export ccall "chat_decrypt_file" cChatDecryptFile :: CString -> CString 
 
 -- | check / migrate database and initialize chat controller on success
 cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
-cChatMigrateInit fp key conf ctrl = do
+cChatMigrateInit fp key = cChatMigrateInitKey fp key 0
+
+cChatMigrateInitKey :: CString -> CString -> CInt -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
+cChatMigrateInitKey fp key keepKey conf ctrl = do
   -- ensure we are set to UTF-8; iOS does not have locale, and will default to
   -- US-ASCII all the time.
   setLocaleEncoding utf8
@@ -117,7 +122,7 @@ cChatMigrateInit fp key conf ctrl = do
   dbKey <- BA.convert <$> B.packCString key
   confirm <- peekCAString conf
   r <-
-    chatMigrateInit dbPath dbKey confirm >>= \case
+    chatMigrateInitKey dbPath dbKey (keepKey /= 0) confirm >>= \case
       Right cc -> (newStablePtr cc >>= poke ctrl) $> DBMOk
       Left e -> pure e
   newCStringFromLazyBS $ J.encode r
