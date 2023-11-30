@@ -65,7 +65,6 @@ struct ChatListView: View {
     private var chatListView: some View {
         VStack {
             chatList
-                .navigationBarHidden(searchMode)
         }
         .onDisappear() { withAnimation { userPickerVisible = false } }
         .refreshable {
@@ -135,6 +134,7 @@ struct ChatListView: View {
                 }
             }
         }
+        .navigationBarHidden(searchMode)
     }
 
     private func createGroupButton() -> some View {
@@ -164,7 +164,7 @@ struct ChatListView: View {
                 List {
                     if !chatModel.chats.isEmpty {
                         ChatListSearchBar(searchMode: $searchMode, searchText: $searchText)
-                            .listRowSeparator(.hidden, edges: .top)
+                            .listRowSeparator(.hidden)
                             .frame(maxWidth: .infinity)
                     }
                     ForEach(cs, id: \.viewId) { chat in
@@ -279,46 +279,48 @@ private struct ChatListSearchBar: View {
     @State private var showScanCodeSheet = false
 
     var body: some View {
-        HStack(spacing: 12) {
-            HStack(spacing: 4) {
-                Image(systemName: "magnifyingglass")
-                TextField("Search or paste link", text: $searchText)
-                    .foregroundColor(.primary)
-                    .frame(maxWidth: .infinity)
-                    .onTapGesture {
-                        searchMode = true
+        VStack(spacing: 12) {
+            HStack(spacing: 12) {
+                HStack(spacing: 4) {
+                    Image(systemName: "magnifyingglass")
+                    TextField("Search or paste link", text: $searchText)
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity)
+                        .onTapGesture {
+                            searchMode = true
+                        }
+                    
+                    if searchMode {
+                        Image(systemName: "xmark.circle.fill")
+                            .opacity(searchText == "" ? 0 : 1)
+                            .onTapGesture {
+                                searchText = ""
+                            }
+                    } else {
+                        Image(systemName: "qrcode")
+                            .onTapGesture {
+                                showScanCodeSheet = true
+                            }
                     }
-
+                }
+                .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
+                .foregroundColor(.secondary)
+                .background(Color(.tertiarySystemFill))
+                .cornerRadius(10.0)
+                
                 if searchMode {
-                    Image(systemName: "xmark.circle.fill")
-                        .opacity(searchText == "" ? 0 : 1)
+                    Text("Cancel")
+                        .foregroundColor(.accentColor)
                         .onTapGesture {
+                            hideKeyboard()
                             searchText = ""
+                            searchMode = false
                         }
-                } else {
-                    Image(systemName: "qrcode")
-                        .onTapGesture {
-                            showScanCodeSheet = true
-                        }
+                        .transition(.identity)
                 }
             }
-            .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
-            .foregroundColor(.secondary)
-            .background(Color(.tertiarySystemFill))
-            .cornerRadius(10.0)
-
-            if searchMode {
-                Text("Cancel")
-                    .foregroundColor(.accentColor)
-                    .onTapGesture {
-                        hideKeyboard()
-                        searchText = ""
-                        searchMode = false
-                    }
-                    .transition(.identity)
-            }
+            Divider()
         }
-        .padding(.bottom, 2)
         .sheet(isPresented: $showScanCodeSheet) {
             NewChatView(selection: .connect, showQRCodeScanner: true)
                 .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil) // fixes .refreshable in ChatListView affecting nested view
