@@ -114,11 +114,11 @@ struct ChatListView: View {
             }
             ToolbarItem(placement: .principal) {
                 HStack(spacing: 4) {
-                    Text("Chats")
-                        .font(.headline)
                     if chatModel.chats.count > 0 {
                         toggleFilterButton()
                     }
+                    Text("Chats")
+                        .font(.headline)
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
             }
@@ -141,10 +141,10 @@ struct ChatListView: View {
         Button {
             showCreateGroupSheet = true
         } label: {
-            Image(systemName: "person.2")
+            Image(systemName: "person.2.circle")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 28, height: 28)
+                .frame(width: 24, height: 24)
         }
     }
 
