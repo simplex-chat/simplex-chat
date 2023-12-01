@@ -179,10 +179,10 @@ fun DatabaseLayout(
       )
       SectionDividerSpaced(maxTopPadding = true)
     }
-    if (chatModel.localUserCreated.value == true && !chatModel.connectedToRemote) {
+    if (chatModel.localUserCreated.value == true) {
       SectionView(stringResource(MR.strings.run_chat_section)) {
         val toggleEnabled = remember { chatModel.remoteHosts }.none { it.sessionState is RemoteHostSessionState.Connected }
-        if (!toggleEnabled) {
+        if (!toggleEnabled && !chatModel.connectedToRemote) {
           SectionItemView(disconnectAllHosts) {
             Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
           }
