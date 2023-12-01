@@ -282,7 +282,7 @@ private struct ChatListSearchBar: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            HStack(spacing: 12) {
+            HStack(spacing: searchMode ? 12 : 4) {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
                     TextField("Search or paste link", text: $searchText)
@@ -301,20 +301,7 @@ private struct ChatListSearchBar: View {
                                 searchText = ""
                             }
                     } else {
-                        if #available(iOS 16.0, *) {
-                            HStack(spacing: 12) {
-                                scanCodeButton()
-
-                                PasteButton(payloadType: String.self) { strings in
-                                    searchText = strings[0]
-                                }
-                                .labelStyle(.iconOnly)
-                                .tint(Color(uiColor: .systemBackground))
-                                .buttonBorderShape(.roundedRectangle(radius: 8.0))
-                            }
-                        } else {
-                            scanCodeButton()
-                        }
+                        scanCodeButton()
                     }
                 }
                 .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
@@ -333,6 +320,13 @@ private struct ChatListSearchBar: View {
                             }
                         }
                         .transition(.identity)
+                } else if #available(iOS 16.0, *) {
+                    PasteButton(payloadType: String.self) { strings in
+                        searchText = strings[0]
+                    }
+                    .labelStyle(.iconOnly)
+                    .tint(Color(uiColor: .systemBackground))
+                    .buttonBorderShape(.roundedRectangle(radius: 10.0))
                 }
             }
             Divider()
