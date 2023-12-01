@@ -301,10 +301,20 @@ private struct ChatListSearchBar: View {
                                 searchText = ""
                             }
                     } else {
-                        Image(systemName: "qrcode")
-                            .onTapGesture {
-                                showScanCodeSheet = true
+                        if #available(iOS 16.0, *) {
+                            HStack(spacing: 12) {
+                                scanCodeButton()
+
+                                PasteButton(payloadType: String.self) { strings in
+                                    searchText = strings[0]
+                                }
+                                .labelStyle(.iconOnly)
+                                .tint(Color(uiColor: .systemBackground))
+                                .buttonBorderShape(.roundedRectangle(radius: 8.0))
                             }
+                        } else {
+                            scanCodeButton()
+                        }
                     }
                 }
                 .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
@@ -333,13 +343,17 @@ private struct ChatListSearchBar: View {
         }
         .onChange(of: searchText) { t in
             let link = t.trimmingCharacters(in: .whitespaces)
-            if strIsSimplexLink(link) {
+            if strIsSimplexLink(link) { // if SimpleX link is pasted, show connection dialogue
                 hideKeyboard()
                 searchText = ""
                 withAnimation {
                     searchMode = false
                 }
                 connect(link)
+            } else if t != "" && !searchMode { // if some other text is pasted, enter search mode
+                withAnimation {
+                    searchMode = true
+                }
             }
         }
         .alert(item: $alert) { a in
@@ -348,6 +362,13 @@ private struct ChatListSearchBar: View {
         .actionSheet(item: $sheet) { s in
             planAndConnectActionSheet(s, dismiss: true, onCancel: { searchText = "" })
         }
+    }
+
+    private func scanCodeButton() -> some View {
+        Image(systemName: "qrcode")
+            .onTapGesture {
+                showScanCodeSheet = true
+            }
     }
 
     private func connect(_ link: String) {
