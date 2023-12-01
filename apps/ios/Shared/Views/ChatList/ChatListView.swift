@@ -85,6 +85,7 @@ struct ChatListView: View {
         .listStyle(.plain)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(searchMode)
+        .animation(.easeInOut(duration: 0.2))
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 let user = chatModel.currentUser ?? User.sampleData
@@ -154,6 +155,7 @@ struct ChatListView: View {
                             .disabled(chatModel.chatRunning != true)
                     }
                     .offset(x: -8)
+                    .animation(nil)
                 }
             }
             .onChange(of: chatModel.chatId) { _ in
