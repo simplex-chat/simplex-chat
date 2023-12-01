@@ -45,6 +45,8 @@ struct NewChatMenuButton: View {
     }
 }
 
-//#Preview {
-//    NewChatMenuButton()
-//}
+#Preview {
+    NewChatMenuButton(
+        newChatMenuOption: Binding.constant(nil)
+    )
+}

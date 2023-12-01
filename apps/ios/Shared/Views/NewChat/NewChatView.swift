@@ -853,6 +853,8 @@ func connReqSentAlert(_ type: ConnReqType) -> Alert {
     )
 }
 
-//#Preview {
-//    NewChatView()
-//}
+#Preview {
+    NewChatView(
+        selection: .invite
+    )
+}
