@@ -249,6 +249,7 @@ private fun ConnectMobileViewLayout(
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 

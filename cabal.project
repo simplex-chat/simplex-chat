@@ -9,7 +9,7 @@ constraints: zip +disable-bzip2 +disable-zstd
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/simplexmq.git
-    tag: 6bffcc8503e5193d57e543ac0100712a8e27d454
+    tag: 90a8fc91d35c578c3b52ad296a6f1df715da2278
 
 source-repository-package
     type: git
@@ -45,8 +45,3 @@ source-repository-package
     type: git
     location: https://github.com/simplex-chat/android-support.git
     tag: 9aa09f148089d6752ce563b14c2df1895718d806
-
-source-repository-package
-    type: git
-    location: https://github.com/simplex-chat/network-transport.git
-    tag: 0013798272a683e35ca38d2fdaf480942311fba8

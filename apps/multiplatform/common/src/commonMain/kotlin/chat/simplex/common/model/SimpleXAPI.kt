@@ -430,8 +430,9 @@ object ChatController {
   }
 
   suspend fun getUserChatData(rhId: Long?) {
-    chatModel.userAddress.value = apiGetUserAddress(rhId)
-    chatModel.chatItemTTL.value = getChatItemTTL(rhId)
+    val hasUser = chatModel.currentUser.value != null
+    chatModel.userAddress.value = if (hasUser) apiGetUserAddress(rhId) else null
+    chatModel.chatItemTTL.value = if (hasUser) getChatItemTTL(rhId) else ChatItemTTL.None
     updatingChatsMutex.withLock {
       val chats = apiGetChats(rhId)
       chatModel.updateChats(chats)
