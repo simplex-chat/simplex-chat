@@ -91,7 +91,7 @@ struct NewChatView: View {
                     .fill(Color(uiColor: .systemGroupedBackground))
             )
             .animation(.easeInOut(duration: 0.3333), value: selection)
-            .gesture(DragGesture(minimumDistance: 3.0, coordinateSpace: .local)
+            .gesture(DragGesture(minimumDistance: 20.0, coordinateSpace: .local)
                 .onChanged { value in
                     switch(value.translation.width, value.translation.height) {
                     case (...0, -30...30): // left swipe
