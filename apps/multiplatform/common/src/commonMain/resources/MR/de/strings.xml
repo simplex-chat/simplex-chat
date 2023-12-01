@@ -1605,4 +1605,8 @@
     <string name="found_desktop">Gefundener Desktop</string>
     <string name="not_compatible">Nicht kompatibel!</string>
     <string name="multicast_discoverable_via_local_network">Über das lokale Netzwerk auffindbar</string>
+    <string name="refresh_qr_code">Aktualisieren</string>
+    <string name="create_chat_profile">Chat-Profil erstellen</string>
+    <string name="disconnect_remote_hosts">Mobiltelefone trennen</string>
+    <string name="no_connected_mobile">Kein Mobiltelefon verbunden</string>
 </resources>
