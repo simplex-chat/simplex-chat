@@ -59,7 +59,9 @@ fun DatabaseView(
   val appFilesCountAndSize = remember { mutableStateOf(directoryFileCountAndSize(appFilesDir.absolutePath)) }
   val importArchiveLauncher = rememberFileChooserLauncher(true) { to: URI? ->
     if (to != null) {
-      importArchiveAlert(m, to, appFilesCountAndSize, progressIndicator)
+      importArchiveAlert(m, to, appFilesCountAndSize, progressIndicator) {
+        startChat(m, chatLastStart, m.chatDbChanged)
+      }
     }
   }
   val chatItemTTL = remember { mutableStateOf(m.chatItemTTL.value) }
@@ -147,31 +149,31 @@ fun DatabaseLayout(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
 ) {
   val stopped = !runChat
-  val operationsDisabled = !stopped || progressIndicator
+  val operationsDisabled = (!stopped || progressIndicator) && !chatModel.desktopNoUserNoRemote
 
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
   ) {
     AppBarTitle(stringResource(MR.strings.your_chat_database))
 
-    SectionView(stringResource(MR.strings.messages_section_title).uppercase()) {
-      TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!stopped && !progressIndicator), onChatItemTTLSelected)
-    }
-    SectionTextFooter(
-      remember(currentUser?.displayName) {
-        buildAnnotatedString {
-          append(generalGetString(MR.strings.messages_section_description) + " ")
-          withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-            append(currentUser?.displayName ?: "")
-          }
-          append(".")
-        }
+    if (!chatModel.desktopNoUserNoRemote) {
+      SectionView(stringResource(MR.strings.messages_section_title).uppercase()) {
+        TtlOptions(chatItemTTL, enabled = rememberUpdatedState(!stopped && !progressIndicator), onChatItemTTLSelected)
       }
-    )
-
-    if (currentRemoteHost == null) {
+      SectionTextFooter(
+        remember(currentUser?.displayName) {
+          buildAnnotatedString {
+            append(generalGetString(MR.strings.messages_section_description) + " ")
+            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+              append(currentUser?.displayName ?: "")
+            }
+            append(".")
+          }
+        }
+      )
       SectionDividerSpaced(maxTopPadding = true)
-
+    }
+    if (chatModel.localUserCreated.value == true && !chatModel.connectedToRemote) {
       SectionView(stringResource(MR.strings.run_chat_section)) {
         RunChatSetting(runChat, stopped, startChat, stopChatAlert)
       }
@@ -183,92 +185,91 @@ fun DatabaseLayout(
         }
       )
       SectionDividerSpaced()
-
-      SectionView(stringResource(MR.strings.chat_database_section)) {
-        val unencrypted = chatDbEncrypted == false
-        SettingsActionItem(
-          if (unencrypted) painterResource(MR.images.ic_lock_open_right) else if (useKeyChain) painterResource(MR.images.ic_vpn_key_filled)
-          else painterResource(MR.images.ic_lock),
-          stringResource(MR.strings.database_passphrase),
-          click = showSettingsModal() { DatabaseEncryptionView(it) },
-          iconColor = if (unencrypted || (appPlatform.isDesktop && passphraseSaved)) WarningOrange else MaterialTheme.colors.secondary,
-          disabled = operationsDisabled
-        )
-        if (appPlatform.isDesktop && developerTools) {
-          SettingsActionItem(
-            painterResource(MR.images.ic_folder_open),
-            stringResource(MR.strings.open_database_folder),
-            ::desktopOpenDatabaseDir,
-            disabled = operationsDisabled
-          )
-        }
-        SettingsActionItem(
-          painterResource(MR.images.ic_ios_share),
-          stringResource(MR.strings.export_database),
-          click = {
-            if (initialRandomDBPassphrase.get()) {
-              exportProhibitedAlert()
-            } else {
-              exportArchive()
-            }
-          },
-          textColor = MaterialTheme.colors.primary,
-          iconColor = MaterialTheme.colors.primary,
-          disabled = operationsDisabled
-        )
-        SettingsActionItem(
-          painterResource(MR.images.ic_download),
-          stringResource(MR.strings.import_database),
-          { withApi { importArchiveLauncher.launch("application/zip") } },
-          textColor = Color.Red,
-          iconColor = Color.Red,
-          disabled = operationsDisabled
-        )
-        val chatArchiveNameVal = chatArchiveName.value
-        val chatArchiveTimeVal = chatArchiveTime.value
-        val chatLastStartVal = chatLastStart.value
-        if (chatArchiveNameVal != null && chatArchiveTimeVal != null && chatLastStartVal != null) {
-          val title = chatArchiveTitle(chatArchiveTimeVal, chatLastStartVal)
-          SettingsActionItem(
-            painterResource(MR.images.ic_inventory_2),
-            title,
-            click = showSettingsModal { ChatArchiveView(it, title, chatArchiveNameVal, chatArchiveTimeVal) },
-            disabled = operationsDisabled
-          )
-        }
-        SettingsActionItem(
-          painterResource(MR.images.ic_delete_forever),
-          stringResource(MR.strings.delete_database),
-          deleteChatAlert,
-          textColor = Color.Red,
-          iconColor = Color.Red,
-          disabled = operationsDisabled
-        )
-      }
-      SectionDividerSpaced(maxTopPadding = true)
-
-      SectionView(stringResource(MR.strings.files_and_media_section).uppercase()) {
-        val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
-        SectionItemView(
-          deleteAppFilesAndMedia,
-          disabled = deleteFilesDisabled
-        ) {
-          Text(
-            stringResource(if (users.size > 1) MR.strings.delete_files_and_media_for_all_users else MR.strings.delete_files_and_media_all),
-            color = if (deleteFilesDisabled) MaterialTheme.colors.secondary else Color.Red
-          )
-        }
-      }
-      val (count, size) = appFilesCountAndSize.value
-      SectionTextFooter(
-        if (count == 0) {
-          stringResource(MR.strings.no_received_app_files)
-        } else {
-          String.format(stringResource(MR.strings.total_files_count_and_size), count, formatBytes(size))
-        }
-      )
     }
 
+    SectionView(stringResource(MR.strings.chat_database_section)) {
+      val unencrypted = chatDbEncrypted == false
+      SettingsActionItem(
+        if (unencrypted) painterResource(MR.images.ic_lock_open_right) else if (useKeyChain) painterResource(MR.images.ic_vpn_key_filled)
+        else painterResource(MR.images.ic_lock),
+        stringResource(MR.strings.database_passphrase),
+        click = showSettingsModal() { DatabaseEncryptionView(it) },
+        iconColor = if (unencrypted || (appPlatform.isDesktop && passphraseSaved)) WarningOrange else MaterialTheme.colors.secondary,
+        disabled = operationsDisabled
+      )
+      if (appPlatform.isDesktop && developerTools) {
+        SettingsActionItem(
+          painterResource(MR.images.ic_folder_open),
+          stringResource(MR.strings.open_database_folder),
+          ::desktopOpenDatabaseDir,
+          disabled = operationsDisabled
+        )
+      }
+      SettingsActionItem(
+        painterResource(MR.images.ic_ios_share),
+        stringResource(MR.strings.export_database),
+        click = {
+          if (initialRandomDBPassphrase.get()) {
+            exportProhibitedAlert()
+          } else {
+            exportArchive()
+          }
+        },
+        textColor = MaterialTheme.colors.primary,
+        iconColor = MaterialTheme.colors.primary,
+        disabled = operationsDisabled
+      )
+      SettingsActionItem(
+        painterResource(MR.images.ic_download),
+        stringResource(MR.strings.import_database),
+        { withApi { importArchiveLauncher.launch("application/zip") } },
+        textColor = Color.Red,
+        iconColor = Color.Red,
+        disabled = operationsDisabled
+      )
+      val chatArchiveNameVal = chatArchiveName.value
+      val chatArchiveTimeVal = chatArchiveTime.value
+      val chatLastStartVal = chatLastStart.value
+      if (chatArchiveNameVal != null && chatArchiveTimeVal != null && chatLastStartVal != null) {
+        val title = chatArchiveTitle(chatArchiveTimeVal, chatLastStartVal)
+        SettingsActionItem(
+          painterResource(MR.images.ic_inventory_2),
+          title,
+          click = showSettingsModal { ChatArchiveView(it, title, chatArchiveNameVal, chatArchiveTimeVal) },
+          disabled = operationsDisabled
+        )
+      }
+      SettingsActionItem(
+        painterResource(MR.images.ic_delete_forever),
+        stringResource(MR.strings.delete_database),
+        deleteChatAlert,
+        textColor = Color.Red,
+        iconColor = Color.Red,
+        disabled = operationsDisabled
+      )
+    }
+    SectionDividerSpaced(maxTopPadding = true)
+
+    SectionView(stringResource(MR.strings.files_and_media_section).uppercase()) {
+      val deleteFilesDisabled = operationsDisabled || appFilesCountAndSize.value.first == 0
+      SectionItemView(
+        deleteAppFilesAndMedia,
+        disabled = deleteFilesDisabled
+      ) {
+        Text(
+          stringResource(if (users.size > 1) MR.strings.delete_files_and_media_for_all_users else MR.strings.delete_files_and_media_all),
+          color = if (deleteFilesDisabled) MaterialTheme.colors.secondary else Color.Red
+        )
+      }
+    }
+    val (count, size) = appFilesCountAndSize.value
+    SectionTextFooter(
+      if (count == 0) {
+        stringResource(MR.strings.no_received_app_files)
+      } else {
+        String.format(stringResource(MR.strings.total_files_count_and_size), count, formatBytes(size))
+      }
+    )
     SectionBottomSpacer()
   }
 }
@@ -501,13 +502,14 @@ private fun importArchiveAlert(
   m: ChatModel,
   importedArchiveURI: URI,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
-  progressIndicator: MutableState<Boolean>
+  progressIndicator: MutableState<Boolean>,
+  startChat: () -> Unit,
 ) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.import_database_question),
     text = generalGetString(MR.strings.your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one),
     confirmText = generalGetString(MR.strings.import_database_confirmation),
-    onConfirm = { importArchive(m, importedArchiveURI, appFilesCountAndSize, progressIndicator) },
+    onConfirm = { importArchive(m, importedArchiveURI, appFilesCountAndSize, progressIndicator, startChat) },
     destructive = true,
   )
 }
@@ -516,7 +518,8 @@ private fun importArchive(
   m: ChatModel,
   importedArchiveURI: URI,
   appFilesCountAndSize: MutableState<Pair<Int, Long>>,
-  progressIndicator: MutableState<Boolean>
+  progressIndicator: MutableState<Boolean>,
+  startChat: () -> Unit,
 ) {
   progressIndicator.value = true
   val archivePath = saveArchiveFromURI(importedArchiveURI)
@@ -532,6 +535,10 @@ private fun importArchive(
           if (archiveErrors.isEmpty()) {
             operationEnded(m, progressIndicator) {
               AlertManager.shared.showAlertMsg(generalGetString(MR.strings.chat_database_imported), text = generalGetString(MR.strings.restart_the_app_to_use_imported_chat_database))
+            }
+            if (chatModel.localUserCreated.value == false) {
+              chatModel.chatRunning.value = false
+              startChat()
             }
           } else {
             operationEnded(m, progressIndicator) {
