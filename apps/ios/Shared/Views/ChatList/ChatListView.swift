@@ -84,6 +84,7 @@ struct ChatListView: View {
         }
         .listStyle(.plain)
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarHidden(searchMode)
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 let user = chatModel.currentUser ?? User.sampleData
@@ -126,7 +127,6 @@ struct ChatListView: View {
                 }
             }
         }
-        .navigationBarHidden(searchMode)
     }
 
     private func toggleFilterButton() -> some View {
@@ -312,7 +312,7 @@ private struct ChatListSearchBar: View {
                                 searchMode = false
                             }
                         }
-                        .transition(.identity)
+                        .transition(.move(edge: .trailing))
                 }
             }
             Divider()
