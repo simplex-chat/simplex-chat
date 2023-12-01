@@ -66,7 +66,7 @@ struct NewChatView: View {
             .padding()
 
             Picker("New chat", selection: $selection) {
-                Label("Share link", systemImage: "link")
+                Label("Add contact", systemImage: "link")
                     .tag(NewChatOption.invite)
                 Label("Connect via link", systemImage: "qrcode")
                     .tag(NewChatOption.connect)
