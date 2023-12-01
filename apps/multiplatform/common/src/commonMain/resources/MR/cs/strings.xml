@@ -354,10 +354,10 @@
     <string name="next_generation_of_private_messaging">Příští generace soukromé komunikace</string>
     <string name="people_can_connect_only_via_links_you_share">Lidé se s vámi mohou spojit pouze prostřednictvím odkazu, který sdílíte.</string>
     <string name="integrity_msg_bad_hash">špatný kontrolní součet zprávy</string>
-    <string name="chat_database_imported">Chat databáze importována</string>
+    <string name="chat_database_imported">Importovaná databáze chatu</string>
     <string name="new_passphrase">Nová přístupová fráze…</string>
     <string name="save_passphrase_and_open_chat">Uložte frázi a otevřete chat</string>
-    <string name="chat_archive_section">CHAT ARCHIV</string>
+    <string name="chat_archive_section">ARCHIV CHATU</string>
     <string name="no_contacts_selected">Nebyl vybrán žádný kontakt</string>
     <string name="invite_prohibited_description">Snažíte se pozvat kontakt se kterým jste sdíleli inkognito profil, do skupiny ve které používáte svůj hlavní profil</string>
     <string name="info_row_group">Skupina</string>
@@ -742,7 +742,7 @@
 \nTuto akci nelze vzít zpět - vaše profily, kontakty, zprávy a soubory budou nenávratně ztraceny.</string>
     <string name="error_deleting_database">Chyba mazání chat databáze</string>
     <string name="error_importing_database">Chyba importu chat databáze</string>
-    <string name="chat_database_deleted">Chat databáze odstraněna</string>
+    <string name="chat_database_deleted">Databáze chatu odstraněna</string>
     <string name="delete_files_and_media_for_all_users">Odstranit soubory všech chat profilů</string>
     <string name="delete_files_and_media_all">Odstranit všechny soubory</string>
     <string name="delete_files_and_media_desc">Tuto akci nelze vrátit zpět - všechny přijaté a odeslané soubory a média budou smazány. Obrázky s nízkým rozlišením zůstanou zachovány.</string>
