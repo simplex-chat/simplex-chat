@@ -4,6 +4,7 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionTextFooter
 import SectionItemView
+import SectionSpacer
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
@@ -20,6 +21,7 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.updatingChatsMutex
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -102,7 +104,12 @@ fun DatabaseView(
           setCiTTL(m, rhId, chatItemTTL, progressIndicator, appFilesCountAndSize)
         }
       },
-      showSettingsModal
+      showSettingsModal,
+      disconnectAllHosts = {
+        chatModel.remoteHosts.filter { it.sessionState is RemoteHostSessionState.Connected }.forEach { h ->
+          controller.stopRemoteHostAndReloadHosts(h, false)
+        }
+      }
     )
     if (progressIndicator.value) {
       Box(
@@ -146,7 +153,8 @@ fun DatabaseLayout(
   deleteChatAlert: () -> Unit,
   deleteAppFilesAndMedia: () -> Unit,
   onChatItemTTLSelected: (ChatItemTTL) -> Unit,
-  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit)
+  showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
+  disconnectAllHosts: () -> Unit,
 ) {
   val stopped = !runChat
   val operationsDisabled = (!stopped || progressIndicator) && !chatModel.desktopNoUserNoRemote
@@ -175,7 +183,13 @@ fun DatabaseLayout(
     }
     if (chatModel.localUserCreated.value == true && !chatModel.connectedToRemote) {
       SectionView(stringResource(MR.strings.run_chat_section)) {
-        RunChatSetting(runChat, stopped, startChat, stopChatAlert)
+        val toggleEnabled = remember { chatModel.remoteHosts }.none { it.sessionState is RemoteHostSessionState.Connected }
+        if (!toggleEnabled) {
+          SectionItemView(disconnectAllHosts) {
+            Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
+          }
+        }
+        RunChatSetting(runChat, stopped, toggleEnabled, startChat, stopChatAlert)
       }
       SectionTextFooter(
         if (stopped) {
@@ -320,6 +334,7 @@ private fun TtlOptions(current: State<ChatItemTTL>, enabled: State<Boolean>, onS
 fun RunChatSetting(
   runChat: Boolean,
   stopped: Boolean,
+  enabled: Boolean,
   startChat: () -> Unit,
   stopChatAlert: () -> Unit
 ) {
@@ -338,6 +353,7 @@ fun RunChatSetting(
           stopChatAlert()
         }
       },
+      enabled = enabled,
     )
   }
 }
@@ -704,6 +720,7 @@ fun PreviewDatabaseLayout() {
       deleteAppFilesAndMedia = {},
       showSettingsModal = { {} },
       onChatItemTTLSelected = {},
+      disconnectAllHosts = {},
     )
   }
 }
