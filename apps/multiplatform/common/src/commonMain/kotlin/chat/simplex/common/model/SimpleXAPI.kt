@@ -362,7 +362,7 @@ object ChatController {
       chatModel.users.addAll(users)
       if (justStarted) {
         chatModel.currentUser.value = user
-        chatModel.userCreated.value = true
+        chatModel.localUserCreated.value = true
         getUserChatData(null)
         appPrefs.chatLastStart.set(Clock.System.now())
         chatModel.chatRunning.value = true
@@ -378,6 +378,31 @@ object ChatController {
       }
     } catch (e: Error) {
       Log.e(TAG, "failed starting chat $e")
+      throw e
+    }
+  }
+
+  suspend fun startChatWithoutUser() {
+    Log.d(TAG, "user: null")
+    try {
+      if (chatModel.chatRunning.value == true) return
+      apiSetTempFolder(coreTmpDir.absolutePath)
+      apiSetFilesFolder(appFilesDir.absolutePath)
+      if (appPlatform.isDesktop) {
+        apiSetRemoteHostsFolder(remoteHostsDir.absolutePath)
+      }
+      apiSetXFTPConfig(getXFTPCfg())
+      apiSetEncryptLocalFiles(appPrefs.privacyEncryptLocalFiles.get())
+      chatModel.users.clear()
+      chatModel.currentUser.value = null
+      chatModel.localUserCreated.value = false
+      appPrefs.chatLastStart.set(Clock.System.now())
+      chatModel.chatRunning.value = true
+      startReceiver()
+      setLocalDeviceName(appPrefs.deviceNameForRemoteAccess.get()!!)
+      Log.d(TAG, "startChat: started without user")
+    } catch (e: Error) {
+      Log.e(TAG, "failed starting chat without user $e")
       throw e
     }
   }
@@ -475,7 +500,9 @@ object ChatController {
     val r = sendCmd(rh, CC.ShowActiveUser())
     if (r is CR.ActiveUser) return r.user.updateRemoteHostId(rh)
     Log.d(TAG, "apiGetActiveUser: ${r.responseType} ${r.details}")
-    chatModel.userCreated.value = false
+    if (rh == null) {
+      chatModel.localUserCreated.value = false
+    }
     return null
   }
 
@@ -1990,7 +2017,7 @@ object ChatController {
     chatModel.setContactNetworkStatus(contact, NetworkStatus.Error(err))
   }
 
-  suspend fun switchUIRemoteHost(rhId: Long?) {
+  suspend fun switchUIRemoteHost(rhId: Long?) = showProgressIfNeeded {
     // TODO lock the switch so that two switches can't run concurrently?
     chatModel.chatId.value = null
     ModalManager.center.closeModals()
@@ -2003,7 +2030,10 @@ object ChatController {
     chatModel.users.clear()
     chatModel.users.addAll(users)
     chatModel.currentUser.value = user
-    chatModel.userCreated.value = true
+    if (user == null) {
+      chatModel.chatItems.clear()
+      chatModel.chats.clear()
+    }
     val statuses = apiGetNetworkStatuses(rhId)
     if (statuses != null) {
       chatModel.networkStatuses.clear()
@@ -2011,6 +2041,23 @@ object ChatController {
       chatModel.networkStatuses.putAll(ss)
     }
     getUserChatData(rhId)
+  }
+
+  suspend fun showProgressIfNeeded(block: suspend () -> Unit) {
+    val job = withBGApi {
+      try {
+        delay(500)
+        chatModel.switchingUsersAndHosts.value = true
+      } catch (e: Throwable) {
+        chatModel.switchingUsersAndHosts.value = false
+      }
+    }
+    try {
+      block()
+    } finally {
+      job.cancel()
+      chatModel.switchingUsersAndHosts.value = false
+    }
   }
 
   fun getXFTPCfg(): XFTPFileConfig {

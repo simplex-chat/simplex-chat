@@ -59,7 +59,9 @@ abstract class NtfManager {
       awaitChatStartedIfNeeded(chatModel)
       if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
         // TODO include remote host ID in desktop notifications?
-        chatModel.controller.changeActiveUser(null, userId, null)
+        chatModel.controller.showProgressIfNeeded {
+          chatModel.controller.changeActiveUser(null, userId, null)
+        }
       }
       val cInfo = chatModel.getChat(chatId)?.chatInfo
       chatModel.clearOverlays.value = true
@@ -72,7 +74,9 @@ abstract class NtfManager {
       awaitChatStartedIfNeeded(chatModel)
       if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
         // TODO include remote host ID in desktop notifications?
-        chatModel.controller.changeActiveUser(null, userId, null)
+        chatModel.controller.showProgressIfNeeded {
+          chatModel.controller.changeActiveUser(null, userId, null)
+        }
       }
       chatModel.chatId.value = null
       chatModel.clearOverlays.value = true
