@@ -140,17 +140,19 @@ struct NewChatView: View {
         }
     }
 
-    @ViewBuilder private func prepareAndInviteView() -> some View {
-        if connReqInvitation != "" {
-            InviteView(
-                invitationUsed: $invitationUsed,
-                contactConnection: $contactConnection,
-                connReqInvitation: connReqInvitation
-            )
-        } else if creatingConnReq {
-            creatingLinkProgressView()
-        } else {
-            retryButton()
+    private func prepareAndInviteView() -> some View {
+        ZStack { // ZStack is needed for views to not make transitions between each other
+            if connReqInvitation != "" {
+                InviteView(
+                    invitationUsed: $invitationUsed,
+                    contactConnection: $contactConnection,
+                    connReqInvitation: connReqInvitation
+                )
+            } else if creatingConnReq {
+                creatingLinkProgressView()
+            } else {
+                retryButton()
+            }
         }
     }
 
@@ -188,7 +190,7 @@ struct NewChatView: View {
         Button {
             createInvitation(selection)
         } label: {
-            VStack {
+            VStack(spacing: 6) {
                 Image(systemName: "arrow.counterclockwise")
                 Text("Retry")
             }
