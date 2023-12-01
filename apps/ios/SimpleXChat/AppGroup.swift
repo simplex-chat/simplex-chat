@@ -10,6 +10,7 @@ import Foundation
 import SwiftUI
 
 let GROUP_DEFAULT_APP_STATE = "appState"
+let GROUP_DEFAULT_NSE_STATE = "nseState"
 let GROUP_DEFAULT_DB_CONTAINER = "dbContainer"
 public let GROUP_DEFAULT_CHAT_LAST_START = "chatLastStart"
 let GROUP_DEFAULT_NTF_PREVIEW_MODE = "ntfPreviewMode"
@@ -90,6 +91,25 @@ public enum AppState: String {
     }
 }
 
+public enum NSEState: String {
+    case created
+    case active
+    case suspending
+    case suspended
+
+    public var inactive: Bool {
+        switch self {
+        case .suspending: true
+        case .suspended: true
+        default: false
+        }
+    }
+
+    public var canSuspend: Bool {
+        if case .active = self { true } else { false }
+    }
+}
+
 public enum DBContainer: String {
     case documents
     case group
@@ -99,6 +119,12 @@ public let appStateGroupDefault = EnumDefault<AppState>(
     defaults: groupDefaults,
     forKey: GROUP_DEFAULT_APP_STATE,
     withDefault: .active
+)
+
+public let nseStateGroupDefault = EnumDefault<NSEState>(
+    defaults: groupDefaults,
+    forKey: GROUP_DEFAULT_NSE_STATE,
+    withDefault: .created
 )
 
 public let dbContainerGroupDefault = EnumDefault<DBContainer>(

@@ -16,6 +16,8 @@ let logger = Logger()
 
 let suspendingDelay: UInt64 = 2_000_000_000
 
+let nseSuspendTimeout: Int = 15
+
 typealias NtfStream = AsyncStream<NSENotification>
 
 actor PendingNtfs {
@@ -25,7 +27,7 @@ actor PendingNtfs {
 
     func createStream(_ id: String) {
         logger.debug("PendingNtfs.createStream: \(id, privacy: .public)")
-        if ntfStreams.index(forKey: id) == nil {
+        if ntfStreams[id] == nil {
             ntfStreams[id] = AsyncStream { cont in
                 ntfConts[id] = cont
                 logger.debug("PendingNtfs.createStream: store continuation")
@@ -41,7 +43,7 @@ actor PendingNtfs {
             for await ntf in s {
                 nse.setBestAttemptNtf(showNotifications ? ntf : .empty)
                 rcvCount -= 1
-                if rcvCount == 0 || ntf.categoryIdentifier == ntfCategoryCallInvitation { break }
+                if rcvCount == 0 || ntf.isCallInvitation { break }
             }
             logger.debug("PendingNtfs.readStream: exiting")
         }
@@ -61,11 +63,11 @@ enum NSENotification {
     case callkit(invitation: RcvCallInvitation)
     case empty
 
-    var categoryIdentifier: String? {
+    var isCallInvitation: Bool {
         switch self {
-        case let .nse(ntf): return ntf.categoryIdentifier
-        case .callkit: return ntfCategoryCallInvitation
-        case .empty: return nil
+        case let .nse(ntf): ntf.categoryIdentifier == ntfCategoryCallInvitation
+        case .callkit: true
+        case .empty: false
         }
     }
 }
@@ -125,7 +127,7 @@ class NotificationService: UNNotificationServiceExtension {
             if case .ok = dbStatus,
                let ntfMsgInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
                 logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfMsgInfo), privacy: .public)")
-                if let connEntity = ntfMsgInfo.connEntity {
+                if let connEntity = ntfMsgInfo.connEntity_ {
                     setBestAttemptNtf(
                         ntfMsgInfo.ntfsEnabled
                         ? .nse(notification: createConnectionEventNtf(ntfMsgInfo.user, connEntity))
@@ -197,20 +199,56 @@ class NotificationService: UNNotificationServiceExtension {
     }
 }
 
-var chatStarted = false
+class NSEChatState {
+    private var value_ = NSEState.created
+
+    var value: NSEState {
+        value_
+    }
+
+    func set(_ state: NSEState) {
+        nseStateGroupDefault.set(state)
+        value_ = state
+    }
+
+    init() {
+        set(.created)
+    }
+}
+
+let nseChatState = NSEChatState()
+var receiverStarted = false
+let startLock = DispatchSemaphore(value: 1)
+let suspendLock = DispatchSemaphore(value: 1)
 var networkConfig: NetCfg = getNetCfg()
-var xftpConfig: XFTPFileConfig? = getXFTPCfg()
+let xftpConfig: XFTPFileConfig? = getXFTPCfg()
 
 func startChat() -> DBMigrationResult? {
+    logger.debug("NotificationService: startChat")
+    if case .active = nseChatState.value { return .ok }
+
+    startLock.wait()
+    defer { startLock.signal() }
+    
+    return switch nseChatState.value {
+    case .created: doStartChat()
+    case .active: .ok
+    case .suspending: activateChat()
+    case .suspended: activateChat()
+    }
+}
+
+func doStartChat() -> DBMigrationResult? {
+    logger.debug("NotificationService: doStartChat")
     hs_init(0, nil)
-    if chatStarted { return .ok }
     let (_, dbStatus) = chatMigrateInit(confirmMigrations: defaultMigrationConfirmation())
     if dbStatus != .ok {
         resetChatCtrl()
+        nseChatState.set(.created)
         return dbStatus
     }
     if let user = apiGetActiveUser() {
-        logger.debug("active user \(String(describing: user))")
+        logger.debug("NotificationService active user \(String(describing: user))")
         do {
             try setNetworkConfig(networkConfig)
             try apiSetTempFolder(tempFolder: getTempFilesDirectory().path)
@@ -218,31 +256,104 @@ func startChat() -> DBMigrationResult? {
             try setXFTPConfig(xftpConfig)
             try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
             let justStarted = try apiStartChat()
-            chatStarted = true
+            nseChatState.set(.active)
             if justStarted {
                 chatLastStartGroupDefault.set(Date.now)
-                Task { await receiveMessages() }
+                Task {
+                    if !receiverStarted {
+                        receiverStarted = true
+                        await receiveMessages()
+                    }
+                }
             }
             return .ok
         } catch {
             logger.error("NotificationService startChat error: \(responseError(error), privacy: .public)")
         }
     } else {
-        logger.debug("no active user")
+        logger.debug("NotificationService: no active user")
     }
     return nil
 }
 
+func activateChat() -> DBMigrationResult? {
+    logger.debug("NotificationService: activateChat")
+    let state = nseChatState.value
+    nseChatState.set(.active)
+    if apiActivateChat() {
+        logger.debug("NotificationService: activateChat: after apiActivateChat")
+        return .ok
+    } else {
+        nseChatState.set(state)
+        return nil
+    }
+}
+
+func suspendChat(_ timeout: Int) {
+    logger.debug("NotificationService: suspendChat")
+    let state = nseChatState.value
+    if !state.canSuspend {
+        logger.error("NotificationService suspendChat called, current state: \(state.rawValue, privacy: .public)")
+    } else {
+        suspendLock.wait()
+        defer { suspendLock.signal() }
+
+        nseChatState.set(.suspending)
+        if apiSuspendChat(timeoutMicroseconds: timeout * 1000000) {
+            logger.debug("NotificationService: activateChat: after apiActivateChat")
+            DispatchQueue.global().asyncAfter(deadline: .now() + Double(timeout) + 1, execute: chatSuspended)
+        } else {
+            nseChatState.set(state)
+        }
+    }
+}
+
+func chatSuspended() {
+    logger.debug("NotificationService chatSuspended")
+    if case .suspending = nseChatState.value {
+        nseChatState.set(.suspended)
+//        if ChatModel.shared.chatRunning == true {
+//            ChatReceiver.shared.stop()
+//        }
+        chatCloseStore()
+    }
+}
+
 func receiveMessages() async {
     logger.debug("NotificationService receiveMessages")
+    var noMsgCount = 0
     while true {
-        updateNetCfg()
+        switch nseChatState.value {
+        case .created: await delayWhenInactive()
+        case .active:
+            updateNetCfg()
+            await receiveMsg()
+        case .suspending: await receiveMsg()
+        case .suspended: await delayWhenInactive()
+        }
+    }
+
+    func receiveMsg() async {
         if let msg = await chatRecvMsg() {
+            logger.debug("NotificationService receiveMsg: message")
+            noMsgCount = 0
             if let (id, ntf) = await receivedMsgNtf(msg) {
+                logger.debug("NotificationService receiveMsg: notification")
                 await PendingNtfs.shared.createStream(id)
                 await PendingNtfs.shared.writeStream(id, ntf)
             }
+        } else {
+            logger.debug("NotificationService receiveMsg: no message")
+            noMsgCount += 1
+            if noMsgCount >= SUSPEND_NSE_AFTER_NO_MESSAGES && nseChatState.value.canSuspend {
+                suspendChat(nseSuspendTimeout)
+            }
         }
+    }
+
+    func delayWhenInactive() async {
+        logger.debug("NotificationService delayWhenInactive")
+        _ = try? await Task.sleep(nanoseconds: 1000_000000)
     }
 }
 
@@ -257,7 +368,7 @@ private let isInChina = SKStorefront().countryCode == "CHN"
 private func useCallKit() -> Bool { !isInChina && callKitEnabledGroupDefault.get() }
 
 func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
-    logger.debug("NotificationService processReceivedMsg: \(res.responseType)")
+    logger.debug("NotificationService receivedMsgNtf: \(res.responseType, privacy: .public)")
     switch res {
     case let .contactConnected(user, contact, _):
         return (contact.id, .nse(notification: createContactConnectedNtf(user, contact)))
@@ -294,8 +405,11 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
             invitation.contact.id,
             useCallKit() ? .callkit(invitation: invitation) : .nse(notification: createCallInvitationNtf(invitation))
         )
+    case .chatSuspended:
+        chatSuspended()
+        return nil
     default:
-        logger.debug("NotificationService processReceivedMsg ignored event: \(res.responseType)")
+        logger.debug("NotificationService receivedMsgNtf ignored event: \(res.responseType)")
         return nil
     }
 }
@@ -334,6 +448,21 @@ func apiStartChat() throws -> Bool {
     }
 }
 
+func apiActivateChat() -> Bool {
+    chatReopenStore()
+    let r = sendSimpleXCmd(.apiActivateChat(restoreChat: false))
+    if case .cmdOk = r { return true }
+    logger.error("NotificationService apiActivateChat error: \(String(describing: r))")
+    return false
+}
+
+func apiSuspendChat(timeoutMicroseconds: Int) -> Bool {
+    let r = sendSimpleXCmd(.apiSuspendChat(timeoutMicroseconds: timeoutMicroseconds))
+    if case .cmdOk = r { return true }
+    logger.error("NotificationService apiSuspendChat error: \(String(describing: r))")
+    return false
+}
+
 func apiSetTempFolder(tempFolder: String) throws {
     let r = sendSimpleXCmd(.setTempFolder(tempFolder: tempFolder))
     if case .cmdOk = r { return }
@@ -364,8 +493,8 @@ func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
         return nil
     }
     let r = sendSimpleXCmd(.apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo))
-    if case let .ntfMessages(user, connEntity, msgTs, ntfMessages) = r, let user = user {
-        return NtfMessages(user: user, connEntity: connEntity, msgTs: msgTs, ntfMessages: ntfMessages)
+    if case let .ntfMessages(user, connEntity_, msgTs, ntfMessages) = r, let user = user {
+        return NtfMessages(user: user, connEntity_: connEntity_, msgTs: msgTs, ntfMessages: ntfMessages)
     } else if case let .chatCmdError(_, error) = r {
         logger.debug("apiGetNtfMessage error response: \(String.init(describing: error))")
     } else {
@@ -405,11 +534,11 @@ func setNetworkConfig(_ cfg: NetCfg) throws {
 
 struct NtfMessages {
     var user: User
-    var connEntity: ConnectionEntity?
+    var connEntity_: ConnectionEntity?
     var msgTs: Date?
     var ntfMessages: [NtfMsgInfo]
 
     var ntfsEnabled: Bool {
-        user.showNotifications && (connEntity?.ntfsEnabled ?? false)
+        user.showNotifications && (connEntity_?.ntfsEnabled ?? false)
     }
 }
