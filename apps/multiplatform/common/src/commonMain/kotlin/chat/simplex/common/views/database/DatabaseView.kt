@@ -105,8 +105,9 @@ fun DatabaseView(
       },
       showSettingsModal,
       disconnectAllHosts = {
-        chatModel.remoteHosts.filter { it.sessionState is RemoteHostSessionState.Connected }.forEach { h ->
-          controller.stopRemoteHostAndReloadHosts(h, false)
+        val connected = chatModel.remoteHosts.filter { it.sessionState is RemoteHostSessionState.Connected }
+        connected.forEachIndexed { index, h ->
+          controller.stopRemoteHostAndReloadHosts(h, index == connected.lastIndex && chatModel.connectedToRemote())
         }
       }
     )
@@ -182,7 +183,7 @@ fun DatabaseLayout(
     if (chatModel.localUserCreated.value == true) {
       SectionView(stringResource(MR.strings.run_chat_section)) {
         val toggleEnabled = remember { chatModel.remoteHosts }.none { it.sessionState is RemoteHostSessionState.Connected }
-        if (!toggleEnabled && !chatModel.connectedToRemote) {
+        if (!toggleEnabled) {
           SectionItemView(disconnectAllHosts) {
             Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
           }
