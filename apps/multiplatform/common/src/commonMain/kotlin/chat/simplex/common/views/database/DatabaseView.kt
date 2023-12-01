@@ -81,7 +81,6 @@ fun DatabaseView(
       m.chatDbEncrypted.value,
       m.controller.appPrefs.storeDBPassphrase.state.value,
       m.controller.appPrefs.initialRandomDBPassphrase,
-      m.controller.appPrefs.developerTools.state.value,
       importArchiveLauncher,
       chatArchiveName,
       chatArchiveTime,
@@ -138,7 +137,6 @@ fun DatabaseLayout(
   chatDbEncrypted: Boolean?,
   passphraseSaved: Boolean,
   initialRandomDBPassphrase: SharedPreference<Boolean>,
-  developerTools: Boolean,
   importArchiveLauncher: FileChooserLauncher,
   chatArchiveName: MutableState<String?>,
   chatArchiveTime: MutableState<Instant?>,
@@ -211,7 +209,7 @@ fun DatabaseLayout(
         iconColor = if (unencrypted || (appPlatform.isDesktop && passphraseSaved)) WarningOrange else MaterialTheme.colors.secondary,
         disabled = operationsDisabled
       )
-      if (appPlatform.isDesktop && developerTools) {
+      if (appPlatform.isDesktop) {
         SettingsActionItem(
           painterResource(MR.images.ic_folder_open),
           stringResource(MR.strings.open_database_folder),
@@ -704,7 +702,6 @@ fun PreviewDatabaseLayout() {
       chatDbEncrypted = false,
       passphraseSaved = false,
       initialRandomDBPassphrase = SharedPreference({ true }, {}),
-      developerTools = true,
       importArchiveLauncher = rememberFileChooserLauncher(true) {},
       chatArchiveName = remember { mutableStateOf("dummy_archive") },
       chatArchiveTime = remember { mutableStateOf(Clock.System.now()) },
