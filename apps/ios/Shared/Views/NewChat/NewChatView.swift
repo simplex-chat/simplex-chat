@@ -20,6 +20,18 @@ enum SomeAlert: Identifiable {
     }
 }
 
+private enum NewChatViewAlert: Identifiable {
+    case planAndConnectAlert(alert: PlanAndConnectAlert)
+    case newChatSomeAlert(alert: SomeAlert)
+
+    var id: String {
+        switch self {
+        case let .planAndConnectAlert(alert): return "planAndConnectAlert \(alert.id)"
+        case let .newChatSomeAlert(alert): return "newChatSomeAlert \(alert.id)"
+        }
+    }
+}
+
 enum NewChatOption: Identifiable {
     case invite
     case connect
@@ -36,52 +48,45 @@ struct NewChatView: View {
     @State private var contactConnection: PendingContactConnection? = nil
     @State private var connReqInvitation: String = ""
     @State private var creatingConnReq = false
-    @State private var someAlert: SomeAlert?
+    @State private var pastedLink: String = ""
+    @State private var alert: NewChatViewAlert?
 
     var body: some View {
-        List {
-            Group {
-                HStack {
-                    Text("New chat")
-                        .font(.largeTitle)
-                        .bold()
-                        .fixedSize(horizontal: false, vertical: true)
-                        .padding(.vertical)
-                    Spacer()
-                    InfoSheetButton {
-                        AddContactLearnMore(showTitle: true)
-                    }
+        VStack(alignment: .leading) {
+            HStack {
+                Text("New chat")
+                    .font(.largeTitle)
+                    .bold()
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer()
+                InfoSheetButton {
+                    AddContactLearnMore(showTitle: true)
                 }
-
-                Picker("New chat", selection: $selection) {
-                    Label("Share link", systemImage: "link")
-                        .tag(NewChatOption.invite)
-                    Label("Connect via link", systemImage: "qrcode")
-                        .tag(NewChatOption.connect)
-                }
-                .pickerStyle(.segmented)
             }
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            .padding()
 
-            switch selection {
-            case .invite:
-                if connReqInvitation != "" {
-                    InviteView(
-                        invitationUsed: $invitationUsed,
-                        contactConnection: $contactConnection,
-                        connReqInvitation: connReqInvitation
-                    )
-                } else if creatingConnReq {
-                    creatingLinkProgressView()
-                } else {
-                    retryButton()
-                }
-            case .connect:
-                ConnectView(showQRCodeScanner: showQRCodeScanner)
+            Picker("New chat", selection: $selection) {
+                Label("Share link", systemImage: "link")
+                    .tag(NewChatOption.invite)
+                Label("Connect via link", systemImage: "qrcode")
+                    .tag(NewChatOption.connect)
             }
+            .pickerStyle(.segmented)
+            .padding()
+
+            VStack {
+                switch selection {
+                case .invite:
+                    prepareAndInviteView()
+                        .transition(.move(edge: .leading))
+                case .connect:
+                    ConnectView(showQRCodeScanner: showQRCodeScanner, pastedLink: $pastedLink, alert: $alert)
+                        .transition(.move(edge: .trailing))
+                }
+            }
+            .animation(.easeInOut(duration: 0.3333), value: selection)
         }
+        .background(Color(.systemGroupedBackground))
         .onChange(of: selection) { sel in
             createInvitation(sel)
         }
@@ -104,10 +109,27 @@ struct NewChatView: View {
                 }
             }
         }
-        .alert(item: $someAlert) { a in
-            switch a {
-            case let .someAlert(alert, _): alert
+        .alert(item: $alert) { a in
+            switch(a) {
+            case let .planAndConnectAlert(alert):
+                return planAndConnectAlert(alert, dismiss: true, onCancel: { pastedLink = "" })
+            case let .newChatSomeAlert(.someAlert(alert, _)):
+                return alert
             }
+        }
+    }
+
+    @ViewBuilder private func prepareAndInviteView() -> some View {
+        if connReqInvitation != "" {
+            InviteView(
+                invitationUsed: $invitationUsed,
+                contactConnection: $contactConnection,
+                connReqInvitation: connReqInvitation
+            )
+        } else if creatingConnReq {
+            creatingLinkProgressView()
+        } else {
+            retryButton()
         }
     }
 
@@ -116,7 +138,7 @@ struct NewChatView: View {
            connReqInvitation == "" && contactConnection == nil && !creatingConnReq {
             creatingConnReq = true
             Task {
-                let (r, alert) = await apiAddContact(incognito: incognitoGroupDefault.get())
+                let (r, apiAlert) = await apiAddContact(incognito: incognitoGroupDefault.get())
                 if let (connReq, pcc) = r {
                     await MainActor.run {
                         connReqInvitation = connReq
@@ -126,8 +148,8 @@ struct NewChatView: View {
                 } else {
                     await MainActor.run {
                         creatingConnReq = false
-                        if let alert = alert {
-                            someAlert = .someAlert(alert: alert, id: "createInvitation error")
+                        if let apiAlert = apiAlert {
+                            alert = .newChatSomeAlert(alert: .someAlert(alert: apiAlert, id: "createInvitation error"))
                         }
                     }
                 }
@@ -139,21 +161,18 @@ struct NewChatView: View {
         ProgressView("Creating link…")
             .progressViewStyle(.circular)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-            .padding(.top)
-            .listRowBackground(Color.clear)
-            .listRowSeparator(.hidden)
     }
 
     private func retryButton() -> some View {
         Button {
             createInvitation(selection)
         } label: {
-            Text("Retry")
+            VStack {
+                Image(systemName: "arrow.counterclockwise")
+                Text("Retry")
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-        .padding(.top)
-        .listRowBackground(Color.clear)
-        .listRowSeparator(.hidden)
     }
 }
 
@@ -165,36 +184,34 @@ private struct InviteView: View {
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
 
     var body: some View {
-        viewBody()
-            .onChange(of: incognitoDefault) { incognito in
-                Task {
-                    do {
-                        if let contactConn = contactConnection,
-                           let conn = try await apiSetConnectionIncognito(connId: contactConn.pccConnId, incognito: incognito) {
-                            await MainActor.run {
-                                contactConnection = conn
-                                chatModel.updateContactConnection(conn)
-                            }
-                        }
-                    } catch {
-                        logger.error("apiSetConnectionIncognito error: \(responseError(error))")
-                    }
-                }
-                setInvitationUsed()
+        List {
+            Section("Share this 1-time invite link") {
+                shareLinkView()
             }
-    }
 
-    @ViewBuilder private func viewBody() -> some View {
-        Section("Share this 1-time invite link") {
-            shareLinkView()
+            qrCodeView()
+
+            Section {
+                IncognitoToggle(incognitoEnabled: $incognitoDefault)
+            } footer: {
+                sharedProfileInfo(incognitoDefault)
+            }
         }
-
-        qrCodeView()
-
-        Section {
-            IncognitoToggle(incognitoEnabled: $incognitoDefault)
-        } footer: {
-            sharedProfileInfo(incognitoDefault)
+        .onChange(of: incognitoDefault) { incognito in
+            Task {
+                do {
+                    if let contactConn = contactConnection,
+                       let conn = try await apiSetConnectionIncognito(connId: contactConn.pccConnId, incognito: incognito) {
+                        await MainActor.run {
+                            contactConnection = conn
+                            chatModel.updateContactConnection(conn)
+                        }
+                    }
+                } catch {
+                    logger.error("apiSetConnectionIncognito error: \(responseError(error))")
+                }
+            }
+            setInvitationUsed()
         }
     }
 
@@ -233,60 +250,39 @@ private struct InviteView: View {
     }
 }
 
-private enum ConnectAlert: Identifiable {
-    case planAndConnectAlert(alert: PlanAndConnectAlert)
-    case connectSomeAlert(alert: SomeAlert)
-
-    var id: String {
-        switch self {
-        case let .planAndConnectAlert(alert): return "planAndConnectAlert \(alert.id)"
-        case let .connectSomeAlert(alert): return "connectSomeAlert \(alert.id)"
-        }
-    }
-}
-
 private struct ConnectView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @State var showQRCodeScanner = false
-    @State private var pastedLink: String = ""
-    @State private var alert: ConnectAlert?
+    @Binding var pastedLink: String
+    @Binding var alert: NewChatViewAlert?
     @State private var sheet: PlanAndConnectActionSheet?
 
     var body: some View {
-        viewBody()
-            .alert(item: $alert) { a in
-                switch(a) {
-                case let .planAndConnectAlert(alert):
-                    return planAndConnectAlert(alert, dismiss: true, onCancel: { pastedLink = "" })
-                case let .connectSomeAlert(.someAlert(alert, _)):
-                    return alert
-                }
+        List {
+            Section("Paste the link you received") {
+                pasteLinkView()
             }
-            .actionSheet(item: $sheet) { s in
-                planAndConnectActionSheet(s, dismiss: true, onCancel: { pastedLink = "" })
-            }
-    }
 
-    @ViewBuilder private func viewBody() -> some View {
-        Section("Paste the link you received") {
-            pasteLinkView()
+            scanCodeView()
         }
-
-        scanCodeView()
+        .actionSheet(item: $sheet) { s in
+            planAndConnectActionSheet(s, dismiss: true, onCancel: { pastedLink = "" })
+        }
     }
 
     @ViewBuilder private func pasteLinkView() -> some View {
         if pastedLink == "" {
             Button {
+                print("tapped link")
                 if let str = UIPasteboard.general.string {
                     let link = str.trimmingCharacters(in: .whitespaces)
                     if strIsSimplexLink(link) {
                         pastedLink = link
                         connect(pastedLink)
                     } else {
-                        alert = .connectSomeAlert(alert: .someAlert(
+                        alert = .newChatSomeAlert(alert: .someAlert(
                             alert: mkAlert(title: "Invalid link", message: "The text you pasted is not a SimpleX link."),
-                            id: "pasteLinkView checkParsedLink error"
+                            id: "pasteLinkView: code is not a SimpleX link"
                         ))
                     }
                 }
@@ -356,16 +352,16 @@ private struct ConnectView: View {
             if strIsSimplexLink(link) {
                 connect(link)
             } else {
-                alert = .connectSomeAlert(alert: .someAlert(
+                alert = .newChatSomeAlert(alert: .someAlert(
                     alert: mkAlert(title: "Invalid QR code", message: "The code you scanned is not a SimpleX link QR code."),
-                    id: "pasteLinkView checkParsedLink error"
+                    id: "processQRCode: code is not a SimpleX link"
                 ))
             }
         case let .failure(e):
             logger.error("processQRCode QR code error: \(e.localizedDescription)")
-            alert = .connectSomeAlert(alert: .someAlert(
+            alert = .newChatSomeAlert(alert: .someAlert(
                 alert: mkAlert(title: "Invalid QR code", message: "Error scanning code: \(e.localizedDescription)"),
-                id: "processQRCode failure"
+                id: "processQRCode: failure"
             ))
         }
     }
