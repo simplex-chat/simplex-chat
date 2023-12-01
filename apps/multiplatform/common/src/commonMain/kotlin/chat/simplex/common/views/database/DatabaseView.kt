@@ -180,9 +180,9 @@ fun DatabaseLayout(
       )
       SectionDividerSpaced(maxTopPadding = true)
     }
+    val toggleEnabled = remember { chatModel.remoteHosts }.none { it.sessionState is RemoteHostSessionState.Connected }
     if (chatModel.localUserCreated.value == true) {
       SectionView(stringResource(MR.strings.run_chat_section)) {
-        val toggleEnabled = remember { chatModel.remoteHosts }.none { it.sessionState is RemoteHostSessionState.Connected }
         if (!toggleEnabled) {
           SectionItemView(disconnectAllHosts) {
             Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
@@ -201,6 +201,11 @@ fun DatabaseLayout(
     }
 
     SectionView(stringResource(MR.strings.chat_database_section)) {
+      if (chatModel.localUserCreated.value != true && !toggleEnabled) {
+        SectionItemView(disconnectAllHosts) {
+          Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
+        }
+      }
       val unencrypted = chatDbEncrypted == false
       SettingsActionItem(
         if (unencrypted) painterResource(MR.images.ic_lock_open_right) else if (useKeyChain) painterResource(MR.images.ic_vpn_key_filled)
