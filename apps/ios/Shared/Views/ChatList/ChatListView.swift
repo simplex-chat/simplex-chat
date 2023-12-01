@@ -301,10 +301,19 @@ private struct ChatListSearchBar: View {
                                 searchText = ""
                             }
                     } else {
-                        Image(systemName: "qrcode")
-                            .onTapGesture {
-                                showScanCodeSheet = true
-                            }
+                        HStack(spacing: 12) {
+                            Image(systemName: "doc")
+                                .onTapGesture {
+                                    if let str = UIPasteboard.general.string {
+                                        searchText = str
+                                    }
+                                }
+
+                            Image(systemName: "qrcode")
+                                .onTapGesture {
+                                    showScanCodeSheet = true
+                                }
+                        }
                     }
                 }
                 .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
@@ -333,13 +342,17 @@ private struct ChatListSearchBar: View {
         }
         .onChange(of: searchText) { t in
             let link = t.trimmingCharacters(in: .whitespaces)
-            if strIsSimplexLink(link) {
+            if strIsSimplexLink(link) { // if SimpleX link is pasted, show connection dialogue
                 hideKeyboard()
                 searchText = ""
                 withAnimation {
                     searchMode = false
                 }
                 connect(link)
+            } else if t != "" && !searchMode { // if some other text is pasted, enter search mode
+                withAnimation {
+                    searchMode = true
+                }
             }
         }
         .alert(item: $alert) { a in
