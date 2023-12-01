@@ -4362,8 +4362,6 @@ data class SomeRemoteCtrl(
   val appVersion: String
 )
 
-
-
 @Serializable
 data class CtrlAppInfo(val appVersionRange: AppVersionRange, val deviceName: String)
 
