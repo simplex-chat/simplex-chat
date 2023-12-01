@@ -1435,4 +1435,8 @@
     <string name="bad_desktop_address">Špatná adresa počítače</string>
     <string name="devices">Zařízení</string>
     <string name="disconnect_desktop_question">Odpojit počítač?</string>
+    <string name="create_group_button">Vytvořit skupinu</string>
+    <string name="session_code">Kód relace</string>
+    <string name="paste_desktop_address">Vložit adres počítače</string>
+    <string name="blocked_item_description">Blokovaný</string>
 </resources>
