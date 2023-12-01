@@ -14,10 +14,9 @@ struct ChatListView: View {
     @Binding var showSettings: Bool
     @State private var searchMode = false
     @State private var searchText = ""
-    @State private var showNewChatSheet = false
+    @State private var newChatMenuOption: NewChatMenuOption? = nil
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
-    @State private var showCreateGroupSheet = false
     @AppStorage(DEFAULT_SHOW_UNREAD_AND_FAVORITES) private var showUnreadAndFavorites = false
 
     var body: some View {
@@ -85,9 +84,6 @@ struct ChatListView: View {
         }
         .listStyle(.plain)
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showCreateGroupSheet) {
-            AddGroupView()
-        }
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 let user = chatModel.currentUser ?? User.sampleData
@@ -114,38 +110,23 @@ struct ChatListView: View {
             }
             ToolbarItem(placement: .principal) {
                 HStack(spacing: 4) {
+                    Text("Chats")
+                        .font(.headline)
                     if chatModel.chats.count > 0 {
                         toggleFilterButton()
                     }
-                    Text("Chats")
-                        .font(.headline)
                 }
                 .frame(maxWidth: .infinity, alignment: .center)
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 switch chatModel.chatRunning {
-                case .some(true):
-                    HStack(spacing: 12) {
-                        createGroupButton()
-                        NewChatInviteButton(showNewChatSheet: $showNewChatSheet)
-                    }
+                case .some(true): NewChatMenuButton(newChatMenuOption: $newChatMenuOption)
                 case .some(false): chatStoppedIcon()
                 case .none: EmptyView()
                 }
             }
         }
         .navigationBarHidden(searchMode)
-    }
-
-    private func createGroupButton() -> some View {
-        Button {
-            showCreateGroupSheet = true
-        } label: {
-            Image(systemName: "plus")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 20, height: 20)
-        }
     }
 
     private func toggleFilterButton() -> some View {
@@ -206,7 +187,7 @@ struct ChatListView: View {
             .padding(.trailing, 12)
 
             connectButton("Tap to start a new chat") {
-                showNewChatSheet = true
+                newChatMenuOption = .newContact
             }
 
             Spacer()

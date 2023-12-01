@@ -11,7 +11,7 @@ import SwiftUI
 struct ChatHelp: View {
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
-    @State private var showNewChatSheet = false
+    @State private var newChatMenuOption: NewChatMenuOption? = nil
 
     var body: some View {
         ScrollView { chatHelp() }
@@ -39,13 +39,12 @@ struct ChatHelp: View {
 
                 HStack(spacing: 8) {
                     Text("Tap button ")
-                    NewChatInviteButton(showNewChatSheet: $showNewChatSheet)
+                    NewChatMenuButton(newChatMenuOption: $newChatMenuOption)
                     Text("above, then choose:")
                 }
 
-                Text("**Create link / QR code** for your contact to use.")
-                Text("**Paste received link** or open it in the browser and tap **Open in mobile app**.")
-                Text("**Scan QR code**: to connect to your contact in person or via video call.")
+                Text("**New contact**: to create a new invitation link, or connect via a link you received.")
+                Text("**New group**: to create a new group.")
             }
             .padding(.top, 24)
 
