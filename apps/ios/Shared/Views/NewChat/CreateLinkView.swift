@@ -62,8 +62,8 @@ struct CreateLinkView: View {
                 createInvitation()
             }
         }
-        .onAppear { m.connReqInv = connReqInvitation }
-        .onDisappear { m.connReqInv = nil }
+        // .onAppear { m.connReqInv = connReqInvitation }
+        // .onDisappear { m.connReqInv = nil }
         .navigationTitle(selection.title)
         .navigationBarTitleDisplayMode(.large)
     }
@@ -77,7 +77,7 @@ struct CreateLinkView: View {
                     m.updateContactConnection(pcc)
                     connReqInvitation = connReq
                     contactConnection = pcc
-                    m.connReqInv = connReq
+                    // m.connReqInv = connReq
                 }
             } else {
                 await MainActor.run {

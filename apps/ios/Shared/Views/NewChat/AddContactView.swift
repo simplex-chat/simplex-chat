@@ -40,7 +40,7 @@ struct AddContactView: View {
                 }
             }
         }
-        .onAppear { chatModel.connReqInv = connReqInvitation }
+        // .onAppear { chatModel.connReqInv = connReqInvitation }
         .onChange(of: incognitoDefault) { incognito in
             Task {
                 do {

@@ -87,8 +87,8 @@ final class ChatModel: ObservableObject {
     @Published var showCallView = false
     // remote desktop
     @Published var remoteCtrlSession: RemoteCtrlSession?
-    // currently showing QR code
-    @Published var connReqInv: String?
+    // currently showing invitation connection id
+    @Published var invitationConnId: String?
     // audio recording and playback
     @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
@@ -620,10 +620,7 @@ final class ChatModel: ObservableObject {
     }
 
     func dismissConnReqView(_ id: String) {
-        if let connReqInv = connReqInv,
-           let c = getChat(id),
-           case let .contactConnection(contactConnection) = c.chatInfo,
-           connReqInv == contactConnection.connReqInv {
+        if id == invitationConnId {
             dismissAllSheets()
         }
     }

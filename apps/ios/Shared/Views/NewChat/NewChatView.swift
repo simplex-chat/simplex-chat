@@ -31,8 +31,10 @@ struct NewChatView: View {
     @EnvironmentObject var m: ChatModel
     @State var selection: NewChatOption
     @State var showQRCodeScanner = false
-    @State private var connReqInvitation: String = ""
+    @State private var invitationUsed: Bool = false
+    @State private var connectionChatCreated: Bool = false
     @State private var contactConnection: PendingContactConnection? = nil
+    @State private var connReqInvitation: String = ""
     @State private var creatingConnReq = false
     @State private var someAlert: SomeAlert?
 
@@ -66,7 +68,11 @@ struct NewChatView: View {
             switch selection {
             case .invite:
                 if connReqInvitation != "" {
-                    InviteView(contactConnection: $contactConnection, connReqInvitation: connReqInvitation)
+                    InviteView(
+                        invitationUsed: $invitationUsed,
+                        contactConnection: $contactConnection,
+                        connReqInvitation: connReqInvitation
+                    )
                 } else if creatingConnReq {
                     creatingLinkProgressView()
                 } else {
@@ -82,7 +88,22 @@ struct NewChatView: View {
         .onAppear {
             createInvitation(selection)
         }
-        .onDisappear { m.connReqInv = nil }
+        .onChange(of: invitationUsed) { used in
+            if used && !connectionChatCreated,
+               let conn = contactConnection {
+                m.updateContactConnection(conn)
+                connectionChatCreated = true
+            }
+        }
+        .onDisappear {
+            m.invitationConnId = nil
+            if !connectionChatCreated,
+               let conn = contactConnection {
+                Task {
+                    try await apiDeleteChat(type: .contactConnection, id: conn.apiId)
+                }
+            }
+        }
         .alert(item: $someAlert) { a in
             switch a {
             case let .someAlert(alert, _): alert
@@ -98,11 +119,9 @@ struct NewChatView: View {
                 let (r, alert) = await apiAddContact(incognito: incognitoGroupDefault.get())
                 if let (connReq, pcc) = r {
                     await MainActor.run {
-                        // TODO add connection to model if shared, or view dismissed by connected event
-                        m.updateContactConnection(pcc)
                         connReqInvitation = connReq
                         contactConnection = pcc
-                        m.connReqInv = connReq
+                        m.invitationConnId = pcc.id
                     }
                 } else {
                     await MainActor.run {
@@ -140,6 +159,7 @@ struct NewChatView: View {
 
 private struct InviteView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @Binding var invitationUsed: Bool
     @Binding var contactConnection: PendingContactConnection?
     var connReqInvitation: String
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
@@ -160,6 +180,7 @@ private struct InviteView: View {
                         logger.error("apiSetConnectionIncognito error: \(responseError(error))")
                     }
                 }
+                setInvitationUsed()
             }
     }
 
@@ -183,6 +204,7 @@ private struct InviteView: View {
             linkTextView(link)
             Button {
                 showShareSheet(items: [link])
+                setInvitationUsed()
             } label: {
                 Image(systemName: "square.and.arrow.up")
             }
@@ -191,7 +213,7 @@ private struct InviteView: View {
 
     private func qrCodeView() -> some View {
         Section("Or show this code") {
-            SimpleXLinkQRCode(uri: connReqInvitation)
+            SimpleXLinkQRCode(uri: connReqInvitation, onShare: setInvitationUsed)
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -201,6 +223,12 @@ private struct InviteView: View {
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+        }
+    }
+
+    private func setInvitationUsed() {
+        if !invitationUsed {
+            invitationUsed = true
         }
     }
 }
