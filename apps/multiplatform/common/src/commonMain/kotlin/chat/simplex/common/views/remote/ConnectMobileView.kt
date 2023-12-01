@@ -13,12 +13,14 @@ import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.input.*
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
@@ -97,9 +99,11 @@ fun ConnectMobileLayout(
       SectionDividerSpaced(maxBottomPadding = false)
     }
     SectionView(stringResource(MR.strings.devices).uppercase()) {
-      SettingsActionItemWithContent(text = stringResource(MR.strings.this_device), icon = painterResource(MR.images.ic_desktop), click = connectDesktop) {
-        if (connectedHost.value == null) {
-          Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+      if (chatModel.localUserCreated.value == true) {
+        SettingsActionItemWithContent(text = stringResource(MR.strings.this_device), icon = painterResource(MR.images.ic_desktop), click = connectDesktop) {
+          if (connectedHost.value == null) {
+            Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+          }
         }
       }
 
@@ -162,26 +166,37 @@ fun DeviceNameField(
 
 @Composable
 private fun ConnectMobileViewLayout(
-  title: String,
+  title: String?,
   invitation: String?,
   deviceName: String?,
   sessionCode: String?,
-  port: String?
+  port: String?,
+  staleQrCode: Boolean = false,
+  refreshQrCode: () -> Unit = {}
 ) {
   Column(
     Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
     verticalArrangement = Arrangement.spacedBy(8.dp)
   ) {
-    AppBarTitle(title)
+    if (title != null) {
+      AppBarTitle(title)
+    }
     SectionView {
       if (invitation != null && sessionCode == null && port != null) {
-        QRCode(
-          invitation, Modifier
-            .padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING_HALF)
-            .aspectRatio(1f)
-        )
-        SectionTextFooter(annotatedStringResource(MR.strings.open_on_mobile_and_scan_qr_code))
-        SectionTextFooter(annotatedStringResource(MR.strings.waiting_for_mobile_to_connect_on_port, port))
+        Box {
+          QRCode(
+            invitation, Modifier
+              .padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING_HALF)
+              .aspectRatio(1f)
+          )
+          if (staleQrCode) {
+            Box(Modifier.matchParentSize().background(MaterialTheme.colors.background.copy(alpha = 0.9f)), contentAlignment = Alignment.Center) {
+              SimpleButtonDecorated(stringResource(MR.strings.refresh_qr_code), painterResource(MR.images.ic_refresh), click = refreshQrCode)
+            }
+          }
+        }
+        SectionTextFooter(annotatedStringResource(MR.strings.open_on_mobile_and_scan_qr_code), textAlign = TextAlign.Center)
+        SectionTextFooter(annotatedStringResource(MR.strings.waiting_for_mobile_to_connect_on_port, port), textAlign = TextAlign.Center)
 
         if (remember { controller.appPrefs.developerTools.state }.value) {
           val clipboard = LocalClipboardManager.current
@@ -218,6 +233,7 @@ private fun ConnectMobileViewLayout(
         }
       }
     }
+    SectionBottomSpacer()
   }
 }
 
@@ -237,55 +253,72 @@ fun connectMobileDevice(rh: RemoteHostInfo, connecting: MutableState<Boolean>) {
 
 private fun showAddingMobileDevice(connecting: MutableState<Boolean>) {
   ModalManager.start.showModalCloseable { close ->
-    val invitation = rememberSaveable { mutableStateOf<String?>(null) }
-    val port = rememberSaveable { mutableStateOf<String?>(null) }
-    val pairing = remember { chatModel.remoteHostPairing }
-    val sessionCode = when (val state = pairing.value?.second) {
-      is RemoteHostSessionState.PendingConfirmation -> state.sessionCode
-      else -> null
+    AddingMobileDevice(true, remember { mutableStateOf(false) }, connecting, close)
+  }
+}
+
+@Composable
+fun AddingMobileDevice(showTitle: Boolean, staleQrCode: MutableState<Boolean>, connecting: MutableState<Boolean>, close: () -> Unit) {
+  val invitation = rememberSaveable { mutableStateOf<String?>(null) }
+  val port = rememberSaveable { mutableStateOf<String?>(null) }
+  val startRemoteHost = suspend {
+    val r = chatModel.controller.startRemoteHost(null, controller.appPrefs.offerRemoteMulticast.get())
+    if (r != null) {
+      connecting.value = true
+      invitation.value = r.second
+      port.value = r.third
+      chatModel.remoteHostPairing.value = null to RemoteHostSessionState.Starting
     }
-    /** It's needed to prevent screen flashes when [chatModel.newRemoteHostPairing] sets to null in background */
-    var cachedSessionCode by remember { mutableStateOf<String?>(null) }
-    if (cachedSessionCode == null && sessionCode != null) {
-      cachedSessionCode = sessionCode
-    }
-    val remoteDeviceName = pairing.value?.first?.hostDeviceName
-    ConnectMobileViewLayout(
-      title = if (cachedSessionCode == null) stringResource(MR.strings.link_a_mobile) else stringResource(MR.strings.verify_connection),
-      invitation = invitation.value,
-      deviceName = remoteDeviceName,
-      sessionCode = cachedSessionCode,
-      port = port.value
-    )
-    val oldRemoteHostId by remember { mutableStateOf(chatModel.currentRemoteHost.value?.remoteHostId) }
-    LaunchedEffect(remember { chatModel.currentRemoteHost }.value) {
-      if (chatModel.currentRemoteHost.value?.remoteHostId != null && chatModel.currentRemoteHost.value?.remoteHostId != oldRemoteHostId) {
-        close()
-      }
-    }
-    KeyChangeEffect(pairing.value) {
-      if (pairing.value == null) {
-        close()
-      }
-    }
-    DisposableEffect(Unit) {
+  }
+  val pairing = remember { chatModel.remoteHostPairing }
+  val sessionCode = when (val state = pairing.value?.second) {
+    is RemoteHostSessionState.PendingConfirmation -> state.sessionCode
+    else -> null
+  }
+  /** It's needed to prevent screen flashes when [chatModel.newRemoteHostPairing] sets to null in background */
+  var cachedSessionCode by remember { mutableStateOf<String?>(null) }
+  if (cachedSessionCode == null && sessionCode != null) {
+    cachedSessionCode = sessionCode
+  }
+  val remoteDeviceName = pairing.value?.first?.hostDeviceName
+  ConnectMobileViewLayout(
+    title = if (!showTitle) null else if (cachedSessionCode == null) stringResource(MR.strings.link_a_mobile) else stringResource(MR.strings.verify_connection),
+    invitation = invitation.value,
+    deviceName = remoteDeviceName,
+    sessionCode = cachedSessionCode,
+    port = port.value,
+    staleQrCode = staleQrCode.value,
+    refreshQrCode = {
       withBGApi {
-        val r = chatModel.controller.startRemoteHost(null, controller.appPrefs.offerRemoteMulticast.get())
-        if (r != null) {
-          connecting.value = true
-          invitation.value = r.second
-          port.value = r.third
-          chatModel.remoteHostPairing.value = null to RemoteHostSessionState.Starting
+        if (chatController.stopRemoteHost(null)) {
+          startRemoteHost()
+          staleQrCode.value = false
         }
       }
-      onDispose {
-        if (chatModel.currentRemoteHost.value?.remoteHostId == oldRemoteHostId) {
-          withBGApi {
-            chatController.stopRemoteHost(null)
-          }
+    },
+  )
+  val oldRemoteHostId by remember { mutableStateOf(chatModel.currentRemoteHost.value?.remoteHostId) }
+  LaunchedEffect(remember { chatModel.currentRemoteHost }.value) {
+    if (chatModel.currentRemoteHost.value?.remoteHostId != null && chatModel.currentRemoteHost.value?.remoteHostId != oldRemoteHostId) {
+      close()
+    }
+  }
+  KeyChangeEffect(pairing.value) {
+    if (pairing.value == null) {
+      close()
+    }
+  }
+  DisposableEffect(Unit) {
+    withBGApi {
+      startRemoteHost()
+    }
+    onDispose {
+      if (chatModel.currentRemoteHost.value?.remoteHostId == oldRemoteHostId) {
+        withBGApi {
+          chatController.stopRemoteHost(null)
         }
-        chatModel.remoteHostPairing.value = null
       }
+      chatModel.remoteHostPairing.value = null
     }
   }
 }

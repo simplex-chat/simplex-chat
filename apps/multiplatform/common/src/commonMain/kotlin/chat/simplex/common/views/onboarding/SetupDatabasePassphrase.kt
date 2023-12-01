@@ -43,7 +43,11 @@ fun SetupDatabasePassphrase(m: ChatModel) {
   val newKey = rememberSaveable { mutableStateOf("") }
   val confirmNewKey = rememberSaveable { mutableStateOf("") }
   fun nextStep() {
-    m.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
+    if (appPlatform.isAndroid || chatModel.currentUser.value != null) {
+      m.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
+    } else {
+      m.controller.appPrefs.onboardingStage.set(OnboardingStage.LinkAMobile)
+    }
   }
   SetupDatabasePassphraseLayout(
     currentKey,
@@ -159,10 +163,7 @@ private fun SetupDatabasePassphraseLayout(
             }
           },
         isValid = { confirmNewKey.value == "" || newKey.value == confirmNewKey.value },
-        keyboardActions = KeyboardActions(onDone = {
-          if (!disabled) onClickUpdate()
-          defaultKeyboardAction(ImeAction.Done)
-        }),
+        keyboardActions = KeyboardActions(onDone = { defaultKeyboardAction(ImeAction.Done) }),
       )
 
       Box(Modifier.align(Alignment.CenterHorizontally).padding(vertical = DEFAULT_PADDING)) {
