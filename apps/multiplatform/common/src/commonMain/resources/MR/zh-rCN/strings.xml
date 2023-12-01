@@ -1523,4 +1523,7 @@
     <string name="found_desktop">找到了桌面</string>
     <string name="not_compatible">不兼容！</string>
     <string name="multicast_discoverable_via_local_network">可通过本地网络发现</string>
+    <string name="refresh_qr_code">刷新</string>
+    <string name="create_chat_profile">创建聊天资料</string>
+    <string name="no_connected_mobile">没有已连接的移动设备</string>
 </resources>
