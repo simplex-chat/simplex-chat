@@ -12,7 +12,7 @@ import SimpleXChat
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
-    @State private var searchMode = false
+    @FocusState private var searchMode
     @State private var searchText = ""
     @State private var newChatMenuOption: NewChatMenuOption? = nil
     @State private var userPickerVisible = false
@@ -85,7 +85,6 @@ struct ChatListView: View {
         .listStyle(.plain)
         .navigationBarTitleDisplayMode(.inline)
         .navigationBarHidden(searchMode)
-        .animation(.easeInOut(duration: 0.2))
         .toolbar {
             ToolbarItem(placement: .navigationBarLeading) {
                 let user = chatModel.currentUser ?? User.sampleData
@@ -155,7 +154,6 @@ struct ChatListView: View {
                             .disabled(chatModel.chatRunning != true)
                     }
                     .offset(x: -8)
-                    .animation(nil)
                 }
             }
             .onChange(of: chatModel.chatId) { _ in
@@ -257,7 +255,7 @@ struct ChatListView: View {
 }
 
 private struct ChatListSearchBar: View {
-    @Binding var searchMode: Bool
+    @FocusState.Binding var searchMode: Bool
     @Binding var searchText: String
     @State private var showScanCodeSheet = false
     @State private var alert: PlanAndConnectAlert?
@@ -269,13 +267,9 @@ private struct ChatListSearchBar: View {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
                     TextField("Search or paste link", text: $searchText)
+                        .focused($searchMode)
                         .foregroundColor(.primary)
                         .frame(maxWidth: .infinity)
-                        .onTapGesture {
-                            withAnimation {
-                                searchMode = true
-                            }
-                        }
 
                     if searchMode {
                         Image(systemName: "xmark.circle.fill")
@@ -284,19 +278,25 @@ private struct ChatListSearchBar: View {
                                 searchText = ""
                             }
                     } else {
-                        HStack(spacing: 16) {
-                            Image(systemName: "doc")
-                                .onTapGesture {
-                                    if let str = UIPasteboard.general.string {
-                                        searchText = str
+                        HStack(spacing: 24) {
+                            if UIPasteboard.general.hasURLs {
+                                Image(systemName: "doc")
+                                    .onTapGesture {
+                                        if let str = UIPasteboard.general.string {
+                                            searchText = str
+                                        }
                                     }
-                                }
+                            }
 
-                            Image(systemName: "qrcode")
+                            Image(systemName: "qrcode.viewfinder")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 27, height: 27)
                                 .onTapGesture {
                                     showScanCodeSheet = true
                                 }
                         }
+                        .padding(.trailing, 2)
                     }
                 }
                 .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))

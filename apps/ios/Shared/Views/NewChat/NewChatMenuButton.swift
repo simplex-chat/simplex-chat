@@ -23,12 +23,12 @@ struct NewChatMenuButton: View {
             Button {
                 newChatMenuOption = .newContact
             } label: {
-                Text("New contact")
+                Text("Add contact")
             }
             Button {
                 newChatMenuOption = .newGroup
             } label: {
-                Text("New group")
+                Text("Create group")
             }
         } label: {
             Image(systemName: "square.and.pencil")
