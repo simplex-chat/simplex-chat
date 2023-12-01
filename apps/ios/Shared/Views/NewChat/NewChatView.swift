@@ -84,7 +84,28 @@ struct NewChatView: View {
                         .transition(.move(edge: .trailing))
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(
+                // Rectangle is needed for swipe gesture to work on mostly empty views (creatingLinkProgressView and retryButton)
+                Rectangle()
+                    .fill(Color(uiColor: .systemGroupedBackground))
+            )
             .animation(.easeInOut(duration: 0.3333), value: selection)
+            .gesture(DragGesture(minimumDistance: 3.0, coordinateSpace: .local)
+                .onChanged { value in
+                    switch(value.translation.width, value.translation.height) {
+                    case (...0, -30...30): // left swipe
+                        if selection == .invite {
+                            selection = .connect
+                        }
+                    case (0..., -30...30): // right swipe
+                        if selection == .connect {
+                            selection = .invite
+                        }
+                    default: ()
+                    }
+                }
+            )
         }
         .background(Color(.systemGroupedBackground))
         .onChange(of: selection) { sel in
@@ -157,10 +178,10 @@ struct NewChatView: View {
         }
     }
 
+    // Rectangle here and in retryButton are needed for gesture to work
     private func creatingLinkProgressView() -> some View {
         ProgressView("Creating link…")
             .progressViewStyle(.circular)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 
     private func retryButton() -> some View {
@@ -172,7 +193,6 @@ struct NewChatView: View {
                 Text("Retry")
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
 }
 
@@ -273,7 +293,6 @@ private struct ConnectView: View {
     @ViewBuilder private func pasteLinkView() -> some View {
         if pastedLink == "" {
             Button {
-                print("tapped link")
                 if let str = UIPasteboard.general.string {
                     let link = str.trimmingCharacters(in: .whitespaces)
                     if strIsSimplexLink(link) {
