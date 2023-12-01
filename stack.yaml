@@ -65,8 +65,6 @@ extra-deps:
     commit: f708b00009b54890172068f168bf98508ffcd495
   - github: simplex-chat/android-support
     commit: 9aa09f148089d6752ce563b14c2df1895718d806
-  - github: simplex-chat/network-transport
-    commit: 0013798272a683e35ca38d2fdaf480942311fba8
 #
 # extra-deps: []
 
