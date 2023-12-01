@@ -187,7 +187,7 @@ library
     , memory >=0.15 && <0.19
     , mtl >=2.2 && <3
     , network >=3.1.2.7 && <3.2
-    , network-transport >=0.5.4 && <0.6
+    , network-transport >=0.5.6 && <0.6
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -197,7 +197,7 @@ library
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.20.*
+    , template-haskell >=2.16 && <2.21
     , terminal ==0.2.*
     , text >=2.0 && <3
     , time ==1.9.*
@@ -239,7 +239,7 @@ executable simplex-bot
     , memory >=0.15 && <0.19
     , mtl >=2.2 && <3
     , network >=3.1.2.7 && <3.2
-    , network-transport >=0.5.4 && <0.6
+    , network-transport >=0.5.6 && <0.6
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -250,7 +250,7 @@ executable simplex-bot
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.20.*
+    , template-haskell >=2.16 && <2.21
     , terminal ==0.2.*
     , text >=2.0 && <3
     , time ==1.9.*
@@ -292,7 +292,7 @@ executable simplex-bot-advanced
     , memory >=0.15 && <0.19
     , mtl >=2.2 && <3
     , network >=3.1.2.7 && <3.2
-    , network-transport >=0.5.4 && <0.6
+    , network-transport >=0.5.6 && <0.6
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -303,7 +303,7 @@ executable simplex-bot-advanced
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.20.*
+    , template-haskell >=2.16 && <2.21
     , terminal ==0.2.*
     , text >=2.0 && <3
     , time ==1.9.*
@@ -347,7 +347,7 @@ executable simplex-broadcast-bot
     , memory >=0.15 && <0.19
     , mtl >=2.2 && <3
     , network >=3.1.2.7 && <3.2
-    , network-transport >=0.5.4 && <0.6
+    , network-transport >=0.5.6 && <0.6
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -358,7 +358,7 @@ executable simplex-broadcast-bot
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.20.*
+    , template-haskell >=2.16 && <2.21
     , terminal ==0.2.*
     , text >=2.0 && <3
     , time ==1.9.*
@@ -401,7 +401,7 @@ executable simplex-chat
     , memory >=0.15 && <0.19
     , mtl >=2.2 && <3
     , network ==3.1.*
-    , network-transport >=0.5.4 && <0.6
+    , network-transport >=0.5.6 && <0.6
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -412,7 +412,7 @@ executable simplex-chat
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.20.*
+    , template-haskell >=2.16 && <2.21
     , terminal ==0.2.*
     , text >=2.0 && <3
     , time ==1.9.*
@@ -459,7 +459,7 @@ executable simplex-directory-service
     , memory >=0.15 && <0.19
     , mtl >=2.2 && <3
     , network >=3.1.2.7 && <3.2
-    , network-transport >=0.5.4 && <0.6
+    , network-transport >=0.5.6 && <0.6
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -470,7 +470,7 @@ executable simplex-directory-service
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.20.*
+    , template-haskell >=2.16 && <2.21
     , terminal ==0.2.*
     , text >=2.0 && <3
     , time ==1.9.*
@@ -543,7 +543,7 @@ test-suite simplex-chat-test
     , memory >=0.15 && <0.19
     , mtl >=2.2 && <3
     , network ==3.1.*
-    , network-transport >=0.5.4 && <0.6
+    , network-transport >=0.5.6 && <0.6
     , optparse-applicative >=0.15 && <0.17
     , process ==1.6.*
     , random >=1.1 && <1.3
@@ -555,7 +555,7 @@ test-suite simplex-chat-test
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.20.*
+    , template-haskell >=2.16 && <2.21
     , terminal ==0.2.*
     , text >=2.0 && <3
     , time ==1.9.*
