@@ -171,11 +171,11 @@ library
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.10.*
+    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite >=0.27 && <0.30
+    , cryptonite ==0.30.*
     , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -197,7 +197,7 @@ library
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.20.*
+    , template-haskell >=2.16 && <2.21
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
@@ -223,11 +223,11 @@ executable simplex-bot
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.10.*
+    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite >=0.27 && <0.30
+    , cryptonite ==0.30.*
     , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -250,7 +250,7 @@ executable simplex-bot
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.20.*
+    , template-haskell >=2.16 && <2.21
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
@@ -276,11 +276,11 @@ executable simplex-bot-advanced
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.10.*
+    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite >=0.27 && <0.30
+    , cryptonite ==0.30.*
     , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -303,7 +303,7 @@ executable simplex-bot-advanced
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.20.*
+    , template-haskell >=2.16 && <2.21
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
@@ -331,11 +331,11 @@ executable simplex-broadcast-bot
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.10.*
+    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite >=0.27 && <0.30
+    , cryptonite ==0.30.*
     , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -358,7 +358,7 @@ executable simplex-broadcast-bot
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.20.*
+    , template-haskell >=2.16 && <2.21
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
@@ -385,11 +385,11 @@ executable simplex-chat
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.10.*
+    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite >=0.27 && <0.30
+    , cryptonite ==0.30.*
     , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -412,7 +412,7 @@ executable simplex-chat
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.20.*
+    , template-haskell >=2.16 && <2.21
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
@@ -443,11 +443,11 @@ executable simplex-directory-service
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.10.*
+    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite >=0.27 && <0.30
+    , cryptonite ==0.30.*
     , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -470,7 +470,7 @@ executable simplex-directory-service
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.20.*
+    , template-haskell >=2.16 && <2.21
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*
@@ -524,11 +524,11 @@ test-suite simplex-chat-test
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.10.*
+    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite >=0.27 && <0.30
+    , cryptonite ==0.30.*
     , data-default ==0.7.*
     , deepseq ==1.4.*
     , direct-sqlcipher ==2.3.*
@@ -555,7 +555,7 @@ test-suite simplex-chat-test
     , socks ==0.6.*
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
-    , template-haskell ==2.20.*
+    , template-haskell >=2.16 && <2.21
     , terminal ==0.2.*
     , text ==2.0.*
     , time ==1.9.*

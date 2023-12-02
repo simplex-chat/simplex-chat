@@ -5,6 +5,7 @@
 module Simplex.Chat.Terminal where
 
 import Control.Exception (handle, throwIO)
+import Control.Monad
 import Control.Monad.Except
 import qualified Data.List.NonEmpty as L
 import Database.SQLite.Simple (SQLError (..))
