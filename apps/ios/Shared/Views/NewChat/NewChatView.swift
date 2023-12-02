@@ -279,6 +279,7 @@ private struct InviteView: View {
 private struct ConnectView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @State var showQRCodeScanner = false
+    @State private var cameraAuthorizationStatus: AVAuthorizationStatus?
     @Binding var pastedLink: String
     @Binding var alert: NewChatViewAlert?
     @State private var sheet: PlanAndConnectActionSheet?
@@ -293,6 +294,26 @@ private struct ConnectView: View {
         }
         .actionSheet(item: $sheet) { s in
             planAndConnectActionSheet(s, dismiss: true, onCancel: { pastedLink = "" })
+        }
+        .onAppear {
+            let status = AVCaptureDevice.authorizationStatus(for: .video)
+            cameraAuthorizationStatus = status
+            if showQRCodeScanner {
+                switch status {
+                case .notDetermined: askCameraAuthorization()
+                case .restricted: showQRCodeScanner = false
+                case .denied: showQRCodeScanner = false
+                case .authorized: ()
+                @unknown default: askCameraAuthorization()
+                }
+            }
+        }
+    }
+
+    func askCameraAuthorization(_ cb: (() -> Void)? = nil) {
+        AVCaptureDevice.requestAccess(for: .video) { allowed in
+            cameraAuthorizationStatus = AVCaptureDevice.authorizationStatus(for: .video)
+            if allowed { cb?() }
         }
     }
 
@@ -316,7 +337,7 @@ private struct ConnectView: View {
                     }
                 }
             } label: {
-                Label("Tap to paste link", systemImage: "link")
+                Text("Tap to paste link")
             }
             .frame(maxWidth: .infinity, alignment: .center)
         } else {
@@ -326,7 +347,7 @@ private struct ConnectView: View {
 
     private func scanCodeView() -> some View {
         Section("Or scan QR code") {
-            if showQRCodeScanner {
+            if showQRCodeScanner, case .authorized = cameraAuthorizationStatus {
                 CodeScannerView(codeTypes: [.qr], completion: processQRCode)
                     .aspectRatio(1, contentMode: .fit)
                     .cornerRadius(12)
@@ -336,14 +357,24 @@ private struct ConnectView: View {
                     .padding(.horizontal)
             } else {
                 Button {
-                    showQRCodeScanner = true
+                    switch cameraAuthorizationStatus {
+                    case .notDetermined: askCameraAuthorization { showQRCodeScanner = true }
+                    case .restricted: ()
+                    case .denied: UIApplication.shared.open(appSettingsURL)
+                    case .authorized: showQRCodeScanner = true
+                    default: askCameraAuthorization { showQRCodeScanner = true }
+                    }
                 } label: {
                     ZStack {
                         Rectangle()
                             .aspectRatio(contentMode: .fill)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .foregroundColor(Color.clear)
-                        Label("Tap to scan", systemImage: "qrcode")
+                        switch cameraAuthorizationStatus {
+                        case .restricted: Text("Camera not available")
+                        case .denied:  Label("Enable camera access", systemImage: "camera")
+                        default: Label("Tap to scan", systemImage: "qrcode")
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
@@ -356,6 +387,7 @@ private struct ConnectView: View {
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
                 .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                .disabled(cameraAuthorizationStatus == .restricted)
             }
         }
     }
