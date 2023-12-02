@@ -59,6 +59,7 @@ module Simplex.Chat.Store.Profiles
   )
 where
 
+import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import qualified Data.Aeson.TH as J

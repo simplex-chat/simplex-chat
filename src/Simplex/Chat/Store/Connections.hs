@@ -16,6 +16,7 @@ module Simplex.Chat.Store.Connections
 where
 
 import Control.Applicative ((<|>))
+import Control.Monad
 import Control.Monad.Except
 import Data.Int (Int64)
 import Data.Maybe (catMaybes, fromMaybe)
