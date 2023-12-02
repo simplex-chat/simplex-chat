@@ -33,7 +33,7 @@
     <string name="all_group_members_will_remain_connected">Všichni členové skupiny zůstanou připojeni.</string>
     <string name="allow_irreversible_message_deletion_only_if">Povolte nevratné smazání zprávy pouze v případě, že vám to váš kontakt povolí.</string>
     <string name="allow_direct_messages">Přímé zprávy členům povoleny.</string>
-    <string name="allow_to_delete_messages">Nevratné mazání odeslaných zpráv povoleno.</string>
+    <string name="allow_to_delete_messages">Povolit nevratné mazání odeslaných zpráv.</string>
     <string name="clear_chat_warning">Všechny zprávy budou smazány – tuto akci nelze vrátit zpět! Zprávy budou smazány POUZE pro vás.</string>
     <string name="allow_your_contacts_irreversibly_delete">Povolit svým kontaktům nevratně odstranit odeslané zprávy.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Povolte svým kontaktům odesílání hlasových zpráv.</string>
@@ -504,7 +504,7 @@
     <string name="connect_via_link_verb">Připojení</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Jste připojeni k serveru, který se používá k přijímání zpráv od tohoto kontaktu.</string>
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Pokoušíte se připojit k serveru používaném pro příjem zpráv od tohoto kontaktu (chyba: %1$s).</string>
-    <string name="marked_deleted_description">označit jako smazáno</string>
+    <string name="marked_deleted_description">označeno jako smazáno</string>
     <string name="sending_files_not_yet_supported">Odesílání souborů zatím není podporováno</string>
     <string name="receiving_files_not_yet_supported">přijímání souborů zatím není podporováno</string>
     <string name="sender_you_pronoun">ty</string>
@@ -828,8 +828,8 @@
     <string name="group_member_status_invited">pozván</string>
     <string name="group_member_status_introduced">představen (zaveden)</string>
     <string name="group_member_status_intro_invitation">připojení (pozvánka na představení)</string>
-    <string name="group_member_status_accepted">připojen (přijat)</string>
-    <string name="group_member_status_announced">připojen (oznámen)</string>
+    <string name="group_member_status_accepted">připojení (přijato)</string>
+    <string name="group_member_status_announced">připojení (oznámeno)</string>
     <string name="group_member_status_connected">připojen</string>
     <string name="group_member_status_complete">komplet</string>
     <string name="group_member_status_creator">tvůrce</string>
