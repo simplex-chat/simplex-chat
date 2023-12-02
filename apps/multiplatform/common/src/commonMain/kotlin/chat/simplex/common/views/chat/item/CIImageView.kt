@@ -164,6 +164,12 @@ fun CIImageView(
           }
         }
       }
+    } else {
+      LaunchedEffect(file) {
+        if (res.value == null) {
+          res.value = imageAndFilePath(file)
+        }
+      }
     }
     val loaded = res.value
     if (loaded != null) {
