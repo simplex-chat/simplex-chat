@@ -1527,4 +1527,5 @@
     <string name="refresh_qr_code">Ricarica</string>
     <string name="create_chat_profile">Crea profilo di chat</string>
     <string name="no_connected_mobile">Nessun cellulare connesso</string>
+    <string name="disconnect_remote_hosts">Disconnetti cellulari</string>
 </resources>
