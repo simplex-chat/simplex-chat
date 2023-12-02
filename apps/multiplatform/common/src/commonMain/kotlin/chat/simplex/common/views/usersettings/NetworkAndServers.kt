@@ -305,7 +305,7 @@ fun SockProxySettings(m: ChatModel) {
         DefaultConfigurableTextField(
           hostUnsaved,
           stringResource(MR.strings.host_verb),
-          modifier = Modifier,
+          modifier = Modifier.fillMaxWidth(),
           isValid = ::validHost,
           keyboardActions = KeyboardActions(onNext = { defaultKeyboardAction(ImeAction.Next) }),
           keyboardType = KeyboardType.Text,
@@ -315,7 +315,7 @@ fun SockProxySettings(m: ChatModel) {
         DefaultConfigurableTextField(
           portUnsaved,
           stringResource(MR.strings.port_verb),
-          modifier = Modifier,
+          modifier = Modifier.fillMaxWidth(),
           isValid = ::validPort,
           keyboardActions = KeyboardActions(onDone = { defaultKeyboardAction(ImeAction.Done); save() }),
           keyboardType = KeyboardType.Number,
@@ -428,7 +428,7 @@ private fun validHost(s: String): Boolean {
 }
 
 // https://ihateregex.io/expr/port/
-private fun validPort(s: String): Boolean {
+fun validPort(s: String): Boolean {
   val validPort = Regex("^(6553[0-5])|(655[0-2][0-9])|(65[0-4][0-9]{2})|(6[0-4][0-9]{3})|([1-5][0-9]{4})|([0-5]{0,5})|([0-9]{1,4})$")
   return s.isNotBlank() && s.matches(validPort)
 }
