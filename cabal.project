@@ -4,6 +4,8 @@ packages: .
 
 with-compiler: ghc-9.6.3
 
+index-state: 2023-10-20T00:00:00Z
+
 constraints: zip +disable-bzip2 +disable-zstd
 
 source-repository-package
