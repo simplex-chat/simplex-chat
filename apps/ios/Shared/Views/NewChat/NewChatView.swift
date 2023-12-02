@@ -9,6 +9,7 @@
 import SwiftUI
 import SimpleXChat
 import CodeScanner
+import AVFoundation
 
 enum SomeAlert: Identifiable {
     case someAlert(alert: Alert, id: String)
@@ -210,6 +211,7 @@ private struct InviteView: View {
             Section("Share this 1-time invite link") {
                 shareLinkView()
             }
+            .listRowInsets(EdgeInsets(top: 0, leading: 20, bottom: 0, trailing: 10))
 
             qrCodeView()
 
@@ -246,8 +248,10 @@ private struct InviteView: View {
                 setInvitationUsed()
             } label: {
                 Image(systemName: "square.and.arrow.up")
+                    .padding(.top, -7)
             }
         }
+        .frame(maxWidth: .infinity)
     }
 
     private func qrCodeView() -> some View {
@@ -299,6 +303,10 @@ private struct ConnectView: View {
                     let link = str.trimmingCharacters(in: .whitespaces)
                     if strIsSimplexLink(link) {
                         pastedLink = link
+                        // It would be good to hide it, but right now it is not clear how to release camera in CodeScanner
+                        // https://github.com/twostraws/CodeScanner/issues/121
+                        // No known tricks worked (changing view ID, wrapping it in another view, etc.)
+                        // showQRCodeScanner = false
                         connect(pastedLink)
                     } else {
                         alert = .newChatSomeAlert(alert: .someAlert(
@@ -308,18 +316,11 @@ private struct ConnectView: View {
                     }
                 }
             } label: {
-                Text("Tap to paste link")
+                Label("Tap to paste link", systemImage: "link")
             }
             .frame(maxWidth: .infinity, alignment: .center)
         } else {
-            HStack {
-                linkTextView(pastedLink)
-                Button {
-                    pastedLink = ""
-                } label: {
-                    Image(systemName: "xmark.circle")
-                }
-            }
+            linkTextView(pastedLink)
         }
     }
 
@@ -342,13 +343,7 @@ private struct ConnectView: View {
                             .aspectRatio(contentMode: .fill)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                             .foregroundColor(Color.clear)
-                        VStack {
-                            Image(systemName: "camera")
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(width: 28)
-                            Text("Tap to scan")
-                        }
+                        Label("Tap to scan", systemImage: "qrcode")
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
@@ -416,7 +411,7 @@ struct InfoSheetButton<Content: View>: View {
             Image(systemName: "info.circle")
                 .resizable()
                 .scaledToFit()
-                .frame(width: 20, height: 20)
+                .frame(width: 24, height: 24)
         }
         .sheet(isPresented: $showInfoSheet) {
             content

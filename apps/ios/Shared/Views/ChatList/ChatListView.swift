@@ -12,7 +12,8 @@ import SimpleXChat
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
     @Binding var showSettings: Bool
-    @FocusState private var searchMode
+    @State private var searchMode = false
+    @FocusState private var searchFocussed
     @State private var searchText = ""
     @State private var newChatMenuOption: NewChatMenuOption? = nil
     @State private var userPickerVisible = false
@@ -144,7 +145,7 @@ struct ChatListView: View {
             VStack {
                 List {
                     if !chatModel.chats.isEmpty {
-                        ChatListSearchBar(searchMode: $searchMode, searchText: $searchText)
+                        ChatListSearchBar(searchMode: $searchMode, searchFocussed: $searchFocussed, searchText: $searchText)
                             .listRowSeparator(.hidden)
                             .frame(maxWidth: .infinity)
                     }
@@ -254,9 +255,13 @@ struct ChatListView: View {
     }
 }
 
-private struct ChatListSearchBar: View {
-    @FocusState.Binding var searchMode: Bool
+struct ChatListSearchBar: View {
+    @EnvironmentObject var m: ChatModel
+    @Binding var searchMode: Bool
+    @FocusState.Binding var searchFocussed: Bool
     @Binding var searchText: String
+    @State private var cancelVisible = false
+    @State private var pasteboardHasString = false
     @State private var showScanCodeSheet = false
     @State private var alert: PlanAndConnectAlert?
     @State private var sheet: PlanAndConnectActionSheet?
@@ -266,20 +271,20 @@ private struct ChatListSearchBar: View {
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
-                    TextField("Search or paste link", text: $searchText)
-                        .focused($searchMode)
+                    TextField("Search or paste SimpleX link", text: $searchText)
+                        .truncationMode(.middle)
+                        .focused($searchFocussed)
                         .foregroundColor(.primary)
                         .frame(maxWidth: .infinity)
-
                     if searchMode {
                         Image(systemName: "xmark.circle.fill")
                             .opacity(searchText == "" ? 0 : 1)
                             .onTapGesture {
                                 searchText = ""
                             }
-                    } else {
+                    } else if searchText == "" {
                         HStack(spacing: 24) {
-                            if UIPasteboard.general.hasURLs {
+                            if m.pasteboardHasURLs {
                                 Image(systemName: "doc")
                                     .onTapGesture {
                                         if let str = UIPasteboard.general.string {
@@ -288,10 +293,10 @@ private struct ChatListSearchBar: View {
                                     }
                             }
 
-                            Image(systemName: "qrcode.viewfinder")
+                            Image(systemName: "qrcode")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 27, height: 27)
+                                .frame(width: 20, height: 20)
                                 .onTapGesture {
                                     showScanCodeSheet = true
                                 }
@@ -306,15 +311,12 @@ private struct ChatListSearchBar: View {
 
                 if searchMode {
                     Text("Cancel")
-                        .foregroundColor(.accentColor)
+                        .foregroundColor(cancelVisible ? .accentColor : .clear)
                         .onTapGesture {
-                            hideKeyboard()
                             searchText = ""
-                            withAnimation {
-                                searchMode = false
-                            }
+                            searchFocussed = false
                         }
-                        .transition(.move(edge: .trailing))
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
             Divider()
@@ -323,19 +325,26 @@ private struct ChatListSearchBar: View {
             NewChatView(selection: .connect, showQRCodeScanner: true)
                 .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil) // fixes .refreshable in ChatListView affecting nested view
         }
+        .onChange(of: searchFocussed) { sf in
+            if sf {
+                withAnimation { searchMode = true }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    withAnimation { cancelVisible = true }
+                }
+            } else {
+                withAnimation {
+                    searchMode = false
+                    cancelVisible = false
+                }
+            }
+        }
         .onChange(of: searchText) { t in
             let link = t.trimmingCharacters(in: .whitespaces)
             if strIsSimplexLink(link) { // if SimpleX link is pasted, show connection dialogue
-                hideKeyboard()
-                searchText = ""
-                withAnimation {
-                    searchMode = false
-                }
+                searchFocussed = false
                 connect(link)
-            } else if t != "" && !searchMode { // if some other text is pasted, enter search mode
-                withAnimation {
-                    searchMode = true
-                }
+            } else if t != "" { // if some other text is pasted, enter search mode
+                searchFocussed = true
             }
         }
         .alert(item: $alert) { a in
