@@ -11,7 +11,7 @@
     <string name="smp_servers_add">Přidat server…</string>
     <string name="network_enable_socks_info">Přistupovat k serverům přes SOCKS proxy na portu %d\? Před povolením této možnosti musí být spuštěna proxy.</string>
     <string name="accept_feature">Přijmout</string>
-    <string name="allow_your_contacts_to_send_disappearing_messages">Povolte svým kontaktům odesílat mizící zprávy.</string>
+    <string name="allow_your_contacts_to_send_disappearing_messages">Povolit svým kontaktům odesílat mizící zprávy.</string>
     <string name="about_simplex_chat">O SimpleX Chat</string>
     <string name="smp_servers_add_to_another_device">Přidat do jiného zařízení</string>
     <string name="allow_verb">Povolit</string>
@@ -31,11 +31,11 @@
     <string name="accept_contact_incognito_button">Přijmout inkognito</string>
     <string name="accept_connection_request__question">Přijmout žádost o připojení\?</string>
     <string name="all_group_members_will_remain_connected">Všichni členové skupiny zůstanou připojeni.</string>
-    <string name="allow_irreversible_message_deletion_only_if">Povolte nevratné smazání zprávy pouze v případě, že vám to váš kontakt dovolí.</string>
+    <string name="allow_irreversible_message_deletion_only_if">Povolte nevratné smazání zprávy pouze v případě, že vám to váš kontakt povolí.</string>
     <string name="allow_direct_messages">Přímé zprávy členům povoleny.</string>
     <string name="allow_to_delete_messages">Nevratné mazání odeslaných zpráv povoleno.</string>
     <string name="clear_chat_warning">Všechny zprávy budou smazány – tuto akci nelze vrátit zpět! Zprávy budou smazány POUZE pro vás.</string>
-    <string name="allow_your_contacts_irreversibly_delete">Umožněte svým kontaktům nevratně odstranit odeslané zprávy.</string>
+    <string name="allow_your_contacts_irreversibly_delete">Povolit svým kontaktům nevratně odstranit odeslané zprávy.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Povolte svým kontaktům odesílání hlasových zpráv.</string>
     <string name="button_create_group_link">Vytvořit odkaz</string>
     <string name="delete_link_question">Smazat odkaz\?</string>
@@ -65,7 +65,7 @@
     <string name="chat_preferences_always">vždy</string>
     <string name="set_group_preferences">Nastavení skupinových předvoleb</string>
     <string name="your_preferences">Vaše preference</string>
-    <string name="timed_messages">Mizící zprávy</string>
+    <string name="timed_messages">Mizející zprávy</string>
     <string name="feature_enabled_for_contact">povoleno pro kontakt</string>
     <string name="feature_received_prohibited">přijaté, zakázané</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Vy i váš kontakt můžete posílat mizící zprávy.</string>
@@ -289,18 +289,18 @@
     <string name="files_and_media_section">Soubory a média</string>
     <string name="delete_files_and_media_question">Smazat soubory a média\?</string>
     <string name="delete_messages">Odstranit zprávy</string>
-    <string name="remove_passphrase_from_keychain">Odstranit frázi z úložiště klíčů\?</string>
+    <string name="remove_passphrase_from_keychain">Odstranit přístupovou frázi z úložiště klíčů?</string>
     <string name="notifications_will_be_hidden">Oznámení budou doručována pouze do doby, než se aplikace zastaví!</string>
     <string name="remove_passphrase">Odstranit</string>
     <string name="update_database">Aktualizovat</string>
-    <string name="current_passphrase">Aktuální fráze…</string>
+    <string name="current_passphrase">Aktuální přístupová fráze…</string>
     <string name="update_database_passphrase">Aktualizovat přístupovou frázi</string>
     <string name="enter_correct_current_passphrase">Zadejte prosím správnou aktuální přístupovou frázi.</string>
-    <string name="database_is_not_encrypted">Chat databáze není šifrována - nastavte přístupovou frázi pro její ochranu.</string>
+    <string name="database_is_not_encrypted">Databáze chatu není šifrována - nastavte přístupovou frázi pro její ochranu.</string>
     <string name="keychain_is_storing_securely">K bezpečnému uložení přístupové fráze slouží úložiště klíčů Android - umožňuje fungování služby oznámení.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Upozornění</b>: pokud přístupovou frázi ztratíte, NEBUDE možné ji obnovit ani změnit.]]></string>
     <string name="database_will_be_encrypted_and_passphrase_stored">Databáze bude zašifrována a přístupová fráze bude uložena v úložišti klíčů.</string>
-    <string name="store_passphrase_securely">Heslo uložte bezpečně, v případě jeho ztráty jej NEBUDE možné změnit.</string>
+    <string name="store_passphrase_securely">Přístupovou frázi uložte bezpečně, v případě její ztráty ji NEBUDE možné změnit.</string>
     <string name="file_with_path">Soubor: %s</string>
     <string name="database_passphrase_is_required">Pro otevření chatu je vyžadována přístupová fráze.</string>
     <string name="unknown_error">Neznámá chyba</string>
@@ -356,7 +356,7 @@
     <string name="integrity_msg_bad_hash">špatný kontrolní součet zprávy</string>
     <string name="chat_database_imported">Databáze chatu importována</string>
     <string name="new_passphrase">Nová přístupová fráze…</string>
-    <string name="save_passphrase_and_open_chat">Uložte frázi a otevřete chat</string>
+    <string name="save_passphrase_and_open_chat">Uložte přístupovou frázi a otevřete chat</string>
     <string name="chat_archive_section">ARCHIV CHATU</string>
     <string name="no_contacts_selected">Nebyl vybrán žádný kontakt</string>
     <string name="invite_prohibited_description">Snažíte se pozvat kontakt, se kterým jste sdíleli inkognito profil, do skupiny, ve které používáte svůj hlavní profil</string>
@@ -381,7 +381,7 @@
     <string name="to_verify_compare">Chcete-li ověřit koncové šifrování u svého kontaktu, porovnejte (nebo naskenujte) kód na svých zařízeních.</string>
     <string name="your_settings">Vaše nastavení</string>
     <string name="your_simplex_contact_address">Vaše SimpleX adresa</string>
-    <string name="database_passphrase_and_export">Heslo databáze a export</string>
+    <string name="database_passphrase_and_export">Přístupová fráze k databázi a export</string>
     <string name="your_chat_profiles">Vaše chatovací profily</string>
     <string name="chat_with_the_founder">Zaslat otázky a nápady</string>
     <string name="smp_servers_test_server">Test serveru</string>
@@ -461,7 +461,7 @@
     <string name="protect_app_screen">Skrývat aplikaci</string>
     <string name="send_link_previews">Odesílat náhledy odkazů</string>
     <string name="full_backup">Zálohovat data aplikace</string>
-    <string name="confirm_new_passphrase">Potvrdit novou frázi…</string>
+    <string name="confirm_new_passphrase">Potvrdit novou přístupovou frázi…</string>
     <string name="error_with_info">Chyba: %s</string>
     <string name="leave_group_question">Opustit skupinu\?</string>
     <string name="icon_descr_group_inactive">Skupina je neaktivní</string>
@@ -721,7 +721,7 @@
     <string name="settings_section_title_you">VY</string>
     <string name="settings_section_title_support">PODPOŘIT SIMPLEX CHAT</string>
     <string name="settings_developer_tools">Nástroje pro vývojáře</string>
-    <string name="settings_section_title_incognito">inkognito mód</string>
+    <string name="settings_section_title_incognito">Inkognito mód</string>
     <string name="your_chat_database">Vaše chatovací databáze</string>
     <string name="run_chat_section">SPUSTIT CHAT</string>
     <string name="chat_is_running">Chat je spuštěn</string>
@@ -756,7 +756,7 @@
     <string name="enable_automatic_deletion_question">Povolit automatické mazání zpráv\?</string>
     <string name="enable_automatic_deletion_message">Tuto akci nelze vzít zpět - zprávy odeslané a přijaté dříve, než bylo zvoleno, budou smazány. Může to trvat několik minut.</string>
     <string name="error_changing_message_deletion">Chyba změny nastavení</string>
-    <string name="save_passphrase_in_keychain">Uložit frázi do úložiště klíčů</string>
+    <string name="save_passphrase_in_keychain">Uložit přístupovou frázi do úložiště klíčů</string>
     <string name="database_encrypted">Databáze zašifrována!</string>
     <string name="error_encrypting_database">Chyba při šifrování databáze</string>
     <string name="encrypt_database">Šifrovat</string>
@@ -764,7 +764,7 @@
     <string name="keychain_allows_to_receive_ntfs">K bezpečnému uložení přístupové fráze se použije úložiště klíčů Android, po restartování aplikace nebo změně přístupové fráze - umožní přijímání oznámení.</string>
     <string name="you_have_to_enter_passphrase_every_time">Musíte zadat přístupovou frázi při každém spuštění aplikace - není uložena v zařízení.</string>
     <string name="encrypt_database_question">Zašifrovat databázi?</string>
-    <string name="change_database_passphrase_question">Změnit přístupovou frázi databáze\?</string>
+    <string name="change_database_passphrase_question">Změnit přístupovou frázi k databázi?</string>
     <string name="database_will_be_encrypted">Databáze bude zašifrována.</string>
     <string name="database_encryption_will_be_updated">Přístupová fráze k databázi bude aktualizována a uložena do úložiště klíčů.</string>
     <string name="database_passphrase_will_be_updated">Přístupová fráze k databázi bude aktualizována.</string>
@@ -782,8 +782,8 @@
     <string name="database_backup_can_be_restored">Pokus o změnu přístupové fráze databáze nebyl dokončen.</string>
     <string name="restore_database_alert_title">Obnovit zálohu databáze\?</string>
     <string name="restore_database_alert_confirm">Obnovit</string>
-    <string name="database_restore_error">Chyba obnovení databáze</string>
-    <string name="restore_passphrase_not_found_desc">Heslo nebylo v klíčence nalezeno, zadejte jej prosím ručně. K této situaci mohlo dojít, pokud jste obnovili data aplikace pomocí zálohovacího nástroje. Pokud tomu tak není, obraťte se na vývojáře.</string>
+    <string name="database_restore_error">Chyba při obnovování databáze</string>
+    <string name="restore_passphrase_not_found_desc">Přístupová fráze nebyla v klíčence nalezena, zadejte jej prosím ručně. K této situaci mohlo dojít, pokud jste obnovili data aplikace pomocí zálohovacího nástroje. Pokud tomu tak není, obraťte se na vývojáře.</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Chat můžete spustit v Nastavení / Databáze nebo restartováním aplikace.</string>
     <string name="save_archive">Uložit archiv</string>
     <string name="delete_archive">Smazat archiv</string>
@@ -1183,7 +1183,7 @@
     <string name="learn_more">Zjistit více</string>
     <string name="share_with_contacts">Sdílet s kontakty</string>
     <string name="group_welcome_preview">Náhled</string>
-    <string name="opening_database">Otvírání databáze…</string>
+    <string name="opening_database">Otevírání databáze…</string>
     <string name="error_setting_address">Chyba nastavení adresy</string>
     <string name="scan_qr_to_connect_to_contact">Pro připojení může váš kontakt naskenovat QR kód, nebo použít odkaz v aplikaci.</string>
     <string name="you_can_accept_or_reject_connection">Když někdo požádá o připojení, můžete žádost přijmout nebo odmítnout.</string>
@@ -1375,17 +1375,17 @@
     <string name="privacy_show_last_messages">Zobrazit poslední zprávy</string>
     <string name="send_receipts_disabled_alert_msg">Tato skupina má více než %1$d členů, doručenky nejsou odeslány.</string>
     <string name="in_developing_desc">Tato funkce zatím není podporována. Vyzkoušejte další vydání.</string>
-    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Databáze bude zašifrována a heslo bude uloženo v klíčence.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Databáze bude zašifrována a přístupová fráze bude uloženo v klíčence.</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Všimněte si prosím</b>: relé zpráv a souborů jsou připojeny prostřednictvím proxy SOCKS. Volání a odesílání náhledů odkazů používá přímé připojení.]]></string>
     <string name="encrypt_local_files">Šifrovat místní soubory</string>
     <string name="you_can_change_it_later">Náhodná přístupová fráze je uložena v nastavení jako prostý text.
 \nMůžete ji později změnit.</string>
-    <string name="database_encryption_will_be_updated_in_settings">Heslo pro šifrování databáze bude aktualizováno a uloženo v klíčence.</string>
+    <string name="database_encryption_will_be_updated_in_settings">Přístupová fráze k databáze bude aktualizována a uložena v klíčence.</string>
     <string name="remove_passphrase_from_settings">Odebrat přístupovou frázi z nastavení\?</string>
     <string name="use_random_passphrase">Použít náhodnou přístupovou frázi</string>
     <string name="save_passphrase_in_settings">Uložit přístupovou frázi v nastavení</string>
-    <string name="setup_database_passphrase">Nastavení přístupové fráze databáze</string>
-    <string name="set_database_passphrase">Nastavit přístupovou frázi databáze</string>
+    <string name="setup_database_passphrase">Nastavení přístupové fráze k databázi</string>
+    <string name="set_database_passphrase">Nastavit přístupovou frázi k databázi</string>
     <string name="open_database_folder">Otevřít složku databáze</string>
     <string name="passphrase_will_be_saved_in_settings">Přístupová fráze bude uložena v nastavení jako prostý text až ji změníte nebo po restartu aplikace.</string>
     <string name="settings_is_storing_in_clear_text">Přístupová fráze je uložena v nastavení jako prostý text.</string>
@@ -1439,4 +1439,5 @@
     <string name="session_code">Kód relace</string>
     <string name="paste_desktop_address">Vložit adres počítače</string>
     <string name="blocked_item_description">Blokovaný</string>
+    <string name="v5_4_better_groups">Lepší skupiny</string>
 </resources>
