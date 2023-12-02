@@ -561,8 +561,8 @@ data ChatResponse
   | CRInvitation {user :: User, connReqInvitation :: ConnReqInvitation, connection :: PendingContactConnection}
   | CRConnectionIncognitoUpdated {user :: User, toConnection :: PendingContactConnection}
   | CRConnectionPlan {user :: User, connectionPlan :: ConnectionPlan}
-  | CRSentConfirmation {user :: User}
-  | CRSentInvitation {user :: User, customUserProfile :: Maybe Profile}
+  | CRSentConfirmation {user :: User, connection :: PendingContactConnection}
+  | CRSentInvitation {user :: User, connection :: PendingContactConnection, customUserProfile :: Maybe Profile}
   | CRSentInvitationToContact {user :: User, contact :: Contact, customUserProfile :: Maybe Profile}
   | CRContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CRGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
@@ -660,7 +660,6 @@ data ChatResponse
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode}
   | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
   | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgInfo}
-  | CRNewContactConnection {user :: User, connection :: PendingContactConnection}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRCurrentRemoteHost {remoteHost_ :: Maybe RemoteHostInfo}

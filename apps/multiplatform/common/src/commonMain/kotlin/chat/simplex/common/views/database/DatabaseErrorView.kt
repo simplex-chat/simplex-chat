@@ -264,7 +264,8 @@ private fun DatabaseKeyField(text: MutableState<String>, enabled: Boolean, onCli
     text,
     generalGetString(MR.strings.enter_passphrase),
     isValid = ::validKey,
-    keyboardActions = KeyboardActions(onDone = if (enabled) {
+    // Don't enable this on desktop since it interfere with key event listener
+    keyboardActions = KeyboardActions(onDone = if (enabled && appPlatform.isAndroid) {
       { onClick?.invoke() }
     } else null
     ),

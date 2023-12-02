@@ -606,27 +606,29 @@ func apiConnectPlan(connReq: String) async throws -> ConnectionPlan {
     throw r
 }
 
-func apiConnect(incognito: Bool, connReq: String) async -> ConnReqType? {
-    let (connReqType, alert) = await apiConnect_(incognito: incognito, connReq: connReq)
+func apiConnect(incognito: Bool, connReq: String) async -> (ConnReqType, PendingContactConnection)? {
+    let (r, alert) = await apiConnect_(incognito: incognito, connReq: connReq)
     if let alert = alert {
         AlertManager.shared.showAlert(alert)
         return nil
     } else {
-        return connReqType
+        return r
     }
 }
 
-func apiConnect_(incognito: Bool, connReq: String) async -> (ConnReqType?, Alert?) {
+func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, PendingContactConnection)?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnect: no current user")
         return (nil, nil)
     }
     let r = await chatSendCmd(.apiConnect(userId: userId, incognito: incognito, connReq: connReq))
+    let m = ChatModel.shared
     switch r {
-    case .sentConfirmation: return (.invitation, nil)
-    case .sentInvitation: return (.contact, nil)
+    case let .sentConfirmation(_, connection):
+        return ((.invitation, connection), nil)
+    case let .sentInvitation(_, connection):
+        return ((.contact, connection), nil)
     case let .contactAlreadyExists(_, contact):
-        let m = ChatModel.shared
         if let c = m.getContactChat(contact.contactId) {
             await MainActor.run { m.chatId = c.id }
         }
@@ -1363,18 +1365,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
     let m = ChatModel.shared
     logger.debug("processReceivedMsg: \(res.responseType)")
     switch res {
-    case let .newContactConnection(user, connection):
-        if active(user) {
-            await MainActor.run {
-                m.updateContactConnection(connection)
-            }
-        }
-    case let .contactConnectionDeleted(user, connection):
-        if active(user) {
-            await MainActor.run {
-                m.removeChat(connection.id)
-            }
-        }
     case let .contactDeletedByContact(user, contact):
         if active(user) && contact.directOrUsed {
             await MainActor.run {

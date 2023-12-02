@@ -164,8 +164,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRInvitation u cReq _ -> ttyUser u $ viewConnReqInvitation cReq
   CRConnectionIncognitoUpdated u c -> ttyUser u $ viewConnectionIncognitoUpdated c
   CRConnectionPlan u connectionPlan -> ttyUser u $ viewConnectionPlan connectionPlan
-  CRSentConfirmation u -> ttyUser u ["confirmation sent!"]
-  CRSentInvitation u customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
+  CRSentConfirmation u _ -> ttyUser u ["confirmation sent!"]
+  CRSentInvitation u _ customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRSentInvitationToContact u _c customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
   CRContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
@@ -275,7 +275,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRCallInvitations _ -> []
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
   CRUserContactLinkSubError e -> ["user address error: " <> sShow e, "to delete your address: " <> highlight' "/da"]
-  CRNewContactConnection u _ -> ttyUser u []
   CRContactConnectionDeleted u PendingContactConnection {pccConnId} -> ttyUser u ["connection :" <> sShow pccConnId <> " deleted"]
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRNtfToken _ status mode -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode)]
