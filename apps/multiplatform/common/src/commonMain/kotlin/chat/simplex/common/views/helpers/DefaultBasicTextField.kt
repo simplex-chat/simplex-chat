@@ -152,7 +152,6 @@ fun DefaultConfigurableTextField(
   BasicTextField(
     value = state.value,
     modifier = modifier
-      .fillMaxWidth()
       .background(colors.backgroundColor(enabled).value, shape)
       .indicatorLine(enabled, false, interactionSource, colors)
       .defaultMinSize(
