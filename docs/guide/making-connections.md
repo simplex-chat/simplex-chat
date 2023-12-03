@@ -23,17 +23,51 @@ If you start receiving too many requests via this address it is always safe to r
 
 ### Comparison of 1-time invitation links and SimpleX Contact addresses
 
-|      |1-time invitation link|SimpleX contact address|
-|:----:|:--------------------:|:---------------------:|
-| Can be used many times? | No | Yes |
-| Can be included in user profile? | No, as it can only be used once. | Yes, to allow group members to connect directly, and your contacts to pass it on to their contacts. |
-| When to use it? | With somebody you know, via another communication channel or QR code (in person or during a video call) | Where many people can see and connect via it, e.g. in email signature, website, social media or group chat. |
-| Security | More secure, as can only be used once, and the initial connection request (including profile) is encrypted with double ratchet. | Initial connection request is also e2e encrypted, but without double ratchet (it is initialized when request is accepted). |
-| Identification | Both sides know who they connect to, as they know with whom and by who the link was shared. You can attach alias to this invitation as soon as you share it or use it, to identify the other person when connection is established. | Only the person using the address knows who they connect to, via the channel where they found the address (email, social media, etc.). The address owner can only see the user profile of the request, and has no proof of identity from the person sending the request<sup>*</sup>. |
-| Advantages over other platforms | There is no direct analogy, other platforms don’t offer one-time invitations without any fixed part identifying the user. | Unlike addresses in other platforms, SimpleX addresses are not used to deliver the messages &mdash; only the initial connection requests.<br>It means that removing this address will not break the contacts made via it (like changing an email address would), it would only prevent new connections, which makes it a good solution against spam and abuse. |
-| Vulnerability to attacks | Until the connection is established, anybody who intercepts this link can connect to it, so it has to be verified with the original contact that the connection succeeded. | These addresses are vulnerable to connection request spam. Unlike other platforms, you can delete or change the address, without losing any contacts (see above). |
-| Passive attacks on connection links | Both types of links are not vulnerable if simply observed &mdash; they only contain public keys. So they can be safely shared via insecure or public channels, as long as you can confirm that you connected to the intended person. |
-| Active attacks on connection links | If the link is substituted via the attack on the channel used to share it, the connection security can be compromised, and the original messages monitored (man-in-the-middle attack). If it is a real risk then security code should be verified to mitigate it - doing so proves<sup>**</sup> that the link and keys were not substituted, and that the end-to-end encryption is secure. |
+<table>
+  <tr>
+    <td>Can be used many times?</td>
+    <td>No</td>
+    <td>Yes</td>
+  </tr>
+  <tr>
+    <td>Can be included in user profile?</td>
+    <td>No, as it can only be used once.</td>
+    <td>Yes, to allow group members to connect directly, and your contacts to pass it on to their contacts.</td>
+  </tr>
+  <tr>
+    <td>When to use it?</td>
+    <td>With somebody you know, via another communication channel or QR code (in person or during a video call)</td>
+    <td>Where many people can see and connect via it, e.g. in email signature, website, social media or group chat.</td>
+  </tr>
+  <tr>
+    <td>Security</td>
+    <td>More secure, as can only be used once, and the initial connection request (including profile) is encrypted with double ratchet.</td>
+    <td>Initial connection request is also e2e encrypted, but without double ratchet (it is initialized when request is accepted).</td>
+  </tr>
+  <tr>
+    <td>Identification</td>
+    <td>Both sides know who they connect to, as they know with whom and by who the link was shared. You can attach alias to this invitation as soon as you share it or use it, to identify the other person when connection is established.</td>
+    <td>Only the person using the address knows who they connect to, via the channel where they found the address (email, social media, etc.). The address owner can only see the user profile of the request, and has no proof of identity from the person sending the request<sup>*</sup>.</td>
+  </tr>
+  <tr>
+    <td>Advantages over other platforms</td>
+    <td>There is no direct analogy, other platforms don’t offer one-time invitations without any fixed part identifying the user.</td>
+    <td>Unlike addresses in other platforms, SimpleX addresses are not used to deliver the messages &mdash; only the initial connection requests.<br>It means that removing this address will not break the contacts made via it (like changing an email address would), it would only prevent new connections, which makes it a good solution against spam and abuse.</td>
+  </tr>
+  <tr>
+    <td>Vulnerability to attacks</td>
+    <td>Until the connection is established, anybody who intercepts this link can connect to it, so it has to be verified with the original contact that the connection succeeded.</td>
+    <td>These addresses are vulnerable to connection request spam. Unlike other platforms, you can delete or change the address, without losing any contacts (see above).</td>
+  </tr>
+  <tr>
+    <td>Passive attacks on connection links</td>
+    <td colspan="2">Both types of links are not vulnerable if simply observed &mdash; they only contain public keys. So they can be safely shared via insecure or public channels, as long as you can confirm that you connected to the intended person.</td>
+  </tr>
+  <tr>
+    <td>Active attacks on connection links</td>
+    <td colspan="2">If the link is substituted via the attack on the channel used to share it, the connection security can be compromised, and the original messages monitored (man-in-the-middle attack). If it is a real risk then security code should be verified to mitigate it - doing so proves<sup>**</sup> that the link and keys were not substituted, and that the end-to-end encryption is secure.</td>
+  </tr>
+</table>
 
 <sup>*</sup> Adding optional verified identities that we plan in the future will change it &mdash; the address owner will have an option to request identity verification before accepting the connection.
 
