@@ -487,14 +487,14 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
         ciQuoteGroup ((Only itemId :. memberRow) : _) = ciQuote itemId . CIQGroupRcv . Just $ toGroupMember userContactId memberRow
 
 getChatPreviews :: DB.Connection -> User -> Bool -> Maybe ChatPaginationTs -> Maybe String -> IO [AChat]
-getChatPreviews db user withPCC pagination_ search_ = do
+getChatPreviews db user withPCC paginationTs_ search_ = do
   directChats <- getDirectChatPreviews_ db user tsFilter_ search_
   groupChats <- getGroupChatPreviews_ db user -- tsFilter_ search_
   cReqChats <- getContactRequestChatPreviews_ db user -- tsFilter_ search_
   connChats <- getContactConnectionChatPreviews_ db user withPCC -- tsFilter_ search_
   pure . limit $ sortOn (Down . ts) (directChats <> groupChats <> cReqChats <> connChats)
   where
-    (tsFilter_, limit) = case pagination_ of
+    (tsFilter_, limit) = case paginationTs_ of
       Nothing -> (Nothing, id)
       Just (CPLastTs count) -> (Nothing, take count)
       Just (CPAfterTs time count) -> (Just (False, time), take count)
@@ -514,8 +514,7 @@ getDirectChatPreviews_ db user@User {userId} filterTS_ search_ = do
     theQuery =
       [sql|
         -- XXX: common part
-        SELECT
-          ct.contact_id
+        SELECT DISTINCT ct.contact_id
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
         LEFT JOIN (
@@ -537,8 +536,9 @@ getDirectChatPreviews_ db user@User {userId} filterTS_ search_ = do
           --   OR cp.local_alias LIKE '%' || :search || '%'
           --   OR c.local_alias LIKE '%' || :search || '%'
           -- )
-          -- XXX: only for filterTS
+          -- XXX: only for filterTS/After
           -- AND i.item_ts >= :ts
+          -- XXX: only for filterTS/Before
           -- AND i.item_ts <= :ts
         -- XXX: common part again
         ORDER BY i.item_ts DESC

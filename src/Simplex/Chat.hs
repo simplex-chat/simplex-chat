@@ -596,8 +596,8 @@ processChatCommand = \case
             . sortOn (timeAvg . snd)
             . M.assocs
             <$> withConnection st (readTVarIO . DB.slow)
-  APIGetChats userId withPCC pagination search -> withUserId userId $ \user ->
-    CRApiChats user <$> withStoreCtx' (Just "APIGetChats, getChatPreviews") (\db -> getChatPreviews db user withPCC pagination search)
+  APIGetChats userId withPCC paginationTs search -> withUserId userId $ \user ->
+    CRApiChats user <$> withStoreCtx' (Just "APIGetChats, getChatPreviews") (\db -> getChatPreviews db user withPCC paginationTs search)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
     CTDirect -> do
