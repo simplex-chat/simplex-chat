@@ -2423,9 +2423,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Afsluiten zonder opslaan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Expand" xml:space="preserve">
+      <trans-unit id="Expand" xml:space="preserve" approved="no">
         <source>Expand</source>
-        <target>Uitbreiden</target>
+        <target state="translated">Uitklappen</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Export database" xml:space="preserve">
