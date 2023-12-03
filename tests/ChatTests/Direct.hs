@@ -14,6 +14,8 @@ import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Time.Clock (getCurrentTime)
+import Data.Time.Format.ISO8601 (iso8601Show)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller (ChatConfig (..))
 import Simplex.Chat.Options (ChatOpts (..))
@@ -121,6 +123,9 @@ chatDirectTests = do
     it "update peer version range on received messages" testUpdatePeerChatVRange
   describe "network statuses" $ do
     it "should get network statuses" testGetNetworkStatuses
+  describe "chat list pagination" $ do -- XXX: doesn't really belong to Direct, should check groups etc too
+    it "should get last chats" testChatListPaginationLast
+    xit "should get chats around timestamp" testChatListPaginationTs
   where
     testInvVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnInvChatVRange vr1 vr2
     testReqVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnReqChatVRange vr1 vr2
@@ -2647,6 +2652,41 @@ testGetNetworkStatuses tmp = do
       bob <## "1 connections connected"
   where
     cfg = testCfg {coreApi = True}
+
+testChatListPaginationLast :: HasCallStack => FilePath -> IO ()
+testChatListPaginationLast tmp =
+  withNewTestChatCfg tmp testCfg "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg tmp testCfg "bob" bobProfile $ \bob ->
+      withNewTestChatCfg tmp testCfg "cath" cathProfile $ \cath -> do
+        connectUsers alice bob
+        alice <##> bob
+        connectUsers alice cath
+        cath <##> alice
+
+        alice ##> "/chats 0"
+        alice ##> "/chats 1"
+        alice <# "@cath hey"
+        alice ##> "/chats 2"
+        alice <# "bob> hey"
+        alice <# "@cath hey"
+
+testChatListPaginationTs :: HasCallStack => FilePath -> IO ()
+testChatListPaginationTs tmp =
+  withNewTestChatCfg tmp testCfg "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg tmp testCfg "bob" bobProfile $ \bob ->
+      withNewTestChatCfg tmp testCfg "cath" cathProfile $ \cath -> do
+        tsStart <- iso8601Show <$> getCurrentTime
+        connectUsers alice bob
+        alice <##> bob
+        tsAliceBob <- iso8601Show <$> getCurrentTime
+        connectUsers alice cath
+        cath <##> alice
+        tsFinish <- iso8601Show <$> getCurrentTime
+
+        alice ##> ("/_get chats 1 after=" <> tsFinish <> " count=2")
+
+        -- alice ##> ("/_get chats 1 before=" <> tsFinish <> " count=2")
+        -- alice <## "{}"
 
 vr11 :: VersionRange
 vr11 = mkVersionRange 1 1
