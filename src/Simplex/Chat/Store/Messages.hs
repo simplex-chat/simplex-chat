@@ -101,17 +101,19 @@ module Simplex.Chat.Store.Messages
   )
 where
 
+-- import Control.Logger.Simple
+-- import Debug.Trace
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
-import Data.Bifunctor (first)
+import Data.Bifunctor (first, second)
 import Data.ByteString.Char8 (ByteString)
 import Data.Either (fromRight, rights)
 import Data.Int (Int64)
-import Data.List (sortOn)
-import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe, maybeToList)
-import Data.Ord (Down (..))
+import Data.List (sortBy)
+import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
+import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
@@ -488,33 +490,34 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
 
 getChatPreviews :: DB.Connection -> User -> Bool -> Maybe ChatPaginationTs -> Maybe String -> IO [AChat]
 getChatPreviews db user withPCC paginationTs_ search_ = do
-  directChats <- getDirectChatPreviews_ db user tsFilter_ search_
-  groupChats <- getGroupChatPreviews_ db user -- tsFilter_ search_
-  cReqChats <- getContactRequestChatPreviews_ db user -- tsFilter_ search_
-  connChats <- getContactConnectionChatPreviews_ db user withPCC -- tsFilter_ search_
-  pure . limit $ sortOn (Down . ts) (directChats <> groupChats <> cReqChats <> connChats)
+  directChats <- findDirectChatPreviews_ db user search
+  groupChats <- error "TODO: getGroupChatPreviews_ db user search"
+  cReqChats <- error "TODO: getContactRequestChatPreviews_ db user search"
+  connChats <- error "TODO: getContactConnectionChatPreviews_ db user withPCC search"
+  let refs = limit . map snd . sortBy (comparing $ Down . fst) . filterTS $ concat [directChats, groupChats, cReqChats, connChats]
+  catMaybes <$> mapM (getChatPreview db user) refs
   where
-    (tsFilter_, limit) = case paginationTs_ of
-      Nothing -> (Nothing, id)
-      Just (CPLastTs count) -> (Nothing, take count)
-      Just (CPAfterTs time count) -> (Just (False, time), take count)
-      Just (CPBeforeTs time count) -> (Just (True, time), take count)
-    ts :: AChat -> UTCTime
-    ts (AChat _ Chat {chatInfo, chatItems}) = case chatInfoChatTs chatInfo of
-      Just chatTs -> chatTs
-      Nothing -> case chatItems of
-        ci : _ -> max (chatItemTs ci) (chatInfoUpdatedAt chatInfo)
-        _ -> chatInfoUpdatedAt chatInfo
+    search = fromMaybe "" search_
+    (filterTS, limit) = case paginationTs_ of
+      Nothing -> (id, id)
+      Just (CPLastTs count) -> (id, take count)
+      Just (CPAfterTs time count) -> (filter $ \(ts, _) -> ts > time, take count)
+      Just (CPBeforeTs time count) -> (filter $ \(ts, _) -> ts < time, take count)
 
-getDirectChatPreviews_ :: DB.Connection -> User -> Maybe (Bool, UTCTime) -> Maybe String -> IO [AChat]
-getDirectChatPreviews_ db user@User {userId} filterTS_ search_ = do
-  ids <- map fromOnly <$> DB.queryNamed db theQuery params
-  catMaybes <$> mapM (getDirectChatPreview db user) ids
+getChatPreview :: DB.Connection -> User -> ChatRef -> IO (Maybe AChat) -- XXX: require ExceptT instead?
+getChatPreview db user (ChatRef ct id') = case ct of
+  CTDirect -> getDirectChatPreview_ db user id'
+  CTGroup -> error "getGroupChatPreview_" db id'
+  CTContactRequest -> error "getContactRequestChatPreview_" db id'
+  CTContactConnection -> error "getContactConnectionChatPreviews_" db id'
+
+findDirectChatPreviews_ :: DB.Connection -> User -> String -> IO [(UTCTime, ChatRef)]
+findDirectChatPreviews_ db user@User {userId} search = map (second $ ChatRef CTDirect) <$> DB.queryNamed db theQuery params
   where
     theQuery =
       [sql|
-        -- XXX: common part
-        SELECT DISTINCT ct.contact_id
+        SELECT DISTINCT -- XXX: the joins may produce duplicates (detected by /invited member replaces member contact reference if it already exists/)
+          i.item_ts, ct.contact_id
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
         LEFT JOIN (
@@ -522,8 +525,7 @@ getDirectChatPreviews_ db user@User {userId} filterTS_ search_ = do
           FROM chat_items
           GROUP BY contact_id
         ) LastItems ON LastItems.contact_id = ct.contact_id
-        LEFT JOIN chat_items i
-          ON i.contact_id = LastItems.contact_id AND i.chat_item_id = LastItems.chat_item_id
+        LEFT JOIN chat_items i ON i.contact_id = LastItems.contact_id AND i.chat_item_id = LastItems.chat_item_id
         LEFT JOIN connections c ON c.contact_id = ct.contact_id
         WHERE ct.user_id = :user_id
           AND ct.is_user = 0
@@ -546,29 +548,24 @@ getDirectChatPreviews_ db user@User {userId} filterTS_ search_ = do
             )
             OR c.connection_id IS NULL
           )
-          -- XXX: only for search
-          -- AND (
-          --   ct.local_display_name LIKE '%' || :search || '%'
-          --   OR cp.display_name LIKE '%' || :search || '%'
-          --   OR cp.full_name LIKE '%' || :search || '%'
-          --   OR cp.local_alias LIKE '%' || :search || '%'
-          --   OR c.local_alias LIKE '%' || :search || '%'
-          -- )
-          -- XXX: only for filterTS/After
-          -- AND i.item_ts >= :ts
-          -- XXX: only for filterTS/Before
-          -- AND i.item_ts <= :ts
-        -- XXX: common part again
+          AND (
+            ct.local_display_name LIKE '%' || :search || '%'
+            OR cp.display_name LIKE '%' || :search || '%'
+            OR cp.full_name LIKE '%' || :search || '%'
+            OR cp.local_alias LIKE '%' || :search || '%'
+            OR c.local_alias LIKE '%' || :search || '%'
+          )
         ORDER BY i.item_ts DESC
       |]
     params =
       [ ":user_id" := userId,
         ":conn_ready" := ConnReady,
-        ":conn_snd_ready" := ConnSndReady
-      ] -- <> [":search" := q | q <- maybeToList search_] <> [":ts" := ts | (_, ts) <- maybeToList filterTS_]
+        ":conn_snd_ready" := ConnSndReady,
+        ":search" := search
+      ]
 
-getDirectChatPreview :: DB.Connection -> User -> Int64 -> IO (Maybe AChat)
-getDirectChatPreview db user contactId = do
+getDirectChatPreview_ :: DB.Connection -> User -> Int64 -> IO (Maybe AChat)
+getDirectChatPreview_ db user contactId = do
   currentTs <- getCurrentTime -- XXX: should be the same for all the preview items?
   maybeFirstRow (toDirectChatPreview currentTs) $
     DB.query
