@@ -25,6 +25,11 @@ If you start receiving too many requests via this address it is always safe to r
 
 <table>
   <tr>
+    <th></th>
+    <th>1-time invitation link</th>
+    <th>SimpleX contact address</th>
+  </tr>
+  <tr>
     <td>Can be used many times?</td>
     <td>No</td>
     <td>Yes</td>
