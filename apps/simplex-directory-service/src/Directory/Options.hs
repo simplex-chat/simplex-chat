@@ -5,10 +5,10 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Directory.Options
- ( DirectoryOpts (..),
-   getDirectoryOpts,
-   mkChatOpts,
- )
+  ( DirectoryOpts (..),
+    getDirectoryOpts,
+    mkChatOpts,
+  )
 where
 
 import Options.Applicative
@@ -35,8 +35,8 @@ directoryOpts appDir defaultDbFileName = do
           <> help "Comma-separated list of super-users in the format CONTACT_ID:DISPLAY_NAME who will be allowed to manage the directory"
       )
   directoryLog <-
-    Just <$>
-      strOption
+    Just
+      <$> strOption
         ( long "directory-file"
             <> metavar "DIRECTORY_FILE"
             <> help "Append only log for directory state"
@@ -81,5 +81,6 @@ mkChatOpts DirectoryOpts {coreOptions} =
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
+      markRead = False,
       maintenance = False
     }
