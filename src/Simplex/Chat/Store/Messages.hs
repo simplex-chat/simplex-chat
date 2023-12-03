@@ -486,13 +486,13 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
         ciQuoteGroup [] = ciQuote Nothing $ CIQGroupRcv Nothing
         ciQuoteGroup ((Only itemId :. memberRow) : _) = ciQuote itemId . CIQGroupRcv . Just $ toGroupMember userContactId memberRow
 
-getChatPreviews :: DB.Connection -> User -> Bool -> IO [AChat]
-getChatPreviews db user withPCC = do
+getChatPreviews :: DB.Connection -> User -> Bool -> Maybe ChatPaginationTs -> IO [AChat]
+getChatPreviews db user withPCC pagination_ = do
   directChats <- getDirectChatPreviews_ db user
   groupChats <- getGroupChatPreviews_ db user
   cReqChats <- getContactRequestChatPreviews_ db user
   connChats <- getContactConnectionChatPreviews_ db user withPCC
-  pure $ sortOn (Down . ts) (directChats <> groupChats <> cReqChats <> connChats)
+  pure $ maybe id paginate pagination_ $ sortOn (Down . ts) (directChats <> groupChats <> cReqChats <> connChats)
   where
     ts :: AChat -> UTCTime
     ts (AChat _ Chat {chatInfo, chatItems}) = case chatInfoChatTs chatInfo of
@@ -500,6 +500,11 @@ getChatPreviews db user withPCC = do
       Nothing -> case chatItems of
         ci : _ -> max (chatItemTs ci) (chatInfoUpdatedAt chatInfo)
         _ -> chatInfoUpdatedAt chatInfo
+    paginate :: ChatPaginationTs -> [AChat] -> [AChat]
+    paginate = \case
+      CPLastTs count -> take count
+      CPAfterTs _after count -> take count . error "TODO: paginate.CPAfterTs" -- XXX: better filter before sorting
+      CPBeforeTs _before count -> take count . error "TODO: paginate.CPBeforeTs"
 
 getDirectChatPreviews_ :: DB.Connection -> User -> IO [AChat]
 getDirectChatPreviews_ db user@User {userId} = do

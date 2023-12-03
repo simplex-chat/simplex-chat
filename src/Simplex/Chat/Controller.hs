@@ -247,7 +247,7 @@ data ChatCommand
   | ExecChatStoreSQL Text
   | ExecAgentStoreSQL Text
   | SlowSQLQueries
-  | APIGetChats {userId :: UserId, pendingConnections :: Bool}
+  | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination_ :: Maybe ChatPaginationTs}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
