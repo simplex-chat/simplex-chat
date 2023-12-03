@@ -82,7 +82,7 @@ testOpts =
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
-      markRead = False,
+      markRead = True,
       maintenance = False
     }
 
