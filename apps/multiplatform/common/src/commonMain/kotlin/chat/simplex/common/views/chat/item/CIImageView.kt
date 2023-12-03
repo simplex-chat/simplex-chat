@@ -165,7 +165,7 @@ fun CIImageView(
         }
       }
     } else {
-      LaunchedEffect(file) {
+      KeyChangeEffect(file) {
         if (res.value == null) {
           res.value = imageAndFilePath(file)
         }
