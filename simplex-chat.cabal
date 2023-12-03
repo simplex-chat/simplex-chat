@@ -171,7 +171,6 @@ library
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
@@ -199,7 +198,6 @@ library
     , stm ==2.5.*
     , template-haskell ==2.20.*
     , terminal ==0.2.*
-    , text ==2.0.*
     , time ==1.9.*
     , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
@@ -208,6 +206,14 @@ library
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
+  if impl(ghc >= 9.6.2)
+    build-depends:
+        bytestring ==0.11.*
+      , text >=2.0.1 && <2.2
+  if impl(ghc < 9.6.2)
+    build-depends:
+        bytestring ==0.10.*
+      , text >=1.2.3.0 && <1.3
 
 executable simplex-bot
   main-is: Main.hs
@@ -223,7 +229,6 @@ executable simplex-bot
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
@@ -252,7 +257,6 @@ executable simplex-bot
     , stm ==2.5.*
     , template-haskell ==2.20.*
     , terminal ==0.2.*
-    , text ==2.0.*
     , time ==1.9.*
     , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
@@ -261,6 +265,14 @@ executable simplex-bot
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
+  if impl(ghc >= 9.6.2)
+    build-depends:
+        bytestring ==0.11.*
+      , text >=2.0.1 && <2.2
+  if impl(ghc < 9.6.2)
+    build-depends:
+        bytestring ==0.10.*
+      , text >=1.2.3.0 && <1.3
 
 executable simplex-bot-advanced
   main-is: Main.hs
@@ -276,7 +288,6 @@ executable simplex-bot-advanced
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
@@ -305,7 +316,6 @@ executable simplex-bot-advanced
     , stm ==2.5.*
     , template-haskell ==2.20.*
     , terminal ==0.2.*
-    , text ==2.0.*
     , time ==1.9.*
     , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
@@ -314,6 +324,14 @@ executable simplex-bot-advanced
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
+  if impl(ghc >= 9.6.2)
+    build-depends:
+        bytestring ==0.11.*
+      , text >=2.0.1 && <2.2
+  if impl(ghc < 9.6.2)
+    build-depends:
+        bytestring ==0.10.*
+      , text >=1.2.3.0 && <1.3
 
 executable simplex-broadcast-bot
   main-is: ../Main.hs
@@ -331,7 +349,6 @@ executable simplex-broadcast-bot
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
@@ -360,7 +377,6 @@ executable simplex-broadcast-bot
     , stm ==2.5.*
     , template-haskell ==2.20.*
     , terminal ==0.2.*
-    , text ==2.0.*
     , time ==1.9.*
     , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
@@ -369,6 +385,14 @@ executable simplex-broadcast-bot
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
+  if impl(ghc >= 9.6.2)
+    build-depends:
+        bytestring ==0.11.*
+      , text >=2.0.1 && <2.2
+  if impl(ghc < 9.6.2)
+    build-depends:
+        bytestring ==0.10.*
+      , text >=1.2.3.0 && <1.3
 
 executable simplex-chat
   main-is: Main.hs
@@ -385,7 +409,6 @@ executable simplex-chat
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
@@ -414,7 +437,6 @@ executable simplex-chat
     , stm ==2.5.*
     , template-haskell ==2.20.*
     , terminal ==0.2.*
-    , text ==2.0.*
     , time ==1.9.*
     , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
@@ -424,6 +446,14 @@ executable simplex-chat
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
+  if impl(ghc >= 9.6.2)
+    build-depends:
+        bytestring ==0.11.*
+      , text >=2.0.1 && <2.2
+  if impl(ghc < 9.6.2)
+    build-depends:
+        bytestring ==0.10.*
+      , text >=1.2.3.0 && <1.3
 
 executable simplex-directory-service
   main-is: ../Main.hs
@@ -443,7 +473,6 @@ executable simplex-directory-service
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
@@ -472,7 +501,6 @@ executable simplex-directory-service
     , stm ==2.5.*
     , template-haskell ==2.20.*
     , terminal ==0.2.*
-    , text ==2.0.*
     , time ==1.9.*
     , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
@@ -481,6 +509,14 @@ executable simplex-directory-service
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
+  if impl(ghc >= 9.6.2)
+    build-depends:
+        bytestring ==0.11.*
+      , text >=2.0.1 && <2.2
+  if impl(ghc < 9.6.2)
+    build-depends:
+        bytestring ==0.10.*
+      , text >=1.2.3.0 && <1.3
 
 test-suite simplex-chat-test
   type: exitcode-stdio-1.0
@@ -524,7 +560,6 @@ test-suite simplex-chat-test
     , attoparsec ==0.14.*
     , base >=4.7 && <5
     , base64-bytestring >=1.0 && <1.3
-    , bytestring ==0.11.*
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
@@ -557,7 +592,6 @@ test-suite simplex-chat-test
     , stm ==2.5.*
     , template-haskell ==2.20.*
     , terminal ==0.2.*
-    , text ==2.0.*
     , time ==1.9.*
     , tls >=1.6.0 && <1.7
     , unliftio ==0.2.*
@@ -566,3 +600,11 @@ test-suite simplex-chat-test
   default-language: Haskell2010
   if flag(swift)
     cpp-options: -DswiftJSON
+  if impl(ghc >= 9.6.2)
+    build-depends:
+        bytestring ==0.11.*
+      , text >=2.0.1 && <2.2
+  if impl(ghc < 9.6.2)
+    build-depends:
+        bytestring ==0.10.*
+      , text >=1.2.3.0 && <1.3
