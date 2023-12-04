@@ -279,7 +279,6 @@ struct ChatListSearchBar: View {
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: String?
     @State private var ignoreSearchTextChange = false
-    @State private var cancelVisible = false
     @State private var pasteboardHasString = false
     @State private var showScanCodeSheet = false
     @State private var alert: PlanAndConnectAlert?
@@ -343,11 +342,7 @@ struct ChatListSearchBar: View {
                 .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil) // fixes .refreshable in ChatListView affecting nested view
         }
         .onChange(of: searchFocussed) { sf in
-            if sf {
-                withAnimation { searchMode = true }
-            } else {
-                withAnimation { searchMode = false }
-            }
+            withAnimation { searchMode = sf }
         }
         .onChange(of: searchText) { t in
             if ignoreSearchTextChange {
