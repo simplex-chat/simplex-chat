@@ -463,10 +463,10 @@ private fun UnderQrLayout(cachedR: CR.RemoteHostStarted?, customAddress: Mutable
         keyboardActions = KeyboardActions(onDone = { defaultKeyboardAction(ImeAction.Done) }),
         keyboardType = KeyboardType.Number,
         fontSize = 14.sp,
+        underline = true,
       )
       if (validPort(portUnsaved.value.text) && portUnsaved.value.text.toInt() > 1023) {
-        Icon(painterResource(MR.images.ic_edit), stringResource(MR.strings.edit_verb), Modifier.padding(end = 56.dp).size(16.dp).align(Alignment.CenterEnd), tint = MaterialTheme.colors.secondary)
-        IconButton(::showOpenPortAlert, Modifier.align(Alignment.TopEnd).padding(top = 2.dp)) {
+        IconButton(::showOpenPortAlert, Modifier.align(Alignment.TopEnd)) {
           Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.primary)
         }
       }
@@ -481,6 +481,11 @@ private fun UnderQrLayout(cachedR: CR.RemoteHostStarted?, customAddress: Mutable
             customPort.value = null
           }
         }
+    }
+    KeyChangeEffect(customPort.value) {
+      if (customPort.value != null) {
+        portUnsaved.value = portUnsaved.value.copy(text = customPort.value.toString())
+      }
     }
   }
 }

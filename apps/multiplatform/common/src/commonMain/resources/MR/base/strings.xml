@@ -1695,7 +1695,7 @@
   <string name="no_connected_mobile">No connected mobile</string>
   <string name="random_port">Random</string>
   <string name="open_port_in_firewall_title">Open port in firewall</string>
-  <string name="open_port_in_firewall_desc">To allow a mobile app to connect to the desktop, open this port in your firewall if you have it enabled</string>
+  <string name="open_port_in_firewall_desc">To allow a mobile app to connect to the desktop, open this port in your firewall, if you have it enabled</string>
 
   <!-- Under development -->
   <string name="in_developing_title">Coming soon!</string>
