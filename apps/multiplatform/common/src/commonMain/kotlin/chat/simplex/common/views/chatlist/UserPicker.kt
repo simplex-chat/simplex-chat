@@ -26,7 +26,9 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.CreateProfile
 import chat.simplex.common.views.remote.*
+import chat.simplex.common.views.usersettings.doWithAuth
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.delay
@@ -38,7 +40,6 @@ import kotlin.math.roundToInt
 fun UserPicker(
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
-  switchingUsersAndHosts: MutableState<Boolean>,
   showSettings: Boolean = true,
   showCancel: Boolean = false,
   cancelClicked: () -> Unit = {},
@@ -123,14 +124,10 @@ fun UserPicker(
         userPickerState.value = AnimatedViewState.HIDING
         if (!u.user.activeUser) {
           scope.launch {
-            val job = launch {
-              delay(500)
-              switchingUsersAndHosts.value = true
+            controller.showProgressIfNeeded {
+              ModalManager.closeAllModalsEverywhere()
+              chatModel.controller.changeActiveUser(u.user.remoteHostId, u.user.userId, null)
             }
-            ModalManager.closeAllModalsEverywhere()
-            chatModel.controller.changeActiveUser(u.user.remoteHostId, u.user.userId, null)
-            job.cancel()
-            switchingUsersAndHosts.value = false
           }
         }
       }
@@ -162,13 +159,13 @@ fun UserPicker(
       val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
         if (remoteHosts.isNotEmpty()) {
-          if (currentRemoteHost == null) {
+          if (currentRemoteHost == null && chatModel.localUserCreated.value == true) {
             LocalDevicePickerItem(true) {
               userPickerState.value = AnimatedViewState.HIDING
               switchToLocalDevice()
             }
             Divider(Modifier.requiredHeight(1.dp))
-          } else {
+          } else if (currentRemoteHost != null) {
             val connecting = rememberSaveable { mutableStateOf(false) }
             RemoteHostPickerItem(currentRemoteHost,
               actionButtonClick = {
@@ -176,7 +173,7 @@ fun UserPicker(
                 stopRemoteHostAndReloadHosts(currentRemoteHost, true)
               }) {
                 userPickerState.value = AnimatedViewState.HIDING
-                switchToRemoteHost(currentRemoteHost, switchingUsersAndHosts, connecting)
+                switchToRemoteHost(currentRemoteHost, connecting)
               }
             Divider(Modifier.requiredHeight(1.dp))
           }
@@ -184,7 +181,7 @@ fun UserPicker(
 
         UsersView()
 
-        if (remoteHosts.isNotEmpty() && currentRemoteHost != null) {
+        if (remoteHosts.isNotEmpty() && currentRemoteHost != null && chatModel.localUserCreated.value == true) {
           LocalDevicePickerItem(false) {
             userPickerState.value = AnimatedViewState.HIDING
             switchToLocalDevice()
@@ -199,7 +196,7 @@ fun UserPicker(
               stopRemoteHostAndReloadHosts(h, false)
             }) {
               userPickerState.value = AnimatedViewState.HIDING
-              switchToRemoteHost(h, switchingUsersAndHosts, connecting)
+              switchToRemoteHost(h, connecting)
           }
           Divider(Modifier.requiredHeight(1.dp))
         }
@@ -218,6 +215,18 @@ fun UserPicker(
             ConnectMobileView()
           }
           userPickerState.value = AnimatedViewState.GONE
+        }
+        Divider(Modifier.requiredHeight(1.dp))
+      } else if (chatModel.desktopNoUserNoRemote) {
+        CreateInitialProfile {
+          doWithAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) {
+            ModalManager.center.showModalCloseable { close ->
+              LaunchedEffect(Unit) {
+                userPickerState.value = AnimatedViewState.HIDING
+              }
+              CreateProfile(chat.simplex.common.platform.chatModel, close)
+            }
+          }
         }
         Divider(Modifier.requiredHeight(1.dp))
       }
@@ -402,6 +411,16 @@ private fun LinkAMobilePickerItem(onClick: () -> Unit) {
 }
 
 @Composable
+private fun CreateInitialProfile(onClick: () -> Unit) {
+  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
+    val text = generalGetString(MR.strings.create_chat_profile)
+    Icon(painterResource(MR.images.ic_manage_accounts), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
+    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+  }
+}
+
+@Composable
 private fun SettingsPickerItem(onClick: () -> Unit) {
   SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
     val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
@@ -441,21 +460,15 @@ private fun switchToLocalDevice() {
   }
 }
 
-private fun switchToRemoteHost(h: RemoteHostInfo, switchingUsersAndHosts: MutableState<Boolean>, connecting: MutableState<Boolean>) {
+private fun switchToRemoteHost(h: RemoteHostInfo, connecting: MutableState<Boolean>) {
   if (!h.activeHost()) {
     withBGApi {
-      val job = launch {
-        delay(500)
-        switchingUsersAndHosts.value = true
-      }
       ModalManager.closeAllModalsEverywhere()
       if (h.sessionState != null) {
         chatModel.controller.switchUIRemoteHost(h.remoteHostId)
       } else {
         connectMobileDevice(h, connecting)
       }
-      job.cancel()
-      switchingUsersAndHosts.value = false
     }
   } else {
     connectMobileDevice(h, connecting)

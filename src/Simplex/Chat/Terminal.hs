@@ -5,7 +5,7 @@
 module Simplex.Chat.Terminal where
 
 import Control.Exception (handle, throwIO)
-import Control.Monad.Except
+import Control.Monad
 import qualified Data.List.NonEmpty as L
 import Database.SQLite.Simple (SQLError (..))
 import qualified Database.SQLite.Simple as DB
@@ -44,7 +44,7 @@ simplexChatTerminal cfg opts t =
   handle checkDBKeyError . simplexChatCore cfg opts $ \u cc -> do
     ct <- newChatTerminal t opts
     when (firstTime cc) . printToTerminal ct $ chatWelcome u
-    runChatTerminal ct cc
+    runChatTerminal ct cc opts
 
 checkDBKeyError :: SQLError -> IO ()
 checkDBKeyError e = case sqlError e of
@@ -53,5 +53,5 @@ checkDBKeyError e = case sqlError e of
     exitFailure
   _ -> throwIO e
 
-runChatTerminal :: ChatTerminal -> ChatController -> IO ()
-runChatTerminal ct cc = raceAny_ [runTerminalInput ct cc, runTerminalOutput ct cc, runInputLoop ct cc]
+runChatTerminal :: ChatTerminal -> ChatController -> ChatOpts -> IO ()
+runChatTerminal ct cc opts = raceAny_ [runTerminalInput ct cc, runTerminalOutput ct cc opts, runInputLoop ct cc]

@@ -21,6 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
@@ -56,7 +57,9 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
         ModalManager.end.closeModals()
       }
       withBGApi {
-        m.controller.changeActiveUser(user.remoteHostId, user.userId, userViewPassword(user, searchTextOrPassword.value.trim()))
+        controller.showProgressIfNeeded {
+          m.controller.changeActiveUser(user.remoteHostId, user.userId, userViewPassword(user, searchTextOrPassword.value.trim()))
+        }
       }
     },
     removeUser = { user ->
