@@ -1486,7 +1486,6 @@
     <string name="desktop_device">Робочий стіл</string>
     <string name="connected_to_desktop">Підключено до робочого столу</string>
     <string name="this_device_name">Назва цього пристрою</string>
-    <string name="waiting_for_mobile_to_connect_on_port">Чекаю на підключення мобільного за портом <i>%s</i></string>
     <string name="loading_remote_file_title">Завантаження файлу</string>
     <string name="connecting_to_desktop">Підключення до робочого столу</string>
     <string name="found_desktop">Знайдено робочий стіл</string>

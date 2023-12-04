@@ -1480,7 +1480,6 @@
     <string name="linked_mobiles">الجوّالات المرتبطة</string>
     <string name="contact_tap_to_connect">انقر للاتصال</string>
     <string name="this_device_name">اسم هذا الجهاز</string>
-    <string name="waiting_for_mobile_to_connect_on_port">في انتظار اتصال الجوّال على المنفذ <i>%s</i></string>
     <string name="connect_plan_you_are_already_in_group_vName">أنت بالفعل في المجموعة %1$s.</string>
     <string name="connect_plan_this_is_your_own_simplex_address">هذا هو عنوان SimpleX الخاص بك!</string>
     <string name="loading_remote_file_title">جارِ تحميل الملف</string>
