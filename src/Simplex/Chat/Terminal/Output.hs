@@ -142,13 +142,13 @@ withTermLock ChatTerminal {termLock} action = do
   action
   atomically $ putTMVar termLock ()
 
-runTerminalOutput :: ChatTerminal -> ChatController -> IO ()
-runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} = do
+runTerminalOutput :: ChatTerminal -> ChatController -> ChatOpts -> IO ()
+runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} ChatOpts {markRead} = do
   forever $ do
     (_, outputRH, r) <- atomically $ readTBQueue outputQ
     case r of
-      CRNewChatItem u ci -> markChatItemRead u ci
-      CRChatItemUpdated u ci -> markChatItemRead u ci
+      CRNewChatItem u ci -> when markRead $ markChatItemRead u ci
+      CRChatItemUpdated u ci -> when markRead $ markChatItemRead u ci
       CRRemoteHostConnected {remoteHost = RemoteHostInfo {remoteHostId}} -> getRemoteUser remoteHostId
       CRRemoteHostStopped {remoteHostId_} -> mapM_ removeRemoteUser remoteHostId_
       _ -> pure ()

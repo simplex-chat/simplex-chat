@@ -42,6 +42,7 @@ data ChatOpts = ChatOpts
     allowInstantFiles :: Bool,
     autoAcceptFileSize :: Integer,
     muteNotifications :: Bool,
+    markRead :: Bool,
     maintenance :: Bool
   }
 
@@ -268,6 +269,12 @@ chatOptsP appDir defaultDbFileName = do
       ( long "mute"
           <> help "Mute notifications"
       )
+  markRead <-
+    switch
+      ( long "mark-read"
+          <> short 'r'
+          <> help "Mark shown messages as read"
+      )
   maintenance <-
     switch
       ( long "maintenance"
@@ -286,6 +293,7 @@ chatOptsP appDir defaultDbFileName = do
         allowInstantFiles,
         autoAcceptFileSize,
         muteNotifications,
+        markRead,
         maintenance
       }
 
