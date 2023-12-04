@@ -290,11 +290,16 @@ struct ChatListSearchBar: View {
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
-                    TextField("Search or paste SimpleX link", text: $searchText)
+                    let v = TextField("Search or paste SimpleX link", text: $searchText)
                         .disabled(searchShowingSimplexLink)
                         .focused($searchFocussed)
                         .foregroundColor(searchShowingSimplexLink ? Color(uiColor: uiLinkColor) : .primary)
                         .frame(maxWidth: .infinity)
+                    if #available(iOS 16, *) {
+                        v.underline(searchShowingSimplexLink)
+                    } else {
+                        v
+                    }
                     if searchMode || searchShowingSimplexLink {
                         Image(systemName: "xmark.circle.fill")
                             .opacity(searchText == "" ? 0 : 1)
