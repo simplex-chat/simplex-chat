@@ -19,7 +19,6 @@ dependencies:
   - attoparsec == 0.14.*
   - base >= 4.7 && < 5
   - base64-bytestring >= 1.0 && < 1.3
-  - bytestring == 0.11.*
   - composition == 1.0.*
   - constraints >= 0.12 && < 0.14
   - containers == 0.6.*
@@ -32,10 +31,10 @@ dependencies:
   - filepath == 1.4.*
   - http-types == 0.12.*
   - http2 >= 4.2.2 && < 4.3
-  - memory >= 0.15 && < 0.19
-  - mtl >= 2.3.1 && < 3
+  - memory == 0.18.*
+  - mtl >= 2.3.1 && < 3.0
   - network >= 3.1.2.7 && < 3.2
-  - network-transport >= 0.5.6 && < 0.6
+  - network-transport == 0.5.6
   - optparse-applicative >= 0.15 && < 0.17
   - process == 1.6.*
   - random >= 1.1 && < 1.3
@@ -45,14 +44,12 @@ dependencies:
   - socks == 0.6.*
   - sqlcipher-simple == 0.4.*
   - stm == 2.5.*
-  - template-haskell >= 2.16 && < 2.21
   - terminal == 0.2.*
-  - text >= 2.0 && < 3
   - time == 1.9.*
   - tls >= 1.6.0 && < 1.7
   - unliftio == 0.2.*
   - unliftio-core == 0.2.*
-  - zip >= 1.7 && < 2.1
+  - zip == 2.0.*
 
 flags:
   swift:
@@ -64,6 +61,16 @@ when:
   - condition: flag(swift)
     cpp-options:
       - -DswiftJSON
+  - condition: impl(ghc >= 9.6.2)
+    dependencies:
+      - bytestring == 0.11.*
+      - template-haskell == 2.20.*
+      - text >= 2.0.1 && < 2.2
+  - condition: impl(ghc < 9.6.2)
+    dependencies:
+      - bytestring == 0.10.*
+      - template-haskell == 2.16.*
+      - text >= 1.2.3.0 && < 1.3
 
 library:
   source-dirs: src
