@@ -135,7 +135,7 @@ private func formatText(_ ft: FormattedText, _ preview: Bool) -> Text {
     }
 }
 
-func linkText(_ s: String, _ link: String, _ preview: Bool, prefix: String, color: Color = Color(uiColor: uiLinkColor), uiColor: UIColor = uiLinkColor) -> Text {
+private func linkText(_ s: String, _ link: String, _ preview: Bool, prefix: String, color: Color = Color(uiColor: uiLinkColor), uiColor: UIColor = uiLinkColor) -> Text {
     preview
     ? Text(s).foregroundColor(color).underline(color: color)
     : Text(AttributedString(s, attributes: AttributeContainer([
