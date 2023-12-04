@@ -17,7 +17,7 @@ Group Chat — Users have the option to create a secret group, share their conta
 
 You can [create an optional long term address](./app-settings.md#your-simplex-contact-address) for other people to connect with you. Unlike 1-time invitation links, these addresses can be used many times, that makes them good to share online, e.g. on social media platforms, or in email signatures. That helps more people discover SimpleX Chat, so please do it!
 
-When people connect to you via this address, you will receive a connection request that you can accept or reject. You can configure an automatic acceptance of connection request and an automatic welcome message that will be sent to the new contacts. You can also share this address as part of your SimpleX profile, so group members can connect to you, and you contacts can share it with others - if this is something that you want.
+When people connect to you via this address, you will receive a connection request that you can accept or reject. You can configure an automatic acceptance of connection request and an automatic welcome message that will be sent to the new contacts. You can also share this address as part of your SimpleX profile, so group members can connect to you, and your contacts can share it with others - if this is something that you want.
 
 If you start receiving too many requests via this address it is always safe to remove it – all the connections you created via this address will remain active, as this address is not used to deliver the messages.
 
