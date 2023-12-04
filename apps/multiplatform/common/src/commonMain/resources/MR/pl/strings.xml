@@ -1496,7 +1496,7 @@
     <string name="v5_4_better_groups_descr">Szybsze dołączenie i bardziej niezawodne wiadomości.</string>
     <string name="linked_mobiles">Połączone telefony</string>
     <string name="this_device_name">Nazwa tego urządzenia</string>
-    <string name="waiting_for_mobile_to_connect_on_port"><![CDATA[Oczekiwanie na połączenie telefonu na port <i>%s</i>]]></string>
+    <string name="waiting_for_mobile_to_connect">Oczekiwanie na połączenie telefonu:</string>
     <string name="loading_remote_file_title">Ładowanie pliku</string>
     <string name="found_desktop">Znaleziono komputer</string>
     <string name="desktop_devices">Urządzenia komputerowe</string>
