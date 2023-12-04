@@ -1486,7 +1486,7 @@
     <string name="desktop_device">Bureau</string>
     <string name="connected_to_desktop">Connecté au bureau</string>
     <string name="this_device_name">Ce nom d\'appareil</string>
-    <string name="waiting_for_mobile_to_connect_on_port"><![CDATA[En attente d\'une connexion mobile sur le port <i>%s</i>]]></string>
+    <string name="waiting_for_mobile_to_connect">En attente d\'une connexion mobile:</string>
     <string name="loading_remote_file_title">Chargement du fichier</string>
     <string name="connecting_to_desktop">Connexion au bureau</string>
     <string name="desktop_devices">Appareils de bureau</string>
