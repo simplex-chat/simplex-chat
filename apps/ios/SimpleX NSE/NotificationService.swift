@@ -94,7 +94,7 @@ class NotificationService: UNNotificationServiceExtension {
             Task {
                 var state = appState
                 for _ in 1...5 {
-                    _ = try await Task.sleep(nanoseconds: suspendingDelay)
+                    _ = try? await Task.sleep(nanoseconds: suspendingDelay)
                     state = appStateGroupDefault.get()
                     if state == .suspended || state != .suspending { break }
                 }

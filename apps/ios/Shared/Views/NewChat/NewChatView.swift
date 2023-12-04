@@ -80,6 +80,9 @@ struct NewChatView: View {
                 case .invite:
                     prepareAndInviteView()
                         .transition(.move(edge: .leading))
+                        .onAppear {
+                            createInvitation()
+                        }
                 case .connect:
                     ConnectView(showQRCodeScanner: showQRCodeScanner, pastedLink: $pastedLink, alert: $alert)
                         .transition(.move(edge: .trailing))
@@ -109,12 +112,6 @@ struct NewChatView: View {
             )
         }
         .background(Color(.systemGroupedBackground))
-        .onChange(of: selection) { sel in
-            createInvitation(sel)
-        }
-        .onAppear {
-            createInvitation(selection)
-        }
         .onChange(of: invitationUsed) { used in
             if used && !(m.showingInvitation?.connChatUsed ?? true) {
                 m.markShowingInvitationUsed()
@@ -165,11 +162,11 @@ struct NewChatView: View {
         }
     }
 
-    private func createInvitation(_ selection: NewChatOption) {
-        if case .invite = selection,
-           connReqInvitation == "" && contactConnection == nil && !creatingConnReq {
+    private func createInvitation() {
+        if connReqInvitation == "" && contactConnection == nil && !creatingConnReq {
             creatingConnReq = true
             Task {
+                _ = try? await Task.sleep(nanoseconds: 250_000000)
                 let (r, apiAlert) = await apiAddContact(incognito: incognitoGroupDefault.get())
                 if let (connReq, pcc) = r {
                     await MainActor.run {
@@ -197,9 +194,7 @@ struct NewChatView: View {
     }
 
     private func retryButton() -> some View {
-        Button {
-            createInvitation(selection)
-        } label: {
+        Button(action: createInvitation) {
             VStack(spacing: 6) {
                 Image(systemName: "arrow.counterclockwise")
                 Text("Retry")
