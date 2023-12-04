@@ -15,6 +15,7 @@ struct ChatListView: View {
     @State private var searchMode = false
     @FocusState private var searchFocussed
     @State private var searchText = ""
+    @State private var searchShowingSimplexLink = false
     @State private var newChatMenuOption: NewChatMenuOption? = nil
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
@@ -145,9 +146,14 @@ struct ChatListView: View {
             VStack {
                 List {
                     if !chatModel.chats.isEmpty {
-                        ChatListSearchBar(searchMode: $searchMode, searchFocussed: $searchFocussed, searchText: $searchText)
-                            .listRowSeparator(.hidden)
-                            .frame(maxWidth: .infinity)
+                        ChatListSearchBar(
+                            searchMode: $searchMode,
+                            searchFocussed: $searchFocussed,
+                            searchText: $searchText,
+                            searchShowingSimplexLink: $searchShowingSimplexLink
+                        )
+                        .listRowSeparator(.hidden)
+                        .frame(maxWidth: .infinity)
                     }
                     ForEach(cs, id: \.viewId) { chat in
                         ChatListNavLink(chat: chat)
@@ -221,7 +227,7 @@ struct ChatListView: View {
 
     private func filteredChats() -> [Chat] {
         let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-        return s == "" && !showUnreadAndFavorites
+        return (s == "" && !showUnreadAndFavorites || searchShowingSimplexLink)
             ? chatModel.chats
             : chatModel.chats.filter { chat in
                 let cInfo = chat.chatInfo
@@ -260,6 +266,7 @@ struct ChatListSearchBar: View {
     @Binding var searchMode: Bool
     @FocusState.Binding var searchFocussed: Bool
     @Binding var searchText: String
+    @Binding var searchShowingSimplexLink: Bool
     @State private var cancelVisible = false
     @State private var pasteboardHasString = false
     @State private var showScanCodeSheet = false
@@ -272,11 +279,10 @@ struct ChatListSearchBar: View {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
                     TextField("Search or paste SimpleX link", text: $searchText)
-                        .truncationMode(.middle)
                         .focused($searchFocussed)
                         .foregroundColor(.primary)
                         .frame(maxWidth: .infinity)
-                    if searchMode {
+                    if searchMode || searchShowingSimplexLink {
                         Image(systemName: "xmark.circle.fill")
                             .opacity(searchText == "" ? 0 : 1)
                             .onTapGesture {
@@ -328,7 +334,7 @@ struct ChatListSearchBar: View {
         .onChange(of: searchFocussed) { sf in
             if sf {
                 withAnimation { searchMode = true }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                     withAnimation { cancelVisible = true }
                 }
             } else {
@@ -339,12 +345,16 @@ struct ChatListSearchBar: View {
             }
         }
         .onChange(of: searchText) { t in
-            let link = t.trimmingCharacters(in: .whitespaces)
-            if strIsSimplexLink(link) { // if SimpleX link is pasted, show connection dialogue
+            if let link = strHasSingleSimplexLink(t.trimmingCharacters(in: .whitespaces)) { // if SimpleX link is pasted, show connection dialogue
                 searchFocussed = false
-                connect(link)
-            } else if t != "" { // if some other text is pasted, enter search mode
-                searchFocussed = true
+                searchText = link.text
+                searchShowingSimplexLink = true
+                connect(link.text)
+            } else {
+                if t != "" { // if some other text is pasted, enter search mode
+                    searchFocussed = true
+                }
+                searchShowingSimplexLink = false
             }
         }
         .alert(item: $alert) { a in

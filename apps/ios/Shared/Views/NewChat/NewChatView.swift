@@ -330,9 +330,8 @@ private struct ConnectView: View {
         if pastedLink == "" {
             Button {
                 if let str = UIPasteboard.general.string {
-                    let link = str.trimmingCharacters(in: .whitespaces)
-                    if strIsSimplexLink(link) {
-                        pastedLink = link
+                    if let link = strHasSingleSimplexLink(str.trimmingCharacters(in: .whitespaces)) {
+                        pastedLink = link.text
                         // It would be good to hide it, but right now it is not clear how to release camera in CodeScanner
                         // https://github.com/twostraws/CodeScanner/issues/121
                         // No known tricks worked (changing view ID, wrapping it in another view, etc.)
@@ -350,7 +349,14 @@ private struct ConnectView: View {
             }
             .frame(maxWidth: .infinity, alignment: .center)
         } else {
-            linkTextView(pastedLink)
+            HStack {
+                linkTextView(pastedLink)
+                Button {
+                    pastedLink = ""
+                } label: {
+                    Image(systemName: "xmark.circle")
+                }
+            }
         }
     }
 
@@ -406,7 +412,7 @@ private struct ConnectView: View {
         switch resp {
         case let .success(r):
             let link = r.string
-            if strIsSimplexLink(link) {
+            if strIsSimplexLink(r.string) {
                 connect(link)
             } else {
                 alert = .newChatSomeAlert(alert: .someAlert(
@@ -467,6 +473,19 @@ func strIsSimplexLink(_ str: String) -> Bool {
         return true
     } else {
         return false
+    }
+}
+
+func strHasSingleSimplexLink(_ str: String) -> FormattedText? {
+    if let parsedMd = parseSimpleXMarkdown(str) {
+       let parsedLinks = parsedMd.filter({ $0.format?.isSimplexLink ?? false })
+        if parsedLinks.count == 1 {
+            return parsedLinks[0]
+        } else {
+            return nil
+        }
+    } else {
+        return nil
     }
 }
 

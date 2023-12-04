@@ -3120,6 +3120,15 @@ public enum Format: Decodable, Equatable {
     case simplexLink(linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
     case email
     case phone
+
+    public var isSimplexLink: Bool {
+        get {
+            switch (self) {
+            case .simplexLink: return true
+            default: return false
+            }
+        }
+    }
 }
 
 public enum SimplexLinkType: String, Decodable {
