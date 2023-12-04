@@ -292,7 +292,7 @@ struct ChatListSearchBar: View {
                     Image(systemName: "magnifyingglass")
                     TextField("Search or paste SimpleX link", text: $searchText)
                         .focused($searchFocussed)
-                        .foregroundColor(.primary)
+                        .foregroundColor(searchShowingSimplexLink ? Color(uiColor: uiLinkColor) : .primary)
                         .frame(maxWidth: .infinity)
                     if searchMode || searchShowingSimplexLink {
                         Image(systemName: "xmark.circle.fill")
@@ -362,9 +362,9 @@ struct ChatListSearchBar: View {
             } else {
                 if let link = strHasSingleSimplexLink(t.trimmingCharacters(in: .whitespaces)) { // if SimpleX link is pasted, show connection dialogue
                     searchFocussed = false
-                    if link.text != t {
+                    if case let .simplexLink(linkType, _, smpHosts) = link.format {
                         ignoreSearchTextChange = true
-                        searchText = link.text
+                        searchText = simplexLinkText(linkType, smpHosts)
                     }
                     searchShowingSimplexLink = true
                     searchChatFilteredBySimplexLink = nil
