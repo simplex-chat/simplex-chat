@@ -19,7 +19,6 @@ import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.views.database.PassphraseStrength
@@ -125,7 +124,6 @@ fun DefaultConfigurableTextField(
   keyboardActions: KeyboardActions = KeyboardActions(),
   keyboardType: KeyboardType = KeyboardType.Text,
   fontSize: TextUnit = 16.sp,
-  underline: Boolean = false,
   dependsOn: State<Any?>? = null,
 ) {
   var valid by remember { mutableStateOf(isValid(state.value.text)) }
@@ -146,8 +144,8 @@ fun DefaultConfigurableTextField(
   val colors = TextFieldDefaults.textFieldColors(
     backgroundColor = Color.Unspecified,
     textColor = MaterialTheme.colors.onBackground,
-    focusedIndicatorColor = if (underline) MaterialTheme.colors.primary.copy(alpha = ContentAlpha.high) else Color.Unspecified,
-    unfocusedIndicatorColor = if (underline) MaterialTheme.colors.onSurface.copy(alpha = TextFieldDefaults.UnfocusedIndicatorLineOpacity) else Color.Unspecified,
+    focusedIndicatorColor = Color.Unspecified,
+    unfocusedIndicatorColor = Color.Unspecified,
   )
   val color = MaterialTheme.colors.onBackground
   val shape = MaterialTheme.shapes.small.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize)
@@ -159,7 +157,7 @@ fun DefaultConfigurableTextField(
       .indicatorLine(enabled, false, interactionSource, colors)
       .defaultMinSize(
         minWidth = TextFieldDefaults.MinWidth,
-        minHeight = if (underline) Dp.Unspecified else TextFieldDefaults.MinHeight
+        minHeight = TextFieldDefaults.MinHeight
       ),
     onValueChange = {
       state.value = it

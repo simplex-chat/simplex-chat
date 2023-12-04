@@ -279,7 +279,7 @@ fun AddingMobileDevice(showTitle: Boolean, staleQrCode: MutableState<Boolean>, c
     if (r != null) {
       cachedR = r
       connecting.value = true
-      customAddress.value = cachedR.address
+      customAddress.value = cachedR.addresses.firstOrNull()
       customPort.value = cachedR.port
       chatModel.remoteHostPairing.value = null to RemoteHostSessionState.Starting
     }
@@ -353,7 +353,7 @@ private fun showConnectMobileDevice(rh: RemoteHostInfo, connecting: MutableState
       if (r != null) {
         cachedR = r
         connecting.value = true
-        customAddress.value = cachedR.address
+        customAddress.value = cachedR.addresses.firstOrNull()
         customPort.value = cachedR.port
         chatModel.remoteHostPairing.value = null to RemoteHostSessionState.Starting
       }
@@ -438,18 +438,23 @@ private fun showConnectedMobileDevice(rh: RemoteHostInfo, disconnectHost: () -> 
 @Composable
 private fun UnderQrLayout(cachedR: CR.RemoteHostStarted?, customAddress: MutableState<RemoteCtrlAddress?>, customPort: MutableState<Int?>) {
   Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
-    ExposedDropDownSetting(
-      cachedR.addresses.map { it to it.address + " (${it.`interface`})" },
-      customAddress,
-      textColor = MaterialTheme.colors.onBackground,
-      fontSize = 14.sp,
-      minWidth = 250.dp,
-      maxWidth = with(LocalDensity.current) { 250.sp.toDp() },
-      enabled = remember { mutableStateOf(cachedR.addresses.size > 1) },
-      onSelected = {
-        customAddress.value = it
-      }
-    )
+    if (cachedR.addresses.size > 1) {
+      ExposedDropDownSetting(
+        cachedR.addresses.map { it to it.address + " (${it.`interface`})" },
+        customAddress,
+        textColor = MaterialTheme.colors.onBackground,
+        fontSize = 14.sp,
+        minWidth = 250.dp,
+        maxWidth = with(LocalDensity.current) { 250.sp.toDp() },
+        enabled = remember { mutableStateOf(cachedR.addresses.size > 1) },
+        onSelected = {
+          customAddress.value = it
+        }
+      )
+    } else {
+      Spacer(Modifier.width(10.dp))
+      Text(customAddress.value?.address + " (${customAddress.value?.`interface`})", fontSize = 14.sp)
+    }
     val portUnsaved = rememberSaveable(stateSaver = TextFieldValue.Saver) {
       mutableStateOf(TextFieldValue((customPort.value ?: cachedR.port!!).toString()))
     }
@@ -463,10 +468,10 @@ private fun UnderQrLayout(cachedR: CR.RemoteHostStarted?, customAddress: Mutable
         keyboardActions = KeyboardActions(onDone = { defaultKeyboardAction(ImeAction.Done) }),
         keyboardType = KeyboardType.Number,
         fontSize = 14.sp,
-        underline = true,
       )
       if (validPort(portUnsaved.value.text) && portUnsaved.value.text.toInt() > 1023) {
-        IconButton(::showOpenPortAlert, Modifier.align(Alignment.TopEnd)) {
+        Icon(painterResource(MR.images.ic_edit), stringResource(MR.strings.edit_verb), Modifier.padding(end = 56.dp).size(16.dp).align(Alignment.CenterEnd), tint = MaterialTheme.colors.secondary)
+        IconButton(::showOpenPortAlert, Modifier.align(Alignment.TopEnd).padding(top = 2.dp)) {
           Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.primary)
         }
       }
@@ -483,9 +488,7 @@ private fun UnderQrLayout(cachedR: CR.RemoteHostStarted?, customAddress: Mutable
         }
     }
     KeyChangeEffect(customPort.value) {
-      if (customPort.value != null) {
-        portUnsaved.value = portUnsaved.value.copy(text = customPort.value.toString())
-      }
+      portUnsaved.value = portUnsaved.value.copy(text = customPort.value.toString())
     }
   }
 }
@@ -501,5 +504,5 @@ private val CR.RemoteHostStarted?.rh: RemoteHostInfo? get() = this?.remoteHost_
 private val CR.RemoteHostStarted?.remoteHostId: Long? get() = this?.remoteHost_?.remoteHostId
 private val CR.RemoteHostStarted?.address: RemoteCtrlAddress? get() = this?.localAddrs?.firstOrNull()
 private val CR.RemoteHostStarted?.addresses: List<RemoteCtrlAddress> get() =
-  (if (controller.appPrefs.developerTools.get()) this?.localAddrs else this?.localAddrs?.filterNot { it.address == "127.0.0.1" }) ?: emptyList()
+  (if (controller.appPrefs.developerTools.get() || this?.localAddrs?.indexOfFirst { it.address == "127.0.0.1" } == 0) this?.localAddrs else this?.localAddrs?.filterNot { it.address == "127.0.0.1" }) ?: emptyList()
 private val CR.RemoteHostStarted?.port: Int? get() = this?.ctrlPort?.toIntOrNull()
