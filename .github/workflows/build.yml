@@ -264,7 +264,7 @@ jobs:
       # * And GitHub Actions does not support parameterizing shell in a matrix job - https://github.community/t/using-matrix-to-specify-shell-is-it-possible/17065
 
       - name: 'Setup MSYS2'
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-latest'
         uses: msys2/setup-msys2@v2
         with:
           msystem: ucrt64
