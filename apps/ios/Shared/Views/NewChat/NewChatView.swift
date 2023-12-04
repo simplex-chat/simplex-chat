@@ -693,8 +693,8 @@ func planAndConnect(
     dismiss: Bool,
     incognito: Bool?,
     cleanup: (() -> Void)? = nil,
-    specialKnownContact: ((Contact) -> Void)? = nil,
-    specialKnownGroup: ((GroupInfo) -> Void)? = nil
+    filterKnownContact: ((Contact) -> Void)? = nil,
+    filterKnownGroup: ((GroupInfo) -> Void)? = nil
 ) {
     Task {
         do {
@@ -719,7 +719,7 @@ func planAndConnect(
                 case let .connecting(contact_):
                     logger.debug("planAndConnect, .invitationLink, .connecting, incognito=\(incognito?.description ?? "nil")")
                     if let contact = contact_ {
-                        if let f = specialKnownContact {
+                        if let f = filterKnownContact {
                             f(contact)
                         } else {
                             openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyConnectingAlert(contact)) }
@@ -729,7 +729,7 @@ func planAndConnect(
                     }
                 case let .known(contact):
                     logger.debug("planAndConnect, .invitationLink, .known, incognito=\(incognito?.description ?? "nil")")
-                    if let f = specialKnownContact {
+                    if let f = filterKnownContact {
                         f(contact)
                     } else {
                         openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyExistsAlert(contact)) }
@@ -760,14 +760,14 @@ func planAndConnect(
                     }
                 case let .connectingProhibit(contact):
                     logger.debug("planAndConnect, .contactAddress, .connectingProhibit, incognito=\(incognito?.description ?? "nil")")
-                    if let f = specialKnownContact {
+                    if let f = filterKnownContact {
                         f(contact)
                     } else {
                         openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyConnectingAlert(contact)) }
                     }
                 case let .known(contact):
                     logger.debug("planAndConnect, .contactAddress, .known, incognito=\(incognito?.description ?? "nil")")
-                    if let f = specialKnownContact {
+                    if let f = filterKnownContact {
                         f(contact)
                     } else {
                         openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyExistsAlert(contact)) }
@@ -790,6 +790,9 @@ func planAndConnect(
                     }
                 case let .ownLink(groupInfo):
                     logger.debug("planAndConnect, .groupLink, .ownLink, incognito=\(incognito?.description ?? "nil")")
+                    if let f = filterKnownGroup {
+                        f(groupInfo)
+                    }
                     showActionSheet(.ownGroupLinkConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito, groupInfo: groupInfo))
                 case .connectingConfirmReconnect:
                     logger.debug("planAndConnect, .groupLink, .connectingConfirmReconnect, incognito=\(incognito?.description ?? "nil")")
@@ -803,7 +806,7 @@ func planAndConnect(
                     showAlert(.groupLinkConnecting(connectionLink: connectionLink, groupInfo: groupInfo_))
                 case let .known(groupInfo):
                     logger.debug("planAndConnect, .groupLink, .known, incognito=\(incognito?.description ?? "nil")")
-                    if let f = specialKnownGroup {
+                    if let f = filterKnownGroup {
                         f(groupInfo)
                     } else {
                         openKnownGroup(groupInfo, dismiss: dismiss) { AlertManager.shared.showAlert(groupAlreadyExistsAlert(groupInfo)) }

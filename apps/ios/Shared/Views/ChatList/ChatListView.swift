@@ -399,8 +399,8 @@ struct ChatListSearchBar: View {
             showActionSheet: { sheet = $0 },
             dismiss: false,
             incognito: nil,
-            specialKnownContact: { searchChatFilteredBySimplexLink = $0.id },
-            specialKnownGroup: { searchChatFilteredBySimplexLink = $0.id }
+            filterKnownContact: { searchChatFilteredBySimplexLink = $0.id },
+            filterKnownGroup: { searchChatFilteredBySimplexLink = $0.id }
         )
     }
 }
