@@ -362,7 +362,7 @@ object ChatController {
       chatModel.users.addAll(users)
       if (justStarted) {
         chatModel.currentUser.value = user
-        chatModel.userCreated.value = true
+        chatModel.localUserCreated.value = true
         getUserChatData(null)
         appPrefs.chatLastStart.set(Clock.System.now())
         chatModel.chatRunning.value = true
@@ -378,6 +378,31 @@ object ChatController {
       }
     } catch (e: Error) {
       Log.e(TAG, "failed starting chat $e")
+      throw e
+    }
+  }
+
+  suspend fun startChatWithoutUser() {
+    Log.d(TAG, "user: null")
+    try {
+      if (chatModel.chatRunning.value == true) return
+      apiSetTempFolder(coreTmpDir.absolutePath)
+      apiSetFilesFolder(appFilesDir.absolutePath)
+      if (appPlatform.isDesktop) {
+        apiSetRemoteHostsFolder(remoteHostsDir.absolutePath)
+      }
+      apiSetXFTPConfig(getXFTPCfg())
+      apiSetEncryptLocalFiles(appPrefs.privacyEncryptLocalFiles.get())
+      chatModel.users.clear()
+      chatModel.currentUser.value = null
+      chatModel.localUserCreated.value = false
+      appPrefs.chatLastStart.set(Clock.System.now())
+      chatModel.chatRunning.value = true
+      startReceiver()
+      setLocalDeviceName(appPrefs.deviceNameForRemoteAccess.get()!!)
+      Log.d(TAG, "startChat: started without user")
+    } catch (e: Error) {
+      Log.e(TAG, "failed starting chat without user $e")
       throw e
     }
   }
@@ -405,8 +430,9 @@ object ChatController {
   }
 
   suspend fun getUserChatData(rhId: Long?) {
-    chatModel.userAddress.value = apiGetUserAddress(rhId)
-    chatModel.chatItemTTL.value = getChatItemTTL(rhId)
+    val hasUser = chatModel.currentUser.value != null
+    chatModel.userAddress.value = if (hasUser) apiGetUserAddress(rhId) else null
+    chatModel.chatItemTTL.value = if (hasUser) getChatItemTTL(rhId) else ChatItemTTL.None
     updatingChatsMutex.withLock {
       val chats = apiGetChats(rhId)
       chatModel.updateChats(chats)
@@ -475,7 +501,9 @@ object ChatController {
     val r = sendCmd(rh, CC.ShowActiveUser())
     if (r is CR.ActiveUser) return r.user.updateRemoteHostId(rh)
     Log.d(TAG, "apiGetActiveUser: ${r.responseType} ${r.details}")
-    chatModel.userCreated.value = false
+    if (rh == null) {
+      chatModel.localUserCreated.value = false
+    }
     return null
   }
 
@@ -1398,9 +1426,9 @@ object ChatController {
     chatModel.remoteHosts.addAll(hosts)
   }
 
-  suspend fun startRemoteHost(rhId: Long?, multicast: Boolean = true): Triple<RemoteHostInfo?, String, String>? {
-    val r = sendCmd(null, CC.StartRemoteHost(rhId, multicast))
-    if (r is CR.RemoteHostStarted) return Triple(r.remoteHost_, r.invitation, r.ctrlPort)
+  suspend fun startRemoteHost(rhId: Long?, multicast: Boolean = true, address: RemoteCtrlAddress?, port: Int?): CR.RemoteHostStarted? {
+    val r = sendCmd(null, CC.StartRemoteHost(rhId, multicast, address, port))
+    if (r is CR.RemoteHostStarted) return r
     apiErrorAlert("startRemoteHost", generalGetString(MR.strings.error_alert_title), r)
     return null
   }
@@ -1990,7 +2018,7 @@ object ChatController {
     chatModel.setContactNetworkStatus(contact, NetworkStatus.Error(err))
   }
 
-  suspend fun switchUIRemoteHost(rhId: Long?) {
+  suspend fun switchUIRemoteHost(rhId: Long?) = showProgressIfNeeded {
     // TODO lock the switch so that two switches can't run concurrently?
     chatModel.chatId.value = null
     ModalManager.center.closeModals()
@@ -2003,7 +2031,10 @@ object ChatController {
     chatModel.users.clear()
     chatModel.users.addAll(users)
     chatModel.currentUser.value = user
-    chatModel.userCreated.value = true
+    if (user == null) {
+      chatModel.chatItems.clear()
+      chatModel.chats.clear()
+    }
     val statuses = apiGetNetworkStatuses(rhId)
     if (statuses != null) {
       chatModel.networkStatuses.clear()
@@ -2011,6 +2042,23 @@ object ChatController {
       chatModel.networkStatuses.putAll(ss)
     }
     getUserChatData(rhId)
+  }
+
+  suspend fun showProgressIfNeeded(block: suspend () -> Unit) {
+    val job = withBGApi {
+      try {
+        delay(500)
+        chatModel.switchingUsersAndHosts.value = true
+      } catch (e: Throwable) {
+        chatModel.switchingUsersAndHosts.value = false
+      }
+    }
+    try {
+      block()
+    } finally {
+      job.cancel()
+      chatModel.switchingUsersAndHosts.value = false
+    }
   }
 
   fun getXFTPCfg(): XFTPFileConfig {
@@ -2200,7 +2248,7 @@ sealed class CC {
   // Remote control
   class SetLocalDeviceName(val displayName: String): CC()
   class ListRemoteHosts(): CC()
-  class StartRemoteHost(val remoteHostId: Long?, val multicast: Boolean): CC()
+  class StartRemoteHost(val remoteHostId: Long?, val multicast: Boolean, val address: RemoteCtrlAddress?, val port: Int?): CC()
   class SwitchRemoteHost (val remoteHostId: Long?): CC()
   class StopRemoteHost(val remoteHostKey: Long?): CC()
   class DeleteRemoteHost(val remoteHostId: Long): CC()
@@ -2336,7 +2384,7 @@ sealed class CC {
     is CancelFile -> "/fcancel $fileId"
     is SetLocalDeviceName -> "/set device name $displayName"
     is ListRemoteHosts -> "/list remote hosts"
-    is StartRemoteHost -> "/start remote host " + if (remoteHostId == null) "new" else "$remoteHostId multicast=${onOff(multicast)}"
+    is StartRemoteHost -> "/start remote host " + (if (remoteHostId == null) "new" else "$remoteHostId multicast=${onOff(multicast)}") + (if (address != null) " addr=${address.address} iface=${address.`interface`}" else "") + (if (port != null) " port=$port" else "")
     is SwitchRemoteHost -> "/switch remote host " + if (remoteHostId == null) "local" else "$remoteHostId"
     is StopRemoteHost -> "/stop remote host " + if (remoteHostKey == null) "new" else "$remoteHostKey"
     is DeleteRemoteHost -> "/delete remote host $remoteHostId"
@@ -3558,6 +3606,8 @@ data class RemoteHostInfo(
   val remoteHostId: Long,
   val hostDeviceName: String,
   val storePath: String,
+  val bindAddress_: RemoteCtrlAddress?,
+  val bindPort_: Int?,
   val sessionState: RemoteHostSessionState?
 ) {
   val activeHost: Boolean
@@ -3565,6 +3615,12 @@ data class RemoteHostInfo(
 
   fun activeHost(): Boolean = chatModel.currentRemoteHost.value?.remoteHostId == remoteHostId
 }
+
+@Serializable
+data class RemoteCtrlAddress(
+  val address: String,
+  val `interface`: String
+)
 
 @Serializable
 sealed class RemoteHostSessionState {
@@ -3800,7 +3856,7 @@ sealed class CR {
   // remote events (desktop)
   @Serializable @SerialName("remoteHostList") class RemoteHostList(val remoteHosts: List<RemoteHostInfo>): CR()
   @Serializable @SerialName("currentRemoteHost") class CurrentRemoteHost(val remoteHost_: RemoteHostInfo?): CR()
-  @Serializable @SerialName("remoteHostStarted") class RemoteHostStarted(val remoteHost_: RemoteHostInfo?, val invitation: String, val ctrlPort: String): CR()
+  @Serializable @SerialName("remoteHostStarted") class RemoteHostStarted(val remoteHost_: RemoteHostInfo?, val invitation: String, val localAddrs: List<RemoteCtrlAddress>, val ctrlPort: String): CR()
   @Serializable @SerialName("remoteHostSessionCode") class RemoteHostSessionCode(val remoteHost_: RemoteHostInfo?, val sessionCode: String): CR()
   @Serializable @SerialName("newRemoteHost") class NewRemoteHost(val remoteHost: RemoteHostInfo): CR()
   @Serializable @SerialName("remoteHostConnected") class RemoteHostConnected(val remoteHost: RemoteHostInfo): CR()

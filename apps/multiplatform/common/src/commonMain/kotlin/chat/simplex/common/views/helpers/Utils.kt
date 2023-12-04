@@ -55,7 +55,7 @@ fun annotatedStringResource(id: StringResource): AnnotatedString {
 @Composable
 fun annotatedStringResource(id: StringResource, vararg args: Any?): AnnotatedString {
   val density = LocalDensity.current
-  return remember(id) {
+  return remember(id, args) {
     escapedHtmlToAnnotatedString(id.localized().format(args = args), density)
   }
 }
