@@ -291,6 +291,7 @@ struct ChatListSearchBar: View {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
                     TextField("Search or paste SimpleX link", text: $searchText)
+                        .disabled(searchShowingSimplexLink)
                         .focused($searchFocussed)
                         .foregroundColor(searchShowingSimplexLink ? Color(uiColor: uiLinkColor) : .primary)
                         .frame(maxWidth: .infinity)
