@@ -358,10 +358,10 @@ struct ChatListSearchBar: View {
             }
         }
         .alert(item: $alert) { a in
-            planAndConnectAlert(a, dismiss: true, onCancel: { searchText = "" })
+            planAndConnectAlert(a, dismiss: true, cleanup: { searchText = "" })
         }
         .actionSheet(item: $sheet) { s in
-            planAndConnectActionSheet(s, dismiss: true, onCancel: { searchText = "" })
+            planAndConnectActionSheet(s, dismiss: true, cleanup: { searchText = "" })
         }
     }
 
