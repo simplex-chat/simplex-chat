@@ -488,7 +488,9 @@ private fun UnderQrLayout(cachedR: CR.RemoteHostStarted?, customAddress: Mutable
         }
     }
     KeyChangeEffect(customPort.value) {
-      portUnsaved.value = portUnsaved.value.copy(text = customPort.value.toString())
+      if (customPort.value != null) {
+        portUnsaved.value = portUnsaved.value.copy(text = customPort.value.toString())
+      }
     }
   }
 }
