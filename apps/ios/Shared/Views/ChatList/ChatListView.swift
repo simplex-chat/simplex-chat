@@ -290,17 +290,11 @@ struct ChatListSearchBar: View {
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
-                    let v = TextField("Search or paste SimpleX link", text: $searchText)
+                    TextField("Search or paste SimpleX link", text: $searchText)
                         .disabled(searchShowingSimplexLink)
                         .focused($searchFocussed)
-                        .foregroundColor(searchShowingSimplexLink ? Color(uiColor: uiLinkColor) : .primary)
                         .frame(maxWidth: .infinity)
-                    if #available(iOS 16, *) {
-                        v.underline(searchShowingSimplexLink)
-                    } else {
-                        v
-                    }
-                    if searchMode || searchShowingSimplexLink {
+                    if searchFocussed || searchShowingSimplexLink {
                         Image(systemName: "xmark.circle.fill")
                             .opacity(searchText == "" ? 0 : 1)
                             .onTapGesture {
@@ -333,14 +327,13 @@ struct ChatListSearchBar: View {
                 .background(Color(.tertiarySystemFill))
                 .cornerRadius(10.0)
 
-                if searchMode {
+                if searchFocussed {
                     Text("Cancel")
-                        .foregroundColor(cancelVisible ? .accentColor : .clear)
+                        .foregroundColor(.accentColor)
                         .onTapGesture {
                             searchText = ""
                             searchFocussed = false
                         }
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
             Divider()
@@ -352,14 +345,8 @@ struct ChatListSearchBar: View {
         .onChange(of: searchFocussed) { sf in
             if sf {
                 withAnimation { searchMode = true }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    withAnimation { cancelVisible = true }
-                }
             } else {
-                withAnimation {
-                    searchMode = false
-                    cancelVisible = false
-                }
+                withAnimation { searchMode = false }
             }
         }
         .onChange(of: searchText) { t in
