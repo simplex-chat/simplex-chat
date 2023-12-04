@@ -16,6 +16,7 @@ module Simplex.Chat.Mobile.File
   )
 where
 
+import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import qualified Data.Aeson as J

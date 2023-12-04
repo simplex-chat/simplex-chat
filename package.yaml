@@ -22,7 +22,7 @@ dependencies:
   - composition == 1.0.*
   - constraints >= 0.12 && < 0.14
   - containers == 0.6.*
-  - cryptonite >= 0.27 && < 0.30
+  - cryptonite == 0.30.*
   - data-default >= 0.7 && < 0.8
   - directory == 1.3.*
   - direct-sqlcipher == 2.3.*

@@ -12,7 +12,9 @@ module Simplex.Chat.Store.Shared where
 
 import Control.Exception (Exception)
 import qualified Control.Exception as E
+import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG, randomBytesGenerate)
 import qualified Data.Aeson.TH as J
 import qualified Data.ByteString.Base64 as B64

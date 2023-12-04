@@ -13,6 +13,7 @@ import Control.Concurrent (forkIOWithUnmask, killThread, threadDelay)
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
+import Control.Monad
 import Control.Monad.Except
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)

@@ -77,7 +77,9 @@ module Simplex.Chat.Store.Files
 where
 
 import Control.Applicative ((<|>))
+import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class
 import Data.Either (rights)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, listToMaybe)
