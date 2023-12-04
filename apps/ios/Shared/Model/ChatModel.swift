@@ -87,7 +87,7 @@ final class ChatModel: ObservableObject {
     @Published var showCallView = false
     // remote desktop
     @Published var remoteCtrlSession: RemoteCtrlSession?
-    // currently showing invitation connection
+    // currently showing invitation
     @Published var showingInvitation: ShowingInvitation?
     // audio recording and playback
     @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
