@@ -692,7 +692,9 @@ func planAndConnect(
     showActionSheet: @escaping (PlanAndConnectActionSheet) -> Void,
     dismiss: Bool,
     incognito: Bool?,
-    cleanup: (() -> Void)? = nil
+    cleanup: (() -> Void)? = nil,
+    specialKnownContact: ((Contact) -> Void)? = nil,
+    specialKnownGroup: ((GroupInfo) -> Void)? = nil
 ) {
     Task {
         do {
@@ -717,13 +719,21 @@ func planAndConnect(
                 case let .connecting(contact_):
                     logger.debug("planAndConnect, .invitationLink, .connecting, incognito=\(incognito?.description ?? "nil")")
                     if let contact = contact_ {
-                        openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyConnectingAlert(contact)) }
+                        if let f = specialKnownContact {
+                            f(contact)
+                        } else {
+                            openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyConnectingAlert(contact)) }
+                        }
                     } else {
                         showAlert(.invitationLinkConnecting(connectionLink: connectionLink))
                     }
                 case let .known(contact):
                     logger.debug("planAndConnect, .invitationLink, .known, incognito=\(incognito?.description ?? "nil")")
-                    openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyExistsAlert(contact)) }
+                    if let f = specialKnownContact {
+                        f(contact)
+                    } else {
+                        openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyExistsAlert(contact)) }
+                    }
                 }
             case let .contactAddress(cap):
                 switch cap {
@@ -750,10 +760,18 @@ func planAndConnect(
                     }
                 case let .connectingProhibit(contact):
                     logger.debug("planAndConnect, .contactAddress, .connectingProhibit, incognito=\(incognito?.description ?? "nil")")
-                    openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyConnectingAlert(contact)) }
+                    if let f = specialKnownContact {
+                        f(contact)
+                    } else {
+                        openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyConnectingAlert(contact)) }
+                    }
                 case let .known(contact):
                     logger.debug("planAndConnect, .contactAddress, .known, incognito=\(incognito?.description ?? "nil")")
-                    openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyExistsAlert(contact)) }
+                    if let f = specialKnownContact {
+                        f(contact)
+                    } else {
+                        openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyExistsAlert(contact)) }
+                    }
                 case let .contactViaAddress(contact):
                     logger.debug("planAndConnect, .contactAddress, .contactViaAddress, incognito=\(incognito?.description ?? "nil")")
                     if let incognito = incognito {
@@ -785,7 +803,11 @@ func planAndConnect(
                     showAlert(.groupLinkConnecting(connectionLink: connectionLink, groupInfo: groupInfo_))
                 case let .known(groupInfo):
                     logger.debug("planAndConnect, .groupLink, .known, incognito=\(incognito?.description ?? "nil")")
-                    openKnownGroup(groupInfo, dismiss: dismiss) { AlertManager.shared.showAlert(groupAlreadyExistsAlert(groupInfo)) }
+                    if let f = specialKnownGroup {
+                        f(groupInfo)
+                    } else {
+                        openKnownGroup(groupInfo, dismiss: dismiss) { AlertManager.shared.showAlert(groupAlreadyExistsAlert(groupInfo)) }
+                    }
                 }
             }
         } catch {

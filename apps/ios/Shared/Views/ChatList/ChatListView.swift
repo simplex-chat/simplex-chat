@@ -16,6 +16,7 @@ struct ChatListView: View {
     @FocusState private var searchFocussed
     @State private var searchText = ""
     @State private var searchShowingSimplexLink = false
+    @State private var searchChatFilteredBySimplexLink: String? = nil
     @State private var newChatMenuOption: NewChatMenuOption? = nil
     @State private var userPickerVisible = false
     @State private var showConnectDesktop = false
@@ -150,7 +151,8 @@ struct ChatListView: View {
                             searchMode: $searchMode,
                             searchFocussed: $searchFocussed,
                             searchText: $searchText,
-                            searchShowingSimplexLink: $searchShowingSimplexLink
+                            searchShowingSimplexLink: $searchShowingSimplexLink,
+                            searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink
                         )
                         .listRowSeparator(.hidden)
                         .frame(maxWidth: .infinity)
@@ -226,22 +228,25 @@ struct ChatListView: View {
     }
 
     private func filteredChats() -> [Chat] {
-        let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-        return (s == "" && !showUnreadAndFavorites || searchShowingSimplexLink)
+        if let linkChatId = searchChatFilteredBySimplexLink {
+            return chatModel.chats.filter { $0.id == linkChatId }
+        } else {
+            let s = searchString()
+            return s == "" && !showUnreadAndFavorites
             ? chatModel.chats
             : chatModel.chats.filter { chat in
                 let cInfo = chat.chatInfo
                 switch cInfo {
                 case let .direct(contact):
                     return s == ""
-                            ? filtered(chat)
-                            : (viewNameContains(cInfo, s) ||
-                               contact.profile.displayName.localizedLowercase.contains(s) ||
-                               contact.fullName.localizedLowercase.contains(s))
+                    ? filtered(chat)
+                    : (viewNameContains(cInfo, s) ||
+                       contact.profile.displayName.localizedLowercase.contains(s) ||
+                       contact.fullName.localizedLowercase.contains(s))
                 case let .group(gInfo):
                     return s == ""
-                            ? (filtered(chat) || gInfo.membership.memberStatus == .memInvited)
-                            : viewNameContains(cInfo, s)
+                    ? (filtered(chat) || gInfo.membership.memberStatus == .memInvited)
+                    : viewNameContains(cInfo, s)
                 case .contactRequest:
                     return s == "" || viewNameContains(cInfo, s)
                 case let .contactConnection(conn):
@@ -250,6 +255,11 @@ struct ChatListView: View {
                     return false
                 }
             }
+        }
+
+        func searchString() -> String {
+            searchShowingSimplexLink ? "" : searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
+        }
 
         func filtered(_ chat: Chat) -> Bool {
             (chat.chatInfo.chatSettings?.favorite ?? false) || chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
@@ -267,6 +277,8 @@ struct ChatListSearchBar: View {
     @FocusState.Binding var searchFocussed: Bool
     @Binding var searchText: String
     @Binding var searchShowingSimplexLink: Bool
+    @Binding var searchChatFilteredBySimplexLink: String?
+    @State private var ignoreSearchTextChange = false
     @State private var cancelVisible = false
     @State private var pasteboardHasString = false
     @State private var showScanCodeSheet = false
@@ -345,16 +357,25 @@ struct ChatListSearchBar: View {
             }
         }
         .onChange(of: searchText) { t in
-            if let link = strHasSingleSimplexLink(t.trimmingCharacters(in: .whitespaces)) { // if SimpleX link is pasted, show connection dialogue
-                searchFocussed = false
-                searchText = link.text
-                searchShowingSimplexLink = true
-                connect(link.text)
+            if ignoreSearchTextChange {
+                ignoreSearchTextChange = false
             } else {
-                if t != "" { // if some other text is pasted, enter search mode
-                    searchFocussed = true
+                if let link = strHasSingleSimplexLink(t.trimmingCharacters(in: .whitespaces)) { // if SimpleX link is pasted, show connection dialogue
+                    searchFocussed = false
+                    if link.text != t {
+                        ignoreSearchTextChange = true
+                        searchText = link.text
+                    }
+                    searchShowingSimplexLink = true
+                    searchChatFilteredBySimplexLink = nil
+                    connect(link.text)
+                } else {
+                    if t != "" { // if some other text is pasted, enter search mode
+                        searchFocussed = true
+                    }
+                    searchShowingSimplexLink = false
+                    searchChatFilteredBySimplexLink = nil
                 }
-                searchShowingSimplexLink = false
             }
         }
         .alert(item: $alert) { a in
@@ -371,7 +392,9 @@ struct ChatListSearchBar: View {
             showAlert: { alert = $0 },
             showActionSheet: { sheet = $0 },
             dismiss: false,
-            incognito: nil
+            incognito: nil,
+            specialKnownContact: { searchChatFilteredBySimplexLink = $0.id },
+            specialKnownGroup: { searchChatFilteredBySimplexLink = $0.id }
         )
     }
 }
