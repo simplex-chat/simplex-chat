@@ -36,7 +36,11 @@ struct NewChatMenuButton: View {
                 .scaledToFit()
                 .frame(width: 24, height: 24)
         }
-        .sheet(item: $newChatMenuOption) { opt in
+        .sheet(item: $newChatMenuOption, onDismiss: {
+            if case .newContact = newChatMenuOption {
+                
+            }
+        }) { opt in
             switch opt {
             case .newContact: NewChatView(selection: .invite)
             case .newGroup: AddGroupView()

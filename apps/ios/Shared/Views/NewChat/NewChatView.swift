@@ -45,7 +45,6 @@ struct NewChatView: View {
     @State var selection: NewChatOption
     @State var showQRCodeScanner = false
     @State private var invitationUsed: Bool = false
-    @State private var connectionChatCreated: Bool = false
     @State private var contactConnection: PendingContactConnection? = nil
     @State private var connReqInvitation: String = ""
     @State private var creatingConnReq = false
@@ -65,6 +64,7 @@ struct NewChatView: View {
                 }
             }
             .padding()
+            .padding(.top)
 
             Picker("New chat", selection: $selection) {
                 Label("Add contact", systemImage: "link")
@@ -116,20 +116,28 @@ struct NewChatView: View {
             createInvitation(selection)
         }
         .onChange(of: invitationUsed) { used in
-            if used && !connectionChatCreated,
-               let conn = contactConnection {
-                m.updateContactConnection(conn)
-                connectionChatCreated = true
+            if used && !(m.showingInvitation?.connChatUsed ?? true) {
+                m.markShowingInvitationUsed()
             }
         }
         .onDisappear {
-            m.invitationConnId = nil
-            if !connectionChatCreated,
+            if !(m.showingInvitation?.connChatUsed ?? true),
                let conn = contactConnection {
-                Task {
-                    try await apiDeleteChat(type: .contactConnection, id: conn.apiId)
-                }
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("Keep unused invitation?"),
+                    message: Text("You can view invitation link again in connection details."),
+                    primaryButton: .default(Text("Keep")) {},
+                    secondaryButton: .destructive(Text("Delete")) {
+                        Task {
+                            await deleteChat(Chat(
+                                chatInfo: .contactConnection(contactConnection: conn),
+                                chatItems: []
+                            ))
+                        }
+                    }
+                ))
             }
+            m.showingInvitation = nil
         }
         .alert(item: $alert) { a in
             switch(a) {
@@ -165,9 +173,10 @@ struct NewChatView: View {
                 let (r, apiAlert) = await apiAddContact(incognito: incognitoGroupDefault.get())
                 if let (connReq, pcc) = r {
                     await MainActor.run {
+                        m.updateContactConnection(pcc)
+                        m.showingInvitation = ShowingInvitation(connId: pcc.id, connChatUsed: false)
                         connReqInvitation = connReq
                         contactConnection = pcc
-                        m.invitationConnId = pcc.id
                     }
                 } else {
                     await MainActor.run {
