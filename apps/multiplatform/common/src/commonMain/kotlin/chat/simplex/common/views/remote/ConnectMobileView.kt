@@ -453,7 +453,7 @@ private fun UnderQrLayout(cachedR: CR.RemoteHostStarted?, customAddress: Mutable
       )
     } else {
       Spacer(Modifier.width(10.dp))
-      Text(customAddress.value?.address + " (${customAddress.value?.`interface`})", fontSize = 14.sp)
+      Text(customAddress.value?.address + " (${customAddress.value?.`interface`})", fontSize = 14.sp, color = MaterialTheme.colors.onBackground)
     }
     val portUnsaved = rememberSaveable(stateSaver = TextFieldValue.Saver) {
       mutableStateOf(TextFieldValue((customPort.value ?: cachedR.port!!).toString()))
