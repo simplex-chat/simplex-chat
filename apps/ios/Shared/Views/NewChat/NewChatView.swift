@@ -76,14 +76,16 @@ struct NewChatView: View {
             .padding()
 
             VStack {
-                switch selection {
-                case .invite:
+                // it seems there's a bug in iOS 15 if several views in switch (or if-else) statement have different transitions
+                // https://developer.apple.com/forums/thread/714977?answerId=731615022#731615022
+                if case .invite = selection {
                     prepareAndInviteView()
                         .transition(.move(edge: .leading))
                         .onAppear {
                             createInvitation()
                         }
-                case .connect:
+                }
+                if case .connect = selection {
                     ConnectView(showQRCodeScanner: showQRCodeScanner, pastedLink: $pastedLink, alert: $alert)
                         .transition(.move(edge: .trailing))
                 }
