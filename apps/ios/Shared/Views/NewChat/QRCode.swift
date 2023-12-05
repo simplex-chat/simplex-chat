@@ -11,20 +11,12 @@ import CoreImage.CIFilterBuiltins
 
 struct MutableQRCode: View {
     @Binding var uri: String
-    @State private var image: UIImage?
+    var withLogo: Bool = true
+    var tintColor = UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1)
 
     var body: some View {
-        ZStack {
-            if let image = image {
-                qrCodeImage(image)
-            }
-        }
-        .onAppear {
-            image = generateImage(uri)
-        }
-        .onChange(of: uri) { _ in
-            image = generateImage(uri)
-        }
+        QRCode(uri: uri, withLogo: withLogo, tintColor: tintColor)
+            .id("simplex-qrcode-view-for-\(uri)")
     }
 }
 
@@ -51,7 +43,7 @@ struct QRCode: View {
     var tintColor = UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1)
     var onShare: (() -> Void)? = nil
     @State private var image: UIImage? = nil
-    @State private var makeScreenshotBinding: () -> Void = {}
+    @State private var makeScreenshotFunc: () -> Void = {}
 
     var body: some View {
         ZStack {
@@ -72,7 +64,7 @@ struct QRCode: View {
                     }
                 }
                 .onAppear {
-                    makeScreenshotBinding = {
+                    makeScreenshotFunc = {
                         let size = CGSizeMake(1024 / UIScreen.main.scale, 1024 / UIScreen.main.scale)
                         showShareSheet(items: [makeScreenshot(geo.frame(in: .local).origin, size)])
                         onShare?()
@@ -81,9 +73,9 @@ struct QRCode: View {
                 .frame(width: geo.size.width, height: geo.size.height)
             }
         }
-        .onTapGesture(perform: makeScreenshotBinding)
+        .onTapGesture(perform: makeScreenshotFunc)
         .onAppear {
-            image = image ?? generateImage(uri)?.replaceColor(UIColor.black, tintColor)
+            image = image ?? generateImage(uri, tintColor: tintColor)
         }
     }
 }
@@ -96,13 +88,13 @@ private func qrCodeImage(_ image: UIImage) -> some View {
         .textSelection(.enabled)
 }
 
-private func generateImage(_ uri: String) -> UIImage? {
+private func generateImage(_ uri: String, tintColor: UIColor) -> UIImage? {
     let context = CIContext()
     let filter = CIFilter.qrCodeGenerator()
     filter.message = Data(uri.utf8)
     if let outputImage = filter.outputImage,
        let cgImage = context.createCGImage(outputImage, from: outputImage.extent) {
-        return UIImage(cgImage: cgImage)
+        return UIImage(cgImage: cgImage).replaceColor(UIColor.black, tintColor)
     }
     return nil
 }
