@@ -55,7 +55,7 @@ fun showApp() {
               // Better to not close fullscreen since it can contain passcode
             } else {
               // The last possible cause that can be closed
-              chatModel.chatId.value
+              chatModel.chatId.value = null
               chatModel.chatItems.clear()
             }
             chatModel.activeCall.value?.let {
