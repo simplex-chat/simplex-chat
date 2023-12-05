@@ -31,7 +31,6 @@ fun VerifyCodeView(
   verify: suspend (String?) -> Pair<Boolean, String>?,
   close: () -> Unit,
 ) {
-  throw Exception()
   if (connectionCode != null) {
     VerifyCodeLayout(
       displayName,

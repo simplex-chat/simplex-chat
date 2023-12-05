@@ -34,7 +34,6 @@ fun NotificationsSettingsView(
     notificationPreviewMode = chatModel.notificationPreviewMode,
     showPage = { page ->
       ModalManager.start.showModalCloseable(true) {
-        throw Exception()
         when (page) {
           CurrentPage.NOTIFICATIONS_MODE -> NotificationsModeView(chatModel.controller.appPrefs.notificationsMode.state) { changeNotificationsMode(it, chatModel) }
           CurrentPage.NOTIFICATION_PREVIEW_MODE -> NotificationPreviewView(chatModel.notificationPreviewMode, onNotificationPreviewModeSelected)

@@ -13,10 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.WindowExceptionHandler
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.simplexWindowState
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
@@ -42,8 +40,6 @@ val connections = ArrayList<WebSocket>()
 
 @Composable
 actual fun ActiveCallView() {
-
-  throw Exception()
   val endCall = {
     val call = chatModel.activeCall.value
     if (call != null) withBGApi { chatModel.callManager.endCall(call) }

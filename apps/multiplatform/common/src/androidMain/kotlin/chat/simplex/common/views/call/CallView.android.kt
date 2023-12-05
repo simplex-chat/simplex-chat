@@ -53,7 +53,6 @@ import kotlinx.serialization.encodeToString
 @SuppressLint("SourceLockedOrientationActivity")
 @Composable
 actual fun ActiveCallView() {
-  throw Exception()
   val chatModel = ChatModel
   BackHandler(onBack = {
     val call = chatModel.activeCall.value
