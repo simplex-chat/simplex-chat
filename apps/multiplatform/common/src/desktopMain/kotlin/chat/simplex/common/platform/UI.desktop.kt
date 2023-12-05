@@ -19,3 +19,9 @@ actual fun getKeyboardState(): State<KeyboardState> = remember { mutableStateOf(
 actual fun hideKeyboard(view: Any?) {}
 
 actual fun androidIsFinishingMainActivity(): Boolean = false
+
+actual class GlobalExceptionsHandler: Thread.UncaughtExceptionHandler {
+  actual override fun uncaughtException(thread: Thread, e: Throwable) {
+    Log.e(TAG, "App crashed, thread name: " + thread.name + ", exception: " + e.stackTraceToString())
+  }
+}

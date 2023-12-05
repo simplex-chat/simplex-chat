@@ -32,7 +32,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
   override fun onCreate() {
     super.onCreate()
     if (ProcessPhoenix.isPhoenixProcess(this)) {
-      return;
+      return
+    } else {
+      setGlobalErrorHandler()
     }
     context = this
     initHaskell()
