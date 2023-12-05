@@ -524,9 +524,28 @@ findDirectChatPreviews_ db User {userId} count filterTS_ search = map (second $ 
         SELECT ct.updated_at, ct.contact_id
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+        LEFT JOIN connections c ON c.contact_id = ct.contact_id
         WHERE ct.user_id = :user_id
           AND ct.is_user = 0
           AND ct.deleted = 0
+          AND ( -- testGroupLink: contacts connected via group link are not in chat previews
+            (
+              ((c.conn_level = 0 AND c.via_group_link = 0) OR ct.contact_used = 1)
+              AND c.connection_id = (
+                SELECT cc_connection_id FROM (
+                  SELECT
+                    cc.connection_id AS cc_connection_id,
+                    cc.created_at AS cc_created_at,
+                    (CASE WHEN cc.conn_status = :conn_ready OR cc.conn_status = :conn_snd_ready THEN 1 ELSE 0 END) AS cc_conn_status_ord
+                  FROM connections cc
+                  WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
+                  ORDER BY cc_conn_status_ord DESC, cc_created_at DESC
+                  LIMIT 1
+                )
+              )
+            )
+            OR c.connection_id IS NULL
+          )
           AND (
             ct.local_display_name LIKE '%' || :search || '%'
             OR cp.display_name LIKE '%' || :search || '%'
@@ -541,6 +560,8 @@ findDirectChatPreviews_ db User {userId} count filterTS_ search = map (second $ 
       |]
     paramsBase =
       [ ":user_id" := userId,
+        ":conn_ready" := ConnReady,
+        ":conn_snd_ready" := ConnSndReady,
         ":search" := search,
         ":count" := count
       ]
