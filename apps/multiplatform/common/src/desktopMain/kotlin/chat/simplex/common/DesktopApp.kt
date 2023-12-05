@@ -48,14 +48,13 @@ fun showApp() {
             // If the left side of screen has open modal, it's probably caused the crash
             if (ModalManager.start.hasModalsOpen()) {
               ModalManager.start.closeModal()
-            } else if (ModalManager.start.hasModalsOpen() || ModalManager.center.hasModalsOpen() || ModalManager.end.hasModalsOpen()) {
-              ModalManager.start.closeModal()
+            } else if (ModalManager.center.hasModalsOpen() || ModalManager.end.hasModalsOpen()) {
               ModalManager.center.closeModal()
               ModalManager.end.closeModal()
               // Better to not close fullscreen since it can contain passcode
             } else {
               // The last possible cause that can be closed
-              chatModel.chatId.value
+              chatModel.chatId.value = null
               chatModel.chatItems.clear()
             }
             chatModel.activeCall.value?.let {
