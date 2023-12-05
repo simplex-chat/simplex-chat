@@ -115,6 +115,7 @@ import Data.List (sortBy)
 import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
 import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
@@ -490,82 +491,62 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
 
 getChatPreviews :: DB.Connection -> User -> Bool -> Maybe ChatPaginationTs -> Maybe String -> IO [AChat]
 getChatPreviews db user withPCC paginationTs_ search_ = do
-  directChats <- findDirectChatPreviews_ db user search
-  groupChats <- findGroupChatPreviews_ db user search
-  cReqChats <- findContactRequestChatPreviews_ db user search
-  connChats <- if withPCC then findContactConnectionChatPreviews_ db user search else pure mempty
-  let refs = limit . map snd . sortBy (comparing $ Down . fst) . filterTS $ concat [directChats, groupChats, cReqChats, connChats]
-  catMaybes <$> mapM (getChatPreview db user) refs
+  directChats <- findDirectChatPreviews_ db user count filterTS search
+  groupChats <- findGroupChatPreviews_ db user count filterTS search
+  cReqChats <- findContactRequestChatPreviews_ db user count filterTS search
+  connChats <- if withPCC then findContactConnectionChatPreviews_ db user count filterTS search else pure []
+  let refs = take count . map snd . sortBy (comparing $ Down . fst) $ concat [directChats, groupChats, cReqChats, connChats]
+  catMaybes <$> mapM (getChatPreview db user) refs -- XXX: ignoring missing entries from getXxxPreview (which shouldn't happen)
   where
-    search = fromMaybe "" search_
-    (filterTS, limit) = case paginationTs_ of
-      Nothing -> (id, id)
-      Just (CPLastTs count) -> (id, take count)
-      Just (CPAfterTs time count) -> (filter $ \(ts, _) -> ts > time, take count)
-      Just (CPBeforeTs time count) -> (filter $ \(ts, _) -> ts < time, take count)
+    search = maybe "" T.pack search_
+    (count, filterTS) = case paginationTs_ of
+      Nothing -> (65535, Nothing)
+      Just (CPLastTs count') -> (count', Nothing)
+      Just (CPAfterTs time count') -> (count', Just (True, time))
+      Just (CPBeforeTs time count') -> (count', Just (False, time))
 
 getChatPreview :: DB.Connection -> User -> ChatRef -> IO (Maybe AChat) -- XXX: require ExceptT instead?
 getChatPreview db user (ChatRef ct id') = case ct of
   CTDirect -> getDirectChatPreview_ db user id'
   CTGroup -> getGroupChatPreview_ db user id'
-  CTContactRequest -> getContactRequestChatPreview_ db id'
-  CTContactConnection -> getContactConnectionChatPreview_ db id'
+  CTContactRequest -> getContactRequestChatPreview_ db user id'
+  CTContactConnection -> getContactConnectionChatPreview_ db user id'
 
-findDirectChatPreviews_ :: DB.Connection -> User -> String -> IO [(UTCTime, ChatRef)]
-findDirectChatPreviews_ db User {userId} search = map (second $ ChatRef CTDirect) <$> DB.queryNamed db q params
+findDirectChatPreviews_ :: DB.Connection -> User -> Int -> Maybe (Bool, UTCTime) -> Text -> IO [(UTCTime, ChatRef)]
+findDirectChatPreviews_ db User {userId} count filterTS_ search = map (second $ ChatRef CTDirect) <$> DB.queryNamed db query params
   where
-    q =
+    (query, params) = case filterTS_ of
+      Nothing -> (queryBase <> queryEnd, paramsBase)
+      Just (False, ts) -> (queryBase <> "\nAND ct.updated_at < :ts\n" <> queryEnd, (":ts" := ts) : paramsBase)
+      Just (True, ts) -> (queryBase <> "\nAND ct.updated_at > :ts\n" <> queryEnd, (":ts" := ts) : paramsBase)
+    queryBase =
       [sql|
-        SELECT DISTINCT -- XXX: the joins may produce duplicates (detected by /invited member replaces member contact reference if it already exists/)
-          i.item_ts, ct.contact_id
+        SELECT ct.updated_at, ct.contact_id
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-        LEFT JOIN (
-          SELECT contact_id, chat_item_id, MAX(created_at)
-          FROM chat_items
-          GROUP BY contact_id
-        ) LastItems ON LastItems.contact_id = ct.contact_id
-        LEFT JOIN chat_items i ON i.contact_id = LastItems.contact_id AND i.chat_item_id = LastItems.chat_item_id
-        LEFT JOIN connections c ON c.contact_id = ct.contact_id
         WHERE ct.user_id = :user_id
           AND ct.is_user = 0
           AND ct.deleted = 0
-          AND (
-            (
-              ((c.conn_level = 0 AND c.via_group_link = 0) OR ct.contact_used = 1)
-              AND c.connection_id = (
-                SELECT cc_connection_id FROM (
-                  SELECT
-                    cc.connection_id AS cc_connection_id,
-                    cc.created_at AS cc_created_at,
-                    (CASE WHEN cc.conn_status = :conn_ready OR cc.conn_status = :conn_snd_ready THEN 1 ELSE 0 END) AS cc_conn_status_ord
-                  FROM connections cc
-                  WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
-                  ORDER BY cc_conn_status_ord DESC, cc_created_at DESC
-                  LIMIT 1
-                )
-              )
-            )
-            OR c.connection_id IS NULL
-          )
           AND (
             ct.local_display_name LIKE '%' || :search || '%'
             OR cp.display_name LIKE '%' || :search || '%'
             OR cp.full_name LIKE '%' || :search || '%'
             OR cp.local_alias LIKE '%' || :search || '%'
-            OR c.local_alias LIKE '%' || :search || '%'
           )
-        ORDER BY i.item_ts DESC
       |]
-    params =
+    queryEnd =
+      [sql|
+        ORDER BY ct.updated_at DESC
+        LIMIT :count
+      |]
+    paramsBase =
       [ ":user_id" := userId,
-        ":conn_ready" := ConnReady,
-        ":conn_snd_ready" := ConnSndReady,
-        ":search" := search
+        ":search" := search,
+        ":count" := count
       ]
 
 getDirectChatPreview_ :: DB.Connection -> User -> Int64 -> IO (Maybe AChat)
-getDirectChatPreview_ db user contactId = do
+getDirectChatPreview_ db user@User {userId} contactId = do
   currentTs <- getCurrentTime -- XXX: should be the same for all the preview items?
   maybeFirstRow (toDirectChatPreview currentTs) $
     DB.query
@@ -606,8 +587,9 @@ getDirectChatPreview_ db user contactId = do
         ) ChatStats ON ChatStats.contact_id = ct.contact_id
         LEFT JOIN chat_items ri ON ri.user_id = i.user_id AND ri.contact_id = i.contact_id AND ri.shared_msg_id = i.quoted_shared_msg_id
         WHERE ct.contact_id = ?
+          AND ct.user_id = ?
       |]
-      (CISRcvNew, contactId)
+      (CISRcvNew, contactId, userId)
   where
     toDirectChatPreview :: UTCTime -> ContactRow :. MaybeConnectionRow :. ChatStatsRow :. MaybeChatItemRow :. QuoteRow -> AChat
     toDirectChatPreview currentTs (contactRow :. connRow :. statsRow :. ciRow_) =
@@ -616,23 +598,19 @@ getDirectChatPreview_ db user contactId = do
           stats = toChatStats statsRow
        in AChat SCTDirect $ Chat (DirectChat contact) ci_ stats
 
-findGroupChatPreviews_ :: DB.Connection -> User -> String -> IO [(UTCTime, ChatRef)]
-findGroupChatPreviews_ db User {userId, userContactId} search = map (second $ ChatRef CTGroup) <$> DB.queryNamed db q params
+findGroupChatPreviews_ :: DB.Connection -> User -> Int -> Maybe (Bool, UTCTime) -> Text -> IO [(UTCTime, ChatRef)]
+findGroupChatPreviews_ db User {userId, userContactId} count filterTS_ search = map (second $ ChatRef CTGroup) <$> DB.queryNamed db query params
   where
-    q =
+    (query, params) = case filterTS_ of
+      Nothing -> (queryBase <> queryEnd, paramsBase)
+      Just (False, ts) -> (queryBase <> "\nAND g.updated_at < :ts\n" <> queryEnd, (":ts" := ts) : paramsBase)
+      Just (True, ts) -> (queryBase <> "\nAND g.updated_at > :ts\n" <> queryEnd, (":ts" := ts) : paramsBase)
+    queryBase =
       [sql|
-        SELECT DISTINCT
-          i.item_ts, g.group_id
+        SELECT g.updated_at, g.group_id
         FROM groups g
         JOIN group_members mu ON mu.group_id = g.group_id
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-        LEFT JOIN (
-          SELECT group_id, chat_item_id, MAX(item_ts)
-          FROM chat_items
-          GROUP BY group_id
-        ) LastItems ON LastItems.group_id = g.group_id
-        LEFT JOIN chat_items i ON i.group_id = LastItems.group_id
-                               AND i.chat_item_id = LastItems.chat_item_id
         WHERE g.user_id = :user_id
           AND mu.contact_id = :user_contact_id
           AND (
@@ -641,16 +619,21 @@ findGroupChatPreviews_ db User {userId, userContactId} search = map (second $ Ch
             OR gp.full_name LIKE '%' || :search || '%'
             OR gp.description LIKE '%' || :search || '%'
           )
-        ORDER BY i.item_ts DESC
       |]
-    params =
+    queryEnd =
+      [sql|
+        ORDER BY g.updated_at DESC
+        LIMIT :count
+      |]
+    paramsBase =
       [ ":user_id" := userId,
         ":user_contact_id" := userContactId,
-        ":search" := search
+        ":search" := search,
+        ":count" := count
       ]
 
 getGroupChatPreview_ :: DB.Connection -> User -> Int64 -> IO (Maybe AChat)
-getGroupChatPreview_ db User {userContactId} groupId = do
+getGroupChatPreview_ db User {userId, userContactId} groupId = do
   currentTs <- getCurrentTime -- XXX: should be the same for all the preview items?
   maybeFirstRow (toGroupChatPreview currentTs) $
     DB.query
@@ -711,9 +694,10 @@ getGroupChatPreview_ db User {userContactId} groupId = do
         LEFT JOIN group_members dbm ON dbm.group_member_id = i.item_deleted_by_group_member_id
         LEFT JOIN contact_profiles dbp ON dbp.contact_profile_id = COALESCE(dbm.member_profile_id, dbm.contact_profile_id)
         WHERE g.group_id = ?
+          AND g.user_id = ?
         ORDER BY i.item_ts DESC
       |]
-      (CISRcvNew, groupId)
+      (CISRcvNew, groupId, userId)
   where
     toGroupChatPreview :: UTCTime -> GroupInfoRow :. ChatStatsRow :. MaybeGroupChatItemRow -> AChat
     toGroupChatPreview currentTs (groupInfoRow :. statsRow :. ciRow_) =
@@ -722,13 +706,16 @@ getGroupChatPreview_ db User {userContactId} groupId = do
           stats = toChatStats statsRow
        in AChat SCTGroup $ Chat (GroupChat groupInfo) ci_ stats
 
-findContactRequestChatPreviews_ :: DB.Connection -> User -> String -> IO [(UTCTime, ChatRef)]
-findContactRequestChatPreviews_ db User {userId} search = map (second $ ChatRef CTContactRequest) <$> DB.queryNamed db q params
+findContactRequestChatPreviews_ :: DB.Connection -> User -> Int -> Maybe (Bool, UTCTime) -> Text -> IO [(UTCTime, ChatRef)]
+findContactRequestChatPreviews_ db User {userId} count filterTS_ search = map (second $ ChatRef CTContactRequest) <$> DB.queryNamed db query params
   where
-    q =
+    (query, params) = case filterTS_ of
+      Nothing -> (queryBase <> queryEnd, paramsBase)
+      Just (False, ts) -> (queryBase <> "\nAND cr.updated_at < :ts\n" <> queryEnd, (":ts" := ts) : paramsBase)
+      Just (True, ts) -> (queryBase <> "\nAND cr.updated_at > :ts\n" <> queryEnd, (":ts" := ts) : paramsBase)
+    queryBase =
       [sql|
-        SELECT DISTINCT
-          cr.updated_at, cr.contact_request_id
+        SELECT cr.updated_at, cr.contact_request_id
         FROM contact_requests cr
         JOIN contact_profiles p ON p.contact_profile_id = cr.contact_profile_id
         JOIN user_contact_links uc ON uc.user_contact_link_id = cr.user_contact_link_id
@@ -741,15 +728,20 @@ findContactRequestChatPreviews_ db User {userId} search = map (second $ ChatRef 
             OR p.display_name LIKE '%' || :search || '%'
             OR p.full_name LIKE '%' || :search || '%'
           )
-        ORDER BY cr.updated_at DESC
       |]
-    params =
+    queryEnd =
+      [sql|
+        ORDER BY cr.updated_at DESC
+        LIMIT :count
+      |]
+    paramsBase =
       [ ":user_id" := userId,
-        ":search" := search
+        ":search" := search,
+        ":count" := count
       ]
 
-getContactRequestChatPreview_ :: DB.Connection -> Int64 -> IO (Maybe AChat)
-getContactRequestChatPreview_ db contactRequestId =
+getContactRequestChatPreview_ :: DB.Connection -> User -> Int64 -> IO (Maybe AChat)
+getContactRequestChatPreview_ db User {userId} contactRequestId =
   maybeFirstRow toContactRequestChatPreview $
     DB.query
       db
@@ -763,8 +755,9 @@ getContactRequestChatPreview_ db contactRequestId =
         JOIN contact_profiles p ON p.contact_profile_id = cr.contact_profile_id
         JOIN user_contact_links uc ON uc.user_contact_link_id = cr.user_contact_link_id
         WHERE cr.contact_request_id = ?
+          AND cr.user_id = ?
       |]
-      (Only contactRequestId)
+      (contactRequestId, userId)
   where
     toContactRequestChatPreview :: ContactRequestRow -> AChat
     toContactRequestChatPreview cReqRow =
@@ -772,10 +765,14 @@ getContactRequestChatPreview_ db contactRequestId =
           stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
        in AChat SCTContactRequest $ Chat (ContactRequest cReq) [] stats
 
-findContactConnectionChatPreviews_ :: DB.Connection -> User -> String -> IO [(UTCTime, ChatRef)]
-findContactConnectionChatPreviews_ db User {userId} search = map (second $ ChatRef CTContactConnection) <$> DB.queryNamed db q params
+findContactConnectionChatPreviews_ :: DB.Connection -> User -> Int -> Maybe (Bool, UTCTime) -> Text -> IO [(UTCTime, ChatRef)]
+findContactConnectionChatPreviews_ db User {userId} count filterTS_ search = map (second $ ChatRef CTContactConnection) <$> DB.queryNamed db query params
   where
-    q =
+    (query, params) = case filterTS_ of
+      Nothing -> (queryBase <> queryEnd, paramsBase)
+      Just (False, ts) -> (queryBase <> "\nAND updated_at < :ts\n" <> queryEnd, (":ts" := ts) : paramsBase)
+      Just (True, ts) -> (queryBase <> "\nAND updated_at > :ts\n" <> queryEnd, (":ts" := ts) : paramsBase)
+    queryBase =
       [sql|
         SELECT updated_at, connection_id
         FROM connections
@@ -788,14 +785,20 @@ findContactConnectionChatPreviews_ db User {userId} search = map (second $ ChatR
           AND (via_group_link = 0 || (via_group_link = 1 AND group_link_id IS NOT NULL))
           AND local_alias LIKE '%' || :search || '%'
       |]
-    params =
+    queryEnd =
+      [sql|
+        ORDER BY updated_at DESC
+        LIMIT :count
+      |]
+    paramsBase =
       [ ":user_id" := userId,
         ":conn_type" := ConnContact,
-        ":search" := search
+        ":search" := search,
+        ":count" := count
       ]
 
-getContactConnectionChatPreview_ :: DB.Connection -> Int64 -> IO (Maybe AChat)
-getContactConnectionChatPreview_ db connectionId =
+getContactConnectionChatPreview_ :: DB.Connection -> User -> Int64 -> IO (Maybe AChat)
+getContactConnectionChatPreview_ db User {userId} connectionId =
   maybeFirstRow toContactConnectionChatPreview $
     DB.query
       db
@@ -803,8 +806,9 @@ getContactConnectionChatPreview_ db connectionId =
         SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id, custom_user_profile_id, conn_req_inv, local_alias, created_at, updated_at
         FROM connections
         WHERE connection_id = ?
+          AND user_id = ?
       |]
-      (Only connectionId)
+      (connectionId, userId)
   where
     toContactConnectionChatPreview :: (Int64, ConnId, ConnStatus, Maybe ByteString, Maybe Int64, Maybe GroupLinkId, Maybe Int64, Maybe ConnReqInvitation, LocalAlias, UTCTime, UTCTime) -> AChat
     toContactConnectionChatPreview connRow =
