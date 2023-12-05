@@ -162,13 +162,13 @@ storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile deskto
 
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
-  desktop <## "1. Mobile (connected) [lo 127.0.0.1:52230]"
+  desktop <##. "1. Mobile (connected) ["
   stopDesktop mobile desktop
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
-  desktop <## "1. Mobile [lo 127.0.0.1:52230]"
+  desktop <##. "1. Mobile ["
 
-  -- TODO: more parser tests
+-- TODO: more parser tests
 
 remoteMessageTest :: HasCallStack => FilePath -> IO ()
 remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do

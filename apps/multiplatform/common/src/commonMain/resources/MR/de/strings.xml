@@ -1581,7 +1581,7 @@
     <string name="v5_4_better_groups_descr">Schnellerer Gruppenbeitritt und zuverlässigere Nachrichtenzustellung.</string>
     <string name="linked_mobiles">Verknüpfte Mobiltelefone</string>
     <string name="this_device_name">Dieser Gerätename</string>
-    <string name="waiting_for_mobile_to_connect_on_port"><![CDATA[Auf die Mobiltelefonverbindung über Port <i>%s</i> warten]]></string>
+    <string name="waiting_for_mobile_to_connect">Auf die Mobiltelefonverbindung warten:</string>
     <string name="loading_remote_file_title">Laden der Datei</string>
     <string name="link_a_mobile">Zu einem Mobiltelefon verbinden</string>
     <string name="settings_section_title_use_from_desktop">Vom Desktop aus nutzen</string>

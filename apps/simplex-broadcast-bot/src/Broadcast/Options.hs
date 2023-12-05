@@ -83,5 +83,6 @@ mkChatOpts BroadcastBotOpts {coreOptions} =
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
+      markRead = False,
       maintenance = False
     }

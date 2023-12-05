@@ -1517,7 +1517,7 @@
     <string name="v5_4_more_things_descr">- 可选择通知已删除的联系人。
 \n- 带空格的个人资料名称。
 \n- 以及更多！</string>
-    <string name="waiting_for_mobile_to_connect_on_port"><![CDATA[正等待移动设备在端口 <i>%s</i> 进行连接]]></string>
+    <string name="waiting_for_mobile_to_connect">正等待移动设备 进行连接:</string>
     <string name="group_member_role_author">作者</string>
     <string name="multicast_connect_automatically">自动连接</string>
     <string name="waiting_for_desktop">等待桌面中…</string>
