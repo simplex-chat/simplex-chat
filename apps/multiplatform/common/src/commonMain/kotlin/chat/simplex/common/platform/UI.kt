@@ -17,7 +17,7 @@ expect fun hideKeyboard(view: Any?)
 
 expect fun androidIsFinishingMainActivity(): Boolean
 
-fun setGlobalErrorHandler() {
+fun registerGlobalErrorHandler() {
   Thread.setDefaultUncaughtExceptionHandler(GlobalExceptionsHandler())
 }
 

@@ -34,7 +34,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     if (ProcessPhoenix.isPhoenixProcess(this)) {
       return
     } else {
-      setGlobalErrorHandler()
+      registerGlobalErrorHandler()
     }
     context = this
     initHaskell()
