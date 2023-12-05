@@ -3550,19 +3550,44 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             let Connection {viaUserContactLink} = conn
             when (isJust viaUserContactLink && isNothing (memberContactId m)) sendXGrpLinkMem
             members <- withStore' $ \db -> getGroupMembers db user gInfo
-            intros <- withStore' $ \db -> createIntroductions db members m
             void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
-            shuffledIntros <- liftIO $ shuffleMembers intros $ \GroupMemberIntro {reMember = GroupMember {memberRole}} -> memberRole
-            forM_ shuffledIntros $ \intro ->
-              processIntro intro `catchChatError` (toView . CRChatError (Just user))
+            sendIntroductions members
+            sendHistory
             where
               sendXGrpLinkMem = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                     profileToSend = profileToSendOnAccept user profileMode
                 void $ sendDirectMessage conn (XGrpLinkMem profileToSend) (GroupId groupId)
+              -- TODO [batch send] batch if invitee version range is compatible with batchSendVRange
+              sendIntroductions members = do
+                intros <- withStore' $ \db -> createIntroductions db members m
+                shuffledIntros <- liftIO $ shuffleMembers intros $ \GroupMemberIntro {reMember = GroupMember {memberRole}} -> memberRole
+                forM_ shuffledIntros $ \intro ->
+                  processIntro intro `catchChatError` (toView . CRChatError (Just user))
               processIntro intro@GroupMemberIntro {introId} = do
                 void $ sendDirectMessage conn (XGrpMemIntro $ memberInfo (reMember intro)) (GroupId groupId)
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
+              -- TODO [batch send] send history batched
+              sendHistory = do
+                -- - check member version range is compatible with batchSendVRange
+                --   - send not batched if not compatible, or don't send?
+                -- - build list of messages forming latest history, possible approaches:
+                --   - retrieve events from 'messages' table as is and filter based on event type
+                --     - downside is that they are periodically cleaned up,
+                --       but practically it won't matter for recent history of active group
+                --     - 'msg_deliveries.chat_ts' to be used as event ts for received messages,
+                --       'messages.created_at' for sent
+                --     - simple - 'msg_body' contains full event which can be forwarded
+                --     - unclear how many records to load to reach required number of messages,
+                --       so either load iteratively or with a reserve
+                --   - reconstruct events from 'chat_items' table
+                --     - it's not periodically cleaned up, but chat items can be deleted
+                --       manually or scheduled for deletion by user
+                --     - 'item_ts' can be used as timestamp of original message
+                --     - more complex - custom reconstruction of reactions, file descriptions, etc.
+                --   - in any case use XGrpMsgForward to wrap messages together with their original ts and sender id
+                -- - send messages in batches (sendBatchedDirectMessages)
+                pure ()
           _ -> do
             -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
             let memCategory = memberCategory m
@@ -3592,6 +3617,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                       void $ sendDirectMessage imConn (XGrpMemCon m.memberId) (GroupId groupId)
                 _ -> messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
       MSG msgMeta _msgFlags msgBody -> do
+        -- TODO [batch send] process events in loop
+        -- - catch error on each iteration
+        -- - don't forward
+        -- - acknowledge after all events are processed
         cmdId <- createAckCmd conn
         tryChatError (processChatMessage cmdId) >>= \case
           Right (ACMsg _ chatMsg, withRcpt) -> do
@@ -5510,6 +5539,29 @@ createSndMessage chatMsgEvent connOrGroupId = do
     let msgBody = strEncode ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
      in NewMessage {chatMsgEvent, msgBody}
 
+sendBatchedDirectMessages :: (MsgEncodingI e, ChatMonad m) => Connection -> [ChatMsgEvent e] -> ConnOrGroupId -> m (SndMessage, Int64)
+sendBatchedDirectMessages conn events connOrGroupId = do
+  when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
+  msg@SndMessage {msgId, msgBody} <- createBatchedSndMessage events connOrGroupId
+  (msg,) <$> deliverMessage' conn MsgFlags {notification = True} msgBody msgId
+
+createBatchedSndMessage :: (MsgEncodingI e, ChatMonad m) => [ChatMsgEvent e] -> ConnOrGroupId -> m SndMessage
+createBatchedSndMessage events connOrGroupId = do
+  gVar <- asks idsDrg
+  ChatConfig {chatVRange} <- asks config
+  -- TODO [batch send] save batched messages
+  -- - use tag of first event for 'chat_msg_event'?
+  -- - add flag 'batched'?
+  -- - loop:
+  --   - add events to batch while it fits max message size
+  --   - save batch as SndMessage, deliver it (deliverMessage')
+  -- - ChatMessage encoding should support list of ChatMsgEvents
+  -- - * return list of SndMessages? it's not necessary for current use cases
+  withStore $ \db -> createNewSndMessage db gVar connOrGroupId $ \sharedMsgId ->
+    let chatMsgEvent = XOk -- dummy
+        msgBody = strEncode ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
+     in NewMessage {chatMsgEvent, msgBody}
+
 directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
 directMessage chatMsgEvent = do
   ChatConfig {chatVRange} <- asks config
@@ -5518,6 +5570,10 @@ directMessage chatMsgEvent = do
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m Int64
 deliverMessage conn@Connection {connId} cmEventTag msgBody msgId = do
   let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
+  deliverMessage' conn msgFlags msgBody msgId
+
+deliverMessage' :: ChatMonad m => Connection -> MsgFlags -> MsgBody -> MessageId -> m Int64
+deliverMessage' conn@Connection {connId} msgFlags msgBody msgId = do
   agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) msgFlags msgBody
   let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
   withStore' $ \db -> createSndMsgDelivery db sndMsgDelivery msgId
