@@ -1527,4 +1527,7 @@
     <string name="create_chat_profile">创建聊天资料</string>
     <string name="no_connected_mobile">没有已连接的移动设备</string>
     <string name="disconnect_remote_hosts">断开移动设备连接</string>
+    <string name="random_port">随机</string>
+    <string name="open_port_in_firewall_desc">要允许移动应用连接到桌面，请在防火墙中打开此端口，如果你已启用了它</string>
+    <string name="open_port_in_firewall_title">在防火墙中打开端口</string>
 </resources>
