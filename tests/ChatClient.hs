@@ -83,6 +83,7 @@ testOpts =
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
+      markRead = True,
       maintenance = False
     }
 
@@ -175,7 +176,7 @@ startTestChat_ db cfg opts user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t opts
   cc <- newChatController db (Just user) cfg opts
-  chatAsync <- async . runSimplexChat opts user cc . const $ runChatTerminal ct
+  chatAsync <- async . runSimplexChat opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   atomically . unless (maintenance opts) $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ

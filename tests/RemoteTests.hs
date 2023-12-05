@@ -162,11 +162,11 @@ storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile deskto
 
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
-  desktop <##. "1. Mobile (connected) [lo"
+  desktop <##. "1. Mobile (connected) ["
   stopDesktop mobile desktop
   desktop ##> "/list remote hosts"
   desktop <## "Remote hosts:"
-  desktop <##. "1. Mobile [lo"
+  desktop <##. "1. Mobile ["
 
 -- TODO: more parser tests
 

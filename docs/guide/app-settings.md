@@ -45,6 +45,8 @@ When people connect to you via this address, you will receive a connection reque
 
 If you start receiving too many requests via this address it is always safe to remove it – all the connections you created via this address will remain active, as this address is not used to deliver the messages.
 
+See the comparison with [1-time invitation links](./making-connections.md#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).
+
 Read more in [this post](../../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#auto-accept-contact-requests).
 
 ### Chat preferences
