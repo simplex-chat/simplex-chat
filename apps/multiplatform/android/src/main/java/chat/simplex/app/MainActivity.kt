@@ -41,9 +41,7 @@ class MainActivity: FragmentActivity() {
       )
     }
     setContent {
-      SimpleXTheme {
-        AppScreen()
-      }
+      AppScreen()
     }
     SimplexApp.context.schedulePeriodicServiceRestartWorker()
     SimplexApp.context.schedulePeriodicWakeUp()

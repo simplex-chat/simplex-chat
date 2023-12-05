@@ -1,8 +1,11 @@
 package chat.simplex.common.views.helpers
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -233,53 +236,71 @@ private fun alertTitle(title: String): (@Composable () -> Unit)? {
 
 @Composable
 private fun AlertContent(text: String?, hostDevice: Pair<Long?, String>?, extraPadding: Boolean = false, content: @Composable (() -> Unit)) {
-  Column(
-    Modifier
-      .padding(bottom = if (appPlatform.isDesktop) DEFAULT_PADDING else DEFAULT_PADDING_HALF)
-  ) {
-    if (appPlatform.isDesktop) {
-      HostDeviceTitle(hostDevice, extraPadding = extraPadding)
-    } else {
-      Spacer(Modifier.size(DEFAULT_PADDING_HALF))
-    }
-    CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
-      if (text != null) {
-        Text(
-          escapedHtmlToAnnotatedString(text, LocalDensity.current),
-          Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f),
-          fontSize = 16.sp,
-          textAlign = TextAlign.Center,
-          color = MaterialTheme.colors.secondary
-        )
+  BoxWithConstraints {
+    Column(
+      Modifier
+        .padding(bottom = if (appPlatform.isDesktop) DEFAULT_PADDING else DEFAULT_PADDING_HALF)
+    ) {
+      if (appPlatform.isDesktop) {
+        HostDeviceTitle(hostDevice, extraPadding = extraPadding)
+      } else {
+        Spacer(Modifier.size(DEFAULT_PADDING_HALF))
       }
+      CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
+        if (text != null) {
+          Column(Modifier.heightIn(max = this@BoxWithConstraints.maxHeight * 0.7f)
+            .verticalScroll(rememberScrollState())
+          ) {
+            SelectionContainer {
+              Text(
+                escapedHtmlToAnnotatedString(text, LocalDensity.current),
+                Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f),
+                fontSize = 16.sp,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colors.secondary
+              )
+            }
+          }
+        }
+      }
+      content()
     }
-    content()
   }
 }
 
 @Composable
 private fun AlertContent(text: AnnotatedString?, hostDevice: Pair<Long?, String>?, extraPadding: Boolean = false, content: @Composable (() -> Unit)) {
-  Column(
-    Modifier
-      .padding(bottom = if (appPlatform.isDesktop) DEFAULT_PADDING else DEFAULT_PADDING_HALF)
-  ) {
-    if (appPlatform.isDesktop) {
-      HostDeviceTitle(hostDevice, extraPadding = extraPadding)
-    } else {
-      Spacer(Modifier.size(DEFAULT_PADDING_HALF))
-    }
-    CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
-      if (text != null) {
-        Text(
-          text,
-          Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f),
-          fontSize = 16.sp,
-          textAlign = TextAlign.Center,
-          color = MaterialTheme.colors.secondary
-        )
+  BoxWithConstraints {
+    Column(
+      Modifier
+        .verticalScroll(rememberScrollState())
+        .padding(bottom = if (appPlatform.isDesktop) DEFAULT_PADDING else DEFAULT_PADDING_HALF)
+    ) {
+      if (appPlatform.isDesktop) {
+        HostDeviceTitle(hostDevice, extraPadding = extraPadding)
+      } else {
+        Spacer(Modifier.size(DEFAULT_PADDING_HALF))
       }
+      CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
+        if (text != null) {
+          Column(
+            Modifier.heightIn(max = this@BoxWithConstraints.maxHeight * 0.7f)
+              .verticalScroll(rememberScrollState())
+          ) {
+            SelectionContainer {
+              Text(
+                text,
+                Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f),
+                fontSize = 16.sp,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colors.secondary
+              )
+            }
+          }
+        }
+      }
+      content()
     }
-    content()
   }
 }
 
