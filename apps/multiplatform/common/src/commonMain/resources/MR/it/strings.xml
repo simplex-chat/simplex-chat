@@ -1528,4 +1528,8 @@
     <string name="create_chat_profile">Crea profilo di chat</string>
     <string name="no_connected_mobile">Nessun cellulare connesso</string>
     <string name="disconnect_remote_hosts">Disconnetti cellulari</string>
+    <string name="random_port">Casuale</string>
+    <string name="open_port_in_firewall_desc">Per consentire a un\'app mobile di connettersi al desktop, apri questa porta nel tuo firewall, se è attivo</string>
+    <string name="app_was_crashed">Vedi crash</string>
+    <string name="open_port_in_firewall_title">Apri porta nel firewall</string>
 </resources>
