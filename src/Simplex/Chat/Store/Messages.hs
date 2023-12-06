@@ -489,10 +489,10 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
         ciQuoteGroup [] = ciQuote Nothing $ CIQGroupRcv Nothing
         ciQuoteGroup ((Only itemId :. memberRow) : _) = ciQuote itemId . CIQGroupRcv . Just $ toGroupMember userContactId memberRow
 
-getChatPreviews :: DB.Connection -> User -> Bool -> Maybe ChatPaginationTs -> Maybe String -> IO [AChat]
-getChatPreviews db user withPCC paginationTs_ search_ = do
-  directChats <- findDirectChatPreviews_ db user count filterTS search
-  groupChats <- findGroupChatPreviews_ db user count filterTS search
+getChatPreviews :: DB.Connection -> User -> Bool -> Maybe ChatPaginationTs -> Bool -> Bool -> Maybe String -> IO [AChat]
+getChatPreviews db user withPCC paginationTs_ favorite unread search_ = do
+  directChats <- findDirectChatPreviews_ db user count filterTS favorite unread search
+  groupChats <- findGroupChatPreviews_ db user count filterTS favorite unread search
   cReqChats <- findContactRequestChatPreviews_ db user count filterTS search
   connChats <- if withPCC then findContactConnectionChatPreviews_ db user count filterTS search else pure []
   let refs = take count . map snd . sortBy (comparing $ Down . fst) $ concat [directChats, groupChats, cReqChats, connChats]
@@ -512,8 +512,8 @@ getChatPreview db user (ChatRef ct id') = case ct of
   CTContactRequest -> getContactRequestChatPreview_ db user id'
   CTContactConnection -> getContactConnectionChatPreview_ db user id'
 
-findDirectChatPreviews_ :: DB.Connection -> User -> Int -> Maybe (Bool, UTCTime) -> Text -> IO [(UTCTime, ChatRef)]
-findDirectChatPreviews_ db User {userId} count filterTS_ search = map (second $ ChatRef CTDirect) <$> DB.queryNamed db query params
+findDirectChatPreviews_ :: DB.Connection -> User -> Int -> Maybe (Bool, UTCTime) -> Bool -> Bool -> Text -> IO [(UTCTime, ChatRef)]
+findDirectChatPreviews_ db User {userId} count filterTS_ favorite unread search = map (second $ ChatRef CTDirect) <$> DB.queryNamed db query params
   where
     (query, params) = case filterTS_ of
       Nothing -> (queryBase <> queryEnd, paramsBase)
@@ -619,8 +619,8 @@ getDirectChatPreview_ db user@User {userId} contactId = do
           stats = toChatStats statsRow
        in AChat SCTDirect $ Chat (DirectChat contact) ci_ stats
 
-findGroupChatPreviews_ :: DB.Connection -> User -> Int -> Maybe (Bool, UTCTime) -> Text -> IO [(UTCTime, ChatRef)]
-findGroupChatPreviews_ db User {userId, userContactId} count filterTS_ search = map (second $ ChatRef CTGroup) <$> DB.queryNamed db query params
+findGroupChatPreviews_ :: DB.Connection -> User -> Int -> Maybe (Bool, UTCTime) -> Bool -> Bool -> Text -> IO [(UTCTime, ChatRef)]
+findGroupChatPreviews_ db User {userId, userContactId} count filterTS_ favorite unread search = map (second $ ChatRef CTGroup) <$> DB.queryNamed db query params
   where
     (query, params) = case filterTS_ of
       Nothing -> (queryBase <> queryEnd, paramsBase)
