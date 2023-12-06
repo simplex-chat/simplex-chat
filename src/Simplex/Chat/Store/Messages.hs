@@ -160,7 +160,8 @@ deleteGroupCIs db User {userId} GroupInfo {groupId} = do
 createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage e) -> ExceptT StoreError IO SndMessage
 createNewSndMessage db gVar connOrGroupId mkMessage =
   createWithRandomId gVar $ \sharedMsgId -> do
-    let NewMessage {chatMsgEvent, msgBody} = mkMessage $ SharedMsgId sharedMsgId
+    let NewMessage {chatMsgEvents, msgBody} = mkMessage $ SharedMsgId sharedMsgId
+        tag = eventsTag chatMsgEvents
     createdAt <- getCurrentTime
     DB.execute
       db
@@ -170,10 +171,15 @@ createNewSndMessage db gVar connOrGroupId mkMessage =
           shared_msg_id, shared_msg_id_user, created_at, updated_at
         ) VALUES (?,?,?,?,?,?,?,?,?)
       |]
-      (MDSnd, toCMEventTag chatMsgEvent, msgBody, connId_, groupId_, sharedMsgId, Just True, createdAt, createdAt)
+      (MDSnd, tag, msgBody, connId_, groupId_, sharedMsgId, Just True, createdAt, createdAt)
     msgId <- insertedRowId db
     pure SndMessage {msgId, sharedMsgId = SharedMsgId sharedMsgId, msgBody}
   where
+    eventsTag :: [ChatMsgEvent e] -> CMEventTag e
+    eventsTag events = case events of
+      [chatMsgEvent] -> toCMEventTag chatMsgEvent
+      (chatMsgEvent : _) -> toCMEventTag chatMsgEvent
+      [] -> error "createNewSndMessage: empty chatMsgEvents"
     (connId_, groupId_) = case connOrGroupId of
       ConnectionId connId -> (Just connId, Nothing)
       GroupId groupId -> (Nothing, Just groupId)
@@ -199,7 +205,7 @@ createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMs
   pure msg
 
 createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
-createNewRcvMessage db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMsgId_ authorMember forwardedByMember =
+createNewRcvMessage db connOrGroupId NewMessage {chatMsgEvents, msgBody} sharedMsgId_ authorMember forwardedByMember =
   case connOrGroupId of
     ConnectionId connId -> liftIO $ insertRcvMsg (Just connId) Nothing
     GroupId groupId -> case sharedMsgId_ of
@@ -222,6 +228,7 @@ createNewRcvMessage db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMs
           |]
           (groupId, sharedMsgId)
     insertRcvMsg connId_ groupId_ = do
+      let tag = eventsTag chatMsgEvents
       currentTs <- getCurrentTime
       DB.execute
         db
@@ -230,9 +237,14 @@ createNewRcvMessage db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMs
             (msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id, shared_msg_id, author_group_member_id, forwarded_by_group_member_id)
           VALUES (?,?,?,?,?,?,?,?,?,?)
         |]
-        (MDRcv, toCMEventTag chatMsgEvent, msgBody, currentTs, currentTs, connId_, groupId_, sharedMsgId_, authorMember, forwardedByMember)
+        (MDRcv, tag, msgBody, currentTs, currentTs, connId_, groupId_, sharedMsgId_, authorMember, forwardedByMember)
       msgId <- insertedRowId db
-      pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody, authorMember, forwardedByMember}
+      pure RcvMessage {msgId, chatMsgEvents = map (ACME (encoding @e)) chatMsgEvents, sharedMsgId_, msgBody, authorMember, forwardedByMember}
+    eventsTag :: [ChatMsgEvent e] -> CMEventTag e
+    eventsTag events = case events of
+      [chatMsgEvent] -> toCMEventTag chatMsgEvent
+      (chatMsgEvent : _) -> toCMEventTag chatMsgEvent
+      [] -> error "createNewRcvMessage: empty chatMsgEvents"
 
 createSndMsgDeliveryEvent :: DB.Connection -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> ExceptT StoreError IO ()
 createSndMsgDeliveryEvent db connId agentMsgId sndMsgDeliveryStatus = do
@@ -365,13 +377,13 @@ createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciCon
           CIQGroupRcv (Just GroupMember {memberId}) -> (Just False, Just memberId)
           CIQGroupRcv Nothing -> (Just False, Nothing)
 
-createNewRcvChatItem :: DB.Connection -> User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> Maybe CITimed -> Bool -> UTCTime -> UTCTime -> IO (ChatItemId, Maybe (CIQuote c))
-createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, forwardedByMember} sharedMsgId_ ciContent timed live itemTs createdAt = do
+createNewRcvChatItem :: DB.Connection -> User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> Maybe CITimed -> Bool -> UTCTime -> UTCTime -> ExceptT StoreError IO (ChatItemId, Maybe (CIQuote c))
+createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvents = [cme], forwardedByMember} sharedMsgId_ ciContent timed live itemTs createdAt = liftIO $ do
   ciId <- createNewChatItem_ db user chatDirection (Just msgId) sharedMsgId_ ciContent quoteRow timed live itemTs forwardedByMember createdAt
   quotedItem <- mapM (getChatItemQuote_ db user chatDirection) quotedMsg
   pure (ciId, quotedItem)
   where
-    quotedMsg = cmToQuotedMsg chatMsgEvent
+    quotedMsg = cmToQuotedMsg cme
     quoteRow :: NewQuoteRow
     quoteRow = case quotedMsg of
       Nothing -> (Nothing, Nothing, Nothing, Nothing, Nothing)
@@ -380,6 +392,7 @@ createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, forw
           CDDirectRcv _ -> (Just $ not sent, Nothing)
           CDGroupRcv GroupInfo {membership = GroupMember {memberId = userMemberId}} _ ->
             (Just $ Just userMemberId == memberId, memberId)
+createNewRcvChatItem _ _ _ RcvMessage {chatMsgEvents = _} _ _ _ _ _ _ = throwError SECantCreateBatchedEventsChatItem
 
 createNewChatItemNoMsg :: forall c d. MsgDirectionI d => DB.Connection -> User -> ChatDirection c d -> CIContent d -> UTCTime -> UTCTime -> IO ChatItemId
 createNewChatItemNoMsg db user chatDirection ciContent itemTs =

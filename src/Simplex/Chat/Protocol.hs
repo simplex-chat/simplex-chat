@@ -133,6 +133,14 @@ data AppMessageJson = AppMessageJson
     params :: J.Object
   }
 
+-- TODO [batch send] AppBatchMessageJson?
+-- data AppMessageJson = AppMessageJson
+--   { v :: Maybe ChatVersionRange,
+--     msgId :: Maybe SharedMsgId,
+--     event :: Text,
+--     params :: J.Object
+--   }
+
 data AppMessageBinary = AppMessageBinary
   { msgId :: Maybe SharedMsgId,
     tag :: Char,
@@ -207,7 +215,7 @@ $(JQ.deriveJSON defaultJSON ''LinkPreview)
 data ChatMessage e = ChatMessage
   { chatVRange :: VersionRange,
     msgId :: Maybe SharedMsgId,
-    chatMsgEvent :: ChatMsgEvent e
+    chatMsgEvent :: [ChatMsgEvent e]
   }
   deriving (Eq, Show)
 
@@ -285,8 +293,10 @@ isForwardedGroupMsg ev = case ev of
   _ -> False
 
 forwardedGroupMsg :: forall e. MsgEncodingI e => ChatMessage e -> Maybe (ChatMessage 'Json)
-forwardedGroupMsg msg@ChatMessage {chatMsgEvent} = case encoding @e of
-  SJson | isForwardedGroupMsg chatMsgEvent -> Just msg
+forwardedGroupMsg msg@ChatMessage {chatMsgEvent} = case chatMsgEvent of
+  [cme] -> case encoding @e of
+    SJson | isForwardedGroupMsg cme -> Just msg
+    _ -> Nothing
   _ -> Nothing
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
@@ -791,8 +801,8 @@ hasDeliveryReceipt = \case
 appBinaryToCM :: AppMessageBinary -> Either String (ChatMessage 'Binary)
 appBinaryToCM AppMessageBinary {msgId, tag, body} = do
   eventTag <- strDecode $ B.singleton tag
-  chatMsgEvent <- parseAll (msg eventTag) body
-  pure ChatMessage {chatVRange = chatInitialVRange, msgId, chatMsgEvent}
+  cme <- parseAll (msg eventTag) body
+  pure ChatMessage {chatVRange = chatInitialVRange, msgId, chatMsgEvent = [cme]}
   where
     msg :: CMEventTag 'Binary -> A.Parser (ChatMsgEvent 'Binary)
     msg = \case
@@ -801,8 +811,8 @@ appBinaryToCM AppMessageBinary {msgId, tag, body} = do
 appJsonToCM :: AppMessageJson -> Either String (ChatMessage 'Json)
 appJsonToCM AppMessageJson {v, msgId, event, params} = do
   eventTag <- strDecode $ encodeUtf8 event
-  chatMsgEvent <- msg eventTag
-  pure ChatMessage {chatVRange = maybe chatInitialVRange fromChatVRange v, msgId, chatMsgEvent}
+  cme <- msg eventTag
+  pure ChatMessage {chatVRange = maybe chatInitialVRange fromChatVRange v, msgId, chatMsgEvent = [cme]}
   where
     p :: FromJSON a => J.Key -> Either String a
     p key = JT.parseEither (.: key) params
@@ -855,14 +865,18 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
 (.=?) :: ToJSON v => JT.Key -> Maybe v -> [(J.Key, J.Value)] -> [(J.Key, J.Value)]
 key .=? value = maybe id ((:) . (key .=)) value
 
+-- TODO [batch send]
 chatToAppMessage :: forall e. MsgEncodingI e => ChatMessage e -> AppMessage e
-chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @e of
-  SBinary ->
-    let (binaryMsgId, body) = toBody chatMsgEvent
-     in AMBinary AppMessageBinary {msgId = binaryMsgId, tag = B.head $ strEncode tag, body}
-  SJson -> AMJson AppMessageJson {v = Just $ ChatVersionRange chatVRange, msgId, event = textEncode tag, params = params chatMsgEvent}
+chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case chatMsgEvent of
+  [cme] -> case encoding @e of
+    SBinary ->
+      let (binaryMsgId, body) = toBody cme
+      in AMBinary AppMessageBinary {msgId = binaryMsgId, tag = B.head $ strEncode $ toCMEventTag cme, body}
+    SJson -> AMJson AppMessageJson {v = Just $ ChatVersionRange chatVRange, msgId, event = textEncode $ toCMEventTag cme, params = params cme}
+  _ ->
+    -- encode list of events
+    error "bad ChatMessage"
   where
-    tag = toCMEventTag chatMsgEvent
     o :: [(J.Key, J.Value)] -> J.Object
     o = JM.fromList
     toBody :: ChatMsgEvent 'Binary -> (Maybe SharedMsgId, ByteString)
