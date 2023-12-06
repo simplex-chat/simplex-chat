@@ -14,7 +14,7 @@ import SimpleXChat
 
 let logger = Logger()
 
-let suspendingDelay: UInt64 = 2_000_000_000
+let suspendingDelay: UInt64 = 3_000_000_000
 
 let nseSuspendTimeout: Int = 15
 
@@ -72,12 +72,35 @@ enum NSENotification {
     }
 }
 
+class ThreadTracker {
+    private var threads: Set<UUID> = []
+    private static let queue = DispatchQueue(label: "chat.simplex.app.SimpleX-NSE.notification-threads.lock")
+
+    func startThread() -> UUID {
+        ThreadTracker.queue.sync {
+            let (_, t) = threads.insert(UUID())
+            return t
+        }
+    }
+
+    func endThread(_ t: UUID) -> Bool {
+        ThreadTracker.queue.sync {
+            let t_ = threads.remove(t)
+            return t_ != nil && threads.isEmpty
+        }
+    }
+}
+
+let notificationThreads = ThreadTracker()
+
 class NotificationService: UNNotificationServiceExtension {
     var contentHandler: ((UNNotificationContent) -> Void)?
     var bestAttemptNtf: NSENotification?
     var badgeCount: Int = 0
+    var threadId: UUID?
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
+        threadId = notificationThreads.startThread()
         logger.debug("DEBUGGING: NotificationService.didReceive")
         if let ntf = request.content.mutableCopy() as? UNMutableNotificationContent {
             setBestAttemptNtf(ntf)
@@ -140,9 +163,9 @@ class NotificationService: UNNotificationServiceExtension {
                             await PendingNtfs.shared.readStream(id, for: self, msgCount: ntfMsgInfo.ntfMessages.count, showNotifications: ntfMsgInfo.user.showNotifications)
                             deliverBestAttemptNtf()
                         }
+                        return
                     }
                 }
-                return
             } else {
                 setBestAttemptNtf(createErrorNtf(dbStatus))
             }
@@ -195,6 +218,12 @@ class NotificationService: UNNotificationServiceExtension {
             case .empty: handler(UNMutableNotificationContent())
             }
             bestAttemptNtf = nil
+        }
+        if let t = threadId {
+            threadId = nil
+            if notificationThreads.endThread(t) {
+                suspendChat(nseSuspendTimeout)
+            }
         }
     }
 }
@@ -321,7 +350,6 @@ func chatSuspended() {
 
 func receiveMessages() async {
     logger.debug("NotificationService receiveMessages")
-    var noMsgCount = 0
     while true {
         switch nseChatState.value {
         case .created: await delayWhenInactive()
@@ -336,17 +364,10 @@ func receiveMessages() async {
     func receiveMsg() async {
         if let msg = await chatRecvMsg() {
             logger.debug("NotificationService receiveMsg: message")
-            noMsgCount = 0
             if let (id, ntf) = await receivedMsgNtf(msg) {
                 logger.debug("NotificationService receiveMsg: notification")
                 await PendingNtfs.shared.createStream(id)
                 await PendingNtfs.shared.writeStream(id, ntf)
-            }
-        } else {
-            logger.debug("NotificationService receiveMsg: no message")
-            noMsgCount += 1
-            if noMsgCount >= SUSPEND_NSE_AFTER_NO_MESSAGES && nseChatState.value.canSuspend {
-                suspendChat(nseSuspendTimeout)
             }
         }
     }
