@@ -12,8 +12,8 @@ chatListTests = do
   it "should get last chats" testPaginationLast
   it "should get chats around timestamp" testPaginationTs
   it "should filter chats by search query" testSearch
-  -- it "should filter chats by fav/unread" testFavUnread
-  -- it "should filter chats by search over fav/unread" testSearchFavUnread
+  it "should filter chats by fav/unread" testFavUnread
+  it "should filter chats by search over fav/unread" testSearchFavUnread
 
 testPaginationLast :: HasCallStack => FilePath -> IO ()
 testPaginationLast tmp =
@@ -68,3 +68,34 @@ testSearch tmp =
         getChats_ "count=1 search=Alice" id alice []
         getChats_ "count=1 search=bob" id alice [("@bob", "hey", Just ConnReady)]
         getChats_ "count=1 search=Bob" id alice [("@bob", "hey", Just ConnReady)]
+
+testFavUnread :: HasCallStack => FilePath -> IO ()
+testFavUnread tmp =
+  withNewTestChatCfg tmp testCfg "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg tmp testCfg "bob" bobProfile $ \bob ->
+      withNewTestChatCfg tmp testCfg "cath" cathProfile $ \cath -> do
+        connectUsers alice bob
+        alice <##> bob
+        connectUsers alice cath
+        cath <##> alice
+        getChats_ "unread=on" id alice [] -- everything is read by cli interface
+        getChats_ "favorite=on" id alice []
+        alice ##> "/_settings @2 {\"enableNtfs\":\"all\",\"favorite\":true}"
+        alice <## "ok"
+        getChats_ "favorite=on" id alice [("@bob", "hey", Just ConnReady)]
+        alice ##> "/_unread chat @3 on"
+        alice <## "ok"
+        getChats_ "favorite=on unread=on" id alice [("@bob", "hey", Just ConnReady), ("@cath", "hey", Just ConnReady)]
+        alice ##> "/_unread chat @3 off"
+        alice <## "ok"
+        getChats_ "favorite=on unread=on" id alice [("@bob", "hey", Just ConnReady)]
+
+testSearchFavUnread :: HasCallStack => FilePath -> IO ()
+testSearchFavUnread tmp =
+  withNewTestChatCfg tmp testCfg "alice" aliceProfile $ \alice ->
+    withNewTestChatCfg tmp testCfg "bob" bobProfile $ \bob -> do
+      connectUsers alice bob
+      alice <##> bob
+      getChats_ "unread=on" id alice []
+      getChats_ "favorite=on" id alice []
+      getChats_ "favorite=on unread=on search=Bob" id alice [("@bob", "hey", Just ConnReady)]
