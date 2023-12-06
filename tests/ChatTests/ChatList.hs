@@ -8,13 +8,15 @@ import Simplex.Chat.Types (ConnStatus (..))
 import Test.Hspec
 
 chatListTests :: SpecWith FilePath
-chatListTests = focus $ do
-  it "should get last chats" testChatListPaginationLast
-  it "should get chats around timestamp" testChatListPaginationTs
-  it "should filter chats by search query" testChatListSearch
+chatListTests = do
+  it "should get last chats" testPaginationLast
+  it "should get chats around timestamp" testPaginationTs
+  it "should filter chats by search query" testSearch
+  -- it "should filter chats by fav/unread" testFavUnread
+  -- it "should filter chats by search over fav/unread" testSearchFavUnread
 
-testChatListPaginationLast :: HasCallStack => FilePath -> IO ()
-testChatListPaginationLast tmp =
+testPaginationLast :: HasCallStack => FilePath -> IO ()
+testPaginationLast tmp =
   withNewTestChatCfg tmp testCfg "alice" aliceProfile $ \alice ->
     withNewTestChatCfg tmp testCfg "bob" bobProfile $ \bob ->
       withNewTestChatCfg tmp testCfg "cath" cathProfile $ \cath -> do
@@ -30,8 +32,8 @@ testChatListPaginationLast tmp =
         alice <# "bob> hey"
         alice <# "@cath hey"
 
-testChatListPaginationTs :: HasCallStack => FilePath -> IO ()
-testChatListPaginationTs tmp =
+testPaginationTs :: HasCallStack => FilePath -> IO ()
+testPaginationTs tmp =
   withNewTestChatCfg tmp testCfg "alice" aliceProfile $ \alice ->
     withNewTestChatCfg tmp testCfg "bob" bobProfile $ \bob ->
       withNewTestChatCfg tmp testCfg "cath" cathProfile $ \cath -> do
@@ -54,8 +56,8 @@ testChatListPaginationTs tmp =
         getChats_ ("after=" <> tsAliceBob <> " count=10") id alice [("@cath", "hey", Just ConnReady)]
         getChats_ ("before=" <> tsAliceBob <> " count=10") id alice [("@bob", "hey", Just ConnReady)]
 
-testChatListSearch :: HasCallStack => FilePath -> IO ()
-testChatListSearch tmp =
+testSearch :: HasCallStack => FilePath -> IO ()
+testSearch tmp =
   withNewTestChatCfg tmp testCfg "alice" aliceProfile $ \alice ->
     withNewTestChatCfg tmp testCfg "bob" bobProfile $ \bob ->
       withNewTestChatCfg tmp testCfg "cath" cathProfile $ \cath -> do
