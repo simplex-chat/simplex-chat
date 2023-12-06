@@ -767,7 +767,7 @@ checkChatType x = case testEquality (chatTypeI @c) (chatTypeI @c') of
   Nothing -> Left "bad chat type"
 
 data NewMessage e = NewMessage
-  { chatMsgEvents :: [ChatMsgEvent e],
+  { chatMsgEvent :: ChatMsgEvent e,
     msgBody :: MsgBody
   }
   deriving (Show)
@@ -780,7 +780,7 @@ data SndMessage = SndMessage
 
 data RcvMessage = RcvMessage
   { msgId :: MessageId,
-    chatMsgEvents :: [AChatMsgEvent],
+    chatMsgEvent :: AChatMsgEvent,
     sharedMsgId_ :: Maybe SharedMsgId,
     msgBody :: MsgBody,
     authorMember :: Maybe GroupMemberId,

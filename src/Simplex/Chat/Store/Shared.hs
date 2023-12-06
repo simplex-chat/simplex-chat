@@ -93,7 +93,6 @@ data StoreError
   | SEChatItemSharedMsgIdNotFound {sharedMsgId :: SharedMsgId}
   | SEChatItemNotFoundByFileId {fileId :: FileTransferId}
   | SEChatItemNotFoundByGroupId {groupId :: GroupId}
-  | SECantCreateBatchedEventsChatItem
   | SEProfileNotFound {profileId :: Int64}
   | SEDuplicateGroupLink {groupInfo :: GroupInfo}
   | SEGroupLinkNotFound {groupInfo :: GroupInfo}
