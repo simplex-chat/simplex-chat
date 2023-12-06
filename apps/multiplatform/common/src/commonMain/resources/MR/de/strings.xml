@@ -1610,6 +1610,7 @@
     <string name="disconnect_remote_hosts">Mobiltelefone trennen</string>
     <string name="no_connected_mobile">Kein Mobiltelefon verbunden</string>
     <string name="random_port">Zufällig</string>
-    <string name="open_port_in_firewall_desc">Um der Mobiltelefon-App die Verbindung zum Desktop zu ermöglichen, öffnen Sie diesen Port in Ihrer Firewall, falls Sie ihn aktiviert haben</string>
+    <string name="open_port_in_firewall_desc">Um einer Mobiltelefon-App die Verbindung zum Desktop zu ermöglichen, öffnen Sie diesen Port in Ihrer Firewall, falls Sie diese aktiviert haben</string>
     <string name="open_port_in_firewall_title">Port in Firewall öffnen</string>
+    <string name="app_was_crashed">Ansicht abgestürzt</string>
 </resources>
