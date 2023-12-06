@@ -471,18 +471,21 @@ data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: Maybe FileInv
 
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 
-instance MsgEncodingI e => StrEncoding (ChatMessage e) where
+instance MsgEncodingI e => StrEncoding [ChatMessage e] where
   strEncode msg = case chatToAppMessage msg of
     AMJson m -> LB.toStrict $ J.encode m
     AMBinary m -> strEncode m
   strP = (\(ACMsg _ m) -> checkEncoding m) <$?> strP
 
-instance StrEncoding AChatMessage where
-  strEncode (ACMsg _ m) = strEncode m
+instance StrEncoding [AChatMessage] where
+  strEncode [(ACMsg _ m)] = strEncode m
   strP =
     A.peekChar' >>= \case
-      '{' -> ACMsg SJson <$> ((appJsonToCM <=< J.eitherDecodeStrict') <$?> A.takeByteString)
-      _ -> ACMsg SBinary <$> (appBinaryToCM <$?> strP)
+      '{' -> (:[]) <$> parseItem
+      -- '[' ->
+      _ -> (:[]) . ACMsg SBinary <$> (appBinaryToCM <$?> strP)
+    where
+      parseItem = ACMsg SJson <$> ((appJsonToCM <=< J.eitherDecodeStrict') <$?> A.takeByteString)
 
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =
