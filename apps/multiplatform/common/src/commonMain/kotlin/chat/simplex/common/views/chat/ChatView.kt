@@ -92,7 +92,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
         .distinctUntilChanged()
         .onEach { Log.d(TAG, "TODOCHAT: chats: activeChatId ${activeChat.value?.id} == new chatId ${it?.id} ${activeChat.value?.id == it?.id} ") }
         // Only changed chatInfo is important thing. Other properties can be skipped for reducing recompositions
-        .filter { it != null && it?.chatInfo != activeChat.value?.chatInfo }
+        .filter { it != null && it.chatInfo != activeChat.value?.chatInfo }
         .collect {
           activeChat.value = it
           Log.d(TAG, "TODOCHAT: chats: activeChatId became ${activeChat.value?.id}")
@@ -145,7 +145,6 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       },
       attachmentOption,
       attachmentBottomSheetState,
-      chatModel.chatItems,
       searchText,
       useLinkPreviews = useLinkPreviews,
       linkMode = chatModel.simplexLinkMode.value,
@@ -222,7 +221,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       },
       loadPrevMessages = { cInfo ->
         val c = chatModel.getChat(cInfo.id)
-        val firstId = chatModel.chatItems.firstOrNull()?.id
+        val firstId = chatModel.chatItems.value.firstOrNull()?.id
         if (c != null && firstId != null) {
           withApi {
             Log.d(TAG, "TODOCHAT: loadPrevMessages: loading for ${c.id}, current chatId ${ChatModel.chatId.value}, size was ${ChatModel.chatItems.size}")
@@ -234,7 +233,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       deleteMessage = { itemId, mode ->
         withApi {
           val cInfo = chat.chatInfo
-          val toDeleteItem = chatModel.chatItems.firstOrNull { it.id == itemId }
+          val toDeleteItem = chatModel.chatItems.value.firstOrNull { it.id == itemId }
           val toModerate = toDeleteItem?.memberToModerate(chat.chatInfo)
           val groupInfo = toModerate?.first
           val groupMember = toModerate?.second
@@ -460,7 +459,6 @@ fun ChatLayout(
   composeView: (@Composable () -> Unit),
   attachmentOption: MutableState<AttachmentOption?>,
   attachmentBottomSheetState: ModalBottomSheetState,
-  chatItems: List<ChatItem>,
   searchValue: State<String>,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
@@ -545,7 +543,7 @@ fun ChatLayout(
             .padding(contentPadding)
           ) {
             ChatItemsList(
-              chat, unreadCount, composeState, chatItems, searchValue,
+              chat, unreadCount, composeState, searchValue,
               useLinkPreviews, linkMode, showMemberInfo, loadPrevMessages, deleteMessage, deleteMessages,
               receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat,
               updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
@@ -785,7 +783,6 @@ fun BoxWithConstraintsScope.ChatItemsList(
   chat: Chat,
   unreadCount: State<Int>,
   composeState: MutableState<ComposeState>,
-  chatItems: List<ChatItem>,
   searchValue: State<String>,
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
@@ -814,7 +811,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
 ) {
   val listState = rememberLazyListState()
   val scope = rememberCoroutineScope()
-  ScrollToBottom(chat.id, listState, chatItems)
+  ScrollToBottom(chat.id, listState, chatModel.chatItems)
   var prevSearchEmptiness by rememberSaveable { mutableStateOf(searchValue.value.isEmpty()) }
   // Scroll to bottom when search value changes from something to nothing and back
   LaunchedEffect(searchValue.value.isEmpty()) {
@@ -828,12 +825,12 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   }
 
-  PreloadItems(listState, ChatPagination.UNTIL_PRELOAD_COUNT, chat, chatItems) { c ->
+  PreloadItems(listState, ChatPagination.UNTIL_PRELOAD_COUNT, chat, chatModel.chatItems) { c ->
     loadPrevMessages(c.chatInfo)
   }
 
   Spacer(Modifier.size(8.dp))
-  val reversedChatItems by remember { derivedStateOf { chatItems.reversed().toList() } }
+  val reversedChatItems by remember { derivedStateOf { chatModel.chatItems.asReversed() } }
   val maxHeightRounded = with(LocalDensity.current) { maxHeight.roundToPx() }
   val scrollToItem: (Long) -> Unit = { itemId: Long ->
     val index = reversedChatItems.indexOfFirst { it.id == itemId }
@@ -886,7 +883,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
           }
         }
         val provider = {
-          providerForGallery(i, chatItems, cItem.id) { indexInReversed ->
+          providerForGallery(i, chatModel.chatItems.value, cItem.id) { indexInReversed ->
             scope.launch {
               listState.scrollToItem(
                 kotlin.math.min(reversedChatItems.lastIndex, indexInReversed + 1),
@@ -1005,11 +1002,11 @@ fun BoxWithConstraintsScope.ChatItemsList(
       }
     }
   }
-  FloatingButtons(chatItems, unreadCount, chat.chatStats.minUnreadItemId, searchValue, markRead, setFloatingButton, listState)
+  FloatingButtons(chatModel.chatItems, unreadCount, chat.chatStats.minUnreadItemId, searchValue, markRead, setFloatingButton, listState)
 }
 
 @Composable
-private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: List<ChatItem>) {
+private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: State<List<ChatItem>>) {
   val scope = rememberCoroutineScope()
   // Helps to scroll to bottom after moving from Group to Direct chat
   // and prevents scrolling to bottom on orientation change
@@ -1027,7 +1024,7 @@ private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: 
   * When the first visible item (from bottom) is visible (even partially) we can autoscroll to 0 item. Or just scrollBy small distance otherwise
   * */
   LaunchedEffect(Unit) {
-    snapshotFlow { chatItems.lastOrNull()?.id }
+    snapshotFlow { chatItems.value.lastOrNull()?.id }
       .distinctUntilChanged()
       .filter { listState.layoutInfo.visibleItemsInfo.firstOrNull()?.key != it }
       .collect {
@@ -1050,7 +1047,7 @@ private fun ScrollToBottom(chatId: ChatId, listState: LazyListState, chatItems: 
 
 @Composable
 fun BoxWithConstraintsScope.FloatingButtons(
-  chatItems: List<ChatItem>,
+  chatItems: State<List<ChatItem>>,
   unreadCount: State<Int>,
   minUnreadItemId: Long,
   searchValue: State<String>,
@@ -1084,10 +1081,11 @@ fun BoxWithConstraintsScope.FloatingButtons(
   val bottomUnreadCount by remember {
     derivedStateOf {
       if (unreadCount.value == 0) return@derivedStateOf 0
-      val from = chatItems.lastIndex - firstVisibleIndex - lastIndexOfVisibleItems
-      if (chatItems.size <= from || from < 0) return@derivedStateOf 0
+      val items = chatItems.value
+      val from = items.lastIndex - firstVisibleIndex - lastIndexOfVisibleItems
+      if (items.size <= from || from < 0) return@derivedStateOf 0
 
-      chatItems.subList(from, chatItems.size).count { it.isRcvNew }
+      items.subList(from, items.size).count { it.isRcvNew }
     }
   }
   val firstVisibleOffset = (-with(LocalDensity.current) { maxHeight.roundToPx() } * 0.8).toInt()
@@ -1133,7 +1131,7 @@ fun BoxWithConstraintsScope.FloatingButtons(
         painterResource(MR.images.ic_check),
         onClick = {
           markRead(
-            CC.ItemRange(minUnreadItemId, chatItems[chatItems.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id - 1),
+            CC.ItemRange(minUnreadItemId, chatItems.value[chatItems.size - listState.layoutInfo.visibleItemsInfo.lastIndex - 1].id - 1),
             bottomUnreadCount
           )
           showDropDown.value = false
@@ -1147,10 +1145,10 @@ fun PreloadItems(
   listState: LazyListState,
   remaining: Int = 10,
   chat: Chat,
-  items: List<*>,
+  items: State<List<*>>,
   onLoadMore: (chat: Chat) -> Unit,
 ) {
-  LaunchedEffect(listState, chat, items) {
+  LaunchedEffect(listState, chat, items.value) {
     snapshotFlow { listState.layoutInfo }
       .map {
         val totalItemsNumber = it.totalItemsCount
@@ -1428,7 +1426,6 @@ fun PreviewChatLayout() {
       composeView = {},
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
-      chatItems = chatItems,
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
@@ -1501,7 +1498,6 @@ fun PreviewGroupChatLayout() {
       composeView = {},
       attachmentOption = remember { mutableStateOf<AttachmentOption?>(null) },
       attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden),
-      chatItems = chatItems,
       searchValue,
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,

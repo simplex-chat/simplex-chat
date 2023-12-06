@@ -3,6 +3,7 @@ package chat.simplex.common.model
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
@@ -55,7 +56,7 @@ object ChatModel {
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
-  val chatItems = mutableStateListOf<ChatItem>()
+  val chatItems = mutableStateOf(SnapshotStateList<ChatItem>())
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
   val groupMembers = mutableStateListOf<GroupMember>()
 
@@ -264,9 +265,9 @@ object ChatModel {
       if (chatId.value == cInfo.id) {
         Log.d(TAG, "TODOCHAT: addChatItem: chatIds are equal, size ${chatItems.size}")
         // Prevent situation when chat item already in the list received from backend
-        if (chatItems.none { it.id == cItem.id }) {
-          if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
-            chatItems.add(kotlin.math.max(0, chatItems.lastIndex), cItem)
+        if (chatItems.value.none { it.id == cItem.id }) {
+          if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+            chatItems.add(kotlin.math.max(0, chatItems.value.lastIndex), cItem)
           } else {
             chatItems.add(cItem)
             Log.d(TAG, "TODOCHAT: addChatItem: added to chat ${chatId.value} from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
@@ -300,9 +301,9 @@ object ChatModel {
     return withContext(Dispatchers.Main) {
       // update current chat
       if (chatId.value == cInfo.id) {
-        val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
+        val itemIndex = chatItems.value.indexOfFirst { it.id == cItem.id }
         if (itemIndex >= 0) {
-          chatItems[itemIndex] = cItem
+          chatItems.value[itemIndex] = cItem
           Log.d(TAG, "TODOCHAT: upsertChatItem: updated in chat $chatId from ${cInfo.id} ${cItem.id}, size ${chatItems.size}")
           false
         } else {
@@ -325,9 +326,9 @@ object ChatModel {
   suspend fun updateChatItem(cInfo: ChatInfo, cItem: ChatItem, status: CIStatus? = null) {
     withContext(Dispatchers.Main) {
       if (chatId.value == cInfo.id) {
-        val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
+        val itemIndex = chatItems.value.indexOfFirst { it.id == cItem.id }
         if (itemIndex >= 0) {
-          chatItems[itemIndex] = cItem
+          chatItems.value[itemIndex] = cItem
         }
       } else if (status != null) {
         chatItemStatuses[cItem.id] = status
@@ -351,9 +352,9 @@ object ChatModel {
     }
     // remove from current chat
     if (chatId.value == cInfo.id) {
-      val itemIndex = chatItems.indexOfFirst { it.id == cItem.id }
+      val itemIndex = chatItems.value.indexOfFirst { it.id == cItem.id }
       if (itemIndex >= 0) {
-        AudioPlayer.stop(chatItems[itemIndex])
+        AudioPlayer.stop(chatItems.value[itemIndex])
         chatItems.removeAt(itemIndex)
       }
     }
@@ -395,7 +396,7 @@ object ChatModel {
   }
 
   fun removeLiveDummy() {
-    if (chatItems.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
+    if (chatItems.value.lastOrNull()?.id == ChatItem.TEMP_LIVE_CHAT_ITEM_ID) {
       chatItems.removeLast()
     }
   }
@@ -428,13 +429,13 @@ object ChatModel {
     if (chatId.value == cInfo.id) {
       var i = 0
       Log.d(TAG, "TODOCHAT: markItemsReadInCurrentChat: marking read ${cInfo.id}, current chatId ${chatId.value}, size was ${chatItems.size}")
-      while (i < chatItems.count()) {
-        val item = chatItems[i]
+      while (i < chatItems.size) {
+        val item = chatItems.value[i]
         if (item.meta.itemStatus is CIStatus.RcvNew && (range == null || (range.from <= item.id && item.id <= range.to))) {
           val newItem = item.withStatus(CIStatus.RcvRead())
-          chatItems[i] = newItem
+          chatItems.value[i] = newItem
           if (newItem.meta.itemLive != true && newItem.meta.itemTimed?.ttl != null) {
-            chatItems[i] = newItem.copy(meta = newItem.meta.copy(itemTimed = newItem.meta.itemTimed.copy(
+            chatItems.value[i] = newItem.copy(meta = newItem.meta.copy(itemTimed = newItem.meta.itemTimed.copy(
               deleteAt = Clock.System.now() + newItem.meta.itemTimed.ttl.toDuration(DurationUnit.SECONDS)))
             )
           }
@@ -1847,6 +1848,38 @@ data class ChatItem (
       )
   }
 }
+
+fun MutableState<SnapshotStateList<ChatItem>>.add(index: Int, chatItem: ChatItem) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(index, chatItem) }
+}
+
+fun MutableState<SnapshotStateList<ChatItem>>.add(chatItem: ChatItem) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); add(chatItem) }
+}
+
+fun MutableState<SnapshotStateList<ChatItem>>.addAll(index: Int, chatItems: List<ChatItem>) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); addAll(index, chatItems) }
+}
+
+fun MutableState<SnapshotStateList<ChatItem>>.addAll(chatItems: List<ChatItem>) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); addAll(chatItems) }
+}
+
+fun MutableState<SnapshotStateList<ChatItem>>.removeAt(index: Int) {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); removeAt(index) }
+}
+
+fun MutableState<SnapshotStateList<ChatItem>>.removeLast() {
+  value = SnapshotStateList<ChatItem>().apply { addAll(value); removeLast() }
+}
+
+fun MutableState<SnapshotStateList<ChatItem>>.clear() {
+  value = SnapshotStateList<ChatItem>()
+}
+
+fun State<SnapshotStateList<ChatItem>>.asReversed(): MutableList<ChatItem> = value.asReversed()
+
+val State<List<ChatItem>>.size: Int get() = value.size
 
 enum class CIMergeCategory {
   MemberConnected,
