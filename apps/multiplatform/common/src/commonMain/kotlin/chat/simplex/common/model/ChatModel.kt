@@ -2,7 +2,6 @@ package chat.simplex.common.model
 
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
@@ -67,6 +66,9 @@ object ChatModel {
 
   // set when app opened from external intent
   val clearOverlays = mutableStateOf<Boolean>(false)
+
+  // Only needed during onboarding when user skipped password setup (left as random password)
+  val desktopOnboardingRandomPassword = mutableStateOf(false)
 
   // set when app is opened via contact or invitation URI
   val appOpenUrl = mutableStateOf<URI?>(null)
