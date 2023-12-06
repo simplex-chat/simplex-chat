@@ -144,13 +144,15 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
       val toasts = remember { simplexWindowState.toasts }
       val toast = toasts.firstOrNull()
       if (toast != null) {
-        Box(Modifier.fillMaxSize().padding(bottom = 20.dp), contentAlignment = Alignment.BottomCenter) {
-          Text(
-            escapedHtmlToAnnotatedString(toast.first, LocalDensity.current),
-            Modifier.background(MaterialTheme.colors.primary, RoundedCornerShape(100)).padding(vertical = 5.dp, horizontal = 10.dp),
-            color = MaterialTheme.colors.onPrimary,
-            style = MaterialTheme.typography.body1
-          )
+        SimpleXTheme {
+          Box(Modifier.fillMaxSize().padding(bottom = 20.dp), contentAlignment = Alignment.BottomCenter) {
+            Text(
+              escapedHtmlToAnnotatedString(toast.first, LocalDensity.current),
+              Modifier.background(MaterialTheme.colors.primary, RoundedCornerShape(100)).padding(vertical = 5.dp, horizontal = 10.dp),
+              color = MaterialTheme.colors.onPrimary,
+              style = MaterialTheme.typography.body1
+            )
+          }
         }
         // Shows toast in insertion order with preferred delay per toast. New one will be shown once previous one expires
         LaunchedEffect(toast, toasts.size) {
