@@ -1433,7 +1433,7 @@
     <string name="block_member_button">Lid blokkeren</string>
     <string name="connect_plan_repeat_join_request">Deelnameverzoek herhalen?</string>
     <string name="button_remove_member_question">Lid verwijderen?</string>
-    <string name="delete_and_notify_contact">Contact verwijderen en op de hoogte stellen</string>
+    <string name="delete_and_notify_contact">Verwijderen en contact op de hoogte stellen</string>
     <string name="connect_plan_open_group">Open groep</string>
     <string name="unblock_member_desc">Berichten van %s worden getoond!</string>
     <string name="error_sending_message_contact_invitation">Fout bij verzenden van uitnodiging</string>
@@ -1526,4 +1526,8 @@
     <string name="create_chat_profile">Chatprofiel aanmaken</string>
     <string name="disconnect_remote_hosts">Mobiele telefoons loskoppelen</string>
     <string name="no_connected_mobile">Geen verbonden mobiel</string>
+    <string name="random_port">willekeurig</string>
+    <string name="open_port_in_firewall_desc">Om een mobiele app verbinding te laten maken met de desktop, opent u deze poort in uw firewall, als u deze hebt ingeschakeld</string>
+    <string name="app_was_crashed">Weergave gecrasht</string>
+    <string name="open_port_in_firewall_title">Open poort in firewall</string>
 </resources>
