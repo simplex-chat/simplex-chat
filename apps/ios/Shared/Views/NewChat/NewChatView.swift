@@ -263,6 +263,7 @@ private struct InviteView: View {
     private func qrCodeView() -> some View {
         Section("Or show this code") {
             SimpleXLinkQRCode(uri: connReqInvitation, onShare: setInvitationUsed)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .padding()
                 .background(
                     RoundedRectangle(cornerRadius: 12, style: .continuous)
