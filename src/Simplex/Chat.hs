@@ -3624,9 +3624,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         cmdId <- createAckCmd conn
         let aChatMsgs = parseChatMessages msgBody
         withAckMessage agentConnId cmdId msgMeta $ do
-          -- TODO [batch send] workaround for UNIQUE(connection_id, agent_msg_id) in msg_deliveries
-          -- - recreate table without UNIQUE constraint?
-          -- - many-to-many table?
           forM_ aChatMsgs $ \case
             Right (ACMsg _ chatMsg) ->
               processEvent cmdId chatMsg `catchChatError` \e -> toView $ CRChatError (Just user) e
@@ -5232,7 +5229,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             XGrpInfo p' -> xGrpInfo gInfo author p' rcvMsg msgTs
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
 
-    -- TODO [batch send] update status of all messages in batch (getChatItemIdByAgentMsgId to return [ChatItemId])
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
@@ -5240,7 +5236,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         withStore' $ \db -> updateSndMsgDeliveryStatus db connId agentMsgId $ MDSSndRcvd msgRcptStatus
         updateDirectItemStatus ct conn agentMsgId $ CISSndRcvd msgRcptStatus SSPComplete
 
-    -- TODO [batch send] same as for directMsgReceived
+    -- TODO [batch send] update status of all messages in batch
+    -- - this is for when we implement identifying inactive connections
+    -- - regular messages sent in batch would all be marked as delivered by a single receipt
+    -- - repeat for directMsgReceived if same logic is applied to direct messages
+    -- - getChatItemIdByAgentMsgId to return [ChatItemId]
     groupMsgReceived :: GroupInfo -> GroupMember -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
     groupMsgReceived gInfo m conn@Connection {connId} msgMeta msgRcpts = do
       checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta
@@ -5520,7 +5520,7 @@ createSndMessage chatMsgEvent connOrGroupId = do
   gVar <- asks idsDrg
   ChatConfig {chatVRange} <- asks config
   withStore $ \db -> createNewSndMessage db gVar connOrGroupId $ \sharedMsgId ->
-    let msgBody = strEncode ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
+    let msgBody = encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
      in NewMessage {chatMsgEvent, msgBody}
 
 sendBatchedDirectMessages :: (MsgEncodingI e, ChatMonad m) => Connection -> [ChatMsgEvent e] -> ConnOrGroupId -> m (SndMessage, Int64)
@@ -5543,13 +5543,13 @@ createBatchedSndMessage events connOrGroupId = do
   -- - * return list of SndMessages? it's not necessary for current use cases
   withStore $ \db -> createNewSndMessage db gVar connOrGroupId $ \sharedMsgId ->
     let chatMsgEvent = XOk -- dummy
-        msgBody = strEncode ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
+        msgBody = encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
      in NewMessage {chatMsgEvent, msgBody}
 
 directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
 directMessage chatMsgEvent = do
   ChatConfig {chatVRange} <- asks config
-  pure $ strEncode ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
+  pure $ encodeChatMessage ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m Int64
 deliverMessage conn cmEventTag msgBody msgId = do
@@ -5634,9 +5634,9 @@ sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn
           _ -> throwChatError $ CEGroupMemberIntroNotFound localDisplayName
         _ -> pure ()
 
+-- TODO [batch send] refactor direct message processing same as groups (e.g. checkIntegrity before processing)
 saveDirectRcvMSG :: ChatMonad m => Connection -> MsgMeta -> CommandId -> MsgBody -> m (Connection, RcvMessage)
-saveDirectRcvMSG conn@Connection {connId} agentMsgMeta agentAckCmdId msgBody = do
-  -- TODO [batch send] refactor direct message processing same as groups
+saveDirectRcvMSG conn@Connection {connId} agentMsgMeta agentAckCmdId msgBody =
   case parseChatMessages msgBody of
     [Right (ACMsg _ ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent})] -> do
       conn' <- updatePeerChatVRange conn chatVRange

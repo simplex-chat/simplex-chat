@@ -32,7 +32,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, UserId)
+import Simplex.Messaging.Agent.Protocol (ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)

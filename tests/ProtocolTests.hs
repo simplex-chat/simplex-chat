@@ -14,8 +14,6 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet
-import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (supportedSMPClientVRange)
 import Simplex.Messaging.Version
 import Test.Hspec
@@ -62,12 +60,17 @@ quotedMsg =
 
 (==##) :: MsgEncodingI e => ByteString -> ChatMessage e -> Expectation
 s ==## msg = do
-  strDecode s `shouldBe` Right msg
-  parseAll strP s `shouldBe` Right msg
+  case parseChatMessages s of
+    [acMsg] -> case acMsg of
+      Right (ACMsg _ msg') -> case checkEncoding msg' of
+        Right msg'' -> msg'' `shouldBe` msg
+        Left e -> expectationFailure $ "checkEncoding error: " <> show e
+      Left e -> expectationFailure $ "parse error: " <> show e
+    _ -> expectationFailure "exactly one message expected"
 
 (##==) :: MsgEncodingI e => ByteString -> ChatMessage e -> Expectation
 s ##== msg =
-  J.eitherDecodeStrict' (strEncode msg)
+  J.eitherDecodeStrict' (encodeChatMessage msg)
     `shouldBe` (J.eitherDecodeStrict' s :: Either String J.Value)
 
 (##==##) :: MsgEncodingI e => ByteString -> ChatMessage e -> Expectation

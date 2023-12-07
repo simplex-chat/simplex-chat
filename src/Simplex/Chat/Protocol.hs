@@ -471,19 +471,10 @@ data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: Maybe FileInv
 
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 
--- TODO [batch send] remove ChatMessage, AChatMessage StrEncoding instances, use specialized function strEncode
-instance MsgEncodingI e => StrEncoding (ChatMessage e) where
-  strEncode msg = case chatToAppMessage msg of
-    AMJson m -> LB.toStrict $ J.encode m
-    AMBinary m -> strEncode m
-  strP = (\(ACMsg _ m) -> checkEncoding m) <$?> strP
-
-instance StrEncoding AChatMessage where
-  strEncode (ACMsg _ m) = strEncode m
-  strP =
-    A.peekChar' >>= \case
-      '{' -> ACMsg SJson <$> ((appJsonToCM <=< J.eitherDecodeStrict') <$?> A.takeByteString)
-      _ -> ACMsg SBinary <$> (appBinaryToCM <$?> strP)
+encodeChatMessage :: MsgEncodingI e => ChatMessage e -> ByteString
+encodeChatMessage msg = case chatToAppMessage msg of
+  AMJson m -> LB.toStrict $ J.encode m
+  AMBinary m -> strEncode m
 
 parseChatMessages :: ByteString -> [Either String AChatMessage]
 parseChatMessages "" = [Left "empty string"]
