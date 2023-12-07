@@ -515,9 +515,7 @@ findDirectChatPreviews_ :: DB.Connection -> User -> Int -> Bool -> UTCTime -> Bo
 findDirectChatPreviews_ db User {userId} count after ts favorite unread search = map (second $ ChatRef CTDirect) <$> DB.queryNamed db query params
   where
     needStats = (favorite || unread) && search == ""
-    query = if after then queryAfter else queryBefore
-    queryAfter = baseQuery <> "\nAND TS > :ts\n" <> baseEnd
-    queryBefore = baseQuery <> "\nAND TS < :ts\n" <> baseEnd
+    query = baseQuery <> if after then queryAfter else queryBefore
     baseQuery = if needStats then queryStats else queryNoStats
     queryStats = baseSelect <> chatStats <> baseWhere <> favOrUnread
     queryNoStats = baseSelect <> baseWhere
@@ -576,9 +574,16 @@ findDirectChatPreviews_ db User {userId} count after ts favorite unread search =
           OR ChatStats.MinUnread
         )
       |]
-    baseEnd =
+    queryAfter =
       [sql|
+        AND TS > :ts
         ORDER BY TS DESC
+        LIMIT :count
+      |]
+    queryBefore =
+      [sql|
+        AND TS < :ts
+        ORDER BY TS ASC
         LIMIT :count
       |]
     params = if needStats then (":rcv_new" := CISRcvNew) : paramsBase else paramsBase
@@ -648,9 +653,7 @@ findGroupChatPreviews_ :: DB.Connection -> User -> Int -> Bool -> UTCTime -> Boo
 findGroupChatPreviews_ db User {userId, userContactId} count after ts favorite unread search = map (second $ ChatRef CTGroup) <$> DB.queryNamed db query params
   where
     needStats = (favorite || unread) && search == ""
-    query = if after then queryAfter else queryBefore
-    queryAfter = baseQuery <> "\nAND TS > :ts\n" <> baseEnd
-    queryBefore = baseQuery <> "\nAND TS < :ts\n" <> baseEnd
+    query = baseQuery <> if after then queryAfter else queryBefore
     baseQuery = if needStats then queryStats else queryNoStats
     queryStats = baseSelect <> chatStats <> baseWhere <> favOrUnread
     queryNoStats = baseSelect <> baseWhere
@@ -690,9 +693,16 @@ findGroupChatPreviews_ db User {userId, userContactId} count after ts favorite u
           OR ChatStats.MinUnread
         )
       |]
-    baseEnd =
+    queryAfter =
       [sql|
+        AND TS > :ts
         ORDER BY TS DESC
+        LIMIT :count
+      |]
+    queryBefore =
+      [sql|
+        AND TS < :ts
+        ORDER BY TS ASC
         LIMIT :count
       |]
     params = if needStats then (":rcv_new" := CISRcvNew) : paramsBase else paramsBase
@@ -781,9 +791,7 @@ getGroupChatPreview_ db User {userId, userContactId} groupId = do
 findContactRequestChatPreviews_ :: DB.Connection -> User -> Int -> Bool -> UTCTime -> Text -> IO [(UTCTime, ChatRef)]
 findContactRequestChatPreviews_ db User {userId} count after ts search = map (second $ ChatRef CTContactRequest) <$> DB.queryNamed db query params
   where
-    query = if after then queryAfter else queryBefore
-    queryAfter = baseQuery <> "\nAND TS > :ts\n" <> baseEnd
-    queryBefore = baseQuery <> "\nAND TS < :ts\n" <> baseEnd
+    query = baseQuery <> if after then queryAfter else queryBefore
     baseQuery =
       [sql|
         SELECT cr.updated_at as TS, cr.contact_request_id
@@ -800,9 +808,16 @@ findContactRequestChatPreviews_ db User {userId} count after ts search = map (se
             OR p.full_name LIKE '%' || :search || '%'
           )
       |]
-    baseEnd =
+    queryAfter =
       [sql|
+        AND TS > :ts
         ORDER BY TS DESC
+        LIMIT :count
+      |]
+    queryBefore =
+      [sql|
+        AND TS < :ts
+        ORDER BY TS ASC
         LIMIT :count
       |]
     params =
@@ -840,9 +855,7 @@ getContactRequestChatPreview_ db User {userId} contactRequestId =
 findContactConnectionChatPreviews_ :: DB.Connection -> User -> Int -> Bool -> UTCTime -> Text -> IO [(UTCTime, ChatRef)]
 findContactConnectionChatPreviews_ db User {userId} count after ts search = map (second $ ChatRef CTContactConnection) <$> DB.queryNamed db query params
   where
-    query = if after then queryAfter else queryBefore
-    queryAfter = baseQuery <> "\nAND TS > :ts\n" <> baseEnd
-    queryBefore = baseQuery <> "\nAND TS < :ts\n" <> baseEnd
+    query = baseQuery <> if after then queryAfter else queryBefore
     baseQuery =
       [sql|
         SELECT updated_at as TS, connection_id
@@ -855,9 +868,16 @@ findContactConnectionChatPreviews_ db User {userId} count after ts search = map 
           AND (via_group_link = 0 || (via_group_link = 1 AND group_link_id IS NOT NULL))
           AND local_alias LIKE '%' || :search || '%'
       |]
-    baseEnd =
+    queryAfter =
       [sql|
+        AND TS > :ts
         ORDER BY TS DESC
+        LIMIT :count
+      |]
+    queryBefore =
+      [sql|
+        AND TS < :ts
+        ORDER BY TS ASC
         LIMIT :count
       |]
     params =
