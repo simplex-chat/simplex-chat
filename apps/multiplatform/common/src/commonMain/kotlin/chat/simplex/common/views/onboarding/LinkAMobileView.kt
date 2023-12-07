@@ -73,7 +73,8 @@ private fun LinkAMobileLayout(
       }
       Box(Modifier.weight(0.7f)) {
         AddingMobileDevice(false, staleQrCode, connecting) {
-          if (chatModel.remoteHosts.isEmpty()) {
+          // currentRemoteHost will be set instantly but remoteHosts may be delayed
+          if (chatModel.remoteHosts.isEmpty() && chatModel.currentRemoteHost.value == null) {
             chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
           } else {
             chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.OnboardingComplete)
