@@ -674,4 +674,25 @@
     <string name="files_are_prohibited_in_group">Fájlok és képek/videók tiltottak ebben a csoportban.</string>
     <string name="how_it_works">Hogyan működik</string>
     <string name="hide_dev_options">Elrejt:</string>
+    <string name="error_creating_member_contact">Hiba a partnerrel való kapcsolat létrehozásában</string>
+    <string name="enter_one_ICE_server_per_line">ICE-kiszolgálók (soronként egy)</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Ha nem tudtok személyesen találkozni, akkor a videohívásban <b>kiszkennelheted a QR-kódot</b>, vagy a pertnered megoszthat egy meghívó linket.</string>
+    <string name="if_you_enter_passcode_data_removed">Ha az alkalmazás megnyitásakor megadod ezt a jelszót, az alkalmazás minden adata visszavonhatatlanul törlődik!</string>
+    <string name="if_you_cant_meet_in_person">Ha nem tudtok személyesen találkozni, mutassátok meg a QR-kódot egy videohívás során, vagy osszátok meg egymással a linket.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Ha nem tudtok személyesen találkozni, <b>mutassátok meg a QR-kódot a videohívásban</b>, vagy osszátok meg egymással a linket.</string>
+    <string name="network_disable_socks_info">Ha megerősíted, az üzenetküldő szerverek láthatják az IP-címedet és a szolgáltatódat, vagyis azt, hogy mely szerverekhez csatlakozol.</string>
+    <string name="image_will_be_received_when_contact_completes_uploading">A kép akkor érkezik meg, amikor a partnered befejezi a feltöltést.</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 asztali számítógép: a megjelenített QR-kód beolvasása az alkalmazásból, a <b>QR kód beolvasásával</b></string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Ha kaptál egy SimpleX Chat meghívó linket, akkor megnyithatod azt a böngészőben:</string>
+    <string name="if_you_enter_self_destruct_code">Ha az alkalmazás megnyitásakor megadod az önmegsemmisítő jelszót:</string>
+    <string name="found_desktop">Megtalált asztali számítógép</string>
+    <string name="desktop_devices">Asztali eszközök</string>
+    <string name="how_to_use_markdown">Hogyan használjuk a markdown-t</string>
+    <string name="create_chat_profile">Csevegő profil létrehozása</string>
+    <string name="immune_to_spam_and_abuse">Spam és visszaélések elleni védelem</string>
+    <string name="disconnect_remote_hosts">Mobilok leválasztása</string>
+    <string name="v4_5_multiple_chat_profiles_descr">Különböző nevek, avatarok és átviteli izoláció.</string>
+    <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Ha úgy döntesz, hogy elutasítod a küldő NEM kap értesítést.</string>
+    <string name="icon_descr_expand_role">Szerepkör kibővítése</string>
+    <string name="image_will_be_received_when_contact_is_online">A kép akkor érkezik meg, amikor a partnered online lesz, kérlek várj vagy nézd meg később!</string>
 </resources>
