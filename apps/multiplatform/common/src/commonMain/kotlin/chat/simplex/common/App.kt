@@ -42,9 +42,11 @@ data class SettingsViewState(
 
 @Composable
 fun AppScreen() {
-  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
-    Surface(color = MaterialTheme.colors.background) {
-      MainScreen()
+  SimpleXTheme {
+    ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
+      Surface(color = MaterialTheme.colors.background) {
+        MainScreen()
+      }
     }
   }
 }

@@ -16,3 +16,11 @@ expect fun getKeyboardState(): State<KeyboardState>
 expect fun hideKeyboard(view: Any?)
 
 expect fun androidIsFinishingMainActivity(): Boolean
+
+fun registerGlobalErrorHandler() {
+  Thread.setDefaultUncaughtExceptionHandler(GlobalExceptionsHandler())
+}
+
+expect class GlobalExceptionsHandler(): Thread.UncaughtExceptionHandler {
+  override fun uncaughtException(thread: Thread, e: Throwable)
+}
