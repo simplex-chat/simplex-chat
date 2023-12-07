@@ -207,12 +207,12 @@ fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: ()
 
 fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: () -> Unit) {
   withApi {
-    chatModel.controller.apiCreateActiveUser(
+    chatModel.currentUser.value = chatModel.controller.apiCreateActiveUser(
       null, Profile(displayName.trim(), "", null)
     ) ?: return@withApi
     val onboardingStage = chatModel.controller.appPrefs.onboardingStage
     if (chatModel.users.isEmpty()) {
-      onboardingStage.set(if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get()) {
+      onboardingStage.set(if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get() && !chatModel.desktopOnboardingRandomPassword.value) {
         OnboardingStage.Step2_5_SetupDatabasePassphrase
       } else {
         OnboardingStage.Step3_CreateSimpleXAddress

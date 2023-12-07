@@ -1601,7 +1601,7 @@
     <string name="verify_connection">Проверить соединение</string>
     <string name="multicast_connect_automatically">Соединяться автоматически</string>
     <string name="waiting_for_desktop">Ожидается подключение…</string>
-    <string name="waiting_for_mobile_to_connect_on_port"><![CDATA[Ожидается подключение мобильного через порт <i>%s</i>]]></string>
+    <string name="waiting_for_mobile_to_connect">Ожидается подключение мобильного:</string>
     <string name="found_desktop">Компьютер найден</string>
     <string name="not_compatible">Несовместимая версия!</string>
     <string name="group_member_role_author">автор</string>

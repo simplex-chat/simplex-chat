@@ -20,6 +20,7 @@ fun <T> ExposedDropDownSetting(
   values: List<Pair<T, String>>,
   selection: State<T>,
   textColor: Color = MaterialTheme.colors.secondary,
+  fontSize: TextUnit = 16.sp,
   label: String? = null,
   enabled: State<Boolean> = mutableStateOf(true),
   minWidth: Dp = 200.dp,
@@ -43,7 +44,8 @@ fun <T> ExposedDropDownSetting(
         Modifier.widthIn(max = maxWidth),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
-        color = textColor
+        color = textColor,
+        fontSize = fontSize,
       )
       Spacer(Modifier.size(12.dp))
       Icon(
@@ -69,6 +71,7 @@ fun <T> ExposedDropDownSetting(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
+            fontSize = fontSize,
           )
         }
       }
@@ -91,6 +94,6 @@ fun <T> ExposedDropDownSettingRow(
   onSelected: (T) -> Unit
 ) {
   SettingsActionItemWithContent(icon, title, iconColor = iconTint, disabled = !enabled.value) {
-    ExposedDropDownSetting(values, selection ,textColor, label, enabled, minWidth, maxWidth, onSelected)
+    ExposedDropDownSetting(values, selection ,textColor, label = label, enabled = enabled, minWidth = minWidth, maxWidth = maxWidth, onSelected = onSelected)
   }
 }
