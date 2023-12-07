@@ -1517,6 +1517,6 @@
     <string name="v5_4_more_things_descr">- avvisa facoltativamente i contatti eliminati.
 \n- nomi del profilo con spazi.
 \n- e molto altro!</string>
-    <string name="waiting_for_mobile_to_connect_on_port"><![CDATA[In attesa che il cellulare si connetta alla porta <i>%s</i>]]></string>
+    <string name="waiting_for_mobile_to_connect">In attesa che il cellulare si connette:</string>
     <string name="group_member_role_author">autore</string>
 </resources>

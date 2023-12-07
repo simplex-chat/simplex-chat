@@ -19,8 +19,8 @@ import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.*
 import chat.simplex.common.views.database.PassphraseStrength
 import chat.simplex.common.views.database.validKey
 import chat.simplex.res.MR
@@ -123,6 +123,7 @@ fun DefaultConfigurableTextField(
   isValid: (String) -> Boolean,
   keyboardActions: KeyboardActions = KeyboardActions(),
   keyboardType: KeyboardType = KeyboardType.Text,
+  fontSize: TextUnit = 16.sp,
   dependsOn: State<Any?>? = null,
 ) {
   var valid by remember { mutableStateOf(isValid(state.value.text)) }
@@ -175,14 +176,14 @@ fun DefaultConfigurableTextField(
     textStyle = TextStyle.Default.copy(
       color = color,
       fontWeight = FontWeight.Normal,
-      fontSize = 16.sp
+      fontSize = fontSize
     ),
     interactionSource = interactionSource,
     decorationBox = @Composable { innerTextField ->
       TextFieldDefaults.TextFieldDecorationBox(
         value = state.value.text,
         innerTextField = innerTextField,
-        placeholder = { Text(placeholder, color = MaterialTheme.colors.secondary) },
+        placeholder = { Text(placeholder, color = MaterialTheme.colors.secondary, fontSize = fontSize, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         singleLine = true,
         enabled = enabled,
         isError = !valid,
