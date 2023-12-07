@@ -174,8 +174,6 @@ private fun ConnectMobileViewLayout(
   sessionCode: String?,
   port: String?,
   staleQrCode: Boolean = false,
-  editEnabled: Boolean = false,
-  editClicked: () -> Unit = {},
   refreshQrCode: () -> Unit = {},
   UnderQrLayout: @Composable () -> Unit = {},
 ) {
@@ -201,16 +199,7 @@ private fun ConnectMobileViewLayout(
           }
         }
         SectionTextFooter(annotatedStringResource(MR.strings.open_on_mobile_and_scan_qr_code), textAlign = TextAlign.Center)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-          SectionTextFooter(annotatedStringResource(MR.strings.waiting_for_mobile_to_connect_on_port, port), textAlign = TextAlign.Center)
-          if (editEnabled) {
-            Spacer(Modifier.width(4.dp))
-            IconButton(editClicked, Modifier.size(16.dp)) {
-              Icon(painterResource(MR.images.ic_edit), stringResource(MR.strings.edit_verb), Modifier.size(16.dp), tint = MaterialTheme.colors.primary)
-            }
-            Spacer(Modifier.width(DEFAULT_PADDING))
-          }
-        }
+        SectionTextFooter(annotatedStringResource(MR.strings.waiting_for_mobile_to_connect), textAlign = TextAlign.Center)
 
         UnderQrLayout()
 
@@ -249,7 +238,9 @@ private fun ConnectMobileViewLayout(
         }
       }
     }
-    SectionBottomSpacer()
+    if (invitation != null) {
+      SectionBottomSpacer()
+    }
   }
 }
 
@@ -275,10 +266,9 @@ private fun showAddingMobileDevice(connecting: MutableState<Boolean>) {
 
 @Composable
 fun AddingMobileDevice(showTitle: Boolean, staleQrCode: MutableState<Boolean>, connecting: MutableState<Boolean>, close: () -> Unit) {
-  val cachedR = remember { mutableStateOf<CR.RemoteHostStarted?>(null) }
+  var cachedR by remember { mutableStateOf<CR.RemoteHostStarted?>(null) }
   val customAddress = rememberSaveable { mutableStateOf<RemoteCtrlAddress?>(null) }
   val customPort = rememberSaveable { mutableStateOf<Int?>(null) }
-  var editing by rememberSaveable { mutableStateOf(false) }
   val startRemoteHost = suspend {
     val r = chatModel.controller.startRemoteHost(
       rhId = null,
@@ -287,9 +277,9 @@ fun AddingMobileDevice(showTitle: Boolean, staleQrCode: MutableState<Boolean>, c
       port = if (customPort.value != cachedR.port) customPort.value else cachedR.rh?.bindPort_
     )
     if (r != null) {
-      cachedR.value = r
+      cachedR = r
       connecting.value = true
-      customAddress.value = cachedR.address
+      customAddress.value = cachedR.addresses.firstOrNull()
       customPort.value = cachedR.port
       chatModel.remoteHostPairing.value = null to RemoteHostSessionState.Starting
     }
@@ -307,23 +297,20 @@ fun AddingMobileDevice(showTitle: Boolean, staleQrCode: MutableState<Boolean>, c
   val remoteDeviceName = pairing.value?.first?.hostDeviceName
   ConnectMobileViewLayout(
     title = if (!showTitle) null else if (cachedSessionCode == null) stringResource(MR.strings.link_a_mobile) else stringResource(MR.strings.verify_connection),
-    invitation = cachedR.invitation,
+    invitation = cachedR?.invitation,
     deviceName = remoteDeviceName,
     sessionCode = cachedSessionCode,
-    port = cachedR.value?.ctrlPort,
-    staleQrCode = staleQrCode.value || (cachedR.address != customAddress.value && customAddress.value != null) || (cachedR.port != customPort.value && customPort.value != null),
-    editEnabled = !editing && cachedR.addresses.isNotEmpty(),
-    editClicked = { editing = true },
+    port = cachedR?.ctrlPort,
+    staleQrCode = staleQrCode.value || (cachedR.address != customAddress.value && customAddress.value != null) || cachedR.port != customPort.value,
     refreshQrCode = {
       withBGApi {
         if (chatController.stopRemoteHost(null)) {
           startRemoteHost()
           staleQrCode.value = false
-          editing = false
         }
       }
     },
-    UnderQrLayout = { UnderQrLayout(editing, cachedR, customAddress, customPort) }
+    UnderQrLayout = { UnderQrLayout(cachedR, customAddress, customPort) }
   )
   val oldRemoteHostId by remember { mutableStateOf(chatModel.currentRemoteHost.value?.remoteHostId) }
   LaunchedEffect(remember { chatModel.currentRemoteHost }.value) {
@@ -353,10 +340,9 @@ fun AddingMobileDevice(showTitle: Boolean, staleQrCode: MutableState<Boolean>, c
 
 private fun showConnectMobileDevice(rh: RemoteHostInfo, connecting: MutableState<Boolean>) {
   ModalManager.start.showModalCloseable { close ->
-    val cachedR = remember { mutableStateOf<CR.RemoteHostStarted?>(null) }
+    var cachedR by remember { mutableStateOf<CR.RemoteHostStarted?>(null) }
     val customAddress = rememberSaveable { mutableStateOf<RemoteCtrlAddress?>(null) }
     val customPort = rememberSaveable { mutableStateOf<Int?>(null) }
-    var editing by rememberSaveable { mutableStateOf(false) }
     val startRemoteHost = suspend {
       val r = chatModel.controller.startRemoteHost(
         rhId = rh.remoteHostId,
@@ -365,9 +351,9 @@ private fun showConnectMobileDevice(rh: RemoteHostInfo, connecting: MutableState
         port = if (customPort.value != cachedR.port) customPort.value else cachedR.rh?.bindPort_ ?: rh.bindPort_
       )
       if (r != null) {
-        cachedR.value = r
+        cachedR = r
         connecting.value = true
-        customAddress.value = cachedR.address
+        customAddress.value = cachedR.addresses.firstOrNull()
         customPort.value = cachedR.port
         chatModel.remoteHostPairing.value = null to RemoteHostSessionState.Starting
       }
@@ -384,22 +370,19 @@ private fun showConnectMobileDevice(rh: RemoteHostInfo, connecting: MutableState
     }
     ConnectMobileViewLayout(
       title = if (cachedSessionCode == null) stringResource(MR.strings.scan_from_mobile) else stringResource(MR.strings.verify_connection),
-      invitation = cachedR.invitation,
+      invitation = cachedR?.invitation,
       deviceName = pairing.value?.first?.hostDeviceName ?: rh.hostDeviceName,
       sessionCode = cachedSessionCode,
-      port = cachedR.value?.ctrlPort,
-      staleQrCode = (cachedR.address != customAddress.value && customAddress.value != null) || (cachedR.port != customPort.value && customPort.value != null),
-      editEnabled = !editing && cachedR.addresses.isNotEmpty(),
-      editClicked = { editing = true },
+      port = cachedR?.ctrlPort,
+      staleQrCode = (cachedR.address != customAddress.value && customAddress.value != null) || cachedR.port != customPort.value,
       refreshQrCode = {
         withBGApi {
           if (chatController.stopRemoteHost(rh.remoteHostId)) {
             startRemoteHost()
-            editing = false
           }
         }
       },
-      UnderQrLayout = { UnderQrLayout(editing, cachedR, customAddress, customPort) }
+      UnderQrLayout = { UnderQrLayout(cachedR, customAddress, customPort) }
     )
     LaunchedEffect(remember { chatModel.currentRemoteHost }.value) {
       if (cachedR.remoteHostId != null && chatModel.currentRemoteHost.value?.remoteHostId == cachedR.remoteHostId) {
@@ -453,48 +436,75 @@ private fun showConnectedMobileDevice(rh: RemoteHostInfo, disconnectHost: () -> 
 }
 
 @Composable
-private fun UnderQrLayout(editing: Boolean, cachedR: State<CR.RemoteHostStarted?>, customAddress: MutableState<RemoteCtrlAddress?>, customPort: MutableState<Int?>) {
-  if (editing) {
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+private fun UnderQrLayout(cachedR: CR.RemoteHostStarted?, customAddress: MutableState<RemoteCtrlAddress?>, customPort: MutableState<Int?>) {
+  Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+    if (cachedR.addresses.size > 1) {
       ExposedDropDownSetting(
         cachedR.addresses.map { it to it.address + " (${it.`interface`})" },
         customAddress,
         textColor = MaterialTheme.colors.onBackground,
+        fontSize = 14.sp,
         minWidth = 250.dp,
         maxWidth = with(LocalDensity.current) { 250.sp.toDp() },
+        enabled = remember { mutableStateOf(cachedR.addresses.size > 1) },
         onSelected = {
           customAddress.value = it
         }
       )
-      val portUnsaved = rememberSaveable(stateSaver = TextFieldValue.Saver) {
-        mutableStateOf(TextFieldValue((customPort.value ?: cachedR.port!!).toString()))
-      }
-      Spacer(Modifier.width(DEFAULT_PADDING))
+    } else {
+      Spacer(Modifier.width(10.dp))
+      Text(customAddress.value?.address + " (${customAddress.value?.`interface`})", fontSize = 14.sp, color = MaterialTheme.colors.onBackground)
+    }
+    val portUnsaved = rememberSaveable(stateSaver = TextFieldValue.Saver) {
+      mutableStateOf(TextFieldValue((customPort.value ?: cachedR.port!!).toString()))
+    }
+    Spacer(Modifier.width(DEFAULT_PADDING))
+    Box {
       DefaultConfigurableTextField(
         portUnsaved,
-        stringResource(MR.strings.port_verb),
-        modifier = Modifier.widthIn(max = 100.dp),
-        isValid = { validPort(it) && it.toInt() > 1023 },
+        stringResource(MR.strings.random_port),
+        modifier = Modifier.widthIn(max = 132.dp),
+        isValid = { (validPort(it) && it.toInt() > 1023) || it.isBlank() },
         keyboardActions = KeyboardActions(onDone = { defaultKeyboardAction(ImeAction.Done) }),
         keyboardType = KeyboardType.Number,
+        fontSize = 14.sp,
       )
-      LaunchedEffect(Unit) {
-        snapshotFlow { portUnsaved.value.text }
-          .distinctUntilChanged()
-          .collect {
-            if (validPort(it) && it.toInt() > 1023) {
-              customPort.value = it.toInt()
-            }
+      if (validPort(portUnsaved.value.text) && portUnsaved.value.text.toInt() > 1023) {
+        Icon(painterResource(MR.images.ic_edit), stringResource(MR.strings.edit_verb), Modifier.padding(end = 56.dp).size(16.dp).align(Alignment.CenterEnd), tint = MaterialTheme.colors.secondary)
+        IconButton(::showOpenPortAlert, Modifier.align(Alignment.TopEnd).padding(top = 2.dp)) {
+          Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.primary)
+        }
+      }
+    }
+    LaunchedEffect(Unit) {
+      snapshotFlow { portUnsaved.value.text }
+        .distinctUntilChanged()
+        .collect {
+          if (validPort(it) && it.toInt() > 1023) {
+            customPort.value = it.toInt()
+          } else {
+            customPort.value = null
           }
+        }
+    }
+    KeyChangeEffect(customPort.value) {
+      if (customPort.value != null) {
+        portUnsaved.value = portUnsaved.value.copy(text = customPort.value.toString())
       }
     }
   }
 }
 
-private val State<CR.RemoteHostStarted?>.rh: RemoteHostInfo? get() = value?.remoteHost_
-private val State<CR.RemoteHostStarted?>.remoteHostId: Long? get() = value?.remoteHost_?.remoteHostId
-private val State<CR.RemoteHostStarted?>.invitation: String? get() = value?.invitation
-private val State<CR.RemoteHostStarted?>.address: RemoteCtrlAddress? get() = value?.localAddrs?.firstOrNull()
-private val State<CR.RemoteHostStarted?>.addresses: List<RemoteCtrlAddress> get() =
-  (if (controller.appPrefs.developerTools.get()) value?.localAddrs else value?.localAddrs?.filterNot { it.address == "127.0.0.1" }) ?: emptyList()
-private val State<CR.RemoteHostStarted?>.port: Int? get() = value?.ctrlPort?.toIntOrNull()
+private fun showOpenPortAlert() {
+  AlertManager.shared.showAlertMsg(
+    title = generalGetString(MR.strings.open_port_in_firewall_title),
+    text = generalGetString(MR.strings.open_port_in_firewall_desc),
+  )
+}
+
+private val CR.RemoteHostStarted?.rh: RemoteHostInfo? get() = this?.remoteHost_
+private val CR.RemoteHostStarted?.remoteHostId: Long? get() = this?.remoteHost_?.remoteHostId
+private val CR.RemoteHostStarted?.address: RemoteCtrlAddress? get() = this?.localAddrs?.firstOrNull()
+private val CR.RemoteHostStarted?.addresses: List<RemoteCtrlAddress> get() =
+  (if (controller.appPrefs.developerTools.get() || this?.localAddrs?.indexOfFirst { it.address == "127.0.0.1" } == 0) this?.localAddrs else this?.localAddrs?.filterNot { it.address == "127.0.0.1" }) ?: emptyList()
+private val CR.RemoteHostStarted?.port: Int? get() = this?.ctrlPort?.toIntOrNull()

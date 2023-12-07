@@ -3,10 +3,6 @@ package chat.simplex.desktop
 import chat.simplex.common.platform.*
 import chat.simplex.common.showApp
 import java.io.File
-import java.nio.file.*
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.attribute.FileTime
-import kotlin.io.path.setLastModifiedTime
 
 fun main() {
   initHaskell()
