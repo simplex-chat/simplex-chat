@@ -116,8 +116,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
-import Data.Time.Clock.System (systemEpochDay)
-import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
+import Database.SQLite.Simple (NamedParam (..), Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
@@ -490,19 +489,26 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
 
 getChatPreviews :: DB.Connection -> User -> Bool -> Maybe ChatPaginationTs -> Bool -> Bool -> Maybe String -> IO [AChat]
 getChatPreviews db user withPCC paginationTs_ favorite unread search_ = do
-  directChats <- findDirectChatPreviews_ db user count after ts favorite unread search
-  groupChats <- findGroupChatPreviews_ db user count after ts favorite unread search
-  cReqChats <- findContactRequestChatPreviews_ db user count after ts search
-  connChats <- if withPCC then findContactConnectionChatPreviews_ db user count after ts search else pure []
-  let refs = take count . map snd . sortBy (comparing $ Down . fst) $ concat [directChats, groupChats, cReqChats, connChats]
+  directChats <- findDirectChatPreviews_ db user paginationTs_ favorite unread search
+  groupChats <- findGroupChatPreviews_ db user paginationTs_ favorite unread search
+  cReqChats <- findContactRequestChatPreviews_ db user paginationTs_ search
+  connChats <- if withPCC then findContactConnectionChatPreviews_ db user paginationTs_ search else pure []
+  let refs = limit . map snd . sortBy (comparing $ Down . fst) $ concat [directChats, groupChats, cReqChats, connChats]
   catMaybes <$> mapM (getChatPreview db user) refs -- XXX: ignoring missing entries from getXxxPreview (which shouldn't happen)
   where
     search = maybe "" T.pack search_
-    (count, after, ts) = case paginationTs_ of
-      Nothing -> (65535, True, UTCTime systemEpochDay 0)
-      Just (CPLastTs count') -> (count', True, UTCTime systemEpochDay 0)
-      Just (CPAfterTs time count') -> (count', True, time)
-      Just (CPBeforeTs time count') -> (count', False, time)
+    limit = case paginationTs_ of
+      Nothing -> id
+      Just (CPLastTs count) -> take count
+      Just (CPAfterTs _ count) -> take count
+      Just (CPBeforeTs _ count) -> take count
+
+paginationTsQueryParams :: Maybe ChatPaginationTs -> (Query, [NamedParam])
+paginationTsQueryParams = \case
+  Nothing -> ("\nORDER BY ts DESC", [])
+  Just (CPLastTs count) -> ("\nORDER BY ts DESC LIMIT :count", [":count" := count])
+  Just (CPAfterTs ts count) -> ("\nAND ts > :ts ORDER BY ts ASC LIMIT :count", [":ts" := ts, ":count" := count])
+  Just (CPBeforeTs ts count) -> ("\nAND ts < :ts ORDER BY ts DESC LIMIT :count", [":ts" := ts, ":count" := count])
 
 getChatPreview :: DB.Connection -> User -> ChatRef -> IO (Maybe AChat) -- XXX: require ExceptT instead?
 getChatPreview db user (ChatRef ct id') = case ct of
@@ -511,17 +517,17 @@ getChatPreview db user (ChatRef ct id') = case ct of
   CTContactRequest -> getContactRequestChatPreview_ db user id'
   CTContactConnection -> getContactConnectionChatPreview_ db user id'
 
-findDirectChatPreviews_ :: DB.Connection -> User -> Int -> Bool -> UTCTime -> Bool -> Bool -> Text -> IO [(UTCTime, ChatRef)]
-findDirectChatPreviews_ db User {userId} count after ts favorite unread search = map (second $ ChatRef CTDirect) <$> DB.queryNamed db query params
+findDirectChatPreviews_ :: DB.Connection -> User -> Maybe ChatPaginationTs -> Bool -> Bool -> Text -> IO [(UTCTime, ChatRef)]
+findDirectChatPreviews_ db User {userId} paginationTS_ favorite unread search = map (second $ ChatRef CTDirect) <$> DB.queryNamed db (query <> paginationQuery) (params <> paginationParams)
   where
     needStats = (favorite || unread) && search == ""
-    query = baseQuery <> if after then queryAfter else queryBefore
-    baseQuery = if needStats then queryStats else queryNoStats
+    (paginationQuery, paginationParams) = paginationTsQueryParams paginationTS_
+    query = if needStats then queryStats else queryNoStats
     queryStats = baseSelect <> chatStats <> baseWhere <> favOrUnread
     queryNoStats = baseSelect <> baseWhere
     baseSelect =
       [sql|
-        SELECT COALESCE(ct.chat_ts, ct.updated_at) as TS, ct.contact_id
+        SELECT COALESCE(ct.chat_ts, ct.updated_at) as ts, ct.contact_id
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id -- XXX: for search
         LEFT JOIN connections c ON c.contact_id = ct.contact_id -- TODO: migrate out
@@ -574,26 +580,12 @@ findDirectChatPreviews_ db User {userId} count after ts favorite unread search =
           OR ChatStats.MinUnread
         )
       |]
-    queryAfter =
-      [sql|
-        AND TS > :ts
-        ORDER BY TS DESC
-        LIMIT :count
-      |]
-    queryBefore =
-      [sql|
-        AND TS < :ts
-        ORDER BY TS ASC
-        LIMIT :count
-      |]
     params = if needStats then (":rcv_new" := CISRcvNew) : paramsBase else paramsBase
     paramsBase =
       [ ":user_id" := userId,
         ":conn_ready" := ConnReady,
         ":conn_snd_ready" := ConnSndReady,
-        ":search" := search,
-        ":ts" := ts,
-        ":count" := count
+        ":search" := search
       ]
 
 getDirectChatPreview_ :: DB.Connection -> User -> Int64 -> IO (Maybe AChat)
@@ -649,17 +641,17 @@ getDirectChatPreview_ db user@User {userId} contactId = do
           stats = toChatStats statsRow
        in AChat SCTDirect $ Chat (DirectChat contact) ci_ stats
 
-findGroupChatPreviews_ :: DB.Connection -> User -> Int -> Bool -> UTCTime -> Bool -> Bool -> Text -> IO [(UTCTime, ChatRef)]
-findGroupChatPreviews_ db User {userId, userContactId} count after ts favorite unread search = map (second $ ChatRef CTGroup) <$> DB.queryNamed db query params
+findGroupChatPreviews_ :: DB.Connection -> User -> Maybe ChatPaginationTs -> Bool -> Bool -> Text -> IO [(UTCTime, ChatRef)]
+findGroupChatPreviews_ db User {userId, userContactId} paginationTS_ favorite unread search = map (second $ ChatRef CTGroup) <$> DB.queryNamed db (query <> paginationQuery) (params <> paginationParams)
   where
     needStats = (favorite || unread) && search == ""
-    query = baseQuery <> if after then queryAfter else queryBefore
-    baseQuery = if needStats then queryStats else queryNoStats
+    (paginationQuery, paginationParams) = paginationTsQueryParams paginationTS_
+    query = if needStats then queryStats else queryNoStats
     queryStats = baseSelect <> chatStats <> baseWhere <> favOrUnread
     queryNoStats = baseSelect <> baseWhere
     baseSelect =
       [sql|
-        SELECT COALESCE(g.chat_ts, g.updated_at) as TS, g.group_id
+        SELECT COALESCE(g.chat_ts, g.updated_at) as ts, g.group_id
         FROM groups g
         JOIN group_members mu ON mu.group_id = g.group_id
         JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
@@ -693,25 +685,11 @@ findGroupChatPreviews_ db User {userId, userContactId} count after ts favorite u
           OR ChatStats.MinUnread
         )
       |]
-    queryAfter =
-      [sql|
-        AND TS > :ts
-        ORDER BY TS DESC
-        LIMIT :count
-      |]
-    queryBefore =
-      [sql|
-        AND TS < :ts
-        ORDER BY TS ASC
-        LIMIT :count
-      |]
     params = if needStats then (":rcv_new" := CISRcvNew) : paramsBase else paramsBase
     paramsBase =
       [ ":user_id" := userId,
         ":user_contact_id" := userContactId,
-        ":search" := search,
-        ":ts" := ts,
-        ":count" := count
+        ":search" := search
       ]
 
 getGroupChatPreview_ :: DB.Connection -> User -> Int64 -> IO (Maybe AChat)
@@ -788,13 +766,13 @@ getGroupChatPreview_ db User {userId, userContactId} groupId = do
           stats = toChatStats statsRow
        in AChat SCTGroup $ Chat (GroupChat groupInfo) ci_ stats
 
-findContactRequestChatPreviews_ :: DB.Connection -> User -> Int -> Bool -> UTCTime -> Text -> IO [(UTCTime, ChatRef)]
-findContactRequestChatPreviews_ db User {userId} count after ts search = map (second $ ChatRef CTContactRequest) <$> DB.queryNamed db query params
+findContactRequestChatPreviews_ :: DB.Connection -> User -> Maybe ChatPaginationTs -> Text -> IO [(UTCTime, ChatRef)]
+findContactRequestChatPreviews_ db User {userId} paginationTS_ search = map (second $ ChatRef CTContactRequest) <$> DB.queryNamed db (query <> paginationQuery) (params <> paginationParams)
   where
-    query = baseQuery <> if after then queryAfter else queryBefore
-    baseQuery =
+    (paginationQuery, paginationParams) = paginationTsQueryParams paginationTS_
+    query =
       [sql|
-        SELECT cr.updated_at as TS, cr.contact_request_id
+        SELECT cr.updated_at as ts, cr.contact_request_id
         FROM contact_requests cr
         JOIN contact_profiles p ON p.contact_profile_id = cr.contact_profile_id
         JOIN user_contact_links uc ON uc.user_contact_link_id = cr.user_contact_link_id
@@ -808,23 +786,9 @@ findContactRequestChatPreviews_ db User {userId} count after ts search = map (se
             OR p.full_name LIKE '%' || :search || '%'
           )
       |]
-    queryAfter =
-      [sql|
-        AND TS > :ts
-        ORDER BY TS DESC
-        LIMIT :count
-      |]
-    queryBefore =
-      [sql|
-        AND TS < :ts
-        ORDER BY TS ASC
-        LIMIT :count
-      |]
     params =
       [ ":user_id" := userId,
-        ":search" := search,
-        ":ts" := ts,
-        ":count" := count
+        ":search" := search
       ]
 
 getContactRequestChatPreview_ :: DB.Connection -> User -> Int64 -> IO (Maybe AChat)
@@ -852,13 +816,13 @@ getContactRequestChatPreview_ db User {userId} contactRequestId =
           stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
        in AChat SCTContactRequest $ Chat (ContactRequest cReq) [] stats
 
-findContactConnectionChatPreviews_ :: DB.Connection -> User -> Int -> Bool -> UTCTime -> Text -> IO [(UTCTime, ChatRef)]
-findContactConnectionChatPreviews_ db User {userId} count after ts search = map (second $ ChatRef CTContactConnection) <$> DB.queryNamed db query params
+findContactConnectionChatPreviews_ :: DB.Connection -> User -> Maybe ChatPaginationTs -> Text -> IO [(UTCTime, ChatRef)]
+findContactConnectionChatPreviews_ db User {userId} paginationTS_ search = map (second $ ChatRef CTContactConnection) <$> DB.queryNamed db (query <> paginationQuery) (params <> paginationParams)
   where
-    query = baseQuery <> if after then queryAfter else queryBefore
-    baseQuery =
+    (paginationQuery, paginationParams) = paginationTsQueryParams paginationTS_
+    query =
       [sql|
-        SELECT updated_at as TS, connection_id
+        SELECT updated_at as ts, connection_id
         FROM connections
         WHERE user_id = :user_id
           AND conn_type = :conn_contact
@@ -868,24 +832,10 @@ findContactConnectionChatPreviews_ db User {userId} count after ts search = map 
           AND (via_group_link = 0 || (via_group_link = 1 AND group_link_id IS NOT NULL))
           AND local_alias LIKE '%' || :search || '%'
       |]
-    queryAfter =
-      [sql|
-        AND TS > :ts
-        ORDER BY TS DESC
-        LIMIT :count
-      |]
-    queryBefore =
-      [sql|
-        AND TS < :ts
-        ORDER BY TS ASC
-        LIMIT :count
-      |]
     params =
       [ ":user_id" := userId,
         ":conn_contact" := ConnContact,
-        ":search" := search,
-        ":ts" := ts,
-        ":count" := count
+        ":search" := search
       ]
 
 getContactConnectionChatPreview_ :: DB.Connection -> User -> Int64 -> IO (Maybe AChat)

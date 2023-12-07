@@ -9,11 +9,11 @@ import Test.Hspec
 
 chatListTests :: SpecWith FilePath
 chatListTests = do
-  it "should get last chats" testPaginationLast
-  it "should get chats around timestamp" testPaginationTs
-  it "should filter chats by search query" testSearch
-  it "should filter chats by fav/unread" testFavUnread
-  it "should filter chats by search over fav/unread" testSearchFavUnread
+  it "gets last chats" testPaginationLast
+  it "gets chats around timestamp" testPaginationTs
+  it "filters by search query" testSearch
+  it "filters by fav/unread" testFavUnread
+  it "filters by search over fav/unread" testSearchFavUnread
 
 testPaginationLast :: HasCallStack => FilePath -> IO ()
 testPaginationLast tmp =
@@ -50,7 +50,7 @@ testPaginationTs tmp =
         getChats_ ("before=" <> tsFinish <> " count=0") id alice []
         -- limited reads
         getChats_ "count=1" id alice [("@cath", "hey", Just ConnReady)]
-        getChats_ ("after=" <> tsStart <> " count=1") id alice [("@cath", "hey", Just ConnReady)]
+        getChats_ ("after=" <> tsStart <> " count=1") id alice [("@bob", "hey", Just ConnReady)]
         getChats_ ("before=" <> tsFinish <> " count=1") id alice [("@cath", "hey", Just ConnReady)]
         -- interval bounds
         getChats_ ("after=" <> tsAliceBob <> " count=10") id alice [("@cath", "hey", Just ConnReady)]
