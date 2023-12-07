@@ -471,21 +471,31 @@ data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: Maybe FileInv
 
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 
-instance MsgEncodingI e => StrEncoding [ChatMessage e] where
+-- TODO [batch send] remove ChatMessage, AChatMessage StrEncoding instances, use specialized function strEncode
+instance MsgEncodingI e => StrEncoding (ChatMessage e) where
   strEncode msg = case chatToAppMessage msg of
     AMJson m -> LB.toStrict $ J.encode m
     AMBinary m -> strEncode m
   strP = (\(ACMsg _ m) -> checkEncoding m) <$?> strP
 
-instance StrEncoding [AChatMessage] where
-  strEncode [(ACMsg _ m)] = strEncode m
+instance StrEncoding AChatMessage where
+  strEncode (ACMsg _ m) = strEncode m
   strP =
     A.peekChar' >>= \case
-      '{' -> (:[]) <$> parseItem
-      -- '[' ->
-      _ -> (:[]) . ACMsg SBinary <$> (appBinaryToCM <$?> strP)
-    where
-      parseItem = ACMsg SJson <$> ((appJsonToCM <=< J.eitherDecodeStrict') <$?> A.takeByteString)
+      '{' -> ACMsg SJson <$> ((appJsonToCM <=< J.eitherDecodeStrict') <$?> A.takeByteString)
+      _ -> ACMsg SBinary <$> (appBinaryToCM <$?> strP)
+
+parseChatMessages :: ByteString -> [Either String AChatMessage]
+parseChatMessages "" = [Left "empty string"]
+parseChatMessages s = case B.head s of
+  '{' -> [ACMsg SJson <$> J.eitherDecodeStrict' s]
+  '[' -> case J.eitherDecodeStrict' s of
+    Right v -> map parseItem v
+    Left e -> [Left e]
+  _ -> [ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
+  where
+    parseItem :: J.Value -> Either String AChatMessage
+    parseItem v = ACMsg SJson <$> JT.parseEither parseJSON v
 
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =

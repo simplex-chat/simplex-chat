@@ -3275,6 +3275,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           pure ()
         MSG meta _msgFlags msgBody -> do
           cmdId <- createAckCmd conn
+          -- TODO only acknowledge without saving message?
+          -- probably this branch is never executed, so there should be no reason
+          -- to save message if contact hasn't been created yet - chat item isn't created anyway
           withAckMessage agentConnId cmdId meta $ do
             (_conn', _) <- saveDirectRcvMSG conn meta cmdId msgBody
             pure False
@@ -3340,39 +3343,35 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           withAckMessage' agentConnId conn msgMeta $
             directMsgReceived ct conn msgMeta msgRcpt
         CONF confId _ connInfo -> do
-          parseChatMessage conn connInfo >>= \case
-            [ChatMessage {chatVRange, chatMsgEvent}] -> do
-              conn' <- updatePeerChatVRange conn chatVRange
-              case chatMsgEvent of
-                -- confirming direct connection with a member
-                XGrpMemInfo _memId _memProfile -> do
-                  -- TODO check member ID
-                  -- TODO update member profile
-                  -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-                  allowAgentConnectionAsync user conn' confId XOk
-                XInfo profile -> do
-                  ct' <- processContactProfileUpdate ct profile False `catchChatError` const (pure ct)
-                  -- [incognito] send incognito profile
-                  incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
-                  let p = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
-                  allowAgentConnectionAsync user conn' confId $ XInfo p
-                  void $ withStore' $ \db -> resetMemberContactFields db ct'
-                _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
-            _ -> messageError "CONF: batching not supported"
+          ChatMessage {chatVRange, chatMsgEvent} <- parseOneChatMessage conn connInfo
+          conn' <- updatePeerChatVRange conn chatVRange
+          case chatMsgEvent of
+            -- confirming direct connection with a member
+            XGrpMemInfo _memId _memProfile -> do
+              -- TODO check member ID
+              -- TODO update member profile
+              -- [async agent commands] no continuation needed, but command should be asynchronous for stability
+              allowAgentConnectionAsync user conn' confId XOk
+            XInfo profile -> do
+              ct' <- processContactProfileUpdate ct profile False `catchChatError` const (pure ct)
+              -- [incognito] send incognito profile
+              incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
+              let p = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
+              allowAgentConnectionAsync user conn' confId $ XInfo p
+              void $ withStore' $ \db -> resetMemberContactFields db ct'
+            _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
         INFO connInfo -> do
-          parseChatMessage conn connInfo >>= \case
-            [ChatMessage {chatVRange, chatMsgEvent}] -> do
-              _conn' <- updatePeerChatVRange conn chatVRange
-              case chatMsgEvent of
-                XGrpMemInfo _memId _memProfile -> do
-                  -- TODO check member ID
-                  -- TODO update member profile
-                  pure ()
-                XInfo profile ->
-                  void $ processContactProfileUpdate ct profile False
-                XOk -> pure ()
-                _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
-            _ -> messageError "INFO: batching not supported"
+          ChatMessage {chatVRange, chatMsgEvent} <- parseOneChatMessage conn connInfo
+          _conn' <- updatePeerChatVRange conn chatVRange
+          case chatMsgEvent of
+            XGrpMemInfo _memId _memProfile -> do
+              -- TODO check member ID
+              -- TODO update member profile
+              pure ()
+            XInfo profile ->
+              void $ processContactProfileUpdate ct profile False
+            XOk -> pure ()
+            _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
         CON ->
           withStore' (\db -> getViaGroupMember db user ct) >>= \case
             Nothing -> do
@@ -3499,44 +3498,40 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               _ -> throwChatError $ CECommandError "unexpected cmdFunction"
             CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _ connInfo -> do
-        parseChatMessage conn connInfo >>= \case
-          [ChatMessage {chatVRange, chatMsgEvent}] -> do
-            conn' <- updatePeerChatVRange conn chatVRange
-            case memberCategory m of
-              GCInviteeMember ->
-                case chatMsgEvent of
-                  XGrpAcpt memId
-                    | sameMemberId memId m -> do
-                        withStore $ \db -> liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
-                        -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-                        allowAgentConnectionAsync user conn' confId XOk
-                    | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
-                  _ -> messageError "CONF from invited member must have x.grp.acpt"
-              _ ->
-                case chatMsgEvent of
-                  XGrpMemInfo memId _memProfile
-                    | sameMemberId memId m -> do
-                        -- TODO update member profile
-                        -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-                        allowAgentConnectionAsync user conn' confId $ XGrpMemInfo membership.memberId (fromLocalProfile $ memberProfile membership)
-                    | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
-                  _ -> messageError "CONF from member must have x.grp.mem.info"
-          _ -> messageError "CONF: batching not supported"
-      INFO connInfo -> do
-        parseChatMessage conn connInfo >>= \case
-          [ChatMessage {chatVRange, chatMsgEvent}] -> do
-            _conn' <- updatePeerChatVRange conn chatVRange
+        ChatMessage {chatVRange, chatMsgEvent} <- parseOneChatMessage conn connInfo
+        conn' <- updatePeerChatVRange conn chatVRange
+        case memberCategory m of
+          GCInviteeMember ->
+            case chatMsgEvent of
+              XGrpAcpt memId
+                | sameMemberId memId m -> do
+                    withStore $ \db -> liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
+                    -- [async agent commands] no continuation needed, but command should be asynchronous for stability
+                    allowAgentConnectionAsync user conn' confId XOk
+                | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
+              _ -> messageError "CONF from invited member must have x.grp.acpt"
+          _ ->
             case chatMsgEvent of
               XGrpMemInfo memId _memProfile
                 | sameMemberId memId m -> do
                     -- TODO update member profile
-                    pure ()
+                    -- [async agent commands] no continuation needed, but command should be asynchronous for stability
+                    allowAgentConnectionAsync user conn' confId $ XGrpMemInfo membership.memberId (fromLocalProfile $ memberProfile membership)
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
-              XInfo _ -> pure () -- sent when connecting via group link
-              XOk -> pure ()
-              _ -> messageError "INFO from member must have x.grp.mem.info, x.info or x.ok"
-            pure ()
-          _ -> messageError "INFO: batching not supported"
+              _ -> messageError "CONF from member must have x.grp.mem.info"
+      INFO connInfo -> do
+        ChatMessage {chatVRange, chatMsgEvent} <- parseOneChatMessage conn connInfo
+        _conn' <- updatePeerChatVRange conn chatVRange
+        case chatMsgEvent of
+          XGrpMemInfo memId _memProfile
+            | sameMemberId memId m -> do
+                -- TODO update member profile
+                pure ()
+            | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
+          XInfo _ -> pure () -- sent when connecting via group link
+          XOk -> pure ()
+          _ -> messageError "INFO from member must have x.grp.mem.info, x.info or x.ok"
+        pure ()
       CON -> do
         withStore' $ \db -> do
           updateGroupMemberStatus db userId m GSMemConnected
@@ -3627,19 +3622,20 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       MSG msgMeta _msgFlags msgBody -> do
         checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta `catchChatError` \_ -> pure ()
         cmdId <- createAckCmd conn
-        tryChatError (parseAChatMessage conn msgMeta msgBody) >>= \case
-          Right aChatMsgs -> do
-            -- TODO [batch send] workaround for UNIQUE(connection_id, agent_msg_id) in msg_deliveries
-            -- - recreate table without UNIQUE constraint?
-            -- - many-to-many table?
-            forM_ aChatMsgs $ \(ACMsg _ chatMsg) -> do
+        let aChatMsgs = parseChatMessages msgBody
+        withAckMessage agentConnId cmdId msgMeta $ do
+          -- TODO [batch send] workaround for UNIQUE(connection_id, agent_msg_id) in msg_deliveries
+          -- - recreate table without UNIQUE constraint?
+          -- - many-to-many table?
+          forM_ aChatMsgs $ \case
+            Right (ACMsg _ chatMsg) ->
               processEvent cmdId chatMsg `catchChatError` \e -> toView $ CRChatError (Just user) e
-            withRcpt <- checkSendRcpt aChatMsgs `catchChatError` \_ -> pure False
-            ackMsg agentConnId cmdId msgMeta $ if withRcpt then Just "" else Nothing
-            when (membership.memberRole >= GRAdmin) $ case aChatMsgs of
-              [ACMsg _ chatMsg] -> forwardMsg_ chatMsg
-              _ -> pure ()
-          Left e -> ackMsg agentConnId cmdId msgMeta Nothing >> throwError e
+            Left e -> toView $ CRChatError (Just user) (ChatError . CEException $ "error parsing chat message: " <> e)
+          checkSendRcpt $ rights aChatMsgs
+        -- currently only a single message is forwarded
+        when (membership.memberRole >= GRAdmin) $ case aChatMsgs of
+          [Right (ACMsg _ chatMsg)] -> forwardMsg_ chatMsg
+          _ -> pure ()
         where
           brokerTs = metaBrokerTs msgMeta
           processEvent :: MsgEncodingI e => CommandId -> ChatMessage e -> m ()
@@ -3786,19 +3782,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- SMP CONF for SndFileConnection happens for direct file protocol
         -- when recipient of the file "joins" connection created by the sender
         CONF confId _ connInfo -> do
-          parseChatMessage conn connInfo  >>= \case
-            [ChatMessage {chatVRange, chatMsgEvent}] -> do
-              conn' <- updatePeerChatVRange conn chatVRange
-              case chatMsgEvent of
-                -- TODO save XFileAcpt message
-                XFileAcpt name
-                  | name == fileName -> do
-                      withStore' $ \db -> updateSndFileStatus db ft FSAccepted
-                      -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-                      allowAgentConnectionAsync user conn' confId XOk
-                  | otherwise -> messageError "x.file.acpt: fileName is different from expected"
-                _ -> messageError "CONF from file connection must have x.file.acpt"
-            _ -> messageError "CONF: batching not supported"
+          ChatMessage {chatVRange, chatMsgEvent} <- parseOneChatMessage conn connInfo
+          conn' <- updatePeerChatVRange conn chatVRange
+          case chatMsgEvent of
+            -- TODO save XFileAcpt message
+            XFileAcpt name
+              | name == fileName -> do
+                  withStore' $ \db -> updateSndFileStatus db ft FSAccepted
+                  -- [async agent commands] no continuation needed, but command should be asynchronous for stability
+                  allowAgentConnectionAsync user conn' confId XOk
+              | otherwise -> messageError "x.file.acpt: fileName is different from expected"
+            _ -> messageError "CONF from file connection must have x.file.acpt"
         CON -> do
           ci <- withStore $ \db -> do
             liftIO $ updateSndFileStatus db ft FSConnected
@@ -3857,13 +3851,11 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- when sender of the file "joins" connection created by the recipient
         -- (sender doesn't create connections for all group members)
         CONF confId _ connInfo -> do
-          parseChatMessage conn connInfo >>= \case
-            [ChatMessage {chatVRange, chatMsgEvent}] -> do
-              conn' <- updatePeerChatVRange conn chatVRange
-              case chatMsgEvent of
-                XOk -> allowAgentConnectionAsync user conn' confId XOk -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-                _ -> pure ()
-            _ -> messageError "CONF: batching not supported"
+          ChatMessage {chatVRange, chatMsgEvent} <- parseOneChatMessage conn connInfo
+          conn' <- updatePeerChatVRange conn chatVRange
+          case chatMsgEvent of
+            XOk -> allowAgentConnectionAsync user conn' confId XOk -- [async agent commands] no continuation needed, but command should be asynchronous for stability
+            _ -> pure ()
         CON -> startReceivingFile user fileId
         MSG meta _ msgBody -> do
           parseFileChunk msgBody >>= receiveFileChunk ft (Just conn) meta
@@ -3920,14 +3912,12 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     processUserContactRequest :: ACommand 'Agent e -> ConnectionEntity -> Connection -> UserContact -> m ()
     processUserContactRequest agentMsg connEntity conn UserContact {userContactLinkId} = case agentMsg of
       REQ invId _ connInfo -> do
-        parseChatMessage conn connInfo >>= \case
-          [ChatMessage {chatVRange, chatMsgEvent}] -> do
-            case chatMsgEvent of
-              XContact p xContactId_ -> profileContactRequest invId chatVRange p xContactId_
-              XInfo p -> profileContactRequest invId chatVRange p Nothing
-              -- TODO show/log error, other events in contact request
-              _ -> pure ()
-          _ -> messageError "REQ: batching not supported"
+        ChatMessage {chatVRange, chatMsgEvent} <- parseOneChatMessage conn connInfo
+        case chatMsgEvent of
+          XContact p xContactId_ -> profileContactRequest invId chatVRange p xContactId_
+          XInfo p -> profileContactRequest invId chatVRange p Nothing
+          -- TODO show/log error, other events in contact request
+          _ -> pure ()
       MERR _ err -> do
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         incAuthErrCounter connEntity conn err
@@ -4955,21 +4945,19 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     saveConnInfo :: Connection -> ConnInfo -> m Connection
     saveConnInfo activeConn connInfo = do
-      parseChatMessage activeConn connInfo >>= \case
-        [ChatMessage {chatVRange, chatMsgEvent}] -> do
-          conn' <- updatePeerChatVRange activeConn chatVRange
-          case chatMsgEvent of
-            XInfo p -> do
-              ct <- withStore $ \db -> createDirectContact db user conn' p
-              toView $ CRContactConnecting user ct
-              pure conn'
-            XGrpLinkInv glInv -> do
-              (gInfo, host) <- withStore $ \db -> createGroupInvitedViaLink db user conn' glInv
-              toView $ CRGroupLinkConnecting user gInfo host
-              pure conn'
-            -- TODO show/log error, other events in SMP confirmation
-            _ -> pure conn'
-        _ -> throwChatError $ CEException "saveConnInfo: batching not supported"
+      ChatMessage {chatVRange, chatMsgEvent} <- parseOneChatMessage activeConn connInfo
+      conn' <- updatePeerChatVRange activeConn chatVRange
+      case chatMsgEvent of
+        XInfo p -> do
+          ct <- withStore $ \db -> createDirectContact db user conn' p
+          toView $ CRContactConnecting user ct
+          pure conn'
+        XGrpLinkInv glInv -> do
+          (gInfo, host) <- withStore $ \db -> createGroupInvitedViaLink db user conn' glInv
+          toView $ CRGroupLinkConnecting user gInfo host
+          pure conn'
+        -- TODO show/log error, other events in SMP confirmation
+        _ -> pure conn'
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> RcvMessage -> UTCTime -> m ()
     xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ memberProfile) msg brokerTs = do
@@ -5349,18 +5337,14 @@ sendFileInline_ FileTransferMeta {filePath, chunkSize} sharedMsgId sendMsg =
         else sendChunks (chunkNo + 1) rest
     chSize = fromIntegral chunkSize
 
-parseChatMessage :: ChatMonad m => Connection -> ByteString -> m [ChatMessage 'Json]
-parseChatMessage conn = parseChatMessage_ conn Nothing
-{-# INLINE parseChatMessage #-}
-
-parseAChatMessage :: ChatMonad m => Connection -> MsgMeta -> ByteString -> m [AChatMessage]
-parseAChatMessage conn msgMeta = parseChatMessage_ conn (Just msgMeta)
-{-# INLINE parseAChatMessage #-}
-
-parseChatMessage_ :: (ChatMonad m, StrEncoding s) => Connection -> Maybe MsgMeta -> ByteString -> m s
-parseChatMessage_ conn msgMeta s = liftEither . first (ChatError . errType) $ strDecode s
+parseOneChatMessage :: ChatMonad m => Connection -> ByteString -> m (ChatMessage 'Json)
+parseOneChatMessage conn s = do
+  case parseChatMessages s of
+    [msg] -> liftEither . first (ChatError . errType) $ (\(ACMsg _ m) -> checkEncoding m) =<< msg
+    _ -> throwChatError $ CEException "parseOneChatMessage: single message is expected"
   where
-    errType = CEInvalidChatMessage conn (msgMetaToJson <$> msgMeta) (safeDecodeUtf8 s)
+    errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
+{-# INLINE parseOneChatMessage #-}
 
 sendFileChunk :: ChatMonad m => User -> SndFileTransfer -> m ()
 sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId acId} =
@@ -5538,7 +5522,7 @@ createSndMessage chatMsgEvent connOrGroupId = do
   gVar <- asks idsDrg
   ChatConfig {chatVRange} <- asks config
   withStore $ \db -> createNewSndMessage db gVar connOrGroupId $ \sharedMsgId ->
-    let msgBody = strEncode [ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}]
+    let msgBody = strEncode ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
      in NewMessage {chatMsgEvent, msgBody}
 
 sendBatchedDirectMessages :: (MsgEncodingI e, ChatMonad m) => Connection -> [ChatMsgEvent e] -> ConnOrGroupId -> m (SndMessage, Int64)
@@ -5561,13 +5545,13 @@ createBatchedSndMessage events connOrGroupId = do
   -- - * return list of SndMessages? it's not necessary for current use cases
   withStore $ \db -> createNewSndMessage db gVar connOrGroupId $ \sharedMsgId ->
     let chatMsgEvent = XOk -- dummy
-        msgBody = strEncode [ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}]
+        msgBody = strEncode ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
      in NewMessage {chatMsgEvent, msgBody}
 
 directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
 directMessage chatMsgEvent = do
   ChatConfig {chatVRange} <- asks config
-  pure $ strEncode [ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}]
+  pure $ strEncode ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m Int64
 deliverMessage conn cmEventTag msgBody msgId = do
@@ -5654,17 +5638,17 @@ sendPendingGroupMessages user GroupMember {groupMemberId, localDisplayName} conn
 
 saveDirectRcvMSG :: ChatMonad m => Connection -> MsgMeta -> CommandId -> MsgBody -> m (Connection, RcvMessage)
 saveDirectRcvMSG conn@Connection {connId} agentMsgMeta agentAckCmdId msgBody = do
-  parseAChatMessage conn agentMsgMeta msgBody >>= \case
-    [ACMsg _ ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent}] -> do
+  -- TODO [batch send] refactor direct message processing same as groups
+  case (parseChatMessages msgBody) of
+    [Right (ACMsg _ ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent})] -> do
       conn' <- updatePeerChatVRange conn chatVRange
       let agentMsgId = fst $ recipient agentMsgMeta
           newMsg = NewMessage {chatMsgEvent, msgBody}
           rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId}
       msg <- withStore $ \db -> createNewMessageAndRcvMsgDelivery db (ConnectionId connId) newMsg sharedMsgId_ rcvMsgDelivery Nothing
       pure (conn', msg)
-    _ ->
-      -- TODO [batch send] refactor direct message processing same as groups
-      error "saveDirectRcvMSG: batching not supported"
+    [Left e] -> error $ "saveDirectRcvMSG: error parsing chat message: " <> e
+    _ -> error "saveDirectRcvMSG: batching not supported"
 
 saveGroupRcvMsg :: (MsgEncodingI e, ChatMonad m) => User -> GroupId -> GroupMember -> Connection -> MsgMeta -> CommandId -> MsgBody -> ChatMessage e -> m (GroupMember, Connection, RcvMessage)
 saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta agentAckCmdId msgBody ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = do

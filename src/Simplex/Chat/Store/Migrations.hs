@@ -182,8 +182,8 @@ schemaMigrations =
     ("20231107_indexes", m20231107_indexes, Just down_m20231107_indexes),
     ("20231113_group_forward", m20231113_group_forward, Just down_m20231113_group_forward),
     ("20231114_remote_control", m20231114_remote_control, Just down_m20231114_remote_control),
-    ("20231126_remote_ctrl_address", m20231126_remote_ctrl_address, Just down_m20231126_remote_ctrl_address),
-    ("20231206_recreate_msg_deliveries", m20231206_recreate_msg_deliveries, Just down_m20231206_recreate_msg_deliveries)
+    ("20231126_remote_ctrl_address", m20231126_remote_ctrl_address, Just down_m20231126_remote_ctrl_address)
+    -- ("20231206_recreate_msg_deliveries", m20231206_recreate_msg_deliveries, Just down_m20231206_recreate_msg_deliveries)
   ]
 
 -- | The list of migrations in ascending order by date
