@@ -91,6 +91,7 @@ import Simplex.Chat.Migrations.M20231107_indexes
 import Simplex.Chat.Migrations.M20231113_group_forward
 import Simplex.Chat.Migrations.M20231114_remote_control
 import Simplex.Chat.Migrations.M20231126_remote_ctrl_address
+import Simplex.Chat.Migrations.M20231207_mark_direct_contacts
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -181,7 +182,8 @@ schemaMigrations =
     ("20231107_indexes", m20231107_indexes, Just down_m20231107_indexes),
     ("20231113_group_forward", m20231113_group_forward, Just down_m20231113_group_forward),
     ("20231114_remote_control", m20231114_remote_control, Just down_m20231114_remote_control),
-    ("20231126_remote_ctrl_address", m20231126_remote_ctrl_address, Just down_m20231126_remote_ctrl_address)
+    ("20231126_remote_ctrl_address", m20231126_remote_ctrl_address, Just down_m20231126_remote_ctrl_address),
+    ("20231207_mark_direct_contacts", m20231207_mark_direct_contacts, Nothing)
   ]
 
 -- | The list of migrations in ascending order by date

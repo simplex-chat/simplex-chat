@@ -247,8 +247,8 @@ createContact_ db userId Profile {displayName, fullName, image, contactLink, pre
     profileId <- insertedRowId db
     DB.execute
       db
-      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?)"
-      (profileId, ldn, userId, viaGroup, currentTs, currentTs, chatTs)
+      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used) VALUES (?,?,?,?,?,?,?,?)"
+      (profileId, ldn, userId, viaGroup, currentTs, currentTs, chatTs, True)
     contactId <- insertedRowId db
     pure $ Right (ldn, contactId, profileId)
 
