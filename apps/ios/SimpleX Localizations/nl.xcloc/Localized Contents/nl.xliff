@@ -1616,9 +1616,9 @@ Dit is uw eigen eenmalige link!</target>
         <target>Verwijder alle bestanden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete and notify contact" xml:space="preserve">
+      <trans-unit id="Delete and notify contact" xml:space="preserve" approved="no">
         <source>Delete and notify contact</source>
-        <target>Contact verwijderen en op de hoogte stellen</target>
+        <target state="translated">Verwijderen en contact op de hoogte stellen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete archive" xml:space="preserve">
