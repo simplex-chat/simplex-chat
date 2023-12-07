@@ -1520,4 +1520,13 @@
     <string name="verify_connections">التحقق من الاتصالات</string>
     <string name="loading_remote_file_desc">من فضلك، انتظر حتى يتم تحميل الملف من الجوّال المرتبط</string>
     <string name="verify_connection">التحقق من الاتصال</string>
+    <string name="refresh_qr_code">أعِد التحميل</string>
+    <string name="random_port">عشوائي</string>
+    <string name="waiting_for_mobile_to_connect">في انتظار اتصال الجوال:</string>
+    <string name="open_port_in_firewall_desc">للسماح لتطبيق الجوال بالاتصال بسطح المكتب، افتح هذا المنفذ في جدار الحماية لديك، إذا فعلته</string>
+    <string name="create_chat_profile">أنشئ ملف تعريف الدردشة</string>
+    <string name="app_was_crashed">عرض التحطم</string>
+    <string name="open_port_in_firewall_title">فتح منفذ في جدار الحماية</string>
+    <string name="disconnect_remote_hosts">اقطع اتصال الجوالات</string>
+    <string name="no_connected_mobile">لا يوجد جوال متصل</string>
 </resources>
