@@ -86,7 +86,6 @@ data StoreError
   | SEIntroNotFound
   | SEUniqueID
   | SEInternalError {message :: String}
-  | SENoMsgDelivery {connId :: Int64, agentMsgId :: AgentMsgId}
   | SEBadChatItem {itemId :: ChatItemId}
   | SEChatItemNotFound {itemId :: ChatItemId}
   | SEChatItemNotFoundByText {text :: Text}

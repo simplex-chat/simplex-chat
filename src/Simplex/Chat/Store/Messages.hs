@@ -23,8 +23,8 @@ module Simplex.Chat.Store.Messages
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
     createNewRcvMessage,
-    createSndMsgDeliveryEvent,
-    createRcvMsgDeliveryEvent,
+    updateSndMsgDeliveryStatus,
+    updateRcvMsgDeliveryStatus,
     createPendingGroupMessage,
     getPendingGroupMessages,
     deletePendingGroupMessage,
@@ -179,11 +179,17 @@ createNewSndMessage db gVar connOrGroupId mkMessage =
       GroupId groupId -> (Nothing, Just groupId)
 
 createSndMsgDelivery :: DB.Connection -> SndMsgDelivery -> MessageId -> IO Int64
-createSndMsgDelivery db sndMsgDelivery messageId = do
+createSndMsgDelivery db SndMsgDelivery {connId, agentMsgId} messageId = do
   currentTs <- getCurrentTime
-  msgDeliveryId <- createSndMsgDelivery_ db sndMsgDelivery messageId currentTs
-  createMsgDeliveryEvent_ db msgDeliveryId MDSSndAgent currentTs
-  pure msgDeliveryId
+  DB.execute
+    db
+    [sql|
+      INSERT INTO msg_deliveries
+        (message_id, connection_id, agent_msg_id, chat_ts, created_at, updated_at, delivery_status)
+      VALUES (?,?,?,?,?,?,?)
+    |]
+    (messageId, connId, agentMsgId, currentTs, currentTs, currentTs, MDSSndAgent)
+  insertedRowId db
 
 createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> RcvMsgDelivery -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
 createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId} authorGroupMemberId_ = do
@@ -192,10 +198,12 @@ createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMs
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO msg_deliveries (message_id, connection_id, agent_msg_id, agent_msg_meta, agent_ack_cmd_id, chat_ts, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-      (msgId, connId, agentMsgId, msgMetaJson agentMsgMeta, agentAckCmdId, snd $ broker agentMsgMeta, currentTs, currentTs)
-    msgDeliveryId <- insertedRowId db
-    createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent currentTs
+      [sql|
+        INSERT INTO msg_deliveries
+          (message_id, connection_id, agent_msg_id, agent_msg_meta, agent_ack_cmd_id, chat_ts, created_at, updated_at, delivery_status)
+        VALUES (?,?,?,?,?,?,?,?,?)
+      |]
+      (msgId, connId, agentMsgId, msgMetaJson agentMsgMeta, agentAckCmdId, snd $ broker agentMsgMeta, currentTs, currentTs, MDSRcvAgent)
   pure msg
 
 createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
@@ -234,68 +242,29 @@ createNewRcvMessage db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMs
       msgId <- insertedRowId db
       pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody, authorMember, forwardedByMember}
 
-createSndMsgDeliveryEvent :: DB.Connection -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> ExceptT StoreError IO ()
-createSndMsgDeliveryEvent db connId agentMsgId sndMsgDeliveryStatus = do
-  msgDeliveryId <- getMsgDeliveryId_ db connId agentMsgId
-  liftIO $ do
-    currentTs <- getCurrentTime
-    createMsgDeliveryEvent_ db msgDeliveryId sndMsgDeliveryStatus currentTs
-
-createRcvMsgDeliveryEvent :: DB.Connection -> Int64 -> CommandId -> MsgDeliveryStatus 'MDRcv -> IO ()
-createRcvMsgDeliveryEvent db connId cmdId rcvMsgDeliveryStatus = do
-  msgDeliveryId <- getMsgDeliveryIdByCmdId_ db connId cmdId
-  forM_ msgDeliveryId $ \mdId -> do
-    currentTs <- getCurrentTime
-    createMsgDeliveryEvent_ db mdId rcvMsgDeliveryStatus currentTs
-
-createSndMsgDelivery_ :: DB.Connection -> SndMsgDelivery -> MessageId -> UTCTime -> IO Int64
-createSndMsgDelivery_ db SndMsgDelivery {connId, agentMsgId} messageId createdAt = do
+updateSndMsgDeliveryStatus :: DB.Connection -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> IO ()
+updateSndMsgDeliveryStatus db connId agentMsgId sndMsgDeliveryStatus = do
+  currentTs <- getCurrentTime
   DB.execute
     db
     [sql|
-      INSERT INTO msg_deliveries
-        (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at)
-      VALUES (?,?,?,NULL,?,?,?)
+      UPDATE msg_deliveries
+      SET delivery_status = ?, updated_at = ?
+      WHERE connection_id = ? AND agent_msg_id = ?
     |]
-    (messageId, connId, agentMsgId, createdAt, createdAt, createdAt)
-  insertedRowId db
+    (sndMsgDeliveryStatus, currentTs, connId, agentMsgId)
 
-createMsgDeliveryEvent_ :: DB.Connection -> Int64 -> MsgDeliveryStatus d -> UTCTime -> IO ()
-createMsgDeliveryEvent_ db msgDeliveryId msgDeliveryStatus createdAt = do
+updateRcvMsgDeliveryStatus :: DB.Connection -> Int64 -> CommandId -> MsgDeliveryStatus 'MDRcv -> IO ()
+updateRcvMsgDeliveryStatus db connId cmdId rcvMsgDeliveryStatus = do
+  currentTs <- getCurrentTime
   DB.execute
     db
     [sql|
-      INSERT INTO msg_delivery_events
-        (msg_delivery_id, delivery_status, created_at, updated_at)
-      VALUES (?,?,?,?)
+      UPDATE msg_deliveries
+      SET delivery_status = ?, updated_at = ?
+      WHERE connection_id = ? AND agent_ack_cmd_id = ?
     |]
-    (msgDeliveryId, msgDeliveryStatus, createdAt, createdAt)
-
-getMsgDeliveryId_ :: DB.Connection -> Int64 -> AgentMsgId -> ExceptT StoreError IO Int64
-getMsgDeliveryId_ db connId agentMsgId =
-  ExceptT . firstRow fromOnly (SENoMsgDelivery connId agentMsgId) $
-    DB.query
-      db
-      [sql|
-        SELECT msg_delivery_id
-        FROM msg_deliveries m
-        WHERE m.connection_id = ? AND m.agent_msg_id = ?
-        LIMIT 1
-      |]
-      (connId, agentMsgId)
-
-getMsgDeliveryIdByCmdId_ :: DB.Connection -> Int64 -> CommandId -> IO (Maybe AgentMsgId)
-getMsgDeliveryIdByCmdId_ db connId cmdId =
-  maybeFirstRow fromOnly $
-    DB.query
-      db
-      [sql|
-        SELECT msg_delivery_id
-        FROM msg_deliveries
-        WHERE connection_id = ? AND agent_ack_cmd_id = ?
-        LIMIT 1
-      |]
-      (connId, cmdId)
+    (rcvMsgDeliveryStatus, currentTs, connId, cmdId)
 
 createPendingGroupMessage :: DB.Connection -> Int64 -> MessageId -> Maybe Int64 -> IO ()
 createPendingGroupMessage db groupMemberId messageId introId_ = do

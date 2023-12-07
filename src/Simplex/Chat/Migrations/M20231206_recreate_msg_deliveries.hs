@@ -16,7 +16,7 @@ DROP INDEX idx_msg_deliveries_agent_ack_cmd_id;
 
 CREATE TABLE new_msg_deliveries(
   msg_delivery_id INTEGER PRIMARY KEY,
-  message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE, -- non UNIQUE for group messages
+  message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE, -- non UNIQUE for group messages and for batched messages
   connection_id INTEGER NOT NULL REFERENCES connections ON DELETE CASCADE,
   agent_msg_id INTEGER, -- internal agent message ID (NULL while pending), non UNIQUE for batched messages
   agent_msg_meta TEXT, -- JSON with timestamps etc. sent in MSG, NULL for sent
