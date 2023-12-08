@@ -303,8 +303,8 @@ class NotificationService: UNNotificationServiceExtension {
                         deliver(createCallInvitationNtf(invitation))
                     }
                 }
-            case .empty: deliver(nil)
-            case .msgInfo: deliver(nil)
+            case .empty: deliver(nil) // used to mute notifications that did not unsubscribe yet
+            case .msgInfo: deliver(nil) // unreachable, the best attempt is never set to msgInfo
             }
         }
     }
