@@ -14,7 +14,7 @@ import SimpleXChat
 
 let logger = Logger()
 
-let suspendingDelay: UInt64 = 3_000_000_000
+let suspendingDelay: UInt64 = 2_500_000_000
 
 let nseSuspendTimeout: Int = 10
 
@@ -25,22 +25,22 @@ actor PendingNtfs {
     private var ntfStreams: [String: NtfStream] = [:]
 
     func createStream(_ id: String) async {
-        logger.debug("PendingNtfs.createStream: \(id, privacy: .public)")
+        logger.debug("NotificationService PendingNtfs.createStream: \(id, privacy: .public)")
         if ntfStreams[id] == nil {
             ntfStreams[id] = ConcurrentQueue()
-            logger.debug("PendingNtfs.createStream: created ConcurrentQueue")
+            logger.debug("NotificationService PendingNtfs.createStream: created ConcurrentQueue")
         }
     }
 
     func readStream(_ id: String, for nse: NotificationService, ntfInfo: NtfMessages) async {
-        logger.debug("PendingNtfs.readStream: \(id, privacy: .public) \(ntfInfo.ntfMessages.count, privacy: .public)")
+        logger.debug("NotificationService PendingNtfs.readStream: \(id, privacy: .public) \(ntfInfo.ntfMessages.count, privacy: .public)")
         if !ntfInfo.user.showNotifications {
             nse.setBestAttemptNtf(.empty)
         }
         if let s = ntfStreams[id] {
-            logger.debug("PendingNtfs.readStream: has stream")
+            logger.debug("NotificationService PendingNtfs.readStream: has stream")
             var expected = Set(ntfInfo.ntfMessages.map { $0.msgId })
-            var received = false
+            logger.debug("NotificationService PendingNtfs.readStream: expecting: \(expected, privacy: .public)")
             var readCancelled = false
             var dequeued: DequeueElement<NSENotification>?
             nse.cancelRead = {
@@ -52,18 +52,23 @@ actor PendingNtfs {
             while !readCancelled {
                 dequeued = s.dequeue()
                 if let ntf = await dequeued?.task.value {
-                    if case let .msgInfo(info) = ntf {
+                    if readCancelled {
+                        logger.debug("NotificationService PendingNtfs.readStream: read cancelled, put ntf to queue front")
+                        s.frontEnqueue(ntf)
+                        break
+                    } else if case let .msgInfo(info) = ntf {
                         let found = expected.remove(info.msgId)
-                        if received {
-                            if found != nil && expected.isEmpty { break }
-                            if let msgTs = ntfInfo.msgTs, info.msgTs > msgTs {
-                                s.frontEnqueue(ntf)
-                                break
-                            }
+                        if found != nil {
+                            logger.debug("NotificationService PendingNtfs.readStream: msgInfo, last: \(expected.isEmpty, privacy: .public)")
+                            if expected.isEmpty { break }
+                        } else if let msgTs = ntfInfo.msgTs, info.msgTs > msgTs {
+                            logger.debug("NotificationService PendingNtfs.readStream: unexpected msgInfo")
+                            s.frontEnqueue(ntf)
+                            break
                         }
                     } else if ntfInfo.user.showNotifications {
+                        logger.debug("NotificationService PendingNtfs.readStream: setting best attempt")
                         nse.setBestAttemptNtf(ntf)
-                        received = true
                         if ntf.isCallInvitation { break }
                     }
                 } else {
@@ -71,14 +76,14 @@ actor PendingNtfs {
                 }
             }
             nse.cancelRead = nil
-            logger.debug("PendingNtfs.readStream: exiting")
+            logger.debug("NotificationService PendingNtfs.readStream: exiting")
         }
     }
 
     func writeStream(_ id: String, _ ntf: NSENotification) async {
-        logger.debug("PendingNtfs.writeStream: \(id, privacy: .public)")
+        logger.debug("NotificationService PendingNtfs.writeStream: \(id, privacy: .public)")
         if let s = ntfStreams[id] {
-            logger.debug("PendingNtfs.writeStream: writing ntf")
+            logger.debug("NotificationService PendingNtfs.writeStream: writing ntf")
             s.enqueue(ntf)
         }
     }
@@ -173,7 +178,7 @@ class NotificationService: UNNotificationServiceExtension {
             setBadgeCount()
             Task {
                 var state = appState
-                for _ in 1...5 {
+                for _ in 1...6 {
                     _ = try await Task.sleep(nanoseconds: suspendingDelay)
                     state = appStateGroupDefault.get()
                     if state == .suspended || state != .suspending { break }
