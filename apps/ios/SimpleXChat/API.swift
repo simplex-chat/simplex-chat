@@ -78,8 +78,6 @@ public func sendSimpleXCmd(_ cmd: ChatCommand) -> ChatResponse {
 // in microseconds
 let MESSAGE_TIMEOUT: Int32 = 15_000_000
 
-public let SUSPEND_NSE_AFTER_NO_MESSAGES: Int = 2
-
 public func recvSimpleXMsg() -> ChatResponse? {
     if let cjson = chat_recv_msg_wait(getChatCtrl(), MESSAGE_TIMEOUT) {
         let s = fromCString(cjson)
