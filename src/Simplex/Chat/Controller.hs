@@ -247,7 +247,7 @@ data ChatCommand
   | ExecChatStoreSQL Text
   | ExecAgentStoreSQL Text
   | SlowSQLQueries
-  | APIGetChats {userId :: UserId, pendingConnections :: Bool, paginationTs_ :: Maybe ChatPaginationTs, favorite :: Bool, unread :: Bool, search_ :: Maybe String}
+  | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: PaginationByTime, query :: ChatListQuery}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
@@ -730,6 +730,26 @@ logResponseToFile = \case
   CRChatError {} -> True
   CRMessageError {} -> True
   _ -> False
+
+data ChatPagination
+  = CPLast Int
+  | CPAfter ChatItemId Int
+  | CPBefore ChatItemId Int
+  deriving (Show)
+
+data PaginationByTime
+  = PTLast Int
+  | PTAfter UTCTime Int
+  | PTBefore UTCTime Int
+  deriving (Show)
+
+data ChatListQuery
+  = CLQFilters {favorite :: Bool, unread :: Bool}
+  | CLQSearch {search :: String}
+  deriving (Show)
+
+clqNoFilters :: ChatListQuery
+clqNoFilters = CLQFilters {favorite = False, unread = False}
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
@@ -1263,6 +1283,8 @@ withAgent action =
     >>= liftEither . first (`ChatErrorAgent` Nothing)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CLQ") ''ChatListQuery)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "ILP") ''InvitationLinkPlan)
 
