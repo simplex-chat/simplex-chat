@@ -18,20 +18,17 @@ let suspendingDelay: UInt64 = 3_000_000_000
 
 let nseSuspendTimeout: Int = 15
 
-typealias NtfStream = AsyncStream<NSENotification>
+typealias NtfStream = ConcurrentQueue<NSENotification>
 
 actor PendingNtfs {
     static let shared = PendingNtfs()
     private var ntfStreams: [String: NtfStream] = [:]
-    private var ntfConts: [String: NtfStream.Continuation] = [:]
 
     func createStream(_ id: String) async {
         logger.debug("PendingNtfs.createStream: \(id, privacy: .public)")
         if ntfStreams[id] == nil {
-            ntfStreams[id] = AsyncStream { cont in
-                ntfConts[id] = cont
-                logger.debug("PendingNtfs.createStream: store continuation")
-            }
+            ntfStreams[id] = ConcurrentQueue()
+            logger.debug("PendingNtfs.createStream: created ConcurrentQueue")
         }
     }
 
@@ -44,30 +41,71 @@ actor PendingNtfs {
             logger.debug("PendingNtfs.readStream: has stream")
             var expected = Set(ntfInfo.ntfMessages.map { $0.msgId })
             var received = false
-            if nse.receiveCancelled { return }
-            for await ntf in s {
-                if nse.receiveCancelled { return }
-                if case let .msgInfo(info) = ntf {
-                    let found = expected.remove(info.msgId)
-                    if received {
-                        if found != nil && expected.isEmpty { break }
-                        if let msgTs = ntfInfo.msgTs, info.msgTs > msgTs { break }
-                    }
-                } else if ntfInfo.user.showNotifications {
-                    nse.setBestAttemptNtf(ntf)
-                    received = true
-                    if ntf.isCallInvitation { break }
+            var readCancelled = false
+            var dequeued: DequeueElement<NSENotification>?
+            nse.cancelRead = {
+                readCancelled = true
+                if let elementId = dequeued?.elementId {
+                    s.cancelDequeue(elementId)
                 }
             }
+            while !readCancelled {
+                dequeued = s.dequeue()
+                if let ntf = await dequeued?.task.value {
+                    if case let .msgInfo(info) = ntf {
+                        let found = expected.remove(info.msgId)
+                        if received {
+                            if found != nil && expected.isEmpty { break }
+                            if let msgTs = ntfInfo.msgTs, info.msgTs > msgTs {
+                                s.frontEnqueue(ntf)
+                                break
+                            }
+                        }
+                    } else if ntfInfo.user.showNotifications {
+                        nse.setBestAttemptNtf(ntf)
+                        received = true
+                        if ntf.isCallInvitation { break }
+                    }
+                } else {
+                    break
+                }
+            }
+            nse.cancelRead = nil
             logger.debug("PendingNtfs.readStream: exiting")
         }
     }
 
     func writeStream(_ id: String, _ ntf: NSENotification) async {
         logger.debug("PendingNtfs.writeStream: \(id, privacy: .public)")
-        if let cont = ntfConts[id] {
+        if let s = ntfStreams[id] {
             logger.debug("PendingNtfs.writeStream: writing ntf")
-            cont.yield(ntf)
+            s.enqueue(ntf)
+        }
+    }
+}
+
+class NtfStreamSemaphores {
+    static let shared = NtfStreamSemaphores()
+    private static let queue = DispatchQueue(label: "chat.simplex.app.SimpleX-NSE.notification-semaphores.lock")
+    private var semaphores: [String: DispatchSemaphore] = [:]
+
+    func waitForStream(_ id: String) {
+        streamSemaphore(id, value: 0)?.wait()
+    }
+
+    func signalStreamReady(_ id: String) {
+        streamSemaphore(id, value: 1)?.signal()
+    }
+
+    // this function returns nil if semaphore is just created, so passed value shoud be coordinated with the desired end value of the semaphore
+    private func streamSemaphore(_ id: String, value: Int) -> DispatchSemaphore? {
+        NtfStreamSemaphores.queue.sync {
+            if let s = semaphores[id] {
+                return s
+            } else {
+                semaphores[id] = DispatchSemaphore(value: value)
+                return nil
+            }
         }
     }
 }
@@ -113,8 +151,8 @@ class NotificationService: UNNotificationServiceExtension {
     var bestAttemptNtf: NSENotification?
     var badgeCount: Int = 0
     var threadId: UUID?
-    var receiveTask: Task<Void, Error>?
-    var receiveCancelled: Bool { receiveTask?.isCancelled == true }
+    var receiveEntityId: String?
+    var cancelRead: (() -> Void)?
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         threadId = NSEThreads.shared.startThread()
@@ -174,11 +212,15 @@ class NotificationService: UNNotificationServiceExtension {
                         : .empty
                     )
                     if let id = connEntity.id {
-                        receiveTask = Task {
-                            logger.debug("NotificationService: receiveNtfMessages: in Task, connEntity id \(id, privacy: .public)")
-                            await PendingNtfs.shared.createStream(id)
-                            await PendingNtfs.shared.readStream(id, for: self, ntfInfo: ntfInfo)
-                            deliverBestAttemptNtf()
+                        receiveEntityId = id
+                        NtfStreamSemaphores.shared.waitForStream(id)
+                        if receiveEntityId != nil {
+                            Task {
+                                logger.debug("NotificationService: receiveNtfMessages: in Task, connEntity id \(id, privacy: .public)")
+                                await PendingNtfs.shared.createStream(id)
+                                await PendingNtfs.shared.readStream(id, for: self, ntfInfo: ntfInfo)
+                                deliverBestAttemptNtf()
+                            }
                         }
                         return
                     }
@@ -216,7 +258,23 @@ class NotificationService: UNNotificationServiceExtension {
 
     private func deliverBestAttemptNtf() {
         logger.debug("NotificationService.deliverBestAttemptNtf")
+        if let cancel = cancelRead {
+            cancelRead = nil
+            cancel()
+        }
+        if let id = receiveEntityId {
+            receiveEntityId = nil
+            NtfStreamSemaphores.shared.signalStreamReady(id)
+        }
+        if let t = threadId {
+            threadId = nil
+            if NSEThreads.shared.endThread(t) {
+                suspendChat(nseSuspendTimeout)
+            }
+        }
         if let handler = contentHandler, let ntf = bestAttemptNtf {
+            contentHandler = nil
+            bestAttemptNtf = nil
             switch ntf {
             case let .nse(content): handler(content)
             case let .callkit(invitation):
@@ -234,17 +292,6 @@ class NotificationService: UNNotificationServiceExtension {
                 }
             case .empty: handler(UNMutableNotificationContent())
             case .msgInfo: handler(UNMutableNotificationContent())
-            }
-            bestAttemptNtf = nil
-        }
-        if let task = receiveTask {
-            receiveTask = nil
-            task.cancel()
-        }
-        if let t = threadId {
-            threadId = nil
-            if NSEThreads.shared.endThread(t) {
-                suspendChat(nseSuspendTimeout)
             }
         }
     }
