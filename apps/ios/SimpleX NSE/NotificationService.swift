@@ -294,7 +294,7 @@ class NotificationService: UNNotificationServiceExtension {
                     if error == nil {
                         deliver(nil)
                     } else {
-                        logger.debug("reportNewIncomingVoIPPushPayload success to CallController for \(invitation.contact.id)")
+                        logger.debug("NotificationService reportNewIncomingVoIPPushPayload success to CallController for \(invitation.contact.id)")
                         deliver(createCallInvitationNtf(invitation))
                     }
                 }

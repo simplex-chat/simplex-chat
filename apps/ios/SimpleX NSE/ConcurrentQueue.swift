@@ -48,16 +48,16 @@ class ConcurrentQueue<T> {
                 }
                 return DequeueElement(elementId: elementId, task: task)
             } else {
-                return DequeueElement(task: Task { queue.remove(at: 0) })
+                let el = queue.remove(at: 0)
+                return DequeueElement(task: Task { el })
             }
         }
     }
 
     func cancelDequeue(_ elementId: UUID) {
-        let match: (((elementId: UUID, CheckedContinuation<T?, Never>)) -> Bool) = { $0.elementId == elementId }
         queueLock.sync {
-            let cancelled = continuations.filter(match)
-            continuations.removeAll(where: match)
+            let cancelled = continuations.filter { $0.elementId == elementId }
+            continuations.removeAll { $0.elementId == elementId }
             cancelled.forEach { $0.continuation.resume(returning: nil) }
         }
     }
