@@ -20,6 +20,11 @@ let nseSuspendTimeout: Int = 10
 
 typealias NtfStream = ConcurrentQueue<NSENotification>
 
+// Notifications are delivered via concurrent queues, as they are all received from chat controller in a single loop that
+// writes to ConcurrentQueue and when notification is processed, the instance of Notification service extension reads from the queue.
+// One queue per connection (entity) is used.
+// The concurrent queues allow for read cancellation, to ensure that notifications are not lost in case the next the current thread completes
+// before expected notification is read (multiple notifications can be expected, because one notification can be delivered for several messages.
 actor PendingNtfs {
     static let shared = PendingNtfs()
     private var ntfStreams: [String: NtfStream] = [:]
@@ -89,6 +94,8 @@ actor PendingNtfs {
     }
 }
 
+// The current implementation assumes concurrent notification delivery and uses semaphores
+// to process only one notification per connection (entity) at a time.
 class NtfStreamSemaphores {
     static let shared = NtfStreamSemaphores()
     private static let queue = DispatchQueue(label: "chat.simplex.app.SimpleX-NSE.notification-semaphores.lock")
@@ -131,6 +138,9 @@ enum NSENotification {
     }
 }
 
+// Once the last thread in the process completes processing chat controller is suspended, and the database is closed, to avoid
+// background crashes and contention for database with the application (both UI and background fetch triggered either on schedule
+// or when background notification is received.
 class NSEThreads {
     static let shared = NSEThreads()
     private static let queue = DispatchQueue(label: "chat.simplex.app.SimpleX-NSE.notification-threads.lock")
@@ -151,6 +161,10 @@ class NSEThreads {
     }
 }
 
+// Notification service extension creates a new instance of the class and calls didReceive for each notification.
+// Each didReceive is called in its own thread, but multiple calls can be made in one process, and, empirically, there is never
+// more than one process for notification service extension.
+// Soon after notification service delivers the last notification it is either suspended or terminated.
 class NotificationService: UNNotificationServiceExtension {
     var contentHandler: ((UNNotificationContent) -> Void)?
     var bestAttemptNtf: NSENotification?
@@ -334,6 +348,8 @@ let suspendLock = DispatchSemaphore(value: 1)
 var networkConfig: NetCfg = getNetCfg()
 let xftpConfig: XFTPFileConfig? = getXFTPCfg()
 
+// startChat uses semaphore startLock to ensure that only one didReceive thread can start chat controller
+// Subsequent calls to didReceive will be waiting on semaphore and won't start chat again, as it will be .active
 func startChat() -> DBMigrationResult? {
     logger.debug("NotificationService: startChat")
     if case .active = NSEChatState.shared.value { return .ok }
@@ -400,6 +416,7 @@ func activateChat() -> DBMigrationResult? {
     }
 }
 
+// suspendChat uses semaphore suspendLock to ensure that only one suspension can happen.
 func suspendChat(_ timeout: Int) {
     logger.debug("NotificationService: suspendChat")
     let state = NSEChatState.shared.value
@@ -427,6 +444,8 @@ func chatSuspended() {
     }
 }
 
+// A single loop is used per Notification service extension process to receive and process all messages depending on the NSE state
+// If the extension is not active yet, or suspended/suspending, or the app is running, the notifications will no be received.
 func receiveMessages() async {
     logger.debug("NotificationService receiveMessages")
     while true {
