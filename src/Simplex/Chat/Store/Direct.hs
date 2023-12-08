@@ -202,7 +202,7 @@ createIncognitoProfile db User {userId} p = do
 createDirectContact :: DB.Connection -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
 createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p@Profile {preferences} = do
   currentTs <- liftIO getCurrentTime
-  (localDisplayName, contactId, profileId) <- createContact_ db userId p localAlias Nothing currentTs (Just currentTs)
+  (localDisplayName, contactId, profileId) <- createContact_ db userId p localAlias Nothing currentTs (Just currentTs) True
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
   let profile = toLocalProfile profileId p localAlias
       userPreferences = emptyChatPrefs
@@ -651,8 +651,8 @@ createAcceptedContact db user@User {userId, profile = LocalProfile {preferences}
   let userPreferences = fromMaybe emptyChatPrefs $ incognitoProfile >> preferences
   DB.execute
     db
-    "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, chat_ts, xcontact_id, contact_used) VALUES (?,?,?,?,?,?,?,?,?)"
-    (userId, localDisplayName, profileId, True, userPreferences, createdAt, createdAt, createdAt, xContactId)
+    "INSERT INTO contacts (user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, created_at, updated_at, chat_ts, xcontact_id, contact_used) VALUES (?,?,?,?,?,?,?,?,?,?)"
+    (userId, localDisplayName, profileId, True, userPreferences, createdAt, createdAt, createdAt, xContactId, True)
   contactId <- insertedRowId db
   conn <- createConnection_ db userId ConnContact (Just contactId) agentConnId cReqChatVRange Nothing (Just userContactLinkId) customUserProfileId 0 createdAt subMode
   let mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
