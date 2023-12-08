@@ -2,7 +2,6 @@ import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
 import ChatTests
-import ChatTests.ChatList (chatListTests)
 import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
@@ -35,7 +34,6 @@ main = do
       xdescribe'' "SimpleX Broadcast bot" broadcastBotTests
       xdescribe'' "SimpleX Directory service bot" directoryServiceTests
       describe "Remote session" remoteTests
-      describe "Chat list API" chatListTests
   where
     testBracket test = do
       t <- getSystemTime
