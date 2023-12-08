@@ -118,6 +118,11 @@ import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose, hSeek, hTell, openFile)
 import UnliftIO.STM
 
+-- this limit reserves space for metadata in forwarded messages
+-- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, round to 15610
+maxChatMsgSize :: Int64
+maxChatMsgSize = 15610
+
 defaultChatConfig :: ChatConfig
 defaultChatConfig =
   ChatConfig
