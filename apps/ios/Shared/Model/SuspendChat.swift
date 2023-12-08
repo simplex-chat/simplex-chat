@@ -18,6 +18,8 @@ let bgSuspendTimeout: Int = 5 // seconds
 
 let terminationTimeout: Int = 3 // seconds
 
+let activationDelay: Double = 1.5 // seconds
+
 private func _suspendChat(timeout: Int) {
     // this is a redundant check to prevent logical errors, like the one fixed in this PR
     let state = appStateGroupDefault.get()
@@ -85,6 +87,12 @@ private func _chatSuspended() {
     chatCloseStore()
 }
 
+func setAppState(_ appState: AppState) {
+    suspendLockQueue.sync {
+        appStateGroupDefault.set(appState)
+    }
+}
+
 func activateChat(appState: AppState = .active) {
     logger.debug("DEBUGGING: activateChat")
     suspendLockQueue.sync {
@@ -106,15 +114,32 @@ func initChatAndMigrate(refreshInvitations: Bool = true) {
     }
 }
 
-func startChatAndActivate() {
+func startChatAndActivate(dispatchQueue: DispatchQueue = DispatchQueue.main, _ completion: @escaping () -> Void) {
     logger.debug("DEBUGGING: startChatAndActivate")
     if ChatModel.shared.chatRunning == true {
         ChatReceiver.shared.start()
         logger.debug("DEBUGGING: startChatAndActivate: after ChatReceiver.shared.start")
     }
-    if .active != appStateGroupDefault.get()  {
+    if .active == appStateGroupDefault.get() {
+        completion()
+    } else if nseStateGroupDefault.get().inactive {
+        activate()
+    } else {
+        suspendLockQueue.sync {
+            appStateGroupDefault.set(.activating)
+        }
+        // TODO can be replaced with Mach messenger to notify the NSE to terminate and continue after reply, with timeout
+        dispatchQueue.asyncAfter(deadline: .now() + activationDelay) {
+            if appStateGroupDefault.get() == .activating {
+                activate()
+            }
+        }
+    }
+
+    func activate() {
         logger.debug("DEBUGGING: startChatAndActivate: before activateChat")
         activateChat()
+        completion()
         logger.debug("DEBUGGING: startChatAndActivate: after activateChat")
     }
 }

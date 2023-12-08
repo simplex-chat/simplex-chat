@@ -69,10 +69,20 @@ public func registerGroupDefaults() {
 
 public enum AppState: String {
     case active
+    case activating
     case bgRefresh
     case suspending
     case suspended
     case stopped
+
+    public var running: Bool {
+        switch self {
+        case .active: return true
+        case .activating: return true
+        case .bgRefresh: return true
+        default: return false
+        }
+    }
 
     public var inactive: Bool {
         switch self {
@@ -85,6 +95,7 @@ public enum AppState: String {
     public var canSuspend: Bool {
         switch self {
         case .active: return true
+        case .activating: return true
         case .bgRefresh: return true
         default: return false
         }
@@ -99,7 +110,7 @@ public enum NSEState: String {
 
     public var inactive: Bool {
         switch self {
-        case .suspending: true
+        case .created: true
         case .suspended: true
         default: false
         }
@@ -126,6 +137,10 @@ public let nseStateGroupDefault = EnumDefault<NSEState>(
     forKey: GROUP_DEFAULT_NSE_STATE,
     withDefault: .created
 )
+
+public func allowBackgroundRefresh() -> Bool {
+    appStateGroupDefault.get().inactive && nseStateGroupDefault.get().inactive
+}
 
 public let dbContainerGroupDefault = EnumDefault<DBContainer>(
     defaults: groupDefaults,

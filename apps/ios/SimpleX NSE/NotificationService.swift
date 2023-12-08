@@ -16,7 +16,7 @@ let logger = Logger()
 
 let suspendingDelay: UInt64 = 3_000_000_000
 
-let nseSuspendTimeout: Int = 15
+let nseSuspendTimeout: Int = 10
 
 typealias NtfStream = ConcurrentQueue<NSENotification>
 
@@ -275,8 +275,16 @@ class NotificationService: UNNotificationServiceExtension {
         if let handler = contentHandler, let ntf = bestAttemptNtf {
             contentHandler = nil
             bestAttemptNtf = nil
+            let deliver: (UNMutableNotificationContent?) -> Void = { ntf in
+                let useNtf = if let ntf = ntf {
+                    appStateGroupDefault.get().running ? UNMutableNotificationContent() : ntf
+                } else {
+                    UNMutableNotificationContent()
+                }
+                handler(useNtf)
+            }
             switch ntf {
-            case let .nse(content): handler(content)
+            case let .nse(content): deliver(content)
             case let .callkit(invitation):
                 CXProvider.reportNewIncomingVoIPPushPayload([
                     "displayName": invitation.contact.displayName,
@@ -284,14 +292,14 @@ class NotificationService: UNNotificationServiceExtension {
                     "media": invitation.callType.media.rawValue
                 ]) { error in
                     if error == nil {
-                        handler(UNMutableNotificationContent())
+                        deliver(nil)
                     } else {
                         logger.debug("reportNewIncomingVoIPPushPayload success to CallController for \(invitation.contact.id)")
-                        handler(createCallInvitationNtf(invitation))
+                        deliver(createCallInvitationNtf(invitation))
                     }
                 }
-            case .empty: handler(UNMutableNotificationContent())
-            case .msgInfo: handler(UNMutableNotificationContent())
+            case .empty: deliver(nil)
+            case .msgInfo: deliver(nil)
             }
         }
     }
@@ -410,9 +418,6 @@ func chatSuspended() {
     logger.debug("NotificationService chatSuspended")
     if case .suspending = NSEChatState.shared.value {
         NSEChatState.shared.set(.suspended)
-//        if ChatModel.shared.chatRunning == true {
-//            ChatReceiver.shared.stop()
-//        }
         chatCloseStore()
     }
 }
@@ -423,8 +428,13 @@ func receiveMessages() async {
         switch NSEChatState.shared.value {
         case .created: await delayWhenInactive()
         case .active:
-            updateNetCfg()
-            await receiveMsg()
+            if appStateGroupDefault.get().running {
+                suspendChat(nseSuspendTimeout)
+                await delayWhenInactive()
+            } else {
+                updateNetCfg()
+                await receiveMsg()
+            }
         case .suspending: await receiveMsg()
         case .suspended: await delayWhenInactive()
         }
