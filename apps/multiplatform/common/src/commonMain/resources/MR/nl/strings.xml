@@ -209,7 +209,7 @@
     <string name="create_profile_button">Maak</string>
     <string name="create_profile">Maak een profiel aan</string>
     <string name="delete_address">Adres verwijderen</string>
-    <string name="always_use_relay">Verbinden via relais</string>
+    <string name="always_use_relay">Altijd relay gebruiken</string>
     <string name="status_contact_has_e2e_encryption">contact heeft e2e-codering</string>
     <string name="status_contact_has_no_e2e_encryption">contact heeft geen e2e versleuteling</string>
     <string name="set_password_to_export_desc">De database is versleuteld met een willekeurige wachtwoord. Wijzig dit voordat u exporteert.</string>
@@ -741,7 +741,7 @@
     <string name="relay_server_if_necessary">Relay server wordt alleen gebruikt als dat nodig is. Een andere partij kan uw IP-adres zien.</string>
     <string name="your_ice_servers">Uw ICE servers</string>
     <string name="alert_title_skipped_messages">Overgeslagen berichten</string>
-    <string name="call_connection_via_relay">via relais</string>
+    <string name="call_connection_via_relay">via relay</string>
     <string name="icon_descr_video_off">Video uit</string>
     <string name="protect_app_screen">App scherm verbergen</string>
     <string name="your_privacy">Uw privacy</string>
@@ -1385,7 +1385,7 @@
     <string name="open_database_folder">Database map openen</string>
     <string name="passphrase_will_be_saved_in_settings">Het wachtwoord wordt als platte tekst in de instellingen opgeslagen nadat u deze hebt gewijzigd of de app opnieuw hebt opgestart.</string>
     <string name="settings_is_storing_in_clear_text">Het wachtwoord wordt als leesbare tekst in de instellingen opgeslagen.</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Let op</b>: bericht en bestands relais zijn verbonden via SOCKS-proxy. Voor oproepen en het verzenden van link voorbeelden wordt gebruik gemaakt van een directe verbinding.]]></string>
+    <string name="socks_proxy_setting_limitations"><b>Let op</b>: bericht en bestands relays zijn verbonden via SOCKS-proxy. Voor oproepen en het verzenden van link voorbeelden wordt gebruik gemaakt van een directe verbinding.</string>
     <string name="encrypt_local_files">Versleutel lokale bestanden</string>
     <string name="v5_3_encrypt_local_files">Versleutel opgeslagen bestanden en media</string>
     <string name="v5_3_new_desktop_app">Nieuwe desktop app!</string>
