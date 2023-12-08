@@ -1528,4 +1528,8 @@
     <string name="create_chat_profile">Créer un profil de chat</string>
     <string name="no_connected_mobile">Pas de mobile connecté</string>
     <string name="disconnect_remote_hosts">Déconnecter les mobiles</string>
+    <string name="random_port">Aléatoire</string>
+    <string name="open_port_in_firewall_desc">Afin de permettre à une application mobile de se connecter à votre ordinateur, ouvrez ce port dans votre pare-feu, si vous l\'avez activé</string>
+    <string name="app_was_crashed">Crash d\'aperçu</string>
+    <string name="open_port_in_firewall_title">Ouvrir le port de votre pare-feu</string>
 </resources>
