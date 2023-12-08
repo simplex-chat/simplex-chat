@@ -116,8 +116,8 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
     profileId <- insertedRowId db
     DB.execute
       db
-      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is_user, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (profileId, displayName, userId, True, currentTs, currentTs)
+      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is_user, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?)"
+      (profileId, displayName, userId, True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
     pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing)

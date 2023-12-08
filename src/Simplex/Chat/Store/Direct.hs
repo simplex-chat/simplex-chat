@@ -202,7 +202,7 @@ createIncognitoProfile db User {userId} p = do
 createDirectContact :: DB.Connection -> User -> Connection -> Profile -> Bool -> ExceptT StoreError IO Contact
 createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p@Profile {preferences} contactUsed = do
   currentTs <- liftIO getCurrentTime
-  (localDisplayName, contactId, profileId) <- createContact_ db userId p localAlias Nothing currentTs (Just currentTs) contactUsed
+  (localDisplayName, contactId, profileId) <- createContact_ db userId p localAlias Nothing currentTs contactUsed
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
   let profile = toLocalProfile profileId p localAlias
       userPreferences = emptyChatPrefs

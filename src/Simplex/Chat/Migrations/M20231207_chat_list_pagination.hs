@@ -16,7 +16,7 @@ WHERE contact_id = (
 
 UPDATE contacts
 SET chat_ts = updated_at
-WHERE chat_ts IS NULL AND contact_used = 1;
+WHERE chat_ts IS NULL;
 
 UPDATE groups
 SET chat_ts = updated_at
