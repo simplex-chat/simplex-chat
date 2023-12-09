@@ -1,14 +1,16 @@
 {-# LANGUAGE FlexibleContexts #-}
 
-module Simplex.Chat.Mobile.WebRTC (
-  cChatEncryptMedia,
-  cChatDecryptMedia,
-  chatEncryptMedia,
-  chatDecryptMedia,
-  reservedSize,
-) where
+module Simplex.Chat.Mobile.WebRTC
+  ( cChatEncryptMedia,
+    cChatDecryptMedia,
+    chatEncryptMedia,
+    chatDecryptMedia,
+    reservedSize,
+  ) where
 
+import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class
 import qualified Crypto.Cipher.Types as AES
 import Data.Bifunctor (bimap)
 import qualified Data.ByteArray as BA
@@ -19,8 +21,8 @@ import Data.Either (fromLeft)
 import Data.Word (Word8)
 import Foreign.C (CInt, CString, newCAString)
 import Foreign.Ptr (Ptr)
-import qualified Simplex.Messaging.Crypto as C
 import Simplex.Chat.Mobile.Shared
+import qualified Simplex.Messaging.Crypto as C
 
 cChatEncryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
 cChatEncryptMedia = cTransformMedia chatEncryptMedia

@@ -2,7 +2,6 @@ package chat.simplex.common.model
 
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
@@ -43,7 +42,7 @@ object ChatModel {
   val setDeliveryReceipts = mutableStateOf(false)
   val currentUser = mutableStateOf<User?>(null)
   val users = mutableStateListOf<UserInfo>()
-  val userCreated = mutableStateOf<Boolean?>(null)
+  val localUserCreated = mutableStateOf<Boolean?>(null)
   val chatRunning = mutableStateOf<Boolean?>(null)
   val chatDbChanged = mutableStateOf<Boolean>(false)
   val chatDbEncrypted = mutableStateOf<Boolean?>(false)
@@ -51,6 +50,7 @@ object ChatModel {
   val chats = mutableStateListOf<Chat>()
   // map of connections network statuses, key is agent connection id
   val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
+  val switchingUsersAndHosts = mutableStateOf(false)
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
@@ -66,6 +66,9 @@ object ChatModel {
 
   // set when app opened from external intent
   val clearOverlays = mutableStateOf<Boolean>(false)
+
+  // Only needed during onboarding when user skipped password setup (left as random password)
+  val desktopOnboardingRandomPassword = mutableStateOf(false)
 
   // set when app is opened via contact or invitation URI
   val appOpenUrl = mutableStateOf<URI?>(null)
@@ -107,6 +110,9 @@ object ChatModel {
   val simplexLinkMode by lazy { mutableStateOf(ChatController.appPrefs.simplexLinkMode.get()) }
 
   var updatingChatsMutex: Mutex = Mutex()
+
+  val desktopNoUserNoRemote: Boolean @Composable get() = appPlatform.isDesktop && currentUser.value == null && currentRemoteHost.value == null
+  fun desktopNoUserNoRemote(): Boolean = appPlatform.isDesktop && currentUser.value == null && currentRemoteHost.value == null
 
   // remote controller
   val remoteHosts = mutableStateListOf<RemoteHostInfo>()
@@ -222,8 +228,23 @@ object ChatModel {
     val chat: Chat
     if (i >= 0) {
       chat = chats[i]
+      val newPreviewItem = when (cInfo) {
+        is ChatInfo.Group -> {
+          val currentPreviewItem = chat.chatItems.firstOrNull()
+          if (currentPreviewItem != null) {
+            if (cItem.meta.itemTs >= currentPreviewItem.meta.itemTs) {
+              cItem
+            } else {
+              currentPreviewItem
+            }
+          } else {
+            cItem
+          }
+        }
+        else -> cItem
+      }
       chats[i] = chat.copy(
-        chatItems = arrayListOf(cItem),
+        chatItems = arrayListOf(newPreviewItem),
         chatStats =
           if (cItem.meta.itemStatus is CIStatus.RcvNew) {
             val minUnreadId = if(chat.chatStats.minUnreadItemId == 0L) cItem.id else chat.chatStats.minUnreadItemId
@@ -605,6 +626,7 @@ object ChatModel {
     terminalItems.add(item)
   }
 
+  val connectedToRemote: Boolean @Composable get() = currentRemoteHost.value != null || remoteCtrlSession.value?.active == true
   fun connectedToRemote(): Boolean = currentRemoteHost.value != null || remoteCtrlSession.value?.active == true
 }
 
@@ -2943,6 +2965,14 @@ sealed class RemoteCtrlSessionState {
   @Serializable @SerialName("connecting") object Connecting: RemoteCtrlSessionState()
   @Serializable @SerialName("pendingConfirmation") data class PendingConfirmation(val sessionCode: String): RemoteCtrlSessionState()
   @Serializable @SerialName("connected") data class Connected(val sessionCode: String): RemoteCtrlSessionState()
+}
+
+@Serializable
+sealed class RemoteCtrlStopReason {
+  @Serializable @SerialName("discoveryFailed") class DiscoveryFailed(val chatError: ChatError): RemoteCtrlStopReason()
+  @Serializable @SerialName("connectionFailed") class ConnectionFailed(val chatError: ChatError): RemoteCtrlStopReason()
+  @Serializable @SerialName("setupFailed") class SetupFailed(val chatError: ChatError): RemoteCtrlStopReason()
+  @Serializable @SerialName("disconnected") object Disconnected: RemoteCtrlStopReason()
 }
 
 sealed class UIRemoteCtrlSessionState {

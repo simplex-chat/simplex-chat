@@ -7,16 +7,16 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
+import Control.Monad
 import Control.Monad.Except
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
+import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), Profile (..))
+import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import System.Directory (copyFile, createDirectoryIfMissing)
 import Test.Hspec
-import Simplex.Chat.Store.Shared (createContact)
-import Control.Monad
-import Simplex.Messaging.Encoding.String (StrEncoding(..))
 
 chatProfileTests :: SpecWith FilePath
 chatProfileTests = do
@@ -633,7 +633,7 @@ testPlanAddressOwn tmp =
     alice <## "alice_1 (Alice) wants to connect to you!"
     alice <## "to accept: /ac alice_1"
     alice <## "to reject: /rc alice_1 (the sender will NOT be notified)"
-    alice @@@ [("<@alice_1", ""), (":2","")]
+    alice @@@ [("<@alice_1", ""), (":2", "")]
     alice ##> "/ac alice_1"
     alice <## "alice_1 (Alice): accepting contact request..."
     alice

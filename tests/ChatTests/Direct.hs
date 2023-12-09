@@ -259,7 +259,6 @@ testPlanInvitationLinkOk =
 
       bob ##> ("/_connect plan 1 " <> inv)
       bob <## "invitation link: ok to connect" -- conn_req_inv is forgotten after connection
-
       alice <##> bob
 
 testPlanInvitationLinkOwn :: HasCallStack => FilePath -> IO ()
@@ -283,7 +282,6 @@ testPlanInvitationLinkOwn tmp =
 
     alice ##> ("/_connect plan 1 " <> inv)
     alice <## "invitation link: ok to connect" -- conn_req_inv is forgotten after connection
-
     alice @@@ [("@alice_1", lastChatFeature), ("@alice_2", lastChatFeature)]
     alice `send` "@alice_2 hi"
     alice
@@ -1213,31 +1211,34 @@ testMuteGroup =
       cath `send` "> #team (hello) hello too!"
       cath <# "#team > bob hello"
       cath <## "      hello too!"
-      concurrently_
-        (bob </)
-        ( do alice <# "#team cath> > bob hello"
-             alice <## "      hello too!"
-        )
+      concurrentlyN_
+        [ (bob </),
+          do
+            alice <# "#team cath> > bob hello"
+            alice <## "      hello too!"
+        ]
       bob ##> "/unmute mentions #team"
       bob <## "ok"
       alice `send` "> #team @bob (hello) hey bob!"
       alice <# "#team > bob hello"
       alice <## "      hey bob!"
-      concurrently_
-        ( do bob <# "#team alice> > bob hello"
-             bob <## "      hey bob!"
-        )
-        ( do cath <# "#team alice> > bob hello"
-             cath <## "      hey bob!"
-        )
+      concurrentlyN_
+        [ do
+            bob <# "#team alice> > bob hello"
+            bob <## "      hey bob!",
+          do
+            cath <# "#team alice> > bob hello"
+            cath <## "      hey bob!"
+        ]
       alice `send` "> #team @cath (hello) hey cath!"
       alice <# "#team > cath hello too!"
       alice <## "      hey cath!"
-      concurrently_
-        (bob </)
-        ( do cath <# "#team alice> > cath hello too!"
-             cath <## "      hey cath!"
-        )
+      concurrentlyN_
+        [ (bob </),
+          do
+            cath <# "#team alice> > cath hello too!"
+            cath <## "      hey cath!"
+        ]
       bob ##> "/gs"
       bob <## "#team (3 members, mentions only, you can /unmute #team)"
       bob ##> "/unmute #team"

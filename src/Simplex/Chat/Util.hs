@@ -2,6 +2,7 @@ module Simplex.Chat.Util (week, encryptFile, chunkSize) where
 
 import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class
 import qualified Data.ByteString.Lazy as LB
 import Data.Time (NominalDiffTime)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
