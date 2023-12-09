@@ -76,7 +76,7 @@ struct SimpleXApp: App {
                         NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
                         CallController.shared.shouldSuspendChat = false
-                        let appState = appStateGroupDefault.get()
+                        let appState = AppChatState.shared.value
                         startChatAndActivate {
                             if appState.inactive && chatModel.chatRunning == true {
                                 updateChats()

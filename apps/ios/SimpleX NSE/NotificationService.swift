@@ -172,13 +172,13 @@ class NotificationService: UNNotificationServiceExtension {
     var threadId: UUID?
     var receiveEntityId: String?
     var cancelRead: (() -> Void)?
+    var appSubscriber: AppSubscriber?
+    var returnedSuspension = false
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
-        threadId = NSEThreads.shared.startThread()
         logger.debug("DEBUGGING: NotificationService.didReceive")
-        if let ntf = request.content.mutableCopy() as? UNMutableNotificationContent {
-            setBestAttemptNtf(ntf)
-        }
+        let ntf = if let ntf_ = request.content.mutableCopy() as? UNMutableNotificationContent { ntf_ } else { UNMutableNotificationContent() }
+        setBestAttemptNtf(ntf)
         self.contentHandler = contentHandler
         registerGroupDefaults()
         let appState = appStateGroupDefault.get()
@@ -191,14 +191,24 @@ class NotificationService: UNNotificationServiceExtension {
             logger.debug("NotificationService: app is suspending")
             setBadgeCount()
             Task {
-                var state = appState
-                for _ in 1...6 {
-                    _ = try await Task.sleep(nanoseconds: suspendingDelay)
-                    state = appStateGroupDefault.get()
-                    if state == .suspended || state != .suspending { break }
+                let state: AppState = await withCheckedContinuation { cont in
+                    let appSuspension = { (s: AppState) in
+                        if !self.returnedSuspension {
+                            self.returnedSuspension = true
+                            self.appSubscriber = nil
+                            cont.resume(returning: s)
+                        }
+                    }
+                    appSubscriber = appStateSubscriber { s in
+                        if s == .suspended { appSuspension(s) }
+                    }
+                    DispatchQueue.global().asyncAfter(deadline: .now() + 16) { // TODO constant
+                        logger.debug("NotificationService: appSuspension timeout")
+                        appSuspension(appStateGroupDefault.get())
+                    }
                 }
                 logger.debug("NotificationService: app state is \(state.rawValue, privacy: .public)")
-                if state.inactive {
+                if state.inactive == true {
                     receiveNtfMessages(request, contentHandler)
                 } else {
                     deliverBestAttemptNtf()
@@ -216,6 +226,7 @@ class NotificationService: UNNotificationServiceExtension {
             deliverBestAttemptNtf()
             return
         }
+        threadId = NSEThreads.shared.startThread()
         let userInfo = request.content.userInfo
         if let ntfData = userInfo["notificationData"] as? [AnyHashable : Any],
            let nonce = ntfData["nonce"] as? String,
@@ -334,11 +345,29 @@ class NSEChatState {
 
     func set(_ state: NSEState) {
         nseStateGroupDefault.set(state)
+        sendNSEState(state)
         value_ = state
     }
 
     init() {
         set(.created)
+    }
+}
+
+var appSubscriber: AppSubscriber = appStateSubscriber { state in
+    logger.debug("NotificationService: appSubscriber")
+    if state.running {
+        logger.debug("NotificationService: appSubscriber app state \(state.rawValue), suspending")
+        suspendChat(nseSuspendTimeout)
+    }
+}
+
+func appStateSubscriber(onState: @escaping (AppState) -> Void) -> AppSubscriber {
+    appMessageSubscriber { msg in
+        if case let .state(state) = msg {
+            logger.debug("NotificationService: appStateSubscriber \(state.rawValue, privacy: .public)")
+            onState(state)
+        }
     }
 }
 

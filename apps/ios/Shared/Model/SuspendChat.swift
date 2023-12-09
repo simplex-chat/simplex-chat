@@ -22,16 +22,16 @@ let activationDelay: Double = 1.5 // seconds
 
 private func _suspendChat(timeout: Int) {
     // this is a redundant check to prevent logical errors, like the one fixed in this PR
-    let state = appStateGroupDefault.get()
+    let state = AppChatState.shared.value
     if !state.canSuspend {
         logger.error("_suspendChat called, current state: \(state.rawValue, privacy: .public)")
     } else if ChatModel.ok {
-        appStateGroupDefault.set(.suspending)
+        AppChatState.shared.set(.suspending)
         apiSuspendChat(timeoutMicroseconds: timeout * 1000000)
         let endTask = beginBGTask(chatSuspended)
         DispatchQueue.global().asyncAfter(deadline: .now() + Double(timeout) + 1, execute: endTask)
     } else {
-        appStateGroupDefault.set(.suspended)
+        AppChatState.shared.set(.suspended)
     }
 }
 
@@ -43,7 +43,7 @@ func suspendChat() {
 
 func suspendBgRefresh() {
     suspendLockQueue.sync {
-        if case .bgRefresh = appStateGroupDefault.get()  {
+        if case .bgRefresh = AppChatState.shared.value  {
             _suspendChat(timeout: bgSuspendTimeout)
         }
     }
@@ -52,7 +52,7 @@ func suspendBgRefresh() {
 func terminateChat() {
     logger.debug("terminateChat")
     suspendLockQueue.sync {
-        switch appStateGroupDefault.get() {
+        switch AppChatState.shared.value {
         case .suspending:
             // suspend instantly if already suspending
             _chatSuspended()
@@ -72,7 +72,7 @@ func terminateChat() {
 
 func chatSuspended() {
     suspendLockQueue.sync {
-        if case .suspending = appStateGroupDefault.get() {
+        if case .suspending = AppChatState.shared.value {
             _chatSuspended()
         }
     }
@@ -80,7 +80,7 @@ func chatSuspended() {
 
 private func _chatSuspended() {
     logger.debug("_chatSuspended")
-    appStateGroupDefault.set(.suspended)
+    AppChatState.shared.set(.suspended)
     if ChatModel.shared.chatRunning == true {
         ChatReceiver.shared.stop()
     }
@@ -89,14 +89,14 @@ private func _chatSuspended() {
 
 func setAppState(_ appState: AppState) {
     suspendLockQueue.sync {
-        appStateGroupDefault.set(appState)
+        AppChatState.shared.set(appState)
     }
 }
 
 func activateChat(appState: AppState = .active) {
     logger.debug("DEBUGGING: activateChat")
     suspendLockQueue.sync {
-        appStateGroupDefault.set(appState)
+        AppChatState.shared.set(appState)
         if ChatModel.ok { apiActivateChat() }
         logger.debug("DEBUGGING: activateChat: after apiActivateChat")
     }
@@ -120,20 +120,25 @@ func startChatAndActivate(dispatchQueue: DispatchQueue = DispatchQueue.main, _ c
         ChatReceiver.shared.start()
         logger.debug("DEBUGGING: startChatAndActivate: after ChatReceiver.shared.start")
     }
-    if .active == appStateGroupDefault.get() {
+    if .active == AppChatState.shared.value {
         completion()
     } else if nseStateGroupDefault.get().inactive {
         activate()
     } else {
         suspendLockQueue.sync {
-            appStateGroupDefault.set(.activating)
+            AppChatState.shared.set(.activating)
         }
-        // TODO can be replaced with Mach messenger to notify the NSE to terminate and continue after reply, with timeout
-        dispatchQueue.asyncAfter(deadline: .now() + activationDelay) {
-            if appStateGroupDefault.get() == .activating {
+        waitNSESuspended(timeout: 10, dispatchQueue: dispatchQueue) { ok in
+            if AppChatState.shared.value == .activating {
                 activate()
             }
         }
+        // TODO can be replaced with Mach messenger to notify the NSE to terminate and continue after reply, with timeout
+//        dispatchQueue.asyncAfter(deadline: .now() + activationDelay) {
+//            if AppChatState.shared.value == .activating {
+//                activate()
+//            }
+//        }
     }
 
     func activate() {
@@ -141,5 +146,20 @@ func startChatAndActivate(dispatchQueue: DispatchQueue = DispatchQueue.main, _ c
         activateChat()
         completion()
         logger.debug("DEBUGGING: startChatAndActivate: after activateChat")
+    }
+}
+
+class AppChatState {
+    static let shared = AppChatState()
+    private var value_ = appStateGroupDefault.get()
+
+    var value: AppState {
+        value_
+    }
+
+    func set(_ state: AppState) {
+        appStateGroupDefault.set(state)
+        sendAppState(state)
+        value_ = state
     }
 }

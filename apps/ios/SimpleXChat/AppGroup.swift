@@ -67,7 +67,7 @@ public func registerGroupDefaults() {
     ])
 }
 
-public enum AppState: String {
+public enum AppState: String, Codable {
     case active
     case activating
     case bgRefresh
@@ -102,7 +102,7 @@ public enum AppState: String {
     }
 }
 
-public enum NSEState: String {
+public enum NSEState: String, Codable {
     case created
     case active
     case suspending
