@@ -12,7 +12,9 @@ module Simplex.Chat.Store.Shared where
 
 import Control.Exception (Exception)
 import qualified Control.Exception as E
+import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG, randomBytesGenerate)
 import qualified Data.Aeson.TH as J
 import qualified Data.ByteString.Base64 as B64
@@ -99,7 +101,7 @@ data StoreError
   | SENoGroupSndStatus {itemId :: ChatItemId, groupMemberId :: GroupMemberId}
   | SEDuplicateGroupMessage {groupId :: Int64, sharedMsgId :: SharedMsgId, authorGroupMemberId :: Maybe GroupMemberId, forwardedByGroupMemberId :: Maybe GroupMemberId}
   | SERemoteHostNotFound {remoteHostId :: RemoteHostId}
-  | SERemoteHostUnknown -- ^ attempting to store KnownHost without a known fingerprint
+  | SERemoteHostUnknown -- attempting to store KnownHost without a known fingerprint
   | SERemoteHostDuplicateCA
   | SERemoteCtrlNotFound {remoteCtrlId :: RemoteCtrlId}
   | SERemoteCtrlDuplicateCA

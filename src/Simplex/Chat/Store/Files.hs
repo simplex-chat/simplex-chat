@@ -77,7 +77,9 @@ module Simplex.Chat.Store.Files
 where
 
 import Control.Applicative ((<|>))
+import Control.Monad
 import Control.Monad.Except
+import Control.Monad.IO.Class
 import Data.Either (rights)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe, isJust, listToMaybe)
@@ -106,7 +108,7 @@ import Simplex.Messaging.Protocol (SubscriptionMode (..))
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
 getLiveSndFileTransfers db User {userId} = do
-  cutoffTs <- addUTCTime (- week) <$> getCurrentTime
+  cutoffTs <- addUTCTime (-week) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
       <$> DB.query
@@ -129,7 +131,7 @@ getLiveSndFileTransfers db User {userId} = do
 
 getLiveRcvFileTransfers :: DB.Connection -> User -> IO [RcvFileTransfer]
 getLiveRcvFileTransfers db user@User {userId} = do
-  cutoffTs <- addUTCTime (- week) <$> getCurrentTime
+  cutoffTs <- addUTCTime (-week) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
       <$> DB.query
@@ -231,11 +233,12 @@ createSndGroupInlineFT db GroupMember {groupMemberId, localDisplayName = n} Conn
 
 updateSndDirectFTDelivery :: DB.Connection -> Contact -> FileTransferMeta -> Int64 -> ExceptT StoreError IO ()
 updateSndDirectFTDelivery _ Contact {localDisplayName, activeConn = Nothing} _ _ = throwError $ SEContactNotReady localDisplayName
-updateSndDirectFTDelivery db Contact {activeConn = Just Connection {connId}} FileTransferMeta {fileId} msgDeliveryId = liftIO $
-  DB.execute
-    db
-    "UPDATE snd_files SET last_inline_msg_delivery_id = ? WHERE connection_id = ? AND file_id = ? AND file_inline IS NOT NULL"
-    (msgDeliveryId, connId, fileId)
+updateSndDirectFTDelivery db Contact {activeConn = Just Connection {connId}} FileTransferMeta {fileId} msgDeliveryId =
+  liftIO $
+    DB.execute
+      db
+      "UPDATE snd_files SET last_inline_msg_delivery_id = ? WHERE connection_id = ? AND file_id = ? AND file_inline IS NOT NULL"
+      (msgDeliveryId, connId, fileId)
 
 updateSndGroupFTDelivery :: DB.Connection -> GroupMember -> Connection -> FileTransferMeta -> Int64 -> IO ()
 updateSndGroupFTDelivery db GroupMember {groupMemberId} Connection {connId} FileTransferMeta {fileId} msgDeliveryId =
@@ -721,7 +724,7 @@ removeFileCryptoArgs db fileId = do
 
 getRcvFilesToReceive :: DB.Connection -> User -> IO [RcvFileTransfer]
 getRcvFilesToReceive db user@User {userId} = do
-  cutoffTs <- addUTCTime (- (2 * nominalDay)) <$> getCurrentTime
+  cutoffTs <- addUTCTime (-(2 * nominalDay)) <$> getCurrentTime
   fileIds :: [Int64] <-
     map fromOnly
       <$> DB.query
@@ -765,20 +768,20 @@ createRcvFileChunk db RcvFileTransfer {fileId, fileInvitation = FileInvitation {
       pure $ case map fromOnly ns of
         []
           | chunkNo == 1 ->
-            if chunkSize >= fileSize
-              then RcvChunkFinal
-              else RcvChunkOk
+              if chunkSize >= fileSize
+                then RcvChunkFinal
+                else RcvChunkOk
           | otherwise -> RcvChunkError
         n : _
           | chunkNo == n -> RcvChunkDuplicate
           | chunkNo == n + 1 ->
-            let prevSize = n * chunkSize
-             in if prevSize >= fileSize
-                  then RcvChunkError
-                  else
-                    if prevSize + chunkSize >= fileSize
-                      then RcvChunkFinal
-                      else RcvChunkOk
+              let prevSize = n * chunkSize
+               in if prevSize >= fileSize
+                    then RcvChunkError
+                    else
+                      if prevSize + chunkSize >= fileSize
+                        then RcvChunkFinal
+                        else RcvChunkOk
           | otherwise -> RcvChunkError
 
 updatedRcvFileChunkStored :: DB.Connection -> RcvFileTransfer -> Integer -> IO ()

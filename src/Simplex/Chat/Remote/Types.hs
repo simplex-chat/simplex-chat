@@ -18,16 +18,17 @@ import qualified Data.Aeson.TH as J
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
+import Data.Word (Word16)
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Types (verificationCode)
 import qualified Simplex.Messaging.Crypto as C
+import Simplex.Messaging.Crypto.File (CryptoFile)
 import Simplex.Messaging.Crypto.SNTRUP761 (KEMHybridSecret)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
+import Simplex.Messaging.Transport (TLS (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Types
-import Simplex.Messaging.Crypto.File (CryptoFile)
-import Simplex.Messaging.Transport (TLS (..))
 
 data RemoteHostClient = RemoteHostClient
   { hostEncoding :: PlatformEncoding,
@@ -48,13 +49,13 @@ data RemoteCrypto = RemoteCrypto
 
 data RemoteSignatures
   = RSSign
-    { idPrivKey :: C.PrivateKeyEd25519,
-      sessPrivKey :: C.PrivateKeyEd25519
-    }
+      { idPrivKey :: C.PrivateKeyEd25519,
+        sessPrivKey :: C.PrivateKeyEd25519
+      }
   | RSVerify
-    { idPubKey :: C.PublicKeyEd25519,
-      sessPubKey :: C.PublicKeyEd25519
-    }
+      { idPubKey :: C.PublicKeyEd25519,
+        sessPubKey :: C.PublicKeyEd25519
+      }
 
 type SessionSeq = Int
 
@@ -71,12 +72,12 @@ data RemoteHostSession
   | RHSessionPendingConfirmation {sessionCode :: Text, tls :: TLS, rhPendingSession :: RHPendingSession}
   | RHSessionConfirmed {tls :: TLS, rhPendingSession :: RHPendingSession}
   | RHSessionConnected
-    { rchClient :: RCHostClient,
-      tls :: TLS,
-      rhClient :: RemoteHostClient,
-      pollAction :: Async (),
-      storePath :: FilePath
-    }
+      { rchClient :: RCHostClient,
+        tls :: TLS,
+        rhClient :: RemoteHostClient,
+        pollAction :: Async (),
+        storePath :: FilePath
+      }
 
 data RemoteHostSessionState
   = RHSStarting
@@ -128,6 +129,8 @@ data RemoteHost = RemoteHost
   { remoteHostId :: RemoteHostId,
     hostDeviceName :: Text,
     storePath :: FilePath,
+    bindAddress_ :: Maybe RCCtrlAddress,
+    bindPort_ :: Maybe Word16,
     hostPairing :: RCHostPairing
   }
 
@@ -136,6 +139,8 @@ data RemoteHostInfo = RemoteHostInfo
   { remoteHostId :: RemoteHostId,
     hostDeviceName :: Text,
     storePath :: FilePath,
+    bindAddress_ :: Maybe RCCtrlAddress,
+    bindPort_ :: Maybe Word16,
     sessionState :: Maybe RemoteHostSessionState
   }
   deriving (Show)
@@ -158,6 +163,7 @@ data PlatformEncoding
   deriving (Show, Eq)
 
 localEncoding :: PlatformEncoding
+
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
 localEncoding = PESwift
 #else

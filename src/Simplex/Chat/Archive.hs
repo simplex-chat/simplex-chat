@@ -14,6 +14,7 @@ module Simplex.Chat.Archive
 where
 
 import qualified Codec.Archive.Zip as Z
+import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Functor (($>))
@@ -21,7 +22,7 @@ import qualified Data.Text as T
 import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
 import Simplex.Messaging.Agent.Client (agentClientStore)
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), sqlString, closeSQLiteStore)
+import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), closeSQLiteStore, sqlString)
 import Simplex.Messaging.Util
 import System.FilePath
 import UnliftIO.Directory

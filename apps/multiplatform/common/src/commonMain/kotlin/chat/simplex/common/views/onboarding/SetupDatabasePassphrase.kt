@@ -1,10 +1,7 @@
 package chat.simplex.common.views.onboarding
 
 import SectionBottomSpacer
-import SectionItemView
-import SectionItemViewSpaceBetween
 import SectionTextFooter
-import SectionView
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
@@ -15,14 +12,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.*
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
@@ -43,7 +38,11 @@ fun SetupDatabasePassphrase(m: ChatModel) {
   val newKey = rememberSaveable { mutableStateOf("") }
   val confirmNewKey = rememberSaveable { mutableStateOf("") }
   fun nextStep() {
-    m.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
+    if (appPlatform.isAndroid || chatModel.currentUser.value != null) {
+      m.controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
+    } else {
+      m.controller.appPrefs.onboardingStage.set(OnboardingStage.LinkAMobile)
+    }
   }
   SetupDatabasePassphraseLayout(
     currentKey,
@@ -159,10 +158,7 @@ private fun SetupDatabasePassphraseLayout(
             }
           },
         isValid = { confirmNewKey.value == "" || newKey.value == confirmNewKey.value },
-        keyboardActions = KeyboardActions(onDone = {
-          if (!disabled) onClickUpdate()
-          defaultKeyboardAction(ImeAction.Done)
-        }),
+        keyboardActions = KeyboardActions(onDone = { defaultKeyboardAction(ImeAction.Done) }),
       )
 
       Box(Modifier.align(Alignment.CenterHorizontally).padding(vertical = DEFAULT_PADDING)) {
@@ -176,7 +172,10 @@ private fun SetupDatabasePassphraseLayout(
     }
 
     Spacer(Modifier.weight(1f))
-    SkipButton(progressIndicator.value, nextStep)
+    SkipButton(progressIndicator.value) {
+      chatModel.desktopOnboardingRandomPassword.value = true
+      nextStep()
+    }
 
     SectionBottomSpacer()
   }

@@ -83,7 +83,7 @@ final class ChatModel: ObservableObject {
     // current WebRTC call
     @Published var callInvitations: Dictionary<ChatId, RcvCallInvitation> = [:]
     @Published var activeCall: Call?
-    @Published var callCommand: WCallCommand?
+    let callCommand: WebRTCCommandProcessor = WebRTCCommandProcessor()
     @Published var showCallView = false
     // remote desktop
     @Published var remoteCtrlSession: RemoteCtrlSession?
@@ -267,7 +267,20 @@ final class ChatModel: ObservableObject {
     func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update previews
         if let i = getChatIndex(cInfo.id) {
-            chats[i].chatItems = [cItem]
+            chats[i].chatItems = switch cInfo {
+            case .group:
+                if let currentPreviewItem = chats[i].chatItems.first {
+                    if cItem.meta.itemTs >= currentPreviewItem.meta.itemTs {
+                        [cItem]
+                    } else {
+                        [currentPreviewItem]
+                    }
+                } else {
+                    [cItem]
+                }
+            default:
+                [cItem]
+            }
             if case .rcvNew = cItem.meta.itemStatus {
                 chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount + 1
                 increaseUnreadCounter(user: currentUser!)
