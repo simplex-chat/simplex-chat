@@ -77,15 +77,16 @@ struct SimpleXApp: App {
                     case .active:
                         CallController.shared.shouldSuspendChat = false
                         let appState = appStateGroupDefault.get()
-                        startChatAndActivate()
-                        if appState.inactive && chatModel.chatRunning == true {
-                            updateChats()
-                            if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
-                                updateCallInvitations()
+                        startChatAndActivate {
+                            if appState.inactive && chatModel.chatRunning == true {
+                                updateChats()
+                                if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
+                                    updateCallInvitations()
+                                }
                             }
+                            doAuthenticate = authenticationExpired()
+                            canConnectCall = !(doAuthenticate && prefPerformLA) || unlockedRecently()
                         }
-                        doAuthenticate = authenticationExpired()
-                        canConnectCall = !(doAuthenticate && prefPerformLA) || unlockedRecently()
                     default:
                         break
                     }

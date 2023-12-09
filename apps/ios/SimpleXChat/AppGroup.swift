@@ -10,6 +10,7 @@ import Foundation
 import SwiftUI
 
 let GROUP_DEFAULT_APP_STATE = "appState"
+let GROUP_DEFAULT_NSE_STATE = "nseState"
 let GROUP_DEFAULT_DB_CONTAINER = "dbContainer"
 public let GROUP_DEFAULT_CHAT_LAST_START = "chatLastStart"
 let GROUP_DEFAULT_NTF_PREVIEW_MODE = "ntfPreviewMode"
@@ -68,10 +69,20 @@ public func registerGroupDefaults() {
 
 public enum AppState: String {
     case active
+    case activating
     case bgRefresh
     case suspending
     case suspended
     case stopped
+
+    public var running: Bool {
+        switch self {
+        case .active: return true
+        case .activating: return true
+        case .bgRefresh: return true
+        default: return false
+        }
+    }
 
     public var inactive: Bool {
         switch self {
@@ -84,9 +95,29 @@ public enum AppState: String {
     public var canSuspend: Bool {
         switch self {
         case .active: return true
+        case .activating: return true
         case .bgRefresh: return true
         default: return false
         }
+    }
+}
+
+public enum NSEState: String {
+    case created
+    case active
+    case suspending
+    case suspended
+
+    public var inactive: Bool {
+        switch self {
+        case .created: true
+        case .suspended: true
+        default: false
+        }
+    }
+
+    public var canSuspend: Bool {
+        if case .active = self { true } else { false }
     }
 }
 
@@ -100,6 +131,16 @@ public let appStateGroupDefault = EnumDefault<AppState>(
     forKey: GROUP_DEFAULT_APP_STATE,
     withDefault: .active
 )
+
+public let nseStateGroupDefault = EnumDefault<NSEState>(
+    defaults: groupDefaults,
+    forKey: GROUP_DEFAULT_NSE_STATE,
+    withDefault: .created
+)
+
+public func allowBackgroundRefresh() -> Bool {
+    appStateGroupDefault.get().inactive && nseStateGroupDefault.get().inactive
+}
 
 public let dbContainerGroupDefault = EnumDefault<DBContainer>(
     defaults: groupDefaults,

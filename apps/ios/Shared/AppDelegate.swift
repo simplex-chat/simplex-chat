@@ -80,7 +80,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 }
             } else if let checkMessages = ntfData["checkMessages"] as? Bool, checkMessages {
                 logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessages")
-                if appStateGroupDefault.get().inactive && m.ntfEnablePeriodic {
+                if  m.ntfEnablePeriodic && allowBackgroundRefresh() {
                     receiveMessages(completionHandler)
                 } else {
                     completionHandler(.noData)
