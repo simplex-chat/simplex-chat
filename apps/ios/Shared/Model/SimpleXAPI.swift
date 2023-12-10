@@ -1235,6 +1235,9 @@ func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool 
         try startChat(refreshInvitations: refreshInvitations)
     } else {
         m.chatRunning = false
+        try getUserChatData()
+        NtfManager.shared.setNtfBadgeCount(m.totalUnreadCountForAllUsers())
+        m.onboardingStage = onboardingStageDefault.get()
     }
 }
 

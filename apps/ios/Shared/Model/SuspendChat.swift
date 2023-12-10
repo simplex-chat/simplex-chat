@@ -9,6 +9,7 @@
 import Foundation
 import UIKit
 import SimpleXChat
+import SwiftUI
 
 private let suspendLockQueue = DispatchQueue(label: "chat.simplex.app.suspend.lock")
 
@@ -103,11 +104,32 @@ func activateChat(appState: AppState = .active) {
 func initChatAndMigrate(refreshInvitations: Bool = true) {
     let m = ChatModel.shared
     if (!m.chatInitialized) {
+        m.v3DBMigration = v3DBMigrationDefault.get()
+        if AppChatState.shared.value == .stopped {
+            AlertManager.shared.showAlert(Alert(
+                title: Text("Start chat?"),
+                message: Text("Chat is stopped. Do not start chat if you already used this database on another device."),
+                primaryButton: .default(Text("Ok")) {
+                    AppChatState.shared.set(.active)
+                    initialize(start: true)
+                },
+                secondaryButton: .cancel {
+                    initialize(start: false)
+                }
+            ))
+        } else {
+            initialize(start: true)
+        }
+    }
+
+    func initialize(start: Bool) {
         do {
-            m.v3DBMigration = v3DBMigrationDefault.get()
-            try initializeChat(start: m.v3DBMigration.startChat, refreshInvitations: refreshInvitations)
+            try initializeChat(start: m.v3DBMigration.startChat && start, refreshInvitations: refreshInvitations)
         } catch let error {
-            fatalError("Failed to start or load chats: \(responseError(error))")
+            AlertManager.shared.showAlertMsg(
+                title: start ? "Error starting chat" : "Error opening chat",
+                message: "Please contact developers.\nError: \(responseError(error))"
+            )
         }
     }
 }

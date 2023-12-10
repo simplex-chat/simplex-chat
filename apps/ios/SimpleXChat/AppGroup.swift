@@ -143,6 +143,7 @@ public let nseStateGroupDefault = EnumDefault<NSEState>(
     withDefault: .suspended // so that NSE that was never launched does not delay the app from resuming
 )
 
+// inactive app states do not include "stopped" state
 public func allowBackgroundRefresh() -> Bool {
     appStateGroupDefault.get().inactive && nseStateGroupDefault.get().inactive
 }
