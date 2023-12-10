@@ -181,7 +181,7 @@ class NSEThreads {
 
 // Notification service extension creates a new instance of the class and calls didReceive for each notification.
 // Each didReceive is called in its own thread, but multiple calls can be made in one process, and, empirically, there is never
-// more than one process for notification service extension.
+// more than one process of notification service extension exists at a time.
 // Soon after notification service delivers the last notification it is either suspended or terminated.
 class NotificationService: UNNotificationServiceExtension {
     var contentHandler: ((UNNotificationContent) -> Void)?
@@ -189,7 +189,7 @@ class NotificationService: UNNotificationServiceExtension {
     var badgeCount: Int = 0
     // thread is added to allThreads here - if thread did not start chat,
     // chat does not need to be suspended but NSE state still needs to be set to "suspended".
-    var threadId: UUID?
+    var threadId: UUID? = NSEThreads.shared.newThread()
     var receiveEntityId: String?
     var cancelRead: (() -> Void)?
     var appSubscriber: AppSubscriber?
@@ -197,20 +197,21 @@ class NotificationService: UNNotificationServiceExtension {
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("DEBUGGING: NotificationService.didReceive")
-        let newThreadId = NSEThreads.shared.newThread()
-        threadId = newThreadId
         let ntf = if let ntf_ = request.content.mutableCopy() as? UNMutableNotificationContent { ntf_ } else { UNMutableNotificationContent() }
         setBestAttemptNtf(ntf)
         self.contentHandler = contentHandler
         registerGroupDefaults()
         let appState = appStateGroupDefault.get()
+        logger.debug("NotificationService: app is \(appState.rawValue, privacy: .public)")
         switch appState {
-        case .suspended:
-            logger.debug("NotificationService: app is suspended")
+        case .stopped:
             setBadgeCount()
-            receiveNtfMessages(newThreadId, request, contentHandler)
+            setBestAttemptNtf(createAppStoppedNtf())
+            deliverBestAttemptNtf()
+        case .suspended:
+            setBadgeCount()
+            receiveNtfMessages(request, contentHandler)
         case .suspending:
-            logger.debug("NotificationService: app is suspending")
             setBadgeCount()
             Task {
                 let state: AppState = await withCheckedContinuation { cont in
@@ -231,20 +232,19 @@ class NotificationService: UNNotificationServiceExtension {
                         }
                     }
                 }
-                logger.debug("NotificationService: app state is \(state.rawValue, privacy: .public)")
+                logger.debug("NotificationService: app state is now \(state.rawValue, privacy: .public)")
                 if state.inactive {
-                    receiveNtfMessages(newThreadId, request, contentHandler)
+                    receiveNtfMessages(request, contentHandler)
                 } else {
                     deliverBestAttemptNtf()
                 }
             }
         default:
-            logger.debug("NotificationService: app state is \(appState.rawValue, privacy: .public)")
             deliverBestAttemptNtf()
         }
     }
 
-    func receiveNtfMessages(_ newThreadId: UUID, _ request: UNNotificationRequest, _ contentHandler: @escaping (UNNotificationContent) -> Void) {
+    func receiveNtfMessages(_ request: UNNotificationRequest, _ contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService: receiveNtfMessages")
         if case .documents = dbContainerGroupDefault.get() {
             deliverBestAttemptNtf()
@@ -257,7 +257,7 @@ class NotificationService: UNNotificationServiceExtension {
            // check it here again
            appStateGroupDefault.get().inactive {
             // thread is added to activeThreads tracking set here - if thread started chat it needs to be suspended
-            NSEThreads.shared.startThread(newThreadId)
+            if let t = threadId { NSEThreads.shared.startThread(t) }
             let dbStatus = startChat()
             if case .ok = dbStatus,
                let ntfInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {

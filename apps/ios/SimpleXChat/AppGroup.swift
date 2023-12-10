@@ -16,8 +16,8 @@ let GROUP_DEFAULT_NSE_STATE = "nseState"
 let GROUP_DEFAULT_DB_CONTAINER = "dbContainer"
 public let GROUP_DEFAULT_CHAT_LAST_START = "chatLastStart"
 let GROUP_DEFAULT_NTF_PREVIEW_MODE = "ntfPreviewMode"
-public let GROUP_DEFAULT_NTF_ENABLE_LOCAL = "ntfEnableLocal"
-public let GROUP_DEFAULT_NTF_ENABLE_PERIODIC = "ntfEnablePeriodic"
+public let GROUP_DEFAULT_NTF_ENABLE_LOCAL = "ntfEnableLocal" // no longer used
+public let GROUP_DEFAULT_NTF_ENABLE_PERIODIC = "ntfEnablePeriodic" // no longer used
 let GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 public let GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE = "privacyTransferImagesInline" // no longer used
 public let GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES = "privacyEncryptLocalFiles"
@@ -162,10 +162,6 @@ public let ntfPreviewModeGroupDefault = EnumDefault<NotificationPreviewMode>(
 )
 
 public let incognitoGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_INCOGNITO)
-
-public let ntfEnableLocalGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_ENABLE_LOCAL)
-
-public let ntfEnablePeriodicGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_ENABLE_PERIODIC)
 
 public let privacyAcceptImagesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES)
 

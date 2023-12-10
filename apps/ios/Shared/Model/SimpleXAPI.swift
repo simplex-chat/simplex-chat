@@ -1251,6 +1251,8 @@ func startChat(refreshInvitations: Bool = true) throws {
             try refreshCallInvitations()
         }
         (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
+        // deviceToken is set when AppDelegate.application(didRegisterForRemoteNotificationsWithDeviceToken:) is called,
+        // when it is called before startChat
         if let token = m.deviceToken {
             registerToken(token: token)
         }

@@ -1498,6 +1498,8 @@ public enum PushProvider: String, Decodable {
     }
 }
 
+// This notification mode is for app core, UI uses AppNotificationsMode.off to mean completely disable,
+// and .local for periodic background checks
 public enum NotificationsMode: String, Decodable, SelectableItem {
     case off = "OFF"
     case periodic = "PERIODIC"
@@ -1505,9 +1507,9 @@ public enum NotificationsMode: String, Decodable, SelectableItem {
 
     public var label: LocalizedStringKey {
         switch self {
-        case .off: return "Off (Local)"
-        case .periodic: return "Periodically"
-        case .instant: return "Instantly"
+        case .off: "Local"
+        case .periodic: "Periodically"
+        case .instant: "Instantly"
         }
     }
 
