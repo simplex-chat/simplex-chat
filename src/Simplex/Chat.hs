@@ -599,7 +599,7 @@ processChatCommand = \case
             . sortOn (timeAvg . snd)
             . M.assocs
             <$> withConnection st (readTVarIO . DB.slow)
-  APIGetChats userId withPCC -> withUserId userId $ \user ->
+  APIGetChats userId withPCC -> withUserId' userId $ \user ->
     CRApiChats user <$> withStoreCtx' (Just "APIGetChats, getChatPreviews") (\db -> getChatPreviews db user withPCC)
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
@@ -1205,8 +1205,7 @@ processChatCommand = \case
       CRServerTestResult user srv <$> withAgent (\a -> testProtocolServer a (aUserId user) server)
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand $ APITestProtoServer userId srv
-  APISetChatItemTTL userId newTTL_ -> withUser $ \user -> do
-    checkSameUser userId user
+  APISetChatItemTTL userId newTTL_ -> withUserId userId $ \user ->
     checkStoreNotChanged $
       withChatLock "setChatItemTTL" $ do
         case newTTL_ of
@@ -1224,7 +1223,7 @@ processChatCommand = \case
         ok user
   SetChatItemTTL newTTL_ -> withUser' $ \User {userId} -> do
     processChatCommand $ APISetChatItemTTL userId newTTL_
-  APIGetChatItemTTL userId -> withUserId userId $ \user -> do
+  APIGetChatItemTTL userId -> withUserId' userId $ \user -> do
     ttl <- withStoreCtx' (Just "APIGetChatItemTTL, getChatItemTTL") (`getChatItemTTL` user)
     pure $ CRChatItemTTL user ttl
   GetChatItemTTL -> withUser' $ \User {userId} -> do
@@ -1483,9 +1482,9 @@ processChatCommand = \case
     pure $ CRUserContactLinkDeleted user'
   DeleteMyAddress -> withUser $ \User {userId} ->
     processChatCommand $ APIDeleteMyAddress userId
-  APIShowMyAddress userId -> withUserId userId $ \user ->
+  APIShowMyAddress userId -> withUserId' userId $ \user ->
     CRUserContactLink user <$> withStoreCtx (Just "APIShowMyAddress, getUserAddress") (`getUserAddress` user)
-  ShowMyAddress -> withUser $ \User {userId} ->
+  ShowMyAddress -> withUser' $ \User {userId} ->
     processChatCommand $ APIShowMyAddress userId
   APISetProfileAddress userId False -> withUserId userId $ \user@User {profile = p} -> do
     let p' = (fromLocalProfile p :: Profile) {contactLink = Nothing}
@@ -5910,6 +5909,11 @@ withUser action = withUser' $ \user ->
 
 withUser_ :: ChatMonad m => m ChatResponse -> m ChatResponse
 withUser_ = withUser . const
+
+withUserId' :: ChatMonad m => UserId -> (User -> m ChatResponse) -> m ChatResponse
+withUserId' userId action = withUser' $ \user -> do
+  checkSameUser userId user
+  action user
 
 withUserId :: ChatMonad m => UserId -> (User -> m ChatResponse) -> m ChatResponse
 withUserId userId action = withUser $ \user -> do
