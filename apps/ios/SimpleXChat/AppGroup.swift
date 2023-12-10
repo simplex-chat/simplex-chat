@@ -106,6 +106,7 @@ public enum AppState: String, Codable {
 
 public enum NSEState: String, Codable {
     case created
+    case starting
     case active
     case suspending
     case suspended
@@ -128,16 +129,18 @@ public enum DBContainer: String {
     case group
 }
 
+// appStateGroupDefault must not be used in the app directly, only via AppChatState singleton
 public let appStateGroupDefault = EnumDefault<AppState>(
     defaults: groupDefaults,
     forKey: GROUP_DEFAULT_APP_STATE,
     withDefault: .active
 )
 
+// nseStateGroupDefault must not be used in NSE directly, only via NSEChatState singleton
 public let nseStateGroupDefault = EnumDefault<NSEState>(
     defaults: groupDefaults,
     forKey: GROUP_DEFAULT_NSE_STATE,
-    withDefault: .created
+    withDefault: .suspended // so that NSE that was never launched does not delay the app from resuming
 )
 
 public func allowBackgroundRefresh() -> Bool {

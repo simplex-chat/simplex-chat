@@ -123,8 +123,16 @@ func startChatAndActivate(dispatchQueue: DispatchQueue = DispatchQueue.main, _ c
     } else if nseStateGroupDefault.get().inactive {
         activate()
     } else {
+        // setting app state to "activating" to notify NSE that it should suspend
         setAppState(.activating)
         waitNSESuspended(timeout: 10, dispatchQueue: dispatchQueue) { ok in
+            if !ok {
+                // if for some reason NSE failed to suspend,
+                // e.g., it crashed previously without setting its state to "suspended",
+                // set it to "suspended" state anyway, so that next time app
+                // does not have to wait when activating.
+                nseStateGroupDefault.set(.suspended)
+            }
             if AppChatState.shared.value == .activating {
                 activate()
             }
@@ -139,6 +147,7 @@ func startChatAndActivate(dispatchQueue: DispatchQueue = DispatchQueue.main, _ c
     }
 }
 
+// appStateGroupDefault must not be used in the app directly, only via this singleton
 class AppChatState {
     static let shared = AppChatState()
     private var value_ = appStateGroupDefault.get()

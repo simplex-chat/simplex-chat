@@ -144,19 +144,37 @@ enum NSENotification {
 class NSEThreads {
     static let shared = NSEThreads()
     private static let queue = DispatchQueue(label: "chat.simplex.app.SimpleX-NSE.notification-threads.lock")
-    private var threads: Set<UUID> = []
+    private var allThreads: Set<UUID> = []
+    private var activeThreads: Set<UUID> = []
 
-    func startThread() -> UUID {
+    func newThread() -> UUID {
         NSEThreads.queue.sync {
-            let (_, t) = threads.insert(UUID())
+            let (_, t) = allThreads.insert(UUID())
             return t
+        }
+    }
+
+    func startThread(_ t: UUID) {
+        NSEThreads.queue.sync {
+            if allThreads.contains(t) {
+                _ = activeThreads.insert(t)
+            } else {
+                logger.warning("NotificationService startThread: thread \(t) was removed before it started")
+            }
         }
     }
 
     func endThread(_ t: UUID) -> Bool {
         NSEThreads.queue.sync {
-            let t_ = threads.remove(t)
-            return t_ != nil && threads.isEmpty
+            let tActive = activeThreads.remove(t)
+            let t = allThreads.remove(t)
+            if tActive != nil && activeThreads.isEmpty {
+                return true
+            }
+            if t != nil && allThreads.isEmpty {
+                NSEChatState.shared.set(.suspended)
+            }
+            return false
         }
     }
 }
@@ -169,6 +187,8 @@ class NotificationService: UNNotificationServiceExtension {
     var contentHandler: ((UNNotificationContent) -> Void)?
     var bestAttemptNtf: NSENotification?
     var badgeCount: Int = 0
+    // thread is added to allThreads here - if thread did not start chat,
+    // chat does not need to be suspended but NSE state still needs to be set to "suspended".
     var threadId: UUID?
     var receiveEntityId: String?
     var cancelRead: (() -> Void)?
@@ -177,6 +197,8 @@ class NotificationService: UNNotificationServiceExtension {
 
     override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("DEBUGGING: NotificationService.didReceive")
+        let newThreadId = NSEThreads.shared.newThread()
+        threadId = newThreadId
         let ntf = if let ntf_ = request.content.mutableCopy() as? UNMutableNotificationContent { ntf_ } else { UNMutableNotificationContent() }
         setBestAttemptNtf(ntf)
         self.contentHandler = contentHandler
@@ -186,7 +208,7 @@ class NotificationService: UNNotificationServiceExtension {
         case .suspended:
             logger.debug("NotificationService: app is suspended")
             setBadgeCount()
-            receiveNtfMessages(request, contentHandler)
+            receiveNtfMessages(newThreadId, request, contentHandler)
         case .suspending:
             logger.debug("NotificationService: app is suspending")
             setBadgeCount()
@@ -211,7 +233,7 @@ class NotificationService: UNNotificationServiceExtension {
                 }
                 logger.debug("NotificationService: app state is \(state.rawValue, privacy: .public)")
                 if state.inactive {
-                    receiveNtfMessages(request, contentHandler)
+                    receiveNtfMessages(newThreadId, request, contentHandler)
                 } else {
                     deliverBestAttemptNtf()
                 }
@@ -222,7 +244,7 @@ class NotificationService: UNNotificationServiceExtension {
         }
     }
 
-    func receiveNtfMessages(_ request: UNNotificationRequest, _ contentHandler: @escaping (UNNotificationContent) -> Void) {
+    func receiveNtfMessages(_ newThreadId: UUID, _ request: UNNotificationRequest, _ contentHandler: @escaping (UNNotificationContent) -> Void) {
         logger.debug("NotificationService: receiveNtfMessages")
         if case .documents = dbContainerGroupDefault.get() {
             deliverBestAttemptNtf()
@@ -234,8 +256,8 @@ class NotificationService: UNNotificationServiceExtension {
            let encNtfInfo = ntfData["message"] as? String,
            // check it here again
            appStateGroupDefault.get().inactive {
-            // thread is added to tracking set here - if thread did not start chat it does not need to be tracked
-            threadId = NSEThreads.shared.startThread()
+            // thread is added to activeThreads tracking set here - if thread started chat it needs to be suspended
+            NSEThreads.shared.startThread(newThreadId)
             let dbStatus = startChat()
             if case .ok = dbStatus,
                let ntfInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
@@ -340,6 +362,7 @@ class NotificationService: UNNotificationServiceExtension {
     }
 }
 
+// nseStateGroupDefault must not be used in NSE directly, only via this singleton
 class NSEChatState {
     static let shared = NSEChatState()
     private var value_ = NSEState.created
@@ -355,6 +378,8 @@ class NSEChatState {
     }
 
     init() {
+        // This is always set to .created state, as in case previous start of NSE crashed in .active state, it is stored correctly.
+        // Otherwise the app will be activating slower
         set(.created)
     }
 }
@@ -393,6 +418,7 @@ func startChat() -> DBMigrationResult? {
     
     return switch NSEChatState.shared.value {
     case .created: doStartChat()
+    case .starting: .ok // it should never get to this branch, as it would be waiting for start on startLock
     case .active: .ok
     case .suspending: activateChat()
     case .suspended: activateChat()
@@ -408,6 +434,8 @@ func doStartChat() -> DBMigrationResult? {
         NSEChatState.shared.set(.created)
         return dbStatus
     }
+    let state = NSEChatState.shared.value
+    NSEChatState.shared.set(.starting)
     if let user = apiGetActiveUser() {
         logger.debug("NotificationService active user \(String(describing: user))")
         do {
@@ -416,24 +444,31 @@ func doStartChat() -> DBMigrationResult? {
             try apiSetFilesFolder(filesFolder: getAppFilesDirectory().path)
             try setXFTPConfig(xftpConfig)
             try apiSetEncryptLocalFiles(privacyEncryptLocalFilesGroupDefault.get())
-            let justStarted = try apiStartChat()
-            NSEChatState.shared.set(.active)
-            if justStarted {
-                chatLastStartGroupDefault.set(Date.now)
-                Task {
-                    if !receiverStarted {
-                        receiverStarted = true
-                        await receiveMessages()
+            // prevent suspension while starting chat
+            suspendLock.wait()
+            defer { suspendLock.signal() }
+            if NSEChatState.shared.value == .starting {
+                updateNetCfg()
+                let justStarted = try apiStartChat()
+                NSEChatState.shared.set(.active)
+                if justStarted {
+                    chatLastStartGroupDefault.set(Date.now)
+                    Task {
+                        if !receiverStarted {
+                            receiverStarted = true
+                            await receiveMessages()
+                        }
                     }
                 }
+                return .ok
             }
-            return .ok
         } catch {
             logger.error("NotificationService startChat error: \(responseError(error), privacy: .public)")
         }
     } else {
         logger.debug("NotificationService: no active user")
     }
+    if NSEChatState.shared.value == .starting { NSEChatState.shared.set(state) }
     return nil
 }
 
@@ -484,15 +519,10 @@ func receiveMessages() async {
     logger.debug("NotificationService receiveMessages")
     while true {
         switch NSEChatState.shared.value {
+        // it should never get to "created" and "starting" branches, as NSE state is set to .active before the loop start
         case .created: await delayWhenInactive()
-        case .active:
-            if appStateGroupDefault.get().running {
-                suspendChat(nseSuspendTimeout)
-                await delayWhenInactive()
-            } else {
-                updateNetCfg()
-                await receiveMsg()
-            }
+        case .starting: await delayWhenInactive()
+        case .active: await receiveMsg()
         case .suspending: await receiveMsg()
         case .suspended: await delayWhenInactive()
         }
