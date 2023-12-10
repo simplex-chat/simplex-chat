@@ -12,13 +12,11 @@ import SimpleXChat
 
 private let suspendLockQueue = DispatchQueue(label: "chat.simplex.app.suspend.lock")
 
-let appSuspendTimeout: Int = 15 // seconds
-
 let bgSuspendTimeout: Int = 5 // seconds
 
 let terminationTimeout: Int = 3 // seconds
 
-let activationDelay: Double = 1.5 // seconds
+let activationDelay: TimeInterval = 1.5
 
 private func _suspendChat(timeout: Int) {
     // this is a redundant check to prevent logical errors, like the one fixed in this PR
@@ -125,20 +123,12 @@ func startChatAndActivate(dispatchQueue: DispatchQueue = DispatchQueue.main, _ c
     } else if nseStateGroupDefault.get().inactive {
         activate()
     } else {
-        suspendLockQueue.sync {
-            AppChatState.shared.set(.activating)
-        }
+        setAppState(.activating)
         waitNSESuspended(timeout: 10, dispatchQueue: dispatchQueue) { ok in
             if AppChatState.shared.value == .activating {
                 activate()
             }
         }
-        // TODO can be replaced with Mach messenger to notify the NSE to terminate and continue after reply, with timeout
-//        dispatchQueue.asyncAfter(deadline: .now() + activationDelay) {
-//            if AppChatState.shared.value == .activating {
-//                activate()
-//            }
-//        }
     }
 
     func activate() {

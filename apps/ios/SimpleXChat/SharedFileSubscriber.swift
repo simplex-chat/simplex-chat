@@ -8,9 +8,9 @@
 
 import Foundation
 
-public typealias AppSubscriber = SharedFileSubscriber<ProcessMessage<AppProcessEvent>>
+public typealias AppSubscriber = SharedFileSubscriber<ProcessMessage<AppProcessMessage>>
 
-public typealias NSESubscriber = SharedFileSubscriber<ProcessMessage<NSEProcessEvent>>
+public typealias NSESubscriber = SharedFileSubscriber<ProcessMessage<NSEProcessMessage>>
 
 public class SharedFileSubscriber<Message: Codable>: NSObject, NSFilePresenter {
     var fileURL: URL
@@ -62,30 +62,30 @@ public struct ProcessMessage<Message: Codable>: Codable {
     var message: Message
 }
 
-public enum AppProcessEvent: Codable {
+public enum AppProcessMessage: Codable {
     case state(state: AppState)
 }
 
-public enum NSEProcessEvent: Codable {
+public enum NSEProcessMessage: Codable {
     case state(state: NSEState)
 }
 
-public func sendAppProcessMessage(_ message: AppProcessEvent) {
+public func sendAppProcessMessage(_ message: AppProcessMessage) {
     SharedFileSubscriber.notify(url: appMessagesSharedFile, message: ProcessMessage(message: message))
 }
 
-public func sendNSEProcessMessage(_ message: NSEProcessEvent) {
+public func sendNSEProcessMessage(_ message: NSEProcessMessage) {
     SharedFileSubscriber.notify(url: nseMessagesSharedFile, message: ProcessMessage(message: message))
 }
 
-public func appMessageSubscriber(onMessage: @escaping (AppProcessEvent) -> Void) -> AppSubscriber {
-    SharedFileSubscriber(fileURL: appMessagesSharedFile) { (msg: ProcessMessage<AppProcessEvent>) in
+public func appMessageSubscriber(onMessage: @escaping (AppProcessMessage) -> Void) -> AppSubscriber {
+    SharedFileSubscriber(fileURL: appMessagesSharedFile) { (msg: ProcessMessage<AppProcessMessage>) in
         onMessage(msg.message)
     }
 }
 
-public func nseMessageSubscriber(onMessage: @escaping (NSEProcessEvent) -> Void) -> NSESubscriber {
-    SharedFileSubscriber(fileURL: nseMessagesSharedFile) { (msg: ProcessMessage<NSEProcessEvent>) in
+public func nseMessageSubscriber(onMessage: @escaping (NSEProcessMessage) -> Void) -> NSESubscriber {
+    SharedFileSubscriber(fileURL: nseMessagesSharedFile) { (msg: ProcessMessage<NSEProcessMessage>) in
         onMessage(msg.message)
     }
 }

@@ -11,7 +11,9 @@ import SimpleXChat
 
 private var nseSubscribers: [UUID:NSESubscriber] = [:]
 
-private let SUSPENDING_TIMEOUT: TimeInterval = 2.5
+// timeout for active notification service extension going into "suspending" state.
+// If in two seconds the state does not change, we assume that it was not running and proceed with app activation/answering call.
+private let SUSPENDING_TIMEOUT: TimeInterval = 2
 
 // timeout should be larger than SUSPENDING_TIMEOUT
 func waitNSESuspended(timeout: TimeInterval, dispatchQueue: DispatchQueue = DispatchQueue.main, suspended: @escaping (Bool) -> Void) {

@@ -9,6 +9,8 @@
 import Foundation
 import SwiftUI
 
+public let appSuspendTimeout: Int = 15 // seconds
+
 let GROUP_DEFAULT_APP_STATE = "appState"
 let GROUP_DEFAULT_NSE_STATE = "nseState"
 let GROUP_DEFAULT_DB_CONTAINER = "dbContainer"

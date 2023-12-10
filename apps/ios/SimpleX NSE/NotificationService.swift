@@ -192,23 +192,25 @@ class NotificationService: UNNotificationServiceExtension {
             setBadgeCount()
             Task {
                 let state: AppState = await withCheckedContinuation { cont in
-                    let appSuspension = { (s: AppState) in
-                        if !self.returnedSuspension {
-                            self.returnedSuspension = true
-                            self.appSubscriber = nil
-                            cont.resume(returning: s)
-                        }
-                    }
                     appSubscriber = appStateSubscriber { s in
                         if s == .suspended { appSuspension(s) }
                     }
-                    DispatchQueue.global().asyncAfter(deadline: .now() + 16) { // TODO constant
+                    DispatchQueue.global().asyncAfter(deadline: .now() + Double(appSuspendTimeout) + 1) {
                         logger.debug("NotificationService: appSuspension timeout")
                         appSuspension(appStateGroupDefault.get())
                     }
+
+                    @Sendable
+                    func appSuspension(_ s: AppState) {
+                        if !self.returnedSuspension {
+                            self.returnedSuspension = true
+                            self.appSubscriber = nil // this disposes of appStateSubscriber
+                            cont.resume(returning: s)
+                        }
+                    }
                 }
                 logger.debug("NotificationService: app state is \(state.rawValue, privacy: .public)")
-                if state.inactive == true {
+                if state.inactive {
                     receiveNtfMessages(request, contentHandler)
                 } else {
                     deliverBestAttemptNtf()
@@ -226,12 +228,15 @@ class NotificationService: UNNotificationServiceExtension {
             deliverBestAttemptNtf()
             return
         }
-        threadId = NSEThreads.shared.startThread()
         let userInfo = request.content.userInfo
         if let ntfData = userInfo["notificationData"] as? [AnyHashable : Any],
            let nonce = ntfData["nonce"] as? String,
            let encNtfInfo = ntfData["message"] as? String,
-           let dbStatus = startChat() {
+           // check it here again
+           appStateGroupDefault.get().inactive {
+            // thread is added to tracking set here - if thread did not start chat it does not need to be tracked
+            threadId = NSEThreads.shared.startThread()
+            let dbStatus = startChat()
             if case .ok = dbStatus,
                let ntfInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
                 logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfInfo), privacy: .public)")
@@ -255,7 +260,7 @@ class NotificationService: UNNotificationServiceExtension {
                         return
                     }
                 }
-            } else {
+            } else if let dbStatus = dbStatus {
                 setBestAttemptNtf(createErrorNtf(dbStatus))
             }
         }
@@ -356,7 +361,7 @@ class NSEChatState {
 
 var appSubscriber: AppSubscriber = appStateSubscriber { state in
     logger.debug("NotificationService: appSubscriber")
-    if state.running {
+    if state.running && NSEChatState.shared.value.canSuspend {
         logger.debug("NotificationService: appSubscriber app state \(state.rawValue), suspending")
         suspendChat(nseSuspendTimeout)
     }
