@@ -131,7 +131,7 @@ struct AddGroupView: View {
         }
         .sheet(isPresented: $showImagePicker) {
             LibraryImagePicker(image: $chosenImage) { _ in
-                DispatchQueue.main.sync {
+                await MainActor.run {
                     showImagePicker = false
                 }
             }
