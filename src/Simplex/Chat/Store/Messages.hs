@@ -516,8 +516,8 @@ getChatPreviews db user withPCC pagination query = do
     printGetPreviewErr :: ExceptT StoreError IO AChat -> IO (Maybe AChat)
     printGetPreviewErr action =
       runExceptT action >>= \case
-        Left err -> do
-          print $ "#################### getChatPreview error (this shouldn't happen): " <> show err
+        Left _err -> do
+          -- print $ "#################### getChatPreview error (this shouldn't happen): " <> show err
           pure Nothing
         Right chat -> pure $ Just chat
 
