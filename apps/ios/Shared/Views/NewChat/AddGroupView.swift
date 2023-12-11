@@ -130,8 +130,10 @@ struct AddGroupView: View {
             }
         }
         .sheet(isPresented: $showImagePicker) {
-            LibraryImagePicker(image: $chosenImage) {
-                didSelectItem in showImagePicker = false
+            LibraryImagePicker(image: $chosenImage) { _ in
+                DispatchQueue.main.sync {
+                    showImagePicker = false
+                }
             }
         }
         .alert(isPresented: $showInvalidNameAlert) {
