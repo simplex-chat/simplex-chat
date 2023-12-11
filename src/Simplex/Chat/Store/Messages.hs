@@ -537,81 +537,91 @@ paginationByTimeFilter = \case
 
 findDirectChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 findDirectChatPreviews_ db User {userId} pagination clq =
-  map toPreview <$> DB.queryNamed db query params
+  map toPreview <$> getPreviews
   where
     toPreview :: (ContactId, UTCTime) :. MaybeChatStatsRow -> AChatPreviewData
     toPreview ((contactId, ts) :. statsRow_) =
       ACPD SCTDirect $ DirectChatPD ts contactId (toMaybeChatStats statsRow_)
     (pagQuery, pagParams) = paginationByTimeFilter pagination
-    (query, params) = case clq of
+    getPreviews = case clq of
       CLQFilters {favorite = False, unread = False} ->
-        ( [sql|
-            SELECT ct.contact_id, ct.chat_ts as ts, NULL, NULL, NULL
-            FROM contacts ct
-            WHERE ct.user_id = :user_id AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
-          |]
-            <> pagQuery,
-          [":user_id" := userId] <> pagParams
-        )
+        DB.queryNamed
+          db
+          ( [sql|
+              SELECT ct.contact_id, ct.chat_ts as ts, NULL, NULL, NULL
+              FROM contacts ct
+              WHERE ct.user_id = :user_id AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
+            |]
+              <> pagQuery
+          )
+          ([":user_id" := userId] <> pagParams)
       CLQFilters {favorite = True, unread = False} ->
-        ( [sql|
-            SELECT ct.contact_id, ct.chat_ts as ts, NULL, NULL, NULL
-            FROM contacts ct
-            WHERE ct.user_id = :user_id AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
-              AND ct.favorite = 1
-          |]
-            <> pagQuery,
-          [":user_id" := userId] <> pagParams
-        )
+        DB.queryNamed
+          db
+          ( [sql|
+              SELECT ct.contact_id, ct.chat_ts as ts, NULL, NULL, NULL
+              FROM contacts ct
+              WHERE ct.user_id = :user_id AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
+                AND ct.favorite = 1
+            |]
+              <> pagQuery
+          )
+          ([":user_id" := userId] <> pagParams)
       CLQFilters {favorite = False, unread = True} ->
-        ( [sql|
-            SELECT ct.contact_id, ct.chat_ts as ts, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), ct.unread_chat
-            FROM contacts ct
-            LEFT JOIN (
-              SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
-              FROM chat_items
-              WHERE item_status = :rcv_new
-              GROUP BY contact_id
-            ) ChatStats ON ChatStats.contact_id = ct.contact_id
-            WHERE ct.user_id = :user_id AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
-              AND (ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
-          |]
-            <> pagQuery,
-          [":user_id" := userId, ":rcv_new" := CISRcvNew] <> pagParams
-        )
+        DB.queryNamed
+          db
+          ( [sql|
+              SELECT ct.contact_id, ct.chat_ts as ts, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), ct.unread_chat
+              FROM contacts ct
+              LEFT JOIN (
+                SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+                FROM chat_items
+                WHERE item_status = :rcv_new
+                GROUP BY contact_id
+              ) ChatStats ON ChatStats.contact_id = ct.contact_id
+              WHERE ct.user_id = :user_id AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
+                AND (ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+            |]
+              <> pagQuery
+          )
+          ([":user_id" := userId, ":rcv_new" := CISRcvNew] <> pagParams)
       CLQFilters {favorite = True, unread = True} ->
-        ( [sql|
-            SELECT ct.contact_id, ct.chat_ts as ts, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), ct.unread_chat
-            FROM contacts ct
-            LEFT JOIN (
-              SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
-              FROM chat_items
-              WHERE item_status = :rcv_new
-              GROUP BY contact_id
-            ) ChatStats ON ChatStats.contact_id = ct.contact_id
-            WHERE ct.user_id = :user_id AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
-              AND (ct.favorite = 1
-                OR ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
-          |]
-            <> pagQuery,
-          [":user_id" := userId, ":rcv_new" := CISRcvNew] <> pagParams
-        )
+        DB.queryNamed
+          db
+          ( [sql|
+              SELECT ct.contact_id, ct.chat_ts as ts, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), ct.unread_chat
+              FROM contacts ct
+              LEFT JOIN (
+                SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+                FROM chat_items
+                WHERE item_status = :rcv_new
+                GROUP BY contact_id
+              ) ChatStats ON ChatStats.contact_id = ct.contact_id
+              WHERE ct.user_id = :user_id AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
+                AND (ct.favorite = 1
+                  OR ct.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+            |]
+              <> pagQuery
+          )
+          ([":user_id" := userId, ":rcv_new" := CISRcvNew] <> pagParams)
       CLQSearch {search} ->
-        ( [sql|
-            SELECT ct.contact_id, ct.chat_ts as ts, NULL, NULL, NULL
-            FROM contacts ct
-            JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-            WHERE ct.user_id = :user_id AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
-              AND (
-                ct.local_display_name LIKE '%' || :search || '%'
-                OR cp.display_name LIKE '%' || :search || '%'
-                OR cp.full_name LIKE '%' || :search || '%'
-                OR cp.local_alias LIKE '%' || :search || '%'
-              )
-          |]
-            <> pagQuery,
-          [":user_id" := userId, ":search" := search] <> pagParams
-        )
+        DB.queryNamed
+          db
+          ( [sql|
+              SELECT ct.contact_id, ct.chat_ts as ts, NULL, NULL, NULL
+              FROM contacts ct
+              JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+              WHERE ct.user_id = :user_id AND ct.is_user = 0 AND ct.deleted = 0 AND ct.contact_used
+                AND (
+                  ct.local_display_name LIKE '%' || :search || '%'
+                  OR cp.display_name LIKE '%' || :search || '%'
+                  OR cp.full_name LIKE '%' || :search || '%'
+                  OR cp.local_alias LIKE '%' || :search || '%'
+                )
+            |]
+              <> pagQuery
+          )
+          ([":user_id" := userId, ":search" := search] <> pagParams)
 
 getDirectChatPreview_ :: DB.Connection -> User -> ChatPreviewData 'CTDirect -> ExceptT StoreError IO AChat
 getDirectChatPreview_ db user (DirectChatPD _ contactId stats_) = do
@@ -663,81 +673,91 @@ getDirectChatPreview_ db user (DirectChatPD _ contactId stats_) = do
 
 findGroupChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 findGroupChatPreviews_ db User {userId} pagination clq =
-  map toPreview <$> DB.queryNamed db query params
+  map toPreview <$> getPreviews
   where
     toPreview :: (GroupId, UTCTime) :. MaybeChatStatsRow -> AChatPreviewData
     toPreview ((groupId, ts) :. statsRow_) =
       ACPD SCTGroup $ GroupChatPD ts groupId (toMaybeChatStats statsRow_)
     (pagQuery, pagParams) = paginationByTimeFilter pagination
-    (query, params) = case clq of
+    getPreviews = case clq of
       CLQFilters {favorite = False, unread = False} ->
-        ( [sql|
-            SELECT g.group_id, g.chat_ts as ts, NULL, NULL, NULL
-            FROM groups g
-            WHERE g.user_id = :user_id
-          |]
-            <> pagQuery,
-          [":user_id" := userId] <> pagParams
-        )
+        DB.queryNamed
+          db
+          ( [sql|
+              SELECT g.group_id, g.chat_ts as ts, NULL, NULL, NULL
+              FROM groups g
+              WHERE g.user_id = :user_id
+            |]
+              <> pagQuery
+          )
+          ([":user_id" := userId] <> pagParams)
       CLQFilters {favorite = True, unread = False} ->
-        ( [sql|
-            SELECT g.group_id, g.chat_ts as ts, NULL, NULL, NULL
-            FROM groups g
-            WHERE g.user_id = :user_id
-              AND g.favorite = 1
-          |]
-            <> pagQuery,
-          [":user_id" := userId] <> pagParams
-        )
+        DB.queryNamed
+          db
+          ( [sql|
+              SELECT g.group_id, g.chat_ts as ts, NULL, NULL, NULL
+              FROM groups g
+              WHERE g.user_id = :user_id
+                AND g.favorite = 1
+            |]
+              <> pagQuery
+          )
+          ([":user_id" := userId] <> pagParams)
       CLQFilters {favorite = False, unread = True} ->
-        ( [sql|
-            SELECT g.group_id, g.chat_ts as ts, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), g.unread_chat
-            FROM groups g
-            LEFT JOIN (
-              SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
-              FROM chat_items
-              WHERE item_status = :rcv_new
-              GROUP BY group_id
-            ) ChatStats ON ChatStats.group_id = g.group_id
-            WHERE g.user_id = :user_id
-              AND (g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
-          |]
-            <> pagQuery,
-          [":user_id" := userId, ":rcv_new" := CISRcvNew] <> pagParams
-        )
+        DB.queryNamed
+          db
+          ( [sql|
+              SELECT g.group_id, g.chat_ts as ts, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), g.unread_chat
+              FROM groups g
+              LEFT JOIN (
+                SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+                FROM chat_items
+                WHERE item_status = :rcv_new
+                GROUP BY group_id
+              ) ChatStats ON ChatStats.group_id = g.group_id
+              WHERE g.user_id = :user_id
+                AND (g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+            |]
+              <> pagQuery
+          )
+          ([":user_id" := userId, ":rcv_new" := CISRcvNew] <> pagParams)
       CLQFilters {favorite = True, unread = True} ->
-        ( [sql|
-            SELECT g.group_id, g.chat_ts as ts, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), g.unread_chat
-            FROM groups g
-            LEFT JOIN (
-              SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
-              FROM chat_items
-              WHERE item_status = :rcv_new
-              GROUP BY group_id
-            ) ChatStats ON ChatStats.group_id = g.group_id
-            WHERE g.user_id = :user_id
-              AND (g.favorite = 1
-                OR g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
-          |]
-            <> pagQuery,
-          [":user_id" := userId, ":rcv_new" := CISRcvNew] <> pagParams
-        )
+        DB.queryNamed
+          db
+          ( [sql|
+              SELECT g.group_id, g.chat_ts as ts, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), g.unread_chat
+              FROM groups g
+              LEFT JOIN (
+                SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+                FROM chat_items
+                WHERE item_status = :rcv_new
+                GROUP BY group_id
+              ) ChatStats ON ChatStats.group_id = g.group_id
+              WHERE g.user_id = :user_id
+                AND (g.favorite = 1
+                  OR g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+            |]
+              <> pagQuery
+          )
+          ([":user_id" := userId, ":rcv_new" := CISRcvNew] <> pagParams)
       CLQSearch {search} ->
-        ( [sql|
-            SELECT g.group_id, g.chat_ts as ts, NULL, NULL, NULL
-            FROM groups g
-            JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-            WHERE g.user_id = :user_id
-              AND (
-                g.local_display_name LIKE '%' || :search || '%'
-                OR gp.display_name LIKE '%' || :search || '%'
-                OR gp.full_name LIKE '%' || :search || '%'
-                OR gp.description LIKE '%' || :search || '%'
-              )
-          |]
-            <> pagQuery,
-          [":user_id" := userId, ":search" := search] <> pagParams
-        )
+        DB.queryNamed
+          db
+          ( [sql|
+              SELECT g.group_id, g.chat_ts as ts, NULL, NULL, NULL
+              FROM groups g
+              JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+              WHERE g.user_id = :user_id
+                AND (
+                  g.local_display_name LIKE '%' || :search || '%'
+                  OR gp.display_name LIKE '%' || :search || '%'
+                  OR gp.full_name LIKE '%' || :search || '%'
+                  OR gp.description LIKE '%' || :search || '%'
+                )
+            |]
+              <> pagQuery
+          )
+          ([":user_id" := userId, ":search" := search] <> pagParams)
 
 getGroupChatPreview_ :: DB.Connection -> User -> ChatPreviewData 'CTGroup -> ExceptT StoreError IO AChat
 getGroupChatPreview_ db user (GroupChatPD _ groupId stats_) = do
