@@ -1149,7 +1149,7 @@ createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupM
     Just (directCmdId, directAgentConnId) -> do
       Connection {connId = directConnId} <- liftIO $ createConnection_ db userId ConnContact Nothing directAgentConnId mcvr memberContactId Nothing customUserProfileId cLevel currentTs subMode
       liftIO $ setCommandConnId db user directCmdId directConnId
-      (localDisplayName, contactId, memProfileId) <- createContact_ db userId memberProfile "" (Just groupId) currentTs Nothing
+      (localDisplayName, contactId, memProfileId) <- createContact_ db userId memberProfile "" (Just groupId) currentTs False
       liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, directConnId)
       pure $ NewGroupMember {memInfo, memCategory = GCPreMember, memStatus = GSMemIntroduced, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Just contactId, memProfileId}
     Nothing -> do
@@ -1178,12 +1178,12 @@ createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = 
       DB.execute
         db
         [sql|
-          INSERT INTO contacts (contact_profile_id, via_group, local_display_name, user_id, created_at, updated_at)
-          SELECT contact_profile_id, group_id, ?, ?, ?, ?
+          INSERT INTO contacts (contact_profile_id, via_group, local_display_name, user_id, created_at, updated_at, chat_ts)
+          SELECT contact_profile_id, group_id, ?, ?, ?, ?, ?
           FROM group_members
           WHERE group_member_id = ?
         |]
-        (localDisplayName, userId, ts, ts, groupMemberId)
+        (localDisplayName, userId, ts, ts, ts, groupMemberId)
       contactId <- insertedRowId db
       DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, ts, connId)
       pure contactId

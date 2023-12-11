@@ -34,7 +34,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char
 import Data.Constraint (Dict (..))
-import Data.Either (fromRight, rights)
+import Data.Either (fromRight, partitionEithers, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -596,8 +596,10 @@ processChatCommand = \case
             . sortOn (timeAvg . snd)
             . M.assocs
             <$> withConnection st (readTVarIO . DB.slow)
-  APIGetChats userId withPCC -> withUserId userId $ \user ->
-    CRApiChats user <$> withStoreCtx' (Just "APIGetChats, getChatPreviews") (\db -> getChatPreviews db user withPCC)
+  APIGetChats {userId, pendingConnections, pagination, query} -> withUserId userId $ \user -> do
+    (errs, previews) <- partitionEithers <$> withStore' (\db -> getChatPreviews db user pendingConnections pagination query)
+    toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
+    pure $ CRApiChats user previews
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
     CTDirect -> do
@@ -1048,10 +1050,12 @@ processChatCommand = \case
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIAcceptContact incognito connReqId -> withUser $ \_ -> withChatLock "acceptContact" $ do
-    (user, cReq) <- withStore $ \db -> getContactRequest' db connReqId
+    (user@User {userId}, cReq@UserContactRequest {userContactLinkId}) <- withStore $ \db -> getContactRequest' db connReqId
+    ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
+    let contactUsed = (\(_, groupId_, _) -> isNothing groupId_) ucl
     -- [incognito] generate profile to send, create connection with incognito profile
     incognitoProfile <- if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
-    ct <- acceptContactRequest user cReq incognitoProfile
+    ct <- acceptContactRequest user cReq incognitoProfile contactUsed
     pure $ CRAcceptingContactRequest user ct
   APIRejectContact connReqId -> withUser $ \user -> withChatLock "rejectContact" $ do
     cReq@UserContactRequest {agentContactConnId = AgentConnId connId, agentInvitationId = AgentInvId invId} <-
@@ -1824,8 +1828,10 @@ processChatCommand = \case
     let mc = MCText msg
     processChatCommand . APISendMessage (ChatRef CTGroup groupId) False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
   LastChats count_ -> withUser' $ \user -> do
-    chats <- withStore' $ \db -> getChatPreviews db user False
-    pure $ CRChats $ maybe id take count_ chats
+    let count = fromMaybe 5000 count_
+    (errs, previews) <- partitionEithers <$> withStore' (\db -> getChatPreviews db user False (PTLast count) clqNoFilters)
+    toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
+    pure $ CRChats previews
   LastMessages (Just chatName) count search -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     chatResp <- processChatCommand $ APIGetChat chatRef (CPLast count) search
@@ -2691,21 +2697,21 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
     getTmpHandle :: FilePath -> m Handle
     getTmpHandle fPath = openFile fPath AppendMode `catchThrow` (ChatError . CEFileInternal . show)
 
-acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
-acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId} incognitoProfile = do
+acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> Bool -> m Contact
+acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId} incognitoProfile contactUsed = do
   subMode <- chatReadVar subscriptionMode
   let profileToSend = profileToSendOnAccept user incognitoProfile
   dm <- directMessage $ XInfo profileToSend
   acId <- withAgent $ \a -> acceptContact a True invId dm subMode
-  withStore' $ \db -> createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId cp userContactLinkId xContactId incognitoProfile subMode
+  withStore' $ \db -> createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId cp userContactLinkId xContactId incognitoProfile subMode contactUsed
 
-acceptContactRequestAsync :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> m Contact
-acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile = do
+acceptContactRequestAsync :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> Bool -> m Contact
+acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile contactUsed = do
   subMode <- chatReadVar subscriptionMode
   let profileToSend = profileToSendOnAccept user incognitoProfile
   (cmdId, acId) <- agentAcceptContactAsync user True invId (XInfo profileToSend) subMode
   withStore' $ \db -> do
-    ct@Contact {activeConn} <- createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId p userContactLinkId xContactId incognitoProfile subMode
+    ct@Contact {activeConn} <- createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId p userContactLinkId xContactId incognitoProfile subMode contactUsed
     forM_ activeConn $ \Connection {connId} -> setCommandConnId db user cmdId connId
     pure ct
 
@@ -3384,20 +3390,20 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                     doProbeContacts = isJust groupLinkId
                 probeMatchingContactsAndMembers ct (contactConnIncognito ct) doProbeContacts
                 withStore' $ \db -> resetContactConnInitiated db user conn
-              forM_ viaUserContactLink $ \userContactLinkId ->
-                withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                  Just (UserContactLink {autoAccept = Just AutoAccept {autoReply = mc_}}, groupId_, gLinkMemRole) -> do
-                    forM_ mc_ $ \mc -> do
-                      (msg, _) <- sendDirectContactMessage ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
-                      ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
-                      toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
-                    forM_ groupId_ $ \groupId -> do
-                      groupInfo <- withStore $ \db -> getGroupInfo db user groupId
-                      subMode <- chatReadVar subscriptionMode
-                      groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
-                      gVar <- asks idsDrg
-                      withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct gLinkMemRole groupConnIds (fromJVersionRange peerChatVRange) subMode
-                  _ -> pure ()
+              forM_ viaUserContactLink $ \userContactLinkId -> do
+                ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
+                let (UserContactLink {autoAccept}, groupId_, gLinkMemRole) = ucl
+                forM_ autoAccept $ \(AutoAccept {autoReply = mc_}) ->
+                  forM_ mc_ $ \mc -> do
+                    (msg, _) <- sendDirectContactMessage ct (XMsgNew $ MCSimple (extMsgContent mc Nothing))
+                    ci <- saveSndChatItem user (CDDirectSnd ct) msg (CISndMsgContent mc)
+                    toView $ CRNewChatItem user (AChatItem SCTDirect SMDSnd (DirectChat ct) ci)
+                forM_ groupId_ $ \groupId -> do
+                  groupInfo <- withStore $ \db -> getGroupInfo db user groupId
+                  subMode <- chatReadVar subscriptionMode
+                  groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
+                  gVar <- asks idsDrg
+                  withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct gLinkMemRole groupConnIds (fromJVersionRange peerChatVRange) subMode
             Just (gInfo, m@GroupMember {activeConn}) ->
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
                 notifyMemberConnected gInfo m $ Just ct
@@ -3915,28 +3921,27 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           withStore (\db -> createOrUpdateContactRequest db user userContactLinkId invId chatVRange p xContactId_) >>= \case
             CORContact contact -> toView $ CRContactRequestAlreadyAccepted user contact
             CORRequest cReq -> do
-              withStore' (\db -> getUserContactLinkById db userId userContactLinkId) >>= \case
-                Just (UserContactLink {autoAccept}, groupId_, gLinkMemRole) ->
-                  case autoAccept of
-                    Just AutoAccept {acceptIncognito} -> case groupId_ of
-                      Nothing -> do
-                        -- [incognito] generate profile to send, create connection with incognito profile
-                        incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
-                        ct <- acceptContactRequestAsync user cReq incognitoProfile
-                        toView $ CRAcceptingContactRequest user ct
-                      Just groupId -> do
-                        gInfo <- withStore $ \db -> getGroupInfo db user groupId
-                        let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                        if isCompatibleRange chatVRange groupLinkNoContactVRange
-                          then do
-                            mem <- acceptGroupJoinRequestAsync user gInfo cReq gLinkMemRole profileMode
-                            createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
-                            toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
-                          else do
-                            ct <- acceptContactRequestAsync user cReq profileMode
-                            toView $ CRAcceptingGroupJoinRequest user gInfo ct
-                    _ -> toView $ CRReceivedContactRequest user cReq
-                _ -> pure ()
+              ucl <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
+              let (UserContactLink {autoAccept}, groupId_, gLinkMemRole) = ucl
+              case autoAccept of
+                Just AutoAccept {acceptIncognito} -> case groupId_ of
+                  Nothing -> do
+                    -- [incognito] generate profile to send, create connection with incognito profile
+                    incognitoProfile <- if acceptIncognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
+                    ct <- acceptContactRequestAsync user cReq incognitoProfile True
+                    toView $ CRAcceptingContactRequest user ct
+                  Just groupId -> do
+                    gInfo <- withStore $ \db -> getGroupInfo db user groupId
+                    let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
+                    if isCompatibleRange chatVRange groupLinkNoContactVRange
+                      then do
+                        mem <- acceptGroupJoinRequestAsync user gInfo cReq gLinkMemRole profileMode
+                        createInternalChatItem user (CDGroupRcv gInfo mem) (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
+                        toView $ CRAcceptingGroupJoinRequestMember user gInfo mem
+                      else do
+                        ct <- acceptContactRequestAsync user cReq profileMode False
+                        toView $ CRAcceptingGroupJoinRequest user gInfo ct
+                _ -> toView $ CRReceivedContactRequest user cReq
 
     memberCanSend :: GroupMember -> m () -> m ()
     memberCanSend mem a
@@ -4932,7 +4937,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       conn' <- updatePeerChatVRange activeConn chatVRange
       case chatMsgEvent of
         XInfo p -> do
-          ct <- withStore $ \db -> createDirectContact db user conn' p
+          let contactUsed = connDirect activeConn
+          ct <- withStore $ \db -> createDirectContact db user conn' p contactUsed
           toView $ CRContactConnecting user ct
           pure conn'
         XGrpLinkInv glInv -> do
@@ -5982,7 +5988,13 @@ chatCommandP =
       "/sql chat " *> (ExecChatStoreSQL <$> textP),
       "/sql agent " *> (ExecAgentStoreSQL <$> textP),
       "/sql slow" $> SlowSQLQueries,
-      "/_get chats " *> (APIGetChats <$> A.decimal <*> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)),
+      "/_get chats "
+        *> ( APIGetChats
+              <$> A.decimal
+              <*> (" pcc=on" $> True <|> " pcc=off" $> False <|> pure False)
+              <*> (A.space *> paginationByTimeP <|> pure (PTLast 5000))
+              <*> (A.space *> jsonP <|> pure clqNoFilters)
+           ),
       "/_get chat " *> (APIGetChat <$> chatRefP <* A.space <*> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
@@ -6222,6 +6234,10 @@ chatCommandP =
       (CPLast <$ "count=" <*> A.decimal)
         <|> (CPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
         <|> (CPBefore <$ "before=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
+    paginationByTimeP =
+      (PTLast <$ "count=" <*> A.decimal)
+        <|> (PTAfter <$ "after=" <*> strP <* A.space <* "count=" <*> A.decimal)
+        <|> (PTBefore <$ "before=" <*> strP <* A.space <* "count=" <*> A.decimal)
     mcTextP = MCText . safeDecodeUtf8 <$> A.takeByteString
     msgContentP = "text " *> mcTextP <|> "json " *> jsonP
     ciDeleteMode = "broadcast" $> CIDMBroadcast <|> "internal" $> CIDMInternal
