@@ -111,7 +111,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Either (fromRight, rights)
 import Data.Int (Int64)
 import Data.List (sortBy)
-import Data.Maybe (catMaybes, fromMaybe, isJust, mapMaybe)
+import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
 import Data.Time (addUTCTime)
@@ -488,14 +488,14 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
         ciQuoteGroup [] = ciQuote Nothing $ CIQGroupRcv Nothing
         ciQuoteGroup ((Only itemId :. memberRow) : _) = ciQuote itemId . CIQGroupRcv . Just $ toGroupMember userContactId memberRow
 
-getChatPreviews :: DB.Connection -> User -> Bool -> PaginationByTime -> ChatListQuery -> IO [AChat]
+getChatPreviews :: DB.Connection -> User -> Bool -> PaginationByTime -> ChatListQuery -> IO [Either StoreError AChat]
 getChatPreviews db user withPCC pagination query = do
   directChats <- findDirectChatPreviews_ db user pagination query
   groupChats <- findGroupChatPreviews_ db user pagination query
   cReqChats <- getContactRequestChatPreviews_ db user pagination query
   connChats <- if withPCC then getContactConnectionChatPreviews_ db user pagination query else pure []
   let refs = sortTake $ concat [directChats, groupChats, cReqChats, connChats]
-  catMaybes <$> mapM (printGetPreviewErr <$> getChatPreview) refs
+  mapM (runExceptT <$> getChatPreview) refs
   where
     ts :: AChatPreviewData -> UTCTime
     ts (ACPD _ cpd) = case cpd of
@@ -513,11 +513,6 @@ getChatPreviews db user withPCC pagination query = do
       SCTGroup -> getGroupChatPreview_ db user cpd
       SCTContactRequest -> let (ContactRequestPD _ chat) = cpd in pure chat
       SCTContactConnection -> let (ContactConnectionPD _ chat) = cpd in pure chat
-    printGetPreviewErr :: ExceptT StoreError IO AChat -> IO (Maybe AChat)
-    printGetPreviewErr action =
-      runExceptT action >>= \case
-        Left _err -> pure Nothing -- this shouldn't happen
-        Right chat -> pure $ Just chat
 
 data ChatPreviewData (c :: ChatType) where
   DirectChatPD :: UTCTime -> ContactId -> Maybe ChatStats -> ChatPreviewData 'CTDirect

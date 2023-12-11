@@ -34,7 +34,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char
 import Data.Constraint (Dict (..))
-import Data.Either (fromRight, rights)
+import Data.Either (fromRight, lefts, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -596,8 +596,10 @@ processChatCommand = \case
             . sortOn (timeAvg . snd)
             . M.assocs
             <$> withConnection st (readTVarIO . DB.slow)
-  APIGetChats {userId, pendingConnections, pagination, query} -> withUserId userId $ \user ->
-    CRApiChats user <$> withStoreCtx' (Just "APIGetChats, getChatPreviews") (\db -> getChatPreviews db user pendingConnections pagination query)
+  APIGetChats {userId, pendingConnections, pagination, query} -> withUserId userId $ \user -> do
+    results <- withStore' $ \db -> getChatPreviews db user pendingConnections pagination query
+    toView $ CRChatErrors (Just user) (map ChatErrorStore $ lefts results)
+    pure $ CRApiChats user $ rights results
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
     CTDirect -> do
@@ -1825,7 +1827,9 @@ processChatCommand = \case
     processChatCommand . APISendMessage (ChatRef CTGroup groupId) False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
   LastChats count_ -> withUser' $ \user -> do
     let count = fromMaybe 5000 count_
-    CRChats <$> withStore' (\db -> getChatPreviews db user False (PTLast count) clqNoFilters)
+    results <- withStore' $ \db -> getChatPreviews db user False (PTLast count) clqNoFilters
+    toView $ CRChatErrors (Just user) (map ChatErrorStore $ lefts results)
+    pure $ CRChats $ rights results
   LastMessages (Just chatName) count search -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     chatResp <- processChatCommand $ APIGetChat chatRef (CPLast count) search
