@@ -810,3 +810,18 @@ CREATE UNIQUE INDEX idx_remote_hosts_host_fingerprint ON remote_hosts(
 CREATE UNIQUE INDEX idx_remote_controllers_ctrl_fingerprint ON remote_controllers(
   ctrl_fingerprint
 );
+CREATE INDEX idx_contacts_chat_ts ON contacts(user_id, chat_ts);
+CREATE INDEX idx_groups_chat_ts ON groups(user_id, chat_ts);
+CREATE INDEX idx_contact_requests_updated_at ON contact_requests(
+  user_id,
+  updated_at
+);
+CREATE INDEX idx_connections_updated_at ON connections(user_id, updated_at);
+CREATE INDEX idx_chat_items_contact_id_item_status ON chat_items(
+  contact_id,
+  item_status
+);
+CREATE INDEX idx_chat_items_group_id_item_status ON chat_items(
+  group_id,
+  item_status
+);
