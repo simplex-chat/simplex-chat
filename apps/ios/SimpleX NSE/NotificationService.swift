@@ -23,8 +23,8 @@ typealias NtfStream = ConcurrentQueue<NSENotification>
 // Notifications are delivered via concurrent queues, as they are all received from chat controller in a single loop that
 // writes to ConcurrentQueue and when notification is processed, the instance of Notification service extension reads from the queue.
 // One queue per connection (entity) is used.
-// The concurrent queues allow for read cancellation, to ensure that notifications are not lost in case the next the current thread completes
-// before expected notification is read (multiple notifications can be expected, because one notification can be delivered for several messages.
+// The concurrent queues allow read cancellation, to ensure that notifications are not lost in case the current thread completes
+// before expected notification is read (multiple notifications can be expected, because one notification can be delivered for several messages).
 actor PendingNtfs {
     static let shared = PendingNtfs()
     private var ntfStreams: [String: NtfStream] = [:]
