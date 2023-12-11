@@ -54,7 +54,7 @@ struct SimpleXApp: App {
                 }
                 .onAppear() {
                     showInitializationView = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                         initChatAndMigrate()
                     }
                 }
@@ -77,15 +77,17 @@ struct SimpleXApp: App {
                     case .active:
                         CallController.shared.shouldSuspendChat = false
                         let appState = AppChatState.shared.value
-                        startChatAndActivate {
-                            if appState.inactive && chatModel.chatRunning == true {
-                                updateChats()
-                                if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
-                                    updateCallInvitations()
+                        if appState != .stopped {
+                            startChatAndActivate {
+                                if appState.inactive && chatModel.chatRunning == true {
+                                    updateChats()
+                                    if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
+                                        updateCallInvitations()
+                                    }
                                 }
+                                doAuthenticate = authenticationExpired()
+                                canConnectCall = !(doAuthenticate && prefPerformLA) || unlockedRecently()
                             }
-                            doAuthenticate = authenticationExpired()
-                            canConnectCall = !(doAuthenticate && prefPerformLA) || unlockedRecently()
                         }
                     default:
                         break

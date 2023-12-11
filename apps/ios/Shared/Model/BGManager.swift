@@ -15,6 +15,7 @@ private let receiveTaskId = "chat.simplex.app.receive"
 // TCP timeout + 2 sec
 private let waitForMessages: TimeInterval = 6
 
+// This is the smallest interval between refreshes, and also target interval in "off" mode
 private let bgRefreshInterval: TimeInterval = 600
 
 private let maxTimerCount = 9
