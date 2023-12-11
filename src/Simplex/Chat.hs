@@ -1994,7 +1994,7 @@ processChatCommand = \case
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
   QuitChat -> liftIO exitSuccess
   ShowVersion -> do
-    let versionInfo = coreVersionInfo $(simplexmqCommitQ)
+    let versionInfo = coreVersionInfo "" -- $(simplexmqCommitQ)
     chatMigrations <- map upMigration <$> withStore' (Migrations.getCurrent . DB.conn)
     agentMigrations <- withAgent getAgentMigrations
     pure $ CRVersionInfo {versionInfo, chatMigrations, agentMigrations}
