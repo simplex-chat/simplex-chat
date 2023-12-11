@@ -494,7 +494,7 @@ getChatPreviews db user withPCC pagination query = do
   groupChats <- findGroupChatPreviews_ db user pagination query
   cReqChats <- getContactRequestChatPreviews_ db user pagination query
   connChats <- if withPCC then getContactConnectionChatPreviews_ db user pagination query else pure []
-  let refs = limit . sortBy (comparing $ Down . ts) $ concat [directChats, groupChats, cReqChats, connChats]
+  let refs = sortTake $ concat [directChats, groupChats, cReqChats, connChats]
   catMaybes <$> mapM (printGetPreviewErr <$> getChatPreview) refs
   where
     ts :: AChatPreviewQueryMeta -> UTCTime
@@ -503,10 +503,10 @@ getChatPreviews db user withPCC pagination query = do
       (GroupChatPQM _ t _) -> t
       (ContactRequestPQM _ t) -> t
       (ContactConnectionPQM _ t) -> t
-    limit = case pagination of
-      PTLast count -> take count
-      PTAfter _ count -> take count
-      PTBefore _ count -> take count
+    sortTake = case pagination of
+      PTLast count -> take count . sortBy (comparing $ Down . ts)
+      PTAfter _ count -> reverse . take count . sortBy (comparing ts)
+      PTBefore _ count -> take count . sortBy (comparing $ Down . ts)
     getChatPreview :: AChatPreviewQueryMeta -> ExceptT StoreError IO AChat
     getChatPreview (AChatPreviewQM cType cpqm) = case cType of
       SCTDirect -> getDirectChatPreview_ db user cpqm
