@@ -108,7 +108,7 @@ func initChatAndMigrate(refreshInvitations: Bool = true) {
         if AppChatState.shared.value == .stopped {
             AlertManager.shared.showAlert(Alert(
                 title: Text("Start chat?"),
-                message: Text("Chat is stopped. Do not start chat if you already used this database on another device."),
+                message: Text("Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat."),
                 primaryButton: .default(Text("Ok")) {
                     AppChatState.shared.set(.active)
                     initialize(start: true)
