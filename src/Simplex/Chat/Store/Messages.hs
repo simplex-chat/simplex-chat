@@ -528,6 +528,12 @@ paginationByTimeFilter = \case
   PTAfter ts count -> ("\nAND ts > :ts ORDER BY ts ASC LIMIT :count", [":ts" := ts, ":count" := count])
   PTBefore ts count -> ("\nAND ts < :ts ORDER BY ts DESC LIMIT :count", [":ts" := ts, ":count" := count])
 
+type MaybeChatStatsRow = (Maybe Int, Maybe ChatItemId, Maybe Bool)
+
+toMaybeChatStats :: MaybeChatStatsRow -> Maybe ChatStats
+toMaybeChatStats (Just unreadCount, Just minUnreadItemId, Just unreadChat) = Just ChatStats {unreadCount, minUnreadItemId, unreadChat}
+toMaybeChatStats _ = Nothing
+
 findDirectChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 findDirectChatPreviews_ db User {userId} pagination clq =
   map toPreview <$> getPreviews
@@ -1181,17 +1187,6 @@ setGroupChatItemDeleteAt db User {userId} groupId chatItemId deleteAt =
     db
     "UPDATE chat_items SET timed_delete_at = ? WHERE user_id = ? AND group_id = ? AND chat_item_id = ?"
     (deleteAt, userId, groupId, chatItemId)
-
-type ChatStatsRow = (Int, ChatItemId, Bool)
-
-type MaybeChatStatsRow = (Maybe Int, Maybe ChatItemId, Maybe Bool)
-
-toChatStats :: ChatStatsRow -> ChatStats
-toChatStats (unreadCount, minUnreadItemId, unreadChat) = ChatStats {unreadCount, minUnreadItemId, unreadChat}
-
-toMaybeChatStats :: MaybeChatStatsRow -> Maybe ChatStats
-toMaybeChatStats (Just unreadCount, Just minUnreadItemId, Just unreadChat) = Just $ toChatStats (unreadCount, minUnreadItemId, unreadChat)
-toMaybeChatStats _ = Nothing
 
 type MaybeCIFIleRow = (Maybe Int64, Maybe String, Maybe Integer, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe ACIFileStatus, Maybe FileProtocol)
 
