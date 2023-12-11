@@ -14,9 +14,6 @@ struct NotificationsView: View {
     @State private var notificationMode: NotificationsMode = ChatModel.shared.notificationMode
     @State private var showAlert: NotificationAlert?
     @State private var legacyDatabase = dbContainerGroupDefault.get() == .documents
-//    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-//    @AppStorage(GROUP_DEFAULT_NTF_ENABLE_LOCAL, store: groupDefaults) private var ntfEnableLocal = false
-//    @AppStorage(GROUP_DEFAULT_NTF_ENABLE_PERIODIC, store: groupDefaults) private var ntfEnablePeriodic = false
 
     var body: some View {
         List {
@@ -88,13 +85,6 @@ struct NotificationsView: View {
                         .padding(.top, 1)
                 }
             }
-
-//            if developerTools {
-//                Section(String("Experimental")) {
-//                    Toggle(String("Always enable local"), isOn: $ntfEnableLocal)
-//                    Toggle(String("Always enable periodic"), isOn: $ntfEnablePeriodic)
-//                }
-//            }
         }
         .disabled(legacyDatabase)
     }
@@ -119,7 +109,7 @@ struct NotificationsView: View {
 
     private func ntfModeAlertTitle(_ mode: NotificationsMode) -> LocalizedStringKey {
         switch mode {
-        case .off: return "Turn off notifications?"
+        case .off: return "Use only local notifications?"
         case .periodic: return "Enable periodic notifications?"
         case .instant: return "Enable instant notifications?"
         }
