@@ -43,6 +43,7 @@ module Simplex.Chat.Store.Direct
     deletePCCIncognitoProfile,
     updateContactUsed,
     updateContactUnreadChat,
+    setUserChatsRead,
     updateContactStatus,
     updateGroupUnreadChat,
     setConnectionVerified,
@@ -78,6 +79,7 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Database.SQLite.Simple (NamedParam (..), Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
+import Simplex.Chat.Messages
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -391,6 +393,13 @@ updateContactUnreadChat :: DB.Connection -> User -> Contact -> Bool -> IO ()
 updateContactUnreadChat db User {userId} Contact {contactId} unreadChat = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE contacts SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?" (unreadChat, updatedAt, userId, contactId)
+
+setUserChatsRead :: DB.Connection -> User -> IO ()
+setUserChatsRead db User {userId} = do
+  updatedAt <- getCurrentTime
+  DB.execute db "UPDATE contacts SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND unread_chat = ?" (False, updatedAt, userId, True)
+  DB.execute db "UPDATE groups SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND unread_chat = ?" (False, updatedAt, userId, True)
+  DB.execute db "UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND item_status = ?" (CISRcvRead, updatedAt, userId, CISRcvNew)
 
 updateContactStatus :: DB.Connection -> User -> Contact -> ContactStatus -> IO Contact
 updateContactStatus db User {userId} ct@Contact {contactId} contactStatus = do
