@@ -240,11 +240,8 @@ chats = mapChats . read
 (@@@!) = getChats id
 
 getChats :: HasCallStack => (Eq a, Show a) => ([(String, String, Maybe ConnStatus)] -> [a]) -> TestCC -> [a] -> Expectation
-getChats = getChats_ ""
-
-getChats_ :: HasCallStack => (Eq a, Show a) => String -> ([(String, String, Maybe ConnStatus)] -> [a]) -> TestCC -> [a] -> Expectation
-getChats_ opts f cc res = do
-  cc ##> ("/_get chats 1 pcc=on" <> if null opts then "" else ' ' : opts)
+getChats f cc res = do
+  cc ##> "/_get chats 1 pcc=on"
   line <- getTermLine cc
   f (read line) `shouldMatchList` res
 
