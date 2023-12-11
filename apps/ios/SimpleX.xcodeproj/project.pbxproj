@@ -116,6 +116,11 @@
 		5CC2C0FF2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CC2C0FD2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings */; };
 		5CC868F329EB540C0017BBFD /* CIRcvDecryptionError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC868F229EB540C0017BBFD /* CIRcvDecryptionError.swift */; };
 		5CCB939C297EFCB100399E78 /* NavStackCompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCB939B297EFCB100399E78 /* NavStackCompat.swift */; };
+		5CCD1A482B263660001A4199 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD1A472B263660001A4199 /* ShareViewController.swift */; };
+		5CCD1A4B2B263660001A4199 /* MainInterface.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 5CCD1A492B263660001A4199 /* MainInterface.storyboard */; };
+		5CCD1A4F2B263660001A4199 /* SimpleX Share.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 5CCD1A452B263660001A4199 /* SimpleX Share.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		5CCD1A532B2636BC001A4199 /* SimpleXChat.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CE2BA682845308900EC33A6 /* SimpleXChat.framework */; };
+		5CCD1A5A2B2646F8001A4199 /* ShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD1A592B2646F8001A4199 /* ShareView.swift */; };
 		5CCD403427A5F6DF00368C90 /* AddContactView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403327A5F6DF00368C90 /* AddContactView.swift */; };
 		5CCD403727A5F9A200368C90 /* ScanToConnectView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCD403627A5F9A200368C90 /* ScanToConnectView.swift */; };
 		5CD67B8F2B0E858A00C510B1 /* hs_init.h in Headers */ = {isa = PBXBuildFile; fileRef = 5CD67B8D2B0E858A00C510B1 /* hs_init.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -201,6 +206,20 @@
 			remoteGlobalIDString = 5CA059C9279559F40002BEB4;
 			remoteInfo = "SimpleX (iOS)";
 		};
+		5CCD1A4D2B263660001A4199 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5CA059BE279559F40002BEB4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5CCD1A442B263660001A4199;
+			remoteInfo = "SimpleX Share";
+		};
+		5CCD1A552B2636BC001A4199 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 5CA059BE279559F40002BEB4 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 5CE2BA672845308900EC33A6;
+			remoteInfo = SimpleXChat;
+		};
 		5CE2BA6E2845308900EC33A6 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 5CA059BE279559F40002BEB4 /* Project object */;
@@ -242,6 +261,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				5CCD1A4F2B263660001A4199 /* SimpleX Share.appex in Embed App Extensions */,
 				5CE2BA9D284555F500EC33A6 /* SimpleX NSE.appex in Embed App Extensions */,
 			);
 			name = "Embed App Extensions";
@@ -399,6 +419,12 @@
 		5CC2C0FE2809BF11000C35E3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = "ru.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
 		5CC868F229EB540C0017BBFD /* CIRcvDecryptionError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIRcvDecryptionError.swift; sourceTree = "<group>"; };
 		5CCB939B297EFCB100399E78 /* NavStackCompat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavStackCompat.swift; sourceTree = "<group>"; };
+		5CCD1A452B263660001A4199 /* SimpleX Share.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "SimpleX Share.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5CCD1A472B263660001A4199 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		5CCD1A4A2B263660001A4199 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/MainInterface.storyboard; sourceTree = "<group>"; };
+		5CCD1A4C2B263660001A4199 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5CCD1A582B26372A001A4199 /* SimpleX Share.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "SimpleX Share.entitlements"; sourceTree = "<group>"; };
+		5CCD1A592B2646F8001A4199 /* ShareView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareView.swift; sourceTree = "<group>"; };
 		5CCD403327A5F6DF00368C90 /* AddContactView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddContactView.swift; sourceTree = "<group>"; };
 		5CCD403627A5F9A200368C90 /* ScanToConnectView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanToConnectView.swift; sourceTree = "<group>"; };
 		5CD67B8D2B0E858A00C510B1 /* hs_init.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hs_init.h; sourceTree = "<group>"; };
@@ -496,6 +522,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5CCD1A422B263660001A4199 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5CCD1A532B2636BC001A4199 /* SimpleXChat.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -649,6 +683,7 @@
 				5C764E5C279C70B7000C6508 /* Libraries */,
 				5CA059C2279559F40002BEB4 /* Shared */,
 				5CDCAD462818589900503DA2 /* SimpleX NSE */,
+				5CCD1A462B263660001A4199 /* SimpleX Share */,
 				5CA059DA279559F40002BEB4 /* Tests iOS */,
 				5CE2BA692845308900EC33A6 /* SimpleXChat */,
 				5CA059CB279559F40002BEB4 /* Products */,
@@ -678,6 +713,7 @@
 				5CA059D7279559F40002BEB4 /* Tests iOS.xctest */,
 				5CDCAD452818589900503DA2 /* SimpleX NSE.appex */,
 				5CE2BA682845308900EC33A6 /* SimpleXChat.framework */,
+				5CCD1A452B263660001A4199 /* SimpleX Share.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -782,6 +818,18 @@
 				18415835CBD939A9ABDC108A /* UserPicker.swift */,
 			);
 			path = ChatList;
+			sourceTree = "<group>";
+		};
+		5CCD1A462B263660001A4199 /* SimpleX Share */ = {
+			isa = PBXGroup;
+			children = (
+				5CCD1A582B26372A001A4199 /* SimpleX Share.entitlements */,
+				5CCD1A472B263660001A4199 /* ShareViewController.swift */,
+				5CCD1A592B2646F8001A4199 /* ShareView.swift */,
+				5CCD1A492B263660001A4199 /* MainInterface.storyboard */,
+				5CCD1A4C2B263660001A4199 /* Info.plist */,
+			);
+			path = "SimpleX Share";
 			sourceTree = "<group>";
 		};
 		5CDCAD462818589900503DA2 /* SimpleX NSE */ = {
@@ -921,6 +969,7 @@
 			dependencies = (
 				5CE2BA6F2845308900EC33A6 /* PBXTargetDependency */,
 				5CE2BA9F284555F500EC33A6 /* PBXTargetDependency */,
+				5CCD1A4E2B263660001A4199 /* PBXTargetDependency */,
 			);
 			name = "SimpleX (iOS)";
 			packageProductDependencies = (
@@ -950,6 +999,24 @@
 			productName = "Tests iOS";
 			productReference = 5CA059D7279559F40002BEB4 /* Tests iOS.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		5CCD1A442B263660001A4199 /* SimpleX Share */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5CCD1A522B263660001A4199 /* Build configuration list for PBXNativeTarget "SimpleX Share" */;
+			buildPhases = (
+				5CCD1A412B263660001A4199 /* Sources */,
+				5CCD1A422B263660001A4199 /* Frameworks */,
+				5CCD1A432B263660001A4199 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5CCD1A562B2636BC001A4199 /* PBXTargetDependency */,
+			);
+			name = "SimpleX Share";
+			productName = "SimpleX Share";
+			productReference = 5CCD1A452B263660001A4199 /* SimpleX Share.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 		5CDCAD442818589900503DA2 /* SimpleX NSE */ = {
 			isa = PBXNativeTarget;
@@ -996,7 +1063,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1330;
+				LastSwiftUpdateCheck = 1500;
 				LastUpgradeCheck = 1340;
 				ORGANIZATIONNAME = "SimpleX Chat";
 				TargetAttributes = {
@@ -1007,6 +1074,9 @@
 					5CA059D6279559F40002BEB4 = {
 						CreatedOnToolsVersion = 13.2.1;
 						TestTargetID = 5CA059C9279559F40002BEB4;
+					};
+					5CCD1A442B263660001A4199 = {
+						CreatedOnToolsVersion = 15.0;
 					};
 					5CDCAD442818589900503DA2 = {
 						CreatedOnToolsVersion = 13.3;
@@ -1054,6 +1124,7 @@
 				5CA059C9279559F40002BEB4 /* SimpleX (iOS) */,
 				5CA059D6279559F40002BEB4 /* Tests iOS */,
 				5CDCAD442818589900503DA2 /* SimpleX NSE */,
+				5CCD1A442B263660001A4199 /* SimpleX Share */,
 				5CE2BA672845308900EC33A6 /* SimpleXChat */,
 			);
 		};
@@ -1075,6 +1146,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5CCD1A432B263660001A4199 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5CCD1A4B2B263660001A4199 /* MainInterface.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1253,6 +1332,15 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5CCD1A412B263660001A4199 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5CCD1A5A2B2646F8001A4199 /* ShareView.swift in Sources */,
+				5CCD1A482B263660001A4199 /* ShareViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5CDCAD412818589900503DA2 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1289,6 +1377,16 @@
 			isa = PBXTargetDependency;
 			target = 5CA059C9279559F40002BEB4 /* SimpleX (iOS) */;
 			targetProxy = 5CA059D8279559F40002BEB4 /* PBXContainerItemProxy */;
+		};
+		5CCD1A4E2B263660001A4199 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5CCD1A442B263660001A4199 /* SimpleX Share */;
+			targetProxy = 5CCD1A4D2B263660001A4199 /* PBXContainerItemProxy */;
+		};
+		5CCD1A562B2636BC001A4199 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 5CE2BA672845308900EC33A6 /* SimpleXChat */;
+			targetProxy = 5CCD1A552B2636BC001A4199 /* PBXContainerItemProxy */;
 		};
 		5CE2BA6F2845308900EC33A6 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -1371,6 +1469,14 @@
 				5C5B67922ABAF56000DA9412 /* bg */,
 			);
 			name = "SimpleX--iOS--InfoPlist.strings";
+			sourceTree = "<group>";
+		};
+		5CCD1A492B263660001A4199 /* MainInterface.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				5CCD1A4A2B263660001A4199 /* Base */,
+			);
+			name = MainInterface.storyboard;
 			sourceTree = "<group>";
 		};
 /* End PBXVariantGroup section */
@@ -1619,6 +1725,78 @@
 			};
 			name = Release;
 		};
+		5CCD1A502B263660001A4199 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_ENTITLEMENTS = "SimpleX Share/SimpleX Share.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 185;
+				DEVELOPMENT_TEAM = 5NN7GUYB6T;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "SimpleX Share/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "SimpleX Share";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2023 SimpleX Chat. All rights reserved.";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 5.4.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.app.SimpleX-Share";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		5CCD1A512B263660001A4199 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_ENTITLEMENTS = "SimpleX Share/SimpleX Share.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 185;
+				DEVELOPMENT_TEAM = 5NN7GUYB6T;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "SimpleX Share/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "SimpleX Share";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "Copyright © 2023 SimpleX Chat. All rights reserved.";
+				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MARKETING_VERSION = 5.4.1;
+				PRODUCT_BUNDLE_IDENTIFIER = "chat.simplex.app.SimpleX-Share";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		5CDCAD4E2818589900503DA2 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1803,6 +1981,15 @@
 			buildConfigurations = (
 				5CA059FA279559F40002BEB4 /* Debug */,
 				5CA059FB279559F40002BEB4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5CCD1A522B263660001A4199 /* Build configuration list for PBXNativeTarget "SimpleX Share" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5CCD1A502B263660001A4199 /* Debug */,
+				5CCD1A512B263660001A4199 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
