@@ -497,22 +497,22 @@ getChatPreviews db user withPCC pagination query = do
   let refs = sortTake $ concat [directChats, groupChats, cReqChats, connChats]
   catMaybes <$> mapM (printGetPreviewErr <$> getChatPreview) refs
   where
-    ts :: AChatPreviewQueryMeta -> UTCTime
-    ts (AChatPreviewQM _ cpqm) = case cpqm of
-      (DirectChatPQM _ t _) -> t
-      (GroupChatPQM _ t _) -> t
-      (ContactRequestPQM _ t) -> t
-      (ContactConnectionPQM _ t) -> t
+    ts :: AChatPreviewData -> UTCTime
+    ts (ACPD _ cpd) = case cpd of
+      (DirectChatPD t _ _) -> t
+      (GroupChatPD t _ _) -> t
+      (ContactRequestPD t _) -> t
+      (ContactConnectionPD t _) -> t
     sortTake = case pagination of
       PTLast count -> take count . sortBy (comparing $ Down . ts)
       PTAfter _ count -> reverse . take count . sortBy (comparing ts)
       PTBefore _ count -> take count . sortBy (comparing $ Down . ts)
-    getChatPreview :: AChatPreviewQueryMeta -> ExceptT StoreError IO AChat
-    getChatPreview (AChatPreviewQM cType cpqm) = case cType of
-      SCTDirect -> getDirectChatPreview_ db user cpqm
-      SCTGroup -> getGroupChatPreview_ db user cpqm
-      SCTContactRequest -> let (ContactRequestPQM chat _) = cpqm in pure chat
-      SCTContactConnection -> let (ContactConnectionPQM chat _) = cpqm in pure chat
+    getChatPreview :: AChatPreviewData -> ExceptT StoreError IO AChat
+    getChatPreview (ACPD cType cpd) = case cType of
+      SCTDirect -> getDirectChatPreview_ db user cpd
+      SCTGroup -> getGroupChatPreview_ db user cpd
+      SCTContactRequest -> let (ContactRequestPD _ chat) = cpd in pure chat
+      SCTContactConnection -> let (ContactConnectionPD _ chat) = cpd in pure chat
     printGetPreviewErr :: ExceptT StoreError IO AChat -> IO (Maybe AChat)
     printGetPreviewErr action =
       runExceptT action >>= \case
@@ -521,13 +521,13 @@ getChatPreviews db user withPCC pagination query = do
           pure Nothing
         Right chat -> pure $ Just chat
 
-data ChatPreviewQueryMeta (c :: ChatType) where
-  DirectChatPQM :: ContactId -> UTCTime -> Maybe ChatStats -> ChatPreviewQueryMeta 'CTDirect
-  GroupChatPQM :: GroupId -> UTCTime -> Maybe ChatStats -> ChatPreviewQueryMeta 'CTGroup
-  ContactRequestPQM :: AChat -> UTCTime -> ChatPreviewQueryMeta 'CTContactRequest
-  ContactConnectionPQM :: AChat -> UTCTime -> ChatPreviewQueryMeta 'CTContactConnection
+data ChatPreviewData (c :: ChatType) where
+  DirectChatPD :: UTCTime -> ContactId -> Maybe ChatStats -> ChatPreviewData 'CTDirect
+  GroupChatPD :: UTCTime -> GroupId -> Maybe ChatStats -> ChatPreviewData 'CTGroup
+  ContactRequestPD :: UTCTime -> AChat -> ChatPreviewData 'CTContactRequest
+  ContactConnectionPD :: UTCTime -> AChat -> ChatPreviewData 'CTContactConnection
 
-data AChatPreviewQueryMeta = forall c. ChatTypeI c => AChatPreviewQM (SChatType c) (ChatPreviewQueryMeta c)
+data AChatPreviewData = forall c. ChatTypeI c => ACPD (SChatType c) (ChatPreviewData c)
 
 paginationByTimeFilter :: PaginationByTime -> (Query, [NamedParam])
 paginationByTimeFilter = \case
@@ -535,13 +535,13 @@ paginationByTimeFilter = \case
   PTAfter ts count -> ("\nAND ts > :ts ORDER BY ts ASC LIMIT :count", [":ts" := ts, ":count" := count])
   PTBefore ts count -> ("\nAND ts < :ts ORDER BY ts DESC LIMIT :count", [":ts" := ts, ":count" := count])
 
-findDirectChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewQueryMeta]
+findDirectChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 findDirectChatPreviews_ db User {userId} pagination clq =
   map toPreview <$> DB.queryNamed db query params
   where
-    toPreview :: (ContactId, UTCTime) :. MaybeChatStatsRow -> AChatPreviewQueryMeta
+    toPreview :: (ContactId, UTCTime) :. MaybeChatStatsRow -> AChatPreviewData
     toPreview ((contactId, ts) :. statsRow_) =
-      AChatPreviewQM SCTDirect $ DirectChatPQM contactId ts (toMaybeChatStats statsRow_)
+      ACPD SCTDirect $ DirectChatPD ts contactId (toMaybeChatStats statsRow_)
     (pagQuery, pagParams) = paginationByTimeFilter pagination
     (query, params) = case clq of
       CLQFilters {favorite = False, unread = False} ->
@@ -613,8 +613,8 @@ findDirectChatPreviews_ db User {userId} pagination clq =
           [":user_id" := userId, ":search" := search] <> pagParams
         )
 
-getDirectChatPreview_ :: DB.Connection -> User -> ChatPreviewQueryMeta 'CTDirect -> ExceptT StoreError IO AChat
-getDirectChatPreview_ db user (DirectChatPQM contactId _ stats_) = do
+getDirectChatPreview_ :: DB.Connection -> User -> ChatPreviewData 'CTDirect -> ExceptT StoreError IO AChat
+getDirectChatPreview_ db user (DirectChatPD _ contactId stats_) = do
   contact <- getContact db user contactId
   lastItem <- getLastItem
   stats <- maybe getChatStats pure stats_
@@ -661,13 +661,13 @@ getDirectChatPreview_ db user (DirectChatPQM contactId _ stats_) = do
           |]
           (contactId, CISRcvNew)
 
-findGroupChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewQueryMeta]
+findGroupChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 findGroupChatPreviews_ db User {userId} pagination clq =
   map toPreview <$> DB.queryNamed db query params
   where
-    toPreview :: (GroupId, UTCTime) :. MaybeChatStatsRow -> AChatPreviewQueryMeta
+    toPreview :: (GroupId, UTCTime) :. MaybeChatStatsRow -> AChatPreviewData
     toPreview ((groupId, ts) :. statsRow_) =
-      AChatPreviewQM SCTGroup $ GroupChatPQM groupId ts (toMaybeChatStats statsRow_)
+      ACPD SCTGroup $ GroupChatPD ts groupId (toMaybeChatStats statsRow_)
     (pagQuery, pagParams) = paginationByTimeFilter pagination
     (query, params) = case clq of
       CLQFilters {favorite = False, unread = False} ->
@@ -739,8 +739,8 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           [":user_id" := userId, ":search" := search] <> pagParams
         )
 
-getGroupChatPreview_ :: DB.Connection -> User -> ChatPreviewQueryMeta 'CTGroup -> ExceptT StoreError IO AChat
-getGroupChatPreview_ db user (GroupChatPQM groupId _ stats_) = do
+getGroupChatPreview_ :: DB.Connection -> User -> ChatPreviewData 'CTGroup -> ExceptT StoreError IO AChat
+getGroupChatPreview_ db user (GroupChatPD _ groupId stats_) = do
   groupInfo <- getGroupInfo db user groupId
   lastItem <- getLastItem
   stats <- maybe getChatStats pure stats_
@@ -787,7 +787,7 @@ getGroupChatPreview_ db user (GroupChatPQM groupId _ stats_) = do
           |]
           (groupId, CISRcvNew)
 
-getContactRequestChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewQueryMeta]
+getContactRequestChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
   CLQFilters {favorite = False, unread = False} -> query ""
   CLQFilters {favorite = True, unread = False} -> pure []
@@ -823,14 +823,14 @@ getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
               <> pagQuery
           )
           ([":user_id" := userId, ":search" := search] <> pagParams)
-    toPreview :: ContactRequestRow -> AChatPreviewQueryMeta
+    toPreview :: ContactRequestRow -> AChatPreviewData
     toPreview cReqRow =
       let cReq@UserContactRequest {updatedAt} = toContactRequest cReqRow
           stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
           aChat = AChat SCTContactRequest $ Chat (ContactRequest cReq) [] stats
-       in AChatPreviewQM SCTContactRequest $ ContactRequestPQM aChat updatedAt
+       in ACPD SCTContactRequest $ ContactRequestPD updatedAt aChat
 
-getContactConnectionChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewQueryMeta]
+getContactConnectionChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 getContactConnectionChatPreviews_ db User {userId} pagination clq = case clq of
   CLQFilters {favorite = False, unread = False} -> query ""
   CLQFilters {favorite = True, unread = False} -> pure []
@@ -859,12 +859,12 @@ getContactConnectionChatPreviews_ db User {userId} pagination clq = case clq of
               <> pagQuery
           )
           ([":user_id" := userId, ":conn_contact" := ConnContact, ":search" := search] <> pagParams)
-    toPreview :: (Int64, ConnId, ConnStatus, Maybe ByteString, Maybe Int64, Maybe GroupLinkId, Maybe Int64, Maybe ConnReqInvitation, LocalAlias, UTCTime, UTCTime) -> AChatPreviewQueryMeta
+    toPreview :: (Int64, ConnId, ConnStatus, Maybe ByteString, Maybe Int64, Maybe GroupLinkId, Maybe Int64, Maybe ConnReqInvitation, LocalAlias, UTCTime, UTCTime) -> AChatPreviewData
     toPreview connRow =
       let conn@PendingContactConnection {updatedAt} = toPendingContactConnection connRow
           stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
           aChat = AChat SCTContactConnection $ Chat (ContactConnection conn) [] stats
-       in AChatPreviewQM SCTContactConnection $ ContactConnectionPQM aChat updatedAt
+       in ACPD SCTContactConnection $ ContactConnectionPD updatedAt aChat
 
 getDirectChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTDirect)
 getDirectChat db user contactId pagination search_ = do
