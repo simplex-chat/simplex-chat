@@ -34,7 +34,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char
 import Data.Constraint (Dict (..))
-import Data.Either (fromRight, lefts, rights)
+import Data.Either (fromRight, partitionEithers, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -597,9 +597,9 @@ processChatCommand = \case
             . M.assocs
             <$> withConnection st (readTVarIO . DB.slow)
   APIGetChats {userId, pendingConnections, pagination, query} -> withUserId userId $ \user -> do
-    results <- withStore' $ \db -> getChatPreviews db user pendingConnections pagination query
-    toView $ CRChatErrors (Just user) (map ChatErrorStore $ lefts results)
-    pure $ CRApiChats user $ rights results
+    (errs, previews) <- partitionEithers <$> withStore' (\db -> getChatPreviews db user pendingConnections pagination query)
+    toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
+    pure $ CRApiChats user previews
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
     CTDirect -> do
@@ -1827,9 +1827,9 @@ processChatCommand = \case
     processChatCommand . APISendMessage (ChatRef CTGroup groupId) False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
   LastChats count_ -> withUser' $ \user -> do
     let count = fromMaybe 5000 count_
-    results <- withStore' $ \db -> getChatPreviews db user False (PTLast count) clqNoFilters
-    toView $ CRChatErrors (Just user) (map ChatErrorStore $ lefts results)
-    pure $ CRChats $ rights results
+    (errs, previews) <- partitionEithers <$> withStore' (\db -> getChatPreviews db user False (PTLast count) clqNoFilters)
+    toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
+    pure $ CRChats previews
   LastMessages (Just chatName) count search -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     chatResp <- processChatCommand $ APIGetChat chatRef (CPLast count) search
