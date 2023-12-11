@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20231206_recreate_msg_deliveries where
+module Simplex.Chat.Migrations.M20231208_recreate_msg_deliveries where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20231206_recreate_msg_deliveries :: Query
-m20231206_recreate_msg_deliveries =
+m20231208_recreate_msg_deliveries :: Query
+m20231208_recreate_msg_deliveries =
   [sql|
 DROP INDEX msg_delivery_events_msg_delivery_id;
 DROP TABLE msg_delivery_events;
@@ -41,8 +41,8 @@ CREATE INDEX idx_msg_deliveries_agent_ack_cmd_id ON "msg_deliveries"(connection_
 CREATE INDEX idx_msg_deliveries_agent_msg_id ON "msg_deliveries"(connection_id, agent_msg_id);
 |]
 
-down_m20231206_recreate_msg_deliveries :: Query
-down_m20231206_recreate_msg_deliveries =
+down_m20231208_recreate_msg_deliveries :: Query
+down_m20231208_recreate_msg_deliveries =
   [sql|
 DROP INDEX idx_msg_deliveries_message_id;
 DROP INDEX idx_msg_deliveries_agent_ack_cmd_id;

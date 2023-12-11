@@ -186,9 +186,10 @@ contactConnIncognito :: Contact -> IncognitoEnabled
 contactConnIncognito = maybe False connIncognito . contactConn
 
 contactDirect :: Contact -> Bool
-contactDirect Contact {activeConn} = maybe True direct activeConn
-  where
-    direct Connection {connLevel, viaGroupLink} = connLevel == 0 && not viaGroupLink
+contactDirect Contact {activeConn} = maybe True connDirect activeConn
+
+connDirect :: Connection -> Bool
+connDirect Connection {connLevel, viaGroupLink} = connLevel == 0 && not viaGroupLink
 
 directOrUsed :: Contact -> Bool
 directOrUsed ct@Contact {contactUsed} =
