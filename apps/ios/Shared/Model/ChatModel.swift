@@ -104,12 +104,10 @@ final class ChatModel: ObservableObject {
 
     static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
 
-    var ntfEnableLocal: Bool {
-        notificationMode == .off || ntfEnableLocalGroupDefault.get()
-    }
+    let ntfEnableLocal = true
 
     var ntfEnablePeriodic: Bool {
-        notificationMode == .periodic || ntfEnablePeriodicGroupDefault.get()
+        notificationMode != .off
     }
 
     var activeRemoteCtrl: Bool {

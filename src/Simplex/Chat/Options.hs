@@ -18,6 +18,7 @@ where
 
 import Control.Logger.Simple (LogLevel (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteString.Char8 as B
 import Data.Text (Text)
 import Numeric.Natural (Natural)
@@ -48,7 +49,7 @@ data ChatOpts = ChatOpts
 
 data CoreChatOpts = CoreChatOpts
   { dbFilePrefix :: String,
-    dbKey :: String,
+    dbKey :: ScrubbedBytes,
     smpServers :: [SMPServerWithAuth],
     xftpServers :: [XFTPServerWithAuth],
     networkConfig :: NetworkConfig,
