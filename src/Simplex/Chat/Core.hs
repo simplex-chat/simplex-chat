@@ -22,7 +22,7 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {core
       withGlobalLogging logCfg initRun
     _ -> initRun
   where
-    initRun = createChatDatabase dbFilePrefix dbKey confirmMigrations >>= either exit run
+    initRun = createChatDatabase dbFilePrefix dbKey False confirmMigrations >>= either exit run
     exit e = do
       putStrLn $ "Error opening database: " <> show e
       exitFailure

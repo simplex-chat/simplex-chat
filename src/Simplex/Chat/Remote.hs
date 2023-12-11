@@ -189,7 +189,7 @@ startRemoteHost rh_ rcAddrPrefs_ port_ = do
         RHSessionConnecting _inv rhs' -> Right ((), RHSessionPendingConfirmation sessionCode tls rhs')
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
       let rh_' = (\rh -> (rh :: RemoteHostInfo) {sessionState = Just RHSPendingConfirmation {sessionCode}}) <$> remoteHost_
-      toView $ CRRemoteHostSessionCode {remoteHost_ = rh_', sessionCode}
+      toView CRRemoteHostSessionCode {remoteHost_ = rh_', sessionCode}
       (RCHostSession {sessionKeys}, rhHello, pairing') <- timeoutThrow (ChatErrorRemoteHost rhKey RHETimeout) 60000000 $ takeRCStep vars'
       hostInfo@HostAppInfo {deviceName = hostDeviceName} <-
         liftError (ChatErrorRemoteHost rhKey) $ parseHostAppInfo rhHello
@@ -260,7 +260,7 @@ cancelRemoteHostSession handlerInfo_ rhKey = do
     atomically $
       TM.lookup rhKey sessions >>= \case
         Nothing -> pure Nothing
-        Just (sessSeq, _) | maybe False (/= sessSeq) (fst <$> handlerInfo_) -> pure Nothing -- ignore cancel from a ghost session handler
+        Just (sessSeq, _) | maybe False ((sessSeq /=) . fst) handlerInfo_ -> pure Nothing -- ignore cancel from a ghost session handler
         Just (_, rhs) -> do
           TM.delete rhKey sessions
           modifyTVar' crh $ \cur -> if (RHId <$> cur) == Just rhKey then Nothing else cur -- only wipe the closing RH
@@ -268,7 +268,7 @@ cancelRemoteHostSession handlerInfo_ rhKey = do
   forM_ deregistered $ \session -> do
     liftIO $ cancelRemoteHost handlingError session `catchAny` (logError . tshow)
     forM_ (snd <$> handlerInfo_) $ \rhStopReason ->
-      toView $ CRRemoteHostStopped {remoteHostId_, rhsState = rhsSessionState session, rhStopReason}
+      toView CRRemoteHostStopped {remoteHostId_, rhsState = rhsSessionState session, rhStopReason}
   where
     handlingError = isJust handlerInfo_
     remoteHostId_ = case rhKey of
