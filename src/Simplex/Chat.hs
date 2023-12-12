@@ -3600,10 +3600,9 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               processIntro intro@GroupMemberIntro {introId} = do
                 void $ sendDirectMessage conn (XGrpMemIntro $ memberInfo (reMember intro)) (GroupId groupId)
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
-              -- TODO [batch send] send history batched
-              sendHistory = do
-                -- - check member version range is compatible with batchSendVRange
-                --   - send not batched if not compatible, or don't send?
+              sendHistory =
+                when (isCompatibleRange (memberChatVRange' m) batchSendVRange) $
+                  pure ()
                 -- - build list of messages forming latest history, possible approaches:
                 --   - retrieve events from 'messages' table as is and filter based on event type
                 --     - downside is that they are periodically cleaned up,
@@ -3620,7 +3619,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 --     - more complex - custom reconstruction of reactions, file descriptions, etc.
                 --   - in any case use XGrpMsgForward to wrap messages together with their original ts and sender id
                 -- - send messages in batches (sendBatchedDirectMessages)
-                pure ()
           _ -> do
             -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
             let memCategory = memberCategory m
