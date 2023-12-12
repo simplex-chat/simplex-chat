@@ -1027,6 +1027,7 @@ data ChatErrorType
   | CEContactNotActive {contact :: Contact}
   | CEContactDisabled {contact :: Contact}
   | CEConnectionDisabled {connection :: Connection}
+  | CELargeChatMsg {messageId :: Int64}
   | CEGroupUserRole {groupInfo :: GroupInfo, requiredRole :: GroupMemberRole}
   | CEGroupMemberInitialRole {groupInfo :: GroupInfo, initialRole :: GroupMemberRole}
   | CEContactIncognitoCantInvite

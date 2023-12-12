@@ -1791,6 +1791,7 @@ viewChatError logLevel testView = \case
     CEContactDisabled ct -> [ttyContact' ct <> ": disabled, to enable: " <> highlight ("/enable " <> viewContactName ct) <> ", to delete: " <> highlight ("/d " <> viewContactName ct)]
     CEContactNotActive c -> [ttyContact' c <> ": not active"]
     CEConnectionDisabled Connection {connId, connType} -> [plain $ "connection " <> textEncode connType <> " (" <> tshow connId <> ") is disabled" | logLevel <= CLLWarning]
+    CELargeChatMsg msgId -> ["large chat message, message_id=" <> sShow msgId]
     CEGroupDuplicateMember c -> ["contact " <> ttyContact c <> " is already in the group"]
     CEGroupDuplicateMemberId -> ["cannot add member - duplicate member ID"]
     CEGroupUserRole g role ->

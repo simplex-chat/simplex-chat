@@ -39,7 +39,7 @@ import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find, foldl', isSuffixOf, partition, sortBy, sortOn)
-import Data.List.NonEmpty (NonEmpty, nonEmpty)
+import Data.List.NonEmpty (NonEmpty (..), nonEmpty, toList)
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -120,7 +120,7 @@ import UnliftIO.STM
 
 -- this limit reserves space for metadata in forwarded messages
 -- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, round to 15610
-maxChatMsgSize :: Int64
+maxChatMsgSize :: Int
 maxChatMsgSize = 15610
 
 defaultChatConfig :: ChatConfig
@@ -5536,28 +5536,66 @@ createSndMessage chatMsgEvent connOrGroupId = do
     let msgBody = encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
      in NewMessage {chatMsgEvent, msgBody}
 
-sendBatchedDirectMessages :: (MsgEncodingI e, ChatMonad m) => Connection -> [ChatMsgEvent e] -> ConnOrGroupId -> m (SndMessage, Int64)
-sendBatchedDirectMessages conn events connOrGroupId = do
+sendBatchedDirectMessages :: forall e m. (MsgEncodingI e, ChatMonad m) => Connection -> NonEmpty (ChatMsgEvent e) -> ConnOrGroupId -> m ()
+sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
-  msg@SndMessage {msgId, msgBody} <- createBatchedSndMessage events connOrGroupId
-  (msg,) <$> deliverMessage' conn MsgFlags {notification = True} msgBody msgId
+  (errs, msgs) <- partitionEithers <$> createSndMessages
+  toView $ CRChatErrors Nothing (map ChatErrorStore errs)
+  forM_ (L.nonEmpty msgs) $ \msgs' -> do
+    let (largeMsgs, msgBatches) = partitionBatches $ batchChatMessages msgs'
+        errs' = map (\SndMessage {msgId} -> ChatError $ CELargeChatMsg msgId) largeMsgs
+    toView $ CRChatErrors Nothing errs'
+    forM_ msgBatches $ \(MessagesBatch batchMsgBody sndMsgs) -> do
+      agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) MsgFlags {notification = True} batchMsgBody
+      let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
+      withStore' $ \db -> forM_ sndMsgs $ \SndMessage {msgId} ->
+        createSndMsgDelivery db sndMsgDelivery msgId
+  where
+  createSndMessages :: m [Either StoreError SndMessage]
+  createSndMessages = do
+    gVar <- asks idsDrg
+    ChatConfig {chatVRange} <- asks config
+    withStore' $ \db -> forM (toList events) $ \event ->
+      runExceptT $ createNewSndMessage db gVar connOrGroupId (newMsg chatVRange event)
+  newMsg chatVRange chatMsgEvent sharedMsgId =
+    let msgBody = encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
+      in NewMessage {chatMsgEvent, msgBody}
+  partitionBatches :: [ChatMessageBatch] -> ([SndMessage], [MessagesBatch])
+  partitionBatches = foldr partition' ([], [])
+    where
+      partition' :: ChatMessageBatch -> ([SndMessage], [MessagesBatch]) -> ([SndMessage], [MessagesBatch])
+      partition' (CMBMessages msgBatch) (largeMsgs, msgBatches) = (largeMsgs, msgBatch : msgBatches)
+      partition' (CMBLargeMessage largeMsg) (largeMsgs, msgBatches) = (largeMsg : largeMsgs, msgBatches)
 
-createBatchedSndMessage :: (MsgEncodingI e, ChatMonad m) => [ChatMsgEvent e] -> ConnOrGroupId -> m SndMessage
-createBatchedSndMessage events connOrGroupId = do
-  gVar <- asks idsDrg
-  ChatConfig {chatVRange} <- asks config
-  -- TODO [batch send] save batched messages
-  -- - use tag of first event for 'chat_msg_event'?
-  -- - add flag 'batched'?
-  -- - loop:
-  --   - add events to batch while it fits max message size
-  --   - save batch as SndMessage, deliver it (deliverMessage')
-  -- - ChatMessage encoding should support list of ChatMsgEvents
-  -- - * return list of SndMessages? it's not necessary for current use cases
-  withStore $ \db -> createNewSndMessage db gVar connOrGroupId $ \sharedMsgId ->
-    let chatMsgEvent = XOk -- dummy
-        msgBody = encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
-     in NewMessage {chatMsgEvent, msgBody}
+data MessagesBatch = MessagesBatch ByteString [SndMessage]
+
+data ChatMessageBatch
+  = CMBMessages MessagesBatch
+  | CMBLargeMessage SndMessage
+
+batchChatMessages :: NonEmpty SndMessage -> [ChatMessageBatch]
+batchChatMessages = mkBatch []
+  where
+    mkBatch :: [ChatMessageBatch] -> NonEmpty SndMessage -> [ChatMessageBatch]
+    mkBatch bs msgs =
+      let (b, msgs_) = encodeBatch "[" 0 [] msgs
+          bs' = b : bs
+       in maybe bs' (mkBatch bs') msgs_
+    encodeBatch :: ByteString -> Int -> [SndMessage] -> NonEmpty SndMessage -> (ChatMessageBatch, Maybe (NonEmpty SndMessage))
+    encodeBatch s n batchedMsgs remainingMsgs@(msg :| msgs_)
+      | B.length s' <= maxChatMsgSize - 1 =
+          case L.nonEmpty msgs_ of
+            Just msgs' -> encodeBatch s' n' batchedMsgs' msgs'
+            Nothing -> (CMBMessages $ MessagesBatch (s' <> "]") (reverse batchedMsgs'), Nothing)
+      | n == 0 = (CMBLargeMessage msg, L.nonEmpty msgs_)
+      | otherwise = (CMBMessages $ MessagesBatch (s <> "]") (reverse batchedMsgs), Just remainingMsgs)
+      where
+        SndMessage {msgBody} = msg
+        s'
+          | n == 0 = s <> msgBody
+          | otherwise = s <> "," <> msgBody
+        n' = n + 1
+        batchedMsgs' = msg : batchedMsgs
 
 directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
 directMessage chatMsgEvent = do
