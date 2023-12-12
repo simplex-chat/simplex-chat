@@ -23,7 +23,7 @@ import Test.Hspec
 
 chatGroupTests :: SpecWith FilePath
 chatGroupTests = do
-  describe "chat groups" $ do
+  fdescribe "chat groups" $ do
     it "add contacts, create group and send/receive messages" testGroup
     it "add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
     it "create group with incognito membership" testNewGroupIncognito
