@@ -499,8 +499,8 @@ getChatPreviews db user withPCC pagination query = do
   where
     ts :: AChatPreviewData -> UTCTime
     ts (ACPD _ cpd) = case cpd of
-      (DirectChatPD t _ _) -> t
-      (GroupChatPD t _ _) -> t
+      (DirectChatPD t _ _ _) -> t
+      (GroupChatPD t _ _ _) -> t
       (ContactRequestPD t _) -> t
       (ContactConnectionPD t _) -> t
     sortTake = case pagination of
@@ -515,8 +515,8 @@ getChatPreviews db user withPCC pagination query = do
       SCTContactConnection -> let (ContactConnectionPD _ chat) = cpd in pure chat
 
 data ChatPreviewData (c :: ChatType) where
-  DirectChatPD :: UTCTime -> ContactId -> ChatStats -> ChatPreviewData 'CTDirect
-  GroupChatPD :: UTCTime -> GroupId -> ChatStats -> ChatPreviewData 'CTGroup
+  DirectChatPD :: UTCTime -> ContactId -> Maybe ChatItemId -> ChatStats -> ChatPreviewData 'CTDirect
+  GroupChatPD :: UTCTime -> GroupId -> Maybe ChatItemId -> ChatStats -> ChatPreviewData 'CTGroup
   ContactRequestPD :: UTCTime -> AChat -> ChatPreviewData 'CTContactRequest
   ContactConnectionPD :: UTCTime -> AChat -> ChatPreviewData 'CTContactConnection
 
@@ -537,13 +537,20 @@ findDirectChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatList
 findDirectChatPreviews_ db User {userId} pagination clq =
   map toPreview <$> getPreviews
   where
-    toPreview :: (ContactId, UTCTime) :. ChatStatsRow -> AChatPreviewData
-    toPreview ((contactId, ts) :. statsRow) =
-      ACPD SCTDirect $ DirectChatPD ts contactId (toChatStats statsRow)
+    toPreview :: (ContactId, UTCTime, Maybe ChatItemId) :. ChatStatsRow -> AChatPreviewData
+    toPreview ((contactId, ts, lastItemId_) :. statsRow) =
+      ACPD SCTDirect $ DirectChatPD ts contactId lastItemId_ (toChatStats statsRow)
     baseQuery =
       [sql|
-        SELECT ct.contact_id, ct.chat_ts as ts, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), ct.unread_chat
+        SELECT ct.contact_id, ct.chat_ts as ts, i.chat_item_id, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), ct.unread_chat
         FROM contacts ct
+        LEFT JOIN (
+          SELECT contact_id, chat_item_id, MAX(created_at)
+          FROM chat_items
+          GROUP BY contact_id
+        ) LastItems ON LastItems.contact_id = ct.contact_id
+        LEFT JOIN chat_items i ON i.contact_id = LastItems.contact_id
+                              AND i.chat_item_id = LastItems.chat_item_id
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
@@ -616,32 +623,31 @@ findDirectChatPreviews_ db User {userId} pagination clq =
           ([":user_id" := userId, ":rcv_new" := CISRcvNew, ":search" := search] <> pagParams)
 
 getDirectChatPreview_ :: DB.Connection -> User -> ChatPreviewData 'CTDirect -> ExceptT StoreError IO AChat
-getDirectChatPreview_ db user@User {userId} (DirectChatPD _ contactId stats) = do
+getDirectChatPreview_ db user (DirectChatPD _ contactId lastItemId_ stats) = do
   contact <- getContact db user contactId
-  lastItem <- getLastItem
+  lastItem <- case lastItemId_ of
+    Just lastItemId -> (: []) <$> getDirectChatItem db user contactId lastItemId
+    Nothing -> pure []
   pure $ AChat SCTDirect (Chat (DirectChat contact) lastItem stats)
-  where
-    getLastItem :: ExceptT StoreError IO [CChatItem 'CTDirect]
-    getLastItem =
-      liftIO getLastItemId >>= \case
-        Just (Just lastItemId, _) -> (: []) <$> getDirectChatItem db user contactId lastItemId
-        _ -> pure []
-    getLastItemId :: IO (Maybe (Maybe ChatItemId, Maybe UTCTime))
-    getLastItemId =
-      maybeFirstRow id $
-        DB.query db "SELECT chat_item_id, MAX(created_at) FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
 
 findGroupChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 findGroupChatPreviews_ db User {userId} pagination clq =
   map toPreview <$> getPreviews
   where
-    toPreview :: (GroupId, UTCTime) :. ChatStatsRow -> AChatPreviewData
-    toPreview ((groupId, ts) :. statsRow) =
-      ACPD SCTGroup $ GroupChatPD ts groupId (toChatStats statsRow)
+    toPreview :: (GroupId, UTCTime, Maybe ChatItemId) :. ChatStatsRow -> AChatPreviewData
+    toPreview ((groupId, ts, lastItemId_) :. statsRow) =
+      ACPD SCTGroup $ GroupChatPD ts groupId lastItemId_ (toChatStats statsRow)
     baseQuery =
       [sql|
-        SELECT g.group_id, g.chat_ts as ts, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), g.unread_chat
+        SELECT g.group_id, g.chat_ts as ts, i.chat_item_id, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), g.unread_chat
         FROM groups g
+        LEFT JOIN (
+          SELECT group_id, chat_item_id, MAX(item_ts)
+          FROM chat_items
+          GROUP BY group_id
+        ) LastItems ON LastItems.group_id = g.group_id
+        LEFT JOIN chat_items i ON i.group_id = LastItems.group_id
+                              AND i.chat_item_id = LastItems.chat_item_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
@@ -714,20 +720,12 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           ([":user_id" := userId, ":rcv_new" := CISRcvNew, ":search" := search] <> pagParams)
 
 getGroupChatPreview_ :: DB.Connection -> User -> ChatPreviewData 'CTGroup -> ExceptT StoreError IO AChat
-getGroupChatPreview_ db user@User {userId} (GroupChatPD _ groupId stats) = do
+getGroupChatPreview_ db user (GroupChatPD _ groupId lastItemId_ stats) = do
   groupInfo <- getGroupInfo db user groupId
-  lastItem <- getLastItem
+  lastItem <- case lastItemId_ of
+    Just lastItemId -> (: []) <$> getGroupChatItem db user groupId lastItemId
+    Nothing -> pure []
   pure $ AChat SCTGroup (Chat (GroupChat groupInfo) lastItem stats)
-  where
-    getLastItem :: ExceptT StoreError IO [CChatItem 'CTGroup]
-    getLastItem =
-      liftIO getLastItemId >>= \case
-        Just (Just lastItemId, _) -> (: []) <$> getGroupChatItem db user groupId lastItemId
-        _ -> pure []
-    getLastItemId :: IO (Maybe (Maybe ChatItemId, Maybe UTCTime))
-    getLastItemId =
-      maybeFirstRow id $
-        DB.query db "SELECT chat_item_id, MAX(item_ts) FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
 getContactRequestChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
