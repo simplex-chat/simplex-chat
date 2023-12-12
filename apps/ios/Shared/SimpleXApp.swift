@@ -26,10 +26,10 @@ struct SimpleXApp: App {
     @State private var showInitializationView = false
 
     init() {
-        DispatchQueue.global(qos: .background).sync {
+//        DispatchQueue.global(qos: .background).sync {
             haskell_init()
 //            hs_init(0, nil)
-        }
+//        }
         UserDefaults.standard.register(defaults: appDefaults)
         setGroupDefaults()
         registerGroupDefaults()
@@ -54,7 +54,7 @@ struct SimpleXApp: App {
                 }
                 .onAppear() {
                     showInitializationView = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                         initChatAndMigrate()
                     }
                 }
@@ -76,16 +76,19 @@ struct SimpleXApp: App {
                         NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
                         CallController.shared.shouldSuspendChat = false
-                        let appState = appStateGroupDefault.get()
-                        startChatAndActivate()
-                        if appState.inactive && chatModel.chatRunning == true {
-                            updateChats()
-                            if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
-                                updateCallInvitations()
+                        let appState = AppChatState.shared.value
+                        if appState != .stopped {
+                            startChatAndActivate {
+                                if appState.inactive && chatModel.chatRunning == true {
+                                    updateChats()
+                                    if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
+                                        updateCallInvitations()
+                                    }
+                                }
+                                doAuthenticate = authenticationExpired()
+                                canConnectCall = !(doAuthenticate && prefPerformLA) || unlockedRecently()
                             }
                         }
-                        doAuthenticate = authenticationExpired()
-                        canConnectCall = !(doAuthenticate && prefPerformLA) || unlockedRecently()
                     default:
                         break
                     }

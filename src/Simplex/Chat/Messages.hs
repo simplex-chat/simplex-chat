@@ -713,12 +713,6 @@ type ChatItemId = Int64
 
 type ChatItemTs = UTCTime
 
-data ChatPagination
-  = CPLast Int
-  | CPAfter ChatItemId Int
-  | CPBefore ChatItemId Int
-  deriving (Show)
-
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect
   SCTGroup :: SChatType 'CTGroup

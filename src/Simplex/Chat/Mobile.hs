@@ -15,6 +15,8 @@ import Control.Monad.Reader
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
+import Data.ByteArray (ScrubbedBytes)
+import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -44,7 +46,7 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, closeSQLiteStore)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, closeSQLiteStore, reopenSQLiteStore)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
@@ -70,7 +72,11 @@ $(JQ.deriveToJSON defaultJSON ''APIResponse)
 
 foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
 
+foreign export ccall "chat_migrate_init_key" cChatMigrateInitKey :: CString -> CString -> CInt -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
+
 foreign export ccall "chat_close_store" cChatCloseStore :: StablePtr ChatController -> IO CString
+
+foreign export ccall "chat_reopen_store" cChatReopenStore :: StablePtr ChatController -> IO CString
 
 foreign export ccall "chat_send_cmd" cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
 
@@ -102,7 +108,10 @@ foreign export ccall "chat_decrypt_file" cChatDecryptFile :: CString -> CString 
 
 -- | check / migrate database and initialize chat controller on success
 cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
-cChatMigrateInit fp key conf ctrl = do
+cChatMigrateInit fp key = cChatMigrateInitKey fp key 0
+
+cChatMigrateInitKey :: CString -> CString -> CInt -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
+cChatMigrateInitKey fp key keepKey conf ctrl = do
   -- ensure we are set to UTF-8; iOS does not have locale, and will default to
   -- US-ASCII all the time.
   setLocaleEncoding utf8
@@ -110,16 +119,21 @@ cChatMigrateInit fp key conf ctrl = do
   setForeignEncoding utf8
 
   dbPath <- peekCAString fp
-  dbKey <- peekCAString key
+  dbKey <- BA.convert <$> B.packCString key
   confirm <- peekCAString conf
   r <-
-    chatMigrateInit dbPath dbKey confirm >>= \case
+    chatMigrateInitKey dbPath dbKey (keepKey /= 0) confirm >>= \case
       Right cc -> (newStablePtr cc >>= poke ctrl) $> DBMOk
       Left e -> pure e
   newCStringFromLazyBS $ J.encode r
 
 cChatCloseStore :: StablePtr ChatController -> IO CString
 cChatCloseStore cPtr = deRefStablePtr cPtr >>= chatCloseStore >>= newCAString
+
+cChatReopenStore :: StablePtr ChatController -> IO CString
+cChatReopenStore cPtr = do
+  c <- deRefStablePtr cPtr
+  newCAString =<< chatReopenStore c
 
 -- | send command to chat (same syntax as in terminal for now)
 cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
@@ -162,13 +176,13 @@ cChatPasswordHash cPwd cSalt = do
 cChatValidName :: CString -> IO CString
 cChatValidName cName = newCString . mkValidName =<< peekCString cName
 
-mobileChatOpts :: String -> String -> ChatOpts
-mobileChatOpts dbFilePrefix dbKey =
+mobileChatOpts :: String -> ChatOpts
+mobileChatOpts dbFilePrefix =
   ChatOpts
     { coreOptions =
         CoreChatOpts
           { dbFilePrefix,
-            dbKey,
+            dbKey = "", -- for API database is already opened, and the key in options is not used
             smpServers = [],
             xftpServers = [],
             networkConfig = defaultNetworkConfig,
@@ -189,6 +203,7 @@ mobileChatOpts dbFilePrefix dbKey =
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
+      markRead = False,
       maintenance = True
     }
 
@@ -204,8 +219,11 @@ defaultMobileConfig =
 getActiveUser_ :: SQLiteStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 
-chatMigrateInit :: String -> String -> String -> IO (Either DBMigrationResult ChatController)
-chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
+chatMigrateInit :: String -> ScrubbedBytes -> String -> IO (Either DBMigrationResult ChatController)
+chatMigrateInit dbFilePrefix dbKey = chatMigrateInitKey dbFilePrefix dbKey False
+
+chatMigrateInitKey :: String -> ScrubbedBytes -> Bool -> String -> IO (Either DBMigrationResult ChatController)
+chatMigrateInitKey dbFilePrefix dbKey keepKey confirm = runExceptT $ do
   confirmMigrations <- liftEitherWith (const DBMInvalidConfirmation) $ strDecode $ B.pack confirm
   chatStore <- migrate createChatStore (chatStoreFile dbFilePrefix) confirmMigrations
   agentStore <- migrate createAgentStore (agentStoreFile dbFilePrefix) confirmMigrations
@@ -213,10 +231,10 @@ chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
   where
     initialize st db = do
       user_ <- getActiveUser_ st
-      newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix dbKey)
+      newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix)
     migrate createStore dbFile confirmMigrations =
       ExceptT $
-        (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey confirmMigrations)
+        (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey keepKey confirmMigrations)
           `catch` (pure . checkDBError)
           `catchAll` (pure . dbError)
       where
@@ -229,6 +247,11 @@ chatCloseStore :: ChatController -> IO String
 chatCloseStore ChatController {chatStore, smpAgent} = handleErr $ do
   closeSQLiteStore chatStore
   closeSQLiteStore $ agentClientStore smpAgent
+
+chatReopenStore :: ChatController -> IO String
+chatReopenStore ChatController {chatStore, smpAgent} = handleErr $ do
+  reopenSQLiteStore chatStore
+  reopenSQLiteStore (agentClientStore smpAgent)
 
 handleErr :: IO () -> IO String
 handleErr a = (a $> "") `catch` (pure . show @SomeException)
