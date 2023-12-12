@@ -1207,9 +1207,9 @@ public struct NetCfg: Codable, Equatable {
     public static let defaults: NetCfg = NetCfg(
         socksProxy: nil,
         sessionMode: TransportSessionMode.user,
-        tcpConnectTimeout: 15_000_000,
-        tcpTimeout: 10_000_000,
-        tcpTimeoutPerKb: 30_000,
+        tcpConnectTimeout: 20_000_000,
+        tcpTimeout: 15_000_000,
+        tcpTimeoutPerKb: 45_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 1200_000_000,
         smpPingCount: 3,
