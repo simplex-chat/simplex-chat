@@ -632,9 +632,9 @@ getDirectChatPreview_ db user@User {userId} (DirectChatPD _ contactId stats_) = 
     getLastItem :: ExceptT StoreError IO [CChatItem 'CTDirect]
     getLastItem =
       liftIO getLastItemId >>= \case
-        Nothing -> pure []
-        Just (lastItemId, _) -> (: []) <$> getDirectChatItem db user contactId lastItemId
-    getLastItemId :: IO (Maybe (ChatItemId, UTCTime))
+        Just (Just lastItemId, _) -> (: []) <$> getDirectChatItem db user contactId lastItemId
+        _ -> pure []
+    getLastItemId :: IO (Maybe (Maybe ChatItemId, Maybe UTCTime))
     getLastItemId =
       maybeFirstRow id $
         DB.query db "SELECT chat_item_id, MAX(created_at) FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
@@ -758,9 +758,9 @@ getGroupChatPreview_ db user@User {userId} (GroupChatPD _ groupId stats_) = do
     getLastItem :: ExceptT StoreError IO [CChatItem 'CTGroup]
     getLastItem =
       liftIO getLastItemId >>= \case
-        Nothing -> pure []
-        Just (lastItemId, _) -> (: []) <$> getGroupChatItem db user groupId lastItemId
-    getLastItemId :: IO (Maybe (ChatItemId, UTCTime))
+        Just (Just lastItemId, _) -> (: []) <$> getGroupChatItem db user groupId lastItemId
+        _ -> pure []
+    getLastItemId :: IO (Maybe (Maybe ChatItemId, Maybe UTCTime))
     getLastItemId =
       maybeFirstRow id $
         DB.query db "SELECT chat_item_id, MAX(item_ts) FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
