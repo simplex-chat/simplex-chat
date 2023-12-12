@@ -825,3 +825,7 @@ CREATE INDEX idx_chat_items_group_id_item_status ON chat_items(
   group_id,
   item_status
 );
+CREATE INDEX idx_chat_items_shared_msg_id_group_id ON chat_items(
+  shared_msg_id,
+  group_id
+);

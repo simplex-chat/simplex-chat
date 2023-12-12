@@ -623,7 +623,7 @@ findDirectChatPreviews_ db User {userId} pagination clq =
           ([":user_id" := userId, ":search" := search] <> pagParams)
 
 getDirectChatPreview_ :: DB.Connection -> User -> ChatPreviewData 'CTDirect -> ExceptT StoreError IO AChat
-getDirectChatPreview_ db user (DirectChatPD _ contactId stats_) = do
+getDirectChatPreview_ db user@User {userId} (DirectChatPD _ contactId stats_) = do
   contact <- getContact db user contactId
   lastItem <- getLastItem
   stats <- maybe getChatStats pure stats_
@@ -633,21 +633,11 @@ getDirectChatPreview_ db user (DirectChatPD _ contactId stats_) = do
     getLastItem =
       liftIO getLastItemId >>= \case
         Nothing -> pure []
-        Just lastItemId -> (: []) <$> getDirectChatItem db user contactId lastItemId
-    getLastItemId :: IO (Maybe ChatItemId)
+        Just (lastItemId, _) -> (: []) <$> getDirectChatItem db user contactId lastItemId
+    getLastItemId :: IO (Maybe (ChatItemId, UTCTime))
     getLastItemId =
-      maybeFirstRow fromOnly $
-        DB.query
-          db
-          [sql|
-            SELECT chat_item_id FROM (
-              SELECT contact_id, chat_item_id, MAX(created_at)
-              FROM chat_items
-              WHERE contact_id = ?
-              GROUP BY contact_id
-            )
-          |]
-          (Only contactId)
+      maybeFirstRow id $
+        DB.query db "SELECT chat_item_id, MAX(created_at) FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
     getChatStats :: ExceptT StoreError IO ChatStats
     getChatStats = do
       r_ <- liftIO getUnreadStats
@@ -759,7 +749,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           ([":user_id" := userId, ":search" := search] <> pagParams)
 
 getGroupChatPreview_ :: DB.Connection -> User -> ChatPreviewData 'CTGroup -> ExceptT StoreError IO AChat
-getGroupChatPreview_ db user (GroupChatPD _ groupId stats_) = do
+getGroupChatPreview_ db user@User {userId} (GroupChatPD _ groupId stats_) = do
   groupInfo <- getGroupInfo db user groupId
   lastItem <- getLastItem
   stats <- maybe getChatStats pure stats_
@@ -769,21 +759,11 @@ getGroupChatPreview_ db user (GroupChatPD _ groupId stats_) = do
     getLastItem =
       liftIO getLastItemId >>= \case
         Nothing -> pure []
-        Just lastItemId -> (: []) <$> getGroupChatItem db user groupId lastItemId
-    getLastItemId :: IO (Maybe ChatItemId)
+        Just (lastItemId, _) -> (: []) <$> getGroupChatItem db user groupId lastItemId
+    getLastItemId :: IO (Maybe (ChatItemId, UTCTime))
     getLastItemId =
-      maybeFirstRow fromOnly $
-        DB.query
-          db
-          [sql|
-            SELECT chat_item_id FROM (
-              SELECT group_id, chat_item_id, MAX(item_ts)
-              FROM chat_items
-              WHERE group_id = ?
-              GROUP BY group_id
-            )
-          |]
-          (Only groupId)
+      maybeFirstRow id $
+        DB.query db "SELECT chat_item_id, MAX(item_ts) FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
     getChatStats :: ExceptT StoreError IO ChatStats
     getChatStats = do
       r_ <- liftIO getUnreadStats
