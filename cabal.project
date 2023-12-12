@@ -23,11 +23,6 @@ source-repository-package
 
 source-repository-package
     type: git
-    location: https://github.com/kazu-yamamoto/http2.git
-    tag: f5525b755ff2418e6e6ecc69e877363b0d0bcaeb
-
-source-repository-package
-    type: git
     location: https://github.com/simplex-chat/direct-sqlcipher.git
     tag: f814ee68b16a9447fbb467ccc8f29bdd3546bfd9
 
