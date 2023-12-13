@@ -8,8 +8,8 @@
 module MobileTests where
 
 import ChatTests.Utils
+import Control.Concurrent.STM
 import Control.Monad.Except
-import Crypto.Random (getRandomBytes)
 import Data.Aeson (FromJSON)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
@@ -227,8 +227,9 @@ testChatApi tmp = do
 
 testMediaApi :: HasCallStack => FilePath -> IO ()
 testMediaApi _ = do
-  key :: ByteString <- getRandomBytes 32
-  frame <- getRandomBytes 100
+  g <- C.newRandom
+  key <- atomically $ C.randomBytes 32 g
+  frame <- atomically $ C.randomBytes 100 g
   let keyStr = strEncode key
       reserved = B.replicate (C.authTagSize + C.gcmIVSize) 0
       frame' = frame <> reserved
@@ -239,8 +240,9 @@ testMediaApi _ = do
 
 testMediaCApi :: HasCallStack => FilePath -> IO ()
 testMediaCApi _ = do
-  key :: ByteString <- getRandomBytes 32
-  frame <- getRandomBytes 100
+  g <- C.newRandom
+  key <- atomically $ C.randomBytes 32 g
+  frame <- atomically $ C.randomBytes 100 g
   let keyStr = strEncode key
       reserved = B.replicate (C.authTagSize + C.gcmIVSize) 0
       frame' = frame <> reserved
@@ -292,7 +294,7 @@ testMissingFileCApi :: FilePath -> IO ()
 testMissingFileCApi tmp = do
   let path = tmp </> "missing_file"
   cPath <- newCString path
-  CFArgs key nonce <- CF.randomArgs
+  CFArgs key nonce <- atomically . CF.randomArgs =<< C.newRandom
   cKey <- encodedCString key
   cNonce <- encodedCString nonce
   ptr <- cChatReadFile cPath cKey cNonce
@@ -327,7 +329,7 @@ testMissingFileEncryptionCApi tmp = do
   r <- peekCAString =<< cChatEncryptFile cFromPath cToPath
   Just (WFError err) <- jDecode r
   err `shouldContain` fromPath
-  CFArgs key nonce <- CF.randomArgs
+  CFArgs key nonce <- atomically . CF.randomArgs =<< C.newRandom
   cKey <- encodedCString key
   cNonce <- encodedCString nonce
   let toPath' = tmp </> "missing_file.decrypted.pdf"

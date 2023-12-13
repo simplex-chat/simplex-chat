@@ -43,7 +43,7 @@ chatEncryptMedia :: ByteString -> ByteString -> ExceptT String IO ByteString
 chatEncryptMedia keyStr frame = do
   len <- checkFrameLen frame
   key <- decodeKey keyStr
-  iv <- liftIO C.randomGCMIV
+  iv <- liftIO C.randomGCMIV'
   (tag, frame') <- withExceptT show $ C.encryptAESNoPad key iv $ B.take len frame
   pure $ frame' <> BA.convert (C.unAuthTag tag) <> C.unGCMIV iv
 

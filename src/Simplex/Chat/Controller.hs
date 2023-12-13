@@ -179,7 +179,7 @@ data ChatController = ChatController
     agentAsync :: TVar (Maybe (Async (), Maybe (Async ()))),
     chatStore :: SQLiteStore,
     chatStoreChanged :: TVar Bool, -- if True, chat should be fully restarted
-    idsDrg :: TVar ChaChaDRG,
+    random :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, Maybe RemoteHostId, ChatResponse),
     connNetworkStatuses :: TMap AgentConnId NetworkStatus,

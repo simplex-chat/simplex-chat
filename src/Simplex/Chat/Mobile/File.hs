@@ -56,7 +56,7 @@ cChatWriteFile cPath ptr len = do
 
 chatWriteFile :: FilePath -> ByteString -> IO WriteFileResult
 chatWriteFile path s = do
-  cfArgs <- CF.randomArgs
+  cfArgs <- CF.randomArgs'
   let file = CryptoFile path $ Just cfArgs
   either WFError (\_ -> WFResult cfArgs)
     <$> runCatchExceptT (withExceptT show $ CF.writeFile file $ LB.fromStrict s)
@@ -99,7 +99,7 @@ chatEncryptFile fromPath toPath =
   either WFError WFResult <$> runCatchExceptT encrypt
   where
     encrypt = do
-      cfArgs <- liftIO CF.randomArgs
+      cfArgs <- liftIO CF.randomArgs'
       encryptFile fromPath toPath cfArgs
       pure cfArgs
 
