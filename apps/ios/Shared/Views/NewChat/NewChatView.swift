@@ -397,7 +397,6 @@ private struct ConnectView: View {
         }
     }
 
-    // TODO scan is only attempted once
     private func processQRCode(_ resp: Result<ScanResult, ScanError>) {
         switch resp {
         case let .success(r):
