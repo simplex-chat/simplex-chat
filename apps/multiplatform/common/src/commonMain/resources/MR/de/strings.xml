@@ -341,7 +341,6 @@
     <string name="this_string_is_not_a_connection_link">Diese Zeichenfolge entspricht keinem gültigen Verbindungslink!</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Sie können sich auch verbinden, indem Sie auf den Link klicken. Wenn er im Browser geöffnet wird, klicken Sie auf die Schaltfläche „<b>In mobiler App öffnen</b>“.]]></string>
     <!-- CreateLinkView.kt -->
-    <string name="create_one_time_link">Einmal-Einladungslink erstellen</string>
     <string name="one_time_link">Einmal-Einladungslink</string>
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Ihre Einstellungen</string>

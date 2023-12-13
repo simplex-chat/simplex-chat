@@ -338,7 +338,6 @@
     <string name="connected_to_mobile">Kapcsolódva a mobilhoz</string>
     <string name="current_passphrase">Jelenlegi jelmondat…</string>
     <string name="choose_file_title">Fájl választása</string>
-    <string name="create_one_time_link">Egyszer használatos meghívó link létrehozása</string>
     <string name="delete_image">Kép törlése</string>
     <string name="smp_server_test_create_file">Fájl létrehozása</string>
     <string name="create_secret_group_title">Tikos csoport létrehozása</string>

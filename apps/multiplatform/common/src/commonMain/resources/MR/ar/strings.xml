@@ -199,7 +199,6 @@
     <string name="smp_server_test_compare_file">قارن الملف</string>
     <string name="icon_descr_server_status_error">خطأ</string>
     <string name="create_group">إنشاء مجموعة سرية</string>
-    <string name="create_one_time_link">إنشاء رابط دعوة لمرة واحدة</string>
     <string name="error_aborting_address_change">خطأ في إحباط تغيير العنوان</string>
     <string name="auth_enable_simplex_lock">تفعيل قفل SimpleX</string>
     <string name="auth_confirm_credential">تأكد من بيانات الاعتماد الخاصة بك</string>

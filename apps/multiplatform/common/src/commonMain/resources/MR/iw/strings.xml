@@ -219,7 +219,6 @@
     <string name="copied">הועתק ללוח</string>
     <string name="share_one_time_link">צור קישור הזמנה חד־פעמי</string>
     <string name="create_group">צור קבוצה סודית</string>
-    <string name="create_one_time_link">צור קישור הזמנה חד־פעמי</string>
     <string name="contribute">תרומה</string>
     <string name="core_version">גרסת ליבה: v%s</string>
     <string name="create_address">צור כתובת</string>

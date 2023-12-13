@@ -209,7 +209,6 @@
     <string name="you_will_be_connected_when_group_host_device_is_online">Ke skupině budete připojeni, až bude zařízení hostitele skupiny online, vyčkejte prosím nebo se podívejte později!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Budete připojeni, jakmile bude vaše žádost o připojení přijata, vyčkejte prosím nebo se podívejte později!</string>
     <string name="connection_request_sent">Požadavek na připojení byl odeslán!</string>
-    <string name="create_one_time_link">Vytvořit jednorázovou pozvánku</string>
     <string name="one_time_link">Jednorázová pozvánka</string>
     <string name="security_code">Bezpečnostní kód</string>
     <string name="is_verified">%s je ověřeno</string>

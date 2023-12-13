@@ -246,7 +246,6 @@
     <string name="paste_button">Coller</string>
     <string name="this_string_is_not_a_connection_link">Cette chaîne n\'est pas un lien de connexion !</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Vous pouvez aussi vous connecter en cliquant sur le lien. Si il s\'ouvre dans le navigateur, cliquez sur <b>Ouvrir dans l\'app mobile</b>.]]></string>
-    <string name="create_one_time_link">Créer un lien d\'invitation unique</string>
     <string name="text_field_set_contact_placeholder">Définir le nom du contact…</string>
     <string name="icon_descr_server_status_disconnected">Déconnecté</string>
     <string name="icon_descr_server_status_error">Erreur</string>

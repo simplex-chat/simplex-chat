@@ -1,31 +1,18 @@
 package chat.simplex.common.views.newchat
 
-import SectionBottomSpacer
 import SectionItemView
-import SectionTextFooter
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
-import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import dev.icerock.moko.resources.compose.stringResource
-import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import java.net.URI
-
-@Composable
-expect fun ScanToConnectView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit)
 
 enum class ConnectionLinkType {
   INVITATION, CONTACT, GROUP
@@ -36,7 +23,9 @@ suspend fun planAndConnect(
   rhId: Long?,
   uri: URI,
   incognito: Boolean?,
-  close: (() -> Unit)?
+  close: (() -> Unit)?,
+  filterKnownContact: ((Contact) -> Unit)? = null,
+  filterKnownGroup: ((GroupInfo) -> Unit)? = null,
 ) {
   val connectionPlan = chatModel.controller.apiConnectPlan(rhId, uri.toString())
   if (connectionPlan != null) {
@@ -436,79 +425,5 @@ fun openKnownGroup(chatModel: ChatModel, rhId: Long?, close: (() -> Unit)?, grou
       close?.invoke()
       openGroupChat(rhId, groupInfo.groupId, chatModel)
     }
-  }
-}
-
-@Composable
-fun ConnectContactLayout(
-  chatModel: ChatModel,
-  rh: RemoteHostInfo?,
-  incognitoPref: SharedPreference<Boolean>,
-  close: () -> Unit
-) {
-  val incognito = remember { mutableStateOf(incognitoPref.get()) }
-
-  @Composable
-  fun QRCodeScanner(close: () -> Unit) {
-    QRCodeScanner { connReqUri ->
-      try {
-        val uri = URI(connReqUri)
-        withApi {
-          planAndConnect(chatModel, rh?.remoteHostId, uri, incognito = incognito.value, close)
-        }
-      } catch (e: RuntimeException) {
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.invalid_QR_code),
-          text = generalGetString(MR.strings.this_QR_code_is_not_a_link)
-        )
-      }
-    }
-  }
-
-  Column(
-    Modifier.verticalScroll(rememberScrollState()).padding(horizontal = DEFAULT_PADDING),
-    verticalArrangement = Arrangement.SpaceBetween
-  ) {
-    AppBarTitle(stringResource(MR.strings.scan_QR_code), hostDevice(rh?.remoteHostId), withPadding = false)
-    Box(
-      Modifier
-        .fillMaxWidth()
-        .aspectRatio(ratio = 1F)
-        .padding(bottom = 12.dp)
-    ) { QRCodeScanner(close) }
-
-    IncognitoToggle(incognitoPref, incognito) { ModalManager.start.showModal { IncognitoView() } }
-
-    SectionTextFooter(
-      buildAnnotatedString {
-        append(sharedProfileInfo(chatModel, incognito.value))
-        append("\n\n")
-        append(annotatedStringResource(MR.strings.if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link))
-      }
-    )
-
-    SectionBottomSpacer()
-  }
-}
-
-fun URI.getQueryParameter(param: String): String? {
-  if (!query.contains("$param=")) return null
-  return query.substringAfter("$param=").substringBefore("&")
-}
-
-@Preview/*(
-  uiMode = Configuration.UI_MODE_NIGHT_YES,
-  showBackground = true,
-  name = "Dark Mode"
-)*/
-@Composable
-fun PreviewConnectContactLayout() {
-  SimpleXTheme {
-    ConnectContactLayout(
-      chatModel = ChatModel,
-      rh = null,
-      incognitoPref = SharedPreference({ false }, {}),
-      close = {},
-    )
   }
 }

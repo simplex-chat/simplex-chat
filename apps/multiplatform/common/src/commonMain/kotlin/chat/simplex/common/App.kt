@@ -107,7 +107,7 @@ fun MainScreen() {
     val localUserCreated = chatModel.localUserCreated.value
     var showInitializationView by remember { mutableStateOf(false) }
     when {
-      chatModel.chatDbStatus.value == null && showInitializationView -> InitializationView()
+      chatModel.chatDbStatus.value == null && showInitializationView -> DefaultProgressView(stringResource(MR.strings.opening_database))
       showChatDatabaseError -> {
         chatModel.chatDbStatus.value?.let {
           DatabaseErrorView(chatModel.chatDbStatus, chatModel.controller.appPrefs)
@@ -322,22 +322,6 @@ fun DesktopScreen(settingsState: SettingsViewState) {
       userPickerState.value = AnimatedViewState.GONE
     }
     ModalManager.fullscreen.showInView()
-  }
-}
-
-@Composable
-fun InitializationView() {
-  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      CircularProgressIndicator(
-        Modifier
-          .padding(bottom = DEFAULT_PADDING)
-          .size(30.dp),
-        color = MaterialTheme.colors.secondary,
-        strokeWidth = 2.5.dp
-      )
-      Text(stringResource(MR.strings.opening_database))
-    }
   }
 }
 

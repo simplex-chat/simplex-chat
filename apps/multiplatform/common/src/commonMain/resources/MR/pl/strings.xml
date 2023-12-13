@@ -933,7 +933,6 @@
     <string name="connection_error_auth">Błąd połączenia (UWIERZYTELNIANIE)</string>
     <string name="connect_via_link_or_qr">Połącz się przez link / kod QR</string>
     <string name="archive_created_on_ts">Utworzony na %1$s</string>
-    <string name="create_one_time_link">Utwórz jednorazowy link do zaproszenia</string>
     <string name="create_group">Utwórz tajną grupę</string>
     <string name="create_secret_group_title">Utwórz tajną grupę</string>
     <string name="set_password_to_export_desc">Baza danych jest zaszyfrowana przy użyciu losowego hasła. Proszę zmienić je przed eksportem.</string>

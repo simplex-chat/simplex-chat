@@ -356,7 +356,6 @@
     <string name="this_link_is_not_a_valid_connection_link">Це посилання не є дійсним посиланням для підключення!</string>
     <string name="connection_request_sent">Запит на підключення відправлено!</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Ви також можете підключитися за посиланням. Якщо воно відкриється в браузері, натисніть кнопку <b>Відкрити в мобільному додатку</b>.]]></string>
-    <string name="create_one_time_link">Створіть одноразове посилання-запрошення</string>
     <string name="scan_code">Сканувати код</string>
     <string name="scan_code_from_contacts_app">Відскануйте код безпеки з додатку вашого контакту.</string>
     <string name="smp_servers_invalid_address">Неправильна адреса сервера!</string>

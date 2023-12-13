@@ -289,7 +289,7 @@ fun GroupMemberInfoLayout(
 
     if (member.contactLink != null) {
       SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
-        SimpleXLinkQRCode(member.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+        SimpleXLinkQRCode(member.contactLink)
         val clipboard = LocalClipboardManager.current
         ShareAddressButton { clipboard.shareText(simplexChatLink(member.contactLink)) }
         if (contactId != null) {

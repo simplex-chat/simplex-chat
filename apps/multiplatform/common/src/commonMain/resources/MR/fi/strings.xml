@@ -232,7 +232,6 @@
     <string name="clear_verb">Tyhjennä</string>
     <string name="clear_chat_button">Tyhjennä keskustelu</string>
     <string name="clear_chat_question">Tyhjennä keskustelu\?</string>
-    <string name="create_one_time_link">Luo kertaluonteinen kutsulinkki</string>
     <string name="app_version_name">Sovellusversio: v%s</string>
     <string name="callstatus_calling">soittaa…</string>
     <string name="delete_chat_profile">Poista keskusteluprofiili</string>

@@ -73,11 +73,14 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
       }
     } else {
       val savedOnboardingStage = appPreferences.onboardingStage.get()
-      appPreferences.onboardingStage.set(if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {
+      val newStage = if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {
         OnboardingStage.Step3_CreateSimpleXAddress
       } else {
         savedOnboardingStage
-      })
+      }
+      if (appPreferences.onboardingStage.get() != newStage) {
+        appPreferences.onboardingStage.set(newStage)
+      }
       if (appPreferences.onboardingStage.get() == OnboardingStage.OnboardingComplete && !chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.get()) {
         chatModel.setDeliveryReceipts.value = true
       }

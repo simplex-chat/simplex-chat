@@ -293,6 +293,7 @@
   <string name="no_filtered_chats">No filtered chats</string>
   <string name="contact_tap_to_connect">Tap to Connect</string>
   <string name="connect_with_contact_name_question">Connect with %1$s?</string>
+  <string name="search_or_paste_simplex_link">Search or paste SimpleX link</string>
 
   <!-- ChatView.kt -->
   <string name="no_selected_chat">No selected chat</string>
@@ -543,11 +544,23 @@
   <string name="this_string_is_not_a_connection_link">This string is not a connection link!</string>
   <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[You can also connect by clicking the link. If it opens in the browser, click <b>Open in mobile app</b> button.]]></string>
 
-  <!-- CreateLinkView.kt -->
-  <string name="create_one_time_link">Create one-time invitation link</string>
+  <!-- NewChatView.kt -->
+  <string name="new_chat">New chat</string>
+  <string name="add_contact_tab">Add contact</string>
   <string name="one_time_link">One-time invitation link</string>
   <string name="one_time_link_short">1-time link</string>
   <string name="simplex_address">SimpleX address</string>
+  <string name="or_show_this_qr_code">Or show this code</string>
+  <string name="or_scan_qr_code">Or scan QR code</string>
+  <string name="keep_unused_invitation_question">Keep unused invitation?</string>
+  <string name="you_can_view_invitation_link_again">You can view invitation link again in connection details.</string>
+  <string name="keep_invitation_link">Keep</string>
+  <string name="creating_link">Creating link…</string>
+  <string name="retry_verb">Retry</string>
+  <string name="share_this_1_time_link">Share this 1-time invite link</string>
+  <string name="paste_the_link_you_received">Paste the link you received</string>
+  <string name="the_text_you_pasted_is_not_a_link">The text you pasted is not a SimpleX link.</string>
+  <string name="tap_to_paste_link">Tap to paste link</string>
 
   <!-- ScanCodeView.kt -->
   <string name="scan_code">Scan code</string>

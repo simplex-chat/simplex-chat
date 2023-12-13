@@ -3,7 +3,6 @@
     <string name="notifications">Bildirimler</string>
     <string name="connect_via_link_or_qr">Bağlantı ya da karekod ile bağlan</string>
     <string name="create_group">Gizli grup oluştur</string>
-    <string name="create_one_time_link">Tek seferlik davet bağlantısı oluştur</string>
     <string name="your_simplex_contact_address">SimpleX addresin</string>
     <string name="callstatus_missed">cevapsız çağrı</string>
     <string name="incoming_video_call">Gelen görüntülü arama</string>

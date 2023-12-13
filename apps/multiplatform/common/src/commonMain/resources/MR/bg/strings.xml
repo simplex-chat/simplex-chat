@@ -404,7 +404,6 @@
     <string name="delete_contact_menu_action">Изтрий</string>
     <string name="delete_group_menu_action">Изтрий</string>
     <string name="connect_via_link">Свърване чрез линк</string>
-    <string name="create_one_time_link">Създай линк за еднократна покана</string>
     <string name="database_passphrase_and_export">Парола за базата данни и експортиране</string>
     <string name="contribute">Допринеси</string>
     <string name="continue_to_next_step">Продължи</string>

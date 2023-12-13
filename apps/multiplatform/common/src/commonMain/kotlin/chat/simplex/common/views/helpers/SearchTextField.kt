@@ -34,6 +34,8 @@ fun SearchTextField(
   alwaysVisible: Boolean,
   searchText: MutableState<TextFieldValue> = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) },
   placeholder: String = stringResource(MR.strings.search_verb),
+  enabled: Boolean = true,
+  trailingContent: @Composable (() -> Unit)? = null,
   onValueChange: (String) -> Unit
 ) {
   val focusRequester = remember { FocusRequester() }
@@ -54,7 +56,6 @@ fun SearchTextField(
     }
   }
 
-  val enabled = true
   val colors = TextFieldDefaults.textFieldColors(
     backgroundColor = Color.Unspecified,
     textColor = MaterialTheme.colors.onBackground,
@@ -77,6 +78,7 @@ fun SearchTextField(
       searchText.value = it
       onValueChange(it.text)
     },
+    enabled = rememberUpdatedState(enabled).value,
     cursorBrush = SolidColor(colors.cursorColor(false).value),
     visualTransformation = VisualTransformation.None,
     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -105,7 +107,7 @@ fun SearchTextField(
           }) {
             Icon(painterResource(MR.images.ic_close), stringResource(MR.strings.icon_descr_close_button), tint = MaterialTheme.colors.primary,)
           }
-        }} else null,
+        }} else trailingContent,
         singleLine = true,
         enabled = enabled,
         interactionSource = interactionSource,

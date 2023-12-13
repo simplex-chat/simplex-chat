@@ -366,7 +366,6 @@
     <string name="connection_error">Erro de conexão</string>
     <string name="connection_local_display_name">conexão %1$d</string>
     <string name="contact_already_exists">O contato já existe</string>
-    <string name="create_one_time_link">Criar convite de ligação de utilização única</string>
     <string name="one_time_link">Convite de ligação de utilização única</string>
     <string name="save_servers_button">Salvar</string>
     <string name="settings_section_title_incognito">Modo anónimo</string>

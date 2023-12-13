@@ -339,7 +339,6 @@
     <string name="connect_button">Соединиться</string>
     <string name="paste_button">Вставить</string>
     <!-- CreateLinkView.kt -->
-    <string name="create_one_time_link">Создать одноразовую ссылку</string>
     <string name="one_time_link">Одноразовая ссылка</string>
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>

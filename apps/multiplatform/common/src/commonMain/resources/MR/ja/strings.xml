@@ -524,7 +524,6 @@
     <string name="mute_chat">ミュート</string>
     <string name="delete_pending_connection__question">接続待ちの繋がりを削除しますか？</string>
     <string name="connect_button">接続</string>
-    <string name="create_one_time_link">使い捨てリンクを発行する</string>
     <string name="one_time_link">使い捨ての招待リンク</string>
     <string name="database_passphrase_and_export">データベース暗証フレーズとエキスポート</string>
     <string name="how_to_use_simplex_chat">使い方</string>

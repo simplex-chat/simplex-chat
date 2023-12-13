@@ -81,7 +81,6 @@
     <string name="both_you_and_your_contact_can_send_disappearing">Tanto tú como tu contacto podéis enviar mensajes temporales.</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Escanear código QR</b>: para conectar con tu contacto mediante su código QR.]]></string>
     <string name="create_profile_button">Crear</string>
-    <string name="create_one_time_link">Crea enlace de invitación de un uso</string>
     <string name="create_group">Crea grupo secreto</string>
     <string name="database_passphrase_will_be_updated">La contraseña de cifrado de la base de datos será actualizada.</string>
     <string name="info_row_database_id">ID base de datos</string>

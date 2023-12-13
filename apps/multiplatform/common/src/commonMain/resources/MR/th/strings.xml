@@ -205,7 +205,6 @@
     <string name="icon_descr_close_button">ปุ่มปิด</string>
     <string name="connect_button">เชื่อมต่อ</string>
     <string name="connect_via_link">เชื่อมต่อผ่านลิงก์</string>
-    <string name="create_one_time_link">สร้างลิงก์เชิญแบบใช้ครั้งเดียว</string>
     <string name="clear_verification">ล้างการยืนยัน</string>
     <string name="chat_console">คอนโซลแชท</string>
     <string name="smp_servers_check_address">ตรวจสอบที่อยู่เซิร์ฟเวอร์แล้วลองอีกครั้ง</string>

@@ -202,7 +202,6 @@
     <string name="status_contact_has_e2e_encryption">대화 상대와 종단간 암호화됨</string>
     <string name="alert_title_contact_connection_pending">대화 상대와 아직 연결되지 않았습니다!</string>
     <string name="archive_created_on_ts">%1$s에 생성 완료</string>
-    <string name="create_one_time_link">일회용 초대 링크 생성</string>
     <string name="create_secret_group_title">비밀 그룹 생성</string>
     <string name="accept_contact_incognito_button">익명 수락</string>
     <string name="chat_item_ttl_month">1개월</string>

@@ -14,7 +14,7 @@ import boofcv.alg.drawing.FiducialImageEngine
 import boofcv.alg.fiducial.qrcode.*
 import chat.simplex.common.model.CryptoFile
 import chat.simplex.common.platform.*
-import chat.simplex.common.ui.theme.SimpleXTheme
+import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.launch
@@ -23,14 +23,18 @@ import kotlinx.coroutines.launch
 fun SimpleXLinkQRCode(
   connReq: String,
   modifier: Modifier = Modifier,
+  padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
   tintColor: Color = Color(0xff062d56),
-  withLogo: Boolean = true
+  withLogo: Boolean = true,
+  onShare: (() -> Unit)? = null,
 ) {
   QRCode(
     simplexChatLink(connReq),
     modifier,
+    padding,
     tintColor,
-    withLogo
+    withLogo,
+    onShare,
   )
 }
 
@@ -46,8 +50,10 @@ fun simplexChatLink(uri: String): String {
 fun QRCode(
   connReq: String,
   modifier: Modifier = Modifier,
+  padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
   tintColor: Color = Color(0xff062d56),
-  withLogo: Boolean = true
+  withLogo: Boolean = true,
+  onShare: (() -> Unit)? = null,
 ) {
   val scope = rememberCoroutineScope()
 
@@ -61,7 +67,9 @@ fun QRCode(
       bitmap = qr,
       contentDescription = stringResource(MR.strings.image_descr_qr_code),
       Modifier
-        .widthIn(max = 360.dp)
+        .widthIn(max = 300.dp)
+        .aspectRatio(1f)
+        .padding(padding)
         .then(modifier)
         .clickable {
           scope.launch {
@@ -70,6 +78,7 @@ fun QRCode(
             val file = saveTempImageUncompressed(image, false)
             if (file != null) {
               shareFile("", CryptoFile.plain(file.absolutePath))
+              onShare?.invoke()
             }
           }
         }

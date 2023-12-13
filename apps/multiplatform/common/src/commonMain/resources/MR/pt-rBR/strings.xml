@@ -374,7 +374,6 @@
     <string name="auth_device_authentication_is_disabled_turning_off">A autenticação do dispositivo está desativada. Desativando o bloqueio SimpleX.</string>
     <string name="for_everybody">Para todos</string>
     <string name="notification_preview_mode_hidden">Oculto</string>
-    <string name="create_one_time_link">Gerar um link de convite de uso único.</string>
     <string name="how_to_use_your_servers">Como usar seus servidores</string>
     <string name="import_database_confirmation">Importar</string>
     <string name="import_database_question">Importar banco de dados de chat\?</string>

@@ -338,7 +338,6 @@
     <string name="create_secret_group_title">创建私密群组</string>
     <string name="v4_5_multiple_chat_profiles_descr">不同的名字、头像和传输隔离。</string>
     <string name="v4_4_french_interface">法语界面</string>
-    <string name="create_one_time_link">创建一次性邀请链接</string>
     <string name="how_to_use_simplex_chat">如何使用它</string>
     <string name="server_error">错误</string>
     <string name="display_name_connecting">连接中……</string>

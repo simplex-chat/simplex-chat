@@ -424,7 +424,6 @@
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 桌面版：在應用程式內掃描一個已存在的二維碼，透過 <b>掃描二維碼</b>。]]></string>
     <string name="icon_descr_settings">設定</string>
     <string name="this_QR_code_is_not_a_link">這個二維碼不是一個連結！</string>
-    <string name="create_one_time_link">建立一次性邀請連結</string>
     <string name="network_use_onion_hosts_prefer">當可行的時候</string>
     <string name="core_version">核心版本：v%s</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>

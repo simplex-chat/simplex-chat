@@ -117,7 +117,6 @@
     <string name="image_descr_qr_code">QR kodas</string>
     <string name="icon_descr_help">pagalba</string>
     <string name="icon_descr_email">El. paštas</string>
-    <string name="create_one_time_link">Sukurti vienkartinio pakvietimo nuorodą</string>
     <string name="scan_code">Skenuoti kodą</string>
     <string name="database_passphrase_and_export">Duomenų bazės slaptafrazė ir eksportavimas</string>
     <string name="smp_servers_delete_server">Ištrinti serverį</string>

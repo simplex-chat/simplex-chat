@@ -319,7 +319,6 @@
     <string name="clear_verification">Annulla la verifica</string>
     <string name="connect_button">Connetti</string>
     <string name="connect_via_link">Connetti via link</string>
-    <string name="create_one_time_link">Crea link di invito una tantum</string>
     <string name="database_passphrase_and_export">Password del database ed esportazione</string>
     <string name="smp_servers_enter_manually">Inserisci il server manualmente</string>
     <string name="how_to_use_simplex_chat">Come si usa</string>
