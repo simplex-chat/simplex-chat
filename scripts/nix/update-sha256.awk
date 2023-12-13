@@ -11,7 +11,7 @@ BEGIN {
 /tag/ && isGit == true { ref=$2 }
 
 isGit == true && loc != "" && ref != "" {
-  cmd = "nix-prefetch-git --quiet "loc" "ref" | jq -r .sha256"
+  cmd = "nix-prefetch-git --fetch-submodules --quiet "loc" "ref" | jq -r .sha256"
   cmd | getline sha256
   close(cmd)
   print "  \""loc"\".\""ref"\" = \""sha256"\";";
