@@ -354,7 +354,7 @@ private struct ConnectView: View {
     private func scanCodeView() -> some View {
         Section("Or scan QR code") {
             if showQRCodeScanner, case .authorized = cameraAuthorizationStatus {
-                CodeScannerView(codeTypes: [.qr], completion: processQRCode)
+                CodeScannerView(codeTypes: [.qr], scanMode: .continuous, completion: processQRCode)
                     .aspectRatio(1, contentMode: .fit)
                     .cornerRadius(12)
                     .listRowBackground(Color.clear)
