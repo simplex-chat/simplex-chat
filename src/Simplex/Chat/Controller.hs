@@ -53,15 +53,17 @@ import Simplex.Chat.Call
 import Simplex.Chat.Markdown (MarkdownList)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
+import Simplex.Messaging.Batch (BatchT, isoEContT)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store (AutoAccept, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
-import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
+import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo, agentEnv)
 import Simplex.Messaging.Agent.Client (AgentLocks, ProtocolTestFailure)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig)
+import qualified Simplex.Messaging.Agent.Env.SQLite as Agent
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation, SQLiteStore, UpMigration, withTransaction)
@@ -1292,6 +1294,11 @@ withAgent action =
   asks smpAgent
     >>= runExceptT . action
     >>= liftEither . first (`ChatErrorAgent` Nothing)
+
+withAgentB :: ChatMonad m => (AgentClient -> BatchT AgentErrorType (ReaderT Agent.Env m) r) -> BatchT ChatError m r
+withAgentB action = do
+  a <- lift $ asks smpAgent
+  isoEContT (`runReaderT` agentEnv a) lift (`ChatErrorAgent` Nothing) $ action a
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
 
