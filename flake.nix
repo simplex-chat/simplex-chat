@@ -15,7 +15,7 @@
       let pkgs = haskellNix.legacyPackages.${system}; in
       let drv' = { extra-modules, pkgs', ... }: pkgs'.haskell-nix.project {
         compiler-nix-name = "ghc8107";
-        index-state = "2023-10-06T00:00:00Z";
+        index-state = "2023-12-12T00:00:00Z";
         # We need this, to specify we want the cabal project.
         # If the stack.yaml was dropped, this would not be necessary.
         projectFileName = "cabal.project";
