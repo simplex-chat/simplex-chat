@@ -176,7 +176,7 @@ library
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite ==0.30.*
+    , crypton ==0.34.*
     , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -200,7 +200,7 @@ library
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.9.*
-    , tls >=1.6.0 && <1.7
+    , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -235,7 +235,7 @@ executable simplex-bot
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite ==0.30.*
+    , crypton ==0.34.*
     , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -260,7 +260,7 @@ executable simplex-bot
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.9.*
-    , tls >=1.6.0 && <1.7
+    , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -295,7 +295,7 @@ executable simplex-bot-advanced
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite ==0.30.*
+    , crypton ==0.34.*
     , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -320,7 +320,7 @@ executable simplex-bot-advanced
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.9.*
-    , tls >=1.6.0 && <1.7
+    , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -357,7 +357,7 @@ executable simplex-broadcast-bot
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite ==0.30.*
+    , crypton ==0.34.*
     , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -382,7 +382,7 @@ executable simplex-broadcast-bot
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.9.*
-    , tls >=1.6.0 && <1.7
+    , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -418,7 +418,7 @@ executable simplex-chat
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite ==0.30.*
+    , crypton ==0.34.*
     , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -443,7 +443,7 @@ executable simplex-chat
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.9.*
-    , tls >=1.6.0 && <1.7
+    , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , websockets ==0.12.*
@@ -483,7 +483,7 @@ executable simplex-directory-service
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite ==0.30.*
+    , crypton ==0.34.*
     , data-default ==0.7.*
     , direct-sqlcipher ==2.3.*
     , directory ==1.3.*
@@ -508,7 +508,7 @@ executable simplex-directory-service
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.9.*
-    , tls >=1.6.0 && <1.7
+    , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*
@@ -572,7 +572,7 @@ test-suite simplex-chat-test
     , composition ==1.0.*
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
-    , cryptonite ==0.30.*
+    , crypton ==0.34.*
     , data-default ==0.7.*
     , deepseq ==1.4.*
     , direct-sqlcipher ==2.3.*
@@ -601,7 +601,7 @@ test-suite simplex-chat-test
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.9.*
-    , tls >=1.6.0 && <1.7
+    , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , zip ==2.0.*

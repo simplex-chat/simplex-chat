@@ -25,7 +25,7 @@ struct ScanToConnectView: View {
                     .fixedSize(horizontal: false, vertical: true)
                     .padding(.vertical)
 
-                CodeScannerView(codeTypes: [.qr], completion: processQRCode)
+                CodeScannerView(codeTypes: [.qr], scanMode: .continuous, completion: processQRCode)
                     .aspectRatio(1, contentMode: .fit)
                     .cornerRadius(12)
 

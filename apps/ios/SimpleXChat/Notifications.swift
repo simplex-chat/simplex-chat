@@ -146,6 +146,13 @@ public func createErrorNtf(_ dbStatus: DBMigrationResult) -> UNMutableNotificati
     )
 }
 
+public func createAppStoppedNtf() -> UNMutableNotificationContent {
+    return createNotification(
+        categoryIdentifier: ntfCategoryConnectionEvent,
+        title: NSLocalizedString("Encrypted message: app is stopped", comment: "notification")
+    )
+}
+
 private func groupMsgNtfTitle(_ groupInfo: GroupInfo, _ groupMember: GroupMember, hideContent: Bool) -> String {
     hideContent
     ? NSLocalizedString("Group message:", comment: "notification")

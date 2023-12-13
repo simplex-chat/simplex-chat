@@ -332,7 +332,7 @@ struct ConnectDesktopView: View {
 
     private func scanDesctopAddressView() -> some View {
         Section("Scan QR code from desktop") {
-            CodeScannerView(codeTypes: [.qr], completion: processDesktopQRCode)
+            CodeScannerView(codeTypes: [.qr], scanMode: .oncePerCode, completion: processDesktopQRCode)
                 .aspectRatio(1, contentMode: .fit)
                 .cornerRadius(12)
                 .listRowBackground(Color.clear)
