@@ -291,7 +291,7 @@ forwardedGroupMsg msg@ChatMessage {chatMsgEvent} = case encoding @e of
   _ -> Nothing
 
 msgIncludedInHistory :: forall e. MsgEncodingI e => ChatMessage e -> Set SharedMsgId -> Maybe (ChatMessage 'Json)
-msgIncludedInHistory msg@ChatMessage {chatMsgEvent} accMsgIds = case encoding @e of
+msgIncludedInHistory msg@ChatMessage {chatMsgEvent} refMsgIds = case encoding @e of
   SJson -> case chatMsgEvent of
     XMsgNew mc -> case mcExtMsgContent mc of
       ExtMsgContent {file = Just FileInvitation {fileInline = Just _}} -> Nothing
@@ -304,7 +304,7 @@ msgIncludedInHistory msg@ChatMessage {chatMsgEvent} accMsgIds = case encoding @e
     _ -> Nothing
     where
       refIncluded msgId
-        | msgId `elem` accMsgIds = Just msg
+        | msgId `elem` refMsgIds = Just msg
         | otherwise = Nothing
   _ -> Nothing
 
