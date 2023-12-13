@@ -344,6 +344,7 @@ private struct ConnectView: View {
             } label: {
                 Text("Tap to paste link")
             }
+            .disabled(!ChatModel.shared.pasteboardHasURLs)
             .frame(maxWidth: .infinity, alignment: .center)
         } else {
             linkTextView(pastedLink)

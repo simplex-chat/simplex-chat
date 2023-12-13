@@ -279,7 +279,6 @@ struct ChatListSearchBar: View {
     @Binding var searchShowingSimplexLink: Bool
     @Binding var searchChatFilteredBySimplexLink: String?
     @State private var ignoreSearchTextChange = false
-    @State private var pasteboardHasString = false
     @State private var showScanCodeSheet = false
     @State private var alert: PlanAndConnectAlert?
     @State private var sheet: PlanAndConnectActionSheet?
