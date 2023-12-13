@@ -74,6 +74,7 @@ struct QRCode: View {
         .onAppear {
             image = image ?? generateImage(uri, tintColor: tintColor)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
