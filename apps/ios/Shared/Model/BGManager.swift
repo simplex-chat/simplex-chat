@@ -15,7 +15,8 @@ private let receiveTaskId = "chat.simplex.app.receive"
 // TCP timeout + 2 sec
 private let waitForMessages: TimeInterval = 6
 
-private let bgRefreshInterval: TimeInterval = 450
+// This is the smallest interval between refreshes, and also target interval in "off" mode
+private let bgRefreshInterval: TimeInterval = 600
 
 private let maxTimerCount = 9
 
@@ -55,7 +56,7 @@ class BGManager {
         }
         logger.debug("BGManager.handleRefresh")
         schedule()
-        if appStateGroupDefault.get().inactive {
+        if allowBackgroundRefresh() {
             let completeRefresh = completionHandler {
                 task.setTaskCompleted(success: true)
             }
@@ -92,18 +93,19 @@ class BGManager {
         DispatchQueue.main.async {
             let m = ChatModel.shared
             if (!m.chatInitialized) {
+                setAppState(.bgRefresh)
                 do {
                     try initializeChat(start: true)
                 } catch let error {
                     fatalError("Failed to start or load chats: \(responseError(error))")
                 }
             }
+            activateChat(appState: .bgRefresh)
             if m.currentUser == nil {
                 completeReceiving("no current user")
                 return
             }
             logger.debug("BGManager.receiveMessages: starting chat")
-            activateChat(appState: .bgRefresh)
             let cr = ChatReceiver()
             self.chatReceiver = cr
             cr.start()
