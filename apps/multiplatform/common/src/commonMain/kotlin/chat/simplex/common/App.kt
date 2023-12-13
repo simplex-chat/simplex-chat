@@ -125,6 +125,7 @@ fun MainScreen() {
           }
           val scaffoldState = rememberScaffoldState()
           val settingsState = remember { SettingsViewState(userPickerState, scaffoldState) }
+          setupClipboardListener()
           if (appPlatform.isAndroid) {
             AndroidScreen(settingsState)
           } else {

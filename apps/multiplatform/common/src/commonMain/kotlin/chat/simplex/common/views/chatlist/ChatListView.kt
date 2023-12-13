@@ -108,7 +108,6 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
         modifier = Modifier
           .fillMaxSize()
       ) {
-        setupClipboardListener()
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel, searchInList = searchInList)
         } else if (!chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
