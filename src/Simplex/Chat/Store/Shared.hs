@@ -99,6 +99,7 @@ data StoreError
   | SEContactNotFoundByFileId {fileId :: FileTransferId}
   | SENoGroupSndStatus {itemId :: ChatItemId, groupMemberId :: GroupMemberId}
   | SEDuplicateGroupMessage {groupId :: Int64, sharedMsgId :: SharedMsgId, authorGroupMemberId :: Maybe GroupMemberId, forwardedByGroupMemberId :: Maybe GroupMemberId}
+  | SEParseJsonMessageError {messageId :: Int64}
   | SERemoteHostNotFound {remoteHostId :: RemoteHostId}
   | SERemoteHostUnknown -- attempting to store KnownHost without a known fingerprint
   | SERemoteHostDuplicateCA

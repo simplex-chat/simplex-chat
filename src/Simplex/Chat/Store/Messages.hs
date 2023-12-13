@@ -7,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 {-# LANGUAGE TypeApplications #-}
@@ -99,6 +100,7 @@ module Simplex.Chat.Store.Messages
     updateGroupSndStatus,
     getGroupSndStatuses,
     getGroupSndStatusCounts,
+    getGroupMsgsHistory,
   )
 where
 
@@ -108,11 +110,13 @@ import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
-import Data.Either (fromRight, rights)
+import Data.Either (fromRight, partitionEithers, rights)
 import Data.Int (Int64)
 import Data.List (sortBy)
 import Data.Maybe (fromMaybe, isJust, mapMaybe)
 import Data.Ord (Down (..), comparing)
+import Data.Set (Set)
+import qualified Data.Set as S
 import Data.Text (Text)
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
@@ -2075,3 +2079,88 @@ getGroupSndStatusCounts db itemId =
       GROUP BY group_snd_item_status
     |]
     (Only itemId)
+
+data JsonMessageRecord = JsonMessageRecord
+  { messageId :: Int64,
+    msgSent :: Bool,
+    chatMsgEvent :: CMEventTag 'Json,
+    chatMsg :: ChatMessage 'Json,
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime,
+    connectionId :: Maybe Int64,
+    groupId :: Maybe Int64,
+    sharedMsgId :: Maybe SharedMsgId,
+    sharedMsgIdUser :: Maybe Bool,
+    authorGroupMemberId :: Maybe GroupMemberId,
+    forwardedByGroupMemberId :: Maybe GroupMemberId
+  }
+
+type JsonMessageRow = (Int64, Bool, CMEventTag 'Json, ByteString, UTCTime, UTCTime, Maybe Int64, Maybe Int64, Maybe SharedMsgId, Maybe Bool, Maybe GroupMemberId, Maybe GroupMemberId)
+
+toJsonMessageRecord :: JsonMessageRow -> Either StoreError JsonMessageRecord
+toJsonMessageRecord (messageId, msgSent, chatMsgEvent, msgBody, createdAt, updatedAt, connectionId, groupId, sharedMsgId, sharedMsgIdUser, authorGroupMemberId, forwardedByGroupMemberId) =
+  case parseChatMessages msgBody of
+    [Right (ACMsg SJson chatMsg)] -> Right JsonMessageRecord {..}
+    _ -> Left $ SEParseJsonMessageError messageId
+
+getGroupMsgsHistory :: DB.Connection -> User -> GroupInfo -> Int64 -> IO ([StoreError], [ChatMsgEvent 'Json])
+getGroupMsgsHistory db user GroupInfo {groupId, membership} numMsgsToSearch = do
+  (errs, msgRecs) <- partitionEithers <$> retrieveMessages
+  (errs', evts) <- collectForwardEvents msgRecs S.empty errs []
+  pure (errs <> errs', evts)
+  where
+    retrieveMessages :: IO [Either StoreError JsonMessageRecord]
+    retrieveMessages =
+      map toJsonMessageRecord
+        <$> DB.query
+          db
+          [sql|
+            SELECT
+              message_id, msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id,
+              shared_msg_id, shared_msg_id_user, author_group_member_id, forwarded_by_group_member_id
+            FROM messages
+            WHERE group_id = ?
+              AND chat_msg_event IN (?,?,?,?,?,?)
+            ORDER BY created_at DESC
+            LIMIT ?
+          |]
+          -- see msgIncludedInHistory in Protocol
+          (groupId, XMsgNew_, XMsgFileDescr_, XMsgUpdate_, XMsgDel_, XMsgReact_, XFileCancel_, numMsgsToSearch)
+    collectForwardEvents ::
+      [JsonMessageRecord] ->
+      Set SharedMsgId ->
+      [StoreError] ->
+      [ChatMsgEvent 'Json] ->
+      IO ([StoreError], [ChatMsgEvent 'Json])
+    collectForwardEvents [] _ errs evts = pure (errs, evts)
+    collectForwardEvents (mrec : mrecs) msgIds errs evts = do
+      let JsonMessageRecord {messageId, msgSent, chatMsg, createdAt, sharedMsgId, authorGroupMemberId} = mrec
+      case msgIncludedInHistory chatMsg msgIds of
+        Nothing -> collectForwardEvents mrecs msgIds errs evts
+        Just chatMsg'
+          | msgSent -> do
+              let GroupMember {memberId} = membership
+                  evt = XGrpMsgForward memberId chatMsg' createdAt -- TODO round to seconds
+                  msgIds' = maybe msgIds (`S.insert` msgIds) sharedMsgId
+              collectForwardEvents mrecs msgIds' errs (evt : evts)
+          | otherwise ->
+              case authorGroupMemberId of
+                Just amId -> do
+                  runExceptT (getGroupMember db user groupId amId) >>= \case
+                    Right _author@GroupMember {memberId} -> do
+                      brokerTs <- getDeliveryTs messageId
+                      -- message received via forward wouldn't have delivery record to retrieve chat_ts from,
+                      -- see comment in processForwardedMsg in Chat
+                      let msgTs = fromMaybe createdAt brokerTs
+                          evt = XGrpMsgForward memberId chatMsg' msgTs
+                          msgIds' = maybe msgIds (`S.insert` msgIds) sharedMsgId
+                      collectForwardEvents mrecs msgIds' errs (evt : evts)
+                    Left err ->
+                      collectForwardEvents mrecs msgIds (err : errs) evts
+                _ -> do
+                  let err = SEInternalError $ "message " <> show messageId <> " has no author group member id (can be due to older app version)"
+                  collectForwardEvents mrecs msgIds (err : errs) evts
+    getDeliveryTs :: Int64 -> IO (Maybe UTCTime)
+    getDeliveryTs messageId =
+      maybeFirstRow fromOnly $
+        DB.query db "SELECT chat_ts FROM msg_deliveries WHERE message_id = ? LIMIT 1" (Only messageId)

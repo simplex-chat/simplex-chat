@@ -39,11 +39,16 @@ ALTER TABLE new_msg_deliveries RENAME TO msg_deliveries;
 CREATE INDEX idx_msg_deliveries_message_id ON "msg_deliveries"(message_id);
 CREATE INDEX idx_msg_deliveries_agent_ack_cmd_id ON "msg_deliveries"(connection_id, agent_ack_cmd_id);
 CREATE INDEX idx_msg_deliveries_agent_msg_id ON "msg_deliveries"(connection_id, agent_msg_id);
+
+-- for message history retrieval
+CREATE INDEX idx_messages_group_id_created_at ON messages(group_id, created_at);
 |]
 
 down_m20231208_recreate_msg_deliveries :: Query
 down_m20231208_recreate_msg_deliveries =
   [sql|
+DROP INDEX idx_messages_group_id_created_at;
+
 DROP INDEX idx_msg_deliveries_message_id;
 DROP INDEX idx_msg_deliveries_agent_ack_cmd_id;
 DROP INDEX idx_msg_deliveries_agent_msg_id;

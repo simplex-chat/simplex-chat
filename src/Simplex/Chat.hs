@@ -3601,26 +3601,12 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 void $ sendDirectMessage conn (XGrpMemIntro $ memberInfo (reMember intro)) (GroupId groupId)
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
               sendHistory =
-                when (isCompatibleRange (memberChatVRange' m) batchSendVRange) $
-                  pure ()
-                -- - build list of messages forming latest history, possible approaches:
-                --   - retrieve events from 'messages' table as is and filter based on event type
-                --     - downside is that they are periodically cleaned up,
-                --       but practically it won't matter for recent history of active group
-                --     - 'msg_deliveries.chat_ts' to be used as event ts for received messages,
-                --       'messages.created_at' for sent
-                --     - simple - 'msg_body' contains full event which can be forwarded
-                --     - unclear how many records to load to reach required number of messages,
-                --       so either load iteratively or with a reserve
-                --   - reconstruct events from 'chat_items' table
-                --     - it's not periodically cleaned up, but chat items can be deleted
-                --       manually or scheduled for deletion by user
-                --     - 'item_ts' can be used as timestamp of original message
-                --     - more complex - custom reconstruction of reactions, file descriptions, etc.
-                --   - in any case use XGrpMsgForward to wrap messages together with their original ts and sender id
-                -- - send messages in batches (sendBatchedDirectMessages)
+                when (isCompatibleRange (memberChatVRange' m) batchSendVRange) $ do
+                  (errs, events) <- withStore' $ \db -> getGroupMsgsHistory db user gInfo 300
+                  toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
+                  forM_ (L.nonEmpty events) $ \events' ->
+                    sendBatchedDirectMessages conn events' (GroupId groupId)
           _ -> do
-            -- TODO notify member who forwarded introduction - question - where it is stored? There is via_contact but probably there should be via_member in group_members table
             let memCategory = memberCategory m
             withStore' (\db -> getViaGroupContact db user m) >>= \case
               Nothing -> do
@@ -5240,6 +5226,10 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         processForwardedMsg :: GroupMember -> ChatMessage 'Json -> m ()
         processForwardedMsg author chatMsg = do
           let body = LB.toStrict $ J.encode msg
+          -- TODO [batch send] save broker ts (here - msgTs) on messages received via forward to include in history
+          -- consider adding chat_ts to messages table: as of now, messages received via forward
+          -- wouldn't have a record in msg_deliveries to retrieve it from;
+          -- practically it's not a problem if members join via a single same admin (e.g. directory bot)
           rcvMsg@RcvMessage {chatMsgEvent = ACME _ event} <- saveGroupFwdRcvMsg user groupId m author body chatMsg
           case event of
             XMsgNew mc -> memberCanSend author $ newGroupContentMessage gInfo author mc rcvMsg msgTs
