@@ -140,7 +140,8 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
       sendMessage cc ct $
         "Welcome to " <> serviceName <> " service!\n\
         \Send a search string to find groups or */help* to learn how to add groups to directory.\n\n\
-        \For example, send _privacy_ to find groups about privacy.\n\n\
+        \For example, send _privacy_ to find groups about privacy.\n\
+        \You can send /all or /new to list groups.\n\n\
         \Content and privacy policy: https://simplex.chat/docs/directory.html"
 
     deGroupInvitation :: Contact -> GroupInfo -> GroupMemberRole -> GroupMemberRole -> IO ()
@@ -403,6 +404,10 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
                         msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
                     sendComposedMessage cc ct Nothing msg
           Nothing -> sendReply "Error: getGroups. Please notify the developers."
+      DCSearchNext -> pure ()
+      DCAllGroups -> pure ()
+      DCRecentGroups -> pure ()
+      DCSubmitGroup _link -> pure ()
       DCConfirmDuplicateGroup ugrId gName ->
         atomically (getUserGroupReg st (contactId' ct) ugrId) >>= \case
           Nothing -> sendReply $ "Group ID " <> show ugrId <> " not found"
