@@ -5602,7 +5602,7 @@ processAll :: ChatMonad m => ChatBatch m -> AgentBatch m -> m ()
 processAll chatBatch agentBatch = do
   chats <- atomically $ stateTVar chatBatch (,[])
   agents <- atomically $ stateTVar agentBatch (,[])
-  logError $ "processAll: " <> tshow (length chats) <> " chats + " <> tshow (length agents) <> " agents"
+  logError $ tshow (length chats) <> " chats + " <> tshow (length agents) <> " agents"
   evalContT $ do
     unless (null chats) $ processChatBatch chats
     unless (null agents) $ asks smpAgent >>= \a -> processAgentBatch a agents
@@ -5626,9 +5626,14 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
     result <- newEmptyMVar
     evalContT $ -- start independent ContT tracks for each member, submitting batched operations to shared queues
       messageMember chatBatch agentBatch m msg {- `catchChatError` (toView . CRChatError (Just user)) -} >>= putMVar result
-    pure $ tryTakeMVar result >>= maybe (error "internal: the task didn't run") pure
+    pure $ tryTakeMVar result >>= \case
+      Nothing -> logError "the task didn't run" >> pure Nothing
+      Just ok -> pure ok
+  logError $ "sendGroupMessage batch: " <> tshow (length recipientMembers) <> " recipientMembers"
   processAll chatBatch agentBatch
-  (msg,) . catMaybes <$> sequence resultPromises
+  logError $ "sendGroupMessage: collecting " <> tshow (length resultPromises) <> " results"
+  rs <- (msg,) . catMaybes <$> sequence resultPromises
+  rs <$ logError ("sendGroupMessage: results collected, " <> tshow (length rs) <> " group members messaged")
   where
     -- messageMember :: GroupMember -> SndMessage -> m (Maybe GroupMember)
     messageMember :: ChatBatch m -> AgentBatch m -> GroupMember -> SndMessage -> BatchT m (Maybe GroupMember)
