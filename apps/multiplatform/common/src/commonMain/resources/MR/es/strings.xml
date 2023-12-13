@@ -885,8 +885,8 @@
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">La base de datos actual será ELIMINADA y SUSTITUIDA por la importada.
 \nEsta acción no se puede deshacer. Tu perfil, contactos, mensajes y archivos se perderán irreversiblemente.</string>
     <string name="incognito_random_profile">Tu perfil aleatorio</string>
-    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Conectarás cuando tu solicitud se acepte, por favor espera o compruébalo más tarde.</string>
-    <string name="you_will_be_connected_when_your_contacts_device_is_online">Conectarás cuando el dispositivo de tu contacto esté en línea, por favor espera o compruébalo más tarde.</string>
+    <string name="you_will_be_connected_when_your_connection_request_is_accepted">Te conectarás cuando tu solicitud se acepte, por favor espera o compruébalo más tarde.</string>
+    <string name="you_will_be_connected_when_your_contacts_device_is_online">Te conectarás cuando el dispositivo de tu contacto esté en línea, por favor espera o compruébalo más tarde.</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Se te pedirá identificarte cuándo inicies o continues usando la aplicación tras 30 segundos en segundo plano.</string>
     <string name="invite_prohibited_description">Estás intentando invitar a un contacto con el que compartes un perfil incógnito a un grupo en el que usas tu perfil principal</string>
     <string name="simplex_link_mode_browser">Mediante navegador</string>
@@ -910,7 +910,7 @@
     <string name="verify_security_code">Comprobar código de seguridad</string>
     <string name="you_accepted_connection">Has aceptado la conexión</string>
     <string name="you_invited_a_contact">Has invitado a tu contacto</string>
-    <string name="you_will_be_connected_when_group_host_device_is_online">Conectarás con el grupo cuando el dispositivo anfitrión esté en línea, por favor espera o compruébalo más tarde.</string>
+    <string name="you_will_be_connected_when_group_host_device_is_online">Te conectarás al grupo cuando el dispositivo anfitrión esté en línea, por favor espera o compruébalo más tarde.</string>
     <string name="your_settings">Configuración</string>
     <string name="your_SMP_servers">Servidores SMP</string>
     <string name="you_control_your_chat">¡Tú controlas tu chat!</string>
@@ -936,7 +936,7 @@
     <string name="chat_preferences_you_allow">Permites</string>
     <string name="app_name">SimpleX</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Tu perfil se enviará al contacto del que has recibido este enlace.</string>
-    <string name="you_will_join_group">Conectarás con todos los miembros del grupo.</string>
+    <string name="you_will_join_group">Te conectarás con todos los miembros del grupo.</string>
     <string name="sender_you_pronoun">tú</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Estás conectado al servidor usado para recibir mensajes de este contacto.</string>
     <string name="description_via_contact_address_link">mediante enlace de dirección de contacto</string>
@@ -1002,7 +1002,7 @@
     <string name="you_can_hide_or_mute_user_profile">Puedes ocultar o silenciar un perfil. Mantenlo pulsado para abrir el menú.</string>
     <string name="you_will_still_receive_calls_and_ntfs">Seguirás recibiendo llamadas y notificaciones de los perfiles silenciados cuando estén activos.</string>
     <string name="v4_6_group_moderation_descr">Ahora los administradores pueden:
-\n- borrar mensajes de los miembros.
+\n- eliminar mensajes de los miembros.
 \n- desactivar el rol miembro (a rol \"observador\")</string>
     <string name="to_reveal_profile_enter_password">Para hacer visible tu perfil oculto, introduce la contraseña completa en el campo de búsqueda del menú Mis perfiles.</string>
     <string name="database_upgrade">Actualización de la base de datos</string>
@@ -1429,7 +1429,7 @@
     <string name="discover_on_network">Descubrir en red local</string>
     <string name="rcv_group_and_other_events">y %d evento(s) más</string>
     <string name="connect_plan_connect_via_link">¿Conectar vía enlace?</string>
-    <string name="connect_plan_already_joining_the_group">¡Ya en proceso de unirse al grupo!</string>
+    <string name="connect_plan_already_joining_the_group">¡En proceso de unirte al grupo!</string>
     <string name="moderated_items_description">%d mensaje(s) moderado(s) por %s</string>
     <string name="connect_plan_connect_to_yourself">¿Conectarte a tí mismo?</string>
     <string name="linked_mobiles">Móviles enlazados</string>
@@ -1532,4 +1532,5 @@
     <string name="loading_remote_file_desc">Por favor, espere mientras el archivo se carga desde el móvil enlazado</string>
     <string name="verify_connection">Verificar conexión</string>
     <string name="no_connected_mobile">Ningún móvil conectado</string>
+    <string name="app_was_crashed">Error aplicación</string>
 </resources>
