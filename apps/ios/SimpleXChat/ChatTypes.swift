@@ -2016,7 +2016,8 @@ public enum ConnectionEntity: Decodable {
 }
 
 public struct NtfMsgInfo: Decodable {
-
+    public var msgId: String
+    public var msgTs: Date
 }
 
 public struct AChatItem: Decodable {

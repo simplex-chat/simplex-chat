@@ -47,6 +47,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         let m = ChatModel.shared
         let deviceToken = DeviceToken(pushProvider: PushProvider(env: pushEnvironment), token: token)
         m.deviceToken = deviceToken
+        // savedToken is set in startChat, when it is started before this method is called
         if m.savedToken != nil {
             registerToken(token: deviceToken)
         }
@@ -85,7 +86,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 }
             } else if let checkMessages = ntfData["checkMessages"] as? Bool, checkMessages {
                 logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessages")
-                if appStateGroupDefault.get().inactive && m.ntfEnablePeriodic {
+                if  m.ntfEnablePeriodic && allowBackgroundRefresh() {
                     receiveMessages(completionHandler)
                 } else {
                     completionHandler(.noData)
