@@ -542,15 +542,13 @@ findDirectChatPreviews_ db User {userId} pagination clq =
       ACPD SCTDirect $ DirectChatPD ts contactId lastItemId_ (toChatStats statsRow)
     baseQuery =
       [sql|
-        SELECT ct.contact_id, ct.chat_ts as ts, i.chat_item_id, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), ct.unread_chat
+        SELECT ct.contact_id, ct.chat_ts as ts, LastItems.chat_item_id, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), ct.unread_chat
         FROM contacts ct
         LEFT JOIN (
           SELECT contact_id, chat_item_id, MAX(created_at)
           FROM chat_items
           GROUP BY contact_id
         ) LastItems ON LastItems.contact_id = ct.contact_id
-        LEFT JOIN chat_items i ON i.contact_id = LastItems.contact_id
-                              AND i.chat_item_id = LastItems.chat_item_id
         LEFT JOIN (
           SELECT contact_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
@@ -639,15 +637,13 @@ findGroupChatPreviews_ db User {userId} pagination clq =
       ACPD SCTGroup $ GroupChatPD ts groupId lastItemId_ (toChatStats statsRow)
     baseQuery =
       [sql|
-        SELECT g.group_id, g.chat_ts as ts, i.chat_item_id, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), g.unread_chat
+        SELECT g.group_id, g.chat_ts as ts, LastItems.chat_item_id, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), g.unread_chat
         FROM groups g
         LEFT JOIN (
           SELECT group_id, chat_item_id, MAX(item_ts)
           FROM chat_items
           GROUP BY group_id
         ) LastItems ON LastItems.group_id = g.group_id
-        LEFT JOIN chat_items i ON i.group_id = LastItems.group_id
-                              AND i.chat_item_id = LastItems.chat_item_id
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
           FROM chat_items
