@@ -36,14 +36,14 @@ testVerifySchemaDump :: IO ()
 testVerifySchemaDump = withTmpFiles $ do
   savedSchema <- ifM (doesFileExist appSchema) (readFile appSchema) (pure "")
   savedSchema `deepseq` pure ()
-  void $ createChatStore testDB "" MCError
+  void $ createChatStore testDB "" False MCError
   getSchema testDB appSchema `shouldReturn` savedSchema
   removeFile testDB
 
 testSchemaMigrations :: IO ()
 testSchemaMigrations = withTmpFiles $ do
   let noDownMigrations = dropWhileEnd (\Migration {down} -> isJust down) Store.migrations
-  Right st <- createSQLiteStore testDB "" noDownMigrations MCError
+  Right st <- createSQLiteStore testDB "" False noDownMigrations MCError
   mapM_ (testDownMigration st) $ drop (length noDownMigrations) Store.migrations
   closeSQLiteStore st
   removeFile testDB

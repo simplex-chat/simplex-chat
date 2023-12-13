@@ -15,6 +15,7 @@ import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
 import Control.Monad
 import Control.Monad.Except
+import Data.ByteArray (ScrubbedBytes)
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
 import Data.Maybe (fromJust, isNothing)
@@ -86,7 +87,7 @@ testOpts =
       maintenance = False
     }
 
-getTestOpts :: Bool -> String -> ChatOpts
+getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
 getTestOpts maintenance dbKey = testOpts {maintenance, coreOptions = (coreOptions testOpts) {dbKey}}
 
 termSettings :: VirtualTerminalSettings
@@ -160,13 +161,13 @@ groupLinkViaContactVRange = mkVersionRange 1 2
 
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
-  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey MCError
+  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False MCError
   Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
   startTestChat_ db cfg opts user
 
 startTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> IO TestCC
 startTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix = do
-  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey MCError
+  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False MCError
   Just user <- find activeUser <$> withTransaction chatStore getUsers
   startTestChat_ db cfg opts user
 
@@ -275,8 +276,8 @@ getTermLine cc =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
+      -- when True $ do
       when (printOutput cc) $ do
-        -- when True $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s
