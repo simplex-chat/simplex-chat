@@ -92,7 +92,7 @@ struct SimpleXApp: App {
 
                                 // --- authentication
                                 let authExpired = authenticationExpired()
-                                // second check is required for when authentication is enabled
+                                // second check is required for when authentication is enabled in settings
                                 if prefPerformLA && chatModel.userAuthenticated != .authenticated {
                                     if authExpired {
                                         if !automaticAuthAttempted {
