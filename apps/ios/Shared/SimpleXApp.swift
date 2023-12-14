@@ -67,11 +67,12 @@ struct SimpleXApp: App {
                             enteredBackgroundAuthorized = ProcessInfo.processInfo.systemUptime
                         }
                         let appState = AppChatState.shared.value
-                        if appState != .stopped {
-                            chatModel.userAuthenticated = .checkAuthentication
-                        } else {
-                            chatModel.userAuthenticated = .notAuthenticated
-                        }
+                        chatModel.userAuthenticated = .checkAuthentication
+//                        if appState != .stopped {
+//                            chatModel.userAuthenticated = .checkAuthentication
+//                        } else {
+//                            chatModel.userAuthenticated = .notAuthenticated
+//                        }
                         automaticAuthAttempted = false
                         canConnectNonCallKitCall = false
                         // authentication ---
@@ -94,24 +95,28 @@ struct SimpleXApp: App {
                                         updateCallInvitations()
                                     }
                                 }
-
-                                // --- authentication
-                                let authExpired = authenticationExpired()
-                                // second check is required for when authentication is enabled in settings
-                                if prefPerformLA && chatModel.userAuthenticated != .authenticated {
-                                    if authExpired {
-                                        if !automaticAuthAttempted {
-                                            automaticAuthAttempted = true
-                                            authenticateIfNotCallKitCall()
-                                        }
-                                    } else {
-                                        chatModel.userAuthenticated = .authenticated
-                                    }
-                                }
-                                canConnectNonCallKitCall = !(authExpired && prefPerformLA) || unlockedRecently()
-                                // authentication ---
                             }
                         }
+                        // --- authentication
+                        let authExpired = authenticationExpired()
+                        // second condition is required for when authentication is enabled in settings
+                        if prefPerformLA && chatModel.userAuthenticated != .authenticated {
+                            if appState != .stopped {
+                                if authExpired {
+                                    if !automaticAuthAttempted {
+                                        automaticAuthAttempted = true
+                                        authenticateIfNotCallKitCall()
+                                    }
+                                } else {
+                                    chatModel.userAuthenticated = .authenticated
+                                }
+                                canConnectNonCallKitCall = !(authExpired && prefPerformLA) || unlockedRecently()
+                            } else {
+                                // this is to show lock button and not automatically attempt authentication when app is stopped
+                                chatModel.userAuthenticated = .notAuthenticated
+                            }
+                        }
+                        // authentication ---
                     default:
                         break
                     }
