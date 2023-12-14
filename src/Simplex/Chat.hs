@@ -87,7 +87,7 @@ import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.Messaging.Agent as Agent
 import Simplex.Messaging.Agent.Batch
-import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, temporaryAgentError)
+import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, temporaryAgentError, withConnLocks)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import qualified Simplex.Messaging.Agent.Env.SQLite as Agent (Env)
 import Simplex.Messaging.Agent.Lock
@@ -5558,33 +5558,37 @@ sendGroupMessage' :: forall e m. (MsgEncodingI e, ChatMonad m) => User -> [Group
 sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
   msg <- createSndMessage chatMsgEvent (GroupId groupId)
   recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members) $ \GroupMember {memberRole} -> memberRole
+  let (store, deliver) = foldr triage ([], []) recipientMembers
   chatBatch <- newTVarIO mempty
   agentBatch <- newTVarIO mempty
-  -- start independent ContT tracks for each member, submitting batched operations to shared queues
-  resultPromises <- forM recipientMembers $ \m -> execEContT $ messageMember chatBatch agentBatch m msg
-  processAll chatBatch agentBatch
-  (failed, passed) <- partitionEithers <$> sequence resultPromises
-  toView $ CRChatErrors (Just user) failed
-  pure (msg, catMaybes passed)
+  a <- asks smpAgent
+  (failed, passed) <- withConnLocks a (map (aConnId . snd) deliver) "sendGroupMessage" $ do
+    -- start independent ContT tracks for each member, submitting batched operations to shared queues
+    stored <- forM store $ execEContT . storeMsg chatBatch msg
+    delivered <- forM deliver $ execEContT . deliverMsg chatBatch agentBatch msg
+    processAll chatBatch agentBatch
+    partitionEithers <$> sequence (stored <> delivered)
+  unless (null failed) . toView $ CRChatErrors (Just user) failed
+  pure (msg, passed)
   where
-    messageMember :: ChatBatch m -> AgentBatch (ReaderT Agent.Env m) -> GroupMember -> SndMessage -> BatchT ChatError m (Maybe GroupMember)
-    messageMember chatBatch agentBatch m@GroupMember {groupMemberId} SndMessage {msgId, msgBody} = case memberConn m of
-      Nothing -> pendingOrForwarded
+    storeMsg chatBatch SndMessage {msgId} m@GroupMember {groupMemberId} = do
+      batchOperation chatBatch $ \db -> Right <$> createPendingGroupMessage db groupMemberId msgId introId_
+      pure m
+    deliverMsg chatBatch agentBatch SndMessage {msgBody, msgId} (m, conn) = do
+      let tag = toCMEventTag chatMsgEvent
+      void $ deliverMessageB chatBatch agentBatch conn tag msgBody msgId
+      lift postDeliver
+      pure m
+    triage m (store, deliver) = case memberConn m of
       Just conn@Connection {connStatus}
-        | connDisabled conn || connStatus == ConnDeleted -> pure Nothing
-        | connStatus == ConnSndReady || connStatus == ConnReady -> do
-            let tag = toCMEventTag chatMsgEvent
-            void $ deliverMessageB chatBatch agentBatch conn tag msgBody msgId -- FIXME: take locks for all the connections before batching
-            lift postDeliver
-            pure $ Just m
-        | otherwise -> pendingOrForwarded
+        | connDisabled conn || connStatus == ConnDeleted -> (store, deliver)
+        | connStatus == ConnSndReady || connStatus == ConnReady -> (store, (m, conn) : deliver)
+      _ -> (pendingOrForwarded m store, deliver)
+    pendingOrForwarded m acc
+      | forwardSupported && isForwardedGroupMsg chatMsgEvent = acc
+      | isXGrpMsgForward chatMsgEvent = acc
+      | otherwise = m : acc
       where
-        pendingOrForwarded
-          | forwardSupported && isForwardedGroupMsg chatMsgEvent = pure Nothing
-          | isXGrpMsgForward chatMsgEvent = pure Nothing
-          | otherwise = do
-              batchOperation chatBatch $ \db -> Right <$> createPendingGroupMessage db groupMemberId msgId introId_
-              pure $ Just m
         forwardSupported = do
           let mcvr = memberChatVRange' m
           isCompatibleRange mcvr groupForwardVRange && invitingMemberSupportsForward
