@@ -536,7 +536,8 @@
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
-                    (pkgs.openssl.override { static = true; })
+                    # TODO: have a cross override for iOS, that sets this.
+                    ((pkgs.openssl.override { static = true; }).overrideDerivation (old: { CCFLAGS = "-optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc" ;}))
                   ];
                 }];
               }).simplex-chat.components.library.override (
