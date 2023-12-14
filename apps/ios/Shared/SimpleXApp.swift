@@ -107,7 +107,7 @@ struct SimpleXApp: App {
                                 // authentication ---
                             }
                         }
-                    default :
+                    default:
                         break
                     }
                 }
