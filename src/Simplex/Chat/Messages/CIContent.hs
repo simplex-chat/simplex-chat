@@ -30,7 +30,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (MsgErrorType (..), RatchetSyncState (..), SwitchPhase (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow, (<$?>))
 
 data MsgDirection = MDRcv | MDSnd
@@ -574,35 +574,6 @@ dbParseACIContent = fmap aciContentDBJSON . J.eitherDecodeStrict' . encodeUtf8
 -- platform specific
 instance FromJSON ACIContent where
   parseJSON = fmap aciContentJSON . J.parseJSON
-
-data CIContentTag
-  = CISndMsgContent_
-  | CIRcvMsgContent_
-  | CISndDeleted_
-  | CIRcvDeleted_
-  | CISndCall_
-  | CIRcvCall_
-  | CIRcvIntegrityError_
-  | CIRcvDecryptionError_
-  | CIRcvGroupInvitation_
-  | CISndGroupInvitation_
-  | CIRcvDirectEvent_
-  | CIRcvGroupEvent_
-  | CISndGroupEvent_
-  | CIRcvConnEvent_
-  | CISndConnEvent_
-  | CIRcvChatFeature_
-  | CISndChatFeature_
-  | CIRcvChatPreference_
-  | CISndChatPreference_
-  | CIRcvGroupFeature_
-  | CISndGroupFeature_
-  | CIRcvChatFeatureRejected_
-  | CIRcvGroupFeatureRejected_
-  | CISndModerated_
-  | CIRcvModerated_
-  | CIInvalidJSON_
-  deriving (Eq, Show)
 
 toCIContentTag :: CIContent e -> Text
 toCIContentTag ciContent = case ciContent of
