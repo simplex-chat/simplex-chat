@@ -357,7 +357,7 @@ private fun ChatListSearchBar(searchTextState: MutableState<TextFieldValue>, sea
           }
           searchShowingSimplexLink.value = true
           searchChatFilteredBySimplexLink.value = null
-          connect(link.text, searchChatFilteredBySimplexLink)
+          connect(link.text, searchChatFilteredBySimplexLink) { searchTextState.value = TextFieldValue() }
         } else if (!searchShowingSimplexLink.value || it.isEmpty()) {
           if (it.isNotEmpty()) {
             // if some other text is pasted, enter search mode
@@ -370,7 +370,7 @@ private fun ChatListSearchBar(searchTextState: MutableState<TextFieldValue>, sea
   }
 }
 
-private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<String?>) {
+private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<String?>, cleanup: (() -> Unit)?) {
   withBGApi {
     planAndConnect(
       chatModel,
@@ -379,7 +379,8 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
       incognito = null,
       filterKnownContact = { searchChatFilteredBySimplexLink.value = it.id },
       filterKnownGroup = { searchChatFilteredBySimplexLink.value = it.id },
-      close = null
+      close = null,
+      cleanup = cleanup,
     )
   }
 }

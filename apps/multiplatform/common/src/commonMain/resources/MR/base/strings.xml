@@ -425,6 +425,11 @@
   <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(scan or paste from clipboard)</string>
   <string name="only_stored_on_members_devices">(only stored by group members)</string>
 
+  <!-- QRCodeScanner -->
+  <string name="enable_camera_access">Enable camera access</string>
+  <string name="tap_to_scan">Tap to scan</string>
+  <string name="camera_not_available">Camera not available</string>
+
   <!-- GetImageView -->
   <string name="toast_permission_denied">Permission Denied!</string>
   <string name="use_camera_button">Camera</string>

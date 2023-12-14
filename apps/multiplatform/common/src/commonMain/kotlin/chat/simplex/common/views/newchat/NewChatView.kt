@@ -40,6 +40,7 @@ enum class NewChatOption {
 @Composable
 fun NewChatView(m: ChatModel, rh: RemoteHostInfo?, selection: NewChatOption, showQRCodeScanner: Boolean = false, close: () -> Unit) {
   val selection = rememberSaveable { mutableStateOf(selection) }
+  val showQRCodeScanner = rememberSaveable { mutableStateOf(showQRCodeScanner) }
   val contactConnection: MutableState<PendingContactConnection?> = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(null) }
   val connReqInvitation by remember { derivedStateOf { m.showingInvitation.value?.connReq ?: "" } }
   val creatingConnReq = rememberSaveable { mutableStateOf(false) }
@@ -245,8 +246,7 @@ private fun AddContactLearnMoreButton() {
 }
 
 @Composable
-private fun ConnectView(rhId: Long?, showQRCodeScanner: Boolean, pastedLink: MutableState<String>, close: () -> Unit) {
-  val showQRCodeScanner = remember { mutableStateOf(showQRCodeScanner) }
+private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, pastedLink: MutableState<String>, close: () -> Unit) {
   SectionView(stringResource(MR.strings.paste_the_link_you_received).uppercase()) {
     PasteLinkView(rhId, pastedLink, showQRCodeScanner, close)
   }
@@ -255,7 +255,7 @@ private fun ConnectView(rhId: Long?, showQRCodeScanner: Boolean, pastedLink: Mut
     Spacer(Modifier.height(10.dp))
 
     SectionView(stringResource(MR.strings.or_scan_qr_code).uppercase()) {
-      QRCodeScanner { text ->
+      QRCodeScanner(showQRCodeScanner) { text ->
         withBGApi {
           val res = verify(rhId, text, close)
           if (!res) {
@@ -279,7 +279,7 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
       if (link != null) {
         pastedLink.value = link.text
         showQRCodeScanner.value = false
-        withBGApi { connect(rhId, link.text, close) }
+        withBGApi { connect(rhId, link.text, close) { pastedLink.value = "" } }
       } else {
         AlertManager.shared.showAlertMsg(
           title = generalGetString(MR.strings.invalid_contact_link),
@@ -338,12 +338,13 @@ private suspend fun verify(rhId: Long?, text: String?, close: () -> Unit): Boole
   return false
 }
 
-private suspend fun connect(rhId: Long?, link: String, close: () -> Unit) {
+private suspend fun connect(rhId: Long?, link: String, close: () -> Unit, cleanup: (() -> Unit)? = null) {
   planAndConnect(
     chatModel,
     rhId,
     URI.create(link),
     close = close,
+    cleanup = cleanup,
     incognito = null
   )
 }
