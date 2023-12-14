@@ -22,7 +22,7 @@ import System.FilePath ((</>))
 import Test.Hspec
 
 chatGroupTests :: SpecWith FilePath
-chatGroupTests = focus $ do
+chatGroupTests = do
   describe "chat groups" $ do
     it "add contacts, create group and send/receive messages" testGroup
     it "add contacts, create group and send/receive messages, check messages" testGroupCheckMessages

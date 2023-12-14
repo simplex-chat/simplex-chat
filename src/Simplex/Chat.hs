@@ -5542,14 +5542,6 @@ sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [Group
 sendGroupMessage user GroupInfo {groupId} members chatMsgEvent =
   sendGroupMessage' user members chatMsgEvent groupId Nothing $ pure ()
 
-memberToSend :: GroupMember -> Maybe (GroupMember, Maybe Connection)
-memberToSend m = case memberConn m of
-  Nothing -> Just (m, Nothing)
-  Just conn@Connection {connStatus}
-    | not (memberCurrent m) || connDisabled conn || connStatus == ConnDeleted -> Nothing
-    | connStatus == ConnSndReady || connStatus == ConnReady -> Just (m, Just conn)
-    | otherwise -> Just (m, Nothing)
-
 sendGroupMessage' :: forall e m. (MsgEncodingI e, ChatMonad m) => User -> [GroupMember] -> ChatMsgEvent e -> Int64 -> Maybe Int64 -> m () -> m (SndMessage, [GroupMember])
 sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
   msg <- createSndMessage chatMsgEvent (GroupId groupId)
