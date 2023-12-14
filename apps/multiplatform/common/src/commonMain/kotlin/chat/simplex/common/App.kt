@@ -163,11 +163,26 @@ fun MainScreen() {
         AuthView()
       } else {
         SplashView()
+        ModalManager.fullscreen.showPasscodeInView()
       }
-    } else if (chatModel.showCallView.value) {
-      ActiveCallView()
+    } else {
+      if (chatModel.showCallView.value) {
+        ActiveCallView()
+      } else {
+        // It's needed for privacy settings toggle, so it can be shown even if the app is passcode unlocked
+        ModalManager.fullscreen.showPasscodeInView()
+      }
+      AlertManager.privacySensitive.showInView()
+      if (onboarding == OnboardingStage.OnboardingComplete) {
+        LaunchedEffect(chatModel.currentUser.value, chatModel.appOpenUrl.value) {
+          val (rhId, url) = chatModel.appOpenUrl.value ?: (null to null)
+          if (url != null) {
+            chatModel.appOpenUrl.value = null
+            connectIfOpenedViaUri(rhId, url, chatModel)
+          }
+        }
+      }
     }
-    ModalManager.fullscreen.showPasscodeInView()
     val invitation = chatModel.activeCallInvitation.value
     if (invitation != null) IncomingCallAlertView(invitation, chatModel)
     AlertManager.shared.showInView()

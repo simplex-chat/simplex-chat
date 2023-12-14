@@ -21,7 +21,7 @@ struct ScanProtocolServer: View {
                 .font(.largeTitle)
                 .bold()
                 .padding(.vertical)
-            CodeScannerView(codeTypes: [.qr], completion: processQRCode)
+            CodeScannerView(codeTypes: [.qr], scanMode: .oncePerCode, completion: processQRCode)
                 .aspectRatio(1, contentMode: .fit)
                 .cornerRadius(12)
                 .padding(.top)
