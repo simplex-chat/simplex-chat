@@ -5529,11 +5529,7 @@ directMessage chatMsgEvent = do
   pure $ strEncode ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m Int64
-deliverMessage conn@Connection {connId} cmEventTag msgBody msgId = do
-  let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
-  agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) msgFlags msgBody
-  let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
-  withStore' $ \db -> createSndMsgDelivery db sndMsgDelivery msgId
+deliverMessage conn cmEventTag msgBody msgId = execChatBatch $ \chatBatch agentBatch -> deliverMessageB chatBatch agentBatch conn cmEventTag msgBody msgId
 
 deliverMessageB :: ChatMonad m => ChatBatch m -> AgentBatch (ReaderT Agent.Env m) -> Connection -> CMEventTag e -> MsgBody -> MessageId -> BatchT ChatError m Int64
 deliverMessageB chatBatch agentBatch conn@Connection {connId} cmEventTag msgBody msgId = do

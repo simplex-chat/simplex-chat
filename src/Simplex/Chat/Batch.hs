@@ -8,7 +8,7 @@ module Simplex.Chat.Batch where
 
 import Control.Logger.Simple
 import Control.Monad
-import Control.Monad.Except (tryError)
+import Control.Monad.Except (throwError, tryError)
 import Control.Monad.Trans (lift)
 import Simplex.Chat.Controller (ChatError, ChatMonad, withAgentB, withStore')
 import Simplex.Messaging.Agent.Batch (AgentEnvBatch, processAgentBatch)
@@ -21,6 +21,14 @@ data ChatDB
 type instance BatchArgs ChatDB = DB.Connection
 type instance BatchError ChatDB = ChatError
 type ChatBatch m = BatchVar ChatDB m
+
+execChatBatch :: ChatMonad m => (ChatBatch m -> AgentEnvBatch m -> BatchT ChatError m r) -> m r
+execChatBatch action = do
+  chatBatch <- newTVarIO mempty
+  agentBatch <- newTVarIO mempty
+  getResult <- execEContT $ action chatBatch agentBatch
+  processAll chatBatch agentBatch
+  getResult >>= either throwError pure
 
 processAll :: ChatMonad m => ChatBatch m -> AgentEnvBatch m -> m ()
 processAll chatBatch agentBatch = do
