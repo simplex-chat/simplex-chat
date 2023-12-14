@@ -45,7 +45,7 @@ struct ContentView: View {
                 case .authenticated:
                     contentView()
                 case .checkAuthentication:
-                    EmptyView() // can put logo here
+                    logoView()
                 case .notAuthenticated:
                     lockButton()
                 }
@@ -122,6 +122,19 @@ struct ContentView: View {
 
     private func lockButton() -> some View {
         Button(action: authenticateContentViewAccess) { Label("Unlock", systemImage: "lock") }
+    }
+
+    private func logoView() -> some View {
+        GeometryReader { g in
+            VStack(alignment: .center) {
+                Image(colorScheme == .light ? "logo" : "logo-light")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: g.size.width * 0.67)
+                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .center)
+            }
+            .frame(minHeight: g.size.height)
+        }
     }
 
     private func initializationView() -> some View {
