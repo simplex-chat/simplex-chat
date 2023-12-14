@@ -107,7 +107,7 @@ struct SimpleXApp: App {
                                     if authExpired {
                                         if !automaticAuthAttempted {
                                             automaticAuthAttempted = true
-                                            authenticateIfNoCallKitCall()
+                                            authenticateIfNotCallKitCall()
                                         }
                                     } else {
                                         userAuthorized = .authorized
@@ -124,7 +124,7 @@ struct SimpleXApp: App {
         }
     }
 
-    func authenticateIfNoCallKitCall() {
+    func authenticateIfNotCallKitCall() {
         logger.debug("DEBUGGING: initAuthenticate")
         if !(CallController.useCallKit() && chatModel.showCallView && chatModel.activeCall != nil) {
             authenticateContentViewAccess()
