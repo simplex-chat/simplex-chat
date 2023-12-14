@@ -22,8 +22,10 @@ import Data.Word (Word8, Word32)
 import Foreign.C
 import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr
+import Foreign.StablePtr
 import Foreign.Storable (peek)
 import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
+import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Mobile
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
@@ -226,27 +228,29 @@ testChatApi tmp = do
   chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown
 
 testMediaApi :: HasCallStack => FilePath -> IO ()
-testMediaApi _ = do
-  g <- C.newRandom
+testMediaApi tmp = do
+  Right c@ChatController {random = g} <- chatMigrateInit (tmp </> "1") "" "yesUp"
+  cc <- newStablePtr c
   key <- atomically $ C.randomBytes 32 g
   frame <- atomically $ C.randomBytes 100 g
   let keyStr = strEncode key
       reserved = B.replicate (C.authTagSize + C.gcmIVSize) 0
       frame' = frame <> reserved
-  Right encrypted <- runExceptT $ chatEncryptMedia keyStr frame'
+  Right encrypted <- runExceptT $ chatEncryptMedia cc keyStr frame'
   encrypted `shouldNotBe` frame'
   B.length encrypted `shouldBe` B.length frame'
   runExceptT (chatDecryptMedia keyStr encrypted) `shouldReturn` Right frame'
 
 testMediaCApi :: HasCallStack => FilePath -> IO ()
-testMediaCApi _ = do
-  g <- C.newRandom
+testMediaCApi tmp = do
+  Right c@ChatController {random = g} <- chatMigrateInit (tmp </> "1") "" "yesUp"
+  cc <- newStablePtr c
   key <- atomically $ C.randomBytes 32 g
   frame <- atomically $ C.randomBytes 100 g
   let keyStr = strEncode key
       reserved = B.replicate (C.authTagSize + C.gcmIVSize) 0
       frame' = frame <> reserved
-  encrypted <- test cChatEncryptMedia keyStr frame'
+  encrypted <- test (cChatEncryptMedia cc) keyStr frame'
   encrypted `shouldNotBe` frame'
   test cChatDecryptMedia keyStr encrypted `shouldReturn` frame'
   where
@@ -268,6 +272,7 @@ instance FromJSON ReadFileResult where
 
 testFileCApi :: FilePath -> FilePath -> IO ()
 testFileCApi fileName tmp = do
+  cc <- mkCCPtr tmp
   src <- B.readFile "./tests/fixtures/test.pdf"
   let path = tmp </> (fileName <> ".pdf")
   cPath <- newCString path
@@ -275,7 +280,7 @@ testFileCApi fileName tmp = do
       cLen = fromIntegral len
   ptr <- mallocBytes $ B.length src
   putByteString ptr src
-  r <- peekCAString =<< cChatWriteFile cPath ptr cLen
+  r <- peekCAString =<< cChatWriteFile cc cPath ptr cLen
   Just (WFResult cfArgs@(CFArgs key nonce)) <- jDecode r
   let encryptedFile = CryptoFile path $ Just cfArgs
   CF.getFileContentsSize encryptedFile `shouldReturn` fromIntegral (B.length src)
@@ -304,13 +309,14 @@ testMissingFileCApi tmp = do
 
 testFileEncryptionCApi :: FilePath -> FilePath -> IO ()
 testFileEncryptionCApi fileName tmp = do
+  cc <- mkCCPtr tmp
   let fromPath = tmp </> (fileName <> ".source.pdf")
   copyFile "./tests/fixtures/test.pdf" fromPath
   src <- B.readFile fromPath
   cFromPath <- newCString fromPath
   let toPath = tmp </> (fileName <> ".encrypted.pdf")
   cToPath <- newCString toPath
-  r <- peekCAString =<< cChatEncryptFile cFromPath cToPath
+  r <- peekCAString =<< cChatEncryptFile cc cFromPath cToPath
   Just (WFResult cfArgs@(CFArgs key nonce)) <- jDecode r
   CF.getFileContentsSize (CryptoFile toPath $ Just cfArgs) `shouldReturn` fromIntegral (B.length src)
   cKey <- encodedCString key
@@ -322,11 +328,12 @@ testFileEncryptionCApi fileName tmp = do
 
 testMissingFileEncryptionCApi :: FilePath -> IO ()
 testMissingFileEncryptionCApi tmp = do
+  cc <- mkCCPtr tmp
   let fromPath = tmp </> "missing_file.source.pdf"
       toPath = tmp </> "missing_file.encrypted.pdf"
   cFromPath <- newCString fromPath
   cToPath <- newCString toPath
-  r <- peekCAString =<< cChatEncryptFile cFromPath cToPath
+  r <- peekCAString =<< cChatEncryptFile cc cFromPath cToPath
   Just (WFError err) <- jDecode r
   err `shouldContain` fromPath
   CFArgs key nonce <- atomically . CF.randomArgs =<< C.newRandom
@@ -336,6 +343,9 @@ testMissingFileEncryptionCApi tmp = do
   cToPath' <- newCString toPath'
   err' <- peekCAString =<< cChatDecryptFile cToPath cKey cNonce cToPath'
   err' `shouldContain` toPath
+
+mkCCPtr :: FilePath -> IO (StablePtr ChatController)
+mkCCPtr tmp = either (error . show) newStablePtr =<< chatMigrateInit (tmp </> "1") "" "yesUp"
 
 testValidNameCApi :: FilePath -> IO ()
 testValidNameCApi _ = do
