@@ -53,9 +53,6 @@ struct SimpleXApp: App {
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
-//                    if prefPerformLA && authenticationExpired() {
-//                        authenticateIfNoCallKitCall()
-//                    }
                     showInitializationView = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                         initChatAndMigrate()

@@ -45,7 +45,7 @@ struct ContentView: View {
                 case .authenticated:
                     contentView()
                 case .checkAuthentication:
-                    EmptyView()
+                    EmptyView() // can put logo here
                 case .notAuthenticated:
                     lockButton()
                 }
