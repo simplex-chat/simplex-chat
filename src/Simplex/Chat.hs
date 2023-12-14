@@ -56,6 +56,7 @@ import Data.Time.Clock.System (systemToUTCTime)
 import Data.Word (Word16, Word32)
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
+import Simplex.Chat.Batch
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
@@ -117,7 +118,7 @@ import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, stdout)
 import System.Random (randomRIO)
 import Text.Read (readMaybe)
 import UnliftIO.Async
-import UnliftIO.Concurrent (forkFinally, forkIO, mkWeakThreadId, newEmptyMVar, putMVar, tryTakeMVar, threadDelay)
+import UnliftIO.Concurrent (forkFinally, forkIO, mkWeakThreadId, threadDelay)
 import UnliftIO.Directory
 import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose, hSeek, hTell, openFile)
@@ -5534,6 +5535,13 @@ deliverMessage conn@Connection {connId} cmEventTag msgBody msgId = do
   let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
   withStore' $ \db -> createSndMsgDelivery db sndMsgDelivery msgId
 
+deliverMessageB :: ChatMonad m => ChatBatch m -> AgentBatch (ReaderT Agent.Env m) -> Connection -> CMEventTag e -> MsgBody -> MessageId -> BatchT ChatError m Int64
+deliverMessageB chatBatch agentBatch conn@Connection {connId} cmEventTag msgBody msgId = do
+  let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
+  agentMsgId <- withAgentB $ \a -> sendMessageB a agentBatch (aConnId conn) msgFlags msgBody
+  let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
+  batchOperation chatBatch $ \db -> Right <$> createSndMsgDelivery db sndMsgDelivery msgId
+
 sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
 sendGroupMessage user GroupInfo {groupId} members chatMsgEvent =
   sendGroupMessage' user members chatMsgEvent groupId Nothing $ pure ()
@@ -5546,30 +5554,9 @@ memberToSend m = case memberConn m of
     | connStatus == ConnSndReady || connStatus == ConnReady -> Just (m, Just conn)
     | otherwise -> Just (m, Nothing)
 
-data ChatDB
-type instance BatchArgs ChatDB = DB.Connection
-type instance BatchError ChatDB = ChatError
-type ChatBatch m = BatchVar ChatDB m
-
-processAll :: ChatMonad m => ChatBatch m -> AgentBatch (ReaderT Agent.Env m) -> m ()
-processAll chatBatch agentBatch = do
-  chats <- atomically $ stateTVar chatBatch (,[])
-  agents <- atomically $ stateTVar agentBatch (,[])
-  logDebug $ tshow (length chats) <> " chats + " <> tshow (length agents) <> " agents"
-  ce <- execEContT $ unless (null chats) $ processChatBatch chats
-  ae <- execEContT $ unless (null agents) $ withAgentB $ \a -> processAgentBatch a agents
-  unless (null chats && null agents) $ processAll chatBatch agentBatch
-
-processChatBatch :: ChatMonad m => [Batch ChatDB m] -> BatchT ChatError m ()
-processChatBatch batch = do
-  results <- lift $ withStore' $ \db ->
-    forM batch $ \(Batch action next) -> next <$> action db
-  sequence_ results
-
 sendGroupMessage' :: forall e m. (MsgEncodingI e, ChatMonad m) => User -> [GroupMember] -> ChatMsgEvent e -> Int64 -> Maybe Int64 -> m () -> m (SndMessage, [GroupMember])
 sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
   msg <- createSndMessage chatMsgEvent (GroupId groupId)
-  -- TODO collect failed deliveries into a single error
   recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members) $ \GroupMember {memberRole} -> memberRole
   chatBatch <- newTVarIO mempty
   agentBatch <- newTVarIO mempty
@@ -5579,10 +5566,7 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
   (failed, passed) <- partitionEithers <$> sequence resultPromises
   toView $ CRChatErrors (Just user) failed
   pure (msg, catMaybes passed)
-  -- rs <- (msg,) . catMaybes <$>
-  -- rs <$ logError ("sendGroupMessage: results collected, " <> tshow (length rs) <> " group members messaged")
   where
-    -- messageMember :: GroupMember -> SndMessage -> m (Maybe GroupMember)
     messageMember :: ChatBatch m -> AgentBatch (ReaderT Agent.Env m) -> GroupMember -> SndMessage -> BatchT ChatError m (Maybe GroupMember)
     messageMember chatBatch agentBatch m@GroupMember {groupMemberId} SndMessage {msgId, msgBody} = case memberConn m of
       Nothing -> pendingOrForwarded
@@ -5590,7 +5574,7 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
         | connDisabled conn || connStatus == ConnDeleted -> pure Nothing
         | connStatus == ConnSndReady || connStatus == ConnReady -> do
             let tag = toCMEventTag chatMsgEvent
-            void $ deliverMessageB chatBatch agentBatch conn tag msgBody msgId
+            void $ deliverMessageB chatBatch agentBatch conn tag msgBody msgId -- FIXME: take locks for all the connections before batching
             lift postDeliver
             pure $ Just m
         | otherwise -> pendingOrForwarded
@@ -5616,13 +5600,6 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
         isXGrpMsgForward ev = case ev of
           XGrpMsgForward {} -> True
           _ -> False
-
-deliverMessageB :: ChatMonad m => ChatBatch m -> AgentBatch (ReaderT Agent.Env m) -> Connection -> CMEventTag e -> MsgBody -> MessageId -> BatchT ChatError m Int64
-deliverMessageB chatBatch agentBatch conn@Connection {connId} cmEventTag msgBody msgId = do
-  let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
-  agentMsgId <- withAgentB $ \a -> sendMessageB a agentBatch (aConnId conn) msgFlags msgBody -- XXX: agent batching
-  let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
-  batchOperation chatBatch $ \db -> Right <$> createSndMsgDelivery db sndMsgDelivery msgId -- XXX: local batching again
 
 shuffleMembers :: [a] -> (a -> GroupMemberRole) -> IO [a]
 shuffleMembers ms role = do
