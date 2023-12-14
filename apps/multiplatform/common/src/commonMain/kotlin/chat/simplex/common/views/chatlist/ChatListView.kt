@@ -49,13 +49,6 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   LaunchedEffect(chatModel.clearOverlays.value) {
     if (chatModel.clearOverlays.value && newChatSheetState.value.isVisible()) hideNewChatSheet(false)
   }
-  LaunchedEffect(chatModel.appOpenUrl.value) {
-    val url = chatModel.appOpenUrl.value
-    if (url != null) {
-      chatModel.appOpenUrl.value = null
-      connectIfOpenedViaUri(chatModel.remoteHostId(), url, chatModel)
-    }
-  }
   if (appPlatform.isDesktop) {
     KeyChangeEffect(chatModel.chatId.value) {
       if (chatModel.chatId.value != null) {
@@ -302,7 +295,7 @@ expect fun DesktopActiveCallOverlayLayout(newChatSheetState: MutableStateFlow<An
 fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
-    chatModel.appOpenUrl.value = uri
+    chatModel.appOpenUrl.value = rhId to uri
   } else {
     withApi {
       planAndConnect(chatModel, rhId, uri, incognito = null, close = null)

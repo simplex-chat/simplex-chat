@@ -70,8 +70,8 @@ object ChatModel {
   // Only needed during onboarding when user skipped password setup (left as random password)
   val desktopOnboardingRandomPassword = mutableStateOf(false)
 
-  // set when app is opened via contact or invitation URI
-  val appOpenUrl = mutableStateOf<URI?>(null)
+  // set when app is opened via contact or invitation URI (rhId, uri)
+  val appOpenUrl = mutableStateOf<Pair<Long?, URI>?>(null)
 
   // preferences
   val notificationPreviewMode by lazy {
