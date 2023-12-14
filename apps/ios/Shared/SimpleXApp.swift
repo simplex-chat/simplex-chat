@@ -68,11 +68,6 @@ struct SimpleXApp: App {
                         }
                         let appState = AppChatState.shared.value
                         chatModel.userAuthenticated = .checkAuthentication
-//                        if appState != .stopped {
-//                            chatModel.userAuthenticated = .checkAuthentication
-//                        } else {
-//                            chatModel.userAuthenticated = .notAuthenticated
-//                        }
                         automaticAuthAttempted = false
                         canConnectNonCallKitCall = false
                         // authentication ---
@@ -98,21 +93,22 @@ struct SimpleXApp: App {
                             }
                         }
                         // --- authentication
-                        let authExpired = authenticationExpired()
-                        // second condition is required for when authentication is enabled in settings
+                        // condition `userAuthenticated != .authenticated` is required for when authentication is enabled in settings or on initial notice
                         if prefPerformLA && chatModel.userAuthenticated != .authenticated {
                             if appState != .stopped {
-                                if authExpired {
+                                let authExpired = authenticationExpired()
+                                if !authExpired {
+                                    chatModel.userAuthenticated = .authenticated
+                                } else {
                                     if !automaticAuthAttempted {
                                         automaticAuthAttempted = true
                                         authenticateIfNotCallKitCall()
                                     }
-                                } else {
-                                    chatModel.userAuthenticated = .authenticated
                                 }
                                 canConnectNonCallKitCall = !(authExpired && prefPerformLA) || unlockedRecently()
                             } else {
-                                // this is to show lock button and not automatically attempt authentication when app is stopped
+                                // this is to show lock button and not automatically attempt authentication when app is stopped;
+                                // basically stopped app ignores autentication timeout
                                 chatModel.userAuthenticated = .notAuthenticated
                             }
                         }

@@ -59,6 +59,7 @@ struct ContentView: View {
                 LocalAuthView(authRequest: la)
             } else if showSetPasscode {
                 SetAppPasscodeView {
+                    chatModel.userAuthenticated = .authenticated
                     prefPerformLA = true
                     showSetPasscode = false
                     privacyLocalAuthModeDefault.set(.passcode)
@@ -213,6 +214,7 @@ struct ContentView: View {
         authenticate(reason: NSLocalizedString("Enable SimpleX Lock", comment: "authentication reason")) { laResult in
             switch laResult {
             case .success:
+                chatModel.userAuthenticated = .authenticated
                 prefPerformLA = true
                 alertManager.showAlert(laTurnedOnAlert())
             case .failed:
