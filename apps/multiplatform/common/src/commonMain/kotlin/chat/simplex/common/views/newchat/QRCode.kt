@@ -23,7 +23,7 @@ import kotlinx.coroutines.launch
 fun SimpleXLinkQRCode(
   connReq: String,
   modifier: Modifier = Modifier,
-  padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
+  padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING * 2f, vertical = DEFAULT_PADDING_HALF),
   tintColor: Color = Color(0xff062d56),
   withLogo: Boolean = true,
   onShare: (() -> Unit)? = null,
@@ -50,26 +50,24 @@ fun simplexChatLink(uri: String): String {
 fun QRCode(
   connReq: String,
   modifier: Modifier = Modifier,
-  padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF),
+  padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING * 2f, vertical = DEFAULT_PADDING_HALF),
   tintColor: Color = Color(0xff062d56),
   withLogo: Boolean = true,
   onShare: (() -> Unit)? = null,
 ) {
   val scope = rememberCoroutineScope()
-
-  BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-    val maxWidthInPx = with(LocalDensity.current) { maxWidth.roundToPx() }
-    val qr = remember(maxWidthInPx, connReq, tintColor, withLogo) {
-      qrCodeBitmap(connReq, maxWidthInPx).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
-        .let { if (withLogo) it.addLogo() else it }
-    }
+  val qr = remember(connReq, tintColor, withLogo) {
+    qrCodeBitmap(connReq, 1024).replaceColor(Color.Black.toArgb(), tintColor.toArgb())
+      .let { if (withLogo) it.addLogo() else it }
+  }
+  Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
     Image(
       bitmap = qr,
       contentDescription = stringResource(MR.strings.image_descr_qr_code),
       Modifier
-        .widthIn(max = 300.dp)
-        .aspectRatio(1f)
         .padding(padding)
+        .widthIn(max = 400.dp)
+        .aspectRatio(1f)
         .then(modifier)
         .clickable {
           scope.launch {
@@ -90,7 +88,9 @@ fun qrCodeBitmap(content: String, size: Int = 1024): ImageBitmap {
   val qrCode = QrCodeEncoder().addAutomatic(content).setError(QrCode.ErrorLevel.L).fixate()
   /** See [QrCodeGeneratorImage.initialize] and [FiducialImageEngine.configure] for size calculation */
   val numModules = QrCode.totalModules(qrCode.version)
-  val borderModule = 1
+  // Hide border on light themes to make it fit to the same place as camera in QRCodeScanner.
+  // On dark themes better to show the border
+  val borderModule = if (CurrentColors.value.colors.isLight) 0 else 1
   // val calculatedFinalWidth = (pixelsPerModule * numModules) + 2 * (borderModule * pixelsPerModule)
   // size = (x * numModules) + 2 * (borderModule * x)
   // size / x = numModules + 2 * borderModule

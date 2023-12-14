@@ -12,8 +12,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -69,7 +68,7 @@ actual fun QRCodeScanner(
       modifier = Modifier
         .padding(padding)
         .clipToBounds()
-        .sizeIn(maxWidth = 300.dp)
+        .widthIn(max = 400.dp)
         .aspectRatio(1f)
     ) { previewView ->
       val cameraSelector: CameraSelector = CameraSelector.Builder()

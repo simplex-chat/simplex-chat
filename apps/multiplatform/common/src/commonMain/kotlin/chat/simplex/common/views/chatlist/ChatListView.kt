@@ -306,6 +306,11 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
 private fun ChatListSearchBar(searchTextState: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>) {
   var focused by remember { mutableStateOf(false) }
   val focusRequester = remember { FocusRequester() }
+  val hideSearchOnBack: () -> Unit = { searchTextState.value = TextFieldValue() }
+  val hasText = remember { derivedStateOf { searchTextState.value.text.isNotEmpty() } }
+  if (hasText.value) {
+    BackHandler(onBack = hideSearchOnBack)
+  }
   Row(verticalAlignment = Alignment.CenterVertically) {
     SearchTextField(
       Modifier.weight(1f).padding(start = 14.dp).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
@@ -318,13 +323,13 @@ private fun ChatListSearchBar(searchTextState: MutableState<TextFieldValue>, sea
       searchTextState.value = searchTextState.value.copy(it.trim())
     }
     if (searchTextState.value.text.isEmpty()) {
-      val padding = if (appPlatform.isDesktop) 0.dp else DEFAULT_PADDING_HALF * 1.6f
+      val padding = if (appPlatform.isDesktop) 0.dp else DEFAULT_PADDING_HALF + 2.dp
       Row(Modifier.padding(end = padding)) {
         val clipboard = LocalClipboardManager.current
         if (remember(focused) { chatModel.clipboardHasText }.value) {
           IconButton(
             { searchTextState.value = searchTextState.value.copy(clipboard.getText()?.text ?: return@IconButton) },
-            Modifier.size(20.dp).desktopPointerHoverIconHand()
+            Modifier.size(30.dp).desktopPointerHoverIconHand()
           ) {
             Icon(painterResource(MR.images.ic_article), null)
           }
@@ -337,7 +342,7 @@ private fun ChatListSearchBar(searchTextState: MutableState<TextFieldValue>, sea
               NewChatView(chatModel, remember { chatModel.currentRemoteHost.value }, selection = NewChatOption.CONNECT, showQRCodeScanner = true, close = close)
             }
           },
-          Modifier.size(20.dp).desktopPointerHoverIconHand()
+          Modifier.size(30.dp).desktopPointerHoverIconHand()
         ) {
           Icon(painterResource(MR.images.ic_qr_code), null)
         }

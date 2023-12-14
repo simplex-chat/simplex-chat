@@ -1,6 +1,8 @@
 package chat.simplex.app
 
 import android.app.Application
+import android.content.Context
+import androidx.compose.ui.platform.ClipboardManager
 import chat.simplex.common.platform.Log
 import androidx.lifecycle.*
 import androidx.work.*
@@ -77,6 +79,13 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         Lifecycle.Event.ON_RESUME -> {
           isAppOnForeground = true
+          /**
+           * When the app calls [ClipboardManager.shareText] and a user copies text in clipboard, Android denies
+           * access to clipboard because the app considered in background.
+           * This will ensure that the app will get the event on resume
+           * */
+          val service = androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+          chatModel.clipboardHasText.value = service.hasPrimaryClip()
           if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete && chatModel.currentUser.value != null) {
             SimplexService.showBackgroundServiceNoticeIfNeeded()
           }

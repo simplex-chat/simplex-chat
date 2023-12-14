@@ -8,6 +8,6 @@ import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 
 @Composable
 expect fun QRCodeScanner(
-  padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING * 3.25f, vertical = DEFAULT_PADDING + 2.dp),
+  padding: PaddingValues = PaddingValues(horizontal = DEFAULT_PADDING * 2f, vertical = DEFAULT_PADDING_HALF),
   onBarcode: (String) -> Unit
 )

@@ -14,8 +14,7 @@ import android.text.SpannedString
 import android.text.style.*
 import android.util.Base64
 import android.view.WindowManager
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.*
@@ -23,7 +22,6 @@ import androidx.compose.ui.text.font.*
 import androidx.compose.ui.text.style.BaselineShift
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.*
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.content.FileProvider
 import androidx.core.text.HtmlCompat
 import chat.simplex.common.helpers.*
@@ -60,7 +58,7 @@ fun keepScreenOn(on: Boolean) {
 }
 
 @Composable
-actual fun setupClipboardListener() {
+actual fun SetupClipboardListener() {
   DisposableEffect(Unit) {
     val service = androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val listener = { chatModel.clipboardHasText.value = service.hasPrimaryClip() }

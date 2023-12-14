@@ -89,7 +89,7 @@ actual fun escapedHtmlToAnnotatedString(text: String, density: Density): Annotat
 }
 
 @Composable
-actual fun setupClipboardListener() {
+actual fun SetupClipboardListener() {
   val clipboard = LocalClipboardManager.current
   chatModel.clipboardHasText.value = clipboard.hasText()
   LaunchedEffect(Unit) {

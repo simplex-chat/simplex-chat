@@ -61,7 +61,7 @@ fun annotatedStringResource(id: StringResource, vararg args: Any?): AnnotatedStr
 }
 
 @Composable
-expect fun setupClipboardListener()
+expect fun SetupClipboardListener()
 
 // maximum image file size to be auto-accepted
 const val MAX_IMAGE_SIZE: Long = 261_120 // 255KB

@@ -105,6 +105,9 @@ fun NewChatView(m: ChatModel, rh: RemoteHostInfo?, selection: NewChatOption, sho
       initialPage = selection.value.ordinal,
       initialPageOffsetFraction = 0f
     ) { NewChatOption.values().size }
+    KeyChangeEffect(pagerState.currentPage) {
+      selection.value = NewChatOption.values()[pagerState.currentPage]
+    }
     TabRow(
       selectedTabIndex = pagerState.currentPage,
       backgroundColor = Color.Transparent,
@@ -112,9 +115,8 @@ fun NewChatView(m: ChatModel, rh: RemoteHostInfo?, selection: NewChatOption, sho
     ) {
       tabTitles.forEachIndexed { index, it ->
         LeadingIconTab(
-          selected = selection.value.ordinal == index,
+          selected = pagerState.currentPage == index,
           onClick = {
-            selection.value = NewChatOption.values()[index]
             scope.launch {
               pagerState.scrollToPage(index)
             }
