@@ -1291,4 +1291,7 @@
     <string name="color_received_message">Fogadott üzenet</string>
     <string name="only_your_contact_can_delete">Kizárólag az ismerősöd tud véglegesen törölni üzeneteket (te csak törlendőként tudod megjelölni azokat).</string>
     <string name="self_destruct_passcode_changed">Önmegsemmisítési számkód megváltozott</string>
+    <string name="using_simplex_chat_servers">SimpleX Chat szerverek használatban.</string>
+    <string name="use_simplex_chat_servers__question">SimpleX Chat szerverek használata?</string>
+    <string name="unhide_chat_profile">Chat profil felfedése</string>
 </resources>
