@@ -172,6 +172,15 @@ fun MainScreen() {
         ModalManager.fullscreen.showPasscodeInView()
       }
       AlertManager.privacySensitive.showInView()
+      if (onboarding == OnboardingStage.OnboardingComplete) {
+        LaunchedEffect(chatModel.currentUser.value, chatModel.appOpenUrl.value) {
+          val (rhId, url) = chatModel.appOpenUrl.value ?: (null to null)
+          if (url != null) {
+            chatModel.appOpenUrl.value = null
+            connectIfOpenedViaUri(rhId, url, chatModel)
+          }
+        }
+      }
     }
     val invitation = chatModel.activeCallInvitation.value
     if (invitation != null) IncomingCallAlertView(invitation, chatModel)
