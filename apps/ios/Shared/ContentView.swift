@@ -14,10 +14,9 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Environment(\.colorScheme) var colorScheme
-    @Binding var doAuthenticate: Bool
-    @Binding var userAuthorized: Bool?
+    var authenticateContentViewAccess: () -> Void
+    @Binding var userAuthorized: UserAuthorized
     @Binding var canConnectCall: Bool
-    @Binding var lastSuccessfulUnlock: TimeInterval?
     @Binding var showInitializationView: Bool
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
@@ -42,7 +41,18 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            contentView()
+            if prefPerformLA {
+                switch userAuthorized {
+                case .authorized:
+                    contentView()
+                case .checkAuthorization:
+                    EmptyView()
+                case .notAuthorized:
+                    lockButton()
+                }
+            } else {
+                contentView()
+            }
             if chatModel.showCallView, let call = chatModel.activeCall {
                 callView(call)
             }
@@ -61,13 +71,6 @@ struct ContentView: View {
                 }
             }
         }
-        .onAppear {
-            if prefPerformLA { requestNtfAuthorization() }
-            initAuthenticate()
-        }
-        .onChange(of: doAuthenticate) { _ in
-            initAuthenticate()
-        }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
         .sheet(isPresented: $showSettings) {
             SettingsView(showSettings: $showSettings)
@@ -79,9 +82,7 @@ struct ContentView: View {
     }
 
     @ViewBuilder private func contentView() -> some View {
-        if prefPerformLA && userAuthorized != true {
-            lockButton()
-        } else if chatModel.chatDbStatus == nil && showInitializationView {
+        if chatModel.chatDbStatus == nil && showInitializationView {
             initializationView()
         } else if let status = chatModel.chatDbStatus, status != .ok {
             DatabaseErrorView(status: status)
@@ -106,11 +107,11 @@ struct ContentView: View {
         if CallController.useCallKit() {
             ActiveCallView(call: call, canConnectCall: Binding.constant(true))
                 .onDisappear {
-                    if userAuthorized == false && doAuthenticate { runAuthenticate() }
+                    if prefPerformLA && userAuthorized != .authorized { authenticateContentViewAccess() }
                 }
         } else {
             ActiveCallView(call: call, canConnectCall: $canConnectCall)
-            if prefPerformLA && userAuthorized != true {
+            if prefPerformLA && userAuthorized != .authorized {
                 Rectangle()
                     .fill(colorScheme == .dark ? .black : .white)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -120,7 +121,7 @@ struct ContentView: View {
     }
 
     private func lockButton() -> some View {
-        Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
+        Button(action: authenticateContentViewAccess) { Label("Unlock", systemImage: "lock") }
     }
 
     private func initializationView() -> some View {
@@ -135,7 +136,7 @@ struct ContentView: View {
         ZStack(alignment: .top) {
             ChatListView(showSettings: $showSettings).privacySensitive(protectScreen)
             .onAppear {
-                if !prefPerformLA { requestNtfAuthorization() }
+                requestNtfAuthorization()
                 // Local Authentication notice is to be shown on next start after onboarding is complete
                 if (!prefLANoticeShown && prefShowLANotice && !chatModel.chats.isEmpty) {
                     prefLANoticeShown = true
@@ -183,52 +184,6 @@ struct ContentView: View {
             logger.debug("callToRecentContact: schedule call")
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 CallController.shared.startCall(contact, mediaType)
-            }
-        }
-    }
-
-    private func initAuthenticate() {
-        logger.debug("initAuthenticate")
-        if CallController.useCallKit() && chatModel.showCallView && chatModel.activeCall != nil {
-            userAuthorized = false
-        } else if doAuthenticate {
-            runAuthenticate()
-        }
-    }
-
-    private func runAuthenticate() {
-        logger.debug("DEBUGGING: runAuthenticate")
-        if !prefPerformLA {
-            userAuthorized = true
-        } else {
-            logger.debug("DEBUGGING: before dismissAllSheets")
-            dismissAllSheets(animated: false) {
-                logger.debug("DEBUGGING: in dismissAllSheets callback")
-                chatModel.chatId = nil
-                justAuthenticate()
-            }
-        }
-    }
-
-    private func justAuthenticate() {
-        userAuthorized = false
-        let laMode = privacyLocalAuthModeDefault.get()
-        authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason"), selfDestruct: true) { laResult in
-            logger.debug("DEBUGGING: authenticate callback: \(String(describing: laResult))")
-            switch (laResult) {
-            case .success:
-                userAuthorized = true
-                canConnectCall = true
-                lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
-            case .failed:
-                if laMode == .passcode {
-                    AlertManager.shared.showAlert(laFailedAlert())
-                }
-            case .unavailable:
-                userAuthorized = true
-                prefPerformLA = false
-                canConnectCall = true
-                AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
             }
         }
     }

@@ -11,18 +11,27 @@ import SimpleXChat
 
 let logger = Logger()
 
+enum UserAuthorized {
+    case authorized
+    case checkAuthorization
+    case notAuthorized
+}
+
 @main
 struct SimpleXApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var chatModel = ChatModel.shared
     @ObservedObject var alertManager = AlertManager.shared
+    
     @Environment(\.scenePhase) var scenePhase
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
-    @State private var userAuthorized: Bool?
-    @State private var doAuthenticate = false
-    @State private var enteredBackground: TimeInterval? = nil
-    @State private var canConnectCall = false
+    @State private var userAuthorized: UserAuthorized = .notAuthorized
+    @State private var enteredBackgroundAuthorized: TimeInterval? = nil
+    @State private var automaticAuthAttempted: Bool = false
+
+    @State private var canConnectNonCallKitCall = false
     @State private var lastSuccessfulUnlock: TimeInterval? = nil
+
     @State private var showInitializationView = false
 
     init() {
@@ -41,10 +50,9 @@ struct SimpleXApp: App {
     var body: some Scene {
         return WindowGroup {
             ContentView(
-                doAuthenticate: $doAuthenticate,
+                authenticateContentViewAccess: authenticateContentViewAccess,
                 userAuthorized: $userAuthorized,
-                canConnectCall: $canConnectCall,
-                lastSuccessfulUnlock: $lastSuccessfulUnlock,
+                canConnectCall: $canConnectNonCallKitCall,
                 showInitializationView: $showInitializationView
             )
                 .environmentObject(chatModel)
@@ -53,6 +61,9 @@ struct SimpleXApp: App {
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
+//                    if prefPerformLA && authenticationExpired() {
+//                        authenticateIfNoCallKitCall()
+//                    }
                     showInitializationView = true
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                         initChatAndMigrate()
@@ -62,17 +73,21 @@ struct SimpleXApp: App {
                     logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
                     switch (phase) {
                     case .background:
+                        // --- authentication
+                        if userAuthorized == .authorized {
+                            enteredBackgroundAuthorized = ProcessInfo.processInfo.systemUptime
+                        }
+                        userAuthorized = .checkAuthorization
+                        automaticAuthAttempted = false
+                        canConnectNonCallKitCall = false
+                        // authentication ---
+
                         if CallController.useCallKit() && chatModel.activeCall != nil {
                             CallController.shared.shouldSuspendChat = true
                         } else {
                             suspendChat()
                             BGManager.shared.schedule()
                         }
-                        if userAuthorized == true {
-                            enteredBackground = ProcessInfo.processInfo.systemUptime
-                        }
-                        doAuthenticate = false
-                        canConnectCall = false
                         NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
                         CallController.shared.shouldSuspendChat = false
@@ -85,14 +100,62 @@ struct SimpleXApp: App {
                                         updateCallInvitations()
                                     }
                                 }
-                                doAuthenticate = authenticationExpired()
-                                canConnectCall = !(doAuthenticate && prefPerformLA) || unlockedRecently()
+
+                                // --- authentication
+                                let authExpired = authenticationExpired()
+                                if prefPerformLA {
+                                    if authExpired {
+                                        if !automaticAuthAttempted {
+                                            automaticAuthAttempted = true
+                                            authenticateIfNoCallKitCall()
+                                        }
+                                    } else {
+                                        userAuthorized = .authorized
+                                    }
+                                }
+                                canConnectNonCallKitCall = !(authExpired && prefPerformLA) || unlockedRecently()
+                                // authentication ---
                             }
                         }
-                    default:
+                    default :
                         break
                     }
                 }
+        }
+    }
+
+    func authenticateIfNoCallKitCall() {
+        logger.debug("DEBUGGING: initAuthenticate")
+        if !(CallController.useCallKit() && chatModel.showCallView && chatModel.activeCall != nil) {
+            authenticateContentViewAccess()
+        }
+    }
+
+    private func authenticateContentViewAccess() {
+        logger.debug("DEBUGGING: runAuthenticate")
+        dismissAllSheets(animated: false) {
+            logger.debug("DEBUGGING: runAuthenticate, in dismissAllSheets callback")
+            chatModel.chatId = nil
+
+            authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason"), selfDestruct: true) { laResult in
+                logger.debug("DEBUGGING: authenticate callback: \(String(describing: laResult))")
+                switch (laResult) {
+                case .success:
+                    userAuthorized = .authorized
+                    canConnectNonCallKitCall = true
+                    lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
+                case .failed:
+                    userAuthorized = .notAuthorized
+                    if privacyLocalAuthModeDefault.get() == .passcode {
+                        AlertManager.shared.showAlert(laFailedAlert())
+                    }
+                case .unavailable:
+                    prefPerformLA = false
+                    userAuthorized = .notAuthorized
+                    canConnectNonCallKitCall = true
+                    AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
+                }
+            }
         }
     }
 
@@ -121,9 +184,9 @@ struct SimpleXApp: App {
     }
 
     private func authenticationExpired() -> Bool {
-        if let enteredBackground = enteredBackground {
+        if let enteredBackgroundAuthorized = enteredBackgroundAuthorized {
             let delay = Double(UserDefaults.standard.integer(forKey: DEFAULT_LA_LOCK_DELAY))
-            return ProcessInfo.processInfo.systemUptime - enteredBackground >= delay
+            return ProcessInfo.processInfo.systemUptime - enteredBackgroundAuthorized >= delay
         } else {
             return true
         }
