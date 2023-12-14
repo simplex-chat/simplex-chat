@@ -30,7 +30,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
 import Simplex.Messaging.Agent.Protocol (MsgErrorType (..), RatchetSyncState (..), SwitchPhase (..))
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, singleFieldJSON, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, fstToLower, singleFieldJSON, sumTypeJSON)
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow, (<$?>))
 
 data MsgDirection = MDRcv | MDSnd
@@ -574,3 +574,122 @@ dbParseACIContent = fmap aciContentDBJSON . J.eitherDecodeStrict' . encodeUtf8
 -- platform specific
 instance FromJSON ACIContent where
   parseJSON = fmap aciContentJSON . J.parseJSON
+
+data CIContentTag
+  = CISndMsgContent_
+  | CIRcvMsgContent_
+  | CISndDeleted_
+  | CIRcvDeleted_
+  | CISndCall_
+  | CIRcvCall_
+  | CIRcvIntegrityError_
+  | CIRcvDecryptionError_
+  | CIRcvGroupInvitation_
+  | CISndGroupInvitation_
+  | CIRcvDirectEvent_
+  | CIRcvGroupEvent_
+  | CISndGroupEvent_
+  | CIRcvConnEvent_
+  | CISndConnEvent_
+  | CIRcvChatFeature_
+  | CISndChatFeature_
+  | CIRcvChatPreference_
+  | CISndChatPreference_
+  | CIRcvGroupFeature_
+  | CISndGroupFeature_
+  | CIRcvChatFeatureRejected_
+  | CIRcvGroupFeatureRejected_
+  | CISndModerated_
+  | CIRcvModerated_
+  | CIInvalidJSON_
+  deriving (Eq, Show)
+
+instance TextEncoding CIContentTag where
+  textDecode = \case
+    "sndMsgContent" -> Just CISndMsgContent_
+    "rcvMsgContent" -> Just CIRcvMsgContent_
+    "sndDeleted" -> Just CISndDeleted_
+    "rcvDeleted" -> Just CIRcvDeleted_
+    "sndCall" -> Just CISndCall_
+    "rcvCall" -> Just CIRcvCall_
+    "rcvIntegrityError" -> Just CIRcvIntegrityError_
+    "rcvDecryptionError" -> Just CIRcvDecryptionError_
+    "rcvGroupInvitation" -> Just CIRcvGroupInvitation_
+    "sndGroupInvitation" -> Just CISndGroupInvitation_
+    "rcvDirectEvent" -> Just CIRcvDirectEvent_
+    "rcvGroupEvent" -> Just CIRcvGroupEvent_
+    "sndGroupEvent" -> Just CISndGroupEvent_
+    "rcvConnEvent" -> Just CIRcvConnEvent_
+    "sndConnEvent" -> Just CISndConnEvent_
+    "rcvChatFeature" -> Just CIRcvChatFeature_
+    "sndChatFeature" -> Just CISndChatFeature_
+    "rcvChatPreference" -> Just CIRcvChatPreference_
+    "sndChatPreference" -> Just CISndChatPreference_
+    "rcvGroupFeature" -> Just CIRcvGroupFeature_
+    "sndGroupFeature" -> Just CISndGroupFeature_
+    "rcvChatFeatureRejected" -> Just CIRcvChatFeatureRejected_
+    "rcvGroupFeatureRejected" -> Just CIRcvGroupFeatureRejected_
+    "sndModerated" -> Just CISndModerated_
+    "rcvModerated" -> Just CIRcvModerated_
+    "invalidJSON" -> Just CIInvalidJSON_
+    _ -> Nothing
+  textEncode = \case
+    CISndMsgContent_ -> "sndMsgContent"
+    CIRcvMsgContent_ -> "rcvMsgContent"
+    CISndDeleted_ -> "sndDeleted"
+    CIRcvDeleted_ -> "rcvDeleted"
+    CISndCall_ -> "sndCall"
+    CIRcvCall_ -> "rcvCall"
+    CIRcvIntegrityError_ -> "rcvIntegrityError"
+    CIRcvDecryptionError_ -> "rcvDecryptionError"
+    CIRcvGroupInvitation_ -> "rcvGroupInvitation"
+    CISndGroupInvitation_ -> "sndGroupInvitation"
+    CIRcvDirectEvent_ -> "rcvDirectEvent"
+    CIRcvGroupEvent_ -> "rcvGroupEvent"
+    CISndGroupEvent_ -> "sndGroupEvent"
+    CIRcvConnEvent_ -> "rcvConnEvent"
+    CISndConnEvent_ -> "sndConnEvent"
+    CIRcvChatFeature_ -> "rcvChatFeature"
+    CISndChatFeature_ -> "sndChatFeature"
+    CIRcvChatPreference_ -> "rcvChatPreference"
+    CISndChatPreference_ -> "sndChatPreference"
+    CIRcvGroupFeature_ -> "rcvGroupFeature"
+    CISndGroupFeature_ -> "sndGroupFeature"
+    CIRcvChatFeatureRejected_ -> "rcvChatFeatureRejected"
+    CIRcvGroupFeatureRejected_ -> "rcvGroupFeatureRejected"
+    CISndModerated_ -> "sndModerated"
+    CIRcvModerated_ -> "rcvModerated"
+    CIInvalidJSON_ -> "invalidJSON"
+
+instance FromField CIContentTag where fromField = fromTextField_ textDecode
+
+instance ToField CIContentTag where toField = toField . textEncode
+
+toCIContentTag :: CIContent e -> CIContentTag
+toCIContentTag ciContent = case ciContent of
+  CISndMsgContent _ -> CISndMsgContent_
+  CIRcvMsgContent _ -> CIRcvMsgContent_
+  CISndDeleted _ -> CISndDeleted_
+  CIRcvDeleted _ -> CIRcvDeleted_
+  CISndCall {} -> CISndCall_
+  CIRcvCall {} -> CIRcvCall_
+  CIRcvIntegrityError _ -> CIRcvIntegrityError_
+  CIRcvDecryptionError {} -> CIRcvDecryptionError_
+  CIRcvGroupInvitation {} -> CIRcvGroupInvitation_
+  CISndGroupInvitation {} -> CISndGroupInvitation_
+  CIRcvDirectEvent _ -> CIRcvDirectEvent_
+  CIRcvGroupEvent _ -> CIRcvGroupEvent_
+  CISndGroupEvent _ -> CISndGroupEvent_
+  CIRcvConnEvent _ -> CIRcvConnEvent_
+  CISndConnEvent _ -> CISndConnEvent_
+  CIRcvChatFeature {} -> CIRcvChatFeature_
+  CISndChatFeature {} -> CISndChatFeature_
+  CIRcvChatPreference {} -> CIRcvChatPreference_
+  CISndChatPreference {} -> CISndChatPreference_
+  CIRcvGroupFeature {} -> CIRcvGroupFeature_
+  CISndGroupFeature {} -> CISndGroupFeature_
+  CIRcvChatFeatureRejected _ -> CIRcvChatFeatureRejected_
+  CIRcvGroupFeatureRejected _ -> CIRcvGroupFeatureRejected_
+  CISndModerated -> CISndModerated_
+  CIRcvModerated -> CIRcvModerated_
+  CIInvalidJSON _ -> CIInvalidJSON_
