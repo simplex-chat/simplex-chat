@@ -24,7 +24,7 @@ import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
 
 class AlertManager {
-  var alertViews = mutableStateListOf<(@Composable () -> Unit)>()
+  private var alertViews = mutableStateListOf<(@Composable () -> Unit)>()
 
   fun showAlert(alert: @Composable () -> Unit) {
     Log.d(TAG, "AlertManager.showAlert")
@@ -34,6 +34,12 @@ class AlertManager {
   fun hideAlert() {
     alertViews.removeLastOrNull()
   }
+
+  fun hideAllAlerts() {
+    alertViews.clear()
+  }
+
+  fun hasAlertsShown() = alertViews.isNotEmpty()
 
   fun showAlertDialogButtons(
     title: String,
@@ -220,6 +226,7 @@ class AlertManager {
 
   companion object {
     val shared = AlertManager()
+    val privacySensitive = AlertManager()
   }
 }
 

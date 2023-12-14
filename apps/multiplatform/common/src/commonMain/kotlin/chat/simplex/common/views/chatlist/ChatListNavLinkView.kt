@@ -611,12 +611,12 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
   close: (() -> Unit)?,
   openChat: Boolean
 ) {
-  AlertManager.shared.showAlertDialogButtonsColumn(
+  AlertManager.privacySensitive.showAlertDialogButtonsColumn(
     title = String.format(generalGetString(MR.strings.connect_with_contact_name_question), contact.chatViewName),
     buttons = {
       Column {
         SectionItemView({
-          AlertManager.shared.hideAlert()
+          AlertManager.privacySensitive.hideAlert()
           withApi {
             close?.invoke()
             val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = false)
@@ -628,7 +628,7 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
           Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         SectionItemView({
-          AlertManager.shared.hideAlert()
+          AlertManager.privacySensitive.hideAlert()
           withApi {
             close?.invoke()
             val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = true)
@@ -640,7 +640,7 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
           Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
         SectionItemView({
-          AlertManager.shared.hideAlert()
+          AlertManager.privacySensitive.hideAlert()
         }) {
           Text(stringResource(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
@@ -654,7 +654,7 @@ suspend fun connectContactViaAddress(chatModel: ChatModel, rhId: Long?, contactI
   val contact = chatModel.controller.apiConnectContactViaAddress(rhId, incognito, contactId)
   if (contact != null) {
     chatModel.updateContact(rhId, contact)
-    AlertManager.shared.showAlertMsg(
+    AlertManager.privacySensitive.showAlertMsg(
       title = generalGetString(MR.strings.connection_request_sent),
       text = generalGetString(MR.strings.you_will_be_connected_when_your_connection_request_is_accepted),
       hostDevice = hostDevice(rhId),
