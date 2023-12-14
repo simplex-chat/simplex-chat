@@ -11,12 +11,6 @@ import SimpleXChat
 
 let logger = Logger()
 
-enum UserAuthorized {
-    case authorized
-    case checkAuthorization
-    case notAuthorized
-}
-
 @main
 struct SimpleXApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
@@ -25,7 +19,6 @@ struct SimpleXApp: App {
     
     @Environment(\.scenePhase) var scenePhase
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
-    @State private var userAuthorized: UserAuthorized = .notAuthorized
     @State private var enteredBackgroundAuthorized: TimeInterval? = nil
     @State private var automaticAuthAttempted: Bool = false
 
@@ -51,7 +44,6 @@ struct SimpleXApp: App {
         return WindowGroup {
             ContentView(
                 authenticateContentViewAccess: authenticateContentViewAccess,
-                userAuthorized: $userAuthorized,
                 canConnectCall: $canConnectNonCallKitCall,
                 showInitializationView: $showInitializationView
             )
@@ -74,10 +66,10 @@ struct SimpleXApp: App {
                     switch (phase) {
                     case .background:
                         // --- authentication
-                        if userAuthorized == .authorized {
+                        if chatModel.userAuthenticated == .authenticated {
                             enteredBackgroundAuthorized = ProcessInfo.processInfo.systemUptime
                         }
-                        userAuthorized = .checkAuthorization
+                        chatModel.userAuthenticated = .checkAuthentication
                         automaticAuthAttempted = false
                         canConnectNonCallKitCall = false
                         // authentication ---
@@ -103,14 +95,15 @@ struct SimpleXApp: App {
 
                                 // --- authentication
                                 let authExpired = authenticationExpired()
-                                if prefPerformLA {
+                                // second check is required for when authentication is enabled
+                                if prefPerformLA && chatModel.userAuthenticated != .authenticated {
                                     if authExpired {
                                         if !automaticAuthAttempted {
                                             automaticAuthAttempted = true
                                             authenticateIfNotCallKitCall()
                                         }
                                     } else {
-                                        userAuthorized = .authorized
+                                        chatModel.userAuthenticated = .authenticated
                                     }
                                 }
                                 canConnectNonCallKitCall = !(authExpired && prefPerformLA) || unlockedRecently()
@@ -141,17 +134,17 @@ struct SimpleXApp: App {
                 logger.debug("DEBUGGING: authenticate callback: \(String(describing: laResult))")
                 switch (laResult) {
                 case .success:
-                    userAuthorized = .authorized
+                    chatModel.userAuthenticated = .authenticated
                     canConnectNonCallKitCall = true
                     lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
                 case .failed:
-                    userAuthorized = .notAuthorized
+                    chatModel.userAuthenticated = .notAuthenticated
                     if privacyLocalAuthModeDefault.get() == .passcode {
                         AlertManager.shared.showAlert(laFailedAlert())
                     }
                 case .unavailable:
                     prefPerformLA = false
-                    userAuthorized = .notAuthorized
+                    chatModel.userAuthenticated = .notAuthenticated
                     canConnectNonCallKitCall = true
                     AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
                 }

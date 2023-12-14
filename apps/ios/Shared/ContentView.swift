@@ -15,7 +15,6 @@ struct ContentView: View {
     @ObservedObject var callController = CallController.shared
     @Environment(\.colorScheme) var colorScheme
     var authenticateContentViewAccess: () -> Void
-    @Binding var userAuthorized: UserAuthorized
     @Binding var canConnectCall: Bool
     @Binding var showInitializationView: Bool
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
@@ -42,12 +41,12 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             if prefPerformLA {
-                switch userAuthorized {
-                case .authorized:
+                switch chatModel.userAuthenticated {
+                case .authenticated:
                     contentView()
-                case .checkAuthorization:
+                case .checkAuthentication:
                     EmptyView()
-                case .notAuthorized:
+                case .notAuthenticated:
                     lockButton()
                 }
             } else {
@@ -107,11 +106,11 @@ struct ContentView: View {
         if CallController.useCallKit() {
             ActiveCallView(call: call, canConnectCall: Binding.constant(true))
                 .onDisappear {
-                    if prefPerformLA && userAuthorized != .authorized { authenticateContentViewAccess() }
+                    if prefPerformLA && chatModel.userAuthenticated != .authenticated { authenticateContentViewAccess() }
                 }
         } else {
             ActiveCallView(call: call, canConnectCall: $canConnectCall)
-            if prefPerformLA && userAuthorized != .authorized {
+            if prefPerformLA && chatModel.userAuthenticated != .authenticated {
                 Rectangle()
                     .fill(colorScheme == .dark ? .black : .white)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
