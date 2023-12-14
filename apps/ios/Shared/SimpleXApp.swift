@@ -66,7 +66,12 @@ struct SimpleXApp: App {
                         if chatModel.userAuthenticated == .authenticated {
                             enteredBackgroundAuthorized = ProcessInfo.processInfo.systemUptime
                         }
-                        chatModel.userAuthenticated = .checkAuthentication
+                        let appState = AppChatState.shared.value
+                        if appState != .stopped {
+                            chatModel.userAuthenticated = .checkAuthentication
+                        } else {
+                            chatModel.userAuthenticated = .notAuthenticated
+                        }
                         automaticAuthAttempted = false
                         canConnectNonCallKitCall = false
                         // authentication ---
