@@ -506,7 +506,7 @@ fun connectViaMemberAddressAlert(rhId: Long?, connReqUri: String) {
   try {
     val uri = URI(connReqUri)
     withApi {
-      planAndConnect(chatModel, rhId, uri, incognito = null, close = { ModalManager.closeAllModalsEverywhere() })
+      planAndConnect(rhId, uri, incognito = null, close = { ModalManager.closeAllModalsEverywhere() })
     }
   } catch (e: RuntimeException) {
     AlertManager.shared.showAlertMsg(

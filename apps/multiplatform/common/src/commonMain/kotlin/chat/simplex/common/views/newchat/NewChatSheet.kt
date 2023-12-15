@@ -42,7 +42,7 @@ fun NewChatSheet(chatModel: ChatModel, newChatSheetState: StateFlow<AnimatedView
     addContact = {
       closeNewChatSheet(false)
       ModalManager.center.closeModals()
-      ModalManager.center.showModalCloseable { close -> NewChatView(chatModel, chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close) }
+      ModalManager.center.showModalCloseable { close -> NewChatView(chatModel.currentRemoteHost.value, NewChatOption.INVITE, close = close) }
     },
     createGroup = {
       closeNewChatSheet(false)

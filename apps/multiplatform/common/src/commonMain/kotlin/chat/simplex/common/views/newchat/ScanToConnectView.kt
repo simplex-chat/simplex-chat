@@ -18,7 +18,6 @@ enum class ConnectionLinkType {
 }
 
 suspend fun planAndConnect(
-  chatModel: ChatModel,
   rhId: Long?,
   uri: URI,
   incognito: Boolean?,

@@ -38,11 +38,11 @@ enum class NewChatOption {
 }
 
 @Composable
-fun NewChatView(m: ChatModel, rh: RemoteHostInfo?, selection: NewChatOption, showQRCodeScanner: Boolean = false, close: () -> Unit) {
+fun NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRCodeScanner: Boolean = false, close: () -> Unit) {
   val selection = rememberSaveable { mutableStateOf(selection) }
   val showQRCodeScanner = rememberSaveable { mutableStateOf(showQRCodeScanner) }
   val contactConnection: MutableState<PendingContactConnection?> = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(null) }
-  val connReqInvitation by remember { derivedStateOf { m.showingInvitation.value?.connReq ?: "" } }
+  val connReqInvitation by remember { derivedStateOf { chatModel.showingInvitation.value?.connReq ?: "" } }
   val creatingConnReq = rememberSaveable { mutableStateOf(false) }
   val pastedLink = rememberSaveable { mutableStateOf("") }
   LaunchedEffect(selection.value) {
@@ -62,9 +62,9 @@ fun NewChatView(m: ChatModel, rh: RemoteHostInfo?, selection: NewChatOption, sho
        * It will be dropped automatically when connection established or when user goes away from this screen.
        * It applies only to Android because on Desktop center space will not be overlapped by [AddContactLearnMore]
        **/
-      if (m.showingInvitation.value != null && (!ModalManager.center.hasModalsOpen() || appPlatform.isDesktop)) {
+      if (chatModel.showingInvitation.value != null && (!ModalManager.center.hasModalsOpen() || appPlatform.isDesktop)) {
         val conn = contactConnection.value
-        if (m.showingInvitation.value?.connChatUsed == false && conn != null) {
+        if (chatModel.showingInvitation.value?.connChatUsed == false && conn != null) {
           AlertManager.shared.showAlertDialog(
             title = generalGetString(MR.strings.keep_unused_invitation_question),
             text = generalGetString(MR.strings.you_can_view_invitation_link_again),
@@ -78,7 +78,7 @@ fun NewChatView(m: ChatModel, rh: RemoteHostInfo?, selection: NewChatOption, sho
             }
           )
         }
-        m.showingInvitation.value = null
+        chatModel.showingInvitation.value = null
       }
     }
   }
@@ -347,7 +347,6 @@ private suspend fun verify(rhId: Long?, text: String?, close: () -> Unit): Boole
 
 private suspend fun connect(rhId: Long?, link: String, close: () -> Unit, cleanup: (() -> Unit)? = null) {
   planAndConnect(
-    chatModel,
     rhId,
     URI.create(link),
     close = close,
