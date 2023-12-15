@@ -110,7 +110,7 @@ struct SimpleXApp: App {
                                 canConnectNonCallKitCall = !(authExpired && prefPerformLA) || unlockedRecently()
                             } else {
                                 // this is to show lock button and not automatically attempt authentication when app is stopped;
-                                // basically stopped app ignores autentication timeout
+                                // basically stopped app ignores authentication timeout
                                 chatModel.userAuthenticated = .notAuthenticated
                             }
                         }
