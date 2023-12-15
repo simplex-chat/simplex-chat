@@ -324,6 +324,8 @@ private fun LinkTextView(link: String, share: Boolean) {
           )
         })
     }
+    // Element Text() can add ellipsis (...) in random place of the string, sometimes even after half of width of a screen.
+    // So using BasicTextField + manual ...
     Text("…", fontSize = 16.sp)
     if (share) {
       Spacer(Modifier.width(DEFAULT_PADDING))
