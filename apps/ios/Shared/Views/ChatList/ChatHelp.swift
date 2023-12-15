@@ -43,8 +43,8 @@ struct ChatHelp: View {
                     Text("above, then choose:")
                 }
 
-                Text("**New contact**: to create a new invitation link, or connect via a link you received.")
-                Text("**New group**: to create a new group.")
+                Text("**Add contact**: to create a new invitation link, or connect via a link you received.")
+                Text("**Create group**: to create a new group.")
             }
             .padding(.top, 24)
 
