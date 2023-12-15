@@ -434,6 +434,7 @@ fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection
     painterResource(MR.images.ic_delete),
     onClick = {
       deleteContactConnectionAlert(rhId, chatInfo.contactConnection, chatModel) {
+        chatModel.dismissConnReqView(chatInfo.contactConnection.id)
         if (chatModel.chatId.value == null) {
           ModalManager.center.closeModals()
           ModalManager.end.closeModals()

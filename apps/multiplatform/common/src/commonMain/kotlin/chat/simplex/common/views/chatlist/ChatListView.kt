@@ -340,9 +340,12 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
     if (hasText.value) {
       val hideSearchOnBack: () -> Unit = { searchText.value = TextFieldValue() }
       BackHandler(onBack = hideSearchOnBack)
+      KeyChangeEffect(chatModel.currentRemoteHost.value) {
+        hideSearchOnBack()
+      }
     } else {
       Row {
-        val padding = if (appPlatform.isDesktop) 0.dp else DEFAULT_PADDING_HALF + 2.dp
+        val padding = if (appPlatform.isDesktop) 0.dp else 7.dp
         val clipboard = LocalClipboardManager.current
         val clipboardHasText = remember(focused) { chatModel.clipboardHasText }.value
         if (clipboardHasText) {
