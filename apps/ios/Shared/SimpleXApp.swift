@@ -45,11 +45,11 @@ struct SimpleXApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView(
+                showInitializationView: $showInitializationView,
                 userAuthenticationExtended: !authenticationExpired(),
-                automaticAuthenticationFailed: automaticAuthenticationFailedOrCancelled,
+                automaticAuthenticationFailedOrCancelled: $automaticAuthenticationFailedOrCancelled,
                 authenticateContentViewAccess: authenticateContentViewAccess,
-                canConnectNonCallKitCall: $canConnectNonCallKitCall,
-                showInitializationView: $showInitializationView
+                canConnectNonCallKitCall: $canConnectNonCallKitCall
             )
             .environmentObject(chatModel)
             .onOpenURL { url in

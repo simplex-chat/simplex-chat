@@ -14,11 +14,14 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Environment(\.colorScheme) var colorScheme
-    @State var userAuthenticationExtended: Bool
-    @State var automaticAuthenticationFailed: Bool
+
+    @Binding var showInitializationView: Bool
+    var userAuthenticationExtended: Bool
+
+    @Binding var automaticAuthenticationFailedOrCancelled: Bool
     var authenticateContentViewAccess: () -> Void
     @Binding var canConnectNonCallKitCall: Bool
-    @Binding var showInitializationView: Bool
+
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -85,7 +88,7 @@ struct ContentView: View {
 
     @ViewBuilder private func contentView() -> some View {
         if chatModel.chatDbStatus == nil && showInitializationView {
-            logoView()
+            initializationView()
         } else if let status = chatModel.chatDbStatus, status != .ok {
             DatabaseErrorView(status: status)
         } else if !chatModel.v3DBMigration.startChat {
@@ -122,39 +125,23 @@ struct ContentView: View {
         }
     }
 
-    // refactor with logoView? (pass Button/AnimatedTextLoadingIndicator as Content)
-    private func lockView() -> some View {
-        GeometryReader { g in
-            VStack(alignment: .center) {
-                Image(colorScheme == .light ? "logo" : "logo-light")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: g.size.width * 0.67)
-                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .center)
-                    .padding(.top)
-                Button(action: authenticateContentViewAccess) {
-                    Label("Unlock", systemImage: "lock")
-                        .foregroundColor(automaticAuthenticationFailed ? Color(cgColor: defaultAccentColor) : .clear)
-                }
-            }
-            .frame(minHeight: g.size.height)
+    @ViewBuilder private func lockView() -> some View {
+        if automaticAuthenticationFailedOrCancelled {
+            Button(action: authenticateContentViewAccess) { Label("Unlock", systemImage: "lock") }
+        } else {
+            Text("Checking authentication…")
+                .foregroundColor(.accentColor)
         }
     }
 
-    private func logoView() -> some View {
-        GeometryReader { g in
-            VStack(alignment: .center) {
-                Image(colorScheme == .light ? "logo" : "logo-light")
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: g.size.width * 0.67)
-                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .center)
-                    .padding(.top)
-                AnimatedTextLoadingIndicator(text: "Starting", color: Color(cgColor: defaultAccentColor))
-            }
-            .frame(minHeight: g.size.height)
+    private func initializationView() -> some View {
+        VStack {
+            ProgressView().scaleEffect(2)
+            Text("Opening app…")
+                .padding()
         }
     }
+
 
     private func mainView() -> some View {
         ZStack(alignment: .top) {
@@ -314,49 +301,6 @@ func mkAlert(title: LocalizedStringKey, message: LocalizedStringKey? = nil) -> A
         return Alert(title: Text(title), message: Text(message))
     } else {
         return Alert(title: Text(title))
-    }
-}
-
-struct AnimatedTextLoadingIndicator: View {
-    var text: LocalizedStringKey
-    var color: Color
-
-    @State private var hideTextTimerCount = 2
-    @State private var dotsCount = 1
-    @State private var waitOnZeroTimerCount = 1
-
-    var body: some View {
-        HStack {
-            if hideTextTimerCount > 0 {
-                Text(text)
-                    .foregroundColor(.clear)
-            } else {
-                Text(text)
-                    .foregroundColor(color) +
-                Text(".")
-                    .foregroundColor(dotsCount > 0 ? color : .clear) +
-                Text(".")
-                    .foregroundColor(dotsCount > 1 ? color : .clear) +
-                Text(".")
-                    .foregroundColor(dotsCount > 2 ? color : .clear)
-            }
-        }
-        .onReceive(Timer.publish(every: 0.67, on: .main, in: .common).autoconnect()) {
-            _ in dotsAnimation()
-        }
-    }
-
-    func dotsAnimation() {
-        if hideTextTimerCount > 0 {
-            hideTextTimerCount -= 1
-        } else if dotsCount == 0 && waitOnZeroTimerCount > 0 {
-            waitOnZeroTimerCount -= 1
-        } else if dotsCount == 3 {
-            dotsCount = 0
-            waitOnZeroTimerCount = 1
-        } else {
-            dotsCount += 1
-        }
     }
 }
 
