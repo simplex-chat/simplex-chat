@@ -1294,4 +1294,35 @@
     <string name="using_simplex_chat_servers">SimpleX Chat szerverek használatban.</string>
     <string name="use_simplex_chat_servers__question">SimpleX Chat szerverek használata?</string>
     <string name="unhide_chat_profile">Chat profil felfedése</string>
+    <string name="v5_0_large_files_support">Videók és fájlok 1Gb méretig</string>
+    <string name="network_option_tcp_connection_timeout">TCP kapcsolat időtúllépés</string>
+    <string name="connect__your_profile_will_be_shared">A te %1$s SimpleX azonosítód megosztásra kerül.</string>
+    <string name="you_are_already_connected_to_vName_via_this_link">Már csatlakozva vagy hozzá: %1$s.</string>
+    <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">A jelenlegi chat adatbázisod TÖRLÉSRE és FELCSERÉLÉSRE kerül az importált által!
+\nEz a művelet nem visszavonható - a profilod, az ismerőseid, a chat üzeneteid és fájljaid mind véglegesen elvesznek!</string>
+    <string name="chat_with_the_founder">Ötletek és kérdések beküldése</string>
+    <string name="database_downgrade_warning">Figyelem: néhány adatot elveszíthetsz!</string>
+    <string name="tap_to_start_new_chat">Új chat kezdése</string>
+    <string name="waiting_for_desktop">Várakozás a számítógépre…</string>
+    <string name="next_generation_of_private_messaging">A privát chatelés új generációja</string>
+    <string name="update_network_settings_question">Hálózati beállítások megváltoztatása?</string>
+    <string name="waiting_for_mobile_to_connect">Várakozás a mobiltelefon csatlakozására:</string>
+    <string name="v4_4_verify_connection_security">Kapcsolat biztonságának ellenőrzése</string>
+    <string name="sending_files_not_yet_supported">fájlok küldése egyelőre még nem támogatott</string>
+    <string name="snd_conn_event_switch_queue_phase_completed_for_member">Megváltoztattad az azonosítót erre: %s</string>
+    <string name="receiving_files_not_yet_supported">fájlok fogadása egyelőre még nem támogatott</string>
+    <string name="save_group_profile">Csoport profil elmentése</string>
+    <string name="network_options_reset_to_defaults">Alaphelyzetbe állítás</string>
+    <string name="connection_error_auth_desc">Hacsaknem az ismerősöd megszakította a kapcsolatot avagy ez a link már használva volt, ez egy programhiba lehet - kérlek jelentsd be.
+\nA kapcsolatfelvételhez kérd meg az ismerősödet, hogy készítsen egy új linket a kapcsolatfelvételhez és ellenőrizd az internet kapcsolatodat.</string>
+    <string name="video_call_no_encryption">videóhívás (nem e2e titkosított)</string>
+    <string name="smp_servers_use_server_for_new_conn">Alkalmazás új kapcsolatokhoz</string>
+    <string name="periodic_notifications_desc">Az app rendszeresen lekéri az új üzeneteket - ez naponta néhány százalék akkumulátort használ. Az app nem használja a Google push értesítési rendszert — az eszközödön lévő adat nem kerül megküldésre a szervereknek.</string>
+    <string name="paste_desktop_address">Számítógép címének beillesztése</string>
+    <string name="description_via_contact_address_link">ismerős azonosítójának linkjén keresztül</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Az adatvédelmed megőrzése érdekkében a Google push értesítési rendszer helyett az app a <b>SimpleX háttérszolgáltatást </b> használja - ez naponta néhány százalék akkumulátort használ.</string>
+    <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Az ismerősöd online kell legyen ahhoz, hogy a kapcsolat létrejöjjön.
+\nMegszakíthatod ezt a kapcsolatfelvételt és törölheted az ismerőst (és később ismét megpróbálhatod egy új linkkel)</string>
+    <string name="restore_passphrase_not_found_desc">Jelmondat nem található a Keystore-ban, kérlek írd be kézileg. Ez akkor történhet, ha helyreállítottad az appot a backup funkcióval. Ha nem így történt, az esetben lépj kapcsolatba a fejlesztőkkel!</string>
+    <string name="your_contacts_will_remain_connected">Az ismerőseid továbbra is megmaradnak</string>
 </resources>
