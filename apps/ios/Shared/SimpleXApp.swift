@@ -18,16 +18,8 @@ struct SimpleXApp: App {
     @ObservedObject var alertManager = AlertManager.shared
 
     @Environment(\.scenePhase) var scenePhase
-
-    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
-    @State private var automaticAuthenticationAttempted = false
-    @State private var automaticAuthenticationFailedOrCancelled = false
-    @State private var enteredBackgroundAuthenticated: TimeInterval? = nil
-
-    @State private var canConnectNonCallKitCall = false
-    @State private var lastSuccessfulUnlock: TimeInterval? = nil
-
     @State private var showInitializationView = false
+    @State private var enteredBackgroundAuthenticated: TimeInterval? = nil
 
     init() {
 //        DispatchQueue.global(qos: .background).sync {
@@ -44,12 +36,12 @@ struct SimpleXApp: App {
 
     var body: some Scene {
         WindowGroup {
+            // userAuthenticationExtended has to be passed to ContentView on view initialization,
+            // so that it's computed by the time view renders, and not on event after rendering
             ContentView(
                 showInitializationView: $showInitializationView,
                 userAuthenticationExtended: !authenticationExpired(),
-                automaticAuthenticationFailedOrCancelled: $automaticAuthenticationFailedOrCancelled,
-                authenticateContentViewAccess: authenticateContentViewAccess,
-                canConnectNonCallKitCall: $canConnectNonCallKitCall
+                enteredBackgroundAuthenticated: $enteredBackgroundAuthenticated
             )
             .environmentObject(chatModel)
             .onOpenURL { url in
@@ -66,63 +58,10 @@ struct SimpleXApp: App {
                 logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
                 switch (phase) {
                 case .background:
-                    // --- authentication
                     if chatModel.userAuthenticated {
                         enteredBackgroundAuthenticated = ProcessInfo.processInfo.systemUptime
                     }
                     chatModel.userAuthenticated = false
-                    automaticAuthenticationAttempted = false
-                    automaticAuthenticationFailedOrCancelled = false
-                    canConnectNonCallKitCall = false
-                    // authentication ---
-
-                    if CallController.useCallKit() && chatModel.activeCall != nil {
-                        CallController.shared.shouldSuspendChat = true
-                    } else {
-                        suspendChat()
-                        BGManager.shared.schedule()
-                    }
-                    NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
-                case .active:
-                    CallController.shared.shouldSuspendChat = false
-                    let appState = AppChatState.shared.value
-                    let authExpired = authenticationExpired()
-
-                    if appState != .stopped {
-                        startChatAndActivate {
-                            if appState.inactive && chatModel.chatRunning == true {
-                                updateChats()
-                                if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
-                                    updateCallInvitations()
-                                }
-                            }
-                            canConnectNonCallKitCall = !(authExpired && prefPerformLA) || unlockedRecently()
-                        }
-                    }
-
-                    // --- authentication
-                    // condition `!chatModel.userAuthenticated` is required for when authentication is enabled in settings or on initial notice
-                    if prefPerformLA && !chatModel.userAuthenticated {
-                        if appState != .stopped {
-                            if !authExpired {
-                                chatModel.userAuthenticated = true
-                            } else {
-                                if !automaticAuthenticationAttempted {
-                                    automaticAuthenticationAttempted = true
-                                    // authenticate if call kit call is not in progress
-                                    if !(CallController.useCallKit() && chatModel.showCallView && chatModel.activeCall != nil) {
-                                        authenticateContentViewAccess()
-                                    } else {
-                                        automaticAuthenticationFailedOrCancelled = true
-                                    }
-                                }
-                            }
-                        } else {
-                            // this is to show lock button and not automatically attempt authentication when app is stopped
-                            chatModel.userAuthenticated = !authExpired
-                        }
-                    }
-                    // authentication ---
                 default:
                     break
                 }
@@ -154,74 +93,12 @@ struct SimpleXApp: App {
         v3DBMigrationDefault.set(state)
     }
 
-    private func authenticateContentViewAccess() {
-        logger.debug("DEBUGGING: authenticateContentViewAccess")
-        dismissAllSheets(animated: false) {
-            logger.debug("DEBUGGING: authenticateContentViewAccess, in dismissAllSheets callback")
-            chatModel.chatId = nil
-
-            authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason"), selfDestruct: true) { laResult in
-                logger.debug("DEBUGGING: authenticate callback: \(String(describing: laResult))")
-                switch (laResult) {
-                case .success:
-                    canConnectNonCallKitCall = true
-                    lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
-                case .failed:
-                    automaticAuthenticationFailedOrCancelled = true
-                    if privacyLocalAuthModeDefault.get() == .passcode {
-                        AlertManager.shared.showAlert(laFailedAlert())
-                    }
-                case .unavailable:
-                    automaticAuthenticationFailedOrCancelled = true
-                    prefPerformLA = false
-                    canConnectNonCallKitCall = true
-                    AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
-                }
-            }
-        }
-    }
-
     private func authenticationExpired() -> Bool {
         if let enteredBackgroundAuthenticated = enteredBackgroundAuthenticated {
             let delay = Double(UserDefaults.standard.integer(forKey: DEFAULT_LA_LOCK_DELAY))
             return ProcessInfo.processInfo.systemUptime - enteredBackgroundAuthenticated >= delay
         } else {
             return true
-        }
-    }
-
-    private func unlockedRecently() -> Bool {
-        if let lastSuccessfulUnlock = lastSuccessfulUnlock {
-            return ProcessInfo.processInfo.systemUptime - lastSuccessfulUnlock < 2
-        } else {
-            return false
-        }
-    }
-
-    private func updateChats() {
-        do {
-            let chats = try apiGetChats()
-            chatModel.updateChats(with: chats)
-            if let id = chatModel.chatId,
-               let chat = chatModel.getChat(id) {
-                loadChat(chat: chat)
-            }
-            if let ncr = chatModel.ntfContactRequest {
-                chatModel.ntfContactRequest = nil
-                if case let .contactRequest(contactRequest) = chatModel.getChat(ncr.chatId)?.chatInfo {
-                    Task { await acceptContactRequest(incognito: ncr.incognito, contactRequest: contactRequest) }
-                }
-            }
-        } catch let error {
-            logger.error("apiGetChats: cannot update chats \(responseError(error))")
-        }
-    }
-
-    private func updateCallInvitations() {
-        do {
-            try refreshCallInvitations()
-        } catch let error {
-            logger.error("apiGetCallInvitations: cannot update call invitations \(responseError(error))")
         }
     }
 }

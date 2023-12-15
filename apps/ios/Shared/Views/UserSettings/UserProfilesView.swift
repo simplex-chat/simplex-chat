@@ -14,7 +14,7 @@ struct UserProfilesView: View {
     @State private var showDeleteConfirmation = false
     @State private var userToDelete: User?
     @State private var alert: UserProfilesAlert?
-    @State private var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
+    @State private var authenticated = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var searchTextOrPassword = ""
     @State private var selectedUser: User?
     @State private var profileHidden = false
@@ -56,7 +56,7 @@ struct UserProfilesView: View {
     }
 
     var body: some View {
-        if authorized {
+        if authenticated {
             userProfilesView()
         } else {
             Button(action: runAuth) { Label("Unlock", systemImage: "lock") }
@@ -64,7 +64,7 @@ struct UserProfilesView: View {
         }
     }
 
-    private func runAuth() { authorize(NSLocalizedString("Open user profiles", comment: "authentication reason"), $authorized) }
+    private func runAuth() { authenticate_(NSLocalizedString("Open user profiles", comment: "authentication reason"), $authenticated) }
 
     private func userProfilesView() -> some View {
         List {

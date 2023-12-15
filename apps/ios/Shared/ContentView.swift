@@ -17,10 +17,12 @@ struct ContentView: View {
 
     @Binding var showInitializationView: Bool
     var userAuthenticationExtended: Bool
+    @Binding var enteredBackgroundAuthenticated: TimeInterval?
 
-    @Binding var automaticAuthenticationFailedOrCancelled: Bool
-    var authenticateContentViewAccess: () -> Void
-    @Binding var canConnectNonCallKitCall: Bool
+    @Environment(\.scenePhase) var scenePhase
+    @State private var automaticAuthenticationAttempted = false
+    @State private var canConnectNonCallKitCall = false
+    @State private var lastSuccessfulUnlock: TimeInterval? = nil
 
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
@@ -65,6 +67,7 @@ struct ContentView: View {
                 LocalAuthView(authRequest: la)
             } else if showSetPasscode {
                 SetAppPasscodeView {
+                    chatModel.userAuthenticated = true
                     prefPerformLA = true
                     showSetPasscode = false
                     privacyLocalAuthModeDefault.set(.passcode)
@@ -83,6 +86,63 @@ struct ContentView: View {
         .confirmationDialog("SimpleX Lock mode", isPresented: $showChooseLAMode, titleVisibility: .visible) {
             Button("System authentication") { initialEnableLA() }
             Button("Passcode entry") { showSetPasscode = true }
+        }
+        .onChange(of: scenePhase) { phase in
+            logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
+            switch (phase) {
+            case .background:
+                // --- authentication
+                automaticAuthenticationAttempted = false
+                canConnectNonCallKitCall = false
+                // authentication ---
+
+                if CallController.useCallKit() && chatModel.activeCall != nil {
+                    CallController.shared.shouldSuspendChat = true
+                } else {
+                    suspendChat()
+                    BGManager.shared.schedule()
+                }
+                NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
+            case .active:
+                CallController.shared.shouldSuspendChat = false
+                let appState = AppChatState.shared.value
+
+                if appState != .stopped {
+                    startChatAndActivate {
+                        if appState.inactive && chatModel.chatRunning == true {
+                            updateChats()
+                            if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
+                                updateCallInvitations()
+                            }
+                        }
+                        canConnectNonCallKitCall = !prefPerformLA || userAuthenticationExtended || unlockedRecently()
+                    }
+                }
+
+                // --- authentication
+                // condition `!chatModel.userAuthenticated` is required for when authentication is enabled in settings or on initial notice
+                if prefPerformLA && !chatModel.userAuthenticated {
+                    if appState != .stopped {
+                        if userAuthenticationExtended {
+                            chatModel.userAuthenticated = true
+                        } else {
+                            if !automaticAuthenticationAttempted {
+                                automaticAuthenticationAttempted = true
+                                // authenticate if call kit call is not in progress
+                                if !(CallController.useCallKit() && chatModel.showCallView && chatModel.activeCall != nil) {
+                                    authenticateContentViewAccess()
+                                }
+                            }
+                        }
+                    } else {
+                        // when app is stopped automatic authentication is not attempted
+                        chatModel.userAuthenticated = userAuthenticationExtended
+                    }
+                }
+                // authentication ---
+            default:
+                break
+            }
         }
     }
 
@@ -126,12 +186,7 @@ struct ContentView: View {
     }
 
     @ViewBuilder private func lockView() -> some View {
-        if automaticAuthenticationFailedOrCancelled {
-            Button(action: authenticateContentViewAccess) { Label("Unlock", systemImage: "lock") }
-        } else {
-            Text("Checking authentication…")
-                .foregroundColor(.accentColor)
-        }
+        Button(action: authenticateContentViewAccess) { Label("Unlock", systemImage: "lock") }
     }
 
     private func initializationView() -> some View {
@@ -174,6 +229,66 @@ struct ContentView: View {
         .onContinueUserActivity("INStartCallIntent", perform: processUserActivity)
         .onContinueUserActivity("INStartAudioCallIntent", perform: processUserActivity)
         .onContinueUserActivity("INStartVideoCallIntent", perform: processUserActivity)
+    }
+
+    private func authenticateContentViewAccess() {
+        logger.debug("DEBUGGING: authenticateContentViewAccess")
+        dismissAllSheets(animated: false) {
+            logger.debug("DEBUGGING: authenticateContentViewAccess, in dismissAllSheets callback")
+            chatModel.chatId = nil
+
+            authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason"), selfDestruct: true) { laResult in
+                logger.debug("DEBUGGING: authenticate callback: \(String(describing: laResult))")
+                switch (laResult) {
+                case .success:
+                    canConnectNonCallKitCall = true
+                    lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
+                case .failed:
+                    if privacyLocalAuthModeDefault.get() == .passcode {
+                        AlertManager.shared.showAlert(laFailedAlert())
+                    }
+                case .unavailable:
+                    prefPerformLA = false
+                    canConnectNonCallKitCall = true
+                    AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
+                }
+            }
+        }
+    }
+
+    private func unlockedRecently() -> Bool {
+        if let lastSuccessfulUnlock = lastSuccessfulUnlock {
+            return ProcessInfo.processInfo.systemUptime - lastSuccessfulUnlock < 2
+        } else {
+            return false
+        }
+    }
+
+    private func updateChats() {
+        do {
+            let chats = try apiGetChats()
+            chatModel.updateChats(with: chats)
+            if let id = chatModel.chatId,
+               let chat = chatModel.getChat(id) {
+                loadChat(chat: chat)
+            }
+            if let ncr = chatModel.ntfContactRequest {
+                chatModel.ntfContactRequest = nil
+                if case let .contactRequest(contactRequest) = chatModel.getChat(ncr.chatId)?.chatInfo {
+                    Task { await acceptContactRequest(incognito: ncr.incognito, contactRequest: contactRequest) }
+                }
+            }
+        } catch let error {
+            logger.error("apiGetChats: cannot update chats \(responseError(error))")
+        }
+    }
+
+    private func updateCallInvitations() {
+        do {
+            try refreshCallInvitations()
+        } catch let error {
+            logger.error("apiGetCallInvitations: cannot update call invitations \(responseError(error))")
+        }
     }
 
     private func processUserActivity(_ activity: NSUserActivity) {
@@ -225,6 +340,7 @@ struct ContentView: View {
         authenticate(reason: NSLocalizedString("Enable SimpleX Lock", comment: "authentication reason")) { laResult in
             switch laResult {
             case .success:
+                chatModel.userAuthenticated = true
                 prefPerformLA = true
                 alertManager.showAlert(laTurnedOnAlert())
             case .failed:

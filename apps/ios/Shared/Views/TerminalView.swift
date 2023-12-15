@@ -19,13 +19,13 @@ struct TerminalView: View {
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State var composeState: ComposeState = ComposeState()
     @State private var keyboardVisible = false
-    @State var authorized = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
+    @State var authenticated = !UserDefaults.standard.bool(forKey: DEFAULT_PERFORM_LA)
     @State private var terminalItem: TerminalItem?
     @State private var scrolled = false
     @State private var showing = false
 
     var body: some View {
-        if authorized {
+        if authenticated {
             terminalView()
                 .onAppear {
                     if showing { return }
@@ -50,7 +50,7 @@ struct TerminalView: View {
         }
     }
 
-    private func runAuth() { authorize(NSLocalizedString("Open chat console", comment: "authentication reason"), $authorized) }
+    private func runAuth() { authenticate_(NSLocalizedString("Open chat console", comment: "authentication reason"), $authenticated) }
 
     private func terminalView() -> some View {
         VStack {
