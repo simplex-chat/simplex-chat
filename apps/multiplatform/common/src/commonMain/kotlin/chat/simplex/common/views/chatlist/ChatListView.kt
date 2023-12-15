@@ -323,9 +323,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
   Row(verticalAlignment = Alignment.CenterVertically) {
     val focusRequester = remember { FocusRequester() }
     var focused by remember { mutableStateOf(false) }
-    Spacer(Modifier.width(DEFAULT_PADDING_HALF))
-    Icon(painterResource(MR.images.ic_search), null, Modifier.size(20.dp), tint = MaterialTheme.colors.secondary)
-    Spacer(Modifier.width(DEFAULT_PADDING_HALF))
+    Icon(painterResource(MR.images.ic_search), null, Modifier.padding(horizontal = DEFAULT_PADDING_HALF).size(20.dp), tint = MaterialTheme.colors.secondary)
     SearchTextField(
       Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
       placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
