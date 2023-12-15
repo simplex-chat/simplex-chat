@@ -1299,6 +1299,7 @@ withAgentB :: ChatMonad m => (AgentClient -> BatchT AgentErrorType (ReaderT Agen
 withAgentB action = do
   a <- lift $ asks smpAgent
   isoEContT (`runReaderT` agentEnv a) lift (`ChatErrorAgent` Nothing) $ action a
+{-# INLINE withAgentB #-}
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
 
