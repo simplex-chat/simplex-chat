@@ -91,6 +91,8 @@ struct ContentView: View {
             switch (phase) {
             case .background:
                 // --- authentication
+                // also see .onChange(of: scenePhase) in SimpleXApp: on entering background
+                // it remembers enteredBackgroundAuthenticated and sets chatModel.userAuthenticated to false
                 automaticAuthenticationAttempted = false
                 canConnectNonCallKitCall = false
                 // authentication ---

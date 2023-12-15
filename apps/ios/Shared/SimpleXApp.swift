@@ -57,6 +57,7 @@ struct SimpleXApp: App {
                 logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
                 switch (phase) {
                 case .background:
+                    // see ContentView .onChange(of: scenePhase) for remaining authentication logic
                     if chatModel.userAuthenticated {
                         enteredBackgroundAuthenticated = ProcessInfo.processInfo.systemUptime
                     }
