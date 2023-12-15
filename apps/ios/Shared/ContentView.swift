@@ -54,7 +54,7 @@ struct ContentView: View {
                 if userAuthenticated {
                     contentView()
                 } else {
-                    lockView()
+                    lockButton()
                 }
             } else {
                 contentView()
@@ -181,12 +181,12 @@ struct ContentView: View {
                 Rectangle()
                     .fill(colorScheme == .dark ? .black : .white)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                lockView()
+                lockButton()
             }
         }
     }
 
-    @ViewBuilder private func lockView() -> some View {
+    @ViewBuilder private func lockButton() -> some View {
         Button(action: authenticateContentViewAccess) { Label("Unlock", systemImage: "lock") }
     }
 
