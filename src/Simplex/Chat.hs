@@ -55,6 +55,7 @@ import Data.Time.Clock.System (systemToUTCTime)
 import Data.Word (Word16, Word32)
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
+import Simplex.Chat.Batch
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
@@ -84,6 +85,7 @@ import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.Messaging.Agent as Agent
+import Simplex.Messaging.Agent.Batch (pureB, (@>>))
 import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, temporaryAgentError)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
@@ -5524,11 +5526,14 @@ directMessage chatMsgEvent = do
   pure $ strEncode ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m Int64
-deliverMessage conn@Connection {connId} cmEventTag msgBody msgId = do
+deliverMessage conn cmEventTag msgBody msgId = unBatch_ $ deliverMessageB conn cmEventTag msgBody msgId
+
+deliverMessageB :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m (ChatBatch m Int64)
+deliverMessageB conn@Connection {connId} cmEventTag msgBody msgId = do
   let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
   agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) msgFlags msgBody
   let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
-  withStore' $ \db -> createSndMsgDelivery db sndMsgDelivery msgId
+  withStoreB' (\db -> createSndMsgDelivery db sndMsgDelivery msgId) pureB
 
 sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
 sendGroupMessage user GroupInfo {groupId} members chatMsgEvent =
@@ -5540,27 +5545,27 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
   -- TODO collect failed deliveries into a single error
   recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members) $ \GroupMember {memberRole} -> memberRole
   rs <- forM recipientMembers $ \m ->
-    messageMember m msg `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
+    unBatch_ (messageMemberB m msg) `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
   let sentToMembers = catMaybes rs
   pure (msg, sentToMembers)
   where
-    messageMember :: GroupMember -> SndMessage -> m (Maybe GroupMember)
-    messageMember m@GroupMember {groupMemberId} SndMessage {msgId, msgBody} = case memberConn m of
-      Nothing -> pendingOrForwarded
+    messageMemberB :: GroupMember -> SndMessage -> m (ChatBatch m (Maybe GroupMember))
+    messageMemberB m@GroupMember {groupMemberId} SndMessage {msgId, msgBody} = case memberConn m of
+      Nothing -> pendingOrForwardedB
       Just conn@Connection {connStatus}
-        | connDisabled conn || connStatus == ConnDeleted -> pure Nothing
+        | connDisabled conn || connStatus == ConnDeleted -> pureB Nothing
         | connStatus == ConnSndReady || connStatus == ConnReady -> do
             let tag = toCMEventTag chatMsgEvent
-            deliverMessage conn tag msgBody msgId >> postDeliver
-            pure $ Just m
-        | otherwise -> pendingOrForwarded
+            deliverMessageB conn tag msgBody msgId
+              @>> postDeliver >> pureB (Just m)
+        | otherwise -> pendingOrForwardedB
       where
-        pendingOrForwarded
-          | forwardSupported && isForwardedGroupMsg chatMsgEvent = pure Nothing
-          | isXGrpMsgForward chatMsgEvent = pure Nothing
-          | otherwise = do
-              withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
-              pure $ Just m
+        pendingOrForwardedB
+          | forwardSupported && isForwardedGroupMsg chatMsgEvent = pureB Nothing
+          | isXGrpMsgForward chatMsgEvent = pureB Nothing
+          | otherwise =
+              withStoreB' (\db -> createPendingGroupMessage db groupMemberId msgId introId_) $
+                \_ -> pureB $ Just m
         forwardSupported = do
           let mcvr = memberChatVRange' m
           isCompatibleRange mcvr groupForwardVRange && invitingMemberSupportsForward
