@@ -24,8 +24,6 @@
     <string name="icon_descr_cancel_live_message">Cancelar mensagem ao vivo</string>
     <string name="back">Voltar</string>
     <string name="choose_file">Arquivo</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Adicionar novo contato</b>: para criar seu QR code de uso único para seu contato.]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Escanear código QR</b>: para se conectar ao seu contato que mostra o código QR para você.]]></string>
     <string name="accept_contact_button">Aceitar</string>
     <string name="clear_chat_question">Limpar chat\?</string>
     <string name="clear_verb">Limpar</string>

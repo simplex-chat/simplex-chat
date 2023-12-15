@@ -44,7 +44,6 @@
     <string name="network_session_mode_user_description"><![CDATA[Külön TCP kapcsolat (és SOCKS bejelentkezési adatok) lesznek használva <b>minden chat profilodra az appban</b>.]]></string>
     <string name="both_you_and_your_contact_can_send_disappearing">Mindketten, te és az ismerősöd is küldhettek eltűnő üzeneteket.</string>
     <string name="keychain_is_storing_securely">Az Android Keystore-t jelmondat biztonságos tárolására használják - lehetővé teszi az értesítési szolgáltatás működését.</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>QR-kód beolvasása</b>: kapcsolódás ismerőshöz a megmutatott QR-kódja alapján]]></string>
     <string name="alert_title_msg_bad_hash">Téves üzenet hash</string>
     <string name="cant_delete_user_profile">Felhasználói profil törlése nem lehetséges!</string>
     <string name="color_background">Háttér</string>
@@ -117,7 +116,6 @@
     <string name="bold_text">vastagított</string>
     <string name="app_passcode_replaced_with_self_destruct">Az app számkód helyettesítésre kerül egy önmegsemmisítő számkóddal.</string>
     <string name="v5_3_new_interface_languages_descr">Arab, bulgár, finn, héber, thai és ukrán - köszönet a felhasználóknak és a Weblate-nek!</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Új ismerős hozzáadása</b>: egyszer használatos QR-kód készítése az ismerős számára.]]></string>
     <string name="allow_voice_messages_question">Hangüzenetek engedélyezése?</string>
     <string name="always_use_relay">Mindig használt relay szervert</string>
     <string name="chat_preferences_always">mindig</string>

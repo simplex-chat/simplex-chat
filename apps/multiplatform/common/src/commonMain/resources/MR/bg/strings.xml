@@ -119,8 +119,6 @@
     <string name="back">Назад</string>
     <string name="cancel_verb">Отказ</string>
     <string name="icon_descr_cancel_live_message">Спри живото съобщение</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Добави нов контакт</b>: за да създадете своя еднократен QR код за вашия контакт.]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Сканирай QR код</b>: за да се свържете с вашия контакт, който ви показва QR код.]]></string>
     <string name="use_camera_button">Камера</string>
     <string name="if_you_cant_meet_in_person">Ако не можете да се срещнете лично, покажете QR код във видеоразговора или споделете линка.</string>
     <string name="icon_descr_cancel_link_preview">спри визуализацията на линка</string>

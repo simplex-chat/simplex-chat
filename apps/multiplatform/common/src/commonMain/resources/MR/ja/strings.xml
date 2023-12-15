@@ -73,12 +73,10 @@
     <string name="auth_unavailable">認証不可能</string>
     <string name="auto_accept_images">画像を自動的に受信</string>
     <string name="notifications_mode_service_desc">バックグラウンド機能が常にオンで、メッセージが到着次第に通知が出ます。</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>新しい連絡先を追加</b>：使い捨てのQRコードを発行]]></string>
     <string name="turning_off_service_and_periodic">電池省エネをオンに、バックグラウンド機能と定期的な受信依頼をオフにします。設定メニューにて変更できます。</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>電池消費が最少</b>：アプリがアクティブ時のみに通知が出ます（バックグラウンドサービス無し）。]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>設定メニューにてオフにできます。</b> アプリがアクティブ時に通知が出ます。]]></string>
     <string name="both_you_and_your_contacts_can_delete">あなたと連絡相手が送信済みメッセージを永久削除できます。</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>QRコードを読み込み</b>：連絡相手のQRコードをスキャンすると繋がります。]]></string>
     <string name="chat_archive_section">チャットのアーカイブ</string>
     <string name="delete_chat_archive_question">チャットのアーカイブを削除しますか？</string>
     <string name="join_group_incognito_button">シークレットモードで参加</string>

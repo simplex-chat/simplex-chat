@@ -189,7 +189,6 @@
     <string name="allow_your_contacts_to_send_disappearing_messages">Salli kontaktiesi lähettää katoavia viestejä.</string>
     <string name="timed_messages">Katoavat viestit</string>
     <string name="icon_descr_context">Kontekstikuvake</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Skannaa QR-koodi</b>: muodostaaksesi yhteyden kontaktiisi, joka näyttää QR-koodin sinulle.]]></string>
     <string name="icon_descr_cancel_live_message">Peruuta live-viesti</string>
     <string name="configure_ICE_servers">Määritä ICE-palvelimet</string>
     <string name="add_address_to_your_profile">Lisää osoite profiiliisi, jotta kontaktisi voivat jakaa sen muiden kanssa. Profiilipäivitys lähetetään kontakteillesi.</string>
@@ -271,7 +270,6 @@
     <string name="icon_descr_server_status_disconnected">Katkaistu</string>
     <string name="back">Takaisin</string>
     <string name="connect_via_link_or_qr">Yhdistä linkillä / QR-koodilla</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Lisää uusi kontakti</b>: luo kertakäyttöinen QR-koodi kontaktille.]]></string>
     <string name="clear_chat_menu_action">Tyhjennä</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 työpöytä: skannaa esitetty QR-koodi sovelluksesta käyttämällä <b>Skannaa QR-koodi</b>.]]></string>
     <string name="delete_pending_connection__question">Poistetaanko odottava yhteys\?</string>

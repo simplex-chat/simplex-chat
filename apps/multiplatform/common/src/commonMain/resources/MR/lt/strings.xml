@@ -386,8 +386,6 @@
     <string name="error_smp_test_certificate">Gali būti, kad liudijimo kontrolinis kodas serverio adrese yra neteisingas</string>
     <string name="smp_server_test_delete_file">Ištrinti failą</string>
     <string name="image_decoding_exception_title">Dekodavimo klaida</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Pridėti naują adresatą</b>: norėdami sukurti adresatui vienkartinį QR kodą.]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Skenuoti QR kodą</b>: norėdami prisijungti prie adresato, kuris jums rodo QR kodą.]]></string>
     <string name="clear_chat_button">Išvalyti pokalbį</string>
     <string name="unmute_chat">Įjungti pranešimus</string>
     <string name="invalid_QR_code">Neteisingas QR kodas</string>

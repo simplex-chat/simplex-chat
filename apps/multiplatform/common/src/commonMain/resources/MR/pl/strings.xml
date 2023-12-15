@@ -229,7 +229,6 @@
     <string name="accept_contact_button">Akceptuj</string>
     <string name="accept_contact_incognito_button">Akceptuj incognito</string>
     <string name="clear_chat_warning">Wszystkie wiadomości zostaną usunięte - nie można tego cofnąć! Wiadomości zostaną usunięte TYLKO dla Ciebie.</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Zeskanuj kod QR</b>: aby połączyć się z kontaktem, który pokaże Ci kod QR.]]></string>
     <string name="icon_descr_cancel_link_preview">anuluj podgląd linku</string>
     <string name="clear_verb">Wyczyść</string>
     <string name="clear_chat_menu_action">Wyczyść</string>
@@ -917,7 +916,6 @@
     <string name="auth_unavailable">Uwierzytelnianie niedostępne</string>
     <string name="attach">Dołącz</string>
     <string name="back">Wstecz</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Dodaj nowy kontakt</b>: aby stworzyć swój jednorazowy kod QR dla kontaktu.]]></string>
     <string name="turning_off_service_and_periodic">Optymalizacja baterii jest aktywna, wyłącza usługi w tle i okresowe żądania nowych wiadomości. Możesz je ponownie włączyć za pośrednictwem ustawień.</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Można je wyłączyć poprzez ustawienia</b> - powiadomienia nadal będą pokazywane podczas działania aplikacji.]]></string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Najlepsze dla baterii</b>. Będziesz otrzymywać powiadomienia tylko wtedy, gdy aplikacja jest uruchomiona (NIE w tle).]]></string>

@@ -191,8 +191,6 @@
     <string name="to_start_a_new_chat_help_header">Pro zahájení nové konverzace</string>
     <string name="chat_help_tap_button">Klepněte na tlačítko</string>
     <string name="above_then_preposition_continuation">potom:</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Přidejte nový kontakt</b>: vytvořte jednorázý QR kód pro váš kontakt.]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Naskenujte QR kód</b>: připojíte se ke kontaktu, který vám QR kód ukázal.]]></string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 počítač: naskenujte QR kód z aplikace přez <b>Skenovat QR kód</b>.]]></string>
     <string name="clear_chat_question">Vyčistit chat\?</string>
     <string name="clear_verb">Vyčistit</string>

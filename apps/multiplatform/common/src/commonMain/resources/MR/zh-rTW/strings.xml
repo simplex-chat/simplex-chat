@@ -47,8 +47,6 @@
     <string name="allow_voice_messages_question">允許使用語音訊息？</string>
     <string name="cancel_verb">取消</string>
     <string name="icon_descr_cancel_live_message">取消實況訊息</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>新增新的聯絡人</b>：建立你的一次性二維碼給你的聯絡人。]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>掃描二維碼</b>：連接到向你出示二維碼的聯絡人。]]></string>
     <string name="choose_file">選擇檔案</string>
     <string name="use_camera_button">相機</string>
     <string name="from_gallery_button">從圖片庫選擇圖片</string>

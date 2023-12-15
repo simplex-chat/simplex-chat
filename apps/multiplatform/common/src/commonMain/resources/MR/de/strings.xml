@@ -266,8 +266,6 @@
     <string name="to_start_a_new_chat_help_header">Um einen neuen Chat zu starten</string>
     <string name="chat_help_tap_button">Schaltfläche antippen</string>
     <string name="above_then_preposition_continuation">Danach die gewünschte Aktion auswählen:</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Neuen Kontakt hinzufügen</b>: Um Ihren Einmal-QR-Code für Ihren Kontakt zu erstellen.]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>QR-Code scannen</b>: Um sich mit Ihrem Kontakt zu verbinden, der Ihnen seinen QR-Code zeigt.]]></string>
     <string name="to_connect_via_link_title">Über Link verbinden</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Wenn Sie einen SimpleX-Chat-Einladungslink erhalten haben, können Sie ihn in Ihrem Browser öffnen:</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 Desktop: Angezeigten QR-Code aus der App scannen, über <b>QR-Code scannen</b>.]]></string>

@@ -735,7 +735,6 @@
     <string name="v4_3_irreversible_message_deletion">Geri alınamaz mesaj silme</string>
     <string name="v4_5_italian_interface">İtalyanca arayüz</string>
     <string name="choose_file_title">Dosya seç</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>QR kodunu tara</b>: size QR kodunu gösteren kişiyle bağlantı kurmak için.]]></string>
     <string name="invite_friends">Arkadaşlarınızı davet edin</string>
     <string name="bold_text">kalın</string>
     <string name="italic_text">İtalik</string>
@@ -789,7 +788,6 @@
     <string name="delete_message_cannot_be_undone_warning">Mesajlar silinecek - bu geri alınamaz!</string>
     <string name="switch_receiving_address_question">Alıcı adresini değiştir\?</string>
     <string name="back">Geri</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Yeni kişi ekle</b>: Kişiniz için tek seferlik QR Kodunuzu oluşturmak için.]]></string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Bağlantı isteğiniz kabul edildiğinde bağlanacaksınız, lütfen bekleyin veya daha sonra kontrol edin!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Kişinizin cihazı çevrimiçi olduğunda bağlanacaksınız, lütfen bekleyin veya daha sonra kontrol edin!</string>
     <string name="learn_more">Daha fazla bilgi edinin</string>

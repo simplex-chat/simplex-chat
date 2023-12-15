@@ -104,7 +104,6 @@
     <string name="integrity_msg_bad_hash">поганий хеш повідомлення</string>
     <string name="integrity_msg_bad_id">помилковий ідентифікатор повідомлення</string>
     <string name="color_background">Фон</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Додайте новий контакт</b>: для створення одноразового QR-коду для вашого контакту.]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Його можна вимкнути в налаштуваннях</b> - сповіщення все одно будуть показуватися під час роботи програми.]]></string>
     <string name="notifications_mode_service_desc">Фоновий сервіс працює постійно - сповіщення з\'являтимуться, щойно повідомлення стануть доступними.</string>
     <string name="icon_descr_asked_to_receive">Попросили отримати зображення</string>
@@ -605,7 +604,6 @@
     <string name="toast_permission_denied">У дозволі відмовлено!</string>
     <string name="use_camera_button">Камера</string>
     <string name="thank_you_for_installing_simplex">Дякуємо, що встановили SimpleX Chat!</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Відскануйте QR-код</b>: щоб з\'єднатися з вашим контактом, який покаже вам QR-код.]]></string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Якщо ви отримали посилання на запрошення SimpleX Chat, ви можете відкрити його у своєму браузері:</string>
     <string name="clear_chat_menu_action">Чисто</string>
     <string name="delete_contact_menu_action">Видалити</string>

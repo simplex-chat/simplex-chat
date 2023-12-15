@@ -112,8 +112,6 @@
     <string name="both_you_and_your_contact_can_add_message_reactions">ทั้งคุณและผู้ติดต่อของคุณสามารถเพิ่มปฏิกิริยาต่อข้อความได้</string>
     <string name="both_you_and_your_contacts_can_delete">ทั้งคุณและผู้ติดต่อของคุณสามารถลบข้อความที่ส่งแล้วอย่างถาวรได้</string>
     <string name="use_camera_button">กล้อง</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b> เพิ่มผู้ติดต่อใหม่ </b>: เพื่อสร้างรหัส QR แบบใช้ครั้งเดียวสําหรับผู้ติดต่อของคุณ]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>สแกนรหัส QR</b>: เพื่อเชื่อมต่อกับผู้ติดต่อที่แสดงรหัส QR ให้คุณ]]></string>
     <string name="learn_more_about_address">เกี่ยวกับที่อยู่ SimpleX</string>
     <string name="bold_text">ตัวหนา</string>
     <string name="callstatus_calling">กำลังโทร…</string>

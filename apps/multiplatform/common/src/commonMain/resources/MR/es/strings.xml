@@ -27,7 +27,6 @@
     <string name="notifications_mode_service">Siempre activo</string>
     <string name="allow_verb">Permitir</string>
     <string name="above_then_preposition_continuation">y después:</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Añadir nuevo contacto</b>: para crear tu código QR de un solo uso para tu contacto.]]></string>
     <string name="accept_connection_request__question">¿Aceptar solicitud de conexión\?</string>
     <string name="accept_contact_incognito_button">Aceptar incógnito</string>
     <string name="clear_chat_warning">Se eliminarán todos los mensajes SOLO para tí. ¡No podrá deshacerse!</string>
@@ -79,7 +78,6 @@
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>¡Consume más batería!</b> El servicio en segundo plano se ejecuta siempre y las notificaciones se mostrarán en cuanto haya mensajes disponibles.]]></string>
     <string name="both_you_and_your_contacts_can_delete">Tanto tú como tu contacto podéis eliminar de forma irreversible los mensajes enviados.</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Tanto tú como tu contacto podéis enviar mensajes temporales.</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Escanear código QR</b>: para conectar con tu contacto mediante su código QR.]]></string>
     <string name="create_profile_button">Crear</string>
     <string name="create_group">Crea grupo secreto</string>
     <string name="database_passphrase_will_be_updated">La contraseña de cifrado de la base de datos será actualizada.</string>

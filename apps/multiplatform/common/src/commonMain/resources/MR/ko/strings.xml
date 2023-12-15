@@ -27,7 +27,6 @@
     <string name="icon_descr_context">컨텍스트 아이콘</string>
     <string name="icon_descr_server_status_connected">연결됨</string>
     <string name="back">뒤로</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>새 대화 상대 추가</b> : 대화를 위한 일회용 QR 코드 만들기]]></string>
     <string name="cancel_verb">취소</string>
     <string name="icon_descr_cancel_live_message">라이브 메시지 취소</string>
     <string name="choose_file">파일 선택</string>
@@ -171,7 +170,6 @@
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>배터리에 가장 좋음</b>. 앱이 실행 중일 때만 알림을 받게 됩니다 (백그라운드에서 실행되지 않음).]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>설정을 통해 비활성화할 수 있습니다.</b> – 앱이 실행되는 동안 알림이 표시됩니다.]]></string>
     <string name="both_you_and_your_contact_can_send_disappearing">당신과 대화 상대 모두 사라지는 메시지를 보낼 수 있습니다.</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>QR 코드 스캔</b>: QR 코드를 보여주는 사람과 대화할 수 있습니다.]]></string>
     <string name="cannot_access_keychain">데이터베이스 암호를 저장하고 있는 Keystore에 접근할 수 없습니다.</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>배터리 더욱 사용</b>! 백그라운드 서비스가 항상 실행됩니다. - 메시지를 수신되는 즉시 알림이 표시됩니다.]]></string>
     <string name="callstatus_ended">통화 종료됨 %1$s</string>

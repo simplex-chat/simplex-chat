@@ -147,8 +147,6 @@
     <string name="rcv_conn_event_switch_queue_phase_completed">تم تغيير العنوان من أجلك</string>
     <string name="cant_delete_user_profile">لا يمكن حذف ملف تعريف المستخدم!</string>
     <string name="icon_descr_video_asked_to_receive">طلب لاستلام الفيديو</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b> إضافة جهة اتصال جديدة </b>: لإنشاء رمز الاستجابة السريعة الخاص بك لمرة واحدة لجهة اتصالك.]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b> امسح رمز الاستجابة السريعة </b>: للاتصال بجهة الاتصال التي تعرض لك رمز الاستجابة السريعة.]]></string>
     <string name="callstatus_in_progress">مكالمتك تحت الإجراء</string>
     <string name="callstatus_ended">انتهت المكالمة</string>
     <string name="change_database_passphrase_question">تغيير عبارة مرور قاعدة البيانات؟</string>

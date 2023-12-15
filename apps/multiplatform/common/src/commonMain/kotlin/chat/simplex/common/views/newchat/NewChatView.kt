@@ -19,7 +19,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -369,7 +368,7 @@ private fun createInvitation(
     val (r, alert) = controller.apiAddContact(rhId, incognito = controller.appPrefs.incognito.get())
     if (r != null) {
       chatModel.updateContactConnection(rhId, r.second)
-      chatModel.showingInvitation.value = ShowingInvitation(connId = r.second.id, connReq = r.first, connChatUsed = false)
+      chatModel.showingInvitation.value = ShowingInvitation(connId = r.second.id, connReq = simplexChatLink(r.first), connChatUsed = false)
       contactConnection.value = r.second
     } else {
       creatingConnReq.value = false

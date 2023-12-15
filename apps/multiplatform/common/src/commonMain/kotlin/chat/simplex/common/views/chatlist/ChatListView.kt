@@ -68,7 +68,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   val searchInList = rememberSaveable(stateSaver = TextFieldValue.Saver) { mutableStateOf(TextFieldValue("")) }
   val scope = rememberCoroutineScope()
   val (userPickerState, scaffoldState ) = settingsState
-  Scaffold(topBar = { Box(Modifier.padding(end = endPadding)) { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped)} },
+  Scaffold(topBar = { Box(Modifier.padding(end = endPadding)) { ChatListToolbar(searchInList, scaffoldState.drawerState, userPickerState, stopped)} },
     scaffoldState = scaffoldState,
     drawerContent = { SettingsView(chatModel, setPerformLA, scaffoldState.drawerState) },
     drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
@@ -165,7 +165,7 @@ private fun ConnectButton(text: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
+private fun ChatListToolbar(searchInList: State<TextFieldValue>, drawerState: DrawerState, userPickerState: MutableStateFlow<AnimatedViewState>, stopped: Boolean) {
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   if (stopped) {
     barButtons.add {
@@ -210,7 +210,12 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
           fontWeight = FontWeight.SemiBold,
         )
         if (chatModel.chats.size > 0) {
-          ToggleFilterButton()
+          val enabled = remember { derivedStateOf { searchInList.value.text.isEmpty() } }
+          if (enabled.value) {
+            ToggleFilterEnabledButton()
+          } else {
+            ToggleFilterDisabledButton()
+          }
         }
       }
     },
@@ -264,7 +269,7 @@ private fun BoxScope.unreadBadge(text: String? = "") {
 }
 
 @Composable
-private fun ToggleFilterButton() {
+private fun ToggleFilterEnabledButton() {
   val pref = remember { ChatController.appPrefs.showUnreadAndFavorites }
   IconButton(onClick = { pref.set(!pref.get()) }) {
     Icon(
@@ -275,6 +280,23 @@ private fun ToggleFilterButton() {
         .padding(3.dp)
         .background(color = if (pref.state.value) MaterialTheme.colors.primary else MaterialTheme.colors.background, shape = RoundedCornerShape(50))
         .border(width = 1.dp, color = MaterialTheme.colors.primary, shape = RoundedCornerShape(50))
+        .padding(3.dp)
+        .size(16.dp)
+    )
+  }
+}
+
+@Composable
+private fun ToggleFilterDisabledButton() {
+  IconButton({}, enabled = false) {
+    Icon(
+      painterResource(MR.images.ic_filter_list),
+      null,
+      tint = MaterialTheme.colors.secondary,
+      modifier = Modifier
+        .padding(3.dp)
+        .background(color = MaterialTheme.colors.background, shape = RoundedCornerShape(50))
+        .border(width = 1.dp, color = MaterialTheme.colors.secondary, shape = RoundedCornerShape(50))
         .padding(3.dp)
         .size(16.dp)
     )
@@ -362,10 +384,8 @@ private fun ChatListSearchBar(listState: LazyListState, searchTextState: Mutable
           if (it.isNotEmpty()) {
             // if some other text is pasted, enter search mode
             focusRequester.requestFocus()
-          } else {
-            if (listState.layoutInfo.totalItemsCount > 0) {
-              listState.scrollToItem(0)
-            }
+          } else if (listState.layoutInfo.totalItemsCount > 0) {
+            listState.scrollToItem(0)
           }
           searchShowingSimplexLink.value = false
           searchChatFilteredBySimplexLink.value = null

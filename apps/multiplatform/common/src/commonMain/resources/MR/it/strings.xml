@@ -292,8 +292,6 @@
     <string name="delete_group_menu_action">Elimina</string>
     <string name="direct_messages_are_prohibited_in_chat">I messaggi diretti tra i membri sono vietati in questo gruppo.</string>
     <string name="display_name">Inserisci il tuo nome:</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Aggiungi un contatto</b>: per creare il tuo codice QR una tantum per il tuo contatto.]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Scansiona codice QR</b>: per connetterti al contatto che ti mostra il codice QR.]]></string>
     <string name="choose_file">File</string>
     <string name="clear_chat_button">Svuota chat</string>
     <string name="clear_chat_question">Svuotare la chat\?</string>

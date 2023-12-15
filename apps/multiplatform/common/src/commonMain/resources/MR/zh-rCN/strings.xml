@@ -118,7 +118,6 @@
     <string name="network_session_mode_entity_description">每个联系人和群组成员 <b>将使用单独的 TCP 连接（和 SOCKS 凭证）</b>。
 \n<b>请注意</b>：如果您有很多连接，您的电池和流量消耗可能会大大增加，并且某些连接可能会失败。</string>
     <string name="back">返回</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>添加新联系人</b>：为您的联系人创建一次性二维码。]]></string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b> 最长续航 </b>。您只会在应用程序运行时收到通知（无后台服务）。]]></string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> 较长续航 </b>。后台服务每 10 分钟检查一次消息。您可能会错过来电或者紧急信息。]]></string>
     <string name="bold_text">加粗</string>
@@ -129,7 +128,6 @@
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b> 使用更多电量 </b>！后台服务始终运行——一旦收到消息，就会显示通知。]]></string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>请注意</b>：如果您丢失密码，您将无法恢复或者更改密码。]]></string>
     <string name="call_already_ended">通话已结束！</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>扫描二维码</b> ：与向您展示二维码的联系人联系。]]></string>
     <string name="alert_title_cant_invite_contacts">无法邀请联系人！</string>
     <string name="invite_prohibited">无法邀请联系人！</string>
     <string name="cancel_verb">取消</string>
