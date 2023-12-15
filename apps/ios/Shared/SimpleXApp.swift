@@ -182,9 +182,9 @@ struct SimpleXApp: App {
     }
 
     private func authenticationExpired() -> Bool {
-        if let enteredBackgroundAuthorized = enteredBackgroundAuthenticated {
+        if let enteredBackgroundAuthenticated = enteredBackgroundAuthenticated {
             let delay = Double(UserDefaults.standard.integer(forKey: DEFAULT_LA_LOCK_DELAY))
-            return ProcessInfo.processInfo.systemUptime - enteredBackgroundAuthorized >= delay
+            return ProcessInfo.processInfo.systemUptime - enteredBackgroundAuthenticated >= delay
         } else {
             return true
         }
