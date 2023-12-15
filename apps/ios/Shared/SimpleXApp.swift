@@ -72,6 +72,7 @@ struct SimpleXApp: App {
                     }
                     chatModel.userAuthenticated = false
                     automaticAuthenticationAttempted = false
+                    automaticAuthenticationFailedOrCancelled = false
                     canConnectNonCallKitCall = false
                     // authentication ---
 
@@ -98,6 +99,7 @@ struct SimpleXApp: App {
                             canConnectNonCallKitCall = !(authExpired && prefPerformLA) || unlockedRecently()
                         }
                     }
+                    
                     // --- authentication
                     // condition `!chatModel.userAuthenticated` is required for when authentication is enabled in settings or on initial notice
                     if prefPerformLA && !chatModel.userAuthenticated {
