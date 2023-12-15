@@ -14,7 +14,9 @@ import SimpleXChat
 
 let logger = Logger()
 
-let suspendingDelay: UInt64 = 2_500_000_000
+let appSuspendingDelay: UInt64 = 2_500_000_000
+
+let nseSuspendDelay: TimeInterval = 2
 
 let nseSuspendTimeout: Int = 10
 
@@ -177,6 +179,10 @@ class NSEThreads {
             return false
         }
     }
+
+    var noThreads: Bool {
+        allThreads.isEmpty
+    }
 }
 
 // Notification service extension creates a new instance of the class and calls didReceive for each notification.
@@ -261,7 +267,7 @@ class NotificationService: UNNotificationServiceExtension {
             let dbStatus = startChat()
             if case .ok = dbStatus,
                let ntfInfo = apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo) {
-                logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfInfo), privacy: .public)")
+                logger.debug("NotificationService: receiveNtfMessages: apiGetNtfMessage \(String(describing: ntfInfo.ntfMessages.count), privacy: .public)")
                 if let connEntity = ntfInfo.connEntity_ {
                     setBestAttemptNtf(
                         ntfInfo.ntfsEnabled
@@ -326,7 +332,13 @@ class NotificationService: UNNotificationServiceExtension {
         if let t = threadId {
             threadId = nil
             if NSEThreads.shared.endThread(t) {
-                suspendChat(nseSuspendTimeout)
+                logger.debug("NotificationService.deliverBestAttemptNtf: will suspend")
+                DispatchQueue.global().asyncAfter(deadline: .now() + nseSuspendDelay) {
+                    if NSEThreads.shared.noThreads {
+                        logger.debug("NotificationService.deliverBestAttemptNtf: suspending...")
+                        suspendChat(nseSuspendTimeout)
+                    }
+                }
             }
         }
         if let handler = contentHandler, let ntf = bestAttemptNtf {
@@ -497,7 +509,7 @@ func suspendChat(_ timeout: Int) {
 
         NSEChatState.shared.set(.suspending)
         if apiSuspendChat(timeoutMicroseconds: timeout * 1000000) {
-            logger.debug("NotificationService: activateChat: after apiActivateChat")
+            logger.debug("NotificationService: suspendChat: after apiSuspendChat")
             DispatchQueue.global().asyncAfter(deadline: .now() + Double(timeout) + 1, execute: chatSuspended)
         } else {
             NSEChatState.shared.set(state)
@@ -510,6 +522,7 @@ func chatSuspended() {
     if case .suspending = NSEChatState.shared.value {
         NSEChatState.shared.set(.suspended)
         chatCloseStore()
+        logger.debug("NotificationService chatSuspended: suspended")
     }
 }
 
