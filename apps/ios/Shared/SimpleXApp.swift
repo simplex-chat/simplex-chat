@@ -99,7 +99,7 @@ struct SimpleXApp: App {
                             canConnectNonCallKitCall = !(authExpired && prefPerformLA) || unlockedRecently()
                         }
                     }
-                    
+
                     // --- authentication
                     // condition `!chatModel.userAuthenticated` is required for when authentication is enabled in settings or on initial notice
                     if prefPerformLA && !chatModel.userAuthenticated {
@@ -155,9 +155,9 @@ struct SimpleXApp: App {
     }
 
     private func authenticateContentViewAccess() {
-        logger.debug("DEBUGGING: runAuthenticate")
+        logger.debug("DEBUGGING: authenticateContentViewAccess")
         dismissAllSheets(animated: false) {
-            logger.debug("DEBUGGING: runAuthenticate, in dismissAllSheets callback")
+            logger.debug("DEBUGGING: authenticateContentViewAccess, in dismissAllSheets callback")
             chatModel.chatId = nil
 
             authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason"), selfDestruct: true) { laResult in
