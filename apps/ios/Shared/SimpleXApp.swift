@@ -40,8 +40,7 @@ struct SimpleXApp: App {
             // so that it's computed by the time view renders, and not on event after rendering
             ContentView(
                 showInitializationView: $showInitializationView,
-                userAuthenticationExtended: !authenticationExpired(),
-                enteredBackgroundAuthenticated: $enteredBackgroundAuthenticated
+                userAuthenticationExtended: !authenticationExpired()
             )
             .environmentObject(chatModel)
             .onOpenURL { url in

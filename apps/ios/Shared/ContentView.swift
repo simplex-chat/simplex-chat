@@ -17,7 +17,6 @@ struct ContentView: View {
 
     @Binding var showInitializationView: Bool
     var userAuthenticationExtended: Bool
-    @Binding var enteredBackgroundAuthenticated: TimeInterval?
 
     @Environment(\.scenePhase) var scenePhase
     @State private var automaticAuthenticationAttempted = false
