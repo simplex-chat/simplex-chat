@@ -43,12 +43,6 @@ private func addTermItem(_ items: inout [TerminalItem], _ item: TerminalItem) {
     items.append(item)
 }
 
-enum UserAuthenticated {
-    case authenticated
-    case checkAuthentication
-    case notAuthenticated
-}
-
 final class ChatModel: ObservableObject {
     @Published var onboardingStage: OnboardingStage?
     @Published var setDeliveryReceipts = false
@@ -61,7 +55,7 @@ final class ChatModel: ObservableObject {
     @Published var chatDbEncrypted: Bool?
     @Published var chatDbStatus: DBMigrationResult?
     // local authentication
-    @Published var userAuthenticated: UserAuthenticated = .checkAuthentication
+    @Published var userAuthenticated: Bool = false
     @Published var laRequest: LocalAuthRequest?
     // list of chat "previews"
     @Published var chats: [Chat] = []

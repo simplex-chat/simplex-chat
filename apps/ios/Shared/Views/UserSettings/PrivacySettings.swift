@@ -467,7 +467,6 @@ struct SimplexLockView: View {
             switch a {
             case .enableAuth:
                 SetAppPasscodeView {
-                    m.userAuthenticated = .authenticated
                     laLockDelay = 30
                     prefPerformLA = true
                     showChangePassword = true
@@ -620,7 +619,6 @@ struct SimplexLockView: View {
         authenticate(reason: NSLocalizedString("Enable SimpleX Lock", comment: "authentication reason")) { laResult in
             switch laResult {
             case .success:
-                m.userAuthenticated = .authenticated
                 prefPerformLA = true
                 laAlert = .laTurnedOnAlert
             case .failed:

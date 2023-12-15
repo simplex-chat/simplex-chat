@@ -13,15 +13,16 @@ let logger = Logger()
 
 @main
 struct SimpleXApp: App {
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var chatModel = ChatModel.shared
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @ObservedObject var alertManager = AlertManager.shared
-    
+
     @Environment(\.scenePhase) var scenePhase
-    @State private var firstOpen = true
+
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
+    @State private var automaticAuthenticationAttempted = false
+    @State private var automaticAuthenticationFailedOrCancelled = false
     @State private var enteredBackgroundAuthenticated: TimeInterval? = nil
-    @State private var automaticAuthAttempted = false
 
     @State private var canConnectNonCallKitCall = false
     @State private var lastSuccessfulUnlock: TimeInterval? = nil
@@ -30,7 +31,7 @@ struct SimpleXApp: App {
 
     init() {
 //        DispatchQueue.global(qos: .background).sync {
-            haskell_init()
+        haskell_init()
 //            hs_init(0, nil)
 //        }
         UserDefaults.standard.register(defaults: appDefaults)
@@ -42,118 +43,86 @@ struct SimpleXApp: App {
     }
 
     var body: some Scene {
-        return WindowGroup {
+        WindowGroup {
             ContentView(
-                firstOpen: firstOpen,
+                userAuthenticationExtended: !authenticationExpired(),
+                automaticAuthenticationFailed: automaticAuthenticationFailedOrCancelled,
                 authenticateContentViewAccess: authenticateContentViewAccess,
-                canConnectCall: $canConnectNonCallKitCall,
+                canConnectNonCallKitCall: $canConnectNonCallKitCall,
                 showInitializationView: $showInitializationView
             )
-                .environmentObject(chatModel)
-                .onOpenURL { url in
-                    logger.debug("ContentView.onOpenURL: \(url)")
-                    chatModel.appOpenUrl = url
+            .environmentObject(chatModel)
+            .onOpenURL { url in
+                logger.debug("ContentView.onOpenURL: \(url)")
+                chatModel.appOpenUrl = url
+            }
+            .onAppear() {
+                showInitializationView = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    initChatAndMigrate()
                 }
-                .onAppear() {
-                    showInitializationView = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                        initChatAndMigrate()
+            }
+            .onChange(of: scenePhase) { phase in
+                logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
+                switch (phase) {
+                case .background:
+                    // --- authentication
+                    if chatModel.userAuthenticated {
+                        enteredBackgroundAuthenticated = ProcessInfo.processInfo.systemUptime
                     }
-                }
-                .onChange(of: scenePhase) { phase in
-                    logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
-                    switch (phase) {
-                    case .background:
-                        // --- authentication
-                        firstOpen = false
-                        if chatModel.userAuthenticated == .authenticated {
-                            enteredBackgroundAuthenticated = ProcessInfo.processInfo.systemUptime
-                        }
-                        chatModel.userAuthenticated = .checkAuthentication
-                        automaticAuthAttempted = false
-                        canConnectNonCallKitCall = false
-                        // authentication ---
+                    chatModel.userAuthenticated = false
+                    automaticAuthenticationAttempted = false
+                    canConnectNonCallKitCall = false
+                    // authentication ---
 
-                        if CallController.useCallKit() && chatModel.activeCall != nil {
-                            CallController.shared.shouldSuspendChat = true
-                        } else {
-                            suspendChat()
-                            BGManager.shared.schedule()
-                        }
-                        NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
-                    case .active:
-                        CallController.shared.shouldSuspendChat = false
-                        let appState = AppChatState.shared.value
-                        let authExpired = authenticationExpired()
+                    if CallController.useCallKit() && chatModel.activeCall != nil {
+                        CallController.shared.shouldSuspendChat = true
+                    } else {
+                        suspendChat()
+                        BGManager.shared.schedule()
+                    }
+                    NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
+                case .active:
+                    CallController.shared.shouldSuspendChat = false
+                    let appState = AppChatState.shared.value
+                    let authExpired = authenticationExpired()
 
+                    if appState != .stopped {
+                        startChatAndActivate {
+                            if appState.inactive && chatModel.chatRunning == true {
+                                updateChats()
+                                if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
+                                    updateCallInvitations()
+                                }
+                            }
+                            canConnectNonCallKitCall = !(authExpired && prefPerformLA) || unlockedRecently()
+                        }
+                    }
+                    // --- authentication
+                    // condition `!chatModel.userAuthenticated` is required for when authentication is enabled in settings or on initial notice
+                    if prefPerformLA && !chatModel.userAuthenticated {
                         if appState != .stopped {
-                            startChatAndActivate {
-                                if appState.inactive && chatModel.chatRunning == true {
-                                    updateChats()
-                                    if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
-                                        updateCallInvitations()
-                                    }
-                                }
-                                canConnectNonCallKitCall = !(authExpired && prefPerformLA) || unlockedRecently()
-                            }
-                        }
-                        // --- authentication
-                        // condition `userAuthenticated != .authenticated` is required for when authentication is enabled in settings or on initial notice
-
-                        if prefPerformLA && chatModel.userAuthenticated != .authenticated {
-                            if appState != .stopped {
-                                if !authExpired {
-                                    chatModel.userAuthenticated = .authenticated
-                                } else {
-                                    if !automaticAuthAttempted {
-                                        automaticAuthAttempted = true
-                                        authenticateIfNotCallKitCall()
-                                    }
-                                }
+                            if !authExpired {
+                                chatModel.userAuthenticated = true
                             } else {
-                                // this is to show lock button and not automatically attempt authentication when app is stopped;
-                                // basically stopped app ignores authentication timeout
-                                chatModel.userAuthenticated = .notAuthenticated
+                                if !automaticAuthenticationAttempted {
+                                    automaticAuthenticationAttempted = true
+                                    // authenticate if call kit call is not in progress
+                                    if !(CallController.useCallKit() && chatModel.showCallView && chatModel.activeCall != nil) {
+                                        authenticateContentViewAccess()
+                                    } else {
+                                        automaticAuthenticationFailedOrCancelled = true
+                                    }
+                                }
                             }
+                        } else {
+                            // this is to show lock button and not automatically attempt authentication when app is stopped
+                            chatModel.userAuthenticated = !authExpired
                         }
-                        // authentication ---
-                    default:
-                        break
                     }
-                }
-        }
-    }
-
-    func authenticateIfNotCallKitCall() {
-        logger.debug("DEBUGGING: initAuthenticate")
-        if !(CallController.useCallKit() && chatModel.showCallView && chatModel.activeCall != nil) {
-            authenticateContentViewAccess()
-        }
-    }
-
-    private func authenticateContentViewAccess() {
-        logger.debug("DEBUGGING: runAuthenticate")
-        dismissAllSheets(animated: false) {
-            logger.debug("DEBUGGING: runAuthenticate, in dismissAllSheets callback")
-            chatModel.chatId = nil
-
-            authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason"), selfDestruct: true) { laResult in
-                logger.debug("DEBUGGING: authenticate callback: \(String(describing: laResult))")
-                switch (laResult) {
-                case .success:
-                    chatModel.userAuthenticated = .authenticated
-                    canConnectNonCallKitCall = true
-                    lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
-                case .failed:
-                    chatModel.userAuthenticated = .notAuthenticated
-                    if privacyLocalAuthModeDefault.get() == .passcode {
-                        AlertManager.shared.showAlert(laFailedAlert())
-                    }
-                case .unavailable:
-                    prefPerformLA = false
-                    chatModel.userAuthenticated = .notAuthenticated
-                    canConnectNonCallKitCall = true
-                    AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
+                    // authentication ---
+                default:
+                    break
                 }
             }
         }
@@ -181,6 +150,33 @@ struct SimpleXApp: App {
     private func setMigrationState(_ state: V3DBMigrationState) {
         if case .migrated = v3DBMigrationDefault.get() { return }
         v3DBMigrationDefault.set(state)
+    }
+
+    private func authenticateContentViewAccess() {
+        logger.debug("DEBUGGING: runAuthenticate")
+        dismissAllSheets(animated: false) {
+            logger.debug("DEBUGGING: runAuthenticate, in dismissAllSheets callback")
+            chatModel.chatId = nil
+
+            authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason"), selfDestruct: true) { laResult in
+                logger.debug("DEBUGGING: authenticate callback: \(String(describing: laResult))")
+                switch (laResult) {
+                case .success:
+                    canConnectNonCallKitCall = true
+                    lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
+                case .failed:
+                    automaticAuthenticationFailedOrCancelled = true
+                    if privacyLocalAuthModeDefault.get() == .passcode {
+                        AlertManager.shared.showAlert(laFailedAlert())
+                    }
+                case .unavailable:
+                    automaticAuthenticationFailedOrCancelled = true
+                    prefPerformLA = false
+                    canConnectNonCallKitCall = true
+                    AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
+                }
+            }
+        }
     }
 
     private func authenticationExpired() -> Bool {

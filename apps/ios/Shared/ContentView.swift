@@ -14,9 +14,10 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Environment(\.colorScheme) var colorScheme
-    var firstOpen: Bool
+    var userAuthenticationExtended: Bool
+    var automaticAuthenticationFailed: Bool
     var authenticateContentViewAccess: () -> Void
-    @Binding var canConnectCall: Bool
+    @Binding var canConnectNonCallKitCall: Bool
     @Binding var showInitializationView: Bool
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
@@ -39,20 +40,17 @@ struct ContentView: View {
         }
     }
 
+    private var userAuthenticated: Bool {
+        chatModel.userAuthenticated || userAuthenticationExtended
+    }
+
     var body: some View {
         ZStack {
             if prefPerformLA {
-                switch chatModel.userAuthenticated {
-                case .authenticated:
+                if userAuthenticated {
                     contentView()
-                case .checkAuthentication:
-                    if firstOpen {
-                        logoView()
-                    } else {
-                        EmptyView()
-                    }
-                case .notAuthenticated:
-                    lockButton()
+                } else {
+                    lockView()
                 }
             } else {
                 contentView()
@@ -64,7 +62,6 @@ struct ContentView: View {
                 LocalAuthView(authRequest: la)
             } else if showSetPasscode {
                 SetAppPasscodeView {
-                    chatModel.userAuthenticated = .authenticated
                     prefPerformLA = true
                     showSetPasscode = false
                     privacyLocalAuthModeDefault.set(.passcode)
@@ -88,7 +85,7 @@ struct ContentView: View {
 
     @ViewBuilder private func contentView() -> some View {
         if chatModel.chatDbStatus == nil && showInitializationView {
-            logoView(text: "Starting", animatedProgressIndicator: true)
+            logoView()
         } else if let status = chatModel.chatDbStatus, status != .ok {
             DatabaseErrorView(status: status)
         } else if !chatModel.v3DBMigration.startChat {
@@ -112,24 +109,21 @@ struct ContentView: View {
         if CallController.useCallKit() {
             ActiveCallView(call: call, canConnectCall: Binding.constant(true))
                 .onDisappear {
-                    if prefPerformLA && chatModel.userAuthenticated != .authenticated { authenticateContentViewAccess() }
+                    if prefPerformLA && !userAuthenticated { authenticateContentViewAccess() }
                 }
         } else {
-            ActiveCallView(call: call, canConnectCall: $canConnectCall)
-            if prefPerformLA && chatModel.userAuthenticated != .authenticated {
+            ActiveCallView(call: call, canConnectCall: $canConnectNonCallKitCall)
+            if prefPerformLA && !userAuthenticated {
                 Rectangle()
                     .fill(colorScheme == .dark ? .black : .white)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-                lockButton()
+                lockView()
             }
         }
     }
 
-    private func lockButton() -> some View {
-        Button(action: authenticateContentViewAccess) { Label("Unlock", systemImage: "lock") }
-    }
-
-    private func logoView(text: LocalizedStringKey? = nil, animatedProgressIndicator: Bool = false) -> some View {
+    // refactor with logoView? (pass Button/AnimatedTextLoadingIndicator as Content)
+    private func lockView() -> some View {
         GeometryReader { g in
             VStack(alignment: .center) {
                 Image(colorScheme == .light ? "logo" : "logo-light")
@@ -138,17 +132,25 @@ struct ContentView: View {
                     .frame(width: g.size.width * 0.67)
                     .frame(maxWidth: .infinity, minHeight: 48, alignment: .center)
                     .padding(.top)
-                if let text = text {
-                    if animatedProgressIndicator {
-                        AnimatedTextLoadingIndicator(text: text, color: Color(cgColor: defaultAccentColor))
-                    } else {
-                        Text(text)
-                            .foregroundColor(Color(cgColor: defaultAccentColor))
-                    }
-                } else {
-                    Text("Starting")
-                        .foregroundColor(.clear)
+                Button(action: authenticateContentViewAccess) {
+                    Label("Unlock", systemImage: "lock")
+                        .foregroundColor(automaticAuthenticationFailed ? Color(cgColor: defaultAccentColor) : .clear)
                 }
+            }
+            .frame(minHeight: g.size.height)
+        }
+    }
+
+    private func logoView() -> some View {
+        GeometryReader { g in
+            VStack(alignment: .center) {
+                Image(colorScheme == .light ? "logo" : "logo-light")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: g.size.width * 0.67)
+                    .frame(maxWidth: .infinity, minHeight: 48, alignment: .center)
+                    .padding(.top)
+                AnimatedTextLoadingIndicator(text: "Starting", color: Color(cgColor: defaultAccentColor))
             }
             .frame(minHeight: g.size.height)
         }
@@ -236,7 +238,6 @@ struct ContentView: View {
         authenticate(reason: NSLocalizedString("Enable SimpleX Lock", comment: "authentication reason")) { laResult in
             switch laResult {
             case .success:
-                chatModel.userAuthenticated = .authenticated
                 prefPerformLA = true
                 alertManager.showAlert(laTurnedOnAlert())
             case .failed:
