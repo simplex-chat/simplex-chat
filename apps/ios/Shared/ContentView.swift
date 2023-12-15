@@ -14,8 +14,8 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Environment(\.colorScheme) var colorScheme
-    var userAuthenticationExtended: Bool
-    var automaticAuthenticationFailed: Bool
+    @State var userAuthenticationExtended: Bool
+    @State var automaticAuthenticationFailed: Bool
     var authenticateContentViewAccess: () -> Void
     @Binding var canConnectNonCallKitCall: Bool
     @Binding var showInitializationView: Bool
