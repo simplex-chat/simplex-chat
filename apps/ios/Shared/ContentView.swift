@@ -186,7 +186,7 @@ struct ContentView: View {
         }
     }
 
-    @ViewBuilder private func lockButton() -> some View {
+    private func lockButton() -> some View {
         Button(action: authenticateContentViewAccess) { Label("Unlock", systemImage: "lock") }
     }
 
