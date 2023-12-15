@@ -1723,20 +1723,20 @@
   <!-- Connection plan -->
   <string name="connect_plan_connect_to_yourself">Connect to yourself?</string>
   <string name="connect_plan_this_is_your_own_one_time_link">This is your own one-time link!</string>
-  <string name="connect_plan_you_are_already_connecting_to_vName">You are already connecting to %1$s.</string>
+  <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[You are already connecting to <b>%1$s</b>.]]></string>
   <string name="connect_plan_already_connecting">Already connecting!</string>
   <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">You are already connecting via this one-time link!</string>
   <string name="connect_plan_this_is_your_own_simplex_address">This is your own SimpleX address!</string>
   <string name="connect_plan_repeat_connection_request">Repeat connection request?</string>
   <string name="connect_plan_you_have_already_requested_connection_via_this_address">You have already requested connection via this address!</string>
   <string name="connect_plan_join_your_group">Join your group?</string>
-  <string name="connect_plan_this_is_your_link_for_group_vName">This is your link for group %1$s!</string>
+  <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[This is your link for group <b>%1$s</b>!]]></string>
   <string name="connect_plan_open_group">Open group</string>
   <string name="connect_plan_repeat_join_request">Repeat join request?</string>
   <string name="connect_plan_group_already_exists">Group already exists!</string>
-  <string name="connect_plan_you_are_already_joining_the_group_vName">You are already joining the group %1$s.</string>
+  <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[You are already joining the group <b>%1$s</b>.]]></string>
   <string name="connect_plan_already_joining_the_group">Already joining the group!</string>
   <string name="connect_plan_you_are_already_joining_the_group_via_this_link">You are already joining the group via this link.</string>
-  <string name="connect_plan_you_are_already_in_group_vName">You are already in group %1$s.</string>
+  <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[You are already in group <b>%1$s</b>.]]></string>
   <string name="connect_plan_connect_via_link">Connect via link?</string>
 </resources>

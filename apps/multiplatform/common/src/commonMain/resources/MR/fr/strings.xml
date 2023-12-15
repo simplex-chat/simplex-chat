@@ -1408,14 +1408,14 @@
     <string name="expand_verb">Développer</string>
     <string name="connect_plan_repeat_connection_request">Répéter la demande de connexion ?</string>
     <string name="rcv_direct_event_contact_deleted">contact supprimé</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Vous êtes déjà connecté(e) à %1$s.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Vous êtes déjà connecté(e) à <b>%1$s</b>.]]></string>
     <string name="error_alert_title">Erreur</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Vous êtes déjà en train de rejoindre le groupe via ce lien.</string>
     <string name="create_group_button">Créer un groupe</string>
     <string name="create_another_profile_button">Créer le profil</string>
     <string name="group_members_2">%s et %s</string>
     <string name="connect_plan_join_your_group">Rejoindre votre groupe ?</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Vous êtes déjà en train de rejoindre le groupe %1$s.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Vous êtes déjà en train de rejoindre le groupe <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_one_time_link">Voici votre propre lien unique !</string>
     <string name="marked_deleted_items_description">%d messages marqués comme supprimés</string>
     <string name="connect_plan_group_already_exists">Ce groupe existe déjà !</string>
@@ -1430,7 +1430,7 @@
     <string name="unblock_member_button">Débloquer ce membre</string>
     <string name="connect_plan_connect_to_yourself">Se connecter à soi-même ?</string>
     <string name="contact_tap_to_connect">Tapez pour vous connecter</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Vous êtes déjà dans le groupe %1$s.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Vous êtes déjà dans le groupe <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">Voici votre propre adresse SimpleX !</string>
     <string name="correct_name_to">Corriger le nom pour %s ?</string>
     <string name="delete_messages__question">Supprimer %d messages ?</string>
@@ -1451,7 +1451,7 @@
     <string name="block_member_question">Bloquer ce membre ?</string>
     <string name="rcv_group_events_count">%d événements de groupe</string>
     <string name="invalid_name">Nom invalide !</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Voici votre lien pour le groupe %1$s !</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Voici votre lien pour le groupe <b>%1$s</b> !]]></string>
     <string name="unblock_member_confirmation">Débloquer</string>
     <string name="non_content_uri_alert_title">Chemin du fichier invalide</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Vous avez déjà demandé une connexion via cette adresse !</string>

@@ -1489,14 +1489,14 @@
     <string name="expand_verb">Erweitern</string>
     <string name="connect_plan_repeat_connection_request">Verbindungsanfrage wiederholen?</string>
     <string name="rcv_direct_event_contact_deleted">Gelöschter Kontakt</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Sie sind bereits mit %1$s verbunden.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Sie sind bereits mit <b>%1$s</b> verbunden.]]></string>
     <string name="error_alert_title">Fehler</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Sie sind über diesen Link bereits Mitglied der Gruppe.</string>
     <string name="create_group_button">Gruppe erstellen</string>
     <string name="create_another_profile_button">Profil erstellen</string>
     <string name="group_members_2">%s und %s</string>
     <string name="connect_plan_join_your_group">Ihrer Gruppe beitreten?</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Sie sind bereits Mitglied in der Gruppe %1$s.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Sie sind bereits Mitglied in der Gruppe <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_one_time_link">Das ist Ihr eigener Einmal-Link!</string>
     <string name="marked_deleted_items_description">%d Nachrichten als gelöscht markiert</string>
     <string name="connect_plan_group_already_exists">Gruppe besteht bereits!</string>
@@ -1511,7 +1511,7 @@
     <string name="unblock_member_button">Mitglied freigeben</string>
     <string name="connect_plan_connect_to_yourself">Mit Ihnen selbst verbinden?</string>
     <string name="contact_tap_to_connect">Zum Verbinden antippen</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Sie sind bereits Mitglied in der Gruppe %1$s.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Sie sind bereits Mitglied in der Gruppe <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">Das ist Ihre eigene SimpleX-Adresse!</string>
     <string name="correct_name_to">Richtiger Name für %s?</string>
     <string name="delete_messages__question">%d Nachrichten löschen?</string>
@@ -1532,7 +1532,7 @@
     <string name="block_member_question">Mitglied blockieren?</string>
     <string name="rcv_group_events_count">%d Gruppenereignisse</string>
     <string name="invalid_name">Ungültiger Name!</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Das ist Ihr Link für die Gruppe %1$s!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Das ist Ihr Link für die Gruppe <b>%1$s</b>!]]></string>
     <string name="unblock_member_confirmation">Freigeben</string>
     <string name="non_content_uri_alert_title">Ungültiger Datei-Pfad</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Sie haben über diese Adresse bereits eine Verbindung beantragt!</string>

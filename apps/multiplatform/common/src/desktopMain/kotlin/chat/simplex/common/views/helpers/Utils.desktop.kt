@@ -6,6 +6,7 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.Density
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
@@ -20,6 +21,7 @@ import kotlin.io.encoding.ExperimentalEncodingApi
 
 private val bStyle = SpanStyle(fontWeight = FontWeight.Bold)
 private val iStyle = SpanStyle(fontStyle = FontStyle.Italic)
+private val uStyle = SpanStyle(textDecoration = TextDecoration.Underline)
 private fun fontStyle(color: String) =
   SpanStyle(color = Color(color.replace("#", "ff").toLongOrNull(16) ?: Color.White.toArgb().toLong()))
 
@@ -56,6 +58,22 @@ actual fun escapedHtmlToAnnotatedString(text: String, density: Density): Annotat
                 }
               }
               break
+            }
+            text.substringSafe(innerI, 2) == "u>" -> {
+              val textStart = innerI + 2
+              for (insideTagI in textStart until text.length) {
+                if (text[insideTagI] == '<') {
+                  withStyle(uStyle) { append(text.substring(textStart, insideTagI)) }
+                  skipTil = insideTagI + 4
+                  break
+                }
+              }
+              break
+            }
+            text.substringSafe(innerI, 3) == "br>" -> {
+              val textStart = innerI + 3
+              append("\n")
+              skipTil = textStart
             }
             text.substringSafe(innerI, 4) == "font" -> {
               var textStart = innerI + 5

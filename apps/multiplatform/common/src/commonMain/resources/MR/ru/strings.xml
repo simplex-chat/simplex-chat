@@ -1566,9 +1566,9 @@
     <string name="block_member_desc">Все новые сообщения от %s будут скрыты!</string>
     <string name="desktop_app_version_is_incompatible">Версия настольного приложения %s несовместима с этим приложением.</string>
     <string name="blocked_item_description">заблокировано</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Вы уже соединяетесь с %1$s.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Вы уже соединяетесь с <b>%1$s</b>.]]></string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Вы уже вступаете в группу по этой ссылке.</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Вы уже вступаете в группу %1$s.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Вы уже вступаете в группу <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_one_time_link">Это ваша собственная одноразовая ссылка!</string>
     <string name="v5_4_link_mobile_desktop_descr">Через безопасный квантово-устойчивый протокол.</string>
     <string name="v5_4_block_group_members_descr">Чтобы скрыть нежелательные сообщения.</string>
@@ -1580,7 +1580,7 @@
     <string name="unblock_member_button">Разблокировать члена группы</string>
     <string name="contact_tap_to_connect">Нажмите чтобы соединиться</string>
     <string name="this_device_name">Имя этого устройства</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Вы уже состоите в группе %1$s.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Вы уже состоите в группе <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">Это ваш собственный адрес SimpleX!</string>
     <string name="unblock_member_question">Разблокировать члена группы?</string>
     <string name="settings_section_title_use_from_desktop">Использовать с компьютера</string>
@@ -1590,7 +1590,7 @@
     <string name="this_device_name_shared_with_mobile">Имя устройства будет доступно подключенному мобильному клиенту.</string>
     <string name="verify_code_on_mobile">Сверьте код на мобильном</string>
     <string name="non_content_uri_alert_text">Указан неверный путь к файлу. Сообщите о проблеме разработчикам приложения.</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Это ваша ссылка на группу %1$s!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Это ваша ссылка на группу <b>%1$s</b>!]]></string>
     <string name="verify_code_with_desktop">Сверьте код с компьютером</string>
     <string name="scan_qr_code_from_desktop">Сканировать QR код с компьютера</string>
     <string name="unblock_member_confirmation">Разблокировать</string>

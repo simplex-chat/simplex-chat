@@ -19,6 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -119,7 +120,7 @@ fun NewChatView(m: ChatModel, rh: RemoteHostInfo?, selection: NewChatOption, sho
           selected = pagerState.currentPage == index,
           onClick = {
             scope.launch {
-              pagerState.scrollToPage(index)
+              pagerState.animateScrollToPage(index)
             }
           },
           text = { Text(it, fontSize = 13.sp) },
@@ -298,28 +299,35 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
 private fun LinkTextView(link: String, share: Boolean) {
   val clipboard = LocalClipboardManager.current
   Row(Modifier.fillMaxWidth().heightIn(min = 46.dp).padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
-    BasicTextField(
-      value = link,
-      onValueChange = { },
-      Modifier.weight(1f),
-      textStyle = TextStyle(fontSize = 16.sp, color = MaterialTheme.colors.onBackground),
-      singleLine = true,
-      decorationBox = @Composable { innerTextField ->
-        TextFieldDefaults.TextFieldDecorationBox(
-          value = link,
-          innerTextField = innerTextField,
-          contentPadding = PaddingValues(),
-          label = null,
-          visualTransformation = VisualTransformation.None,
-          leadingIcon = null,
-          trailingIcon = null,
-          singleLine = true,
-          enabled = true,
-          isError = false,
-          interactionSource = remember { MutableInteractionSource() },
-        )})
+    Box(Modifier.weight(1f).clickable {
+      chatModel.markShowingInvitationUsed()
+      clipboard.shareText(link)
+    }) {
+      BasicTextField(
+        value = link,
+        onValueChange = {  },
+        enabled = false,
+        textStyle = TextStyle(fontSize = 16.sp, color = MaterialTheme.colors.onBackground),
+        singleLine = true,
+        decorationBox = @Composable { innerTextField ->
+          TextFieldDefaults.TextFieldDecorationBox(
+            value = link,
+            innerTextField = innerTextField,
+            contentPadding = PaddingValues(),
+            label = null,
+            visualTransformation = VisualTransformation.None,
+            leadingIcon = null,
+            trailingIcon = null,
+            singleLine = true,
+            enabled = false,
+            isError = false,
+            interactionSource = remember { MutableInteractionSource() },
+          )
+        })
+    }
+    Text("…", fontSize = 16.sp)
     if (share) {
-      Spacer(Modifier.width(DEFAULT_PADDING_HALF))
+      Spacer(Modifier.width(DEFAULT_PADDING))
       IconButton({
         chatModel.markShowingInvitationUsed()
         clipboard.shareText(link)

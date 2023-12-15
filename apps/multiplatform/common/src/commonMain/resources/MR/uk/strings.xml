@@ -1377,7 +1377,7 @@
     <string name="connect_plan_repeat_connection_request">Повторити запит на підключення?</string>
     <string name="encryption_renegotiation_error">Помилка повторного узгодження шифрування</string>
     <string name="rcv_direct_event_contact_deleted">видалений контакт</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Ви вже з\'єднані з %1$s.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Ви вже з\'єднані з <b>%1$s</b>.]]></string>
     <string name="rcv_group_event_open_chat">Відкрити</string>
     <string name="v5_3_encrypt_local_files">Шифрування збережених файлів і носіїв</string>
     <string name="error_alert_title">Помилка</string>
@@ -1388,7 +1388,7 @@
     <string name="create_another_profile_button">Створити профіль</string>
     <string name="group_members_2">%s та %s</string>
     <string name="connect_plan_join_your_group">Приєднатися до групи?</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Ви вже приєдналися до групи %1$s.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Ви вже приєдналися до групи <b>%1$s</b>.]]></string>
     <string name="encrypt_local_files">Шифрування локальних файлів</string>
     <string name="connect_plan_this_is_your_own_one_time_link">Це ваше власне одноразове посилання!</string>
     <string name="marked_deleted_items_description">%d повідомлень позначено як видалені</string>
@@ -1417,7 +1417,7 @@
     <string name="v5_3_simpler_incognito_mode">Спрощений режим інкогніто</string>
     <string name="contact_tap_to_connect">Натисніть, щоб підключитися</string>
     <string name="setup_database_passphrase">Ключова фраза для налаштування бази даних</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Ви вже в групі %1$s.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Ви вже в групі <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">Це ваша власна SimpleX адреса!</string>
     <string name="alert_text_encryption_renegotiation_failed">Повторне узгодження шифрування не вдалося.</string>
     <string name="correct_name_to">Виправити ім\'я на %s?</string>
@@ -1445,7 +1445,7 @@
     <string name="rcv_group_events_count">%d групових подій</string>
     <string name="invalid_name">Неправильне ім\'я!</string>
     <string name="v5_3_simpler_incognito_mode_descr">Увімкніть інкогніто при підключенні.</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Це ваше посилання для групи %1$s!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Це ваше посилання для групи <b>%1$s</b>!]]></string>
     <string name="unblock_member_confirmation">Розблокувати</string>
     <string name="non_content_uri_alert_title">Неправильний шлях до файлу</string>
     <string name="v5_3_discover_join_groups_descr">- підключитися до служби каталогів (БЕТА)!

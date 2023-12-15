@@ -62,7 +62,28 @@ class AlertManager {
 
   fun showAlertDialogButtonsColumn(
     title: String,
-    text: AnnotatedString? = null,
+    text: String? = null,
+    onDismissRequest: (() -> Unit)? = null,
+    hostDevice: Pair<Long?, String>? = null,
+    buttons: @Composable () -> Unit,
+  ) {
+    showAlert {
+      AlertDialog(
+        onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
+        title = alertTitle(title),
+        buttons = {
+          AlertContent(text, hostDevice, extraPadding = true) {
+            buttons()
+          }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+      )
+    }
+  }
+
+  fun showAlertDialogButtonsColumn(
+    title: String,
+    text: AnnotatedString,
     onDismissRequest: (() -> Unit)? = null,
     hostDevice: Pair<Long?, String>? = null,
     buttons: @Composable () -> Unit,

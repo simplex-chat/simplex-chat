@@ -1428,12 +1428,12 @@
     <string name="blocked_item_description">zablokowany</string>
     <string name="expand_verb">Rozszerz</string>
     <string name="connect_plan_repeat_connection_request">Powtórzyć prośbę połączenia?</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Już jesteś połączony z %1$s.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Już jesteś połączony z <b>%1$s</b>.]]></string>
     <string name="error_alert_title">Błąd</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Już dołączasz do grupy przez ten link.</string>
     <string name="group_members_2">%s i %s</string>
     <string name="connect_plan_join_your_group">Dołączyć do twojej grupy?</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Już dołączasz do grupy %1$s.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Już dołączasz do grupy <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_one_time_link">To jest twój jednorazowy link!</string>
     <string name="connect_plan_group_already_exists">Grupa już istnieje!</string>
     <string name="video_decoding_exception_desc">Wideo nie może zostać zdekodowane, spróbuj inne wideo lub skontaktuj się z deweloperami.</string>
@@ -1441,7 +1441,7 @@
     <string name="group_members_n">%s, %s i %d członków</string>
     <string name="unblock_member_button">Odblokuj członka</string>
     <string name="contact_tap_to_connect">Dotknij aby połączyć</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Już jesteś w grupie %1$s.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Już jesteś w grupie <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">To jest twój własny adres SimpleX!</string>
     <string name="remove_member_button">Usuń członka</string>
     <string name="unblock_member_question">Odblokować członka?</string>
@@ -1453,7 +1453,7 @@
     <string name="error_sending_message_contact_invitation">Błąd wysyłania zaproszenia</string>
     <string name="non_content_uri_alert_text">Udostępniłeś nieprawidłową ścieżkę pliku. Zgłoś problem do deweloperów aplikacji.</string>
     <string name="invalid_name">Nieprawidłowa nazwa!</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">To jest twój link zaproszenia do grupy %1$s!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[To jest twój link zaproszenia do grupy <b>%1$s</b>!]]></string>
     <string name="unblock_member_confirmation">Odblokuj</string>
     <string name="non_content_uri_alert_title">Nieprawidłowa ścieżka pliku</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Już prosiłeś o połączenie na ten adres!</string>

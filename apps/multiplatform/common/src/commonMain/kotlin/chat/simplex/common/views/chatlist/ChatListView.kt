@@ -296,7 +296,7 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
 }
 
 @Composable
-private fun ChatListSearchBar(searchTextState: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>) {
+private fun ChatListSearchBar(listState: LazyListState, searchTextState: MutableState<TextFieldValue>, searchShowingSimplexLink: MutableState<Boolean>, searchChatFilteredBySimplexLink: MutableState<String?>) {
   var focused by remember { mutableStateOf(false) }
   val focusRequester = remember { FocusRequester() }
   val hideSearchOnBack: () -> Unit = { searchTextState.value = TextFieldValue() }
@@ -362,6 +362,10 @@ private fun ChatListSearchBar(searchTextState: MutableState<TextFieldValue>, sea
           if (it.isNotEmpty()) {
             // if some other text is pasted, enter search mode
             focusRequester.requestFocus()
+          } else {
+            if (listState.layoutInfo.totalItemsCount > 0) {
+              listState.scrollToItem(0)
+            }
           }
           searchShowingSimplexLink.value = false
           searchChatFilteredBySimplexLink.value = null
@@ -405,9 +409,11 @@ private fun ChatList(chatModel: ChatModel, searchInList: MutableState<TextFieldV
     modifier = Modifier.fillMaxWidth(),
     listState
   ) {
-    item {
-      ChatListSearchBar(searchInList, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
-      SectionDivider()
+    stickyHeader {
+      Column(Modifier.offset { if (searchInList.value.text.isNotEmpty()) IntOffset.Zero else IntOffset(0, if (listState.firstVisibleItemIndex == 0) -listState.firstVisibleItemScrollOffset else -1000) }.background(MaterialTheme.colors.background)) {
+        ChatListSearchBar(listState, searchInList, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
+        SectionDivider()
+      }
     }
     items(chats) { chat ->
       ChatListNavLinkView(chat, chatModel)

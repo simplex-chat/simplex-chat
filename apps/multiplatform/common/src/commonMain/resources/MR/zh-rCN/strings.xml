@@ -1408,14 +1408,14 @@
     <string name="expand_verb">展开</string>
     <string name="connect_plan_repeat_connection_request">重复连接请求吗？</string>
     <string name="rcv_direct_event_contact_deleted">已删除联系人</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">你已经在连接到 %1$s。</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[你已经在连接到 <b>%1$s</b>。]]></string>
     <string name="error_alert_title">错误</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">你已经在通过此链接加入该群。</string>
     <string name="create_group_button">建群</string>
     <string name="create_another_profile_button">创建个人资料</string>
     <string name="group_members_2">%s 和 %s</string>
     <string name="connect_plan_join_your_group">加入你的群吗？</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">你已经在加入 %1$s 群。</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[你已经在加入 <b>%1$s</b> 群。]]></string>
     <string name="connect_plan_this_is_your_own_one_time_link">这是你自己的一次性链接！</string>
     <string name="marked_deleted_items_description">%d 条消息被标记为删除</string>
     <string name="connect_plan_group_already_exists">群已存在！</string>
@@ -1430,7 +1430,7 @@
     <string name="unblock_member_button">解封成员</string>
     <string name="connect_plan_connect_to_yourself">连接到你自己？</string>
     <string name="contact_tap_to_connect">轻按连接</string>
-    <string name="connect_plan_you_are_already_in_group_vName">你已经在%1$s 群内。</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[你已经在<b>%1$s</b> 群内。]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">这是你自己的 SimpleX 地址！</string>
     <string name="correct_name_to">更正名称为 %s?</string>
     <string name="delete_messages__question">删除 %d 条消息吗？</string>
@@ -1451,7 +1451,7 @@
     <string name="block_member_question">封禁成员吗？</string>
     <string name="rcv_group_events_count">%d 个群事件</string>
     <string name="invalid_name">无效名称！</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">这是给你的 %1$s 群链接！</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[这是给你的 <b>%1$s</b> 群链接！]]></string>
     <string name="unblock_member_confirmation">解封</string>
     <string name="non_content_uri_alert_title">无效的文件路径</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">你已经请求通过此地址进行连接！</string>
