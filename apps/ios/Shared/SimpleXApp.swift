@@ -13,8 +13,8 @@ let logger = Logger()
 
 @main
 struct SimpleXApp: App {
-    @StateObject private var chatModel = ChatModel.shared
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    @StateObject private var chatModel = ChatModel.shared
     @ObservedObject var alertManager = AlertManager.shared
 
     @Environment(\.scenePhase) var scenePhase
