@@ -242,9 +242,11 @@ struct ContentView: View {
                 logger.debug("DEBUGGING: authenticate callback: \(String(describing: laResult))")
                 switch (laResult) {
                 case .success:
+                    chatModel.userAuthenticated = true
                     canConnectNonCallKitCall = true
                     lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
                 case .failed:
+                    chatModel.userAuthenticated = false
                     if privacyLocalAuthModeDefault.get() == .passcode {
                         AlertManager.shared.showAlert(laFailedAlert())
                     }

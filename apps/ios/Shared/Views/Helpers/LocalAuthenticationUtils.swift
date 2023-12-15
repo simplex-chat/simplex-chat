@@ -48,13 +48,7 @@ func authenticate(title: LocalizedStringKey? = nil, reason: String, selfDestruct
                     reason: reason,
                     password: password,
                     selfDestruct: selfDestruct && UserDefaults.standard.bool(forKey: DEFAULT_LA_SELF_DESTRUCT),
-                    completed: { r in
-                        switch r {
-                        case .success: ChatModel.shared.userAuthenticated = true
-                        default: break
-                        }
-                        completed(r)
-                    }
+                    completed: completed
                 )
             }
         } else {
@@ -73,7 +67,6 @@ func systemAuthenticate(_ reason: String, _ completed: @escaping (LAResult) -> V
             logger.debug("DEBUGGING: systemAuthenticate evaluatePolicy callback")
             DispatchQueue.main.async {
                 if success {
-                    ChatModel.shared.userAuthenticated = true
                     completed(LAResult.success)
                 } else {
                     logger.error("DEBUGGING: systemAuthenticate authentication error: \(authError.debugDescription)")
