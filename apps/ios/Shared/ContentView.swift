@@ -348,11 +348,9 @@ struct AnimatedTextLoadingIndicator: View {
     func dotsAnimation() {
         if hideTextTimerCount > 0 {
             hideTextTimerCount -= 1
-        }
-        else if dotsCount == 0 && waitOnZeroTimerCount > 0 {
+        } else if dotsCount == 0 && waitOnZeroTimerCount > 0 {
             waitOnZeroTimerCount -= 1
-        }
-        else if dotsCount == 3 {
+        } else if dotsCount == 3 {
             dotsCount = 0
             waitOnZeroTimerCount = 1
         } else {
