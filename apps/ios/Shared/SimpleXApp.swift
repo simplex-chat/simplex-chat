@@ -19,7 +19,7 @@ struct SimpleXApp: App {
     
     @Environment(\.scenePhase) var scenePhase
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
-    @State private var enteredBackgroundAuthorized: TimeInterval? = nil
+    @State private var enteredBackgroundAuthenticated: TimeInterval? = nil
     @State private var automaticAuthAttempted: Bool = false
 
     @State private var canConnectNonCallKitCall = false
@@ -64,9 +64,8 @@ struct SimpleXApp: App {
                     case .background:
                         // --- authentication
                         if chatModel.userAuthenticated == .authenticated {
-                            enteredBackgroundAuthorized = ProcessInfo.processInfo.systemUptime
+                            enteredBackgroundAuthenticated = ProcessInfo.processInfo.systemUptime
                         }
-                        let appState = AppChatState.shared.value
                         chatModel.userAuthenticated = .checkAuthentication
                         automaticAuthAttempted = false
                         canConnectNonCallKitCall = false
@@ -180,7 +179,7 @@ struct SimpleXApp: App {
     }
 
     private func authenticationExpired() -> Bool {
-        if let enteredBackgroundAuthorized = enteredBackgroundAuthorized {
+        if let enteredBackgroundAuthorized = enteredBackgroundAuthenticated {
             let delay = Double(UserDefaults.standard.integer(forKey: DEFAULT_LA_LOCK_DELAY))
             return ProcessInfo.processInfo.systemUptime - enteredBackgroundAuthorized >= delay
         } else {
