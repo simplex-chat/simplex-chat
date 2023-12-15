@@ -18,9 +18,10 @@ struct SimpleXApp: App {
     @ObservedObject var alertManager = AlertManager.shared
     
     @Environment(\.scenePhase) var scenePhase
+    @State private var firstOpen = true
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var enteredBackgroundAuthenticated: TimeInterval? = nil
-    @State private var automaticAuthAttempted: Bool = false
+    @State private var automaticAuthAttempted = false
 
     @State private var canConnectNonCallKitCall = false
     @State private var lastSuccessfulUnlock: TimeInterval? = nil
@@ -43,6 +44,7 @@ struct SimpleXApp: App {
     var body: some Scene {
         return WindowGroup {
             ContentView(
+                firstOpen: firstOpen,
                 authenticateContentViewAccess: authenticateContentViewAccess,
                 canConnectCall: $canConnectNonCallKitCall,
                 showInitializationView: $showInitializationView
@@ -63,6 +65,7 @@ struct SimpleXApp: App {
                     switch (phase) {
                     case .background:
                         // --- authentication
+                        firstOpen = false
                         if chatModel.userAuthenticated == .authenticated {
                             enteredBackgroundAuthenticated = ProcessInfo.processInfo.systemUptime
                         }

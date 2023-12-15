@@ -14,6 +14,7 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Environment(\.colorScheme) var colorScheme
+    var firstOpen: Bool
     var authenticateContentViewAccess: () -> Void
     @Binding var canConnectCall: Bool
     @Binding var showInitializationView: Bool
@@ -45,7 +46,11 @@ struct ContentView: View {
                 case .authenticated:
                     contentView()
                 case .checkAuthentication:
-                    logoView()
+                    if firstOpen {
+                        logoView()
+                    } else {
+                        EmptyView()
+                    }
                 case .notAuthenticated:
                     lockButton()
                 }
