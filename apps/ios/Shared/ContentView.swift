@@ -88,7 +88,7 @@ struct ContentView: View {
 
     @ViewBuilder private func contentView() -> some View {
         if chatModel.chatDbStatus == nil && showInitializationView {
-            initializationView()
+            logoView(text: "Starting", animatedProgressIndicator: true)
         } else if let status = chatModel.chatDbStatus, status != .ok {
             DatabaseErrorView(status: status)
         } else if !chatModel.v3DBMigration.startChat {
@@ -129,7 +129,7 @@ struct ContentView: View {
         Button(action: authenticateContentViewAccess) { Label("Unlock", systemImage: "lock") }
     }
 
-    private func logoView() -> some View {
+    private func logoView(text: LocalizedStringKey? = nil, animatedProgressIndicator: Bool = false) -> some View {
         GeometryReader { g in
             VStack(alignment: .center) {
                 Image(colorScheme == .light ? "logo" : "logo-light")
@@ -137,16 +137,20 @@ struct ContentView: View {
                     .aspectRatio(contentMode: .fit)
                     .frame(width: g.size.width * 0.67)
                     .frame(maxWidth: .infinity, minHeight: 48, alignment: .center)
+                    .padding(.top)
+                if let text = text {
+                    if animatedProgressIndicator {
+                        AnimatedTextLoadingIndicator(text: text, color: Color(cgColor: defaultAccentColor))
+                    } else {
+                        Text(text)
+                            .foregroundColor(Color(cgColor: defaultAccentColor))
+                    }
+                } else {
+                    Text("Starting")
+                        .foregroundColor(.clear)
+                }
             }
             .frame(minHeight: g.size.height)
-        }
-    }
-
-    private func initializationView() -> some View {
-        VStack {
-            ProgressView().scaleEffect(2)
-            Text("Opening database…")
-                .padding()
         }
     }
 
@@ -309,6 +313,51 @@ func mkAlert(title: LocalizedStringKey, message: LocalizedStringKey? = nil) -> A
         return Alert(title: Text(title), message: Text(message))
     } else {
         return Alert(title: Text(title))
+    }
+}
+
+struct AnimatedTextLoadingIndicator: View {
+    var text: LocalizedStringKey
+    var color: Color
+
+    @State private var hideTextTimerCount = 2
+    @State private var dotsCount = 1
+    @State private var waitOnZeroTimerCount = 1
+
+    var body: some View {
+        HStack {
+            if hideTextTimerCount > 0 {
+                Text(text)
+                    .foregroundColor(.clear)
+            } else {
+                Text(text)
+                    .foregroundColor(color) +
+                Text(".")
+                    .foregroundColor(dotsCount > 0 ? color : .clear) +
+                Text(".")
+                    .foregroundColor(dotsCount > 1 ? color : .clear) +
+                Text(".")
+                    .foregroundColor(dotsCount > 2 ? color : .clear)
+            }
+        }
+        .onReceive(Timer.publish(every: 0.67, on: .main, in: .common).autoconnect()) {
+            _ in dotsAnimation()
+        }
+    }
+
+    func dotsAnimation() {
+        if hideTextTimerCount > 0 {
+            hideTextTimerCount -= 1
+        }
+        else if dotsCount == 0 && waitOnZeroTimerCount > 0 {
+            waitOnZeroTimerCount -= 1
+        }
+        else if dotsCount == 3 {
+            dotsCount = 0
+            waitOnZeroTimerCount = 1
+        } else {
+            dotsCount += 1
+        }
     }
 }
 
