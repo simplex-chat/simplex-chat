@@ -84,6 +84,8 @@ struct SimpleXApp: App {
                     case .active:
                         CallController.shared.shouldSuspendChat = false
                         let appState = AppChatState.shared.value
+                        let authExpired = authenticationExpired()
+
                         if appState != .stopped {
                             startChatAndActivate {
                                 if appState.inactive && chatModel.chatRunning == true {
@@ -92,13 +94,14 @@ struct SimpleXApp: App {
                                         updateCallInvitations()
                                     }
                                 }
+                                canConnectNonCallKitCall = !(authExpired && prefPerformLA) || unlockedRecently()
                             }
                         }
                         // --- authentication
                         // condition `userAuthenticated != .authenticated` is required for when authentication is enabled in settings or on initial notice
+
                         if prefPerformLA && chatModel.userAuthenticated != .authenticated {
                             if appState != .stopped {
-                                let authExpired = authenticationExpired()
                                 if !authExpired {
                                     chatModel.userAuthenticated = .authenticated
                                 } else {
@@ -107,7 +110,6 @@ struct SimpleXApp: App {
                                         authenticateIfNotCallKitCall()
                                     }
                                 }
-                                canConnectNonCallKitCall = !(authExpired && prefPerformLA) || unlockedRecently()
                             } else {
                                 // this is to show lock button and not automatically attempt authentication when app is stopped;
                                 // basically stopped app ignores authentication timeout
