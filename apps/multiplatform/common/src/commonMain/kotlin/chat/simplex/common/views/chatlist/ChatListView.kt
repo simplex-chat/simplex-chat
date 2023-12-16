@@ -323,7 +323,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
   Row(verticalAlignment = Alignment.CenterVertically) {
     val focusRequester = remember { FocusRequester() }
     var focused by remember { mutableStateOf(false) }
-    Icon(painterResource(MR.images.ic_search), null, Modifier.padding(horizontal = DEFAULT_PADDING_HALF).size(20.dp), tint = MaterialTheme.colors.secondary)
+    Icon(painterResource(MR.images.ic_search), null, Modifier.padding(horizontal = DEFAULT_PADDING_HALF), tint = MaterialTheme.colors.secondary)
     SearchTextField(
       Modifier.weight(1f).onFocusChanged { focused = it.hasFocus }.focusRequester(focusRequester),
       placeholder = stringResource(MR.strings.search_or_paste_simplex_link),
@@ -332,7 +332,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
       enabled = !remember { searchShowingSimplexLink }.value,
       trailingContent = null,
     ) {
-      searchText.value = searchText.value.copy(it.trim())
+      searchText.value = searchText.value.copy(it)
     }
     val hasText = remember { derivedStateOf { searchText.value.text.isNotEmpty() } }
     if (hasText.value) {
