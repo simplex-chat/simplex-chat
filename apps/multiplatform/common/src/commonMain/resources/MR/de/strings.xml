@@ -1041,7 +1041,6 @@
     <string name="moderate_message_will_be_deleted_warning">Diese Nachricht wird für alle Gruppenmitglieder gelöscht.</string>
     <string name="language_system">System</string>
     <string name="confirm_password">Passwort bestätigen</string>
-    <string name="cant_delete_user_profile">Das Benutzerprofil kann nicht gelöscht werden!</string>
     <string name="dont_show_again">Nicht nochmals anzeigen</string>
     <string name="v4_6_chinese_spanish_interface">Chinesische und spanische Bedienoberfläche</string>
     <string name="v4_6_audio_video_calls">Audio- und Videoanrufe</string>
@@ -1060,8 +1059,6 @@
     <string name="make_profile_private">Privates Profil erzeugen!</string>
     <string name="user_mute">Stummschalten</string>
     <string name="tap_to_activate_profile">Tippen Sie auf das Profil, um es zu aktivieren.</string>
-    <string name="should_be_at_least_one_profile">Es muss mindestens ein Benutzer-Profil vorhanden sein.</string>
-    <string name="should_be_at_least_one_visible_profile">Es muss mindestens ein sichtbares Benutzer-Profil vorhanden sein.</string>
     <string name="user_unmute">Stummschaltung aufheben</string>
     <string name="muted_when_inactive">Bei Inaktivität stummgeschaltet!</string>
     <string name="v4_6_hidden_chat_profiles_descr">Schützen Sie Ihre Chat-Profile mit einem Passwort!</string>

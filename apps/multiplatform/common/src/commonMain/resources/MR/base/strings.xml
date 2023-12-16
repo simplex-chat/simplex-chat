@@ -1391,9 +1391,6 @@
   <string name="user_unmute">Unmute</string>
   <string name="enter_password_to_show">Enter password in search</string>
   <string name="tap_to_activate_profile">Tap to activate profile.</string>
-  <string name="cant_delete_user_profile">Can\'t delete user profile!</string>
-  <string name="should_be_at_least_one_visible_profile">There should be at least one visible user profile.</string>
-  <string name="should_be_at_least_one_profile">There should be at least one user profile.</string>
   <string name="make_profile_private">Make profile private!</string>
   <string name="you_can_hide_or_mute_user_profile">You can hide or mute a user profile - hold it for the menu.</string>
   <string name="dont_show_again">Don\'t show again</string>

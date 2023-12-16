@@ -405,15 +405,15 @@ object ChatController {
     }
   }
 
-  suspend fun changeActiveUser_(rhId: Long?, toUserId: Long, viewPwd: String?) {
-    val currentUser = apiSetActiveUser(rhId, toUserId, viewPwd)
+  suspend fun changeActiveUser_(rhId: Long?, toUserId: Long?, viewPwd: String?) {
+    val currentUser = if (toUserId != null) apiSetActiveUser(rhId, toUserId, viewPwd) else apiGetActiveUser(rhId)
     chatModel.currentUser.value = currentUser
     val users = listUsers(rhId)
     chatModel.users.clear()
     chatModel.users.addAll(users)
     getUserChatData(rhId)
     val invitation = chatModel.callInvitations.values.firstOrNull { inv -> inv.user.userId == toUserId }
-    if (invitation != null) {
+    if (invitation != null && currentUser != null) {
       chatModel.callManager.reportNewIncomingCall(invitation.copy(user = currentUser))
     }
   }

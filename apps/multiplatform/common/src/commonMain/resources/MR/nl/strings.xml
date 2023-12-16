@@ -958,7 +958,6 @@
     <string name="you_are_observer">jij bent waarnemer</string>
     <string name="language_system">Systeem</string>
     <string name="v4_6_audio_video_calls">Audio en video oproepen</string>
-    <string name="cant_delete_user_profile">Kan gebruikers profiel niet verwijderen!</string>
     <string name="confirm_password">Bevestig wachtwoord</string>
     <string name="v4_6_chinese_spanish_interface">Chinese en Spaanse interface</string>
     <string name="enter_password_to_show">Voer wachtwoord in bij zoeken</string>
@@ -990,12 +989,10 @@
     <string name="v4_6_audio_video_calls_descr">Ondersteuning voor bluetooth en andere verbeteringen.</string>
     <string name="tap_to_activate_profile">Tik om profiel te activeren.</string>
     <string name="v4_6_chinese_spanish_interface_descr">Dank aan de gebruikers – draag bij via Weblate!</string>
-    <string name="should_be_at_least_one_profile">Er moet ten minste één gebruikers profiel zijn.</string>
     <string name="you_can_hide_or_mute_user_profile">U kunt een gebruikers profiel verbergen of dempen - houd het vast voor het menu.</string>
     <string name="user_unhide">zichtbaar maken</string>
     <string name="user_unmute">Dempen opheffen</string>
     <string name="group_welcome_title">Welkomst bericht</string>
-    <string name="should_be_at_least_one_visible_profile">"Er moet ten minste één zichtbaar gebruikers  profiel zijn."</string>
     <string name="to_reveal_profile_enter_password">Om uw verborgen profiel te onthullen, voert u een volledig wachtwoord in een zoekveld in op de pagina Uw chat profielen.</string>
     <string name="button_welcome_message">Welkomst bericht</string>
     <string name="you_will_still_receive_calls_and_ntfs">U ontvangt nog steeds oproepen en meldingen van gedempte profielen wanneer deze actief zijn.</string>

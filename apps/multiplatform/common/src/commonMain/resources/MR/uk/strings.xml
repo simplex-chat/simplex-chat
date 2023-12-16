@@ -517,7 +517,6 @@
     <string name="role_in_group">Роль</string>
     <string name="conn_level_desc_indirect">непряме (%1$s)</string>
     <string name="user_unmute">Відглушити</string>
-    <string name="should_be_at_least_one_profile">Повинен бути принаймні один профіль користувача.</string>
     <string name="make_profile_private">Зробіть профіль приватним!</string>
     <string name="feature_offered_item">запропоновано %s</string>
     <string name="v4_5_message_draft">Чернетка повідомлення</string>
@@ -900,7 +899,6 @@
     <string name="delete_files_and_media_all">Видалити всі файли</string>
     <string name="delete_messages_after">Видаляйте повідомлення після</string>
     <string name="enable_automatic_deletion_question">Увімкнути автоматичне видалення повідомлень\?</string>
-    <string name="should_be_at_least_one_visible_profile">Повинен бути принаймні один видимий профіль користувача.</string>
     <string name="v4_6_hidden_chat_profiles">Приховані профілі чату</string>
     <string name="v4_6_group_welcome_message">Повідомлення вітання групи</string>
     <string name="v4_6_chinese_spanish_interface_descr">Дякуємо користувачам – приєднуйтеся через Weblate!</string>
@@ -933,7 +931,6 @@
     <string name="icon_descr_group_inactive">Група неактивна</string>
     <string name="snd_group_event_member_deleted">ви видалили %1$s</string>
     <string name="tap_to_activate_profile">Торкніться для активації профілю.</string>
-    <string name="cant_delete_user_profile">Не вдається видалити профіль користувача!</string>
     <string name="prohibit_sending_voice">Забороняйте надсилання голосових повідомлень.</string>
     <string name="group_members_can_send_disappearing">Учасники групи можуть надсилати самознищувальні повідомлення.</string>
     <string name="ttl_min">%d хв</string>

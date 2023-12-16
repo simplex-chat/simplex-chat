@@ -185,7 +185,6 @@
     <string name="change_verb">Промени</string>
     <string name="change_member_role_question">Промяна на груповата роля\?</string>
     <string name="you_will_still_receive_calls_and_ntfs">Все още ще получавате обаждания и известия от заглушени профили, когато са активни.</string>
-    <string name="cant_delete_user_profile">Потребителският профил не може да се изтрие!</string>
     <string name="allow_disappearing_messages_only_if">Позволи изчезващи съобщения само ако вашият контакт ги разрешава.</string>
     <string name="allow_your_contacts_irreversibly_delete">Позволи на вашите контакти да изтриват необратимо изпратените съобщения.</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Позволи на вашите контакти да изпращат изчезващи съобщения.</string>
@@ -1165,8 +1164,6 @@
     <string name="profile_is_only_shared_with_your_contacts">Профилът се споделя само с вашите контакти.</string>
     <string name="delete_files_and_media_desc">Това действие не може да бъде отменено - всички получени и изпратени файлове и медия ще бъдат изтрити. Снимките с ниска разделителна способност ще бъдат запазени.</string>
     <string name="tap_to_activate_profile">Докосни за активиране на профил.</string>
-    <string name="should_be_at_least_one_profile">Трябва да има поне един потребителски профил.</string>
-    <string name="should_be_at_least_one_visible_profile">Трябва да има поне един видим потребителски профил.</string>
     <string name="language_system">Системен</string>
     <string name="color_title">Заглавие</string>
     <string name="to_share_with_your_contact">(за споделяне с вашия контакт)</string>

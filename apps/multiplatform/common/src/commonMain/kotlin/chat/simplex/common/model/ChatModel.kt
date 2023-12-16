@@ -146,7 +146,7 @@ object ChatModel {
 
   fun removeUser(user: User) {
     val i = getUserIndex(user)
-    if (i != -1 && users[i].user.userId != currentUser.value?.userId) {
+    if (i != -1) {
       users.removeAt(i)
     }
   }

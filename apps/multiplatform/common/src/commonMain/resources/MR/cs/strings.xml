@@ -960,7 +960,6 @@
     <string name="language_system">Systém</string>
     <string name="smp_save_servers_question">Uložit servery\?</string>
     <string name="dont_show_again">Znovu neukazuj</string>
-    <string name="cant_delete_user_profile">Nemohu smazat uživatelský profil!</string>
     <string name="button_add_welcome_message">Přidat uvítací zprávu</string>
     <string name="v4_6_chinese_spanish_interface">Čínské a Španělské rozhranní</string>
     <string name="v4_6_audio_video_calls">Hlasové a video hovory</string>
@@ -991,12 +990,10 @@
     <string name="v4_6_audio_video_calls_descr">Podpora bluetooth a další vylepšení.</string>
     <string name="tap_to_activate_profile">Klepnutím aktivujete profil.</string>
     <string name="v4_6_chinese_spanish_interface_descr">Díky uživatelům - překládejte prostřednictvím Weblate!</string>
-    <string name="should_be_at_least_one_profile">Měl by tam být alespoň jeden uživatelský profil.</string>
     <string name="button_welcome_message">Uvítací zpráva</string>
     <string name="group_welcome_title">Uvítací zpráva</string>
     <string name="user_unmute">Zrušit ztlumení</string>
     <string name="to_reveal_profile_enter_password">Chcete-li odhalit svůj skrytý profil, zadejte celé heslo do vyhledávacího pole na stránce Chat profily.</string>
-    <string name="should_be_at_least_one_visible_profile">Měl by tam být alespoň jeden viditelný uživatelský profil.</string>
     <string name="you_will_still_receive_calls_and_ntfs">Stále budete přijímat volání a upozornění od umlčených profilů pokud budou aktivní.</string>
     <string name="you_can_hide_or_mute_user_profile">Můžete skrýt nebo ztlumit uživatelský profil - Podržte pro menu.</string>
     <string name="user_unhide">Odkrýt</string>

@@ -969,8 +969,6 @@
     <string name="tap_to_activate_profile">Tocca per attivare il profilo.</string>
     <string name="user_unhide">Svela</string>
     <string name="make_profile_private">Rendi privato il profilo!</string>
-    <string name="should_be_at_least_one_profile">Deve esserci almeno un profilo utente.</string>
-    <string name="should_be_at_least_one_visible_profile">Deve esserci almeno un profilo utente visibile.</string>
     <string name="you_can_hide_or_mute_user_profile">Puoi nascondere o silenziare un profilo utente - tienilo premuto per il menu.</string>
     <string name="dont_show_again">Non mostrare più</string>
     <string name="muted_when_inactive">Silenzioso quando inattivo!</string>
@@ -990,7 +988,6 @@
     <string name="v4_6_group_moderation_descr">Ora gli amministratori possono:
 \n- eliminare i messaggi dei membri.
 \n- disattivare i membri (ruolo \"osservatore\")</string>
-    <string name="cant_delete_user_profile">Impossibile eliminare il profilo utente!</string>
     <string name="hide_profile">Nascondi il profilo</string>
     <string name="confirm_password">Conferma password</string>
     <string name="error_updating_user_privacy">Errore nell\'aggiornamento della privacy dell\'utente</string>

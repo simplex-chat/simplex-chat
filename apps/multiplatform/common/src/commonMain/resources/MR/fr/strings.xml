@@ -962,7 +962,6 @@
     <string name="smp_save_servers_question">Sauvegarder les serveurs \?</string>
     <string name="dont_show_again">Ne plus afficher</string>
     <string name="button_add_welcome_message">Ajouter un message d\'accueil</string>
-    <string name="cant_delete_user_profile">Impossible de supprimer le profil d\'utilisateur !</string>
     <string name="v4_6_group_moderation">Modération de groupe</string>
     <string name="user_hide">Cacher</string>
     <string name="muted_when_inactive">Mute en cas d\'inactivité !</string>
@@ -993,8 +992,6 @@
     <string name="to_reveal_profile_enter_password">Pour révéler votre profil caché, entrez le mot de passe dans le champ de recherche de la page Profils de chat.</string>
     <string name="v4_6_audio_video_calls_descr">Prise en charge du Bluetooth et autres améliorations.</string>
     <string name="v4_6_chinese_spanish_interface_descr">Merci aux utilisateurs - contribuez via Weblate !</string>
-    <string name="should_be_at_least_one_profile">Il doit y avoir au moins un profil d\'utilisateur.</string>
-    <string name="should_be_at_least_one_visible_profile">Il doit y avoir au moins un profil d\'utilisateur visible.</string>
     <string name="user_unhide">Dévoiler</string>
     <string name="user_unmute">Démute</string>
     <string name="button_welcome_message">Message d\'accueil</string>

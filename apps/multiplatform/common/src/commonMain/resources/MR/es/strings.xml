@@ -967,17 +967,14 @@
     <string name="error_saving_user_password">Error al guardar contraseña de usuario</string>
     <string name="relay_server_if_necessary">El retransmisor sólo se usa en caso de necesidad. Un tercero podría ver tu IP.</string>
     <string name="relay_server_protects_ip">El servidor de retransmisión protege tu IP pero puede ver la duración de la llamada.</string>
-    <string name="cant_delete_user_profile">¡No se puede eliminar el perfil!</string>
     <string name="enter_password_to_show">Introduce la contraseña</string>
     <string name="user_hide">Ocultar</string>
     <string name="user_mute">Silenciar</string>
     <string name="save_and_update_group_profile">Guardar y actualizar perfil de grupo</string>
     <string name="tap_to_activate_profile">Pulsa sobre un perfil para activarlo.</string>
-    <string name="should_be_at_least_one_visible_profile">Debe haber al menos un perfil de usuario visible.</string>
     <string name="user_unhide">Mostrar</string>
     <string name="button_welcome_message">Mensaje de bienvenida</string>
     <string name="group_welcome_title">Mensaje de bienvenida</string>
-    <string name="should_be_at_least_one_profile">Debe haber al menos un perfil de usuario.</string>
     <string name="make_profile_private">¡Hacer perfil privado!</string>
     <string name="dont_show_again">No mostrar de nuevo</string>
     <string name="muted_when_inactive">¡Silenciado cuando está inactivo!</string>

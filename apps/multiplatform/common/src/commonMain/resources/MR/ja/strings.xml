@@ -944,7 +944,6 @@
     <string name="la_lock_mode_passcode">パスコード入力</string>
     <string name="la_auth_failed">認証失敗</string>
     <string name="la_enter_app_passcode">パスコードを入力</string>
-    <string name="cant_delete_user_profile">ユーザープロフィールが削除できません。</string>
     <string name="la_mode_system">システム</string>
     <string name="change_lock_mode">ロックモードを変更</string>
     <string name="v4_6_chinese_spanish_interface">中国語とスペイン語UI</string>
@@ -1113,8 +1112,6 @@
     <string name="v5_0_large_files_support_descr">送信者がオンラインになるまでの待ち時間がなく、速い！</string>
     <string name="v5_0_app_passcode">アプリのパスコード</string>
     <string name="v5_0_app_passcode_descr">システム認証の代わりに設定します。</string>
-    <string name="should_be_at_least_one_visible_profile">少なくとも1つのユーザープロフィールが表示されている必要があります。</string>
-    <string name="should_be_at_least_one_profile">少なくとも1つのユーザープロファイルが必要です。</string>
     <string name="make_profile_private">プロフィールを非表示にできます！</string>
     <string name="relay_server_protects_ip">リレー サーバーは IP アドレスを保護しますが、通話時間は監視されます。</string>
     <string name="share_address_with_contacts_question">アドレスを連絡先と共有しますか\?</string>

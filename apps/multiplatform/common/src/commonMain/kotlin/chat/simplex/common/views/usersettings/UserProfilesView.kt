@@ -30,6 +30,7 @@ import chat.simplex.common.views.chatlist.UserProfileRow
 import chat.simplex.common.views.database.PassphraseField
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.CreateProfile
+import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
@@ -63,45 +64,34 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
       }
     },
     removeUser = { user ->
-      if (m.users.size > 1 && (user.hidden || visibleUsersCount(m) > 1)) {
-        val text = buildAnnotatedString {
-          append(generalGetString(MR.strings.users_delete_all_chats_deleted) + "\n\n" + generalGetString(MR.strings.users_delete_profile_for) + " ")
-          withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
-            append(user.displayName)
-          }
-          append(":")
+      val text = buildAnnotatedString {
+        append(generalGetString(MR.strings.users_delete_all_chats_deleted) + "\n\n" + generalGetString(MR.strings.users_delete_profile_for) + " ")
+        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+          append(user.displayName)
         }
-        AlertManager.shared.showAlertDialogButtonsColumn(
-          title = generalGetString(MR.strings.users_delete_question),
-          text = text,
-          buttons = {
-            Column {
-              SectionItemView({
-                AlertManager.shared.hideAlert()
-                removeUser(m, user, users, true, searchTextOrPassword.value.trim())
-              }) {
-                Text(stringResource(MR.strings.users_delete_with_connections), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
-              }
-              SectionItemView({
-                AlertManager.shared.hideAlert()
-                removeUser(m, user, users, false, searchTextOrPassword.value.trim())
-              }
-              ) {
-                Text(stringResource(MR.strings.users_delete_data_only), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
-              }
+        append(":")
+      }
+      AlertManager.shared.showAlertDialogButtonsColumn(
+        title = generalGetString(MR.strings.users_delete_question),
+        text = text,
+        buttons = {
+          Column {
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+              removeUser(m, user, users, true, searchTextOrPassword.value.trim())
+            }) {
+              Text(stringResource(MR.strings.users_delete_with_connections), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+            }
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+              removeUser(m, user, users, false, searchTextOrPassword.value.trim())
+            }
+            ) {
+              Text(stringResource(MR.strings.users_delete_data_only), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
             }
           }
-        )
-      } else {
-        AlertManager.shared.showAlertMsg(
-          title = generalGetString(MR.strings.cant_delete_user_profile),
-          text = if (m.users.size > 1) {
-            generalGetString(MR.strings.should_be_at_least_one_visible_profile)
-          } else {
-            generalGetString(MR.strings.should_be_at_least_one_profile)
-          }
-        )
-      }
+        }
+      )
     },
     unhideUser = { user ->
       if (passwordEntryRequired(user, searchTextOrPassword.value)) {
@@ -178,7 +168,7 @@ private fun UserProfilesLayout(
 
     SectionView {
       for (user in filteredUsers) {
-        UserView(user, users, visibleUsersCount, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
+        UserView(user, visibleUsersCount, activateUser, removeUser, unhideUser, muteUser, unmuteUser, showHiddenProfile)
         SectionDivider()
       }
       if (searchTextOrPassword.value.trim().isEmpty()) {
@@ -210,7 +200,6 @@ private fun UserProfilesLayout(
 @Composable
 private fun UserView(
   user: User,
-  users: List<User>,
   visibleUsersCount: Int,
   activateUser: (User) -> Unit,
   removeUser: (User) -> Unit,
@@ -220,7 +209,7 @@ private fun UserView(
   showHiddenProfile: (User) -> Unit,
 ) {
   val showMenu = remember { mutableStateOf(false) }
-  UserProfilePickerItem(user, onLongClick = { if (users.size > 1) showMenu.value = true }) {
+  UserProfilePickerItem(user, onLongClick = { showMenu.value = true }) {
     activateUser(user)
   }
   Box(Modifier.padding(horizontal = DEFAULT_PADDING)) {
@@ -350,22 +339,25 @@ private fun removeUser(m: ChatModel, user: User, users: List<User>, delSMPQueues
 }
 
 private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, delSMPQueues: Boolean, viewPwd: String?) {
-  if (users.size < 2) return
-
-  suspend fun deleteUser(user: User) {
-    m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
-    m.removeUser(user)
-  }
   try {
-    if (user.activeUser) {
-      val newActive = users.firstOrNull { u -> !u.activeUser && !u.hidden }
-      if (newActive != null) {
-        m.controller.changeActiveUser_(newActive.remoteHostId, newActive.userId, null)
-        deleteUser(user.copy(activeUser = false))
+    when {
+      user.activeUser -> {
+        val newActive = users.firstOrNull { u -> !u.activeUser && !u.hidden }
+        if (newActive != null) {
+          m.controller.changeActiveUser_(user.remoteHostId, newActive.userId, null)
+          m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
+        } else {
+          // Deleting the last visible user
+          m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
+          m.controller.changeActiveUser_(user.remoteHostId, null, null)
+          controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+        }
       }
-    } else {
-      deleteUser(user)
+      else -> {
+        m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
+      }
     }
+    m.removeUser(user)
   } catch (e: Exception) {
     AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_deleting_user), e.stackTraceToString())
   }

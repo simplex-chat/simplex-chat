@@ -335,7 +335,6 @@
     <string name="share_text_disappears_at">Katoaa klo: %s</string>
     <string name="create_secret_group_title">Luo salainen ryhmä</string>
     <string name="chat_preferences_always">aina</string>
-    <string name="cant_delete_user_profile">Käyttäjäprofiilia ei voi poistaa!</string>
     <string name="allow_your_contacts_to_call">Salli kontaktiesi soittaa sinulle.</string>
     <string name="allow_your_contacts_irreversibly_delete">Salli kontaktiesi poistaa lähetetyt viestit peruuttamattomasti.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Salli kontaktiesi lähettää ääniviestejä.</string>
@@ -1238,8 +1237,6 @@
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">muutit osoitteeksi %s</string>
     <string name="invite_prohibited_description">Yrität kutsua kontaktia, jonka kanssa olet jakanut inkognito-profiilin, ryhmään, jossa käytät pääprofiiliasi</string>
     <string name="group_welcome_title">Tervetuloviesti</string>
-    <string name="should_be_at_least_one_profile">Käyttäjäprofiileja tulee olla vähintään yksi.</string>
-    <string name="should_be_at_least_one_visible_profile">Näkyviä käyttäjäprofiileja tulee olla vähintään yksi.</string>
     <string name="incognito_info_share">Kun jaat inkognitoprofiilin jonkun kanssa, tätä profiilia käytetään ryhmissä, joihin tämä sinut kutsuu.</string>
     <string name="group_main_profile_sent">Keskusteluprofiilisi lähetetään ryhmän jäsenille</string>
     <string name="incognito_random_profile">Satunnainen profiilisi</string>
