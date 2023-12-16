@@ -84,6 +84,7 @@ import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitatio
 import Simplex.RemoteControl.Types
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
+import qualified UnliftIO.Exception as E
 import UnliftIO.STM
 
 versionNumber :: String
@@ -1287,11 +1288,26 @@ withStoreCtx ctx_ action = do
     handleInternal :: String -> SomeException -> IO (Either StoreError a)
     handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
 
+withStoreBatch :: ChatMonad' m => (DB.Connection -> [ExceptT StoreError IO a]) -> m [Either ChatError a]
+withStoreBatch actions = do
+  ChatController {chatStore} <- ask
+  rs <- liftIO $ withTransaction chatStore $ mapM (\a -> runExceptT a `E.catch` handleInternal) . actions
+  pure $ fmap (first ChatErrorStore) rs
+  where
+    handleInternal :: E.SomeException -> IO (Either StoreError a)
+    handleInternal = pure . Left . SEInternalError . show
+
+withStoreBatch' :: ChatMonad' m => (DB.Connection -> [IO a]) -> m [Either ChatError a]
+withStoreBatch' actions = withStoreBatch $ fmap liftIO . actions
+
 withAgent :: ChatMonad m => (AgentClient -> ExceptT AgentErrorType m a) -> m a
 withAgent action =
   asks smpAgent
     >>= runExceptT . action
     >>= liftEither . first (`ChatErrorAgent` Nothing)
+
+withAgent' :: ChatMonad' m => (AgentClient -> m a) -> m a
+withAgent' action = asks smpAgent >>= action
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
 
