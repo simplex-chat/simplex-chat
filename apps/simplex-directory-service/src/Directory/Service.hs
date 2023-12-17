@@ -422,7 +422,7 @@ directoryService st DirectoryOpts {superUsers, serviceName, searchResults, testi
         where
           showAllGroups = deUserCommand env ct ciId DCAllGroups
       DCAllGroups -> withFoundListedGroups Nothing $ sendAllGroups takeTop "top" STAll
-      DCRecentGroups -> withFoundListedGroups Nothing $ sendAllGroups takeTop "most recent" STRecent
+      DCRecentGroups -> withFoundListedGroups Nothing $ sendAllGroups takeRecent "the most recent" STRecent
       DCSubmitGroup _link -> pure ()
       DCConfirmDuplicateGroup ugrId gName ->
         atomically (getUserGroupReg st (contactId' ct) ugrId) >>= \case
