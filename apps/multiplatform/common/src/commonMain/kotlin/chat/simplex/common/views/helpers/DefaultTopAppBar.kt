@@ -36,7 +36,7 @@ fun DefaultTopAppBar(
         SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = false, onValueChange = onSearchValueChanged)
       }
     },
-    backgroundColor = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.95f),
+    backgroundColor = MaterialTheme.colors.background.mixWith(MaterialTheme.colors.onBackground, 0.97f),
     navigationIcon = navigationButton,
     buttons = if (!showSearch) buttons else emptyList(),
     centered = !showSearch,
