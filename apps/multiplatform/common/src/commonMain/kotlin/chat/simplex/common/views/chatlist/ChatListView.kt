@@ -351,7 +351,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
             onClick = { searchText.value = searchText.value.copy(clipboard.getText()?.text ?: return@IconButton) },
             Modifier.size(30.dp).desktopPointerHoverIconHand()
           ) {
-            Icon(painterResource(MR.images.ic_article), null)
+            Icon(painterResource(MR.images.ic_article), null, tint = MaterialTheme.colors.secondary)
           }
         }
         Spacer(Modifier.width(padding))
@@ -365,7 +365,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
           },
           Modifier.size(30.dp).desktopPointerHoverIconHand()
         ) {
-          Icon(painterResource(MR.images.ic_qr_code), null)
+          Icon(painterResource(MR.images.ic_qr_code), null, tint = MaterialTheme.colors.secondary)
         }
         Spacer(Modifier.width(padding))
       }
