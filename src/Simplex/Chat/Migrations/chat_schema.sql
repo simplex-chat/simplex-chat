@@ -379,7 +379,8 @@ CREATE TABLE chat_items(
   item_live INTEGER,
   item_deleted_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   item_deleted_ts TEXT,
-  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
+  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  item_content_tag TEXT
 );
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -817,11 +818,3 @@ CREATE INDEX idx_contact_requests_updated_at ON contact_requests(
   updated_at
 );
 CREATE INDEX idx_connections_updated_at ON connections(user_id, updated_at);
-CREATE INDEX idx_chat_items_contact_id_item_status ON chat_items(
-  contact_id,
-  item_status
-);
-CREATE INDEX idx_chat_items_group_id_item_status ON chat_items(
-  group_id,
-  item_status
-);
