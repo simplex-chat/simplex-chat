@@ -467,6 +467,7 @@ executable simplex-directory-service
   other-modules:
       Directory.Events
       Directory.Options
+      Directory.Search
       Directory.Service
       Directory.Store
       Paths_simplex_chat
@@ -553,6 +554,7 @@ test-suite simplex-chat-test
       Broadcast.Options
       Directory.Events
       Directory.Options
+      Directory.Search
       Directory.Service
       Directory.Store
       Paths_simplex_chat

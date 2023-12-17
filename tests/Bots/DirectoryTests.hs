@@ -67,6 +67,7 @@ mkDirectoryOpts tmp superUsers =
       superUsers,
       directoryLog = Just $ tmp </> "directory_service.log",
       serviceName = "SimpleX-Directory",
+      searchResults = 3,
       testing = True
     }
 
@@ -158,7 +159,7 @@ testDirectoryService tmp =
     search u s welcome = do
       u #> ("@SimpleX-Directory " <> s)
       u <# ("SimpleX-Directory> > " <> s)
-      u <## "      Found 1 group(s)"
+      u <## "      Found 1 group(s)."
       u <# "SimpleX-Directory> PSA (Privacy, Security & Anonymity)"
       u <## "Welcome message:"
       u <## welcome
@@ -206,7 +207,7 @@ testJoinGroup tmp =
           cath `connectVia` dsLink
           cath #> "@SimpleX-Directory privacy"
           cath <# "SimpleX-Directory> > privacy"
-          cath <## "      Found 1 group(s)"
+          cath <## "      Found 1 group(s)."
           cath <# "SimpleX-Directory> privacy (Privacy)"
           cath <## "Welcome message:"
           welcomeMsg <- getTermLine cath
@@ -930,6 +931,7 @@ u `connectVia` dsLink = do
   u <## "Send a search string to find groups or /help to learn how to add groups to directory."
   u <## ""
   u <## "For example, send privacy to find groups about privacy."
+  u <## "Or send /all or /new to list groups."
   u <## ""
   u <## "Content and privacy policy: https://simplex.chat/docs/directory.html"
 
@@ -967,7 +969,7 @@ groupFoundN :: Int -> TestCC -> String -> IO ()
 groupFoundN count u name = do
   u #> ("@SimpleX-Directory " <> name)
   u <# ("SimpleX-Directory> > " <> name)
-  u <## "      Found 1 group(s)"
+  u <## "      Found 1 group(s)."
   u <#. ("SimpleX-Directory> " <> name)
   u <## "Welcome message:"
   u <##. "Link to join the group "
