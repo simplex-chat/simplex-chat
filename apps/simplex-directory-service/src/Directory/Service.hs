@@ -36,7 +36,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Types
-import Simplex.Chat.View (serializeChatResponse)
+import Simplex.Chat.View (serializeChatResponse, simplexChatContact)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
@@ -217,7 +217,7 @@ directoryService st DirectoryOpts {superUsers, serviceName, searchResults, testi
                 "Created the public link to join the group via this directory service that is always online.\n\n\
                 \Please add it to the group welcome message.\n\
                 \For example, add:"
-              notifyOwner gr $ "Link to join the group " <> T.unpack displayName <> ": " <> B.unpack (strEncode connReqContact)
+              notifyOwner gr $ "Link to join the group " <> T.unpack displayName <> ": " <> B.unpack (strEncode $ simplexChatContact connReqContact)
             CRChatCmdError _ (ChatError e) -> case e of
               CEGroupUserRole {} -> notifyOwner gr "Failed creating group link, as service is no longer an admin."
               CEGroupMemberUserRemoved -> notifyOwner gr "Failed creating group link, as service is removed from the group."
@@ -292,9 +292,10 @@ directoryService st DirectoryOpts {superUsers, serviceName, searchResults, testi
           where
             profileUpdate = \case
               CRGroupLink {connReqContact} ->
-                let groupLink = safeDecodeUtf8 $ strEncode connReqContact
-                    hadLinkBefore = groupLink `isInfix` description p
-                    hasLinkNow = groupLink `isInfix` description p'
+                let groupLink1 = safeDecodeUtf8 $ strEncode connReqContact
+                    groupLink2 = safeDecodeUtf8 $ strEncode $ simplexChatContact connReqContact
+                    hadLinkBefore = groupLink1 `isInfix` description p || groupLink2 `isInfix` description p
+                    hasLinkNow = groupLink1 `isInfix` description p' || groupLink2 `isInfix` description p'
                 in if
                       | hadLinkBefore && hasLinkNow -> GPHasServiceLink
                       | hadLinkBefore -> GPServiceLinkRemoved
