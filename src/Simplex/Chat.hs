@@ -2327,16 +2327,16 @@ processChatCommand = \case
           pure $ CRUserPrivacy {user, updatedUser = user'}
     checkDeleteChatUser :: User -> m ()
     checkDeleteChatUser user@User {userId} = do
-      when (activeUser user) $ throwChatError (CECantDeleteActiveUser userId)
       users <- withStore' getUsers
-      unless (length users > 1 && (isJust (viewPwdHash user) || length (filter (isNothing . viewPwdHash) users) > 1)) $
-        throwChatError (CECantDeleteLastUser userId)
+      let otherVisible = filter (\User {userId = userId', viewPwdHash} -> userId /= userId' && isNothing viewPwdHash) users
+      when (activeUser user && length otherVisible > 0) $ throwChatError (CECantDeleteActiveUser userId)
     deleteChatUser :: User -> Bool -> m ChatResponse
     deleteChatUser user delSMPQueues = do
       filesInfo <- withStore' (`getUserFileInfo` user)
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withAgent $ \a -> deleteUser a (aUserId user) delSMPQueues
       withStore' (`deleteUserRecord` user)
+      when (activeUser user) $ chatWriteVar currentUser Nothing
       ok_
     updateChatSettings :: ChatName -> (ChatSettings -> ChatSettings) -> m ChatResponse
     updateChatSettings (ChatName cType name) updateSettings = withUser $ \user -> do
