@@ -16,7 +16,7 @@ struct ContentView: View {
     @Environment(\.colorScheme) var colorScheme
 
     @Binding var showInitializationView: Bool
-    var userAuthenticationExtended: Bool
+    var contentAccessAuthenticationExtended: Bool
 
     @Environment(\.scenePhase) var scenePhase
     @State private var automaticAuthenticationAttempted = false
@@ -44,20 +44,18 @@ struct ContentView: View {
         }
     }
 
-    private var userAuthenticated: Bool {
-        chatModel.userAuthenticated || userAuthenticationExtended
+    private var accessAuthenticated: Bool {
+        chatModel.contentViewAccessAuthenticated || contentAccessAuthenticationExtended
     }
 
     var body: some View {
         ZStack {
-            if prefPerformLA {
-                if userAuthenticated {
-                    contentView()
-                } else {
-                    lockButton()
-                }
-            } else {
+            // contentView() has to be in a single branch, so that enabling authentication doesn't trigger re-rendering and close settings.
+            // i.e. with separate branches like this settings are closed: `if prefPerformLA { ... contentView() ... } else { contentView() }
+            if !prefPerformLA || (prefPerformLA && accessAuthenticated) {
                 contentView()
+            } else if prefPerformLA && !accessAuthenticated {
+                lockButton()
             }
             if chatModel.showCallView, let call = chatModel.activeCall {
                 callView(call)
@@ -66,7 +64,7 @@ struct ContentView: View {
                 LocalAuthView(authRequest: la)
             } else if showSetPasscode {
                 SetAppPasscodeView {
-                    chatModel.userAuthenticated = true
+                    chatModel.contentViewAccessAuthenticated = true
                     prefPerformLA = true
                     showSetPasscode = false
                     privacyLocalAuthModeDefault.set(.passcode)
@@ -95,7 +93,7 @@ struct ContentView: View {
             case .background:
                 // --- authentication
                 // also see .onChange(of: scenePhase) in SimpleXApp: on entering background
-                // it remembers enteredBackgroundAuthenticated and sets chatModel.userAuthenticated to false
+                // it remembers enteredBackgroundAuthenticated and sets chatModel.contentViewAccessAuthenticated to false
                 automaticAuthenticationAttempted = false
                 canConnectNonCallKitCall = false
                 // authentication ---
@@ -119,16 +117,16 @@ struct ContentView: View {
                                 updateCallInvitations()
                             }
                         }
-                        canConnectNonCallKitCall = !prefPerformLA || userAuthenticationExtended || unlockedRecently()
+                        canConnectNonCallKitCall = !prefPerformLA || contentAccessAuthenticationExtended || unlockedRecently()
                     }
                 }
 
                 // --- authentication
-                // condition `!chatModel.userAuthenticated` is required for when authentication is enabled in settings or on initial notice
-                if prefPerformLA && !chatModel.userAuthenticated {
+                // condition `!chatModel.contentViewAccessAuthenticated` is required for when authentication is enabled in settings or on initial notice
+                if prefPerformLA && !chatModel.contentViewAccessAuthenticated {
                     if appState != .stopped {
-                        if userAuthenticationExtended {
-                            chatModel.userAuthenticated = true
+                        if contentAccessAuthenticationExtended {
+                            chatModel.contentViewAccessAuthenticated = true
                         } else {
                             if !automaticAuthenticationAttempted {
                                 automaticAuthenticationAttempted = true
@@ -140,7 +138,7 @@ struct ContentView: View {
                         }
                     } else {
                         // when app is stopped automatic authentication is not attempted
-                        chatModel.userAuthenticated = userAuthenticationExtended
+                        chatModel.contentViewAccessAuthenticated = contentAccessAuthenticationExtended
                     }
                 }
                 // authentication ---
@@ -174,11 +172,11 @@ struct ContentView: View {
         if CallController.useCallKit() {
             ActiveCallView(call: call, canConnectCall: Binding.constant(true))
                 .onDisappear {
-                    if prefPerformLA && !userAuthenticated { authenticateContentViewAccess() }
+                    if prefPerformLA && !accessAuthenticated { authenticateContentViewAccess() }
                 }
         } else {
             ActiveCallView(call: call, canConnectCall: $canConnectNonCallKitCall)
-            if prefPerformLA && !userAuthenticated {
+            if prefPerformLA && !accessAuthenticated {
                 Rectangle()
                     .fill(colorScheme == .dark ? .black : .white)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -248,11 +246,11 @@ struct ContentView: View {
                 logger.debug("DEBUGGING: authenticate callback: \(String(describing: laResult))")
                 switch (laResult) {
                 case .success:
-                    chatModel.userAuthenticated = true
+                    chatModel.contentViewAccessAuthenticated = true
                     canConnectNonCallKitCall = true
                     lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
                 case .failed:
-                    chatModel.userAuthenticated = false
+                    chatModel.contentViewAccessAuthenticated = false
                     if privacyLocalAuthModeDefault.get() == .passcode {
                         AlertManager.shared.showAlert(laFailedAlert())
                     }
@@ -349,7 +347,7 @@ struct ContentView: View {
         authenticate(reason: NSLocalizedString("Enable SimpleX Lock", comment: "authentication reason")) { laResult in
             switch laResult {
             case .success:
-                chatModel.userAuthenticated = true
+                chatModel.contentViewAccessAuthenticated = true
                 prefPerformLA = true
                 alertManager.showAlert(laTurnedOnAlert())
             case .failed:

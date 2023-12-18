@@ -55,7 +55,7 @@ final class ChatModel: ObservableObject {
     @Published var chatDbEncrypted: Bool?
     @Published var chatDbStatus: DBMigrationResult?
     // local authentication
-    @Published var userAuthenticated: Bool = false
+    @Published var contentViewAccessAuthenticated: Bool = false
     @Published var laRequest: LocalAuthRequest?
     // list of chat "previews"
     @Published var chats: [Chat] = []

@@ -36,11 +36,11 @@ struct SimpleXApp: App {
 
     var body: some Scene {
         WindowGroup {
-            // userAuthenticationExtended has to be passed to ContentView on view initialization,
+            // contentAccessAuthenticationExtended has to be passed to ContentView on view initialization,
             // so that it's computed by the time view renders, and not on event after rendering
             ContentView(
                 showInitializationView: $showInitializationView,
-                userAuthenticationExtended: !authenticationExpired()
+                contentAccessAuthenticationExtended: !authenticationExpired()
             )
             .environmentObject(chatModel)
             .onOpenURL { url in
@@ -58,10 +58,10 @@ struct SimpleXApp: App {
                 switch (phase) {
                 case .background:
                     // see ContentView .onChange(of: scenePhase) for remaining authentication logic
-                    if chatModel.userAuthenticated {
+                    if chatModel.contentViewAccessAuthenticated {
                         enteredBackgroundAuthenticated = ProcessInfo.processInfo.systemUptime
                     }
-                    chatModel.userAuthenticated = false
+                    chatModel.contentViewAccessAuthenticated = false
                 default:
                     break
                 }
