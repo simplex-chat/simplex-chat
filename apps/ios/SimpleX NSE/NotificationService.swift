@@ -18,7 +18,7 @@ let appSuspendingDelay: UInt64 = 2_500_000_000
 
 let nseSuspendDelay: TimeInterval = 2
 
-let nseSuspendTimeout: Int = 10
+let nseSuspendTimeout: Int = 5
 
 typealias NtfStream = ConcurrentQueue<NSENotification>
 
