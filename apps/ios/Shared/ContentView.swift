@@ -15,7 +15,7 @@ struct ContentView: View {
     @ObservedObject var callController = CallController.shared
     @Environment(\.colorScheme) var colorScheme
 
-    @State var contentAccessAuthenticationExtended: Bool
+    var contentAccessAuthenticationExtended: Bool
 
     @Environment(\.scenePhase) var scenePhase
     @State private var automaticAuthenticationAttempted = false
