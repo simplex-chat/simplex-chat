@@ -235,33 +235,6 @@ struct ContentView: View {
         .onContinueUserActivity("INStartVideoCallIntent", perform: processUserActivity)
     }
 
-    private func authenticateContentViewAccess() {
-        logger.debug("DEBUGGING: authenticateContentViewAccess")
-        dismissAllSheets(animated: false) {
-            logger.debug("DEBUGGING: authenticateContentViewAccess, in dismissAllSheets callback")
-            chatModel.chatId = nil
-
-            authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason"), selfDestruct: true) { laResult in
-                logger.debug("DEBUGGING: authenticate callback: \(String(describing: laResult))")
-                switch (laResult) {
-                case .success:
-                    chatModel.contentViewAccessAuthenticated = true
-                    canConnectNonCallKitCall = true
-                    lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
-                case .failed:
-                    chatModel.contentViewAccessAuthenticated = false
-                    if privacyLocalAuthModeDefault.get() == .passcode {
-                        AlertManager.shared.showAlert(laFailedAlert())
-                    }
-                case .unavailable:
-                    prefPerformLA = false
-                    canConnectNonCallKitCall = true
-                    AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
-                }
-            }
-        }
-    }
-
     private func unlockedRecently() -> Bool {
         if let lastSuccessfulUnlock = lastSuccessfulUnlock {
             return ProcessInfo.processInfo.systemUptime - lastSuccessfulUnlock < 2
@@ -316,6 +289,33 @@ struct ContentView: View {
             logger.debug("callToRecentContact: schedule call")
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 CallController.shared.startCall(contact, mediaType)
+            }
+        }
+    }
+
+    private func authenticateContentViewAccess() {
+        logger.debug("DEBUGGING: authenticateContentViewAccess")
+        dismissAllSheets(animated: false) {
+            logger.debug("DEBUGGING: authenticateContentViewAccess, in dismissAllSheets callback")
+            chatModel.chatId = nil
+
+            authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason"), selfDestruct: true) { laResult in
+                logger.debug("DEBUGGING: authenticate callback: \(String(describing: laResult))")
+                switch (laResult) {
+                case .success:
+                    chatModel.contentViewAccessAuthenticated = true
+                    canConnectNonCallKitCall = true
+                    lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
+                case .failed:
+                    chatModel.contentViewAccessAuthenticated = false
+                    if privacyLocalAuthModeDefault.get() == .passcode {
+                        AlertManager.shared.showAlert(laFailedAlert())
+                    }
+                case .unavailable:
+                    prefPerformLA = false
+                    canConnectNonCallKitCall = true
+                    AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
+                }
             }
         }
     }
