@@ -577,6 +577,8 @@ object ChatModel {
       showingInvitation.value = null
       chatModel.chatItems.clear()
       chatModel.chatId.value = null
+      // Close NewChatView
+      ModalManager.center.closeModals()
       ModalManager.end.closeModals()
     }
   }
