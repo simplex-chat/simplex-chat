@@ -115,6 +115,8 @@ chatGroupTests = do
     it "forward file (x.msg.file.descr)" testGroupMsgForwardFile
     it "forward role change (x.grp.mem.role)" testGroupMsgForwardChangeRole
     it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
+  describe "group history" $ do
+    it "send recent history to invitee - text messages" testGroupHistory
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -4116,3 +4118,45 @@ testGroupMsgForwardNewMember =
                "cath (Catherine): admin, connected",
                "dan (Daniel): member"
              ]
+
+testGroupHistory :: HasCallStack => FilePath -> IO ()
+testGroupHistory =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+
+      threadDelay 1000000
+
+      bob #> "#team hey!"
+      alice <# "#team bob> hey!"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> hello [>>]",
+                   WithTime "#team bob> hey! [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine cath
+      r `shouldContain` [(0, "hello"), (0, "hey!")]
+
+      -- message delivery works after sending history
+      alice #> "#team 1"
+      [bob, cath] *<# "#team alice> 1"
+      bob #> "#team 2"
+      [alice, cath] *<# "#team bob> 2"
+      cath #> "#team 3"
+      [alice, bob] *<# "#team cath> 3"
