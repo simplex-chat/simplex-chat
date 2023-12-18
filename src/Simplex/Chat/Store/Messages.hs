@@ -491,11 +491,12 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
 
 getChatPreviews :: DB.Connection -> User -> Bool -> PaginationByTime -> ChatListQuery -> IO [Either StoreError AChat]
 getChatPreviews db user withPCC pagination query = do
+  selfChat <- getSelfChatPreview_ db user pagination query
   directChats <- findDirectChatPreviews_ db user pagination query
   groupChats <- findGroupChatPreviews_ db user pagination query
   cReqChats <- getContactRequestChatPreviews_ db user pagination query
   connChats <- if withPCC then getContactConnectionChatPreviews_ db user pagination query else pure []
-  let refs = sortTake $ concat [directChats, groupChats, cReqChats, connChats]
+  let refs = sortTake $ concat [selfChat, directChats, groupChats, cReqChats, connChats]
   mapM (runExceptT <$> getChatPreview) refs
   where
     ts :: AChatPreviewData -> UTCTime
@@ -504,6 +505,7 @@ getChatPreviews db user withPCC pagination query = do
       (GroupChatPD t _ _ _) -> t
       (ContactRequestPD t _) -> t
       (ContactConnectionPD t _) -> t
+      (SelfChatPD t _) -> t
     sortTake = case pagination of
       PTLast count -> take count . sortBy (comparing $ Down . ts)
       PTAfter _ count -> reverse . take count . sortBy (comparing ts)
@@ -514,12 +516,14 @@ getChatPreviews db user withPCC pagination query = do
       SCTGroup -> getGroupChatPreview_ db user cpd
       SCTContactRequest -> let (ContactRequestPD _ chat) = cpd in pure chat
       SCTContactConnection -> let (ContactConnectionPD _ chat) = cpd in pure chat
+      SCTSelf -> let (SelfChatPD _ chat) = cpd in pure chat
 
 data ChatPreviewData (c :: ChatType) where
   DirectChatPD :: UTCTime -> ContactId -> Maybe ChatItemId -> ChatStats -> ChatPreviewData 'CTDirect
   GroupChatPD :: UTCTime -> GroupId -> Maybe ChatItemId -> ChatStats -> ChatPreviewData 'CTGroup
   ContactRequestPD :: UTCTime -> AChat -> ChatPreviewData 'CTContactRequest
   ContactConnectionPD :: UTCTime -> AChat -> ChatPreviewData 'CTContactConnection
+  SelfChatPD :: UTCTime -> AChat -> ChatPreviewData 'CTSelf
 
 data AChatPreviewData = forall c. ChatTypeI c => ACPD (SChatType c) (ChatPreviewData c)
 
@@ -723,6 +727,39 @@ getGroupChatPreview_ db user (GroupChatPD _ groupId lastItemId_ stats) = do
     Just lastItemId -> (: []) <$> getGroupChatItem db user groupId lastItemId
     Nothing -> pure []
   pure $ AChat SCTGroup (Chat (GroupChat groupInfo) lastItem stats)
+
+getSelfChatPreview_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
+getSelfChatPreview_ db User {userId} _pagination = \case
+  CLQFilters {favorite = False, unread = False} -> query
+  _ -> pure []
+  where
+    query =
+      map toPreview
+        <$> DB.queryNamed
+          db
+          [sql|
+            SELECT
+              -- ChatItem
+              i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.shared_msg_id,
+              i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
+              -- ChatItemModeRow
+              i.timed_ttl, i.timed_delete_at, i.item_live,
+              -- MaybeCIFIleRow
+              f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
+            FROM chat_items i
+            LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
+            WHERE i.user_id := :user_id AND i.self_chat
+            ORDER BY ts DESC
+            LIMIT 1
+          |]
+          [":user_id" := userId]
+    toPreview :: ChatItemRow -> AChatPreviewData
+    toPreview (ci :. ciMode :. ciFile_) =
+      let lastItem = error "TODO: lastItem" :: CChatItem CTSelf
+          ts = error "TODO: ts" :: UTCTime
+          stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
+          aChat = AChat SCTSelf $ Chat (SelfChat ts) [lastItem] stats
+       in ACPD SCTSelf $ SelfChatPD ts aChat
 
 getContactRequestChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of
