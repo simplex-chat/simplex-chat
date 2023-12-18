@@ -77,6 +77,9 @@ struct ContentView: View {
                     alertManager.showAlert(laPasscodeNotSetAlert())
                 }
             }
+            if chatModel.chatDbStatus == nil && showInitializationView {
+                initializationView()
+            }
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
         .sheet(isPresented: $showSettings) {
@@ -148,9 +151,7 @@ struct ContentView: View {
     }
 
     @ViewBuilder private func contentView() -> some View {
-        if chatModel.chatDbStatus == nil && showInitializationView {
-            initializationView()
-        } else if let status = chatModel.chatDbStatus, status != .ok {
+        if let status = chatModel.chatDbStatus, status != .ok {
             DatabaseErrorView(status: status)
         } else if !chatModel.v3DBMigration.startChat {
             MigrateToAppGroupView()
@@ -196,6 +197,11 @@ struct ContentView: View {
             Text("Opening app…")
                 .padding()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity )
+        .background(
+            Rectangle()
+                .fill(.background )
+        ) 
     }
 
 
