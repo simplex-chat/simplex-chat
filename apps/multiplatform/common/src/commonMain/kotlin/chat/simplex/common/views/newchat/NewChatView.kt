@@ -73,7 +73,12 @@ fun NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRCodeScanner
             destructive = true,
             onConfirm = {
               withBGApi {
-                controller.deleteChat(Chat(remoteHostId = rh?.remoteHostId, chatInfo = ChatInfo.ContactConnection(conn), chatItems = listOf()))
+                val chatInfo = ChatInfo.ContactConnection(conn)
+                controller.deleteChat(Chat(remoteHostId = rh?.remoteHostId, chatInfo = chatInfo, chatItems = listOf()))
+                if (chatModel.chatId.value == chatInfo.id) {
+                  chatModel.chatId.value = null
+                  ModalManager.end.closeModals()
+                }
               }
             }
           )
@@ -226,14 +231,14 @@ private fun AddContactLearnMoreButton() {
   IconButton(
     {
       if (appPlatform.isDesktop) ModalManager.end.closeModals()
-      ModalManager.end.showModal {
+      ModalManager.end.showModalCloseable { close ->
         Column(
           Modifier
             .fillMaxHeight()
             .padding(horizontal = DEFAULT_PADDING),
           verticalArrangement = Arrangement.SpaceBetween
         ) {
-          AddContactLearnMore()
+          AddContactLearnMore(close)
         }
       }
     }

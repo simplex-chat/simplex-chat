@@ -64,14 +64,14 @@ fun ContactConnectionInfoView(
     onLocalAliasChanged = { setContactAlias(rhId, contactConnection, it, chatModel) },
     share = { if (connReqInvitation != null) clipboard.shareText(connReqInvitation) },
     learnMore = {
-      ModalManager.end.showModal {
+      ModalManager.end.showModalCloseable { close ->
         Column(
           Modifier
             .fillMaxHeight()
             .padding(horizontal = DEFAULT_PADDING),
           verticalArrangement = Arrangement.SpaceBetween
         ) {
-          AddContactLearnMore()
+          AddContactLearnMore(close)
         }
       }
     }

@@ -458,11 +458,14 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
           .background(MaterialTheme.colors.background)
       ) {
         ChatListSearchBar(listState, searchText, searchShowingSimplexLink, searchChatFilteredBySimplexLink)
-        SectionDivider()
+        Divider()
       }
     }
-    items(chats) { chat ->
-      ChatListNavLinkView(chat, chatModel)
+    itemsIndexed(chats) { index, chat ->
+      val nextChatSelected = remember(chat.id) { derivedStateOf {
+        chatModel.chatId.value != null && chats.getOrNull(index + 1)?.id == chatModel.chatId.value
+      } }
+      ChatListNavLinkView(chat, nextChatSelected)
     }
   }
   if (chats.isEmpty() && !chatModel.chats.isEmpty()) {
