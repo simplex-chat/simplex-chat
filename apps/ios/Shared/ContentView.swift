@@ -51,9 +51,9 @@ struct ContentView: View {
         ZStack {
             // contentView() has to be in a single branch, so that enabling authentication doesn't trigger re-rendering and close settings.
             // i.e. with separate branches like this settings are closed: `if prefPerformLA { ... contentView() ... } else { contentView() }
-            if !prefPerformLA || (prefPerformLA && accessAuthenticated) {
+            if !prefPerformLA || accessAuthenticated {
                 contentView()
-            } else if prefPerformLA && !accessAuthenticated {
+            } else {
                 lockButton()
             }
             if chatModel.showCallView, let call = chatModel.activeCall {
