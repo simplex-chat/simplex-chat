@@ -16,12 +16,12 @@ enum LAResult {
     case unavailable(authError: String?)
 }
 
-func authenticate_(_ text: String, _ authenticated: Binding<Bool>) {
+func authorize(_ text: String, _ authorized: Binding<Bool>) {
     authenticate(reason: text) { laResult in
         switch laResult {
-        case .success: authenticated.wrappedValue = true
-        case .unavailable: authenticated.wrappedValue = true
-        case .failed: authenticated.wrappedValue = false
+        case .success: authorized.wrappedValue = true
+        case .unavailable: authorized.wrappedValue = true
+        case .failed: authorized.wrappedValue = false
         }
     }
 }
