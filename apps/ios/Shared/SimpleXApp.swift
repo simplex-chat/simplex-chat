@@ -21,8 +21,8 @@ struct SimpleXApp: App {
     @State private var enteredBackgroundAuthenticated: TimeInterval? = nil
 
     init() {
-//        DispatchQueue.global(qos: .background).sync {
         haskell_init()
+//        DispatchQueue.global(qos: .background).sync {
 //            hs_init(0, nil)
 //        }
         UserDefaults.standard.register(defaults: appDefaults)
