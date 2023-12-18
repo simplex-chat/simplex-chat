@@ -172,7 +172,7 @@ struct ContentView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity )
         .background(
             Rectangle()
-                .fill(.background )
+                .fill(.background)
         ) 
     }
 
