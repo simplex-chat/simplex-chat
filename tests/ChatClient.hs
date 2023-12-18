@@ -18,7 +18,7 @@ import Control.Monad.Except
 import Data.ByteArray (ScrubbedBytes)
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
-import Data.Maybe (fromJust, isNothing)
+import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
@@ -276,15 +276,15 @@ getTermLine cc =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
-      -- when True $ do
-      when (printOutput cc) $ do
+      when True $ do
+      -- when (printOutput cc) $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s
     _ -> error "no output for 5 seconds"
 
 userName :: TestCC -> IO [Char]
-userName (TestCC ChatController {currentUser} _ _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser
+userName (TestCC ChatController {currentUser} _ _ _ _ _) = maybe "no current user" (T.unpack . localDisplayName) <$> readTVarIO currentUser
 
 testChat2 :: HasCallStack => Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChat2 = testChatCfgOpts2 testCfg testOpts

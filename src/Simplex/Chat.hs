@@ -473,12 +473,14 @@ processChatCommand = \case
       coupleDaysAgo t = (`addUTCTime` t) . fromInteger . negate . (+ (2 * day)) <$> randomRIO (0, day)
       day = 86400
   ListUsers -> CRUsersList <$> withStoreCtx' (Just "ListUsers, getUsersInfo") getUsersInfo
-  APISetActiveUser userId' viewPwd_ -> withUser $ \user -> do
+  APISetActiveUser userId' viewPwd_ -> do
+    unlessM chatStarted $ throwChatError CEChatNotStarted
+    user_ <- chatReadVar currentUser
     user' <- privateGetUser userId'
-    validateUserPassword user user' viewPwd_
+    validateUserPassword_ user_ user' viewPwd_
     withStoreCtx' (Just "APISetActiveUser, setActiveUser") $ \db -> setActiveUser db userId'
     let user'' = user' {activeUser = True}
-    asks currentUser >>= atomically . (`writeTVar` Just user'')
+    chatWriteVar currentUser $ Just user''
     pure $ CRActiveUser user''
   SetActiveUser uName viewPwd_ -> do
     tryChatError (withStore (`getUserIdByName` uName)) >>= \case
@@ -2300,11 +2302,14 @@ processChatCommand = \case
       tryChatError (withStore (`getUser` userId)) >>= \case
         Left _ -> throwChatError CEUserUnknown
         Right user -> pure user
-    validateUserPassword :: User -> User -> Maybe UserPwd -> m ()
-    validateUserPassword User {userId} User {userId = userId', viewPwdHash} viewPwd_ =
+    validateUserPassword :: User -> User -> Maybe UserPwd -> m ()        
+    validateUserPassword = validateUserPassword_ . Just
+    validateUserPassword_ :: Maybe User -> User -> Maybe UserPwd -> m ()
+    validateUserPassword_ user_ User {userId = userId', viewPwdHash} viewPwd_ =
       forM_ viewPwdHash $ \pwdHash ->
-        let pwdOk = case viewPwd_ of
-              Nothing -> userId == userId'
+        let userId_ = (\User {userId} -> userId) <$> user_
+            pwdOk = case viewPwd_ of
+              Nothing -> userId_ == Just userId'
               Just (UserPwd viewPwd) -> validPassword viewPwd pwdHash
          in unless pwdOk $ throwChatError CEUserUnknown
     validPassword :: Text -> UserPwdHash -> Bool
