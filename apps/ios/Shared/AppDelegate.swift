@@ -81,7 +81,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 }
             } else if let checkMessages = ntfData["checkMessages"] as? Bool, checkMessages {
                 logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessages")
-                if  m.ntfEnablePeriodic && allowBackgroundRefresh() &&  BGManager.shared.shouldRun {
+                if  m.ntfEnablePeriodic && allowBackgroundRefresh() &&  BGManager.shared.lastRanLongAgo {
                     receiveMessages(completionHandler)
                 } else {
                     completionHandler(.noData)

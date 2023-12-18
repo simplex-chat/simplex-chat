@@ -39,14 +39,14 @@ class BGManager {
         }
     }
 
-    func schedule(soon: Bool = false) {
+    func schedule(interval: TimeInterval? = nil) {
         if !ChatModel.shared.ntfEnableLocal {
             logger.debug("BGManager.schedule: disabled")
             return
         }
         logger.debug("BGManager.schedule")
         let request = BGAppRefreshTaskRequest(identifier: receiveTaskId)
-        request.earliestBeginDate = Date(timeIntervalSinceNow: soon ? bgRefreshInterval : runInterval)
+        request.earliestBeginDate = Date(timeIntervalSinceNow: interval ?? runInterval)
         do {
             try BGTaskScheduler.shared.submit(request)
         } catch {
@@ -62,7 +62,7 @@ class BGManager {
         }
     }
 
-    var shouldRun: Bool {
+    var lastRanLongAgo: Bool {
         Date.now.timeIntervalSince(chatLastBackgroundRunGroupDefault.get()) > runInterval
     }
 
@@ -72,7 +72,7 @@ class BGManager {
             return
         }
         logger.debug("BGManager.handleRefresh")
-        let shouldRun_ = shouldRun
+        let shouldRun_ = lastRanLongAgo
         if allowBackgroundRefresh() && shouldRun_ {
             schedule()
             let completeRefresh = completionHandler {
@@ -81,7 +81,7 @@ class BGManager {
             task.expirationHandler = { completeRefresh("expirationHandler") }
             receiveMessages(completeRefresh)
         } else {
-            schedule(soon: shouldRun_)
+            schedule(interval: shouldRun_ ? bgRefreshInterval : runInterval)
             logger.debug("BGManager.completionHandler: already active, not started")
             task.setTaskCompleted(success: true)
         }
