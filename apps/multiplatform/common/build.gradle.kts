@@ -166,14 +166,16 @@ afterEvaluate {
         val formats = ArrayList<String>()
         var substring = value.substringAfter("%")
         while (true) {
+          var foundFormat = false
           for (format in possibleFormat) {
             if (substring.startsWith(format)) {
               formats.add(format)
+              foundFormat = true
               break
             }
           }
-          if (substring.startsWith("@")) {
-            throw Exception("Bad formatting in string: $this \nin $filepath")
+          if (!foundFormat) {
+            throw Exception("Unknown formatting in string. Add it to 'possibleFormat' in common/build.gradle.kts if needed: $this \nin $filepath")
           }
           val was = substring
           substring = substring.substringAfter("%")
