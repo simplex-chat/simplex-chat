@@ -476,7 +476,6 @@
     <string name="error_encrypting_database">Hiba az adatbázis titkosításakor</string>
     <string name="error_deleting_group">Hiba a csoport törlésekor</string>
     <string name="exit_without_saving">Kilépés mentés nélkül</string>
-    <string name="mtr_error_different"></string>
     <string name="v5_3_encrypt_local_files">Tárolt fájlok, képek és hangfájlok titkosítása</string>
     <string name="error_setting_address">Hiba az azonosító beállításakor</string>
     <string name="group_invitation_expired">A csoport meghívó lejárt</string>
