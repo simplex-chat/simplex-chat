@@ -333,6 +333,8 @@ class NotificationService: UNNotificationServiceExtension {
             threadId = nil
             if NSEThreads.shared.endThread(t) {
                 logger.debug("NotificationService.deliverBestAttemptNtf: will suspend")
+                // suspension is delayed to allow chat core finalise any processing
+                // (e.g., send delivery receipts)
                 DispatchQueue.global().asyncAfter(deadline: .now() + nseSuspendDelay) {
                     if NSEThreads.shared.noThreads {
                         logger.debug("NotificationService.deliverBestAttemptNtf: suspending...")
