@@ -18,7 +18,6 @@ struct SimpleXApp: App {
     @ObservedObject var alertManager = AlertManager.shared
 
     @Environment(\.scenePhase) var scenePhase
-    @State private var showInitializationView = false
     @State private var enteredBackgroundAuthenticated: TimeInterval? = nil
 
     init() {
@@ -38,34 +37,30 @@ struct SimpleXApp: App {
         WindowGroup {
             // contentAccessAuthenticationExtended has to be passed to ContentView on view initialization,
             // so that it's computed by the time view renders, and not on event after rendering
-            ContentView(
-                showInitializationView: $showInitializationView,
-                contentAccessAuthenticationExtended: !authenticationExpired()
-            )
-            .environmentObject(chatModel)
-            .onOpenURL { url in
-                logger.debug("ContentView.onOpenURL: \(url)")
-                chatModel.appOpenUrl = url
-            }
-            .onAppear() {
-                showInitializationView = true
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                    initChatAndMigrate()
+            ContentView(contentAccessAuthenticationExtended: !authenticationExpired())
+                .environmentObject(chatModel)
+                .onOpenURL { url in
+                    logger.debug("ContentView.onOpenURL: \(url)")
+                    chatModel.appOpenUrl = url
                 }
-            }
-            .onChange(of: scenePhase) { phase in
-                logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
-                switch (phase) {
-                case .background:
-                    // see ContentView .onChange(of: scenePhase) for remaining authentication logic
-                    if chatModel.contentViewAccessAuthenticated {
-                        enteredBackgroundAuthenticated = ProcessInfo.processInfo.systemUptime
+                .onAppear() {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                        initChatAndMigrate()
                     }
-                    chatModel.contentViewAccessAuthenticated = false
-                default:
-                    break
                 }
-            }
+                .onChange(of: scenePhase) { phase in
+                    logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
+                    switch (phase) {
+                    case .background:
+                        // see ContentView .onChange(of: scenePhase) for remaining authentication logic
+                        if chatModel.contentViewAccessAuthenticated {
+                            enteredBackgroundAuthenticated = ProcessInfo.processInfo.systemUptime
+                        }
+                        chatModel.contentViewAccessAuthenticated = false
+                    default:
+                        break
+                    }
+                }
         }
     }
 

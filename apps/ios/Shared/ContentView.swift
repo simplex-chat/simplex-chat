@@ -15,7 +15,6 @@ struct ContentView: View {
     @ObservedObject var callController = CallController.shared
     @Environment(\.colorScheme) var colorScheme
 
-    @Binding var showInitializationView: Bool
     var contentAccessAuthenticationExtended: Bool
 
     @Environment(\.scenePhase) var scenePhase
@@ -75,7 +74,7 @@ struct ContentView: View {
                     alertManager.showAlert(laPasscodeNotSetAlert())
                 }
             }
-            if chatModel.chatDbStatus == nil && showInitializationView {
+            if chatModel.chatDbStatus == nil {
                 initializationView()
             }
         }
