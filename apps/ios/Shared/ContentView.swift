@@ -19,7 +19,7 @@ struct ContentView: View {
 
     @Environment(\.scenePhase) var scenePhase
     @State private var automaticAuthenticationAttempted = false
-    @State private var canConnectNonCallKitCall = false
+    @State private var canConnectViewCall = false
     @State private var lastSuccessfulUnlock: TimeInterval? = nil
 
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
@@ -94,7 +94,7 @@ struct ContentView: View {
                 // also see .onChange(of: scenePhase) in SimpleXApp: on entering background
                 // it remembers enteredBackgroundAuthenticated and sets chatModel.contentViewAccessAuthenticated to false
                 automaticAuthenticationAttempted = false
-                canConnectNonCallKitCall = false
+                canConnectViewCall = false
                 // authentication ---
 
                 if CallController.useCallKit() && chatModel.activeCall != nil {
@@ -116,7 +116,7 @@ struct ContentView: View {
                                 updateCallInvitations()
                             }
                         }
-                        canConnectNonCallKitCall = !prefPerformLA || contentAccessAuthenticationExtended || unlockedRecently()
+                        canConnectViewCall = !prefPerformLA || contentAccessAuthenticationExtended || unlockedRecently()
                     }
                 }
 
@@ -174,7 +174,7 @@ struct ContentView: View {
                     if prefPerformLA && !accessAuthenticated { authenticateContentViewAccess() }
                 }
         } else {
-            ActiveCallView(call: call, canConnectCall: $canConnectNonCallKitCall)
+            ActiveCallView(call: call, canConnectCall: $canConnectViewCall)
             if prefPerformLA && !accessAuthenticated {
                 Rectangle()
                     .fill(colorScheme == .dark ? .black : .white)
@@ -304,7 +304,7 @@ struct ContentView: View {
                 switch (laResult) {
                 case .success:
                     chatModel.contentViewAccessAuthenticated = true
-                    canConnectNonCallKitCall = true
+                    canConnectViewCall = true
                     lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
                 case .failed:
                     chatModel.contentViewAccessAuthenticated = false
@@ -313,7 +313,7 @@ struct ContentView: View {
                     }
                 case .unavailable:
                     prefPerformLA = false
-                    canConnectNonCallKitCall = true
+                    canConnectViewCall = true
                     AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
                 }
             }
