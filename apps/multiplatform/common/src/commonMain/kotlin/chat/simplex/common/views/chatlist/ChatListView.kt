@@ -462,7 +462,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
       }
     }
     itemsIndexed(chats) { index, chat ->
-      val nextChatSelected = remember(chat.id) { derivedStateOf {
+      val nextChatSelected = remember(chat.id, chats) { derivedStateOf {
         chatModel.chatId.value != null && chats.getOrNull(index + 1)?.id == chatModel.chatId.value
       } }
       ChatListNavLinkView(chat, nextChatSelected)

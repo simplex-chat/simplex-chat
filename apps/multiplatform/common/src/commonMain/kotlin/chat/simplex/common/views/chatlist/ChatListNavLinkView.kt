@@ -23,7 +23,6 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.group.deleteGroupDialog
 import chat.simplex.common.views.chat.group.leaveGroupDialog
-import chat.simplex.common.views.chat.item.InvalidJSONView
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
@@ -434,10 +433,6 @@ fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection
     onClick = {
       deleteContactConnectionAlert(rhId, chatInfo.contactConnection, chatModel) {
         chatModel.dismissConnReqView(chatInfo.contactConnection.id)
-        if (chatModel.chatId.value == chatInfo.id) {
-          chatModel.chatId.value = null
-          ModalManager.end.closeModals()
-        }
       }
       showMenu.value = false
     },

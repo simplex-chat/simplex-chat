@@ -1572,7 +1572,7 @@ object ChatController {
           chatModel.updateContact(rhId, r.contact)
           val conn = r.contact.activeConn
           if (conn != null) {
-            chatModel.dismissConnReqView(conn.id)
+            chatModel.replaceConnReqView(conn.id, "@${r.contact.contactId}")
             chatModel.removeChat(rhId, conn.id)
           }
         }
@@ -1586,7 +1586,7 @@ object ChatController {
           chatModel.updateContact(rhId, r.contact)
           val conn = r.contact.activeConn
           if (conn != null) {
-            chatModel.dismissConnReqView(conn.id)
+            chatModel.replaceConnReqView(conn.id, "@${r.contact.contactId}")
             chatModel.removeChat(rhId, conn.id)
           }
         }
@@ -1721,7 +1721,7 @@ object ChatController {
         chatModel.updateGroup(rhId, r.groupInfo)
         val conn = r.hostContact?.activeConn
         if (conn != null) {
-          chatModel.dismissConnReqView(conn.id)
+          chatModel.replaceConnReqView(conn.id, "#${r.groupInfo.groupId}")
           chatModel.removeChat(rhId, conn.id)
         }
       }
@@ -1731,7 +1731,7 @@ object ChatController {
         chatModel.updateGroup(rhId, r.groupInfo)
         val hostConn = r.hostMember.activeConn
         if (hostConn != null) {
-          chatModel.dismissConnReqView(hostConn.id)
+          chatModel.replaceConnReqView(hostConn.id, "#${r.groupInfo.groupId}")
           chatModel.removeChat(rhId, hostConn.id)
         }
       }

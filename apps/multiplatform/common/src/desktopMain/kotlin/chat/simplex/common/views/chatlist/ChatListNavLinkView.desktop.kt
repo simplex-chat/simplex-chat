@@ -54,7 +54,7 @@ actual fun ChatListNavLinkLayout(
         chatLinkPreview()
       }
       if (selectedChat.value) {
-        Box(Modifier.matchParentSize().background(MaterialTheme.colors.onBackground.copy(0.03f)))
+        Box(Modifier.matchParentSize().background(MaterialTheme.colors.onBackground.copy(0.05f)))
       }
       if (dropdownMenuItems != null) {
         DefaultDropdownMenu(showMenu, dropdownMenuItems = dropdownMenuItems)
