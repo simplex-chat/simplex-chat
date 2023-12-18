@@ -176,7 +176,6 @@ struct ContentView: View {
         ) 
     }
 
-
     private func mainView() -> some View {
         ZStack(alignment: .top) {
             ChatListView(showSettings: $showSettings).privacySensitive(protectScreen)
@@ -210,14 +209,6 @@ struct ContentView: View {
         .onContinueUserActivity("INStartVideoCallIntent", perform: processUserActivity)
     }
 
-    private func unlockedRecently() -> Bool {
-        if let lastSuccessfulUnlock = lastSuccessfulUnlock {
-            return ProcessInfo.processInfo.systemUptime - lastSuccessfulUnlock < 2
-        } else {
-            return false
-        }
-    }
-
     private func processUserActivity(_ activity: NSUserActivity) {
         let intent = activity.interaction?.intent
         if let intent = intent as? INStartCallIntent {
@@ -238,6 +229,14 @@ struct ContentView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
                 CallController.shared.startCall(contact, mediaType)
             }
+        }
+    }
+
+    private func unlockedRecently() -> Bool {
+        if let lastSuccessfulUnlock = lastSuccessfulUnlock {
+            return ProcessInfo.processInfo.systemUptime - lastSuccessfulUnlock < 2
+        } else {
+            return false
         }
     }
 
