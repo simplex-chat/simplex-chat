@@ -566,6 +566,7 @@ object ChatModel {
   fun replaceConnReqView(id: String, withId: String) {
     if (id == showingInvitation.value?.connId) {
       showingInvitation.value = null
+      chatModel.chatItems.clear()
       chatModel.chatId.value = withId
       ModalManager.end.closeModals()
     }
@@ -574,6 +575,7 @@ object ChatModel {
   fun dismissConnReqView(id: String) {
     if (id == showingInvitation.value?.connId) {
       showingInvitation.value = null
+      chatModel.chatItems.clear()
       chatModel.chatId.value = null
       ModalManager.end.closeModals()
     }
