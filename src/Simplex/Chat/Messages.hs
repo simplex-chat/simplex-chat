@@ -59,7 +59,7 @@ chatTypeStr = \case
   CTGroup -> "#"
   CTContactRequest -> "<@"
   CTContactConnection -> ":"
-  CTNotes -> "~"
+  CTNotes -> "*"
 
 chatNameStr :: ChatName -> String
 chatNameStr (ChatName cType name) = T.unpack $ chatTypeStr cType <> if T.any isSpace name then "'" <> name <> "'" else name
@@ -70,7 +70,7 @@ data ChatRef = ChatRef ChatType Int64
 data ChatInfo (c :: ChatType) where
   DirectChat :: Contact -> ChatInfo 'CTDirect
   GroupChat :: GroupInfo -> ChatInfo 'CTGroup
-  NotesChat :: UTCTime -> ChatInfo 'CTNotes
+  NotesChat :: NotesFolder -> ChatInfo 'CTNotes
   ContactRequest :: UserContactRequest -> ChatInfo 'CTContactRequest
   ContactConnection :: PendingContactConnection -> ChatInfo 'CTContactConnection
 
@@ -86,7 +86,7 @@ chatInfoUpdatedAt :: ChatInfo c -> UTCTime
 chatInfoUpdatedAt = \case
   DirectChat Contact {updatedAt} -> updatedAt
   GroupChat GroupInfo {updatedAt} -> updatedAt
-  NotesChat updatedAt -> updatedAt
+  NotesChat NotesFolder {updatedAt} -> updatedAt
   ContactRequest UserContactRequest {updatedAt} -> updatedAt
   ContactConnection PendingContactConnection {updatedAt} -> updatedAt
 
@@ -94,7 +94,7 @@ chatInfoToRef :: ChatInfo c -> ChatRef
 chatInfoToRef = \case
   DirectChat Contact {contactId} -> ChatRef CTDirect contactId
   GroupChat GroupInfo {groupId} -> ChatRef CTGroup groupId
-  NotesChat {} -> ChatRef CTNotes 0
+  NotesChat NotesFolder {notesFolderId} -> ChatRef CTNotes notesFolderId
   ContactRequest UserContactRequest {contactRequestId} -> ChatRef CTContactRequest contactRequestId
   ContactConnection PendingContactConnection {pccConnId} -> ChatRef CTContactConnection pccConnId
 
@@ -106,7 +106,7 @@ chatInfoMembership = \case
 data JSONChatInfo
   = JCInfoDirect {contact :: Contact}
   | JCInfoGroup {groupInfo :: GroupInfo}
-  | JCInfoNotes {updatedAt :: UTCTime}
+  | JCInfoNotes {notesFolder :: NotesFolder}
   | JCInfoContactRequest {contactRequest :: UserContactRequest}
   | JCInfoContactConnection {contactConnection :: PendingContactConnection}
 
@@ -135,7 +135,7 @@ jsonAChatInfo :: JSONChatInfo -> AChatInfo
 jsonAChatInfo = \case
   JCInfoDirect c -> AChatInfo SCTDirect $ DirectChat c
   JCInfoGroup g -> AChatInfo SCTGroup $ GroupChat g
-  JCInfoNotes s -> AChatInfo SCTNotes $ NotesChat s
+  JCInfoNotes n -> AChatInfo SCTNotes $ NotesChat n
   JCInfoContactRequest g -> AChatInfo SCTContactRequest $ ContactRequest g
   JCInfoContactConnection c -> AChatInfo SCTContactConnection $ ContactConnection c
 
@@ -175,6 +175,7 @@ data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv
   CIGroupSnd :: CIDirection 'CTGroup 'MDSnd
   CIGroupRcv :: GroupMember -> CIDirection 'CTGroup 'MDRcv
+  CINote :: CIDirection 'CTNotes 'MDSnd
 
 deriving instance Show (CIDirection c d)
 
@@ -187,6 +188,7 @@ data JSONCIDirection
   | JCIDirectRcv
   | JCIGroupSnd
   | JCIGroupRcv {groupMember :: GroupMember}
+  | JCINote
   deriving (Show)
 
 jsonCIDirection :: CIDirection c d -> JSONCIDirection
@@ -195,6 +197,7 @@ jsonCIDirection = \case
   CIDirectRcv -> JCIDirectRcv
   CIGroupSnd -> JCIGroupSnd
   CIGroupRcv m -> JCIGroupRcv m
+  CINote -> JCINote
 
 jsonACIDirection :: JSONCIDirection -> ACIDirection
 jsonACIDirection = \case
@@ -202,6 +205,7 @@ jsonACIDirection = \case
   JCIDirectRcv -> ACID SCTDirect SMDRcv CIDirectRcv
   JCIGroupSnd -> ACID SCTGroup SMDSnd CIGroupSnd
   JCIGroupRcv m -> ACID SCTGroup SMDRcv $ CIGroupRcv m
+  JCINote -> ACID SCTNotes SMDSnd CINote
 
 data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
   deriving (Show)
@@ -398,6 +402,7 @@ data CIQDirection (c :: ChatType) where
   CIQDirectRcv :: CIQDirection 'CTDirect
   CIQGroupSnd :: CIQDirection 'CTGroup
   CIQGroupRcv :: Maybe GroupMember -> CIQDirection 'CTGroup -- member can be Nothing in case MsgRef has memberId that the user is not notified about yet
+  CIQNote :: CIQDirection 'CTNotes
 
 deriving instance Show (CIQDirection c)
 
@@ -410,6 +415,7 @@ jsonCIQDirection = \case
   CIQGroupSnd -> Just JCIGroupSnd
   CIQGroupRcv (Just m) -> Just $ JCIGroupRcv m
   CIQGroupRcv Nothing -> Nothing
+  CIQNote -> Just JCINote
 
 jsonACIQDirection :: Maybe JSONCIDirection -> ACIQDirection
 jsonACIQDirection = \case
@@ -417,6 +423,7 @@ jsonACIQDirection = \case
   Just JCIDirectRcv -> ACIQDirection SCTDirect CIQDirectRcv
   Just JCIGroupSnd -> ACIQDirection SCTGroup CIQGroupSnd
   Just (JCIGroupRcv m) -> ACIQDirection SCTGroup $ CIQGroupRcv (Just m)
+  Just JCINote -> ACIQDirection SCTNotes CIQNote
   Nothing -> ACIQDirection SCTGroup $ CIQGroupRcv Nothing
 
 quoteMsgDirection :: CIQDirection c -> MsgDirection
@@ -425,6 +432,7 @@ quoteMsgDirection = \case
   CIQDirectRcv -> MDRcv
   CIQGroupSnd -> MDSnd
   CIQGroupRcv _ -> MDRcv
+  CIQNote -> MDSnd
 
 data CIFile (d :: MsgDirection) = CIFile
   { fileId :: Int64,

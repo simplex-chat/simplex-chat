@@ -366,6 +366,7 @@ createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciCon
           CIQGroupSnd -> (Just True, Nothing)
           CIQGroupRcv (Just GroupMember {memberId}) -> (Just False, Just memberId)
           CIQGroupRcv Nothing -> (Just False, Nothing)
+          CIQNote -> (Just True, Nothing)
 
 createNewRcvChatItem :: DB.Connection -> User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> Maybe CITimed -> Bool -> UTCTime -> UTCTime -> IO (ChatItemId, Maybe (CIQuote c))
 createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, forwardedByMember} sharedMsgId_ ciContent timed live itemTs createdAt = do
@@ -491,12 +492,12 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
 
 getChatPreviews :: DB.Connection -> User -> Bool -> PaginationByTime -> ChatListQuery -> IO [Either StoreError AChat]
 getChatPreviews db user withPCC pagination query = do
-  notes <- getNotesChatPreview_ db user pagination query
   directChats <- findDirectChatPreviews_ db user pagination query
   groupChats <- findGroupChatPreviews_ db user pagination query
+  notesChats <- findNotesChatPreview_ db user pagination query
   cReqChats <- getContactRequestChatPreviews_ db user pagination query
   connChats <- if withPCC then getContactConnectionChatPreviews_ db user pagination query else pure []
-  let refs = sortTake $ concat [notes, directChats, groupChats, cReqChats, connChats]
+  let refs = sortTake $ concat [directChats, groupChats, notesChats, cReqChats, connChats]
   mapM (runExceptT <$> getChatPreview) refs
   where
     ts :: AChatPreviewData -> UTCTime
@@ -728,38 +729,50 @@ getGroupChatPreview_ db user (GroupChatPD _ groupId lastItemId_ stats) = do
     Nothing -> pure []
   pure $ AChat SCTGroup (Chat (GroupChat groupInfo) lastItem stats)
 
-getNotesChatPreview_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
-getNotesChatPreview_ db User {userId} _pagination = \case
-  CLQFilters {favorite = False, unread = False} -> query
-  _ -> pure []
+findNotesChatPreview_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
+findNotesChatPreview_ db User {userId} pagination clq = pure []
+
+getNotesChatPreview_ :: DB.Connection -> User -> ChatPreviewData 'CTNotes -> ExceptT StoreError IO AChat
+getNotesChatPreview_ = error "TODO: getNotesChatPreview_"
+
+-- this function can be changed so it never fails, not only avoid failure on invalid json
+toNoteChatItem :: UTCTime -> ChatItemRow :. QuoteRow -> Either StoreError (CChatItem 'CTNotes)
+toNoteChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)) :. quoteRow) =
+  chatItem $ fromRight invalid $ dbParseACIContent itemContentText
   where
-    query =
-      map toPreview
-        <$> DB.queryNamed
-          db
-          [sql|
-            SELECT
-              -- ChatItem
-              i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.shared_msg_id,
-              i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
-              -- ChatItemModeRow
-              i.timed_ttl, i.timed_delete_at, i.item_live,
-              -- MaybeCIFIleRow
-              f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
-            FROM chat_items i
-            LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-            WHERE i.user_id := :user_id AND i.notes_chat
-            ORDER BY ts DESC
-            LIMIT 1
-          |]
-          [":user_id" := userId]
-    toPreview :: ChatItemRow -> AChatPreviewData
-    toPreview (ci :. ciMode :. ciFile_) =
-      let lastItem = error "TODO: lastItem" :: CChatItem CTNotes
-          ts = error "TODO: ts" :: UTCTime
-          stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-          aChat = AChat SCTNotes $ Chat (NotesChat ts) [lastItem] stats
-       in ACPD SCTNotes $ NotesChatPD ts aChat
+    invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
+    chatItem itemContent = case (itemContent, itemStatus, fileStatus_) of
+      (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, Just (AFS SMDSnd fileStatus)) ->
+        Right $ cItem SMDSnd CINote ciStatus ciContent (maybeCIFile fileStatus)
+      (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, Nothing) ->
+        Right $ cItem SMDSnd CINote ciStatus ciContent Nothing
+      _ -> badItem
+    maybeCIFile :: CIFileStatus d -> Maybe (CIFile d)
+    maybeCIFile fileStatus =
+      case (fileId_, fileName_, fileSize_, fileProtocol_) of
+        (Just fileId, Just fileName, Just fileSize, Just fileProtocol) ->
+          let cfArgs = CFArgs <$> fileKey <*> fileNonce
+              fileSource = (`CryptoFile` cfArgs) <$> filePath
+           in Just CIFile {fileId, fileName, fileSize, fileSource, fileStatus, fileProtocol}
+        _ -> Nothing
+    cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTNotes d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTNotes
+    cItem d chatDir ciStatus content file =
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toNoteQuote quoteRow, reactions = [], file}
+    badItem = Left $ SEBadChatItem itemId
+    ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTNotes d
+    ciMeta content status =
+      let itemDeleted' = case itemDeleted of
+            DBCINotDeleted -> Nothing
+            _ -> Just (CIDeleted @'CTNotes deletedTs)
+          itemEdited' = fromMaybe False itemEdited
+       in mkCIMeta itemId content itemText status sharedMsgId itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs Nothing createdAt updatedAt
+    ciTimed :: Maybe CITimed
+    ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
+
+toNoteQuote :: QuoteRow -> Maybe (CIQuote 'CTNotes)
+toNoteQuote qr@(_, _, _, _, quotedSent) = toQuote qr $ quotedSent >>= direction
+  where
+    direction sent = if sent then Just CIQNote else Nothing
 
 getContactRequestChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of

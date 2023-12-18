@@ -327,6 +327,8 @@ type ContactName = Text
 
 type GroupName = Text
 
+type FolderName = Text
+
 optionalFullName :: ContactName -> Text -> Text
 optionalFullName displayName fullName
   | T.null fullName || displayName == fullName = ""
@@ -1520,6 +1522,21 @@ data XGrpMemIntroCont = XGrpMemIntroCont
   }
   deriving (Show)
 
+data NotesFolder = NotesFolder
+  { notesFolderId :: NotesFolderId,
+    userId :: UserId,
+    localDisplayName :: FolderName,
+    chatItemId :: Maybe Int64,
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime,
+    chatTs :: Maybe UTCTime,
+    favorite :: Bool,
+    unread :: Bool
+  }
+  deriving (Eq, Show)
+
+type NotesFolderId = Int64
+
 data ServerCfg p = ServerCfg
   { server :: ProtoServerWithAuth p,
     preset :: Bool,
@@ -1639,6 +1656,8 @@ $(JQ.deriveJSON defaultJSON ''UserInfo)
 $(JQ.deriveJSON defaultJSON ''Contact)
 
 $(JQ.deriveJSON defaultJSON ''ContactRef)
+
+$(JQ.deriveJSON defaultJSON ''NotesFolder)
 
 instance ProtocolTypeI p => ToJSON (ServerCfg p) where
   toEncoding = $(JQ.mkToEncoding defaultJSON ''ServerCfg)
