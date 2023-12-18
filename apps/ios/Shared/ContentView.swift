@@ -90,40 +90,16 @@ struct ContentView: View {
             logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
             switch (phase) {
             case .background:
-                // --- authentication
                 // also see .onChange(of: scenePhase) in SimpleXApp: on entering background
                 // it remembers enteredBackgroundAuthenticated and sets chatModel.contentViewAccessAuthenticated to false
                 automaticAuthenticationAttempted = false
                 canConnectViewCall = false
-                // authentication ---
-
-                if CallController.useCallKit() && chatModel.activeCall != nil {
-                    CallController.shared.shouldSuspendChat = true
-                } else {
-                    suspendChat()
-                    BGManager.shared.schedule()
-                }
-                NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
             case .active:
-                CallController.shared.shouldSuspendChat = false
-                let appState = AppChatState.shared.value
-
-                if appState != .stopped {
-                    startChatAndActivate {
-                        if appState.inactive && chatModel.chatRunning == true {
-                            updateChats()
-                            if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
-                                updateCallInvitations()
-                            }
-                        }
-                        canConnectViewCall = !prefPerformLA || contentAccessAuthenticationExtended || unlockedRecently()
-                    }
-                }
-
-                // --- authentication
+                canConnectViewCall = !prefPerformLA || contentAccessAuthenticationExtended || unlockedRecently()
+                
                 // condition `!chatModel.contentViewAccessAuthenticated` is required for when authentication is enabled in settings or on initial notice
                 if prefPerformLA && !chatModel.contentViewAccessAuthenticated {
-                    if appState != .stopped {
+                    if AppChatState.shared.value != .stopped {
                         if contentAccessAuthenticationExtended {
                             chatModel.contentViewAccessAuthenticated = true
                         } else {
@@ -140,7 +116,6 @@ struct ContentView: View {
                         chatModel.contentViewAccessAuthenticated = contentAccessAuthenticationExtended
                     }
                 }
-                // authentication ---
             default:
                 break
             }
@@ -240,33 +215,6 @@ struct ContentView: View {
             return ProcessInfo.processInfo.systemUptime - lastSuccessfulUnlock < 2
         } else {
             return false
-        }
-    }
-
-    private func updateChats() {
-        do {
-            let chats = try apiGetChats()
-            chatModel.updateChats(with: chats)
-            if let id = chatModel.chatId,
-               let chat = chatModel.getChat(id) {
-                loadChat(chat: chat)
-            }
-            if let ncr = chatModel.ntfContactRequest {
-                chatModel.ntfContactRequest = nil
-                if case let .contactRequest(contactRequest) = chatModel.getChat(ncr.chatId)?.chatInfo {
-                    Task { await acceptContactRequest(incognito: ncr.incognito, contactRequest: contactRequest) }
-                }
-            }
-        } catch let error {
-            logger.error("apiGetChats: cannot update chats \(responseError(error))")
-        }
-    }
-
-    private func updateCallInvitations() {
-        do {
-            try refreshCallInvitations()
-        } catch let error {
-            logger.error("apiGetCallInvitations: cannot update call invitations \(responseError(error))")
         }
     }
 

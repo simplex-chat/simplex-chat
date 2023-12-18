@@ -52,11 +52,35 @@ struct SimpleXApp: App {
                     logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
                     switch (phase) {
                     case .background:
+                        // --- authentication
                         // see ContentView .onChange(of: scenePhase) for remaining authentication logic
                         if chatModel.contentViewAccessAuthenticated {
                             enteredBackgroundAuthenticated = ProcessInfo.processInfo.systemUptime
                         }
                         chatModel.contentViewAccessAuthenticated = false
+                        // authentication ---
+
+                        if CallController.useCallKit() && chatModel.activeCall != nil {
+                            CallController.shared.shouldSuspendChat = true
+                        } else {
+                            suspendChat()
+                            BGManager.shared.schedule()
+                        }
+                        NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
+                    case .active:
+                        CallController.shared.shouldSuspendChat = false
+                        let appState = AppChatState.shared.value
+
+                        if appState != .stopped {
+                            startChatAndActivate {
+                                if appState.inactive && chatModel.chatRunning == true {
+                                    updateChats()
+                                    if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
+                                        updateCallInvitations()
+                                    }
+                                }
+                            }
+                        }
                     default:
                         break
                     }
@@ -94,6 +118,33 @@ struct SimpleXApp: App {
             return ProcessInfo.processInfo.systemUptime - enteredBackgroundAuthenticated >= delay
         } else {
             return true
+        }
+    }
+
+    private func updateChats() {
+        do {
+            let chats = try apiGetChats()
+            chatModel.updateChats(with: chats)
+            if let id = chatModel.chatId,
+               let chat = chatModel.getChat(id) {
+                loadChat(chat: chat)
+            }
+            if let ncr = chatModel.ntfContactRequest {
+                chatModel.ntfContactRequest = nil
+                if case let .contactRequest(contactRequest) = chatModel.getChat(ncr.chatId)?.chatInfo {
+                    Task { await acceptContactRequest(incognito: ncr.incognito, contactRequest: contactRequest) }
+                }
+            }
+        } catch let error {
+            logger.error("apiGetChats: cannot update chats \(responseError(error))")
+        }
+    }
+
+    private func updateCallInvitations() {
+        do {
+            try refreshCallInvitations()
+        } catch let error {
+            logger.error("apiGetCallInvitations: cannot update call invitations \(responseError(error))")
         }
     }
 }
