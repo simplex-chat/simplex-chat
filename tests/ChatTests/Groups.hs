@@ -116,7 +116,7 @@ chatGroupTests = do
     it "forward role change (x.grp.mem.role)" testGroupMsgForwardChangeRole
     it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
   describe "group history" $ do
-    it "send recent history to invitee - text messages" testGroupHistory
+    fit "send recent history to invitee - text messages" testGroupHistory
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange

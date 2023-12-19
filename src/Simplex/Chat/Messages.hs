@@ -370,6 +370,9 @@ data CIQuote (c :: ChatType) = CIQuote
   }
   deriving (Show)
 
+quoteItemId :: CIQuote c -> Maybe ChatItemId
+quoteItemId CIQuote {itemId} = itemId
+
 data CIReaction (c :: ChatType) (d :: MsgDirection) = CIReaction
   { chatDir :: CIDirection c d,
     chatItem :: CChatItem c,

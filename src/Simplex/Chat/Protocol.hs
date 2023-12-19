@@ -31,7 +31,6 @@ import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Maybe (fromMaybe)
-import Data.Set (Set)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -150,7 +149,7 @@ instance StrEncoding AppMessageBinary where
     pure AppMessageBinary {tag, msgId, body}
 
 newtype SharedMsgId = SharedMsgId ByteString
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Show)
 
 instance FromField SharedMsgId where fromField f = SharedMsgId <$> fromField f
 
@@ -288,24 +287,6 @@ isForwardedGroupMsg ev = case ev of
 forwardedGroupMsg :: forall e. MsgEncodingI e => ChatMessage e -> Maybe (ChatMessage 'Json)
 forwardedGroupMsg msg@ChatMessage {chatMsgEvent} = case encoding @e of
   SJson | isForwardedGroupMsg chatMsgEvent -> Just msg
-  _ -> Nothing
-
-msgIncludedInHistory :: forall e. MsgEncodingI e => ChatMessage e -> Set SharedMsgId -> Maybe (ChatMessage 'Json)
-msgIncludedInHistory msg@ChatMessage {chatMsgEvent} refMsgIds = case encoding @e of
-  SJson -> case chatMsgEvent of
-    XMsgNew mc -> case mcExtMsgContent mc of
-      ExtMsgContent {file = Just FileInvitation {fileInline = Just _}} -> Nothing
-      _ -> Just msg
-    XMsgFileDescr msgId _ -> refIncluded msgId
-    XMsgUpdate {msgId} -> refIncluded msgId
-    XMsgDel msgId _ -> refIncluded msgId
-    XMsgReact {msgId} -> refIncluded msgId
-    XFileCancel msgId -> refIncluded msgId
-    _ -> Nothing
-    where
-      refIncluded msgId
-        | msgId `elem` refMsgIds = Just msg
-        | otherwise = Nothing
   _ -> Nothing
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
@@ -469,6 +450,18 @@ durationText duration =
     with0 n
       | n <= 9 = '0' : show n
       | otherwise = show n
+
+msgContentHasText :: MsgContent -> Bool
+msgContentHasText = \case
+  MCText t -> hasText t
+  MCLink {text} -> hasText text
+  MCImage {text} -> hasText text
+  MCVideo {text} -> hasText text
+  MCVoice {text} -> hasText text
+  MCFile t -> hasText t
+  MCUnknown {text} -> hasText text
+  where
+    hasText = not . T.null
 
 isVoice :: MsgContent -> Bool
 isVoice = \case

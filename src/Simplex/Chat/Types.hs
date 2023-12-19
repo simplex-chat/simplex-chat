@@ -1012,9 +1012,11 @@ data XFTPRcvFile = XFTPRcvFile
   }
   deriving (Eq, Show)
 
+type RcvFileDescrText = Text
+
 data RcvFileDescr = RcvFileDescr
   { fileDescrId :: Int64,
-    fileDescrText :: Text,
+    fileDescrText :: RcvFileDescrText,
     fileDescrPartNo :: Int,
     fileDescrComplete :: Bool
   }

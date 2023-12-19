@@ -686,7 +686,7 @@ processChatCommand = \case
               withStore $ \db -> getDirectChatItem db user chatId quotedItemId
             (origQmc, qd, sent) <- quoteData qci
             let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Nothing}
-                qmc = quoteContent origQmc file
+                qmc = quoteContent mc origQmc file
                 quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
             pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
           where
@@ -700,13 +700,13 @@ processChatCommand = \case
       assertUserGroupRole gInfo GRAuthor
       send g
       where
-        send g@(Group gInfo@GroupInfo {groupId, membership} ms)
+        send g@(Group gInfo@GroupInfo {groupId} ms)
           | isVoice mc && not (groupFeatureAllowed SGFVoice gInfo) = notAllowedError GFVoice
           | not (isVoice mc) && isJust file_ && not (groupFeatureAllowed SGFFiles gInfo) = notAllowedError GFFiles
           | otherwise = do
               (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
               timed_ <- sndGroupCITimed live gInfo itemTTL
-              (msgContainer, quotedItem_) <- prepareMsg fInv_ timed_ membership
+              (msgContainer, quotedItem_) <- prepareGroupMsg user gInfo mc quotedItemId_ fInv_ timed_ live
               (msg@SndMessage {sharedMsgId}, sentToMembers) <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
               ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
               withStore' $ \db ->
@@ -746,51 +746,9 @@ processChatCommand = \case
                 void . withStore' $ \db -> createSndGroupInlineFT db m conn ft
                 sendMemberFileInline m conn ft sharedMsgId
             processMember _ = pure ()
-        prepareMsg :: Maybe FileInvitation -> Maybe CITimed -> GroupMember -> m (MsgContainer, Maybe (CIQuote 'CTGroup))
-        prepareMsg fInv_ timed_ membership = case quotedItemId_ of
-          Nothing -> pure (MCSimple (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
-          Just quotedItemId -> do
-            CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
-              withStore $ \db -> getGroupChatItem db user chatId quotedItemId
-            (origQmc, qd, sent, GroupMember {memberId}) <- quoteData qci membership
-            let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
-                qmc = quoteContent origQmc file
-                quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
-            pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
-          where
-            quoteData :: ChatItem c d -> GroupMember -> m (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
-            quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} _ = throwChatError CEInvalidQuote
-            quoteData ChatItem {chatDir = CIGroupSnd, content = CISndMsgContent qmc} membership' = pure (qmc, CIQGroupSnd, True, membership')
-            quoteData ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
-            quoteData _ _ = throwChatError CEInvalidQuote
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
-      quoteContent :: forall d. MsgContent -> Maybe (CIFile d) -> MsgContent
-      quoteContent qmc ciFile_
-        | replaceContent = MCText qTextOrFile
-        | otherwise = case qmc of
-            MCImage _ image -> MCImage qTextOrFile image
-            MCFile _ -> MCFile qTextOrFile
-            -- consider same for voice messages
-            -- MCVoice _ voice -> MCVoice qTextOrFile voice
-            _ -> qmc
-        where
-          -- if the message we're quoting with is one of the "large" MsgContents
-          -- we replace the quote's content with MCText
-          replaceContent = case mc of
-            MCText _ -> False
-            MCFile _ -> False
-            MCLink {} -> True
-            MCImage {} -> True
-            MCVideo {} -> True
-            MCVoice {} -> False
-            MCUnknown {} -> True
-          qText = msgContentText qmc
-          getFileName :: CIFile d -> String
-          getFileName CIFile {fileName} = fileName
-          qFileName = maybe qText (T.pack . getFileName) ciFile_
-          qTextOrFile = if T.null qText then qFileName else qText
       xftpSndFileTransfer :: User -> CryptoFile -> Integer -> Int -> ContactOrGroup -> m (FileInvitation, CIFile 'MDSnd, FileTransferMeta)
       xftpSndFileTransfer user file@(CryptoFile filePath cfArgs) fileSize n contactOrGroup = do
         let fileName = takeFileName filePath
@@ -2427,6 +2385,50 @@ processChatCommand = \case
         cReqHashes = bimap hash hash cReqSchemas
         hash = ConnReqUriHash . C.sha256Hash . strEncode
 
+prepareGroupMsg :: forall m. ChatMonad m => User -> GroupInfo -> MsgContent -> Maybe ChatItemId -> Maybe FileInvitation -> Maybe CITimed -> Bool -> m (MsgContainer, Maybe (CIQuote 'CTGroup))
+prepareGroupMsg user GroupInfo {groupId, membership} mc quotedItemId_ fInv_ timed_ live = case quotedItemId_ of
+  Nothing -> pure (MCSimple (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Nothing)
+  Just quotedItemId -> do
+    CChatItem _ qci@ChatItem {meta = CIMeta {itemTs, itemSharedMsgId}, formattedText, file} <-
+      withStore $ \db -> getGroupChatItem db user groupId quotedItemId
+    (origQmc, qd, sent, GroupMember {memberId}) <- quoteData qci membership
+    let msgRef = MsgRef {msgId = itemSharedMsgId, sentAt = itemTs, sent, memberId = Just memberId}
+        qmc = quoteContent mc origQmc file
+        quotedItem = CIQuote {chatDir = qd, itemId = Just quotedItemId, sharedMsgId = itemSharedMsgId, sentAt = itemTs, content = qmc, formattedText}
+    pure (MCQuote QuotedMsg {msgRef, content = qmc} (ExtMsgContent mc fInv_ (ttl' <$> timed_) (justTrue live)), Just quotedItem)
+  where
+    quoteData :: ChatItem c d -> GroupMember -> m (MsgContent, CIQDirection 'CTGroup, Bool, GroupMember)
+    quoteData ChatItem {meta = CIMeta {itemDeleted = Just _}} _ = throwChatError CEInvalidQuote
+    quoteData ChatItem {chatDir = CIGroupSnd, content = CISndMsgContent qmc} membership' = pure (qmc, CIQGroupSnd, True, membership')
+    quoteData ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
+    quoteData _ _ = throwChatError CEInvalidQuote
+
+quoteContent :: forall d. MsgContent -> MsgContent -> Maybe (CIFile d) -> MsgContent
+quoteContent mc qmc ciFile_
+  | replaceContent = MCText qTextOrFile
+  | otherwise = case qmc of
+      MCImage _ image -> MCImage qTextOrFile image
+      MCFile _ -> MCFile qTextOrFile
+      -- consider same for voice messages
+      -- MCVoice _ voice -> MCVoice qTextOrFile voice
+      _ -> qmc
+  where
+    -- if the message we're quoting with is one of the "large" MsgContents
+    -- we replace the quote's content with MCText
+    replaceContent = case mc of
+      MCText _ -> False
+      MCFile _ -> False
+      MCLink {} -> True
+      MCImage {} -> True
+      MCVideo {} -> True
+      MCVoice {} -> False
+      MCUnknown {} -> True
+    qText = msgContentText qmc
+    getFileName :: CIFile d -> String
+    getFileName CIFile {fileName} = fileName
+    qFileName = maybe qText (T.pack . getFileName) ciFile_
+    qTextOrFile = if T.null qText then qFileName else qText
+
 assertDirectAllowed :: ChatMonad m => User -> MsgDirection -> Contact -> CMEventTag e -> m ()
 assertDirectAllowed user dir ct event =
   unless (allowedChatEvent || anyDirectOrUsed ct) . unlessM directMessagesAllowed $
@@ -2604,7 +2606,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
         -- marking file as accepted and reading description in the same transaction
         -- to prevent race condition with appending description
         ci <- xftpAcceptRcvFT db user fileId filePath
-        rfd <- getRcvFileDescrByFileId db fileId
+        rfd <- getRcvFileDescrByRcvFileId db fileId
         pure (ci, rfd)
       receiveViaCompleteFD user fileId rfd cryptoArgs
       pure ci
@@ -3581,9 +3583,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                     let events = map (XGrpMemIntro . memberInfo . reMember) shuffledIntros
                     forM_ (L.nonEmpty events) $ \events' ->
                       sendBatchedDirectMessages conn events' (GroupId groupId)
-                  else
-                    forM_ shuffledIntros $ \intro ->
-                      processIntro intro `catchChatError` (toView . CRChatError (Just user))
+                  else forM_ shuffledIntros $ \intro ->
+                    processIntro intro `catchChatError` (toView . CRChatError (Just user))
               shuffleIntros :: [GroupMemberIntro] -> IO [GroupMemberIntro]
               shuffleIntros intros = do
                 let (admins, others) = partition isAdmin intros
@@ -3602,10 +3603,92 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
               sendHistory =
                 when (isCompatibleRange (memberChatVRange' m) batchSendVRange) $ do
-                  (errs, events) <- withStore' $ \db -> getGroupMsgsHistory db user gInfo 300
-                  toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
+                  (errs, items) <- withStore' $ \db -> getGroupHistoryLastItems db user gInfo 100
+                  (errs', events) <- collectForwardEvents items [] []
+                  toView $ CRChatErrors (Just user) (map ChatErrorStore errs <> errs' )
                   forM_ (L.nonEmpty events) $ \events' ->
                     sendBatchedDirectMessages conn events' (GroupId groupId)
+              collectForwardEvents :: [CChatItem 'CTGroup] -> [ChatError] -> [ChatMsgEvent 'Json] -> m ([ChatError], [ChatMsgEvent 'Json])
+              collectForwardEvents [] errs evts = pure (errs, evts)
+              collectForwardEvents (ci : items) errs evts =
+                flip catchChatError (\e -> collectForwardEvents items (e : errs) evts) $ case ci of
+                  (CChatItem SMDRcv ChatItem {chatDir = CIGroupRcv sender, meta, content = CIRcvMsgContent mc, quotedItem, file}) -> do
+                    fInvDescr_ <- join <$> forM file getRcvFileInvDescr
+                    if isNothing fInvDescr_ && not (msgContentHasText mc)
+                      then collectForwardEvents items errs evts
+                      else do
+                        let CIMeta {itemTs, itemSharedMsgId, itemTimed} = meta
+                            quotedItemId_ = quoteItemId =<< quotedItem
+                            fInv_ = fst <$> fInvDescr_
+                        (msgContainer, _) <- prepareGroupMsg user gInfo mc quotedItemId_ fInv_ itemTimed False
+                        let senderVRange = memberChatVRange' sender
+                            xMsgNewChatMsg = ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent = XMsgNew msgContainer}
+                        fileDescrEvents <- case (snd <$> fInvDescr_, itemSharedMsgId) of
+                          (Just fileDescrText, Just msgId) -> prepareFileDescrEvents fileDescrText msgId
+                          _ -> pure []
+                        let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
+                            GroupMember {memberId} = sender
+                            msgForwardEvents = map (\cm -> XGrpMsgForward memberId cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
+                        collectForwardEvents items errs (msgForwardEvents <> evts)
+                    where
+                      getRcvFileInvDescr :: CIFile 'MDRcv -> m (Maybe (FileInvitation, RcvFileDescrText))
+                      getRcvFileInvDescr CIFile {fileId, fileName, fileSize, fileProtocol, fileStatus}
+                        | fileProtocol /= FPXFTP || fileStatus == CIFSRcvCancelled = pure Nothing
+                        | otherwise = do
+                          RcvFileDescr {fileDescrText, fileDescrComplete} <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
+                          if fileDescrComplete
+                            then do
+                              let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
+                                  fInv = xftpFileInvitation fileName fileSize fInvDescr
+                              pure $ Just (fInv, fileDescrText)
+                            else pure Nothing
+                  (CChatItem SMDSnd ChatItem {chatDir = CIGroupSnd, meta, content = CISndMsgContent mc, quotedItem, file}) -> do
+                    fInvDescr_ <- join <$> forM file getSndFileInvDescr
+                    if isNothing fInvDescr_ && not (msgContentHasText mc)
+                      then collectForwardEvents items errs evts
+                      else do
+                        let CIMeta {itemTs, itemSharedMsgId, itemTimed} = meta
+                            quotedItemId_ = quoteItemId =<< quotedItem
+                            fInv_ = fst <$> fInvDescr_
+                        (msgContainer, _) <- prepareGroupMsg user gInfo mc quotedItemId_ fInv_ itemTimed False
+                        let senderVRange = memberChatVRange' membership
+                            xMsgNewChatMsg = ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent = XMsgNew msgContainer}
+                        fileDescrEvents <- case (snd <$> fInvDescr_, itemSharedMsgId) of
+                          (Just fileDescrText, Just msgId) -> prepareFileDescrEvents fileDescrText msgId
+                          _ -> pure []
+                        let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
+                            GroupMember {memberId} = membership
+                            msgForwardEvents = map (\cm -> XGrpMsgForward memberId cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
+                        collectForwardEvents items errs (msgForwardEvents <> evts)
+                    where
+                      getSndFileInvDescr :: CIFile 'MDSnd -> m (Maybe (FileInvitation, RcvFileDescrText))
+                      getSndFileInvDescr CIFile {fileId, fileName, fileSize, fileProtocol, fileStatus}
+                        | fileProtocol /= FPXFTP || fileStatus == CIFSSndCancelled = pure Nothing
+                        | otherwise = do
+                          -- can also lookup in extra_xftp_file_descriptions, though it can be empty;
+                          -- would be best if snd file had a single rcv description for all members saved in files table
+                          RcvFileDescr {fileDescrText, fileDescrComplete} <- withStore $ \db -> getRcvFileDescrBySndFileId db fileId
+                          if fileDescrComplete
+                            then do
+                              let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
+                                  fInv = xftpFileInvitation fileName fileSize fInvDescr
+                              pure $ Just (fInv, fileDescrText)
+                            else pure Nothing
+                  _ -> collectForwardEvents items errs evts
+                where
+                  prepareFileDescrEvents :: RcvFileDescrText -> SharedMsgId -> m [ChatMsgEvent 'Json]
+                  prepareFileDescrEvents fileDescrText msgId = do
+                    partSize <- asks $ xftpDescrPartSize . config
+                    pure $ prepareParts 1 partSize fileDescrText []
+                    where
+                      prepareParts partNo partSize rfdText events = do
+                        let (part, rest) = T.splitAt partSize rfdText
+                            complete = T.null rest
+                            fileDescr = FileDescr {fileDescrText = part, fileDescrPartNo = partNo, fileDescrComplete = complete}
+                            events' = XMsgFileDescr {msgId, fileDescr} : events
+                        if complete
+                          then reverse events'
+                          else prepareParts (partNo + 1) partSize rest events'
           _ -> do
             let memCategory = memberCategory m
             withStore' (\db -> getViaGroupContact db user m) >>= \case
@@ -5226,10 +5309,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         processForwardedMsg :: GroupMember -> ChatMessage 'Json -> m ()
         processForwardedMsg author chatMsg = do
           let body = LB.toStrict $ J.encode msg
-          -- TODO [batch send] save broker ts (here - msgTs) on messages received via forward to include in history
-          -- consider adding chat_ts to messages table: as of now, messages received via forward
-          -- wouldn't have a record in msg_deliveries to retrieve it from;
-          -- practically it's not a problem if members join via a single same admin (e.g. directory bot)
           rcvMsg@RcvMessage {chatMsgEvent = ACME _ event} <- saveGroupFwdRcvMsg user groupId m author body chatMsg
           case event of
             XMsgNew mc -> memberCanSend author $ newGroupContentMessage gInfo author mc rcvMsg msgTs
@@ -5556,21 +5635,21 @@ sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
       withStore' $ \db -> forM_ sndMsgs $ \SndMessage {msgId} ->
         createSndMsgDelivery db sndMsgDelivery msgId
   where
-  createSndMessages :: m [Either StoreError SndMessage]
-  createSndMessages = do
-    gVar <- asks idsDrg
-    ChatConfig {chatVRange} <- asks config
-    withStore' $ \db -> forM (toList events) $ \event ->
-      runExceptT $ createNewSndMessage db gVar connOrGroupId (newMsg chatVRange event)
-  newMsg chatVRange chatMsgEvent sharedMsgId =
-    let msgBody = encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
-      in NewMessage {chatMsgEvent, msgBody}
-  partitionBatches :: [ChatMessageBatch] -> ([SndMessage], [MessagesBatch])
-  partitionBatches = foldr partition' ([], [])
-    where
-      partition' :: ChatMessageBatch -> ([SndMessage], [MessagesBatch]) -> ([SndMessage], [MessagesBatch])
-      partition' (CMBMessages msgBatch) (largeMsgs, msgBatches) = (largeMsgs, msgBatch : msgBatches)
-      partition' (CMBLargeMessage largeMsg) (largeMsgs, msgBatches) = (largeMsg : largeMsgs, msgBatches)
+    createSndMessages :: m [Either StoreError SndMessage]
+    createSndMessages = do
+      gVar <- asks idsDrg
+      ChatConfig {chatVRange} <- asks config
+      withStore' $ \db -> forM (toList events) $ \event ->
+        runExceptT $ createNewSndMessage db gVar connOrGroupId (newMsg chatVRange event)
+    newMsg chatVRange chatMsgEvent sharedMsgId =
+      let msgBody = encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
+       in NewMessage {chatMsgEvent, msgBody}
+    partitionBatches :: [ChatMessageBatch] -> ([SndMessage], [MessagesBatch])
+    partitionBatches = foldr partition' ([], [])
+      where
+        partition' :: ChatMessageBatch -> ([SndMessage], [MessagesBatch]) -> ([SndMessage], [MessagesBatch])
+        partition' (CMBMessages msgBatch) (largeMsgs, msgBatches) = (largeMsgs, msgBatch : msgBatches)
+        partition' (CMBLargeMessage largeMsg) (largeMsgs, msgBatches) = (largeMsg : largeMsgs, msgBatches)
 
 data MessagesBatch = MessagesBatch ByteString [SndMessage]
 

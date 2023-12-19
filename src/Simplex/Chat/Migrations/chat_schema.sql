@@ -812,7 +812,3 @@ CREATE INDEX idx_msg_deliveries_agent_msg_id ON "msg_deliveries"(
   connection_id,
   agent_msg_id
 );
-CREATE INDEX idx_messages_group_id_created_at ON messages(
-  group_id,
-  created_at
-);
