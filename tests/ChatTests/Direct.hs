@@ -1519,7 +1519,7 @@ testDeleteUser =
       -- no connection authorization error - connection wasn't deleted
       (alice </)
 
-      -- cannot delete new active user wher
+      -- cannot delete active user when there is another user
 
       alice ##> "/create user alisa2"
       showActiveUser alice "alisa2"
