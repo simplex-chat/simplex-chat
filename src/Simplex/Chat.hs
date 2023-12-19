@@ -547,7 +547,7 @@ processChatCommand = \case
     ask >>= stopChatController
     pure CRChatStopped
   APIActivateChat backgroundMode -> withUser $ \_ -> do
-    when restoreChat restoreCalls
+    unless backgroundMode restoreCalls
     withAgent (`foregroundAgent` backgroundMode)
     unless backgroundMode $ do
       users <- withStoreCtx' (Just "APIActivateChat, getUsers") getUsers
