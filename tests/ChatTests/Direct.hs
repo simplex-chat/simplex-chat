@@ -1550,7 +1550,7 @@ testDeleteUser =
 
       alice <##> dan
 
-      -- delete last active user deleting SMP queues
+      -- delete last active user
 
       alice ##> "/delete user alisa2 del_smp=off"
       alice <### ["ok", "completed deleting user"]
