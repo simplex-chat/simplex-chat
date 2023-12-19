@@ -116,7 +116,14 @@ chatGroupTests = do
     it "forward role change (x.grp.mem.role)" testGroupMsgForwardChangeRole
     it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
   describe "group history" $ do
-    fit "send recent history to invitee - text messages" testGroupHistory
+    it "text messages" testGroupHistory
+    it "host's file" testGroupHistoryHostFile
+    it "member's file" testGroupHistoryMemberFile
+    it "large file with text" testGroupHistoryLargeFile
+    it "multiple files" testGroupHistoryMultipleFiles
+    it "cancelled files are not attached (text message is still sent)" testGroupHistoryFileCancel
+    it "cancelled files without text are excluded" testGroupHistoryFileCancelNoText
+    it "quoted messages" testGroupHistoryQuotes
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -4160,3 +4167,436 @@ testGroupHistory =
       [alice, cath] *<# "#team bob> 2"
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
+
+testGroupHistoryHostFile :: HasCallStack => FilePath -> IO ()
+testGroupHistoryHostFile =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      createGroup2 "team" alice bob
+
+      alice #> "/f #team ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      alice <## "completed uploading file 1 (test.jpg) for #team"
+
+      bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]",
+                   "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/fr 1 ./tests/tmp"
+      cath
+        <### [ "saving file 1 from alice to ./tests/tmp/test.jpg",
+               "started receiving file 1 (test.jpg) from alice"
+             ]
+      cath <## "completed receiving file 1 (test.jpg) from alice"
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testGroupHistoryMemberFile :: HasCallStack => FilePath -> IO ()
+testGroupHistoryMemberFile =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      createGroup2 "team" alice bob
+
+      bob #> "/f #team ./tests/fixtures/test.jpg"
+      bob <## "use /fc 1 to cancel sending"
+      bob <## "completed uploading file 1 (test.jpg) for #team"
+
+      alice <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]",
+                   "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/fr 1 ./tests/tmp"
+      cath
+        <### [ "saving file 1 from bob to ./tests/tmp/test.jpg",
+               "started receiving file 1 (test.jpg) from bob"
+             ]
+      cath <## "completed receiving file 1 (test.jpg) from bob"
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testGroupHistoryLargeFile :: HasCallStack => FilePath -> IO ()
+testGroupHistoryLargeFile =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      xftpCLI ["rand", "./tests/tmp/testfile", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile"]
+
+      createGroup2 "team" alice bob
+
+      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"hello\",\"type\":\"file\"}}"
+      bob <# "#team hello"
+      bob <# "/f #team ./tests/tmp/testfile"
+      bob <## "use /fc 1 to cancel sending"
+      bob <## "completed uploading file 1 (testfile) for #team"
+
+      alice <# "#team bob> hello"
+      alice <# "#team bob> sends file testfile (17.0 MiB / 17825792 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team bob> hello [>>]",
+                   WithTime "#team bob> sends file testfile (17.0 MiB / 17825792 bytes) [>>]",
+                   "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/fr 1 ./tests/tmp"
+      cath
+        <### [ "saving file 1 from bob to ./tests/tmp/testfile_1",
+               "started receiving file 1 (testfile) from bob"
+             ]
+      cath <## "completed receiving file 1 (testfile) from bob"
+      src <- B.readFile "./tests/tmp/testfile"
+      dest <- B.readFile "./tests/tmp/testfile_1"
+      dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testGroupHistoryMultipleFiles :: HasCallStack => FilePath -> IO ()
+testGroupHistoryMultipleFiles =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      xftpCLI ["rand", "./tests/tmp/testfile_bob", "2mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_bob"]
+      xftpCLI ["rand", "./tests/tmp/testfile_alice", "1mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_alice"]
+
+      createGroup2 "team" alice bob
+
+      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}"
+      bob <# "#team hi alice"
+      bob <# "/f #team ./tests/tmp/testfile_bob"
+      bob <## "use /fc 1 to cancel sending"
+      bob <## "completed uploading file 1 (testfile_bob) for #team"
+
+      alice <# "#team bob> hi alice"
+      alice <# "#team bob> sends file testfile_bob (2.0 MiB / 2097152 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      threadDelay 1000000
+
+      alice ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}"
+      alice <# "#team hey bob"
+      alice <# "/f #team ./tests/tmp/testfile_alice"
+      alice <## "use /fc 2 to cancel sending"
+      alice <## "completed uploading file 2 (testfile_alice) for #team"
+
+      bob <# "#team alice> hey bob"
+      bob <# "#team alice> sends file testfile_alice (1.0 MiB / 1048576 bytes)"
+      bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team bob> hi alice [>>]",
+                   WithTime "#team bob> sends file testfile_bob (2.0 MiB / 2097152 bytes) [>>]",
+                   "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                   WithTime "#team alice> hey bob [>>]",
+                   WithTime "#team alice> sends file testfile_alice (1.0 MiB / 1048576 bytes) [>>]",
+                   "use /fr 2 [<dir>/ | <path>] to receive it [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/fr 1 ./tests/tmp"
+      cath
+        <### [ "saving file 1 from bob to ./tests/tmp/testfile_bob_1",
+               "started receiving file 1 (testfile_bob) from bob"
+             ]
+      cath <## "completed receiving file 1 (testfile_bob) from bob"
+      srcBob <- B.readFile "./tests/tmp/testfile_bob"
+      destBob <- B.readFile "./tests/tmp/testfile_bob_1"
+      destBob `shouldBe` srcBob
+
+      cath ##> "/fr 2 ./tests/tmp"
+      cath
+        <### [ "saving file 2 from alice to ./tests/tmp/testfile_alice_1",
+               "started receiving file 2 (testfile_alice) from alice"
+             ]
+      cath <## "completed receiving file 2 (testfile_alice) from alice"
+      srcAlice <- B.readFile "./tests/tmp/testfile_alice"
+      destAlice <- B.readFile "./tests/tmp/testfile_alice_1"
+      destAlice `shouldBe` srcAlice
+
+      cath ##> "/_get chat #1 count=100"
+      r <- chatF <$> getTermLine cath
+      r
+        `shouldContain` [ ((0, "hi alice"), Just "./tests/tmp/testfile_bob_1"),
+                          ((0, "hey bob"), Just "./tests/tmp/testfile_alice_1")
+                        ]
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testGroupHistoryFileCancel :: HasCallStack => FilePath -> IO ()
+testGroupHistoryFileCancel =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      xftpCLI ["rand", "./tests/tmp/testfile_bob", "2mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_bob"]
+      xftpCLI ["rand", "./tests/tmp/testfile_alice", "1mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_alice"]
+
+      createGroup2 "team" alice bob
+
+      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}"
+      bob <# "#team hi alice"
+      bob <# "/f #team ./tests/tmp/testfile_bob"
+      bob <## "use /fc 1 to cancel sending"
+      bob <## "completed uploading file 1 (testfile_bob) for #team"
+
+      alice <# "#team bob> hi alice"
+      alice <# "#team bob> sends file testfile_bob (2.0 MiB / 2097152 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      bob ##> "/fc 1"
+      bob <## "cancelled sending file 1 (testfile_bob) to alice"
+      alice <## "bob cancelled sending file 1 (testfile_bob)"
+
+      threadDelay 1000000
+
+      alice ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}"
+      alice <# "#team hey bob"
+      alice <# "/f #team ./tests/tmp/testfile_alice"
+      alice <## "use /fc 2 to cancel sending"
+      alice <## "completed uploading file 2 (testfile_alice) for #team"
+
+      bob <# "#team alice> hey bob"
+      bob <# "#team alice> sends file testfile_alice (1.0 MiB / 1048576 bytes)"
+      bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+
+      alice ##> "/fc 2"
+      alice <## "cancelled sending file 2 (testfile_alice) to bob"
+      bob <## "alice cancelled sending file 2 (testfile_alice)"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team bob> hi alice [>>]",
+                   WithTime "#team alice> hey bob [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testGroupHistoryFileCancelNoText :: HasCallStack => FilePath -> IO ()
+testGroupHistoryFileCancelNoText =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      xftpCLI ["rand", "./tests/tmp/testfile_bob", "2mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_bob"]
+      xftpCLI ["rand", "./tests/tmp/testfile_alice", "1mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_alice"]
+
+      createGroup2 "team" alice bob
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+
+      -- bob file
+
+      bob #> "/f #team ./tests/tmp/testfile_bob"
+      bob <## "use /fc 1 to cancel sending"
+      bob <## "completed uploading file 1 (testfile_bob) for #team"
+
+      alice <# "#team bob> sends file testfile_bob (2.0 MiB / 2097152 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      bob ##> "/fc 1"
+      bob <## "cancelled sending file 1 (testfile_bob) to alice"
+      alice <## "bob cancelled sending file 1 (testfile_bob)"
+
+      -- alice file
+
+      alice #> "/f #team ./tests/tmp/testfile_alice"
+      alice <## "use /fc 2 to cancel sending"
+      alice <## "completed uploading file 2 (testfile_alice) for #team"
+
+      bob <# "#team alice> sends file testfile_alice (1.0 MiB / 1048576 bytes)"
+      bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+
+      alice ##> "/fc 2"
+      alice <## "cancelled sending file 2 (testfile_alice) to bob"
+      bob <## "alice cancelled sending file 2 (testfile_alice)"
+
+      -- other messages are sent
+
+      bob #> "#team hey!"
+      alice <# "#team bob> hey!"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> hello [>>]",
+                   WithTime "#team bob> hey! [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testGroupHistoryQuotes :: HasCallStack => FilePath -> IO ()
+testGroupHistoryQuotes =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      threadDelay 1000000
+
+      alice #> "#team ALICE"
+      bob <# "#team alice> ALICE"
+
+      threadDelay 1000000
+
+      bob #> "#team BOB"
+      alice <# "#team bob> BOB"
+
+      threadDelay 1000000
+
+      alice `send` "> #team @alice (ALICE) 1"
+      alice <# "#team > alice ALICE"
+      alice <## "      1"
+      bob <# "#team alice> > alice ALICE"
+      bob <## "      1"
+
+      threadDelay 1000000
+
+      alice `send` "> #team @bob (BOB) 2"
+      alice <# "#team > bob BOB"
+      alice <## "      2"
+      bob <# "#team alice> > bob BOB"
+      bob <## "      2"
+
+      threadDelay 1000000
+
+      bob `send` "> #team @alice (ALICE) 3"
+      bob <# "#team > alice ALICE"
+      bob <## "      3"
+      alice <# "#team bob> > alice ALICE"
+      alice <## "      3"
+
+      threadDelay 1000000
+
+      bob `send` "> #team @bob (BOB) 4"
+      bob <# "#team > bob BOB"
+      bob <## "      4"
+      alice <# "#team bob> > bob BOB"
+      alice <## "      4"
+
+      alice
+        #$> ( "/_get chat #1 count=6",
+              chat',
+              [ ((1, "ALICE"), Nothing),
+                ((0, "BOB"), Nothing),
+                ((1, "1"), Just (1, "ALICE")),
+                ((1, "2"), Just (0, "BOB")),
+                ((0, "3"), Just (1, "ALICE")),
+                ((0, "4"), Just (0, "BOB"))
+              ]
+            )
+      bob
+        #$> ( "/_get chat #1 count=6",
+              chat',
+              [ ((0, "ALICE"), Nothing),
+                ((1, "BOB"), Nothing),
+                ((0, "1"), Just (0, "ALICE")),
+                ((0, "2"), Just (1, "BOB")),
+                ((1, "3"), Just (0, "ALICE")),
+                ((1, "4"), Just (1, "BOB"))
+              ]
+            )
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> ALICE [>>]",
+                   WithTime "#team bob> BOB [>>]",
+                   WithTime "#team alice> > alice ALICE [>>]",
+                   "      1 [>>]",
+                   WithTime "#team alice> > bob BOB [>>]",
+                   "      2 [>>]",
+                   WithTime "#team bob> > alice ALICE [>>]",
+                   "      3 [>>]",
+                   WithTime "#team bob> > bob BOB [>>]",
+                   "      4 [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/_get chat #1 count=100"
+      r <- chat' <$> getTermLine cath
+      r
+        `shouldContain` [ ((0, "ALICE"), Nothing),
+                          ((0, "BOB"), Nothing),
+                          ((0, "1"), Just (0, "ALICE")),
+                          ((0, "2"), Just (0, "BOB")),
+                          ((0, "3"), Just (0, "ALICE")),
+                          ((0, "4"), Just (0, "BOB"))
+                        ]

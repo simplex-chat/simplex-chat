@@ -3605,15 +3605,49 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 when (isCompatibleRange (memberChatVRange' m) batchSendVRange) $ do
                   (errs, items) <- withStore' $ \db -> getGroupHistoryLastItems db user gInfo 100
                   (errs', events) <- collectForwardEvents items [] []
-                  toView $ CRChatErrors (Just user) (map ChatErrorStore errs <> errs' )
+                  toView $ CRChatErrors (Just user) (map ChatErrorStore errs <> errs')
                   forM_ (L.nonEmpty events) $ \events' ->
                     sendBatchedDirectMessages conn events' (GroupId groupId)
               collectForwardEvents :: [CChatItem 'CTGroup] -> [ChatError] -> [ChatMsgEvent 'Json] -> m ([ChatError], [ChatMsgEvent 'Json])
               collectForwardEvents [] errs evts = pure (errs, evts)
-              collectForwardEvents (ci : items) errs evts =
-                flip catchChatError (\e -> collectForwardEvents items (e : errs) evts) $ case ci of
-                  (CChatItem SMDRcv ChatItem {chatDir = CIGroupRcv sender, meta, content = CIRcvMsgContent mc, quotedItem, file}) -> do
+              collectForwardEvents (cci : items) errs evts =
+                flip catchChatError (\e -> collectForwardEvents items (e : errs) evts) $ case cci of
+                  (CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv sender, content = CIRcvMsgContent mc, file}) -> do
                     fInvDescr_ <- join <$> forM file getRcvFileInvDescr
+                    processContentItem sender ci mc fInvDescr_
+                    where
+                      getRcvFileInvDescr :: CIFile 'MDRcv -> m (Maybe (FileInvitation, RcvFileDescrText))
+                      getRcvFileInvDescr CIFile {fileId, fileName, fileSize, fileProtocol, fileStatus}
+                        | fileProtocol /= FPXFTP || fileStatus == CIFSRcvCancelled = pure Nothing
+                        | otherwise = do
+                            RcvFileDescr {fileDescrText, fileDescrComplete} <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
+                            if fileDescrComplete
+                              then do
+                                let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
+                                    fInv = xftpFileInvitation fileName fileSize fInvDescr
+                                pure $ Just (fInv, fileDescrText)
+                              else pure Nothing
+                  (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file}) -> do
+                    fInvDescr_ <- join <$> forM file getSndFileInvDescr
+                    processContentItem membership ci mc fInvDescr_
+                    where
+                      getSndFileInvDescr :: CIFile 'MDSnd -> m (Maybe (FileInvitation, RcvFileDescrText))
+                      getSndFileInvDescr CIFile {fileId, fileName, fileSize, fileProtocol, fileStatus}
+                        | fileProtocol /= FPXFTP || fileStatus == CIFSSndCancelled = pure Nothing
+                        | otherwise = do
+                            -- can also lookup in extra_xftp_file_descriptions, though it can be empty;
+                            -- would be best if snd file had a single rcv description for all members saved in files table
+                            RcvFileDescr {fileDescrText, fileDescrComplete} <- withStore $ \db -> getRcvFileDescrBySndFileId db fileId
+                            if fileDescrComplete
+                              then do
+                                let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
+                                    fInv = xftpFileInvitation fileName fileSize fInvDescr
+                                pure $ Just (fInv, fileDescrText)
+                              else pure Nothing
+                  _ -> collectForwardEvents items errs evts
+                where
+                  processContentItem :: GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> m ([ChatError], [ChatMsgEvent Json])
+                  processContentItem sender ChatItem {meta, quotedItem} mc fInvDescr_ =
                     if isNothing fInvDescr_ && not (msgContentHasText mc)
                       then collectForwardEvents items errs evts
                       else do
@@ -3630,52 +3664,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                             GroupMember {memberId} = sender
                             msgForwardEvents = map (\cm -> XGrpMsgForward memberId cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
                         collectForwardEvents items errs (msgForwardEvents <> evts)
-                    where
-                      getRcvFileInvDescr :: CIFile 'MDRcv -> m (Maybe (FileInvitation, RcvFileDescrText))
-                      getRcvFileInvDescr CIFile {fileId, fileName, fileSize, fileProtocol, fileStatus}
-                        | fileProtocol /= FPXFTP || fileStatus == CIFSRcvCancelled = pure Nothing
-                        | otherwise = do
-                          RcvFileDescr {fileDescrText, fileDescrComplete} <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
-                          if fileDescrComplete
-                            then do
-                              let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
-                                  fInv = xftpFileInvitation fileName fileSize fInvDescr
-                              pure $ Just (fInv, fileDescrText)
-                            else pure Nothing
-                  (CChatItem SMDSnd ChatItem {chatDir = CIGroupSnd, meta, content = CISndMsgContent mc, quotedItem, file}) -> do
-                    fInvDescr_ <- join <$> forM file getSndFileInvDescr
-                    if isNothing fInvDescr_ && not (msgContentHasText mc)
-                      then collectForwardEvents items errs evts
-                      else do
-                        let CIMeta {itemTs, itemSharedMsgId, itemTimed} = meta
-                            quotedItemId_ = quoteItemId =<< quotedItem
-                            fInv_ = fst <$> fInvDescr_
-                        (msgContainer, _) <- prepareGroupMsg user gInfo mc quotedItemId_ fInv_ itemTimed False
-                        let senderVRange = memberChatVRange' membership
-                            xMsgNewChatMsg = ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent = XMsgNew msgContainer}
-                        fileDescrEvents <- case (snd <$> fInvDescr_, itemSharedMsgId) of
-                          (Just fileDescrText, Just msgId) -> prepareFileDescrEvents fileDescrText msgId
-                          _ -> pure []
-                        let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
-                            GroupMember {memberId} = membership
-                            msgForwardEvents = map (\cm -> XGrpMsgForward memberId cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
-                        collectForwardEvents items errs (msgForwardEvents <> evts)
-                    where
-                      getSndFileInvDescr :: CIFile 'MDSnd -> m (Maybe (FileInvitation, RcvFileDescrText))
-                      getSndFileInvDescr CIFile {fileId, fileName, fileSize, fileProtocol, fileStatus}
-                        | fileProtocol /= FPXFTP || fileStatus == CIFSSndCancelled = pure Nothing
-                        | otherwise = do
-                          -- can also lookup in extra_xftp_file_descriptions, though it can be empty;
-                          -- would be best if snd file had a single rcv description for all members saved in files table
-                          RcvFileDescr {fileDescrText, fileDescrComplete} <- withStore $ \db -> getRcvFileDescrBySndFileId db fileId
-                          if fileDescrComplete
-                            then do
-                              let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
-                                  fInv = xftpFileInvitation fileName fileSize fInvDescr
-                              pure $ Just (fInv, fileDescrText)
-                            else pure Nothing
-                  _ -> collectForwardEvents items errs evts
-                where
                   prepareFileDescrEvents :: RcvFileDescrText -> SharedMsgId -> m [ChatMsgEvent 'Json]
                   prepareFileDescrEvents fileDescrText msgId = do
                     partSize <- asks $ xftpDescrPartSize . config

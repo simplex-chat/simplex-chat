@@ -23,13 +23,15 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
-import System.Environment (lookupEnv)
+import System.Environment (lookupEnv, withArgs)
 import System.FilePath ((</>))
+import System.IO.Silently (capture_)
 import System.Info (os)
 import Test.Hspec
 
@@ -597,3 +599,6 @@ linkAnotherSchema link
   | "simplex:/" `isPrefixOf` link =
       T.unpack $ T.replace "simplex:/" "https://simplex.chat/" $ T.pack link
   | otherwise = error "link starts with neither https://simplex.chat/ nor simplex:/"
+
+xftpCLI :: [String] -> IO [String]
+xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)
