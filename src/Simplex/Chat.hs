@@ -198,79 +198,84 @@ createChatDatabase filePrefix key keepKey confirmMigrations = runExceptT $ do
   agentStore <- ExceptT $ createAgentStore (agentStoreFile filePrefix) key keepKey confirmMigrations
   pure ChatDatabase {chatStore, agentStore}
 
-newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> IO ChatController
-newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, tempDir, deviceNameForRemote} ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, networkConfig, logLevel, logConnections, logServerHosts, logFile, tbqSize, highlyAvailable}, deviceName, optFilesFolder, showReactions, allowInstantFiles, autoAcceptFileSize} = do
-  let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
-      config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles', autoAcceptFileSize, highlyAvailable}
-      firstTime = dbNew chatStore
-  currentUser <- newTVarIO user
-  currentRemoteHost <- newTVarIO Nothing
-  servers <- agentServers config
-  smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore
-  agentAsync <- newTVarIO Nothing
-  idsDrg <- newTVarIO =<< liftIO drgNew
-  inputQ <- newTBQueueIO tbqSize
-  outputQ <- newTBQueueIO tbqSize
-  connNetworkStatuses <- atomically TM.empty
-  subscriptionMode <- newTVarIO SMSubscribe
-  chatLock <- newEmptyTMVarIO
-  sndFiles <- newTVarIO M.empty
-  rcvFiles <- newTVarIO M.empty
-  currentCalls <- atomically TM.empty
-  localDeviceName <- newTVarIO $ fromMaybe deviceNameForRemote deviceName
-  multicastSubscribers <- newTMVarIO 0
-  remoteSessionSeq <- newTVarIO 0
-  remoteHostSessions <- atomically TM.empty
-  remoteHostsFolder <- newTVarIO Nothing
-  remoteCtrlSession <- newTVarIO Nothing
-  filesFolder <- newTVarIO optFilesFolder
-  chatStoreChanged <- newTVarIO False
-  expireCIThreads <- newTVarIO M.empty
-  expireCIFlags <- newTVarIO M.empty
-  cleanupManagerAsync <- newTVarIO Nothing
-  timedItemThreads <- atomically TM.empty
-  showLiveItems <- newTVarIO False
-  encryptLocalFiles <- newTVarIO False
-  userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
-  tempDirectory <- newTVarIO tempDir
-  contactMergeEnabled <- newTVarIO True
-  pure
-    ChatController
-      { firstTime,
-        currentUser,
-        currentRemoteHost,
-        smpAgent,
-        agentAsync,
-        chatStore,
-        chatStoreChanged,
-        idsDrg,
-        inputQ,
-        outputQ,
-        connNetworkStatuses,
-        subscriptionMode,
-        chatLock,
-        sndFiles,
-        rcvFiles,
-        currentCalls,
-        localDeviceName,
-        multicastSubscribers,
-        remoteSessionSeq,
-        remoteHostSessions,
-        remoteHostsFolder,
-        remoteCtrlSession,
-        config,
-        filesFolder,
-        expireCIThreads,
-        expireCIFlags,
-        cleanupManagerAsync,
-        timedItemThreads,
-        showLiveItems,
-        encryptLocalFiles,
-        userXFTPFileConfig,
-        tempDirectory,
-        logFilePath = logFile,
-        contactMergeEnabled
-      }
+newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Bool -> IO ChatController
+newChatController
+  ChatDatabase {chatStore, agentStore}
+  user
+  cfg@ChatConfig {agentConfig = aCfg, defaultServers, inlineFiles, tempDir, deviceNameForRemote}
+  ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, networkConfig, logLevel, logConnections, logServerHosts, logFile, tbqSize, highlyAvailable}, deviceName, optFilesFolder, showReactions, allowInstantFiles, autoAcceptFileSize}
+  backgroundMode = do
+    let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
+        config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles', autoAcceptFileSize, highlyAvailable}
+        firstTime = dbNew chatStore
+    currentUser <- newTVarIO user
+    currentRemoteHost <- newTVarIO Nothing
+    servers <- agentServers config
+    smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore backgroundMode
+    agentAsync <- newTVarIO Nothing
+    idsDrg <- newTVarIO =<< liftIO drgNew
+    inputQ <- newTBQueueIO tbqSize
+    outputQ <- newTBQueueIO tbqSize
+    connNetworkStatuses <- atomically TM.empty
+    subscriptionMode <- newTVarIO SMSubscribe
+    chatLock <- newEmptyTMVarIO
+    sndFiles <- newTVarIO M.empty
+    rcvFiles <- newTVarIO M.empty
+    currentCalls <- atomically TM.empty
+    localDeviceName <- newTVarIO $ fromMaybe deviceNameForRemote deviceName
+    multicastSubscribers <- newTMVarIO 0
+    remoteSessionSeq <- newTVarIO 0
+    remoteHostSessions <- atomically TM.empty
+    remoteHostsFolder <- newTVarIO Nothing
+    remoteCtrlSession <- newTVarIO Nothing
+    filesFolder <- newTVarIO optFilesFolder
+    chatStoreChanged <- newTVarIO False
+    expireCIThreads <- newTVarIO M.empty
+    expireCIFlags <- newTVarIO M.empty
+    cleanupManagerAsync <- newTVarIO Nothing
+    timedItemThreads <- atomically TM.empty
+    showLiveItems <- newTVarIO False
+    encryptLocalFiles <- newTVarIO False
+    userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
+    tempDirectory <- newTVarIO tempDir
+    contactMergeEnabled <- newTVarIO True
+    pure
+      ChatController
+        { firstTime,
+          currentUser,
+          currentRemoteHost,
+          smpAgent,
+          agentAsync,
+          chatStore,
+          chatStoreChanged,
+          idsDrg,
+          inputQ,
+          outputQ,
+          connNetworkStatuses,
+          subscriptionMode,
+          chatLock,
+          sndFiles,
+          rcvFiles,
+          currentCalls,
+          localDeviceName,
+          multicastSubscribers,
+          remoteSessionSeq,
+          remoteHostSessions,
+          remoteHostsFolder,
+          remoteCtrlSession,
+          config,
+          filesFolder,
+          expireCIThreads,
+          expireCIFlags,
+          cleanupManagerAsync,
+          timedItemThreads,
+          showLiveItems,
+          encryptLocalFiles,
+          userXFTPFileConfig,
+          tempDirectory,
+          logFilePath = logFile,
+          contactMergeEnabled
+        }
   where
     configServers :: DefaultAgentServers
     configServers =
@@ -543,7 +548,7 @@ processChatCommand = \case
     pure CRChatStopped
   APIActivateChat restoreChat -> withUser $ \_ -> do
     when restoreChat restoreCalls
-    withAgent foregroundAgent
+    withAgent (`foregroundAgent` not restoreChat)
     when restoreChat $ do
       users <- withStoreCtx' (Just "APIActivateChat, getUsers") getUsers
       void . forkIO $ subscribeUsers True users
