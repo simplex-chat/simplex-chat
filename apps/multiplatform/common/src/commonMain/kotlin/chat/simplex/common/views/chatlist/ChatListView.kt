@@ -492,20 +492,20 @@ private fun filteredChats(
       chats.filter { chat ->
         when (val cInfo = chat.chatInfo) {
           is ChatInfo.Direct -> if (s.isEmpty()) {
-            filtered(chat)
+            chat.id == chatModel.chatId.value || filtered(chat)
           } else {
             (viewNameContains(cInfo, s) ||
                 cInfo.contact.profile.displayName.lowercase().contains(s) ||
                 cInfo.contact.fullName.lowercase().contains(s))
           }
           is ChatInfo.Group -> if (s.isEmpty()) {
-            (filtered(chat) || cInfo.groupInfo.membership.memberStatus == GroupMemberStatus.MemInvited)
+            chat.id == chatModel.chatId.value || filtered(chat) || cInfo.groupInfo.membership.memberStatus == GroupMemberStatus.MemInvited
           } else {
             viewNameContains(cInfo, s)
           }
           is ChatInfo.ContactRequest -> s.isEmpty() || viewNameContains(cInfo, s)
-          is ChatInfo.ContactConnection -> s.isNotEmpty() && cInfo.contactConnection.localAlias.lowercase().contains(s)
-          is ChatInfo.InvalidJSON -> false
+          is ChatInfo.ContactConnection -> (s.isNotEmpty() && cInfo.contactConnection.localAlias.lowercase().contains(s)) || (s.isEmpty() && chat.id == chatModel.chatId.value)
+          is ChatInfo.InvalidJSON -> chat.id == chatModel.chatId.value
         }
       }
     }
