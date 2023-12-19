@@ -116,7 +116,6 @@ import UnliftIO.Async
 import UnliftIO.Concurrent (forkFinally, forkIO, mkWeakThreadId, threadDelay)
 import UnliftIO.Directory
 import qualified UnliftIO.Exception as E
-import UnliftIO.IORef
 import UnliftIO.IO (hClose, hSeek, hTell, openFile)
 import UnliftIO.STM
 
@@ -5529,25 +5528,21 @@ deliverMessage conn cmEventTag msgBody msgId =
   deliverMessages [(conn, cmEventTag, msgBody, msgId)] >>= \case
     [Right msgDeliveryId] -> pure msgDeliveryId
     [Left e] -> throwError e
-    rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> (show $ length rs)
+    rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
 deliverMessages :: ChatMonad' m => [(Connection, CMEventTag e, MsgBody, MessageId)] -> m [Either ChatError Int64]
-deliverMessages [] = pure []
 deliverMessages msgReqs = do
-  rs <- replicateM (length msgReqs) (newIORef $ Left $ ChatError $ CEInternalError "skipped in batch")
-  let aReqs = map (\(conn, cmEvTag, msgBody, _) -> (aConnId conn, msgFlags cmEvTag, msgBody)) msgReqs
-  rs' <- withAgent' (`sendMessages` aReqs)
-  rs1 <- catMaybes <$> mapM processResults (zip3 rs msgReqs rs')
-  rs1' <- withStoreBatch' (\db -> map (createDelivery db) rs1)
-  mapM_ (\((r, _, _), msgDeliveryId) -> writeIORef r msgDeliveryId) (zip rs1 rs1')
-  mapM readIORef rs
+  sent <- zipWith prepareBatch msgReqs <$> withAgent' (`sendMessages` aReqs)
+  withStoreBatch (\db -> map (bindRight $ createDelivery db) sent)
   where
+    aReqs = map (\(conn, cmEvTag, msgBody, _msgId) -> (aConnId conn, msgFlags cmEvTag, msgBody)) msgReqs
     msgFlags cmEvTag = MsgFlags {notification = hasNotification cmEvTag}
-    processResults (r, req, aMsgId_) = case aMsgId_ of
-      Left e -> Nothing <$ writeIORef r (Left $ ChatErrorAgent e Nothing)
-      Right aMsgId -> pure $ Just (r, req, aMsgId)
-    createDelivery db (_, (Connection {connId}, _, _, msgId), agentMsgId) =
-      createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId}) msgId
+    prepareBatch req = \case
+      Left ae -> Left $ ChatErrorAgent ae Nothing
+      Right aMsgId -> Right (req, aMsgId)
+    createDelivery :: DB.Connection -> ((Connection, CMEventTag e, MsgBody, MessageId), AgentMsgId) -> IO (Either ChatError Int64)
+    createDelivery db ((Connection {connId}, _, _, msgId), agentMsgId) =
+      Right <$> createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId}) msgId
 
 sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
 sendGroupMessage user GroupInfo {groupId} members chatMsgEvent = do
@@ -5557,20 +5552,20 @@ sendGroupMessage user GroupInfo {groupId} members chatMsgEvent = do
       tag = toCMEventTag chatMsgEvent
       (pending, toSend) = foldl' addMember ([], []) ms
       msgReqs = map (\(_, conn) -> (conn, tag, msgBody, msgId)) toSend
-  rs <- deliverMessages msgReqs
-  -- TODO send failed deliveries as a single error?
-  forM_ (lefts rs) $ toView . CRChatError (Just user)
-  rs' <- withStoreBatch' $ \db -> map (\m -> createPendingGroupMessage db (groupMemberId' m) msgId Nothing) pending
-  let sentToMembers = filterSent rs toSend fst <> filterSent rs' pending id
+  delivered <- deliverMessages msgReqs
+  let errors = lefts delivered
+  unless (null errors) $ toView $ CRChatErrors (Just user) errors
+  stored <- withStoreBatch' $ \db -> map (\m -> createPendingGroupMessage db (groupMemberId' m) msgId Nothing) pending
+  let sentToMembers = filterSent delivered toSend fst <> filterSent stored pending id
   pure (msg, sentToMembers)
   where
     addMember (pending, toSend) (m, conn_) = case conn_ of
       Just conn -> (pending, (m, conn) : toSend)
       Nothing -> (m : pending, toSend)
     filterSent :: [Either ChatError a] -> [mem] -> (mem -> GroupMember) -> [GroupMember]
-    filterSent rs ms mem = mapMaybe (\case (Right _, m) -> Just $ mem m; _ -> Nothing) $ zip rs ms
-    
-memberToSend :: ChatMsgEvent e -> [GroupMember] -> GroupMember -> (Maybe (GroupMember, Maybe Connection))
+    filterSent rs ms mem = [mem m | (Right _, m) <- zip rs ms]
+
+memberToSend :: ChatMsgEvent e -> [GroupMember] -> GroupMember -> Maybe (GroupMember, Maybe Connection)
 memberToSend chatMsgEvent members m = case memberConn m of
   Nothing -> pendingOrForwarded
   Just conn@Connection {connStatus}
