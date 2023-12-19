@@ -280,7 +280,7 @@ private fun ToggleFilterEnabledButton() {
       tint = if (pref.state.value) MaterialTheme.colors.background else MaterialTheme.colors.primary,
       modifier = Modifier
         .padding(3.dp)
-        .background(color = if (pref.state.value) MaterialTheme.colors.primary else MaterialTheme.colors.background, shape = RoundedCornerShape(50))
+        .background(color = if (pref.state.value) MaterialTheme.colors.primary else Color.Unspecified, shape = RoundedCornerShape(50))
         .border(width = 1.dp, color = MaterialTheme.colors.primary, shape = RoundedCornerShape(50))
         .padding(3.dp)
         .size(16.dp)
@@ -297,7 +297,6 @@ private fun ToggleFilterDisabledButton() {
       tint = MaterialTheme.colors.secondary,
       modifier = Modifier
         .padding(3.dp)
-        .background(color = MaterialTheme.colors.background, shape = RoundedCornerShape(50))
         .border(width = 1.dp, color = MaterialTheme.colors.secondary, shape = RoundedCornerShape(50))
         .padding(3.dp)
         .size(16.dp)
