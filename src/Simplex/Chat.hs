@@ -546,10 +546,10 @@ processChatCommand = \case
   APIStopChat -> do
     ask >>= stopChatController
     pure CRChatStopped
-  APIActivateChat restoreChat -> withUser $ \_ -> do
+  APIActivateChat backgroundMode -> withUser $ \_ -> do
     when restoreChat restoreCalls
-    withAgent (`foregroundAgent` not restoreChat)
-    when restoreChat $ do
+    withAgent (`foregroundAgent` backgroundMode)
+    unless backgroundMode $ do
       users <- withStoreCtx' (Just "APIActivateChat, getUsers") getUsers
       void . forkIO $ subscribeUsers True users
       void . forkIO $ startFilesToReceive users
@@ -5982,8 +5982,8 @@ chatCommandP =
       "/_start subscribe=" *> (StartChat <$> onOffP <* " expire=" <*> onOffP <* " xftp=" <*> onOffP),
       "/_start" $> StartChat True True True,
       "/_stop" $> APIStopChat,
-      "/_app activate restore=" *> (APIActivateChat <$> onOffP),
-      "/_app activate" $> APIActivateChat True,
+      "/_app activate background=" *> (APIActivateChat <$> onOffP),
+      "/_app activate" $> APIActivateChat False,
       "/_app suspend " *> (APISuspendChat <$> A.decimal),
       "/_resubscribe all" $> ResubscribeAllConnections,
       "/_temp_folder " *> (SetTempFolder <$> filePath),

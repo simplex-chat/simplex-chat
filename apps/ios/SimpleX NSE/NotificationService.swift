@@ -655,7 +655,7 @@ func apiStartChat() throws -> Bool {
 
 func apiActivateChat() -> Bool {
     chatReopenStore()
-    let r = sendSimpleXCmd(.apiActivateChat(restoreChat: false))
+    let r = sendSimpleXCmd(.apiActivateChat(backgroundMode: true))
     if case .cmdOk = r { return true }
     logger.error("NotificationService apiActivateChat error: \(String(describing: r))")
     return false
