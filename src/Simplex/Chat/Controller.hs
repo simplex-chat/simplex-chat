@@ -1288,17 +1288,16 @@ withStoreCtx ctx_ action = do
     handleInternal :: String -> SomeException -> IO (Either StoreError a)
     handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
 
-withStoreBatch :: ChatMonad' m => (DB.Connection -> [ExceptT StoreError IO a]) -> m [Either ChatError a]
+withStoreBatch :: (ChatMonad' m, Traversable t) => (DB.Connection -> t (IO (Either ChatError a))) -> m (t (Either ChatError a))
 withStoreBatch actions = do
   ChatController {chatStore} <- ask
-  rs <- liftIO $ withTransaction chatStore $ mapM (\a -> runExceptT a `E.catch` handleInternal) . actions
-  pure $ fmap (first ChatErrorStore) rs
+  liftIO $ withTransaction chatStore $ mapM (`E.catch` handleInternal) . actions
   where
-    handleInternal :: E.SomeException -> IO (Either StoreError a)
-    handleInternal = pure . Left . SEInternalError . show
+    handleInternal :: E.SomeException -> IO (Either ChatError a)
+    handleInternal = pure . Left . ChatError . CEInternalError . show
 
-withStoreBatch' :: ChatMonad' m => (DB.Connection -> [IO a]) -> m [Either ChatError a]
-withStoreBatch' actions = withStoreBatch $ fmap liftIO . actions
+withStoreBatch' :: (ChatMonad' m, Traversable t) => (DB.Connection -> t (IO a)) -> m (t (Either ChatError a))
+withStoreBatch' actions = withStoreBatch $ fmap (fmap Right) . actions
 
 withAgent :: ChatMonad m => (AgentClient -> ExceptT AgentErrorType m a) -> m a
 withAgent action =
