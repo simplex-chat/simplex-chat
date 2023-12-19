@@ -1531,4 +1531,5 @@
     <string name="open_port_in_firewall_desc">要允许移动应用连接到桌面，请在防火墙中打开此端口，如果你已启用了它</string>
     <string name="open_port_in_firewall_title">在防火墙中打开端口</string>
     <string name="app_was_crashed">查看崩溃</string>
+    <string name="moderated_items_description">%s 审核了 %d 条消息</string>
 </resources>
