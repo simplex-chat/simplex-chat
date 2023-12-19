@@ -287,6 +287,19 @@ fun CIMarkdownText(
 ) {
   Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
     val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
+    if (text == "LALAL") {
+      MarkdownText(
+        (text + "%d").format("ALALLA", "ALAL"), if (text.isEmpty()) emptyList() else ci.formattedText,
+        meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
+        uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
+      )
+    } else {
+      MarkdownText(
+        text, if (text.isEmpty()) emptyList() else ci.formattedText,
+        meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
+        uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
+      )
+    }
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText,
       meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
