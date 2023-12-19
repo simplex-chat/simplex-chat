@@ -5526,8 +5526,7 @@ directMessage chatMsgEvent = do
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m Int64
 deliverMessage conn cmEventTag msgBody msgId =
   deliverMessages [(conn, cmEventTag, msgBody, msgId)] >>= \case
-    [Right msgDeliveryId] -> pure msgDeliveryId
-    [Left e] -> throwError e
+    [r] -> liftEither r
     rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
 deliverMessages :: ChatMonad' m => [(Connection, CMEventTag e, MsgBody, MessageId)] -> m [Either ChatError Int64]
