@@ -5533,13 +5533,11 @@ deliverMessage conn cmEventTag msgBody msgId =
 deliverMessages :: ChatMonad' m => [(Connection, CMEventTag e, MsgBody, MessageId)] -> m [Either ChatError Int64]
 deliverMessages msgReqs = do
   sent <- zipWith prepareBatch msgReqs <$> withAgent' (`sendMessages` aReqs)
-  withStoreBatch (\db -> map (bindRight $ createDelivery db) sent)
+  withStoreBatch $ \db -> map (bindRight $ createDelivery db) sent
   where
     aReqs = map (\(conn, cmEvTag, msgBody, _msgId) -> (aConnId conn, msgFlags cmEvTag, msgBody)) msgReqs
     msgFlags cmEvTag = MsgFlags {notification = hasNotification cmEvTag}
-    prepareBatch req = \case
-      Left ae -> Left $ ChatErrorAgent ae Nothing
-      Right aMsgId -> Right (req, aMsgId)
+    prepareBatch req = bimap (`ChatErrorAgent` Nothing) (req,)
     createDelivery :: DB.Connection -> ((Connection, CMEventTag e, MsgBody, MessageId), AgentMsgId) -> IO (Either ChatError Int64)
     createDelivery db ((Connection {connId}, _, _, msgId), agentMsgId) =
       Right <$> createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId}) msgId
