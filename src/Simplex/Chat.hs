@@ -5548,9 +5548,8 @@ sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [Group
 sendGroupMessage user GroupInfo {groupId} members chatMsgEvent = do
   msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent (GroupId groupId)
   recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members) $ \GroupMember {memberRole} -> memberRole
-  let ms = mapMaybe (memberToSend chatMsgEvent members) recipientMembers
-      tag = toCMEventTag chatMsgEvent
-      (pending, toSend) = foldl' addMember ([], []) ms
+  let tag = toCMEventTag chatMsgEvent
+      (toSend, pending) = foldr addMember ([], []) recipientMembers
       msgReqs = map (\(_, conn) -> (conn, tag, msgBody, msgId)) toSend
   delivered <- deliverMessages msgReqs
   let errors = lefts delivered
@@ -5559,24 +5558,27 @@ sendGroupMessage user GroupInfo {groupId} members chatMsgEvent = do
   let sentToMembers = filterSent delivered toSend fst <> filterSent stored pending id
   pure (msg, sentToMembers)
   where
-    addMember (pending, toSend) (m, conn_) = case conn_ of
-      Just conn -> (pending, (m, conn) : toSend)
-      Nothing -> (m : pending, toSend)
+    addMember m (toSend, pending) = case memberSendAction chatMsgEvent members m of
+      Just (MSASend conn) -> ((m, conn) : toSend, pending)
+      Just MSAPending -> (toSend, m : pending)
+      Nothing -> (toSend, pending)
     filterSent :: [Either ChatError a] -> [mem] -> (mem -> GroupMember) -> [GroupMember]
     filterSent rs ms mem = [mem m | (Right _, m) <- zip rs ms]
 
-memberToSend :: ChatMsgEvent e -> [GroupMember] -> GroupMember -> Maybe (GroupMember, Maybe Connection)
-memberToSend chatMsgEvent members m = case memberConn m of
+data MemberSendAction = MSASend Connection | MSAPending
+
+memberSendAction :: ChatMsgEvent e -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
+memberSendAction chatMsgEvent members m = case memberConn m of
   Nothing -> pendingOrForwarded
   Just conn@Connection {connStatus}
     | connDisabled conn || connStatus == ConnDeleted -> Nothing
-    | connStatus == ConnSndReady || connStatus == ConnReady -> Just (m, Just conn)
+    | connStatus == ConnSndReady || connStatus == ConnReady -> Just (MSASend conn)
     | otherwise -> pendingOrForwarded
   where
     pendingOrForwarded
       | forwardSupported && isForwardedGroupMsg chatMsgEvent = Nothing
       | isXGrpMsgForward chatMsgEvent = Nothing
-      | otherwise = Just (m, Nothing)
+      | otherwise = Just MSAPending
       where
         forwardSupported =
           let mcvr = memberChatVRange' m
@@ -5600,9 +5602,9 @@ sendGroupMemberMessage user m@GroupMember {groupMemberId} chatMsgEvent groupId i
   messageMember msg `catchChatError` (\e -> toView (CRChatError (Just user) e))
   where
     messageMember :: SndMessage -> m ()
-    messageMember SndMessage {msgId, msgBody} = forM_ (memberToSend chatMsgEvent [m] m) $ \(_, conn_) -> case conn_ of
-      Just conn -> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
-      Nothing -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
+    messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction chatMsgEvent [m] m) $ \case
+      MSASend conn -> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
+      MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
 
 shuffleMembers :: [a] -> (a -> GroupMemberRole) -> IO [a]
 shuffleMembers ms role = do
