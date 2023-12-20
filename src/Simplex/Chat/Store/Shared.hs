@@ -389,8 +389,7 @@ createWithRandomBytes' size gVar create = tryCreate 3
     tryCreate n = do
       id' <- liftIO $ encodedRandomBytes gVar size
       liftIO (E.try $ create id') >>= \case
-        Right (Right x) -> pure x
-        Right (Left e) -> throwError e
+        Right x -> liftEither x
         Left e
           | SQL.sqlError e == SQL.ErrorConstraint -> tryCreate (n - 1)
           | otherwise -> throwError . SEInternalError $ show e
