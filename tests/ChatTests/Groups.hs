@@ -125,7 +125,7 @@ chatGroupTests = do
     it "cancelled files without text are excluded" testGroupHistoryFileCancelNoText
     it "quoted messages" testGroupHistoryQuotes
     it "deleted message is not included" testGroupHistoryDeletedMessage
-    xit "disappearing message is sent as disappearing" testGroupHistoryDisappearingMessage
+    it "disappearing message is sent as disappearing" testGroupHistoryDisappearingMessage
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -4658,6 +4658,7 @@ testGroupHistoryDisappearingMessage =
 
       threadDelay 1000000
 
+      -- 3 seconds so that messages 2 and 3 are not deleted for alice before sending history to cath
       alice ##> "/set disappear #team on 3"
       alice <## "updated group preferences:"
       alice <## "Disappearing messages: on (3 sec)"
@@ -4722,5 +4723,5 @@ testGroupHistoryDisappearingMessage =
       cath ##> "/_get chat #1 count=100"
       r2 <- chat <$> getTermLine cath
       r2 `shouldContain` [(0, "1"), (0, "4")]
+      r2 `shouldNotContain` [(0, "2")]
       r2 `shouldNotContain` [(0, "3")]
-      r2 `shouldNotContain` [(0, "4")]
