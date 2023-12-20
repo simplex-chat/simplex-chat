@@ -5617,7 +5617,7 @@ sendBatchedDirectMessages :: forall e m. (MsgEncodingI e, ChatMonad m) => Connec
 sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
   (errs, msgs) <- partitionEithers <$> createSndMessages
-  unless (null errs) $ toView $ CRChatErrors Nothing (map ChatErrorStore errs)
+  unless (null errs) $ toView $ CRChatErrors Nothing errs
   forM_ (L.nonEmpty msgs) $ \msgs' -> do
     let (largeMsgs, msgBatches) = partitionBatches $ batchChatMessages msgs'
         errs' = map (\SndMessage {msgId} -> ChatError $ CELargeChatMsg msgId) largeMsgs
@@ -5626,15 +5626,16 @@ sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
       let batchBody = LB.toStrict $ Builder.toLazyByteString batchBuilder
       agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) MsgFlags {notification = True} batchBody
       let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
-      withStore' $ \db -> forM_ sndMsgs $ \SndMessage {msgId} ->
-        createSndMsgDelivery db sndMsgDelivery msgId
+      withStoreBatch' $ \db -> map (\SndMessage {msgId} -> createSndMsgDelivery db sndMsgDelivery msgId) sndMsgs
   where
-    createSndMessages :: m [Either StoreError SndMessage]
+    createSndMessages :: m [Either ChatError SndMessage]
     createSndMessages = do
       gVar <- asks idsDrg
       ChatConfig {chatVRange} <- asks config
-      withStore' $ \db -> forM (toList events) $ \event ->
-        runExceptT $ createNewSndMessage db gVar connOrGroupId (newMsg chatVRange event)
+      withStoreBatch $ \db -> map (createMsg db gVar chatVRange) (toList events)
+    createMsg db gVar chatVRange evnt = do
+      r <- runExceptT $ createNewSndMessage db gVar connOrGroupId (newMsg chatVRange evnt)
+      pure $ first ChatErrorStore r
     newMsg chatVRange chatMsgEvent sharedMsgId = do
       let r = encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
       fmap (NewMessage chatMsgEvent) r
