@@ -2092,7 +2092,9 @@ getGroupHistoryLastItems db user@User {userId} GroupInfo {groupId} count = do
           [sql|
             SELECT chat_item_id
             FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND item_content_tag IN (?,?)
+            WHERE user_id = ? AND group_id = ?
+              AND item_content_tag IN (?,?)
+              AND item_deleted = 0
             ORDER BY item_ts DESC, chat_item_id DESC
             LIMIT ?
           |]
