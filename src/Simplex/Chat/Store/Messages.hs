@@ -736,8 +736,8 @@ getNotesChatPreview_ :: DB.Connection -> User -> ChatPreviewData 'CTNotes -> Exc
 getNotesChatPreview_ = error "TODO: getNotesChatPreview_"
 
 -- this function can be changed so it never fails, not only avoid failure on invalid json
-toNoteChatItem :: UTCTime -> ChatItemRow :. QuoteRow -> Either StoreError (CChatItem 'CTNotes)
-toNoteChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)) :. quoteRow) =
+toNoteChatItem :: UTCTime -> ChatItemRow -> Either StoreError (CChatItem 'CTNotes)
+toNoteChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentText, itemText, itemStatus, sharedMsgId) :. (itemDeleted, deletedTs, itemEdited, createdAt, updatedAt) :. (timedTTL, timedDeleteAt, itemLive) :. (fileId_, fileName_, fileSize_, filePath, fileKey, fileNonce, fileStatus_, fileProtocol_)) =
   chatItem $ fromRight invalid $ dbParseACIContent itemContentText
   where
     invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
@@ -757,7 +757,7 @@ toNoteChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentTex
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTNotes d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTNotes
     cItem d chatDir ciStatus content file =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toNoteQuote quoteRow, reactions = [], file}
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = Nothing, reactions = [], file}
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTNotes d
     ciMeta content status =
@@ -768,11 +768,6 @@ toNoteChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentTex
        in mkCIMeta itemId content itemText status sharedMsgId itemDeleted' itemEdited' ciTimed itemLive currentTs itemTs Nothing createdAt updatedAt
     ciTimed :: Maybe CITimed
     ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
-
-toNoteQuote :: QuoteRow -> Maybe (CIQuote 'CTNotes)
-toNoteQuote qr@(_, _, _, _, quotedSent) = toQuote qr $ quotedSent >>= direction
-  where
-    direction sent = if sent then Just CIQNote else Nothing
 
 getContactRequestChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
 getContactRequestChatPreviews_ db User {userId} pagination clq = case clq of

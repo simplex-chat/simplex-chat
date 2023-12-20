@@ -12,16 +12,16 @@ m20231219_notes_folders =
       notes_folder_id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
       local_display_name TEXT NOT NULL,
-      FOREIGN KEY (user_id, local_display_name)
-        REFERENCES display_names (user_id, local_display_name)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       chat_ts TEXT,
       favorite INTEGER NOT NULL DEFAULT 0,
       unread_chat INTEGER DEFAULT 0 NOT NULL,
       chat_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE SET NULL,
+      FOREIGN KEY (user_id, local_display_name)
+        REFERENCES display_names (user_id, local_display_name)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
     );
 
     CREATE UNIQUE INDEX idx_notes_user_local_display_name ON notes_fodler (
