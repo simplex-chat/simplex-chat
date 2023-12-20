@@ -5665,9 +5665,14 @@ batchChatMessages = reverse . mkBatch []
       | len' <= maxSize' =
           case L.nonEmpty msgs_ of
             Just msgs' -> encodeBatch builder' len' cnt' batchedMsgs' msgs'
-            Nothing -> (CMBMessages $ MessagesBatch (completeBuilder builder') (reverse batchedMsgs'), Nothing)
+            Nothing -> (CMBMessages $ MessagesBatch completeBuilder (reverse batchedMsgs'), Nothing)
+              where
+                completeBuilder
+                  | cnt' == 1 = builder'
+                  | otherwise = builder' <> "]"
       | cnt' == 1 = (CMBLargeMessage msg, L.nonEmpty msgs_)
-      | otherwise = (CMBMessages $ MessagesBatch (completeBuilder builder) (reverse batchedMsgs), Just remainingMsgs)
+      | cnt' == 2 = (CMBMessages $ MessagesBatch builder (reverse batchedMsgs), Just remainingMsgs)
+      | otherwise = (CMBMessages $ MessagesBatch (builder <> "]") (reverse batchedMsgs), Just remainingMsgs)
       where
         SndMessage {msgBody} = msg
         cnt' = cnt + 1
@@ -5679,10 +5684,6 @@ batchChatMessages = reverse . mkBatch []
           | cnt' == 1 = Builder.lazyByteString msgBody
           | cnt' == 2 = "[" <> builder <> "," <> Builder.lazyByteString msgBody
           | otherwise = builder <> "," <> Builder.lazyByteString msgBody
-        -- TODO test, probably need different functions for a case when only a single message fits into batch
-        completeBuilder bldr
-          | cnt' == 1 = bldr
-          | otherwise = bldr <> "]"
         maxSize'
           | cnt' == 1 = maxChatMsgSize
           | otherwise = maxChatMsgSize - 1 -- for closing bracket "]"
