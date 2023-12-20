@@ -5660,20 +5660,20 @@ batchChatMessages = mkBatch []
           batches' = batch : batches
        in maybe batches' (mkBatch batches') msgs_
     encodeBatch :: Builder.Builder -> Int -> Int -> [SndMessage] -> NonEmpty SndMessage -> (ChatMessageBatch, Maybe (NonEmpty SndMessage))
-    encodeBatch builder length count batchedMsgs remainingMsgs@(msg :| msgs_)
-      | length' <= maxChatMsgSize - 1 =
+    encodeBatch builder len cnt batchedMsgs remainingMsgs@(msg :| msgs_)
+      | len' <= maxChatMsgSize - 1 =
           case L.nonEmpty msgs_ of
-            Just msgs' -> encodeBatch builder' length' count' batchedMsgs' msgs'
+            Just msgs' -> encodeBatch builder' len' cnt' batchedMsgs' msgs'
             Nothing -> (CMBMessages $ MessagesBatch (builder' <> "]") (reverse batchedMsgs'), Nothing)
-      | count == 0 = (CMBLargeMessage msg, L.nonEmpty msgs_)
+      | cnt == 0 = (CMBLargeMessage msg, L.nonEmpty msgs_)
       | otherwise = (CMBMessages $ MessagesBatch (builder <> "]") (reverse batchedMsgs), Just remainingMsgs)
       where
         SndMessage {msgBody} = msg
-        length' = length + B.length msgBody
+        len' = len + B.length msgBody
         builder'
-          | count == 0 = builder <> Builder.byteString msgBody
+          | cnt == 0 = builder <> Builder.byteString msgBody
           | otherwise = builder <> "," <> Builder.byteString msgBody
-        count' = count + 1
+        cnt' = cnt + 1
         batchedMsgs' = msg : batchedMsgs
 
 directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
