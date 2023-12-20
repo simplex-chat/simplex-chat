@@ -58,7 +58,6 @@
     <string name="la_mode_off">Ανενεργό</string>
     <string name="connect__your_profile_will_be_shared">"Το προφίλ σας  %1$s θα μοιραστεί"</string>
     <string name="your_simplex_contact_address">Η SimpleX διεύθυνση σας</string>
-    <string name="color_background"></string>
     <string name="full_backup">Αντίγραφο δεδομένων εφαρμογής</string>
     <string name="send_disappearing_message_5_minutes">5 λεπτά</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Θα συνδεθείτε όταν η συσκευή της επαφής σας είναι συνδεμένει, παρακαλώ περιμένετε ή ελέγξτε αργότερα!</string>
