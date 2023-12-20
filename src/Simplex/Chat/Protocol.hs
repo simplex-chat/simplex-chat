@@ -72,7 +72,7 @@ groupLinkNoContactVRange = mkVersionRange 3 currentChatVersion
 groupForwardVRange :: VersionRange
 groupForwardVRange = mkVersionRange 4 currentChatVersion
 
--- version range that supports batch sending
+-- version range that supports batch sending in groups
 batchSendVRange :: VersionRange
 batchSendVRange = mkVersionRange 5 currentChatVersion
 
