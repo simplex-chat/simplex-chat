@@ -118,11 +118,6 @@ import qualified UnliftIO.Exception as E
 import UnliftIO.IO (hClose, hSeek, hTell, openFile)
 import UnliftIO.STM
 
--- this limit reserves space for metadata in forwarded messages
--- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, round to 15610
-maxChatMsgSize :: Int
-maxChatMsgSize = 15610
-
 defaultChatConfig :: ChatConfig
 defaultChatConfig =
   ChatConfig
@@ -3714,6 +3709,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta `catchChatError` \_ -> pure ()
         cmdId <- createAckCmd conn
         let aChatMsgs = parseChatMessages msgBody
+        when (length aChatMsgs > 1) $ liftIO $ putStrLn (show msgBody)
         withAckMessage agentConnId cmdId msgMeta $ do
           forM_ aChatMsgs $ \case
             Right (ACMsg _ chatMsg) ->
@@ -5611,9 +5607,11 @@ createSndMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> ConnOrGro
 createSndMessage chatMsgEvent connOrGroupId = do
   gVar <- asks idsDrg
   ChatConfig {chatVRange} <- asks config
-  withStore $ \db -> createNewSndMessage db gVar connOrGroupId $ \sharedMsgId ->
-    let msgBody = encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
-     in NewMessage {chatMsgEvent, msgBody}
+  withStore $ \db -> createNewSndMessage db gVar connOrGroupId (newMsg chatVRange)
+  where
+    newMsg chatVRange sharedMsgId = do
+      let r = encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
+      fmap (NewMessage chatMsgEvent) r
 
 sendBatchedDirectMessages :: forall e m. (MsgEncodingI e, ChatMonad m) => Connection -> NonEmpty (ChatMsgEvent e) -> ConnOrGroupId -> m ()
 sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
@@ -5636,9 +5634,9 @@ sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
       ChatConfig {chatVRange} <- asks config
       withStore' $ \db -> forM (toList events) $ \event ->
         runExceptT $ createNewSndMessage db gVar connOrGroupId (newMsg chatVRange event)
-    newMsg chatVRange chatMsgEvent sharedMsgId =
-      let msgBody = encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
-       in NewMessage {chatMsgEvent, msgBody}
+    newMsg chatVRange chatMsgEvent sharedMsgId = do
+      let r = encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
+      fmap (NewMessage chatMsgEvent) r
     partitionBatches :: [ChatMessageBatch] -> ([SndMessage], [MessagesBatch])
     partitionBatches = foldr partition' ([], [])
       where
@@ -5679,7 +5677,10 @@ batchChatMessages = mkBatch []
 directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
 directMessage chatMsgEvent = do
   ChatConfig {chatVRange} <- asks config
-  pure $ encodeChatMessage ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
+  let r = encodeChatMessage ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
+  case r of
+    Left e -> throwChatError $ CEException e
+    Right encodedBody -> pure encodedBody
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m Int64
 deliverMessage conn cmEventTag msgBody msgId = do

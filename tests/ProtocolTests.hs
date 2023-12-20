@@ -69,9 +69,13 @@ s ==## msg = do
     _ -> expectationFailure "exactly one message expected"
 
 (##==) :: MsgEncodingI e => ByteString -> ChatMessage e -> Expectation
-s ##== msg =
-  J.eitherDecodeStrict' (encodeChatMessage msg)
-    `shouldBe` (J.eitherDecodeStrict' s :: Either String J.Value)
+s ##== msg = do
+  let r = encodeChatMessage msg
+  case r of
+    Left e -> expectationFailure $ "encode error: " <> show e
+    Right encodedBody ->
+      J.eitherDecodeStrict' encodedBody
+        `shouldBe` (J.eitherDecodeStrict' s :: Either String J.Value)
 
 (##==##) :: MsgEncodingI e => ByteString -> ChatMessage e -> Expectation
 s ##==## msg = do

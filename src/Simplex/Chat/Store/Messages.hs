@@ -160,22 +160,24 @@ deleteGroupCIs db User {userId} GroupInfo {groupId} = do
   DB.execute db "DELETE FROM chat_item_reactions WHERE group_id = ?" (Only groupId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
-createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage e) -> ExceptT StoreError IO SndMessage
+createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> Either String (NewMessage e)) -> ExceptT StoreError IO SndMessage
 createNewSndMessage db gVar connOrGroupId mkMessage =
-  createWithRandomId gVar $ \sharedMsgId -> do
-    let NewMessage {chatMsgEvent, msgBody} = mkMessage $ SharedMsgId sharedMsgId
-    createdAt <- getCurrentTime
-    DB.execute
-      db
-      [sql|
-        INSERT INTO messages (
-          msg_sent, chat_msg_event, msg_body, connection_id, group_id,
-          shared_msg_id, shared_msg_id_user, created_at, updated_at
-        ) VALUES (?,?,?,?,?,?,?,?,?)
-      |]
-      (MDSnd, toCMEventTag chatMsgEvent, msgBody, connId_, groupId_, sharedMsgId, Just True, createdAt, createdAt)
-    msgId <- insertedRowId db
-    pure SndMessage {msgId, sharedMsgId = SharedMsgId sharedMsgId, msgBody}
+  createWithRandomId' gVar $ \sharedMsgId ->
+    case mkMessage (SharedMsgId sharedMsgId) of
+      Left err -> pure $ Left (SEErrorSavingMessage err)
+      Right NewMessage {chatMsgEvent, msgBody} -> do
+        createdAt <- getCurrentTime
+        DB.execute
+          db
+          [sql|
+            INSERT INTO messages (
+              msg_sent, chat_msg_event, msg_body, connection_id, group_id,
+              shared_msg_id, shared_msg_id_user, created_at, updated_at
+            ) VALUES (?,?,?,?,?,?,?,?,?)
+          |]
+          (MDSnd, toCMEventTag chatMsgEvent, msgBody, connId_, groupId_, sharedMsgId, Just True, createdAt, createdAt)
+        msgId <- insertedRowId db
+        pure $ Right SndMessage {msgId, sharedMsgId = SharedMsgId sharedMsgId, msgBody}
   where
     (connId_, groupId_) = case connOrGroupId of
       ConnectionId connId -> (Just connId, Nothing)

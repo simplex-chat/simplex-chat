@@ -85,6 +85,7 @@ data StoreError
   | SEPendingConnectionNotFound {connId :: Int64}
   | SEIntroNotFound
   | SEUniqueID
+  | SEErrorSavingMessage {message :: String}
   | SEInternalError {message :: String}
   | SEBadChatItem {itemId :: ChatItemId}
   | SEChatItemNotFound {itemId :: ChatItemId}
@@ -374,15 +375,22 @@ withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreate
 createWithRandomId :: forall a. TVar ChaChaDRG -> (ByteString -> IO a) -> ExceptT StoreError IO a
 createWithRandomId = createWithRandomBytes 12
 
+createWithRandomId' :: forall a. TVar ChaChaDRG -> (ByteString -> IO (Either StoreError a)) -> ExceptT StoreError IO a
+createWithRandomId' = createWithRandomBytes' 12
+
 createWithRandomBytes :: forall a. Int -> TVar ChaChaDRG -> (ByteString -> IO a) -> ExceptT StoreError IO a
-createWithRandomBytes size gVar create = tryCreate 3
+createWithRandomBytes size gVar create = createWithRandomBytes' size gVar (fmap Right . create)
+
+createWithRandomBytes' :: forall a. Int -> TVar ChaChaDRG -> (ByteString -> IO (Either StoreError a)) -> ExceptT StoreError IO a
+createWithRandomBytes' size gVar create = tryCreate 3
   where
     tryCreate :: Int -> ExceptT StoreError IO a
     tryCreate 0 = throwError SEUniqueID
     tryCreate n = do
       id' <- liftIO $ encodedRandomBytes gVar size
       liftIO (E.try $ create id') >>= \case
-        Right x -> pure x
+        Right (Right x) -> pure x
+        Right (Left e) -> throwError e
         Left e
           | SQL.sqlError e == SQL.ErrorConstraint -> tryCreate (n - 1)
           | otherwise -> throwError . SEInternalError $ show e

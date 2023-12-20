@@ -483,10 +483,19 @@ data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: Maybe FileInv
 
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 
-encodeChatMessage :: MsgEncodingI e => ChatMessage e -> ByteString
-encodeChatMessage msg = case chatToAppMessage msg of
-  AMJson m -> LB.toStrict $ J.encode m
-  AMBinary m -> strEncode m
+-- this limit reserves space for metadata in forwarded messages
+-- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, round to 15610
+maxChatMsgSize :: Int
+maxChatMsgSize = 15610
+
+encodeChatMessage :: MsgEncodingI e => ChatMessage e -> Either String ByteString
+encodeChatMessage msg = do
+  let body = case chatToAppMessage msg of
+        AMJson m -> LB.toStrict $ J.encode m
+        AMBinary m -> strEncode m
+  if B.length body > maxChatMsgSize
+    then Left "large message"
+    else Right body
 
 parseChatMessages :: ByteString -> [Either String AChatMessage]
 parseChatMessages "" = [Left "empty string"]
