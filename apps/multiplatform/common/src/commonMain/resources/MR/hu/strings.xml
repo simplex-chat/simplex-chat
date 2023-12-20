@@ -1527,4 +1527,6 @@
     <string name="receipts_section_description">Ezek a beállítások a jelenlegi profilodra vonatkoznak</string>
     <string name="loading_remote_file_desc">Kérjük, várj, amíg a fájl betöltődik az összekapcsolt mobilról.</string>
     <string name="read_more_in_github_with_link">További információ a &lt;font color=#0088ff&gt;GitHub tárolónkban&lt;/font&gt;.</string>
+    <string name="error_showing_content">hiba a tartalom megjelenítése közben</string>
+    <string name="error_showing_message">hiba az üzenet megjelenítésekor</string>
 </resources>
