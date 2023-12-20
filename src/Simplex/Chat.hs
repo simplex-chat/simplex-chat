@@ -5656,24 +5656,34 @@ batchChatMessages = mkBatch []
   where
     mkBatch :: [ChatMessageBatch] -> NonEmpty SndMessage -> [ChatMessageBatch]
     mkBatch batches msgs =
-      let (batch, msgs_) = encodeBatch "[" 1 0 [] msgs
+      let (batch, msgs_) = encodeBatch mempty 0 0 [] msgs
           batches' = batch : batches
        in maybe batches' (mkBatch batches') msgs_
     encodeBatch :: Builder.Builder -> Int -> Int -> [SndMessage] -> NonEmpty SndMessage -> (ChatMessageBatch, Maybe (NonEmpty SndMessage))
     encodeBatch builder len cnt batchedMsgs remainingMsgs@(msg :| msgs_)
-      | len' <= maxChatMsgSize - 1 =
+      | len' <= maxSize' =
           case L.nonEmpty msgs_ of
             Just msgs' -> encodeBatch builder' len' cnt' batchedMsgs' msgs'
-            Nothing -> (CMBMessages $ MessagesBatch (builder' <> "]") (reverse batchedMsgs'), Nothing)
-      | cnt == 0 = (CMBLargeMessage msg, L.nonEmpty msgs_)
-      | otherwise = (CMBMessages $ MessagesBatch (builder <> "]") (reverse batchedMsgs), Just remainingMsgs)
+            Nothing -> (CMBMessages $ MessagesBatch (completeBuilder builder') (reverse batchedMsgs'), Nothing)
+      | cnt' == 1 = (CMBLargeMessage msg, L.nonEmpty msgs_)
+      | otherwise = (CMBMessages $ MessagesBatch (completeBuilder builder) (reverse batchedMsgs), Just remainingMsgs)
       where
         SndMessage {msgBody} = msg
-        len' = len + B.length msgBody
-        builder'
-          | cnt == 0 = builder <> Builder.byteString msgBody
-          | otherwise = builder <> "," <> Builder.byteString msgBody
         cnt' = cnt + 1
+        len'
+          | cnt' == 1 = B.length msgBody -- initially len = 0
+          | cnt' == 2 = len + B.length msgBody + 2 -- for opening bracket "[" and comma ","
+          | otherwise = len + B.length msgBody + 1 -- for comma ","
+        builder'
+          | cnt' == 1 = Builder.byteString msgBody
+          | cnt' == 2 = "[" <> builder <> "," <> Builder.byteString msgBody
+          | otherwise = builder <> "," <> Builder.byteString msgBody
+        completeBuilder bldr
+          | cnt' == 1 = bldr
+          | otherwise = bldr <> "]"
+        maxSize'
+          | cnt' == 1 = maxChatMsgSize
+          | otherwise = maxChatMsgSize - 1 -- for closing bracket "]"
         batchedMsgs' = msg : batchedMsgs
 
 directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
