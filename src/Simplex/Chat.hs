@@ -30,6 +30,7 @@ import Data.Bifunctor (bimap, first)
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base64 as B64
+import qualified Data.ByteString.Builder as Builder
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -5621,8 +5622,9 @@ sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
     let (largeMsgs, msgBatches) = partitionBatches $ batchChatMessages msgs'
         errs' = map (\SndMessage {msgId} -> ChatError $ CELargeChatMsg msgId) largeMsgs
     unless (null errs') $ toView $ CRChatErrors Nothing errs'
-    forM_ msgBatches $ \(MessagesBatch batchMsgBody sndMsgs) -> do
-      agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) MsgFlags {notification = True} batchMsgBody
+    forM_ msgBatches $ \(MessagesBatch batchBuilder sndMsgs) -> do
+      let batchBody = LB.toStrict $ Builder.toLazyByteString batchBuilder
+      agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) MsgFlags {notification = True} batchBody
       let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
       withStore' $ \db -> forM_ sndMsgs $ \SndMessage {msgId} ->
         createSndMsgDelivery db sndMsgDelivery msgId
@@ -5643,7 +5645,7 @@ sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
         partition' (CMBMessages msgBatch) (largeMsgs, msgBatches) = (largeMsgs, msgBatch : msgBatches)
         partition' (CMBLargeMessage largeMsg) (largeMsgs, msgBatches) = (largeMsg : largeMsgs, msgBatches)
 
-data MessagesBatch = MessagesBatch ByteString [SndMessage]
+data MessagesBatch = MessagesBatch Builder.Builder [SndMessage]
 
 data ChatMessageBatch
   = CMBMessages MessagesBatch
@@ -5653,24 +5655,25 @@ batchChatMessages :: NonEmpty SndMessage -> [ChatMessageBatch]
 batchChatMessages = mkBatch []
   where
     mkBatch :: [ChatMessageBatch] -> NonEmpty SndMessage -> [ChatMessageBatch]
-    mkBatch bs msgs =
-      let (b, msgs_) = encodeBatch "[" 0 [] msgs
-          bs' = b : bs
-       in maybe bs' (mkBatch bs') msgs_
-    encodeBatch :: ByteString -> Int -> [SndMessage] -> NonEmpty SndMessage -> (ChatMessageBatch, Maybe (NonEmpty SndMessage))
-    encodeBatch s n batchedMsgs remainingMsgs@(msg :| msgs_)
-      | B.length s' <= maxChatMsgSize - 1 =
+    mkBatch batches msgs =
+      let (batch, msgs_) = encodeBatch "[" 1 0 [] msgs
+          batches' = batch : batches
+       in maybe batches' (mkBatch batches') msgs_
+    encodeBatch :: Builder.Builder -> Int -> Int -> [SndMessage] -> NonEmpty SndMessage -> (ChatMessageBatch, Maybe (NonEmpty SndMessage))
+    encodeBatch builder size count batchedMsgs remainingMsgs@(msg :| msgs_)
+      | size' <= maxChatMsgSize - 1 =
           case L.nonEmpty msgs_ of
-            Just msgs' -> encodeBatch s' n' batchedMsgs' msgs'
-            Nothing -> (CMBMessages $ MessagesBatch (s' <> "]") (reverse batchedMsgs'), Nothing)
-      | n == 0 = (CMBLargeMessage msg, L.nonEmpty msgs_)
-      | otherwise = (CMBMessages $ MessagesBatch (s <> "]") (reverse batchedMsgs), Just remainingMsgs)
+            Just msgs' -> encodeBatch builder' size' count' batchedMsgs' msgs'
+            Nothing -> (CMBMessages $ MessagesBatch (builder' <> "]") (reverse batchedMsgs'), Nothing)
+      | count == 0 = (CMBLargeMessage msg, L.nonEmpty msgs_)
+      | otherwise = (CMBMessages $ MessagesBatch (builder <> "]") (reverse batchedMsgs), Just remainingMsgs)
       where
         SndMessage {msgBody} = msg
-        s'
-          | n == 0 = s <> msgBody
-          | otherwise = s <> "," <> msgBody
-        n' = n + 1
+        size' = size + B.length msgBody
+        builder'
+          | count == 0 = builder <> Builder.byteString msgBody
+          | otherwise = builder <> "," <> Builder.byteString msgBody
+        count' = count + 1
         batchedMsgs' = msg : batchedMsgs
 
 directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
