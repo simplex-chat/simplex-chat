@@ -5660,16 +5660,16 @@ batchChatMessages = mkBatch []
           batches' = batch : batches
        in maybe batches' (mkBatch batches') msgs_
     encodeBatch :: Builder.Builder -> Int -> Int -> [SndMessage] -> NonEmpty SndMessage -> (ChatMessageBatch, Maybe (NonEmpty SndMessage))
-    encodeBatch builder size count batchedMsgs remainingMsgs@(msg :| msgs_)
-      | size' <= maxChatMsgSize - 1 =
+    encodeBatch builder length count batchedMsgs remainingMsgs@(msg :| msgs_)
+      | length' <= maxChatMsgSize - 1 =
           case L.nonEmpty msgs_ of
-            Just msgs' -> encodeBatch builder' size' count' batchedMsgs' msgs'
+            Just msgs' -> encodeBatch builder' length' count' batchedMsgs' msgs'
             Nothing -> (CMBMessages $ MessagesBatch (builder' <> "]") (reverse batchedMsgs'), Nothing)
       | count == 0 = (CMBLargeMessage msg, L.nonEmpty msgs_)
       | otherwise = (CMBMessages $ MessagesBatch (builder <> "]") (reverse batchedMsgs), Just remainingMsgs)
       where
         SndMessage {msgBody} = msg
-        size' = size + B.length msgBody
+        length' = length + B.length msgBody
         builder'
           | count == 0 = builder <> Builder.byteString msgBody
           | otherwise = builder <> "," <> Builder.byteString msgBody
