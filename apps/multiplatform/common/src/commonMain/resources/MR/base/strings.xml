@@ -45,7 +45,9 @@
   <string name="moderated_description">moderated</string>
   <string name="invalid_chat">invalid chat</string>
   <string name="invalid_data">invalid data</string>
-  <string name="failed_to_display_message">failed to display the message</string>
+  <string name="error_showing_message">error showing message</string>
+  <string name="error_showing_content">error showing content</string>
+
   <string name="decryption_error">Decryption error</string>
   <string name="encryption_renegotiation_error">Encryption re-negotiation error</string>
 

@@ -13,6 +13,6 @@ import chat.simplex.res.MR
 @Composable
 fun CIBrokenComposableView(alignment: Alignment) {
   Box(Modifier.fillMaxWidth().padding(horizontal = 10.dp, vertical = 6.dp), contentAlignment = alignment) {
-    Text(stringResource(MR.strings.failed_to_display_message), color = MaterialTheme.colors.error, fontStyle = FontStyle.Italic)
+    Text(stringResource(MR.strings.error_showing_message), color = MaterialTheme.colors.error, fontStyle = FontStyle.Italic)
   }
 }

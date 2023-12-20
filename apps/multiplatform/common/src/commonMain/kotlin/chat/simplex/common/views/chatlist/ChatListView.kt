@@ -114,9 +114,11 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
   }
   if (appPlatform.isAndroid) {
-    UserPicker(chatModel, userPickerState) {
-      scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
-      userPickerState.value = AnimatedViewState.GONE
+    tryOrShowError("UserPicker", error = {}) {
+      UserPicker(chatModel, userPickerState) {
+        scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
+        userPickerState.value = AnimatedViewState.GONE
+      }
     }
   }
 }

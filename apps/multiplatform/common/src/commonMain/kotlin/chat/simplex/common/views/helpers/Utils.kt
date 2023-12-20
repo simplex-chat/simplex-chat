@@ -405,7 +405,10 @@ fun tryOrShowError(key: Any = Exception().stackTraceToString().lines()[2], error
 }
 
 fun includeMoreFailedComposables() {
-  lastExecutedComposables.forEach { failedComposables.add(it) }
+  lastExecutedComposables.forEach {
+    failedComposables.add(it)
+    Log.i(TAG, "Added composable key as failed: $it")
+  }
   lastExecutedComposables.clear()
 }
 
