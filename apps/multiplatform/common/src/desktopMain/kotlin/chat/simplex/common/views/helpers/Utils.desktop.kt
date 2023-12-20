@@ -5,11 +5,11 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Density
-import chat.simplex.common.model.*
+import chat.simplex.common.model.CIFile
+import chat.simplex.common.model.readCryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.simplexWindowState
-import java.io.ByteArrayInputStream
-import java.io.File
+import java.io.*
 import java.net.URI
 import javax.imageio.ImageIO
 import kotlin.io.encoding.Base64
@@ -148,9 +148,8 @@ actual suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean)
   return if (file != null) {
     try {
       val ext = if (asPng) "png" else "jpg"
-      val newFile = File(file.absolutePath + File.separator + generateNewFileName("IMG", ext, File(getAppFilePath(""))))
-      // LALAL FILE IS EMPTY
-      ImageIO.write(image.toAwtImage(), ext.uppercase(), newFile.outputStream())
+      val newFile = File(file.absolutePath + File.separator + generateNewFileName("IMG", ext, File(file.absolutePath)))
+      ImageIO.write(image.toAwtImage(), ext, newFile.outputStream())
       newFile
     } catch (e: Exception) {
       Log.e(TAG, "Util.kt saveTempImageUncompressed error: ${e.message}")

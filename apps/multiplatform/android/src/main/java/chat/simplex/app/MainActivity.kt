@@ -124,7 +124,9 @@ fun processIntent(intent: Intent?) {
   when (intent?.action) {
     "android.intent.action.VIEW" -> {
       val uri = intent.data
-      if (uri != null) connectIfOpenedViaUri(chatModel.remoteHostId(), uri.toURI(), ChatModel)
+      if (uri != null) {
+        chatModel.appOpenUrl.value = null to uri.toURI()
+      }
     }
   }
 }

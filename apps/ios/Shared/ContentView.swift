@@ -14,11 +14,14 @@ struct ContentView: View {
     @ObservedObject var alertManager = AlertManager.shared
     @ObservedObject var callController = CallController.shared
     @Environment(\.colorScheme) var colorScheme
-    @Binding var doAuthenticate: Bool
-    @Binding var userAuthorized: Bool?
-    @Binding var canConnectCall: Bool
-    @Binding var lastSuccessfulUnlock: TimeInterval?
-    @Binding var showInitializationView: Bool
+
+    var contentAccessAuthenticationExtended: Bool
+
+    @Environment(\.scenePhase) var scenePhase
+    @State private var automaticAuthenticationAttempted = false
+    @State private var canConnectViewCall = false
+    @State private var lastSuccessfulUnlock: TimeInterval? = nil
+
     @AppStorage(DEFAULT_SHOW_LA_NOTICE) private var prefShowLANotice = false
     @AppStorage(DEFAULT_LA_NOTICE_SHOWN) private var prefLANoticeShown = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -40,9 +43,19 @@ struct ContentView: View {
         }
     }
 
+    private var accessAuthenticated: Bool {
+        chatModel.contentViewAccessAuthenticated || contentAccessAuthenticationExtended
+    }
+
     var body: some View {
         ZStack {
-            contentView()
+            // contentView() has to be in a single branch, so that enabling authentication doesn't trigger re-rendering and close settings.
+            // i.e. with separate branches like this settings are closed: `if prefPerformLA { ... contentView() ... } else { contentView() }
+            if !prefPerformLA || accessAuthenticated {
+                contentView()
+            } else {
+                lockButton()
+            }
             if chatModel.showCallView, let call = chatModel.activeCall {
                 callView(call)
             }
@@ -50,6 +63,7 @@ struct ContentView: View {
                 LocalAuthView(authRequest: la)
             } else if showSetPasscode {
                 SetAppPasscodeView {
+                    chatModel.contentViewAccessAuthenticated = true
                     prefPerformLA = true
                     showSetPasscode = false
                     privacyLocalAuthModeDefault.set(.passcode)
@@ -60,13 +74,9 @@ struct ContentView: View {
                     alertManager.showAlert(laPasscodeNotSetAlert())
                 }
             }
-        }
-        .onAppear {
-            if prefPerformLA { requestNtfAuthorization() }
-            initAuthenticate()
-        }
-        .onChange(of: doAuthenticate) { _ in
-            initAuthenticate()
+            if chatModel.chatDbStatus == nil {
+                initializationView()
+            }
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }
         .sheet(isPresented: $showSettings) {
@@ -76,14 +86,44 @@ struct ContentView: View {
             Button("System authentication") { initialEnableLA() }
             Button("Passcode entry") { showSetPasscode = true }
         }
+        .onChange(of: scenePhase) { phase in
+            logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
+            switch (phase) {
+            case .background:
+                // also see .onChange(of: scenePhase) in SimpleXApp: on entering background
+                // it remembers enteredBackgroundAuthenticated and sets chatModel.contentViewAccessAuthenticated to false
+                automaticAuthenticationAttempted = false
+                canConnectViewCall = false
+            case .active:
+                canConnectViewCall = !prefPerformLA || contentAccessAuthenticationExtended || unlockedRecently()
+                
+                // condition `!chatModel.contentViewAccessAuthenticated` is required for when authentication is enabled in settings or on initial notice
+                if prefPerformLA && !chatModel.contentViewAccessAuthenticated {
+                    if AppChatState.shared.value != .stopped {
+                        if contentAccessAuthenticationExtended {
+                            chatModel.contentViewAccessAuthenticated = true
+                        } else {
+                            if !automaticAuthenticationAttempted {
+                                automaticAuthenticationAttempted = true
+                                // authenticate if call kit call is not in progress
+                                if !(CallController.useCallKit() && chatModel.showCallView && chatModel.activeCall != nil) {
+                                    authenticateContentViewAccess()
+                                }
+                            }
+                        }
+                    } else {
+                        // when app is stopped automatic authentication is not attempted
+                        chatModel.contentViewAccessAuthenticated = contentAccessAuthenticationExtended
+                    }
+                }
+            default:
+                break
+            }
+        }
     }
 
     @ViewBuilder private func contentView() -> some View {
-        if prefPerformLA && userAuthorized != true {
-            lockButton()
-        } else if chatModel.chatDbStatus == nil && showInitializationView {
-            initializationView()
-        } else if let status = chatModel.chatDbStatus, status != .ok {
+        if let status = chatModel.chatDbStatus, status != .ok {
             DatabaseErrorView(status: status)
         } else if !chatModel.v3DBMigration.startChat {
             MigrateToAppGroupView()
@@ -106,11 +146,11 @@ struct ContentView: View {
         if CallController.useCallKit() {
             ActiveCallView(call: call, canConnectCall: Binding.constant(true))
                 .onDisappear {
-                    if userAuthorized == false && doAuthenticate { runAuthenticate() }
+                    if prefPerformLA && !accessAuthenticated { authenticateContentViewAccess() }
                 }
         } else {
-            ActiveCallView(call: call, canConnectCall: $canConnectCall)
-            if prefPerformLA && userAuthorized != true {
+            ActiveCallView(call: call, canConnectCall: $canConnectViewCall)
+            if prefPerformLA && !accessAuthenticated {
                 Rectangle()
                     .fill(colorScheme == .dark ? .black : .white)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -120,22 +160,27 @@ struct ContentView: View {
     }
 
     private func lockButton() -> some View {
-        Button(action: runAuthenticate) { Label("Unlock", systemImage: "lock") }
+        Button(action: authenticateContentViewAccess) { Label("Unlock", systemImage: "lock") }
     }
 
     private func initializationView() -> some View {
         VStack {
             ProgressView().scaleEffect(2)
-            Text("Opening database…")
+            Text("Opening app…")
                 .padding()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity )
+        .background(
+            Rectangle()
+                .fill(.background)
+        ) 
     }
 
     private func mainView() -> some View {
         ZStack(alignment: .top) {
             ChatListView(showSettings: $showSettings).privacySensitive(protectScreen)
             .onAppear {
-                if !prefPerformLA { requestNtfAuthorization() }
+                requestNtfAuthorization()
                 // Local Authentication notice is to be shown on next start after onboarding is complete
                 if (!prefLANoticeShown && prefShowLANotice && !chatModel.chats.isEmpty) {
                     prefLANoticeShown = true
@@ -187,48 +232,37 @@ struct ContentView: View {
         }
     }
 
-    private func initAuthenticate() {
-        logger.debug("initAuthenticate")
-        if CallController.useCallKit() && chatModel.showCallView && chatModel.activeCall != nil {
-            userAuthorized = false
-        } else if doAuthenticate {
-            runAuthenticate()
-        }
-    }
-
-    private func runAuthenticate() {
-        logger.debug("DEBUGGING: runAuthenticate")
-        if !prefPerformLA {
-            userAuthorized = true
+    private func unlockedRecently() -> Bool {
+        if let lastSuccessfulUnlock = lastSuccessfulUnlock {
+            return ProcessInfo.processInfo.systemUptime - lastSuccessfulUnlock < 2
         } else {
-            logger.debug("DEBUGGING: before dismissAllSheets")
-            dismissAllSheets(animated: false) {
-                logger.debug("DEBUGGING: in dismissAllSheets callback")
-                chatModel.chatId = nil
-                justAuthenticate()
-            }
+            return false
         }
     }
 
-    private func justAuthenticate() {
-        userAuthorized = false
-        let laMode = privacyLocalAuthModeDefault.get()
-        authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason"), selfDestruct: true) { laResult in
-            logger.debug("DEBUGGING: authenticate callback: \(String(describing: laResult))")
-            switch (laResult) {
-            case .success:
-                userAuthorized = true
-                canConnectCall = true
-                lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
-            case .failed:
-                if laMode == .passcode {
-                    AlertManager.shared.showAlert(laFailedAlert())
+    private func authenticateContentViewAccess() {
+        logger.debug("DEBUGGING: authenticateContentViewAccess")
+        dismissAllSheets(animated: false) {
+            logger.debug("DEBUGGING: authenticateContentViewAccess, in dismissAllSheets callback")
+            chatModel.chatId = nil
+
+            authenticate(reason: NSLocalizedString("Unlock app", comment: "authentication reason"), selfDestruct: true) { laResult in
+                logger.debug("DEBUGGING: authenticate callback: \(String(describing: laResult))")
+                switch (laResult) {
+                case .success:
+                    chatModel.contentViewAccessAuthenticated = true
+                    canConnectViewCall = true
+                    lastSuccessfulUnlock = ProcessInfo.processInfo.systemUptime
+                case .failed:
+                    chatModel.contentViewAccessAuthenticated = false
+                    if privacyLocalAuthModeDefault.get() == .passcode {
+                        AlertManager.shared.showAlert(laFailedAlert())
+                    }
+                case .unavailable:
+                    prefPerformLA = false
+                    canConnectViewCall = true
+                    AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
                 }
-            case .unavailable:
-                userAuthorized = true
-                prefPerformLA = false
-                canConnectCall = true
-                AlertManager.shared.showAlert(laUnavailableTurningOffAlert())
             }
         }
     }
@@ -259,6 +293,7 @@ struct ContentView: View {
         authenticate(reason: NSLocalizedString("Enable SimpleX Lock", comment: "authentication reason")) { laResult in
             switch laResult {
             case .success:
+                chatModel.contentViewAccessAuthenticated = true
                 prefPerformLA = true
                 alertManager.showAlert(laTurnedOnAlert())
             case .failed:

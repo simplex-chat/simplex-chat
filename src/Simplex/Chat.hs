@@ -34,7 +34,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char
 import Data.Constraint (Dict (..))
-import Data.Either (fromRight, partitionEithers, rights)
+import Data.Either (fromRight, lefts, partitionEithers, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -472,12 +472,14 @@ processChatCommand = \case
       coupleDaysAgo t = (`addUTCTime` t) . fromInteger . negate . (+ (2 * day)) <$> randomRIO (0, day)
       day = 86400
   ListUsers -> CRUsersList <$> withStoreCtx' (Just "ListUsers, getUsersInfo") getUsersInfo
-  APISetActiveUser userId' viewPwd_ -> withUser $ \user -> do
+  APISetActiveUser userId' viewPwd_ -> do
+    unlessM chatStarted $ throwChatError CEChatNotStarted
+    user_ <- chatReadVar currentUser
     user' <- privateGetUser userId'
-    validateUserPassword user user' viewPwd_
+    validateUserPassword_ user_ user' viewPwd_
     withStoreCtx' (Just "APISetActiveUser, setActiveUser") $ \db -> setActiveUser db userId'
     let user'' = user' {activeUser = True}
-    asks currentUser >>= atomically . (`writeTVar` Just user'')
+    chatWriteVar currentUser $ Just user''
     pure $ CRActiveUser user''
   SetActiveUser uName viewPwd_ -> do
     tryChatError (withStore (`getUserIdByName` uName)) >>= \case
@@ -2300,11 +2302,14 @@ processChatCommand = \case
       tryChatError (withStore (`getUser` userId)) >>= \case
         Left _ -> throwChatError CEUserUnknown
         Right user -> pure user
-    validateUserPassword :: User -> User -> Maybe UserPwd -> m ()
-    validateUserPassword User {userId} User {userId = userId', viewPwdHash} viewPwd_ =
+    validateUserPassword :: User -> User -> Maybe UserPwd -> m ()        
+    validateUserPassword = validateUserPassword_ . Just
+    validateUserPassword_ :: Maybe User -> User -> Maybe UserPwd -> m ()
+    validateUserPassword_ user_ User {userId = userId', viewPwdHash} viewPwd_ =
       forM_ viewPwdHash $ \pwdHash ->
-        let pwdOk = case viewPwd_ of
-              Nothing -> userId == userId'
+        let userId_ = (\User {userId} -> userId) <$> user_
+            pwdOk = case viewPwd_ of
+              Nothing -> userId_ == Just userId'
               Just (UserPwd viewPwd) -> validPassword viewPwd pwdHash
          in unless pwdOk $ throwChatError CEUserUnknown
     validPassword :: Text -> UserPwdHash -> Bool
@@ -2327,16 +2332,16 @@ processChatCommand = \case
           pure $ CRUserPrivacy {user, updatedUser = user'}
     checkDeleteChatUser :: User -> m ()
     checkDeleteChatUser user@User {userId} = do
-      when (activeUser user) $ throwChatError (CECantDeleteActiveUser userId)
       users <- withStore' getUsers
-      unless (length users > 1 && (isJust (viewPwdHash user) || length (filter (isNothing . viewPwdHash) users) > 1)) $
-        throwChatError (CECantDeleteLastUser userId)
+      let otherVisible = filter (\User {userId = userId', viewPwdHash} -> userId /= userId' && isNothing viewPwdHash) users
+      when (activeUser user && length otherVisible > 0) $ throwChatError (CECantDeleteActiveUser userId)
     deleteChatUser :: User -> Bool -> m ChatResponse
     deleteChatUser user delSMPQueues = do
       filesInfo <- withStore' (`getUserFileInfo` user)
       forM_ filesInfo $ \fileInfo -> deleteFile user fileInfo
       withAgent $ \a -> deleteUser a (aUserId user) delSMPQueues
       withStore' (`deleteUserRecord` user)
+      when (activeUser user) $ chatWriteVar currentUser Nothing
       ok_
     updateChatSettings :: ChatName -> (ChatSettings -> ChatSettings) -> m ChatResponse
     updateChatSettings (ChatName cType name) updateSettings = withUser $ \user -> do
@@ -4998,7 +5003,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
             Left _ -> messageError "x.grp.mem.inv error: referenced member does not exist"
             Right reMember -> do
               GroupMemberIntro {introId} <- withStore $ \db -> saveIntroInvitation db reMember m introInv
-              void . sendGroupMessage' user [reMember] (XGrpMemFwd (memberInfo m) introInv) groupId (Just introId) $
+              sendGroupMemberMessage user reMember (XGrpMemFwd (memberInfo m) introInv) groupId (Just introId) $
                 withStore' $
                   \db -> updateIntroStatus db introId GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
@@ -5525,46 +5530,62 @@ directMessage chatMsgEvent = do
   pure $ strEncode ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m Int64
-deliverMessage conn@Connection {connId} cmEventTag msgBody msgId = do
-  let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
-  agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) msgFlags msgBody
-  let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
-  withStore' $ \db -> createSndMsgDelivery db sndMsgDelivery msgId
+deliverMessage conn cmEventTag msgBody msgId =
+  deliverMessages [(conn, cmEventTag, msgBody, msgId)] >>= \case
+    [r] -> liftEither r
+    rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
+
+deliverMessages :: ChatMonad' m => [(Connection, CMEventTag e, MsgBody, MessageId)] -> m [Either ChatError Int64]
+deliverMessages msgReqs = do
+  sent <- zipWith prepareBatch msgReqs <$> withAgent' (`sendMessages` aReqs)
+  withStoreBatch $ \db -> map (bindRight $ createDelivery db) sent
+  where
+    aReqs = map (\(conn, cmEvTag, msgBody, _msgId) -> (aConnId conn, msgFlags cmEvTag, msgBody)) msgReqs
+    msgFlags cmEvTag = MsgFlags {notification = hasNotification cmEvTag}
+    prepareBatch req = bimap (`ChatErrorAgent` Nothing) (req,)
+    createDelivery :: DB.Connection -> ((Connection, CMEventTag e, MsgBody, MessageId), AgentMsgId) -> IO (Either ChatError Int64)
+    createDelivery db ((Connection {connId}, _, _, msgId), agentMsgId) =
+      Right <$> createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId}) msgId
 
 sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
-sendGroupMessage user GroupInfo {groupId} members chatMsgEvent =
-  sendGroupMessage' user members chatMsgEvent groupId Nothing $ pure ()
-
-sendGroupMessage' :: forall e m. (MsgEncodingI e, ChatMonad m) => User -> [GroupMember] -> ChatMsgEvent e -> Int64 -> Maybe Int64 -> m () -> m (SndMessage, [GroupMember])
-sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
-  msg <- createSndMessage chatMsgEvent (GroupId groupId)
-  -- TODO collect failed deliveries into a single error
+sendGroupMessage user GroupInfo {groupId} members chatMsgEvent = do
+  msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent (GroupId groupId)
   recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members) $ \GroupMember {memberRole} -> memberRole
-  rs <- forM recipientMembers $ \m ->
-    messageMember m msg `catchChatError` (\e -> toView (CRChatError (Just user) e) $> Nothing)
-  let sentToMembers = catMaybes rs
+  let tag = toCMEventTag chatMsgEvent
+      (toSend, pending) = foldr addMember ([], []) recipientMembers
+      msgReqs = map (\(_, conn) -> (conn, tag, msgBody, msgId)) toSend
+  delivered <- deliverMessages msgReqs
+  let errors = lefts delivered
+  unless (null errors) $ toView $ CRChatErrors (Just user) errors
+  stored <- withStoreBatch' $ \db -> map (\m -> createPendingGroupMessage db (groupMemberId' m) msgId Nothing) pending
+  let sentToMembers = filterSent delivered toSend fst <> filterSent stored pending id
   pure (msg, sentToMembers)
   where
-    messageMember :: GroupMember -> SndMessage -> m (Maybe GroupMember)
-    messageMember m@GroupMember {groupMemberId} SndMessage {msgId, msgBody} = case memberConn m of
-      Nothing -> pendingOrForwarded
-      Just conn@Connection {connStatus}
-        | connDisabled conn || connStatus == ConnDeleted -> pure Nothing
-        | connStatus == ConnSndReady || connStatus == ConnReady -> do
-            let tag = toCMEventTag chatMsgEvent
-            deliverMessage conn tag msgBody msgId >> postDeliver
-            pure $ Just m
-        | otherwise -> pendingOrForwarded
+    addMember m (toSend, pending) = case memberSendAction chatMsgEvent members m of
+      Just (MSASend conn) -> ((m, conn) : toSend, pending)
+      Just MSAPending -> (toSend, m : pending)
+      Nothing -> (toSend, pending)
+    filterSent :: [Either ChatError a] -> [mem] -> (mem -> GroupMember) -> [GroupMember]
+    filterSent rs ms mem = [mem m | (Right _, m) <- zip rs ms]
+
+data MemberSendAction = MSASend Connection | MSAPending
+
+memberSendAction :: ChatMsgEvent e -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
+memberSendAction chatMsgEvent members m = case memberConn m of
+  Nothing -> pendingOrForwarded
+  Just conn@Connection {connStatus}
+    | connDisabled conn || connStatus == ConnDeleted -> Nothing
+    | connStatus == ConnSndReady || connStatus == ConnReady -> Just (MSASend conn)
+    | otherwise -> pendingOrForwarded
+  where
+    pendingOrForwarded
+      | forwardSupported && isForwardedGroupMsg chatMsgEvent = Nothing
+      | isXGrpMsgForward chatMsgEvent = Nothing
+      | otherwise = Just MSAPending
       where
-        pendingOrForwarded
-          | forwardSupported && isForwardedGroupMsg chatMsgEvent = pure Nothing
-          | isXGrpMsgForward chatMsgEvent = pure Nothing
-          | otherwise = do
-              withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
-              pure $ Just m
-        forwardSupported = do
+        forwardSupported =
           let mcvr = memberChatVRange' m
-          isCompatibleRange mcvr groupForwardVRange && invitingMemberSupportsForward
+           in isCompatibleRange mcvr groupForwardVRange && invitingMemberSupportsForward
         invitingMemberSupportsForward = case m.invitedByGroupMemberId of
           Just invMemberId ->
             -- can be optimized for large groups by replacing [GroupMember] with Map GroupMemberId GroupMember
@@ -5577,6 +5598,16 @@ sendGroupMessage' user members chatMsgEvent groupId introId_ postDeliver = do
         isXGrpMsgForward ev = case ev of
           XGrpMsgForward {} -> True
           _ -> False
+
+sendGroupMemberMessage :: forall e m. (MsgEncodingI e, ChatMonad m) => User -> GroupMember -> ChatMsgEvent e -> Int64 -> Maybe Int64 -> m () -> m ()
+sendGroupMemberMessage user m@GroupMember {groupMemberId} chatMsgEvent groupId introId_ postDeliver = do
+  msg <- createSndMessage chatMsgEvent (GroupId groupId)
+  messageMember msg `catchChatError` (\e -> toView (CRChatError (Just user) e))
+  where
+    messageMember :: SndMessage -> m ()
+    messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction chatMsgEvent [m] m) $ \case
+      MSASend conn -> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
+      MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId introId_
 
 shuffleMembers :: [a] -> (a -> GroupMemberRole) -> IO [a]
 shuffleMembers ms role = do
