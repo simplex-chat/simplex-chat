@@ -5662,17 +5662,14 @@ batchChatMessages = reverse . mkBatch []
        in maybe batches' (mkBatch batches') msgs_
     encodeBatch :: Builder.Builder -> Int64 -> Int -> [SndMessage] -> NonEmpty SndMessage -> (ChatMessageBatch, Maybe (NonEmpty SndMessage))
     encodeBatch builder len cnt batchedMsgs remainingMsgs@(msg :| msgs_)
+      -- message fits
       | len' <= maxSize' =
           case L.nonEmpty msgs_ of
             Just msgs' -> encodeBatch builder' len' cnt' batchedMsgs' msgs'
-            Nothing -> (CMBMessages $ MessagesBatch completeBuilder (reverse batchedMsgs'), Nothing)
-              where
-                completeBuilder
-                  | cnt' == 1 = builder'
-                  | otherwise = builder' <> "]"
-      | cnt' == 1 = (CMBLargeMessage msg, L.nonEmpty msgs_)
-      | cnt' == 2 = (CMBMessages $ MessagesBatch builder (reverse batchedMsgs), Just remainingMsgs)
-      | otherwise = (CMBMessages $ MessagesBatch (builder <> "]") (reverse batchedMsgs), Just remainingMsgs)
+            Nothing -> completeBatchLastMsgFits
+      -- message doesn't fit
+      | cnt == 0 = (CMBLargeMessage msg, L.nonEmpty msgs_)
+      | otherwise = completeBatchMsgDoesntFit
       where
         SndMessage {msgBody} = msg
         cnt' = cnt + 1
@@ -5688,6 +5685,18 @@ batchChatMessages = reverse . mkBatch []
           | cnt' == 1 = maxChatMsgSize
           | otherwise = maxChatMsgSize - 1 -- for closing bracket "]"
         batchedMsgs' = msg : batchedMsgs
+        completeBatchLastMsgFits =
+          (CMBMessages $ MessagesBatch completeBuilder (reverse batchedMsgs'), Nothing)
+          where
+            completeBuilder
+              | cnt' == 1 = builder' -- if last message fits, we look at current cnt'
+              | otherwise = builder' <> "]"
+        completeBatchMsgDoesntFit =
+          (CMBMessages $ MessagesBatch completeBuilder (reverse batchedMsgs), Just remainingMsgs)
+          where
+            completeBuilder
+              | cnt == 1 = builder -- if message doesn't fit, we look at previous cnt
+              | otherwise = builder <> "]"
 
 directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
 directMessage chatMsgEvent = do
