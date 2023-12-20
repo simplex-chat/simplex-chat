@@ -5659,7 +5659,7 @@ batchChatMessages = mkBatch []
       let (batch, msgs_) = encodeBatch mempty 0 0 [] msgs
           batches' = batch : batches
        in maybe batches' (mkBatch batches') msgs_
-    encodeBatch :: Builder.Builder -> Int -> Int -> [SndMessage] -> NonEmpty SndMessage -> (ChatMessageBatch, Maybe (NonEmpty SndMessage))
+    encodeBatch :: Builder.Builder -> Int64 -> Int -> [SndMessage] -> NonEmpty SndMessage -> (ChatMessageBatch, Maybe (NonEmpty SndMessage))
     encodeBatch builder len cnt batchedMsgs remainingMsgs@(msg :| msgs_)
       | len' <= maxSize' =
           case L.nonEmpty msgs_ of
@@ -5671,13 +5671,13 @@ batchChatMessages = mkBatch []
         SndMessage {msgBody} = msg
         cnt' = cnt + 1
         len'
-          | cnt' == 1 = B.length msgBody -- initially len = 0
-          | cnt' == 2 = len + B.length msgBody + 2 -- for opening bracket "[" and comma ","
-          | otherwise = len + B.length msgBody + 1 -- for comma ","
+          | cnt' == 1 = LB.length msgBody -- initially len = 0
+          | cnt' == 2 = len + LB.length msgBody + 2 -- for opening bracket "[" and comma ","
+          | otherwise = len + LB.length msgBody + 1 -- for comma ","
         builder'
-          | cnt' == 1 = Builder.byteString msgBody
-          | cnt' == 2 = "[" <> builder <> "," <> Builder.byteString msgBody
-          | otherwise = builder <> "," <> Builder.byteString msgBody
+          | cnt' == 1 = Builder.lazyByteString msgBody
+          | cnt' == 2 = "[" <> builder <> "," <> Builder.lazyByteString msgBody
+          | otherwise = builder <> "," <> Builder.lazyByteString msgBody
         completeBuilder bldr
           | cnt' == 1 = bldr
           | otherwise = bldr <> "]"
@@ -5692,27 +5692,27 @@ directMessage chatMsgEvent = do
   let r = encodeChatMessage ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
   case r of
     Left e -> throwChatError $ CEException e
-    Right encodedBody -> pure encodedBody
+    Right encodedBody -> pure . LB.toStrict $ encodedBody
 
-deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m Int64
+deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> LazyMsgBody -> MessageId -> m Int64
 deliverMessage conn cmEventTag msgBody msgId = do
   let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
   deliverMessage' conn msgFlags msgBody msgId
 
-deliverMessage' :: ChatMonad m => Connection -> MsgFlags -> MsgBody -> MessageId -> m Int64
+deliverMessage' :: ChatMonad m => Connection -> MsgFlags -> LazyMsgBody -> MessageId -> m Int64
 deliverMessage' conn msgFlags msgBody msgId =
   deliverMessages [(conn, msgFlags, msgBody, msgId)] >>= \case
     [r] -> liftEither r
     rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
-deliverMessages :: ChatMonad' m => [(Connection, MsgFlags, MsgBody, MessageId)] -> m [Either ChatError Int64]
+deliverMessages :: ChatMonad' m => [(Connection, MsgFlags, LazyMsgBody, MessageId)] -> m [Either ChatError Int64]
 deliverMessages msgReqs = do
   sent <- zipWith prepareBatch msgReqs <$> withAgent' (`sendMessages` aReqs)
   withStoreBatch $ \db -> map (bindRight $ createDelivery db) sent
   where
-    aReqs = map (\(conn, msgFlags, msgBody, _msgId) -> (aConnId conn, msgFlags, msgBody)) msgReqs
+    aReqs = map (\(conn, msgFlags, msgBody, _msgId) -> (aConnId conn, msgFlags, LB.toStrict msgBody)) msgReqs
     prepareBatch req = bimap (`ChatErrorAgent` Nothing) (req,)
-    createDelivery :: DB.Connection -> ((Connection, MsgFlags, MsgBody, MessageId), AgentMsgId) -> IO (Either ChatError Int64)
+    createDelivery :: DB.Connection -> ((Connection, MsgFlags, LazyMsgBody, MessageId), AgentMsgId) -> IO (Either ChatError Int64)
     createDelivery db ((Connection {connId}, _, _, msgId), agentMsgId) =
       Right <$> createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId}) msgId
 
@@ -5807,7 +5807,7 @@ saveDirectRcvMSG conn@Connection {connId} agentMsgMeta agentAckCmdId msgBody =
     [Right (ACMsg _ ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent})] -> do
       conn' <- updatePeerChatVRange conn chatVRange
       let agentMsgId = fst $ recipient agentMsgMeta
-          newMsg = NewMessage {chatMsgEvent, msgBody}
+          newMsg = NewRcvMessage {chatMsgEvent, msgBody}
           rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId}
       msg <- withStore $ \db -> createNewMessageAndRcvMsgDelivery db (ConnectionId connId) newMsg sharedMsgId_ rcvMsgDelivery Nothing
       pure (conn', msg)
@@ -5818,7 +5818,7 @@ saveGroupRcvMsg :: (MsgEncodingI e, ChatMonad m) => User -> GroupId -> GroupMemb
 saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta agentAckCmdId msgBody ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = do
   (am', conn') <- updateMemberChatVRange authorMember conn chatVRange
   let agentMsgId = fst $ recipient agentMsgMeta
-      newMsg = NewMessage {chatMsgEvent, msgBody}
+      newMsg = NewRcvMessage {chatMsgEvent, msgBody}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId}
       amId = Just am'.groupMemberId
   msg <-
@@ -5834,7 +5834,7 @@ saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta 
 
 saveGroupFwdRcvMsg :: (MsgEncodingI e, ChatMonad m) => User -> GroupId -> GroupMember -> GroupMember -> MsgBody -> ChatMessage e -> m RcvMessage
 saveGroupFwdRcvMsg user groupId forwardingMember refAuthorMember msgBody ChatMessage {msgId = sharedMsgId_, chatMsgEvent} = do
-  let newMsg = NewMessage {chatMsgEvent, msgBody}
+  let newMsg = NewRcvMessage {chatMsgEvent, msgBody}
       fwdMemberId = Just $ groupMemberId' forwardingMember
       refAuthorId = Just $ groupMemberId' refAuthorMember
   withStore (\db -> createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ refAuthorId fwdMemberId)

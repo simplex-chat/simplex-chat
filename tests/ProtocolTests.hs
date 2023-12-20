@@ -7,6 +7,7 @@ module ProtocolTests where
 
 import qualified Data.Aeson as J
 import Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Time.Clock.System (SystemTime (..), systemToUTCTime)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
@@ -74,7 +75,7 @@ s ##== msg = do
   case r of
     Left e -> expectationFailure $ "encode error: " <> show e
     Right encodedBody ->
-      J.eitherDecodeStrict' encodedBody
+      J.eitherDecodeStrict' (LB.toStrict encodedBody)
         `shouldBe` (J.eitherDecodeStrict' s :: Either String J.Value)
 
 (##==##) :: MsgEncodingI e => ByteString -> ChatMessage e -> Expectation

@@ -22,6 +22,7 @@ import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
+import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace)
 import Data.Int (Int64)
@@ -763,17 +764,25 @@ checkChatType x = case testEquality (chatTypeI @c) (chatTypeI @c') of
   Just Refl -> Right x
   Nothing -> Left "bad chat type"
 
-data NewMessage e = NewMessage
+type LazyMsgBody = L.ByteString
+
+data NewSndMessage e = NewMessage
   { chatMsgEvent :: ChatMsgEvent e,
-    msgBody :: MsgBody
+    msgBody :: LazyMsgBody
   }
   deriving (Show)
 
 data SndMessage = SndMessage
   { msgId :: MessageId,
     sharedMsgId :: SharedMsgId,
+    msgBody :: LazyMsgBody
+  }
+
+data NewRcvMessage e = NewRcvMessage
+  { chatMsgEvent :: ChatMsgEvent e,
     msgBody :: MsgBody
   }
+  deriving (Show)
 
 data RcvMessage = RcvMessage
   { msgId :: MessageId,
@@ -787,7 +796,7 @@ data RcvMessage = RcvMessage
 data PendingGroupMessage = PendingGroupMessage
   { msgId :: MessageId,
     cmEventTag :: ACMEventTag,
-    msgBody :: MsgBody,
+    msgBody :: LazyMsgBody,
     introId_ :: Maybe Int64
   }
 
