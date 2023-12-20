@@ -1529,4 +1529,7 @@
     <string name="open_port_in_firewall_title">فتح منفذ في جدار الحماية</string>
     <string name="disconnect_remote_hosts">اقطع اتصال الجوالات</string>
     <string name="no_connected_mobile">لا يوجد جوال متصل</string>
+    <string name="error_showing_content">خطأ في إظهار المحتوى</string>
+    <string name="error_showing_message">خطأ في إظهار الرسالة</string>
+    <string name="callstatus_ended">انتهت المكالمة %1$s</string>
 </resources>
