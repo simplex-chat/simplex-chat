@@ -353,6 +353,7 @@ serverCfg =
       serverStatsBackupFile = Nothing,
       smpServerVRange = supportedSMPServerVRange,
       transportConfig = defaultTransportServerConfig,
+      smpHandshakeTimeout = 1000000,
       controlPort = Nothing
     }
 
