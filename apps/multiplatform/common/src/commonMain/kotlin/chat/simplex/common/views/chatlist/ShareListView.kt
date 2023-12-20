@@ -47,10 +47,12 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
     }
   }
   if (appPlatform.isAndroid) {
-    UserPicker(chatModel, userPickerState, showSettings = false, showCancel = true, cancelClicked = {
-      chatModel.sharedContent.value = null
-      userPickerState.value = AnimatedViewState.GONE
-    })
+    tryOrShowError("UserPicker", error = {}) {
+      UserPicker(chatModel, userPickerState, showSettings = false, showCancel = true, cancelClicked = {
+        chatModel.sharedContent.value = null
+        userPickerState.value = AnimatedViewState.GONE
+      })
+    }
   }
 }
 
