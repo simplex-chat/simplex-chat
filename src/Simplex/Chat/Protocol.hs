@@ -490,12 +490,13 @@ maxChatMsgSize = 15610
 
 encodeChatMessage :: MsgEncodingI e => ChatMessage e -> Either String ByteString
 encodeChatMessage msg = do
-  let body = case chatToAppMessage msg of
-        AMJson m -> LB.toStrict $ J.encode m
-        AMBinary m -> strEncode m
-  if B.length body > maxChatMsgSize
-    then Left "large message"
-    else Right body
+  case chatToAppMessage msg of
+    AMJson m -> do
+      let body = LB.toStrict $ J.encode m
+      if B.length body > maxChatMsgSize
+        then Left "large message"
+        else Right body
+    AMBinary m -> Right $ strEncode m
 
 parseChatMessages :: ByteString -> [Either String AChatMessage]
 parseChatMessages "" = [Left "empty string"]

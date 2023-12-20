@@ -3709,7 +3709,6 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta `catchChatError` \_ -> pure ()
         cmdId <- createAckCmd conn
         let aChatMsgs = parseChatMessages msgBody
-        when (length aChatMsgs > 1) $ liftIO $ putStrLn (show msgBody)
         withAckMessage agentConnId cmdId msgMeta $ do
           forM_ aChatMsgs $ \case
             Right (ACMsg _ chatMsg) ->
