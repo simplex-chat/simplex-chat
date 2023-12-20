@@ -5679,6 +5679,7 @@ batchChatMessages = reverse . mkBatch []
           | cnt' == 1 = Builder.lazyByteString msgBody
           | cnt' == 2 = "[" <> builder <> "," <> Builder.lazyByteString msgBody
           | otherwise = builder <> "," <> Builder.lazyByteString msgBody
+        -- TODO test, probably need different functions for a case when only a single message fits into batch
         completeBuilder bldr
           | cnt' == 1 = bldr
           | otherwise = bldr <> "]"
