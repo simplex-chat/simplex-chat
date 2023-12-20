@@ -41,6 +41,7 @@ CREATE INDEX idx_msg_deliveries_agent_ack_cmd_id ON "msg_deliveries"(connection_
 CREATE INDEX idx_msg_deliveries_agent_msg_id ON "msg_deliveries"(connection_id, agent_msg_id);
 |]
 
+-- msg_deliveries are not repopulated on down migration, as it may cause constraint violations
 down_m20231215_recreate_msg_deliveries :: Query
 down_m20231215_recreate_msg_deliveries =
   [sql|
@@ -48,7 +49,9 @@ DROP INDEX idx_msg_deliveries_message_id;
 DROP INDEX idx_msg_deliveries_agent_ack_cmd_id;
 DROP INDEX idx_msg_deliveries_agent_msg_id;
 
-CREATE TABLE old_msg_deliveries(
+DROP TABLE msg_deliveries;
+
+CREATE TABLE msg_deliveries(
   msg_delivery_id INTEGER PRIMARY KEY,
   message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE, -- non UNIQUE for group messages
   connection_id INTEGER NOT NULL REFERENCES connections ON DELETE CASCADE,
@@ -60,15 +63,6 @@ CREATE TABLE old_msg_deliveries(
   agent_ack_cmd_id INTEGER, -- broker_ts for received, created_at for sent
   UNIQUE(connection_id, agent_msg_id)
 );
-
-INSERT INTO old_msg_deliveries
-  (msg_delivery_id, message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at, agent_ack_cmd_id)
-SELECT
-  msg_delivery_id, message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at, agent_ack_cmd_id
-  FROM msg_deliveries;
-
-DROP TABLE msg_deliveries;
-ALTER TABLE old_msg_deliveries RENAME TO msg_deliveries;
 
 CREATE INDEX idx_msg_deliveries_message_id ON "msg_deliveries"(message_id);
 CREATE INDEX idx_msg_deliveries_agent_ack_cmd_id ON "msg_deliveries"(connection_id, agent_ack_cmd_id);
