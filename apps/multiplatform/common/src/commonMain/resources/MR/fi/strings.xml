@@ -171,7 +171,6 @@
     <string name="chat_archive_header">Arkisto</string>
     <string name="delete_chat_archive_question">Poista keskusteluarkisto\?</string>
     <string name="archive_created_on_ts">Luotu %1$s</string>
-    <string name="rcv_group_event_changed_your_role">%s:n rooli muutettu %s:ksi</string>
     <string name="rcv_group_event_group_deleted">poistettu ryhmä</string>
     <string name="group_member_status_connecting">yhdistää</string>
     <string name="group_member_status_accepted">yhdistäminen (hyväksytty)</string>
