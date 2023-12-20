@@ -124,6 +124,8 @@ chatGroupTests = do
     it "cancelled files are not attached (text message is still sent)" testGroupHistoryFileCancel
     it "cancelled files without text are excluded" testGroupHistoryFileCancelNoText
     it "quoted messages" testGroupHistoryQuotes
+    it "deleted message is not included" testGroupHistoryDeletedMessage
+    xit "disappearing message is sent as disappearing" testGroupHistoryDisappearingMessage
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -4132,6 +4134,8 @@ testGroupHistory =
     \alice bob cath -> do
       createGroup2 "team" alice bob
 
+      threadDelay 1000000
+
       alice #> "#team hello"
       bob <# "#team alice> hello"
 
@@ -4305,6 +4309,8 @@ testGroupHistoryMultipleFiles =
       xftpCLI ["rand", "./tests/tmp/testfile_alice", "1mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_alice"]
 
       createGroup2 "team" alice bob
+
+      threadDelay 1000000
 
       bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}"
       bob <# "#team hi alice"
@@ -4600,3 +4606,121 @@ testGroupHistoryQuotes =
                           ((0, "3"), Just (0, "ALICE")),
                           ((0, "4"), Just (0, "BOB"))
                         ]
+
+testGroupHistoryDeletedMessage :: HasCallStack => FilePath -> IO ()
+testGroupHistoryDeletedMessage =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+
+      threadDelay 1000000
+
+      bob #> "#team hey!"
+      alice <# "#team bob> hey!"
+
+      bobMsgId <- lastItemId bob
+      bob #$> ("/_delete item #1 " <> bobMsgId <> " broadcast", id, "message marked deleted")
+      alice <# "#team bob> [marked deleted] hey!"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> hello [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine cath
+      r `shouldContain` [(0, "hello")]
+      r `shouldNotContain` [(0, "hey!")]
+
+testGroupHistoryDisappearingMessage :: HasCallStack => FilePath -> IO ()
+testGroupHistoryDisappearingMessage =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      threadDelay 1000000
+
+      alice #> "#team 1"
+      bob <# "#team alice> 1"
+
+      threadDelay 1000000
+
+      alice ##> "/set disappear #team on 3"
+      alice <## "updated group preferences:"
+      alice <## "Disappearing messages: on (3 sec)"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "Disappearing messages: on (3 sec)"
+
+      bob #> "#team 2"
+      alice <# "#team bob> 2"
+
+      threadDelay 1000000
+
+      alice #> "#team 3"
+      bob <# "#team alice> 3"
+
+      threadDelay 1000000
+
+      alice ##> "/set disappear #team off"
+      alice <## "updated group preferences:"
+      alice <## "Disappearing messages: off"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "Disappearing messages: off"
+
+      bob #> "#team 4"
+      alice <# "#team bob> 4"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> 1 [>>]",
+                   WithTime "#team bob> 2 [>>]",
+                   WithTime "#team alice> 3 [>>]",
+                   WithTime "#team bob> 4 [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/_get chat #1 count=100"
+      r1 <- chat <$> getTermLine cath
+      r1 `shouldContain` [(0, "1"), (0, "2"), (0, "3"), (0, "4")]
+
+      concurrentlyN_
+        [ do
+            alice <## "timed message deleted: 2"
+            alice <## "timed message deleted: 3",
+          do
+            bob <## "timed message deleted: 2"
+            bob <## "timed message deleted: 3",
+          do
+            cath <## "timed message deleted: 2"
+            cath <## "timed message deleted: 3"
+        ]
+
+      cath ##> "/_get chat #1 count=100"
+      r2 <- chat <$> getTermLine cath
+      r2 `shouldContain` [(0, "1"), (0, "4")]
+      r2 `shouldNotContain` [(0, "3")]
+      r2 `shouldNotContain` [(0, "4")]

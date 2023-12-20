@@ -2264,7 +2264,7 @@ processChatCommand = \case
       tryChatError (withStore (`getUser` userId)) >>= \case
         Left _ -> throwChatError CEUserUnknown
         Right user -> pure user
-    validateUserPassword :: User -> User -> Maybe UserPwd -> m ()        
+    validateUserPassword :: User -> User -> Maybe UserPwd -> m ()
     validateUserPassword = validateUserPassword_ . Just
     validateUserPassword_ :: Maybe User -> User -> Maybe UserPwd -> m ()
     validateUserPassword_ user_ User {userId = userId', viewPwdHash} viewPwd_ =
@@ -6508,6 +6508,7 @@ chatCommandP =
         <|> ("day" $> 86400)
         <|> ("week" $> (7 * 86400))
         <|> ("month" $> (30 * 86400))
+        <|> A.decimal
     timedTTLOnOffP =
       optional ("on" *> A.space) *> (Just <$> timedTTLP)
         <|> ("off" $> Nothing)
