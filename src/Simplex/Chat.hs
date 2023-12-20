@@ -5653,7 +5653,7 @@ data ChatMessageBatch
   | CMBLargeMessage SndMessage
 
 batchChatMessages :: NonEmpty SndMessage -> [ChatMessageBatch]
-batchChatMessages = mkBatch []
+batchChatMessages = reverse . mkBatch []
   where
     mkBatch :: [ChatMessageBatch] -> NonEmpty SndMessage -> [ChatMessageBatch]
     mkBatch batches msgs =
