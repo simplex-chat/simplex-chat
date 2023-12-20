@@ -1532,4 +1532,6 @@
     <string name="open_port_in_firewall_desc">Afin de permettre à une application mobile de se connecter à votre ordinateur, ouvrez ce port dans votre pare-feu, si vous l\'avez activé</string>
     <string name="app_was_crashed">Crash d\'aperçu</string>
     <string name="open_port_in_firewall_title">Ouvrir le port de votre pare-feu</string>
+    <string name="error_showing_content">erreur d\'affichage de contenu</string>
+    <string name="error_showing_message">erreur d\'affichage de message</string>
 </resources>
