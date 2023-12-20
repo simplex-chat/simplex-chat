@@ -11,6 +11,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.text.font.FontStyle
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -64,7 +65,11 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   val (userPickerState, scaffoldState ) = settingsState
   Scaffold(topBar = { Box(Modifier.padding(end = endPadding)) { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } } },
     scaffoldState = scaffoldState,
-    drawerContent = { SettingsView(chatModel, setPerformLA, scaffoldState.drawerState) },
+    drawerContent = {
+      tryOrShowError("Settings", error = { ErrorSettingsView() }) {
+        SettingsView(chatModel, setPerformLA, scaffoldState.drawerState)
+      }
+    },
     drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
     drawerGesturesEnabled = appPlatform.isAndroid,
     floatingActionButton = {
@@ -111,7 +116,9 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   if (searchInList.isEmpty()) {
     DesktopActiveCallOverlayLayout(newChatSheetState)
     // TODO disable this button and sheet for the duration of the switch
-    NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
+    tryOrShowError("NewChatSheet", error = {}) {
+      NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
+    }
   }
   if (appPlatform.isAndroid) {
     tryOrShowError("UserPicker", error = {}) {
@@ -302,6 +309,13 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
     withApi {
       planAndConnect(chatModel, rhId, uri, incognito = null, close = null)
     }
+  }
+}
+
+@Composable
+private fun ErrorSettingsView() {
+  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Text(generalGetString(MR.strings.error_showing_content), color = MaterialTheme.colors.error, fontStyle = FontStyle.Italic)
   }
 }
 
