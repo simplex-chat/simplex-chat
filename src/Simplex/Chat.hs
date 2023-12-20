@@ -607,7 +607,7 @@ processChatCommand = \case
             <$> withConnection st (readTVarIO . DB.slow)
   APIGetChats {userId, pendingConnections, pagination, query} -> withUserId' userId $ \user -> do
     (errs, previews) <- partitionEithers <$> withStore' (\db -> getChatPreviews db user pendingConnections pagination query)
-    toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
+    unless (null errs) $ toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
     pure $ CRApiChats user previews
   APIGetChat (ChatRef cType cId) pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
@@ -1793,7 +1793,7 @@ processChatCommand = \case
   LastChats count_ -> withUser' $ \user -> do
     let count = fromMaybe 5000 count_
     (errs, previews) <- partitionEithers <$> withStore' (\db -> getChatPreviews db user False (PTLast count) clqNoFilters)
-    toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
+    unless (null errs) $ toView $ CRChatErrors (Just user) (map ChatErrorStore errs)
     pure $ CRChats previews
   LastMessages (Just chatName) count search -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
@@ -3610,7 +3610,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 when (isCompatibleRange (memberChatVRange' m) batchSendVRange) $ do
                   (errs, items) <- withStore' $ \db -> getGroupHistoryLastItems db user gInfo 100
                   (errs', events) <- collectForwardEvents items [] []
-                  toView $ CRChatErrors (Just user) (map ChatErrorStore errs <> errs')
+                  let errors = map ChatErrorStore errs <> errs'
+                  unless (null errors) $ toView $ CRChatErrors (Just user) errors
                   forM_ (L.nonEmpty events) $ \events' ->
                     sendBatchedDirectMessages conn events' (GroupId groupId)
               collectForwardEvents :: [CChatItem 'CTGroup] -> [ChatError] -> [ChatMsgEvent 'Json] -> m ([ChatError], [ChatMsgEvent 'Json])
@@ -5618,11 +5619,11 @@ sendBatchedDirectMessages :: forall e m. (MsgEncodingI e, ChatMonad m) => Connec
 sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
   (errs, msgs) <- partitionEithers <$> createSndMessages
-  toView $ CRChatErrors Nothing (map ChatErrorStore errs)
+  unless (null errs) $ toView $ CRChatErrors Nothing (map ChatErrorStore errs)
   forM_ (L.nonEmpty msgs) $ \msgs' -> do
     let (largeMsgs, msgBatches) = partitionBatches $ batchChatMessages msgs'
         errs' = map (\SndMessage {msgId} -> ChatError $ CELargeChatMsg msgId) largeMsgs
-    toView $ CRChatErrors Nothing errs'
+    unless (null errs') $ toView $ CRChatErrors Nothing errs'
     forM_ msgBatches $ \(MessagesBatch batchMsgBody sndMsgs) -> do
       agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) MsgFlags {notification = True} batchMsgBody
       let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
