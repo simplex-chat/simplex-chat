@@ -5673,14 +5673,19 @@ batchChatMessages = reverse . mkBatch []
       where
         SndMessage {msgBody} = msg
         cnt' = cnt + 1
-        len'
-          | cnt' == 1 = LB.length msgBody -- initially len = 0
-          | cnt' == 2 = len + LB.length msgBody + 2 -- for opening bracket "[" and comma ","
-          | otherwise = len + LB.length msgBody + 1 -- for comma ","
-        builder'
-          | cnt' == 1 = Builder.lazyByteString msgBody
-          | cnt' == 2 = "[" <> builder <> "," <> Builder.lazyByteString msgBody
-          | otherwise = builder <> "," <> Builder.lazyByteString msgBody
+        (len', builder')
+          | cnt' == 1 =
+              ( LB.length msgBody, -- initially len = 0
+                Builder.lazyByteString msgBody
+              )
+          | cnt' == 2 =
+              ( len + LB.length msgBody + 2, -- for opening bracket "[" and comma ","
+                "[" <> builder <> "," <> Builder.lazyByteString msgBody
+              )
+          | otherwise =
+              ( len + LB.length msgBody + 1, -- for comma ","
+                builder <> "," <> Builder.lazyByteString msgBody
+              )
         maxSize'
           | cnt' == 1 = maxChatMsgSize
           | otherwise = maxChatMsgSize - 1 -- for closing bracket "]"
