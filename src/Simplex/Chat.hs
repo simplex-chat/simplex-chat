@@ -3584,7 +3584,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   then do
                     let events = map (XGrpMemIntro . memberInfo . reMember) shuffledIntros
                     forM_ (L.nonEmpty events) $ \events' ->
-                      sendBatchedDirectMessages conn events' (GroupId groupId)
+                      sendGroupMemberMessages conn events' groupId
                   else forM_ shuffledIntros $ \intro ->
                     processIntro intro `catchChatError` (toView . CRChatError (Just user))
               shuffleIntros :: [GroupMemberIntro] -> IO [GroupMemberIntro]
@@ -3610,7 +3610,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   let errors = map ChatErrorStore errs <> errs'
                   unless (null errors) $ toView $ CRChatErrors (Just user) errors
                   forM_ (L.nonEmpty events) $ \events' ->
-                    sendBatchedDirectMessages conn events' (GroupId groupId)
+                    sendGroupMemberMessages conn events' groupId
               collectForwardEvents :: [CChatItem 'CTGroup] -> [ChatError] -> [ChatMsgEvent 'Json] -> m ([ChatError], [ChatMsgEvent 'Json])
               collectForwardEvents [] errs evts = pure (errs, evts)
               collectForwardEvents (cci : items) errs evts =
@@ -5614,8 +5614,8 @@ createSndMessage chatMsgEvent connOrGroupId = do
     encodeMessage chatVRange sharedMsgId =
       encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
 
-sendBatchedDirectMessages :: forall e m. (MsgEncodingI e, ChatMonad m) => Connection -> NonEmpty (ChatMsgEvent e) -> ConnOrGroupId -> m ()
-sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
+sendGroupMemberMessages :: forall e m. (MsgEncodingI e, ChatMonad m) => Connection -> NonEmpty (ChatMsgEvent e) -> GroupId -> m ()
+sendGroupMemberMessages conn@Connection {connId} events groupId = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
   (errs, msgs) <- partitionEithers <$> createSndMessages
   unless (null errs) $ toView $ CRChatErrors Nothing errs
@@ -5636,7 +5636,7 @@ sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
       ChatConfig {chatVRange} <- asks config
       withStoreBatch $ \db -> map (createMsg db gVar chatVRange) (toList events)
     createMsg db gVar chatVRange evnt = do
-      r <- runExceptT $ createNewSndMessage db gVar connOrGroupId evnt (encodeMessage chatVRange evnt)
+      r <- runExceptT $ createNewSndMessage db gVar (GroupId groupId) evnt (encodeMessage chatVRange evnt)
       pure $ first ChatErrorStore r
     encodeMessage chatVRange evnt sharedMsgId =
       encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent = evnt}
