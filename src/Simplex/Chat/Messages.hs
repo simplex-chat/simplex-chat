@@ -766,12 +766,6 @@ checkChatType x = case testEquality (chatTypeI @c) (chatTypeI @c') of
 
 type LazyMsgBody = L.ByteString
 
-data NewSndMessage e = NewSndMessage
-  { chatMsgEvent :: ChatMsgEvent e,
-    msgBody :: LazyMsgBody
-  }
-  deriving (Show)
-
 data SndMessage = SndMessage
   { msgId :: MessageId,
     sharedMsgId :: SharedMsgId,
