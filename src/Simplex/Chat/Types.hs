@@ -327,7 +327,7 @@ type ContactName = Text
 
 type GroupName = Text
 
-type FolderName = Text
+type NotesFolderName = Text
 
 optionalFullName :: ContactName -> Text -> Text
 optionalFullName displayName fullName
@@ -1522,14 +1522,16 @@ data XGrpMemIntroCont = XGrpMemIntroCont
   }
   deriving (Show)
 
+-- | An entity for local chats
 data NotesFolder = NotesFolder
   { notesFolderId :: NotesFolderId,
     userId :: UserId,
-    localDisplayName :: FolderName,
+    displayName :: NotesFolderName,
+    localDisplayName :: NotesFolderName,
     chatItemId :: Maybe Int64,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    chatTs :: Maybe UTCTime,
+    chatTs :: UTCTime,
     favorite :: Bool,
     unread :: Bool
   }

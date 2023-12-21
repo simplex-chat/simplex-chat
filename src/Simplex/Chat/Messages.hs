@@ -47,7 +47,7 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextFie
 import Simplex.Messaging.Protocol (MsgBody)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 
-data ChatType = CTDirect | CTGroup | CTContactRequest | CTContactConnection | CTNotes
+data ChatType = CTDirect | CTGroup | CTLocal | CTContactRequest | CTContactConnection
   deriving (Eq, Show, Ord)
 
 data ChatName = ChatName {chatType :: ChatType, chatName :: Text}
@@ -57,9 +57,9 @@ chatTypeStr :: ChatType -> Text
 chatTypeStr = \case
   CTDirect -> "@"
   CTGroup -> "#"
+  CTLocal -> "$"
   CTContactRequest -> "<@"
   CTContactConnection -> ":"
-  CTNotes -> "*"
 
 chatNameStr :: ChatName -> String
 chatNameStr (ChatName cType name) = T.unpack $ chatTypeStr cType <> if T.any isSpace name then "'" <> name <> "'" else name
@@ -70,7 +70,7 @@ data ChatRef = ChatRef ChatType Int64
 data ChatInfo (c :: ChatType) where
   DirectChat :: Contact -> ChatInfo 'CTDirect
   GroupChat :: GroupInfo -> ChatInfo 'CTGroup
-  NotesChat :: NotesFolder -> ChatInfo 'CTNotes
+  LocalChat :: NotesFolder -> ChatInfo 'CTLocal
   ContactRequest :: UserContactRequest -> ChatInfo 'CTContactRequest
   ContactConnection :: PendingContactConnection -> ChatInfo 'CTContactConnection
 
@@ -86,7 +86,7 @@ chatInfoUpdatedAt :: ChatInfo c -> UTCTime
 chatInfoUpdatedAt = \case
   DirectChat Contact {updatedAt} -> updatedAt
   GroupChat GroupInfo {updatedAt} -> updatedAt
-  NotesChat NotesFolder {updatedAt} -> updatedAt
+  LocalChat NotesFolder {updatedAt} -> updatedAt
   ContactRequest UserContactRequest {updatedAt} -> updatedAt
   ContactConnection PendingContactConnection {updatedAt} -> updatedAt
 
@@ -94,7 +94,7 @@ chatInfoToRef :: ChatInfo c -> ChatRef
 chatInfoToRef = \case
   DirectChat Contact {contactId} -> ChatRef CTDirect contactId
   GroupChat GroupInfo {groupId} -> ChatRef CTGroup groupId
-  NotesChat NotesFolder {notesFolderId} -> ChatRef CTNotes notesFolderId
+  LocalChat NotesFolder {notesFolderId} -> ChatRef CTLocal notesFolderId
   ContactRequest UserContactRequest {contactRequestId} -> ChatRef CTContactRequest contactRequestId
   ContactConnection PendingContactConnection {pccConnId} -> ChatRef CTContactConnection pccConnId
 
@@ -106,7 +106,7 @@ chatInfoMembership = \case
 data JSONChatInfo
   = JCInfoDirect {contact :: Contact}
   | JCInfoGroup {groupInfo :: GroupInfo}
-  | JCInfoNotes {notesFolder :: NotesFolder}
+  | JCInfoLocal {notesFolder :: NotesFolder}
   | JCInfoContactRequest {contactRequest :: UserContactRequest}
   | JCInfoContactConnection {contactConnection :: PendingContactConnection}
 
@@ -123,7 +123,7 @@ jsonChatInfo :: ChatInfo c -> JSONChatInfo
 jsonChatInfo = \case
   DirectChat c -> JCInfoDirect c
   GroupChat g -> JCInfoGroup g
-  NotesChat s -> JCInfoNotes s
+  LocalChat l -> JCInfoLocal l
   ContactRequest g -> JCInfoContactRequest g
   ContactConnection c -> JCInfoContactConnection c
 
@@ -135,7 +135,7 @@ jsonAChatInfo :: JSONChatInfo -> AChatInfo
 jsonAChatInfo = \case
   JCInfoDirect c -> AChatInfo SCTDirect $ DirectChat c
   JCInfoGroup g -> AChatInfo SCTGroup $ GroupChat g
-  JCInfoNotes n -> AChatInfo SCTNotes $ NotesChat n
+  JCInfoLocal l -> AChatInfo SCTLocal $ LocalChat l
   JCInfoContactRequest g -> AChatInfo SCTContactRequest $ ContactRequest g
   JCInfoContactConnection c -> AChatInfo SCTContactConnection $ ContactConnection c
 
@@ -175,7 +175,8 @@ data CIDirection (c :: ChatType) (d :: MsgDirection) where
   CIDirectRcv :: CIDirection 'CTDirect 'MDRcv
   CIGroupSnd :: CIDirection 'CTGroup 'MDSnd
   CIGroupRcv :: GroupMember -> CIDirection 'CTGroup 'MDRcv
-  CINote :: CIDirection 'CTNotes 'MDSnd
+  CILocalSnd :: CIDirection 'CTLocal 'MDSnd
+  CILocalRcv :: CIDirection 'CTLocal 'MDRcv
 
 deriving instance Show (CIDirection c d)
 
@@ -205,7 +206,7 @@ jsonACIDirection = \case
   JCIDirectRcv -> ACID SCTDirect SMDRcv CIDirectRcv
   JCIGroupSnd -> ACID SCTGroup SMDSnd CIGroupSnd
   JCIGroupRcv m -> ACID SCTGroup SMDRcv $ CIGroupRcv m
-  JCINote -> ACID SCTNotes SMDSnd CINote
+  JCINote -> ACID SCTLocal SMDSnd CINote
 
 data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
   deriving (Show)
@@ -402,7 +403,6 @@ data CIQDirection (c :: ChatType) where
   CIQDirectRcv :: CIQDirection 'CTDirect
   CIQGroupSnd :: CIQDirection 'CTGroup
   CIQGroupRcv :: Maybe GroupMember -> CIQDirection 'CTGroup -- member can be Nothing in case MsgRef has memberId that the user is not notified about yet
-  CIQNote :: CIQDirection 'CTNotes
 
 deriving instance Show (CIQDirection c)
 
@@ -415,7 +415,6 @@ jsonCIQDirection = \case
   CIQGroupSnd -> Just JCIGroupSnd
   CIQGroupRcv (Just m) -> Just $ JCIGroupRcv m
   CIQGroupRcv Nothing -> Nothing
-  CIQNote -> Just JCINote
 
 jsonACIQDirection :: Maybe JSONCIDirection -> ACIQDirection
 jsonACIQDirection = \case
@@ -423,7 +422,7 @@ jsonACIQDirection = \case
   Just JCIDirectRcv -> ACIQDirection SCTDirect CIQDirectRcv
   Just JCIGroupSnd -> ACIQDirection SCTGroup CIQGroupSnd
   Just (JCIGroupRcv m) -> ACIQDirection SCTGroup $ CIQGroupRcv (Just m)
-  Just JCINote -> ACIQDirection SCTNotes CIQNote
+  Just JCINote -> ACIQDirection SCTLocal CIQNote
   Nothing -> ACIQDirection SCTGroup $ CIQGroupRcv Nothing
 
 quoteMsgDirection :: CIQDirection c -> MsgDirection
@@ -731,18 +730,18 @@ type ChatItemTs = UTCTime
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect
   SCTGroup :: SChatType 'CTGroup
+  SCTLocal :: SChatType 'CTLocal
   SCTContactRequest :: SChatType 'CTContactRequest
   SCTContactConnection :: SChatType 'CTContactConnection
-  SCTNotes :: SChatType 'CTNotes
 
 deriving instance Show (SChatType c)
 
 instance TestEquality SChatType where
   testEquality SCTDirect SCTDirect = Just Refl
   testEquality SCTGroup SCTGroup = Just Refl
+  testEquality SCTLocal SCTLocal = Just Refl
   testEquality SCTContactRequest SCTContactRequest = Just Refl
   testEquality SCTContactConnection SCTContactConnection = Just Refl
-  testEquality SCTNotes SCTNotes = Just Refl
   testEquality _ _ = Nothing
 
 data AChatType = forall c. ChatTypeI c => ACT (SChatType c)
@@ -754,27 +753,27 @@ instance ChatTypeI 'CTDirect where chatTypeI = SCTDirect
 
 instance ChatTypeI 'CTGroup where chatTypeI = SCTGroup
 
+instance ChatTypeI 'CTLocal where chatTypeI = SCTLocal
+
 instance ChatTypeI 'CTContactRequest where chatTypeI = SCTContactRequest
 
 instance ChatTypeI 'CTContactConnection where chatTypeI = SCTContactConnection
-
-instance ChatTypeI 'CTNotes where chatTypeI = SCTNotes
 
 toChatType :: SChatType c -> ChatType
 toChatType = \case
   SCTDirect -> CTDirect
   SCTGroup -> CTGroup
+  SCTLocal -> CTLocal
   SCTContactRequest -> CTContactRequest
   SCTContactConnection -> CTContactConnection
-  SCTNotes -> CTNotes
 
 aChatType :: ChatType -> AChatType
 aChatType = \case
   CTDirect -> ACT SCTDirect
   CTGroup -> ACT SCTGroup
+  CTLocal -> ACT SCTLocal
   CTContactRequest -> ACT SCTContactRequest
   CTContactConnection -> ACT SCTContactConnection
-  CTNotes -> ACT SCTNotes
 
 checkChatType :: forall t c c'. (ChatTypeI c, ChatTypeI c') => t c' -> Either String (t c)
 checkChatType x = case testEquality (chatTypeI @c) (chatTypeI @c') of

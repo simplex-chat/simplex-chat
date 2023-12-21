@@ -11,20 +11,20 @@ m20231219_notes_folders =
     CREATE TABLE notes_folders (
       notes_folder_id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+      display_name TEXT NOT NULL,
       local_display_name TEXT NOT NULL,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
-      chat_ts TEXT,
+      chat_ts TEXT NOT NULL,
       favorite INTEGER NOT NULL DEFAULT 0,
       unread_chat INTEGER DEFAULT 0 NOT NULL,
-      chat_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE SET NULL,
       FOREIGN KEY (user_id, local_display_name)
         REFERENCES display_names (user_id, local_display_name)
         ON DELETE CASCADE
         ON UPDATE CASCADE,
     );
 
-    CREATE UNIQUE INDEX idx_notes_user_local_display_name ON notes_fodler (
+    CREATE UNIQUE INDEX idx_notes_folders_user_id_local_display_name ON notes_folders (
       user_id,
       local_display_name
     );
@@ -35,7 +35,7 @@ m20231219_notes_folders =
 down_m20231219_notes_folders :: Query
 down_m20231219_notes_folders =
   [sql|
-DROP INDEX idx_notes_user_local_display_name;
+DROP INDEX idx_notes_folders_user_id_local_display_name;
 DROP TABLE notes_folders;
 ALTER TABLE chat_items DROP COLUMN notes_folder_id;
 |]

@@ -611,8 +611,8 @@ processChatCommand = \case
     CTGroup -> do
       groupChat <- withStore (\db -> getGroupChat db user cId pagination search)
       pure $ CRApiChat user (AChat SCTGroup groupChat)
-    CTNotes -> do
-      error "TODO: APIGetChat.CTNotes"
+    CTLocal -> do
+      error "TODO: APIGetChat.CTLocal"
     CTContactRequest -> pure $ chatCmdError (Just user) "not implemented"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIGetChatItems pagination search -> withUser $ \user -> do
@@ -761,7 +761,7 @@ processChatCommand = \case
             quoteData ChatItem {chatDir = CIGroupSnd, content = CISndMsgContent qmc} membership' = pure (qmc, CIQGroupSnd, True, membership')
             quoteData ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
             quoteData _ _ = throwChatError CEInvalidQuote
-    CTNotes -> pure $ chatCmdError (Just user) "TODO: send note"
+    CTLocal -> pure $ chatCmdError (Just user) "TODO: send local"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
@@ -863,7 +863,7 @@ processChatCommand = \case
                 else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
             _ -> throwChatError CEInvalidChatItemUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
-    CTNotes -> pure $ chatCmdError (Just user) "TODO: update note"
+    CTLocal -> pure $ chatCmdError (Just user) "TODO: update local"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIDeleteChatItem (ChatRef cType chatId) itemId mode -> withUser $ \user -> withChatLock "deleteChatItem" $ case cType of
@@ -888,7 +888,7 @@ processChatCommand = \case
           (SndMessage {msgId}, _) <- sendGroupMessage user gInfo ms $ XMsgDel itemSharedMId Nothing
           delGroupChatItem user gInfo ci msgId Nothing
         (CIDMBroadcast, _, _, _) -> throwChatError CEInvalidChatItemDelete
-    CTNotes -> pure $ chatCmdError (Just user) "TODO: APIDeleteChatItem.Note"
+    CTLocal -> pure $ chatCmdError (Just user) "TODO: APIDeleteChatItem.Local"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIDeleteMemberChatItem gId mId itemId -> withUser $ \user -> withChatLock "deleteChatItem" $ do
@@ -939,7 +939,7 @@ processChatCommand = \case
               r = ACIReaction SCTGroup SMDSnd (GroupChat g) $ CIReaction CIGroupSnd ci' createdAt reaction
           pure $ CRChatItemReaction user add r
         _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
-    CTNotes -> pure $ chatCmdError (Just user) "TODO: note reactions"
+    CTLocal -> pure $ chatCmdError (Just user) "TODO: note reactions"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
@@ -971,8 +971,7 @@ processChatCommand = \case
         startProximateTimedItemThread user (ChatRef CTGroup chatId, itemId) deleteAt
       withStore' $ \db -> updateGroupChatItemsRead db userId chatId fromToIds
       ok user
-    CTNotes -> do
-      error "TODO: APIChatRead.CTNotes"
+    CTLocal -> error "TODO: APIChatRead.CTLocal"
     CTContactRequest -> pure $ chatCmdError Nothing "not supported"
     CTContactConnection -> pure $ chatCmdError Nothing "not supported"
   APIChatUnread (ChatRef cType chatId) unreadChat -> withUser $ \user -> case cType of
@@ -1042,7 +1041,7 @@ processChatCommand = \case
                       withStore' (\db -> setContactDeleted db user ct)
                         `catchChatError` (toView . CRChatError (Just user))
                       pure $ map aConnId conns
-    CTNotes -> error "TODO: APIDeleteChat.CTNotes"
+    CTLocal -> error "TODO: APIDeleteChat.CTLocal"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
     CTDirect -> do
@@ -1059,8 +1058,7 @@ processChatCommand = \case
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
       pure $ CRChatCleared user (AChatInfo SCTGroup $ GroupChat gInfo)
-    CTNotes -> do
-      error "TODO: APIClearChat.CTNotes"
+    CTLocal -> error "TODO: APIClearChat.CTLocal"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIAcceptContact incognito connReqId -> withUser $ \_ -> withChatLock "acceptContact" $ do
