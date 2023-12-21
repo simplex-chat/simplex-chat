@@ -2023,7 +2023,8 @@ object ChatController {
     chatModel.chatId.value = null
     ModalManager.center.closeModals()
     ModalManager.end.closeModals()
-    AlertManager.shared.alertViews.clear()
+    AlertManager.shared.hideAllAlerts()
+    AlertManager.privacySensitive.hideAllAlerts()
     chatModel.currentRemoteHost.value = switchRemoteHost(rhId)
     reloadRemoteHosts()
     val user = apiGetActiveUser(rhId)

@@ -1,6 +1,8 @@
 package chat.simplex.app
 
 import android.app.Application
+import android.os.Handler
+import android.os.Looper
 import chat.simplex.common.platform.Log
 import androidx.lifecycle.*
 import androidx.work.*
@@ -35,6 +37,21 @@ class SimplexApp: Application(), LifecycleEventObserver {
       return
     } else {
       registerGlobalErrorHandler()
+      Handler(Looper.getMainLooper()).post {
+        while (true) {
+          try {
+            Looper.loop()
+          } catch (e: Throwable) {
+            if (e.message != null && e.message!!.startsWith("Unable to start activity")) {
+              android.os.Process.killProcess(android.os.Process.myPid())
+              break
+            } else {
+              // Send it to our exception handled because it will not get the exception otherwise
+              Thread.getDefaultUncaughtExceptionHandler()?.uncaughtException(Looper.getMainLooper().thread, e)
+            }
+          }
+        }
+      }
     }
     context = this
     initHaskell()
