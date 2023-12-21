@@ -3605,7 +3605,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 withStore' $ \db -> updateIntroStatus db introId GMIntroSent
               sendHistory =
                 when (isCompatibleRange (memberChatVRange' m) batchSendVRange) $ do
-                  (errs, items) <- withStore' $ \db -> getGroupHistoryLastItems db user gInfo 100
+                  (errs, items) <- partitionEithers <$> withStore' (\db -> getGroupHistoryItems db user gInfo 100)
                   (errs', events) <- collectForwardEvents items [] []
                   let errors = map ChatErrorStore errs <> errs'
                   unless (null errors) $ toView $ CRChatErrors (Just user) errors

@@ -99,7 +99,7 @@ module Simplex.Chat.Store.Messages
     updateGroupSndStatus,
     getGroupSndStatuses,
     getGroupSndStatusCounts,
-    getGroupHistoryLastItems,
+    getGroupHistoryItems,
   )
 where
 
@@ -2080,11 +2080,11 @@ getGroupSndStatusCounts db itemId =
     |]
     (Only itemId)
 
-getGroupHistoryLastItems :: DB.Connection -> User -> GroupInfo -> Int -> IO ([StoreError], [CChatItem 'CTGroup])
-getGroupHistoryLastItems db user@User {userId} GroupInfo {groupId} count = do
+getGroupHistoryItems :: DB.Connection -> User -> GroupInfo -> Int -> IO [Either StoreError (CChatItem 'CTGroup)]
+getGroupHistoryItems db user@User {userId} GroupInfo {groupId} count = do
   chatItemIds <- getLastItemIds_
   -- use getGroupCIWithReactions to read reactions data
-  partitionEithers <$> mapM (runExceptT <$> getGroupChatItem db user groupId) chatItemIds
+  mapM (runExceptT . getGroupChatItem db user groupId) chatItemIds
   where
     getLastItemIds_ :: IO [ChatItemId]
     getLastItemIds_ =
