@@ -1532,4 +1532,6 @@
     <string name="open_port_in_firewall_title">在防火墙中打开端口</string>
     <string name="app_was_crashed">查看崩溃</string>
     <string name="moderated_items_description">%s 审核了 %d 条消息</string>
+    <string name="error_showing_content">显示内容出错</string>
+    <string name="error_showing_message">显示消息出错</string>
 </resources>
