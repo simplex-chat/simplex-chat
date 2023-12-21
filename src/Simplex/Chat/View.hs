@@ -551,7 +551,24 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {forwardedByMember}, 
             from = ttyFromGroup g m
         where
           quote = maybe [] (groupQuote g) quotedItem
-      _ -> []
+      LocalChat nf -> case chatDir of
+        CILocalSnd -> case content of
+          CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to quote mc
+          CISndGroupEvent {} -> showSndItemProhibited to
+          _ -> showSndItem to
+          where
+            to = ttyToLocal nf
+        CILocalRcv -> case content of
+          CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
+          CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
+          CIRcvGroupEvent {} -> showRcvItemProhibited from
+          _ -> showRcvItem from
+          where
+            from = ttyFromLocal nf
+        where
+          quote = []
+      ContactRequest {} -> []
+      ContactConnection {} -> []
     withItemDeleted item = case chatItemDeletedText ci (chatInfoMembership chat) of
       Nothing -> item
       Just t -> item <> styled (colored Red) (" [" <> t <> "]")
@@ -2034,6 +2051,9 @@ ttyToGroup g = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " ")
 
 ttyToGroupEdited :: GroupInfo -> StyledString
 ttyToGroupEdited g = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " [edited] ")
+
+ttyToLocal :: NoteFolder -> StyledString
+ttyToLocal NoteFolder {localDisplayName} = ttyFrom ("$" <> localDisplayName <> " ")
 
 ttyFromLocal :: NoteFolder -> StyledString
 ttyFromLocal NoteFolder {localDisplayName} = ttyFrom ("$" <> localDisplayName <> "> ")

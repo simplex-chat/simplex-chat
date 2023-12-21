@@ -256,6 +256,8 @@ data ChatDirection (c :: ChatType) (d :: MsgDirection) where
   CDDirectRcv :: Contact -> ChatDirection 'CTDirect 'MDRcv
   CDGroupSnd :: GroupInfo -> ChatDirection 'CTGroup 'MDSnd
   CDGroupRcv :: GroupInfo -> GroupMember -> ChatDirection 'CTGroup 'MDRcv
+  CDLocalSnd :: NoteFolder -> ChatDirection 'CTLocal 'MDSnd
+  CDLocalRcv :: NoteFolder -> ChatDirection 'CTLocal 'MDRcv
 
 toCIDirection :: ChatDirection c d -> CIDirection c d
 toCIDirection = \case
@@ -263,6 +265,8 @@ toCIDirection = \case
   CDDirectRcv _ -> CIDirectRcv
   CDGroupSnd _ -> CIGroupSnd
   CDGroupRcv _ m -> CIGroupRcv m
+  CDLocalSnd _ -> CILocalSnd
+  CDLocalRcv _ -> CILocalRcv
 
 toChatInfo :: ChatDirection c d -> ChatInfo c
 toChatInfo = \case
@@ -270,6 +274,8 @@ toChatInfo = \case
   CDDirectRcv c -> DirectChat c
   CDGroupSnd g -> GroupChat g
   CDGroupRcv g _ -> GroupChat g
+  CDLocalSnd l -> LocalChat l
+  CDLocalRcv l -> LocalChat l
 
 data NewChatItem d = NewChatItem
   { createdByMsgId :: Maybe MessageId,
@@ -825,7 +831,7 @@ data PendingGroupMessage = PendingGroupMessage
 
 type MessageId = Int64
 
-data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
+data ConnOrGroupId = ConnectionId Int64 | GroupId Int64 | NoteFolderId Int64
 
 data SndMsgDelivery = SndMsgDelivery
   { connId :: Int64,

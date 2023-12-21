@@ -18,25 +18,25 @@ testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/note folder self"
   alice <## "new note folder created, write to $self to add notes"
 
-  alice ##> "$self keep in mind"
-  alice <## "ok"
+  alice #> "$self keep in mind"
+  alice ##> "/tail"
+  alice <# "$self keep in mind"
 
 testUserNotes :: FilePath -> IO ()
 testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/note folder self"
   alice <## "new note folder created, write to $self to add notes"
 
-  alice ##> "$self keep in mind"
-  alice <## "ok"
-  alice ##> "/chats"
-  alice <## "$self keep in mind"
+  alice #> "$self keep in mind"
+  alice ##> "/tail"
+  alice <# "$self keep in mind"
 
   alice ##> "/create user secret"
   alice <## "user profile: secret"
   alice <## "use /p <display name> to change it"
   alice <## "(the updated profile will be sent to all your contacts)"
 
-  alice ##> "/note folder $gossip Do not quote me on this"
+  alice ##> "/note folder gossip"
   alice <## "new note folder created, write to $gossip to add notes"
 
-  alice ##> "/chats"
+  alice ##> "/tail"

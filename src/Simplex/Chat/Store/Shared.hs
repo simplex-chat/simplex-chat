@@ -68,6 +68,8 @@ data StoreError
   | SEDuplicateGroupMember
   | SEGroupAlreadyJoined
   | SEGroupInvitationNotFound
+  | SENoteFolderNotFound {noteFolderId :: NoteFolderId}
+  | SENoteFolderNotFoundByName {noteFolderName :: NoteFolderName}
   | SESndFileNotFound {fileId :: FileTransferId}
   | SESndFileInvalid {fileId :: FileTransferId}
   | SERcvFileNotFound {fileId :: FileTransferId}
