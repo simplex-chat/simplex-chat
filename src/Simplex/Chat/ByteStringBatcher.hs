@@ -1,97 +1,49 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Simplex.Chat.ByteStringBatcher
-  ( HasByteString (..),
-    BSBatch (..),
-    BSBatcherOutput (..),
-    batchByteStringObjects,
-    partitionBatches,
+  ( MsgBatch (..),
+    batchMessages,
   )
 where
 
-import qualified Data.ByteString.Builder as BB
-import qualified Data.ByteString.Lazy as L
-import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.ByteString.Builder (Builder, charUtf8, lazyByteString)
+import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
-import Data.List.NonEmpty (NonEmpty (..))
-import qualified Data.List.NonEmpty as L
+import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
+import Simplex.Chat.Messages
 
-class HasByteString a where
-  getByteString :: a -> L.ByteString
+data MsgBatch = MsgBatch Builder [SndMessage]
+  deriving (Show)
 
-instance HasByteString L.ByteString where
-  getByteString = id
-
-data HasByteString a => BSBatch a = BSBatch BB.Builder [a]
-
-data HasByteString a => BSBatcherOutput a
-  = BatcherOutputBatch (BSBatch a)
-  | BatcherOutputLarge a
-
--- | Batches instances of HasByteString into batches of ByteString builders in form of JSON arrays.
--- Does not check if the resulting batch is a valid JSON. If it is required,
--- getByteString should return ByteString encoded JSON object.
--- If a single element is passed, it is returned in form of JSON object instead.
--- If an element exceeds batchLenLimit, it is returned as BatcherOutputLarge.
-batchByteStringObjects :: forall a. HasByteString a => Int64 -> NonEmpty a -> [BSBatcherOutput a]
-batchByteStringObjects batchLenLimit = reverse . mkBatch []
+-- | Batches [SndMessage] into batches of ByteString builders in form of JSON arrays.
+-- Does not check if the resulting batch is a valid JSON.
+-- If a single element is passed of fits the size, it is returned as is (a JSON string).
+-- If an element exceeds maxLen, it is returned as ChatError.
+batchMessages :: Int64 -> [SndMessage] -> [Either ChatError MsgBatch]
+batchMessages maxLen msgs =
+  let (batches, batch, _, n) = foldr addToBatch ([], [], 0, 0) msgs
+   in if n == 0 then batches else msgBatch batch : batches
   where
-    mkBatch :: [BSBatcherOutput a] -> NonEmpty a -> [BSBatcherOutput a]
-    mkBatch batches objs =
-      let (batch, objs_) = encodeBatch mempty 0 0 [] objs
-          batches' = batch : batches
-       in maybe batches' (mkBatch batches') objs_
-    encodeBatch :: BB.Builder -> Int64 -> Int -> [a] -> NonEmpty a -> (BSBatcherOutput a, Maybe (NonEmpty a))
-    encodeBatch builder len cnt batchedObjs remainingObjs@(obj :| objs_)
-      -- batched string fits
-      | len' <= maxSize' =
-          case L.nonEmpty objs_ of
-            Just objs' -> encodeBatch builder' len' cnt' batchedObjs' objs'
-            Nothing -> completeBatchLastStrFits
-      -- batched string doesn't fit
-      | cnt == 0 = (BatcherOutputLarge obj, L.nonEmpty objs_)
-      | otherwise = completeBatchStrDoesntFit
+    msgBatch batch = Right (MsgBatch (encodeMessages batch) batch)
+    addToBatch :: SndMessage -> ([Either ChatError MsgBatch], [SndMessage], Int64, Int) -> ([Either ChatError MsgBatch], [SndMessage], Int64, Int)
+    addToBatch msg@SndMessage {msgBody} (batches, batch, len, n)
+      | batchLen <= maxLen = (batches, msg : batch, len', n + 1)
+      | msgLen <= maxLen = (batches', [msg], msgLen, 1)
+      | otherwise = (errLarge msg : (if n == 0 then batches else batches'), [], 0, 0)
       where
-        bStr = getByteString obj
-        cnt' = cnt + 1
-        (len', builder')
-          | cnt' == 1 =
-              ( LB.length bStr, -- initially len = 0
-                BB.lazyByteString bStr
-              )
-          | cnt' == 2 =
-              ( len + LB.length bStr + 2, -- for opening bracket "[" and comma ","
-                "[" <> builder <> "," <> BB.lazyByteString bStr
-              )
-          | otherwise =
-              ( len + LB.length bStr + 1, -- for comma ","
-                builder <> "," <> BB.lazyByteString bStr
-              )
-        maxSize'
-          | cnt' == 1 = batchLenLimit
-          | otherwise = batchLenLimit - 1 -- for closing bracket "]"
-        batchedObjs' :: [a]
-        batchedObjs' = obj : batchedObjs
-        completeBatchLastStrFits :: (BSBatcherOutput a, Maybe (NonEmpty a))
-        completeBatchLastStrFits =
-          (BatcherOutputBatch $ BSBatch completeBuilder (reverse batchedObjs'), Nothing)
-          where
-            completeBuilder
-              | cnt' == 1 = builder' -- if last string fits, we look at current cnt'
-              | otherwise = builder' <> "]"
-        completeBatchStrDoesntFit :: (BSBatcherOutput a, Maybe (NonEmpty a))
-        completeBatchStrDoesntFit =
-          (BatcherOutputBatch $ BSBatch completeBuilder (reverse batchedObjs), Just remainingObjs)
-          where
-            completeBuilder
-              | cnt == 1 = builder -- if string doesn't fit, we look at previous cnt
-              | otherwise = builder <> "]"
+        msgLen = LB.length msgBody
+        batches' = msgBatch batch : batches
+        len' = msgLen + if n == 0 then 0 else len + 1 -- 1 accounts for comma
+        batchLen = len' + (if n == 0 then 0 else 2) -- 2 accounts for opening and closing brackets
+        errLarge SndMessage {msgId} = Left $ ChatError $ CEInternalError ("large message " <> show msgId)
 
--- | Partitions list of batcher outputs into lists of batches and large objects.
-partitionBatches :: forall a. HasByteString a => [BSBatcherOutput a] -> ([a], [BSBatch a])
-partitionBatches = foldr partition' ([], [])
+encodeMessages :: [SndMessage] -> Builder
+encodeMessages = \case
+  [] -> mempty
+  [msg] -> encodeMsg msg
+  (msg : msgs) -> charUtf8 '[' <> encodeMsg msg <> mconcat [charUtf8 ',' <> encodeMsg msg' | msg' <- msgs] <> charUtf8 ']' 
   where
-    partition' :: BSBatcherOutput a -> ([a], [BSBatch a]) -> ([a], [BSBatch a])
-    partition' (BatcherOutputBatch bStrBatch) (largeBStrs, bStrBatches) = (largeBStrs, bStrBatch : bStrBatches)
-    partition' (BatcherOutputLarge largeBStr) (largeBStrs, bStrBatches) = (largeBStr : largeBStrs, bStrBatches)
+    encodeMsg SndMessage {msgBody} = lazyByteString msgBody

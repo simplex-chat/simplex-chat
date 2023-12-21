@@ -35,7 +35,6 @@ import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
-import Simplex.Chat.ByteStringBatcher (HasByteString(..))
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
@@ -772,9 +771,7 @@ data SndMessage = SndMessage
     sharedMsgId :: SharedMsgId,
     msgBody :: LazyMsgBody
   }
-
-instance HasByteString SndMessage where
-  getByteString SndMessage {msgBody} = msgBody
+  deriving (Show)
 
 data NewRcvMessage e = NewRcvMessage
   { chatMsgEvent :: ChatMsgEvent e,

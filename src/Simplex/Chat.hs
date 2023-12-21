@@ -29,7 +29,7 @@ import Data.Bifunctor (bimap, first)
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base64 as B64
-import qualified Data.ByteString.Builder as Builder
+import Data.ByteString.Builder (toLazyByteString)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -54,7 +54,7 @@ import Data.Time.Clock.System (systemToUTCTime)
 import Data.Word (Word32)
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
-import Simplex.Chat.ByteStringBatcher (BSBatch (..), batchByteStringObjects, partitionBatches)
+import Simplex.Chat.ByteStringBatcher (MsgBatch (..), batchMessages)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
@@ -5617,17 +5617,17 @@ sendGroupMemberMessages user conn@Connection {connId} events groupId = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
   (errs, msgs) <- partitionEithers <$> createSndMessages
   unless (null errs) $ toView $ CRChatErrors Nothing errs
-  forM_ (L.nonEmpty msgs) $ \msgs' -> do
-    let (largeMsgs, msgBatches) = partitionBatches $ batchByteStringObjects maxChatMsgSize msgs'
-        -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
-        errs' = map (\SndMessage {msgId} -> ChatError $ CEInternalError ("large message " <> show msgId)) largeMsgs
+  unless (null msgs) $ do
+    let (errs', msgBatches) = partitionEithers $ batchMessages maxChatMsgSize msgs
+        -- errs' = map (\SndMessage {msgId} -> ChatError $ CEInternalError ("large message " <> show msgId)) largeMsgs
+    -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
     unless (null errs') $ toView $ CRChatErrors Nothing errs'
     forM_ msgBatches $ \batch ->
       processBatch batch `catchChatError` (toView . CRChatError (Just user))
   where
-    processBatch :: BSBatch SndMessage -> m ()
-    processBatch (BSBatch batchBuilder sndMsgs) = do
-      let batchBody = LB.toStrict $ Builder.toLazyByteString batchBuilder
+    processBatch :: MsgBatch -> m ()
+    processBatch (MsgBatch builder sndMsgs) = do
+      let batchBody = LB.toStrict $ toLazyByteString builder
       agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) MsgFlags {notification = True} batchBody
       let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
       void . withStoreBatch' $ \db -> map (\SndMessage {msgId} -> createSndMsgDelivery db sndMsgDelivery msgId) sndMsgs
