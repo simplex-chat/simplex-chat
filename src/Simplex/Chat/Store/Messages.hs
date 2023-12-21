@@ -742,9 +742,13 @@ toLocalChatItem currentTs ((itemId, itemTs, AMsgDirection msgDir, itemContentTex
     invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
     chatItem itemContent = case (itemContent, itemStatus, fileStatus_) of
       (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, Just (AFS SMDSnd fileStatus)) ->
-        Right $ cItem SMDSnd CINote ciStatus ciContent (maybeCIFile fileStatus)
+        Right $ cItem SMDSnd CILocalSnd ciStatus ciContent (maybeCIFile fileStatus)
       (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, Nothing) ->
-        Right $ cItem SMDSnd CINote ciStatus ciContent Nothing
+        Right $ cItem SMDSnd CILocalSnd ciStatus ciContent Nothing
+      (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just (AFS SMDRcv fileStatus)) ->
+        Right $ cItem SMDRcv CILocalRcv ciStatus ciContent (maybeCIFile fileStatus)
+      (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Nothing) ->
+        Right $ cItem SMDRcv CILocalRcv ciStatus ciContent Nothing
       _ -> badItem
     maybeCIFile :: CIFileStatus d -> Maybe (CIFile d)
     maybeCIFile fileStatus =

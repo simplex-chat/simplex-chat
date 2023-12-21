@@ -393,7 +393,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
         toChatView :: AChat -> (Text, Text, Maybe ConnStatus)
         toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items Nothing, connStatus <$> activeConn)
         toChatView (AChat _ (Chat (GroupChat GroupInfo {membership, localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items (Just membership), Nothing)
-        toChatView (AChat _ (Chat (NotesChat NotesFolder {localDisplayName}) items _)) = ("$" <> localDisplayName, toCIPreview items Nothing, Nothing)
+        toChatView (AChat _ (Chat (LocalChat NotesFolder {localDisplayName}) items _)) = ("$" <> localDisplayName, toCIPreview items Nothing, Nothing)
         toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items Nothing, Nothing)
         toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items Nothing, Just pccConnStatus)
         toCIPreview :: [CChatItem c] -> Maybe GroupMember -> Text
@@ -702,9 +702,15 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
       where
         from = ttyFromGroup g m
         reactionMsg mc = quoteText mc . ttyQuotedMember . Just $ sentByMember' g itemDir
+    (LocalChat l, CILocalRcv) -> case ciMsgContent content of
+      Just mc -> view from $ reactionMsg mc
+      _ -> []
+      where
+        from = ttyFromLocal l
+        reactionMsg mc = quoteText mc $ if toMsgDirection md == MDSnd then ">>" else ">"
     (_, CIDirectSnd) -> [sentText]
     (_, CIGroupSnd) -> [sentText]
-    (_, CINote) -> [sentText]
+    (_, CILocalSnd) -> [sentText]
   where
     view from msg
       | showReactions = viewReceivedReaction from msg reactionText ts tz sentAt
@@ -2027,6 +2033,9 @@ ttyToGroup g = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " ")
 
 ttyToGroupEdited :: GroupInfo -> StyledString
 ttyToGroupEdited g = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " [edited] ")
+
+ttyFromLocal :: NotesFolder -> StyledString
+ttyFromLocal NotesFolder {localDisplayName} = ttyFrom ("$" <> localDisplayName <> "> ")
 
 viewName :: Text -> Text
 viewName s = if T.any isSpace s then "'" <> s <> "'" else s
