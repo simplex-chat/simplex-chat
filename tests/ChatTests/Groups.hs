@@ -1460,7 +1460,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       alice <## "Message reactions: on"
       alice <## "Voice messages: on"
       alice <## "Files and media: on"
-      alice <## "History: on"
+      alice <## "Recent history: on"
     bobAddedDan :: HasCallStack => TestCC -> IO ()
     bobAddedDan cc = do
       cc <## "#team: bob added dan (Daniel) to the group (connecting...)"
@@ -4261,16 +4261,16 @@ testGroupHistoryPreferenceOff =
 
       alice ##> "/set history #team off"
       alice <## "updated group preferences:"
-      alice <## "History: off"
+      alice <## "Recent history: off"
       concurrentlyN_
         [ do
             bob <## "alice updated group #team:"
             bob <## "updated group preferences:"
-            bob <## "History: off",
+            bob <## "Recent history: off",
           do
             cath <## "alice updated group #team:"
             cath <## "updated group preferences:"
-            cath <## "History: off"
+            cath <## "Recent history: off"
         ]
 
       connectUsers alice dan
