@@ -149,6 +149,7 @@ library
       Simplex.Chat.Store.Groups
       Simplex.Chat.Store.Messages
       Simplex.Chat.Store.Migrations
+      Simplex.Chat.Store.NoteFolders
       Simplex.Chat.Store.Profiles
       Simplex.Chat.Store.Remote
       Simplex.Chat.Store.Shared

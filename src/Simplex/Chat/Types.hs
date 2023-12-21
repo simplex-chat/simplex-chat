@@ -1528,7 +1528,6 @@ data NoteFolder = NoteFolder
     userId :: UserId,
     displayName :: NoteFolderName,
     localDisplayName :: NoteFolderName,
-    chatItemId :: Maybe Int64,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: UTCTime,

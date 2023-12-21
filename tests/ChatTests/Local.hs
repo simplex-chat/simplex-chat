@@ -15,16 +15,16 @@ chatLocalTests = do
 
 testNotes :: FilePath -> IO ()
 testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-  alice ##> "/create note folder self"
-  alice <## "note folder created, write to $self to add notes"
+  alice ##> "/note folder self"
+  alice <## "new note folder created, write to $self to add notes"
 
   alice ##> "$self keep in mind"
   alice <## "ok"
 
 testUserNotes :: FilePath -> IO ()
 testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-  alice ##> "/create note folder self"
-  alice <## "note folder created, write to $self to add notes"
+  alice ##> "/note folder self"
+  alice <## "new note folder created, write to $self to add notes"
 
   alice ##> "$self keep in mind"
   alice <## "ok"
@@ -35,5 +35,8 @@ testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice <## "user profile: secret"
   alice <## "use /p <display name> to change it"
   alice <## "(the updated profile will be sent to all your contacts)"
+
+  alice ##> "/note folder $gossip Do not quote me on this"
+  alice <## "new note folder created, write to $gossip to add notes"
 
   alice ##> "/chats"
