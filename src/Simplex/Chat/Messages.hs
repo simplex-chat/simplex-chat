@@ -766,7 +766,7 @@ checkChatType x = case testEquality (chatTypeI @c) (chatTypeI @c') of
 
 type LazyMsgBody = L.ByteString
 
-data NewSndMessage e = NewMessage
+data NewSndMessage e = NewSndMessage
   { chatMsgEvent :: ChatMsgEvent e,
     msgBody :: LazyMsgBody
   }

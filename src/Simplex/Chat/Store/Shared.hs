@@ -85,7 +85,7 @@ data StoreError
   | SEPendingConnectionNotFound {connId :: Int64}
   | SEIntroNotFound
   | SEUniqueID
-  | SEErrorSavingMessage {message :: String}
+  | SELargeMsg
   | SEInternalError {message :: String}
   | SEBadChatItem {itemId :: ChatItemId}
   | SEChatItemNotFound {itemId :: ChatItemId}

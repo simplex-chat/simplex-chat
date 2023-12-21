@@ -160,12 +160,12 @@ deleteGroupCIs db User {userId} GroupInfo {groupId} = do
   DB.execute db "DELETE FROM chat_item_reactions WHERE group_id = ?" (Only groupId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
-createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> Either String (NewSndMessage e)) -> ExceptT StoreError IO SndMessage
-createNewSndMessage db gVar connOrGroupId mkMessage =
+createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> ChatMsgEvent e -> (SharedMsgId -> EncodedChatMessage) -> ExceptT StoreError IO SndMessage
+createNewSndMessage db gVar connOrGroupId chatMsgEvent encodeMessage =
   createWithRandomId' gVar $ \sharedMsgId ->
-    case mkMessage (SharedMsgId sharedMsgId) of
-      Left err -> pure $ Left (SEErrorSavingMessage err)
-      Right NewMessage {chatMsgEvent, msgBody} -> do
+    case encodeMessage (SharedMsgId sharedMsgId) of
+      ECMLarge -> pure $ Left SELargeMsg
+      ECMEncoded msgBody -> do
         createdAt <- getCurrentTime
         DB.execute
           db

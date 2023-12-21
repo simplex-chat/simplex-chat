@@ -73,10 +73,10 @@ s ==## msg = do
 s ##== msg = do
   let r = encodeChatMessage msg
   case r of
-    Left e -> expectationFailure $ "encode error: " <> show e
-    Right encodedBody ->
+    ECMEncoded encodedBody ->
       J.eitherDecodeStrict' (LB.toStrict encodedBody)
         `shouldBe` (J.eitherDecodeStrict' s :: Either String J.Value)
+    ECMLarge -> expectationFailure $ "large message"
 
 (##==##) :: MsgEncodingI e => ByteString -> ChatMessage e -> Expectation
 s ##==## msg = do

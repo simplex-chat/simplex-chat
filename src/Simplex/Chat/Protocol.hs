@@ -490,15 +490,17 @@ $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 maxChatMsgSize :: Int64
 maxChatMsgSize = 15610
 
-encodeChatMessage :: MsgEncodingI e => ChatMessage e -> Either String L.ByteString
+data EncodedChatMessage = ECMEncoded L.ByteString | ECMLarge
+
+encodeChatMessage :: MsgEncodingI e => ChatMessage e -> EncodedChatMessage
 encodeChatMessage msg = do
   case chatToAppMessage msg of
     AMJson m -> do
       let body = J.encode m
       if LB.length body > maxChatMsgSize
-        then Left "large message"
-        else Right body
-    AMBinary m -> Right . LB.fromStrict $ strEncode m
+        then ECMLarge
+        else ECMEncoded body
+    AMBinary m -> ECMEncoded . LB.fromStrict $ strEncode m
 
 parseChatMessages :: ByteString -> [Either String AChatMessage]
 parseChatMessages "" = [Left "empty string"]

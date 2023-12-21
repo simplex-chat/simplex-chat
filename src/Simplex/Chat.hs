@@ -5607,11 +5607,10 @@ createSndMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> ConnOrGro
 createSndMessage chatMsgEvent connOrGroupId = do
   gVar <- asks idsDrg
   ChatConfig {chatVRange} <- asks config
-  withStore $ \db -> createNewSndMessage db gVar connOrGroupId (newMsg chatVRange)
+  withStore $ \db -> createNewSndMessage db gVar connOrGroupId chatMsgEvent (encodeMessage chatVRange)
   where
-    newMsg chatVRange sharedMsgId = do
-      let r = encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
-      fmap (NewMessage chatMsgEvent) r
+    encodeMessage chatVRange sharedMsgId =
+      encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
 
 sendBatchedDirectMessages :: forall e m. (MsgEncodingI e, ChatMonad m) => Connection -> NonEmpty (ChatMsgEvent e) -> ConnOrGroupId -> m ()
 sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
@@ -5620,7 +5619,8 @@ sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
   unless (null errs) $ toView $ CRChatErrors Nothing errs
   forM_ (L.nonEmpty msgs) $ \msgs' -> do
     let (largeMsgs, msgBatches) = partitionBatches $ batchChatMessages msgs'
-        errs' = map (\SndMessage {msgId} -> ChatError $ CELargeChatMsg msgId) largeMsgs
+        -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
+        errs' = map (\SndMessage {msgId} -> ChatError $ CEInternalError ("large message " <> show msgId)) largeMsgs
     unless (null errs') $ toView $ CRChatErrors Nothing errs'
     forM_ msgBatches $ \(MessagesBatch batchBuilder sndMsgs) -> do
       let batchBody = LB.toStrict $ Builder.toLazyByteString batchBuilder
@@ -5634,11 +5634,10 @@ sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
       ChatConfig {chatVRange} <- asks config
       withStoreBatch $ \db -> map (createMsg db gVar chatVRange) (toList events)
     createMsg db gVar chatVRange evnt = do
-      r <- runExceptT $ createNewSndMessage db gVar connOrGroupId (newMsg chatVRange evnt)
+      r <- runExceptT $ createNewSndMessage db gVar connOrGroupId evnt (encodeMessage chatVRange evnt)
       pure $ first ChatErrorStore r
-    newMsg chatVRange chatMsgEvent sharedMsgId = do
-      let r = encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
-      fmap (NewMessage chatMsgEvent) r
+    encodeMessage chatVRange evnt sharedMsgId =
+      encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent = evnt}
     partitionBatches :: [ChatMessageBatch] -> ([SndMessage], [MessagesBatch])
     partitionBatches = foldr partition' ([], [])
       where
@@ -5708,8 +5707,8 @@ directMessage chatMsgEvent = do
   ChatConfig {chatVRange} <- asks config
   let r = encodeChatMessage ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
   case r of
-    Left e -> throwChatError $ CEException e
-    Right encodedBody -> pure . LB.toStrict $ encodedBody
+    ECMEncoded encodedBody -> pure . LB.toStrict $ encodedBody
+    ECMLarge -> throwChatError $ CEException "large message"
 
 deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> LazyMsgBody -> MessageId -> m Int64
 deliverMessage conn cmEventTag msgBody msgId = do
