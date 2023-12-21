@@ -29,7 +29,6 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.*
-import java.io.File
 import java.net.URI
 
 @Composable
@@ -82,7 +81,10 @@ fun SendMsgView(
     val showVoiceButton = !nextSendGrpInv && cs.message.isEmpty() && showVoiceRecordIcon && !composeState.value.editing &&
         cs.liveMessage == null && (cs.preview is ComposePreview.NoPreview || recState.value is RecordingState.Started)
     val showDeleteTextButton = rememberSaveable { mutableStateOf(false) }
-    PlatformTextField(composeState, sendMsgEnabled, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage, onFilesPasted) {
+    val sendMsgButtonDisabled = !sendMsgEnabled || !cs.sendEnabled() ||
+      (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
+      cs.endLiveDisabled
+    PlatformTextField(composeState, sendMsgEnabled, sendMsgButtonDisabled, textStyle, showDeleteTextButton, userIsObserver, onMessageChange, editPrevMessage, onFilesPasted) {
       if (!cs.inProgress) {
         sendMessage(null)
       }
@@ -155,9 +157,6 @@ fun SendMsgView(
         else -> {
           val cs = composeState.value
           val icon = if (cs.editing || cs.liveMessage != null) painterResource(MR.images.ic_check_filled) else painterResource(MR.images.ic_arrow_upward)
-          val disabled = !sendMsgEnabled || !cs.sendEnabled() ||
-              (!allowedVoiceByPrefs && cs.preview is ComposePreview.VoicePreview) ||
-              cs.endLiveDisabled
           val showDropdown = rememberSaveable { mutableStateOf(false) }
 
           @Composable
@@ -200,12 +199,12 @@ fun SendMsgView(
 
           val menuItems = MenuItems()
           if (menuItems.isNotEmpty()) {
-            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !disabled, sendMessage) { showDropdown.value = true }
+            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendMessage) { showDropdown.value = true }
             DefaultDropdownMenu(showDropdown) {
               menuItems.forEach { composable -> composable() }
             }
           } else {
-            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !disabled, sendMessage)
+            SendMsgButton(icon, sendButtonSize, sendButtonAlpha, sendButtonColor, !sendMsgButtonDisabled, sendMessage)
           }
         }
       }

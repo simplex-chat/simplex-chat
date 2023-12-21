@@ -142,7 +142,7 @@ startRemoteHost rh_ rcAddrPrefs_ port_ = do
     Just (rhId, multicast) -> do
       rh@RemoteHost {hostPairing} <- withStore $ \db -> getRemoteHost db rhId
       pure (RHId rhId, multicast, Just $ remoteHostInfo rh $ Just RHSStarting, hostPairing) -- get from the database, start multicast if requested
-    Nothing -> (RHNew,False,Nothing,) <$> rcNewHostPairing
+    Nothing -> withAgent $ \a -> (RHNew,False,Nothing,) <$> rcNewHostPairing a
   sseq <- startRemoteHostSession rhKey
   ctrlAppInfo <- mkCtrlAppInfo
   (localAddrs, invitation, rchClient, vars) <- handleConnectError rhKey sseq . withAgent $ \a -> rcConnectHost a pairing (J.toJSON ctrlAppInfo) multicast rcAddrPrefs_ port_
@@ -352,7 +352,7 @@ storeRemoteFile rhId encrypted_ localPath = do
       tmpDir <- getChatTempDirectory
       createDirectoryIfMissing True tmpDir
       tmpFile <- tmpDir `uniqueCombine` takeFileName localPath
-      cfArgs <- liftIO CF.randomArgs
+      cfArgs <- atomically . CF.randomArgs =<< asks random
       liftError (ChatError . CEFileWrite tmpFile) $ encryptFile localPath tmpFile cfArgs
       pure $ CryptoFile tmpFile $ Just cfArgs
 

@@ -78,7 +78,7 @@ $(deriveJSON (taggedObjectJSON $ dropPrefix "RR") ''RemoteResponse)
 
 mkRemoteHostClient :: ChatMonad m => HTTP2Client -> HostSessKeys -> SessionCode -> FilePath -> HostAppInfo -> m RemoteHostClient
 mkRemoteHostClient httpClient sessionKeys sessionCode storePath HostAppInfo {encoding, deviceName, encryptFiles} = do
-  drg <- asks $ agentDRG . smpAgent
+  drg <- asks random
   counter <- newTVarIO 1
   let HostSessKeys {hybridKey, idPrivKey, sessPrivKey} = sessionKeys
       signatures = RSSign {idPrivKey, sessPrivKey}
@@ -95,7 +95,7 @@ mkRemoteHostClient httpClient sessionKeys sessionCode storePath HostAppInfo {enc
 
 mkCtrlRemoteCrypto :: ChatMonad m => CtrlSessKeys -> SessionCode -> m RemoteCrypto
 mkCtrlRemoteCrypto CtrlSessKeys {hybridKey, idPubKey, sessPubKey} sessionCode = do
-  drg <- asks $ agentDRG . smpAgent
+  drg <- asks random
   counter <- newTVarIO 1
   let signatures = RSVerify {idPubKey, sessPubKey}
   pure RemoteCrypto {drg, counter, sessionCode, hybridKey, signatures}

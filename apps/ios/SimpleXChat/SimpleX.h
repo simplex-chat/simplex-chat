@@ -25,11 +25,11 @@ extern char *chat_parse_markdown(char *str);
 extern char *chat_parse_server(char *str);
 extern char *chat_password_hash(char *pwd, char *salt);
 extern char *chat_valid_name(char *name);
-extern char *chat_encrypt_media(char *key, char *frame, int len);
+extern char *chat_encrypt_media(chat_ctrl ctl, char *key, char *frame, int len);
 extern char *chat_decrypt_media(char *key, char *frame, int len);
 
 // chat_write_file returns null-terminated string with JSON of WriteFileResult
-extern char *chat_write_file(char *path, char *data, int len);
+extern char *chat_write_file(chat_ctrl ctl, char *path, char *data, int len);
 
 // chat_read_file returns a buffer with:
 // result status (1 byte), then if
@@ -38,7 +38,7 @@ extern char *chat_write_file(char *path, char *data, int len);
 extern char *chat_read_file(char *path, char *key, char *nonce);
 
 // chat_encrypt_file returns null-terminated string with JSON of WriteFileResult
-extern char *chat_encrypt_file(char *fromPath, char *toPath);
+extern char *chat_encrypt_file(chat_ctrl ctl, char *fromPath, char *toPath);
 
 // chat_decrypt_file returns null-terminated string with the error message
 extern char *chat_decrypt_file(char *fromPath, char *key, char *nonce, char *toPath);

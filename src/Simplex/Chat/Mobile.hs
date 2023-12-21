@@ -94,15 +94,15 @@ foreign export ccall "chat_password_hash" cChatPasswordHash :: CString -> CStrin
 
 foreign export ccall "chat_valid_name" cChatValidName :: CString -> IO CString
 
-foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
+foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: StablePtr ChatController -> CString -> Ptr Word8 -> CInt -> IO CString
 
 foreign export ccall "chat_decrypt_media" cChatDecryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
 
-foreign export ccall "chat_write_file" cChatWriteFile :: CString -> Ptr Word8 -> CInt -> IO CJSONString
+foreign export ccall "chat_write_file" cChatWriteFile :: StablePtr ChatController -> CString -> Ptr Word8 -> CInt -> IO CJSONString
 
 foreign export ccall "chat_read_file" cChatReadFile :: CString -> CString -> CString -> IO (Ptr Word8)
 
-foreign export ccall "chat_encrypt_file" cChatEncryptFile :: CString -> CString -> IO CJSONString
+foreign export ccall "chat_encrypt_file" cChatEncryptFile :: StablePtr ChatController -> CString -> CString -> IO CJSONString
 
 foreign export ccall "chat_decrypt_file" cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
 
