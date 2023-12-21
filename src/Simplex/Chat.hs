@@ -3614,37 +3614,41 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   (CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv sender, content = CIRcvMsgContent mc, file}) -> do
                     fInvDescr_ <- join <$> forM file getRcvFileInvDescr
                     processContentItem sender ci mc fInvDescr_
-                    where
-                      getRcvFileInvDescr :: CIFile 'MDRcv -> m (Maybe (FileInvitation, RcvFileDescrText))
-                      getRcvFileInvDescr CIFile {fileId, fileName, fileSize, fileProtocol, fileStatus}
-                        | fileProtocol /= FPXFTP || fileStatus == CIFSRcvCancelled = pure Nothing
-                        | otherwise = do
-                            RcvFileDescr {fileDescrText, fileDescrComplete} <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
-                            if fileDescrComplete
-                              then do
-                                let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
-                                    fInv = xftpFileInvitation fileName fileSize fInvDescr
-                                pure $ Just (fInv, fileDescrText)
-                              else pure Nothing
                   (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file}) -> do
                     fInvDescr_ <- join <$> forM file getSndFileInvDescr
                     processContentItem membership ci mc fInvDescr_
-                    where
-                      getSndFileInvDescr :: CIFile 'MDSnd -> m (Maybe (FileInvitation, RcvFileDescrText))
-                      getSndFileInvDescr CIFile {fileId, fileName, fileSize, fileProtocol, fileStatus}
-                        | fileProtocol /= FPXFTP || fileStatus == CIFSSndCancelled = pure Nothing
-                        | otherwise = do
-                            -- can also lookup in extra_xftp_file_descriptions, though it can be empty;
-                            -- would be best if snd file had a single rcv description for all members saved in files table
-                            RcvFileDescr {fileDescrText, fileDescrComplete} <- withStore $ \db -> getRcvFileDescrBySndFileId db fileId
-                            if fileDescrComplete
-                              then do
-                                let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
-                                    fInv = xftpFileInvitation fileName fileSize fInvDescr
-                                pure $ Just (fInv, fileDescrText)
-                              else pure Nothing
                   _ -> collectForwardEvents items errs evts
                 where
+                  getRcvFileInvDescr :: CIFile 'MDRcv -> m (Maybe (FileInvitation, RcvFileDescrText))
+                  getRcvFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus} = do
+                    expired <- fileExpired
+                    if fileProtocol /= FPXFTP || fileStatus == CIFSRcvCancelled || expired
+                      then pure Nothing
+                      else do
+                        rfd <- withStore $ \db -> getRcvFileDescrByRcvFileId db fileId
+                        pure $ invCompleteDescr ciFile rfd
+                  getSndFileInvDescr :: CIFile 'MDSnd -> m (Maybe (FileInvitation, RcvFileDescrText))
+                  getSndFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus} = do
+                    expired <- fileExpired
+                    if fileProtocol /= FPXFTP || fileStatus == CIFSSndCancelled || expired
+                      then pure Nothing
+                      else do
+                        -- can also lookup in extra_xftp_file_descriptions, though it can be empty;
+                        -- would be best if snd file had a single rcv description for all members saved in files table
+                        rfd <- withStore $ \db -> getRcvFileDescrBySndFileId db fileId
+                        pure $ invCompleteDescr ciFile rfd
+                  fileExpired :: m Bool
+                  fileExpired = do
+                    ttl <- asks $ rcvFilesTTL . agentConfig . config
+                    cutoffTs <- addUTCTime (-ttl) <$> liftIO getCurrentTime
+                    pure $ chatItemTs cci < cutoffTs
+                  invCompleteDescr :: CIFile d -> RcvFileDescr -> (Maybe (FileInvitation, RcvFileDescrText))
+                  invCompleteDescr CIFile {fileName, fileSize} RcvFileDescr {fileDescrText, fileDescrComplete}
+                    | fileDescrComplete =
+                      let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
+                          fInv = xftpFileInvitation fileName fileSize fInvDescr
+                       in Just (fInv, fileDescrText)
+                    | otherwise = Nothing
                   processContentItem :: GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> m ([ChatError], [ChatMsgEvent Json])
                   processContentItem sender ChatItem {meta, quotedItem} mc fInvDescr_ =
                     if isNothing fInvDescr_ && not (msgContentHasText mc)
