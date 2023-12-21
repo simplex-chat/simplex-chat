@@ -93,6 +93,7 @@ import Simplex.Chat.Migrations.M20231114_remote_control
 import Simplex.Chat.Migrations.M20231126_remote_ctrl_address
 import Simplex.Chat.Migrations.M20231207_chat_list_pagination
 import Simplex.Chat.Migrations.M20231214_item_content_tag
+import Simplex.Chat.Migrations.M20231219_note_folders
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -185,7 +186,8 @@ schemaMigrations =
     ("20231114_remote_control", m20231114_remote_control, Just down_m20231114_remote_control),
     ("20231126_remote_ctrl_address", m20231126_remote_ctrl_address, Just down_m20231126_remote_ctrl_address),
     ("20231207_chat_list_pagination", m20231207_chat_list_pagination, Just down_m20231207_chat_list_pagination),
-    ("20231214_item_content_tag", m20231214_item_content_tag, Just down_m20231214_item_content_tag)
+    ("20231214_item_content_tag", m20231214_item_content_tag, Just down_m20231214_item_content_tag),
+    ("20231219_note_folders", m20231219_note_folders, Just down_m20231219_note_folders)
   ]
 
 -- | The list of migrations in ascending order by date

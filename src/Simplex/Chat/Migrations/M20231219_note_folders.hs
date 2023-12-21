@@ -1,14 +1,14 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20231219_notes_folders where
+module Simplex.Chat.Migrations.M20231219_note_folders where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20231219_notes_folders :: Query
-m20231219_notes_folders =
+m20231219_note_folders :: Query
+m20231219_note_folders =
   [sql|
-    CREATE TABLE notes_folders (
+    CREATE TABLE note_folders (
       notes_folder_id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
       display_name TEXT NOT NULL,
@@ -21,21 +21,21 @@ m20231219_notes_folders =
       FOREIGN KEY (user_id, local_display_name)
         REFERENCES display_names (user_id, local_display_name)
         ON DELETE CASCADE
-        ON UPDATE CASCADE,
+        ON UPDATE CASCADE
     );
 
-    CREATE UNIQUE INDEX idx_notes_folders_user_id_local_display_name ON notes_folders (
+    CREATE UNIQUE INDEX idx_note_folders_user_id_local_display_name ON note_folders (
       user_id,
       local_display_name
     );
 
-    ALTER TABLE chat_items ADD COLUMN notes_folder_id INTEGER DEFAULT NULL REFERENCES notes_folders ON DELETE CASCADE;
+    ALTER TABLE chat_items ADD COLUMN notes_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE;
 |]
 
-down_m20231219_notes_folders :: Query
-down_m20231219_notes_folders =
+down_m20231219_note_folders :: Query
+down_m20231219_note_folders =
   [sql|
-DROP INDEX idx_notes_folders_user_id_local_display_name;
-DROP TABLE notes_folders;
+DROP INDEX idx_note_folders_user_id_local_display_name;
+DROP TABLE note_folders;
 ALTER TABLE chat_items DROP COLUMN notes_folder_id;
 |]

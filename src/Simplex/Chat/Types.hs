@@ -327,7 +327,7 @@ type ContactName = Text
 
 type GroupName = Text
 
-type NotesFolderName = Text
+type NoteFolderName = Text
 
 optionalFullName :: ContactName -> Text -> Text
 optionalFullName displayName fullName
@@ -1523,11 +1523,11 @@ data XGrpMemIntroCont = XGrpMemIntroCont
   deriving (Show)
 
 -- | An entity for local chats
-data NotesFolder = NotesFolder
-  { notesFolderId :: NotesFolderId,
+data NoteFolder = NoteFolder
+  { noteFolderId :: NoteFolderId,
     userId :: UserId,
-    displayName :: NotesFolderName,
-    localDisplayName :: NotesFolderName,
+    displayName :: NoteFolderName,
+    localDisplayName :: NoteFolderName,
     chatItemId :: Maybe Int64,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
@@ -1537,7 +1537,7 @@ data NotesFolder = NotesFolder
   }
   deriving (Eq, Show)
 
-type NotesFolderId = Int64
+type NoteFolderId = Int64
 
 data ServerCfg p = ServerCfg
   { server :: ProtoServerWithAuth p,
@@ -1659,7 +1659,7 @@ $(JQ.deriveJSON defaultJSON ''Contact)
 
 $(JQ.deriveJSON defaultJSON ''ContactRef)
 
-$(JQ.deriveJSON defaultJSON ''NotesFolder)
+$(JQ.deriveJSON defaultJSON ''NoteFolder)
 
 instance ProtocolTypeI p => ToJSON (ServerCfg p) where
   toEncoding = $(JQ.mkToEncoding defaultJSON ''ServerCfg)
