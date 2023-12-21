@@ -390,6 +390,28 @@ fun IntSize.Companion.Saver(): Saver<IntSize, *> = Saver(
   restore = { IntSize(it.first, it.second) }
 )
 
+private var lastExecutedComposables = HashSet<Any>()
+private val failedComposables = HashSet<Any>()
+
+@Composable
+fun tryOrShowError(key: Any = Exception().stackTraceToString().lines()[2], error: @Composable () -> Unit = {}, content: @Composable () -> Unit) {
+  if (!failedComposables.contains(key)) {
+    lastExecutedComposables.add(key)
+    content()
+    lastExecutedComposables.remove(key)
+  } else {
+    error()
+  }
+}
+
+fun includeMoreFailedComposables() {
+  lastExecutedComposables.forEach {
+    failedComposables.add(it)
+    Log.i(TAG, "Added composable key as failed: $it")
+  }
+  lastExecutedComposables.clear()
+}
+
 @Composable
 fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenGone: () -> Unit) {
   DisposableEffect(Unit) {

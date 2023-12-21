@@ -15,6 +15,7 @@ let GROUP_DEFAULT_APP_STATE = "appState"
 let GROUP_DEFAULT_NSE_STATE = "nseState"
 let GROUP_DEFAULT_DB_CONTAINER = "dbContainer"
 public let GROUP_DEFAULT_CHAT_LAST_START = "chatLastStart"
+public let GROUP_DEFAULT_CHAT_LAST_BACKGROUND_RUN = "chatLastBackgroundRun"
 let GROUP_DEFAULT_NTF_PREVIEW_MODE = "ntfPreviewMode"
 public let GROUP_DEFAULT_NTF_ENABLE_LOCAL = "ntfEnableLocal" // no longer used
 public let GROUP_DEFAULT_NTF_ENABLE_PERIODIC = "ntfEnablePeriodic" // no longer used
@@ -155,6 +156,8 @@ public let dbContainerGroupDefault = EnumDefault<DBContainer>(
 )
 
 public let chatLastStartGroupDefault = DateDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_CHAT_LAST_START)
+
+public let chatLastBackgroundRunGroupDefault = DateDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_CHAT_LAST_BACKGROUND_RUN)
 
 public let ntfPreviewModeGroupDefault = EnumDefault<NotificationPreviewMode>(
     defaults: groupDefaults,

@@ -473,7 +473,9 @@ chatItemDeletedText ChatItem {meta = CIMeta {itemDeleted}, content} membership_ 
       _ -> ""
 
 viewUsersList :: [UserInfo] -> [StyledString]
-viewUsersList = mapMaybe userInfo . sortOn ldn
+viewUsersList us =
+  let ss = mapMaybe userInfo $ sortOn ldn us
+   in if null ss then ["no users"] else ss
   where
     ldn (UserInfo User {localDisplayName = n} _) = T.toLower n
     userInfo (UserInfo User {localDisplayName = n, profile = LocalProfile {fullName}, activeUser, showNtfs, viewPwdHash} count)
