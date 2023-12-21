@@ -366,7 +366,6 @@ createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciCon
           CIQGroupSnd -> (Just True, Nothing)
           CIQGroupRcv (Just GroupMember {memberId}) -> (Just False, Just memberId)
           CIQGroupRcv Nothing -> (Just False, Nothing)
-          CIQNote -> (Just True, Nothing)
 
 createNewRcvChatItem :: DB.Connection -> User -> ChatDirection c 'MDRcv -> RcvMessage -> Maybe SharedMsgId -> CIContent 'MDRcv -> Maybe CITimed -> Bool -> UTCTime -> UTCTime -> IO (ChatItemId, Maybe (CIQuote c))
 createNewRcvChatItem db user chatDirection RcvMessage {msgId, chatMsgEvent, forwardedByMember} sharedMsgId_ ciContent timed live itemTs createdAt = do
@@ -504,9 +503,9 @@ getChatPreviews db user withPCC pagination query = do
     ts (ACPD _ cpd) = case cpd of
       (DirectChatPD t _ _ _) -> t
       (GroupChatPD t _ _ _) -> t
+      (LocalChatPD t _) -> t
       (ContactRequestPD t _) -> t
       (ContactConnectionPD t _) -> t
-      (LocalChatPD t _) -> t
     sortTake = case pagination of
       PTLast count -> take count . sortBy (comparing $ Down . ts)
       PTAfter _ count -> reverse . take count . sortBy (comparing ts)
@@ -515,9 +514,9 @@ getChatPreviews db user withPCC pagination query = do
     getChatPreview (ACPD cType cpd) = case cType of
       SCTDirect -> getDirectChatPreview_ db user cpd
       SCTGroup -> getGroupChatPreview_ db user cpd
+      SCTLocal -> let (LocalChatPD _ chat) = cpd in pure chat
       SCTContactRequest -> let (ContactRequestPD _ chat) = cpd in pure chat
       SCTContactConnection -> let (ContactConnectionPD _ chat) = cpd in pure chat
-      SCTNotes -> let (LocalChatPD _ chat) = cpd in pure chat
 
 data ChatPreviewData (c :: ChatType) where
   DirectChatPD :: UTCTime -> ContactId -> Maybe ChatItemId -> ChatStats -> ChatPreviewData 'CTDirect

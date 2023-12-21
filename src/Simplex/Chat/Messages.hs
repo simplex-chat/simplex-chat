@@ -11,11 +11,14 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Messages where
 
 import Control.Applicative ((<|>))
+import Control.Monad ((>=>))
 import Data.Aeson (FromJSON, ToJSON, (.:))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
@@ -25,6 +28,7 @@ import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace)
 import Data.Int (Int64)
+import Data.Kind (Constraint)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -34,6 +38,8 @@ import Data.Type.Equality
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple.FromField (FromField (..))
 import Database.SQLite.Simple.ToField (ToField (..))
+import GHC.TypeLits (ErrorMessage (ShowType, type (:<>:)), TypeError)
+import qualified GHC.TypeLits as Type
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
@@ -189,7 +195,8 @@ data JSONCIDirection
   | JCIDirectRcv
   | JCIGroupSnd
   | JCIGroupRcv {groupMember :: GroupMember}
-  | JCINote
+  | JCILocalSnd
+  | JCILocalRcv
   deriving (Show)
 
 jsonCIDirection :: CIDirection c d -> JSONCIDirection
@@ -198,7 +205,8 @@ jsonCIDirection = \case
   CIDirectRcv -> JCIDirectRcv
   CIGroupSnd -> JCIGroupSnd
   CIGroupRcv m -> JCIGroupRcv m
-  CINote -> JCINote
+  CILocalSnd -> JCILocalSnd
+  CILocalRcv -> JCILocalRcv
 
 jsonACIDirection :: JSONCIDirection -> ACIDirection
 jsonACIDirection = \case
@@ -206,7 +214,8 @@ jsonACIDirection = \case
   JCIDirectRcv -> ACID SCTDirect SMDRcv CIDirectRcv
   JCIGroupSnd -> ACID SCTGroup SMDSnd CIGroupSnd
   JCIGroupRcv m -> ACID SCTGroup SMDRcv $ CIGroupRcv m
-  JCINote -> ACID SCTLocal SMDSnd CINote
+  JCILocalSnd -> ACID SCTLocal SMDSnd CILocalSnd
+  JCILocalRcv -> ACID SCTLocal SMDRcv CILocalRcv
 
 data CIReactionCount = CIReactionCount {reaction :: MsgReaction, userReacted :: Bool, totalReacted :: Int}
   deriving (Show)
@@ -398,6 +407,12 @@ deriving instance Show ACIReaction
 
 data JSONCIReaction c d = JSONCIReaction {chatInfo :: ChatInfo c, chatReaction :: CIReaction c d}
 
+type family ChatTypeQuotable (a :: ChatType) :: Constraint where
+  ChatTypeQuotable CTDirect = ()
+  ChatTypeQuotable CTGroup = ()
+  ChatTypeQuotable a =
+    (Int ~ Bool, TypeError (Type.Text "ChatType " :<>: ShowType a :<>: Type.Text " cannot be quoted"))
+
 data CIQDirection (c :: ChatType) where
   CIQDirectSnd :: CIQDirection 'CTDirect
   CIQDirectRcv :: CIQDirection 'CTDirect
@@ -406,7 +421,7 @@ data CIQDirection (c :: ChatType) where
 
 deriving instance Show (CIQDirection c)
 
-data ACIQDirection = forall c. ChatTypeI c => ACIQDirection (SChatType c) (CIQDirection c)
+data ACIQDirection = forall c. (ChatTypeI c, ChatTypeQuotable c) => ACIQDirection (SChatType c) (CIQDirection c)
 
 jsonCIQDirection :: CIQDirection c -> Maybe JSONCIDirection
 jsonCIQDirection = \case
@@ -416,14 +431,15 @@ jsonCIQDirection = \case
   CIQGroupRcv (Just m) -> Just $ JCIGroupRcv m
   CIQGroupRcv Nothing -> Nothing
 
-jsonACIQDirection :: Maybe JSONCIDirection -> ACIQDirection
+jsonACIQDirection :: Maybe JSONCIDirection -> Either String ACIQDirection
 jsonACIQDirection = \case
-  Just JCIDirectSnd -> ACIQDirection SCTDirect CIQDirectSnd
-  Just JCIDirectRcv -> ACIQDirection SCTDirect CIQDirectRcv
-  Just JCIGroupSnd -> ACIQDirection SCTGroup CIQGroupSnd
-  Just (JCIGroupRcv m) -> ACIQDirection SCTGroup $ CIQGroupRcv (Just m)
-  Just JCINote -> ACIQDirection SCTLocal CIQNote
-  Nothing -> ACIQDirection SCTGroup $ CIQGroupRcv Nothing
+  Just JCIDirectSnd -> Right $ ACIQDirection SCTDirect CIQDirectSnd
+  Just JCIDirectRcv -> Right $ ACIQDirection SCTDirect CIQDirectRcv
+  Just JCIGroupSnd -> Right $ ACIQDirection SCTGroup CIQGroupSnd
+  Just (JCIGroupRcv m) -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv (Just m)
+  Nothing -> Right $ ACIQDirection SCTGroup $ CIQGroupRcv Nothing
+  Just JCILocalSnd -> Left "unquotable"
+  Just JCILocalRcv -> Left "unquotable"
 
 quoteMsgDirection :: CIQDirection c -> MsgDirection
 quoteMsgDirection = \case
@@ -431,7 +447,6 @@ quoteMsgDirection = \case
   CIQDirectRcv -> MDRcv
   CIQGroupSnd -> MDSnd
   CIQGroupRcv _ -> MDRcv
-  CIQNote -> MDSnd
 
 data CIFile (d :: MsgDirection) = CIFile
   { fileId :: Int64,
@@ -1057,7 +1072,7 @@ instance FromJSON ACIDirection where
   parseJSON v = jsonACIDirection <$> J.parseJSON v
 
 instance ChatTypeI c => FromJSON (CIQDirection c) where
-  parseJSON v = (\(ACIQDirection _ x) -> checkChatType x) . jsonACIQDirection <$?> J.parseJSON v
+  parseJSON v = (jsonACIQDirection >=> \(ACIQDirection _ x) -> checkChatType x) <$?> J.parseJSON v
 
 instance ToJSON (CIQDirection c) where
   toJSON = J.toJSON . jsonCIQDirection
