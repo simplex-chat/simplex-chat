@@ -1,3 +1,4 @@
+import ByteStringBatcherTests
 import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
@@ -28,6 +29,7 @@ main = do
     describe "SimpleX chat protocol" protocolTests
     describe "WebRTC encryption" webRTCTests
     describe "Valid names" validNameTests
+    describe "ByteStringBatcher tests" byteStringBatcherTests
     around testBracket $ do
       describe "Mobile API Tests" mobileTests
       describe "SimpleX chat client" chatTests

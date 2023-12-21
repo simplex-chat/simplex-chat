@@ -29,6 +29,7 @@ library
       Simplex.Chat.Archive
       Simplex.Chat.Bot
       Simplex.Chat.Bot.KnownContacts
+      Simplex.Chat.ByteStringBatcher
       Simplex.Chat.Call
       Simplex.Chat.Controller
       Simplex.Chat.Core
@@ -532,6 +533,7 @@ test-suite simplex-chat-test
   type: exitcode-stdio-1.0
   main-is: Test.hs
   other-modules:
+      ByteStringBatcherTests
       Bots.BroadcastTests
       Bots.DirectoryTests
       ChatClient

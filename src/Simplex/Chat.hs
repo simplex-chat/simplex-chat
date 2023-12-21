@@ -55,6 +55,7 @@ import Data.Time.Clock.System (systemToUTCTime)
 import Data.Word (Word32)
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
+import Simplex.Chat.ByteStringBatcher (BSBatch (..), batchByteStringObjects, partitionBatches)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
@@ -5618,11 +5619,11 @@ sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
   (errs, msgs) <- partitionEithers <$> createSndMessages
   unless (null errs) $ toView $ CRChatErrors Nothing errs
   forM_ (L.nonEmpty msgs) $ \msgs' -> do
-    let (largeMsgs, msgBatches) = partitionBatches $ batchChatMessages msgs'
+    let (largeMsgs, msgBatches) = partitionBatches $ batchByteStringObjects maxChatMsgSize msgs'
         -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
         errs' = map (\SndMessage {msgId} -> ChatError $ CEInternalError ("large message " <> show msgId)) largeMsgs
     unless (null errs') $ toView $ CRChatErrors Nothing errs'
-    forM_ msgBatches $ \(MessagesBatch batchBuilder sndMsgs) -> do
+    forM_ msgBatches $ \(BSBatch batchBuilder sndMsgs) -> do
       let batchBody = LB.toStrict $ Builder.toLazyByteString batchBuilder
       agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) MsgFlags {notification = True} batchBody
       let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
@@ -5638,69 +5639,6 @@ sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
       pure $ first ChatErrorStore r
     encodeMessage chatVRange evnt sharedMsgId =
       encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent = evnt}
-    partitionBatches :: [ChatMessageBatch] -> ([SndMessage], [MessagesBatch])
-    partitionBatches = foldr partition' ([], [])
-      where
-        partition' :: ChatMessageBatch -> ([SndMessage], [MessagesBatch]) -> ([SndMessage], [MessagesBatch])
-        partition' (CMBMessages msgBatch) (largeMsgs, msgBatches) = (largeMsgs, msgBatch : msgBatches)
-        partition' (CMBLargeMessage largeMsg) (largeMsgs, msgBatches) = (largeMsg : largeMsgs, msgBatches)
-
-data MessagesBatch = MessagesBatch Builder.Builder [SndMessage]
-
-data ChatMessageBatch
-  = CMBMessages MessagesBatch
-  | CMBLargeMessage SndMessage
-
-batchChatMessages :: NonEmpty SndMessage -> [ChatMessageBatch]
-batchChatMessages = reverse . mkBatch []
-  where
-    mkBatch :: [ChatMessageBatch] -> NonEmpty SndMessage -> [ChatMessageBatch]
-    mkBatch batches msgs =
-      let (batch, msgs_) = encodeBatch mempty 0 0 [] msgs
-          batches' = batch : batches
-       in maybe batches' (mkBatch batches') msgs_
-    encodeBatch :: Builder.Builder -> Int64 -> Int -> [SndMessage] -> NonEmpty SndMessage -> (ChatMessageBatch, Maybe (NonEmpty SndMessage))
-    encodeBatch builder len cnt batchedMsgs remainingMsgs@(msg :| msgs_)
-      -- message fits
-      | len' <= maxSize' =
-          case L.nonEmpty msgs_ of
-            Just msgs' -> encodeBatch builder' len' cnt' batchedMsgs' msgs'
-            Nothing -> completeBatchLastMsgFits
-      -- message doesn't fit
-      | cnt == 0 = (CMBLargeMessage msg, L.nonEmpty msgs_)
-      | otherwise = completeBatchMsgDoesntFit
-      where
-        SndMessage {msgBody} = msg
-        cnt' = cnt + 1
-        (len', builder')
-          | cnt' == 1 =
-              ( LB.length msgBody, -- initially len = 0
-                Builder.lazyByteString msgBody
-              )
-          | cnt' == 2 =
-              ( len + LB.length msgBody + 2, -- for opening bracket "[" and comma ","
-                "[" <> builder <> "," <> Builder.lazyByteString msgBody
-              )
-          | otherwise =
-              ( len + LB.length msgBody + 1, -- for comma ","
-                builder <> "," <> Builder.lazyByteString msgBody
-              )
-        maxSize'
-          | cnt' == 1 = maxChatMsgSize
-          | otherwise = maxChatMsgSize - 1 -- for closing bracket "]"
-        batchedMsgs' = msg : batchedMsgs
-        completeBatchLastMsgFits =
-          (CMBMessages $ MessagesBatch completeBuilder (reverse batchedMsgs'), Nothing)
-          where
-            completeBuilder
-              | cnt' == 1 = builder' -- if last message fits, we look at current cnt'
-              | otherwise = builder' <> "]"
-        completeBatchMsgDoesntFit =
-          (CMBMessages $ MessagesBatch completeBuilder (reverse batchedMsgs), Just remainingMsgs)
-          where
-            completeBuilder
-              | cnt == 1 = builder -- if message doesn't fit, we look at previous cnt
-              | otherwise = builder <> "]"
 
 directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
 directMessage chatMsgEvent = do
