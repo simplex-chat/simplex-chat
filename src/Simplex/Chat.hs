@@ -5632,7 +5632,7 @@ sendBatchedDirectMessages conn@Connection {connId} events connOrGroupId = do
   where
     createSndMessages :: m [Either ChatError SndMessage]
     createSndMessages = do
-      gVar <- asks idsDrg
+      gVar <- asks random
       ChatConfig {chatVRange} <- asks config
       withStoreBatch $ \db -> map (createMsg db gVar chatVRange) (toList events)
     createMsg db gVar chatVRange evnt = do
