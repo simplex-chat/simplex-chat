@@ -11,18 +11,14 @@ import Control.Logger.Simple
 import qualified Data.Aeson as J
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
-import qualified Network.TLS as TLS
 import Simplex.Chat.Archive (archiveFilesFolder)
 import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..), versionNumber)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Remote.Types
-import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Util
 import System.FilePath ((</>))
 import Test.Hspec
@@ -570,12 +566,6 @@ contactBob desktop bob = do
   concurrently_
     (desktop <## "bob (Bob): contact is connected")
     (bob <## "alice (Alice): contact is connected")
-
-genTestCredentials :: IO (C.KeyHash, TLS.Credentials)
-genTestCredentials = do
-  caCreds <- liftIO $ genCredentials Nothing (0, 24) "CA"
-  sessionCreds <- liftIO $ genCredentials (Just caCreds) (0, 24) "Session"
-  pure . tlsCredentials $ sessionCreds :| [caCreds]
 
 stopDesktop :: HasCallStack => TestCC -> TestCC -> IO ()
 stopDesktop mobile desktop = do

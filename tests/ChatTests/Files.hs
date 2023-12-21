@@ -1094,7 +1094,7 @@ testXFTPFileTransferEncrypted =
     let srcPath = "./tests/tmp/alice/test.pdf"
     createDirectoryIfMissing True "./tests/tmp/alice/"
     createDirectoryIfMissing True "./tests/tmp/bob/"
-    WFResult cfArgs <- chatWriteFile srcPath src
+    WFResult cfArgs <- chatWriteFile (chatController alice) srcPath src
     let fileJSON = LB.unpack $ J.encode $ CryptoFile srcPath $ Just cfArgs
     withXFTPServer $ do
       connectUsers alice bob

@@ -18,6 +18,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
     }()
     private static let ivTagBytes: Int = 28
     private static let enableEncryption: Bool = true
+    private var chat_ctrl = getChatCtrl()
 
     struct Call {
         var connection: RTCPeerConnection
@@ -308,7 +309,7 @@ final class WebRTCClient: NSObject, RTCVideoViewDelegate, RTCFrameEncryptorDeleg
             memcpy(pointer, (unencrypted as NSData).bytes, unencrypted.count)
             let isKeyFrame = unencrypted[0] & 1 == 0
             let clearTextBytesSize = mediaType.rawValue == 0 ? 1 : isKeyFrame ? 10 : 3
-            logCrypto("encrypt", chat_encrypt_media(&key, pointer.advanced(by: clearTextBytesSize), Int32(unencrypted.count + WebRTCClient.ivTagBytes - clearTextBytesSize)))
+            logCrypto("encrypt", chat_encrypt_media(chat_ctrl, &key, pointer.advanced(by: clearTextBytesSize), Int32(unencrypted.count + WebRTCClient.ivTagBytes - clearTextBytesSize)))
             return Data(bytes: pointer, count: unencrypted.count + WebRTCClient.ivTagBytes)
         } else {
             return nil
