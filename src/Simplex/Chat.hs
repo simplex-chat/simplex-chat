@@ -3592,11 +3592,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 let (admins, others) = partition isAdmin intros
                     (admPics, admNoPics) = partition hasPicture admins
                     (othPics, othNoPics) = partition hasPicture others
-                admPics' <- shuffle admPics
-                admNoPics' <- shuffle admNoPics
-                othPics' <- shuffle othPics
-                othNoPics' <- shuffle othNoPics
-                pure $ admPics' <> admNoPics' <> othPics' <> othNoPics'
+                mconcat <$> mapM shuffle [admPics, admNoPics, othPics, othNoPics]
                 where
                   isAdmin GroupMemberIntro {reMember = GroupMember {memberRole}} = memberRole >= GRAdmin
                   hasPicture GroupMemberIntro {reMember = GroupMember {memberProfile = LocalProfile {image}}} = isJust image
