@@ -11,6 +11,8 @@ import Test.Hspec
 
 byteStringBatcherTests :: Spec
 byteStringBatcherTests = describe "ByteStringBatcher tests" $ do
+  runBatcherTest 8 ["a"] [] ["a"]
+  runBatcherTest 8 ["a","b"] [] ["[a,b]"]
   runBatcherTest 8 ["a", "b", "c"] [] ["[a,b,c]"]
   runBatcherTest 8 ["a", "bb", "c"] [] ["[a,bb,c]"]
   runBatcherTest 8 ["a", "b", "c", "d"] [] ["[a,b,c]","d"]
