@@ -3359,7 +3359,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
           withAckMessage' agentConnId conn msgMeta $
             directMsgReceived ct conn msgMeta msgRcpt
         CONF confId _ connInfo -> do
-          ChatMessage {chatVRange, chatMsgEvent} <- parseOneChatMessage conn connInfo
+          ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
           conn' <- updatePeerChatVRange conn chatVRange
           case chatMsgEvent of
             -- confirming direct connection with a member
@@ -3377,7 +3377,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               void $ withStore' $ \db -> resetMemberContactFields db ct'
             _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
         INFO connInfo -> do
-          ChatMessage {chatVRange, chatMsgEvent} <- parseOneChatMessage conn connInfo
+          ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
           _conn' <- updatePeerChatVRange conn chatVRange
           case chatMsgEvent of
             XGrpMemInfo _memId _memProfile -> do
@@ -3514,7 +3514,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               _ -> throwChatError $ CECommandError "unexpected cmdFunction"
             CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
       CONF confId _ connInfo -> do
-        ChatMessage {chatVRange, chatMsgEvent} <- parseOneChatMessage conn connInfo
+        ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         conn' <- updatePeerChatVRange conn chatVRange
         case memberCategory m of
           GCInviteeMember ->
@@ -3536,7 +3536,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
               _ -> messageError "CONF from member must have x.grp.mem.info"
       INFO connInfo -> do
-        ChatMessage {chatVRange, chatMsgEvent} <- parseOneChatMessage conn connInfo
+        ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         _conn' <- updatePeerChatVRange conn chatVRange
         case chatMsgEvent of
           XGrpMemInfo memId _memProfile
@@ -3867,7 +3867,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- SMP CONF for SndFileConnection happens for direct file protocol
         -- when recipient of the file "joins" connection created by the sender
         CONF confId _ connInfo -> do
-          ChatMessage {chatVRange, chatMsgEvent} <- parseOneChatMessage conn connInfo
+          ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
           conn' <- updatePeerChatVRange conn chatVRange
           case chatMsgEvent of
             -- TODO save XFileAcpt message
@@ -3936,7 +3936,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
         -- when sender of the file "joins" connection created by the recipient
         -- (sender doesn't create connections for all group members)
         CONF confId _ connInfo -> do
-          ChatMessage {chatVRange, chatMsgEvent} <- parseOneChatMessage conn connInfo
+          ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
           conn' <- updatePeerChatVRange conn chatVRange
           case chatMsgEvent of
             XOk -> allowAgentConnectionAsync user conn' confId XOk -- [async agent commands] no continuation needed, but command should be asynchronous for stability
@@ -3997,7 +3997,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     processUserContactRequest :: ACommand 'Agent e -> ConnectionEntity -> Connection -> UserContact -> m ()
     processUserContactRequest agentMsg connEntity conn UserContact {userContactLinkId} = case agentMsg of
       REQ invId _ connInfo -> do
-        ChatMessage {chatVRange, chatMsgEvent} <- parseOneChatMessage conn connInfo
+        ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of
           XContact p xContactId_ -> profileContactRequest invId chatVRange p xContactId_
           XInfo p -> profileContactRequest invId chatVRange p Nothing
@@ -5027,7 +5027,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     saveConnInfo :: Connection -> ConnInfo -> m Connection
     saveConnInfo activeConn connInfo = do
-      ChatMessage {chatVRange, chatMsgEvent} <- parseOneChatMessage activeConn connInfo
+      ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage activeConn connInfo
       conn' <- updatePeerChatVRange activeConn chatVRange
       case chatMsgEvent of
         XInfo p -> do
@@ -5425,14 +5425,14 @@ sendFileInline_ FileTransferMeta {filePath, chunkSize} sharedMsgId sendMsg =
         else sendChunks (chunkNo + 1) rest
     chSize = fromIntegral chunkSize
 
-parseOneChatMessage :: ChatMonad m => Connection -> ByteString -> m (ChatMessage 'Json)
-parseOneChatMessage conn s = do
+parseChatMessage :: ChatMonad m => Connection -> ByteString -> m (ChatMessage 'Json)
+parseChatMessage conn s = do
   case parseChatMessages s of
     [msg] -> liftEither . first (ChatError . errType) $ (\(ACMsg _ m) -> checkEncoding m) =<< msg
-    _ -> throwChatError $ CEException "parseOneChatMessage: single message is expected"
+    _ -> throwChatError $ CEException "parseChatMessage: single message is expected"
   where
     errType = CEInvalidChatMessage conn Nothing (safeDecodeUtf8 s)
-{-# INLINE parseOneChatMessage #-}
+{-# INLINE parseChatMessage #-}
 
 sendFileChunk :: ChatMonad m => User -> SndFileTransfer -> m ()
 sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId acId} =
