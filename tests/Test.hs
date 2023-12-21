@@ -27,7 +27,7 @@ main = do
     describe "JSON Tests" jsonTests
     describe "SimpleX chat view" viewTests
     describe "SimpleX chat protocol" protocolTests
-    describe "WebRTC encryption" webRTCTests
+    around tmpBracket $ describe "WebRTC encryption" webRTCTests
     describe "Valid names" validNameTests
     describe "ByteStringBatcher tests" byteStringBatcherTests
     around testBracket $ do
@@ -37,10 +37,11 @@ main = do
       xdescribe'' "SimpleX Directory service bot" directoryServiceTests
       describe "Remote session" remoteTests
   where
-    testBracket test = do
+    testBracket test = withSmpServer $ tmpBracket test
+    tmpBracket test = do
       t <- getSystemTime
       let ts = show (systemSeconds t) <> show (systemNanoseconds t)
-      withSmpServer $ withTmpFiles $ withTempDirectory "tests/tmp" ts test
+      withTmpFiles $ withTempDirectory "tests/tmp" ts test
 
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}

@@ -22,7 +22,6 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
-import Crypto.Random (drgNew)
 import qualified Data.Aeson as J
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
@@ -209,7 +208,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
   servers <- agentServers config
   smpAgent <- getSMPAgentClient aCfg {tbqSize} servers agentStore
   agentAsync <- newTVarIO Nothing
-  idsDrg <- newTVarIO =<< liftIO drgNew
+  random <- liftIO C.newRandom
   inputQ <- newTBQueueIO tbqSize
   outputQ <- newTBQueueIO tbqSize
   connNetworkStatuses <- atomically TM.empty
@@ -244,7 +243,7 @@ newChatController ChatDatabase {chatStore, agentStore} user cfg@ChatConfig {agen
         agentAsync,
         chatStore,
         chatStoreChanged,
-        idsDrg,
+        random,
         inputQ,
         outputQ,
         connNetworkStatuses,
@@ -1036,8 +1035,9 @@ processChatCommand = \case
       then do
         calls <- asks currentCalls
         withChatLock "sendCallInvitation" $ do
-          callId <- CallId <$> drgRandomBytes 16
-          dhKeyPair <- if encryptedCall callType then Just <$> liftIO C.generateKeyPair' else pure Nothing
+          g <- asks random
+          callId <- atomically $ CallId <$> C.randomBytes 16 g
+          dhKeyPair <- atomically $ if encryptedCall callType then Just <$> C.generateKeyPair g else pure Nothing
           let invitation = CallInvitation {callType, callDhPubKey = fst <$> dhKeyPair}
               callState = CallInvitationSent {localCallType = callType, localDhPrivKey = snd <$> dhKeyPair}
           (msg, _) <- sendDirectContactMessage ct (XCallInv callId invitation)
@@ -1559,7 +1559,7 @@ processChatCommand = \case
     processChatCommand $ APIChatItemReaction chatRef chatItemId add reaction
   APINewGroup userId incognito gProfile@GroupProfile {displayName} -> withUserId userId $ \user -> do
     checkValidName displayName
-    gVar <- asks idsDrg
+    gVar <- asks random
     -- [incognito] generate incognito profile for group membership
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     groupInfo <- withStore $ \db -> createNewGroup db gVar user gProfile incognitoProfile
@@ -1580,7 +1580,7 @@ processChatCommand = \case
     let sendInvitation = sendGrpInvitation user contact gInfo
     case contactMember contact members of
       Nothing -> do
-        gVar <- asks idsDrg
+        gVar <- asks random
         subMode <- chatReadVar subscriptionMode
         (agentConnId, cReq) <- withAgent $ \a -> createConnection a (aUserId user) True SCMInvitation Nothing subMode
         member <- withStore $ \db -> createNewContactMember db gVar user gInfo contact memRole agentConnId cReq subMode
@@ -1843,7 +1843,7 @@ processChatCommand = \case
   SetFileToReceive fileId encrypted_ -> withUser $ \_ -> do
     withChatLock "setFileToReceive" . procCmd $ do
       encrypt <- (`fromMaybe` encrypted_) <$> chatReadVar encryptLocalFiles
-      cfArgs <- if encrypt then Just <$> liftIO CF.randomArgs else pure Nothing
+      cfArgs <- if encrypt then Just <$> (atomically . CF.randomArgs =<< asks random) else pure Nothing
       withStore' $ \db -> setRcvFileToReceive db fileId cfArgs
       ok_
   CancelFile fileId -> withUser $ \user@User {userId} ->
@@ -1989,7 +1989,7 @@ processChatCommand = \case
     -- in View.hs `r'` should be defined as `id` in this case
     -- procCmd :: m ChatResponse -> m ChatResponse
     -- procCmd action = do
-    --   ChatController {chatLock = l, smpAgent = a, outputQ = q, idsDrg = gVar} <- ask
+    --   ChatController {chatLock = l, smpAgent = a, outputQ = q, random = gVar} <- ask
     --   corrId <- liftIO $ SMP.CorrId <$> randomBytes gVar 8
     --   void . forkIO $
     --     withAgentLock a . withLock l name $
@@ -2255,7 +2255,7 @@ processChatCommand = \case
             then pure Nothing
             else Just . addUTCTime (realToFrac ttl) <$> liftIO getCurrentTime
     drgRandomBytes :: Int -> m ByteString
-    drgRandomBytes n = asks idsDrg >>= liftIO . (`randomBytes` n)
+    drgRandomBytes n = asks random >>= atomically . C.randomBytes n
     privateGetUser :: UserId -> m User
     privateGetUser userId =
       tryChatError (withStore (`getUser` userId)) >>= \case
@@ -2574,7 +2574,7 @@ toFSFilePath f =
 
 setFileToEncrypt :: ChatMonad m => RcvFileTransfer -> m RcvFileTransfer
 setFileToEncrypt ft@RcvFileTransfer {fileId} = do
-  cfArgs <- liftIO CF.randomArgs
+  cfArgs <- atomically . CF.randomArgs =<< asks random
   withStore' $ \db -> setFileCryptoArgs db fileId cfArgs
   pure (ft :: RcvFileTransfer) {cryptoArgs = Just cfArgs}
 
@@ -2729,7 +2729,7 @@ acceptGroupJoinRequestAsync
   ucr@UserContactRequest {agentInvitationId = AgentInvId invId}
   gLinkMemRole
   incognitoProfile = do
-    gVar <- asks idsDrg
+    gVar <- asks random
     (groupMemberId, memberId) <- withStore $ \db -> createAcceptedMember db gVar user gInfo ucr gLinkMemRole
     let Profile {displayName} = profileToSendOnAccept user incognitoProfile
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
@@ -3413,7 +3413,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                   groupInfo <- withStore $ \db -> getGroupInfo db user groupId
                   subMode <- chatReadVar subscriptionMode
                   groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
-                  gVar <- asks idsDrg
+                  gVar <- asks random
                   withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct gLinkMemRole groupConnIds (fromJVersionRange peerChatVRange) subMode
             Just (gInfo, m@GroupMember {activeConn}) ->
               when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
@@ -4136,7 +4136,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     probeMatchingContactsAndMembers :: Contact -> IncognitoEnabled -> Bool -> m ()
     probeMatchingContactsAndMembers ct connectedIncognito doProbeContacts = do
-      gVar <- asks idsDrg
+      gVar <- asks random
       contactMerge <- readTVarIO =<< asks contactMergeEnabled
       if contactMerge && not connectedIncognito
         then do
@@ -4160,7 +4160,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
     probeMatchingMemberContact :: GroupMember -> IncognitoEnabled -> m ()
     probeMatchingMemberContact GroupMember {activeConn = Nothing} _ = pure ()
     probeMatchingMemberContact m@GroupMember {groupId, activeConn = Just conn} connectedIncognito = do
-      gVar <- asks idsDrg
+      gVar <- asks random
       contactMerge <- readTVarIO =<< asks contactMergeEnabled
       if contactMerge && not connectedIncognito
         then do
@@ -4862,7 +4862,8 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
       checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       if featureAllowed SCFCalls forContact ct
         then do
-          dhKeyPair <- if encryptedCall callType then Just <$> liftIO C.generateKeyPair' else pure Nothing
+          g <- asks random
+          dhKeyPair <- atomically $ if encryptedCall callType then Just <$> C.generateKeyPair g else pure Nothing
           ci <- saveCallItem CISCallPending
           let sharedKey = C.Key . C.dhBytes' <$> (C.dh' <$> callDhPubKey <*> (snd <$> dhKeyPair))
               callState = CallInvitationReceived {peerCallType = callType, localDhPubKey = fst <$> dhKeyPair, sharedKey}
@@ -5606,7 +5607,7 @@ sendDirectMessage conn chatMsgEvent connOrGroupId = do
 
 createSndMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> ConnOrGroupId -> m SndMessage
 createSndMessage chatMsgEvent connOrGroupId = do
-  gVar <- asks idsDrg
+  gVar <- asks random
   ChatConfig {chatVRange} <- asks config
   withStore $ \db -> createNewSndMessage db gVar connOrGroupId chatMsgEvent (encodeMessage chatVRange)
   where

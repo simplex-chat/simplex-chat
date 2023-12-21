@@ -15,7 +15,7 @@ import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
-import Crypto.Random (ChaChaDRG, randomBytesGenerate)
+import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson.TH as J
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
@@ -35,6 +35,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Messaging.Agent.Protocol (ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util (allFinally)
@@ -395,7 +396,4 @@ createWithRandomBytes' size gVar create = tryCreate 3
           | otherwise -> throwError . SEInternalError $ show e
 
 encodedRandomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
-encodedRandomBytes gVar = fmap B64.encode . randomBytes gVar
-
-randomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
-randomBytes gVar = atomically . stateTVar gVar . randomBytesGenerate
+encodedRandomBytes gVar n = atomically $ B64.encode <$> C.randomBytes n gVar
