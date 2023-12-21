@@ -67,6 +67,9 @@
       }); in
       let iosPostInstall = bundleName: ''
         ${pkgs.tree}/bin/tree $out
+        mkdir tmp
+        find ./dist -name "libHS*-ghc*.a" -exec cp {} tmp \;
+        (cd tmp; ${pkgs.tree}/bin/tree .; ar x libHS*.a; for o in *.o; do if /usr/bin/otool -xv $o|grep ldadd ; then echo $o; fi; done; cd ..; rm -fR tmp)
         mkdir -p $out/_pkg
         # copy over includes, we might want those, but maybe not.
         # cp -r $out/lib/*/*/include $out/_pkg/
@@ -82,6 +85,13 @@
           ${mac2ios.packages.${system}.mac2ios}/bin/mac2ios $pkg
           chmod -w $pkg
         done
+
+        mkdir tmp
+        find $out/_pkg -name "libHS*-ghc*.a" -exec cp {} tmp \;
+        (cd tmp; ${pkgs.tree}/bin/tree .; ar x libHS*.a; for o in *.o; do if /usr/bin/otool -xv $o|grep ldadd ; then echo $o; fi; done; cd ..; rm -fR tmp)
+
+        sha256sum $out/_pkg/*.a
+
         (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/${bundleName}.zip *)
         rm -fR $out/_pkg
         mkdir -p $out/nix-support
@@ -537,7 +547,7 @@
                   packages.entropy.flags.DoNotGetEntropy = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     # TODO: have a cross override for iOS, that sets this.
-                    ((pkgs.openssl.override { static = true; }).overrideDerivation (old: { CFLAGS = "-optc-mcpu=apple-a7 -optc-march=armv8-a+norcpc" ;}))
+                    ((pkgs.openssl.override { static = true; }).overrideDerivation (old: { CFLAGS = "-mcpu=apple-a7 -march=armv8-a+norcpc" ;}))
                   ];
                 }];
               }).simplex-chat.components.library.override (
