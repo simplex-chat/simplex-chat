@@ -109,7 +109,7 @@ import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
-import Data.Either (fromRight, partitionEithers, rights)
+import Data.Either (fromRight, rights)
 import Data.Int (Int64)
 import Data.List (sortBy)
 import Data.Maybe (fromMaybe, isJust, mapMaybe)
@@ -2084,7 +2084,7 @@ getGroupHistoryItems :: DB.Connection -> User -> GroupInfo -> Int -> IO [Either 
 getGroupHistoryItems db user@User {userId} GroupInfo {groupId} count = do
   chatItemIds <- getLastItemIds_
   -- use getGroupCIWithReactions to read reactions data
-  mapM (runExceptT . getGroupChatItem db user groupId) chatItemIds
+  reverse <$> mapM (runExceptT . getGroupChatItem db user groupId) chatItemIds
   where
     getLastItemIds_ :: IO [ChatItemId]
     getLastItemIds_ =

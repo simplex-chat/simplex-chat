@@ -3602,22 +3602,20 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
               sendHistory =
                 when (isCompatibleRange (memberChatVRange' m) batchSendVRange) $ do
                   (errs, items) <- partitionEithers <$> withStore' (\db -> getGroupHistoryItems db user gInfo 100)
-                  (errs', events) <- collectForwardEvents items [] []
+                  (errs', events) <- partitionEithers <$> mapM (tryChatError . itemForwardEvents) items
                   let errors = map ChatErrorStore errs <> errs'
                   unless (null errors) $ toView $ CRChatErrors (Just user) errors
-                  forM_ (L.nonEmpty events) $ \events' ->
+                  forM_ (L.nonEmpty $ concat events) $ \events' ->
                     sendGroupMemberMessages user conn events' groupId
-              collectForwardEvents :: [CChatItem 'CTGroup] -> [ChatError] -> [ChatMsgEvent 'Json] -> m ([ChatError], [ChatMsgEvent 'Json])
-              collectForwardEvents [] errs evts = pure (errs, evts)
-              collectForwardEvents (cci : items) errs evts =
-                flip catchChatError (\e -> collectForwardEvents items (e : errs) evts) $ case cci of
-                  (CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv sender, content = CIRcvMsgContent mc, file}) -> do
-                    fInvDescr_ <- join <$> forM file getRcvFileInvDescr
-                    processContentItem sender ci mc fInvDescr_
-                  (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file}) -> do
-                    fInvDescr_ <- join <$> forM file getSndFileInvDescr
-                    processContentItem membership ci mc fInvDescr_
-                  _ -> collectForwardEvents items errs evts
+              itemForwardEvents :: CChatItem 'CTGroup -> m [ChatMsgEvent 'Json]
+              itemForwardEvents cci = case cci of
+                (CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv sender, content = CIRcvMsgContent mc, file}) -> do
+                  fInvDescr_ <- join <$> forM file getRcvFileInvDescr
+                  processContentItem sender ci mc fInvDescr_
+                (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file}) -> do
+                  fInvDescr_ <- join <$> forM file getSndFileInvDescr
+                  processContentItem membership ci mc fInvDescr_
+                _ -> pure []
                 where
                   getRcvFileInvDescr :: CIFile 'MDRcv -> m (Maybe (FileInvitation, RcvFileDescrText))
                   getRcvFileInvDescr ciFile@CIFile {fileId, fileProtocol, fileStatus} = do
@@ -3642,17 +3640,17 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                     ttl <- asks $ rcvFilesTTL . agentConfig . config
                     cutoffTs <- addUTCTime (-ttl) <$> liftIO getCurrentTime
                     pure $ chatItemTs cci < cutoffTs
-                  invCompleteDescr :: CIFile d -> RcvFileDescr -> (Maybe (FileInvitation, RcvFileDescrText))
+                  invCompleteDescr :: CIFile d -> RcvFileDescr -> Maybe (FileInvitation, RcvFileDescrText)
                   invCompleteDescr CIFile {fileName, fileSize} RcvFileDescr {fileDescrText, fileDescrComplete}
                     | fileDescrComplete =
-                      let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
-                          fInv = xftpFileInvitation fileName fileSize fInvDescr
-                       in Just (fInv, fileDescrText)
+                        let fInvDescr = FileDescr {fileDescrText = "", fileDescrPartNo = 0, fileDescrComplete = False}
+                            fInv = xftpFileInvitation fileName fileSize fInvDescr
+                         in Just (fInv, fileDescrText)
                     | otherwise = Nothing
-                  processContentItem :: GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> m ([ChatError], [ChatMsgEvent Json])
+                  processContentItem :: GroupMember -> ChatItem 'CTGroup d -> MsgContent -> Maybe (FileInvitation, RcvFileDescrText) -> m [ChatMsgEvent Json]
                   processContentItem sender ChatItem {meta, quotedItem} mc fInvDescr_ =
                     if isNothing fInvDescr_ && not (msgContentHasText mc)
-                      then collectForwardEvents items errs evts
+                      then pure []
                       else do
                         let CIMeta {itemTs, itemSharedMsgId, itemTimed} = meta
                             quotedItemId_ = quoteItemId =<< quotedItem
@@ -3666,7 +3664,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                         let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
                             GroupMember {memberId} = sender
                             msgForwardEvents = map (\cm -> XGrpMsgForward memberId cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
-                        collectForwardEvents items errs (msgForwardEvents <> evts)
+                        pure msgForwardEvents
                   prepareFileDescrEvents :: RcvFileDescrText -> SharedMsgId -> m [ChatMsgEvent 'Json]
                   prepareFileDescrEvents fileDescrText msgId = do
                     partSize <- asks $ xftpDescrPartSize . config
