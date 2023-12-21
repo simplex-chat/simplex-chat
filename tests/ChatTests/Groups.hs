@@ -117,7 +117,8 @@ chatGroupTests = do
     it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
   describe "group history" $ do
     it "text messages" testGroupHistory
-    fit "history is not sent if preference is disabled" testGroupHistoryPreferenceOff
+    it "history is sent when joining via group link" testGroupHistoryGroupLink
+    it "history is not sent if preference is disabled" testGroupHistoryPreferenceOff
     it "host's file" testGroupHistoryHostFile
     it "member's file" testGroupHistoryMemberFile
     it "large file with text" testGroupHistoryLargeFile
@@ -4152,6 +4153,54 @@ testGroupHistory =
         [ alice <## "#team: cath joined the group",
           cath
             <### [ "#team: you joined the group",
+                   WithTime "#team alice> hello [>>]",
+                   WithTime "#team bob> hey! [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine cath
+      r `shouldContain` [(0, "hello"), (0, "hey!")]
+
+      -- message delivery works after sending history
+      alice #> "#team 1"
+      [bob, cath] *<# "#team alice> 1"
+      bob #> "#team 2"
+      [alice, cath] *<# "#team bob> 2"
+      cath #> "#team 3"
+      [alice, bob] *<# "#team cath> 3"
+
+testGroupHistoryGroupLink :: HasCallStack => FilePath -> IO ()
+testGroupHistoryGroupLink =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      threadDelay 1000000
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+
+      threadDelay 1000000
+
+      bob #> "#team hey!"
+      alice <# "#team bob> hey!"
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
                    WithTime "#team alice> hello [>>]",
                    WithTime "#team bob> hey! [>>]",
                    "#team: member bob (Bob) is connected"
