@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.*
 import android.view.WindowManager
 import androidx.activity.compose.setContent
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.fragment.app.FragmentActivity
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.getUserIdFromIntent
@@ -22,6 +23,7 @@ import java.lang.ref.WeakReference
 class MainActivity: FragmentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
+    platform.androidSetNightModeIfSupported()
     applyAppLocale(ChatModel.controller.appPrefs.appLanguage)
     super.onCreate(savedInstanceState)
     // testJson()
