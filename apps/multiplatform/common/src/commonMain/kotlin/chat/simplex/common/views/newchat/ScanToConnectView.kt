@@ -85,6 +85,7 @@ suspend fun planAndConnect(
                 String.format(generalGetString(MR.strings.connect_plan_you_are_already_connecting_to_vName), contact.displayName) + linkText,
                 hostDevice = hostDevice(rhId),
               )
+              cleanup?.invoke()
             }
           } else {
             AlertManager.privacySensitive.showAlertMsg(
@@ -92,8 +93,8 @@ suspend fun planAndConnect(
               generalGetString(MR.strings.connect_plan_you_are_already_connecting_via_this_one_time_link) + linkText,
               hostDevice = hostDevice(rhId),
             )
+            cleanup?.invoke()
           }
-          cleanup?.invoke()
         }
         is InvitationLinkPlan.Known -> {
           Log.d(TAG, "planAndConnect, .InvitationLink, .Known, incognito=$incognito")
@@ -107,6 +108,7 @@ suspend fun planAndConnect(
               String.format(generalGetString(MR.strings.you_are_already_connected_to_vName_via_this_link), contact.displayName) + linkText,
               hostDevice = hostDevice(rhId),
             )
+            cleanup?.invoke()
           }
         }
       }
@@ -183,8 +185,8 @@ suspend fun planAndConnect(
               String.format(generalGetString(MR.strings.connect_plan_you_are_already_connecting_to_vName), contact.displayName) + linkText,
               hostDevice = hostDevice(rhId),
             )
+            cleanup?.invoke()
           }
-          cleanup?.invoke()
         }
         is ContactAddressPlan.Known -> {
           Log.d(TAG, "planAndConnect, .ContactAddress, .Known, incognito=$incognito")
@@ -198,8 +200,8 @@ suspend fun planAndConnect(
               String.format(generalGetString(MR.strings.you_are_already_connected_to_vName_via_this_link), contact.displayName) + linkText,
               hostDevice = hostDevice(rhId),
             )
+            cleanup?.invoke()
           }
-          cleanup?.invoke()
         }
         is ContactAddressPlan.ContactViaAddress -> {
           Log.d(TAG, "planAndConnect, .ContactAddress, .ContactViaAddress, incognito=$incognito")
@@ -210,6 +212,7 @@ suspend fun planAndConnect(
           } else {
             askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, rhId, contact, close, openChat = false)
           }
+          cleanup?.invoke()
         }
       }
       is ConnectionPlan.GroupLink -> when (connectionPlan.groupLinkPlan) {
@@ -296,8 +299,8 @@ suspend fun planAndConnect(
               String.format(generalGetString(MR.strings.connect_plan_you_are_already_in_group_vName), groupInfo.displayName) + linkText,
               hostDevice = hostDevice(rhId),
             )
+            cleanup?.invoke()
           }
-          cleanup?.invoke()
         }
       }
     }

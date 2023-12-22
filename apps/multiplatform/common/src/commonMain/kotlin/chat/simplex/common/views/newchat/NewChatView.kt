@@ -38,9 +38,9 @@ enum class NewChatOption {
 }
 
 @Composable
-fun NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRCodeScanner: Boolean = false, close: () -> Unit) {
-  val selection = rememberSaveable { mutableStateOf(selection) }
-  val showQRCodeScanner = rememberSaveable { mutableStateOf(showQRCodeScanner) }
+fun ModalData.NewChatView(rh: RemoteHostInfo?, selection: NewChatOption, showQRCodeScanner: Boolean = false, close: () -> Unit) {
+  val selection = remember { stateGetOrPut("selection") { selection } }
+  val showQRCodeScanner = remember { stateGetOrPut("showQRCodeScanner") { showQRCodeScanner } }
   val contactConnection: MutableState<PendingContactConnection?> = rememberSaveable(stateSaver = serializableSaver()) { mutableStateOf(null) }
   val connReqInvitation by remember { derivedStateOf { chatModel.showingInvitation.value?.connReq ?: "" } }
   val creatingConnReq = rememberSaveable { mutableStateOf(false) }
@@ -205,7 +205,7 @@ private fun InviteView(rhId: Long?, connReqInvitation: String, contactConnection
   Spacer(Modifier.height(10.dp))
 
   SectionView(stringResource(MR.strings.or_show_this_qr_code).uppercase()) {
-    SimpleXLinkQRCode(connReqInvitation)
+    SimpleXLinkQRCode(connReqInvitation, onShare = { chatModel.markShowingInvitationUsed() })
   }
 
   Spacer(Modifier.height(10.dp))
