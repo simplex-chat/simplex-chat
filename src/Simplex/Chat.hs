@@ -40,7 +40,7 @@ import Data.Fixed (div')
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (find, foldl', isSuffixOf, partition, sortOn)
-import Data.List.NonEmpty (NonEmpty (..), nonEmpty, toList)
+import Data.List.NonEmpty (NonEmpty (..), nonEmpty, toList, (<|))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -54,12 +54,12 @@ import Data.Time.Clock.System (systemToUTCTime)
 import Data.Word (Word32)
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
-import Simplex.Chat.Messages.Batch (MsgBatch (..), batchMessages)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
+import Simplex.Chat.Messages.Batch (MsgBatch (..), batchMessages)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Options
@@ -3186,17 +3186,29 @@ processAgentMsgSndFile _corrId aFileId msg =
         sendFileDescription sft rfd msgId sendMsg = do
           let rfdText = fileDescrText rfd
           withStore' $ \db -> updateSndFTDescrXFTP db user sft rfdText
-          partSize <- asks $ xftpDescrPartSize . config
-          sendParts 1 partSize rfdText
+          parts <- splitFileDescr rfdText
+          loopSend parts
           where
-            sendParts partNo partSize rfdText = do
-              let (part, rest) = T.splitAt partSize rfdText
-                  complete = T.null rest
-                  fileDescr = FileDescr {fileDescrText = part, fileDescrPartNo = partNo, fileDescrComplete = complete}
+            -- returns msgDeliveryId of the last file description message
+            loopSend :: NonEmpty FileDescr -> m Int64
+            loopSend (fileDescr :| fds) = do
               (_, msgDeliveryId) <- sendMsg $ XMsgFileDescr {msgId, fileDescr}
-              if complete
-                then pure msgDeliveryId
-                else sendParts (partNo + 1) partSize rest
+              case L.nonEmpty fds of
+                Just fds' -> loopSend fds'
+                Nothing -> pure msgDeliveryId
+
+splitFileDescr :: ChatMonad m => RcvFileDescrText -> m (NonEmpty FileDescr)
+splitFileDescr rfdText = do
+  partSize <- asks $ xftpDescrPartSize . config
+  pure $ splitParts 1 partSize rfdText
+  where
+    splitParts partNo partSize remText =
+      let (part, rest) = T.splitAt partSize remText
+          complete = T.null rest
+          fileDescr = FileDescr {fileDescrText = part, fileDescrPartNo = partNo, fileDescrComplete = complete}
+       in if complete
+            then fileDescr :| []
+            else fileDescr <| splitParts (partNo + 1) partSize rest
 
 processAgentMsgRcvFile :: forall m. ChatMonad m => ACorrId -> RcvFileId -> ACommand 'Agent 'AERcvFile -> m ()
 processAgentMsgRcvFile _corrId aFileId msg =
@@ -3659,25 +3671,14 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
                         let senderVRange = memberChatVRange' sender
                             xMsgNewChatMsg = ChatMessage {chatVRange = senderVRange, msgId = itemSharedMsgId, chatMsgEvent = XMsgNew msgContainer}
                         fileDescrEvents <- case (snd <$> fInvDescr_, itemSharedMsgId) of
-                          (Just fileDescrText, Just msgId) -> prepareFileDescrEvents fileDescrText msgId
+                          (Just fileDescrText, Just msgId) -> do
+                            parts <- splitFileDescr fileDescrText
+                            pure . toList $ L.map (XMsgFileDescr msgId) parts
                           _ -> pure []
                         let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
                             GroupMember {memberId} = sender
                             msgForwardEvents = map (\cm -> XGrpMsgForward memberId cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
                         pure msgForwardEvents
-                  prepareFileDescrEvents :: RcvFileDescrText -> SharedMsgId -> m [ChatMsgEvent 'Json]
-                  prepareFileDescrEvents fileDescrText msgId = do
-                    partSize <- asks $ xftpDescrPartSize . config
-                    pure $ prepareParts 1 partSize fileDescrText []
-                    where
-                      prepareParts partNo partSize rfdText events = do
-                        let (part, rest) = T.splitAt partSize rfdText
-                            complete = T.null rest
-                            fileDescr = FileDescr {fileDescrText = part, fileDescrPartNo = partNo, fileDescrComplete = complete}
-                            events' = XMsgFileDescr {msgId, fileDescr} : events
-                        if complete
-                          then reverse events'
-                          else prepareParts (partNo + 1) partSize rest events'
           _ -> do
             let memCategory = memberCategory m
             withStore' (\db -> getViaGroupContact db user m) >>= \case
