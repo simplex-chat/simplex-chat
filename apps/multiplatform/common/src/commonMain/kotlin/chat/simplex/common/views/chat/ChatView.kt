@@ -1152,33 +1152,31 @@ fun PreloadItems(
   remaining: Int = 10,
   onLoadMore: () -> Unit,
 ) {
+  // Prevent situation when initial load and load more happens one after another after selecting a chat with long scroll position from previous selection
+  val allowLoad = remember { mutableStateOf(false) }
   LaunchedEffect(Unit) {
-    // Prevent situation when initial load and load more happens one after another after selecting a chat with long scroll position from previous selection
-    var allowLoad: Boolean = false
-    launch {
-      snapshotFlow { chatModel.chatId.value }
-        .filterNotNull()
-        .collect {
-          allowLoad = false
-          delay(1000)
-          allowLoad = true
-        }
-    }
-    launch {
-      snapshotFlow {
-        val lInfo = listState.layoutInfo
-        val totalItemsNumber = lInfo.totalItemsCount
-        val lastVisibleItemIndex = (lInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) + 1
-        if (allowLoad && lastVisibleItemIndex > (totalItemsNumber - remaining) && totalItemsNumber >= ChatPagination.INITIAL_COUNT)
-          totalItemsNumber + ChatPagination.PRELOAD_COUNT
-        else
-          0
+    snapshotFlow { chatModel.chatId.value }
+      .filterNotNull()
+      .collect {
+        allowLoad.value = listState.layoutInfo.totalItemsCount == listState.layoutInfo.visibleItemsInfo.size
+        delay(500)
+        allowLoad.value = true
       }
-        .filter { it > 0 }
-        .collect {
-          onLoadMore()
-        }
+  }
+  KeyChangeEffect(allowLoad.value) {
+    snapshotFlow {
+      val lInfo = listState.layoutInfo
+      val totalItemsNumber = lInfo.totalItemsCount
+      val lastVisibleItemIndex = (lInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) + 1
+      if (allowLoad.value && lastVisibleItemIndex > (totalItemsNumber - remaining) && totalItemsNumber >= ChatPagination.INITIAL_COUNT)
+        totalItemsNumber + ChatPagination.PRELOAD_COUNT
+      else
+        0
     }
+      .filter { it > 0 }
+      .collect {
+        onLoadMore()
+      }
   }
 }
 
