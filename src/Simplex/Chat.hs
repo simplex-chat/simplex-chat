@@ -54,7 +54,7 @@ import Data.Time.Clock.System (systemToUTCTime)
 import Data.Word (Word32)
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
-import Simplex.Chat.ByteStringBatcher (MsgBatch (..), batchMessages)
+import Simplex.Chat.Messages.Batch (MsgBatch (..), batchMessages)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files

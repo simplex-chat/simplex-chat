@@ -3,7 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Simplex.Chat.ByteStringBatcher
+module Simplex.Chat.Messages.Batch
   ( MsgBatch (..),
     batchMessages,
   )
@@ -20,7 +20,7 @@ data MsgBatch = MsgBatch Builder [SndMessage]
 
 -- | Batches [SndMessage] into batches of ByteString builders in form of JSON arrays.
 -- Does not check if the resulting batch is a valid JSON.
--- If a single element is passed of fits the size, it is returned as is (a JSON string).
+-- If a single element is passed, it is returned as is (a JSON string).
 -- If an element exceeds maxLen, it is returned as ChatError.
 batchMessages :: Int64 -> [SndMessage] -> [Either ChatError MsgBatch]
 batchMessages maxLen msgs =

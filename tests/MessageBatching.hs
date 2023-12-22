@@ -4,7 +4,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module ByteStringBatcherTests (byteStringBatcherTests) where
+module MessageBatching (batchingTests) where
 
 import Crypto.Number.Serialize (os2ip)
 import Data.ByteString.Builder (toLazyByteString)
@@ -14,14 +14,14 @@ import Data.Int (Int64)
 import Data.String (IsString (..))
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Simplex.Chat.ByteStringBatcher
+import Simplex.Chat.Messages.Batch
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Messages (SndMessage (..))
 import Simplex.Chat.Protocol (SharedMsgId (..), maxChatMsgSize)
 import Test.Hspec
 
-byteStringBatcherTests :: Spec
-byteStringBatcherTests = describe "ByteStringBatcher tests" $ do
+batchingTests :: Spec
+batchingTests = describe "message batching tests" $ do
   testBatchingCorrectness
   it "image x.msg.new and x.msg.file.descr should fit into single batch" testImageFitsSingleBatch
 
@@ -98,7 +98,7 @@ testImageFitsSingleBatch = do
       descrStr = LB.replicate descrRoundedSize 2
       msg s = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = s}
       batched = "[" <> xMsgNewStr <> "," <> descrStr <> "]"
-      
+
   runBatcherTest' maxChatMsgSize [msg xMsgNewStr, msg descrStr] [] [batched]
 
 runBatcherTest :: Int64 -> [SndMessage] -> [ChatError] -> [LB.ByteString] -> Spec

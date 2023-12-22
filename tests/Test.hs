@@ -1,4 +1,3 @@
-import ByteStringBatcherTests
 import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
@@ -8,6 +7,7 @@ import Control.Logger.Simple
 import Data.Time.Clock.System
 import JSONTests
 import MarkdownTests
+import MessageBatching
 import MobileTests
 import ProtocolTests
 import RemoteTests
@@ -29,7 +29,7 @@ main = do
     describe "SimpleX chat protocol" protocolTests
     around tmpBracket $ describe "WebRTC encryption" webRTCTests
     describe "Valid names" validNameTests
-    describe "ByteStringBatcher tests" byteStringBatcherTests
+    describe "Message batching" batchingTests
     around testBracket $ do
       describe "Mobile API Tests" mobileTests
       describe "SimpleX chat client" chatTests
