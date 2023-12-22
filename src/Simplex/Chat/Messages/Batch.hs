@@ -36,14 +36,18 @@ batchMessages maxLen msgs =
       where
         msgLen = LB.length msgBody
         batches' = msgBatch batch : batches
-        len' = msgLen + if n == 0 then 0 else len + 1 -- 1 accounts for comma
-        batchLen = len' + (if n == 0 then 0 else 2) -- 2 accounts for opening and closing brackets
+        len'
+          | n == 0 = msgLen
+          | otherwise = msgLen + len + 1 -- 1 accounts for comma
+        batchLen
+          | n == 0 = len'
+          | otherwise = len' + 2 -- 2 accounts for opening and closing brackets
         errLarge SndMessage {msgId} = Left $ ChatError $ CEInternalError ("large message " <> show msgId)
 
 encodeMessages :: [SndMessage] -> Builder
 encodeMessages = \case
   [] -> mempty
   [msg] -> encodeMsg msg
-  (msg : msgs) -> charUtf8 '[' <> encodeMsg msg <> mconcat [charUtf8 ',' <> encodeMsg msg' | msg' <- msgs] <> charUtf8 ']' 
+  (msg : msgs) -> charUtf8 '[' <> encodeMsg msg <> mconcat [charUtf8 ',' <> encodeMsg msg' | msg' <- msgs] <> charUtf8 ']'
   where
     encodeMsg SndMessage {msgBody} = lazyByteString msgBody

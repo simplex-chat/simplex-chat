@@ -5616,12 +5616,11 @@ sendGroupMemberMessages :: forall e m. (MsgEncodingI e, ChatMonad m) => User -> 
 sendGroupMemberMessages user conn@Connection {connId} events groupId = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
   (errs, msgs) <- partitionEithers <$> createSndMessages
-  unless (null errs) $ toView $ CRChatErrors Nothing errs
+  unless (null errs) $ toView $ CRChatErrors (Just user) errs
   unless (null msgs) $ do
     let (errs', msgBatches) = partitionEithers $ batchMessages maxChatMsgSize msgs
-        -- errs' = map (\SndMessage {msgId} -> ChatError $ CEInternalError ("large message " <> show msgId)) largeMsgs
     -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
-    unless (null errs') $ toView $ CRChatErrors Nothing errs'
+    unless (null errs') $ toView $ CRChatErrors (Just user) errs'
     forM_ msgBatches $ \batch ->
       processBatch batch `catchChatError` (toView . CRChatError (Just user))
   where
