@@ -220,8 +220,9 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           }
         }
       },
-      loadPrevMessages = { cInfo ->
-        val c = chatModel.getChat(cInfo.id)
+      loadPrevMessages = {
+        if (chatModel.chatId.value != activeChat.value?.id) return@ChatLayout
+        val c = chatModel.getChat(chatModel.chatId.value ?: return@ChatLayout)
         val firstId = chatModel.chatItems.firstOrNull()?.id
         if (c != null && firstId != null) {
           withApi {
@@ -440,7 +441,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
       changeNtfsState = { enabled, currentValue -> toggleNotifications(chat, enabled, chatModel, currentValue) },
       onSearchValueChanged = { value ->
         if (searchText.value == value) return@ChatLayout
-        val c = chatModel.getChat(chat.chatInfo.id) ?: return@ChatLayout
+        if (chatModel.chatId.value != activeChat.value?.id) return@ChatLayout
+        val c = chatModel.getChat(chatModel.chatId.value ?: return@ChatLayout) ?: return@ChatLayout
         withApi {
           apiFindMessages(c, chatModel, value)
           searchText.value = value
@@ -467,7 +469,7 @@ fun ChatLayout(
   back: () -> Unit,
   info: () -> Unit,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  loadPrevMessages: (ChatInfo) -> Unit,
+  loadPrevMessages: () -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long, Boolean) -> Unit,
@@ -790,7 +792,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   useLinkPreviews: Boolean,
   linkMode: SimplexLinkMode,
   showMemberInfo: (GroupInfo, GroupMember) -> Unit,
-  loadPrevMessages: (ChatInfo) -> Unit,
+  loadPrevMessages: () -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
   receiveFile: (Long, Boolean) -> Unit,
@@ -828,9 +830,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
     }
   }
 
-  PreloadItems(listState, ChatPagination.UNTIL_PRELOAD_COUNT, chat, chatItems) { c ->
-    loadPrevMessages(c.chatInfo)
-  }
+  PreloadItems(listState, ChatPagination.UNTIL_PRELOAD_COUNT, loadPrevMessages)
 
   Spacer(Modifier.size(8.dp))
   val reversedChatItems by remember { derivedStateOf { chatItems.reversed().toList() } }
@@ -1150,25 +1150,37 @@ fun BoxWithConstraintsScope.FloatingButtons(
 fun PreloadItems(
   listState: LazyListState,
   remaining: Int = 10,
-  chat: Chat,
-  items: List<*>,
-  onLoadMore: (chat: Chat) -> Unit,
+  onLoadMore: () -> Unit,
 ) {
-  LaunchedEffect(listState, chat, items) {
-    snapshotFlow { listState.layoutInfo }
-      .map {
-        val totalItemsNumber = it.totalItemsCount
-        val lastVisibleItemIndex = (it.visibleItemsInfo.lastOrNull()?.index ?: 0) + 1
+  LaunchedEffect(Unit) {
+    // Prevent situation when initial load and load more happens one after another after selecting a chat with long scroll position from previous selection
+    var allowLoad: Boolean = false
+    launch {
+      snapshotFlow { chatModel.chatId.value }
+        .filterNotNull()
+        .collect {
+          allowLoad = false
+          delay(1000)
+          allowLoad = true
+        }
+    }
+    launch {
+      snapshotFlow {
+        val lInfo = listState.layoutInfo
+        val totalItemsNumber = lInfo.totalItemsCount
+        val lastVisibleItemIndex = (lInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) + 1
         if (lastVisibleItemIndex > (totalItemsNumber - remaining) && totalItemsNumber >= ChatPagination.INITIAL_COUNT)
-          totalItemsNumber
+          totalItemsNumber + ChatPagination.PRELOAD_COUNT
         else
           0
       }
-      .distinctUntilChanged()
-      .filter { it > 0 }
-      .collect {
-        onLoadMore(chat)
-      }
+        .distinctUntilChanged()
+        .filter { it > 0 }
+        .filter { allowLoad }
+        .collect {
+          onLoadMore()
+        }
+    }
   }
 }
 
@@ -1439,7 +1451,7 @@ fun PreviewChatLayout() {
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
-      loadPrevMessages = { _ -> },
+      loadPrevMessages = {},
       deleteMessage = { _, _ -> },
       deleteMessages = { _ -> },
       receiveFile = { _, _ -> },
@@ -1512,7 +1524,7 @@ fun PreviewGroupChatLayout() {
       back = {},
       info = {},
       showMemberInfo = { _, _ -> },
-      loadPrevMessages = { _ -> },
+      loadPrevMessages = {},
       deleteMessage = { _, _ -> },
       deleteMessages = {},
       receiveFile = { _, _ -> },
