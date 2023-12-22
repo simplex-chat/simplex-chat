@@ -17,16 +17,16 @@ import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
 import qualified Data.ByteString.Char8 as B
-import Data.List (sortOn)
 import Data.Maybe (fromMaybe, maybeToList)
-import Data.Ord (Down(..))
+import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Time.Clock (getCurrentTime)
+import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Directory.Events
 import Directory.Options
+import Directory.Search
 import Directory.Store
 import Simplex.Chat.Bot
 import Simplex.Chat.Bot.KnownContacts
@@ -36,8 +36,10 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Types
-import Simplex.Chat.View (serializeChatResponse)
+import Simplex.Chat.View (serializeChatResponse, simplexChatContact)
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.TMap (TMap)
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow, ($>>=), (<$$>))
 import System.Directory (getAppUserDataDirectory)
 
@@ -55,6 +57,15 @@ data GroupRolesStatus
   | GRSBadRoles
   deriving (Eq)
 
+data ServiceState = ServiceState
+  { searchRequests :: TMap ContactId SearchRequest
+  }
+
+newServiceState :: IO ServiceState
+newServiceState = do
+  searchRequests <- atomically TM.empty
+  pure ServiceState {searchRequests}
+
 welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
   appDir <- getAppUserDataDirectory "simplex"
@@ -65,8 +76,9 @@ welcomeGetOpts = do
   pure opts
 
 directoryService :: DirectoryStore -> DirectoryOpts -> User -> ChatController -> IO ()
-directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {userId} cc = do
+directoryService st DirectoryOpts {superUsers, serviceName, searchResults, testing} user@User {userId} cc = do
   initializeBotAddress' (not testing) cc
+  env <- newServiceState
   race_ (forever $ void getLine) . forever $ do
     (_, _, resp) <- atomically . readTBQueue $ outputQ cc
     forM_ (crDirectoryEvent resp) $ \case
@@ -84,7 +96,7 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
       DEItemEditIgnored _ct -> pure ()
       DEItemDeleteIgnored _ct -> pure ()
       DEContactCommand ct ciId aCmd -> case aCmd of
-        ADC SDRUser cmd -> deUserCommand ct ciId cmd
+        ADC SDRUser cmd -> deUserCommand env ct ciId cmd
         ADC SDRSuperUser cmd -> deSuperUserCommand ct ciId cmd
   where
     withSuperUsers action = void . forkIO $ forM_ superUsers $ \KnownContact {contactId} -> action contactId
@@ -105,8 +117,11 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
       T.unpack $ "The group " <> displayName <> " (" <> fullName <> ") is already listed in the directory, please choose another name."
 
     getGroups :: Text -> IO (Maybe [(GroupInfo, GroupSummary)])
-    getGroups search =
-      sendChatCmd cc (APIListGroups userId Nothing $ Just $ T.unpack search) >>= \case
+    getGroups = getGroups_ . Just
+
+    getGroups_ :: Maybe Text -> IO (Maybe [(GroupInfo, GroupSummary)])
+    getGroups_ search_ =
+      sendChatCmd cc (APIListGroups userId Nothing $ T.unpack <$> search_) >>= \case
         CRGroupsList {groups} -> pure $ Just groups
         _ -> pure Nothing
 
@@ -140,7 +155,8 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
       sendMessage cc ct $
         "Welcome to " <> serviceName <> " service!\n\
         \Send a search string to find groups or */help* to learn how to add groups to directory.\n\n\
-        \For example, send _privacy_ to find groups about privacy.\n\n\
+        \For example, send _privacy_ to find groups about privacy.\n\
+        \Or send */all* or */new* to list groups.\n\n\
         \Content and privacy policy: https://simplex.chat/docs/directory.html"
 
     deGroupInvitation :: Contact -> GroupInfo -> GroupMemberRole -> GroupMemberRole -> IO ()
@@ -201,7 +217,7 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
                 "Created the public link to join the group via this directory service that is always online.\n\n\
                 \Please add it to the group welcome message.\n\
                 \For example, add:"
-              notifyOwner gr $ "Link to join the group " <> T.unpack displayName <> ": " <> B.unpack (strEncode connReqContact)
+              notifyOwner gr $ "Link to join the group " <> T.unpack displayName <> ": " <> B.unpack (strEncode $ simplexChatContact connReqContact)
             CRChatCmdError _ (ChatError e) -> case e of
               CEGroupUserRole {} -> notifyOwner gr "Failed creating group link, as service is no longer an admin."
               CEGroupMemberUserRemoved -> notifyOwner gr "Failed creating group link, as service is removed from the group."
@@ -276,9 +292,10 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
           where
             profileUpdate = \case
               CRGroupLink {connReqContact} ->
-                let groupLink = safeDecodeUtf8 $ strEncode connReqContact
-                    hadLinkBefore = groupLink `isInfix` description p
-                    hasLinkNow = groupLink `isInfix` description p'
+                let groupLink1 = safeDecodeUtf8 $ strEncode connReqContact
+                    groupLink2 = safeDecodeUtf8 $ strEncode $ simplexChatContact connReqContact
+                    hadLinkBefore = groupLink1 `isInfix` description p || groupLink2 `isInfix` description p
+                    hasLinkNow = groupLink1 `isInfix` description p' || groupLink2 `isInfix` description p'
                 in if
                       | hadLinkBefore && hasLinkNow -> GPHasServiceLink
                       | hadLinkBefore -> GPServiceLinkRemoved
@@ -379,8 +396,8 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
         notifyOwner gr $ serviceName <> " is removed from the group " <> userGroupReference gr g <> ".\n\nThe group is no longer listed in the directory."
         notifySuperUsers $ "The group " <> groupReference g <> " is de-listed (directory service is removed)."
 
-    deUserCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRUser -> IO ()
-    deUserCommand ct ciId = \case
+    deUserCommand :: ServiceState -> Contact -> ChatItemId -> DirectoryCmd 'DRUser -> IO ()
+    deUserCommand env@ServiceState {searchRequests} ct ciId = \case
       DCHelp ->
         sendMessage cc ct $
           "You must be the owner to add the group to the directory:\n\
@@ -389,20 +406,25 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
           \3. You will then need to add this link to the group welcome message.\n\
           \4. Once the link is added, service admins will approve the group (it can take up to 24 hours), and everybody will be able to find it in directory.\n\n\
           \Start from inviting the bot to your group as admin - it will guide you through the process"
-      DCSearchGroup s ->
-        getGroups s >>= \case
-          Just groups ->
-            atomically (filterListedGroups st groups) >>= \case
-              [] -> sendReply "No groups found"
-              gs -> do
-                sendReply $ "Found " <> show (length gs) <> " group(s)" <> if length gs > 10 then ", sending 10." else ""
-                void . forkIO $ forM_ (take 10 $ sortOn (Down . currentMembers . snd) gs) $
-                  \(GroupInfo {groupProfile = p@GroupProfile {image = image_}}, GroupSummary {currentMembers}) -> do
-                    let membersStr = "_" <> tshow currentMembers <> " members_"
-                        text = groupInfoText p <> "\n" <> membersStr
-                        msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
-                    sendComposedMessage cc ct Nothing msg
-          Nothing -> sendReply "Error: getGroups. Please notify the developers."
+      DCSearchGroup s -> withFoundListedGroups (Just s) $ sendSearchResults s
+      DCSearchNext ->
+        atomically (TM.lookup (contactId' ct) searchRequests) >>= \case
+          Just search@SearchRequest {searchType, searchTime} -> do
+            currentTime <- getCurrentTime
+            if diffUTCTime currentTime searchTime > 300 -- 5 minutes
+              then do
+                atomically $ TM.delete (contactId' ct) searchRequests
+                showAllGroups
+              else case searchType of
+                STSearch s -> withFoundListedGroups (Just s) $ sendNextSearchResults takeTop search
+                STAll -> withFoundListedGroups Nothing $ sendNextSearchResults takeTop search
+                STRecent -> withFoundListedGroups Nothing $ sendNextSearchResults takeRecent search
+          Nothing -> showAllGroups
+        where
+          showAllGroups = deUserCommand env ct ciId DCAllGroups
+      DCAllGroups -> withFoundListedGroups Nothing $ sendAllGroups takeTop "top" STAll
+      DCRecentGroups -> withFoundListedGroups Nothing $ sendAllGroups takeRecent "the most recent" STRecent
+      DCSubmitGroup _link -> pure ()
       DCConfirmDuplicateGroup ugrId gName ->
         atomically (getUserGroupReg st (contactId' ct) ugrId) >>= \case
           Nothing -> sendReply $ "Group ID " <> show ugrId <> " not found"
@@ -429,6 +451,54 @@ directoryService st DirectoryOpts {superUsers, serviceName, testing} user@User {
       DCCommandError tag -> sendReply $ "Command error: " <> show tag
       where
         sendReply = sendComposedMessage cc ct (Just ciId) . textMsgContent
+        withFoundListedGroups s_ action =
+          getGroups_ s_ >>= \case
+            Just groups -> atomically (filterListedGroups st groups) >>= action
+            Nothing -> sendReply "Error: getGroups. Please notify the developers."
+        sendSearchResults s = \case
+          [] -> sendReply "No groups found"
+          gs -> do
+            let gs' = takeTop searchResults gs
+                moreGroups = length gs - length gs'
+                more = if moreGroups > 0 then ", sending top " <> show (length gs') else ""
+            sendReply $ "Found " <> show (length gs) <> " group(s)" <> more <> "." 
+            updateSearchRequest (STSearch s) $ groupIds gs'
+            sendFoundGroups gs' moreGroups
+        sendAllGroups takeFirst sortName searchType = \case
+          [] -> sendReply "No groups listed"
+          gs -> do
+            let gs' = takeFirst searchResults gs
+                moreGroups = length gs - length gs'
+                more = if moreGroups > 0 then ", sending " <> sortName <> " " <> show (length gs') else ""
+            sendReply $ show (length gs) <> " group(s) listed" <> more <> "."
+            updateSearchRequest searchType $ groupIds gs'
+            sendFoundGroups gs' moreGroups
+        sendNextSearchResults takeFirst SearchRequest {searchType, sentGroups} = \case
+          [] -> do
+            sendReply "Sorry, no more groups"
+            atomically $ TM.delete (contactId' ct) searchRequests
+          gs -> do
+            let gs' = takeFirst searchResults $ filterNotSent sentGroups gs
+                sentGroups' = sentGroups <> groupIds gs'
+                moreGroups = length gs - S.size sentGroups'
+            sendReply $ "Sending " <> show (length gs') <> " more group(s)."
+            updateSearchRequest searchType sentGroups'
+            sendFoundGroups gs' moreGroups
+        updateSearchRequest :: SearchType -> Set GroupId -> IO ()
+        updateSearchRequest searchType sentGroups = do
+          searchTime <- getCurrentTime
+          let search = SearchRequest {searchType, searchTime, sentGroups}
+          atomically $ TM.insert (contactId' ct) search searchRequests
+        sendFoundGroups gs moreGroups =
+          void . forkIO $ do
+            forM_ gs $
+              \(GroupInfo {groupProfile = p@GroupProfile {image = image_}}, GroupSummary {currentMembers}) -> do
+                let membersStr = "_" <> tshow currentMembers <> " members_"
+                    text = groupInfoText p <> "\n" <> membersStr
+                    msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
+                sendComposedMessage cc ct Nothing msg
+            when (moreGroups > 0) $
+              sendComposedMessage cc ct Nothing $ MCText $ "Send */next* or just *.* for " <> tshow moreGroups <> " more result(s)."
 
     deSuperUserCommand :: Contact -> ChatItemId -> DirectoryCmd 'DRSuperUser -> IO ()
     deSuperUserCommand ct ciId cmd

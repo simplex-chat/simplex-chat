@@ -148,7 +148,6 @@
     <string name="cant_delete_user_profile">لا يمكن حذف ملف تعريف المستخدم!</string>
     <string name="icon_descr_video_asked_to_receive">طلب لاستلام الفيديو</string>
     <string name="callstatus_in_progress">مكالمتك تحت الإجراء</string>
-    <string name="callstatus_ended">انتهت المكالمة</string>
     <string name="change_database_passphrase_question">تغيير عبارة مرور قاعدة البيانات؟</string>
     <string name="cannot_access_keychain">لا يمكن الوصول إلى Keystore لحفظ كلمة مرور قاعدة البيانات</string>
     <string name="icon_descr_cancel_file_preview">إلغاء معاينة الملف</string>

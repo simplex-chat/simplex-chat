@@ -199,7 +199,7 @@ library
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
-    , time ==1.9.*
+    , time ==1.12.*
     , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
@@ -259,7 +259,7 @@ executable simplex-bot
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
-    , time ==1.9.*
+    , time ==1.12.*
     , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
@@ -319,7 +319,7 @@ executable simplex-bot-advanced
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
-    , time ==1.9.*
+    , time ==1.12.*
     , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
@@ -381,7 +381,7 @@ executable simplex-broadcast-bot
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
-    , time ==1.9.*
+    , time ==1.12.*
     , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
@@ -442,7 +442,7 @@ executable simplex-chat
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
-    , time ==1.9.*
+    , time ==1.12.*
     , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
@@ -467,6 +467,7 @@ executable simplex-directory-service
   other-modules:
       Directory.Events
       Directory.Options
+      Directory.Search
       Directory.Service
       Directory.Store
       Paths_simplex_chat
@@ -507,7 +508,7 @@ executable simplex-directory-service
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
-    , time ==1.9.*
+    , time ==1.12.*
     , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
@@ -553,6 +554,7 @@ test-suite simplex-chat-test
       Broadcast.Options
       Directory.Events
       Directory.Options
+      Directory.Search
       Directory.Service
       Directory.Store
       Paths_simplex_chat
@@ -600,7 +602,7 @@ test-suite simplex-chat-test
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
-    , time ==1.9.*
+    , time ==1.12.*
     , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*

@@ -1,6 +1,5 @@
 package chat.simplex.common.views.chatlist
 
-import SectionDivider
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
@@ -13,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.TextRange
 import dev.icerock.moko.resources.compose.painterResource
@@ -70,7 +70,11 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   val (userPickerState, scaffoldState ) = settingsState
   Scaffold(topBar = { Box(Modifier.padding(end = endPadding)) { ChatListToolbar(searchText, scaffoldState.drawerState, userPickerState, stopped)} },
     scaffoldState = scaffoldState,
-    drawerContent = { SettingsView(chatModel, setPerformLA, scaffoldState.drawerState) },
+    drawerContent = {
+      tryOrShowError("Settings", error = { ErrorSettingsView() }) {
+        SettingsView(chatModel, setPerformLA, scaffoldState.drawerState)
+      }
+    },
     drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
     drawerGesturesEnabled = appPlatform.isAndroid,
     floatingActionButton = {
@@ -117,12 +121,16 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   if (searchText.value.text.isEmpty()) {
     DesktopActiveCallOverlayLayout(newChatSheetState)
     // TODO disable this button and sheet for the duration of the switch
-    NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
+    tryOrShowError("NewChatSheet", error = {}) {
+      NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
+    }
   }
   if (appPlatform.isAndroid) {
-    UserPicker(chatModel, userPickerState) {
-      scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
-      userPickerState.value = AnimatedViewState.GONE
+    tryOrShowError("UserPicker", error = {}) {
+      UserPicker(chatModel, userPickerState) {
+        scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
+        userPickerState.value = AnimatedViewState.GONE
+      }
     }
   }
 }
@@ -418,6 +426,13 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
       close = null,
       cleanup = cleanup,
     )
+  }
+}
+
+@Composable
+private fun ErrorSettingsView() {
+  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Text(generalGetString(MR.strings.error_showing_content), color = MaterialTheme.colors.error, fontStyle = FontStyle.Italic)
   }
 }
 

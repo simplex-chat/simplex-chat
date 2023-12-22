@@ -1,5 +1,6 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TupleSections #-}
@@ -31,7 +32,9 @@ import Data.Word (Word32, Word8)
 import Foreign.C
 import Foreign.Marshal.Alloc (mallocBytes)
 import Foreign.Ptr
+import Foreign.StablePtr
 import Foreign.Storable (poke, pokeByteOff)
+import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Util (chunkSize, encryptFile)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..), CryptoFileHandle, FTCryptoError (..))
@@ -39,7 +42,7 @@ import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Util (catchAll)
-import UnliftIO (Handle, IOMode (..), withFile)
+import UnliftIO (Handle, IOMode (..), atomically, withFile)
 
 data WriteFileResult
   = WFResult {cryptoArgs :: CryptoFileArgs}
@@ -47,16 +50,17 @@ data WriteFileResult
 
 $(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "WF") ''WriteFileResult)
 
-cChatWriteFile :: CString -> Ptr Word8 -> CInt -> IO CJSONString
-cChatWriteFile cPath ptr len = do
+cChatWriteFile :: StablePtr ChatController -> CString -> Ptr Word8 -> CInt -> IO CJSONString
+cChatWriteFile cc cPath ptr len = do
+  c <- deRefStablePtr cc
   path <- peekCString cPath
   s <- getByteString ptr len
-  r <- chatWriteFile path s
+  r <- chatWriteFile c path s
   newCStringFromLazyBS $ J.encode r
 
-chatWriteFile :: FilePath -> ByteString -> IO WriteFileResult
-chatWriteFile path s = do
-  cfArgs <- CF.randomArgs
+chatWriteFile :: ChatController -> FilePath -> ByteString -> IO WriteFileResult
+chatWriteFile ChatController {random} path s = do
+  cfArgs <- atomically $ CF.randomArgs random
   let file = CryptoFile path $ Just cfArgs
   either WFError (\_ -> WFResult cfArgs)
     <$> runCatchExceptT (withExceptT show $ CF.writeFile file $ LB.fromStrict s)
@@ -87,19 +91,20 @@ chatReadFile path keyStr nonceStr = runCatchExceptT $ do
   let file = CryptoFile path $ Just $ CFArgs key nonce
   withExceptT show $ CF.readFile file
 
-cChatEncryptFile :: CString -> CString -> IO CJSONString
-cChatEncryptFile cFromPath cToPath = do
+cChatEncryptFile :: StablePtr ChatController -> CString -> CString -> IO CJSONString
+cChatEncryptFile cc cFromPath cToPath = do
+  c <- deRefStablePtr cc
   fromPath <- peekCString cFromPath
   toPath <- peekCString cToPath
-  r <- chatEncryptFile fromPath toPath
+  r <- chatEncryptFile c fromPath toPath
   newCAString . LB'.unpack $ J.encode r
 
-chatEncryptFile :: FilePath -> FilePath -> IO WriteFileResult
-chatEncryptFile fromPath toPath =
+chatEncryptFile :: ChatController -> FilePath -> FilePath -> IO WriteFileResult
+chatEncryptFile ChatController {random} fromPath toPath =
   either WFError WFResult <$> runCatchExceptT encrypt
   where
     encrypt = do
-      cfArgs <- liftIO CF.randomArgs
+      cfArgs <- atomically $ CF.randomArgs random
       encryptFile fromPath toPath cfArgs
       pure cfArgs
 

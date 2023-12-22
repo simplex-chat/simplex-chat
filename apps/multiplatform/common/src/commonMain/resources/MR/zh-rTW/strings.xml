@@ -11,7 +11,7 @@
     <string name="about_simplex_chat">關於 SimpleX Chat</string>
     <string name="accept_connection_request__question">接受連接請求？</string>
     <string name="callstatus_accepted">已接受通話</string>
-    <string name="network_enable_socks_info">要在端口啟用 SOCKS 代理伺服器嗎？在啟用這個選項之前，必須先啟用代理伺服器。</string>
+    <string name="network_enable_socks_info">要在端口啟用 SOCKS 代理伺服器嗎 %d？在啟用這個選項之前，必須先啟用代理伺服器。</string>
     <string name="group_member_role_admin">管理員</string>
     <string name="above_then_preposition_continuation">然後，選按：</string>
     <string name="smp_servers_preset_add">新增預設伺服器</string>

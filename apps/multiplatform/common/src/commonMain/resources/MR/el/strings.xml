@@ -41,7 +41,7 @@
     <string name="accept">Αποδοχή</string>
     <string name="accept_connection_request__question">Αποδοχή αιτήματος σύνδεσης;</string>
     <string name="callstatus_accepted">αποδεκτή κλήση</string>
-    <string name="network_enable_socks_info">Πρόσβαση στους διακομιστές μέσω SOCKS proxy στην πόρτα 9050; Ο διακομιστής μεσολάβησης (proxy server) πρέπει να είναι ενεργός πριν ενεργοποιηθεί αυτή η ρύθμιση.</string>
+    <string name="network_enable_socks_info">Πρόσβαση στους διακομιστές μέσω SOCKS proxy στην πόρτα %d; Ο διακομιστής μεσολάβησης (proxy server) πρέπει να είναι ενεργός πριν ενεργοποιηθεί αυτή η ρύθμιση.</string>
     <string name="smp_servers_add">Προσθήκη διακομιστή…</string>
     <string name="network_settings">Προχωρημένες ρυθμίσεις δικτύου</string>
     <string name="v4_3_improved_server_configuration_desc">Προσθήκη διακομιστών μέσω σάρωσης QR κωδικών.</string>
