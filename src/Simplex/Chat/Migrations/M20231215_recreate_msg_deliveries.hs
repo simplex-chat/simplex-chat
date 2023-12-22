@@ -27,11 +27,14 @@ CREATE TABLE new_msg_deliveries(
   delivery_status TEXT -- MsgDeliveryStatus
 );
 
-INSERT INTO new_msg_deliveries
-  (msg_delivery_id, message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at, agent_ack_cmd_id)
+INSERT INTO new_msg_deliveries (
+  msg_delivery_id, message_id, connection_id, agent_msg_id, agent_msg_meta,
+  chat_ts, created_at, updated_at, agent_ack_cmd_id
+)
 SELECT
-  msg_delivery_id, message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at, agent_ack_cmd_id
-  FROM msg_deliveries;
+  msg_delivery_id, message_id, connection_id, agent_msg_id, agent_msg_meta,
+  chat_ts, created_at, updated_at, agent_ack_cmd_id
+FROM msg_deliveries;
 
 DROP TABLE msg_deliveries;
 ALTER TABLE new_msg_deliveries RENAME TO msg_deliveries;
@@ -61,11 +64,23 @@ CREATE TABLE old_msg_deliveries(
   UNIQUE(connection_id, agent_msg_id)
 );
 
-INSERT INTO old_msg_deliveries
-  (msg_delivery_id, message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at, agent_ack_cmd_id)
+INSERT INTO old_msg_deliveries (
+  msg_delivery_id, message_id, connection_id, agent_msg_id, agent_msg_meta,
+  chat_ts, created_at, updated_at, agent_ack_cmd_id
+)
+WITH unique_msg_deliveries AS (
+  SELECT
+    msg_delivery_id, message_id, connection_id, agent_msg_id, agent_msg_meta,
+    chat_ts, created_at, updated_at, agent_ack_cmd_id,
+    row_number() OVER connection_id_agent_msg_id_win AS row_number
+  FROM msg_deliveries
+  WINDOW connection_id_agent_msg_id_win AS (PARTITION BY connection_id, agent_msg_id ORDER BY created_at ASC, msg_delivery_id ASC)
+)
 SELECT
-  msg_delivery_id, message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at, agent_ack_cmd_id
-  FROM msg_deliveries;
+  msg_delivery_id, message_id, connection_id, agent_msg_id, agent_msg_meta,
+  chat_ts, created_at, updated_at, agent_ack_cmd_id
+FROM unique_msg_deliveries
+WHERE row_number = 1;
 
 DROP TABLE msg_deliveries;
 ALTER TABLE old_msg_deliveries RENAME TO msg_deliveries;

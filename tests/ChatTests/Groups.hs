@@ -121,7 +121,7 @@ chatGroupTests = do
     it "history is not sent if preference is disabled" testGroupHistoryPreferenceOff
     it "host's file" testGroupHistoryHostFile
     it "member's file" testGroupHistoryMemberFile
-    fit "large file with text" testGroupHistoryLargeFile
+    it "large file with text" testGroupHistoryLargeFile
     it "multiple files" testGroupHistoryMultipleFiles
     it "cancelled files are not attached (text message is still sent)" testGroupHistoryFileCancel
     it "cancelled files without text are excluded" testGroupHistoryFileCancelNoText
