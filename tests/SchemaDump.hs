@@ -75,7 +75,7 @@ skipComparisonForDownMigrations =
     -- on down migration idx_connections_via_contact_uri_hash index moves down to the end of the file
     "20231019_indexes",
     -- table and indexes move down to the end of the file
-    "20231215_group_history"
+    "20231215_recreate_msg_deliveries"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String
