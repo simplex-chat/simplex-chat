@@ -1169,14 +1169,12 @@ fun PreloadItems(
         val lInfo = listState.layoutInfo
         val totalItemsNumber = lInfo.totalItemsCount
         val lastVisibleItemIndex = (lInfo.visibleItemsInfo.lastOrNull()?.index ?: 0) + 1
-        if (lastVisibleItemIndex > (totalItemsNumber - remaining) && totalItemsNumber >= ChatPagination.INITIAL_COUNT)
+        if (allowLoad && lastVisibleItemIndex > (totalItemsNumber - remaining) && totalItemsNumber >= ChatPagination.INITIAL_COUNT)
           totalItemsNumber + ChatPagination.PRELOAD_COUNT
         else
           0
       }
-        .distinctUntilChanged()
         .filter { it > 0 }
-        .filter { allowLoad }
         .collect {
           onLoadMore()
         }
