@@ -53,6 +53,7 @@ module Simplex.Chat.Store.Messages
     updateGroupChatItemModerated,
     markGroupChatItemDeleted,
     markGroupChatItemBlocked,
+    deleteLocalChatItem,
     updateDirectChatItemsRead,
     getDirectUnreadTimedItems,
     setDirectChatItemDeleteAt,
@@ -78,6 +79,7 @@ module Simplex.Chat.Store.Messages
     getGroupMemberCIBySharedMsgId,
     getGroupChatItemByAgentMsgId,
     getGroupMemberChatItemLast,
+    getLocalChatItem,
     getDirectChatItemIdByText,
     getDirectChatItemIdByText',
     getGroupChatItemIdByText,
@@ -1901,6 +1903,19 @@ getLocalChatItem db User {userId} folderId itemId = ExceptT $ do
         |]
         (userId, folderId, itemId)
 
+deleteLocalChatItem :: DB.Connection -> User -> NoteFolder -> ChatItem 'CTLocal d -> IO ()
+deleteLocalChatItem db User {userId} NoteFolder {noteFolderId} ci = do
+  let itemId = chatItemId' ci
+  deleteChatItemVersions_ db itemId
+  deleteLocalCIReactions_ db noteFolderId ci
+  DB.execute
+    db
+    [sql|
+      DELETE FROM chat_items
+      WHERE user_id = ? AND note_folder_id = ? AND chat_item_id = ?
+    |]
+    (userId, noteFolderId, itemId)
+
 getChatItemByFileId :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO AChatItem
 getChatItemByFileId db user@User {userId} fileId = do
   (chatRef, itemId) <-
@@ -2054,6 +2069,11 @@ deleteGroupCIReactions_ db g@GroupInfo {groupId} ci@ChatItem {meta = CIMeta {ite
       db
       "DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id = ?"
       (groupId, itemSharedMId, memberId)
+
+deleteLocalCIReactions_ :: DB.Connection -> NoteFolderId -> ChatItem 'CTLocal d -> IO ()
+deleteLocalCIReactions_ db folderId ChatItem {meta = CIMeta {itemSharedMsgId}} =
+  forM_ itemSharedMsgId $ \itemSharedMId ->
+    DB.execute db "DELETE FROM chat_item_reactions WHERE note_folder_id = ? AND shared_msg_id = ?" (folderId, itemSharedMId)
 
 toCIReaction :: (MsgReaction, Bool, Int) -> CIReactionCount
 toCIReaction (reaction, userReacted, totalReacted) = CIReactionCount {reaction, userReacted, totalReacted}

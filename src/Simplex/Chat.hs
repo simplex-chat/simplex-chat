@@ -894,7 +894,9 @@ processChatCommand = \case
           (SndMessage {msgId}, _) <- sendGroupMessage user gInfo ms $ XMsgDel itemSharedMId Nothing
           delGroupChatItem user gInfo ci msgId Nothing
         (CIDMBroadcast, _, _, _) -> throwChatError CEInvalidChatItemDelete
-    CTLocal -> pure $ chatCmdError (Just user) "TODO: APIDeleteChatItem.Local"
+    CTLocal -> do
+      (nf, CChatItem _ ci) <- withStore $ \db -> (,) <$> getNoteFolder db user chatId <*> getLocalChatItem db user chatId itemId
+      deleteLocalCI user nf ci True False
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIDeleteMemberChatItem gId mId itemId -> withUser $ \user -> withChatLock "deleteChatItem" $ do
@@ -5726,6 +5728,12 @@ deleteGroupCI user gInfo ci@ChatItem {file} byUser timed byGroupMember_ deletedT
   where
     gItem = AChatItem SCTGroup msgDirection (GroupChat gInfo)
 
+deleteLocalCI :: (ChatMonad m, MsgDirectionI d) => User -> NoteFolder -> ChatItem 'CTLocal d -> Bool -> Bool -> m ChatResponse
+deleteLocalCI user nf ci@ChatItem {file} byUser timed = do
+  deleteCIFile user file
+  withStoreCtx' (Just "deleteLocalCI, deleteLocalChatItem") $ \db -> deleteLocalChatItem db user nf ci
+  pure $ CRChatItemDeleted user (AChatItem SCTLocal msgDirection (LocalChat nf) ci) Nothing byUser timed
+
 deleteCIFile :: (ChatMonad m, MsgDirectionI d) => User -> Maybe (CIFile d) -> m ()
 deleteCIFile user file_ =
   forM_ file_ $ \file -> do
@@ -6145,7 +6153,9 @@ chatCommandP =
       ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       ("/leave " <|> "/l ") *> char_ '#' *> (LeaveGroup <$> displayName),
       ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName),
+      -- TODO: ("/delete $" <|> "/d $") *> (DeleteNoteFolder <$> displayName),
       ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayName),
+      -- TODO: "/clear $" *> (ClearNoteFolder <$> displayName),
       "/clear #" *> (ClearGroup <$> displayName),
       "/clear " *> char_ '@' *> (ClearContact <$> displayName),
       ("/members " <|> "/ms ") *> char_ '#' *> (ListMembers <$> displayName),

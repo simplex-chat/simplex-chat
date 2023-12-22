@@ -22,6 +22,10 @@ testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/tail"
   alice <# "$self keep in mind"
 
+  alice ##> "/_delete item $1 1 internal"
+  alice <## "message deleted"
+  alice ##> "/tail"
+
 testUserNotes :: FilePath -> IO ()
 testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/note folder self"
