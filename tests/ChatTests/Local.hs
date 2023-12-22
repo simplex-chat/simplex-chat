@@ -26,6 +26,9 @@ testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice <## "message deleted"
   alice ##> "/tail"
 
+  alice ##> "/delete $self"
+  alice <## "note folder self deleted"
+
 testUserNotes :: FilePath -> IO ()
 testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/note folder self"
@@ -42,5 +45,7 @@ testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
 
   alice ##> "/note folder gossip"
   alice <## "new note folder created, write to $gossip to add notes"
-
   alice ##> "/tail"
+
+  alice ##> "/_delete item $1 1 internal"
+  alice <## "chat db error: SENoteFolderNotFound {noteFolderId = 1}"

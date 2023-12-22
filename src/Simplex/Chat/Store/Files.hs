@@ -72,6 +72,7 @@ module Simplex.Chat.Store.Files
     getSndFileTransfer,
     getSndFileTransfers,
     getContactFileInfo,
+    getNoteFolderFileInfo,
     getLocalCryptoFile,
     updateDirectCIFileStatus,
   )
@@ -894,6 +895,11 @@ getContactFileInfo :: DB.Connection -> User -> Contact -> IO [CIFileInfo]
 getContactFileInfo db User {userId} Contact {contactId} =
   map toFileInfo
     <$> DB.query db (fileInfoQuery <> " WHERE i.user_id = ? AND i.contact_id = ?") (userId, contactId)
+
+getNoteFolderFileInfo :: DB.Connection -> User -> NoteFolder -> IO [CIFileInfo]
+getNoteFolderFileInfo db User {userId} NoteFolder {noteFolderId} =
+  map toFileInfo
+    <$> DB.query db (fileInfoQuery <> " WHERE i.user_id = ? AND i.note_folder_id = ?") (userId, noteFolderId)
 
 getLocalCryptoFile :: DB.Connection -> UserId -> Int64 -> Bool -> ExceptT StoreError IO CryptoFile
 getLocalCryptoFile db userId fileId sent =

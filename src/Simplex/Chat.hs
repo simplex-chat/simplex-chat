@@ -1050,7 +1050,16 @@ processChatCommand = \case
                       withStore' (\db -> setContactDeleted db user ct)
                         `catchChatError` (toView . CRChatError (Just user))
                       pure $ map aConnId conns
-    CTLocal -> error "TODO: APIDeleteChat.CTLocal"
+    CTLocal -> do
+      nf <- withStore $ \db -> getNoteFolder db user chatId
+      filesInfo <- withStore' $ \db -> getNoteFolderFileInfo db user nf
+      withChatLock "deleteChat local" . procCmd $ do
+        mapM_ (deleteFile user) filesInfo
+        -- functions below are called in separate transactions to prevent crashes on android
+        -- (possibly, race condition on integrity check?)
+        withStore' $ \db -> deleteNoteFolderFiles db userId nf
+        withStore' $ \db -> deleteNoteFolder db user nf
+        pure $ CRNoteFolderDeleted user nf
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
     CTDirect -> do
@@ -1853,7 +1862,10 @@ processChatCommand = \case
   NewNoteFolder displayName -> withUser $ \user@User {userId} -> do
     -- processChatCommand $ APINewLocalChat userId localChatProfile
     checkValidName displayName
-    withStore $ \db -> CRLocalChatCreated user <$> createNewNoteFolder db userId displayName
+    withStore $ \db -> CRNoteFolderCreated user <$> createNewNoteFolder db userId displayName
+  DeleteNoteFolder displayName -> withUser $ \user -> do
+    folderId <- withStore $ \db -> getNoteFolderIdByName db user displayName
+    processChatCommand $ APIDeleteChat (ChatRef CTLocal folderId) True
   LastChats count_ -> withUser' $ \user -> do
     let count = fromMaybe 5000 count_
     (errs, previews) <- partitionEithers <$> withStore' (\db -> getChatPreviews db user False (PTLast count) clqNoFilters)
@@ -6153,7 +6165,7 @@ chatCommandP =
       ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       ("/leave " <|> "/l ") *> char_ '#' *> (LeaveGroup <$> displayName),
       ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName),
-      -- TODO: ("/delete $" <|> "/d $") *> (DeleteNoteFolder <$> displayName),
+      ("/delete $" <|> "/d $") *> (DeleteNoteFolder <$> displayName),
       ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayName),
       -- TODO: "/clear $" *> (ClearNoteFolder <$> displayName),
       "/clear #" *> (ClearGroup <$> displayName),

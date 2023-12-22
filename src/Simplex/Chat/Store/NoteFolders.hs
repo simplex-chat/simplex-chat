@@ -68,3 +68,19 @@ getNoteFolder db User {userId} noteFolderId =
   where
     toNoteFolder (displayName, localDisplayName, createdAt, updatedAt, chatTs, favorite, unread) =
       NoteFolder {noteFolderId, userId, displayName, localDisplayName, createdAt, updatedAt, chatTs, favorite, unread}
+
+deleteNoteFolderFiles :: DB.Connection -> UserId -> NoteFolder -> IO ()
+deleteNoteFolderFiles db userId NoteFolder {noteFolderId} = do
+  DB.execute
+    db
+    [sql|
+      DELETE FROM files
+      WHERE user_id = ?
+        AND chat_item_id IN (
+          SELECT chat_item_id FROM chat_items WHERE user_id = ? AND note_folder_id = ?
+        )
+      |] (userId, userId, noteFolderId)
+
+deleteNoteFolder :: DB.Connection -> User -> NoteFolder -> IO ()
+deleteNoteFolder db User {userId} NoteFolder {noteFolderId} =
+  DB.execute db [sql| DELETE FROM note_folders WHERE user_id = ? AND note_folder_id = ? |] (userId, noteFolderId)
