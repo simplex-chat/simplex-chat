@@ -764,10 +764,9 @@ processChatCommand = \case
             quoteData ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
             quoteData _ _ = throwChatError CEInvalidQuote
     CTLocal -> do
-      nf@NoteFolder {noteFolderId} <- withStore $ \db -> getNoteFolder db user chatId
+      nf <- withStore $ \db -> getNoteFolder db user chatId
       -- TODO: files, voice, etc.
-      msg <- createSndMessage (XMsgNew . MCSimple $ extMsgContent mc Nothing) (NoteFolderId noteFolderId)
-      ci <- saveSndChatItem user (CDLocalSnd nf) msg (CISndMsgContent mc)
+      ci <- createInternalChatItem_ user (CDLocalSnd nf) (CISndMsgContent mc) Nothing
       pure $ CRNewChatItem user (AChatItem SCTLocal SMDSnd (LocalChat nf) ci)
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
@@ -5865,13 +5864,17 @@ sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferenc
 
 createInternalChatItem :: forall c d m. (ChatTypeI c, MsgDirectionI d, ChatMonad m) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> m ()
 createInternalChatItem user cd content itemTs_ = do
+  ci <- createInternalChatItem_ user cd content itemTs_
+  toView $ CRNewChatItem user (AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci)
+
+createInternalChatItem_ :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> m (ChatItem c d)
+createInternalChatItem_ user cd content itemTs_ = do
   createdAt <- liftIO getCurrentTime
   let itemTs = fromMaybe createdAt itemTs_
   ciId <- withStore' $ \db -> do
     when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
     createNewChatItemNoMsg db user cd content itemTs createdAt
-  ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
-  toView $ CRNewChatItem user (AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci)
+  liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
 
 getCreateActiveUser :: SQLiteStore -> Bool -> IO User
 getCreateActiveUser st testView = do

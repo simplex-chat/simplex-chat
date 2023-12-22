@@ -831,7 +831,7 @@ data PendingGroupMessage = PendingGroupMessage
 
 type MessageId = Int64
 
-data ConnOrGroupId = ConnectionId Int64 | GroupId Int64 | NoteFolderId Int64
+data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
 
 data SndMsgDelivery = SndMsgDelivery
   { connId :: Int64,

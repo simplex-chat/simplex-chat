@@ -170,18 +170,17 @@ createNewSndMessage db gVar connOrGroupId mkMessage =
       db
       [sql|
         INSERT INTO messages (
-          msg_sent, chat_msg_event, msg_body, connection_id, group_id, note_folder_id,
+          msg_sent, chat_msg_event, msg_body, connection_id, group_id,
           shared_msg_id, shared_msg_id_user, created_at, updated_at
-        ) VALUES (?,?,?,?,?,?,?,?,?,?)
+        ) VALUES (?,?,?,?,?,?,?,?,?)
       |]
-      (MDSnd, toCMEventTag chatMsgEvent, msgBody, connId_, groupId_, folderId_, sharedMsgId, Just True, createdAt, createdAt)
+      (MDSnd, toCMEventTag chatMsgEvent, msgBody, connId_, groupId_, sharedMsgId, Just True, createdAt, createdAt)
     msgId <- insertedRowId db
     pure SndMessage {msgId, sharedMsgId = SharedMsgId sharedMsgId, msgBody}
   where
-    (connId_, groupId_, folderId_) = case connOrGroupId of
-      ConnectionId connId -> (Just connId, Nothing, Nothing)
-      GroupId groupId -> (Nothing, Just groupId, Nothing)
-      NoteFolderId folderId -> (Nothing, Nothing, Just folderId)
+    (connId_, groupId_) = case connOrGroupId of
+      ConnectionId connId -> (Just connId, Nothing)
+      GroupId groupId -> (Nothing, Just groupId)
 
 createSndMsgDelivery :: DB.Connection -> SndMsgDelivery -> MessageId -> IO Int64
 createSndMsgDelivery db sndMsgDelivery messageId = do
@@ -214,7 +213,6 @@ createNewRcvMessage db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMs
             throwError $ SEDuplicateGroupMessage groupId sharedMsgId duplAuthorId duplFwdMemberId
           Nothing -> liftIO $ insertRcvMsg Nothing $ Just groupId
       Nothing -> liftIO $ insertRcvMsg Nothing $ Just groupId
-    NoteFolderId _folderId -> error "TODO: createNewRcvMessage.NoteFolderId"
   where
     duplicateGroupMsgMemberIds :: Int64 -> SharedMsgId -> IO (Maybe (Maybe GroupMemberId, Maybe GroupMemberId))
     duplicateGroupMsgMemberIds groupId sharedMsgId =
