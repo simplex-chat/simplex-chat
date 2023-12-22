@@ -13,8 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.TextRange
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -370,12 +369,11 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
         Spacer(Modifier.width(padding))
       }
     }
-    if (focused) {
-      val focusManager = LocalFocusManager.current
-      KeyChangeEffect(chatModel.chatId.value == null) {
-        if (chatModel.chatId.value != null) {
-          focusManager.clearFocus()
-        }
+    val focusManager = LocalFocusManager.current
+    val keyboardState = getKeyboardState()
+    LaunchedEffect(keyboardState.value) {
+      if (keyboardState.value == KeyboardState.Closed && focused) {
+        focusManager.clearFocus()
       }
     }
     val view = LocalMultiplatformView()
