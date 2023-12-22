@@ -1,13 +1,15 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20231215_recreate_msg_deliveries where
+module Simplex.Chat.Migrations.M20231215_group_history where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20231215_recreate_msg_deliveries :: Query
-m20231215_recreate_msg_deliveries =
+m20231215_group_history :: Query
+m20231215_group_history =
   [sql|
+ALTER TABLE chat_items ADD COLUMN item_content_tag TEXT;
+
 DROP INDEX msg_delivery_events_msg_delivery_id;
 DROP TABLE msg_delivery_events;
 
@@ -42,8 +44,8 @@ CREATE INDEX idx_msg_deliveries_agent_msg_id ON "msg_deliveries"(connection_id, 
 |]
 
 -- msg_deliveries are not repopulated on down migration, as it may cause constraint violations
-down_m20231215_recreate_msg_deliveries :: Query
-down_m20231215_recreate_msg_deliveries =
+down_m20231215_group_history :: Query
+down_m20231215_group_history =
   [sql|
 DROP INDEX idx_msg_deliveries_message_id;
 DROP INDEX idx_msg_deliveries_agent_ack_cmd_id;
@@ -76,4 +78,6 @@ CREATE TABLE msg_delivery_events (
   UNIQUE (msg_delivery_id, delivery_status)
 );
 CREATE INDEX msg_delivery_events_msg_delivery_id ON msg_delivery_events(msg_delivery_id);
+
+ALTER TABLE chat_items DROP COLUMN item_content_tag;
 |]

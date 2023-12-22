@@ -127,8 +127,7 @@ library
       Simplex.Chat.Migrations.M20231114_remote_control
       Simplex.Chat.Migrations.M20231126_remote_ctrl_address
       Simplex.Chat.Migrations.M20231207_chat_list_pagination
-      Simplex.Chat.Migrations.M20231214_item_content_tag
-      Simplex.Chat.Migrations.M20231215_recreate_msg_deliveries
+      Simplex.Chat.Migrations.M20231215_group_history
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
