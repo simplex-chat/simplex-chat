@@ -121,7 +121,7 @@ chatGroupTests = do
     it "history is not sent if preference is disabled" testGroupHistoryPreferenceOff
     it "host's file" testGroupHistoryHostFile
     it "member's file" testGroupHistoryMemberFile
-    it "large file with text" testGroupHistoryLargeFile
+    fit "large file with text" testGroupHistoryLargeFile
     it "multiple files" testGroupHistoryMultipleFiles
     it "cancelled files are not attached (text message is still sent)" testGroupHistoryFileCancel
     it "cancelled files without text are excluded" testGroupHistoryFileCancelNoText
@@ -4398,6 +4398,17 @@ testGroupHistoryLargeFile =
       alice <# "#team bob> sends file testfile (17.0 MiB / 17825792 bytes)"
       alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
 
+      -- admin receiving file does not prevent the new member from receiving it later
+      alice ##> "/fr 1 ./tests/tmp"
+      alice
+        <### [ "saving file 1 from bob to ./tests/tmp/testfile_1",
+               "started receiving file 1 (testfile) from bob"
+             ]
+      alice <## "completed receiving file 1 (testfile) from bob"
+      src <- B.readFile "./tests/tmp/testfile"
+      destAlice <- B.readFile "./tests/tmp/testfile_1"
+      destAlice `shouldBe` src
+
       connectUsers alice cath
       addMember "team" alice cath GRAdmin
       cath ##> "/j team"
@@ -4417,15 +4428,15 @@ testGroupHistoryLargeFile =
 
       cath ##> "/fr 1 ./tests/tmp"
       cath
-        <### [ "saving file 1 from bob to ./tests/tmp/testfile_1",
+        <### [ "saving file 1 from bob to ./tests/tmp/testfile_2",
                "started receiving file 1 (testfile) from bob"
              ]
       cath <## "completed receiving file 1 (testfile) from bob"
-      src <- B.readFile "./tests/tmp/testfile"
-      dest <- B.readFile "./tests/tmp/testfile_1"
-      dest `shouldBe` src
+
+      destCath <- B.readFile "./tests/tmp/testfile_2"
+      destCath `shouldBe` src
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {xftpDescrPartSize = 200, xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
 testGroupHistoryMultipleFiles :: HasCallStack => FilePath -> IO ()
 testGroupHistoryMultipleFiles =

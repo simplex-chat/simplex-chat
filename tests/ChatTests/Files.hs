@@ -1493,7 +1493,7 @@ testXFTPCancelRcvRepeat =
       dest <- B.readFile "./tests/tmp/testfile_1"
       dest `shouldBe` src
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {xftpDescrPartSize = 200, xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
 testAutoAcceptFile :: HasCallStack => FilePath -> IO ()
 testAutoAcceptFile =
