@@ -575,10 +575,16 @@ dbParseACIContent = fmap aciContentDBJSON . J.eitherDecodeStrict' . encodeUtf8
 instance FromJSON ACIContent where
   parseJSON = fmap aciContentJSON . J.parseJSON
 
+sndMsgContentTag :: Text
+sndMsgContentTag = "sndMsgContent"
+
+rcvMsgContentTag :: Text
+rcvMsgContentTag = "rcvMsgContent"
+
 toCIContentTag :: CIContent e -> Text
 toCIContentTag ciContent = case ciContent of
-  CISndMsgContent _ -> "sndMsgContent"
-  CIRcvMsgContent _ -> "rcvMsgContent"
+  CISndMsgContent _ -> sndMsgContentTag
+  CIRcvMsgContent _ -> rcvMsgContentTag
   CISndDeleted _ -> "sndDeleted"
   CIRcvDeleted _ -> "rcvDeleted"
   CISndCall {} -> "sndCall"

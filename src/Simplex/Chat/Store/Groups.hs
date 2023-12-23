@@ -150,7 +150,7 @@ type MaybeGroupMemberRow = ((Maybe Int64, Maybe Int64, Maybe MemberId, Maybe Ver
 
 toGroupInfo :: Int64 -> GroupInfoRow -> GroupInfo
 toGroupInfo userContactId ((groupId, localDisplayName, displayName, fullName, description, image, hostConnCustomUserProfileId, enableNtfs_, sendRcpts, favorite, groupPreferences) :. (createdAt, updatedAt, chatTs) :. userMemberRow) =
-  let membership = toGroupMember userContactId userMemberRow
+  let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = JVersionRange supportedChatVRange}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       groupProfile = GroupProfile {displayName, fullName, description, image, groupPreferences}

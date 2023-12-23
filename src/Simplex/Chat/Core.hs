@@ -28,7 +28,7 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {core
       exitFailure
     run db@ChatDatabase {chatStore} = do
       u <- getCreateActiveUser chatStore testView
-      cc <- newChatController db (Just u) cfg opts
+      cc <- newChatController db (Just u) cfg opts False
       runSimplexChat opts u cc chat
 
 runSimplexChat :: ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
