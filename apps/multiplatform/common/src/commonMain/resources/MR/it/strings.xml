@@ -41,7 +41,7 @@
     <string name="description_via_contact_address_link_incognito">incognito via link indirizzo del contatto</string>
     <string name="description_via_one_time_link">via link una tantum</string>
     <string name="description_via_one_time_link_incognito">incognito via link una tantum</string>
-    <string name="simplex_link_contact">Indirizzo del contatto SimpleX</string>
+    <string name="simplex_link_contact">Indirizzo di contatto SimpleX</string>
     <string name="simplex_link_invitation">Invito SimpleX una tantum</string>
     <string name="simplex_link_group">Link gruppo SimpleX</string>
     <string name="simplex_link_mode_full">Link completo</string>
@@ -1532,4 +1532,6 @@
     <string name="open_port_in_firewall_desc">Per consentire a un\'app mobile di connettersi al desktop, apri questa porta nel tuo firewall, se è attivo</string>
     <string name="app_was_crashed">Vedi crash</string>
     <string name="open_port_in_firewall_title">Apri porta nel firewall</string>
+    <string name="error_showing_content">errore di visualizzazione del contenuto</string>
+    <string name="error_showing_message">errore di visualizzazione del messaggio</string>
 </resources>
