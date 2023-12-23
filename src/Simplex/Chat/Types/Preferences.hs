@@ -147,6 +147,7 @@ data GroupFeature
   | GFReactions
   | GFVoice
   | GFFiles
+  | GFHistory
   deriving (Show)
 
 data SGroupFeature (f :: GroupFeature) where
@@ -156,6 +157,7 @@ data SGroupFeature (f :: GroupFeature) where
   SGFReactions :: SGroupFeature 'GFReactions
   SGFVoice :: SGroupFeature 'GFVoice
   SGFFiles :: SGroupFeature 'GFFiles
+  SGFHistory :: SGroupFeature 'GFHistory
 
 deriving instance Show (SGroupFeature f)
 
@@ -171,6 +173,7 @@ groupFeatureNameText = \case
   GFReactions -> "Message reactions"
   GFVoice -> "Voice messages"
   GFFiles -> "Files and media"
+  GFHistory -> "Recent history"
 
 groupFeatureNameText' :: SGroupFeature f -> Text
 groupFeatureNameText' = groupFeatureNameText . toGroupFeature
@@ -186,7 +189,8 @@ allGroupFeatures =
     AGF SGFFullDelete,
     AGF SGFReactions,
     AGF SGFVoice,
-    AGF SGFFiles
+    AGF SGFFiles,
+    AGF SGFHistory
   ]
 
 groupPrefSel :: SGroupFeature f -> GroupPreferences -> Maybe (GroupFeaturePreference f)
@@ -197,6 +201,7 @@ groupPrefSel = \case
   SGFReactions -> reactions
   SGFVoice -> voice
   SGFFiles -> files
+  SGFHistory -> history
 
 toGroupFeature :: SGroupFeature f -> GroupFeature
 toGroupFeature = \case
@@ -206,6 +211,7 @@ toGroupFeature = \case
   SGFReactions -> GFReactions
   SGFVoice -> GFVoice
   SGFFiles -> GFFiles
+  SGFHistory -> GFHistory
 
 class GroupPreferenceI p where
   getGroupPreference :: SGroupFeature f -> p -> GroupFeaturePreference f
@@ -224,6 +230,7 @@ instance GroupPreferenceI FullGroupPreferences where
     SGFReactions -> reactions
     SGFVoice -> voice
     SGFFiles -> files
+    SGFHistory -> history
   {-# INLINE getGroupPreference #-}
 
 -- collection of optional group preferences
@@ -233,7 +240,8 @@ data GroupPreferences = GroupPreferences
     fullDelete :: Maybe FullDeleteGroupPreference,
     reactions :: Maybe ReactionsGroupPreference,
     voice :: Maybe VoiceGroupPreference,
-    files :: Maybe FilesGroupPreference
+    files :: Maybe FilesGroupPreference,
+    history :: Maybe HistoryGroupPreference
   }
   deriving (Eq, Show)
 
@@ -258,6 +266,7 @@ setGroupPreference_ f pref prefs =
     SGFReactions -> prefs {reactions = pref}
     SGFVoice -> prefs {voice = pref}
     SGFFiles -> prefs {files = pref}
+    SGFHistory -> prefs {history = pref}
 
 setGroupTimedMessagesPreference :: TimedMessagesGroupPreference -> Maybe GroupPreferences -> GroupPreferences
 setGroupTimedMessagesPreference pref prefs_ =
@@ -284,7 +293,8 @@ data FullGroupPreferences = FullGroupPreferences
     fullDelete :: FullDeleteGroupPreference,
     reactions :: ReactionsGroupPreference,
     voice :: VoiceGroupPreference,
-    files :: FilesGroupPreference
+    files :: FilesGroupPreference,
+    history :: HistoryGroupPreference
   }
   deriving (Eq, Show)
 
@@ -339,11 +349,12 @@ defaultGroupPrefs =
       fullDelete = FullDeleteGroupPreference {enable = FEOff},
       reactions = ReactionsGroupPreference {enable = FEOn},
       voice = VoiceGroupPreference {enable = FEOn},
-      files = FilesGroupPreference {enable = FEOn}
+      files = FilesGroupPreference {enable = FEOn},
+      history = HistoryGroupPreference {enable = FEOff}
     }
 
 emptyGroupPrefs :: GroupPreferences
-emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing
+emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 data TimedMessagesPreference = TimedMessagesPreference
   { allow :: FeatureAllowed,
@@ -438,6 +449,10 @@ data FilesGroupPreference = FilesGroupPreference
   {enable :: GroupFeatureEnabled}
   deriving (Eq, Show)
 
+data HistoryGroupPreference = HistoryGroupPreference
+  {enable :: GroupFeatureEnabled}
+  deriving (Eq, Show)
+
 class (Eq (GroupFeaturePreference f), HasField "enable" (GroupFeaturePreference f) GroupFeatureEnabled) => GroupFeatureI f where
   type GroupFeaturePreference (f :: GroupFeature) = p | p -> f
   sGroupFeature :: SGroupFeature f
@@ -463,6 +478,9 @@ instance HasField "enable" VoiceGroupPreference GroupFeatureEnabled where
 
 instance HasField "enable" FilesGroupPreference GroupFeatureEnabled where
   hasField p = (\enable -> p {enable}, enable (p :: FilesGroupPreference))
+
+instance HasField "enable" HistoryGroupPreference GroupFeatureEnabled where
+  hasField p = (\enable -> p {enable}, enable (p :: HistoryGroupPreference))
 
 instance GroupFeatureI 'GFTimedMessages where
   type GroupFeaturePreference 'GFTimedMessages = TimedMessagesGroupPreference
@@ -492,6 +510,11 @@ instance GroupFeatureI 'GFVoice where
 instance GroupFeatureI 'GFFiles where
   type GroupFeaturePreference 'GFFiles = FilesGroupPreference
   sGroupFeature = SGFFiles
+  groupPrefParam _ = Nothing
+
+instance GroupFeatureI 'GFHistory where
+  type GroupFeaturePreference 'GFHistory = HistoryGroupPreference
+  sGroupFeature = SGFHistory
   groupPrefParam _ = Nothing
 
 groupPrefStateText :: HasField "enable" p GroupFeatureEnabled => GroupFeature -> p -> Maybe Int -> Text
@@ -616,7 +639,8 @@ mergeGroupPreferences groupPreferences =
       fullDelete = pref SGFFullDelete,
       reactions = pref SGFReactions,
       voice = pref SGFVoice,
-      files = pref SGFFiles
+      files = pref SGFFiles,
+      history = pref SGFHistory
     }
   where
     pref :: SGroupFeature f -> GroupFeaturePreference f
@@ -630,7 +654,8 @@ toGroupPreferences groupPreferences =
       fullDelete = pref SGFFullDelete,
       reactions = pref SGFReactions,
       voice = pref SGFVoice,
-      files = pref SGFFiles
+      files = pref SGFFiles,
+      history = pref SGFHistory
     }
   where
     pref :: SGroupFeature f -> Maybe (GroupFeaturePreference f)
@@ -735,6 +760,8 @@ $(J.deriveJSON defaultJSON ''FullDeleteGroupPreference)
 $(J.deriveJSON defaultJSON ''VoiceGroupPreference)
 
 $(J.deriveJSON defaultJSON ''FilesGroupPreference)
+
+$(J.deriveJSON defaultJSON ''HistoryGroupPreference)
 
 $(J.deriveJSON defaultJSON ''GroupPreferences)
 

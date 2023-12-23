@@ -270,7 +270,7 @@ private fun DatabaseKeyField(text: MutableState<String>, enabled: Boolean, onCli
     } else null
     ),
     modifier = Modifier.focusRequester(focusRequester).onPreviewKeyEvent {
-      if (onClick != null && it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+      if (onClick != null && (it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
         onClick()
         true
       } else {
