@@ -723,14 +723,14 @@ struct ChatView: View {
                 if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
                     menu.append(replyUIAction(ci))
                 }
-                let fileExists = if let fileSource = getLoadedFileSource(ci.file), FileManager.default.fileExists(atPath: getAppFilePath(fileSource.filePath).path) { true } else { false }
-                let isImage = if case .image = ci.content.msgContent { true } else { false }
-                let copyAndShareAllowed = !ci.content.text.isEmpty || (isImage && fileExists)
+                let fileSource = getLoadedFileSource(ci.file)
+                let fileExists = if let fs = fileSource, FileManager.default.fileExists(atPath: getAppFilePath(fs.filePath).path) { true } else { false }
+                let copyAndShareAllowed = !ci.content.text.isEmpty || (ci.content.msgContent?.isImage == true && fileExists)
                 if copyAndShareAllowed {
                     menu.append(shareUIAction(ci))
                     menu.append(copyUIAction(ci))
                 }
-                if let fileSource = getLoadedFileSource(ci.file), fileExists {
+                if let fileSource = fileSource, fileExists {
                     if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
                         if image.imageData != nil {
                             menu.append(saveFileAction(fileSource))
