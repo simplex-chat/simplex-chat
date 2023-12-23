@@ -36,6 +36,7 @@ library
       Simplex.Chat.Help
       Simplex.Chat.Markdown
       Simplex.Chat.Messages
+      Simplex.Chat.Messages.Batch
       Simplex.Chat.Messages.CIContent
       Simplex.Chat.Messages.CIContent.Events
       Simplex.Chat.Migrations.M20220101_initial
@@ -127,6 +128,7 @@ library
       Simplex.Chat.Migrations.M20231126_remote_ctrl_address
       Simplex.Chat.Migrations.M20231207_chat_list_pagination
       Simplex.Chat.Migrations.M20231214_item_content_tag
+      Simplex.Chat.Migrations.M20231215_recreate_msg_deliveries
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
       Simplex.Chat.Mobile.Shared
@@ -543,6 +545,7 @@ test-suite simplex-chat-test
       ChatTests.Utils
       JSONTests
       MarkdownTests
+      MessageBatching
       MobileTests
       ProtocolTests
       RemoteTests

@@ -10,6 +10,7 @@ interface PlatformInterface {
   fun androidChatStopped() {}
   fun androidChatInitializedAndStarted() {}
   fun androidIsBackgroundCallAllowed(): Boolean = true
+  fun androidSetNightModeIfSupported() {}
   suspend fun androidAskToAllowBackgroundCalls(): Boolean = true
 }
 /**
