@@ -27,7 +27,6 @@ import androidx.core.view.inputmethod.EditorInfoCompat
 import androidx.core.view.inputmethod.InputConnectionCompat
 import androidx.core.widget.doAfterTextChanged
 import androidx.core.widget.doOnTextChanged
-import chat.simplex.common.*
 import chat.simplex.common.R
 import chat.simplex.common.helpers.toURI
 import chat.simplex.common.model.ChatModel
@@ -45,6 +44,7 @@ import java.net.URI
 actual fun PlatformTextField(
   composeState: MutableState<ComposeState>,
   sendMsgEnabled: Boolean,
+  sendMsgButtonDisabled: Boolean,
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,

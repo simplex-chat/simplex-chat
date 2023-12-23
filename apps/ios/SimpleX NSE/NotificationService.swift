@@ -442,7 +442,7 @@ func startChat() -> DBMigrationResult? {
 func doStartChat() -> DBMigrationResult? {
     logger.debug("NotificationService: doStartChat")
     hs_init(0, nil)
-    let (_, dbStatus) = chatMigrateInit(confirmMigrations: defaultMigrationConfirmation())
+    let (_, dbStatus) = chatMigrateInit(confirmMigrations: defaultMigrationConfirmation(), backgroundMode: true)
     if dbStatus != .ok {
         resetChatCtrl()
         NSEChatState.shared.set(.created)
