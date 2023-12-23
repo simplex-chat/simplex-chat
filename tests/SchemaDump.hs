@@ -73,7 +73,9 @@ skipComparisonForDownMigrations =
     -- table and index definitions move down the file, so fields are re-created as not unique
     "20230914_member_probes",
     -- on down migration idx_connections_via_contact_uri_hash index moves down to the end of the file
-    "20231019_indexes"
+    "20231019_indexes",
+    -- table and indexes move down to the end of the file
+    "20231215_recreate_msg_deliveries"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String
