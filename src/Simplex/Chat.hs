@@ -4784,7 +4784,7 @@ processAgentMessageConn user@User {userId} corrId agentConnId agentMessage = do
 
     createGroupFeatureItems :: GroupInfo -> GroupMember -> m ()
     createGroupFeatureItems g@GroupInfo {fullGroupPreferences} m =
-      forM_ allGroupFeatures $ \(AGF f) -> do
+      forM_ allGroupFeatureItems $ \(AGF f) -> do
         let p = getGroupPreference f fullGroupPreferences
             (_, param) = groupFeatureState p
         createInternalChatItem user (CDGroupRcv g m) (CIRcvGroupFeature (toGroupFeature f) (toGroupPreference p) param) Nothing
@@ -5987,7 +5987,7 @@ createFeatureItems user Contact {mergedPreferences = cups} ct'@Contact {mergedPr
 
 createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> CIContent d) -> GroupInfo -> GroupInfo -> m ()
 createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences = gps} GroupInfo {fullGroupPreferences = gps'} =
-  forM_ allGroupFeatures $ \(AGF f) -> do
+  forM_ allGroupFeatureItems $ \(AGF f) -> do
     let state = groupFeatureState $ getGroupPreference f gps
         pref' = getGroupPreference f gps'
         state'@(_, int') = groupFeatureState pref'
