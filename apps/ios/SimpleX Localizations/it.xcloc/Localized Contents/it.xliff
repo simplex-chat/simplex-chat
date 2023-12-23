@@ -4722,9 +4722,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Indirizzo SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX contact address" xml:space="preserve">
+      <trans-unit id="SimpleX contact address" xml:space="preserve" approved="no">
         <source>SimpleX contact address</source>
-        <target>Indirizzo del contatto SimpleX</target>
+        <target state="translated">Indirizzo di contatto SimpleX</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="SimpleX encrypted message or connection event" xml:space="preserve">
