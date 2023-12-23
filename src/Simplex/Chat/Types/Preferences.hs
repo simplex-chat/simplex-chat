@@ -480,7 +480,7 @@ instance HasField "enable" FilesGroupPreference GroupFeatureEnabled where
   hasField p = (\enable -> p {enable}, enable (p :: FilesGroupPreference))
 
 instance HasField "enable" HistoryGroupPreference GroupFeatureEnabled where
-  hasField p = (\enable -> p {enable}, p.enable)
+  hasField p = (\enable -> p {enable}, enable (p :: HistoryGroupPreference))
 
 instance GroupFeatureI 'GFTimedMessages where
   type GroupFeaturePreference 'GFTimedMessages = TimedMessagesGroupPreference
