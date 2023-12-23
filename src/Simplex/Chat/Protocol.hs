@@ -52,9 +52,13 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstTo
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
 
+-- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
+-- This indirection is needed for backward/forward compatibility testing.
+-- Testing with real app versions is still needed, as the test only test current code with different version ranges, not old code.
 currentChatVersion :: Version
 currentChatVersion = 5
 
+-- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRange
 supportedChatVRange = mkVersionRange 1 currentChatVersion
 

@@ -69,20 +69,22 @@ ifCI xrun run d t = do
 
 versionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix2 runTest = do
-  it "v2" $ testChat2 aliceProfile bobProfile runTest
+  it "current" $ testChat2 aliceProfile bobProfile runTest
+  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile runTest
+  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev runTest
+  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg runTest
   it "v1" $ testChatCfg2 testCfgV1 aliceProfile bobProfile runTest
   it "v1 to v2" $ runTestCfg2 testCfg testCfgV1 runTest
   it "v2 to v1" $ runTestCfg2 testCfgV1 testCfg runTest
 
--- versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
--- versionTestMatrix3 runTest = do
---   it "v2" $ testChat3 aliceProfile bobProfile cathProfile runTest
-
--- it "v1" $ testChatCfg3 testCfgV1 aliceProfile bobProfile cathProfile runTest
--- it "v1 to v2" $ runTestCfg3 testCfg testCfgV1 testCfgV1 runTest
--- it "v2+v1 to v2" $ runTestCfg3 testCfg testCfg testCfgV1 runTest
--- it "v2 to v1" $ runTestCfg3 testCfgV1 testCfg testCfg runTest
--- it "v2+v1 to v1" $ runTestCfg3 testCfgV1 testCfg testCfgV1 runTest
+versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
+versionTestMatrix3 runTest = do
+  it "current" $ testChat3 aliceProfile bobProfile cathProfile runTest
+  it "prev" $ testChatCfg3 testCfgVPrev aliceProfile bobProfile cathProfile runTest
+  it "prev to curr" $ runTestCfg3 testCfg testCfgVPrev testCfgVPrev runTest
+  it "curr+prev to curr" $ runTestCfg3 testCfg testCfg testCfgVPrev runTest
+  it "curr to prev" $ runTestCfg3 testCfgVPrev testCfg testCfg runTest
+  it "curr+prev to prev" $ runTestCfg3 testCfgVPrev testCfg testCfgVPrev runTest
 
 inlineCfg :: Integer -> ChatConfig
 inlineCfg n = testCfg {inlineFiles = defaultInlineFilesConfig {sendChunks = 0, offerChunks = n, receiveChunks = n}}

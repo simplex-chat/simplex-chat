@@ -24,8 +24,9 @@ import Test.Hspec
 chatGroupTests :: SpecWith FilePath
 chatGroupTests = do
   describe "chat groups" $ do
-    it "add contacts, create group and send/receive messages" testGroup
-    it "add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
+    describe "add contacts, create group and send/receive messages" testGroupMatrix
+    it "v1: add contacts, create group and send/receive messages" testGroup
+    it "v1: add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
     it "create group with incognito membership" testNewGroupIncognito
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
@@ -146,15 +147,19 @@ chatGroupTests = do
 testGroup :: HasCallStack => FilePath -> IO ()
 testGroup =
   testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
-    \alice bob cath -> testGroupShared alice bob cath False
+    \alice bob cath -> testGroupShared alice bob cath False True
 
 testGroupCheckMessages :: HasCallStack => FilePath -> IO ()
 testGroupCheckMessages =
   testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
-    \alice bob cath -> testGroupShared alice bob cath True
+    \alice bob cath -> testGroupShared alice bob cath True True
 
-testGroupShared :: HasCallStack => TestCC -> TestCC -> TestCC -> Bool -> IO ()
-testGroupShared alice bob cath checkMessages = do
+testGroupMatrix :: SpecWith FilePath
+testGroupMatrix =
+  versionTestMatrix3 $ \alice bob cath -> testGroupShared alice bob cath False False
+
+testGroupShared :: HasCallStack => TestCC -> TestCC -> TestCC -> Bool -> Bool -> IO ()
+testGroupShared alice bob cath checkMessages directConnections = do
   connectUsers alice bob
   connectUsers alice cath
   alice ##> "/g team"
@@ -206,7 +211,8 @@ testGroupShared alice bob cath checkMessages = do
     (alice <# "#team cath> hey team")
     (bob <# "#team cath> hey team")
   msgItem2 <- lastItemId alice
-  bob <##> cath
+  when directConnections $
+    bob <##> cath
   when checkMessages $ getReadChats msgItem1 msgItem2
   -- list groups
   alice ##> "/gs"
@@ -263,17 +269,34 @@ testGroupShared alice bob cath checkMessages = do
     (cath </)
   cath ##> "#team hello"
   cath <## "you are no longer a member of the group"
-  bob <##> cath
+  when directConnections $
+    bob <##> cath
   -- delete contact
   alice ##> "/d bob"
   alice <## "bob: contact is deleted"
   bob <## "alice (Alice) deleted contact with you"
   alice `send` "@bob hey"
-  alice
-    <### [ "@bob hey",
-           "member #team bob does not have direct connection, creating",
-           "peer chat protocol version range incompatible"
-         ]
+  if directConnections
+    then
+      alice
+        <### [ "@bob hey",
+               "member #team bob does not have direct connection, creating",
+               "peer chat protocol version range incompatible"
+             ]
+    else do
+      alice
+        <### [ WithTime "@bob hey",
+               "member #team bob does not have direct connection, creating",
+               "contact for member #team bob is created",
+               "sent invitation to connect directly to member #team bob",
+               "bob (Bob): contact is connected"
+             ]
+      bob
+        <### [ "#team alice is creating direct contact alice with you",
+               WithTime "alice> hey",
+               "alice: security code changed",
+               "alice (Alice): contact is connected"
+             ]
   when checkMessages $ threadDelay 1000000
   alice #> "#team checking connection"
   bob <# "#team alice> checking connection"
