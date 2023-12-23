@@ -229,7 +229,7 @@ func apiStopChat() async throws {
 
 func apiActivateChat() {
     chatReopenStore()
-    let r = chatSendCmdSync(.apiActivateChat(backgroundMode: false))
+    let r = chatSendCmdSync(.apiActivateChat(restoreChat: true))
     if case .cmdOk = r { return }
     logger.error("apiActivateChat error: \(String(describing: r))")
 }

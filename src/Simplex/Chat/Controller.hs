@@ -235,7 +235,7 @@ data ChatCommand
   | DeleteUser UserName Bool (Maybe UserPwd)
   | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool, startXFTPWorkers :: Bool}
   | APIStopChat
-  | APIActivateChat {backgroundMode :: Bool}
+  | APIActivateChat {restoreChat :: Bool}
   | APISuspendChat {suspendTimeout :: Int}
   | ResubscribeAllConnections
   | SetTempFolder FilePath

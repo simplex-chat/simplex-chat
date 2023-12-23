@@ -27,7 +27,7 @@ public enum ChatCommand {
     case apiDeleteUser(userId: Int64, delSMPQueues: Bool, viewPwd: String?)
     case startChat(subscribe: Bool, expire: Bool, xftp: Bool)
     case apiStopChat
-    case apiActivateChat(backgroundMode: Bool)
+    case apiActivateChat(restoreChat: Bool)
     case apiSuspendChat(timeoutMicroseconds: Int)
     case setTempFolder(tempFolder: String)
     case setFilesFolder(filesFolder: String)
@@ -156,7 +156,7 @@ public enum ChatCommand {
             case let .apiDeleteUser(userId, delSMPQueues, viewPwd): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))\(maybePwd(viewPwd))"
             case let .startChat(subscribe, expire, xftp): return "/_start subscribe=\(onOff(subscribe)) expire=\(onOff(expire)) xftp=\(onOff(xftp))"
             case .apiStopChat: return "/_stop"
-            case let .apiActivateChat(background): return "/_app activate background=\(onOff(background))"
+            case let .apiActivateChat(restore): return "/_app activate restore=\(onOff(restore))"
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
             case let .setTempFolder(tempFolder): return "/_temp_folder \(tempFolder)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
