@@ -1530,4 +1530,6 @@
     <string name="open_port_in_firewall_desc">Om een mobiele app verbinding te laten maken met de desktop, opent u deze poort in uw firewall, als u deze hebt ingeschakeld</string>
     <string name="app_was_crashed">Weergave gecrasht</string>
     <string name="open_port_in_firewall_title">Open poort in firewall</string>
+    <string name="error_showing_content">Fout bij het tonen van inhoud</string>
+    <string name="error_showing_message">fout bij weergeven bericht</string>
 </resources>
