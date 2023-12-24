@@ -1144,6 +1144,7 @@ data FileTransfer
         sndFileTransfers :: [SndFileTransfer]
       }
   | FTRcv {rcvFileTransfer :: RcvFileTransfer}
+  | FTLocal {localFileMeta :: LocalFileMeta}
   deriving (Show)
 
 data FileTransferMeta = FileTransferMeta
@@ -1158,6 +1159,15 @@ data FileTransferMeta = FileTransferMeta
   }
   deriving (Eq, Show)
 
+data LocalFileMeta = LocalFileMeta
+  { fileId :: FileTransferId,
+    fileName :: String,
+    filePath :: String,
+    fileSize :: Integer,
+    fileCryptoArgs :: Maybe CryptoFileArgs
+  }
+  deriving (Eq, Show)
+
 data XFTPSndFile = XFTPSndFile
   { agentSndFileId :: AgentSndFileId,
     privateSndFileDescr :: Maybe Text,
@@ -1169,8 +1179,10 @@ data XFTPSndFile = XFTPSndFile
 fileTransferCancelled :: FileTransfer -> Bool
 fileTransferCancelled (FTSnd FileTransferMeta {cancelled} _) = cancelled
 fileTransferCancelled (FTRcv RcvFileTransfer {cancelled}) = cancelled
+fileTransferCancelled FTLocal {} = False
 
 -- For XFTP file transfers FSConnected means "uploaded to XFTP relays"
+-- Local files are always FSComplete
 data FileStatus = FSNew | FSAccepted | FSConnected | FSComplete | FSCancelled deriving (Eq, Ord, Show)
 
 instance FromField FileStatus where fromField = fromTextField_ textDecode
@@ -1643,6 +1655,8 @@ $(JQ.deriveJSON defaultJSON ''RcvFileTransfer)
 $(JQ.deriveJSON defaultJSON ''XFTPSndFile)
 
 $(JQ.deriveJSON defaultJSON ''FileTransferMeta)
+
+$(JQ.deriveJSON defaultJSON ''LocalFileMeta)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FT") ''FileTransfer)
 

@@ -106,6 +106,7 @@ filesHelpInfo =
     [ green "File transfer commands:",
       indent <> highlight "/file @<contact> <file_path>       " <> " - send file to contact",
       indent <> highlight "/file #<group> <file_path>         " <> " - send file to group",
+      indent <> highlight "/file $<folder> <file_path>        " <> " - add file to folder",
       indent <> highlight "/image <name> [<file_path>]        " <> " - send file as image to @contact or #group",
       indent <> highlight "/freceive <file_id> [<file_path>]  " <> " - accept to receive file",
       indent <> highlight "/fforward <name> [<file_id>]       " <> " - forward received file to @contact or #group",

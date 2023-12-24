@@ -31,6 +31,7 @@ m20231219_note_folders =
 
     ALTER TABLE chat_items ADD COLUMN note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE;
     ALTER TABLE chat_item_reactions ADD COLUMN note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE;
+    ALTER TABLE files ADD COLUMN note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE;
 |]
 
 down_m20231219_note_folders :: Query
@@ -40,4 +41,5 @@ DROP INDEX idx_note_folders_user_id_local_display_name;
 DROP TABLE note_folders;
 ALTER TABLE chat_items DROP COLUMN note_folder_id;
 ALTER TABLE chat_item_reactions DROP COLUMN note_folder_id;
+ALTER TABLE files DROP COLUMN note_folder_id;
 |]

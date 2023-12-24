@@ -18,6 +18,7 @@ module Simplex.Chat.Store.Files
     createSndDirectFTConnection,
     createSndGroupFileTransfer,
     createSndGroupFileTransferConnection,
+    createSndLocalFileTransfer,
     createSndDirectInlineFT,
     createSndGroupInlineFT,
     updateSndDirectFTDelivery,
@@ -209,6 +210,16 @@ createSndGroupFileTransferConnection db user@User {userId} fileId (cmdId, acId) 
     db
     "INSERT INTO snd_files (file_id, file_status, connection_id, group_member_id, created_at, updated_at) VALUES (?,?,?,?,?,?)"
     (fileId, FSAccepted, connId, groupMemberId, currentTs, currentTs)
+
+createSndLocalFileTransfer :: DB.Connection -> User -> NoteFolder -> FilePath -> FileInvitation -> Integer -> IO FileTransferMeta
+createSndLocalFileTransfer db User {userId} NoteFolder {noteFolderId} filePath FileInvitation {fileName, fileSize, fileInline} chunkSize = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "INSERT INTO files (user_id, note_folder_id, file_name, file_path, file_size, chunk_size, file_inline, ci_file_status, protocol, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
+    ((userId, noteFolderId, fileName, filePath, fileSize, chunkSize) :. (fileInline, CIFSSndComplete, FPLocal, currentTs, currentTs))
+  fileId <- insertedRowId db
+  pure FileTransferMeta {fileId, xftpSndFile = Nothing, fileName, filePath, fileSize, fileInline, chunkSize, cancelled = False}
 
 createSndDirectInlineFT :: DB.Connection -> Contact -> FileTransferMeta -> ExceptT StoreError IO SndFileTransfer
 createSndDirectInlineFT _ Contact {localDisplayName, activeConn = Nothing} _ = throwError $ SEContactNotReady localDisplayName
@@ -814,12 +825,14 @@ getFileTransferProgress db user fileId = do
       FTSnd _ [] -> pure [Only 0]
       FTSnd _ _ -> DB.query db "SELECT COUNT(*) FROM snd_file_chunks WHERE file_id = ? and chunk_sent = 1 GROUP BY connection_id" (Only fileId)
       FTRcv _ -> DB.query db "SELECT COUNT(*) FROM rcv_file_chunks WHERE file_id = ? AND chunk_stored = 1" (Only fileId)
+      FTLocal _ -> pure [Only 0]
 
 getFileTransfer :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO FileTransfer
 getFileTransfer db user@User {userId} fileId =
   fileTransfer =<< liftIO (getFileTransferRow_ db userId fileId)
   where
     fileTransfer :: [(Maybe Int64, Maybe Int64)] -> ExceptT StoreError IO FileTransfer
+    fileTransfer [(Nothing, Nothing)] = FTLocal <$> getLocalFileMeta db user fileId
     fileTransfer [(Nothing, Just _)] = FTRcv <$> getRcvFileTransfer db user fileId
     fileTransfer _ = do
       (ftm, fts) <- getSndFileTransfer db user fileId
@@ -890,6 +903,23 @@ getFileTransferMeta_ db userId fileId =
       let cryptoArgs = CFArgs <$> fileKey <*> fileNonce
           xftpSndFile = (\fId -> XFTPSndFile {agentSndFileId = fId, privateSndFileDescr, agentSndFileDeleted, cryptoArgs}) <$> aSndFileId_
        in FileTransferMeta {fileId, xftpSndFile, fileName, fileSize, chunkSize, filePath, fileInline, cancelled = fromMaybe False cancelled_}
+
+getLocalFileMeta :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO LocalFileMeta
+getLocalFileMeta db User {userId} fileId =
+  ExceptT . firstRow localFileMeta (SEFileNotFound fileId) $
+    DB.query
+      db
+      [sql|
+        SELECT file_name, file_size, file_path, file_crypto_key, file_crypto_nonce
+        FROM files
+        WHERE user_id = ? AND file_id = ?
+      |]
+      (userId, fileId)
+  where
+    localFileMeta :: (FilePath, Integer, FilePath, Maybe C.SbKey, Maybe C.CbNonce) -> LocalFileMeta
+    localFileMeta (fileName, fileSize, filePath, fileKey, fileNonce) =
+      let fileCryptoArgs = CFArgs <$> fileKey <*> fileNonce
+       in LocalFileMeta {fileId, fileName, fileSize, filePath, fileCryptoArgs}
 
 getContactFileInfo :: DB.Connection -> User -> Contact -> IO [CIFileInfo]
 getContactFileInfo db User {userId} Contact {contactId} =

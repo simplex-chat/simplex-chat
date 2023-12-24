@@ -464,7 +464,7 @@ data CIFile (d :: MsgDirection) = CIFile
   }
   deriving (Show)
 
-data FileProtocol = FPSMP | FPXFTP
+data FileProtocol = FPSMP | FPXFTP | FPLocal
   deriving (Eq, Show, Ord)
 
 instance FromField FileProtocol where fromField = fromTextField_ textDecode
@@ -482,10 +482,12 @@ instance TextEncoding FileProtocol where
   textDecode = \case
     "smp" -> Just FPSMP
     "xftp" -> Just FPXFTP
+    "local" -> Just FPLocal
     _ -> Nothing
   textEncode = \case
     FPSMP -> "smp"
     FPXFTP -> "xftp"
+    FPLocal -> "local"
 
 data CIFileStatus (d :: MsgDirection) where
   CIFSSndStored :: CIFileStatus 'MDSnd

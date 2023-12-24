@@ -763,13 +763,7 @@ processChatCommand = \case
             quoteData ChatItem {chatDir = CIGroupSnd, content = CISndMsgContent qmc} membership' = pure (qmc, CIQGroupSnd, True, membership')
             quoteData ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent qmc} _ = pure (qmc, CIQGroupRcv $ Just m, False, m)
             quoteData _ _ = throwChatError CEInvalidQuote
-    CTLocal -> do
-      nf <- withStore $ \db -> getNoteFolder db user chatId
-      -- TODO: files, voice, etc.
-      ci <- createInternalChatItem_ user (CDLocalSnd nf) (CISndMsgContent mc) Nothing
-      pure $ CRNewChatItem user (AChatItem SCTLocal SMDSnd (LocalChat nf) ci)
-    CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
-    CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
+    _ -> pure $ chatCmdError (Just user) "not supported"
     where
       quoteContent :: forall d. MsgContent -> Maybe (CIFile d) -> MsgContent
       quoteContent qmc ciFile_
@@ -824,6 +818,26 @@ processChatCommand = \case
       unzipMaybe3 :: Maybe (a, b, c) -> (Maybe a, Maybe b, Maybe c)
       unzipMaybe3 (Just (a, b, c)) = (Just a, Just b, Just c)
       unzipMaybe3 _ = (Nothing, Nothing, Nothing)
+  APICreateChatItem folderId (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user -> do
+    forM_ quotedItemId_ $ \_ -> throwError $ ChatError $ CECommandError "not supported"
+    nf <- withStore $ \db -> getNoteFolder db user folderId
+    -- TODO: assertLocalAllowed user MDSnd nf XMsgNew_
+    ci'@ChatItem {meta = CIMeta{itemId, itemTs}} <- createInternalChatItem_ user (CDLocalSnd nf) (CISndMsgContent mc) Nothing
+    ciFile_ <- forM file_ $ localFile user nf itemId itemTs
+    let ci = (ci' :: ChatItem 'CTLocal 'MDSnd) {file = ciFile_}
+    pure . CRNewChatItem user $ AChatItem SCTLocal SMDSnd (LocalChat nf) ci
+    where
+      localFile user nf chatItemId createdAt (CryptoFile file cfArgs) = do
+        fsFilePath <- toFSFilePath file
+        fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cfArgs
+        let fileName = takeFileName file
+            fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}
+        chSize <- asks $ fileChunkSize . config
+        withStore $ \db -> do
+          FileTransferMeta {fileId} <- liftIO $ createSndLocalFileTransfer db user nf file fileInvitation chSize
+          liftIO $ updateFileTransferChatItemId db fileId chatItemId createdAt
+          let fileSource = Just $ CF.plain file
+          pure CIFile {fileId, fileName, fileSize, fileSource, fileStatus = CIFSSndComplete, fileProtocol = FPLocal}
   APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> withChatLock "updateChatItem" $ case cType of
     CTDirect -> do
       ct@Contact {contactId} <- withStore $ \db -> getContact db user chatId
@@ -1562,8 +1576,8 @@ processChatCommand = \case
         let chatRef = ChatRef CTGroup gId
         processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage Nothing Nothing mc
       CTLocal -> do
-        chatRef <- withStore $ \db -> ChatRef CTLocal <$> getNoteFolderIdByName db user name
-        processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage Nothing Nothing mc
+        folderId <- withStore $ \db -> getNoteFolderIdByName db user name
+        processChatCommand . APICreateChatItem folderId $ ComposedMessage Nothing Nothing mc
       _ -> throwChatError $ CECommandError "not supported"
   SendMemberContactMessage gName mName msg -> withUser $ \user -> do
     (gId, mId) <- getGroupAndMemberId user gName mName
@@ -1901,7 +1915,9 @@ processChatCommand = \case
     asks showLiveItems >>= atomically . (`writeTVar` on) >> ok_
   SendFile chatName f -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
-    processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage (Just f) Nothing (MCFile "")
+    case chatRef of
+      ChatRef CTLocal folderId -> processChatCommand . APICreateChatItem folderId $ ComposedMessage (Just f) Nothing (MCFile "")
+      _ -> processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage (Just f) Nothing (MCFile "")
   SendImage chatName f@(CryptoFile fPath _) -> withUser $ \user -> do
     chatRef <- getChatRef user chatName
     filePath <- toFSFilePath fPath
@@ -1970,11 +1986,14 @@ processChatCommand = \case
                     updateRcvFileAgentId db fileId Nothing
                   getChatItemByFileId db user fileId
                 pure $ CRRcvFileCancelled user ci ftr
+        FTLocal _ -> throwChatError $ CEFileCancel fileId "cannot cancel local files"
   FileStatus fileId -> withUser $ \user -> do
     ci@(AChatItem _ _ _ ChatItem {file}) <- withStore $ \db -> getChatItemByFileId db user fileId
     case file of
       Just CIFile {fileProtocol = FPXFTP} ->
         pure $ CRFileTransferStatusXFTP user ci
+      -- Just CIFile {fileProtocol = FPLocal, fileId,} ->
+      --   pure $ CRLocalFileStatus user fileId ???
       _ -> do
         fileStatus <- withStore $ \db -> getFileTransferProgress db user fileId
         pure $ CRFileTransferStatus user fileStatus
@@ -6058,6 +6077,7 @@ chatCommandP =
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessage <$> chatRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
+      "/_create $" *> (APICreateChatItem <$> A.decimal <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <* A.space <*> A.decimal <* A.space <*> A.decimal),

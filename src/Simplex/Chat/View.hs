@@ -554,13 +554,13 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {forwardedByMember}, 
           quote = maybe [] (groupQuote g) quotedItem
       LocalChat nf -> case chatDir of
         CILocalSnd -> case content of
-          CISndMsgContent mc -> hideLive meta $ withSndFile to $ sndMsg to quote mc
+          CISndMsgContent mc -> hideLive meta $ withLocalFile to $ sndMsg to quote mc
           CISndGroupEvent {} -> showSndItemProhibited to
           _ -> showSndItem to
           where
             to = ttyToLocal nf
         CILocalRcv -> case content of
-          CIRcvMsgContent mc -> withRcvFile from $ rcvMsg from quote mc
+          CIRcvMsgContent mc -> withLocalFile from $ rcvMsg from quote mc
           CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
           CIRcvGroupEvent {} -> showRcvItemProhibited from
           _ -> showRcvItem from
@@ -578,6 +578,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {forwardedByMember}, 
       Just _ -> item <> styled (colored Yellow) (" [>>]" :: String)
     withSndFile = withFile viewSentFileInvitation
     withRcvFile = withFile viewReceivedFileInvitation
+    withLocalFile = withFile viewLocalFile
     withFile view dir l = maybe l (\f -> l <> view dir f ts tz meta) file
     sndMsg = msg viewSentMessage
     rcvMsg = msg viewReceivedMessage
@@ -1590,6 +1591,11 @@ receivingFile_' hu testView status (AChatItem _ _ chat ChatItem {file = Just CIF
       _ -> []
 receivingFile_' _ _ status _ = [plain status <> " receiving file"] -- shouldn't happen
 
+viewLocalFile :: StyledString -> CIFile d -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
+viewLocalFile to CIFile {fileId, fileSource} ts tz = case fileSource of
+  Just (CryptoFile fPath _) -> sentWithTime_ ts tz [to <> fileTransferStr fileId fPath]
+  _ -> const []
+
 cryptoFileArgsStr :: Bool -> CryptoFileArgs -> ByteString
 cryptoFileArgsStr testView cfArgs@(CFArgs key nonce)
   | testView = LB.toStrict $ J.encode cfArgs
@@ -1642,6 +1648,7 @@ viewFileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileI
       RFSComplete RcvFileInfo {filePath} -> "complete, path: " <> plain filePath
       RFSCancelled (Just RcvFileInfo {filePath}) -> "cancelled, received part path: " <> plain filePath
       RFSCancelled Nothing -> "cancelled"
+viewFileTransferStatus (FTLocal LocalFileMeta {fileId, fileName}, _) = [fileTransferStr fileId fileName]
 
 viewFileTransferStatusXFTP :: AChatItem -> [StyledString]
 viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName, fileSize, fileStatus, fileSource}}) =
