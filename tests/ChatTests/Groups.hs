@@ -2661,6 +2661,11 @@ testGroupLinkNoContact =
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
+
+      alice ##> "/set history #team off"
+      alice <## "updated group preferences:"
+      alice <## "Recent history: off"
+
       alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" GRMember True
       bob ##> ("/c " <> gLink)
@@ -2692,13 +2697,10 @@ testGroupLinkNoContact =
         [ do
             alice <## "cath (Catherine): accepting request to join group #team..."
             alice <## "#team: cath joined the group",
-          cath
-            <### [ "#team: joining the group...",
-                   "#team: you joined the group",
-                   WithTime "#team alice> hello [>>]",
-                   WithTime "#team bob> hi there [>>]",
-                   "#team: member bob (Bob) is connected"
-                 ],
+          do
+            cath <## "#team: joining the group..."
+            cath <## "#team: you joined the group"
+            cath <## "#team: member bob (Bob) is connected",
           do
             bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
             bob <## "#team: new member cath is connected"
