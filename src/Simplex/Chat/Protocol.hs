@@ -54,7 +54,7 @@ import Simplex.Messaging.Version hiding (version)
 
 -- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
 -- This indirection is needed for backward/forward compatibility testing.
--- Testing with real app versions is still needed, as tests only use the current code with different version ranges, not the old code.
+-- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: Version
 currentChatVersion = 5
 
