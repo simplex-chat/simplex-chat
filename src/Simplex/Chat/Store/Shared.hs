@@ -78,6 +78,7 @@ data StoreError
   | SEFileNotFound {fileId :: FileTransferId}
   | SERcvFileInvalid {fileId :: FileTransferId}
   | SERcvFileInvalidDescrPart
+  | SEBadFileTransfer {fileId :: FileTransferId}
   | SESharedMsgIdNotFoundByFileId {fileId :: FileTransferId}
   | SEFileIdNotFoundBySharedMsgId {sharedMsgId :: SharedMsgId}
   | SESndFileNotFoundXFTP {agentSndFileId :: AgentSndFileId}
