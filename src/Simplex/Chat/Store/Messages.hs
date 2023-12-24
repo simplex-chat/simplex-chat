@@ -84,6 +84,8 @@ module Simplex.Chat.Store.Messages
     getDirectChatItemIdByText',
     getGroupChatItemIdByText,
     getGroupChatItemIdByText',
+    getLocalChatItemIdByText,
+    getLocalChatItemIdByText',
     getChatItemByFileId,
     getChatItemByGroupId,
     updateDirectChatItemStatus,
@@ -1902,6 +1904,34 @@ getLocalChatItem db User {userId} folderId itemId = ExceptT $ do
           WHERE i.user_id = ? AND i.note_folder_id = ? AND i.chat_item_id = ?
         |]
         (userId, folderId, itemId)
+
+getLocalChatItemIdByText :: DB.Connection -> User -> NoteFolderId -> SMsgDirection d -> Text -> ExceptT StoreError IO ChatItemId
+getLocalChatItemIdByText db User {userId} noteFolderId msgDir quotedMsg =
+  ExceptT . firstRow fromOnly (SEChatItemNotFoundByText quotedMsg) $
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND note_folder_id = ? AND item_sent = ? AND item_text LIKE ?
+        ORDER BY chat_item_id DESC
+        LIMIT 1
+      |]
+      (userId, noteFolderId, msgDir, quotedMsg <> "%")
+
+getLocalChatItemIdByText' :: DB.Connection -> User -> NoteFolderId -> Text -> ExceptT StoreError IO ChatItemId
+getLocalChatItemIdByText' db User {userId} noteFolderId msg =
+  ExceptT . firstRow fromOnly (SEChatItemNotFoundByText msg) $
+    DB.query
+      db
+      [sql|
+        SELECT chat_item_id
+        FROM chat_items
+        WHERE user_id = ? AND note_folder_id = ? AND item_text LIKE ?
+        ORDER BY chat_item_id DESC
+        LIMIT 1
+      |]
+      (userId, noteFolderId, msg <> "%")
 
 deleteLocalChatItem :: DB.Connection -> User -> NoteFolder -> ChatItem 'CTLocal d -> IO ()
 deleteLocalChatItem db User {userId} NoteFolder {noteFolderId} ci = do
