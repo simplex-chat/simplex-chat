@@ -2619,8 +2619,8 @@ testPlanGroupLinkLeaveRejoin =
 
 testGroupLinkNoContact :: HasCallStack => FilePath -> IO ()
 testGroupLinkNoContact =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -2649,10 +2649,32 @@ testGroupLinkNoContact =
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
 
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      concurrentlyN_
+        [ do
+            alice <## "cath (Catherine): accepting request to join group #team..."
+            alice <## "#team: cath joined the group",
+          do
+            cath <## "#team: joining the group..."
+            cath <## "#team: you joined the group"
+            cath <## "#team: member bob (Bob) is connected",
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+      cath #> "#team hey"
+      alice <# "#team cath> hey"
+      bob <# "#team cath> hey"
+
+      bob #> "#team hi cath"
+      alice <# "#team bob> hi cath"
+      cath <# "#team bob> hi cath"
+
 testGroupLinkNoContactMemberRole :: HasCallStack => FilePath -> IO ()
 testGroupLinkNoContactMemberRole =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -2691,6 +2713,41 @@ testGroupLinkNoContactMemberRole =
 
       bob #> "#team hey now"
       alice <# "#team bob> hey now"
+
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      concurrentlyN_
+        [ do
+            alice <## "cath (Catherine): accepting request to join group #team..."
+            alice <## "#team: cath joined the group",
+          do
+            cath <## "#team: joining the group..."
+            cath <## "#team: you joined the group"
+            cath <## "#team: member bob (Bob) is connected",
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+      bob #> "#team hi cath"
+      alice <# "#team bob> hi cath"
+      cath <# "#team bob> hi cath"
+
+      cath ##> "#team hey"
+      cath <## "#team: you don't have permission to send messages"
+
+      alice ##> "/mr #team cath admin"
+      alice <## "#team: you changed the role of cath from observer to admin"
+      cath <## "#team: alice changed your role from observer to admin"
+      bob <## "#team: alice changed the role of cath from observer to admin"
+
+      cath #> "#team hey"
+      alice <# "#team cath> hey"
+      bob <# "#team cath> hey"
+
+      cath ##> "/mr #team bob admin"
+      cath <## "#team: you changed the role of bob from member to admin"
+      bob <## "#team: cath changed your role from member to admin"
+      alice <## "#team: cath changed the role of bob from member to admin"
 
 testGroupLinkNoContactHostIncognito :: HasCallStack => FilePath -> IO ()
 testGroupLinkNoContactHostIncognito =
