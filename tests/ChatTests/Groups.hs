@@ -4378,6 +4378,16 @@ testGroupHistoryPreferenceOff =
       r' <- chat <$> getTermLine dan
       r' `shouldNotContain` [(0, "hello")]
       r' `shouldNotContain` [(0, "hey!")]
+
+      -- message delivery works
+      alice #> "#team 1"
+      [bob, cath, dan] *<# "#team alice> 1"
+      bob #> "#team 2"
+      [alice, cath, dan] *<# "#team bob> 2"
+      cath #> "#team 3"
+      [alice, bob, dan] *<# "#team cath> 3"
+      dan #> "#team 4"
+      [alice, bob, cath] *<# "#team dan> 4"
   where
     aliceAddedDan :: HasCallStack => TestCC -> IO ()
     aliceAddedDan cc = do
