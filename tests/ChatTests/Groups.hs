@@ -2692,14 +2692,18 @@ testGroupLinkNoContact =
         [ do
             alice <## "cath (Catherine): accepting request to join group #team..."
             alice <## "#team: cath joined the group",
-          do
-            cath <## "#team: joining the group..."
-            cath <## "#team: you joined the group"
-            cath <## "#team: member bob (Bob) is connected",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   WithTime "#team alice> hello [>>]",
+                   WithTime "#team bob> hi there [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
           do
             bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
             bob <## "#team: new member cath is connected"
         ]
+
       cath #> "#team hey"
       alice <# "#team cath> hey"
       bob <# "#team cath> hey"
@@ -2757,10 +2761,12 @@ testGroupLinkNoContactMemberRole =
         [ do
             alice <## "cath (Catherine): accepting request to join group #team..."
             alice <## "#team: cath joined the group",
-          do
-            cath <## "#team: joining the group..."
-            cath <## "#team: you joined the group"
-            cath <## "#team: member bob (Bob) is connected",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   WithTime "#team bob> hey now [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
           do
             bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
             bob <## "#team: new member cath is connected"
