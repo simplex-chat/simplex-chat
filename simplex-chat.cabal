@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        5.4.0.7
+version:        5.4.2.0
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -36,6 +36,7 @@ library
       Simplex.Chat.Help
       Simplex.Chat.Markdown
       Simplex.Chat.Messages
+      Simplex.Chat.Messages.Batch
       Simplex.Chat.Messages.CIContent
       Simplex.Chat.Messages.CIContent.Events
       Simplex.Chat.Migrations.M20220101_initial
@@ -127,6 +128,7 @@ library
       Simplex.Chat.Migrations.M20231126_remote_ctrl_address
       Simplex.Chat.Migrations.M20231207_chat_list_pagination
       Simplex.Chat.Migrations.M20231214_item_content_tag
+      Simplex.Chat.Migrations.M20231215_recreate_msg_deliveries
       Simplex.Chat.Migrations.M20231219_note_folders
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
@@ -201,7 +203,7 @@ library
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
-    , time ==1.9.*
+    , time ==1.12.*
     , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
@@ -261,7 +263,7 @@ executable simplex-bot
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
-    , time ==1.9.*
+    , time ==1.12.*
     , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
@@ -321,7 +323,7 @@ executable simplex-bot-advanced
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
-    , time ==1.9.*
+    , time ==1.12.*
     , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
@@ -383,7 +385,7 @@ executable simplex-broadcast-bot
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
-    , time ==1.9.*
+    , time ==1.12.*
     , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
@@ -444,7 +446,7 @@ executable simplex-chat
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
-    , time ==1.9.*
+    , time ==1.12.*
     , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
@@ -510,7 +512,7 @@ executable simplex-directory-service
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
-    , time ==1.9.*
+    , time ==1.12.*
     , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
@@ -546,6 +548,7 @@ test-suite simplex-chat-test
       ChatTests.Utils
       JSONTests
       MarkdownTests
+      MessageBatching
       MobileTests
       ProtocolTests
       RemoteTests
@@ -605,7 +608,7 @@ test-suite simplex-chat-test
     , sqlcipher-simple ==0.4.*
     , stm ==2.5.*
     , terminal ==0.2.*
-    , time ==1.9.*
+    , time ==1.12.*
     , tls >=1.7.0 && <1.8
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
