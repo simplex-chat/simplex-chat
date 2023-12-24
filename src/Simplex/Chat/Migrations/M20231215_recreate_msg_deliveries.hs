@@ -8,12 +8,12 @@ import Database.SQLite.Simple.QQ (sql)
 m20231215_recreate_msg_deliveries :: Query
 m20231215_recreate_msg_deliveries =
   [sql|
-DROP VIEW IF EXISTS VIEW direct_messages;
-DROP VIEW IF EXISTS VIEW direct_messages_plain;
-DROP VIEW IF EXISTS VIEW group_messages;
-DROP VIEW IF EXISTS VIEW group_messages_plain;
-DROP VIEW IF EXISTS VIEW all_messages;
-DROP VIEW IF EXISTS VIEW all_messages_plain;
+DROP VIEW IF EXISTS direct_messages;
+DROP VIEW IF EXISTS direct_messages_plain;
+DROP VIEW IF EXISTS group_messages;
+DROP VIEW IF EXISTS group_messages_plain;
+DROP VIEW IF EXISTS all_messages;
+DROP VIEW IF EXISTS all_messages_plain;
 
 DROP INDEX msg_delivery_events_msg_delivery_id;
 DROP TABLE msg_delivery_events;
