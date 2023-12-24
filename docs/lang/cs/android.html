@@ -648,10 +648,6 @@ window.addEventListener('scroll',changeHeaderBg);
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/lang/cs/sql.html">Přístup ke zprávám v databázi</a>
-                                                </li>
-                                            
-                                                <li>
                                                     <a class="" href="/docs/lang/cs/contributing.html">Průvodce přispíváním</a>
                                                 </li>
                                             
@@ -783,7 +779,14 @@ tar -xvzf chat.gz
 <p>Poté by mělo být zálohování ukončeno. Pokud se zobrazí chybové hlášení <code>tar: Error is not recoverable: exiting now</code>, ale předtím jste vypsali názvy některých souborů, nebojte se, je to v pořádku.</p>
 <p>Nyní budou zálohované soubory uvnitř <code>./apps/chat.simplex.app/</code>.</p>
 <p>Upozorňujeme, že pokud používáte moderní verzi SimpleX, budou databáze zašifrované a jejich obsah nebudete moci zobrazit bez použití aplikace <code>sqlcipher</code> a bez znalosti dešifrovací fráze (musíte ji nejprve změnit na svou z náhodně vygenerovaných v aplikaci).</p>
-<p>Další informace o tom, jak dešifrovat databáze a provádět dotazy do nich, najdete v příručce <a href="sql.html">SQL.md</a>.</p>
+<h2 id="desifrovani-databazi" tabindex="-1">Dešifrování databází</h2>
+<p>Chcete-li zobrazit data v databázi, musíte je nejprve dešifrovat. Nainstalujte <code>sqlcipher</code> pomocí svého oblíbeného správce balíčků a v adresáři s databázemi spusťte následující příkazy:</p>
+<pre><code class="language-bash">sqlcipher files_chat.db
+pragma key=&quot;youDecryptionPassphrase&quot;;
+# Ujistěte se, že vše funguje správně
+select * from users;
+</code></pre>
+<p>Pokud se zobrazí <code>Parse error: no such table: users</code>, ujistěte se, že jste zadali správnou přístupovou frázi a že jste ji v aplikaci pro Android změnili z náhodné (pokud jste tuto databázi získali ze zařízení s Androidem, samozřejmě).</p>
 </div>
                 </article>
             </main>

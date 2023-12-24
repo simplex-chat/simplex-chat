@@ -637,10 +637,6 @@ window.addEventListener('scroll',changeHeaderBg);
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/sql.html">Accessing messages in the database</a>
-                                                </li>
-                                            
-                                                <li>
                                                     <a class="" href="/docs/contributing.html">Contributing guide</a>
                                                 </li>
                                             
@@ -941,25 +937,6 @@ brew services start tor
 <p>User address is &quot;long-term&quot; in a sense that it is a multiple-use connection link - it can be used until it is deleted by the user, in which case all established connections would still remain active (unlike how it works with email, when changing the address results in people not being able to message you).</p>
 <p>Use <code>/help address</code> for other commands.</p>
 <p><img src="../images/user-addresses.gif" alt="simplex-chat"></p>
-<h3 id="access-chat-history" tabindex="-1">Access chat history</h3>
-<p>SimpleX chat stores all your contacts and conversations in a local SQLite database, making it private and portable by design, owned and controlled by user.</p>
-<p>You can view and search your chat history by querying your database. Run the below script to create message views in your database.</p>
-<pre><code class="language-sh">curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/scripts/message_views.sql | sqlite3 ~/.simplex/simplex_v1_chat.db
-</code></pre>
-<p>Open SQLite Command Line Shell:</p>
-<pre><code class="language-sh">sqlite3 ~/.simplex/simplex_v1_chat.db
-</code></pre>
-<p>See <a href="sql.html">Message queries</a> for examples.</p>
-<blockquote>
-<p><strong>Please note:</strong> SQLite foreign key constraints are disabled by default, and must be <strong><a href="https://sqlite.org/foreignkeys.html#fk_enable">enabled separately for each database connection</a></strong>. The latter can be achieved by running <code>PRAGMA foreign_keys = ON;</code> command on an open database connection. By running data altering queries without enabling foreign keys prior to that, you may risk putting your database in an inconsistent state.</p>
-</blockquote>
-<p><strong>Convenience queries</strong></p>
-<p>Get all messages from today (<code>chat_dt</code> is in UTC):</p>
-<pre><code class="language-sql">select * from all_messages_plain where date(chat_dt) &gt; date('now', '-1 day') order by chat_dt;
-</code></pre>
-<p>Get overnight messages in the morning:</p>
-<pre><code class="language-sql">select * from all_messages_plain where chat_dt &gt; datetime('now', '-15 hours') order by chat_dt;
-</code></pre>
 </div>
                 </article>
             </main>

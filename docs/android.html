@@ -637,10 +637,6 @@ window.addEventListener('scroll',changeHeaderBg);
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/sql.html">Accessing messages in the database</a>
-                                                </li>
-                                            
-                                                <li>
                                                     <a class="" href="/docs/contributing.html">Contributing guide</a>
                                                 </li>
                                             
@@ -803,7 +799,14 @@ tar -xvzf chat.gz
 <p>After that the backup should be ended. If you see an error saying <code>tar: Error is not recoverable: exiting now</code> but before that you have printed some file names, don't worry, it's ok.</p>
 <p>Now the backed-up files will be inside <code>./apps/chat.simplex.app/</code>.</p>
 <p>Please, note, that if you use a modern version of SimpleX, the databases will be encrypted, and you'll not be able to view contents of them without using <code>sqlcipher</code> application and without knowing decryption passphrase (you need to change it to yours from randomly generated in the app firstly).</p>
-<p>Please, follow <a href="sql.html">SQL.md</a> guide for more info of how to decrypt your databases and to make queries to them.</p>
+<h2 id="decrypting-databases" tabindex="-1">Decrypting databases</h2>
+<p>In order to view database data you need to decrypt it first. Install <code>sqlcipher</code> using your favorite package manager and run the following commands in the directory with databases:</p>
+<pre><code class="language-bash">sqlcipher files_chat.db
+pragma key=&quot;youDecryptionPassphrase&quot;;
+# Ensure it works fine
+select * from users;
+</code></pre>
+<p>If you see <code>Parse error: no such table: users</code>, make sure you entered correct passphrase, and you have changed passphrase from random in Android app (if you got this database from Android device, of course).</p>
 </div>
                 </article>
             </main>

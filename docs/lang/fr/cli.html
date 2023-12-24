@@ -667,10 +667,6 @@ window.addEventListener('scroll',changeHeaderBg);
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="" href="/docs/lang/fr/sql.html">Accès aux messages de la base de données</a>
-                                                </li>
-                                            
-                                                <li>
                                                     <a class="" href="/docs/lang/fr/contributing.html">Guide pour contribuer</a>
                                                 </li>
                                             
@@ -909,25 +905,6 @@ brew services start tor
 <p>L'adresse de l'utilisateur est &quot;à long terme&quot; dans le sens où il s'agit d'un lien de connexion à usage multiple - elle peut être utilisée jusqu'à ce qu'elle soit supprimée par l'utilisateur, auquel cas toutes les connexions établies resteront actives (contrairement à ce qui se passe avec le courrier électronique, où le changement d'adresse empêche les gens de vous envoyer des messages).</p>
 <p>Utilisez <code>/help address</code> pour les autres commandes.</p>
 <p><img src="/images/user-addresses.gif" alt="simplex-chat"></p>
-<h3 id="acceder-a-lhistorique-des-chats" tabindex="-1">Accéder à l'historique des chats</h3>
-<p>SimpleX chat stocke tous vos contacts et conversations dans une base de données SQLite locale, ce qui la rend privée et portable par définition, appartenant et contrôlée par l'utilisateur.</p>
-<p>Vous pouvez visualiser et rechercher votre historique de chat en interrogeant votre base de données. Exécutez le script ci-dessous pour créer des aperçus de messages dans votre base de données.</p>
-<pre><code class="language-sh">curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/scripts/message_views.sql | sqlite3 ~/.simplex/simplex_v1_chat.db
-</code></pre>
-<p>Ouvrir un terminal de commande SQLite :</p>
-<pre><code class="language-sh">sqlite3 ~/.simplex/simplex_v1_chat.db
-</code></pre>
-<p>Voir les <a href="sql.html">requêtes de message</a> à titre d'exemple.</p>
-<blockquote>
-<p><strong>Veuillez noter :</strong> Les contraintes de clé étrangère SQLite sont désactivées par défaut, et doivent être <strong><a href="https://sqlite.org/foreignkeys.html#fk_enable">activé séparément pour chaque connexion de base de données</a></strong>. Cette dernière peut être réalisée en exécutant la commande <code>PRAGMA foreign_keys = ON;</code> sur une connexion de base de données ouverte. En exécutant des requêtes modifiant les données sans activer les clés étrangères au préalable, vous risquez de mettre votre base de données dans un état inconsistant.</p>
-</blockquote>
-<p><strong>Requêtes de commodité</strong></p>
-<p>Pour recevoir tous les messages du jour (<code>chat_dt</code> est en UTC) :</p>
-<pre><code class="language-sql">select * from all_messages_plain where date(chat_dt) &gt; date('now', '-1 day') order by chat_dt;
-</code></pre>
-<p>Pour recevoir les messages de la nuit dans la matinée :</p>
-<pre><code class="language-sql">select * from all_messages_plain where chat_dt &gt; datetime('now', '-15 hours') order by chat_dt;
-</code></pre>
 </div>
                 </article>
             </main>
