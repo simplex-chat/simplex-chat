@@ -1533,4 +1533,6 @@
     <string name="verify_connection">Verificar conexión</string>
     <string name="no_connected_mobile">Ningún móvil conectado</string>
     <string name="app_was_crashed">Error aplicación</string>
+    <string name="error_showing_content">error mostrando contenido</string>
+    <string name="error_showing_message">error mostrando mensaje</string>
 </resources>
