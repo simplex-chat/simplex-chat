@@ -1439,6 +1439,7 @@
   <string name="message_reactions">Message reactions</string>
   <string name="voice_messages">Voice messages</string>
   <string name="files_and_media">Files and media</string>
+  <string name="recent_history">Recent history</string>
   <string name="audio_video_calls">Audio/video calls</string>
   <string name="available_in_v51">\nAvailable in v5.1</string>
   <string name="feature_enabled">enabled</string>
@@ -1495,6 +1496,8 @@
   <string name="prohibit_message_reactions_group">Prohibit messages reactions.</string>
   <string name="allow_to_send_files">Allow to send files and media.</string>
   <string name="prohibit_sending_files">Prohibit sending files and media.</string>
+  <string name="enable_sending_recent_history">Send recent history to new members.</string>
+  <string name="disable_sending_recent_history">Do not send recent history to new members.</string>
   <string name="group_members_can_send_disappearing">Group members can send disappearing messages.</string>
   <string name="disappearing_messages_are_prohibited">Disappearing messages are prohibited in this group.</string>
   <string name="group_members_can_send_dms">Group members can send direct messages.</string>
@@ -1507,6 +1510,8 @@
   <string name="message_reactions_are_prohibited">Message reactions are prohibited in this group.</string>
   <string name="group_members_can_send_files">Group members can send files and media.</string>
   <string name="files_are_prohibited_in_group">Files and media are prohibited in this group.</string>
+  <string name="recent_history_is_sent_to_new_members">Recent history is sent to new members.</string>
+  <string name="recent_history_is_not_sent_to_new_members">Recent history is not sent to new members.</string>
   <string name="delete_after">Delete after</string>
   <string name="ttl_sec">%d sec</string>
   <string name="ttl_s">%ds</string>

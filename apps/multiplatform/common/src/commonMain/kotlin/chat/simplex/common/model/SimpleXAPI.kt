@@ -3304,7 +3304,8 @@ enum class GroupFeature: Feature {
   @SerialName("fullDelete") FullDelete,
   @SerialName("reactions") Reactions,
   @SerialName("voice") Voice,
-  @SerialName("files") Files;
+  @SerialName("files") Files,
+  @SerialName("history") History;
 
   override val hasParam: Boolean get() = when(this) {
     TimedMessages -> true
@@ -3319,6 +3320,7 @@ enum class GroupFeature: Feature {
       Reactions -> generalGetString(MR.strings.message_reactions)
       Voice -> generalGetString(MR.strings.voice_messages)
       Files -> generalGetString(MR.strings.files_and_media)
+      History -> generalGetString(MR.strings.recent_history)
     }
 
   val icon: Painter
@@ -3329,6 +3331,7 @@ enum class GroupFeature: Feature {
       Reactions -> painterResource(MR.images.ic_add_reaction)
       Voice -> painterResource(MR.images.ic_keyboard_voice)
       Files -> painterResource(MR.images.ic_draft)
+      History -> painterResource(MR.images.ic_schedule)
     }
 
   @Composable
@@ -3339,6 +3342,7 @@ enum class GroupFeature: Feature {
     Reactions -> painterResource(MR.images.ic_add_reaction_filled)
     Voice -> painterResource(MR.images.ic_keyboard_voice_filled)
     Files -> painterResource(MR.images.ic_draft_filled)
+    History -> painterResource(MR.images.ic_schedule_filled)
   }
 
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
@@ -3368,6 +3372,10 @@ enum class GroupFeature: Feature {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_to_send_files)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_sending_files)
         }
+        History -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.enable_sending_recent_history)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.disable_sending_recent_history)
+        }
       }
     } else {
       when(this) {
@@ -3394,6 +3402,10 @@ enum class GroupFeature: Feature {
         Files -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_files)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.files_are_prohibited_in_group)
+        }
+        History -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.recent_history_is_sent_to_new_members)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.recent_history_is_not_sent_to_new_members)
         }
       }
     }
@@ -3509,6 +3521,7 @@ data class FullGroupPreferences(
   val reactions: GroupPreference,
   val voice: GroupPreference,
   val files: GroupPreference,
+  val history: GroupPreference,
 ) {
   fun toGroupPreferences(): GroupPreferences =
     GroupPreferences(
@@ -3518,6 +3531,7 @@ data class FullGroupPreferences(
       reactions = reactions,
       voice = voice,
       files = files,
+      history = history
     )
 
   companion object {
@@ -3528,6 +3542,7 @@ data class FullGroupPreferences(
       reactions = GroupPreference(GroupFeatureEnabled.ON),
       voice = GroupPreference(GroupFeatureEnabled.ON),
       files = GroupPreference(GroupFeatureEnabled.ON),
+      history = GroupPreference(GroupFeatureEnabled.ON),
     )
   }
 }
@@ -3540,6 +3555,7 @@ data class GroupPreferences(
   val reactions: GroupPreference?,
   val voice: GroupPreference?,
   val files: GroupPreference?,
+  val history: GroupPreference?,
 ) {
   companion object {
     val sampleData = GroupPreferences(
@@ -3549,6 +3565,7 @@ data class GroupPreferences(
       reactions = GroupPreference(GroupFeatureEnabled.ON),
       voice = GroupPreference(GroupFeatureEnabled.ON),
       files = GroupPreference(GroupFeatureEnabled.ON),
+      history = GroupPreference(GroupFeatureEnabled.ON),
     )
   }
 }
