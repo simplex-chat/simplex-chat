@@ -2681,7 +2681,7 @@ testGroupLinkNoContact =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
@@ -2744,7 +2744,7 @@ testGroupLinkNoContactInviteesWereConnected =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected"), ("@cath", "hey")]
@@ -2825,7 +2825,7 @@ testGroupLinkNoContactAllMembersWereConnected =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected"), ("@bob", "hey"), ("@cath", "hey")]
       bob @@@ [("#team", "connected"), ("@alice", "hey"), ("@cath", "hey")]
