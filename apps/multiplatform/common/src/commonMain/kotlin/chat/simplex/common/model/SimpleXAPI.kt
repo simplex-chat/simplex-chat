@@ -3549,13 +3549,13 @@ data class FullGroupPreferences(
 
 @Serializable
 data class GroupPreferences(
-  val timedMessages: TimedMessagesGroupPreference?,
-  val directMessages: GroupPreference?,
-  val fullDelete: GroupPreference?,
-  val reactions: GroupPreference?,
-  val voice: GroupPreference?,
-  val files: GroupPreference?,
-  val history: GroupPreference?,
+  val timedMessages: TimedMessagesGroupPreference? = null,
+  val directMessages: GroupPreference? = null,
+  val fullDelete: GroupPreference? = null,
+  val reactions: GroupPreference? = null,
+  val voice: GroupPreference? = null,
+  val files: GroupPreference? = null,
+  val history: GroupPreference? = null,
 ) {
   companion object {
     val sampleData = GroupPreferences(
