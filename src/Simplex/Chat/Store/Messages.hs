@@ -484,7 +484,7 @@ getChatPreviews db vr user withPCC pagination query = do
     ts (ACPD _ cpd) = case cpd of
       (DirectChatPD t _ _ _) -> t
       (GroupChatPD t _ _ _) -> t
-      (LocalChatPD t _) -> t
+      (LocalChatPD t _ _ _) -> t
       (ContactRequestPD t _) -> t
       (ContactConnectionPD t _) -> t
     sortTake = case pagination of
@@ -502,7 +502,7 @@ getChatPreviews db vr user withPCC pagination query = do
 data ChatPreviewData (c :: ChatType) where
   DirectChatPD :: UTCTime -> ContactId -> Maybe ChatItemId -> ChatStats -> ChatPreviewData 'CTDirect
   GroupChatPD :: UTCTime -> GroupId -> Maybe ChatItemId -> ChatStats -> ChatPreviewData 'CTGroup
-  LocalChatPD :: UTCTime -> AChat -> ChatPreviewData 'CTLocal
+  LocalChatPD :: UTCTime -> NoteFolderId -> Maybe ChatItemId -> ChatStats -> ChatPreviewData 'CTLocal
   ContactRequestPD :: UTCTime -> AChat -> ChatPreviewData 'CTContactRequest
   ContactConnectionPD :: UTCTime -> AChat -> ChatPreviewData 'CTContactConnection
 
@@ -710,10 +710,93 @@ getGroupChatPreview_ db vr user (GroupChatPD _ groupId lastItemId_ stats) = do
   pure $ AChat SCTGroup (Chat (GroupChat groupInfo) lastItem stats)
 
 findLocalChatPreview_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
-findLocalChatPreview_ db User {userId} pagination clq = pure []
+findLocalChatPreview_ db User {userId} pagination clq =
+  map toPreview <$> getPreviews
+  where
+    toPreview :: (NoteFolderId, UTCTime, Maybe ChatItemId) :. ChatStatsRow -> AChatPreviewData
+    toPreview ((noteFolderId, ts, lastItemId_) :. statsRow) =
+      ACPD SCTLocal $ LocalChatPD ts noteFolderId lastItemId_ (toChatStats statsRow)
+    baseQuery =
+      [sql|
+        SELECT nf.note_folder_id, nf.chat_ts as ts, LastItems.chat_item_id, COALESCE(ChatStats.UnreadCount, 0), COALESCE(ChatStats.MinUnread, 0), nf.unread_chat
+        FROM note_folders nf
+        LEFT JOIN (
+          SELECT note_folder_id, chat_item_id, MAX(created_at)
+          FROM chat_items
+          GROUP BY note_folder_id
+        ) LastItems ON LastItems.note_folder_id = nf.note_folder_id
+        LEFT JOIN (
+          SELECT note_folder_id, COUNT(1) AS UnreadCount, MIN(chat_item_id) AS MinUnread
+          FROM chat_items
+          WHERE item_status = :rcv_new
+          GROUP BY note_folder_id
+        ) ChatStats ON ChatStats.note_folder_id = nf.note_folder_id
+      |]
+    (pagQuery, pagParams) = paginationByTimeFilter pagination
+    getPreviews = case clq of
+      CLQFilters {favorite = False, unread = False} ->
+        DB.queryNamed
+          db
+          ( baseQuery
+              <> [sql|
+                    WHERE nf.user_id = :user_id
+                  |]
+              <> pagQuery
+          )
+          ([":user_id" := userId, ":rcv_new" := CISRcvNew] <> pagParams)
+      CLQFilters {favorite = True, unread = False} ->
+        DB.queryNamed
+          db
+          ( baseQuery
+              <> [sql|
+                    WHERE nf.user_id = :user_id
+                      AND nf.favorite = 1
+                  |]
+              <> pagQuery
+          )
+          ([":user_id" := userId, ":rcv_new" := CISRcvNew] <> pagParams)
+      CLQFilters {favorite = False, unread = True} ->
+        DB.queryNamed
+          db
+          ( baseQuery
+              <> [sql|
+                    WHERE nf.user_id = :user_id
+                      AND (nf.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+                  |]
+              <> pagQuery
+          )
+          ([":user_id" := userId, ":rcv_new" := CISRcvNew] <> pagParams)
+      CLQFilters {favorite = True, unread = True} ->
+        DB.queryNamed
+          db
+          ( baseQuery
+              <> [sql|
+                    WHERE nf.user_id = :user_id
+                      AND (nf.favorite = 1
+                        OR nf.unread_chat = 1 OR ChatStats.UnreadCount > 0)
+                  |]
+              <> pagQuery
+          )
+          ([":user_id" := userId, ":rcv_new" := CISRcvNew] <> pagParams)
+      CLQSearch {search} ->
+        DB.queryNamed
+          db
+          ( baseQuery
+              <> [sql|
+                    WHERE nf.user_id = :user_id
+                      AND nf.local_display_name LIKE '%' || :search || '%'
+                  |]
+              <> pagQuery
+          )
+          ([":user_id" := userId, ":rcv_new" := CISRcvNew, ":search" := search] <> pagParams)
 
 getLocalChatPreview_ :: DB.Connection -> User -> ChatPreviewData 'CTLocal -> ExceptT StoreError IO AChat
-getLocalChatPreview_ = error "TODO: getLocalChatPreview_"
+getLocalChatPreview_ db user (LocalChatPD _ noteFolderId lastItemId_ stats) = do
+  nf <- getNoteFolder db user noteFolderId
+  lastItem <- case lastItemId_ of
+    Just lastItemId -> (: []) <$> getLocalChatItem db user noteFolderId lastItemId
+    Nothing -> pure []
+  pure $ AChat SCTLocal (Chat (LocalChat nf) lastItem stats)
 
 -- this function can be changed so it never fails, not only avoid failure on invalid json
 toLocalChatItem :: UTCTime -> ChatItemRow -> Either StoreError (CChatItem 'CTLocal)

@@ -19,13 +19,21 @@ testNotes :: FilePath -> IO ()
 testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   createFolder alice "self"
 
+  alice ##> "/contacts"
+  -- not a contact
+
   alice #> "$self keep in mind"
   alice ##> "/tail"
+  alice <# "$self keep in mind"
+  alice ##> "/chats"
+  alice <# "$self keep in mind"
+  alice ##> "/? keep"
   alice <# "$self keep in mind"
 
   alice ##> "/_delete item $1 1 internal"
   alice <## "message deleted"
   alice ##> "/tail"
+  alice ##> "/chats"
 
   alice ##> "/delete $self"
   alice <## "note folder self deleted"
