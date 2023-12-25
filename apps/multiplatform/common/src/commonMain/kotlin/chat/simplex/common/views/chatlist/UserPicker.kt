@@ -116,7 +116,12 @@ fun UserPicker(
       }
   }
   LaunchedEffect(Unit) {
-    controller.reloadRemoteHosts()
+    try {
+      controller.reloadRemoteHosts()
+    } catch (e: Exception) {
+      Log.e(TAG, "UserPicker: ${e.stackTraceToString()}")
+      // Can be `java.lang.Exception: Controller is not initialized` while invoking self-destruct process
+    }
   }
   val UsersView: @Composable ColumnScope.() -> Unit = {
     users.forEach { u ->
