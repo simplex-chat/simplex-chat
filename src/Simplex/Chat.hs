@@ -794,22 +794,15 @@ processChatCommand' vr = \case
     forM_ quotedItemId_ $ \_ -> throwError $ ChatError $ CECommandError "not supported"
     nf <- withStore $ \db -> getNoteFolder db user folderId
     -- TODO: assertLocalAllowed user MDSnd nf XMsgNew_
-    ci'@ChatItem {meta = CIMeta{itemId, itemTs}} <- createInternalChatItem_ user (CDLocalSnd nf) (CISndMsgContent mc) Nothing
-    ciFile_ <- forM file_ $ localFile user nf itemId itemTs
+    ci'@ChatItem {meta = CIMeta {itemId, itemTs}} <- createInternalChatItem_ user (CDLocalSnd nf) (CISndMsgContent mc) Nothing
+    ciFile_ <- forM file_ $ \cf@CryptoFile {filePath, cryptoArgs} -> do
+      fsFilePath <- toFSFilePath filePath -- XXX: only used for size?..
+      fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cryptoArgs
+      withStore' $ \db -> do
+        fileId <- createLocalFile CIFSSndComplete db user nf itemId itemTs cf fileSize
+        pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndComplete, fileProtocol = FPLocal}
     let ci = (ci' :: ChatItem 'CTLocal 'MDSnd) {file = ciFile_}
     pure . CRNewChatItem user $ AChatItem SCTLocal SMDSnd (LocalChat nf) ci
-    where
-      localFile user nf chatItemId createdAt (CryptoFile file cfArgs) = do
-        fsFilePath <- toFSFilePath file
-        fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cfArgs
-        let fileName = takeFileName file
-            fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq = Nothing, fileInline = Nothing, fileDescr = Nothing}
-        chSize <- asks $ fileChunkSize . config
-        withStore $ \db -> do
-          FileTransferMeta {fileId} <- liftIO $ createSndLocalFileTransfer db user nf file fileInvitation chSize
-          liftIO $ updateFileTransferChatItemId db fileId chatItemId createdAt
-          let fileSource = Just $ CF.plain file
-          pure CIFile {fileId, fileName, fileSize, fileSource, fileStatus = CIFSSndComplete, fileProtocol = FPLocal}
   APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> withChatLock "updateChatItem" $ case cType of
     CTDirect -> do
       ct@Contact {contactId} <- withStore $ \db -> getContact db user chatId
@@ -1959,14 +1952,15 @@ processChatCommand' vr = \case
                     updateRcvFileAgentId db fileId Nothing
                   getChatItemByFileId db vr user fileId
                 pure $ CRRcvFileCancelled user ci ftr
-        FTLocal _ -> throwChatError $ CEFileCancel fileId "cannot cancel local files"
-  FileStatus fileId -> withUser $ \user -> do
+  FileStatus fileId -> withUser $ \user@User {userId} -> do
     ci@(AChatItem _ _ _ ChatItem {file}) <- withStore $ \db -> getChatItemByFileId db vr user fileId
     case file of
+      Just CIFile {fileProtocol = FPLocal} -> do
+        -- XXX: not stricly a file transfer but the file *has* some status
+        fileMeta <- withStore $ \db -> getLocalFileMeta db userId fileId
+        pure $ CRLocalFileStatus user fileMeta
       Just CIFile {fileProtocol = FPXFTP} ->
         pure $ CRFileTransferStatusXFTP user ci
-      -- Just CIFile {fileProtocol = FPLocal, fileId,} ->
-      --   pure $ CRLocalFileStatus user fileId ???
       _ -> do
         fileStatus <- withStore $ \db -> getFileTransferProgress db user fileId
         pure $ CRFileTransferStatus user fileStatus

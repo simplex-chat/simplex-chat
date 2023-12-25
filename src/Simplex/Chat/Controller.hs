@@ -563,7 +563,7 @@ data ChatResponse
   | CRNoteFolderDeleted {user :: User, noteFolder :: NoteFolder}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRFileTransferStatusXFTP User AChatItem
-  -- | CRLocalFileStatus User CIFileInfo
+  | CRLocalFileStatus User LocalFileMeta
   | CRUserProfile {user :: User, profile :: Profile}
   | CRUserProfileNoChange {user :: User}
   | CRUserPrivacy {user :: User, updatedUser :: User}

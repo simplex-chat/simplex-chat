@@ -1147,7 +1147,6 @@ data FileTransfer
         sndFileTransfers :: [SndFileTransfer]
       }
   | FTRcv {rcvFileTransfer :: RcvFileTransfer}
-  | FTLocal {localFileMeta :: LocalFileMeta}
   deriving (Show)
 
 data FileTransferMeta = FileTransferMeta
@@ -1182,7 +1181,6 @@ data XFTPSndFile = XFTPSndFile
 fileTransferCancelled :: FileTransfer -> Bool
 fileTransferCancelled (FTSnd FileTransferMeta {cancelled} _) = cancelled
 fileTransferCancelled (FTRcv RcvFileTransfer {cancelled}) = cancelled
-fileTransferCancelled FTLocal {} = False
 
 -- For XFTP file transfers FSConnected means "uploaded to XFTP relays"
 -- Local files are always FSComplete

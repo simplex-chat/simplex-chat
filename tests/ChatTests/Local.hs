@@ -60,7 +60,7 @@ testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/tail"
   alice <# "$self file 1 (test.jpg)"
   alice ##> "/fs 1"
-  alice <## "file 1 (test.jpg)"
+  alice <## "local file 1 (test.jpg)"
 
 createFolder :: TestCC -> String -> IO ()
 createFolder cc label = do

@@ -155,6 +155,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
           | viaGroupLink -> [ttyContact' c <> " invited to group " <> ttyGroup' g <> " via your group link"]
           | otherwise -> ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
         Nothing -> []
+  CRLocalFileStatus u lfm -> ttyUser u $ viewLocalFileStatus lfm
   CRFileTransferStatus u ftStatus -> ttyUser u $ viewFileTransferStatus ftStatus
   CRFileTransferStatusXFTP u ci -> ttyUser u $ viewFileTransferStatusXFTP ci
   CRUserProfile u p -> ttyUser u $ viewUserProfile p
@@ -1598,6 +1599,9 @@ viewLocalFile to CIFile {fileId, fileSource} ts tz = case fileSource of
   Just (CryptoFile fPath _) -> sentWithTime_ ts tz [to <> fileTransferStr fileId fPath]
   _ -> const []
 
+viewLocalFileStatus :: LocalFileMeta -> [StyledString]
+viewLocalFileStatus LocalFileMeta {fileId, filePath} = ["local " <> fileTransferStr fileId filePath]
+
 cryptoFileArgsStr :: Bool -> CryptoFileArgs -> ByteString
 cryptoFileArgsStr testView cfArgs@(CFArgs key nonce)
   | testView = LB.toStrict $ J.encode cfArgs
@@ -1650,7 +1654,6 @@ viewFileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileI
       RFSComplete RcvFileInfo {filePath} -> "complete, path: " <> plain filePath
       RFSCancelled (Just RcvFileInfo {filePath}) -> "cancelled, received part path: " <> plain filePath
       RFSCancelled Nothing -> "cancelled"
-viewFileTransferStatus (FTLocal LocalFileMeta {fileId, fileName}, _) = [fileTransferStr fileId fileName]
 
 viewFileTransferStatusXFTP :: AChatItem -> [StyledString]
 viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName, fileSize, fileStatus, fileSource}}) =
