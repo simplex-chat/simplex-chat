@@ -184,18 +184,16 @@ groupFeatureAllowed' :: GroupFeatureI f => SGroupFeature f -> FullGroupPreferenc
 groupFeatureAllowed' feature prefs =
   getField @"enable" (getGroupPreference feature prefs) == FEOn
 
-allGroupFeatureItems :: [AGroupFeature]
-allGroupFeatureItems =
+allGroupFeatures :: [AGroupFeature]
+allGroupFeatures =
   [ AGF SGFTimedMessages,
     AGF SGFDirectMessages,
     AGF SGFFullDelete,
     AGF SGFReactions,
     AGF SGFVoice,
-    AGF SGFFiles
+    AGF SGFFiles,
+    AGF SGFHistory
   ]
-
-allGroupFeatures :: [AGroupFeature]
-allGroupFeatures = allGroupFeatureItems <> [AGF SGFHistory]
 
 groupPrefSel :: SGroupFeature f -> GroupPreferences -> Maybe (GroupFeaturePreference f)
 groupPrefSel f ps = case f of
