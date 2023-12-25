@@ -1378,9 +1378,9 @@ This is your own one-time link!</source>
         <target>Crear</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create SimpleX address" xml:space="preserve">
+      <trans-unit id="Create SimpleX address" xml:space="preserve" approved="no">
         <source>Create SimpleX address</source>
-        <target>Crear tu dirección SimpleX</target>
+        <target state="translated">Crear dirección SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create a group using a random profile." xml:space="preserve" approved="no">
@@ -5129,9 +5129,9 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>Para hacer una conexión nueva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." xml:space="preserve">
+      <trans-unit id="To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts." xml:space="preserve" approved="no">
         <source>To protect privacy, instead of user IDs used by all other platforms, SimpleX has identifiers for message queues, separate for each of your contacts.</source>
-        <target>Para proteger la privacidad, en lugar de los identificadores de usuario que usan el resto de plataformas, SimpleX dispone de identificadores para las colas de mensajes, independientes para cada uno de tus contactos.</target>
+        <target state="translated">Para proteger tu privacidad, en lugar de los identificadores de usuario que usan el resto de plataformas, SimpleX dispone de identificadores para las colas de mensajes, independientes para cada uno de tus contactos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To protect timezone, image/voice files use UTC." xml:space="preserve">
@@ -5139,10 +5139,10 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>Para proteger la zona horaria, los archivos de imagen/voz usan la hora UTC.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve">
+      <trans-unit id="To protect your information, turn on SimpleX Lock.&#10;You will be prompted to complete authentication before this feature is enabled." xml:space="preserve" approved="no">
         <source>To protect your information, turn on SimpleX Lock.
 You will be prompted to complete authentication before this feature is enabled.</source>
-        <target>Para proteger tu información, activa Bloqueo SimpleX.
+        <target state="translated">Para proteger tu información, activa el Bloqueo SimpleX.
 Se te pedirá que completes la autenticación antes de activar esta función.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -5915,10 +5915,10 @@ Puedes cancelar esta conexión y eliminar el contacto (e intentarlo más tarde c
         <target>Tus contactos pueden permitir la eliminación completa de mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contacts in SimpleX will see it.&#10;You can change it in Settings." xml:space="preserve">
+      <trans-unit id="Your contacts in SimpleX will see it.&#10;You can change it in Settings." xml:space="preserve" approved="no">
         <source>Your contacts in SimpleX will see it.
 You can change it in Settings.</source>
-        <target>Tus contactos en SimpleX lo verán.
+        <target state="translated">Tus contactos en SimpleX la verán.
 Puedes cambiarlo en Configuración.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -6429,9 +6429,9 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>ha invitado a %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="invited to connect" xml:space="preserve">
+      <trans-unit id="invited to connect" xml:space="preserve" approved="no">
         <source>invited to connect</source>
-        <target>invitado a conectarse</target>
+        <target state="translated">invitación a conectarse</target>
         <note>chat list item title</note>
       </trans-unit>
       <trans-unit id="invited via your group link" xml:space="preserve">
@@ -6741,9 +6741,9 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>has expulsado a %@</target>
         <note>snd group event chat item</note>
       </trans-unit>
-      <trans-unit id="you shared one-time link" xml:space="preserve">
+      <trans-unit id="you shared one-time link" xml:space="preserve" approved="no">
         <source>you shared one-time link</source>
-        <target>has compartido un enlace de un uso</target>
+        <target state="translated">enlace de un solo uso</target>
         <note>chat list item description</note>
       </trans-unit>
       <trans-unit id="you shared one-time link incognito" xml:space="preserve">
