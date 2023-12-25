@@ -1004,13 +1004,13 @@ public struct GroupPreferences: Codable {
     public var history: GroupPreference?
 
     public init(
-        timedMessages: TimedMessagesGroupPreference?,
-        directMessages: GroupPreference?,
-        fullDelete: GroupPreference?,
-        reactions: GroupPreference?,
-        voice: GroupPreference?,
-        files: GroupPreference?,
-        history: GroupPreference?
+        timedMessages: TimedMessagesGroupPreference? = nil,
+        directMessages: GroupPreference? = nil,
+        fullDelete: GroupPreference? = nil,
+        reactions: GroupPreference? = nil,
+        voice: GroupPreference? = nil,
+        files: GroupPreference? = nil,
+        history: GroupPreference? = nil
     ) {
         self.timedMessages = timedMessages
         self.directMessages = directMessages
