@@ -783,8 +783,8 @@ public enum GroupFeature: String, Decodable, Feature {
                 }
             case .history:
                 switch enabled {
-                case .on: return "Enable sending recent history to new members."
-                case .off: return "Disable sending recent history to new members."
+                case .on: return "Send recent history to new members."
+                case .off: return "Do not send recent history to new members."
                 }
             }
         } else {
