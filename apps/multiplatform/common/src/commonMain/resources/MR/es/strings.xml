@@ -3,8 +3,8 @@
     <string name="auth_unavailable">Autenticación no disponible</string>
     <string name="accept_contact_button">Aceptar</string>
     <string name="network_settings">Configuración avanzada de red</string>
-    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Mejor para la batería</b>. Recibirás notificaciones sólo cuando la aplicación se esté ejecutando, SIN servicio en segundo plano.]]></string>
-    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Bueno para la batería</b>. El servicio en segundo plano comprueba si hay mensajes cada 10 minutos. Puedes perder llamadas o mensajes urgentes.]]></string>
+    <string name="onboarding_notifications_mode_off_desc"><b>Óptimo para la batería</b>. Recibirás notificaciones sólo cuando la aplicación esté abierta (SIN servicio en segundo plano).</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><b>Bueno para la batería</b>. El servicio en segundo plano comprueba si hay mensajes cada 10 minutos. Podrías no recibir a tiempo llamadas o mensajes urgentes.</string>
     <string name="accept_call_on_lock_screen">Aceptar</string>
     <string name="full_backup">Copia de seguridad de los datos de la aplicación</string>
     <string name="chat_item_ttl_day">un dia</string>
@@ -76,7 +76,7 @@
     <string name="icon_descr_asked_to_receive">Solicita recibir la imagen</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Atención</b>: NO podrás recuperar o cambiar la contraseña si la pierdes.]]></string>
     <string name="both_you_and_your_contact_can_send_voice">Tanto tú como tu contacto podéis enviar mensajes de voz.</string>
-    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>¡Consume más batería!</b> El servicio en segundo plano se ejecuta siempre y las notificaciones se mostrarán en cuanto haya mensajes disponibles.]]></string>
+    <string name="onboarding_notifications_mode_service_desc"><b>¡Consume más batería!</b> El servicio en segundo plano se ejecuta continuamente y las notificaciones se mostrarán de inmediato.</string>
     <string name="both_you_and_your_contacts_can_delete">Tanto tú como tu contacto podéis eliminar de forma irreversible los mensajes enviados.</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Tanto tú como tu contacto podéis enviar mensajes temporales.</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Escanear código QR</b>: para conectar con tu contacto mediante su código QR.]]></string>
@@ -439,7 +439,7 @@
     <string name="how_it_works">Cómo funciona</string>
     <string name="delete_message_cannot_be_undone_warning">El mensaje será eliminado. ¡No podrá deshacerse!</string>
     <string name="incognito_info_protects">El modo incógnito protege tu privacidad creando un perfil aleatorio por cada contacto.</string>
-    <string name="turn_off_battery_optimization"><![CDATA[Para usar SimpleX, por favor <b>permite que SimpleX se ejecute en segundo plano</b> en el siguiente cuadro de diálogo. De lo contrario las notificaciones se desactivarán.]]></string>
+    <string name="turn_off_battery_optimization">Para usar SimpleX, por favor <b>permite que SimpleX se ejecute en segundo plano</b> en el siguiente cuadro de diálogo. De lo contrario las notificaciones se desactivarán.</string>
     <string name="install_simplex_chat_for_terminal">Instalar terminal para SimpleX Chat</string>
     <string name="group_invitation_item_description">invitación al grupo %1$s</string>
     <string name="rcv_group_event_member_added">ha invitado a %1$s</string>
@@ -452,7 +452,7 @@
     <string name="network_settings_title">Configuración de red</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">No se usarán hosts .onion</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Sólo los dispositivos cliente almacenan perfiles de usuario, contactos, grupos y mensajes enviados con <b>cifrado de extremo a extremo de 2 capas</b> .]]></string>
-    <string name="onboarding_notifications_mode_subtitle">Puede cambiarse más tarde en Configuración.</string>
+    <string name="onboarding_notifications_mode_subtitle">Puedes cambiar estos ajustes más tarde en Configuración.</string>
     <string name="onboarding_notifications_mode_service">Instantánea</string>
     <string name="join_group_button">Únete</string>
     <string name="join_group_incognito_button">Únete en modo incógnito</string>
@@ -499,7 +499,7 @@
     <string name="invalid_message_format">formato de mensaje no válido</string>
     <string name="live">EN VIVO</string>
     <string name="moderated_description">eliminado por el moderador</string>
-    <string name="display_name_invited_to_connect">invitado a conectarse</string>
+    <string name="display_name_invited_to_connect">invitación a conectarse</string>
     <string name="service_notifications_disabled">¡Las notificaciones instantáneas están desactivadas!</string>
     <string name="notification_preview_new_message">mensaje nuevo</string>
     <string name="notification_new_contact_request">Nueva solicitud de contacto</string>
@@ -713,7 +713,7 @@
     <string name="save_and_notify_group_members">Guardar y notificar a los miembros del grupo</string>
     <string name="connection_error_auth_desc">A menos que tu contacto haya eliminado la conexión o que este enlace ya se haya usado, podría ser un error. Por favor, notifícalo.
 \nPara conectarte, pide a tu contacto que cree otro enlace de conexión y comprueba que tienes buena conexión de red.</string>
-    <string name="periodic_notifications_desc">La aplicación recoge nuevos mensajes periódicamente por lo que usa un pequeño porcentaje de la batería al día. La aplicación no hace uso de notificaciones automáticas: los datos de tu dispositivo no se envían a los servidores.</string>
+    <string name="periodic_notifications_desc">La aplicación recoge nuevos mensajes periódicamente lo que consume un pequeño porcentaje de batería al día. La aplicación no usa notificaciones push por tanto los datos de tu dispositivo no se envían a los servidores push.</string>
     <string name="la_notice_title_simplex_lock">Bloqueo SimpleX</string>
     <string name="auth_unlock">Desbloquear</string>
     <string name="this_text_is_available_in_settings">Este texto está disponible en Configuración</string>
@@ -722,7 +722,7 @@
     <string name="using_simplex_chat_servers">Usando servidores SimpleX Chat.</string>
     <string name="network_session_mode_transport_isolation">Aislamiento de transporte</string>
     <string name="strikethrough_text">tachado</string>
-    <string name="use_chat">Usar Chat</string>
+    <string name="use_chat">Abrir SimpleX</string>
     <string name="settings_section_title_socks">PROXY SOCKS</string>
     <string name="settings_section_title_themes">TEMAS</string>
     <string name="stop_chat_confirmation">Detener</string>
@@ -764,8 +764,8 @@
     <string name="add_contact_or_create_group">Inciar chat nuevo</string>
     <string name="stop_chat_to_export_import_or_delete_chat_database">Para exportar, importar o eliminar la base de datos debes detener Chat. Durante la parada no podrás recibir o enviar mensajes.</string>
     <string name="thank_you_for_installing_simplex">Gracias por instalar SimpleX Chat!</string>
-    <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger la privacidad, en lugar de los identificadores de usuario que usan el resto de plataformas, SimpleX dispone de identificadores para las colas de mensajes, independientes para cada uno de tus contactos.</string>
-    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Para proteger tu información, activa Bloqueo SimpleX.
+    <string name="to_protect_privacy_simplex_has_ids_for_queues">Para proteger tu privacidad, en lugar de los identificadores de usuario que usan el resto de plataformas, SimpleX dispone de identificadores para las colas de mensajes, independientes para cada uno de tus contactos.</string>
+    <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Para proteger tu información, activa el Bloqueo SimpleX.
 \nSe te pedirá que completes la autenticación antes de activar esta función.</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Al actualizar la configuración, el cliente se reconectará a todos los servidores.</string>
     <string name="use_simplex_chat_servers__question">¿Usar servidores SimpleX Chat\?</string>
@@ -883,7 +883,7 @@
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Tu contacto debe estar en línea para que se complete la conexión.
 \nPuedes cancelar esta conexión y eliminar el contacto (e intentarlo más tarde con un enlace nuevo).</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">La base de datos actual será ELIMINADA y SUSTITUIDA por la importada.
-\nEsta acción no se puede deshacer. Tu perfil, contactos, mensajes y archivos se perderán irreversiblemente.</string>
+\nEsta acción no podrá deshacerse. Tu perfil, contactos, mensajes y archivos actuales se perderán irreversiblemente.</string>
     <string name="incognito_random_profile">Tu perfil aleatorio</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Te conectarás cuando tu solicitud se acepte, por favor espera o compruébalo más tarde.</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Te conectarás cuando el dispositivo de tu contacto esté en línea, por favor espera o compruébalo más tarde.</string>
@@ -941,7 +941,7 @@
     <string name="connected_to_server_to_receive_messages_from_contact">Estás conectado al servidor usado para recibir mensajes de este contacto.</string>
     <string name="description_via_contact_address_link">mediante enlace de dirección de contacto</string>
     <string name="description_via_group_link">mediante enlace de grupo</string>
-    <string name="description_you_shared_one_time_link">has compartido enlace de un solo uso</string>
+    <string name="description_you_shared_one_time_link">enlace de un solo uso</string>
     <string name="description_you_shared_one_time_link_incognito">has compartido enlace de un solo uso en módo incógnito</string>
     <string name="you_have_no_chats">No tienes chats</string>
     <string name="contact_sent_large_file">El contacto ha enviado un archivo mayor al máximo admitido (%1$s ).</string>
@@ -1125,7 +1125,7 @@
     <string name="learn_more">Más información</string>
     <string name="if_you_cant_meet_in_person">Si no puedes reunirte en persona, **muestra el código QR por videollamada**, o comparte el enlace.</string>
     <string name="scan_qr_to_connect_to_contact">Para conectarse, tu contacto puede escanear el código QR o usar el enlace en la aplicación.</string>
-    <string name="create_simplex_address">Crear tu dirección SimpleX</string>
+    <string name="create_simplex_address">Crear dirección SimpleX</string>
     <string name="auto_accept_contact">Auto aceptar</string>
     <string name="group_welcome_preview">Vista previa</string>
     <string name="opening_database">Abriendo base de datos…</string>
@@ -1174,7 +1174,7 @@
     <string name="share_with_contacts">Compartir con contactos</string>
     <string name="color_title">Título</string>
     <string name="you_can_share_this_address_with_your_contacts">Puedes compartir esta dirección con tus contactos para que puedan conectar con %s.</string>
-    <string name="your_contacts_will_see_it">Tus contactos en SimpleX lo verán.
+    <string name="your_contacts_will_see_it">Tus contactos en SimpleX la verán.
 \nPuedes cambiarlo en Configuración.</string>
     <string name="your_contacts_will_remain_connected">Tus contactos permanecerán conectados.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Si más tarde decides eliminar tu dirección los contactos no se perderán.</string>
