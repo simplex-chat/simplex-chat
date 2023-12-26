@@ -408,8 +408,8 @@ data ChatCommand
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: Text, message :: Text}
-  -- | APINewLocalChat UserId LocalChatProfile
   | NewNoteFolder NoteFolderName
+  | ClearNoteFolder NoteFolderName
   | DeleteNoteFolder NoteFolderName
   | LastChats (Maybe Int) -- UserId (not used in UI)
   | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)

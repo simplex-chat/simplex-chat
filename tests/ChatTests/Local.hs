@@ -70,6 +70,10 @@ testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/fs 1"
   alice <## "local file 1 (test.jpg)"
 
+  alice ##> "/clear $self"
+  alice ##> "/fs 1"
+  alice <## "chat db error: SEChatItemNotFoundByFileId {fileId = 1}"
+
 createFolder :: TestCC -> String -> IO ()
 createFolder cc label = do
   cc ##> ("/note folder " <> label)

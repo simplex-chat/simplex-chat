@@ -79,7 +79,12 @@ deleteNoteFolderFiles db userId NoteFolder {noteFolderId} = do
         AND chat_item_id IN (
           SELECT chat_item_id FROM chat_items WHERE user_id = ? AND note_folder_id = ?
         )
-      |] (userId, userId, noteFolderId)
+    |]
+    (userId, userId, noteFolderId)
+
+deleteNoteFolderCIs :: DB.Connection -> User -> NoteFolder -> IO ()
+deleteNoteFolderCIs db User {userId} NoteFolder {noteFolderId} =
+  DB.execute db [sql| DELETE FROM chat_items WHERE user_id = ? AND note_folder_id = ? |] (userId, noteFolderId)
 
 deleteNoteFolder :: DB.Connection -> User -> NoteFolder -> IO ()
 deleteNoteFolder db User {userId} NoteFolder {noteFolderId} =

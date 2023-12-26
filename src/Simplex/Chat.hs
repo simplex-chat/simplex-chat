@@ -1040,7 +1040,7 @@ processChatCommand' vr = \case
         withStore' $ \db -> deleteNoteFolder db user nf
         pure $ CRNoteFolderDeleted user nf
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
-  APIClearChat (ChatRef cType chatId) -> withUser $ \user -> case cType of
+  APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
       ct <- withStore $ \db -> getContact db user chatId
       filesInfo <- withStore' $ \db -> getContactFileInfo db user ct
@@ -1055,7 +1055,14 @@ processChatCommand' vr = \case
       membersToDelete <- withStore' $ \db -> getGroupMembersForExpiration db user gInfo
       forM_ membersToDelete $ \m -> withStore' $ \db -> deleteGroupMember db user m
       pure $ CRChatCleared user (AChatInfo SCTGroup $ GroupChat gInfo)
-    CTLocal -> error "TODO: APIClearChat.CTLocal"
+    CTLocal -> do
+      nf <- withStore $ \db -> getNoteFolder db user chatId
+      filesInfo <- withStore' $ \db -> getNoteFolderFileInfo db user nf
+      withChatLock "clearChat local" . procCmd $ do
+        mapM_ (deleteFile user) filesInfo
+        withStore' $ \db -> deleteNoteFolderFiles db userId nf
+        withStore' $ \db -> deleteNoteFolderCIs db user nf
+        pure $ CRChatCleared user (AChatInfo SCTLocal $ LocalChat nf)
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIAcceptContact incognito connReqId -> withUser $ \_ -> withChatLock "acceptContact" $ do
@@ -1836,13 +1843,12 @@ processChatCommand' vr = \case
     quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName quotedMsg
     let mc = MCText msg
     processChatCommand . APISendMessage (ChatRef CTGroup groupId) False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
-  -- APINewLocalChat userId localChatProfile -> withUserId userId $ \user -> do
-  --   checkValidName displayName
-  --   CRLocalChatCreated user <$> createLocalChat userId localChatProfile
   NewNoteFolder displayName -> withUser $ \user@User {userId} -> do
-    -- processChatCommand $ APINewLocalChat userId localChatProfile
     checkValidName displayName
     withStore $ \db -> CRNoteFolderCreated user <$> createNewNoteFolder db userId displayName
+  ClearNoteFolder displayName -> withUser $ \user -> do
+    folderId <- withStore $ \db -> getNoteFolderIdByName db user displayName
+    processChatCommand $ APIClearChat (ChatRef CTLocal folderId)
   DeleteNoteFolder displayName -> withUser $ \user -> do
     folderId <- withStore $ \db -> getNoteFolderIdByName db user displayName
     processChatCommand $ APIDeleteChat (ChatRef CTLocal folderId) True
@@ -6367,7 +6373,7 @@ chatCommandP =
       ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName),
       ("/delete $" <|> "/d $") *> (DeleteNoteFolder <$> displayName),
       ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayName),
-      -- TODO: "/clear $" *> (ClearNoteFolder <$> displayName),
+      "/clear $" *> (ClearNoteFolder <$> displayName),
       "/clear #" *> (ClearGroup <$> displayName),
       "/clear " *> char_ '@' *> (ClearContact <$> displayName),
       ("/members " <|> "/ms ") *> char_ '#' *> (ListMembers <$> displayName),
