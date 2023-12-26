@@ -33,6 +33,10 @@ testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/_reaction $1 1 on {\"type\":\"emoji\",\"emoji\":\"🚀\"}"
   alice <## "added 🚀"
 
+  alice #$> ("/_read chat $1 from=1 to=100", id, "ok")
+  alice ##> "/_unread chat $1 on"
+  alice <## "ok"
+
   alice ##> "/_delete item $1 1 internal"
   alice <## "message deleted"
   alice ##> "/tail"

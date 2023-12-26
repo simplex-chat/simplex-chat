@@ -61,6 +61,7 @@ module Simplex.Chat.Store.Messages
     updateGroupChatItemsRead,
     getGroupUnreadTimedItems,
     setGroupChatItemDeleteAt,
+    updateLocalChatItemsRead,
     getChatRefViaItemId,
     getChatItemVersions,
     getDirectCIReactions,
@@ -1298,6 +1299,27 @@ setGroupChatItemDeleteAt db User {userId} groupId chatItemId deleteAt =
     db
     "UPDATE chat_items SET timed_delete_at = ? WHERE user_id = ? AND group_id = ? AND chat_item_id = ?"
     (deleteAt, userId, groupId, chatItemId)
+
+updateLocalChatItemsRead :: DB.Connection -> User -> NoteFolderId -> Maybe (ChatItemId, ChatItemId) -> IO ()
+updateLocalChatItemsRead db User {userId} noteFolderId itemsRange_ = do
+  currentTs <- getCurrentTime
+  case itemsRange_ of
+    Just (fromItemId, toItemId) ->
+      DB.execute
+        db
+        [sql|
+          UPDATE chat_items SET item_status = ?, updated_at = ?
+          WHERE user_id = ? AND note_folder_id = ? AND chat_item_id >= ? AND chat_item_id <= ? AND item_status = ?
+        |]
+        (CISRcvRead, currentTs, userId, noteFolderId, fromItemId, toItemId, CISRcvNew)
+    _ ->
+      DB.execute
+        db
+        [sql|
+          UPDATE chat_items SET item_status = ?, updated_at = ?
+          WHERE user_id = ? AND note_folder_id = ? AND item_status = ?
+        |]
+        (CISRcvRead, currentTs, userId, noteFolderId, CISRcvNew)
 
 type MaybeCIFIleRow = (Maybe Int64, Maybe String, Maybe Integer, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe ACIFileStatus, Maybe FileProtocol)
 

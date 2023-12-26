@@ -69,6 +69,11 @@ getNoteFolder db User {userId} noteFolderId =
     toNoteFolder (displayName, localDisplayName, createdAt, updatedAt, chatTs, favorite, unread) =
       NoteFolder {noteFolderId, userId, displayName, localDisplayName, createdAt, updatedAt, chatTs, favorite, unread}
 
+updateNoteFolderUnreadChat :: DB.Connection -> User -> NoteFolder -> Bool -> IO ()
+updateNoteFolderUnreadChat db User {userId} NoteFolder {noteFolderId} unreadChat = do
+  updatedAt <- getCurrentTime
+  DB.execute db [sql| UPDATE note_folders SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND note_folder_id = ? |] (unreadChat, updatedAt, userId, noteFolderId)
+
 deleteNoteFolderFiles :: DB.Connection -> UserId -> NoteFolder -> IO ()
 deleteNoteFolderFiles db userId NoteFolder {noteFolderId} = do
   DB.execute

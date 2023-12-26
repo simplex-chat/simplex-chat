@@ -971,7 +971,10 @@ processChatCommand' vr = \case
         startProximateTimedItemThread user (ChatRef CTGroup chatId, itemId) deleteAt
       withStore' $ \db -> updateGroupChatItemsRead db userId chatId fromToIds
       ok user
-    CTLocal -> error "TODO: APIChatRead.CTLocal"
+    CTLocal -> do
+      user <- withStore $ \db -> getUserByNoteFolderId db chatId
+      withStore' $ \db -> updateLocalChatItemsRead db user chatId fromToIds
+      ok user
     CTContactRequest -> pure $ chatCmdError Nothing "not supported"
     CTContactConnection -> pure $ chatCmdError Nothing "not supported"
   APIChatUnread (ChatRef cType chatId) unreadChat -> withUser $ \user -> case cType of
@@ -985,7 +988,11 @@ processChatCommand' vr = \case
         Group {groupInfo} <- getGroup db vr user chatId
         liftIO $ updateGroupUnreadChat db user groupInfo unreadChat
       ok user
-    CTLocal -> error "APIChatUnread: CTLocal"
+    CTLocal -> do
+      withStore $ \db -> do
+        nf <- getNoteFolder db user chatId
+        liftIO $ updateNoteFolderUnreadChat db user nf unreadChat
+      ok user
     _ -> pure $ chatCmdError (Just user) "not supported"
   APIDeleteChat (ChatRef cType chatId) notify -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
