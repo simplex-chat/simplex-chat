@@ -85,6 +85,7 @@ module Simplex.Chat.Store.Messages
     getGroupChatItemByAgentMsgId,
     getGroupMemberChatItemLast,
     getLocalChatItem,
+    updateLocalChatItem',
     getDirectChatItemIdByText,
     getDirectChatItemIdByText',
     getGroupChatItemIdByText,
@@ -2014,6 +2015,29 @@ getLocalChatItemIdByText' db User {userId} noteFolderId msg =
         LIMIT 1
       |]
       (userId, noteFolderId, msg <> "%")
+
+updateLocalChatItem' :: forall d. MsgDirectionI d => DB.Connection -> User -> NoteFolderId -> ChatItem 'CTLocal d -> CIContent d -> IO (ChatItem 'CTLocal d)
+updateLocalChatItem' db User {userId} noteFolderId ci newContent = do
+  currentTs <- liftIO getCurrentTime
+  let ci' = updatedChatItem ci newContent False currentTs
+  liftIO $ updateLocalChatItem_ db userId noteFolderId ci'
+  pure ci'
+
+-- this function assumes that direct item with correct chat direction already exists,
+-- it should be checked before calling it
+updateLocalChatItem_ :: forall d. MsgDirectionI d => DB.Connection -> UserId -> NoteFolderId -> ChatItem 'CTLocal d -> IO ()
+updateLocalChatItem_ db userId noteFolderId ChatItem {meta, content} = do
+  let CIMeta {itemId, itemText, itemStatus, itemDeleted, itemEdited, updatedAt} = meta
+      itemDeleted' = isJust itemDeleted
+      itemDeletedTs' = itemDeletedTs =<< itemDeleted
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_items
+      SET item_content = ?, item_text = ?, item_status = ?, item_deleted = ?, item_deleted_ts = ?, item_edited = ?, updated_at = ?
+      WHERE user_id = ? AND note_folder_id = ? AND chat_item_id = ?
+    |]
+    ((content, itemText, itemStatus, itemDeleted', itemDeletedTs', itemEdited, updatedAt) :. (userId, noteFolderId, itemId))
 
 deleteLocalChatItem :: DB.Connection -> User -> NoteFolder -> ChatItem 'CTLocal d -> IO ()
 deleteLocalChatItem db User {userId} NoteFolder {noteFolderId} ci = do

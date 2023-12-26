@@ -42,6 +42,11 @@ testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/tail"
   alice ##> "/chats"
 
+  alice #> "$self ahoy!"
+  alice ##> "/_update item $1 1 text Greetings."
+  alice ##> "/tail $self"
+  alice <# "$self Greetings."
+
   alice ##> "/delete $self"
   alice <## "note folder self deleted"
 

@@ -848,7 +848,21 @@ processChatCommand' vr = \case
                 else pure $ CRChatItemNotChanged user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
             _ -> throwChatError CEInvalidChatItemUpdate
         CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
-    CTLocal -> pure $ chatCmdError (Just user) "TODO: APIUpdateChatItem.CTLocal"
+    CTLocal -> do
+      (nf@NoteFolder {noteFolderId}, cci) <- withStore $ \db -> (,) <$> getNoteFolder db user chatId <*> getLocalChatItem db user chatId itemId
+      case cci of
+        CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
+        CChatItem SMDSnd ci@ChatItem {meta = CIMeta {editable}, content = ciContent} -> do
+          case (ciContent, editable) of
+            (CISndMsgContent oldMC, True) ->
+              if mc /= oldMC
+                then withStore' $ \db -> do
+                  currentTs <- getCurrentTime
+                  addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
+                  ci' <- updateLocalChatItem' db user noteFolderId ci (CISndMsgContent mc)
+                  pure $ CRChatItemUpdated user (AChatItem SCTLocal SMDSnd (LocalChat nf) ci')
+                else pure $ CRChatItemNotChanged user (AChatItem SCTLocal SMDSnd (LocalChat nf) ci)
+            _ -> throwChatError CEInvalidChatItemUpdate
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIDeleteChatItem (ChatRef cType chatId) itemId mode -> withUser $ \user -> withChatLock "deleteChatItem" $ case cType of
@@ -6125,7 +6139,7 @@ createLocalChatItem user cd content itemTs_ = do
     when (ciRequiresAttention content) . liftIO $ updateChatTs db user cd createdAt
     createWithRandomId gVar $ \sharedMsgId ->
       let smi_ = Just (SharedMsgId sharedMsgId)
-      in createNewChatItem_ db user cd Nothing smi_ content (Nothing, Nothing, Nothing, Nothing, Nothing) Nothing False itemTs Nothing createdAt
+       in createNewChatItem_ db user cd Nothing smi_ content (Nothing, Nothing, Nothing, Nothing, Nothing) Nothing False itemTs Nothing createdAt
   liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
 
 getCreateActiveUser :: SQLiteStore -> Bool -> IO User
