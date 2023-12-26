@@ -901,8 +901,8 @@
     <string name="invalid_data">données invalides</string>
     <string name="invalid_chat">chat invalide</string>
     <string name="icon_descr_cancel_live_message">Annuler le message dynamique</string>
-    <string name="feature_offered_item">offert %s</string>
-    <string name="feature_offered_item_with_param">offert %s: %2s</string>
+    <string name="feature_offered_item">propose %s</string>
+    <string name="feature_offered_item_with_param">propose %s : %2s</string>
     <string name="feature_cancelled_item">annulé %s</string>
     <string name="app_version_title">Version de l\'app</string>
     <string name="core_simplexmq_version">simplexmq : v%s (%2s)</string>
