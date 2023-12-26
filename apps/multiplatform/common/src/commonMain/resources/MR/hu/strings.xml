@@ -1421,7 +1421,7 @@
     <string name="snd_conn_event_switch_queue_phase_completed">megváltoztattad az azonosítót</string>
     <string name="v4_3_irreversible_message_deletion_desc">Az ismerőseid engedélyezhetik a teljes üzenet törlést.</string>
     <string name="you_have_to_enter_passphrase_every_time">Be kell írd a jelmondatodat a SimpleX app minden indulásakor - nem az eszközön lesz tárolva.</string>
-    <string name="open_port_in_firewall_desc">Ahhoz, hogy engedélyezda mobil app csatlakozását a számítógépedhez, nyisd meg ezt a portot a tűzfaladon, ha az engedélyezve van</string>
+    <string name="open_port_in_firewall_desc">Ahhoz, hogy engedélyezd a mobil app csatlakozását a számítógépedhez, nyisd meg ezt a portot a tűzfaladon, ha az engedélyezve van</string>
     <string name="your_profile_is_stored_on_your_device">A te profilod, ismerőseid és az elküldött üzeneteid a te eszközödön vannak tárolva (a SimpleX chat szerverekről kézbesítés illetve a TTL időkorlát után törlődnek).</string>
     <string name="system_restricted_background_warn">Az értesítések engedélyezéséhez kérlek válaszd az <b>App akkumulátor használat</b> / <b>Korlátlan</b> módot az app beállításaiban.</string>
     <string name="this_string_is_not_a_connection_link">Ez a karakterlánc nem meghívó link!</string>
