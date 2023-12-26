@@ -35,9 +35,10 @@ import Simplex.Messaging.Agent.Protocol (ConnId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, firstRow', maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Util (eitherToMaybe)
+import Simplex.Messaging.Version (VersionRange)
 
-getConnectionEntity :: DB.Connection -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
-getConnectionEntity db user@User {userId, userContactId} agentConnId = do
+getConnectionEntity :: DB.Connection -> VersionRange -> User -> AgentConnId -> ExceptT StoreError IO ConnectionEntity
+getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
   c@Connection {connType, entityId} <- getConnection_
   case entityId of
     Nothing ->
@@ -115,7 +116,7 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
           (groupMemberId, userId, userContactId)
     toGroupAndMember :: Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupMember)
     toGroupAndMember c (groupInfoRow :. memberRow) =
-      let groupInfo = toGroupInfo userContactId groupInfoRow
+      let groupInfo = toGroupInfo vr userContactId groupInfoRow
           member = toGroupMember userContactId memberRow
        in (groupInfo, (member :: GroupMember) {activeConn = Just c})
     getConnSndFileTransfer_ :: Int64 -> Connection -> ExceptT StoreError IO SndFileTransfer
@@ -154,19 +155,19 @@ getConnectionEntity db user@User {userId, userContactId} agentConnId = do
         userContact_ [(cReq, groupId)] = Right UserContact {userContactLinkId, connReqContact = cReq, groupId}
         userContact_ _ = Left SEUserContactLinkNotFound
 
-getConnectionEntityByConnReq :: DB.Connection -> User -> (ConnReqInvitation, ConnReqInvitation) -> IO (Maybe ConnectionEntity)
-getConnectionEntityByConnReq db user@User {userId} (cReqSchema1, cReqSchema2) = do
+getConnectionEntityByConnReq :: DB.Connection -> VersionRange -> User -> (ConnReqInvitation, ConnReqInvitation) -> IO (Maybe ConnectionEntity)
+getConnectionEntityByConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2) = do
   connId_ <-
     maybeFirstRow fromOnly $
       DB.query db "SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_req_inv IN (?,?) LIMIT 1" (userId, cReqSchema1, cReqSchema2)
-  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db user) connId_
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db vr user) connId_
 
 -- search connection for connection plan:
 -- multiple connections can have same via_contact_uri_hash if request was repeated;
 -- this function searches for latest connection with contact so that "known contact" plan would be chosen;
 -- deleted connections are filtered out to allow re-connecting via same contact address
-getContactConnEntityByConnReqHash :: DB.Connection -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe ConnectionEntity)
-getContactConnEntityByConnReqHash db user@User {userId} (cReqHash1, cReqHash2) = do
+getContactConnEntityByConnReqHash :: DB.Connection -> VersionRange -> User -> (ConnReqUriHash, ConnReqUriHash) -> IO (Maybe ConnectionEntity)
+getContactConnEntityByConnReqHash db vr user@User {userId} (cReqHash1, cReqHash2) = do
   connId_ <-
     maybeFirstRow fromOnly $
       DB.query
@@ -183,14 +184,14 @@ getContactConnEntityByConnReqHash db user@User {userId} (cReqHash1, cReqHash2) =
           )
         |]
         (userId, cReqHash1, cReqHash2, ConnDeleted)
-  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db user) connId_
+  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getConnectionEntity db vr user) connId_
 
-getConnectionsToSubscribe :: DB.Connection -> IO ([ConnId], [ConnectionEntity])
-getConnectionsToSubscribe db = do
+getConnectionsToSubscribe :: DB.Connection -> VersionRange -> IO ([ConnId], [ConnectionEntity])
+getConnectionsToSubscribe db vr = do
   aConnIds <- map fromOnly <$> DB.query_ db "SELECT agent_conn_id FROM connections where to_subscribe = 1"
   entities <- forM aConnIds $ \acId -> do
     getUserByAConnId db acId >>= \case
-      Just user -> eitherToMaybe <$> runExceptT (getConnectionEntity db user acId)
+      Just user -> eitherToMaybe <$> runExceptT (getConnectionEntity db vr user acId)
       Nothing -> pure Nothing
   unsetConnectionToSubscribe db
   let connIds = map (\(AgentConnId connId) -> connId) aConnIds
