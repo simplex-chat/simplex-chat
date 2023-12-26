@@ -1613,4 +1613,6 @@
     <string name="open_port_in_firewall_desc">Um einer Mobiltelefon-App die Verbindung zum Desktop zu ermöglichen, öffnen Sie diesen Port in Ihrer Firewall, falls Sie diese aktiviert haben</string>
     <string name="open_port_in_firewall_title">Port in Firewall öffnen</string>
     <string name="app_was_crashed">Ansicht abgestürzt</string>
+    <string name="error_showing_content">Fehler beim Anzeigen des Inhalts</string>
+    <string name="error_showing_message">Fehler beim Anzeigen der Nachricht</string>
 </resources>
