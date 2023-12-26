@@ -794,7 +794,7 @@ processChatCommand' vr = \case
     forM_ quotedItemId_ $ \_ -> throwError $ ChatError $ CECommandError "not supported"
     nf <- withStore $ \db -> getNoteFolder db user folderId
     -- TODO: assertLocalAllowed user MDSnd nf XMsgNew_
-    ci'@ChatItem {meta = CIMeta {itemId, itemTs}} <- createInternalChatItem_ user (CDLocalSnd nf) (CISndMsgContent mc) Nothing
+    ci'@ChatItem {meta = CIMeta {itemId, itemTs}} <- createLocalChatItem user (CDLocalSnd nf) (CISndMsgContent mc) Nothing
     ciFile_ <- forM file_ $ \cf@CryptoFile {filePath, cryptoArgs} -> do
       fsFilePath <- toFSFilePath filePath -- XXX: only used for size?..
       fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cryptoArgs
@@ -926,7 +926,20 @@ processChatCommand' vr = \case
               r = ACIReaction SCTGroup SMDSnd (GroupChat g) $ CIReaction CIGroupSnd ci' createdAt reaction
           pure $ CRChatItemReaction user add r
         _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
-    CTLocal -> pure $ chatCmdError (Just user) "TODO: APIChatItemReaction.CTLocal"
+    CTLocal -> do
+      (nf, CChatItem md ci) <- withStore $ \db -> (,) <$> getNoteFolder db user chatId <*> getLocalChatItem db user chatId itemId
+      itemSharedMId <- case ci of
+        ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} -> pure itemSharedMId
+        _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
+      rs <- withStore' $ \db -> getLocalReactions db nf itemSharedMId True
+      checkReactionAllowed rs
+      createdAt <- liftIO getCurrentTime
+      reactions <- withStore' $ \db -> do
+        setLocalReaction db nf itemSharedMId reaction add createdAt
+        liftIO $ getLocalCIReactions db nf itemSharedMId
+      let ci' = CChatItem md ci {reactions}
+          r = ACIReaction SCTLocal SMDSnd (LocalChat nf) $ CIReaction CILocalSnd ci' createdAt reaction
+      pure $ CRChatItemReaction user add r
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
@@ -6094,6 +6107,18 @@ createInternalChatItem_ user cd content itemTs_ = do
   ciId <- withStore' $ \db -> do
     when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
     createNewChatItemNoMsg db user cd content itemTs createdAt
+  liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
+
+createLocalChatItem :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTLocal d -> CIContent d -> Maybe UTCTime -> m (ChatItem 'CTLocal d)
+createLocalChatItem user cd content itemTs_ = do
+  createdAt <- liftIO getCurrentTime
+  let itemTs = fromMaybe createdAt itemTs_
+  gVar <- asks random
+  ciId <- withStore $ \db -> do
+    when (ciRequiresAttention content) . liftIO $ updateChatTs db user cd createdAt
+    createWithRandomId gVar $ \sharedMsgId ->
+      let smi_ = Just (SharedMsgId sharedMsgId)
+      in createNewChatItem_ db user cd Nothing smi_ content (Nothing, Nothing, Nothing, Nothing, Nothing) Nothing False itemTs Nothing createdAt
   liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
 
 getCreateActiveUser :: SQLiteStore -> Bool -> IO User

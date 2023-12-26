@@ -30,6 +30,9 @@ testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/? keep"
   alice <# "$self keep in mind"
 
+  alice ##> "/_reaction $1 1 on {\"type\":\"emoji\",\"emoji\":\"🚀\"}"
+  alice <## "added 🚀"
+
   alice ##> "/_delete item $1 1 internal"
   alice <## "message deleted"
   alice ##> "/tail"

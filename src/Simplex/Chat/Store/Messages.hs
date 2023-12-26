@@ -34,6 +34,7 @@ module Simplex.Chat.Store.Messages
     createNewSndChatItem,
     createNewRcvChatItem,
     createNewChatItemNoMsg,
+    createNewChatItem_,
     getChatPreviews,
     getDirectChat,
     getGroupChat,
@@ -68,6 +69,9 @@ module Simplex.Chat.Store.Messages
     getGroupCIReactions,
     getGroupReactions,
     setGroupReaction,
+    getLocalReactions,
+    getLocalCIReactions,
+    setLocalReaction,
     getChatItemIdByAgentMsgId,
     getDirectChatItem,
     getDirectCIWithReactions,
@@ -131,7 +135,7 @@ import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Groups
-import Simplex.Chat.Store.NoteFolders (getNoteFolder)
+import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, MsgMeta (..), UserId)
@@ -2139,6 +2143,9 @@ getACIReactions db aci@(AChatItem _ md chat ci@ChatItem {meta = CIMeta {itemShar
       let GroupMember {memberId} = chatItemMember g ci
       reactions <- getGroupCIReactions db g memberId itemSharedMId
       pure $ AChatItem SCTGroup md chat ci {reactions}
+    LocalChat nf -> do
+      reactions <- getLocalCIReactions db nf itemSharedMId
+      pure $ AChatItem SCTLocal md chat ci {reactions}
     _ -> pure aci
   _ -> pure aci
 
@@ -2227,6 +2234,38 @@ setGroupReaction db GroupInfo {groupId} m itemMemberId itemSharedMId sent reacti
           WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id = ? AND reaction_sent = ? AND reaction = ?
         |]
         (groupId, groupMemberId' m, itemSharedMId, itemMemberId, sent, reaction)
+
+getLocalReactions :: DB.Connection -> NoteFolder -> SharedMsgId -> Bool -> IO [MsgReaction]
+getLocalReactions db NoteFolder {noteFolderId} itemSharedMId sent =
+  map fromOnly
+    <$> DB.query
+      db
+      [sql|
+        SELECT reaction
+        FROM chat_item_reactions
+        WHERE note_folder_id = ? AND shared_msg_id = ? AND reaction_sent = ?
+      |]
+      (noteFolderId, itemSharedMId, sent)
+
+setLocalReaction :: DB.Connection -> NoteFolder -> SharedMsgId -> MsgReaction -> Bool -> UTCTime -> IO ()
+setLocalReaction db NoteFolder {noteFolderId} itemSharedMId reaction add reactionTs
+  | add =
+      DB.execute
+        db
+        [sql|
+          INSERT INTO chat_item_reactions
+            (note_folder_id, shared_msg_id, reaction_sent, reaction, reaction_ts)
+            VALUES (?,?,?,?,?)
+        |]
+        (noteFolderId, itemSharedMId, True, reaction, reactionTs)
+  | otherwise =
+      DB.execute
+        db
+        [sql|
+          DELETE FROM chat_item_reactions
+          WHERE note_folder_id = ? AND shared_msg_id = ? AND reaction_sent = ? AND reaction = ?
+        |]
+        (noteFolderId, itemSharedMId, True, reaction)
 
 getTimedItems :: DB.Connection -> User -> UTCTime -> IO [((ChatRef, ChatItemId), UTCTime)]
 getTimedItems db User {userId} startTimedThreadCutoff =
