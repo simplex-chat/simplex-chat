@@ -116,11 +116,9 @@ fun UserPicker(
       }
   }
   LaunchedEffect(Unit) {
-    try {
+    // Controller.ctrl can be null when self-destructing activates
+    if (controller.ctrl != null && controller.ctrl != -1L) {
       controller.reloadRemoteHosts()
-    } catch (e: Exception) {
-      Log.e(TAG, "UserPicker: ${e.stackTraceToString()}")
-      // Can be `java.lang.Exception: Controller is not initialized` while invoking self-destruct process
     }
   }
   val UsersView: @Composable ColumnScope.() -> Unit = {

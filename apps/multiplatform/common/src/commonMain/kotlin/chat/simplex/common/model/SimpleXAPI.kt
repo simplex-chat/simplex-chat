@@ -2141,7 +2141,15 @@ class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
   init {
     this.set = { value ->
       set(value)
-      _state.value = value
+      try {
+        _state.value = value
+      } catch (e: IllegalStateException) {
+        // Can be `Reading a state that was created after the snapshot was taken or in a snapshot that has not yet been applied`
+        Log.i(TAG, e.stackTraceToString())
+        withApi {
+          _state.value = value
+        }
+      }
     }
   }
 }

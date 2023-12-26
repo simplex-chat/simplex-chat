@@ -1,7 +1,6 @@
 package chat.simplex.common.views.localauth
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
@@ -13,19 +12,34 @@ import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.database.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.delay
 
 @Composable
 fun LocalAuthView(m: ChatModel, authRequest: LocalAuthRequest) {
   val passcode = rememberSaveable { mutableStateOf("") }
-  PasscodeView(passcode, authRequest.title ?: stringResource(MR.strings.la_enter_app_passcode), authRequest.reason, stringResource(MR.strings.submit_passcode),
+  val allowToReact = rememberSaveable { mutableStateOf(true) }
+  if (!allowToReact.value) {
+    BackHandler {
+      // do nothing until submit action finishes to prevent concurrent removing of storage
+    }
+  }
+  PasscodeView(passcode, authRequest.title ?: stringResource(MR.strings.la_enter_app_passcode), authRequest.reason, stringResource(MR.strings.submit_passcode), buttonsEnabled = allowToReact,
     submit = {
       val sdPassword = ksSelfDestructPassword.get()
       if (sdPassword == passcode.value && authRequest.selfDestruct) {
+        allowToReact.value = false
         deleteStorageAndRestart(m, sdPassword) { r ->
           authRequest.completed(r)
         }
       } else {
-        val r: LAResult = if (passcode.value == authRequest.password) LAResult.Success else LAResult.Error(generalGetString(MR.strings.incorrect_passcode))
+        val r: LAResult = if (passcode.value == authRequest.password) {
+          if (authRequest.selfDestruct && sdPassword != null && controller.ctrl == -1L) {
+            initChatControllerAndRunMigrations(true)
+          }
+          LAResult.Success
+        } else {
+          LAResult.Error(generalGetString(MR.strings.incorrect_passcode))
+        }
         authRequest.completed(r)
       }
     },
@@ -37,12 +51,23 @@ fun LocalAuthView(m: ChatModel, authRequest: LocalAuthRequest) {
 private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (LAResult) -> Unit) {
   withBGApi {
     try {
+      /** Waiting until [initChatController] finishes */
+      while (m.ctrlInitInProgress.value) {
+        delay(50)
+      }
       if (m.chatRunning.value == true) {
         stopChatAsync(m)
-        deleteChatAsync(m)
-      } else {
-        deleteChatManually()
       }
+      val ctrl = m.controller.ctrl
+      if (ctrl != null && ctrl != -1L) {
+        chatCloseStore(ctrl)
+      }
+      deleteChatManually()
+      // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
+      m.chatId.value = null
+      m.chatItems.clear()
+      m.chats.clear()
+      m.users.clear()
       ksAppPassword.set(password)
       ksSelfDestructPassword.remove()
       ntfManager.cancelAllNotifications()

@@ -463,7 +463,6 @@ suspend fun deleteChatAsync(m: ChatModel) {
 }
 
 fun deleteChatManually() {
-  //controller.apiCloseDatabase()
   val chat = File(dataDir, chatDatabaseFileName)
   val chatBak = File(dataDir, "$chatDatabaseFileName.bak")
   val agent = File(dataDir, agentDatabaseFileName)
