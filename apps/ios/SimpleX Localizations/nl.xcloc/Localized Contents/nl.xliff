@@ -2960,9 +2960,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Instantly" xml:space="preserve">
+      <trans-unit id="Instantly" xml:space="preserve" approved="no">
         <source>Instantly</source>
-        <target>Meteen</target>
+        <target state="translated">Direct</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Interface" xml:space="preserve">
