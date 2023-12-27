@@ -875,8 +875,6 @@
     <string name="incognito_info_share">Biriyle gizli bir profil paylaştığınızda, bu profil sizi davet ettikleri gruplar için kullanılacaktır.</string>
     <string name="v4_2_auto_accept_contact_requests_desc">İsteğe bağlı karşılama mesajı ile.</string>
     <string name="your_contacts_will_remain_connected">Kişileriniz bağlı kalacaktır.</string>
-    <string name="your_contacts_will_see_it">SimpleX\'teki kişileriniz bunu görecektir.
-\nBunu Ayarlardan değiştirebilirsiniz.</string>
     <string name="you_can_create_it_later">Daha sonra oluşturabilirsiniz</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Mesajları biçimlendirmek için markdown kullanabilirsiniz:</string>
     <string name="your_chat_database">Mesaj veri tabanınız</string>

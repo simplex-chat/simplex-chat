@@ -1247,8 +1247,6 @@
     <string name="only_your_contact_can_add_message_reactions">Reakce na zprávy může přidávat pouze váš kontakt.</string>
     <string name="your_contacts_will_remain_connected">Vaše kontakty zůstanou připojeny.</string>
     <string name="you_can_share_this_address_with_your_contacts">Tuto adresu můžete sdílet se svými kontakty, aby se mohli připojit k %s.</string>
-    <string name="your_contacts_will_see_it">Vaše kontakty v SimpleX ji uvidí.
-\nMůžete ji změnit v Nastavení.</string>
     <string name="you_can_share_your_address">Svou adresu můžete sdílet jako odkaz nebo QR kód - kdokoli se k vám může připojit.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Pokud později adresu odstraníte, o kontakty nepřijdete.</string>
     <string name="app_passcode_replaced_with_self_destruct">Přístupový kód aplikace je nahrazen sebedestrukčním přístupovým heslem.</string>
