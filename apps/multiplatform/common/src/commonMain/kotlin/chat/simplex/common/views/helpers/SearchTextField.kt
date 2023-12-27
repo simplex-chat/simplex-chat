@@ -61,6 +61,7 @@ fun SearchTextField(
     textColor = MaterialTheme.colors.onBackground,
     focusedIndicatorColor = Color.Unspecified,
     unfocusedIndicatorColor = Color.Unspecified,
+    disabledIndicatorColor = Color.Unspecified,
   )
   val shape = MaterialTheme.shapes.small.copy(bottomEnd = ZeroCornerSize, bottomStart = ZeroCornerSize)
   val interactionSource = remember { MutableInteractionSource() }
