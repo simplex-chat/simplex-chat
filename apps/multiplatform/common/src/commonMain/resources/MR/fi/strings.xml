@@ -1140,8 +1140,6 @@
     <string name="theme_colors_section_title">TEEMAN VÄRIT</string>
     <string name="update_network_session_mode_question">Päivitä kuljetuksen eristystila\?</string>
     <string name="you_can_create_it_later">Voit luoda sen myöhemmin</string>
-    <string name="your_contacts_will_see_it">Kontaktisi SimpleX:ssä näkevät sen.
-\nVoit muuttaa sitä Asetuksista.</string>
     <string name="to_reveal_profile_enter_password">Voit paljastaa piilotetun profiilisi kirjoittamalla koko salasanan Keskusteluprofiilit-sivun hakukenttään.</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">Emme tallenna mitään kontaktejasi tai viestejäsi (kun ne on toimitettu) palvelimille.</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Yksityisyyden suojaamiseksi kaikkien muiden alustojen käyttämien käyttäjätunnusten sijaan SimpleX käyttää viestijonojen tunnisteita, jotka ovat kaikille kontakteille erillisiä.</string>

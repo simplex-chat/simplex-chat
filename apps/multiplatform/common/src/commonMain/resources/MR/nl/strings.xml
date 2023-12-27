@@ -1173,8 +1173,6 @@
     <string name="read_more_in_user_guide_with_link"><![CDATA[Lees meer in de <font color="#0088ff">Gebruikershandleiding</font>.]]></string>
     <string name="theme_colors_section_title">THEMA KLEUREN</string>
     <string name="you_can_share_your_address">U kunt uw adres delen als een link of QR-code - iedereen kan verbinding met u maken.</string>
-    <string name="your_contacts_will_see_it">Uw contacten in SimpleX kunnen het zien.
-\nU kunt dit wijzigen in Instellingen.</string>
     <string name="all_app_data_will_be_cleared">Alle app-gegevens worden verwijderd.</string>
     <string name="empty_chat_profile_is_created">Er wordt een leeg chatprofiel met de opgegeven naam gemaakt en de app wordt zoals gewoonlijk geopend.</string>
     <string name="enabled_self_destruct_passcode">Zelfvernietigings wachtwoord inschakelen</string>
