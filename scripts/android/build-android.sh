@@ -103,8 +103,10 @@ build() {
 
   for arch in $arches; do
 
-    if [ "$arch" = "armv7a" ]; then
-      git checkout "$(git describe --tags)"-armv7a
+    tag="$(git tag --points-at HEAD)"
+
+    if [ "$arch" = "armv7a" ] && [ -n "$tag" ] ; then
+      git checkout "${tag}-armv7a"
     fi
     
     android_simplex_lib="${folder}#hydraJobs.${arch}-android:lib:simplex-chat.x86_64-linux"
@@ -144,6 +146,10 @@ build() {
     zipalign -p -f 4 "$tmp/$android_apk_output_final" "$PWD/$android_apk_output_final"
 
     rm -rf "$libs_folder/$android_arch"
+
+    if [ "$arch" = "armv7a" ] && [ -n "$tag" ] ; then
+      git checkout "${tag}"
+    fi
   done
 }
 
