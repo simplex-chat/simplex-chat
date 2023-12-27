@@ -183,26 +183,29 @@ final class ChatModel: ObservableObject {
         }
     }
 
-    func updateChatInfo(_ cInfo: ChatInfo) {
+    func updateChatInfo(_ cInfo: ChatInfo, _ logStr: String? = nil) {
         if let i = getChatIndex(cInfo.id) {
-            switch cInfo {
-            case let .direct(contact):
-                let oldChatInfo = chats[i].chatInfo
-                switch oldChatInfo {
-                case let .direct(oldContact):
-                    var newContact = contact
-                    if let oldConn = oldContact.activeConn,
-                       contact.activeConn == nil {
-                        newContact.activeConn = oldConn
-                    }
-                    chats[i].chatInfo = .direct(contact: newContact)
-                    chats[i].created = Date.now
-                default: break // shouldn't happen
-                }
-            default:
+//            switch cInfo {
+//            case let .direct(contact):
+//                let oldChatInfo = chats[i].chatInfo
+//                switch oldChatInfo {
+//                case let .direct(oldContact):
+//                    var newContact = contact
+//                    if let oldConn = oldContact.activeConn,
+//                       contact.activeConn == nil {
+//                        if let logStr = logStr {
+//                            logger.debug("#################### tried to remove connection from contact: \(logStr)")
+//                        }
+//                        newContact.activeConn = oldConn
+//                    }
+//                    chats[i].chatInfo = .direct(contact: newContact)
+//                    chats[i].created = Date.now
+//                default: break // shouldn't happen
+//                }
+//            default:
                 chats[i].chatInfo = cInfo
                 chats[i].created = Date.now
-            }
+//            }
         }
     }
 
@@ -715,7 +718,7 @@ final class ChatModel: ObservableObject {
         if let conn = contact.activeConn {
             networkStatuses[conn.agentConnId] ?? .unknown
         } else {
-            .unknown // can also try .connected here
+            .connected // can also try .connected here
         }
     }
 }
