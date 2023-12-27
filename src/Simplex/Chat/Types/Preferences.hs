@@ -383,19 +383,19 @@ class (Eq (FeaturePreference f), HasField "allow" (FeaturePreference f) FeatureA
   prefParam :: FeaturePreference f -> Maybe Int
 
 instance HasField "allow" TimedMessagesPreference FeatureAllowed where
-  hasField p@TimedMessagesPreference {allow} = (\allow' -> p {allow = allow'}, allow)
+  hasField p@TimedMessagesPreference {allow} = (\a -> p {allow = a}, allow)
 
 instance HasField "allow" FullDeletePreference FeatureAllowed where
-  hasField p@FullDeletePreference {allow} = (\allow' -> p {allow = allow'}, allow)
+  hasField p@FullDeletePreference {allow} = (\a -> p {allow = a}, allow)
 
 instance HasField "allow" ReactionsPreference FeatureAllowed where
-  hasField p@ReactionsPreference {allow} = (\allow' -> p {allow = allow'}, allow)
+  hasField p@ReactionsPreference {allow} = (\a -> p {allow = a}, allow)
 
 instance HasField "allow" VoicePreference FeatureAllowed where
-  hasField p@VoicePreference {allow} = (\allow' -> p {allow = allow'}, allow)
+  hasField p@VoicePreference {allow} = (\a -> p {allow = a}, allow)
 
 instance HasField "allow" CallsPreference FeatureAllowed where
-  hasField p@CallsPreference {allow} = (\allow' -> p {allow = allow'}, allow)
+  hasField p@CallsPreference {allow} = (\a -> p {allow = a}, allow)
 
 instance FeatureI 'CFTimedMessages where
   type FeaturePreference 'CFTimedMessages = TimedMessagesPreference
@@ -462,28 +462,28 @@ class (Eq (GroupFeaturePreference f), HasField "enable" (GroupFeaturePreference 
   groupPrefParam :: GroupFeaturePreference f -> Maybe Int
 
 instance HasField "enable" GroupPreference GroupFeatureEnabled where
-  hasField p@GroupPreference {enable} = (\e' -> p {enable = e'}, enable)
+  hasField p@GroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance HasField "enable" TimedMessagesGroupPreference GroupFeatureEnabled where
-  hasField p@TimedMessagesGroupPreference {enable} = (\e' -> p {enable = e'}, enable)
+  hasField p@TimedMessagesGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance HasField "enable" DirectMessagesGroupPreference GroupFeatureEnabled where
-  hasField p@DirectMessagesGroupPreference {enable} = (\e' -> p {enable = e'}, enable)
+  hasField p@DirectMessagesGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance HasField "enable" ReactionsGroupPreference GroupFeatureEnabled where
-  hasField p@ReactionsGroupPreference {enable} = (\e' -> p {enable = e'}, enable)
+  hasField p@ReactionsGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance HasField "enable" FullDeleteGroupPreference GroupFeatureEnabled where
-  hasField p@FullDeleteGroupPreference {enable} = (\e' -> p {enable = e'}, enable)
+  hasField p@FullDeleteGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance HasField "enable" VoiceGroupPreference GroupFeatureEnabled where
-  hasField p@VoiceGroupPreference {enable} = (\e' -> p {enable = e'}, enable)
+  hasField p@VoiceGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance HasField "enable" FilesGroupPreference GroupFeatureEnabled where
-  hasField p@FilesGroupPreference {enable} = (\e' -> p {enable = e'}, enable)
+  hasField p@FilesGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance HasField "enable" HistoryGroupPreference GroupFeatureEnabled where
-  hasField p@HistoryGroupPreference {enable} = (\e' -> p {enable = e'}, enable)
+  hasField p@HistoryGroupPreference {enable} = (\e -> p {enable = e}, enable)
 
 instance GroupFeatureI 'GFTimedMessages where
   type GroupFeaturePreference 'GFTimedMessages = TimedMessagesGroupPreference
