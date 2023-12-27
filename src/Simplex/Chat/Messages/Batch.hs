@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -10,13 +11,21 @@ module Simplex.Chat.Messages.Batch
 where
 
 import Data.ByteString.Builder (Builder, charUtf8, lazyByteString)
+#if !MIN_VERSION_bytestring(0,11,1)
+import Data.ByteString.Builder (toLazyByteString)
+#endif
 import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Messages
 
 data MsgBatch = MsgBatch Builder [SndMessage]
+#if MIN_VERSION_bytestring(0,11,1)
   deriving (Show)
+#else
+instance Show MsgBatch where
+  show (MsgBatch b ms) = unwords ["MsgBatch", show $ toLazyByteString b, show ms]
+#endif
 
 -- | Batches [SndMessage] into batches of ByteString builders in form of JSON arrays.
 -- Does not check if the resulting batch is a valid JSON.

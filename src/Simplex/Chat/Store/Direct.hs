@@ -2,7 +2,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -489,7 +488,7 @@ createOrUpdateContactRequest db user@User {userId} userContactLinkId invId (Vers
         ExceptT $
           maybeM getContactRequestByXContactId xContactId_ >>= \case
             Nothing -> createContactRequest
-            Just cr -> updateContactRequest cr $> Right cr.contactRequestId
+            Just cr@UserContactRequest {contactRequestId} -> updateContactRequest cr $> Right contactRequestId
       getContactRequest db user cReqId
     createContactRequest :: IO (Either StoreError Int64)
     createContactRequest = do

@@ -58,22 +58,7 @@ serverPort = "7001"
 testOpts :: ChatOpts
 testOpts =
   ChatOpts
-    { coreOptions =
-        CoreChatOpts
-          { dbFilePrefix = undefined,
-            dbKey = "",
-            -- dbKey = "this is a pass-phrase to encrypt the database",
-            smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
-            xftpServers = ["xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"],
-            networkConfig = defaultNetworkConfig,
-            logLevel = CLLImportant,
-            logConnections = False,
-            logServerHosts = False,
-            logAgent = Nothing,
-            logFile = Nothing,
-            tbqSize = 16,
-            highlyAvailable = False
-          },
+    { coreOptions = testCoreOpts,
       deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
@@ -87,8 +72,25 @@ testOpts =
       maintenance = False
     }
 
+testCoreOpts :: CoreChatOpts
+testCoreOpts = CoreChatOpts
+  { dbFilePrefix = undefined,
+    dbKey = "",
+    -- dbKey = "this is a pass-phrase to encrypt the database",
+    smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
+    xftpServers = ["xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"],
+    networkConfig = defaultNetworkConfig,
+    logLevel = CLLImportant,
+    logConnections = False,
+    logServerHosts = False,
+    logAgent = Nothing,
+    logFile = Nothing,
+    tbqSize = 16,
+    highlyAvailable = False
+  }
+
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
-getTestOpts maintenance dbKey = testOpts {maintenance, coreOptions = (coreOptions testOpts) {dbKey}}
+getTestOpts maintenance dbKey = testOpts {maintenance, coreOptions = testCoreOpts {dbKey}}
 
 termSettings :: VirtualTerminalSettings
 termSettings =
