@@ -2855,8 +2855,8 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user@User {userId} = 
     getContactConns :: m ([ConnId], Map ConnId Contact)
     getContactConns = do
       cts <- withStore_ ("subscribeUserConnections " <> show userId <> ", getUserContacts") getUserContacts
-      let connIds = mapMaybe contactConnId (filter contactActive cts)
-      pure (connIds, M.fromList $ zip connIds cts)
+      let cts' = mapMaybe (\ct -> (,ct) <$> contactConnId ct) $ filter contactActive cts
+      pure (map fst cts', M.fromList cts')
     getUserContactLinkConns :: m ([ConnId], Map ConnId UserContact)
     getUserContactLinkConns = do
       (cs, ucs) <- unzip <$> withStore_ ("subscribeUserConnections " <> show userId <> ", getUserContactLinks") getUserContactLinks
