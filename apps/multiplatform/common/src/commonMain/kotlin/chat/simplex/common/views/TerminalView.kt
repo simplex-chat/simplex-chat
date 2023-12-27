@@ -152,7 +152,12 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
           .clickable {
             ModalManager.start.showModal(endButtons = { ShareButton { clipboard.shareText(item.details) } }) {
               SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(item.details, modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING))
+                val details = item.details
+                  .let {
+                    if (it.length < 100_000) it
+                    else it.substring(0, 100_000)
+                  }
+                Text(details, modifier = Modifier.heightIn(max = 50_000.dp).padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING))
               }
             }
           }.padding(horizontal = 8.dp, vertical = 4.dp)

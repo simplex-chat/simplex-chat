@@ -1168,8 +1168,6 @@
     <string name="save_auto_accept_settings">Zapisz ustawienia automatycznej akceptacji</string>
     <string name="share_with_contacts">Udostępnij kontaktom</string>
     <string name="you_can_create_it_later">Możesz go utworzyć później</string>
-    <string name="your_contacts_will_see_it">Twoje kontakty w SimpleX będą to widzieć.
-\nMożesz to zmienić w Ustawieniach.</string>
     <string name="address_section_title">Adres</string>
     <string name="theme_simplex">SimpleX</string>
     <string name="color_secondary">Drugorzędny</string>

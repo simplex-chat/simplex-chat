@@ -1236,8 +1236,6 @@
     <string name="network_disable_socks">Използване на директна интернет връзка\?</string>
     <string name="network_use_onion_hosts">Използвай .onion хостове</string>
     <string name="network_use_onion_hosts_prefer">Когато са налични</string>
-    <string name="your_contacts_will_see_it">Вашите контакти в SimpleX ще го видят.
-\nМожете да го промените в Настройки.</string>
     <string name="your_profile_is_stored_on_your_device">Вашият профил, контакти и доставени съобщения се съхраняват на вашето устройство.</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Можете да използвате markdown за форматиране на съобщенията:</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Вие контролирате през кой сървър(и) <b>да получавате</b> съобщенията, вашите контакти – сървърите, които използвате, за да им изпращате съобщения.]]></string>
