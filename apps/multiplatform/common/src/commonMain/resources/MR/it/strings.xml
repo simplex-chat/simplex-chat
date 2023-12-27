@@ -1140,8 +1140,6 @@
     <string name="invite_friends">Invita amici</string>
     <string name="save_auto_accept_settings">Salva le impostazioni di accettazione automatica</string>
     <string name="you_can_create_it_later">Puoi crearlo più tardi</string>
-    <string name="your_contacts_will_see_it">I tuoi contatti in SimpleX lo vedranno.
-\nPuoi modificarlo nelle impostazioni.</string>
     <string name="share_address">Condividi indirizzo</string>
     <string name="enter_welcome_message">Inserisci il messaggio di benvenuto…</string>
     <string name="group_welcome_preview">Anteprima</string>

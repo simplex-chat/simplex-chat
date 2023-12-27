@@ -33,6 +33,7 @@ struct LibraryMediaListPicker: UIViewControllerRepresentable {
     typealias UIViewControllerType = PHPickerViewController
     var addMedia: (_ content: UploadContent) async -> Void
     var selectionLimit: Int
+    var finishedPreprocessing: () -> Void = {}
     var didFinishPicking: (_ didSelectItems: Bool) async -> Void
 
     class Coordinator: PHPickerViewControllerDelegate {
@@ -50,6 +51,7 @@ struct LibraryMediaListPicker: UIViewControllerRepresentable {
                 for r in results {
                     await loadItem(r.itemProvider)
                 }
+                parent.finishedPreprocessing()
             }
         }
 
@@ -103,21 +105,27 @@ struct LibraryMediaListPicker: UIViewControllerRepresentable {
             await withCheckedContinuation { cont in
                 loadFileURL(p, type: UTType.movie) { url in
                     if let url = url  {
-                        let tempUrl = URL(fileURLWithPath: generateNewFileName(getTempFilesDirectory().path + "/" + "video", url.pathExtension, fullPath: true))
+                        let tempUrl = URL(fileURLWithPath: generateNewFileName(getTempFilesDirectory().path + "/" + "rawvideo", url.pathExtension, fullPath: true))
+                        let convertedVideoUrl = URL(fileURLWithPath: generateNewFileName(getTempFilesDirectory().path + "/" + "video", "mp4", fullPath: true))
                         do {
-//                            logger.debug("LibraryMediaListPicker copyItem \(url) to \(tempUrl)")
+//                          logger.debug("LibraryMediaListPicker copyItem \(url) to \(tempUrl)")
                             try FileManager.default.copyItem(at: url, to: tempUrl)
-                            DispatchQueue.main.async {
-                                _ = ChatModel.shared.filesToDelete.insert(tempUrl)
-                            }
-                            let video = UploadContent.loadVideoFromURL(url: tempUrl)
-                            cont.resume(returning: video)
-                            return
                         } catch let err {
                             logger.error("LibraryMediaListPicker copyItem error: \(err.localizedDescription)")
+                            return cont.resume(returning: nil)
+                        }
+                        Task {
+                            let success = await makeVideoQualityLower(tempUrl, outputUrl: convertedVideoUrl)
+                            try? FileManager.default.removeItem(at: tempUrl)
+                            if success {
+                                _ = ChatModel.shared.filesToDelete.insert(convertedVideoUrl)
+                                let video = UploadContent.loadVideoFromURL(url: convertedVideoUrl)
+                                return cont.resume(returning: video)
+                            }
+                            try? FileManager.default.removeItem(at: convertedVideoUrl)
+                            cont.resume(returning: nil)
                         }
                     }
-                    cont.resume(returning: nil)
                 }
             }
         }
@@ -143,7 +151,7 @@ struct LibraryMediaListPicker: UIViewControllerRepresentable {
         config.filter = .any(of: [.images, .videos])
         config.selectionLimit = selectionLimit
         config.selection = .ordered
-        //config.preferredAssetRepresentationMode = .current
+        config.preferredAssetRepresentationMode = .current
         let controller = PHPickerViewController(configuration: config)
         controller.delegate = context.coordinator
         return controller
