@@ -265,7 +265,8 @@ private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, p
           val res = verify(rhId, text, close)
           if (!res) {
             AlertManager.shared.showAlertMsg(
-              title = generalGetString(MR.strings.incorrect_code)
+              title = generalGetString(MR.strings.invalid_qr_code),
+              text = generalGetString(MR.strings.code_you_scanned_is_not_simplex_link_qr_code)
             )
           }
         }
