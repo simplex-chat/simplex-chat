@@ -687,7 +687,6 @@
     <string name="sender_cancelled_file_transfer">ファイル送信が中止されました。</string>
     <string name="sender_may_have_deleted_the_connection_request">送信元が繋がりリクエストを削除したかもしれません。</string>
     <string name="error_smp_test_server_auth">このサーバで待ち行列を作るには認証が必要です。パスワードをご確認ください。</string>
-    <string name="periodic_notifications_desc">アプリが定期的に新しいメッセージを受信します。一日の電池使用量が約3%で、プッシュ通知に頼らずに、あなたの端末のデータをサーバに送ることはありません。</string>
     <string name="la_notice_title_simplex_lock">SimpleXロック</string>
     <string name="enter_passphrase_notification_desc">通知を受けるには、データベースの暗証フレーズを入力してください。</string>
     <string name="simplex_service_notification_title">SimpleX Chat サービス</string>
@@ -904,7 +903,6 @@
     <string name="settings_section_title_support">SIMPLEX CHATを支援</string>
     <string name="smp_servers_test_servers">テストサーバ</string>
     <string name="switch_receiving_address_desc">受信アドレスは別のサーバーに変更されます。アドレス変更は送信者がオンラインになった後に完了します。</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[あなたのプライバシーを守るために、このアプリはプッシュ通知の変わりに <b>SimpleX バックグラウンド・サービス</b> を使ってます。一日の電池使用量は約3%です。]]></string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">あなたのプライバシーを守るために、他のアプリと違って、ユーザーIDの変わりに SimpleX メッセージ束毎にIDを配布し、各連絡先が別々と扱います。</string>
     <string name="group_main_profile_sent">あなたのチャットプロフィールが他のグループメンバーに送られます。</string>
     <string name="to_verify_compare">エンドツーエンド暗号化を確認するには、ご自分の端末と連絡先の端末のコードを比べます (スキャンします)。</string>
@@ -1098,8 +1096,6 @@
 \n何らかのバグが原因で、または接続に問題があった場合に発生する可能性があります。</string>
     <string name="v5_0_polish_interface_descr">ユーザーに感謝します – Weblate 経由で貢献してください!</string>
     <string name="you_can_accept_or_reject_connection">接続が要求されたら、それを受け入れるか拒否するかを選択できます。</string>
-    <string name="your_contacts_will_see_it">SimpleX の連絡先に表示されます。
-\n設定で変更できます。</string>
     <string name="icon_descr_video_snd_complete">ビデオが送信されました</string>
     <string name="v4_6_group_moderation_descr">管理者は次のことができます。
 \n- メンバーのメッセージを削除します。

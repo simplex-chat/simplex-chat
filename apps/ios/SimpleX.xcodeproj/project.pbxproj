@@ -110,6 +110,11 @@
 		5CC1C99527A6CF7F000D9FF6 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */; };
 		5CC2C0FC2809BF11000C35E3 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CC2C0FA2809BF11000C35E3 /* Localizable.strings */; };
 		5CC2C0FF2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5CC2C0FD2809BF11000C35E3 /* SimpleX--iOS--InfoPlist.strings */; };
+		5CC6B3B32B3746E60077D4D0 /* libHSsimplex-chat-5.4.2.0-1dXNnkvLJVS8FSAgswHDGD.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CC6B3AE2B3746E60077D4D0 /* libHSsimplex-chat-5.4.2.0-1dXNnkvLJVS8FSAgswHDGD.a */; };
+		5CC6B3B42B3746E60077D4D0 /* libgmpxx.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CC6B3AF2B3746E60077D4D0 /* libgmpxx.a */; };
+		5CC6B3B52B3746E60077D4D0 /* libgmp.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CC6B3B02B3746E60077D4D0 /* libgmp.a */; };
+		5CC6B3B62B3746E60077D4D0 /* libHSsimplex-chat-5.4.2.0-1dXNnkvLJVS8FSAgswHDGD-ghc9.6.3.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CC6B3B12B3746E60077D4D0 /* libHSsimplex-chat-5.4.2.0-1dXNnkvLJVS8FSAgswHDGD-ghc9.6.3.a */; };
+		5CC6B3B72B3746E60077D4D0 /* libffi.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 5CC6B3B22B3746E60077D4D0 /* libffi.a */; };
 		5CC868F329EB540C0017BBFD /* CIRcvDecryptionError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC868F229EB540C0017BBFD /* CIRcvDecryptionError.swift */; };
 		5CCB939C297EFCB100399E78 /* NavStackCompat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CCB939B297EFCB100399E78 /* NavStackCompat.swift */; };
 		5CD67B8F2B0E858A00C510B1 /* hs_init.h in Headers */ = {isa = PBXBuildFile; fileRef = 5CD67B8D2B0E858A00C510B1 /* hs_init.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -184,6 +189,7 @@
 		64D0C2C629FAC1EC00B38D5F /* AddContactLearnMore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64D0C2C529FAC1EC00B38D5F /* AddContactLearnMore.swift */; };
 		64E972072881BB22008DBC02 /* CIGroupInvitationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E972062881BB22008DBC02 /* CIGroupInvitationView.swift */; };
 		64F1CC3B28B39D8600CD1FB1 /* IncognitoHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */; };
+		8C05382E2B39887E006436DC /* VideoUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C05382D2B39887E006436DC /* VideoUtils.swift */; };
 		D7197A1829AE89660055C05A /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = D7197A1729AE89660055C05A /* WebRTC */; };
 		D72A9088294BD7A70047C86D /* NativeTextEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = D72A9087294BD7A70047C86D /* NativeTextEditor.swift */; };
 		D741547829AF89AF0022400A /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D741547729AF89AF0022400A /* StoreKit.framework */; };
@@ -392,6 +398,11 @@
 		5CC1C99427A6CF7F000D9FF6 /* ShareSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareSheet.swift; sourceTree = "<group>"; };
 		5CC2C0FB2809BF11000C35E3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = ru.lproj/Localizable.strings; sourceTree = "<group>"; };
 		5CC2C0FE2809BF11000C35E3 /* ru */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = ru; path = "ru.lproj/SimpleX--iOS--InfoPlist.strings"; sourceTree = "<group>"; };
+		5CC6B3AE2B3746E60077D4D0 /* libHSsimplex-chat-5.4.2.0-1dXNnkvLJVS8FSAgswHDGD.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-5.4.2.0-1dXNnkvLJVS8FSAgswHDGD.a"; sourceTree = "<group>"; };
+		5CC6B3AF2B3746E60077D4D0 /* libgmpxx.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmpxx.a; sourceTree = "<group>"; };
+		5CC6B3B02B3746E60077D4D0 /* libgmp.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libgmp.a; sourceTree = "<group>"; };
+		5CC6B3B12B3746E60077D4D0 /* libHSsimplex-chat-5.4.2.0-1dXNnkvLJVS8FSAgswHDGD-ghc9.6.3.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = "libHSsimplex-chat-5.4.2.0-1dXNnkvLJVS8FSAgswHDGD-ghc9.6.3.a"; sourceTree = "<group>"; };
+		5CC6B3B22B3746E60077D4D0 /* libffi.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libffi.a; sourceTree = "<group>"; };
 		5CC868F229EB540C0017BBFD /* CIRcvDecryptionError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIRcvDecryptionError.swift; sourceTree = "<group>"; };
 		5CCB939B297EFCB100399E78 /* NavStackCompat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavStackCompat.swift; sourceTree = "<group>"; };
 		5CD67B8D2B0E858A00C510B1 /* hs_init.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = hs_init.h; sourceTree = "<group>"; };
@@ -468,6 +479,7 @@
 		64DAE1502809D9F5000DA960 /* FileUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileUtils.swift; sourceTree = "<group>"; };
 		64E972062881BB22008DBC02 /* CIGroupInvitationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIGroupInvitationView.swift; sourceTree = "<group>"; };
 		64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncognitoHelp.swift; sourceTree = "<group>"; };
+		8C05382D2B39887E006436DC /* VideoUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoUtils.swift; sourceTree = "<group>"; };
 		D72A9087294BD7A70047C86D /* NativeTextEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NativeTextEditor.swift; sourceTree = "<group>"; };
 		D741547729AF89AF0022400A /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/StoreKit.framework; sourceTree = DEVELOPER_DIR; };
 		D741547929AF90B00022400A /* PushKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PushKit.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS16.1.sdk/System/Library/Frameworks/PushKit.framework; sourceTree = DEVELOPER_DIR; };
@@ -509,12 +521,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				64863B9B2B3C536500714A11 /* libgmpxx.a in Frameworks */,
-				64863B9D2B3C536500714A11 /* libHSsimplex-chat-5.4.2.0-1dXNnkvLJVS8FSAgswHDGD.a in Frameworks */,
+				5CC6B3B42B3746E60077D4D0 /* libgmpxx.a in Frameworks */,
+				5CC6B3B52B3746E60077D4D0 /* libgmp.a in Frameworks */,
+				5CC6B3B62B3746E60077D4D0 /* libHSsimplex-chat-5.4.2.0-1dXNnkvLJVS8FSAgswHDGD-ghc9.6.3.a in Frameworks */,
 				5CE2BA93284534B000EC33A6 /* libiconv.tbd in Frameworks */,
-				64863B9C2B3C536500714A11 /* libHSsimplex-chat-5.4.2.0-1dXNnkvLJVS8FSAgswHDGD-ghc9.6.3.a in Frameworks */,
-				64863B9F2B3C536500714A11 /* libffi.a in Frameworks */,
-				64863B9E2B3C536500714A11 /* libgmp.a in Frameworks */,
+				5CC6B3B72B3746E60077D4D0 /* libffi.a in Frameworks */,
+				5CC6B3B32B3746E60077D4D0 /* libHSsimplex-chat-5.4.2.0-1dXNnkvLJVS8FSAgswHDGD.a in Frameworks */,
 				5CE2BA94284534BB00EC33A6 /* libz.tbd in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -577,11 +589,11 @@
 		5C764E5C279C70B7000C6508 /* Libraries */ = {
 			isa = PBXGroup;
 			children = (
-				64863B9A2B3C536500714A11 /* libffi.a */,
-				64863B992B3C536500714A11 /* libgmp.a */,
-				64863B962B3C536500714A11 /* libgmpxx.a */,
-				64863B972B3C536500714A11 /* libHSsimplex-chat-5.4.2.0-1dXNnkvLJVS8FSAgswHDGD-ghc9.6.3.a */,
-				64863B982B3C536500714A11 /* libHSsimplex-chat-5.4.2.0-1dXNnkvLJVS8FSAgswHDGD.a */,
+				5CC6B3B22B3746E60077D4D0 /* libffi.a */,
+				5CC6B3B02B3746E60077D4D0 /* libgmp.a */,
+				5CC6B3AF2B3746E60077D4D0 /* libgmpxx.a */,
+				5CC6B3B12B3746E60077D4D0 /* libHSsimplex-chat-5.4.2.0-1dXNnkvLJVS8FSAgswHDGD-ghc9.6.3.a */,
+				5CC6B3AE2B3746E60077D4D0 /* libHSsimplex-chat-5.4.2.0-1dXNnkvLJVS8FSAgswHDGD.a */,
 			);
 			path = Libraries;
 			sourceTree = "<group>";
@@ -634,6 +646,7 @@
 				64466DCB29FFE3E800E3D48D /* MailView.swift */,
 				64C3B0202A0D359700E19930 /* CustomTimePicker.swift */,
 				5CEBD7452A5C0A8F00665FE2 /* KeyboardPadding.swift */,
+				8C05382D2B39887E006436DC /* VideoUtils.swift */,
 			);
 			path = Helpers;
 			sourceTree = "<group>";
@@ -1197,6 +1210,7 @@
 				5C55A91F283AD0E400C4E99E /* CallManager.swift in Sources */,
 				5CFA59D12864782E00863A68 /* ChatArchiveView.swift in Sources */,
 				649BCDA22805D6EF00C3A862 /* CIImageView.swift in Sources */,
+				8C05382E2B39887E006436DC /* VideoUtils.swift in Sources */,
 				5CADE79C292131E900072E13 /* ContactPreferencesView.swift in Sources */,
 				5CB346E52868AA7F001FD2EF /* SuspendChat.swift in Sources */,
 				5C9C2DA52894777E00CC63B1 /* GroupProfileView.swift in Sources */,

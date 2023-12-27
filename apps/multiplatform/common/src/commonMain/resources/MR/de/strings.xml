@@ -1256,8 +1256,6 @@
     <string name="import_theme_error_desc">Stellen Sie sicher, dass die Datei die korrekte YAML-Syntax hat. Exportieren Sie das Design, um ein Beispiel für die Dateistruktur des Designs zu erhalten.</string>
     <string name="auth_open_chat_profiles">Offene Chat-Profile</string>
     <string name="you_can_share_your_address">Sie können Ihre Adresse als Link oder QR-Code teilen – jede Person kann sich mit Ihnen verbinden.</string>
-    <string name="your_contacts_will_see_it">Ihre Kontakte in SimpleX werden es sehen.
-\nSie können es in den Einstellungen ändern.</string>
     <string name="all_app_data_will_be_cleared">Werden die App-Daten komplett gelöscht.</string>
     <string name="empty_chat_profile_is_created">Es wurde ein leeres Chat-Profil mit dem eingegebenen Namen erstellt und die App öffnet wie gewohnt.</string>
     <string name="if_you_enter_self_destruct_code">Wenn Sie Ihren Selbstzerstörungs-Zugangscode während des Öffnens der App eingeben:</string>

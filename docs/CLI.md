@@ -243,37 +243,3 @@ User address is "long-term" in a sense that it is a multiple-use connection link
 Use `/help address` for other commands.
 
 ![simplex-chat](../images/user-addresses.gif)
-
-### Access chat history
-
-SimpleX chat stores all your contacts and conversations in a local SQLite database, making it private and portable by design, owned and controlled by user.
-
-You can view and search your chat history by querying your database. Run the below script to create message views in your database.
-
-```sh
-curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/scripts/message_views.sql | sqlite3 ~/.simplex/simplex_v1_chat.db
-```
-
-Open SQLite Command Line Shell:
-
-```sh
-sqlite3 ~/.simplex/simplex_v1_chat.db
-```
-
-See [Message queries](./SQL.md) for examples.
-
-> **Please note:** SQLite foreign key constraints are disabled by default, and must be **[enabled separately for each database connection](https://sqlite.org/foreignkeys.html#fk_enable)**. The latter can be achieved by running `PRAGMA foreign_keys = ON;` command on an open database connection. By running data altering queries without enabling foreign keys prior to that, you may risk putting your database in an inconsistent state.
-
-**Convenience queries**
-
-Get all messages from today (`chat_dt` is in UTC):
-
-```sql
-select * from all_messages_plain where date(chat_dt) > date('now', '-1 day') order by chat_dt;
-```
-
-Get overnight messages in the morning:
-
-```sql
-select * from all_messages_plain where chat_dt > datetime('now', '-15 hours') order by chat_dt;
-```

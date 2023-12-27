@@ -45,6 +45,9 @@
   <string name="moderated_description">moderated</string>
   <string name="invalid_chat">invalid chat</string>
   <string name="invalid_data">invalid data</string>
+  <string name="error_showing_message">error showing message</string>
+  <string name="error_showing_content">error showing content</string>
+
   <string name="decryption_error">Decryption error</string>
   <string name="encryption_renegotiation_error">Encryption re-negotiation error</string>
 
@@ -690,7 +693,7 @@
   <string name="continue_to_next_step">Continue</string>
   <string name="dont_create_address">Don\'t create address</string>
   <string name="you_can_create_it_later">You can create it later</string>
-  <string name="your_contacts_will_see_it">Your contacts in SimpleX will see it.\nYou can change it in Settings.</string>
+  <string name="you_can_make_address_visible_via_settings">You can make it visible to your SimpleX contacts via Settings.</string>
 
   <!-- User profile details - UserProfileView.kt -->
   <string name="display_name__field">Profile name:</string>

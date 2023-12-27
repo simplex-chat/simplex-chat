@@ -7,6 +7,7 @@ import androidx.compose.ui.text.font.FontFamily
 import chat.simplex.res.MR
 import chat.simplex.common.model.AppPreferences
 import chat.simplex.common.model.ChatController
+import chat.simplex.common.platform.platform
 import chat.simplex.common.views.helpers.generalGetString
 
 // https://github.com/rsms/inter
@@ -96,6 +97,7 @@ object ThemeManager {
   fun applyTheme(theme: String, darkForSystemTheme: Boolean) {
     appPrefs.currentTheme.set(theme)
     CurrentColors.value = currentColors(darkForSystemTheme)
+    platform.androidSetNightModeIfSupported()
   }
 
   fun changeDarkTheme(theme: String, darkForSystemTheme: Boolean) {

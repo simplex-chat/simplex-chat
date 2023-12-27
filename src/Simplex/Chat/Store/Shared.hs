@@ -15,7 +15,7 @@ import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
-import Crypto.Random (ChaChaDRG, randomBytesGenerate)
+import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson.TH as J
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString)
@@ -32,9 +32,10 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
-import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, UserId)
+import Simplex.Messaging.Agent.Protocol (ConnId, UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow, maybeFirstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util (allFinally)
@@ -85,8 +86,8 @@ data StoreError
   | SEPendingConnectionNotFound {connId :: Int64}
   | SEIntroNotFound
   | SEUniqueID
+  | SELargeMsg
   | SEInternalError {message :: String}
-  | SENoMsgDelivery {connId :: Int64, agentMsgId :: AgentMsgId}
   | SEBadChatItem {itemId :: ChatItemId}
   | SEChatItemNotFound {itemId :: ChatItemId}
   | SEChatItemNotFoundByText {text :: Text}
@@ -375,21 +376,24 @@ withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreate
 createWithRandomId :: forall a. TVar ChaChaDRG -> (ByteString -> IO a) -> ExceptT StoreError IO a
 createWithRandomId = createWithRandomBytes 12
 
+createWithRandomId' :: forall a. TVar ChaChaDRG -> (ByteString -> IO (Either StoreError a)) -> ExceptT StoreError IO a
+createWithRandomId' = createWithRandomBytes' 12
+
 createWithRandomBytes :: forall a. Int -> TVar ChaChaDRG -> (ByteString -> IO a) -> ExceptT StoreError IO a
-createWithRandomBytes size gVar create = tryCreate 3
+createWithRandomBytes size gVar create = createWithRandomBytes' size gVar (fmap Right . create)
+
+createWithRandomBytes' :: forall a. Int -> TVar ChaChaDRG -> (ByteString -> IO (Either StoreError a)) -> ExceptT StoreError IO a
+createWithRandomBytes' size gVar create = tryCreate 3
   where
     tryCreate :: Int -> ExceptT StoreError IO a
     tryCreate 0 = throwError SEUniqueID
     tryCreate n = do
       id' <- liftIO $ encodedRandomBytes gVar size
       liftIO (E.try $ create id') >>= \case
-        Right x -> pure x
+        Right x -> liftEither x
         Left e
           | SQL.sqlError e == SQL.ErrorConstraint -> tryCreate (n - 1)
           | otherwise -> throwError . SEInternalError $ show e
 
 encodedRandomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
-encodedRandomBytes gVar = fmap B64.encode . randomBytes gVar
-
-randomBytes :: TVar ChaChaDRG -> Int -> IO ByteString
-randomBytes gVar = atomically . stateTVar gVar . randomBytesGenerate
+encodedRandomBytes gVar n = atomically $ B64.encode <$> C.randomBytes n gVar
