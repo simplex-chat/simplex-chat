@@ -471,13 +471,7 @@ object ChatController {
 
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
-
-      repeat(100) {
-        val start = System.nanoTime()
-        chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
-        println("LALAL diff ${System.nanoTime() - start}")
-      }
-
+      chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
       Log.d(TAG, "sendCmd: ${cmd.cmdType}")
       val json = if (rhId == null) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId.toInt(), c)
       val r = APIResponse.decodeStr(json)
