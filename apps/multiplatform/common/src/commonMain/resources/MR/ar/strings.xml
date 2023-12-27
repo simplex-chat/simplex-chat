@@ -1275,8 +1275,6 @@
     <string name="gallery_video_button">فيديو</string>
     <string name="you_can_share_your_address">يمكنك مشاركة عنوانك كرابط أو رمز QR - يمكن لأي شخص الاتصال بك.</string>
     <string name="you_can_create_it_later">يمكنك إنشاؤه لاحقًا</string>
-    <string name="your_contacts_will_see_it">سوف تراها جهات اتصالك في whatsapp.
-\nيمكنك تغييره في الإعدادات.</string>
     <string name="invite_prohibited_description">أنت تحاول دعوة جهة اتصال قمت بمشاركة ملف تعريف متخفي معها إلى المجموعة التي تستخدم فيها ملفك الشخصي الرئيسي</string>
     <string name="user_unmute">إلغاء الكتم</string>
     <string name="unmute_chat">إلغاء الكتم</string>

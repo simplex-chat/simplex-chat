@@ -584,8 +584,6 @@
     <string name="message_delivery_error_desc">Muito provavelmente este contato eliminou a conexão consigo.</string>
     <string name="this_text_is_available_in_settings">Este texto está disponível nas definições</string>
     <string name="update_onion_hosts_settings_question">Atualizar definições de servidores .onion\?</string>
-    <string name="your_contacts_will_see_it">Os seus contatos no SimpleX irão vê-lo.
-\nVocê pode alterá-lo nas Definições.</string>
     <string name="onboarding_notifications_mode_subtitle">Pode ser alterado mais tarde através das definições.</string>
     <string name="settings_section_title_help">AJUDA</string>
     <string name="settings_section_title_support">SUPORTE SIMPLEX CHAT</string>

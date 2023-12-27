@@ -1175,8 +1175,6 @@
     <string name="read_more_in_user_guide_with_link"><![CDATA[Pour en savoir plus, consultez le <font color="#0088ff">Guide de l\'utilisateur</font>.]]></string>
     <string name="save_auto_accept_settings">Sauvegarder les paramètres d\'acceptation automatique</string>
     <string name="scan_qr_to_connect_to_contact">Pour se connecter, votre contact peut scanner le code QR ou utiliser le lien dans l\'application.</string>
-    <string name="your_contacts_will_see_it">Vos contacts dans SimpleX la verront.
-\nVous pouvez modifier ce choix dans les Paramètres.</string>
     <string name="app_passcode_replaced_with_self_destruct">Le code d\'accès de l\'application est remplacé par un code d\'autodestruction.</string>
     <string name="enable_self_destruct">Activer l\'autodestruction</string>
     <string name="empty_chat_profile_is_created">Un profil de chat vierge portant le nom fourni est créé et l\'application s\'ouvre normalement.</string>
