@@ -104,7 +104,7 @@ struct ComposeState {
 
     var sendEnabled: Bool {
         switch preview {
-        case .mediaPreviews: return true
+        case let .mediaPreviews(media): return !media.isEmpty
         case .voicePreview: return voiceMessageRecordingState == .finished
         case .filePreview: return true
         default: return !message.isEmpty || liveMessage != nil
@@ -384,7 +384,7 @@ struct ComposeView: View {
             }
         }
         .sheet(isPresented: $showMediaPicker) {
-            LibraryMediaListPicker(addMedia: addMediaContent, selectionLimit: 10) { itemsSelected in
+            LibraryMediaListPicker(addMedia: addMediaContent, selectionLimit: 10, finishedPreprocessing: finishedPreprocessingMediaContent) { itemsSelected in
                 await MainActor.run {
                     showMediaPicker = false
                     if itemsSelected {
@@ -499,6 +499,15 @@ struct ComposeView: View {
             }
             await MainActor.run {
                 composeState = composeState.copy(preview: .mediaPreviews(mediaPreviews: newMedia))
+            }
+        }
+    }
+
+    // When error occurs while converting video, remove media preview
+    private func finishedPreprocessingMediaContent() {
+        if case let .mediaPreviews(media) = composeState.preview, media.isEmpty {
+            DispatchQueue.main.async {
+                composeState = composeState.copy(preview: .noPreview)
             }
         }
     }

@@ -48,14 +48,6 @@ fun CreateSimpleXAddress(m: ChatModel, rhId: Long?) {
         val connReqContact = m.controller.apiCreateUserAddress(rhId)
         if (connReqContact != null) {
           m.userAddress.value = UserContactLinkRec(connReqContact)
-          try {
-            val u = m.controller.apiSetProfileAddress(rhId, true)
-            if (u != null) {
-              m.updateUser(u)
-            }
-          } catch (e: Exception) {
-            Log.e(TAG, "CreateSimpleXAddress apiSetProfileAddress: ${e.stackTraceToString()}")
-          }
           progressIndicator = false
         }
       }
@@ -100,7 +92,7 @@ private fun CreateSimpleXAddressLayout(
       ContinueButton(nextStep)
     } else {
       CreateAddressButton(createAddress)
-      TextBelowButton(stringResource(MR.strings.your_contacts_will_see_it))
+      TextBelowButton(stringResource(MR.strings.you_can_make_address_visible_via_settings))
       Spacer(Modifier.weight(1f))
       SkipButton(nextStep)
     }
