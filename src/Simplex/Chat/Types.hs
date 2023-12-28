@@ -1539,8 +1539,6 @@ data XGrpMemIntroCont = XGrpMemIntroCont
 data NoteFolder = NoteFolder
   { noteFolderId :: NoteFolderId,
     userId :: UserId,
-    displayName :: NoteFolderName,
-    localDisplayName :: NoteFolderName,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: UTCTime,

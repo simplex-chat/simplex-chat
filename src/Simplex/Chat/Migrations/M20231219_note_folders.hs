@@ -11,32 +11,31 @@ m20231219_note_folders =
     CREATE TABLE note_folders (
       note_folder_id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-      display_name TEXT NOT NULL,
-      local_display_name TEXT NOT NULL,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       chat_ts TEXT NOT NULL,
       favorite INTEGER NOT NULL DEFAULT 0,
-      unread_chat INTEGER DEFAULT 0 NOT NULL,
-      FOREIGN KEY (user_id, local_display_name)
-        REFERENCES display_names (user_id, local_display_name)
-        ON DELETE CASCADE
-        ON UPDATE CASCADE
-    );
-
-    CREATE UNIQUE INDEX idx_note_folders_user_id_local_display_name ON note_folders (
-      user_id,
-      local_display_name
+      unread_chat INTEGER DEFAULT 0 NOT NULL
     );
 
     ALTER TABLE chat_items ADD COLUMN note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE;
     ALTER TABLE files ADD COLUMN note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE;
+
+    INSERT INTO note_folders
+      SELECT
+        NULL as note_folder_id,
+        u.user_id as user_id,
+        datetime('now') as created_at,
+        datetime('now') as updated_at,
+        datetime('now') as chat_ts,
+        0 as favorite,
+        0 as unread_chat
+      FROM users u;
 |]
 
 down_m20231219_note_folders :: Query
 down_m20231219_note_folders =
   [sql|
-DROP INDEX idx_note_folders_user_id_local_display_name;
 DROP TABLE note_folders;
 ALTER TABLE chat_items DROP COLUMN note_folder_id;
 ALTER TABLE files DROP COLUMN note_folder_id;

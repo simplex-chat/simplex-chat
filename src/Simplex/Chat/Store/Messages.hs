@@ -331,6 +331,11 @@ updateChatTs db User {userId} chatDirection chatTs = case toChatInfo chatDirecti
       db
       "UPDATE groups SET chat_ts = ? WHERE user_id = ? AND group_id = ?"
       (chatTs, userId, groupId)
+  LocalChat NoteFolder {noteFolderId} ->
+    DB.execute
+      db
+      "UPDATE note_folders SET chat_ts = ? WHERE user_id = ? AND note_folder_id = ?"
+      (chatTs, userId, noteFolderId)
   _ -> pure ()
 
 createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CITimed -> Bool -> UTCTime -> IO ChatItemId
@@ -781,17 +786,7 @@ findLocalChatPreview_ db User {userId} pagination clq =
               <> pagQuery
           )
           ([":user_id" := userId, ":rcv_new" := CISRcvNew] <> pagParams)
-      CLQSearch {search} ->
-        DB.queryNamed
-          db
-          ( baseQuery
-              <> [sql|
-                    WHERE nf.user_id = :user_id
-                      AND nf.local_display_name LIKE '%' || :search || '%'
-                  |]
-              <> pagQuery
-          )
-          ([":user_id" := userId, ":rcv_new" := CISRcvNew, ":search" := search] <> pagParams)
+      CLQSearch {} -> pure []
 
 getLocalChatPreview_ :: DB.Connection -> User -> ChatPreviewData 'CTLocal -> ExceptT StoreError IO AChat
 getLocalChatPreview_ db user (LocalChatPD _ noteFolderId lastItemId_ stats) = do

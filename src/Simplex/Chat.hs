@@ -1044,16 +1044,7 @@ processChatCommand' vr = \case
                       withStore' (\db -> setContactDeleted db user ct)
                         `catchChatError` (toView . CRChatError (Just user))
                       pure $ map aConnId conns
-    CTLocal -> do
-      nf <- withStore $ \db -> getNoteFolder db user chatId
-      filesInfo <- withStore' $ \db -> getNoteFolderFileInfo db user nf
-      withChatLock "deleteChat local" . procCmd $ do
-        mapM_ (deleteFile user) filesInfo
-        -- functions below are called in separate transactions to prevent crashes on android
-        -- (possibly, race condition on integrity check?)
-        withStore' $ \db -> deleteNoteFolderFiles db userId nf
-        withStore' $ \db -> deleteNoteFolder db user nf
-        pure $ CRNoteFolderDeleted user nf
+    CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
   APIClearChat (ChatRef cType chatId) -> withUser $ \user@User {userId} -> case cType of
     CTDirect -> do
@@ -1858,15 +1849,9 @@ processChatCommand' vr = \case
     quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName quotedMsg
     let mc = MCText msg
     processChatCommand . APISendMessage (ChatRef CTGroup groupId) False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
-  NewNoteFolder displayName -> withUser $ \user@User {userId} -> do
-    checkValidName displayName
-    withStore $ \db -> CRNoteFolderCreated user <$> createNewNoteFolder db userId displayName
   ClearNoteFolder displayName -> withUser $ \user -> do
     folderId <- withStore $ \db -> getNoteFolderIdByName db user displayName
     processChatCommand $ APIClearChat (ChatRef CTLocal folderId)
-  DeleteNoteFolder displayName -> withUser $ \user -> do
-    folderId <- withStore $ \db -> getNoteFolderIdByName db user displayName
-    processChatCommand $ APIDeleteChat (ChatRef CTLocal folderId) True
   LastChats count_ -> withUser' $ \user -> do
     let count = fromMaybe 5000 count_
     (errs, previews) <- partitionEithers <$> withStore' (\db -> getChatPreviews db vr user False (PTLast count) clqNoFilters)
@@ -6113,7 +6098,7 @@ createLocalChatItem user cd content itemTs_ = do
   let itemTs = fromMaybe createdAt itemTs_
   gVar <- asks random
   ciId <- withStore $ \db -> do
-    when (ciRequiresAttention content) . liftIO $ updateChatTs db user cd createdAt
+    liftIO $ updateChatTs db user cd createdAt
     createWithRandomId gVar $ \sharedMsgId ->
       let smi_ = Just (SharedMsgId sharedMsgId)
        in createNewChatItem_ db user cd Nothing smi_ content (Nothing, Nothing, Nothing, Nothing, Nothing) Nothing False itemTs Nothing createdAt
@@ -6394,7 +6379,6 @@ chatCommandP =
       ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       ("/leave " <|> "/l ") *> char_ '#' *> (LeaveGroup <$> displayName),
       ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName),
-      ("/delete $" <|> "/d $") *> (DeleteNoteFolder <$> displayName),
       ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayName),
       "/clear $" *> (ClearNoteFolder <$> displayName),
       "/clear #" *> (ClearGroup <$> displayName),
@@ -6421,9 +6405,6 @@ chatCommandP =
       "/_invite member contact @" *> (APISendMemberContactInvitation <$> A.decimal <*> optional (A.space *> msgContentP)),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayName <* A.space <* char_ '@' <*> (Just <$> displayName) <* A.space <*> quotedMsg <*> msgTextP),
-      -- "/notes" $> ListNoteFolders, -- TODO
-      -- "/_new local chat " *> (APINewLocalChat <$> A.decimal <*> jsonP),
-      "/note folder " *> (NewNoteFolder <$> (char_ '$' *> displayName)),
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
       "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> strP),

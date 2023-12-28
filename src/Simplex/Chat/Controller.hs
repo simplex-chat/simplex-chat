@@ -408,9 +408,7 @@ data ChatCommand
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: Text, message :: Text}
-  | NewNoteFolder NoteFolderName
   | ClearNoteFolder NoteFolderName
-  | DeleteNoteFolder NoteFolderName
   | LastChats (Maybe Int) -- UserId (not used in UI)
   | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)
   | LastChatItemId (Maybe ChatName) Int -- UserId (not used in UI)
@@ -559,8 +557,6 @@ data ChatResponse
   | CRUserDeletedMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRGroupsList {user :: User, groups :: [(GroupInfo, GroupSummary)]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
-  | CRNoteFolderCreated {user :: User, noteFolder :: NoteFolder}
-  | CRNoteFolderDeleted {user :: User, noteFolder :: NoteFolder}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRFileTransferStatusXFTP User AChatItem
   | CRLocalFileStatus User LocalFileMeta

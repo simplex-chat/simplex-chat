@@ -263,8 +263,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRMemberSubError u g m e -> ttyUser u [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
   CRMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
   CRGroupSubscribed u g -> ttyUser u $ viewGroupSubscribed g
-  CRNoteFolderCreated u NoteFolder {displayName} -> ttyUser u ["new note folder created, use $" <> plain displayName <> " to create a note"]
-  CRNoteFolderDeleted u NoteFolder {displayName} -> ttyUser u ["note folder " <> plain displayName <> " deleted"]
   CRPendingSubSummary u _ -> ttyUser u []
   CRSndFileSubError u SndFileTransfer {fileId, fileName} e ->
     ttyUser u ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
@@ -396,7 +394,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
         toChatView :: AChat -> (Text, Text, Maybe ConnStatus)
         toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items Nothing, connStatus <$> activeConn)
         toChatView (AChat _ (Chat (GroupChat GroupInfo {membership, localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items (Just membership), Nothing)
-        toChatView (AChat _ (Chat (LocalChat NoteFolder {localDisplayName}) items _)) = ("$" <> localDisplayName, toCIPreview items Nothing, Nothing)
+        toChatView (AChat _ (Chat (LocalChat _) items _)) = ("$notes", toCIPreview items Nothing, Nothing)
         toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items Nothing, Nothing)
         toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items Nothing, Just pccConnStatus)
         toCIPreview :: [CChatItem c] -> Maybe GroupMember -> Text
@@ -555,20 +553,20 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {forwardedByMember}, 
             from = ttyFromGroup g m
         where
           quote = maybe [] (groupQuote g) quotedItem
-      LocalChat nf -> case chatDir of
+      LocalChat _ -> case chatDir of
         CILocalSnd -> case content of
           CISndMsgContent mc -> hideLive meta $ withLocalFile to $ sndMsg to quote mc
           CISndGroupEvent {} -> showSndItemProhibited to
           _ -> showSndItem to
           where
-            to = ttyToLocal nf
+            to = "$notes "
         CILocalRcv -> case content of
           CIRcvMsgContent mc -> withLocalFile from $ rcvMsg from quote mc
           CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
           CIRcvGroupEvent {} -> showRcvItemProhibited from
           _ -> showRcvItem from
           where
-            from = ttyFromLocal nf
+            from = "$??? "
         where
           quote = []
       ContactRequest {} -> []
@@ -725,11 +723,11 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
       where
         from = ttyFromGroup g m
         reactionMsg mc = quoteText mc . ttyQuotedMember . Just $ sentByMember' g itemDir
-    (LocalChat l, CILocalRcv) -> case ciMsgContent content of
+    (LocalChat _, CILocalRcv) -> case ciMsgContent content of
       Just mc -> view from $ reactionMsg mc
       _ -> []
       where
-        from = ttyFromLocal l
+        from = "$??? "
         reactionMsg mc = quoteText mc $ if toMsgDirection md == MDSnd then ">>" else ">"
     (_, CIDirectSnd) -> [sentText]
     (_, CIGroupSnd) -> [sentText]
@@ -2068,12 +2066,6 @@ ttyToGroup g = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " ")
 
 ttyToGroupEdited :: GroupInfo -> StyledString
 ttyToGroupEdited g = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " [edited] ")
-
-ttyToLocal :: NoteFolder -> StyledString
-ttyToLocal NoteFolder {localDisplayName} = ttyFrom ("$" <> localDisplayName <> " ")
-
-ttyFromLocal :: NoteFolder -> StyledString
-ttyFromLocal NoteFolder {localDisplayName} = ttyFrom ("$" <> localDisplayName <> "> ")
 
 viewName :: Text -> Text
 viewName s = if T.any isSpace s then "'" <> s <> "'" else s
