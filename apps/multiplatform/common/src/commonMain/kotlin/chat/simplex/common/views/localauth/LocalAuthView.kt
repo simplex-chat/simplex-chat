@@ -62,7 +62,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       if (ctrl != null && ctrl != -1L) {
         chatCloseStore(ctrl)
       }
-      deleteChatManually()
+      deleteChatDatabaseFiles()
       // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
       m.chatId.value = null
       m.chatItems.clear()

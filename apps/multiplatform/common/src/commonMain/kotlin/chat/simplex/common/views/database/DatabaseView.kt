@@ -4,7 +4,6 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionTextFooter
 import SectionItemView
-import SectionSpacer
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
@@ -426,6 +425,7 @@ private fun authStopChat(m: ChatModel) {
           }
           is LAResult.Error -> {
             m.chatRunning.value = true
+            laFailedAlert()
           }
           is LAResult.Failed -> {
             m.chatRunning.value = true
@@ -459,10 +459,10 @@ suspend fun deleteChatAsync(m: ChatModel) {
   m.controller.apiDeleteStorage()
   DatabaseUtils.ksDatabasePassword.remove()
   m.controller.appPrefs.storeDBPassphrase.set(true)
-  deleteChatManually()
+  deleteChatDatabaseFiles()
 }
 
-fun deleteChatManually() {
+fun deleteChatDatabaseFiles() {
   val chat = File(dataDir, chatDatabaseFileName)
   val chatBak = File(dataDir, "$chatDatabaseFileName.bak")
   val agent = File(dataDir, agentDatabaseFileName)
