@@ -21,10 +21,11 @@ sealed class WriteFileResult {
 * */
 
 fun writeCryptoFile(path: String, data: ByteArray): CryptoFileArgs {
+  val ctrl = ChatController.ctrl ?: throw Exception("Controller is not initialized")
   val buffer = ByteBuffer.allocateDirect(data.size)
   buffer.put(data)
   buffer.rewind()
-  val str = chatWriteFile(path, buffer)
+  val str = chatWriteFile(ctrl, path, buffer)
   return when (val d = json.decodeFromString(WriteFileResult.serializer(), str)) {
     is WriteFileResult.Result -> d.cryptoArgs
     is WriteFileResult.Error -> throw Exception(d.writeError)
@@ -43,7 +44,8 @@ fun readCryptoFile(path: String, cryptoArgs: CryptoFileArgs): ByteArray {
 }
 
 fun encryptCryptoFile(fromPath: String, toPath: String): CryptoFileArgs {
-  val str = chatEncryptFile(fromPath, toPath)
+  val ctrl = ChatController.ctrl ?: throw Exception("Controller is not initialized")
+  val str = chatEncryptFile(ctrl, fromPath, toPath)
   val d = json.decodeFromString(WriteFileResult.serializer(), str)
   return when (d) {
     is WriteFileResult.Result -> d.cryptoArgs

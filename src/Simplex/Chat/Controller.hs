@@ -29,6 +29,8 @@ import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
+import Data.ByteArray (ScrubbedBytes)
+import qualified Data.ByteArray as BA
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (ord)
@@ -39,7 +41,9 @@ import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.String
 import Data.Text (Text)
+import Data.Text.Encoding (decodeLatin1)
 import Data.Time (NominalDiffTime, UTCTime)
+import Data.Time.Clock.System (systemToUTCTime)
 import Data.Version (showVersion)
 import Data.Word (Word16)
 import Language.Haskell.TH (Exp, Q, runIO)
@@ -69,7 +73,7 @@ import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Notifications.Protocol (DeviceToken (..), NtfTknStatus)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, parseAll, parseString, sumTypeJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, MsgFlags, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServerWithAuth, userProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), CorrId, NtfServer, ProtoServerWithAuth, ProtocolTypeI, QueueId, SMPMsgMeta (..), SProtocolType, SubscriptionMode (..), UserProtocol, XFTPServerWithAuth, userProtocol)
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, simplexMQVersion)
 import Simplex.Messaging.Transport.Client (TransportHost)
@@ -80,6 +84,7 @@ import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitatio
 import Simplex.RemoteControl.Types
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
+import qualified UnliftIO.Exception as E
 import UnliftIO.STM
 
 versionNumber :: String
@@ -175,7 +180,7 @@ data ChatController = ChatController
     agentAsync :: TVar (Maybe (Async (), Maybe (Async ()))),
     chatStore :: SQLiteStore,
     chatStoreChanged :: TVar Bool, -- if True, chat should be fully restarted
-    idsDrg :: TVar ChaChaDRG,
+    random :: TVar ChaChaDRG,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe CorrId, Maybe RemoteHostId, ChatResponse),
     connNetworkStatuses :: TMap AgentConnId NetworkStatus,
@@ -230,7 +235,7 @@ data ChatCommand
   | DeleteUser UserName Bool (Maybe UserPwd)
   | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool, startXFTPWorkers :: Bool}
   | APIStopChat
-  | APIActivateChat
+  | APIActivateChat {restoreChat :: Bool}
   | APISuspendChat {suspendTimeout :: Int}
   | ResubscribeAllConnections
   | SetTempFolder FilePath
@@ -247,7 +252,7 @@ data ChatCommand
   | ExecChatStoreSQL Text
   | ExecAgentStoreSQL Text
   | SlowSQLQueries
-  | APIGetChats {userId :: UserId, pendingConnections :: Bool}
+  | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: PaginationByTime, query :: ChatListQuery}
   | APIGetChat ChatRef ChatPagination (Maybe String)
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
@@ -256,6 +261,8 @@ data ChatCommand
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
+  | APIUserRead UserId
+  | UserRead
   | APIChatRead ChatRef (Maybe (ChatItemId, ChatItemId))
   | APIChatUnread ChatRef Bool
   | APIDeleteChat ChatRef Bool -- `notify` flag is only applied to direct chats
@@ -453,7 +460,7 @@ allowRemoteCommand :: ChatCommand -> Bool -- XXX: consider using Relay/Block/For
 allowRemoteCommand = \case
   StartChat {} -> False
   APIStopChat -> False
-  APIActivateChat -> False
+  APIActivateChat _ -> False
   APISuspendChat _ -> False
   QuitChat -> False
   SetTempFolder _ -> False
@@ -654,7 +661,8 @@ data ChatResponse
   | CRUserContactLinkSubError {chatError :: ChatError} -- TODO delete
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode}
-  | CRNtfMessages {user_ :: Maybe User, connEntity :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
+  | CRNtfMessages {user_ :: Maybe User, connEntity_ :: Maybe ConnectionEntity, msgTs :: Maybe UTCTime, ntfMessages :: [NtfMsgInfo]}
+  | CRNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}
   | CRRemoteHostList {remoteHosts :: [RemoteHostInfo]}
   | CRCurrentRemoteHost {remoteHost_ :: Maybe RemoteHostInfo}
@@ -683,6 +691,7 @@ data ChatResponse
   | CRMessageError {user :: User, severity :: Text, errorMessage :: Text}
   | CRChatCmdError {user_ :: Maybe User, chatError :: ChatError}
   | CRChatError {user_ :: Maybe User, chatError :: ChatError}
+  | CRChatErrors {user_ :: Maybe User, chatErrors :: [ChatError]}
   | CRArchiveImported {archiveErrors :: [ArchiveError]}
   | CRTimedAction {action :: String, durationMilliseconds :: Int64}
   deriving (Show)
@@ -730,6 +739,26 @@ logResponseToFile = \case
   CRChatError {} -> True
   CRMessageError {} -> True
   _ -> False
+
+data ChatPagination
+  = CPLast Int
+  | CPAfter ChatItemId Int
+  | CPBefore ChatItemId Int
+  deriving (Show)
+
+data PaginationByTime
+  = PTLast Int
+  | PTAfter UTCTime Int
+  | PTBefore UTCTime Int
+  deriving (Show)
+
+data ChatListQuery
+  = CLQFilters {favorite :: Bool, unread :: Bool}
+  | CLQSearch {search :: String}
+  deriving (Show)
+
+clqNoFilters :: ChatListQuery
+clqNoFilters = CLQFilters {favorite = False, unread = False}
 
 data ConnectionPlan
   = CPInvitationLink {invitationLinkPlan :: InvitationLinkPlan}
@@ -825,17 +854,17 @@ deriving instance Show AUserProtoServers
 data ArchiveConfig = ArchiveConfig {archivePath :: FilePath, disableCompression :: Maybe Bool, parentTempDirectory :: Maybe FilePath}
   deriving (Show)
 
-data DBEncryptionConfig = DBEncryptionConfig {currentKey :: DBEncryptionKey, newKey :: DBEncryptionKey}
+data DBEncryptionConfig = DBEncryptionConfig {currentKey :: DBEncryptionKey, newKey :: DBEncryptionKey, keepKey :: Maybe Bool}
   deriving (Show)
 
-newtype DBEncryptionKey = DBEncryptionKey String
+newtype DBEncryptionKey = DBEncryptionKey ScrubbedBytes
   deriving (Show)
 
 instance IsString DBEncryptionKey where fromString = parseString $ parseAll strP
 
 instance StrEncoding DBEncryptionKey where
-  strEncode (DBEncryptionKey s) = B.pack s
-  strP = DBEncryptionKey . B.unpack <$> A.takeWhile (\c -> c /= ' ' && ord c >= 0x21 && ord c <= 0x7E)
+  strEncode (DBEncryptionKey s) = BA.convert s
+  strP = DBEncryptionKey . BA.convert <$> A.takeWhile (\c -> c /= ' ' && ord c >= 0x21 && ord c <= 0x7E)
 
 instance FromJSON DBEncryptionKey where
   parseJSON = strParseJSON "DBEncryptionKey"
@@ -900,8 +929,11 @@ data XFTPFileConfig = XFTPFileConfig
 defaultXFTPFileConfig :: XFTPFileConfig
 defaultXFTPFileConfig = XFTPFileConfig {minFileSize = 0}
 
-data NtfMsgInfo = NtfMsgInfo {msgTs :: UTCTime, msgFlags :: MsgFlags}
+data NtfMsgInfo = NtfMsgInfo {msgId :: Text, msgTs :: UTCTime}
   deriving (Show)
+
+ntfMsgInfo :: SMPMsgMeta -> NtfMsgInfo
+ntfMsgInfo SMPMsgMeta {msgId, msgTs} = NtfMsgInfo {msgId = decodeLatin1 $ strEncode msgId, msgTs = systemToUTCTime msgTs}
 
 crNtfToken :: (DeviceToken, NtfTknStatus, NotificationsMode) -> ChatResponse
 crNtfToken (token, status, ntfMode) = CRNtfToken {token, status, ntfMode}
@@ -1256,13 +1288,29 @@ withStoreCtx ctx_ action = do
     handleInternal :: String -> SomeException -> IO (Either StoreError a)
     handleInternal ctxStr e = pure . Left . SEInternalError $ show e <> ctxStr
 
+withStoreBatch :: (ChatMonad' m, Traversable t) => (DB.Connection -> t (IO (Either ChatError a))) -> m (t (Either ChatError a))
+withStoreBatch actions = do
+  ChatController {chatStore} <- ask
+  liftIO $ withTransaction chatStore $ mapM (`E.catch` handleInternal) . actions
+  where
+    handleInternal :: E.SomeException -> IO (Either ChatError a)
+    handleInternal = pure . Left . ChatError . CEInternalError . show
+
+withStoreBatch' :: (ChatMonad' m, Traversable t) => (DB.Connection -> t (IO a)) -> m (t (Either ChatError a))
+withStoreBatch' actions = withStoreBatch $ fmap (fmap Right) . actions
+
 withAgent :: ChatMonad m => (AgentClient -> ExceptT AgentErrorType m a) -> m a
 withAgent action =
   asks smpAgent
     >>= runExceptT . action
     >>= liftEither . first (`ChatErrorAgent` Nothing)
 
+withAgent' :: ChatMonad' m => (AgentClient -> m a) -> m a
+withAgent' action = asks smpAgent >>= action
+
 $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CLQ") ''ChatListQuery)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "ILP") ''InvitationLinkPlan)
 

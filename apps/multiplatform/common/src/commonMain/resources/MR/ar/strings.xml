@@ -150,7 +150,6 @@
     <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b> إضافة جهة اتصال جديدة </b>: لإنشاء رمز الاستجابة السريعة الخاص بك لمرة واحدة لجهة اتصالك.]]></string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b> امسح رمز الاستجابة السريعة </b>: للاتصال بجهة الاتصال التي تعرض لك رمز الاستجابة السريعة.]]></string>
     <string name="callstatus_in_progress">مكالمتك تحت الإجراء</string>
-    <string name="callstatus_ended">انتهت المكالمة</string>
     <string name="change_database_passphrase_question">تغيير عبارة مرور قاعدة البيانات؟</string>
     <string name="cannot_access_keychain">لا يمكن الوصول إلى Keystore لحفظ كلمة مرور قاعدة البيانات</string>
     <string name="icon_descr_cancel_file_preview">إلغاء معاينة الملف</string>
@@ -1276,8 +1275,6 @@
     <string name="gallery_video_button">فيديو</string>
     <string name="you_can_share_your_address">يمكنك مشاركة عنوانك كرابط أو رمز QR - يمكن لأي شخص الاتصال بك.</string>
     <string name="you_can_create_it_later">يمكنك إنشاؤه لاحقًا</string>
-    <string name="your_contacts_will_see_it">سوف تراها جهات اتصالك في whatsapp.
-\nيمكنك تغييره في الإعدادات.</string>
     <string name="invite_prohibited_description">أنت تحاول دعوة جهة اتصال قمت بمشاركة ملف تعريف متخفي معها إلى المجموعة التي تستخدم فيها ملفك الشخصي الرئيسي</string>
     <string name="user_unmute">إلغاء الكتم</string>
     <string name="unmute_chat">إلغاء الكتم</string>

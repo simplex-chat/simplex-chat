@@ -104,7 +104,7 @@ struct ComposeState {
 
     var sendEnabled: Bool {
         switch preview {
-        case .mediaPreviews: return true
+        case let .mediaPreviews(media): return !media.isEmpty
         case .voicePreview: return voiceMessageRecordingState == .finished
         case .filePreview: return true
         default: return !message.isEmpty || liveMessage != nil
@@ -384,10 +384,10 @@ struct ComposeView: View {
             }
         }
         .sheet(isPresented: $showMediaPicker) {
-            LibraryMediaListPicker(media: $chosenMedia, selectionLimit: 10) { itemsSelected in
-                showMediaPicker = false
-                if itemsSelected {
-                    DispatchQueue.main.async {
+            LibraryMediaListPicker(addMedia: addMediaContent, selectionLimit: 10, finishedPreprocessing: finishedPreprocessingMediaContent) { itemsSelected in
+                await MainActor.run {
+                    showMediaPicker = false
+                    if itemsSelected {
                         composeState = composeState.copy(preview: .mediaPreviews(mediaPreviews: []))
                     }
                 }
@@ -484,6 +484,30 @@ struct ComposeView: View {
         .onAppear {
             if case let .voicePreview(_, duration) = composeState.preview {
                 voiceMessageRecordingTime = TimeInterval(duration)
+            }
+        }
+    }
+
+    private func addMediaContent(_ content: UploadContent) async {
+        if let img = resizeImageToStrSize(content.uiImage, maxDataSize: 14000) {
+            var newMedia: [(String, UploadContent?)] = []
+            if case var .mediaPreviews(media) = composeState.preview {
+                media.append((img, content))
+                newMedia = media
+            } else {
+                newMedia = [(img, content)]
+            }
+            await MainActor.run {
+                composeState = composeState.copy(preview: .mediaPreviews(mediaPreviews: newMedia))
+            }
+        }
+    }
+
+    // When error occurs while converting video, remove media preview
+    private func finishedPreprocessingMediaContent() {
+        if case let .mediaPreviews(media) = composeState.preview, media.isEmpty {
+            DispatchQueue.main.async {
+                composeState = composeState.copy(preview: .noPreview)
             }
         }
     }

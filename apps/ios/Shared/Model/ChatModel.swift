@@ -54,6 +54,8 @@ final class ChatModel: ObservableObject {
     @Published var chatDbChanged = false
     @Published var chatDbEncrypted: Bool?
     @Published var chatDbStatus: DBMigrationResult?
+    // local authentication
+    @Published var contentViewAccessAuthenticated: Bool = false
     @Published var laRequest: LocalAuthRequest?
     // list of chat "previews"
     @Published var chats: [Chat] = []
@@ -104,12 +106,10 @@ final class ChatModel: ObservableObject {
 
     static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
 
-    var ntfEnableLocal: Bool {
-        notificationMode == .off || ntfEnableLocalGroupDefault.get()
-    }
+    let ntfEnableLocal = true
 
     var ntfEnablePeriodic: Bool {
-        notificationMode == .periodic || ntfEnablePeriodicGroupDefault.get()
+        notificationMode != .off
     }
 
     var activeRemoteCtrl: Bool {
