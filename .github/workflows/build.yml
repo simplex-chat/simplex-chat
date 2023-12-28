@@ -51,6 +51,9 @@ jobs:
       matrix:
         include:
           - os: ubuntu-20.04
+            ghc: "8.10.7"
+            cache_path: ~/.cabal/store
+          - os: ubuntu-20.04
             ghc: "9.6.3"
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-ubuntu-20_04-x86-64
@@ -109,7 +112,7 @@ jobs:
           echo "    flags: +openssl"                                        >> cabal.project.local
 
       - name: Install AppImage dependencies
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && matrix.os == 'ubuntu-20.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && matrix.os == 'ubuntu-20.04'
         run: sudo apt install -y desktop-file-utils
 
       - name: Install pkg-config for Mac
@@ -125,17 +128,22 @@ jobs:
           echo "    flags: +openssl"      >> cabal.project.local
 
       - name: Unix build CLI
-        id: unix_cli_build
+        id: unix_build
         if: matrix.os != 'windows-latest'
         shell: bash
+        run: cabal build --enable-tests
+
+      - name: Unix hash CLI
+        id: unix_cli_hash
+        if: matrix.asset_name && matrix.os != 'windows-latest'
+        shell: bash
         run: |
-          cabal build --enable-tests
           path=$(cabal list-bin simplex-chat)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
           echo "bin_hash=$(echo SHA2-512\(${{ matrix.asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Unix upload CLI binary to release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && matrix.os != 'windows-latest'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && matrix.os != 'windows-latest'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -144,7 +152,7 @@ jobs:
           tag: ${{ github.ref }}
 
       - name: Unix update CLI binary hash
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && matrix.os != 'windows-latest'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && matrix.os != 'windows-latest'
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -163,7 +171,7 @@ jobs:
 
       - name: Linux build desktop
         id: linux_desktop_build
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
         shell: bash
         run: |
           scripts/desktop/build-lib-linux.sh
@@ -175,7 +183,7 @@ jobs:
 
       - name: Linux make AppImage
         id: linux_appimage_build
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && matrix.os == 'ubuntu-20.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && matrix.os == 'ubuntu-20.04'
         shell: bash
         run: |
           scripts/desktop/make-appimage-linux.sh
@@ -185,7 +193,7 @@ jobs:
 
       - name: Mac build desktop
         id: mac_desktop_build
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && matrix.os == 'macos-latest'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && matrix.os == 'macos-latest'
         shell: bash
         env:
           APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN }}
@@ -198,7 +206,7 @@ jobs:
           echo "package_hash=$(echo SHA2-512\(${{ matrix.desktop_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Linux upload desktop package to release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -207,7 +215,7 @@ jobs:
           tag: ${{ github.ref }}
 
       - name: Linux update desktop package hash
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -217,7 +225,7 @@ jobs:
             ${{ steps.linux_desktop_build.outputs.package_hash }}
 
       - name: Linux upload AppImage to release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && matrix.os == 'ubuntu-20.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && matrix.os == 'ubuntu-20.04'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -226,7 +234,7 @@ jobs:
           tag: ${{ github.ref }}
 
       - name: Linux update AppImage hash
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && matrix.os == 'ubuntu-20.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && matrix.os == 'ubuntu-20.04'
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -236,7 +244,7 @@ jobs:
             ${{ steps.linux_appimage_build.outputs.appimage_hash }}
 
       - name: Mac upload desktop package to release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && matrix.os == 'macos-latest'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && matrix.os == 'macos-latest'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -245,7 +253,7 @@ jobs:
           tag: ${{ github.ref }}
 
       - name: Mac update desktop package hash
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && matrix.os == 'macos-latest'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && matrix.os == 'macos-latest'
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -299,12 +307,18 @@ jobs:
           sed -i "s/, unix /--, unix /" simplex-chat.cabal
           cabal build --enable-tests
           rm -rf dist-newstyle/src/direct-sq*
+
+      - name: Windows hash
+        id: windows_hash
+        if: matrix.asset_name && matrix.os == 'windows-latest'
+        shell: msys2 {0}
+        run: |
           path=$(cabal list-bin simplex-chat | tail -n 1)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
           echo "bin_hash=$(echo SHA2-512\(${{ matrix.asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Windows upload CLI binary to release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && matrix.os == 'windows-latest'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && matrix.os == 'windows-latest'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -313,7 +327,7 @@ jobs:
           tag: ${{ github.ref }}
 
       - name: Windows update CLI binary hash
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && matrix.os == 'windows-latest'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && matrix.os == 'windows-latest'
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -324,7 +338,7 @@ jobs:
 
       - name: Windows build desktop
         id: windows_desktop_build
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && matrix.os == 'windows-latest'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && matrix.os == 'windows-latest'
         shell: msys2 {0}
         run: |
           export PATH=$PATH:/c/ghcup/bin
@@ -336,7 +350,7 @@ jobs:
           echo "package_hash=$(echo SHA2-512\(${{ matrix.desktop_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Windows upload desktop package to release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && matrix.os == 'windows-latest'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && matrix.os == 'windows-latest'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -345,7 +359,7 @@ jobs:
           tag: ${{ github.ref }}
 
       - name: Windows update desktop package hash
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.ghc == '9.6.3' && matrix.os == 'windows-latest'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.assert_name && matrix.os == 'windows-latest'
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
