@@ -3563,10 +3563,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             case chatMsgEvent of
               XGrpMemInfo memId _memProfile
                 | sameMemberId memId m -> do
-                    let GroupMember {memberId} = membership
+                    let GroupMember {memberId = membershipMemId} = membership
                     -- TODO update member profile
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-                    allowAgentConnectionAsync user conn' confId $ XGrpMemInfo memberId (fromLocalProfile $ memberProfile membership)
+                    allowAgentConnectionAsync user conn' confId $ XGrpMemInfo membershipMemId (fromLocalProfile $ memberProfile membership)
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
               _ -> messageError "CONF from member must have x.grp.mem.info"
       INFO connInfo -> do
@@ -3740,8 +3740,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Left e -> toView $ CRChatError (Just user) (ChatError . CEException $ "error parsing chat message: " <> e)
           checkSendRcpt $ rights aChatMsgs
         -- currently only a single message is forwarded
-        let GroupMember {memberRole} = membership
-        when (memberRole >= GRAdmin) $ case aChatMsgs of
+        let GroupMember {memberRole = membershipMemRole} = membership
+        when (membershipMemRole >= GRAdmin) $ case aChatMsgs of
           [Right (ACMsg _ chatMsg)] -> forwardMsg_ chatMsg
           _ -> pure ()
         where
