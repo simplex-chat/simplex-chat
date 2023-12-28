@@ -121,6 +121,9 @@
 /* copied message info, <sender> at <time> */
 "%@ at %@:" = "%1$@ at %2$@:";
 
+/* No comment provided by engineer. */
+"%@ connected" = "%@ 接続中";
+
 /* notification title */
 "%@ is connected!" = "%@ 接続中!";
 
@@ -177,6 +180,12 @@
 
 /* No comment provided by engineer. */
 "%lld members" = "%lld 人のメンバー";
+
+/* No comment provided by engineer. */
+"%lld messages marked deleted" = "%lld 件のメッセージが削除されました";
+
+/* No comment provided by engineer. */
+"%lld messages moderated by %@" = "%@ により%lld 件のメッセージが検閲されました";
 
 /* No comment provided by engineer. */
 "%lld minutes" = "%lld 分";
@@ -1948,6 +1957,9 @@
 "Live messages" = "ライブメッセージ";
 
 /* No comment provided by engineer. */
+"Local" = "自分のみ";
+
+/* No comment provided by engineer. */
 "Local name" = "ローカルネーム";
 
 /* No comment provided by engineer. */
@@ -2207,9 +2219,6 @@
 /* No comment provided by engineer. */
 "Off" = "オフ";
 
-/* No comment provided by engineer. */
-"Off (Local)" = "オフ(自分のみ)";
-
 /* feature offered item */
 "offered %@" = "提供された %@";
 
@@ -2299,9 +2308,6 @@
 
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "プロトコル技術とコードはオープンソースで、どなたでもご自分のサーバを運用できます。";
-
-/* No comment provided by engineer. */
-"Opening database…" = "データベースを開いています…";
 
 /* member role */
 "owner" = "オーナー";
@@ -3168,9 +3174,6 @@
 "Turn off" = "オフにする";
 
 /* No comment provided by engineer. */
-"Turn off notifications?" = "通知をオフにしますか？";
-
-/* No comment provided by engineer. */
 "Turn on" = "オンにする";
 
 /* No comment provided by engineer. */
@@ -3589,9 +3592,6 @@
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "連絡先がメッセージの完全削除を許可できます。";
-
-/* No comment provided by engineer. */
-"Your contacts in SimpleX will see it.\nYou can change it in Settings." = "SimpleX の連絡先に表示されます。\n設定で変更できます。";
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "連絡先は接続されたままになります。";

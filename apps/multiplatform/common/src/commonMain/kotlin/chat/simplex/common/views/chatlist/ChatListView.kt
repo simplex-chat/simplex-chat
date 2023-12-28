@@ -11,6 +11,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.text.font.FontStyle
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -49,13 +50,6 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   LaunchedEffect(chatModel.clearOverlays.value) {
     if (chatModel.clearOverlays.value && newChatSheetState.value.isVisible()) hideNewChatSheet(false)
   }
-  LaunchedEffect(chatModel.appOpenUrl.value) {
-    val url = chatModel.appOpenUrl.value
-    if (url != null) {
-      chatModel.appOpenUrl.value = null
-      connectIfOpenedViaUri(chatModel.remoteHostId(), url, chatModel)
-    }
-  }
   if (appPlatform.isDesktop) {
     KeyChangeEffect(chatModel.chatId.value) {
       if (chatModel.chatId.value != null) {
@@ -68,14 +62,18 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   var searchInList by rememberSaveable { mutableStateOf("") }
   val scope = rememberCoroutineScope()
-  val (userPickerState, scaffoldState, switchingUsersAndHosts ) = settingsState
+  val (userPickerState, scaffoldState ) = settingsState
   Scaffold(topBar = { Box(Modifier.padding(end = endPadding)) { ChatListToolbar(chatModel, scaffoldState.drawerState, userPickerState, stopped) { searchInList = it.trim() } } },
     scaffoldState = scaffoldState,
-    drawerContent = { SettingsView(chatModel, setPerformLA, scaffoldState.drawerState) },
+    drawerContent = {
+      tryOrShowError("Settings", error = { ErrorSettingsView() }) {
+        SettingsView(chatModel, setPerformLA, scaffoldState.drawerState)
+      }
+    },
     drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
     drawerGesturesEnabled = appPlatform.isAndroid,
     floatingActionButton = {
-      if (searchInList.isEmpty()) {
+      if (searchInList.isEmpty() && !chatModel.desktopNoUserNoRemote) {
         FloatingActionButton(
           onClick = {
             if (!stopped) {
@@ -104,7 +102,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       ) {
         if (chatModel.chats.isNotEmpty()) {
           ChatList(chatModel, search = searchInList)
-        } else if (!switchingUsersAndHosts.value) {
+        } else if (!chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
           Box(Modifier.fillMaxSize()) {
             if (!stopped && !newChatSheetState.collectAsState().value.isVisible()) {
               OnboardingButtons(showNewChatSheet)
@@ -118,20 +116,16 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
   if (searchInList.isEmpty()) {
     DesktopActiveCallOverlayLayout(newChatSheetState)
     // TODO disable this button and sheet for the duration of the switch
-    NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
-  }
-  if (appPlatform.isAndroid) {
-    UserPicker(chatModel, userPickerState, switchingUsersAndHosts) {
-      scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
-      userPickerState.value = AnimatedViewState.GONE
+    tryOrShowError("NewChatSheet", error = {}) {
+      NewChatSheet(chatModel, newChatSheetState, stopped, hideNewChatSheet)
     }
   }
-  if (switchingUsersAndHosts.value) {
-    Box(
-      Modifier.fillMaxSize().clickable(enabled = false, onClick = {}),
-      contentAlignment = Alignment.Center
-    ) {
-      ProgressIndicator()
+  if (appPlatform.isAndroid) {
+    tryOrShowError("UserPicker", error = {}) {
+      UserPicker(chatModel, userPickerState) {
+        scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
+        userPickerState.value = AnimatedViewState.GONE
+      }
     }
   }
 }
@@ -209,7 +203,7 @@ private fun ChatListToolbar(chatModel: ChatModel, drawerState: DrawerState, user
     navigationButton = {
       if (showSearch) {
         NavigationButtonBack(hideSearchOnBack)
-      } else if (chatModel.users.isEmpty()) {
+      } else if (chatModel.users.isEmpty() && !chatModel.desktopNoUserNoRemote) {
         NavigationButtonMenu { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } }
       } else {
         val users by remember { derivedStateOf { chatModel.users.filter { u -> u.user.activeUser || !u.user.hidden } } }
@@ -305,27 +299,23 @@ private fun ToggleFilterButton() {
 }
 
 @Composable
-private fun ProgressIndicator() {
-  CircularProgressIndicator(
-    Modifier
-      .padding(horizontal = 2.dp)
-      .size(30.dp),
-    color = MaterialTheme.colors.secondary,
-    strokeWidth = 2.5.dp
-  )
-}
-
-@Composable
 expect fun DesktopActiveCallOverlayLayout(newChatSheetState: MutableStateFlow<AnimatedViewState>)
 
 fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
   Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
-    chatModel.appOpenUrl.value = uri
+    chatModel.appOpenUrl.value = rhId to uri
   } else {
     withApi {
       planAndConnect(chatModel, rhId, uri, incognito = null, close = null)
     }
+  }
+}
+
+@Composable
+private fun ErrorSettingsView() {
+  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Text(generalGetString(MR.strings.error_showing_content), color = MaterialTheme.colors.error, fontStyle = FontStyle.Italic)
   }
 }
 

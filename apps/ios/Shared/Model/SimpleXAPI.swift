@@ -228,7 +228,8 @@ func apiStopChat() async throws {
 }
 
 func apiActivateChat() {
-    let r = chatSendCmdSync(.apiActivateChat)
+    chatReopenStore()
+    let r = chatSendCmdSync(.apiActivateChat(restoreChat: true))
     if case .cmdOk = r { return }
     logger.error("apiActivateChat error: \(String(describing: r))")
 }
@@ -605,27 +606,29 @@ func apiConnectPlan(connReq: String) async throws -> ConnectionPlan {
     throw r
 }
 
-func apiConnect(incognito: Bool, connReq: String) async -> ConnReqType? {
-    let (connReqType, alert) = await apiConnect_(incognito: incognito, connReq: connReq)
+func apiConnect(incognito: Bool, connReq: String) async -> (ConnReqType, PendingContactConnection)? {
+    let (r, alert) = await apiConnect_(incognito: incognito, connReq: connReq)
     if let alert = alert {
         AlertManager.shared.showAlert(alert)
         return nil
     } else {
-        return connReqType
+        return r
     }
 }
 
-func apiConnect_(incognito: Bool, connReq: String) async -> (ConnReqType?, Alert?) {
+func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, PendingContactConnection)?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnect: no current user")
         return (nil, nil)
     }
     let r = await chatSendCmd(.apiConnect(userId: userId, incognito: incognito, connReq: connReq))
+    let m = ChatModel.shared
     switch r {
-    case .sentConfirmation: return (.invitation, nil)
-    case .sentInvitation: return (.contact, nil)
+    case let .sentConfirmation(_, connection):
+        return ((.invitation, connection), nil)
+    case let .sentInvitation(_, connection):
+        return ((.contact, connection), nil)
     case let .contactAlreadyExists(_, contact):
-        let m = ChatModel.shared
         if let c = m.getContactChat(contact.contactId) {
             await MainActor.run { m.chatId = c.id }
         }
@@ -1232,6 +1235,9 @@ func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool 
         try startChat(refreshInvitations: refreshInvitations)
     } else {
         m.chatRunning = false
+        try getUserChatData()
+        NtfManager.shared.setNtfBadgeCount(m.totalUnreadCountForAllUsers())
+        m.onboardingStage = onboardingStageDefault.get()
     }
 }
 
@@ -1248,6 +1254,8 @@ func startChat(refreshInvitations: Bool = true) throws {
             try refreshCallInvitations()
         }
         (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
+        // deviceToken is set when AppDelegate.application(didRegisterForRemoteNotificationsWithDeviceToken:) is called,
+        // when it is called before startChat
         if let token = m.deviceToken {
             registerToken(token: token)
         }
@@ -1362,18 +1370,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
     let m = ChatModel.shared
     logger.debug("processReceivedMsg: \(res.responseType)")
     switch res {
-    case let .newContactConnection(user, connection):
-        if active(user) {
-            await MainActor.run {
-                m.updateContactConnection(connection)
-            }
-        }
-    case let .contactConnectionDeleted(user, connection):
-        if active(user) {
-            await MainActor.run {
-                m.removeChat(connection.id)
-            }
-        }
     case let .contactDeletedByContact(user, contact):
         if active(user) && contact.directOrUsed {
             await MainActor.run {
@@ -1666,36 +1662,40 @@ func processReceivedMsg(_ res: ChatResponse) async {
         activateCall(invitation)
     case let .callOffer(_, contact, callType, offer, sharedKey, _):
         await withCall(contact) { call in
-            call.callState = .offerReceived
-            call.peerMedia = callType.media
-            call.sharedKey = sharedKey
+            await MainActor.run {
+                call.callState = .offerReceived
+                call.peerMedia = callType.media
+                call.sharedKey = sharedKey
+            }
             let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
             let iceServers = getIceServers()
             logger.debug(".callOffer useRelay \(useRelay)")
             logger.debug(".callOffer iceServers \(String(describing: iceServers))")
-            m.callCommand = .offer(
+            await m.callCommand.processCommand(.offer(
                 offer: offer.rtcSession,
                 iceCandidates: offer.rtcIceCandidates,
                 media: callType.media, aesKey: sharedKey,
                 iceServers: iceServers,
                 relay: useRelay
-            )
+            ))
         }
     case let .callAnswer(_, contact, answer):
         await withCall(contact) { call in
-            call.callState = .answerReceived
-            m.callCommand = .answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates)
+            await MainActor.run {
+                call.callState = .answerReceived
+            }
+            await m.callCommand.processCommand(.answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates))
         }
     case let .callExtraInfo(_, contact, extraInfo):
         await withCall(contact) { _ in
-            m.callCommand = .ice(iceCandidates: extraInfo.rtcIceCandidates)
+            await m.callCommand.processCommand(.ice(iceCandidates: extraInfo.rtcIceCandidates))
         }
     case let .callEnded(_, contact):
         if let invitation = await MainActor.run(body: { m.callInvitations.removeValue(forKey: contact.id) }) {
             CallController.shared.reportCallRemoteEnded(invitation: invitation)
         }
         await withCall(contact) { call in
-            m.callCommand = .end
+            await m.callCommand.processCommand(.end)
             CallController.shared.reportCallRemoteEnded(call: call)
         }
     case .chatSuspended:
@@ -1742,7 +1742,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
         // This delay is needed to cancel the session that fails on network failure,
         // e.g. when user did not grant permission to access local network yet.
         if let sess = m.remoteCtrlSession {
-            m.remoteCtrlSession = nil
+            await MainActor.run {
+                m.remoteCtrlSession = nil
+            }
             if case .connected = sess.sessionState {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     switchToLocalSession()
@@ -1753,9 +1755,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
         logger.debug("unsupported event: \(res.responseType)")
     }
 
-    func withCall(_ contact: Contact, _ perform: (Call) -> Void) async {
+    func withCall(_ contact: Contact, _ perform: (Call) async -> Void) async {
         if let call = m.activeCall, call.contact.apiId == contact.apiId {
-            await MainActor.run { perform(call) }
+            await perform(call)
         } else {
             logger.debug("processReceivedMsg: ignoring \(res.responseType), not in call with the contact \(contact.id)")
         }

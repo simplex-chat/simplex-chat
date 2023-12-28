@@ -18,6 +18,7 @@ import qualified Data.Aeson.TH as J
 import Data.ByteString (ByteString)
 import Data.Int (Int64)
 import Data.Text (Text)
+import Data.Word (Word16)
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Types (verificationCode)
 import qualified Simplex.Messaging.Crypto as C
@@ -128,6 +129,8 @@ data RemoteHost = RemoteHost
   { remoteHostId :: RemoteHostId,
     hostDeviceName :: Text,
     storePath :: FilePath,
+    bindAddress_ :: Maybe RCCtrlAddress,
+    bindPort_ :: Maybe Word16,
     hostPairing :: RCHostPairing
   }
 
@@ -136,6 +139,8 @@ data RemoteHostInfo = RemoteHostInfo
   { remoteHostId :: RemoteHostId,
     hostDeviceName :: Text,
     storePath :: FilePath,
+    bindAddress_ :: Maybe RCCtrlAddress,
+    bindPort_ :: Maybe Word16,
     sessionState :: Maybe RemoteHostSessionState
   }
   deriving (Show)
@@ -158,6 +163,7 @@ data PlatformEncoding
   deriving (Show, Eq)
 
 localEncoding :: PlatformEncoding
+
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
 localEncoding = PESwift
 #else

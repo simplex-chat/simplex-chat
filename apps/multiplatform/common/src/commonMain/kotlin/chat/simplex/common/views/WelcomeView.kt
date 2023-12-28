@@ -21,8 +21,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.Profile
+import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -76,7 +76,13 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
           disabled = !canCreateProfile(displayName.value),
           textColor = MaterialTheme.colors.primary,
           iconColor = MaterialTheme.colors.primary,
-          click = { createProfileInProfiles(chatModel, displayName.value, close) },
+          click = {
+            if (chatModel.localUserCreated.value == true) {
+              createProfileInProfiles(chatModel, displayName.value, close)
+            } else {
+              createProfileInNoProfileSetup(displayName.value, close)
+            }
+          },
         )
         SectionTextFooter(generalGetString(MR.strings.your_profile_is_stored_on_your_device))
         SectionTextFooter(generalGetString(MR.strings.profile_is_only_shared_with_your_contacts))
@@ -168,6 +174,17 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
   }
 }
 
+fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
+  withApi {
+    val user = controller.apiCreateActiveUser(null, Profile(displayName.trim(), "", null)) ?: return@withApi
+    controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
+    chatModel.chatRunning.value = false
+    controller.startChat(user)
+    controller.switchUIRemoteHost(null)
+    close()
+  }
+}
+
 fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: () -> Unit) {
   withApi {
     val rhId = chatModel.remoteHostId()
@@ -190,12 +207,12 @@ fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: ()
 
 fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: () -> Unit) {
   withApi {
-    chatModel.controller.apiCreateActiveUser(
+    chatModel.currentUser.value = chatModel.controller.apiCreateActiveUser(
       null, Profile(displayName.trim(), "", null)
     ) ?: return@withApi
     val onboardingStage = chatModel.controller.appPrefs.onboardingStage
     if (chatModel.users.isEmpty()) {
-      onboardingStage.set(if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get()) {
+      onboardingStage.set(if (appPlatform.isDesktop && chatModel.controller.appPrefs.initialRandomDBPassphrase.get() && !chatModel.desktopOnboardingRandomPassword.value) {
         OnboardingStage.Step2_5_SetupDatabasePassphrase
       } else {
         OnboardingStage.Step3_CreateSimpleXAddress

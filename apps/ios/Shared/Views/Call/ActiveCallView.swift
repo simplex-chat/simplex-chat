@@ -49,10 +49,10 @@ struct ActiveCallView: View {
         }
         .onDisappear {
             logger.debug("ActiveCallView: disappear")
+            Task { await m.callCommand.setClient(nil) }
             AppDelegate.keepScreenOn(false)
             client?.endCall()
         }
-        .onChange(of: m.callCommand) { _ in sendCommandToClient()}
         .background(.black)
         .preferredColorScheme(.dark)
     }
@@ -60,19 +60,8 @@ struct ActiveCallView: View {
     private func createWebRTCClient() {
         if client == nil && canConnectCall {
             client = WebRTCClient($activeCall, { msg in await MainActor.run { processRtcMessage(msg: msg) } }, $localRendererAspectRatio)
-            sendCommandToClient()
-        }
-    }
-
-    private func sendCommandToClient() {
-        if call == m.activeCall,
-           m.activeCall != nil,
-           let client = client,
-           let cmd = m.callCommand {
-            m.callCommand = nil
-            logger.debug("sendCallCommand: \(cmd.cmdType)")
             Task {
-                await client.sendCallCommand(command: cmd)
+                await m.callCommand.setClient(client)
             }
         }
     }
@@ -168,8 +157,10 @@ struct ActiveCallView: View {
                 }
             case let .error(message):
                 logger.debug("ActiveCallView: command error: \(message)")
+                AlertManager.shared.showAlert(Alert(title: Text("Error"), message: Text(message)))
             case let .invalid(type):
                 logger.debug("ActiveCallView: invalid response: \(type)")
+                AlertManager.shared.showAlert(Alert(title: Text("Invalid response"), message: Text(type)))
             }
         }
     }
@@ -255,7 +246,6 @@ struct ActiveCallOverlay: View {
                 HStack {
                     Text(call.encryptionStatus)
                     if let connInfo = call.connectionInfo {
-//                        Text("(") + Text(connInfo.text) + Text(", \(connInfo.protocolText))")
                         Text("(") + Text(connInfo.text) + Text(")")
                     }
                 }

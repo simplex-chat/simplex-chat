@@ -70,7 +70,8 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
         m.controller.startChat(createdUser)
       }
       ModalManager.fullscreen.closeModals()
-      AlertManager.shared.hideAlert()
+      AlertManager.shared.hideAllAlerts()
+      AlertManager.privacySensitive.hideAllAlerts()
       completed(LAResult.Success)
     } catch (e: Exception) {
       completed(LAResult.Error(generalGetString(MR.strings.incorrect_passcode)))

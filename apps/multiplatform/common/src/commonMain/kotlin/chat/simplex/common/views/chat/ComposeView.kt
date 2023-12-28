@@ -201,7 +201,7 @@ suspend fun MutableState<ComposeState>.processPickedMedia(uris: List<URI>, text:
         // Image
         val drawable = getDrawableFromUri(uri)
         // Do not show alert in case it's already shown from the function above
-        bitmap = getBitmapFromUri(uri, withAlertOnException = AlertManager.shared.alertViews.isEmpty())
+        bitmap = getBitmapFromUri(uri, withAlertOnException = !AlertManager.shared.hasAlertsShown())
         if (isAnimImage(uri, drawable)) {
           // It's a gif or webp
           val fileSize = getFileSize(uri)

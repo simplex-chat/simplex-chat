@@ -188,17 +188,19 @@ struct GroupMemberInfoView: View {
                         // this condition prevents re-setting picker
                         if !justOpened { return }
                     }
-                    newRole = member.memberRole
-                    do {
-                        let (_, stats) = try apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
-                        let (mem, code) = member.memberActive ? try apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
-                        _ = chatModel.upsertGroupMember(groupInfo, mem)
-                        connectionStats = stats
-                        connectionCode = code
-                    } catch let error {
-                        logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
-                    }
                     justOpened = false
+                    DispatchQueue.main.async {
+                        newRole = member.memberRole
+                        do {
+                            let (_, stats) = try apiGroupMemberInfo(groupInfo.apiId, member.groupMemberId)
+                            let (mem, code) = member.memberActive ? try apiGetGroupMemberCode(groupInfo.apiId, member.groupMemberId) : (member, nil)
+                            _ = chatModel.upsertGroupMember(groupInfo, mem)
+                            connectionStats = stats
+                            connectionCode = code
+                        } catch let error {
+                            logger.error("apiGroupMemberInfo or apiGetGroupMemberCode error: \(responseError(error))")
+                        }
+                    }
                 }
                 .onChange(of: newRole) { newRole in
                     if newRole != member.memberRole {

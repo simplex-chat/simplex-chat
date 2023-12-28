@@ -1170,8 +1170,6 @@
     <string name="opening_database">Abrindo banco de dados…</string>
     <string name="auth_open_chat_profiles">Abrir perfis de bate-papo</string>
     <string name="share_address_with_contacts_question">Compartilhar endereço com os contatos\?</string>
-    <string name="your_contacts_will_see_it">Seus contatos no SimpleX o verão.
-\nVocê pode alterá-la nas Configurações.</string>
     <string name="your_contacts_will_remain_connected">Seus contatos continuarão conectados.</string>
     <string name="all_app_data_will_be_cleared">Todos os dados do aplicativo serão excluídos.</string>
     <string name="app_passcode_replaced_with_self_destruct">A senha do aplicativo é substituída por uma senha de auto-destruição.</string>

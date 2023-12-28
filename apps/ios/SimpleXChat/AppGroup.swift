@@ -9,12 +9,16 @@
 import Foundation
 import SwiftUI
 
+public let appSuspendTimeout: Int = 15 // seconds
+
 let GROUP_DEFAULT_APP_STATE = "appState"
+let GROUP_DEFAULT_NSE_STATE = "nseState"
 let GROUP_DEFAULT_DB_CONTAINER = "dbContainer"
 public let GROUP_DEFAULT_CHAT_LAST_START = "chatLastStart"
+public let GROUP_DEFAULT_CHAT_LAST_BACKGROUND_RUN = "chatLastBackgroundRun"
 let GROUP_DEFAULT_NTF_PREVIEW_MODE = "ntfPreviewMode"
-public let GROUP_DEFAULT_NTF_ENABLE_LOCAL = "ntfEnableLocal"
-public let GROUP_DEFAULT_NTF_ENABLE_PERIODIC = "ntfEnablePeriodic"
+public let GROUP_DEFAULT_NTF_ENABLE_LOCAL = "ntfEnableLocal" // no longer used
+public let GROUP_DEFAULT_NTF_ENABLE_PERIODIC = "ntfEnablePeriodic" // no longer used
 let GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES = "privacyAcceptImages"
 public let GROUP_DEFAULT_PRIVACY_TRANSFER_IMAGES_INLINE = "privacyTransferImagesInline" // no longer used
 public let GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES = "privacyEncryptLocalFiles"
@@ -66,12 +70,22 @@ public func registerGroupDefaults() {
     ])
 }
 
-public enum AppState: String {
+public enum AppState: String, Codable {
     case active
+    case activating
     case bgRefresh
     case suspending
     case suspended
     case stopped
+
+    public var running: Bool {
+        switch self {
+        case .active: return true
+        case .activating: return true
+        case .bgRefresh: return true
+        default: return false
+        }
+    }
 
     public var inactive: Bool {
         switch self {
@@ -84,9 +98,30 @@ public enum AppState: String {
     public var canSuspend: Bool {
         switch self {
         case .active: return true
+        case .activating: return true
         case .bgRefresh: return true
         default: return false
         }
+    }
+}
+
+public enum NSEState: String, Codable {
+    case created
+    case starting
+    case active
+    case suspending
+    case suspended
+
+    public var inactive: Bool {
+        switch self {
+        case .created: true
+        case .suspended: true
+        default: false
+        }
+    }
+
+    public var canSuspend: Bool {
+        if case .active = self { true } else { false }
     }
 }
 
@@ -95,11 +130,24 @@ public enum DBContainer: String {
     case group
 }
 
+// appStateGroupDefault must not be used in the app directly, only via AppChatState singleton
 public let appStateGroupDefault = EnumDefault<AppState>(
     defaults: groupDefaults,
     forKey: GROUP_DEFAULT_APP_STATE,
     withDefault: .active
 )
+
+// nseStateGroupDefault must not be used in NSE directly, only via NSEChatState singleton
+public let nseStateGroupDefault = EnumDefault<NSEState>(
+    defaults: groupDefaults,
+    forKey: GROUP_DEFAULT_NSE_STATE,
+    withDefault: .suspended // so that NSE that was never launched does not delay the app from resuming
+)
+
+// inactive app states do not include "stopped" state
+public func allowBackgroundRefresh() -> Bool {
+    appStateGroupDefault.get().inactive && nseStateGroupDefault.get().inactive
+}
 
 public let dbContainerGroupDefault = EnumDefault<DBContainer>(
     defaults: groupDefaults,
@@ -109,6 +157,8 @@ public let dbContainerGroupDefault = EnumDefault<DBContainer>(
 
 public let chatLastStartGroupDefault = DateDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_CHAT_LAST_START)
 
+public let chatLastBackgroundRunGroupDefault = DateDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_CHAT_LAST_BACKGROUND_RUN)
+
 public let ntfPreviewModeGroupDefault = EnumDefault<NotificationPreviewMode>(
     defaults: groupDefaults,
     forKey: GROUP_DEFAULT_NTF_PREVIEW_MODE,
@@ -116,10 +166,6 @@ public let ntfPreviewModeGroupDefault = EnumDefault<NotificationPreviewMode>(
 )
 
 public let incognitoGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_INCOGNITO)
-
-public let ntfEnableLocalGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_ENABLE_LOCAL)
-
-public let ntfEnablePeriodicGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_NTF_ENABLE_PERIODIC)
 
 public let privacyAcceptImagesGroupDefault = BoolDefault(defaults: groupDefaults, forKey: GROUP_DEFAULT_PRIVACY_ACCEPT_IMAGES)
 

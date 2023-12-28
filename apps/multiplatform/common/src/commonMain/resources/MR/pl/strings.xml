@@ -1168,8 +1168,6 @@
     <string name="save_auto_accept_settings">Zapisz ustawienia automatycznej akceptacji</string>
     <string name="share_with_contacts">Udostępnij kontaktom</string>
     <string name="you_can_create_it_later">Możesz go utworzyć później</string>
-    <string name="your_contacts_will_see_it">Twoje kontakty w SimpleX będą to widzieć.
-\nMożesz to zmienić w Ustawieniach.</string>
     <string name="address_section_title">Adres</string>
     <string name="theme_simplex">SimpleX</string>
     <string name="color_secondary">Drugorzędny</string>
@@ -1496,7 +1494,7 @@
     <string name="v5_4_better_groups_descr">Szybsze dołączenie i bardziej niezawodne wiadomości.</string>
     <string name="linked_mobiles">Połączone telefony</string>
     <string name="this_device_name">Nazwa tego urządzenia</string>
-    <string name="waiting_for_mobile_to_connect_on_port"><![CDATA[Oczekiwanie na połączenie telefonu na port <i>%s</i>]]></string>
+    <string name="waiting_for_mobile_to_connect">Oczekiwanie na połączenie telefonu:</string>
     <string name="loading_remote_file_title">Ładowanie pliku</string>
     <string name="found_desktop">Znaleziono komputer</string>
     <string name="desktop_devices">Urządzenia komputerowe</string>

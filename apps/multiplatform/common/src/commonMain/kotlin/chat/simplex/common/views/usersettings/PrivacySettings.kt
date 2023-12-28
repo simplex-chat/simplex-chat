@@ -92,7 +92,6 @@ fun PrivacySettingsView(
         chatModel.simplexLinkMode.value = it
       })
     }
-    SectionDividerSpaced()
 
     val currentUser = chatModel.currentUser.value
     if (currentUser != null) {
@@ -142,39 +141,42 @@ fun PrivacySettingsView(
         }
       }
 
-      DeliveryReceiptsSection(
-        currentUser = currentUser,
-        setOrAskSendReceiptsContacts = { enable ->
-          val contactReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
-            if (chat.chatInfo is ChatInfo.Direct) {
-              val sendRcpts = chat.chatInfo.contact.chatSettings.sendRcpts
-              count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
+      if (!chatModel.desktopNoUserNoRemote) {
+        SectionDividerSpaced()
+        DeliveryReceiptsSection(
+          currentUser = currentUser,
+          setOrAskSendReceiptsContacts = { enable ->
+            val contactReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
+              if (chat.chatInfo is ChatInfo.Direct) {
+                val sendRcpts = chat.chatInfo.contact.chatSettings.sendRcpts
+                count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
+              } else {
+                count
+              }
+            }
+            if (contactReceiptsOverrides == 0) {
+              setSendReceiptsContacts(enable, clearOverrides = false)
             } else {
-              count
+              showUserContactsReceiptsAlert(enable, contactReceiptsOverrides, ::setSendReceiptsContacts)
+            }
+          },
+          setOrAskSendReceiptsGroups = { enable ->
+            val groupReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
+              if (chat.chatInfo is ChatInfo.Group) {
+                val sendRcpts = chat.chatInfo.groupInfo.chatSettings.sendRcpts
+                count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
+              } else {
+                count
+              }
+            }
+            if (groupReceiptsOverrides == 0) {
+              setSendReceiptsGroups(enable, clearOverrides = false)
+            } else {
+              showUserGroupsReceiptsAlert(enable, groupReceiptsOverrides, ::setSendReceiptsGroups)
             }
           }
-          if (contactReceiptsOverrides == 0) {
-            setSendReceiptsContacts(enable, clearOverrides = false)
-          } else {
-            showUserContactsReceiptsAlert(enable, contactReceiptsOverrides, ::setSendReceiptsContacts)
-          }
-        },
-        setOrAskSendReceiptsGroups = { enable ->
-          val groupReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
-            if (chat.chatInfo is ChatInfo.Group) {
-              val sendRcpts = chat.chatInfo.groupInfo.chatSettings.sendRcpts
-              count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
-            } else {
-              count
-            }
-          }
-          if (groupReceiptsOverrides == 0) {
-            setSendReceiptsGroups(enable, clearOverrides = false)
-          } else {
-            showUserGroupsReceiptsAlert(enable, groupReceiptsOverrides, ::setSendReceiptsGroups)
-          }
-        }
-      )
+        )
+      }
     }
     SectionBottomSpacer()
   }

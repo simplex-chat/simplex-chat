@@ -11,18 +11,14 @@ import Control.Logger.Simple
 import qualified Data.Aeson as J
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
-import qualified Network.TLS as TLS
 import Simplex.Chat.Archive (archiveFilesFolder)
 import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..), versionNumber)
 import qualified Simplex.Chat.Controller as Controller
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Remote.Types
-import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String (strEncode)
-import Simplex.Messaging.Transport.Credentials (genCredentials, tlsCredentials)
 import Simplex.Messaging.Util
 import System.FilePath ((</>))
 import Test.Hspec
@@ -38,6 +34,7 @@ remoteTests = describe "Remote" $ do
     it "connects with stored pairing" remoteHandshakeStoredTest
     it "connects with multicast discovery" remoteHandshakeDiscoverTest
     it "refuses invalid client cert" remoteHandshakeRejectTest
+    it "connects with stored server bindings" storedBindingsTest
   it "sends messages" remoteMessageTest
   describe "remote files" $ do
     it "store/get/send/receive files" remoteStoreFileTest
@@ -117,7 +114,7 @@ remoteHandshakeRejectTest = testChat3 aliceProfile aliceDesktopProfile bobProfil
   mobileBob ##> "/set device name MobileBob"
   mobileBob <## "ok"
   desktop ##> "/start remote host 1"
-  desktop <##. "remote host 1 started on port "
+  desktop <##. "remote host 1 started on "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobileBob ##> ("/connect remote ctrl " <> inv)
@@ -137,6 +134,37 @@ remoteHandshakeRejectTest = testChat3 aliceProfile aliceDesktopProfile bobProfil
   mobile <## "remote controller 1 session started with My desktop"
   desktop <## "remote host 1 connected"
   stopMobile mobile desktop
+
+storedBindingsTest :: HasCallStack => FilePath -> IO ()
+storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile desktop -> do
+  desktop ##> "/set device name My desktop"
+  desktop <## "ok"
+  mobile ##> "/set device name Mobile"
+  mobile <## "ok"
+
+  desktop ##> "/start remote host new addr=127.0.0.1 iface=\"lo\" port=52230"
+  desktop <##. "new remote host started on 127.0.0.1:52230" -- TODO: show ip?
+  desktop <## "Remote session invitation:"
+  inv <- getTermLine desktop
+
+  mobile ##> ("/connect remote ctrl " <> inv)
+  mobile <## ("connecting new remote controller: My desktop, v" <> versionNumber)
+  desktop <## "new remote host connecting"
+  mobile <## "new remote controller connected"
+  verifyRemoteCtrl mobile desktop
+  mobile <## "remote controller 1 session started with My desktop"
+  desktop <## "new remote host 1 added: Mobile"
+  desktop <## "remote host 1 connected"
+
+  desktop ##> "/list remote hosts"
+  desktop <## "Remote hosts:"
+  desktop <##. "1. Mobile (connected) ["
+  stopDesktop mobile desktop
+  desktop ##> "/list remote hosts"
+  desktop <## "Remote hosts:"
+  desktop <##. "1. Mobile ["
+
+-- TODO: more parser tests
 
 remoteMessageTest :: HasCallStack => FilePath -> IO ()
 remoteMessageTest = testChat3 aliceProfile aliceDesktopProfile bobProfile $ \mobile desktop bob -> do
@@ -475,7 +503,7 @@ startRemote mobile desktop = do
   mobile ##> "/set device name Mobile"
   mobile <## "ok"
   desktop ##> "/start remote host new"
-  desktop <##. "new remote host started on port "
+  desktop <##. "new remote host started on "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobile ##> ("/connect remote ctrl " <> inv)
@@ -490,7 +518,7 @@ startRemote mobile desktop = do
 startRemoteStored :: TestCC -> TestCC -> IO ()
 startRemoteStored mobile desktop = do
   desktop ##> "/start remote host 1"
-  desktop <##. "remote host 1 started on port "
+  desktop <##. "remote host 1 started on "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobile ##> ("/connect remote ctrl " <> inv)
@@ -504,7 +532,7 @@ startRemoteStored mobile desktop = do
 startRemoteDiscover :: TestCC -> TestCC -> IO ()
 startRemoteDiscover mobile desktop = do
   desktop ##> "/start remote host 1 multicast=on"
-  desktop <##. "remote host 1 started on port "
+  desktop <##. "remote host 1 started on "
   desktop <## "Remote session invitation:"
   _inv <- getTermLine desktop -- will use multicast instead
   mobile ##> "/find remote ctrl"
@@ -538,12 +566,6 @@ contactBob desktop bob = do
   concurrently_
     (desktop <## "bob (Bob): contact is connected")
     (bob <## "alice (Alice): contact is connected")
-
-genTestCredentials :: IO (C.KeyHash, TLS.Credentials)
-genTestCredentials = do
-  caCreds <- liftIO $ genCredentials Nothing (0, 24) "CA"
-  sessionCreds <- liftIO $ genCredentials (Just caCreds) (0, 24) "Session"
-  pure . tlsCredentials $ sessionCreds :| [caCreds]
 
 stopDesktop :: HasCallStack => TestCC -> TestCC -> IO ()
 stopDesktop mobile desktop = do

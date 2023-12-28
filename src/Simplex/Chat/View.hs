@@ -65,6 +65,7 @@ import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (bshow, tshow)
 import Simplex.Messaging.Version hiding (version)
+import Simplex.RemoteControl.Types (RCCtrlAddress (..))
 import System.Console.ANSI.Types
 
 type CurrentTime = UTCTime
@@ -163,8 +164,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRInvitation u cReq _ -> ttyUser u $ viewConnReqInvitation cReq
   CRConnectionIncognitoUpdated u c -> ttyUser u $ viewConnectionIncognitoUpdated c
   CRConnectionPlan u connectionPlan -> ttyUser u $ viewConnectionPlan connectionPlan
-  CRSentConfirmation u -> ttyUser u ["confirmation sent!"]
-  CRSentInvitation u customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
+  CRSentConfirmation u _ -> ttyUser u ["confirmation sent!"]
+  CRSentInvitation u _ customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRSentInvitationToContact u _c customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
   CRContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
@@ -274,11 +275,11 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRCallInvitations _ -> []
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
   CRUserContactLinkSubError e -> ["user address error: " <> sShow e, "to delete your address: " <> highlight' "/da"]
-  CRNewContactConnection u _ -> ttyUser u []
   CRContactConnectionDeleted u PendingContactConnection {pccConnId} -> ttyUser u ["connection :" <> sShow pccConnId <> " deleted"]
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRNtfToken _ status mode -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode)]
   CRNtfMessages {} -> []
+  CRNtfMessage {} -> []
   CRCurrentRemoteHost rhi_ ->
     [ maybe
         "Using local profile"
@@ -286,13 +287,13 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
         rhi_
     ]
   CRRemoteHostList hs -> viewRemoteHosts hs
-  CRRemoteHostStarted {remoteHost_, invitation, ctrlPort} ->
+  CRRemoteHostStarted {remoteHost_, invitation, localAddrs = RCCtrlAddress {address} :| _, ctrlPort} ->
     [ plain $ maybe ("new remote host" <> started) (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> show rhId <> started) remoteHost_,
       "Remote session invitation:",
       plain invitation
     ]
     where
-      started = " started on port " <> ctrlPort
+      started = " started on " <> B.unpack (strEncode address) <> ":" <> ctrlPort
   CRRemoteHostSessionCode {remoteHost_, sessionCode} ->
     [ maybe "new remote host connecting" (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> sShow rhId <> " connecting") remoteHost_,
       "Compare session code with host:",
@@ -364,6 +365,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRMessageError u prefix err -> ttyUser u [plain prefix <> ": " <> plain err | prefix == "error" || logLevel <= CLLWarning]
   CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError logLevel testView e
   CRChatError u e -> ttyUser' u $ viewChatError logLevel testView e
+  CRChatErrors u errs -> ttyUser' u $ concatMap (viewChatError logLevel testView) errs
   CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRTimedAction _ _ -> []
   where
@@ -472,7 +474,9 @@ chatItemDeletedText ChatItem {meta = CIMeta {itemDeleted}, content} membership_ 
       _ -> ""
 
 viewUsersList :: [UserInfo] -> [StyledString]
-viewUsersList = mapMaybe userInfo . sortOn ldn
+viewUsersList us =
+  let ss = mapMaybe userInfo $ sortOn ldn us
+   in if null ss then ["no users"] else ss
   where
     ldn (UserInfo User {localDisplayName = n} _) = T.toLower n
     userInfo (UserInfo User {localDisplayName = n, profile = LocalProfile {fullName}, activeUser, showNtfs, viewPwdHash} count)
@@ -1713,8 +1717,13 @@ viewRemoteHosts = \case
   [] -> ["No remote hosts"]
   hs -> "Remote hosts: " : map viewRemoteHostInfo hs
   where
-    viewRemoteHostInfo RemoteHostInfo {remoteHostId, hostDeviceName, sessionState} =
-      plain $ tshow remoteHostId <> ". " <> hostDeviceName <> maybe "" viewSessionState sessionState
+    viewRemoteHostInfo RemoteHostInfo {remoteHostId, hostDeviceName, sessionState, bindAddress_, bindPort_} =
+      plain $ tshow remoteHostId <> ". " <> hostDeviceName <> maybe "" viewSessionState sessionState <> ctrlBinds bindAddress_ bindPort_
+    ctrlBinds Nothing Nothing = ""
+    ctrlBinds rca_ port_ = mconcat [" [", maybe "" rca rca_, maybe "" port port_, "]"]
+      where
+        rca RCCtrlAddress {interface, address} = interface <> " " <> decodeLatin1 (strEncode address)
+        port p = ":" <> tshow p
     viewSessionState = \case
       RHSStarting -> " (starting)"
       RHSConnecting _ -> " (connecting)"

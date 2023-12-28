@@ -22,9 +22,9 @@ external fun chatParseMarkdown(str: String): String
 external fun chatParseServer(str: String): String
 external fun chatPasswordHash(pwd: String, salt: String): String
 external fun chatValidName(name: String): String
-external fun chatWriteFile(path: String, buffer: ByteBuffer): String
+external fun chatWriteFile(ctrl: ChatCtrl, path: String, buffer: ByteBuffer): String
 external fun chatReadFile(path: String, key: String, nonce: String): Array<Any>
-external fun chatEncryptFile(fromPath: String, toPath: String): String
+external fun chatEncryptFile(ctrl: ChatCtrl, fromPath: String, toPath: String): String
 external fun chatDecryptFile(fromPath: String, key: String, nonce: String, toPath: String): String
 
 val chatModel: ChatModel
@@ -55,10 +55,22 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)
     val user = chatController.apiGetActiveUser(null)
     if (user == null) {
-      chatModel.controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
       chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
       chatModel.currentUser.value = null
       chatModel.users.clear()
+      if (appPlatform.isDesktop) {
+        /**
+         * Setting it here to null because otherwise the screen will flash in [MainScreen] after the first start
+         * because of default value of [OnboardingStage.OnboardingComplete]
+         * */
+        chatModel.localUserCreated.value = null
+        if (chatController.listRemoteHosts()?.isEmpty() == true) {
+          chatController.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+        }
+        chatController.startChatWithoutUser()
+      } else {
+        chatController.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+      }
     } else {
       val savedOnboardingStage = appPreferences.onboardingStage.get()
       appPreferences.onboardingStage.set(if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {

@@ -264,12 +264,13 @@ private fun DatabaseKeyField(text: MutableState<String>, enabled: Boolean, onCli
     text,
     generalGetString(MR.strings.enter_passphrase),
     isValid = ::validKey,
-    keyboardActions = KeyboardActions(onDone = if (enabled) {
+    // Don't enable this on desktop since it interfere with key event listener
+    keyboardActions = KeyboardActions(onDone = if (enabled && appPlatform.isAndroid) {
       { onClick?.invoke() }
     } else null
     ),
     modifier = Modifier.focusRequester(focusRequester).onPreviewKeyEvent {
-      if (onClick != null && it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+      if (onClick != null && (it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
         onClick()
         true
       } else {
