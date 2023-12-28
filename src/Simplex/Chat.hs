@@ -2350,7 +2350,6 @@ processChatCommand' vr = \case
           ( CRInvitationUri crData {crScheme = CRSSimplex} e2e,
             CRInvitationUri crData {crScheme = simplexChat} e2e
           )
-
     connectPlan user (ACR SCMContact (CRContactUri crData)) = do
       let ConnReqUriData {crClientData} = crData
           groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
@@ -5802,18 +5801,17 @@ saveDirectRcvMSG conn@Connection {connId} agentMsgMeta agentAckCmdId msgBody =
 
 saveGroupRcvMsg :: (MsgEncodingI e, ChatMonad m) => User -> GroupId -> GroupMember -> Connection -> MsgMeta -> CommandId -> MsgBody -> ChatMessage e -> m (GroupMember, Connection, RcvMessage)
 saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta agentAckCmdId msgBody ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = do
-  (am'@GroupMember {memberId, groupMemberId}, conn') <- updateMemberChatVRange authorMember conn chatVRange
+  (am'@GroupMember {memberId = amMemId, groupMemberId = amGroupMemId}, conn') <- updateMemberChatVRange authorMember conn chatVRange
   let agentMsgId = fst $ recipient agentMsgMeta
       newMsg = NewRcvMessage {chatMsgEvent, msgBody}
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId}
-      amId = Just groupMemberId
   msg <-
-    withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ rcvMsgDelivery amId)
+    withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ rcvMsgDelivery $ Just amGroupMemId)
       `catchChatError` \e -> case e of
         ChatErrorStore (SEDuplicateGroupMessage _ _ _ (Just forwardedByGroupMemberId)) -> do
           fm <- withStore $ \db -> getGroupMember db user groupId forwardedByGroupMemberId
           forM_ (memberConn fm) $ \fmConn ->
-            void $ sendDirectMessage fmConn (XGrpMemCon memberId) (GroupId groupId)
+            void $ sendDirectMessage fmConn (XGrpMemCon amMemId) (GroupId groupId)
           throwError e
         _ -> throwError e
   pure (am', conn', msg)
