@@ -20,8 +20,8 @@ getByteString ptr len = do
 {-# INLINE getByteString #-}
 
 putByteString :: Ptr Word8 -> ByteString -> IO ()
-putByteString ptr (PS fp _ len) =
-  withForeignPtr fp $ \p -> memcpy ptr p len
+putByteString ptr (PS fp offset len) =
+  withForeignPtr fp $ \p -> memcpy ptr (p `plusPtr` offset) len
 {-# INLINE putByteString #-}
 
 putLazyByteString :: Ptr Word8 -> LB.ByteString -> IO ()
