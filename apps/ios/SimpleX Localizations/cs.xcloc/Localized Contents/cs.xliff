@@ -1072,6 +1072,10 @@
         <target>Chat je zastaven</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve">
+        <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat preferences" xml:space="preserve">
         <source>Chat preferences</source>
         <target>Předvolby chatu</target>
@@ -2015,6 +2019,10 @@ This cannot be undone!</source>
         <target>Šifrovaná zpráva nebo jiná událost</target>
         <note>notification</note>
       </trans-unit>
+      <trans-unit id="Encrypted message: app is stopped" xml:space="preserve">
+        <source>Encrypted message: app is stopped</source>
+        <note>notification</note>
+      </trans-unit>
       <trans-unit id="Encrypted message: database error" xml:space="preserve">
         <source>Encrypted message: database error</source>
         <target>Šifrovaná zpráva: chyba databáze</target>
@@ -2238,6 +2246,10 @@ This cannot be undone!</source>
       <trans-unit id="Error loading %@ servers" xml:space="preserve">
         <source>Error loading %@ servers</source>
         <target>Chyba načítání %@ serverů</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error opening chat" xml:space="preserve">
+        <source>Error opening chat</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
@@ -2918,6 +2930,10 @@ This cannot be undone!</source>
         <source>Invalid name!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invalid response" xml:space="preserve">
+        <source>Invalid response</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Invalid server address!" xml:space="preserve">
         <source>Invalid server address!</source>
         <target>Neplatná adresa serveru!</target>
@@ -3116,6 +3132,11 @@ This is your link for group %@!</source>
       <trans-unit id="Live messages" xml:space="preserve">
         <source>Live messages</source>
         <target>Živé zprávy</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Local" xml:space="preserve">
+        <source>Local</source>
+        <target>Místní</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
@@ -3485,11 +3506,6 @@ This is your link for group %@!</source>
         <target>Vypnout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Off (Local)" xml:space="preserve">
-        <source>Off (Local)</source>
-        <target>Vypnuto (místní)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Ok" xml:space="preserve">
         <source>Ok</source>
         <target>Ok</target>
@@ -3629,9 +3645,8 @@ This is your link for group %@!</source>
         <target>Protokol a kód s otevřeným zdrojovým kódem - servery může provozovat kdokoli.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Opening database…" xml:space="preserve">
-        <source>Opening database…</source>
-        <target>Otvírání databáze…</target>
+      <trans-unit id="Opening app…" xml:space="preserve">
+        <source>Opening app…</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -3731,6 +3746,11 @@ This is your link for group %@!</source>
       <trans-unit id="Please check yours and your contact preferences." xml:space="preserve">
         <source>Please check yours and your contact preferences.</source>
         <target>Zkontrolujte prosím nastavení své i svého kontaktu.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Please contact developers.&#10;Error: %@" xml:space="preserve">
+        <source>Please contact developers.
+Error: %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please contact group admin." xml:space="preserve">
@@ -4707,6 +4727,10 @@ This is your link for group %@!</source>
         <target>Začít chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Start chat?" xml:space="preserve">
+        <source>Start chat?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Start migration" xml:space="preserve">
         <source>Start migration</source>
         <target>Zahájit přenesení</target>
@@ -5106,11 +5130,6 @@ Před zapnutím této funkce budete vyzváni k dokončení ověření.</target>
         <target>Vypnout</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Turn off notifications?" xml:space="preserve">
-        <source>Turn off notifications?</source>
-        <target>Vypnout upozornění?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Turn on" xml:space="preserve">
         <source>Turn on</source>
         <target>Zapnout</target>
@@ -5305,6 +5324,10 @@ Chcete-li se připojit, požádejte svůj kontakt o vytvoření dalšího odkazu
       <trans-unit id="Use new incognito profile" xml:space="preserve">
         <source>Use new incognito profile</source>
         <target>Použít nový inkognito profil</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use only local notifications?" xml:space="preserve">
+        <source>Use only local notifications?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -5581,6 +5604,10 @@ Repeat join request?</source>
         <target>Profil uživatele můžete skrýt nebo ztlumit - přejeďte prstem doprava.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You can make it visible to your SimpleX contacts via Settings." xml:space="preserve">
+        <source>You can make it visible to your SimpleX contacts via Settings.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
         <source>You can now send messages to %@</source>
         <target>Nyní můžete posílat zprávy %@</target>
@@ -5803,13 +5830,6 @@ Toto připojení můžete zrušit a kontakt odebrat (a zkusit to později s nov�
       <trans-unit id="Your contacts can allow full message deletion." xml:space="preserve">
         <source>Your contacts can allow full message deletion.</source>
         <target>Vaše kontakty mohou povolit úplné mazání zpráv.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your contacts in SimpleX will see it.&#10;You can change it in Settings." xml:space="preserve">
-        <source>Your contacts in SimpleX will see it.
-You can change it in Settings.</source>
-        <target>Vaše kontakty v SimpleX ji uvidí.
-Můžete ji změnit v Nastavení.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contacts will remain connected." xml:space="preserve">

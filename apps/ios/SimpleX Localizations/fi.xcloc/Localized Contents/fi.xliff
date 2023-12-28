@@ -1067,6 +1067,10 @@
         <target>Chat on pysäytetty</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve">
+        <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat preferences" xml:space="preserve">
         <source>Chat preferences</source>
         <target>Chat-asetukset</target>
@@ -2009,6 +2013,10 @@ This cannot be undone!</source>
         <target>Salattu viesti tai muu tapahtuma</target>
         <note>notification</note>
       </trans-unit>
+      <trans-unit id="Encrypted message: app is stopped" xml:space="preserve">
+        <source>Encrypted message: app is stopped</source>
+        <note>notification</note>
+      </trans-unit>
       <trans-unit id="Encrypted message: database error" xml:space="preserve">
         <source>Encrypted message: database error</source>
         <target>Salattu viesti: tietokantavirhe</target>
@@ -2231,6 +2239,10 @@ This cannot be undone!</source>
       <trans-unit id="Error loading %@ servers" xml:space="preserve">
         <source>Error loading %@ servers</source>
         <target>Virhe %@-palvelimien lataamisessa</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error opening chat" xml:space="preserve">
+        <source>Error opening chat</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
@@ -2910,6 +2922,10 @@ This cannot be undone!</source>
         <source>Invalid name!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invalid response" xml:space="preserve">
+        <source>Invalid response</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Invalid server address!" xml:space="preserve">
         <source>Invalid server address!</source>
         <target>Virheellinen palvelinosoite!</target>
@@ -3108,6 +3124,11 @@ This is your link for group %@!</source>
       <trans-unit id="Live messages" xml:space="preserve">
         <source>Live messages</source>
         <target>Live-viestit</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Local" xml:space="preserve">
+        <source>Local</source>
+        <target>Paikallinen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
@@ -3476,11 +3497,6 @@ This is your link for group %@!</source>
         <target>Pois</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Off (Local)" xml:space="preserve">
-        <source>Off (Local)</source>
-        <target>Pois (Paikallinen)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Ok" xml:space="preserve">
         <source>Ok</source>
         <target>Ok</target>
@@ -3619,9 +3635,8 @@ This is your link for group %@!</source>
         <target>Avoimen lähdekoodin protokolla ja koodi - kuka tahansa voi käyttää palvelimia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Opening database…" xml:space="preserve">
-        <source>Opening database…</source>
-        <target>Avataan tietokantaa…</target>
+      <trans-unit id="Opening app…" xml:space="preserve">
+        <source>Opening app…</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -3721,6 +3736,11 @@ This is your link for group %@!</source>
       <trans-unit id="Please check yours and your contact preferences." xml:space="preserve">
         <source>Please check yours and your contact preferences.</source>
         <target>Tarkista omasi ja kontaktin asetukset.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Please contact developers.&#10;Error: %@" xml:space="preserve">
+        <source>Please contact developers.
+Error: %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please contact group admin." xml:space="preserve">
@@ -4695,6 +4715,10 @@ This is your link for group %@!</source>
         <target>Aloita keskustelu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Start chat?" xml:space="preserve">
+        <source>Start chat?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Start migration" xml:space="preserve">
         <source>Start migration</source>
         <target>Aloita siirto</target>
@@ -5093,11 +5117,6 @@ Sinua kehotetaan suorittamaan todennus loppuun, ennen kuin tämä ominaisuus ote
         <target>Sammuta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Turn off notifications?" xml:space="preserve">
-        <source>Turn off notifications?</source>
-        <target>Kytke ilmoitukset pois päältä?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Turn on" xml:space="preserve">
         <source>Turn on</source>
         <target>Kytke päälle</target>
@@ -5292,6 +5311,10 @@ Jos haluat muodostaa yhteyden, pyydä kontaktiasi luomaan toinen yhteyslinkki ja
       <trans-unit id="Use new incognito profile" xml:space="preserve">
         <source>Use new incognito profile</source>
         <target>Käytä uutta incognito-profiilia</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use only local notifications?" xml:space="preserve">
+        <source>Use only local notifications?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -5568,6 +5591,10 @@ Repeat join request?</source>
         <target>Voit piilottaa tai mykistää käyttäjäprofiilin pyyhkäisemällä sitä oikealle.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You can make it visible to your SimpleX contacts via Settings." xml:space="preserve">
+        <source>You can make it visible to your SimpleX contacts via Settings.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
         <source>You can now send messages to %@</source>
         <target>Voit nyt lähettää viestejä %@:lle</target>
@@ -5790,13 +5817,6 @@ Voit peruuttaa tämän yhteyden ja poistaa kontaktin (ja yrittää myöhemmin uu
       <trans-unit id="Your contacts can allow full message deletion." xml:space="preserve">
         <source>Your contacts can allow full message deletion.</source>
         <target>Kontaktisi voivat sallia viestien täydellisen poistamisen.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your contacts in SimpleX will see it.&#10;You can change it in Settings." xml:space="preserve">
-        <source>Your contacts in SimpleX will see it.
-You can change it in Settings.</source>
-        <target>Kontaktisi SimpleX:ssä näkevät sen.
-Voit muuttaa sitä Asetuksista.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contacts will remain connected." xml:space="preserve">

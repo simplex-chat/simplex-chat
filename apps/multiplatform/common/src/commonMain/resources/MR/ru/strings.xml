@@ -1605,4 +1605,11 @@
     <string name="not_compatible">Несовместимая версия!</string>
     <string name="group_member_role_author">автор</string>
     <string name="multicast_discoverable_via_local_network">Найти через локальную сеть</string>
+    <string name="refresh_qr_code">Обновить</string>
+    <string name="random_port">Случайный</string>
+    <string name="open_port_in_firewall_desc">Чтобы разрешить мобильному приложению подключаться к компьютеру, откройте этот порт в брандмауэре, если он включен</string>
+    <string name="create_chat_profile">Создать профиль чата</string>
+    <string name="open_port_in_firewall_title">Открыть порт в брандмауэре</string>
+    <string name="disconnect_remote_hosts">Отключить мобильные</string>
+    <string name="no_connected_mobile">Нет подключённых мобильных</string>
 </resources>
