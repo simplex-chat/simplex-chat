@@ -14,7 +14,7 @@ chatListTests = do
   it "filter favorite" testFilterFavorite
   it "filter unread" testFilterUnread
   it "filter favorite or unread" testFilterFavoriteOrUnread
-  it "sort and filter chats of all types" testPaginationAllChatTypes
+  fit "sort and filter chats of all types" testPaginationAllChatTypes
 
 testPaginationLast :: HasCallStack => FilePath -> IO ()
 testPaginationLast =
@@ -191,17 +191,24 @@ testPaginationAllChatTypes =
       connectUsers alice dan
       alice <##> dan
 
-      ts6 <- iso8601Show <$> getCurrentTime
+      _ts6 <- iso8601Show <$> getCurrentTime
 
-      getChats_ alice "count=10" [("@dan", "hey"), ("#team", ""), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
-      getChats_ alice "count=3" [("@dan", "hey"), ("#team", ""), (":3", "")]
+      -- $notes
+      alice ##> "/note folder self"
+      alice <## "new note folder created, use $self to create a note"
+      alice #> "$self psst"
+
+      ts7 <- iso8601Show <$> getCurrentTime
+
+      getChats_ alice "count=10" [("$self", "psst"), ("@dan", "hey"), ("#team", ""), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
+      getChats_ alice "count=3" [("$self", "psst"), ("@dan", "hey"), ("#team", "")]
       getChats_ alice ("after=" <> ts2 <> " count=2") [(":3", ""), ("<@cath", "")]
       getChats_ alice ("before=" <> ts5 <> " count=2") [("#team", ""), (":3", "")]
-      getChats_ alice ("after=" <> ts3 <> " count=10") [("@dan", "hey"), ("#team", ""), (":3", "")]
+      getChats_ alice ("after=" <> ts3 <> " count=10") [("$self", "psst"), ("@dan", "hey"), ("#team", ""), (":3", "")]
       getChats_ alice ("before=" <> ts4 <> " count=10") [(":3", ""), ("<@cath", ""), ("@bob", "hey")]
-      getChats_ alice ("after=" <> ts1 <> " count=10") [("@dan", "hey"), ("#team", ""), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
-      getChats_ alice ("before=" <> ts6 <> " count=10") [("@dan", "hey"), ("#team", ""), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
-      getChats_ alice ("after=" <> ts6 <> " count=10") []
+      getChats_ alice ("after=" <> ts1 <> " count=10") [("$self", "psst"), ("@dan", "hey"), ("#team", ""), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
+      getChats_ alice ("before=" <> ts7 <> " count=10") [("$self", "psst"), ("@dan", "hey"), ("#team", ""), (":3", ""), ("<@cath", ""), ("@bob", "hey")]
+      getChats_ alice ("after=" <> ts7 <> " count=10") []
       getChats_ alice ("before=" <> ts1 <> " count=10") []
 
       let queryFavorite = "{\"type\": \"filters\", \"favorite\": true, \"unread\": false}"

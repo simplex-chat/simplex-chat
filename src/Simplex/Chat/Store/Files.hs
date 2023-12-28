@@ -919,8 +919,8 @@ getFileTransferMeta_ db userId fileId =
           xftpSndFile = (\fId -> XFTPSndFile {agentSndFileId = fId, privateSndFileDescr, agentSndFileDeleted, cryptoArgs}) <$> aSndFileId_
        in FileTransferMeta {fileId, xftpSndFile, fileName, fileSize, chunkSize, filePath, fileInline, cancelled = fromMaybe False cancelled_}
 
-createLocalFile :: ToField (CIFileStatus d) => CIFileStatus d -> DB.Connection -> User -> NoteFolder -> ChatItemId -> UTCTime -> CryptoFile -> Integer -> IO Int64
-createLocalFile fileStatus db User {userId} NoteFolder {noteFolderId} chatItemId itemTs CryptoFile {filePath, cryptoArgs} fileSize = do
+createLocalFile :: ToField (CIFileStatus d) => CIFileStatus d -> DB.Connection -> User -> NoteFolder -> ChatItemId -> UTCTime -> CryptoFile -> Integer -> Integer -> IO Int64
+createLocalFile fileStatus db User {userId} NoteFolder {noteFolderId} chatItemId itemTs CryptoFile {filePath, cryptoArgs} fileSize fileChunkSize = do
   DB.execute
     db
     [sql|
@@ -935,7 +935,7 @@ createLocalFile fileStatus db User {userId} NoteFolder {noteFolderId} chatItemId
     ( (userId, noteFolderId, chatItemId)
         :. (takeFileName filePath, filePath, fileSize)
         :. maybe (Nothing, Nothing) (\(CFArgs key nonce) -> (Just key, Just nonce)) cryptoArgs
-        :. (65536 :: Int, Nothing :: Maybe InlineFileMode, fileStatus, FPLocal, itemTs, itemTs)
+        :. (fileChunkSize, Nothing :: Maybe InlineFileMode, fileStatus, FPLocal, itemTs, itemTs)
     )
   insertedRowId db
 

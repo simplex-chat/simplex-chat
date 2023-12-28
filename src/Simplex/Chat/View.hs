@@ -263,7 +263,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRMemberSubError u g m e -> ttyUser u [ttyGroup' g <> " member " <> ttyMember m <> " error: " <> sShow e]
   CRMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
   CRGroupSubscribed u g -> ttyUser u $ viewGroupSubscribed g
-  CRNoteFolderCreated u NoteFolder {displayName} -> ttyUser u ["new note folder created, write to $" <> plain displayName <> " to add notes"]
+  CRNoteFolderCreated u NoteFolder {displayName} -> ttyUser u ["new note folder created, use $" <> plain displayName <> " to create a note"]
   CRNoteFolderDeleted u NoteFolder {displayName} -> ttyUser u ["note folder " <> plain displayName <> " deleted"]
   CRPendingSubSummary u _ -> ttyUser u []
   CRSndFileSubError u SndFileTransfer {fileId, fileName} e ->
@@ -1908,7 +1908,7 @@ viewChatError logLevel testView = \case
     SEDuplicateGroupMessage {groupId, sharedMsgId}
       | testView -> ["duplicate group message, group id: " <> sShow groupId <> ", message id: " <> sShow sharedMsgId]
       | otherwise -> []
-    SENoteFolderNotFoundByName f -> ["no folder " <> ttyLocal f]
+    SENoteFolderNotFoundByName f -> ["no notes folder " <> ttyLocal f]
     e -> ["chat db error: " <> sShow e]
   ChatErrorDatabase err -> case err of
     DBErrorEncrypted -> ["error: chat database is already encrypted"]

@@ -89,4 +89,4 @@ testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
 createFolder :: TestCC -> String -> IO ()
 createFolder cc label = do
   cc ##> ("/note folder " <> label)
-  cc <## ("new note folder created, write to $" <> label <> " to add notes")
+  cc <## ("new note folder created, use $" <> label <> " to create a note")

@@ -793,13 +793,13 @@ processChatCommand' vr = \case
   APICreateChatItem folderId (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user -> do
     forM_ quotedItemId_ $ \_ -> throwError $ ChatError $ CECommandError "not supported"
     nf <- withStore $ \db -> getNoteFolder db user folderId
-    -- TODO: assertLocalAllowed user MDSnd nf XMsgNew_
     ci'@ChatItem {meta = CIMeta {itemId, itemTs}} <- createLocalChatItem user (CDLocalSnd nf) (CISndMsgContent mc) Nothing
     ciFile_ <- forM file_ $ \cf@CryptoFile {filePath, cryptoArgs} -> do
       fsFilePath <- toFSFilePath filePath -- XXX: only used for size?..
       fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cryptoArgs
+      chunkSize <- asks $ fileChunkSize . config
       withStore' $ \db -> do
-        fileId <- createLocalFile CIFSSndComplete db user nf itemId itemTs cf fileSize
+        fileId <- createLocalFile CIFSSndComplete db user nf itemId itemTs cf fileSize chunkSize
         pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndComplete, fileProtocol = FPLocal}
     let ci = (ci' :: ChatItem 'CTLocal 'MDSnd) {file = ciFile_}
     pure . CRNewChatItem user $ AChatItem SCTLocal SMDSnd (LocalChat nf) ci
@@ -851,18 +851,14 @@ processChatCommand' vr = \case
     CTLocal -> do
       (nf@NoteFolder {noteFolderId}, cci) <- withStore $ \db -> (,) <$> getNoteFolder db user chatId <*> getLocalChatItem db user chatId itemId
       case cci of
-        CChatItem SMDRcv _ -> throwChatError CEInvalidChatItemUpdate
-        CChatItem SMDSnd ci@ChatItem {meta = CIMeta {editable}, content = ciContent} -> do
-          case (ciContent, editable) of
-            (CISndMsgContent oldMC, True) ->
-              if mc /= oldMC
-                then withStore' $ \db -> do
-                  currentTs <- getCurrentTime
-                  addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
-                  ci' <- updateLocalChatItem' db user noteFolderId ci (CISndMsgContent mc)
-                  pure $ CRChatItemUpdated user (AChatItem SCTLocal SMDSnd (LocalChat nf) ci')
-                else pure $ CRChatItemNotChanged user (AChatItem SCTLocal SMDSnd (LocalChat nf) ci)
-            _ -> throwChatError CEInvalidChatItemUpdate
+        CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent oldMC}
+          | mc == oldMC -> pure $ CRChatItemNotChanged user (AChatItem SCTLocal SMDSnd (LocalChat nf) ci)
+          | otherwise -> withStore' $ \db -> do
+              currentTs <- getCurrentTime
+              addInitialAndNewCIVersions db itemId (chatItemTs' ci, oldMC) (currentTs, mc)
+              ci' <- updateLocalChatItem' db user noteFolderId ci (CISndMsgContent mc)
+              pure $ CRChatItemUpdated user (AChatItem SCTLocal SMDSnd (LocalChat nf) ci')
+        _ -> throwChatError CEInvalidChatItemUpdate
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
   APIDeleteChatItem (ChatRef cType chatId) itemId mode -> withUser $ \user -> withChatLock "deleteChatItem" $ case cType of
@@ -1018,8 +1014,6 @@ processChatCommand' vr = \case
           void (sendDirectContactMessage ct XDirectDel) `catchChatError` const (pure ())
         contactConnIds <- map aConnId <$> withStore' (\db -> getContactConnections db userId ct)
         deleteAgentConnectionsAsync user contactConnIds
-        -- functions below are called in separate transactions to prevent crashes on android
-        -- (possibly, race condition on integrity check?)
         withStore' $ \db -> deleteContactConnectionsAndFiles db userId ct
         withStore' $ \db -> deleteContact db user ct
         pure $ CRContactDeleted user ct
@@ -5977,7 +5971,7 @@ deleteGroupCI user gInfo ci@ChatItem {file} byUser timed byGroupMember_ deletedT
 deleteLocalCI :: (ChatMonad m, MsgDirectionI d) => User -> NoteFolder -> ChatItem 'CTLocal d -> Bool -> Bool -> m ChatResponse
 deleteLocalCI user nf ci@ChatItem {file} byUser timed = do
   deleteCIFile user file
-  withStoreCtx' (Just "deleteLocalCI, deleteLocalChatItem") $ \db -> deleteLocalChatItem db user nf ci
+  withStore' $ \db -> deleteLocalChatItem db user nf ci
   pure $ CRChatItemDeleted user (AChatItem SCTLocal msgDirection (LocalChat nf) ci) Nothing byUser timed
 
 deleteCIFile :: (ChatMonad m, MsgDirectionI d) => User -> Maybe (CIFile d) -> m ()
@@ -6118,17 +6112,13 @@ sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferenc
 
 createInternalChatItem :: forall c d m. (ChatTypeI c, MsgDirectionI d, ChatMonad m) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> m ()
 createInternalChatItem user cd content itemTs_ = do
-  ci <- createInternalChatItem_ user cd content itemTs_
-  toView $ CRNewChatItem user (AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci)
-
-createInternalChatItem_ :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> m (ChatItem c d)
-createInternalChatItem_ user cd content itemTs_ = do
   createdAt <- liftIO getCurrentTime
   let itemTs = fromMaybe createdAt itemTs_
   ciId <- withStore' $ \db -> do
     when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
     createNewChatItemNoMsg db user cd content itemTs createdAt
-  liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
+  ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
+  toView $ CRNewChatItem user (AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci)
 
 createLocalChatItem :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTLocal d -> CIContent d -> Maybe UTCTime -> m (ChatItem 'CTLocal d)
 createLocalChatItem user cd content itemTs_ = do
