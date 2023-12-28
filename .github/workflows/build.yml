@@ -313,6 +313,7 @@ jobs:
         if: matrix.asset_name && matrix.os == 'windows-latest'
         shell: msys2 {0}
         run: |
+          export PATH=$PATH:/c/ghcup/bin
           path=$(cabal list-bin simplex-chat | tail -n 1)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
           echo "bin_hash=$(echo SHA2-512\(${{ matrix.asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
