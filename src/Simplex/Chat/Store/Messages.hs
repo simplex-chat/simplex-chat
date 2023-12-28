@@ -70,9 +70,6 @@ module Simplex.Chat.Store.Messages
     getGroupCIReactions,
     getGroupReactions,
     setGroupReaction,
-    getLocalReactions,
-    getLocalCIReactions,
-    setLocalReaction,
     getChatItemIdByAgentMsgId,
     getDirectChatItem,
     getDirectCIWithReactions,
@@ -1125,7 +1122,7 @@ getLocalChatLast_ :: DB.Connection -> User -> NoteFolder -> Int -> String -> Exc
 getLocalChatLast_ db user@User {userId} nf@NoteFolder {noteFolderId} count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   chatItemIds <- liftIO getLocalChatItemIdsLast_
-  chatItems <- mapM (getLocalCIWithReactions db user nf) chatItemIds
+  chatItems <- mapM (getLocalChatItem db user noteFolderId) chatItemIds
   pure $ Chat (LocalChat nf) (reverse chatItems) stats
   where
     getLocalChatItemIdsLast_ :: IO [ChatItemId]
@@ -1147,7 +1144,7 @@ getLocalChatAfter_ db user@User {userId} nf@NoteFolder {noteFolderId} afterChatI
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   afterChatItem <- getLocalChatItem db user noteFolderId afterChatItemId
   chatItemIds <- liftIO $ getLocalChatItemIdsAfter_ (chatItemTs afterChatItem)
-  chatItems <- mapM (getLocalCIWithReactions db user nf) chatItemIds
+  chatItems <- mapM (getLocalChatItem db user noteFolderId) chatItemIds
   pure $ Chat (LocalChat nf) chatItems stats
   where
     getLocalChatItemIdsAfter_ :: UTCTime -> IO [ChatItemId]
@@ -1170,7 +1167,7 @@ getLocalChatBefore_ db user@User {userId} nf@NoteFolder {noteFolderId} beforeCha
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
   beforeChatItem <- getLocalChatItem db user noteFolderId beforeChatItemId
   chatItemIds <- liftIO $ getLocalChatItemIdsBefore_ (chatItemTs beforeChatItem)
-  chatItems <- mapM (getLocalCIWithReactions db user nf) chatItemIds
+  chatItems <- mapM (getLocalChatItem db user noteFolderId) chatItemIds
   pure $ Chat (LocalChat nf) (reverse chatItems) stats
   where
     getLocalChatItemIdsBefore_ :: UTCTime -> IO [ChatItemId]
@@ -1957,17 +1954,6 @@ getGroupChatItemIdByText' db User {userId} groupId msg =
       |]
       (userId, groupId, msg <> "%")
 
-getLocalCIWithReactions :: DB.Connection -> User -> NoteFolder -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTLocal)
-getLocalCIWithReactions db user nf@NoteFolder {noteFolderId} itemId = do
-  liftIO . localCIWithReactions db nf =<< getLocalChatItem db user noteFolderId itemId
-
-localCIWithReactions :: DB.Connection -> NoteFolder -> CChatItem 'CTLocal -> IO (CChatItem 'CTLocal)
-localCIWithReactions db nf cci@(CChatItem md ci@ChatItem {meta = CIMeta {itemSharedMsgId}}) = case itemSharedMsgId of
-  Just sharedMsgId -> do
-    reactions <- getLocalCIReactions db nf sharedMsgId
-    pure $ CChatItem md ci {reactions}
-  Nothing -> pure cci
-
 getLocalChatItem :: DB.Connection -> User -> Int64 -> ChatItemId -> ExceptT StoreError IO (CChatItem 'CTLocal)
 getLocalChatItem db User {userId} folderId itemId = ExceptT $ do
   currentTs <- getCurrentTime
@@ -2043,7 +2029,6 @@ deleteLocalChatItem :: DB.Connection -> User -> NoteFolder -> ChatItem 'CTLocal 
 deleteLocalChatItem db User {userId} NoteFolder {noteFolderId} ci = do
   let itemId = chatItemId' ci
   deleteChatItemVersions_ db itemId
-  deleteLocalCIReactions_ db noteFolderId ci
   DB.execute
     db
     [sql|
@@ -2166,19 +2151,6 @@ getGroupCIReactions db GroupInfo {groupId} itemMemberId itemSharedMsgId =
       |]
       (groupId, itemMemberId, itemSharedMsgId)
 
-getLocalCIReactions :: DB.Connection -> NoteFolder -> SharedMsgId -> IO [CIReactionCount]
-getLocalCIReactions db NoteFolder {noteFolderId} itemSharedMsgId = do
-  map toCIReaction
-    <$> DB.query
-      db
-      [sql|
-        SELECT reaction, MAX(reaction_sent), COUNT(chat_item_reaction_id)
-        FROM chat_item_reactions
-        WHERE note_folder_id = ? AND shared_msg_id = ?
-        GROUP BY reaction
-      |]
-      (noteFolderId, itemSharedMsgId)
-
 getACIReactions :: DB.Connection -> AChatItem -> IO AChatItem
 getACIReactions db aci@(AChatItem _ md chat ci@ChatItem {meta = CIMeta {itemSharedMsgId}}) = case itemSharedMsgId of
   Just itemSharedMId -> case chat of
@@ -2189,9 +2161,6 @@ getACIReactions db aci@(AChatItem _ md chat ci@ChatItem {meta = CIMeta {itemShar
       let GroupMember {memberId} = chatItemMember g ci
       reactions <- getGroupCIReactions db g memberId itemSharedMId
       pure $ AChatItem SCTGroup md chat ci {reactions}
-    LocalChat nf -> do
-      reactions <- getLocalCIReactions db nf itemSharedMId
-      pure $ AChatItem SCTLocal md chat ci {reactions}
     _ -> pure aci
   _ -> pure aci
 
@@ -2208,11 +2177,6 @@ deleteGroupCIReactions_ db g@GroupInfo {groupId} ci@ChatItem {meta = CIMeta {ite
       db
       "DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id = ?"
       (groupId, itemSharedMId, memberId)
-
-deleteLocalCIReactions_ :: DB.Connection -> NoteFolderId -> ChatItem 'CTLocal d -> IO ()
-deleteLocalCIReactions_ db folderId ChatItem {meta = CIMeta {itemSharedMsgId}} =
-  forM_ itemSharedMsgId $ \itemSharedMId ->
-    DB.execute db "DELETE FROM chat_item_reactions WHERE note_folder_id = ? AND shared_msg_id = ?" (folderId, itemSharedMId)
 
 toCIReaction :: (MsgReaction, Bool, Int) -> CIReactionCount
 toCIReaction (reaction, userReacted, totalReacted) = CIReactionCount {reaction, userReacted, totalReacted}
@@ -2280,38 +2244,6 @@ setGroupReaction db GroupInfo {groupId} m itemMemberId itemSharedMId sent reacti
           WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id = ? AND reaction_sent = ? AND reaction = ?
         |]
         (groupId, groupMemberId' m, itemSharedMId, itemMemberId, sent, reaction)
-
-getLocalReactions :: DB.Connection -> NoteFolder -> SharedMsgId -> Bool -> IO [MsgReaction]
-getLocalReactions db NoteFolder {noteFolderId} itemSharedMId sent =
-  map fromOnly
-    <$> DB.query
-      db
-      [sql|
-        SELECT reaction
-        FROM chat_item_reactions
-        WHERE note_folder_id = ? AND shared_msg_id = ? AND reaction_sent = ?
-      |]
-      (noteFolderId, itemSharedMId, sent)
-
-setLocalReaction :: DB.Connection -> NoteFolder -> SharedMsgId -> MsgReaction -> Bool -> UTCTime -> IO ()
-setLocalReaction db NoteFolder {noteFolderId} itemSharedMId reaction add reactionTs
-  | add =
-      DB.execute
-        db
-        [sql|
-          INSERT INTO chat_item_reactions
-            (note_folder_id, shared_msg_id, reaction_sent, reaction, reaction_ts)
-            VALUES (?,?,?,?,?)
-        |]
-        (noteFolderId, itemSharedMId, True, reaction, reactionTs)
-  | otherwise =
-      DB.execute
-        db
-        [sql|
-          DELETE FROM chat_item_reactions
-          WHERE note_folder_id = ? AND shared_msg_id = ? AND reaction_sent = ? AND reaction = ?
-        |]
-        (noteFolderId, itemSharedMId, True, reaction)
 
 getTimedItems :: DB.Connection -> User -> UTCTime -> IO [((ChatRef, ChatItemId), UTCTime)]
 getTimedItems db User {userId} startTimedThreadCutoff =

@@ -936,20 +936,7 @@ processChatCommand' vr = \case
               r = ACIReaction SCTGroup SMDSnd (GroupChat g) $ CIReaction CIGroupSnd ci' createdAt reaction
           pure $ CRChatItemReaction user add r
         _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
-    CTLocal -> do
-      (nf, CChatItem md ci) <- withStore $ \db -> (,) <$> getNoteFolder db user chatId <*> getLocalChatItem db user chatId itemId
-      itemSharedMId <- case ci of
-        ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} -> pure itemSharedMId
-        _ -> throwChatError $ CECommandError "reaction not possible - no shared item ID"
-      rs <- withStore' $ \db -> getLocalReactions db nf itemSharedMId True
-      checkReactionAllowed rs
-      createdAt <- liftIO getCurrentTime
-      reactions <- withStore' $ \db -> do
-        setLocalReaction db nf itemSharedMId reaction add createdAt
-        liftIO $ getLocalCIReactions db nf itemSharedMId
-      let ci' = CChatItem md ci {reactions}
-          r = ACIReaction SCTLocal SMDSnd (LocalChat nf) $ CIReaction CILocalSnd ci' createdAt reaction
-      pure $ CRChatItemReaction user add r
+    CTLocal -> pure $ chatCmdError (Just user) "not supported"
     CTContactRequest -> pure $ chatCmdError (Just user) "not supported"
     CTContactConnection -> pure $ chatCmdError (Just user) "not supported"
     where
