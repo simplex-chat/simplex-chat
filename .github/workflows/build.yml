@@ -88,7 +88,7 @@ jobs:
       - name: Setup Haskell
         uses: haskell-actions/setup@v2
         with:
-          ghc-version: "9.6.3"
+          ghc-version: ${{ matrix.ghc }}
           cabal-version: "3.10.1.0"
 
       - name: Cache dependencies
