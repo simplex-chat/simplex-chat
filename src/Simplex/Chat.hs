@@ -3640,9 +3640,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     sendGroupMemberMessages user conn events' groupId
               itemForwardEvents :: CChatItem 'CTGroup -> m [ChatMsgEvent 'Json]
               itemForwardEvents cci = case cci of
-                (CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv sender, content = CIRcvMsgContent mc, file}) -> do
-                  fInvDescr_ <- join <$> forM file getRcvFileInvDescr
-                  processContentItem sender ci mc fInvDescr_
+                (CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv sender, content = CIRcvMsgContent mc, file})
+                  | memberCurrent sender -> do
+                    fInvDescr_ <- join <$> forM file getRcvFileInvDescr
+                    processContentItem sender ci mc fInvDescr_
+                  | otherwise -> pure []
                 (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file}) -> do
                   fInvDescr_ <- join <$> forM file getSndFileInvDescr
                   processContentItem membership ci mc fInvDescr_

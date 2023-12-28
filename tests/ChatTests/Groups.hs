@@ -122,6 +122,7 @@ chatGroupTests = do
     it "text messages" testGroupHistory
     it "history is sent when joining via group link" testGroupHistoryGroupLink
     it "history is not sent if preference is disabled" testGroupHistoryPreferenceOff
+    it "member's messages are not included if member is not a current member" testGroupHistoryNotCurrentMember
     it "host's file" testGroupHistoryHostFile
     it "member's file" testGroupHistoryMemberFile
     it "large file with text" testGroupHistoryLargeFile
@@ -4560,6 +4561,66 @@ testGroupHistoryPreferenceOff =
     aliceAddedDan cc = do
       cc <## "#team: alice added dan (Daniel) to the group (connecting...)"
       cc <## "#team: new member dan is connected"
+
+testGroupHistoryNotCurrentMember :: HasCallStack => FilePath -> IO ()
+testGroupHistoryNotCurrentMember =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000
+
+      alice #> "#team hi from alice"
+      [bob, cath] *<# "#team alice> hi from alice"
+
+      threadDelay 1000000
+
+      bob #> "#team hi from bob"
+      [alice, cath] *<# "#team bob> hi from bob"
+
+      threadDelay 1000000
+
+      cath #> "#team hi from cath"
+      [alice, bob] *<# "#team cath> hi from cath"
+
+      bob ##> "/l team"
+      concurrentlyN_
+        [ do
+            bob <## "#team: you left the group"
+            bob <## "use /d #team to delete the group",
+          alice <## "#team: bob left the group",
+          cath <## "#team: bob left the group"
+        ]
+
+      connectUsers alice dan
+      addMember "team" alice dan GRAdmin
+      dan ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: dan joined the group",
+          -- if non current members weren't filtered out, dan would report "member not found" error
+          dan
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> hi from alice [>>]",
+                   WithTime "#team cath> hi from cath [>>]",
+                   "#team: member cath (Catherine) is connected"
+                 ],
+          do
+            cath <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            cath <## "#team: new member dan is connected"
+        ]
+
+      dan ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine dan
+      r `shouldContain` [(0, "hi from alice"), (0, "hi from cath")]
+      r `shouldNotContain` [(0, "hi from bob")]
+
+      -- message delivery works after sending history
+      alice #> "#team 1"
+      [cath, dan] *<# "#team alice> 1"
+      cath #> "#team 2"
+      [alice, dan] *<# "#team cath> 2"
+      dan #> "#team 3"
+      [alice, cath] *<# "#team dan> 3"
 
 testGroupHistoryHostFile :: HasCallStack => FilePath -> IO ()
 testGroupHistoryHostFile =
