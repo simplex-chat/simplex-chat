@@ -970,8 +970,9 @@ processChatCommand' vr = \case
       withStore' $ \db -> deletePendingContactConnection db userId chatId
       pure $ CRContactConnectionDeleted user conn
     CTGroup -> do
-      Group gInfo@GroupInfo {membership = membership@GroupMember {memberRole}} members <- withStore $ \db -> getGroup db vr user chatId
-      let isOwner = memberRole == GROwner
+      Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db vr user chatId
+      let GroupMember {memberRole = membershipMemRole} = membership
+      let isOwner = membershipMemRole == GROwner
           canDelete = isOwner || not (memberCurrent membership)
       unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
@@ -1610,12 +1611,13 @@ processChatCommand' vr = \case
       (invitation, ct) <- withStore $ \db -> do
         inv@ReceivedGroupInvitation {fromMember} <- getGroupInvitation db vr user groupId
         (inv,) <$> getContactViaMember db user fromMember
-      let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership = membership@GroupMember {memberId}}} = invitation
+      let ReceivedGroupInvitation {fromMember, connRequest, groupInfo = g@GroupInfo {membership}} = invitation
+          GroupMember {memberId = membershipMemId} = membership
           Contact {activeConn} = ct
       case activeConn of
         Just Connection {peerChatVRange} -> do
           subMode <- chatReadVar subscriptionMode
-          dm <- directMessage $ XGrpAcpt memberId
+          dm <- directMessage $ XGrpAcpt membershipMemId
           agentConnId <- withAgent $ \a -> joinConnection a (aUserId user) True connRequest dm subMode
           withStore' $ \db -> do
             createMemberConnection db userId fromMember agentConnId (fromJVersionRange peerChatVRange) subMode
@@ -2190,8 +2192,9 @@ processChatCommand' vr = \case
       let validName = T.pack $ mkValidName $ T.unpack displayName
       when (displayName /= validName) $ throwChatError CEInvalidDisplayName {displayName, validName}
     assertUserGroupRole :: GroupInfo -> GroupMemberRole -> m ()
-    assertUserGroupRole g@GroupInfo {membership = membership@GroupMember {memberRole}} requiredRole = do
-      when (memberRole < requiredRole) $ throwChatError $ CEGroupUserRole g requiredRole
+    assertUserGroupRole g@GroupInfo {membership} requiredRole = do
+      let GroupMember {memberRole = membershipMemRole} = membership
+      when (membershipMemRole < requiredRole) $ throwChatError $ CEGroupUserRole g requiredRole
       when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined g)
       when (memberRemoved membership) $ throwChatError CEGroupMemberUserRemoved
       unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
@@ -4684,12 +4687,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
         when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
         -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
-        (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership = membership@GroupMember {groupMemberId, memberId}}, hostId) <-
-          withStore $ \db -> createGroupInvitation db vr user ct inv customUserProfileId
+        (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership}, hostId) <- withStore $ \db -> createGroupInvitation db vr user ct inv customUserProfileId
+        let GroupMember {groupMemberId, memberId = membershipMemId} = membership
         if sameGroupLinkId groupLinkId groupLinkId'
           then do
             subMode <- chatReadVar subscriptionMode
-            dm <- directMessage $ XGrpAcpt memberId
+            dm <- directMessage $ XGrpAcpt membershipMemId
             connIds <- joinAgentConnectionAsync user True connRequest dm subMode
             withStore' $ \db -> do
               setViaGroupLinkHash db groupId connId
@@ -5119,7 +5122,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
-    xGrpMemFwd gInfo@GroupInfo {membership = membership@GroupMember {memberId}, chatSettings} m memInfo@(MemberInfo memId memRole memChatVRange _) introInv@IntroInvitation {groupConnReq, directConnReq} = do
+    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings} m memInfo@(MemberInfo memId memRole memChatVRange _) introInv@IntroInvitation {groupConnReq, directConnReq} = do
+      let GroupMember {memberId = membershipMemId} = membership
       checkHostRole m memRole
       toMember <-
         withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
@@ -5132,7 +5136,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       withStore' $ \db -> saveMemberInvitation db toMember introInv
       subMode <- chatReadVar subscriptionMode
       -- [incognito] send membership incognito profile, create direct connection as incognito
-      dm <- directMessage $ XGrpMemInfo memberId (fromLocalProfile $ memberProfile membership)
+      dm <- directMessage $ XGrpMemInfo membershipMemId (fromLocalProfile $ memberProfile membership)
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       groupConnIds <- joinAgentConnectionAsync user (chatHasNtfs chatSettings) groupConnReq dm subMode
       directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user True dcr dm subMode
@@ -5141,15 +5145,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       withStore' $ \db -> createIntroToMemberContact db user m toMember mcvr groupConnIds directConnIds customUserProfileId subMode
 
     xGrpMemRole :: GroupInfo -> GroupMember -> MemberId -> GroupMemberRole -> RcvMessage -> UTCTime -> m ()
-    xGrpMemRole gInfo@GroupInfo {membership = membership@GroupMember {memberId}} m@GroupMember {memberRole = senderRole} memRoleId memRole msg brokerTs
-      | memberId == memRoleId =
+    xGrpMemRole gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId memRole msg brokerTs
+      | membershipMemId == memId =
           let gInfo' = gInfo {membership = membership {memberRole = memRole}}
            in changeMemberRole gInfo' membership $ RGEUserRole memRole
       | otherwise =
-          withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memRoleId) >>= \case
+          withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
             Right member -> changeMemberRole gInfo member $ RGEMemberRole (groupMemberId' member) (fromLocalProfile $ memberProfile member) memRole
             Left _ -> messageError "x.grp.mem.role with unknown member ID"
       where
+        GroupMember {memberId = membershipMemId} = membership
         changeMemberRole gInfo' member@GroupMember {memberRole = fromRole} gEvent
           | senderRole < GRAdmin || senderRole < fromRole = messageError "x.grp.mem.role with insufficient member permissions"
           | otherwise = do
@@ -5202,8 +5207,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         updateStatus introId status = withStore' $ \db -> updateIntroStatus db introId status
 
     xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> UTCTime -> m ()
-    xGrpMemDel gInfo@GroupInfo {membership = membership@GroupMember {memberId}} m@GroupMember {memberRole = senderRole} memDelId msg brokerTs = do
-      if memberId == memDelId
+    xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId msg brokerTs = do
+      let GroupMember {memberId = membershipMemId} = membership
+      if membershipMemId == memId
         then checkRole membership $ do
           deleteGroupLinkIfExists user gInfo
           -- member records are not deleted to keep history
@@ -5213,7 +5219,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           deleteMemberItem RGEUserDeleted
           toView $ CRDeletedMemberUser user gInfo {membership = membership {memberStatus = GSMemRemoved}} m
         else
-          withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memDelId) >>= \case
+          withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
             Left _ -> messageError "x.grp.mem.del with unknown member ID"
             Right member@GroupMember {groupMemberId, memberProfile} ->
               checkRole member $ do
