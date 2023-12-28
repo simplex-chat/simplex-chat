@@ -1,7 +1,8 @@
 package chat.simplex.app
 
 import android.app.Application
-import chat.simplex.common.platform.Log
+import android.app.UiModeManager
+import android.os.*
 import androidx.lifecycle.*
 import androidx.work.*
 import chat.simplex.app.model.NtfManager
@@ -10,10 +11,12 @@ import chat.simplex.common.helpers.requiresIgnoringBattery
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.updatingChatsMutex
+import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.ui.theme.DefaultTheme
+import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.common.platform.*
-import chat.simplex.common.views.call.RcvCallInvitation
 import com.jakewharton.processphoenix.ProcessPhoenix
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.withLock
@@ -35,6 +38,21 @@ class SimplexApp: Application(), LifecycleEventObserver {
       return
     } else {
       registerGlobalErrorHandler()
+      Handler(Looper.getMainLooper()).post {
+        while (true) {
+          try {
+            Looper.loop()
+          } catch (e: Throwable) {
+            if (e.message != null && e.message!!.startsWith("Unable to start activity")) {
+              android.os.Process.killProcess(android.os.Process.myPid())
+              break
+            } else {
+              // Send it to our exception handled because it will not get the exception otherwise
+              Thread.getDefaultUncaughtExceptionHandler()?.uncaughtException(Looper.getMainLooper().thread, e)
+            }
+          }
+        }
+      }
     }
     context = this
     initHaskell()
@@ -207,6 +225,23 @@ class SimplexApp: Application(), LifecycleEventObserver {
       }
 
       override fun androidIsBackgroundCallAllowed(): Boolean = !SimplexService.isBackgroundRestricted()
+
+      override fun androidSetNightModeIfSupported() {
+        if (Build.VERSION.SDK_INT < 31) return
+
+        val light = if (CurrentColors.value.name == DefaultTheme.SYSTEM.name) {
+          null
+        } else {
+          CurrentColors.value.colors.isLight
+        }
+        val mode = when (light) {
+          null -> UiModeManager.MODE_NIGHT_AUTO
+          true -> UiModeManager.MODE_NIGHT_NO
+          false -> UiModeManager.MODE_NIGHT_YES
+        }
+        val uiModeManager = androidAppContext.getSystemService(UI_MODE_SERVICE) as UiModeManager
+        uiModeManager.setApplicationNightMode(mode)
+      }
 
       override suspend fun androidAskToAllowBackgroundCalls(): Boolean {
         if (SimplexService.isBackgroundRestricted()) {

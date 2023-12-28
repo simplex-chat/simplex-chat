@@ -17,12 +17,14 @@ import qualified Codec.Archive.Zip as Z
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.Reader
+import qualified Data.ByteArray as BA
 import Data.Functor (($>))
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import qualified Database.SQLite3 as SQL
 import Simplex.Chat.Controller
 import Simplex.Messaging.Agent.Client (agentClientStore)
-import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), closeSQLiteStore, sqlString)
+import Simplex.Messaging.Agent.Store.SQLite (SQLiteStore (..), closeSQLiteStore, keyString, sqlString, storeKey)
 import Simplex.Messaging.Util
 import System.FilePath
 import UnliftIO.Directory
@@ -118,7 +120,7 @@ storageFiles = do
   pure StorageFiles {chatStore, agentStore, filesPath}
 
 sqlCipherExport :: forall m. ChatMonad m => DBEncryptionConfig -> m ()
-sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = DBEncryptionKey key'} =
+sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = DBEncryptionKey key', keepKey} =
   when (key /= key') $ do
     fs <- storageFiles
     checkFile `withDBs` fs
@@ -134,15 +136,15 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
     backup f = copyFile f (f <> ".bak")
     restore f = copyFile (f <> ".bak") f
     checkFile f = unlessM (doesFileExist f) $ throwDBError $ DBErrorNoFile f
-    checkEncryption SQLiteStore {dbEncrypted} = do
-      enc <- readTVarIO dbEncrypted
-      when (enc && null key) $ throwDBError DBErrorEncrypted
-      when (not enc && not (null key)) $ throwDBError DBErrorPlaintext
+    checkEncryption SQLiteStore {dbKey} = do
+      enc <- maybe True (not . BA.null) <$> readTVarIO dbKey
+      when (enc && BA.null key) $ throwDBError DBErrorEncrypted
+      when (not enc && not (BA.null key)) $ throwDBError DBErrorPlaintext
     exported = (<> ".exported")
     removeExported f = whenM (doesFileExist $ exported f) $ removeFile (exported f)
-    moveExported SQLiteStore {dbFilePath = f, dbEncrypted} = do
+    moveExported SQLiteStore {dbFilePath = f, dbKey} = do
       renameFile (exported f) f
-      atomically $ writeTVar dbEncrypted $ not (null key')
+      atomically $ writeTVar dbKey $ storeKey key' (fromMaybe False keepKey)
     export f = do
       withDB f (`SQL.exec` exportSQL) DBErrorExport
       withDB (exported f) (`SQL.exec` testSQL) DBErrorOpen
@@ -161,7 +163,7 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
         exportSQL =
           T.unlines $
             keySQL key
-              <> [ "ATTACH DATABASE " <> sqlString (f <> ".exported") <> " AS exported KEY " <> sqlString key' <> ";",
+              <> [ "ATTACH DATABASE " <> sqlString (T.pack f <> ".exported") <> " AS exported KEY " <> keyString key' <> ";",
                    "SELECT sqlcipher_export('exported');",
                    "DETACH DATABASE exported;"
                  ]
@@ -172,7 +174,7 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
                    "PRAGMA secure_delete = ON;",
                    "SELECT count(*) FROM sqlite_master;"
                  ]
-        keySQL k = ["PRAGMA key = " <> sqlString k <> ";" | not (null k)]
+        keySQL k = ["PRAGMA key = " <> keyString k <> ";" | not (BA.null k)]
 
 withDBs :: Monad m => (FilePath -> m b) -> StorageFiles -> m b
 action `withDBs` StorageFiles {chatStore, agentStore} = action (dbFilePath chatStore) >> action (dbFilePath agentStore)

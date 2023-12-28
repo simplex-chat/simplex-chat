@@ -120,7 +120,7 @@ private fun SetupDatabasePassphraseLayout(
           .padding(horizontal = DEFAULT_PADDING)
           .focusRequester(focusRequester)
           .onPreviewKeyEvent {
-            if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+            if ((it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
               focusManager.moveFocus(FocusDirection.Down)
               true
             } else {
@@ -150,7 +150,7 @@ private fun SetupDatabasePassphraseLayout(
         modifier = Modifier
           .padding(horizontal = DEFAULT_PADDING)
           .onPreviewKeyEvent {
-            if (!disabled && it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+            if (!disabled && (it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
               onClickUpdate()
               true
             } else {

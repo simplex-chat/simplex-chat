@@ -175,6 +175,8 @@ testAddContact = versionTestMatrix2 runTestAddContact
       bob #$> ("/_read chat @2 from=1 to=100", id, "ok")
       alice #$> ("/_read chat @2", id, "ok")
       bob #$> ("/_read chat @2", id, "ok")
+      alice #$> ("/read user", id, "ok")
+      alice #$> ("/_read user 1", id, "ok")
 
 testDuplicateContactsSeparate :: HasCallStack => FilePath -> IO ()
 testDuplicateContactsSeparate =
@@ -1490,15 +1492,15 @@ testDeleteUser =
     \alice bob cath dan -> do
       connectUsers alice bob
 
-      -- cannot delete active user
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
 
-      alice ##> "/_delete user 1 del_smp=off"
+      -- cannot delete active user when there is another user
+
+      alice ##> "/_delete user 2 del_smp=off"
       alice <## "cannot delete active user"
 
       -- delete user without deleting SMP queues
-
-      alice ##> "/create user alisa"
-      showActiveUser alice "alisa"
 
       connectUsers alice cath
       alice <##> cath
@@ -1517,17 +1519,7 @@ testDeleteUser =
       -- no connection authorization error - connection wasn't deleted
       (alice </)
 
-      -- cannot delete new active user
-
-      alice ##> "/delete user alisa"
-      alice <## "cannot delete active user"
-
-      alice ##> "/users"
-      alice <## "alisa (active)"
-
-      alice <##> cath
-
-      -- delete user deleting SMP queues
+      -- cannot delete active user when there is another user
 
       alice ##> "/create user alisa2"
       showActiveUser alice "alisa2"
@@ -1535,9 +1527,16 @@ testDeleteUser =
       connectUsers alice dan
       alice <##> dan
 
+      alice ##> "/delete user alisa2"
+      alice <## "cannot delete active user"
+
       alice ##> "/users"
       alice <## "alisa"
       alice <## "alisa2 (active)"
+
+      alice <##> dan
+
+      -- delete user deleting SMP queues
 
       alice ##> "/delete user alisa"
       alice <### ["ok", "completed deleting user"]
@@ -1550,6 +1549,16 @@ testDeleteUser =
       (alice </)
 
       alice <##> dan
+
+      -- delete last active user
+
+      alice ##> "/delete user alisa2 del_smp=off"
+      alice <### ["ok", "completed deleting user"]
+      alice ##> "/users"
+      alice <## "no users"
+
+      alice ##> "/create user alisa3"
+      showActiveUser alice "alisa3"
 
 testUsersDifferentCIExpirationTTL :: HasCallStack => FilePath -> IO ()
 testUsersDifferentCIExpirationTTL tmp = do
@@ -2045,12 +2054,23 @@ testUserPrivacy =
       userVisible alice "current "
       alice ##> "/hide user new_password"
       userHidden alice "current "
-      alice ##> "/_delete user 1 del_smp=on"
-      alice <## "cannot delete last user"
-      alice ##> "/_hide user 1 \"password\""
-      alice <## "cannot hide the only not hidden user"
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
+      -- delete last visible active user
+      alice ##> "/_delete user 1 del_smp=on"
+      alice <### ["ok", "completed deleting user"]
+      -- hidden user is not shown
+      alice ##> "/users"
+      alice <## "no users"
+      -- but it is still possible to switch to it
+      alice ##> "/user alisa wrong_password"
+      alice <## "user does not exist or incorrect password"
+      alice ##> "/user alisa new_password"
+      showActiveUser alice "alisa"
+      alice ##> "/create user alisa2"
+      showActiveUser alice "alisa2"
+      alice ##> "/_hide user 3 \"password2\""
+      alice <## "cannot hide the only not hidden user"
       -- change profile privacy for inactive user via API requires correct password
       alice ##> "/_unmute user 2"
       alice <## "hidden user always muted when inactive"
@@ -2062,17 +2082,14 @@ testUserPrivacy =
       userVisible alice ""
       alice ##> "/_hide user 2 \"another_password\""
       userHidden alice ""
-      alice ##> "/user alisa another_password"
-      showActiveUser alice "alisa"
-      alice ##> "/user alice"
-      showActiveUser alice "alice (Alice)"
       alice ##> "/_delete user 2 del_smp=on"
       alice <## "user does not exist or incorrect password"
       alice ##> "/_delete user 2 del_smp=on \"wrong_password\""
       alice <## "user does not exist or incorrect password"
       alice ##> "/_delete user 2 del_smp=on \"another_password\""
-      alice <## "ok"
-      alice <## "completed deleting user"
+      alice <### ["ok", "completed deleting user"]
+      alice ##> "/_delete user 3 del_smp=on"
+      alice <### ["ok", "completed deleting user"]
   where
     userHidden alice current = do
       alice <## (current <> "user alisa:")

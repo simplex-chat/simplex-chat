@@ -116,8 +116,8 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
     profileId <- insertedRowId db
     DB.execute
       db
-      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is_user, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (profileId, displayName, userId, True, currentTs, currentTs)
+      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is_user, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?)"
+      (profileId, displayName, userId, True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
     pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing)
@@ -429,9 +429,9 @@ getUserAddress db User {userId} =
       |]
       (Only userId)
 
-getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> IO (Maybe (UserContactLink, Maybe GroupId, GroupMemberRole))
+getUserContactLinkById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO (UserContactLink, Maybe GroupId, GroupMemberRole)
 getUserContactLinkById db userId userContactLinkId =
-  maybeFirstRow (\(ucl :. (groupId_, mRole_)) -> (toUserContactLink ucl, groupId_, fromMaybe GRMember mRole_)) $
+  ExceptT . firstRow (\(ucl :. (groupId_, mRole_)) -> (toUserContactLink ucl, groupId_, fromMaybe GRMember mRole_)) SEUserContactLinkNotFound $
     DB.query
       db
       [sql|

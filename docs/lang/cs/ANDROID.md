@@ -19,6 +19,7 @@ Pokud chcete zobrazit, co je uloženo v datovém adresáři SimpleX, musíte mí
 - zařízení připojené přes USB nebo Wi-Fi k počítači.
 
 ## Postup:
+
 - Otevřete SimpleX, přejděte na `Databáze passphrase & export`, povolte `Zálohování dat aplikace`. Tím se zprovozní další kroky
 - _Volitelné_: pokud chcete zobrazit obsah databáze, změňte přístupovou frázi databáze z náhodné na svou. Chcete-li to provést, zastavte chat na obrazovce `Database passphrase & export`, otevřete `Database passphrase`, zadejte novou passphrase a potvrďte ji, poté ji aktualizujte. Nezapomeňte ji, jinak přijdete o všechna svá data v případě, že bude passphrase později znovu požadována.
 - otevřete emulátor terminálu (Windows CMD/Powershell nebude fungovat) a změňte adresář na ten, který chcete použít pro uložení zálohy:
@@ -42,4 +43,14 @@ Nyní budou zálohované soubory uvnitř `./apps/chat.simplex.app/`.
 
 Upozorňujeme, že pokud používáte moderní verzi SimpleX, budou databáze zašifrované a jejich obsah nebudete moci zobrazit bez použití aplikace `sqlcipher` a bez znalosti dešifrovací fráze (musíte ji nejprve změnit na svou z náhodně vygenerovaných v aplikaci).
 
-Další informace o tom, jak dešifrovat databáze a provádět dotazy do nich, najdete v příručce [SQL.md](./SQL.md).
+## Dešifrování databází
+
+Chcete-li zobrazit data v databázi, musíte je nejprve dešifrovat. Nainstalujte `sqlcipher` pomocí svého oblíbeného správce balíčků a v adresáři s databázemi spusťte následující příkazy:
+```bash
+sqlcipher files_chat.db
+pragma key="youDecryptionPassphrase";
+# Ujistěte se, že vše funguje správně
+select * from users;
+```
+
+Pokud se zobrazí `Parse error: no such table: users`, ujistěte se, že jste zadali správnou přístupovou frázi a že jste ji v aplikaci pro Android změnili z náhodné (pokud jste tuto databázi získali ze zařízení s Androidem, samozřejmě).

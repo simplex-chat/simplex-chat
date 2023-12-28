@@ -21,6 +21,7 @@ data DirectoryOpts = DirectoryOpts
     superUsers :: [KnownContact],
     directoryLog :: Maybe FilePath,
     serviceName :: String,
+    searchResults :: Int,
     testing :: Bool
   }
 
@@ -54,6 +55,7 @@ directoryOpts appDir defaultDbFileName = do
         superUsers,
         directoryLog,
         serviceName,
+        searchResults = 10,
         testing = False
       }
 

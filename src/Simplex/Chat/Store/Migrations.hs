@@ -91,6 +91,9 @@ import Simplex.Chat.Migrations.M20231107_indexes
 import Simplex.Chat.Migrations.M20231113_group_forward
 import Simplex.Chat.Migrations.M20231114_remote_control
 import Simplex.Chat.Migrations.M20231126_remote_ctrl_address
+import Simplex.Chat.Migrations.M20231207_chat_list_pagination
+import Simplex.Chat.Migrations.M20231214_item_content_tag
+import Simplex.Chat.Migrations.M20231215_recreate_msg_deliveries
 import Simplex.Messaging.Agent.Store.SQLite.Migrations (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -181,7 +184,10 @@ schemaMigrations =
     ("20231107_indexes", m20231107_indexes, Just down_m20231107_indexes),
     ("20231113_group_forward", m20231113_group_forward, Just down_m20231113_group_forward),
     ("20231114_remote_control", m20231114_remote_control, Just down_m20231114_remote_control),
-    ("20231126_remote_ctrl_address", m20231126_remote_ctrl_address, Just down_m20231126_remote_ctrl_address)
+    ("20231126_remote_ctrl_address", m20231126_remote_ctrl_address, Just down_m20231126_remote_ctrl_address),
+    ("20231207_chat_list_pagination", m20231207_chat_list_pagination, Just down_m20231207_chat_list_pagination),
+    ("20231214_item_content_tag", m20231214_item_content_tag, Just down_m20231214_item_content_tag),
+    ("20231215_recreate_msg_deliveries", m20231215_recreate_msg_deliveries, Just down_m20231215_recreate_msg_deliveries)
   ]
 
 -- | The list of migrations in ascending order by date

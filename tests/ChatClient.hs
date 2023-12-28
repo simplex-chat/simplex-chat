@@ -15,9 +15,10 @@ import Control.Concurrent.STM
 import Control.Exception (bracket, bracket_)
 import Control.Monad
 import Control.Monad.Except
+import Data.ByteArray (ScrubbedBytes)
 import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
-import Data.Maybe (fromJust, isNothing)
+import Data.Maybe (isNothing)
 import qualified Data.Text as T
 import Network.Socket
 import Simplex.Chat
@@ -86,7 +87,7 @@ testOpts =
       maintenance = False
     }
 
-getTestOpts :: Bool -> String -> ChatOpts
+getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
 getTestOpts maintenance dbKey = testOpts {maintenance, coreOptions = (coreOptions testOpts) {dbKey}}
 
 termSettings :: VirtualTerminalSettings
@@ -127,16 +128,43 @@ testCfg =
       xftpFileConfig = Nothing
     }
 
+testAgentCfgVPrev :: AgentConfig
+testAgentCfgVPrev =
+  testAgentCfg
+    { smpAgentVRange = prevRange $ smpAgentVRange testAgentCfg,
+      smpClientVRange = prevRange $ smpClientVRange testAgentCfg,
+      e2eEncryptVRange = prevRange $ e2eEncryptVRange testAgentCfg,
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = prevRange $ serverVRange $ smpCfg testAgentCfg}
+    }
+
 testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
-    { smpClientVRange = mkVersionRange 1 1,
-      smpAgentVRange = mkVersionRange 1 1,
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange 1 1}
+    { smpClientVRange = v1Range,
+      smpAgentVRange = v1Range,
+      e2eEncryptVRange = v1Range,
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = v1Range}
+    }
+
+testCfgVPrev :: ChatConfig
+testCfgVPrev =
+  testCfg
+    { chatVRange = prevRange $ chatVRange testCfg,
+      agentConfig = testAgentCfgVPrev
     }
 
 testCfgV1 :: ChatConfig
-testCfgV1 = testCfg {agentConfig = testAgentCfgV1}
+testCfgV1 =
+  testCfg
+    { chatVRange = v1Range,
+      agentConfig = testAgentCfgV1
+    }
+
+prevRange :: VersionRange -> VersionRange
+prevRange vr = vr {maxVersion = maxVersion vr - 1}
+
+v1Range :: VersionRange
+v1Range = mkVersionRange 1 1
 
 testCfgCreateGroupDirect :: ChatConfig
 testCfgCreateGroupDirect =
@@ -160,13 +188,13 @@ groupLinkViaContactVRange = mkVersionRange 1 2
 
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
-  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey MCError
+  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False MCError
   Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
   startTestChat_ db cfg opts user
 
 startTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> IO TestCC
 startTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix = do
-  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey MCError
+  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False MCError
   Just user <- find activeUser <$> withTransaction chatStore getUsers
   startTestChat_ db cfg opts user
 
@@ -174,7 +202,7 @@ startTestChat_ :: ChatDatabase -> ChatConfig -> ChatOpts -> User -> IO TestCC
 startTestChat_ db cfg opts user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t opts
-  cc <- newChatController db (Just user) cfg opts
+  cc <- newChatController db (Just user) cfg opts False
   chatAsync <- async . runSimplexChat opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   atomically . unless (maintenance opts) $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
@@ -275,15 +303,15 @@ getTermLine cc =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
+      -- when True $ do
       when (printOutput cc) $ do
-        -- when True $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s
     _ -> error "no output for 5 seconds"
 
 userName :: TestCC -> IO [Char]
-userName (TestCC ChatController {currentUser} _ _ _ _ _) = T.unpack . localDisplayName . fromJust <$> readTVarIO currentUser
+userName (TestCC ChatController {currentUser} _ _ _ _ _) = maybe "no current user" (T.unpack . localDisplayName) <$> readTVarIO currentUser
 
 testChat2 :: HasCallStack => Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> IO ()) -> FilePath -> IO ()
 testChat2 = testChatCfgOpts2 testCfg testOpts
@@ -352,6 +380,7 @@ serverCfg =
       serverStatsBackupFile = Nothing,
       smpServerVRange = supportedSMPServerVRange,
       transportConfig = defaultTransportServerConfig,
+      smpHandshakeTimeout = 1000000,
       controlPort = Nothing
     }
 
@@ -376,6 +405,7 @@ xftpServerConfig =
       allowNewFiles = True,
       newFileBasicAuth = Nothing,
       fileExpiration = Just defaultFileExpiration,
+      inactiveClientExpiration = Just defaultInactiveClientExpiration,
       caCertificateFile = "tests/fixtures/tls/ca.crt",
       privateKeyFile = "tests/fixtures/tls/server.key",
       certificateFile = "tests/fixtures/tls/server.crt",

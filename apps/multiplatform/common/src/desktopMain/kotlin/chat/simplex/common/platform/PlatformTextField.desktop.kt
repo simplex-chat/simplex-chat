@@ -45,6 +45,7 @@ import kotlin.text.substring
 actual fun PlatformTextField(
   composeState: MutableState<ComposeState>,
   sendMsgEnabled: Boolean,
+  sendMsgButtonDisabled: Boolean,
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
@@ -103,7 +104,7 @@ actual fun PlatformTextField(
       .padding(vertical = 4.dp)
       .focusRequester(focusRequester)
       .onPreviewKeyEvent {
-        if (it.key == Key.Enter && it.type == KeyEventType.KeyDown) {
+        if ((it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyDown) {
           if (it.isShiftPressed) {
             val start = if (minOf(textFieldValue.selection.min) == 0) "" else textFieldValue.text.substring(0 until textFieldValue.selection.min)
             val newText = start + "\n" +
@@ -113,7 +114,7 @@ actual fun PlatformTextField(
               selection = TextRange(textFieldValue.selection.min + 1)
             )
             onMessageChange(newText)
-          } else if (cs.message.isNotEmpty()) {
+          } else if (!sendMsgButtonDisabled) {
             onDone()
           }
           true

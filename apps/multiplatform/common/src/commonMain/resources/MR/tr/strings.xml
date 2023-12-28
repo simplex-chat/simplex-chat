@@ -337,7 +337,7 @@
     <string name="error_sending_message">Mesaj gönderilirken hata oluştu</string>
     <string name="error_creating_address">Adres oluştururken hata oluştu</string>
     <string name="error_changing_address">Adres değiştirirken hata oluştu</string>
-    <string name="contact_wants_to_connect_via_call">1$s sizinle şu yolla bağlantı kurmak istiyor</string>
+    <string name="contact_wants_to_connect_via_call">%1$s sizinle şu yolla bağlantı kurmak istiyor</string>
     <string name="error_changing_message_deletion">Ayarları değiştirirken hata oluştu</string>
     <string name="error_creating_link_for_group">Toplu konuşma bağlantısı oluştururken hata oluştu</string>
     <string name="error_changing_role">Yetki değiştirirken hata oluştu</string>
@@ -747,9 +747,9 @@
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Aklınızda bulunsun</b>: kaybederseniz, parolayı kurtaramaz veya değiştiremezsiniz.]]></string>
     <string name="chat_archive_header">Sohbet arşivi</string>
     <string name="chat_archive_section">SOHBET ARŞİVİ</string>
-    <string name="group_invitation_item_description">1$s grubuna davet</string>
+    <string name="group_invitation_item_description">%1$s grubuna davet</string>
     <string name="join_group_question">Gruba katıl\?</string>
-    <string name="rcv_group_event_member_added">1$s davet edildi</string>
+    <string name="rcv_group_event_member_added">%1$s davet edildi</string>
     <string name="rcv_group_event_invited_via_your_group_link">grup bağlantınız üzerinden davet edildi</string>
     <string name="group_member_status_invited">davet edildi</string>
     <string name="invite_to_group_button">Gruba davet edin</string>
@@ -875,8 +875,6 @@
     <string name="incognito_info_share">Biriyle gizli bir profil paylaştığınızda, bu profil sizi davet ettikleri gruplar için kullanılacaktır.</string>
     <string name="v4_2_auto_accept_contact_requests_desc">İsteğe bağlı karşılama mesajı ile.</string>
     <string name="your_contacts_will_remain_connected">Kişileriniz bağlı kalacaktır.</string>
-    <string name="your_contacts_will_see_it">SimpleX\'teki kişileriniz bunu görecektir.
-\nBunu Ayarlardan değiştirebilirsiniz.</string>
     <string name="you_can_create_it_later">Daha sonra oluşturabilirsiniz</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Mesajları biçimlendirmek için markdown kullanabilirsiniz:</string>
     <string name="your_chat_database">Mesaj veri tabanınız</string>

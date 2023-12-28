@@ -2023,7 +2023,8 @@ object ChatController {
     chatModel.chatId.value = null
     ModalManager.center.closeModals()
     ModalManager.end.closeModals()
-    AlertManager.shared.alertViews.clear()
+    AlertManager.shared.hideAllAlerts()
+    AlertManager.privacySensitive.hideAllAlerts()
     chatModel.currentRemoteHost.value = switchRemoteHost(rhId)
     reloadRemoteHosts()
     val user = apiGetActiveUser(rhId)
@@ -2800,9 +2801,9 @@ data class NetCfg(
         hostMode = HostMode.OnionViaSocks,
         requiredHostMode = false,
         sessionMode = TransportSessionMode.User,
-        tcpConnectTimeout = 15_000_000,
-        tcpTimeout = 10_000_000,
-        tcpTimeoutPerKb = 30_000,
+        tcpConnectTimeout = 20_000_000,
+        tcpTimeout = 15_000_000,
+        tcpTimeoutPerKb = 45_000,
         tcpKeepAlive = KeepAliveOpts.defaults,
         smpPingInterval = 1200_000_000,
         smpPingCount = 3

@@ -39,6 +39,7 @@
         android:exported="true"
         android:label="${app_name}"
         android:windowSoftInputMode="adjustResize"
+        android:configChanges="uiMode"
         android:theme="@style/Theme.SimpleX">
       <intent-filter>
         <category android:name="android.intent.category.LAUNCHER" />

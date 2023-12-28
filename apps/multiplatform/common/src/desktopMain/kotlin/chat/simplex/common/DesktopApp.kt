@@ -45,6 +45,7 @@ fun showApp() {
             Log.e(TAG, "App crashed, thread name: " + Thread.currentThread().name + ", exception: " + e.stackTraceToString())
             window.dispatchEvent(WindowEvent(window, WindowEvent.WINDOW_CLOSING))
             closedByError.value = true
+            includeMoreFailedComposables()
             // If the left side of screen has open modal, it's probably caused the crash
             if (ModalManager.start.hasModalsOpen()) {
               ModalManager.start.closeModal()

@@ -651,8 +651,6 @@
     <string name="developer_options">Ідентифікатори бази даних та опція ізоляції транспорту.</string>
     <string name="shutdown_alert_desc">Сповіщення перестануть працювати, поки ви не перезапустите додаток</string>
     <string name="you_can_create_it_later">Ви можете створити його пізніше</string>
-    <string name="your_contacts_will_see_it">Ваші контакти в SimpleX побачать це.
-\nВи можете змінити його в Налаштуваннях.</string>
     <string name="your_current_profile">Ваш поточний профіль</string>
     <string name="delete_image">Видалити зображення</string>
     <string name="save_preferences_question">Зберегти налаштування\?</string>

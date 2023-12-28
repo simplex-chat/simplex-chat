@@ -15,7 +15,13 @@ private let receiveTaskId = "chat.simplex.app.receive"
 // TCP timeout + 2 sec
 private let waitForMessages: TimeInterval = 6
 
-private let bgRefreshInterval: TimeInterval = 450
+// This is the smallest interval between refreshes, and also target interval in "off" mode
+private let bgRefreshInterval: TimeInterval = 600 // 10 minutes
+
+// This intervals are used for background refresh in instant and periodic modes
+private let periodicBgRefreshInterval: TimeInterval = 1200 // 20 minutes
+
+private let maxBgRefreshInterval: TimeInterval = 2400 // 40 minutes
 
 private let maxTimerCount = 9
 
@@ -33,19 +39,31 @@ class BGManager {
         }
     }
 
-    func schedule() {
+    func schedule(interval: TimeInterval? = nil) {
         if !ChatModel.shared.ntfEnableLocal {
             logger.debug("BGManager.schedule: disabled")
             return
         }
         logger.debug("BGManager.schedule")
         let request = BGAppRefreshTaskRequest(identifier: receiveTaskId)
-        request.earliestBeginDate = Date(timeIntervalSinceNow: bgRefreshInterval)
+        request.earliestBeginDate = Date(timeIntervalSinceNow: interval ?? runInterval)
         do {
             try BGTaskScheduler.shared.submit(request)
         } catch {
             logger.error("BGManager.schedule error: \(error.localizedDescription)")
         }
+    }
+
+    var runInterval: TimeInterval {
+        switch ChatModel.shared.notificationMode {
+        case .instant: maxBgRefreshInterval
+        case .periodic: periodicBgRefreshInterval
+        case .off: bgRefreshInterval
+        }
+    }
+
+    var lastRanLongAgo: Bool {
+        Date.now.timeIntervalSince(chatLastBackgroundRunGroupDefault.get()) > runInterval
     }
 
     private func handleRefresh(_ task: BGAppRefreshTask) {
@@ -54,14 +72,16 @@ class BGManager {
             return
         }
         logger.debug("BGManager.handleRefresh")
-        schedule()
-        if appStateGroupDefault.get().inactive {
+        let shouldRun_ = lastRanLongAgo
+        if allowBackgroundRefresh() && shouldRun_ {
+            schedule()
             let completeRefresh = completionHandler {
                 task.setTaskCompleted(success: true)
             }
             task.expirationHandler = { completeRefresh("expirationHandler") }
             receiveMessages(completeRefresh)
         } else {
+            schedule(interval: shouldRun_ ? bgRefreshInterval : runInterval)
             logger.debug("BGManager.completionHandler: already active, not started")
             task.setTaskCompleted(success: true)
         }
@@ -90,20 +110,22 @@ class BGManager {
         }
         self.completed = false
         DispatchQueue.main.async {
+            chatLastBackgroundRunGroupDefault.set(Date.now)
             let m = ChatModel.shared
             if (!m.chatInitialized) {
+                setAppState(.bgRefresh)
                 do {
                     try initializeChat(start: true)
                 } catch let error {
                     fatalError("Failed to start or load chats: \(responseError(error))")
                 }
             }
+            activateChat(appState: .bgRefresh)
             if m.currentUser == nil {
                 completeReceiving("no current user")
                 return
             }
             logger.debug("BGManager.receiveMessages: starting chat")
-            activateChat(appState: .bgRefresh)
             let cr = ChatReceiver()
             self.chatReceiver = cr
             cr.start()
