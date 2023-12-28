@@ -87,8 +87,9 @@
         <target>%@ / %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ and %@" xml:space="preserve">
+      <trans-unit id="%@ and %@" xml:space="preserve" approved="no">
         <source>%@ and %@</source>
+        <target state="translated">%@ a %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ and %@ connected" xml:space="preserve">
@@ -101,8 +102,9 @@
         <target>%1$@ na %2$@:</target>
         <note>copied message info, &lt;sender&gt; at &lt;time&gt;</note>
       </trans-unit>
-      <trans-unit id="%@ connected" xml:space="preserve">
+      <trans-unit id="%@ connected" xml:space="preserve" approved="no">
         <source>%@ connected</source>
+        <target state="translated">%@ připojen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ is connected!" xml:space="preserve">
@@ -130,8 +132,9 @@
         <target>%@ se chce připojit!</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="%@, %@ and %lld members" xml:space="preserve">
+      <trans-unit id="%@, %@ and %lld members" xml:space="preserve" approved="no">
         <source>%@, %@ and %lld members</source>
+        <target state="needs-translation">%@, %@ a %lld členů</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@, %@ and %lld other members connected" xml:space="preserve">
