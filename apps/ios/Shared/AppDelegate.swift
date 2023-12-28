@@ -38,7 +38,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     }
 
     @objc func pasteboardChanged() {
-        ChatModel.shared.pasteboardHasURLs = UIPasteboard.general.hasStrings
+        ChatModel.shared.pasteboardHasStrings = UIPasteboard.general.hasStrings
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {

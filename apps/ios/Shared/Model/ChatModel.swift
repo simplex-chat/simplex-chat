@@ -97,7 +97,7 @@ final class ChatModel: ObservableObject {
     @Published var draftChatId: String?
     // tracks keyboard height via subscription in AppDelegate
     @Published var keyboardHeight: CGFloat = 0
-    @Published var pasteboardHasURLs: Bool = UIPasteboard.general.hasStrings
+    @Published var pasteboardHasStrings: Bool = UIPasteboard.general.hasStrings
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 

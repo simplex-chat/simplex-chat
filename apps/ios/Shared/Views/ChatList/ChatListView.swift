@@ -300,7 +300,7 @@ struct ChatListSearchBar: View {
                             }
                     } else if searchText == "" {
                         HStack(spacing: 24) {
-                            if m.pasteboardHasURLs {
+                            if m.pasteboardHasStrings {
                                 Image(systemName: "doc")
                                     .onTapGesture {
                                         if let str = UIPasteboard.general.string {
