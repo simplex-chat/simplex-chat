@@ -60,6 +60,11 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       }
       val ctrl = m.controller.ctrl
       if (ctrl != null && ctrl != -1L) {
+        /**
+         * The following sequence can bring a user here:
+         * the user opened the app, entered app passcode, went to background, returned back, entered self-destruct code.
+         * In this case database should be closed to prevent possible situation when OS can deny database removal command
+         * */
         chatCloseStore(ctrl)
       }
       deleteChatDatabaseFiles()
