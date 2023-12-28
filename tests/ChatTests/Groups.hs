@@ -70,6 +70,8 @@ chatGroupTests = do
     it "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
   describe "group links without contact" $ do
     it "join via group link without creating contact" testGroupLinkNoContact
+    it "invitees were previously connected as contacts" testGroupLinkNoContactInviteesWereConnected
+    it "all members were previously connected as contacts" testGroupLinkNoContactAllMembersWereConnected
     it "group link member role" testGroupLinkNoContactMemberRole
     it "host incognito" testGroupLinkNoContactHostIncognito
     it "invitee incognito" testGroupLinkNoContactInviteeIncognito
@@ -2661,6 +2663,11 @@ testGroupLinkNoContact =
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
+
+      alice ##> "/set history #team off"
+      alice <## "updated group preferences:"
+      alice <## "Recent history: off"
+
       alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" GRMember True
       bob ##> ("/c " <> gLink)
@@ -2700,6 +2707,7 @@ testGroupLinkNoContact =
             bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
             bob <## "#team: new member cath is connected"
         ]
+
       cath #> "#team hey"
       alice <# "#team cath> hey"
       bob <# "#team cath> hey"
@@ -2707,6 +2715,169 @@ testGroupLinkNoContact =
       bob #> "#team hi cath"
       alice <# "#team bob> hi cath"
       cath <# "#team bob> hi cath"
+
+testGroupLinkNoContactInviteesWereConnected :: HasCallStack => FilePath -> IO ()
+testGroupLinkNoContactInviteesWereConnected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers bob cath
+      bob <##> cath
+
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+
+      alice ##> "/set history #team off"
+      alice <## "updated group preferences:"
+      alice <## "Recent history: off"
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+        ]
+
+      threadDelay 100000
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
+
+      alice @@@ [("#team", "connected")]
+      bob @@@ [("#team", "connected"), ("@cath", "hey")]
+      alice ##> "/contacts"
+      bob ##> "/contacts"
+      bob <## "cath (Catherine)"
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      concurrentlyN_
+        [ do
+            alice <## "cath (Catherine): accepting request to join group #team..."
+            alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   "#team: member bob_1 (Bob) is connected",
+                   "contact and member are merged: bob, #team bob_1",
+                   "use @bob <message> to send messages"
+                 ],
+          bob
+            <### [ "#team: alice added cath_1 (Catherine) to the group (connecting...)",
+                   "#team: new member cath_1 is connected",
+                   "contact and member are merged: cath, #team cath_1",
+                   "use @cath <message> to send messages"
+                 ]
+        ]
+
+      -- message delivery works
+      bob <##> cath
+
+      alice #> "#team 1"
+      [bob, cath] *<# "#team alice> 1"
+      bob #> "#team 2"
+      [alice, cath] *<# "#team bob> 2"
+      cath #> "#team 3"
+      [alice, bob] *<# "#team cath> 3"
+
+testGroupLinkNoContactAllMembersWereConnected :: HasCallStack => FilePath -> IO ()
+testGroupLinkNoContactAllMembersWereConnected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      alice <##> bob
+      connectUsers alice cath
+      alice <##> cath
+      connectUsers bob cath
+      bob <##> cath
+
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+
+      alice ##> "/set history #team off"
+      alice <## "updated group preferences:"
+      alice <## "Recent history: off"
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob_1 (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ do
+            alice <## "#team: bob_1 joined the group"
+            alice <## "contact and member are merged: bob, #team bob_1"
+            alice <## "use @bob <message> to send messages",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+            bob <## "contact and member are merged: alice, #team alice_1"
+            bob <## "use @alice <message> to send messages"
+        ]
+
+      threadDelay 100000
+      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
+
+      alice @@@ [("#team", "connected"), ("@bob", "hey"), ("@cath", "hey")]
+      bob @@@ [("#team", "connected"), ("@alice", "hey"), ("@cath", "hey")]
+      alice ##> "/contacts"
+      alice <## "bob (Bob)"
+      alice <## "cath (Catherine)"
+      bob ##> "/contacts"
+      bob <## "alice (Alice)"
+      bob <## "cath (Catherine)"
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      concurrentlyN_
+        [ alice
+            <### [ "cath_1 (Catherine): accepting request to join group #team...",
+                   "#team: cath_1 joined the group",
+                   "contact and member are merged: cath, #team cath_1",
+                   "use @cath <message> to send messages"
+                 ],
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   "#team: member bob_1 (Bob) is connected",
+                   "contact and member are merged: bob, #team bob_1",
+                   "use @bob <message> to send messages",
+                   "contact and member are merged: alice, #team alice_1",
+                   "use @alice <message> to send messages"
+                 ],
+          bob
+            <### [ "#team: alice added cath_1 (Catherine) to the group (connecting...)",
+                   "#team: new member cath_1 is connected",
+                   "contact and member are merged: cath, #team cath_1",
+                   "use @cath <message> to send messages"
+                 ]
+        ]
+
+      -- message delivery works
+      alice <##> bob
+      alice <##> cath
+      bob <##> cath
+
+      alice #> "#team 1"
+      [bob, cath] *<# "#team alice> 1"
+      bob #> "#team 2"
+      [alice, cath] *<# "#team bob> 2"
+      cath #> "#team 3"
+      [alice, bob] *<# "#team cath> 3"
 
 testGroupLinkNoContactMemberRole :: HasCallStack => FilePath -> IO ()
 testGroupLinkNoContactMemberRole =
@@ -2757,10 +2928,12 @@ testGroupLinkNoContactMemberRole =
         [ do
             alice <## "cath (Catherine): accepting request to join group #team..."
             alice <## "#team: cath joined the group",
-          do
-            cath <## "#team: joining the group..."
-            cath <## "#team: you joined the group"
-            cath <## "#team: member bob (Bob) is connected",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   WithTime "#team bob> hey now [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
           do
             bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
             bob <## "#team: new member cath is connected"
@@ -4372,6 +4545,16 @@ testGroupHistoryPreferenceOff =
       r' <- chat <$> getTermLine dan
       r' `shouldNotContain` [(0, "hello")]
       r' `shouldNotContain` [(0, "hey!")]
+
+      -- message delivery works
+      alice #> "#team 1"
+      [bob, cath, dan] *<# "#team alice> 1"
+      bob #> "#team 2"
+      [alice, cath, dan] *<# "#team bob> 2"
+      cath #> "#team 3"
+      [alice, bob, dan] *<# "#team cath> 3"
+      dan #> "#team 4"
+      [alice, bob, cath] *<# "#team dan> 4"
   where
     aliceAddedDan :: HasCallStack => TestCC -> IO ()
     aliceAddedDan cc = do

@@ -1174,8 +1174,6 @@
     <string name="share_with_contacts">Compartir con contactos</string>
     <string name="color_title">Título</string>
     <string name="you_can_share_this_address_with_your_contacts">Puedes compartir esta dirección con tus contactos para que puedan conectar con %s.</string>
-    <string name="your_contacts_will_see_it">Tus contactos en SimpleX lo verán.
-\nPuedes cambiarlo en Configuración.</string>
     <string name="your_contacts_will_remain_connected">Tus contactos permanecerán conectados.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Si más tarde decides eliminar tu dirección los contactos no se perderán.</string>
     <string name="all_app_data_will_be_cleared">Todos los datos de la aplicación se eliminarán.</string>
