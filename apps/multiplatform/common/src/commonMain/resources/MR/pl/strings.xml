@@ -1519,4 +1519,15 @@
     <string name="disconnect_desktop_question">Rozłączyć komputer?</string>
     <string name="loading_remote_file_desc">Proszę poczekać na załadowanie pliku z połączonego telefonu</string>
     <string name="verify_connection">Zweryfikuj połączenie</string>
+    <string name="refresh_qr_code">Odświerz</string>
+    <string name="you_can_make_address_visible_via_settings">Możesz ustawić go jako widoczny dla swoich kontaktów SimpleX w Ustawieniach.</string>
+    <string name="random_port">Losowy</string>
+    <string name="error_showing_content">błąd wyświetlania zawartości</string>
+    <string name="error_showing_message">błąd wyświetlania wiadomości</string>
+    <string name="open_port_in_firewall_desc">Aby umożliwić aplikacji mobilnej łączenie się z komputerem, otwórz ten port w zaporze sieciowej, jeśli jest ona włączona</string>
+    <string name="create_chat_profile">Utwórz profil czatu</string>
+    <string name="app_was_crashed">Widok uległ awarii</string>
+    <string name="open_port_in_firewall_title">Otwórz port w zaporze</string>
+    <string name="disconnect_remote_hosts">Rozłącz telefony</string>
+    <string name="no_connected_mobile">Brak połączonych telefonów</string>
 </resources>
