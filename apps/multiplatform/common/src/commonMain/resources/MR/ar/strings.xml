@@ -173,8 +173,8 @@
     <string name="copy_verb">نسخ</string>
     <string name="connect_via_link_verb">اتصل</string>
     <string name="server_connected">متصل</string>
-    <string name="connect_via_group_link">تواصل عبر رابط جماعي؟</string>
-    <string name="connect_via_invitation_link">تواصل عبر رابط دعوة؟</string>
+    <string name="connect_via_group_link">انضمام إلى المجموعة؟</string>
+    <string name="connect_via_invitation_link">اتصل عبر رابط لمرة واحدة؟</string>
     <string name="switch_receiving_address_question">تغيير عنوان الاستلام؟</string>
     <string name="copied">نٌسخت إلى الحافظة</string>
     <string name="clear_verb">مسح</string>
@@ -276,7 +276,7 @@
     <string name="chat_preferences">تفضيلات الدردشة</string>
     <string name="enter_correct_passphrase">أدخل عبارة المرور الصحيحة.</string>
     <string name="rcv_group_event_member_connected">متصل</string>
-    <string name="connect_via_contact_link">تواصل عبر رابط الاتصال؟</string>
+    <string name="connect_via_contact_link">اتصل عبر عنوان التواصل؟</string>
     <string name="error_deleting_link_for_group">خطأ في حذف رابط المجموعة</string>
     <string name="notifications_mode_periodic_desc">التحقق من الرسائل الجديدة كل 10 دقائق لمدة تصل إلى دقيقة واحدة</string>
     <string name="server_connecting">جار الاتصال</string>
@@ -431,7 +431,7 @@
     <string name="files_and_media_prohibited">الملفات والوسائط ممنوعة!</string>
     <string name="icon_descr_file">الملف</string>
     <string name="snd_group_event_group_profile_updated">حُدّث ملف تعريف المجموعة</string>
-    <string name="group_display_name_field">اسم عرض المجموعة:</string>
+    <string name="group_display_name_field">أدخل اسم المجموعة:</string>
     <string name="group_members_can_send_voice">يمكن لأعضاء المجموعة إرسال رسائل صوتية.</string>
     <string name="files_are_prohibited_in_group">الملفات والوسائط ممنوعة في هذه المجموعة.</string>
     <string name="v4_6_group_welcome_message">رسالة ترحيب المجموعة</string>
@@ -613,9 +613,9 @@
     <string name="smp_server_test_download_file">نزّل الملف</string>
     <string name="auth_disable_simplex_lock">تعطيل قفل SimpleX</string>
     <string name="edit_verb">تحرير</string>
-    <string name="display_name__field">اسم العرض:</string>
+    <string name="display_name__field">اسم الملف الشخصي:</string>
     <string name="icon_descr_email">البريد الإلكتروني</string>
-    <string name="display_name">اسم العرض</string>
+    <string name="display_name">أدخل أسمك:</string>
     <string name="integrity_msg_duplicate">كرر الرسالة</string>
     <string name="share_text_disappears_at">يختفي في: %s</string>
     <string name="disappearing_prohibited_in_this_chat">الرسائل المختفية ممنوعة في هذه الدردشة.</string>
@@ -720,7 +720,7 @@
     <string name="message_delivery_error_title">خطأ في تسليم الرسالة</string>
     <string name="network_and_servers">الشبكة والخوادم</string>
     <string name="moderate_verb">إشراف</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 للجوال: انقر فوق <b>فتح في تطبيق الجوال</b> ، ثم انقر فوق <b>اتصال</b> في التطبيق.]]></string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 للجوال: انقر فوق <b>فتح في تطبيق الجوال</b>، ثم انقر فوق <b>اتصال</b> في التطبيق.</string>
     <string name="share_text_moderated_at">تحت الإشراف في: %s</string>
     <string name="message_reactions_prohibited_in_this_chat">ردود الفعل الرسائل ممنوعة في هذه الدردشة.</string>
     <string name="moderated_item_description">مُشرف بواسطة %s</string>
@@ -1095,7 +1095,7 @@
     <string name="theme">السمة</string>
     <string name="to_start_a_new_chat_help_header">لبدء محادثة جديدة</string>
     <string name="to_verify_compare">للتحقق من التشفير بين الطريفين مع جهة اتصالك، قارن (أو امسح) الرمز الموجود على أجهزتك.</string>
-    <string name="group_is_decentralized">المجموعة لامركزية بالكامل - فهي مرئية فقط للأعضاء.</string>
+    <string name="group_is_decentralized">لامركزية بالكامل – مرئية للأعضاء فقط.</string>
     <string name="theme_system">النظام</string>
     <string name="error_smp_test_failed_at_step">فشل الاختبار في الخطوة %s.</string>
     <string name="v4_5_italian_interface_descr">بفضل المستخدمين - المساهمة عبر Weblate!</string>
@@ -1168,7 +1168,7 @@
     <string name="sender_you_pronoun">أنت</string>
     <string name="description_you_shared_one_time_link">لقد شاركت رابط لمرة واحدة</string>
     <string name="profile_will_be_sent_to_contact_sending_link">سيتم إرسال ملف التعريفك إلى جهة الاتصال التي تلقيت منها هذا الارتباط.</string>
-    <string name="you_will_join_group">ستنضم إلى مجموعة يشير إليها هذا الرابط وتتصل بأعضائها.</string>
+    <string name="you_will_join_group">سوف تتصل بجميع أعضاء المجموعة.</string>
     <string name="your_chat_profiles">ملفات تعريف الدردشة الخاصة بك</string>
     <string name="your_simplex_contact_address">عنوان SimpleX الخاص بك</string>
     <string name="your_SMP_servers">خوادم SMP الخاصة بك</string>
@@ -1405,8 +1405,129 @@
     <string name="v5_4_better_groups">مجموعات أفضل</string>
     <string name="rcv_group_and_other_events">و%d أحداث أخرى</string>
     <string name="connect_plan_already_joining_the_group">جارٍ انضمام بالفعل إلى المجموعة!</string>
-    <string name="block_member_confirmation">حجب</string>
+    <string name="block_member_confirmation">حظر</string>
     <string name="bad_desktop_address">عنوان سطح المكتب غير صالح</string>
     <string name="block_member_desc">سيتم إخفاء كافة الرسائل الجديدة من %s!</string>
-    <string name="blocked_item_description">محجوب</string>
+    <string name="blocked_item_description">محظور</string>
+    <string name="v5_4_block_group_members">حظر أعضاء المجموعة</string>
+    <string name="rcv_direct_event_contact_deleted">جهة الاتصال المحذوفة</string>
+    <string name="v5_4_incognito_groups_descr">أنشِئ مجموعة باستخدام ملف تعريف عشوائي.</string>
+    <string name="create_group_button">أنشِئ مجموعة</string>
+    <string name="create_another_profile_button">أنشِئ ملف تعريف</string>
+    <string name="connected_desktop">سطح المكتب متصل</string>
+    <string name="multicast_connect_automatically">اتصل تلقائيًا</string>
+    <string name="desktop_address">عنوان سطح المكتب</string>
+    <string name="marked_deleted_items_description">وضّع علامة \"محذوفة\" على %d من الرسائل</string>
+    <string name="discover_on_network">اكتشف عبر الشبكة المحلية</string>
+    <string name="connect_plan_connect_via_link">اتصل عبر الرابط؟</string>
+    <string name="connect_plan_connect_to_yourself">اتصل بنفسك؟</string>
+    <string name="desktop_device">سطح المكتب</string>
+    <string name="connected_to_desktop">متصل بسطح المكتب</string>
+    <string name="connecting_to_desktop">جار الاتصال بسطح المكتب</string>
+    <string name="desktop_devices">أجهزة سطح المكتب</string>
+    <string name="correct_name_to">الاسم الصحيح لـ%s؟</string>
+    <string name="delete_messages__question">حذف %d رسالة؟</string>
+    <string name="connect_with_contact_name_question">اتصل مع %1$s؟</string>
+    <string name="blocked_items_description">%d رسالة محظورة</string>
+    <string name="block_member_button">حظر العضو</string>
+    <string name="connected_mobile">الجوّال متصل</string>
+    <string name="delete_and_notify_contact">حذف وإشعار جهة الاتصال</string>
+    <string name="desktop_connection_terminated">انتهى الاتصال</string>
+    <string name="connect_to_desktop">اتصل بسطح المكتب</string>
+    <string name="disconnect_remote_host">قطع الاتصال</string>
+    <string name="block_member_question">حظر العضو؟</string>
+    <string name="rcv_group_events_count">%d أحداث مجموعة</string>
+    <string name="group_member_role_author">الكاتب</string>
+    <string name="connected_to_mobile">متصل بالجوّال</string>
+    <string name="devices">الأجهزة</string>
+    <string name="multicast_discoverable_via_local_network">مُكتشف عبر الشبكة المحلية</string>
+    <string name="disconnect_desktop_question">قطع اتصال سطح المكتب؟</string>
+    <string name="desktop_app_version_is_incompatible">إصدار تطبيق سطح المكتب %s غير متوافق مع هذا التطبيق.</string>
+    <string name="expand_verb">توسيع</string>
+    <string name="connect_plan_repeat_connection_request">هل تريد تكرار طلب الاتصال؟</string>
+    <string name="encryption_renegotiation_error">خطأ في إعادة التفاوض بشأن التشفير</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName">أنت متصل بالفعل بـ%1$s.</string>
+    <string name="error_alert_title">خطأ</string>
+    <string name="connect_plan_you_are_already_joining_the_group_via_this_link">لقد انضممت بالفعل إلى المجموعة عبر هذا الرابط.</string>
+    <string name="group_members_2">%s و%s</string>
+    <string name="new_mobile_device">جوّال جديد</string>
+    <string name="only_one_device_can_work_at_the_same_time">يمكن لجهاز واحد فقط العمل في نفس الوقت</string>
+    <string name="connect_plan_join_your_group">انضمام إلى مجموعتك؟</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName">لقد انضممت بالفعل إلى المجموعة %1$s.</string>
+    <string name="v5_4_link_mobile_desktop">ربط تطبيقات الجوّال وسطح المكتب! 🔗</string>
+    <string name="connect_plan_this_is_your_own_one_time_link">هذا هو الرابط الخاص بك لمرة واحدة!</string>
+    <string name="connect_plan_group_already_exists">المجموعة موجودة بالفعل!</string>
+    <string name="v5_4_link_mobile_desktop_descr">عبر بروتوكول آمن مقاوم للكم.</string>
+    <string name="open_on_mobile_and_scan_qr_code">افتح <i>الاستخدام من سطح المكتب</i> في تطبيق الجوّال وامسح رمز QR ضوئيًا.</string>
+    <string name="v5_4_block_group_members_descr">لإخفاء الرسائل غير المرغوب فيها.</string>
+    <string name="desktop_incompatible_version">نُسخة غير متوافقة</string>
+    <string name="new_desktop"><i>(جديد)</i></string>
+    <string name="unlink_desktop_question">فك ربط سطح المكتب؟</string>
+    <string name="linked_desktop_options">خيارات سطح المكتب المرتبطة</string>
+    <string name="video_decoding_exception_desc">لا يمكن فك تشفير الفيديو. من فضلك، جرب مقطع فيديو مختلفًا أو اتصل بالمطورين.</string>
+    <string name="rcv_group_event_1_member_connected">%s متصل</string>
+    <string name="linked_desktops">أسطح المكتب المرتبطة</string>
+    <string name="v5_4_incognito_groups">مجموعات التخفي</string>
+    <string name="group_members_n">%s و%s و%d عضو</string>
+    <string name="this_device">هذا الجهاز</string>
+    <string name="moderated_items_description">%d من الرسائل يُشرف عليها بواسطة %s</string>
+    <string name="unblock_member_button">إلغاء حظر العضو</string>
+    <string name="remote_host_was_disconnected_toast">جوّال <b>%s</b> قُطع اتصاله</string>
+    <string name="waiting_for_desktop">في انتظار سطح المكتب…</string>
+    <string name="v5_4_better_groups_descr">انضمام أسرع ورسائل أكثر موثوقية.</string>
+    <string name="linked_mobiles">الجوّالات المرتبطة</string>
+    <string name="contact_tap_to_connect">انقر للاتصال</string>
+    <string name="this_device_name">اسم هذا الجهاز</string>
+    <string name="connect_plan_you_are_already_in_group_vName">أنت بالفعل في المجموعة %1$s.</string>
+    <string name="connect_plan_this_is_your_own_simplex_address">هذا هو عنوان SimpleX الخاص بك!</string>
+    <string name="loading_remote_file_title">جارِ تحميل الملف</string>
+    <string name="found_desktop">وجدت سطح المكتب</string>
+    <string name="alert_text_encryption_renegotiation_failed">فشلت إعادة التفاوض على التشفير.</string>
+    <string name="not_compatible">غير متوافق!</string>
+    <string name="link_a_mobile">ربط الجوّال</string>
+    <string name="remove_member_button">إزالة العضو</string>
+    <string name="unblock_member_question">إلغاء حظر العضو؟</string>
+    <string name="settings_section_title_use_from_desktop">استخدم من سطح المكتب</string>
+    <string name="session_code">رمز الجلسة</string>
+    <string name="connect_plan_repeat_join_request">هل تريد تكرار طلب الانضمام؟</string>
+    <string name="button_remove_member_question">إزالة العضو؟</string>
+    <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">أنت متصل بالفعل عبر هذا الرابط لمرة واحدة!</string>
+    <string name="connect_plan_open_group">افتح المجموعة</string>
+    <string name="this_device_version"><i>(هذا الجهاز v%s)</i></string>
+    <string name="unlink_desktop">فك الربط</string>
+    <string name="unblock_member_desc">سيتم عرض الرسائل من %s!</string>
+    <string name="this_device_name_shared_with_mobile">ستتم مشاركة اسم الجهاز مع عميل الجوّال متصل.</string>
+    <string name="error_sending_message_contact_invitation">حدث خطأ أثناء إرسال الدعوة</string>
+    <string name="verify_code_on_mobile">التحقق من الرمز على الجوّال</string>
+    <string name="enter_this_device_name">أدخل اسم الجهاز هذا…</string>
+    <string name="error">خطأ</string>
+    <string name="non_content_uri_alert_text">لقد شاركت مسار ملف غير صالح. أبلغ عن المشكلة لمطوري التطبيق.</string>
+    <string name="invalid_name">اسم غير صالح!</string>
+    <string name="paste_desktop_address">لصق عنوان سطح المكتب</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName">هذا هو الرابط الخاص بك للمجموعة %1$s!</string>
+    <string name="verify_code_with_desktop">التحقق من الرمز مع سطح المكتب</string>
+    <string name="scan_qr_code_from_desktop">مسح رمز QR من سطح المكتب</string>
+    <string name="unblock_member_confirmation">إلغاء الحظر</string>
+    <string name="v5_4_more_things_descr">- إشعار اختياريًا جهات الاتصال المحذوفة.
+\n- أسماء الملفات الشخصية بمسافات.
+\n- و اكثر!</string>
+    <string name="non_content_uri_alert_title">مسار الملف غير صالح</string>
+    <string name="connect_plan_you_have_already_requested_connection_via_this_address">لقد طلبت بالفعل الاتصال عبر هذا العنوان!</string>
+    <string name="terminal_always_visible">إظهار وحدة التحكم في نافذة جديدة</string>
+    <string name="scan_from_mobile">المسح من الجوّال</string>
+    <string name="verify_connections">التحقق من الاتصالات</string>
+    <string name="loading_remote_file_desc">من فضلك، انتظر حتى يتم تحميل الملف من الجوّال المرتبط</string>
+    <string name="verify_connection">التحقق من الاتصال</string>
+    <string name="refresh_qr_code">أعِد التحميل</string>
+    <string name="random_port">عشوائي</string>
+    <string name="waiting_for_mobile_to_connect">في انتظار اتصال الجوال:</string>
+    <string name="open_port_in_firewall_desc">للسماح لتطبيق الجوال بالاتصال بسطح المكتب، افتح هذا المنفذ في جدار الحماية لديك، إذا فعلته</string>
+    <string name="create_chat_profile">أنشئ ملف تعريف الدردشة</string>
+    <string name="app_was_crashed">عرض التحطم</string>
+    <string name="open_port_in_firewall_title">فتح منفذ في جدار الحماية</string>
+    <string name="disconnect_remote_hosts">اقطع اتصال الجوالات</string>
+    <string name="no_connected_mobile">لا يوجد جوال متصل</string>
+    <string name="error_showing_content">خطأ في إظهار المحتوى</string>
+    <string name="error_showing_message">خطأ في إظهار الرسالة</string>
+    <string name="callstatus_ended">انتهت المكالمة %1$s</string>
 </resources>

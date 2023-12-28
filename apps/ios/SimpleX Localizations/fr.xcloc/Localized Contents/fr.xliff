@@ -6535,14 +6535,14 @@ Les serveurs SimpleX ne peuvent pas voir votre profil.</target>
    group pref value
    time to disappear</note>
       </trans-unit>
-      <trans-unit id="offered %@" xml:space="preserve">
+      <trans-unit id="offered %@" xml:space="preserve" approved="no">
         <source>offered %@</source>
-        <target>offert %@</target>
+        <target state="translated">propose %@</target>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="offered %@: %@" xml:space="preserve">
+      <trans-unit id="offered %@: %@" xml:space="preserve" approved="no">
         <source>offered %1$@: %2$@</source>
-        <target>offert %1$@ : %2$@</target>
+        <target state="translated">propose %1$@ : %2$@</target>
         <note>feature offered item</note>
       </trans-unit>
       <trans-unit id="on" xml:space="preserve">

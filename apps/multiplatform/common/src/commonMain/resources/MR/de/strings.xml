@@ -271,7 +271,7 @@
     <string name="to_connect_via_link_title">Über Link verbinden</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Wenn Sie einen SimpleX-Chat-Einladungslink erhalten haben, können Sie ihn in Ihrem Browser öffnen:</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 Desktop: Angezeigten QR-Code aus der App scannen, über <b>QR-Code scannen</b>.]]></string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 Handy: Tippen Sie in der App auf „<b>In mobiler App öffnen</b>“ und dann auf „<b>Verbinden</b>“.]]></string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 Mobiltelefon: Tippen Sie in der App auf „<b>In mobiler App öffnen</b>“ und dann auf „<b>Verbinden</b>“.</string>
     <!-- Contact Request Alert Dialogue - ChatListNavLinkView.kt -->
     <string name="accept_connection_request__question">Die Verbindungsanfrage akzeptieren?</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Wenn Sie ablehnen, wird der Absender NICHT benachrichtigt.</string>
@@ -1603,4 +1603,14 @@
     <string name="found_desktop">Gefundener Desktop</string>
     <string name="not_compatible">Nicht kompatibel!</string>
     <string name="multicast_discoverable_via_local_network">Über das lokale Netzwerk auffindbar</string>
+    <string name="refresh_qr_code">Aktualisieren</string>
+    <string name="create_chat_profile">Chat-Profil erstellen</string>
+    <string name="disconnect_remote_hosts">Mobiltelefone trennen</string>
+    <string name="no_connected_mobile">Kein Mobiltelefon verbunden</string>
+    <string name="random_port">Zufällig</string>
+    <string name="open_port_in_firewall_desc">Um einer Mobiltelefon-App die Verbindung zum Desktop zu ermöglichen, öffnen Sie diesen Port in Ihrer Firewall, falls Sie diese aktiviert haben</string>
+    <string name="open_port_in_firewall_title">Port in Firewall öffnen</string>
+    <string name="app_was_crashed">Ansicht abgestürzt</string>
+    <string name="error_showing_content">Fehler beim Anzeigen des Inhalts</string>
+    <string name="error_showing_message">Fehler beim Anzeigen der Nachricht</string>
 </resources>

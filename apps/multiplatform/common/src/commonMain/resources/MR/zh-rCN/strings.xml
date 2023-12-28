@@ -1521,4 +1521,15 @@
     <string name="found_desktop">找到了桌面</string>
     <string name="not_compatible">不兼容！</string>
     <string name="multicast_discoverable_via_local_network">可通过本地网络发现</string>
+    <string name="refresh_qr_code">刷新</string>
+    <string name="create_chat_profile">创建聊天资料</string>
+    <string name="no_connected_mobile">没有已连接的移动设备</string>
+    <string name="disconnect_remote_hosts">断开移动设备连接</string>
+    <string name="random_port">随机</string>
+    <string name="open_port_in_firewall_desc">要允许移动应用连接到桌面，请在防火墙中打开此端口，如果你已启用了它</string>
+    <string name="open_port_in_firewall_title">在防火墙中打开端口</string>
+    <string name="app_was_crashed">查看崩溃</string>
+    <string name="moderated_items_description">%s 审核了 %d 条消息</string>
+    <string name="error_showing_content">显示内容出错</string>
+    <string name="error_showing_message">显示消息出错</string>
 </resources>
