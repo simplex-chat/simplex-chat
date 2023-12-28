@@ -797,8 +797,8 @@
     <string name="change_verb">Ändern</string>
     <string name="switch_verb">Wechseln</string>
     <string name="change_member_role_question">Die Mitgliederrolle ändern?</string>
-    <string name="member_role_will_be_changed_with_notification">Die Mitgliederrolle wird auf \"%s\" geändert. Alle Mitglieder der Gruppe werden benachrichtigt.</string>
-    <string name="member_role_will_be_changed_with_invitation">Die Mitgliederrolle wird auf \"%s\" geändert. Das Mitglied wird eine neue Einladung erhalten.</string>
+    <string name="member_role_will_be_changed_with_notification">Die Mitgliederrolle wird auf %s geändert. Alle Mitglieder der Gruppe werden benachrichtigt.</string>
+    <string name="member_role_will_be_changed_with_invitation">Die Mitgliederrolle wird auf %s geändert. Das Mitglied wird eine neue Einladung erhalten.</string>
     <string name="error_removing_member">Fehler beim Entfernen des Mitglieds</string>
     <string name="error_changing_role">Fehler beim Ändern der Rolle</string>
     <string name="info_row_group">Gruppe</string>

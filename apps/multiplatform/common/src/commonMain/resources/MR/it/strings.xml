@@ -829,8 +829,8 @@
     <string name="theme_system">Sistema</string>
     <string name="network_option_tcp_connection_timeout">Scadenza connessione TCP</string>
     <string name="group_is_decentralized">Completamente decentralizzato: visibile solo ai membri.</string>
-    <string name="member_role_will_be_changed_with_notification">Il ruolo verrà cambiato in \"%s\". Tutti i membri del gruppo riceveranno una notifica.</string>
-    <string name="member_role_will_be_changed_with_invitation">Il ruolo verrà cambiato in \"%s\". Il membro riceverà un nuovo invito.</string>
+    <string name="member_role_will_be_changed_with_notification">Il ruolo verrà cambiato in %s. Tutti i membri del gruppo riceveranno una notifica.</string>
+    <string name="member_role_will_be_changed_with_invitation">Il ruolo verrà cambiato in %s. Il membro riceverà un nuovo invito.</string>
     <string name="update_network_settings_confirmation">Aggiorna</string>
     <string name="update_network_settings_question">Aggiornare le impostazioni di rete\?</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">L\'aggiornamento delle impostazioni riconnetterà il client a tutti i server.</string>

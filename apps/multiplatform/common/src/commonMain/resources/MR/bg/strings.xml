@@ -521,7 +521,7 @@
     <string name="snd_conn_event_ratchet_sync_agreed">криптирането е съгласувано за %s</string>
     <string name="button_edit_group_profile">Редактирай групов профил</string>
     <string name="share_text_disappears_at">Изчезва в: %s</string>
-    <string name="member_role_will_be_changed_with_invitation">Ролята ще бъде променена на \"%s\". Членът ще получи нова покана.</string>
+    <string name="member_role_will_be_changed_with_invitation">Ролята ще бъде променена на %s. Членът ще получи нова покана.</string>
     <string name="conn_level_desc_direct">директна</string>
     <string name="renegotiate_encryption">Предоговори криптирането</string>
     <string name="group_display_name_field">Групово показвано име:</string>
@@ -925,7 +925,7 @@
     <string name="member_will_be_removed_from_group_cannot_be_undone">Членът ще бъде премахнат от групата - това не може да бъде отменено!</string>
     <string name="item_info_no_text">няма текст</string>
     <string name="button_remove_member">Острани член</string>
-    <string name="member_role_will_be_changed_with_notification">Ролята ще бъде променена на \"%s\". Всички в групата ще бъдат уведомени.</string>
+    <string name="member_role_will_be_changed_with_notification">Ролята ще бъде променена на %s. Всички в групата ще бъдат уведомени.</string>
     <string name="users_delete_data_only">Само данни за локален профил</string>
     <string name="users_delete_with_connections">Профилни и сървърни връзки</string>
     <string name="user_mute">Без звук</string>

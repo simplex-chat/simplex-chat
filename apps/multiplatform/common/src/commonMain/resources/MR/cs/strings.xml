@@ -468,7 +468,7 @@
     <string name="rcv_group_event_member_left">odešel</string>
     <string name="clear_contacts_selection_button">Vyčistit</string>
     <string name="switch_verb">Přepnout</string>
-    <string name="member_role_will_be_changed_with_notification">Role bude změněna na \"%s\". Všichni ve skupině budou informováni.</string>
+    <string name="member_role_will_be_changed_with_notification">Role bude změněna na %s. Všichni ve skupině budou informováni.</string>
     <string name="error_removing_member">Chyba odebírání člena</string>
     <string name="error_saving_group_profile">Chyba ukládání profilu skupiny</string>
     <string name="network_option_seconds_label">vteřiny</string>
@@ -866,7 +866,7 @@
     <string name="role_in_group">Role</string>
     <string name="change_role">Změnit roli</string>
     <string name="change_verb">Změnit</string>
-    <string name="member_role_will_be_changed_with_invitation">Role bude změněna na \"%s\". Člen obdrží novou pozvánku.</string>
+    <string name="member_role_will_be_changed_with_invitation">Role bude změněna na %s. Člen obdrží novou pozvánku.</string>
     <string name="error_changing_role">Chyba změny role</string>
     <string name="conn_level_desc_direct">přímo</string>
     <string name="sending_via">Odesíláno přez</string>

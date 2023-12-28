@@ -734,7 +734,7 @@
     <string name="icon_descr_sent_msg_status_unauthorized_send">envío no autorizado</string>
     <string name="set_contact_name">Escribe un nombre para el contacto</string>
     <string name="unknown_error">Error desconocido</string>
-    <string name="member_role_will_be_changed_with_notification">El rol cambiará a \"%s\". Se notificará a todos los miembros del grupo.</string>
+    <string name="member_role_will_be_changed_with_notification">El rol cambiará a %s. Se notificará a todos los miembros del grupo.</string>
     <string name="v4_2_security_assessment_desc">La seguridad de SimpleX Chat ha sido auditada por Trail of Bits.</string>
     <string name="v4_4_disappearing_messages_desc">Los mensajes enviados se eliminarán una vez transcurrido el tiempo establecido.</string>
     <string name="ntf_channel_messages">Mensajes de chat SimpleX</string>
@@ -822,7 +822,7 @@
     <string name="update_database_passphrase">Actualizar contraseña base de datos</string>
     <string name="group_invitation_tap_to_join_incognito">Pulsa para unirte en modo incógnito</string>
     <string name="switch_verb">Cambiar</string>
-    <string name="member_role_will_be_changed_with_invitation">El rol cambiará a \"%s\". El miembro recibirá una nueva invitación.</string>
+    <string name="member_role_will_be_changed_with_invitation">El rol cambiará a %s. El miembro recibirá una nueva invitación.</string>
     <string name="update_network_settings_confirmation">Actualizar</string>
     <string name="update_network_settings_question">¿Actualizar la configuración de red\?</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Intentando conectar con el servidor usado para recibir mensajes de este contacto.</string>
