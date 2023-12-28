@@ -1960,6 +1960,9 @@
 "Live messages" = "实时消息";
 
 /* No comment provided by engineer. */
+"Local" = "本地";
+
+/* No comment provided by engineer. */
 "Local name" = "本地名称";
 
 /* No comment provided by engineer. */
@@ -2222,9 +2225,6 @@
 /* No comment provided by engineer. */
 "Off" = "关闭";
 
-/* No comment provided by engineer. */
-"Off (Local)" = "关闭（本地）";
-
 /* feature offered item */
 "offered %@" = "已提供 %@";
 
@@ -2314,9 +2314,6 @@
 
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "开源协议和代码——任何人都可以运行服务器。";
-
-/* No comment provided by engineer. */
-"Opening database…" = "打开数据库中……";
 
 /* member role */
 "owner" = "群主";
@@ -3219,9 +3216,6 @@
 "Turn off" = "关闭";
 
 /* No comment provided by engineer. */
-"Turn off notifications?" = "关闭通知？";
-
-/* No comment provided by engineer. */
 "Turn on" = "打开";
 
 /* No comment provided by engineer. */
@@ -3640,9 +3634,6 @@
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "您的联系人可以允许完全删除消息。";
-
-/* No comment provided by engineer. */
-"Your contacts in SimpleX will see it.\nYou can change it in Settings." = "您的 SimpleX 的联系人会看到它。\n您可以在设置中更改它。";
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "与您的联系人保持连接。";

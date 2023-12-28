@@ -202,8 +202,6 @@
     <string name="contact_sent_large_file">Η επαφή σας έστειλε ένα αρχείο το οποίο είναι μεγαλύτερο από το παρόν υποστηριζόμενο μέγεθος (%1$s).</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Το προφίλ της συνομιλίας σας θα σταλεί στην επαφή σας</string>
     <string name="connect_use_new_incognito_profile">Χρήση νέου ανώνυμου προφίλ</string>
-    <string name="your_contacts_will_see_it">Οι επαφές σας στο SimpleX θα το δούν.
-\nΜπορείτε να το αλλάξετε στις ρυθμίσεις.</string>
     <string name="connect_plan_already_connecting">Ήδη συνδέεται</string>
     <string name="you_rejected_group_invitation">Απορρίψατε την πρόσκληση της ομάδας</string>
     <string name="connect_via_contact_link">Σύνδεση μέσω διεύθυνση επαφής</string>

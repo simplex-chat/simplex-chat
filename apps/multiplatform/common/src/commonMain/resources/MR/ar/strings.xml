@@ -720,7 +720,7 @@
     <string name="message_delivery_error_title">خطأ في تسليم الرسالة</string>
     <string name="network_and_servers">الشبكة والخوادم</string>
     <string name="moderate_verb">إشراف</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 للجوال: انقر فوق <b>فتح في تطبيق الجوال</b>، ثم انقر فوق <b>اتصال</b> في التطبيق.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 للجوال: انقر فوق <b>فتح في تطبيق الجوال</b>، ثم انقر فوق <b>اتصال</b> في التطبيق.]]></string>
     <string name="share_text_moderated_at">تحت الإشراف في: %s</string>
     <string name="message_reactions_prohibited_in_this_chat">ردود الفعل الرسائل ممنوعة في هذه الدردشة.</string>
     <string name="moderated_item_description">مُشرف بواسطة %s</string>
@@ -1458,10 +1458,10 @@
     <string name="connect_plan_this_is_your_own_one_time_link">هذا هو الرابط الخاص بك لمرة واحدة!</string>
     <string name="connect_plan_group_already_exists">المجموعة موجودة بالفعل!</string>
     <string name="v5_4_link_mobile_desktop_descr">عبر بروتوكول آمن مقاوم للكم.</string>
-    <string name="open_on_mobile_and_scan_qr_code">افتح <i>الاستخدام من سطح المكتب</i> في تطبيق الجوّال وامسح رمز QR ضوئيًا.</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[افتح <i>الاستخدام من سطح المكتب</i> في تطبيق الجوّال وامسح رمز QR ضوئيًا.]]></string>
     <string name="v5_4_block_group_members_descr">لإخفاء الرسائل غير المرغوب فيها.</string>
     <string name="desktop_incompatible_version">نُسخة غير متوافقة</string>
-    <string name="new_desktop"><i>(جديد)</i></string>
+    <string name="new_desktop"><![CDATA[<i>(جديد)</i>]]></string>
     <string name="unlink_desktop_question">فك ربط سطح المكتب؟</string>
     <string name="linked_desktop_options">خيارات سطح المكتب المرتبطة</string>
     <string name="video_decoding_exception_desc">لا يمكن فك تشفير الفيديو. من فضلك، جرب مقطع فيديو مختلفًا أو اتصل بالمطورين.</string>
@@ -1472,7 +1472,7 @@
     <string name="this_device">هذا الجهاز</string>
     <string name="moderated_items_description">%d من الرسائل يُشرف عليها بواسطة %s</string>
     <string name="unblock_member_button">إلغاء حظر العضو</string>
-    <string name="remote_host_was_disconnected_toast">جوّال <b>%s</b> قُطع اتصاله</string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[جوّال <b>%s</b> قُطع اتصاله]]></string>
     <string name="waiting_for_desktop">في انتظار سطح المكتب…</string>
     <string name="v5_4_better_groups_descr">انضمام أسرع ورسائل أكثر موثوقية.</string>
     <string name="linked_mobiles">الجوّالات المرتبطة</string>
@@ -1493,7 +1493,7 @@
     <string name="button_remove_member_question">إزالة العضو؟</string>
     <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">أنت متصل بالفعل عبر هذا الرابط لمرة واحدة!</string>
     <string name="connect_plan_open_group">افتح المجموعة</string>
-    <string name="this_device_version"><i>(هذا الجهاز v%s)</i></string>
+    <string name="this_device_version"><![CDATA[<i>(هذا الجهاز v%s)</i>]]></string>
     <string name="unlink_desktop">فك الربط</string>
     <string name="unblock_member_desc">سيتم عرض الرسائل من %s!</string>
     <string name="this_device_name_shared_with_mobile">ستتم مشاركة اسم الجهاز مع عميل الجوّال متصل.</string>

@@ -1105,14 +1105,14 @@
     <string name="icon_descr_speaker_on">Hoparlör açık</string>
     <string name="only_your_contact_can_send_voice">Sadece senin kişin sesli mesaj gönderebilir.</string>
     <string name="in_developing_desc">Bu özellik henüz desteklenmiyor. Bir sonraki sürümü deneyin.</string>
-    <string name="open_on_mobile_and_scan_qr_code">Mobile uygulamadan <i>Masaüstünden kullan</i> seçeneğini aç ve karekodu okut.</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Mobile uygulamadan <i>Masaüstünden kullan</i> seçeneğini aç ve karekodu okut.]]></string>
     <string name="thank_you_for_installing_simplex">SimpleX Chat\'i yüklediğiniz için teşekkürler!</string>
     <string name="skip_inviting_button">Üyeleri davet etmeyi atla</string>
     <string name="connect_plan_already_connecting">Zaten bağlanılıyor!</string>
     <string name="icon_descr_send_message">Mesaj Gönder</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Bu bağlantıyı paylaştığınız kişi bağlanamayacak!</string>
     <string name="desktop_incompatible_version">Uyumsuz sürüm</string>
-    <string name="new_desktop"><i>(yeni)</i></string>
+    <string name="new_desktop"><![CDATA[<i>(yeni)</i>]]></string>
     <string name="notification_preview_mode_message_desc">Kişiyi ve mesajı göster</string>
     <string name="v5_4_better_groups">Daha iyi gruplar</string>
     <string name="video_decoding_exception_desc">Videonun kodu çözülemiyor. Lütfen farklı bir video deneyin veya geliştiricilerle iletişime geçin.</string>
@@ -1174,7 +1174,7 @@
     <string name="connection_you_accepted_will_be_cancelled">Kabul ettiğiniz bağlantı iptal edilecek!</string>
     <string name="connect_plan_open_group">Grubu aç</string>
     <string name="privacy_show_last_messages">Son mesajları göster</string>
-    <string name="this_device_version"><i>bu cihaz s%s</i></string>
+    <string name="this_device_version"><![CDATA[<i>bu cihaz s%s</i>]]></string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
     <string name="update_database">Güncelle</string>
     <string name="this_device_name_shared_with_mobile">Cihaz ismi bağlı olduğu mobil istemci ile paylaşılacak.</string>

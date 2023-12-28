@@ -48,7 +48,7 @@
     <string name="alert_title_msg_bad_hash">Téves üzenet hash</string>
     <string name="cant_delete_user_profile">Felhasználói profil törlése nem lehetséges!</string>
     <string name="color_background">Háttér</string>
-    <string name="socks_proxy_setting_limitations"><b>Tudnivaló</b>: az üzenet- és fájl relay szerverek SOCKS proxy által vannak kapcsolatban. A hívások és URL link előnézetek közvetlen kapcsolatot használnak.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Tudnivaló</b>: az üzenet- és fájl relay szerverek SOCKS proxy által vannak kapcsolatban. A hívások és URL link előnézetek közvetlen kapcsolatot használnak.]]></string>
     <string name="full_backup">App adatmentés</string>
     <string name="database_initialization_error_title">Az adatbázis inicializálása sikertelen</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">A kapcsolat megmarad az összes Ismerősöddel. Profil változtatások frissítésre kerülnek az ismerőseidnél.</string>
@@ -675,13 +675,13 @@
     <string name="hide_dev_options">Elrejt:</string>
     <string name="error_creating_member_contact">Hiba az ismerősöddel való kapcsolat létrehozásában</string>
     <string name="enter_one_ICE_server_per_line">ICE-kiszolgálók (soronként egy)</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Ha nem tudtok személyesen találkozni, akkor a videohívásban <b>kiszkennelheted a QR-kódot</b>, vagy a pertnered megoszthat egy meghívó linket.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Ha nem tudtok személyesen találkozni, akkor a videohívásban <b>kiszkennelheted a QR-kódot</b>, vagy a pertnered megoszthat egy meghívó linket.]]></string>
     <string name="if_you_enter_passcode_data_removed">Ha az alkalmazás megnyitásakor megadod ezt a jelszót, az alkalmazás minden adata visszavonhatatlanul törlődik!</string>
     <string name="if_you_cant_meet_in_person">Ha nem tudtok személyesen találkozni, mutassátok meg a QR-kódot egy videohívás során, vagy osszátok meg egymással a linket.</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Ha nem tudtok személyesen találkozni, <b>mutassátok meg a QR-kódot a videohívásban</b>, vagy osszátok meg egymással a linket.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Ha nem tudtok személyesen találkozni, <b>mutassátok meg a QR-kódot a videohívásban</b>, vagy osszátok meg egymással a linket.]]></string>
     <string name="network_disable_socks_info">Ha megerősíted, az üzenetküldő szerverek láthatják az IP-címedet és a szolgáltatódat, vagyis azt, hogy mely szerverekhez csatlakozol.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">A kép akkor érkezik meg, amikor az ismerősöd befejezi a feltöltést.</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 asztali számítógép: a megjelenített QR-kód beolvasása az alkalmazásból, a <b>QR kód beolvasásával</b></string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 asztali számítógép: a megjelenített QR-kód beolvasása az alkalmazásból, a <b>QR kód beolvasásával</b>]]></string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Ha kaptál egy SimpleX Chat meghívó linket, akkor megnyithatod azt a böngészőben:</string>
     <string name="if_you_enter_self_destruct_code">Ha az alkalmazás megnyitásakor megadod az önmegsemmisítő jelszót:</string>
     <string name="found_desktop">Megtalált asztali számítógép</string>
@@ -711,7 +711,7 @@
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">Győződj meg róla, hogy az XFTP-kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nem duplikáltak.</string>
     <string name="no_contacts_selected">Nincsenek ismerősök kiválasztva</string>
     <string name="no_received_app_files">Nincsenek fogadott vagy küldött fájlok</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 mobil: koppints a <b>Megnyitás mobil alkalmazásban</b>, majd koppints a <b>Csatlakozás</b> \u0020gombra az alkalmazásban.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobil: koppints a <b>Megnyitás mobil alkalmazásban</b>, majd koppints a <b>Csatlakozás</b> \u0020gombra az alkalmazásban.]]></string>
     <string name="markdown_in_messages">Markdown az üzenetekben</string>
     <string name="group_invitation_item_description">meghívás a %1$s csoportba</string>
     <string name="lock_mode">Lezárás mód</string>
@@ -750,7 +750,7 @@
     <string name="smp_servers_invalid_address">Érvénytelen szervercím!</string>
     <string name="thousand_abbreviation">k</string>
     <string name="chat_item_ttl_none">soha</string>
-    <string name="new_desktop"><i>(új)</i></string>
+    <string name="new_desktop"><![CDATA[<i>(új)</i>]]></string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Győződj meg róla, hogy az SMP-kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nincsenek duplikálva.</string>
     <string name="network_use_onion_hosts_no_desc">Onion host-ok nem lesznek használva.</string>
     <string name="custom_time_unit_minutes">perc</string>
@@ -770,7 +770,7 @@
     <string name="v5_1_japanese_portuguese_interface">Japán és Portugál kezelőfelület</string>
     <string name="message_deletion_prohibited_in_chat">Ebben a csoportban tilos az üzenetek visszafordíthatatlan törlése.</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Onion host-ok nem lesznek használva.</string>
-    <string name="remote_host_was_disconnected_toast">A(z) <b>%s</b> eszközzel megszakadt a kapcsolat</string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[A(z) <b>%s</b> eszközzel megszakadt a kapcsolat]]></string>
     <string name="custom_time_unit_months">hónap</string>
     <string name="privacy_message_draft">Üzenet vázlat</string>
     <string name="v5_2_disappear_one_message">Egy üzenet eltüntetése</string>
@@ -812,7 +812,7 @@
     <string name="link_a_mobile">Egy mobil összekapcsolása</string>
     <string name="settings_notifications_mode_title">Értesítési szolgáltatás</string>
     <string name="only_group_owners_can_enable_voice">Csak a csoporttulajdonosok engedélyezhetik a hangüzeneteket.</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Csak a te eszközeid tárolják a felhasználói profilodat, névjegyeidet, csoportjaidat és a <b>2 rétegű végponttól-végpontig titkosítással</b> küldött üzeneteidet.</string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Csak a te eszközeid tárolják a felhasználói profilodat, névjegyeidet, csoportjaidat és a <b>2 rétegű végponttól-végpontig titkosítással</b> küldött üzeneteidet.]]></string>
     <string name="invalid_migration_confirmation">Érvénytelen migrációs visszaigazolás</string>
     <string name="only_group_owners_can_change_prefs">Csak a csoporttulajdonosok módosíthatják a csoportbeállításokat.</string>
     <string name="no_history">Nincsenek előzmények</string>
@@ -826,11 +826,11 @@
     <string name="join_group_button">Csatlakozás</string>
     <string name="shutdown_alert_desc">Az értesítések az alkalmazás elindításáig nem fognak működni.</string>
     <string name="chat_preferences_off">ki</string>`
-  <string name="this_device_version"><i>(ez az eszköz) v%s)</i></string>
+  <string name="this_device_version"><![CDATA[<i>(ez az eszköz) v%s)</i>]]></string>
     <string name="feature_offered_item">ajánlott %s</string>
     <string name="button_leave_group">Csoport elhagyása</string>
     <string name="unblock_member_desc">A %s-től érkező üzenetek megjelennek!</string>
-    <string name="many_people_asked_how_can_it_deliver">Sokan kérdezték: <i>Ha a SimpleX Chat-nek nincs felhasználói azonosítója, hogyan lehet mégis üzeneteket küldeni?</i></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Sokan kérdezték: <i>Ha a SimpleX Chat-nek nincs felhasználói azonosítója, hogyan lehet mégis üzeneteket küldeni?</i>]]></string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Ez akkor fordulhat elő, ha:
 \n1. Az üzenetek az ismerősödnél 2 nap után, vagy a kiszolgálón 30 nap után lejártak.
 \n2. Az üzenet visszafejtése sikertelen volt, mert Te vagy az ismerősöd régi adatbázis biztonsági mentést használt.
@@ -1319,7 +1319,7 @@
     <string name="periodic_notifications_desc">Az app rendszeresen lekéri az új üzeneteket - ez naponta néhány százalék akkumulátort használ. Az app nem használja a Google push értesítési rendszert — az eszközödön lévő adat nem kerül megküldésre a szervereknek.</string>
     <string name="paste_desktop_address">Számítógép címének beillesztése</string>
     <string name="description_via_contact_address_link">ismerős azonosítójának linkjén keresztül</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Az adatvédelmed megőrzése érdekkében a Google push értesítési rendszer helyett az app a <b>SimpleX háttérszolgáltatást </b> használja - ez naponta néhány százalék akkumulátort használ.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Az adatvédelmed megőrzése érdekkében a Google push értesítési rendszer helyett az app a <b>SimpleX háttérszolgáltatást </b> használja - ez naponta néhány százalék akkumulátort használ.]]></string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Az ismerősöd online kell legyen ahhoz, hogy a kapcsolat létrejöjjön.
 \nMegszakíthatod ezt a kapcsolatfelvételt és törölheted az ismerőst (és később ismét megpróbálhatod egy új linkkel)</string>
     <string name="restore_passphrase_not_found_desc">Jelmondat nem található a Keystore-ban, kérlek írd be kézileg. Ez akkor történhet, ha helyreállítottad az appot a backup funkcióval. Ha nem így történt, az esetben lépj kapcsolatba a fejlesztőkkel!</string>
@@ -1339,7 +1339,7 @@
     <string name="profile_will_be_sent_to_contact_sending_link">A profilodat elküldjük annak az ismerősödnek, akitől ezt a linket kaptad.</string>
     <string name="system_restricted_background_in_call_desc">Az alkalmazás 1 perc után bezárható a háttérben.</string>
     <string name="group_preview_you_are_invited">meg lettél hívva a csoportba</string>
-    <string name="turn_off_battery_optimization">Használatához kérjük, <b>engedélyezd a SimpleX háttérben történő futtatását</b> a következő párbeszédpanelen. Ellenkező esetben az értesítések le lesznek tiltva.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Használatához kérjük, <b>engedélyezd a SimpleX háttérben történő futtatását</b> a következő párbeszédpanelen. Ellenkező esetben az értesítések le lesznek tiltva.]]></string>
     <string name="error_smp_test_server_auth">A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrízd a jelszavadat</string>
     <string name="you_will_join_group">Csatlakozni fogsz a csoport összes tagjához.</string>
     <string name="error_smp_test_certificate">Lehetséges, hogy a kiszolgáló címében szereplő tanúsítvány-ujjlenyomat helytelen</string>
@@ -1375,7 +1375,7 @@
     <string name="contact_sent_large_file">Az ismerősöd a jelenleg megengedett maximálisan méretű (%1$s) fájlnál nagyobbat küldött.</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">Nem tároljuk egyetlen üzenetedet illetve ismerőseidet (kézbesítás után) a SimpleX szervereken.</string>
     <string name="you_can_use_markdown_to_format_messages__prompt">Üzenetek formázása a szövegbe szúrt speciális karakterekkel:</string>
-    <string name="you_can_also_connect_by_clicking_the_link">A linkre kattintással is kapcsolódhatsz. Ha megnyílik böngészőben, kattints a<b>Mobil appban megnyitás</b> gombra.</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[A linkre kattintással is kapcsolódhatsz. Ha megnyílik böngészőben, kattints a<b>Mobil appban megnyitás</b> gombra.]]></string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">A chat profilod megküldésre kerül
 \naz ismerősöd számára</string>
     <string name="invite_prohibited_description">Egy olyan ismerőst próbálsz meghívni, akivel inkognító profilt osztottál meg abban a csoportban, amelyben a saját fő profilodat használod</string>
@@ -1385,18 +1385,16 @@
     <string name="v4_5_transport_isolation">Kapcsolat izolációs mód</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Csatlakoztok amikor a meghívód elfogadásra kerül. Kérlek várj vagy nézz vissza később!</string>
     <string name="voice_messages_are_prohibited">A hangüzenetek tiltottak ebben a csoportban.</string>
-    <string name="system_restricted_background_in_call_warn">A háttérben való hívásokhoz kérlek válaszd az <b>App akkumulátor használat</b> / <b>Korlátlan</b> módot az app beállításaiban.</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[A háttérben való hívásokhoz kérlek válaszd az <b>App akkumulátor használat</b> / <b>Korlátlan</b> módot az app beállításaiban.]]></string>
     <string name="v5_4_link_mobile_desktop_descr">Biztonságos kvantum ellenálló protokoll által.</string>
-    <string name="your_contacts_will_see_it">Az ismerőseid a SimpleX-ben látni fogják.
-\nA beállításokban megváltoztathatod.</string>
     <string name="v5_1_better_messages_descr">- hangüzenetek 5 percig.
 \n- egyedi eltűnési időhatár
 \n- előzmény szerkesztése</string>
-    <string name="open_on_mobile_and_scan_qr_code">Kattints a <i>Használd a számítógépről</i> gombra a mobil appban és olvasd be a QR-kódot!</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Kattints a <i>Használd a számítógépről</i> gombra a mobil appban és olvasd be a QR-kódot!]]></string>
     <string name="sender_at_ts">%s at %s</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Csatlakoztok amikor az ismerősöd eszköze online lesz. Kérlek várj vagy nézz vissza később!</string>
     <string name="v5_4_block_group_members_descr">Kéretlen üzenetek elrejtése.</string>
-    <string name="disable_onion_hosts_when_not_supported">Állítsd a <i>Használd az .onion hostokat</i> \u0020NEM-re ha a SOCKS proxy nem támogatja.</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Állítsd a <i>Használd az .onion hostokat</i> \u0020NEM-re ha a SOCKS proxy nem támogatja.]]></string>
     <string name="you_can_share_your_address">Megoszthatod a SimpleX azonosítódat linkben vagy QR-kódban - bárki kapcsolatfelvételt kezdeményezhet veled.</string>
     <string name="you_can_create_it_later">Később létrehozhatod</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">A profilod a te eszközödön van tárolva és csak az ismerőseiddel kerül megosztásra! A SimpleX chat szerverek nem láthatják a profilodat!</string>
@@ -1416,14 +1414,14 @@
     <string name="to_reveal_profile_enter_password">A rejtett profilod felfedéséhez gépeld be a jelszót a kereső mezőbe a Chat profiljaid oldalon!</string>
     <string name="upgrade_and_open_chat">A chat frissítése és megnyitása</string>
     <string name="you_need_to_allow_to_send_voice">Ahhoz, hogy hangüzeneteket küldhess, engedélyezned kell az ismerőseidnek is azok küldését.</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">Te kontrollálod, hogy melyik szerveren(-ken) keresztül <b>fogadod</b>az üzeneteket, míg az ismerőseid a szervereket amelyeken át üzensz nekik.</string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Te kontrollálod, hogy melyik szerveren(-ken) keresztül <b>fogadod</b>az üzeneteket, míg az ismerőseid a szervereket amelyeken át üzensz nekik.]]></string>
     <string name="connect_plan_you_are_already_in_group_vName">Már a %1$s csoportban vagy.</string>
     <string name="snd_conn_event_switch_queue_phase_completed">megváltoztattad az azonosítót</string>
     <string name="v4_3_irreversible_message_deletion_desc">Az ismerőseid engedélyezhetik a teljes üzenet törlést.</string>
     <string name="you_have_to_enter_passphrase_every_time">Be kell írd a jelmondatodat a SimpleX app minden indulásakor - nem az eszközön lesz tárolva.</string>
     <string name="open_port_in_firewall_desc">Ahhoz, hogy engedélyezd a mobil app csatlakozását a számítógépedhez, nyisd meg ezt a portot a tűzfaladon, ha az engedélyezve van</string>
     <string name="your_profile_is_stored_on_your_device">A te profilod, ismerőseid és az elküldött üzeneteid a te eszközödön vannak tárolva (a SimpleX chat szerverekről kézbesítés illetve a TTL időkorlát után törlődnek).</string>
-    <string name="system_restricted_background_warn">Az értesítések engedélyezéséhez kérlek válaszd az <b>App akkumulátor használat</b> / <b>Korlátlan</b> módot az app beállításaiban.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Az értesítések engedélyezéséhez kérlek válaszd az <b>App akkumulátor használat</b> / <b>Korlátlan</b> módot az app beállításaiban.]]></string>
     <string name="this_string_is_not_a_connection_link">Ez a karakterlánc nem meghívó link!</string>
     <string name="to_start_a_new_chat_help_header">Új chat kezdése</string>
     <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">Csatlakozásod már folyamatban van ezzel az Egyszer használatos link-el!</string>
@@ -1434,7 +1432,7 @@
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">A chat szolgáltatást elindíthatod a beállítások / adatbázis pontban vagy az app újraindításával.</string>
     <string name="verify_code_on_mobile">Ellenőrizd a kódot a mobilon!</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Csatlakoztál ehhez a csoporthoz. Kapcsolódás a meghívó csoporttaghoz.</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Kapcsolatba léphetsz &lt;font color=#0088ff&gt;a SimpleX Chat fejlesztőivel és kérdezhetsz bármit és értesülhetsz az újdonságokról&lt;/font&gt;.</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Kapcsolatba léphetsz <font color=#0088ff>a SimpleX Chat fejlesztőivel és kérdezhetsz bármit és értesülhetsz az újdonságokról</font>.]]></string>
     <string name="v4_2_auto_accept_contact_requests_desc">Opcionális üdvözlő szöveggel.</string>
     <string name="unknown_database_error_with_info">Ismeretlen adatbázis hiba: %s</string>
     <string name="you_can_hide_or_mute_user_profile">Elrejtheted vagy némíthatod egy felhasználó profilját - tartsd lenyomva a menühöz!</string>
@@ -1520,13 +1518,13 @@
     <string name="sync_connection_force_desc">A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Ez a művelet nem vonható vissza - profilod, ismerőseid, üzeneteid és fájljaid visszafordíthatatlanul törlésre kerülnek.</string>
     <string name="info_row_updated_at">A bejegyzés frissítve</string>
-    <string name="read_more_in_user_guide_with_link">További információ a &lt;font color=#0088ff&gt;Felhasználói útmutatóban&lt;/font&gt; olvasható.</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[További információ a <font color=#0088ff>Felhasználói útmutatóban</font> olvasható.]]></string>
     <string name="settings_is_storing_in_clear_text">A jelmondat a beállításokban egyszerű szövegként van tárolva.</string>
     <string name="terminal_always_visible">Konzol megjelenítése új ablakban</string>
     <string name="alert_text_msg_bad_hash">Az előző üzenet hash-e más.</string>
     <string name="receipts_section_description">Ezek a beállítások a jelenlegi profilodra vonatkoznak</string>
     <string name="loading_remote_file_desc">Kérjük, várj, amíg a fájl betöltődik az összekapcsolt mobilról.</string>
-    <string name="read_more_in_github_with_link">További információ a &lt;font color=#0088ff&gt;GitHub tárolónkban&lt;/font&gt;.</string>
+    <string name="read_more_in_github_with_link"><![CDATA[További információ a <font color=#0088ff>GitHub tárolónkban</font>.]]></string>
     <string name="error_showing_content">hiba a tartalom megjelenítése közben</string>
     <string name="error_showing_message">hiba az üzenet megjelenítésekor</string>
 </resources>

@@ -439,7 +439,7 @@
     <string name="custom_time_unit_days">дни</string>
     <string name="choose_file_title">Избери файл</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Ако сте получили линк за покана за SimpleX Chat, можете да го отворите във вашия браузър:</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 настолно устройство: сканирай показания QR код от приложението чрез <b>Сканирай QR код</b>.</string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 настолно устройство: сканирай показания QR код от приложението чрез <b>Сканирай QR код</b>.]]></string>
     <string name="delete_pending_connection__question">Изтрий предстоящата връзка\?</string>
     <string name="icon_descr_email">Електронна поща</string>
     <string name="share_invitation_link">Сподели еднократен линк</string>
@@ -787,7 +787,7 @@
     <string name="custom_time_unit_seconds">секунди</string>
     <string name="custom_time_unit_weeks">седмици</string>
     <string name="v5_1_japanese_portuguese_interface">Японски и португалски потребителски интерфейс</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 мобилно устройство: докоснете <b>Отваряне в мобилно приложение</b>, след което докоснете <b>Свързване</b> в приложението.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 мобилно устройство: докоснете <b>Отваряне в мобилно приложение</b>, след което докоснете <b>Свързване</b> в приложението.]]></string>
     <string name="reject_contact_button">Отхвърляне</string>
     <string name="mark_unread">Маркирай като непрочетено</string>
     <string name="mark_read">Маркирай като прочетено</string>
@@ -1426,11 +1426,11 @@
     <string name="marked_deleted_items_description">%d съобщения са маркирани като изтрити</string>
     <string name="connect_plan_group_already_exists">Групата вече съществува!</string>
     <string name="v5_4_link_mobile_desktop_descr">Чрез сигурен квантово устойчив протокол.</string>
-    <string name="open_on_mobile_and_scan_qr_code">Отвори <i>Използвай от настолно устройство</i> в мобилното приложение и сканирай QR кода.</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Отвори <i>Използвай от настолно устройство</i> в мобилното приложение и сканирай QR кода.]]></string>
     <string name="connect_plan_already_connecting">В процес на свързване!</string>
     <string name="v5_4_block_group_members_descr">Скриване на нежелани съобщения.</string>
     <string name="desktop_incompatible_version">Несъвместима версия</string>
-    <string name="new_desktop"><i>(ново)</i></string>
+    <string name="new_desktop"><![CDATA[<i>(ново)</i>]]></string>
     <string name="unlink_desktop_question">Забрави настолно устройство?</string>
     <string name="v5_4_better_groups">По-добри групи</string>
     <string name="linked_desktop_options">Настройки на запомнени настолни устройства</string>
@@ -1447,7 +1447,7 @@
     <string name="this_device">Това устройство</string>
     <string name="moderated_items_description">%d съобщения, модерирани от %s</string>
     <string name="unblock_member_button">Отблокирай член</string>
-    <string name="remote_host_was_disconnected_toast">Връзкарта с <b>%s</b> мобилно устройство бе прекъсната</string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[Връзкарта с <b>%s</b> мобилно устройство бе прекъсната]]></string>
     <string name="waiting_for_desktop">Изчакване на настолно устройство…</string>
     <string name="v5_4_better_groups_descr">По-бързо присъединяване и по-надеждни съобщения.</string>
     <string name="connect_plan_connect_to_yourself">Свърване със себе си?</string>
@@ -1486,7 +1486,7 @@
     <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">Вече се свързвате чрез този еднократен линк за връзка!</string>
     <string name="connect_plan_open_group">Отвори група</string>
     <string name="desktop_connection_terminated">Връзката е прекратена</string>
-    <string name="this_device_version"><i>(това устройство v%s)</i></string>
+    <string name="this_device_version"><![CDATA[<i>(това устройство v%s)</i>]]></string>
     <string name="unlink_desktop">Забрави</string>
     <string name="unblock_member_desc">Съобщенията от %s ще бъдат показани!</string>
     <string name="this_device_name_shared_with_mobile">Името на устройството ще бъде споделено със свързания мобилен клиент.</string>

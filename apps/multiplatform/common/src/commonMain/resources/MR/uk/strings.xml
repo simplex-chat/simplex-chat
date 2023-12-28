@@ -72,7 +72,7 @@
     <string name="notifications_mode_off_desc">Додаток може отримувати сповіщення тільки тоді, коли він працює, фоновий сервіс не буде запущено</string>
     <string name="chat_preferences_always">завжди</string>
     <string name="allow_your_contacts_to_call">Дозвольте вашим контактам дзвонити вам.</string>
-    <string name="network_session_mode_user_description">Окреме TCP-підключення (і обліковий запис SOCKS) буде використовуватися <b>для кожного профілю чату, який у вас є в додатку</b>.</string>
+    <string name="network_session_mode_user_description"><![CDATA[Окреме TCP-підключення (і обліковий запис SOCKS) буде використовуватися <b>для кожного профілю чату, який у вас є в додатку</b>.]]></string>
     <string name="appearance_settings">Вигляд</string>
     <string name="app_version_name">Версія додатку: v%s</string>
     <string name="network_session_mode_entity_description">Окреме TCP-підключення (і обліковий запис SOCKS) буде використовуватися <b>для кожного контакту та учасника групи</b>.
@@ -80,7 +80,7 @@
     <string name="turning_off_service_and_periodic">Активована оптимізація батареї, вимикається фоновий сервіс і періодичні запити нових повідомлень. Ви можете знову увімкнути їх у налаштуваннях.</string>
     <string name="back">Назад</string>
     <string name="bold_text">жирний</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Добре для акумулятора</b>. Сервіс фонового запуску перевіряє повідомлення кожні 10 хвилин. Ви можете пропустити виклики чи важливі повідомлення.</string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Добре для акумулятора</b>. Сервіс фонового запуску перевіряє повідомлення кожні 10 хвилин. Ви можете пропустити виклики чи важливі повідомлення.]]></string>
     <string name="settings_audio_video_calls">Аудіо та відеовиклики</string>
     <string name="icon_descr_audio_off">Аудіо вимкнено</string>
     <string name="auth_unavailable">Аутентифікація недоступна</string>
@@ -95,7 +95,7 @@
     <string name="icon_descr_audio_on">Аудіо увімкнено</string>
     <string name="both_you_and_your_contact_can_add_message_reactions">Як ви, так і ваш контакт можуть додавати реакції на повідомлення.</string>
     <string name="icon_descr_audio_call">аудіовиклик</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Найкраще для акумулятора</b>. Ви отримуєте сповіщення тільки тоді, коли додаток працює (НЕТЛЕ фоновий сервіс).</string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Найкраще для акумулятора</b>. Ви отримуєте сповіщення тільки тоді, коли додаток працює (НЕТЛЕ фоновий сервіс).]]></string>
     <string name="v4_6_audio_video_calls">Аудіо та відеовиклики</string>
     <string name="la_authenticate">Аутентифікація</string>
     <string name="la_auth_failed">Помилка аутентифікації</string>
@@ -104,7 +104,7 @@
     <string name="integrity_msg_bad_hash">поганий хеш повідомлення</string>
     <string name="integrity_msg_bad_id">поганий ідентифікатор повідомлення</string>
     <string name="color_background">Фон</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><b>Додайте новий контакт</b>: щоб створити одноразовий QR-код для вашого контакту.</string>
+    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Додайте новий контакт</b>: щоб створити одноразовий QR-код для вашого контакту.]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown">Це можна вимкнути у налаштуваннях – сповіщення все одно будуть відображатися, коли програма працює.</string>
     <string name="notifications_mode_service_desc">Служба фонового режиму завжди активна – сповіщення відображатимуться, як тільки повідомлення будуть доступні.</string>
     <string name="icon_descr_asked_to_receive">Запит на отримання зображення</string>
@@ -221,7 +221,7 @@
     <string name="ok">OK</string>
     <string name="copied">Скопійовано в буфер обміну</string>
     <string name="to_connect_via_link_title">Для підключення через посилання</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 мобільний телефон: натисніть <b>Відкрити у мобільному додатку</b>, а потім торкніться <b>Підключити</b> в додатку.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 мобільний телефон: натисніть <b>Відкрити у мобільному додатку</b>, а потім торкніться <b>Підключити</b> в додатку.]]></string>
     <string name="mute_chat">Приглушити</string>
     <string name="unmute_chat">Скасувати приглушення</string>
     <string name="you_invited_a_contact">Ви запросили контакт</string>
@@ -229,7 +229,7 @@
     <string name="icon_descr_profile_image_placeholder">заповнювач зображення профілю</string>
     <string name="image_descr_qr_code">QR-код</string>
     <string name="icon_descr_help">довідка</string>
-    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel">Якщо ви не можете зустрітися особисто, <b>покажіть QR-код у відеовиклику</b>, або поділіться посиланням.</string>
+    <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Якщо ви не можете зустрітися особисто, <b>покажіть QR-код у відеовиклику</b>, або поділіться посиланням.]]></string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Ваш профіль чату буде відправлено
 \nвашому контакту</string>
     <string name="one_time_link">Одноразове запрошення</string>
@@ -355,7 +355,7 @@
     <string name="invalid_contact_link">Неправильне посилання!</string>
     <string name="this_link_is_not_a_valid_connection_link">Це посилання не є дійсним з\'єднувальним посиланням!</string>
     <string name="connection_request_sent">Запит на з\'єднання відправлено!</string>
-    <string name="you_can_also_connect_by_clicking_the_link">Ви також можете підключитися, клацнувши посилання. Якщо воно відкривається у браузері, клацніть кнопку <b>Відкрити у мобільному додатку</b>.</string>
+    <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Ви також можете підключитися, клацнувши посилання. Якщо воно відкривається у браузері, клацніть кнопку <b>Відкрити у мобільному додатку</b>.]]></string>
     <string name="create_one_time_link">Створити одноразове запрошення</string>
     <string name="scan_code">Сканувати код</string>
     <string name="scan_code_from_contacts_app">Скануйте код безпеки з додатка вашого контакту.</string>
@@ -529,7 +529,7 @@
     <string name="image_descr_profile_image">зображення профілю</string>
     <string name="icon_descr_more_button">Більше</string>
     <string name="create_profile">Створити профіль</string>
-    <string name="read_more_in_github_with_link">Докладніше читайте в нашому репозиторії на &lt;font color=#0088ff&gt;GitHub&lt;/font&gt;.</string>
+    <string name="read_more_in_github_with_link"><![CDATA[Докладніше читайте в нашому репозиторії на <font color=#0088ff>GitHub</font>.]]></string>
     <string name="icon_descr_video_on">Відео увімкнено</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Це може трапитися, якщо ви або ваше з\'єднання використовували застарілу резервну копію бази даних.</string>
     <string name="restore_database">Відновити резервну копію бази даних</string>
@@ -555,7 +555,7 @@
     <string name="smp_server_test_create_file">Створити файл</string>
     <string name="error_deleting_user">Помилка видалення користувача</string>
     <string name="error_updating_user_privacy">Помилка оновлення конфіденційності користувача</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">Для збереження вашої конфіденційності, замість торкання сповіщень, програма використовує <b>фоновий сервіс SimpleX</b> – він використовує кілька відсотків батареї щодня.</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Для збереження вашої конфіденційності, замість торкання сповіщень, програма використовує <b>фоновий сервіс SimpleX</b> – він використовує кілька відсотків батареї щодня.]]></string>
     <string name="periodic_notifications">Періодичні сповіщення</string>
     <string name="simplex_service_notification_title">Служба чату SimpleX</string>
     <string name="notifications_mode_periodic_desc">Перевіряє нові повідомлення кожні 10 хвилин протягом 1 хвилини</string>
@@ -606,7 +606,7 @@
     <string name="toast_permission_denied">Доступ відхилено!</string>
     <string name="use_camera_button">Камера</string>
     <string name="thank_you_for_installing_simplex">Дякуємо за установку SimpleX Chat!</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><b>Сканувати QR-код</b>: щоб підключитися до вашого контакту, який вам показує QR-код.</string>
+    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Сканувати QR-код</b>: щоб підключитися до вашого контакту, який вам показує QR-код.]]></string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Якщо ви отримали запрошення від SimpleX Chat, ви можете відкрити його у вашому браузері:</string>
     <string name="clear_chat_menu_action">Очистити</string>
     <string name="delete_contact_menu_action">Видалити</string>
@@ -663,11 +663,11 @@
     <string name="you_can_use_markdown_to_format_messages__prompt">Ви можете використовувати markdown для форматування повідомлень:</string>
     <string name="create_your_profile">Створіть свій профіль</string>
     <string name="make_private_connection">Створіть приватне підключення</string>
-    <string name="many_people_asked_how_can_it_deliver">Багато людей питають: <i>як в SimpleX можливо доставляти повідомлення, якщо він не має ідентифікаторів користувачів?</i></string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send">Ви контролюєте, через які сервери <b>отримувати</b> повідомлення, ваші контакти – сервери, які ви використовуєте для надсилання повідомлень їм.</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Тільки пристрої клієнта зберігають профілі користувачів, контакти, групи та повідомлення, відправлені за допомогою <b>шифрування на двох рівнях</b>.</string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Багато людей питають: <i>як в SimpleX можливо доставляти повідомлення, якщо він не має ідентифікаторів користувачів?</i>]]></string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Ви контролюєте, через які сервери <b>отримувати</b> повідомлення, ваші контакти – сервери, які ви використовуєте для надсилання повідомлень їм.]]></string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Тільки пристрої клієнта зберігають профілі користувачів, контакти, групи та повідомлення, відправлені за допомогою <b>шифрування на двох рівнях</b>.]]></string>
     <string name="onboarding_notifications_mode_title">Приватні сповіщення</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>Споживає більше заряду акумулятора</b>! Фоновий сервіс завжди працює – сповіщення відображаються, як тільки повідомлення доступні.</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Споживає більше заряду акумулятора</b>! Фоновий сервіс завжди працює – сповіщення відображаються, як тільки повідомлення доступні.]]></string>
     <string name="paste_the_link_you_received">Вставте отримане посилання</string>
     <string name="icon_descr_video_off">Відео вимкнено</string>
     <string name="icon_descr_call_ended">Завершено виклик</string>
@@ -821,7 +821,7 @@
     <string name="smp_server_test_secure_queue">Безпечна черга</string>
     <string name="smp_server_test_delete_queue">Видалити чергу</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Будь ласка, перевірте, що ви використали правильне посилання або попросіть вашого контакту вислати інше.</string>
-    <string name="turn_off_battery_optimization">Щоб його використовувати, будь ласка, <b>дозвольте SimpleX працювати в фоновому режимі</b> в наступному діалозі. В іншому випадку сповіщення будуть вимкнені.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Щоб його використовувати, будь ласка, <b>дозвольте SimpleX працювати в фоновому режимі</b> в наступному діалозі. В іншому випадку сповіщення будуть вимкнені.]]></string>
     <string name="icon_descr_instant_notifications">Миттєві сповіщення</string>
     <string name="notification_preview_somebody">Контакт прихований:</string>
     <string name="notification_preview_new_message">нове повідомлення</string>
@@ -922,7 +922,7 @@
     <string name="delete_files_and_media_question">Видалити файли та медіа?</string>
     <string name="total_files_count_and_size">%d файл(ів) обсягом %s</string>
     <string name="database_is_not_encrypted">Ваша база даних чату не зашифрована - встановіть ключову фразу для її захисту.</string>
-    <string name="impossible_to_recover_passphrase"><b>Зверніть увагу</b>: ви НЕ зможете відновити або змінити ключову фразу, якщо ви її втратите.</string>
+    <string name="impossible_to_recover_passphrase"><![CDATA[<b>Зверніть увагу</b>: ви НЕ зможете відновити або змінити ключову фразу, якщо ви її втратите.]]></string>
     <string name="theme_system">Система</string>
     <string name="incompatible_database_version">Несумісна версія бази даних</string>
     <string name="confirm_database_upgrades">Підтвердити оновлення бази даних</string>
@@ -1028,7 +1028,7 @@
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Вас підключать, коли пристрій вашого контакту буде в мережі, зачекайте або перевірте пізніше!</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Ви не втратите свої контакти, якщо ви пізніше видалите свою адресу.</string>
     <string name="you_can_accept_or_reject_connection">Коли люди просять про з\'єднання, ви можете його прийняти чи відхилити.</string>
-    <string name="read_more_in_user_guide_with_link">Докладніше читайте в &lt;font color=#0088ff&gt;Посібнику користувача&lt;/font&gt;.</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[Докладніше читайте в <font color=#0088ff>Посібнику користувача</font>.]]></string>
     <string name="simplex_address">SimpleX-адреса</string>
     <string name="clear_verification">Очистити перевірку</string>
     <string name="is_verified">%s перевірено</string>
@@ -1200,8 +1200,8 @@
     <string name="create_group">Створити секретну групу</string>
     <string name="to_share_with_your_contact">(щоб поділитися з вашим контактом)</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(сканувати або вставити з буферу обміну)</string>
-    <string name="you_can_connect_to_simplex_chat_founder">Ви можете &lt;font color=#0088ff&gt;підключитися до розробників SimpleX Chat, щоб задати будь-які питання і отримувати оновлення&lt;/font&gt;.</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 настільний комп\'ютер: скануйте відображений QR-код з додатка за допомогою <b>Сканувати QR-код</b>.</string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Ви можете <font color=#0088ff>підключитися до розробників SimpleX Chat, щоб задати будь-які питання і отримувати оновлення</font>.]]></string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 настільний комп\'ютер: скануйте відображений QR-код з додатка за допомогою <b>Сканувати QR-код</b>.]]></string>
     <string name="icon_descr_address">Адреса SimpleX</string>
     <string name="show_QR_code">Показати QR-код</string>
     <string name="joining_group">Приєднання до групи</string>
@@ -1240,10 +1240,10 @@
     <string name="rcv_group_event_user_deleted">вас видалили</string>
     <string name="group_member_role_owner">власник</string>
     <string name="group_member_status_removed">видалено</string>
-    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link">Якщо ви не можете зустрітися особисто, ви можете <b>сканувати QR-код у відеовиклику</b>, або ваш контакт може поділитися посиланням на запрошення.</string>
+    <string name="if_you_cannot_meet_in_person_scan_QR_in_video_call_or_ask_for_invitation_link"><![CDATA[Якщо ви не можете зустрітися особисто, ви можете <b>сканувати QR-код у відеовиклику</b>, або ваш контакт може поділитися посиланням на запрошення.]]></string>
     <string name="how_to_use_simplex_chat">Як користуватися</string>
     <string name="network_session_mode_entity">Підключення</string>
-    <string name="disable_onion_hosts_when_not_supported">Встановіть <i>Використовувати .onion-хости</i> на Ні, якщо SOCKS-проксі їх не підтримує.</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Встановіть <i>Використовувати .onion-хости</i> на Ні, якщо SOCKS-проксі їх не підтримує.]]></string>
     <string name="show_dev_options">Показати:</string>
     <string name="hide_dev_options">Сховати:</string>
     <string name="non_fatal_errors_occured_during_import">Під час імпорту сталися деякі невідновні помилки - ви можете переглянути консоль чату для отримання більше деталей.</string>
@@ -1359,8 +1359,8 @@
     <string name="receipts_groups_override_disabled">Надсилання повідомлень про доставку вимкнено для %d груп</string>
     <string name="rcv_group_event_3_members_connected">%s, %s і %s підключилися</string>
     <string name="receipts_section_description_1">Їх можна замінити в налаштуваннях контактів і груп.</string>
-    <string name="system_restricted_background_warn">Щоб увімкнути сповіщення, оберіть, будь ласка, <b>Використання батареї додатком</b> / <b>Без обмежень</b> у налаштуваннях додатка.</string>
-    <string name="system_restricted_background_in_call_warn">Щоб здійснювати дзвінки в фоновому режимі, будь ласка, оберіть <b>Використання батареї додатком</b> / <b>Без обмежень</b> у налаштуваннях додатка.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Щоб увімкнути сповіщення, оберіть, будь ласка, <b>Використання батареї додатком</b> / <b>Без обмежень</b> у налаштуваннях додатка.]]></string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Щоб здійснювати дзвінки в фоновому режимі, будь ласка, оберіть <b>Використання батареї додатком</b> / <b>Без обмежень</b> у налаштуваннях додатка.]]></string>
     <string name="connect_use_new_incognito_profile">Використовувати новий інкогніто-профіль</string>
     <string name="you_can_enable_delivery_receipts_later_alert">Ви зможете увімкнути їх пізніше через налаштування конфіденційності та безпеки додатка.</string>
     <string name="rcv_group_event_n_members_connected">%s, %s і ще %d учасників підключилися</string>
@@ -1383,7 +1383,7 @@
     <string name="error_creating_member_contact">Помилка при створенні контакту учасника</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Ви вже приєднуєтеся до групи за цим посиланням.</string>
     <string name="create_group_button">Створити групу</string>
-    <string name="socks_proxy_setting_limitations"><b>Зверніть увагу</b>: ретрансляція повідомлень та файлів підключається через SOCKS-проксі. Дзвінки та відправлення переглядів посилань використовують пряме підключення.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Зверніть увагу</b>: ретрансляція повідомлень та файлів підключається через SOCKS-проксі. Дзвінки та відправлення переглядів посилань використовують пряме підключення.]]></string>
     <string name="create_another_profile_button">Створити профіль</string>
     <string name="group_members_2">%s і %s</string>
     <string name="connect_plan_join_your_group">Приєднатися до вашої групи?</string>
@@ -1466,10 +1466,10 @@
     <string name="only_one_device_can_work_at_the_same_time">Одночасно може працювати лише один пристрій</string>
     <string name="v5_4_link_mobile_desktop">Посилання на мобільний та комп\'ютерний додатки! 🔗</string>
     <string name="v5_4_link_mobile_desktop_descr">Через безпечний квантовостійкий протокол.</string>
-    <string name="open_on_mobile_and_scan_qr_code">Відкрийте <i>Використовувати з робочого столу</i> у мобільному додатку і скануйте QR-код.</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Відкрийте <i>Використовувати з робочого столу</i> у мобільному додатку і скануйте QR-код.]]></string>
     <string name="v5_4_block_group_members_descr">Щоб приховати небажані повідомлення.</string>
     <string name="desktop_incompatible_version">Несумісна версія</string>
-    <string name="new_desktop"><i>(новий)</i></string>
+    <string name="new_desktop"><![CDATA[<i>(новий)</i>]]></string>
     <string name="unlink_desktop_question">Відсунути відсилання до робочого столу?</string>
     <string name="v5_4_better_groups">Кращі групи</string>
     <string name="linked_desktop_options">Параметри пов\'язаних робочих столів</string>
@@ -1477,7 +1477,7 @@
     <string name="discover_on_network">Виявити через локальну мережу</string>
     <string name="v5_4_incognito_groups">Інкогніто групи</string>
     <string name="this_device">Цей пристрій</string>
-    <string name="remote_host_was_disconnected_toast">Мобільний <b>%s</b> був відключений</string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[Мобільний <b>%s</b> був відключений]]></string>
     <string name="waiting_for_desktop">Очікування робочого столу…</string>
     <string name="v5_4_better_groups_descr">Швидше приєднуйтесь та надійшовні повідомлення.</string>
     <string name="linked_mobiles">Пов\'язані мобільні</string>
@@ -1494,7 +1494,7 @@
     <string name="connected_mobile">Підключений мобільний</string>
     <string name="session_code">Код сеансу</string>
     <string name="desktop_connection_terminated">Підключення завершено</string>
-    <string name="this_device_version"><i>(цей пристрій v%s)</i></string>
+    <string name="this_device_version"><![CDATA[<i>(цей пристрій v%s)</i>]]></string>
     <string name="unlink_desktop">Відсунути відсилання</string>
     <string name="this_device_name_shared_with_mobile">Назва пристрою буде надіслана підключеному мобільному клієнту.</string>
     <string name="verify_code_on_mobile">Перевірте код на мобільному</string>

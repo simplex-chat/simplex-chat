@@ -3,8 +3,8 @@
     <string name="auth_unavailable">Autenticación no disponible</string>
     <string name="accept_contact_button">Aceptar</string>
     <string name="network_settings">Configuración avanzada de red</string>
-    <string name="onboarding_notifications_mode_off_desc"><b>Óptimo para la batería</b>. Recibirás notificaciones sólo cuando la aplicación esté abierta (SIN servicio en segundo plano).</string>
-    <string name="onboarding_notifications_mode_periodic_desc"><b>Bueno para la batería</b>. El servicio en segundo plano comprueba si hay mensajes cada 10 minutos. Podrías no recibir a tiempo llamadas o mensajes urgentes.</string>
+    <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Óptimo para la batería</b>. Recibirás notificaciones sólo cuando la aplicación esté abierta (SIN servicio en segundo plano).]]></string>
+    <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Bueno para la batería</b>. El servicio en segundo plano comprueba si hay mensajes cada 10 minutos. Podrías no recibir a tiempo llamadas o mensajes urgentes.]]></string>
     <string name="accept_call_on_lock_screen">Aceptar</string>
     <string name="full_backup">Copia de seguridad de los datos de la aplicación</string>
     <string name="chat_item_ttl_day">un dia</string>
@@ -76,7 +76,7 @@
     <string name="icon_descr_asked_to_receive">Solicita recibir la imagen</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Atención</b>: NO podrás recuperar o cambiar la contraseña si la pierdes.]]></string>
     <string name="both_you_and_your_contact_can_send_voice">Tanto tú como tu contacto podéis enviar mensajes de voz.</string>
-    <string name="onboarding_notifications_mode_service_desc"><b>¡Consume más batería!</b> El servicio en segundo plano se ejecuta continuamente y las notificaciones se mostrarán de inmediato.</string>
+    <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>¡Consume más batería!</b> El servicio en segundo plano se ejecuta continuamente y las notificaciones se mostrarán de inmediato.]]></string>
     <string name="both_you_and_your_contacts_can_delete">Tanto tú como tu contacto podéis eliminar de forma irreversible los mensajes enviados.</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Tanto tú como tu contacto podéis enviar mensajes temporales.</string>
     <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Escanear código QR</b>: para conectar con tu contacto mediante su código QR.]]></string>
@@ -162,7 +162,7 @@
     <string name="icon_descr_server_status_connected">Conectado</string>
     <string name="copied">Copiado en portapapeles</string>
     <string name="share_one_time_link">Crea enlace de invitación de un uso.</string>
-    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code">💻 Ordenador: escanéa el código QR desde la aplicación mediante <b>Escanear código QR </b></string>
+    <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 Ordenador: escanéa el código QR desde la aplicación mediante <b>Escanear código QR </b>]]></string>
     <string name="delete_contact_menu_action">Eliminar</string>
     <string name="delete_group_menu_action">Eliminar</string>
     <string name="alert_title_contact_connection_pending">¡El contacto aun no se ha conectado!</string>
@@ -439,7 +439,7 @@
     <string name="how_it_works">Cómo funciona</string>
     <string name="delete_message_cannot_be_undone_warning">El mensaje será eliminado. ¡No podrá deshacerse!</string>
     <string name="incognito_info_protects">El modo incógnito protege tu privacidad creando un perfil aleatorio por cada contacto.</string>
-    <string name="turn_off_battery_optimization">Para usar SimpleX, por favor <b>permite que SimpleX se ejecute en segundo plano</b> en el siguiente cuadro de diálogo. De lo contrario las notificaciones se desactivarán.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Para usar SimpleX, por favor <b>permite que SimpleX se ejecute en segundo plano</b> en el siguiente cuadro de diálogo. De lo contrario las notificaciones se desactivarán.]]></string>
     <string name="install_simplex_chat_for_terminal">Instalar terminal para SimpleX Chat</string>
     <string name="group_invitation_item_description">invitación al grupo %1$s</string>
     <string name="rcv_group_event_member_added">ha invitado a %1$s</string>
@@ -1467,7 +1467,7 @@
     <string name="blocked_item_description">bloqueado</string>
     <string name="v5_4_block_group_members">Bloquear miembros del grupo</string>
     <string name="connect_plan_repeat_connection_request">¿Repetir solicitud de conexión?</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Ya estás conectando con %@.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName">Ya estás conectando con %1$s.</string>
     <string name="v5_4_incognito_groups_descr">Crear grupo usando perfil aleatorio.</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Ya estás uniéndote al grupo mediante este enlace.</string>
     <string name="refresh_qr_code">Recargar</string>
@@ -1477,7 +1477,7 @@
     <string name="v5_4_link_mobile_desktop">¡Enlazar aplicación móvil con ordenador!</string>
     <string name="connect_plan_this_is_your_own_one_time_link">¡Este es tu propio enlace de un solo uso!</string>
     <string name="v5_4_link_mobile_desktop_descr">Mediante protocolo seguro de resistencia cuántica.</string>
-    <string name="open_on_mobile_and_scan_qr_code">Abre <i>Usar desde ordenador</i> en la aplicación móvil y escanea el código QR.</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Abre <i>Usar desde ordenador</i> en la aplicación móvil y escanea el código QR.]]></string>
     <string name="v5_4_block_group_members_descr">Para ocultar mensajes no deseados.</string>
     <string name="unlink_desktop_question">¿Desenlazar ordenador?</string>
     <string name="v5_4_better_groups">Grupos mejorados</string>
@@ -1488,7 +1488,7 @@
     <string name="group_members_n">%s, %s y %d miembros</string>
     <string name="this_device">Este dispositivo</string>
     <string name="unblock_member_button">Desbloquear miembro</string>
-    <string name="remote_host_was_disconnected_toast">Móvil <b>%s</b> desconectado</string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[Móvil <b>%s</b> desconectado]]></string>
     <string name="waiting_for_desktop">Esperando ordenador…</string>
     <string name="v5_4_better_groups_descr">Mensajería más segura y conexión más rápida.</string>
     <string name="contact_tap_to_connect">Pulsa para conectar</string>
