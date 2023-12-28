@@ -118,7 +118,7 @@ cChatMigrateInitKey fp key keepKey conf background ctrl = do
   setFileSystemEncoding utf8
   setForeignEncoding utf8
 
-  dbPath <- peekCAString fp
+  dbPath <- peekCString fp
   dbKey <- BA.convert <$> B.packCString key
   confirm <- peekCAString conf
   r <-

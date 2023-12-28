@@ -1222,8 +1222,6 @@
 \nלא ניתן לבטל פעולה זו – הפרופיל, אנשי הקשר, ההודעות והקבצים שלך ייאבדו באופן בלתי הפיך.</string>
     <string name="your_current_profile">הפרופיל הנוכחי שלך</string>
     <string name="your_contacts_will_remain_connected">אנשי הקשר שלך יישארו מחוברים.</string>
-    <string name="your_contacts_will_see_it">אנשי הקשר שלך ב־SimpleX ייראו זאת.
-\nניתן לשנות זאת בהגדרות.</string>
     <string name="your_ice_servers">שרתי ה־ICE שלך</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">אתם תהיו מחוברים כאשר בקשת החיבור תאושר, אנא חכו או בידקו מאוחר יותר!</string>
     <string name="profile_will_be_sent_to_contact_sending_link">הפרופיל שלך יישלח לאיש הקשר ממנו קיבלת קישור זה.</string>
