@@ -131,6 +131,7 @@ chatGroupTests = do
     it "quoted messages" testGroupHistoryQuotes
     it "deleted message is not included" testGroupHistoryDeletedMessage
     it "disappearing message is sent as disappearing" testGroupHistoryDisappearingMessage
+    it "welcome message (group description) is sent after history" testGroupHistoryWelcomeMessage
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -5125,3 +5126,56 @@ testGroupHistoryDisappearingMessage =
       r2 `shouldContain` [(0, "1"), (0, "4")]
       r2 `shouldNotContain` [(0, "2")]
       r2 `shouldNotContain` [(0, "3")]
+
+testGroupHistoryWelcomeMessage :: HasCallStack => FilePath -> IO ()
+testGroupHistoryWelcomeMessage =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/set welcome #team welcome to team"
+      alice <## "description changed to:"
+      alice <## "welcome to team"
+
+      bob <## "alice updated group #team:"
+      bob <## "description changed to:"
+      bob <## "welcome to team"
+
+      threadDelay 1000000
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+
+      threadDelay 1000000
+
+      bob #> "#team hey!"
+      alice <# "#team bob> hey!"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> hello [>>]",
+                   WithTime "#team bob> hey! [>>]",
+                   WithTime "#team alice> welcome to team",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine cath
+      r `shouldContain` [(0, "hello"), (0, "hey!"), (0, "welcome to team")]
+
+      -- message delivery works after sending history
+      alice #> "#team 1"
+      [bob, cath] *<# "#team alice> 1"
+      bob #> "#team 2"
+      [alice, cath] *<# "#team bob> 2"
+      cath #> "#team 3"
+      [alice, bob] *<# "#team cath> 3"
