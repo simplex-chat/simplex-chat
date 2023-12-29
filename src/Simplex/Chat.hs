@@ -5630,8 +5630,8 @@ deleteOrUpdateMemberRecord user@User {userId} member =
 sendDirectContactMessage :: (MsgEncodingI e, ChatMonad m) => Contact -> ChatMsgEvent e -> m (SndMessage, Int64)
 sendDirectContactMessage ct chatMsgEvent =
   case contactSendAction ct of
-    CSAError e -> throwError e
     CSASend conn@Connection {connId} -> sendDirectMessage conn chatMsgEvent (ConnectionId connId)
+    CSAError e -> throwError e
 
 data ContactSendAction = CSASend Connection | CSAError ChatError
 
