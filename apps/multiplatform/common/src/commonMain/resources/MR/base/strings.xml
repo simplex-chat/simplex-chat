@@ -821,9 +821,6 @@
   <string name="you_can_change_it_later">Random passphrase is stored in settings as plaintext.\nYou can change it later.</string>
   <string name="use_random_passphrase">Use random passphrase</string>
 
-  <!-- MakeConnection -->
-  <string name="paste_the_link_you_received">Paste received link</string>
-
   <!-- Call -->
   <string name="incoming_video_call">Incoming video call</string>
   <string name="incoming_audio_call">Incoming audio call</string>
