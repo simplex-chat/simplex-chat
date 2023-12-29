@@ -303,14 +303,17 @@
         <target>)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="**Add contact**: to create a new invitation link, or connect via a link you received." xml:space="preserve">
+        <source>**Add contact**: to create a new invitation link, or connect via a link you received.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="**Add new contact**: to create your one-time QR Code for your contact." xml:space="preserve">
         <source>**Add new contact**: to create your one-time QR Code or link for your contact.</source>
         <target>**Přidat nový kontakt**: pro vytvoření jednorázového QR kódu nebo odkazu pro váš kontakt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve">
-        <source>**Create link / QR code** for your contact to use.</source>
-        <target>**Vytvořte odkaz / QR kód** pro váš kontakt.</target>
+      <trans-unit id="**Create group**: to create a new group." xml:space="preserve">
+        <source>**Create group**: to create a new group.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**More private**: check new messages every 20 minutes. Device token is shared with SimpleX Chat server, but not how many contacts or messages you have." xml:space="preserve">
@@ -323,11 +326,6 @@
         <target>**Nejsoukromější**: nepoužívejte server oznámení SimpleX Chat, pravidelně kontrolujte zprávy na pozadí (závisí na tom, jak často aplikaci používáte).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Paste received link** or open it in the browser and tap **Open in mobile app**." xml:space="preserve">
-        <source>**Paste received link** or open it in the browser and tap **Open in mobile app**.</source>
-        <target>**Vložte přijatý odkaz** nebo jej otevřete v prohlížeči a klepněte na **Otevřít v mobilní aplikaci**.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="**Please note**: you will NOT be able to recover or change passphrase if you lose it." xml:space="preserve">
         <source>**Please note**: you will NOT be able to recover or change passphrase if you lose it.</source>
         <target>**Upozornění**: Pokud heslo ztratíte, NEBUDETE jej moci obnovit ani změnit.</target>
@@ -336,11 +334,6 @@
       <trans-unit id="**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from." xml:space="preserve">
         <source>**Recommended**: device token and notifications are sent to SimpleX Chat notification server, but not the message content, size or who it is from.</source>
         <target>**Doporučeno**: Token zařízení a oznámení se odesílají na oznamovací server SimpleX Chat, ale nikoli obsah, velikost nebo od koho jsou zprávy.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="**Scan QR code**: to connect to your contact in person or via video call." xml:space="preserve">
-        <source>**Scan QR code**: to connect to your contact in person or via video call.</source>
-        <target>** Naskenujte QR kód**: pro připojení ke kontaktu osobně nebo prostřednictvím videohovoru.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
@@ -439,11 +432,6 @@
         <source>1 week</source>
         <target>1 týden</target>
         <note>time interval</note>
-      </trans-unit>
-      <trans-unit id="1-time link" xml:space="preserve">
-        <source>1-time link</source>
-        <target>Jednorázový odkaz</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="5 minutes" xml:space="preserve">
         <source>5 minutes</source>
@@ -558,6 +546,10 @@
       <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
         <source>Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</source>
         <target>Přidejte adresu do svého profilu, aby ji vaše kontakty mohly sdílet s dalšími lidmi. Aktualizace profilu bude zaslána vašim kontaktům.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Add contact" xml:space="preserve">
+        <source>Add contact</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add preset servers" xml:space="preserve">
@@ -956,6 +948,10 @@
         <target>Hovory</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Camera not available" xml:space="preserve">
+        <source>Camera not available</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Can't delete user profile!" xml:space="preserve">
         <source>Can't delete user profile!</source>
         <target>Nemohu smazat uživatelský profil!</target>
@@ -1212,11 +1208,6 @@ This is your own one-time link!</source>
         <target>Připojte se prostřednictvím odkazu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via link / QR code" xml:space="preserve">
-        <source>Connect via link / QR code</source>
-        <target>Připojit se prostřednictvím odkazu / QR kódu</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Connect via one-time link" xml:space="preserve">
         <source>Connect via one-time link</source>
         <target>Připojit se jednorázovým odkazem</target>
@@ -1384,11 +1375,6 @@ This is your own one-time link!</source>
         <target>Vytvořit nový profil v [desktop app](https://simplex.chat/downloads/). 💻</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create one-time invitation link" xml:space="preserve">
-        <source>Create one-time invitation link</source>
-        <target>Vytvořit jednorázovou pozvánku</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Create profile" xml:space="preserve">
         <source>Create profile</source>
         <note>No comment provided by engineer.</note>
@@ -1411,6 +1397,10 @@ This is your own one-time link!</source>
       <trans-unit id="Created on %@" xml:space="preserve">
         <source>Created on %@</source>
         <target>Vytvořeno na %@</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Creating link…" xml:space="preserve">
+        <source>Creating link…</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Current Passcode" xml:space="preserve">
@@ -1954,6 +1944,10 @@ This cannot be undone!</source>
         <target>Povolit automatické mazání zpráv?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Enable camera access" xml:space="preserve">
+        <source>Enable camera access</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Enable for all" xml:space="preserve">
         <source>Enable for all</source>
         <target>Povolit pro všechny</target>
@@ -2290,6 +2284,10 @@ This cannot be undone!</source>
       <trans-unit id="Error saving user password" xml:space="preserve">
         <source>Error saving user password</source>
         <target>Chyba ukládání hesla uživatele</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error scanning code: %@" xml:space="preserve">
+        <source>Error scanning code: %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error sending email" xml:space="preserve">
@@ -2761,11 +2759,6 @@ This cannot be undone!</source>
         <target>Pokud se nemůžete setkat osobně, zobrazte QR kód ve videohovoru nebo sdílejte odkaz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link." xml:space="preserve">
-        <source>If you cannot meet in person, you can **scan QR code in the video call**, or your contact can share an invitation link.</source>
-        <target>Pokud se nemůžete setkat osobně, můžete **naskenovat QR kód během videohovoru**, nebo váš kontakt může sdílet odkaz na pozvánku.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="If you enter this passcode when opening the app, all app data will be irreversibly removed!" xml:space="preserve">
         <source>If you enter this passcode when opening the app, all app data will be irreversibly removed!</source>
         <target>Pokud tento přístupový kód zadáte při otevření aplikace, všechna data budou nenávratně smazána!</target>
@@ -2921,9 +2914,17 @@ This cannot be undone!</source>
         <target>Rozhranní</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invalid QR code" xml:space="preserve">
+        <source>Invalid QR code</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Invalid connection link" xml:space="preserve">
         <source>Invalid connection link</source>
         <target>Neplatný odkaz na spojení</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Invalid link" xml:space="preserve">
+        <source>Invalid link</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid name!" xml:space="preserve">
@@ -3048,8 +3049,16 @@ This is your link for group %@!</source>
         <target>Připojování ke skupině</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Keep" xml:space="preserve">
+        <source>Keep</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Keep the app open to use it from desktop" xml:space="preserve">
         <source>Keep the app open to use it from desktop</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Keep unused invitation?" xml:space="preserve">
+        <source>Keep unused invitation?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
@@ -3378,6 +3387,10 @@ This is your link for group %@!</source>
         <target>Nové heslo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="New chat" xml:space="preserve">
+        <source>New chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="New contact request" xml:space="preserve">
         <source>New contact request</source>
         <target>Žádost o nový kontakt</target>
@@ -3499,6 +3512,10 @@ This is your link for group %@!</source>
         <target>Nyní mohou správci:
 - mazat zprávy členů.
 - zakázat členy (role "pozorovatel")</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="OK" xml:space="preserve">
+        <source>OK</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Off" xml:space="preserve">
@@ -3649,6 +3666,14 @@ This is your link for group %@!</source>
         <source>Opening app…</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Or scan QR code" xml:space="preserve">
+        <source>Or scan QR code</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Or show this code" xml:space="preserve">
+        <source>Or show this code</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
         <source>PING count</source>
         <target>Počet PING</target>
@@ -3689,11 +3714,6 @@ This is your link for group %@!</source>
         <target>Heslo k zobrazení</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste" xml:space="preserve">
-        <source>Paste</source>
-        <target>Vložit</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Paste desktop address" xml:space="preserve">
         <source>Paste desktop address</source>
         <note>No comment provided by engineer.</note>
@@ -3703,15 +3723,9 @@ This is your link for group %@!</source>
         <target>Vložit obrázek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Paste received link" xml:space="preserve">
-        <source>Paste received link</source>
-        <target>Vložení přijatého odkazu</target>
+      <trans-unit id="Paste the link you received" xml:space="preserve">
+        <source>Paste the link you received</source>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Paste the link you received to connect with your contact." xml:space="preserve">
-        <source>Paste the link you received to connect with your contact.</source>
-        <target>Vložte odkaz, který jste obdrželi, do pole níže a spojte se se svým kontaktem.</target>
-        <note>placeholder</note>
       </trans-unit>
       <trans-unit id="People can connect to you only via the links you share." xml:space="preserve">
         <source>People can connect to you only via the links you share.</source>
@@ -3956,6 +3970,10 @@ Error: %@</source>
         <target>Další informace naleznete v [Uživatelské příručce](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode)." xml:space="preserve">
+        <source>Read more in [User Guide](https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode).</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends)." xml:space="preserve">
         <source>Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</source>
         <target>Přečtěte si více v [Uživatelské příručce](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</target>
@@ -4164,6 +4182,10 @@ Error: %@</source>
         <target>Chyba obnovení databáze</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Retry" xml:space="preserve">
+        <source>Retry</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Reveal" xml:space="preserve">
         <source>Reveal</source>
         <target>Odhalit</target>
@@ -4316,6 +4338,10 @@ Error: %@</source>
       <trans-unit id="Search" xml:space="preserve">
         <source>Search</source>
         <target>Hledat</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
+        <source>Search or paste SimpleX link</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Secure queue" xml:space="preserve">
@@ -4592,9 +4618,8 @@ Error: %@</source>
         <target>Sdílet odkaz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share one-time invitation link" xml:space="preserve">
-        <source>Share one-time invitation link</source>
-        <target>Jednorázový zvací odkaz</target>
+      <trans-unit id="Share this 1-time invite link" xml:space="preserve">
+        <source>Share this 1-time invite link</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share with contacts" xml:space="preserve">
@@ -4716,11 +4741,6 @@ Error: %@</source>
         <source>Somebody</source>
         <target>Někdo</target>
         <note>notification title</note>
-      </trans-unit>
-      <trans-unit id="Start a new chat" xml:space="preserve">
-        <source>Start a new chat</source>
-        <target>Začít nový chat</target>
-        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat" xml:space="preserve">
         <source>Start chat</source>
@@ -4855,6 +4875,14 @@ Error: %@</source>
         <target>Klepnutím se připojíte inkognito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Tap to paste link" xml:space="preserve">
+        <source>Tap to paste link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Tap to scan" xml:space="preserve">
+        <source>Tap to scan</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Tap to start a new chat" xml:space="preserve">
         <source>Tap to start a new chat</source>
         <target>Klepnutím na zahájíte nový chat</target>
@@ -4915,6 +4943,10 @@ Může se to stát kvůli nějaké chybě, nebo pokud je spojení kompromitován
       <trans-unit id="The attempt to change database passphrase was not completed." xml:space="preserve">
         <source>The attempt to change database passphrase was not completed.</source>
         <target>Pokus o změnu přístupové fráze databáze nebyl dokončen.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The code you scanned is not a SimpleX link QR code." xml:space="preserve">
+        <source>The code you scanned is not a SimpleX link QR code.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The connection you accepted will be cancelled!" xml:space="preserve">
@@ -4980,6 +5012,10 @@ Může se to stát kvůli nějaké chybě, nebo pokud je spojení kompromitován
       <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve">
         <source>The servers for new connections of your current chat profile **%@**.</source>
         <target>Servery pro nová připojení vašeho aktuálního chat profilu **%@**.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
+        <source>The text you pasted is not a SimpleX link.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Theme" xml:space="preserve">
@@ -5579,11 +5615,6 @@ Repeat join request?</source>
         <target>Můžete přijímat hovory z obrazovky zámku, bez ověření zařízení a aplikace.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button." xml:space="preserve">
-        <source>You can also connect by clicking the link. If it opens in the browser, click **Open in mobile app** button.</source>
-        <target>Můžete se také připojit kliknutím na odkaz. Pokud se otevře v prohlížeči, klikněte na tlačítko **Otevřít v mobilní aplikaci**.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="You can create it later" xml:space="preserve">
         <source>You can create it later</source>
         <target>Můžete vytvořit později</target>
@@ -5646,6 +5677,10 @@ Repeat join request?</source>
       <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
         <source>You can use markdown to format messages:</source>
         <target>K formátování zpráv můžete použít markdown:</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can view invitation link again in connection details." xml:space="preserve">
+        <source>You can view invitation link again in connection details.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can't send messages!" xml:space="preserve">
