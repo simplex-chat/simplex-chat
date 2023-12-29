@@ -97,7 +97,7 @@ jobs:
           path: |
             ${{ matrix.cache_path }}
             dist-newstyle
-          key: ${{ matrix.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
+          key: ${{ matrix.os }}-ghc${{ matrix.ghc }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
 
       # / Unix
 
@@ -256,6 +256,15 @@ jobs:
           append_body: true
           body: |
             ${{ steps.mac_desktop_build.outputs.package_hash }}
+
+      - name: Cache build
+        uses: actions/cache/save@v3
+        if: always()
+        with:
+          path: |
+            ${{ matrix.cache_path }}
+            dist-newstyle
+          key: ${{ matrix.os }}-ghc${{ matrix.ghc }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
 
       - name: Unix test
         if: matrix.os != 'windows-latest'
