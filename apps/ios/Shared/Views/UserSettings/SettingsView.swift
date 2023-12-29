@@ -95,6 +95,12 @@ let appDefaults: [String: Any] = [
     DEFAULT_CONNECT_REMOTE_VIA_MULTICAST_AUTO: true,
 ]
 
+// not used anymore
+enum ConnectViaLinkTab: String {
+    case scan
+    case paste
+}
+
 enum SimpleXLinkMode: String, Identifiable {
     case description
     case full

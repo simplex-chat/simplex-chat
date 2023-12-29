@@ -26,3 +26,5 @@ actual fun Modifier.desktopOnExternalDrag(
 ): Modifier = this
 
 actual fun Modifier.onRightClick(action: () -> Unit): Modifier = this
+
+actual fun Modifier.desktopPointerHoverIconHand(): Modifier = this

@@ -24,17 +24,15 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.group.deleteGroupDialog
 import chat.simplex.common.views.chat.group.leaveGroupDialog
-import chat.simplex.common.views.chat.item.InvalidJSONView
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.datetime.Clock
-import java.net.URI
 
 @Composable
-fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
+fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   val showMenu = remember { mutableStateOf(false) }
   val showMarkRead = remember(chat.chatStats.unreadCount, chat.chatStats.unreadChat) {
     chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
@@ -45,7 +43,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
     showMenu.value = false
     delay(500L)
   }
-  val selectedChat = remember(chat.id) { derivedStateOf { chat.id == ChatModel.chatId.value } }
+  val selectedChat = remember(chat.id) { derivedStateOf { chat.id == chatModel.chatId.value } }
   val showChatPreviews = chatModel.showChatPreviews.value
   val inProgress = remember { mutableStateOf(false) }
   var progressByTimeout by rememberSaveable { mutableStateOf(false) }
@@ -75,7 +73,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
         },
         showMenu,
         stopped,
-        selectedChat
+        selectedChat,
+        nextChatSelected,
       )
     }
     is ChatInfo.Group ->
@@ -93,7 +92,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
         },
         showMenu,
         stopped,
-        selectedChat
+        selectedChat,
+        nextChatSelected,
       )
     is ChatInfo.ContactRequest ->
       ChatListNavLinkLayout(
@@ -110,7 +110,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
         },
         showMenu,
         stopped,
-        selectedChat
+        selectedChat,
+        nextChatSelected,
       )
     is ChatInfo.ContactConnection ->
       ChatListNavLinkLayout(
@@ -120,11 +121,7 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
           }
         },
         click = {
-          ModalManager.center.closeModals()
-          ModalManager.end.closeModals()
-          ModalManager.center.showModalCloseable(true, showClose = appPlatform.isAndroid) { close ->
-            ContactConnectionInfoView(chatModel, chat.remoteHostId, chat.chatInfo.contactConnection.connReqInv, chat.chatInfo.contactConnection, false, close)
-          }
+          chatModel.chatId.value = chat.id
         },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
@@ -133,7 +130,8 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
         },
         showMenu,
         stopped,
-        selectedChat
+        selectedChat,
+        nextChatSelected,
       )
     is ChatInfo.InvalidJSON ->
       ChatListNavLinkLayout(
@@ -143,13 +141,13 @@ fun ChatListNavLinkView(chat: Chat, chatModel: ChatModel) {
           }
         },
         click = {
-          ModalManager.end.closeModals()
-          ModalManager.center.showModal(true) { InvalidJSONView(chat.chatInfo.json) }
+          chatModel.chatId.value = chat.id
         },
         dropdownMenuItems = null,
         showMenu,
         stopped,
-        selectedChat
+        selectedChat,
+        nextChatSelected,
       )
   }
 }
@@ -476,10 +474,7 @@ fun ContactConnectionMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactConnection
     painterResource(MR.images.ic_delete),
     onClick = {
       deleteContactConnectionAlert(rhId, chatInfo.contactConnection, chatModel) {
-        if (chatModel.chatId.value == null) {
-          ModalManager.center.closeModals()
-          ModalManager.end.closeModals()
-        }
+        chatModel.dismissConnReqView(chatInfo.contactConnection.id)
       }
       showMenu.value = false
     },
@@ -804,7 +799,8 @@ expect fun ChatListNavLinkLayout(
   dropdownMenuItems: (@Composable () -> Unit)?,
   showMenu: MutableState<Boolean>,
   stopped: Boolean,
-  selectedChat: State<Boolean>
+  selectedChat: State<Boolean>,
+  nextChatSelected: State<Boolean>,
 )
 
 @Preview/*(
@@ -846,7 +842,8 @@ fun PreviewChatListNavLinkDirect() {
       dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) },
       stopped = false,
-      selectedChat = remember { mutableStateOf(false) }
+      selectedChat = remember { mutableStateOf(false) },
+      nextChatSelected = remember { mutableStateOf(false) }
     )
   }
 }
@@ -890,7 +887,8 @@ fun PreviewChatListNavLinkGroup() {
       dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) },
       stopped = false,
-      selectedChat = remember { mutableStateOf(false) }
+      selectedChat = remember { mutableStateOf(false) },
+      nextChatSelected = remember { mutableStateOf(false) }
     )
   }
 }
@@ -911,7 +909,8 @@ fun PreviewChatListNavLinkContactRequest() {
       dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) },
       stopped = false,
-      selectedChat = remember { mutableStateOf(false) }
+      selectedChat = remember { mutableStateOf(false) },
+      nextChatSelected = remember { mutableStateOf(false) }
     )
   }
 }

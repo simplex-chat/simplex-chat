@@ -262,12 +262,10 @@
     <string name="gallery_video_button">Video</string>
     <!-- help - ChatHelpView.kt -->
     <string name="thank_you_for_installing_simplex">Danke, dass Sie SimpleX Chat installiert haben!</string>
-    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Sie können sich <font color=#0088ff>mit SimpleX-Chat-Entwicklern verbinden, um Fragen zu stellen und Updates zu erhalten</font>.]]></string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Sie können sich <font color="#0088ff">mit SimpleX-Chat-Entwicklern verbinden, um Fragen zu stellen und Updates zu erhalten</font>.]]></string>
     <string name="to_start_a_new_chat_help_header">Um einen neuen Chat zu starten</string>
     <string name="chat_help_tap_button">Schaltfläche antippen</string>
     <string name="above_then_preposition_continuation">Danach die gewünschte Aktion auswählen:</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Neuen Kontakt hinzufügen</b>: Um Ihren Einmal-QR-Code für Ihren Kontakt zu erstellen.]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>QR-Code scannen</b>: Um sich mit Ihrem Kontakt zu verbinden, der Ihnen seinen QR-Code zeigt.]]></string>
     <string name="to_connect_via_link_title">Über Link verbinden</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Wenn Sie einen SimpleX-Chat-Einladungslink erhalten haben, können Sie ihn in Ihrem Browser öffnen:</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 Desktop: Angezeigten QR-Code aus der App scannen, über <b>QR-Code scannen</b>.]]></string>
@@ -341,7 +339,6 @@
     <string name="this_string_is_not_a_connection_link">Diese Zeichenfolge entspricht keinem gültigen Verbindungslink!</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Sie können sich auch verbinden, indem Sie auf den Link klicken. Wenn er im Browser geöffnet wird, klicken Sie auf die Schaltfläche „<b>In mobiler App öffnen</b>“.]]></string>
     <!-- CreateLinkView.kt -->
-    <string name="create_one_time_link">Einmal-Einladungslink erstellen</string>
     <string name="one_time_link">Einmal-Einladungslink</string>
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Ihre Einstellungen</string>
@@ -1488,14 +1485,14 @@
     <string name="expand_verb">Erweitern</string>
     <string name="connect_plan_repeat_connection_request">Verbindungsanfrage wiederholen?</string>
     <string name="rcv_direct_event_contact_deleted">Gelöschter Kontakt</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Sie sind bereits mit %1$s verbunden.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Sie sind bereits mit <b>%1$s</b> verbunden.]]></string>
     <string name="error_alert_title">Fehler</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Sie sind über diesen Link bereits Mitglied der Gruppe.</string>
     <string name="create_group_button">Gruppe erstellen</string>
     <string name="create_another_profile_button">Profil erstellen</string>
     <string name="group_members_2">%s und %s</string>
     <string name="connect_plan_join_your_group">Ihrer Gruppe beitreten?</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Sie sind bereits Mitglied in der Gruppe %1$s.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Sie sind bereits Mitglied in der Gruppe <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_one_time_link">Das ist Ihr eigener Einmal-Link!</string>
     <string name="marked_deleted_items_description">%d Nachrichten als gelöscht markiert</string>
     <string name="connect_plan_group_already_exists">Gruppe besteht bereits!</string>
@@ -1510,7 +1507,7 @@
     <string name="unblock_member_button">Mitglied freigeben</string>
     <string name="connect_plan_connect_to_yourself">Mit Ihnen selbst verbinden?</string>
     <string name="contact_tap_to_connect">Zum Verbinden antippen</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Sie sind bereits Mitglied in der Gruppe %1$s.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Sie sind bereits Mitglied in der Gruppe <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">Das ist Ihre eigene SimpleX-Adresse!</string>
     <string name="correct_name_to">Richtiger Name für %s?</string>
     <string name="delete_messages__question">%d Nachrichten löschen?</string>
@@ -1531,7 +1528,7 @@
     <string name="block_member_question">Mitglied blockieren?</string>
     <string name="rcv_group_events_count">%d Gruppenereignisse</string>
     <string name="invalid_name">Ungültiger Name!</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Das ist Ihr Link für die Gruppe %1$s!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Das ist Ihr Link für die Gruppe <b>%1$s</b>!]]></string>
     <string name="unblock_member_confirmation">Freigeben</string>
     <string name="non_content_uri_alert_title">Ungültiger Datei-Pfad</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Sie haben über diese Adresse bereits eine Verbindung beantragt!</string>

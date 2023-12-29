@@ -97,8 +97,8 @@ object ChatModel {
   val showCallView = mutableStateOf(false)
   val switchingCall = mutableStateOf(false)
 
-  // currently showing QR code
-  val connReqInv = mutableStateOf(null as String?)
+  // currently showing invitation
+  val showingInvitation = mutableStateOf(null as ShowingInvitation?)
 
   var draft = mutableStateOf(null as ComposeState?)
   var draftChatId = mutableStateOf(null as String?)
@@ -108,6 +108,8 @@ object ChatModel {
 
   val filesToDelete = mutableSetOf<File>()
   val simplexLinkMode by lazy { mutableStateOf(ChatController.appPrefs.simplexLinkMode.get()) }
+
+  val clipboardHasText = mutableStateOf(false)
 
   var updatingChatsMutex: Mutex = Mutex()
 
@@ -561,13 +563,28 @@ object ChatModel {
     chats.add(index = 0, chat)
   }
 
-  fun dismissConnReqView(id: String) {
-    if (connReqInv.value == null) return
-    val info = getChat(id)?.chatInfo as? ChatInfo.ContactConnection ?: return
-    if (info.contactConnection.connReqInv == connReqInv.value) {
-      connReqInv.value = null
-      ModalManager.center.closeModals()
+  fun replaceConnReqView(id: String, withId: String) {
+    if (id == showingInvitation.value?.connId) {
+      showingInvitation.value = null
+      chatModel.chatItems.clear()
+      chatModel.chatId.value = withId
+      ModalManager.end.closeModals()
     }
+  }
+
+  fun dismissConnReqView(id: String) {
+    if (id == showingInvitation.value?.connId) {
+      showingInvitation.value = null
+      chatModel.chatItems.clear()
+      chatModel.chatId.value = null
+      // Close NewChatView
+      ModalManager.center.closeModals()
+      ModalManager.end.closeModals()
+    }
+  }
+
+  fun markShowingInvitationUsed() {
+    showingInvitation.value = showingInvitation.value?.copy(connChatUsed = true)
   }
 
   fun removeChat(rhId: Long?, id: String) {
@@ -629,6 +646,12 @@ object ChatModel {
   val connectedToRemote: Boolean @Composable get() = currentRemoteHost.value != null || remoteCtrlSession.value?.active == true
   fun connectedToRemote(): Boolean = currentRemoteHost.value != null || remoteCtrlSession.value?.active == true
 }
+
+data class ShowingInvitation(
+  val connId: String,
+  val connReq: String,
+  val connChatUsed: Boolean
+)
 
 enum class ChatType(val type: String) {
   Direct("@"),
@@ -2663,6 +2686,8 @@ sealed class Format {
     is Email -> linkStyle
     is Phone -> linkStyle
   }
+
+  val isSimplexLink = this is SimplexLink
 
   companion object {
     val linkStyle @Composable get() = SpanStyle(color = MaterialTheme.colors.primary, textDecoration = TextDecoration.Underline)

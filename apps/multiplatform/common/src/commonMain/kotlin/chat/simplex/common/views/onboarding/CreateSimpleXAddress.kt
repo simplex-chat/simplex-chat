@@ -84,7 +84,7 @@ private fun CreateSimpleXAddressLayout(
     Spacer(Modifier.weight(1f))
 
     if (userAddress != null) {
-      SimpleXLinkQRCode(userAddress.connReqContact, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+      SimpleXLinkQRCode(userAddress.connReqContact)
       ShareAddressButton { share(simplexChatLink(userAddress.connReqContact)) }
       Spacer(Modifier.weight(1f))
       ShareViaEmailButton { sendEmail(userAddress) }
