@@ -1072,6 +1072,10 @@
         <target>Чатът е спрян</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve">
+        <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat preferences" xml:space="preserve">
         <source>Chat preferences</source>
         <target>Чат настройки</target>
@@ -2015,6 +2019,10 @@ This cannot be undone!</source>
         <target>Криптирано съобщение или друго събитие</target>
         <note>notification</note>
       </trans-unit>
+      <trans-unit id="Encrypted message: app is stopped" xml:space="preserve">
+        <source>Encrypted message: app is stopped</source>
+        <note>notification</note>
+      </trans-unit>
       <trans-unit id="Encrypted message: database error" xml:space="preserve">
         <source>Encrypted message: database error</source>
         <target>Криптирано съобщение: грешка в базата данни</target>
@@ -2238,6 +2246,10 @@ This cannot be undone!</source>
       <trans-unit id="Error loading %@ servers" xml:space="preserve">
         <source>Error loading %@ servers</source>
         <target>Грешка при зареждане на %@ сървъри</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error opening chat" xml:space="preserve">
+        <source>Error opening chat</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
@@ -2918,6 +2930,10 @@ This cannot be undone!</source>
         <source>Invalid name!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invalid response" xml:space="preserve">
+        <source>Invalid response</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Invalid server address!" xml:space="preserve">
         <source>Invalid server address!</source>
         <target>Невалиден адрес на сървъра!</target>
@@ -3116,6 +3132,11 @@ This is your link for group %@!</source>
       <trans-unit id="Live messages" xml:space="preserve">
         <source>Live messages</source>
         <target>Съобщения на живо</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Local" xml:space="preserve">
+        <source>Local</source>
+        <target>Локално</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
@@ -3485,11 +3506,6 @@ This is your link for group %@!</source>
         <target>Изключено</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Off (Local)" xml:space="preserve">
-        <source>Off (Local)</source>
-        <target>Изключено (Локално)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Ok" xml:space="preserve">
         <source>Ok</source>
         <target>Ок</target>
@@ -3629,9 +3645,8 @@ This is your link for group %@!</source>
         <target>Протокол и код с отворен код – всеки може да оперира собствени сървъри.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Opening database…" xml:space="preserve">
-        <source>Opening database…</source>
-        <target>Отваряне на база данни…</target>
+      <trans-unit id="Opening app…" xml:space="preserve">
+        <source>Opening app…</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -3731,6 +3746,11 @@ This is your link for group %@!</source>
       <trans-unit id="Please check yours and your contact preferences." xml:space="preserve">
         <source>Please check yours and your contact preferences.</source>
         <target>Моля, проверете вашите настройки и тези вашия за контакт.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Please contact developers.&#10;Error: %@" xml:space="preserve">
+        <source>Please contact developers.
+Error: %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please contact group admin." xml:space="preserve">
@@ -4707,6 +4727,10 @@ This is your link for group %@!</source>
         <target>Започни чат</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Start chat?" xml:space="preserve">
+        <source>Start chat?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Start migration" xml:space="preserve">
         <source>Start migration</source>
         <target>Започни миграция</target>
@@ -5106,11 +5130,6 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Изключи</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Turn off notifications?" xml:space="preserve">
-        <source>Turn off notifications?</source>
-        <target>Изключи известията?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Turn on" xml:space="preserve">
         <source>Turn on</source>
         <target>Включи</target>
@@ -5305,6 +5324,10 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Use new incognito profile" xml:space="preserve">
         <source>Use new incognito profile</source>
         <target>Използвай нов инкогнито профил</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use only local notifications?" xml:space="preserve">
+        <source>Use only local notifications?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -5581,6 +5604,10 @@ Repeat join request?</source>
         <target>Можете да скриете или заглушите известията за потребителски профил - плъзнете надясно.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You can make it visible to your SimpleX contacts via Settings." xml:space="preserve">
+        <source>You can make it visible to your SimpleX contacts via Settings.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
         <source>You can now send messages to %@</source>
         <target>Вече можете да изпращате съобщения до %@</target>
@@ -5803,13 +5830,6 @@ You can cancel this connection and remove the contact (and try later with a new 
       <trans-unit id="Your contacts can allow full message deletion." xml:space="preserve">
         <source>Your contacts can allow full message deletion.</source>
         <target>Вашите контакти могат да позволят пълното изтриване на съобщението.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your contacts in SimpleX will see it.&#10;You can change it in Settings." xml:space="preserve">
-        <source>Your contacts in SimpleX will see it.
-You can change it in Settings.</source>
-        <target>Вашите контакти в SimpleX ще го видят.
-Можете да го промените в Настройки.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contacts will remain connected." xml:space="preserve">
