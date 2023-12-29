@@ -142,7 +142,7 @@ storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile deskto
   mobile ##> "/set device name Mobile"
   mobile <## "ok"
 
-  desktop ##> "/start remote host new addr=127.0.0.1 iface=lo port=52230"
+  desktop ##> "/start remote host new addr=127.0.0.1 iface=\"lo\" port=52230"
   desktop <##. "new remote host started on 127.0.0.1:52230" -- TODO: show ip?
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop

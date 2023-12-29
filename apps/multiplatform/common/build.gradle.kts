@@ -154,8 +154,10 @@ afterEvaluate {
       val endStringRegex = Regex("</string>[ ]*")
       val endTagRegex = Regex("</")
       val anyHtmlRegex = Regex("[^>]*>.*(<|>).*</string>|[^>]*>.*(&lt;|&gt;).*</string>")
+      val fontLtGtRegex = Regex("[^>]*>.*&lt;font[^>]*&gt;.*&lt;/font&gt;.*</string>")
+      val unbracketedColorRegex = Regex("color=#[abcdefABCDEF0-9]{3,6}")
       val correctHtmlRegex = Regex("[^>]*>.*<b>.*</b>.*</string>|[^>]*>.*<i>.*</i>.*</string>|[^>]*>.*<u>.*</u>.*</string>|[^>]*>.*<font[^>]*>.*</font>.*</string>")
-      val possibleFormat = listOf("s", "d", "1\$s", "1\$d", "2s", "f")
+      val possibleFormat = listOf("s", "d", "1\$s", "2\$s", "3\$s", "4\$s", "1\$d", "2\$d", "3\$d", "4\$d", "2s", "f")
 
       fun String.id(): String = replace("<string name=\"", "").trim().substringBefore("\"")
 
@@ -181,7 +183,11 @@ afterEvaluate {
           substring = substring.substringAfter("%")
           if (was.length == substring.length) break
         }
-        return formats
+        return if (formats.any { it.startsWith("1$") || it.startsWith("2$") || it.startsWith("3$") || it.startsWith("4$") }) {
+          formats.sortedBy { it.trim('s', 'd', 'f', '$').toIntOrNull() ?: throw Exception("Formatting don't have positional arguments: $this \nin $filepath") }
+        } else {
+          formats
+        }
       }
 
       fun String.removeCDATA(): String =
@@ -194,9 +200,12 @@ afterEvaluate {
       fun String.addCDATA(filepath: String): String {
         //return this
         if (anyHtmlRegex.matches(this)) {
-          val countOfStartTag = count { it == '<' }
-          val countOfEndTag = count { it == '>' }
-          if (countOfStartTag != countOfEndTag || countOfStartTag != endTagRegex.findAll(this).count() * 2 || !correctHtmlRegex.matches(this)) {
+          val prepared = if (fontLtGtRegex.matches(this) || unbracketedColorRegex.containsMatchIn(this)) {
+            replace("&lt;", "<").replace("&gt;", ">").replace(unbracketedColorRegex) { it.value.replace("color=#", "color=\"#") + "\"" }
+          } else this
+          val countOfStartTag = prepared.count { it == '<' }
+          val countOfEndTag = prepared.count { it == '>' }
+          if (countOfStartTag != countOfEndTag || countOfStartTag != endTagRegex.findAll(prepared).count() * 2 || !correctHtmlRegex.matches(prepared)) {
             if (debug) {
               println("Wrong string:")
               println(this)
@@ -206,7 +215,7 @@ afterEvaluate {
               throw Exception("Wrong string: $this \nin $filepath")
             }
           }
-          val res = replace(startStringRegex) { it.value + "<![CDATA[" }.replace(endStringRegex) { "]]>" + it.value }
+          val res = prepared.replace(startStringRegex) { it.value + "<![CDATA[" }.replace(endStringRegex) { "]]>" + it.value }
           if (debug) {
             println("Changed string:")
             println(this)
@@ -223,8 +232,8 @@ afterEvaluate {
         return this
       }
       val fileRegex = Regex("MR/../strings.xml$|MR/..-.../strings.xml$|MR/..-../strings.xml$|MR/base/strings.xml$")
-      val tree = kotlin.sourceSets["commonMain"].resources.filter { fileRegex.containsMatchIn(it.absolutePath) }.asFileTree
-      val baseStringsFile = tree.first { it.absolutePath.endsWith("base/strings.xml") } ?: throw Exception("No base/strings.xml found")
+      val tree = kotlin.sourceSets["commonMain"].resources.filter { fileRegex.containsMatchIn(it.absolutePath.replace("\\", "/")) }.asFileTree
+      val baseStringsFile = tree.firstOrNull { it.absolutePath.replace("\\", "/").endsWith("base/strings.xml") } ?: throw Exception("No base/strings.xml found")
       val treeList = ArrayList(tree.toList())
       treeList.remove(baseStringsFile)
       treeList.add(0, baseStringsFile)

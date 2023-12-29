@@ -1094,6 +1094,10 @@
         <target>Czat jest zatrzymany</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve">
+        <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Chat preferences" xml:space="preserve">
         <source>Chat preferences</source>
         <target>Preferencje czatu</target>
@@ -2063,6 +2067,10 @@ To nie może być cofnięte!</target>
         <target>Zaszyfrowana wiadomość lub inne zdarzenie</target>
         <note>notification</note>
       </trans-unit>
+      <trans-unit id="Encrypted message: app is stopped" xml:space="preserve">
+        <source>Encrypted message: app is stopped</source>
+        <note>notification</note>
+      </trans-unit>
       <trans-unit id="Encrypted message: database error" xml:space="preserve">
         <source>Encrypted message: database error</source>
         <target>Zaszyfrowana wiadomość: błąd bazy danych</target>
@@ -2291,6 +2299,10 @@ To nie może być cofnięte!</target>
       <trans-unit id="Error loading %@ servers" xml:space="preserve">
         <source>Error loading %@ servers</source>
         <target>Błąd ładowania %@ serwerów</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error opening chat" xml:space="preserve">
+        <source>Error opening chat</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
@@ -2980,6 +2992,10 @@ To nie może być cofnięte!</target>
         <target>Nieprawidłowa nazwa!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Invalid response" xml:space="preserve">
+        <source>Invalid response</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Invalid server address!" xml:space="preserve">
         <source>Invalid server address!</source>
         <target>Nieprawidłowy adres serwera!</target>
@@ -3186,6 +3202,11 @@ To jest twój link do grupy %@!</target>
       <trans-unit id="Live messages" xml:space="preserve">
         <source>Live messages</source>
         <target>Wiadomości na żywo</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Local" xml:space="preserve">
+        <source>Local</source>
+        <target>Lokalnie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
@@ -3557,11 +3578,6 @@ To jest twój link do grupy %@!</target>
         <target>Wyłączony</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Off (Local)" xml:space="preserve">
-        <source>Off (Local)</source>
-        <target>Wyłączony (Lokalnie)</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Ok" xml:space="preserve">
         <source>Ok</source>
         <target>Ok</target>
@@ -3702,9 +3718,8 @@ To jest twój link do grupy %@!</target>
         <target>Otwarto źródłowy protokół i kod - każdy może uruchomić serwery.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Opening database…" xml:space="preserve">
-        <source>Opening database…</source>
-        <target>Otwieranie bazy danych…</target>
+      <trans-unit id="Opening app…" xml:space="preserve">
+        <source>Opening app…</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="PING count" xml:space="preserve">
@@ -3805,6 +3820,11 @@ To jest twój link do grupy %@!</target>
       <trans-unit id="Please check yours and your contact preferences." xml:space="preserve">
         <source>Please check yours and your contact preferences.</source>
         <target>Proszę sprawdzić preferencje Twoje i Twojego kontaktu.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Please contact developers.&#10;Error: %@" xml:space="preserve">
+        <source>Please contact developers.
+Error: %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please contact group admin." xml:space="preserve">
@@ -4787,6 +4807,10 @@ To jest twój link do grupy %@!</target>
         <target>Rozpocznij czat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Start chat?" xml:space="preserve">
+        <source>Start chat?</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Start migration" xml:space="preserve">
         <source>Start migration</source>
         <target>Rozpocznij migrację</target>
@@ -5191,11 +5215,6 @@ Przed włączeniem tej funkcji zostanie wyświetlony monit uwierzytelniania.</ta
         <target>Wyłącz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Turn off notifications?" xml:space="preserve">
-        <source>Turn off notifications?</source>
-        <target>Wyłączyć powiadomienia?</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Turn on" xml:space="preserve">
         <source>Turn on</source>
         <target>Włącz</target>
@@ -5396,6 +5415,10 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
       <trans-unit id="Use new incognito profile" xml:space="preserve">
         <source>Use new incognito profile</source>
         <target>Użyj nowego profilu incognito</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use only local notifications?" xml:space="preserve">
+        <source>Use only local notifications?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -5685,6 +5708,10 @@ Powtórzyć prośbę dołączenia?</target>
         <target>Możesz ukryć lub wyciszyć profil użytkownika - przesuń palcem w prawo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="You can make it visible to your SimpleX contacts via Settings." xml:space="preserve">
+        <source>You can make it visible to your SimpleX contacts via Settings.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
         <source>You can now send messages to %@</source>
         <target>Możesz teraz wysyłać wiadomości do %@</target>
@@ -5912,13 +5939,6 @@ Możesz anulować to połączenie i usunąć kontakt (i spróbować później z 
       <trans-unit id="Your contacts can allow full message deletion." xml:space="preserve">
         <source>Your contacts can allow full message deletion.</source>
         <target>Twoje kontakty mogą zezwolić na pełne usunięcie wiadomości.</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Your contacts in SimpleX will see it.&#10;You can change it in Settings." xml:space="preserve">
-        <source>Your contacts in SimpleX will see it.
-You can change it in Settings.</source>
-        <target>Twoje kontakty w SimpleX będą to widzieć.
-Możesz to zmienić w Ustawieniach.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contacts will remain connected." xml:space="preserve">

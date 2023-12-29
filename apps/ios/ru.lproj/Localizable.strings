@@ -2164,6 +2164,9 @@
 "Live messages" = "\"Живые\" сообщения";
 
 /* No comment provided by engineer. */
+"Local" = "Локальные";
+
+/* No comment provided by engineer. */
 "Local name" = "Локальное имя";
 
 /* No comment provided by engineer. */
@@ -2432,9 +2435,6 @@
 /* No comment provided by engineer. */
 "Off" = "Выключено";
 
-/* No comment provided by engineer. */
-"Off (Local)" = "Выключить (Локальные)";
-
 /* feature offered item */
 "offered %@" = "предложил(a) %@";
 
@@ -2527,9 +2527,6 @@
 
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "Открытый протокол и код - кто угодно может запустить сервер.";
-
-/* No comment provided by engineer. */
-"Opening database…" = "Открытие базы данных…";
 
 /* member role */
 "owner" = "владелец";
@@ -3468,9 +3465,6 @@
 "Turn off" = "Выключить";
 
 /* No comment provided by engineer. */
-"Turn off notifications?" = "Выключить уведомления?";
-
-/* No comment provided by engineer. */
 "Turn on" = "Включить";
 
 /* No comment provided by engineer. */
@@ -3958,9 +3952,6 @@
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "Ваши контакты могут разрешить окончательное удаление сообщений.";
-
-/* No comment provided by engineer. */
-"Your contacts in SimpleX will see it.\nYou can change it in Settings." = "Ваши контакты в SimpleX получат этот адрес.\nВы можете изменить это в Настройках.";
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "Ваши контакты сохранятся.";

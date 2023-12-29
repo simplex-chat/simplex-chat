@@ -41,7 +41,7 @@
     <string name="description_via_contact_address_link_incognito">incognito via link indirizzo del contatto</string>
     <string name="description_via_one_time_link">via link una tantum</string>
     <string name="description_via_one_time_link_incognito">incognito via link una tantum</string>
-    <string name="simplex_link_contact">Indirizzo del contatto SimpleX</string>
+    <string name="simplex_link_contact">Indirizzo di contatto SimpleX</string>
     <string name="simplex_link_invitation">Invito SimpleX una tantum</string>
     <string name="simplex_link_group">Link gruppo SimpleX</string>
     <string name="simplex_link_mode_full">Link completo</string>
@@ -508,7 +508,7 @@
     <string name="keychain_allows_to_receive_ntfs">Android Keystore verrà usato per memorizzare in modo sicuro la password dopo il riavvio dell\'app o la modifica della password; consentirà di ricevere le notifiche.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Nota bene</b>: NON potrai recuperare o cambiare la password se la perdi.]]></string>
     <string name="change_database_passphrase_question">Cambiare password del database\?</string>
-    <string name="confirm_new_passphrase">Conferma password nuova…</string>
+    <string name="confirm_new_passphrase">Conferma nuova password…</string>
     <string name="current_passphrase">Password attuale…</string>
     <string name="database_encrypted">Database crittografato!</string>
     <string name="database_passphrase_will_be_updated">La password di crittografia del database verrà aggiornata.</string>
@@ -623,7 +623,7 @@
     <string name="save_servers_button">Salva</string>
     <string name="saved_ICE_servers_will_be_removed">I server WebRTC ICE salvati verranno rimossi.</string>
     <string name="share_link">Condividi link</string>
-    <string name="star_on_github">Stella su GitHub</string>
+    <string name="star_on_github">Dai una stella su GitHub</string>
     <string name="update_onion_hosts_settings_question">Aggiornare l\'impostazione degli host .onion\?</string>
     <string name="network_disable_socks">Usare una connessione internet diretta\?</string>
     <string name="network_use_onion_hosts">Usa gli host .onion</string>
@@ -775,7 +775,7 @@
     <string name="group_invitation_tap_to_join">Tocca per entrare</string>
     <string name="group_invitation_tap_to_join_incognito">Toccare per entrare in incognito</string>
     <string name="alert_message_no_group">Questo gruppo non esiste più.</string>
-    <string name="rcv_group_event_updated_group_profile">profilo del gruppo aggiornato</string>
+    <string name="rcv_group_event_updated_group_profile">ha aggiornato il profilo del gruppo</string>
     <string name="you_are_invited_to_group">Sei stato/a invitato/a al gruppo</string>
     <string name="snd_conn_event_switch_queue_phase_completed">hai cambiato indirizzo</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">hai cambiato l\'indirizzo per %s</string>
@@ -1368,9 +1368,9 @@
     <string name="system_restricted_background_desc">SimpleX non può funzionare in secondo piano. Riceverai le notifiche solo quando l\'app è aperta.</string>
     <string name="system_restricted_background_warn"><![CDATA[Per attivare le notifiche, scegli <b>Utilizzo batteria dell\'app</b> / <b>Senza restrizioni</b> nelle impostazioni.]]></string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Per effettuare chiamate in secondo piano, scegli <b>Utilizzo batteria dell\'app</b> / <b>Senza restrizioni</b> nelle impostazioni.]]></string>
-    <string name="rcv_group_event_2_members_connected">%s e %s sono connessi/e</string>
-    <string name="rcv_group_event_n_members_connected">%s, %s e altri %d membri sono connessi</string>
-    <string name="rcv_group_event_3_members_connected">%s, %s e %s sono connessi/e</string>
+    <string name="rcv_group_event_2_members_connected">%s e %s si sono connessi/e</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s e altri %d membri si sono connessi</string>
+    <string name="rcv_group_event_3_members_connected">%s, %s e %s si sono connessi/e</string>
     <string name="privacy_message_draft">Bozza</string>
     <string name="privacy_show_last_messages">Mostra gli ultimi messaggi</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Il database verrà crittografato e la password conservata nelle impostazioni.</string>
@@ -1380,7 +1380,7 @@
     <string name="remove_passphrase_from_settings">Rimuovere la password dalle impostazioni\?</string>
     <string name="use_random_passphrase">Usa password casuale</string>
     <string name="save_passphrase_in_settings">Salva password nelle impostazioni</string>
-    <string name="setup_database_passphrase">Configura password del database</string>
+    <string name="setup_database_passphrase">Configura la password del database</string>
     <string name="set_database_passphrase">Imposta password del database</string>
     <string name="open_database_folder">Apri cartella del database</string>
     <string name="passphrase_will_be_saved_in_settings">La password verrà conservata nelle impostazioni come testo normale dopo averla cambiata o il riavvio dell\'app.</string>
@@ -1469,7 +1469,7 @@
     <string name="unlink_desktop_question">Scollegare il desktop?</string>
     <string name="linked_desktop_options">Opzioni del desktop collegato</string>
     <string name="linked_desktops">Desktop collegati</string>
-    <string name="discover_on_network">Trova nella rete</string>
+    <string name="discover_on_network">Individua via rete locale</string>
     <string name="this_device">Questo dispositivo</string>
     <string name="linked_mobiles">Cellulari collegati</string>
     <string name="desktop_device">Desktop</string>
@@ -1517,4 +1517,19 @@
 \n- e molto altro!</string>
     <string name="waiting_for_mobile_to_connect">In attesa che il cellulare si connette:</string>
     <string name="group_member_role_author">autore</string>
+    <string name="multicast_connect_automatically">Connetti automaticamente</string>
+    <string name="waiting_for_desktop">In attesa del desktop…</string>
+    <string name="found_desktop">Desktop trovato</string>
+    <string name="not_compatible">Non compatibile!</string>
+    <string name="multicast_discoverable_via_local_network">individuabile via rete locale</string>
+    <string name="refresh_qr_code">Ricarica</string>
+    <string name="create_chat_profile">Crea profilo di chat</string>
+    <string name="no_connected_mobile">Nessun cellulare connesso</string>
+    <string name="disconnect_remote_hosts">Disconnetti cellulari</string>
+    <string name="random_port">Casuale</string>
+    <string name="open_port_in_firewall_desc">Per consentire a un\'app mobile di connettersi al desktop, apri questa porta nel tuo firewall, se è attivo</string>
+    <string name="app_was_crashed">Vedi crash</string>
+    <string name="open_port_in_firewall_title">Apri porta nel firewall</string>
+    <string name="error_showing_content">errore di visualizzazione del contenuto</string>
+    <string name="error_showing_message">errore di visualizzazione del messaggio</string>
 </resources>
