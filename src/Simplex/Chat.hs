@@ -2168,12 +2168,12 @@ processChatCommand' vr = \case
               r <- prepareMsgReq mergedProfile' ct' `catchChatError` \e -> pure $ Left e
               pure (notChangedCnt, changedCts', r : rs)
           where
-            prepareMsgReq mergedProfile' ct' = case contactSendAction ct' of
-              CSASend conn@Connection {connId} -> do
+            prepareMsgReq mergedProfile' ct' = case contactSendConn_ ct' of
+              Right conn@Connection {connId} -> do
                 SndMessage {msgId, msgBody} <- createSndMessage (XInfo mergedProfile') (ConnectionId connId)
                 when (directOrUsed ct') $ createSndFeatureItems user' ct ct'
                 pure $ Right (conn, MsgFlags {notification = hasNotification XInfo_}, msgBody, msgId)
-              CSAError e -> pure $ Left e
+              Left e -> pure $ Left e
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -5629,22 +5629,20 @@ deleteOrUpdateMemberRecord user@User {userId} member =
 
 sendDirectContactMessage :: (MsgEncodingI e, ChatMonad m) => Contact -> ChatMsgEvent e -> m (SndMessage, Int64)
 sendDirectContactMessage ct chatMsgEvent =
-  case contactSendAction ct of
-    CSASend conn@Connection {connId} -> sendDirectMessage conn chatMsgEvent (ConnectionId connId)
-    CSAError e -> throwError e
+  case contactSendConn_ ct of
+    Right conn@Connection {connId} -> sendDirectMessage conn chatMsgEvent (ConnectionId connId)
+    Left e -> throwError e
 
-data ContactSendAction = CSASend Connection | CSAError ChatError
-
-contactSendAction :: Contact -> ContactSendAction
-contactSendAction ct@Contact {activeConn, contactStatus} = case activeConn of
+contactSendConn_ :: Contact -> Either ChatError Connection
+contactSendConn_ ct@Contact {activeConn, contactStatus} = case activeConn of
   Nothing -> err $ CEContactNotReady ct
   Just conn@Connection {connStatus}
     | connStatus /= ConnReady && connStatus /= ConnSndReady -> err $ CEContactNotReady ct
     | contactStatus /= CSActive -> err $ CEContactNotActive ct
     | connDisabled conn -> err $ CEContactDisabled ct
-    | otherwise -> CSASend conn
+    | otherwise -> Right conn
   where
-    err = CSAError . ChatError
+    err = Left . ChatError
 
 sendDirectMessage :: (MsgEncodingI e, ChatMonad m) => Connection -> ChatMsgEvent e -> ConnOrGroupId -> m (SndMessage, Int64)
 sendDirectMessage conn chatMsgEvent connOrGroupId = do
