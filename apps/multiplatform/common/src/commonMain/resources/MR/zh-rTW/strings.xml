@@ -1175,8 +1175,6 @@
     <string name="all_app_data_will_be_cleared">已刪除所有的應用程式數據。</string>
     <string name="set_passcode">設定密碼</string>
     <string name="you_can_share_this_address_with_your_contacts">你可以與聯絡人分享此地址，讓他們使用 %s 進行連接。</string>
-    <string name="your_contacts_will_see_it">在 SimpleX ，你的聯絡人會看到此。
-\n你可以在設定中修改。</string>
     <string name="you_can_create_it_later">你可以在稍後建立它</string>
     <string name="scan_qr_to_connect_to_contact">為了連接，你的聯絡人可以掃描二維碼或使用此應用程式的連結。</string>
     <string name="if_you_cant_meet_in_person">如果你不能面對面接觸此聯絡人，可於視訊通話中出示你的二維碼，或者分享連結。</string>

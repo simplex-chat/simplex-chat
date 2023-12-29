@@ -24,8 +24,8 @@ module Simplex.Chat.Store.Messages
     createSndMsgDelivery,
     createNewMessageAndRcvMsgDelivery,
     createNewRcvMessage,
-    createSndMsgDeliveryEvent,
-    createRcvMsgDeliveryEvent,
+    updateSndMsgDeliveryStatus,
+    updateRcvMsgDeliveryStatus,
     createPendingGroupMessage,
     getPendingGroupMessages,
     deletePendingGroupMessage,
@@ -99,6 +99,7 @@ module Simplex.Chat.Store.Messages
     updateGroupSndStatus,
     getGroupSndStatuses,
     getGroupSndStatusCounts,
+    getGroupHistoryItems,
   )
 where
 
@@ -133,6 +134,7 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Util (eitherToMaybe)
+import Simplex.Messaging.Version (VersionRange)
 import UnliftIO.STM
 
 deleteContactCIs :: DB.Connection -> User -> Contact -> IO ()
@@ -159,49 +161,59 @@ deleteGroupCIs db User {userId} GroupInfo {groupId} = do
   DB.execute db "DELETE FROM chat_item_reactions WHERE group_id = ?" (Only groupId)
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
 
-createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> (SharedMsgId -> NewMessage e) -> ExceptT StoreError IO SndMessage
-createNewSndMessage db gVar connOrGroupId mkMessage =
-  createWithRandomId gVar $ \sharedMsgId -> do
-    let NewMessage {chatMsgEvent, msgBody} = mkMessage $ SharedMsgId sharedMsgId
-    createdAt <- getCurrentTime
-    DB.execute
-      db
-      [sql|
-        INSERT INTO messages (
-          msg_sent, chat_msg_event, msg_body, connection_id, group_id,
-          shared_msg_id, shared_msg_id_user, created_at, updated_at
-        ) VALUES (?,?,?,?,?,?,?,?,?)
-      |]
-      (MDSnd, toCMEventTag chatMsgEvent, msgBody, connId_, groupId_, sharedMsgId, Just True, createdAt, createdAt)
-    msgId <- insertedRowId db
-    pure SndMessage {msgId, sharedMsgId = SharedMsgId sharedMsgId, msgBody}
+createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> ChatMsgEvent e -> (SharedMsgId -> EncodedChatMessage) -> ExceptT StoreError IO SndMessage
+createNewSndMessage db gVar connOrGroupId chatMsgEvent encodeMessage =
+  createWithRandomId' gVar $ \sharedMsgId ->
+    case encodeMessage (SharedMsgId sharedMsgId) of
+      ECMLarge -> pure $ Left SELargeMsg
+      ECMEncoded msgBody -> do
+        createdAt <- getCurrentTime
+        DB.execute
+          db
+          [sql|
+            INSERT INTO messages (
+              msg_sent, chat_msg_event, msg_body, connection_id, group_id,
+              shared_msg_id, shared_msg_id_user, created_at, updated_at
+            ) VALUES (?,?,?,?,?,?,?,?,?)
+          |]
+          (MDSnd, toCMEventTag chatMsgEvent, msgBody, connId_, groupId_, sharedMsgId, Just True, createdAt, createdAt)
+        msgId <- insertedRowId db
+        pure $ Right SndMessage {msgId, sharedMsgId = SharedMsgId sharedMsgId, msgBody}
   where
     (connId_, groupId_) = case connOrGroupId of
       ConnectionId connId -> (Just connId, Nothing)
       GroupId groupId -> (Nothing, Just groupId)
 
 createSndMsgDelivery :: DB.Connection -> SndMsgDelivery -> MessageId -> IO Int64
-createSndMsgDelivery db sndMsgDelivery messageId = do
+createSndMsgDelivery db SndMsgDelivery {connId, agentMsgId} messageId = do
   currentTs <- getCurrentTime
-  msgDeliveryId <- createSndMsgDelivery_ db sndMsgDelivery messageId currentTs
-  createMsgDeliveryEvent_ db msgDeliveryId MDSSndAgent currentTs
-  pure msgDeliveryId
+  DB.execute
+    db
+    [sql|
+      INSERT INTO msg_deliveries
+        (message_id, connection_id, agent_msg_id, chat_ts, created_at, updated_at, delivery_status)
+      VALUES (?,?,?,?,?,?,?)
+    |]
+    (messageId, connId, agentMsgId, currentTs, currentTs, currentTs, MDSSndAgent)
+  insertedRowId db
 
-createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> RcvMsgDelivery -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
+createNewMessageAndRcvMsgDelivery :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> RcvMsgDelivery -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
 createNewMessageAndRcvMsgDelivery db connOrGroupId newMessage sharedMsgId_ RcvMsgDelivery {connId, agentMsgId, agentMsgMeta, agentAckCmdId} authorGroupMemberId_ = do
   msg@RcvMessage {msgId} <- createNewRcvMessage db connOrGroupId newMessage sharedMsgId_ authorGroupMemberId_ Nothing
   liftIO $ do
     currentTs <- getCurrentTime
     DB.execute
       db
-      "INSERT INTO msg_deliveries (message_id, connection_id, agent_msg_id, agent_msg_meta, agent_ack_cmd_id, chat_ts, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)"
-      (msgId, connId, agentMsgId, msgMetaJson agentMsgMeta, agentAckCmdId, snd $ broker agentMsgMeta, currentTs, currentTs)
-    msgDeliveryId <- insertedRowId db
-    createMsgDeliveryEvent_ db msgDeliveryId MDSRcvAgent currentTs
+      [sql|
+        INSERT INTO msg_deliveries
+          (message_id, connection_id, agent_msg_id, agent_msg_meta, agent_ack_cmd_id, chat_ts, created_at, updated_at, delivery_status)
+        VALUES (?,?,?,?,?,?,?,?,?)
+      |]
+      (msgId, connId, agentMsgId, msgMetaJson agentMsgMeta, agentAckCmdId, snd $ broker agentMsgMeta, currentTs, currentTs, MDSRcvAgent)
   pure msg
 
-createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
-createNewRcvMessage db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMsgId_ authorMember forwardedByMember =
+createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
+createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, msgBody} sharedMsgId_ authorMember forwardedByMember =
   case connOrGroupId of
     ConnectionId connId -> liftIO $ insertRcvMsg (Just connId) Nothing
     GroupId groupId -> case sharedMsgId_ of
@@ -236,68 +248,29 @@ createNewRcvMessage db connOrGroupId NewMessage {chatMsgEvent, msgBody} sharedMs
       msgId <- insertedRowId db
       pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody, authorMember, forwardedByMember}
 
-createSndMsgDeliveryEvent :: DB.Connection -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> ExceptT StoreError IO ()
-createSndMsgDeliveryEvent db connId agentMsgId sndMsgDeliveryStatus = do
-  msgDeliveryId <- getMsgDeliveryId_ db connId agentMsgId
-  liftIO $ do
-    currentTs <- getCurrentTime
-    createMsgDeliveryEvent_ db msgDeliveryId sndMsgDeliveryStatus currentTs
-
-createRcvMsgDeliveryEvent :: DB.Connection -> Int64 -> CommandId -> MsgDeliveryStatus 'MDRcv -> IO ()
-createRcvMsgDeliveryEvent db connId cmdId rcvMsgDeliveryStatus = do
-  msgDeliveryId <- getMsgDeliveryIdByCmdId_ db connId cmdId
-  forM_ msgDeliveryId $ \mdId -> do
-    currentTs <- getCurrentTime
-    createMsgDeliveryEvent_ db mdId rcvMsgDeliveryStatus currentTs
-
-createSndMsgDelivery_ :: DB.Connection -> SndMsgDelivery -> MessageId -> UTCTime -> IO Int64
-createSndMsgDelivery_ db SndMsgDelivery {connId, agentMsgId} messageId createdAt = do
+updateSndMsgDeliveryStatus :: DB.Connection -> Int64 -> AgentMsgId -> MsgDeliveryStatus 'MDSnd -> IO ()
+updateSndMsgDeliveryStatus db connId agentMsgId sndMsgDeliveryStatus = do
+  currentTs <- getCurrentTime
   DB.execute
     db
     [sql|
-      INSERT INTO msg_deliveries
-        (message_id, connection_id, agent_msg_id, agent_msg_meta, chat_ts, created_at, updated_at)
-      VALUES (?,?,?,NULL,?,?,?)
+      UPDATE msg_deliveries
+      SET delivery_status = ?, updated_at = ?
+      WHERE connection_id = ? AND agent_msg_id = ?
     |]
-    (messageId, connId, agentMsgId, createdAt, createdAt, createdAt)
-  insertedRowId db
+    (sndMsgDeliveryStatus, currentTs, connId, agentMsgId)
 
-createMsgDeliveryEvent_ :: DB.Connection -> Int64 -> MsgDeliveryStatus d -> UTCTime -> IO ()
-createMsgDeliveryEvent_ db msgDeliveryId msgDeliveryStatus createdAt = do
+updateRcvMsgDeliveryStatus :: DB.Connection -> Int64 -> CommandId -> MsgDeliveryStatus 'MDRcv -> IO ()
+updateRcvMsgDeliveryStatus db connId cmdId rcvMsgDeliveryStatus = do
+  currentTs <- getCurrentTime
   DB.execute
     db
     [sql|
-      INSERT INTO msg_delivery_events
-        (msg_delivery_id, delivery_status, created_at, updated_at)
-      VALUES (?,?,?,?)
+      UPDATE msg_deliveries
+      SET delivery_status = ?, updated_at = ?
+      WHERE connection_id = ? AND agent_ack_cmd_id = ?
     |]
-    (msgDeliveryId, msgDeliveryStatus, createdAt, createdAt)
-
-getMsgDeliveryId_ :: DB.Connection -> Int64 -> AgentMsgId -> ExceptT StoreError IO Int64
-getMsgDeliveryId_ db connId agentMsgId =
-  ExceptT . firstRow fromOnly (SENoMsgDelivery connId agentMsgId) $
-    DB.query
-      db
-      [sql|
-        SELECT msg_delivery_id
-        FROM msg_deliveries m
-        WHERE m.connection_id = ? AND m.agent_msg_id = ?
-        LIMIT 1
-      |]
-      (connId, agentMsgId)
-
-getMsgDeliveryIdByCmdId_ :: DB.Connection -> Int64 -> CommandId -> IO (Maybe AgentMsgId)
-getMsgDeliveryIdByCmdId_ db connId cmdId =
-  maybeFirstRow fromOnly $
-    DB.query
-      db
-      [sql|
-        SELECT msg_delivery_id
-        FROM msg_deliveries
-        WHERE connection_id = ? AND agent_ack_cmd_id = ?
-        LIMIT 1
-      |]
-      (connId, cmdId)
+    (rcvMsgDeliveryStatus, currentTs, connId, cmdId)
 
 createPendingGroupMessage :: DB.Connection -> Int64 -> MessageId -> Maybe Int64 -> IO ()
 createPendingGroupMessage db groupMemberId messageId introId_ = do
@@ -489,8 +462,8 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
         ciQuoteGroup [] = ciQuote Nothing $ CIQGroupRcv Nothing
         ciQuoteGroup ((Only itemId :. memberRow) : _) = ciQuote itemId . CIQGroupRcv . Just $ toGroupMember userContactId memberRow
 
-getChatPreviews :: DB.Connection -> User -> Bool -> PaginationByTime -> ChatListQuery -> IO [Either StoreError AChat]
-getChatPreviews db user withPCC pagination query = do
+getChatPreviews :: DB.Connection -> VersionRange -> User -> Bool -> PaginationByTime -> ChatListQuery -> IO [Either StoreError AChat]
+getChatPreviews db vr user withPCC pagination query = do
   directChats <- findDirectChatPreviews_ db user pagination query
   groupChats <- findGroupChatPreviews_ db user pagination query
   cReqChats <- getContactRequestChatPreviews_ db user pagination query
@@ -511,7 +484,7 @@ getChatPreviews db user withPCC pagination query = do
     getChatPreview :: AChatPreviewData -> ExceptT StoreError IO AChat
     getChatPreview (ACPD cType cpd) = case cType of
       SCTDirect -> getDirectChatPreview_ db user cpd
-      SCTGroup -> getGroupChatPreview_ db user cpd
+      SCTGroup -> getGroupChatPreview_ db vr user cpd
       SCTContactRequest -> let (ContactRequestPD _ chat) = cpd in pure chat
       SCTContactConnection -> let (ContactConnectionPD _ chat) = cpd in pure chat
 
@@ -716,9 +689,9 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           )
           ([":user_id" := userId, ":rcv_new" := CISRcvNew, ":search" := search] <> pagParams)
 
-getGroupChatPreview_ :: DB.Connection -> User -> ChatPreviewData 'CTGroup -> ExceptT StoreError IO AChat
-getGroupChatPreview_ db user (GroupChatPD _ groupId lastItemId_ stats) = do
-  groupInfo <- getGroupInfo db user groupId
+getGroupChatPreview_ :: DB.Connection -> VersionRange -> User -> ChatPreviewData 'CTGroup -> ExceptT StoreError IO AChat
+getGroupChatPreview_ db vr user (GroupChatPD _ groupId lastItemId_ stats) = do
+  groupInfo <- getGroupInfo db vr user groupId
   lastItem <- case lastItemId_ of
     Just lastItemId -> (: []) <$> getGroupChatItem db user groupId lastItemId
     Nothing -> pure []
@@ -902,10 +875,10 @@ getDirectChatBefore_ db User {userId} ct@Contact {contactId} beforeChatItemId co
           |]
           (userId, contactId, search, beforeChatItemId, count)
 
-getGroupChat :: DB.Connection -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup)
-getGroupChat db user groupId pagination search_ = do
+getGroupChat :: DB.Connection -> VersionRange -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTGroup)
+getGroupChat db vr user groupId pagination search_ = do
   let search = fromMaybe "" search_
-  g <- getGroupInfo db user groupId
+  g <- getGroupInfo db vr user groupId
   case pagination of
     CPLast count -> getGroupChatLast_ db user g count search
     CPAfter afterId count -> getGroupChatAfter_ db user g afterId count search
@@ -1213,19 +1186,19 @@ toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir,
     ciTimed :: Maybe CITimed
     ciTimed = timedTTL >>= \ttl -> Just CITimed {ttl, deleteAt = timedDeleteAt}
 
-getAllChatItems :: DB.Connection -> User -> ChatPagination -> Maybe String -> ExceptT StoreError IO [AChatItem]
-getAllChatItems db user@User {userId} pagination search_ = do
+getAllChatItems :: DB.Connection -> VersionRange -> User -> ChatPagination -> Maybe String -> ExceptT StoreError IO [AChatItem]
+getAllChatItems db vr user@User {userId} pagination search_ = do
   itemRefs <-
     rights . map toChatItemRef <$> case pagination of
       CPLast count -> liftIO $ getAllChatItemsLast_ count
       CPAfter afterId count -> liftIO . getAllChatItemsAfter_ afterId count . aChatItemTs =<< getAChatItem_ afterId
       CPBefore beforeId count -> liftIO . getAllChatItemsBefore_ beforeId count . aChatItemTs =<< getAChatItem_ beforeId
-  mapM (uncurry (getAChatItem db user) >=> liftIO . getACIReactions db) itemRefs
+  mapM (uncurry (getAChatItem db vr user) >=> liftIO . getACIReactions db) itemRefs
   where
     search = fromMaybe "" search_
     getAChatItem_ itemId = do
       chatRef <- getChatRefViaItemId db user itemId
-      getAChatItem db user chatRef itemId
+      getAChatItem db vr user chatRef itemId
     getAllChatItemsLast_ count =
       reverse
         <$> DB.query
@@ -1741,8 +1714,8 @@ getGroupChatItemIdByText' db User {userId} groupId msg =
       |]
       (userId, groupId, msg <> "%")
 
-getChatItemByFileId :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO AChatItem
-getChatItemByFileId db user@User {userId} fileId = do
+getChatItemByFileId :: DB.Connection -> VersionRange -> User -> Int64 -> ExceptT StoreError IO AChatItem
+getChatItemByFileId db vr user@User {userId} fileId = do
   (chatRef, itemId) <-
     ExceptT . firstRow' toChatItemRef (SEChatItemNotFoundByFileId fileId) $
       DB.query
@@ -1755,10 +1728,10 @@ getChatItemByFileId db user@User {userId} fileId = do
             LIMIT 1
           |]
         (userId, fileId)
-  getAChatItem db user chatRef itemId
+  getAChatItem db vr user chatRef itemId
 
-getChatItemByGroupId :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO AChatItem
-getChatItemByGroupId db user@User {userId} groupId = do
+getChatItemByGroupId :: DB.Connection -> VersionRange -> User -> GroupId -> ExceptT StoreError IO AChatItem
+getChatItemByGroupId db vr user@User {userId} groupId = do
   (chatRef, itemId) <-
     ExceptT . firstRow' toChatItemRef (SEChatItemNotFoundByGroupId groupId) $
       DB.query
@@ -1771,7 +1744,7 @@ getChatItemByGroupId db user@User {userId} groupId = do
           LIMIT 1
         |]
         (userId, groupId)
-  getAChatItem db user chatRef itemId
+  getAChatItem db vr user chatRef itemId
 
 getChatRefViaItemId :: DB.Connection -> User -> ChatItemId -> ExceptT StoreError IO ChatRef
 getChatRefViaItemId db User {userId} itemId = do
@@ -1783,14 +1756,14 @@ getChatRefViaItemId db User {userId} itemId = do
       (Nothing, Just groupId) -> Right $ ChatRef CTGroup groupId
       (_, _) -> Left $ SEBadChatItem itemId
 
-getAChatItem :: DB.Connection -> User -> ChatRef -> ChatItemId -> ExceptT StoreError IO AChatItem
-getAChatItem db user chatRef itemId = case chatRef of
+getAChatItem :: DB.Connection -> VersionRange -> User -> ChatRef -> ChatItemId -> ExceptT StoreError IO AChatItem
+getAChatItem db vr user chatRef itemId = case chatRef of
   ChatRef CTDirect contactId -> do
     ct <- getContact db user contactId
     (CChatItem msgDir ci) <- getDirectChatItem db user contactId itemId
     pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
   ChatRef CTGroup groupId -> do
-    gInfo <- getGroupInfo db user groupId
+    gInfo <- getGroupInfo db vr user groupId
     (CChatItem msgDir ci) <- getGroupChatItem db user groupId itemId
     pure $ AChatItem SCTGroup msgDir (GroupChat gInfo) ci
   _ -> throwError $ SEChatItemNotFound itemId
@@ -2107,3 +2080,25 @@ getGroupSndStatusCounts db itemId =
       GROUP BY group_snd_item_status
     |]
     (Only itemId)
+
+getGroupHistoryItems :: DB.Connection -> User -> GroupInfo -> Int -> IO [Either StoreError (CChatItem 'CTGroup)]
+getGroupHistoryItems db user@User {userId} GroupInfo {groupId} count = do
+  chatItemIds <- getLastItemIds_
+  -- use getGroupCIWithReactions to read reactions data
+  reverse <$> mapM (runExceptT . getGroupChatItem db user groupId) chatItemIds
+  where
+    getLastItemIds_ :: IO [ChatItemId]
+    getLastItemIds_ =
+      map fromOnly
+        <$> DB.query
+          db
+          [sql|
+            SELECT chat_item_id
+            FROM chat_items
+            WHERE user_id = ? AND group_id = ?
+              AND item_content_tag IN (?,?)
+              AND item_deleted = 0
+            ORDER BY item_ts DESC, chat_item_id DESC
+            LIMIT ?
+          |]
+          (userId, groupId, rcvMsgContentTag, sndMsgContentTag, count)

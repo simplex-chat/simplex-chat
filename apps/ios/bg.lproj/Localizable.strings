@@ -1960,6 +1960,9 @@
 "Live messages" = "Съобщения на живо";
 
 /* No comment provided by engineer. */
+"Local" = "Локално";
+
+/* No comment provided by engineer. */
 "Local name" = "Локално име";
 
 /* No comment provided by engineer. */
@@ -2222,9 +2225,6 @@
 /* No comment provided by engineer. */
 "Off" = "Изключено";
 
-/* No comment provided by engineer. */
-"Off (Local)" = "Изключено (Локално)";
-
 /* feature offered item */
 "offered %@" = "предлага %@";
 
@@ -2314,9 +2314,6 @@
 
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "Протокол и код с отворен код – всеки може да оперира собствени сървъри.";
-
-/* No comment provided by engineer. */
-"Opening database…" = "Отваряне на база данни…";
 
 /* member role */
 "owner" = "собственик";
@@ -3219,9 +3216,6 @@
 "Turn off" = "Изключи";
 
 /* No comment provided by engineer. */
-"Turn off notifications?" = "Изключи известията?";
-
-/* No comment provided by engineer. */
 "Turn on" = "Включи";
 
 /* No comment provided by engineer. */
@@ -3640,9 +3634,6 @@
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "Вашите контакти могат да позволят пълното изтриване на съобщението.";
-
-/* No comment provided by engineer. */
-"Your contacts in SimpleX will see it.\nYou can change it in Settings." = "Вашите контакти в SimpleX ще го видят.\nМожете да го промените в Настройки.";
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "Вашите контакти ще останат свързани.";

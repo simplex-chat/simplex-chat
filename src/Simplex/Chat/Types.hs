@@ -627,7 +627,8 @@ data GroupMember = GroupMember
     memberContactProfileId :: ProfileId,
     activeConn :: Maybe Connection,
     -- member chat protocol version range; if member has active connection, its version range is preferred;
-    -- for membership current supportedChatVRange is set, it's not updated on protocol version increase
+    -- for membership current supportedChatVRange is set, it's not updated on protocol version increase in database,
+    -- but it's correctly set on read (see toGroupInfo)
     memberChatVRange :: JVersionRange
   }
   deriving (Eq, Show)
@@ -1012,9 +1013,11 @@ data XFTPRcvFile = XFTPRcvFile
   }
   deriving (Eq, Show)
 
+type RcvFileDescrText = Text
+
 data RcvFileDescr = RcvFileDescr
   { fileDescrId :: Int64,
-    fileDescrText :: Text,
+    fileDescrText :: RcvFileDescrText,
     fileDescrPartNo :: Int,
     fileDescrComplete :: Bool
   }

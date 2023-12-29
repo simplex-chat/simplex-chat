@@ -128,16 +128,43 @@ testCfg =
       xftpFileConfig = Nothing
     }
 
+testAgentCfgVPrev :: AgentConfig
+testAgentCfgVPrev =
+  testAgentCfg
+    { smpAgentVRange = prevRange $ smpAgentVRange testAgentCfg,
+      smpClientVRange = prevRange $ smpClientVRange testAgentCfg,
+      e2eEncryptVRange = prevRange $ e2eEncryptVRange testAgentCfg,
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = prevRange $ serverVRange $ smpCfg testAgentCfg}
+    }
+
 testAgentCfgV1 :: AgentConfig
 testAgentCfgV1 =
   testAgentCfg
-    { smpClientVRange = mkVersionRange 1 1,
-      smpAgentVRange = mkVersionRange 1 1,
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange 1 1}
+    { smpClientVRange = v1Range,
+      smpAgentVRange = v1Range,
+      e2eEncryptVRange = v1Range,
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = v1Range}
+    }
+
+testCfgVPrev :: ChatConfig
+testCfgVPrev =
+  testCfg
+    { chatVRange = prevRange $ chatVRange testCfg,
+      agentConfig = testAgentCfgVPrev
     }
 
 testCfgV1 :: ChatConfig
-testCfgV1 = testCfg {agentConfig = testAgentCfgV1}
+testCfgV1 =
+  testCfg
+    { chatVRange = v1Range,
+      agentConfig = testAgentCfgV1
+    }
+
+prevRange :: VersionRange -> VersionRange
+prevRange vr = vr {maxVersion = maxVersion vr - 1}
+
+v1Range :: VersionRange
+v1Range = mkVersionRange 1 1
 
 testCfgCreateGroupDirect :: ChatConfig
 testCfgCreateGroupDirect =
@@ -175,7 +202,7 @@ startTestChat_ :: ChatDatabase -> ChatConfig -> ChatOpts -> User -> IO TestCC
 startTestChat_ db cfg opts user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t opts
-  cc <- newChatController db (Just user) cfg opts
+  cc <- newChatController db (Just user) cfg opts False
   chatAsync <- async . runSimplexChat opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   atomically . unless (maintenance opts) $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
@@ -378,6 +405,7 @@ xftpServerConfig =
       allowNewFiles = True,
       newFileBasicAuth = Nothing,
       fileExpiration = Just defaultFileExpiration,
+      inactiveClientExpiration = Just defaultInactiveClientExpiration,
       caCertificateFile = "tests/fixtures/tls/ca.crt",
       privateKeyFile = "tests/fixtures/tls/server.key",
       certificateFile = "tests/fixtures/tls/server.crt",

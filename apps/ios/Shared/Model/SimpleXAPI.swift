@@ -581,15 +581,15 @@ func apiVerifyGroupMember(_ groupId: Int64, _ groupMemberId: Int64, connectionCo
     return nil
 }
 
-func apiAddContact(incognito: Bool) async -> (String, PendingContactConnection)? {
+func apiAddContact(incognito: Bool) async -> ((String, PendingContactConnection)?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiAddContact: no current user")
-        return nil
+        return (nil, nil)
     }
     let r = await chatSendCmd(.apiAddContact(userId: userId, incognito: incognito), bgTask: false)
-    if case let .invitation(_, connReqInvitation, connection) = r { return (connReqInvitation, connection) }
-    AlertManager.shared.showAlert(connectionErrorAlert(r))
-    return nil
+    if case let .invitation(_, connReqInvitation, connection) = r { return ((connReqInvitation, connection), nil) }
+    let alert = connectionErrorAlert(r)
+    return (nil, alert)
 }
 
 func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> PendingContactConnection? {
@@ -1742,7 +1742,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
         // This delay is needed to cancel the session that fails on network failure,
         // e.g. when user did not grant permission to access local network yet.
         if let sess = m.remoteCtrlSession {
-            m.remoteCtrlSession = nil
+            await MainActor.run {
+                m.remoteCtrlSession = nil
+            }
             if case .connected = sess.sessionState {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     switchToLocalSession()

@@ -72,7 +72,7 @@ $(JQ.deriveToJSON defaultJSON ''APIResponse)
 
 foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
 
-foreign export ccall "chat_migrate_init_key" cChatMigrateInitKey :: CString -> CString -> CInt -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
+foreign export ccall "chat_migrate_init_key" cChatMigrateInitKey :: CString -> CString -> CInt -> CString -> CInt -> Ptr (StablePtr ChatController) -> IO CJSONString
 
 foreign export ccall "chat_close_store" cChatCloseStore :: StablePtr ChatController -> IO CString
 
@@ -108,21 +108,21 @@ foreign export ccall "chat_decrypt_file" cChatDecryptFile :: CString -> CString 
 
 -- | check / migrate database and initialize chat controller on success
 cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
-cChatMigrateInit fp key = cChatMigrateInitKey fp key 0
+cChatMigrateInit fp key conf = cChatMigrateInitKey fp key 0 conf 0
 
-cChatMigrateInitKey :: CString -> CString -> CInt -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
-cChatMigrateInitKey fp key keepKey conf ctrl = do
+cChatMigrateInitKey :: CString -> CString -> CInt -> CString -> CInt -> Ptr (StablePtr ChatController) -> IO CJSONString
+cChatMigrateInitKey fp key keepKey conf background ctrl = do
   -- ensure we are set to UTF-8; iOS does not have locale, and will default to
   -- US-ASCII all the time.
   setLocaleEncoding utf8
   setFileSystemEncoding utf8
   setForeignEncoding utf8
 
-  dbPath <- peekCAString fp
+  dbPath <- peekCString fp
   dbKey <- BA.convert <$> B.packCString key
   confirm <- peekCAString conf
   r <-
-    chatMigrateInitKey dbPath dbKey (keepKey /= 0) confirm >>= \case
+    chatMigrateInitKey dbPath dbKey (keepKey /= 0) confirm (background /= 0) >>= \case
       Right cc -> (newStablePtr cc >>= poke ctrl) $> DBMOk
       Left e -> pure e
   newCStringFromLazyBS $ J.encode r
@@ -220,10 +220,10 @@ getActiveUser_ :: SQLiteStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 
 chatMigrateInit :: String -> ScrubbedBytes -> String -> IO (Either DBMigrationResult ChatController)
-chatMigrateInit dbFilePrefix dbKey = chatMigrateInitKey dbFilePrefix dbKey False
+chatMigrateInit dbFilePrefix dbKey confirm = chatMigrateInitKey dbFilePrefix dbKey False confirm False
 
-chatMigrateInitKey :: String -> ScrubbedBytes -> Bool -> String -> IO (Either DBMigrationResult ChatController)
-chatMigrateInitKey dbFilePrefix dbKey keepKey confirm = runExceptT $ do
+chatMigrateInitKey :: String -> ScrubbedBytes -> Bool -> String -> Bool -> IO (Either DBMigrationResult ChatController)
+chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExceptT $ do
   confirmMigrations <- liftEitherWith (const DBMInvalidConfirmation) $ strDecode $ B.pack confirm
   chatStore <- migrate createChatStore (chatStoreFile dbFilePrefix) confirmMigrations
   agentStore <- migrate createAgentStore (agentStoreFile dbFilePrefix) confirmMigrations
@@ -231,7 +231,7 @@ chatMigrateInitKey dbFilePrefix dbKey keepKey confirm = runExceptT $ do
   where
     initialize st db = do
       user_ <- getActiveUser_ st
-      newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix)
+      newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix) backgroundMode
     migrate createStore dbFile confirmMigrations =
       ExceptT $
         (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey keepKey confirmMigrations)

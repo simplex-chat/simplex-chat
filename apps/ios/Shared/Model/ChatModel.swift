@@ -89,14 +89,15 @@ final class ChatModel: ObservableObject {
     @Published var showCallView = false
     // remote desktop
     @Published var remoteCtrlSession: RemoteCtrlSession?
-    // currently showing QR code
-    @Published var connReqInv: String?
+    // currently showing invitation
+    @Published var showingInvitation: ShowingInvitation?
     // audio recording and playback
     @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
     // tracks keyboard height via subscription in AppDelegate
     @Published var keyboardHeight: CGFloat = 0
+    @Published var pasteboardHasStrings: Bool = UIPasteboard.general.hasStrings
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
@@ -620,12 +621,14 @@ final class ChatModel: ObservableObject {
     }
 
     func dismissConnReqView(_ id: String) {
-        if let connReqInv = connReqInv,
-           let c = getChat(id),
-           case let .contactConnection(contactConnection) = c.chatInfo,
-           connReqInv == contactConnection.connReqInv {
+        if id == showingInvitation?.connId {
+            markShowingInvitationUsed()
             dismissAllSheets()
         }
+    }
+
+    func markShowingInvitationUsed() {
+        showingInvitation?.connChatUsed = true
     }
 
     func removeChat(_ id: String) {
@@ -702,6 +705,11 @@ final class ChatModel: ObservableObject {
             .unknown
         }
     }
+}
+
+struct ShowingInvitation {
+    var connId: String
+    var connChatUsed: Bool
 }
 
 struct NTFContactRequest {

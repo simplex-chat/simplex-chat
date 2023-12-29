@@ -20,7 +20,13 @@
 "_italic_" = "\\_курсив_";
 
 /* No comment provided by engineer. */
+"- connect to [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!\n- delivery receipts (up to 20 members).\n- faster and more stable." = "- підключитися до [сервера каталогів](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex. im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id. цибуля) (БЕТА)!\n- підтвердження доставлення (до 20 учасників).\n- швидше і стабільніше.";
+
+/* No comment provided by engineer. */
 "- more stable message delivery.\n- a bit better groups.\n- and more!" = "- стабільніша доставка повідомлень.\n- трохи кращі групи.\n- і багато іншого!";
+
+/* No comment provided by engineer. */
+"- optionally notify deleted contacts.\n- profile names with spaces.\n- and more!" = "- опція сповіщати про видалені контакти.\n- імена профілів з пробілами.\n- та багато іншого!";
 
 /* No comment provided by engineer. */
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- голосові повідомлення до 5 хвилин.\n- користувальницький час зникнення.\n- історія редагування.";
@@ -39,6 +45,12 @@
 
 /* No comment provided by engineer. */
 "(" = "(";
+
+/* No comment provided by engineer. */
+"(new)" = "(новий)";
+
+/* No comment provided by engineer. */
+"(this device v%@)" = "(цей пристрій v%@)";
 
 /* No comment provided by engineer. */
 ")" = ")";
@@ -116,10 +128,16 @@
 "%@ %@" = "%@ %@";
 
 /* No comment provided by engineer. */
+"%@ and %@" = "%@ та %@";
+
+/* No comment provided by engineer. */
 "%@ and %@ connected" = "%@ і %@ підключено";
 
 /* copied message info, <sender> at <time> */
 "%@ at %@:" = "%1$@ за %2$@:";
+
+/* No comment provided by engineer. */
+"%@ connected" = "%@ підключено";
 
 /* notification title */
 "%@ is connected!" = "%@ підключено!";
@@ -135,6 +153,9 @@
 
 /* notification title */
 "%@ wants to connect!" = "%@ хоче підключитися!";
+
+/* No comment provided by engineer. */
+"%@, %@ and %lld members" = "%@, %@ та %lld учасників";
 
 /* No comment provided by engineer. */
 "%@, %@ and %lld other members connected" = "%@, %@ та %lld інші підключені учасники";
@@ -176,10 +197,25 @@
 "%lld file(s) with total size of %@" = "%lld файл(и) загальним розміром %@";
 
 /* No comment provided by engineer. */
+"%lld group events" = "%lld групові заходи";
+
+/* No comment provided by engineer. */
 "%lld members" = "%lld учасників";
 
 /* No comment provided by engineer. */
+"%lld messages blocked" = "%lld повідомлень заблоковано";
+
+/* No comment provided by engineer. */
+"%lld messages marked deleted" = "%lld повідомлень позначено як видалені";
+
+/* No comment provided by engineer. */
+"%lld messages moderated by %@" = "%lld повідомлень модерує %@";
+
+/* No comment provided by engineer. */
 "%lld minutes" = "%lld хвилин";
+
+/* No comment provided by engineer. */
+"%lld new interface languages" = "%lld нові мови інтерфейсу";
 
 /* No comment provided by engineer. */
 "%lld second(s)" = "%lld секунд(и)";
@@ -222,6 +258,9 @@
 
 /* No comment provided by engineer. */
 "~strike~" = "\\~закреслити~";
+
+/* time to disappear */
+"0 sec" = "0 сек";
 
 /* No comment provided by engineer. */
 "0s" = "0с";
@@ -366,6 +405,9 @@
 "All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." = "Всі повідомлення будуть видалені - це неможливо скасувати! Повідомлення будуть видалені ТІЛЬКИ для вас.";
 
 /* No comment provided by engineer. */
+"All new messages from %@ will be hidden!" = "Всі нові повідомлення від %@ будуть приховані!";
+
+/* No comment provided by engineer. */
 "All your contacts will remain connected." = "Всі ваші контакти залишаться на зв'язку.";
 
 /* No comment provided by engineer. */
@@ -428,6 +470,12 @@
 /* No comment provided by engineer. */
 "Already connected?" = "Вже підключено?";
 
+/* No comment provided by engineer. */
+"Already connecting!" = "Вже підключаємось!";
+
+/* No comment provided by engineer. */
+"Already joining the group!" = "Вже приєднуємося до групи!";
+
 /* pref value */
 "always" = "завжди";
 
@@ -442,6 +490,9 @@
 
 /* No comment provided by engineer. */
 "App build: %@" = "Збірка програми: %@";
+
+/* No comment provided by engineer. */
+"App encrypts new local files (except videos)." = "Додаток шифрує нові локальні файли (крім відео).";
 
 /* No comment provided by engineer. */
 "App icon" = "Іконка програми";
@@ -503,6 +554,9 @@
 /* No comment provided by engineer. */
 "Back" = "Назад";
 
+/* No comment provided by engineer. */
+"Bad desktop address" = "Неправильна адреса робочого столу";
+
 /* integrity error chat item */
 "bad message hash" = "невірний хеш повідомлення";
 
@@ -516,7 +570,22 @@
 "Bad message ID" = "Неправильний ідентифікатор повідомлення";
 
 /* No comment provided by engineer. */
+"Better groups" = "Кращі групи";
+
+/* No comment provided by engineer. */
 "Better messages" = "Кращі повідомлення";
+
+/* No comment provided by engineer. */
+"Block" = "Блокувати";
+
+/* No comment provided by engineer. */
+"Block group members" = "Учасники групи блокування";
+
+/* No comment provided by engineer. */
+"Block member" = "Заблокувати користувача";
+
+/* No comment provided by engineer. */
+"Block member?" = "Заблокувати користувача?";
 
 /* No comment provided by engineer. */
 "bold" = "жирний";
@@ -535,6 +604,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Надсилати голосові повідомлення можете як ви, так і ваш контакт.";
+
+/* No comment provided by engineer. */
+"Bulgarian, Finnish, Thai and Ukrainian - thanks to the users and [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!" = "Болгарською, фінською, тайською та українською мовами - завдяки користувачам та [Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!";
 
 /* No comment provided by engineer. */
 "By chat profile (default) or [by connection](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA)." = "Через профіль чату (за замовчуванням) або [за з'єднанням](https://simplex.chat/blog/20230204-simplex-chat-v4-5-user-chat-profiles.html#transport-isolation) (BETA).";
@@ -709,10 +781,28 @@
 "Connect" = "Підключіться";
 
 /* No comment provided by engineer. */
+"Connect automatically" = "Підключення автоматично";
+
+/* No comment provided by engineer. */
 "Connect incognito" = "Підключайтеся інкогніто";
 
 /* No comment provided by engineer. */
+"Connect to desktop" = "Підключення до комп'ютера";
+
+/* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "зв'язатися з розробниками SimpleX Chat.";
+
+/* No comment provided by engineer. */
+"Connect to yourself?" = "З'єднатися з самим собою?";
+
+/* No comment provided by engineer. */
+"Connect to yourself?\nThis is your own one-time link!" = "Підключитися до себе? \nЦе ваше власне одноразове посилання!";
+
+/* No comment provided by engineer. */
+"Connect to yourself?\nThis is your own SimpleX address!" = "З'єднатися з самим собою? \nЦе ваша власна SimpleX-адреса!";
+
+/* No comment provided by engineer. */
+"Connect via contact address" = "Підключіться за контактною адресою";
 
 /* No comment provided by engineer. */
 "Connect via link" = "Підключіться за посиланням";
@@ -724,7 +814,13 @@
 "Connect via one-time link" = "Під'єднатися за одноразовим посиланням";
 
 /* No comment provided by engineer. */
+"Connect with %@" = "Підключитися до %@";
+
+/* No comment provided by engineer. */
 "connected" = "з'єднаний";
+
+/* No comment provided by engineer. */
+"Connected desktop" = "Підключений робочий стіл";
 
 /* No comment provided by engineer. */
 "connecting" = "з'єднання";
@@ -1924,6 +2020,9 @@
 "Live messages" = "Живі повідомлення";
 
 /* No comment provided by engineer. */
+"Local" = "Локально";
+
+/* No comment provided by engineer. */
 "Local name" = "Місцева назва";
 
 /* No comment provided by engineer. */
@@ -2183,9 +2282,6 @@
 /* No comment provided by engineer. */
 "Off" = "Вимкнено";
 
-/* No comment provided by engineer. */
-"Off (Local)" = "Вимкнено (локально)";
-
 /* feature offered item */
 "offered %@" = "запропоновано %@";
 
@@ -2272,9 +2368,6 @@
 
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "Протокол і код з відкритим вихідним кодом - будь-хто може запускати сервери.";
-
-/* No comment provided by engineer. */
-"Opening database…" = "Відкриття бази даних…";
 
 /* member role */
 "owner" = "власник";
@@ -3165,9 +3258,6 @@
 "Turn off" = "Вимкнути";
 
 /* No comment provided by engineer. */
-"Turn off notifications?" = "Вимкнути сповіщення?";
-
-/* No comment provided by engineer. */
 "Turn on" = "Ввімкнути";
 
 /* No comment provided by engineer. */
@@ -3586,9 +3676,6 @@
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "Ваші контакти можуть дозволити повне видалення повідомлень.";
-
-/* No comment provided by engineer. */
-"Your contacts in SimpleX will see it.\nYou can change it in Settings." = "Ваші контакти в SimpleX побачать це.\nВи можете змінити його в Налаштуваннях.";
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "Ваші контакти залишаться на зв'язку.";

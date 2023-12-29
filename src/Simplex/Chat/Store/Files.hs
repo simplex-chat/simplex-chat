@@ -47,7 +47,8 @@ module Simplex.Chat.Store.Files
     createRcvFileTransfer,
     createRcvGroupFileTransfer,
     appendRcvFD,
-    getRcvFileDescrByFileId,
+    getRcvFileDescrByRcvFileId,
+    getRcvFileDescrBySndFileId,
     updateRcvFileAgentId,
     getRcvFileTransferById,
     getRcvFileTransfer,
@@ -106,6 +107,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
+import Simplex.Messaging.Version (VersionRange)
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
 getLiveSndFileTransfers db User {userId} = do
@@ -543,7 +545,7 @@ createRcvFD_ db userId currentTs FileDescr {fileDescrText, fileDescrPartNo, file
 appendRcvFD :: DB.Connection -> UserId -> FileTransferId -> FileDescr -> ExceptT StoreError IO RcvFileDescr
 appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileDescrComplete} = do
   currentTs <- liftIO getCurrentTime
-  liftIO (getRcvFileDescrByFileId_ db fileId) >>= \case
+  liftIO (getRcvFileDescrByRcvFileId_ db fileId) >>= \case
     Nothing -> do
       rfd@RcvFileDescr {fileDescrId} <- createRcvFD_ db userId currentTs fd
       liftIO $
@@ -572,14 +574,14 @@ appendRcvFD db userId fileId fd@FileDescr {fileDescrText, fileDescrPartNo, fileD
             (fileDescrText', fileDescrPartNo, fileDescrComplete, fileDescrId)
         pure RcvFileDescr {fileDescrId, fileDescrText = fileDescrText', fileDescrPartNo, fileDescrComplete}
 
-getRcvFileDescrByFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO RcvFileDescr
-getRcvFileDescrByFileId db fileId = do
-  liftIO (getRcvFileDescrByFileId_ db fileId) >>= \case
+getRcvFileDescrByRcvFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO RcvFileDescr
+getRcvFileDescrByRcvFileId db fileId = do
+  liftIO (getRcvFileDescrByRcvFileId_ db fileId) >>= \case
     Nothing -> throwError $ SERcvFileDescrNotFound fileId
     Just rfd -> pure rfd
 
-getRcvFileDescrByFileId_ :: DB.Connection -> FileTransferId -> IO (Maybe RcvFileDescr)
-getRcvFileDescrByFileId_ db fileId =
+getRcvFileDescrByRcvFileId_ :: DB.Connection -> FileTransferId -> IO (Maybe RcvFileDescr)
+getRcvFileDescrByRcvFileId_ db fileId =
   maybeFirstRow toRcvFileDescr $
     DB.query
       db
@@ -591,10 +593,30 @@ getRcvFileDescrByFileId_ db fileId =
         LIMIT 1
       |]
       (Only fileId)
-  where
-    toRcvFileDescr :: (Int64, Text, Int, Bool) -> RcvFileDescr
-    toRcvFileDescr (fileDescrId, fileDescrText, fileDescrPartNo, fileDescrComplete) =
-      RcvFileDescr {fileDescrId, fileDescrText, fileDescrPartNo, fileDescrComplete}
+
+getRcvFileDescrBySndFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO RcvFileDescr
+getRcvFileDescrBySndFileId db fileId = do
+  liftIO (getRcvFileDescrBySndFileId_ db fileId) >>= \case
+    Nothing -> throwError $ SERcvFileDescrNotFound fileId
+    Just rfd -> pure rfd
+
+getRcvFileDescrBySndFileId_ :: DB.Connection -> FileTransferId -> IO (Maybe RcvFileDescr)
+getRcvFileDescrBySndFileId_ db fileId =
+  maybeFirstRow toRcvFileDescr $
+    DB.query
+      db
+      [sql|
+        SELECT d.file_descr_id, d.file_descr_text, d.file_descr_part_no, d.file_descr_complete
+        FROM xftp_file_descriptions d
+        JOIN snd_files f ON f.file_descr_id = d.file_descr_id
+        WHERE f.file_id = ?
+        LIMIT 1
+      |]
+      (Only fileId)
+
+toRcvFileDescr :: (Int64, Text, Int, Bool) -> RcvFileDescr
+toRcvFileDescr (fileDescrId, fileDescrText, fileDescrPartNo, fileDescrComplete) =
+  RcvFileDescr {fileDescrId, fileDescrText, fileDescrPartNo, fileDescrComplete}
 
 updateRcvFileAgentId :: DB.Connection -> FileTransferId -> Maybe AgentRcvFileId -> IO ()
 updateRcvFileAgentId db fileId aFileId = do
@@ -627,7 +649,7 @@ getRcvFileTransfer_ db userId fileId = do
           WHERE f.user_id = ? AND f.file_id = ?
         |]
         (userId, fileId)
-  rfd_ <- liftIO $ getRcvFileDescrByFileId_ db fileId
+  rfd_ <- liftIO $ getRcvFileDescrByRcvFileId_ db fileId
   rcvFileTransfer rfd_ rftRow
   where
     rcvFileTransfer ::
@@ -656,8 +678,8 @@ getRcvFileTransfer_ db userId fileId = do
           _ -> pure Nothing
         cancelled = fromMaybe False cancelled_
 
-acceptRcvFileTransfer :: DB.Connection -> User -> Int64 -> (CommandId, ConnId) -> ConnStatus -> FilePath -> SubscriptionMode -> ExceptT StoreError IO AChatItem
-acceptRcvFileTransfer db user@User {userId} fileId (cmdId, acId) connStatus filePath subMode = ExceptT $ do
+acceptRcvFileTransfer :: DB.Connection -> VersionRange -> User -> Int64 -> (CommandId, ConnId) -> ConnStatus -> FilePath -> SubscriptionMode -> ExceptT StoreError IO AChatItem
+acceptRcvFileTransfer db vr user@User {userId} fileId (cmdId, acId) connStatus filePath subMode = ExceptT $ do
   currentTs <- getCurrentTime
   acceptRcvFT_ db user fileId filePath Nothing currentTs
   DB.execute
@@ -666,7 +688,7 @@ acceptRcvFileTransfer db user@User {userId} fileId (cmdId, acId) connStatus file
     (acId, connStatus, ConnRcvFile, fileId, userId, currentTs, currentTs, subMode == SMOnlyCreate)
   connId <- insertedRowId db
   setCommandConnId db user cmdId connId
-  runExceptT $ getChatItemByFileId db user fileId
+  runExceptT $ getChatItemByFileId db vr user fileId
 
 getContactByFileId :: DB.Connection -> User -> FileTransferId -> ExceptT StoreError IO Contact
 getContactByFileId db user@User {userId} fileId = do
@@ -677,19 +699,19 @@ getContactByFileId db user@User {userId} fileId = do
       ExceptT . firstRow fromOnly (SEContactNotFoundByFileId fileId) $
         DB.query db "SELECT contact_id FROM files WHERE user_id = ? AND file_id = ?" (userId, fileId)
 
-acceptRcvInlineFT :: DB.Connection -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
-acceptRcvInlineFT db user fileId filePath = do
+acceptRcvInlineFT :: DB.Connection -> VersionRange -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
+acceptRcvInlineFT db vr user fileId filePath = do
   liftIO $ acceptRcvFT_ db user fileId filePath (Just IFMOffer) =<< getCurrentTime
-  getChatItemByFileId db user fileId
+  getChatItemByFileId db vr user fileId
 
 startRcvInlineFT :: DB.Connection -> User -> RcvFileTransfer -> FilePath -> Maybe InlineFileMode -> IO ()
 startRcvInlineFT db user RcvFileTransfer {fileId} filePath rcvFileInline =
   acceptRcvFT_ db user fileId filePath rcvFileInline =<< getCurrentTime
 
-xftpAcceptRcvFT :: DB.Connection -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
-xftpAcceptRcvFT db user fileId filePath = do
+xftpAcceptRcvFT :: DB.Connection -> VersionRange -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
+xftpAcceptRcvFT db vr user fileId filePath = do
   liftIO $ acceptRcvFT_ db user fileId filePath Nothing =<< getCurrentTime
-  getChatItemByFileId db user fileId
+  getChatItemByFileId db vr user fileId
 
 acceptRcvFT_ :: DB.Connection -> User -> FileTransferId -> FilePath -> Maybe InlineFileMode -> UTCTime -> IO ()
 acceptRcvFT_ db User {userId} fileId filePath rcvFileInline currentTs = do
@@ -909,9 +931,9 @@ getLocalCryptoFile db userId fileId sent =
       FileTransferMeta {filePath, xftpSndFile} <- getFileTransferMeta_ db userId fileId
       pure $ CryptoFile filePath $ xftpSndFile >>= \f -> f.cryptoArgs
 
-updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
-updateDirectCIFileStatus db user fileId fileStatus = do
-  aci@(AChatItem cType d cInfo ci) <- getChatItemByFileId db user fileId
+updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> VersionRange -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
+updateDirectCIFileStatus db vr user fileId fileStatus = do
+  aci@(AChatItem cType d cInfo ci) <- getChatItemByFileId db vr user fileId
   case (cType, testEquality d $ msgDirection @d) of
     (SCTDirect, Just Refl) -> do
       liftIO $ updateCIFileStatus db user fileId fileStatus

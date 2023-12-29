@@ -898,8 +898,8 @@
     <string name="invalid_data">données invalides</string>
     <string name="invalid_chat">chat invalide</string>
     <string name="icon_descr_cancel_live_message">Annuler le message dynamique</string>
-    <string name="feature_offered_item">offert %s</string>
-    <string name="feature_offered_item_with_param">offert %s: %2s</string>
+    <string name="feature_offered_item">propose %s</string>
+    <string name="feature_offered_item_with_param">propose %s : %2s</string>
     <string name="feature_cancelled_item">annulé %s</string>
     <string name="app_version_title">Version de l\'app</string>
     <string name="core_simplexmq_version">simplexmq : v%s (%2s)</string>
@@ -1172,8 +1172,6 @@
     <string name="read_more_in_user_guide_with_link"><![CDATA[Pour en savoir plus, consultez le <font color="#0088ff">Guide de l\'utilisateur</font>.]]></string>
     <string name="save_auto_accept_settings">Sauvegarder les paramètres d\'acceptation automatique</string>
     <string name="scan_qr_to_connect_to_contact">Pour se connecter, votre contact peut scanner le code QR ou utiliser le lien dans l\'application.</string>
-    <string name="your_contacts_will_see_it">Vos contacts dans SimpleX la verront.
-\nVous pouvez modifier ce choix dans les Paramètres.</string>
     <string name="app_passcode_replaced_with_self_destruct">Le code d\'accès de l\'application est remplacé par un code d\'autodestruction.</string>
     <string name="enable_self_destruct">Activer l\'autodestruction</string>
     <string name="empty_chat_profile_is_created">Un profil de chat vierge portant le nom fourni est créé et l\'application s\'ouvre normalement.</string>
@@ -1521,4 +1519,14 @@
     <string name="found_desktop">Bureau trouvé</string>
     <string name="not_compatible">Non compatible !</string>
     <string name="multicast_discoverable_via_local_network">Accessible via le réseau local</string>
+    <string name="refresh_qr_code">Rafraîchir</string>
+    <string name="create_chat_profile">Créer un profil de chat</string>
+    <string name="no_connected_mobile">Pas de mobile connecté</string>
+    <string name="disconnect_remote_hosts">Déconnecter les mobiles</string>
+    <string name="random_port">Aléatoire</string>
+    <string name="open_port_in_firewall_desc">Afin de permettre à une application mobile de se connecter à votre ordinateur, ouvrez ce port dans votre pare-feu, si vous l\'avez activé</string>
+    <string name="app_was_crashed">Crash d\'aperçu</string>
+    <string name="open_port_in_firewall_title">Ouvrir le port de votre pare-feu</string>
+    <string name="error_showing_content">erreur d\'affichage de contenu</string>
+    <string name="error_showing_message">erreur d\'affichage de message</string>
 </resources>

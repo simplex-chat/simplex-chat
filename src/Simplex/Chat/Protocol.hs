@@ -29,7 +29,9 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
+import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.String
 import Data.Text (Text)
@@ -50,9 +52,13 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, fstTo
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version hiding (version)
 
+-- This should not be used directly in code, instead use `maxVersion chatVRange` from ChatConfig.
+-- This indirection is needed for backward/forward compatibility testing.
+-- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: Version
-currentChatVersion = 4
+currentChatVersion = 5
 
+-- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRange
 supportedChatVRange = mkVersionRange 1 currentChatVersion
 
@@ -71,6 +77,10 @@ groupLinkNoContactVRange = mkVersionRange 3 currentChatVersion
 -- version range that supports group forwarding
 groupForwardVRange :: VersionRange
 groupForwardVRange = mkVersionRange 4 currentChatVersion
+
+-- version range that supports batch sending in groups
+batchSendVRange :: VersionRange
+batchSendVRange = mkVersionRange 5 currentChatVersion
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
@@ -447,6 +457,18 @@ durationText duration =
       | n <= 9 = '0' : show n
       | otherwise = show n
 
+msgContentHasText :: MsgContent -> Bool
+msgContentHasText = \case
+  MCText t -> hasText t
+  MCLink {text} -> hasText text
+  MCImage {text} -> hasText text
+  MCVideo {text} -> hasText text
+  MCVoice {text} -> hasText text
+  MCFile t -> hasText t
+  MCUnknown {text} -> hasText text
+  where
+    hasText = not . T.null
+
 isVoice :: MsgContent -> Bool
 isVoice = \case
   MCVoice {} -> True
@@ -467,18 +489,34 @@ data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: Maybe FileInv
 
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 
-instance MsgEncodingI e => StrEncoding (ChatMessage e) where
-  strEncode msg = case chatToAppMessage msg of
-    AMJson m -> LB.toStrict $ J.encode m
-    AMBinary m -> strEncode m
-  strP = (\(ACMsg _ m) -> checkEncoding m) <$?> strP
+-- this limit reserves space for metadata in forwarded messages
+-- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, round to 15610
+maxChatMsgSize :: Int64
+maxChatMsgSize = 15610
 
-instance StrEncoding AChatMessage where
-  strEncode (ACMsg _ m) = strEncode m
-  strP =
-    A.peekChar' >>= \case
-      '{' -> ACMsg SJson <$> ((appJsonToCM <=< J.eitherDecodeStrict') <$?> A.takeByteString)
-      _ -> ACMsg SBinary <$> (appBinaryToCM <$?> strP)
+data EncodedChatMessage = ECMEncoded L.ByteString | ECMLarge
+
+encodeChatMessage :: MsgEncodingI e => ChatMessage e -> EncodedChatMessage
+encodeChatMessage msg = do
+  case chatToAppMessage msg of
+    AMJson m -> do
+      let body = J.encode m
+      if LB.length body > maxChatMsgSize
+        then ECMLarge
+        else ECMEncoded body
+    AMBinary m -> ECMEncoded . LB.fromStrict $ strEncode m
+
+parseChatMessages :: ByteString -> [Either String AChatMessage]
+parseChatMessages "" = [Left "empty string"]
+parseChatMessages s = case B.head s of
+  '{' -> [ACMsg SJson <$> J.eitherDecodeStrict' s]
+  '[' -> case J.eitherDecodeStrict' s of
+    Right v -> map parseItem v
+    Left e -> [Left e]
+  _ -> [ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
+  where
+    parseItem :: J.Value -> Either String AChatMessage
+    parseItem v = ACMsg SJson <$> JT.parseEither parseJSON v
 
 parseMsgContainer :: J.Object -> JT.Parser MsgContainer
 parseMsgContainer v =

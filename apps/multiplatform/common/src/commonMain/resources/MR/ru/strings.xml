@@ -1277,8 +1277,7 @@
     <string name="continue_to_next_step">Продолжить</string>
     <string name="dont_create_address">Не создавать адрес</string>
     <string name="you_can_create_it_later">Вы можете создать его позже</string>
-    <string name="your_contacts_will_see_it">Ваши контакты в SimpleX получат этот адрес.
-\nВы можете изменить это в Настройках.</string>
+    <string name="you_can_make_address_visible_via_settings">Вы можете сделать его видимым для ваших контактов в SimpleX через Настройки.</string>
     <string name="address_section_title">Адрес</string>
     <string name="enter_welcome_message">Введите приветственное сообщение…</string>
     <string name="group_welcome_preview">Просмотр</string>
@@ -1603,4 +1602,11 @@
     <string name="not_compatible">Несовместимая версия!</string>
     <string name="group_member_role_author">автор</string>
     <string name="multicast_discoverable_via_local_network">Найти через локальную сеть</string>
+    <string name="refresh_qr_code">Обновить</string>
+    <string name="random_port">Случайный</string>
+    <string name="open_port_in_firewall_desc">Чтобы разрешить мобильному приложению подключаться к компьютеру, откройте этот порт в брандмауэре, если он включен</string>
+    <string name="create_chat_profile">Создать профиль чата</string>
+    <string name="open_port_in_firewall_title">Открыть порт в брандмауэре</string>
+    <string name="disconnect_remote_hosts">Отключить мобильные</string>
+    <string name="no_connected_mobile">Нет подключённых мобильных</string>
 </resources>
