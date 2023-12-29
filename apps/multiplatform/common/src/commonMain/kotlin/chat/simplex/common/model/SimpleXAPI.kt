@@ -106,6 +106,7 @@ class AppPreferences {
   val chatArchiveName = mkStrPreference(SHARED_PREFS_CHAT_ARCHIVE_NAME, null)
   val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
+  val chatStopped = mkBoolPreference(SHARED_PREFS_CHAT_STOPPED, false)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
   val terminalAlwaysVisible = mkBoolPreference(SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
@@ -273,6 +274,7 @@ class AppPreferences {
     private const val SHARED_PREFS_APP_LANGUAGE = "AppLanguage"
     private const val SHARED_PREFS_ONBOARDING_STAGE = "OnboardingStage"
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
+    private const val SHARED_PREFS_CHAT_STOPPED = "ChatStopped"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
     private const val SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE = "TerminalAlwaysVisible"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
@@ -345,15 +347,8 @@ object ChatController {
     Log.d(TAG, "user: $user")
     try {
       if (chatModel.chatRunning.value == true) return
-      apiSetNetworkConfig(getNetCfg())
-      apiSetTempFolder(coreTmpDir.absolutePath)
-      apiSetFilesFolder(appFilesDir.absolutePath)
-      if (appPlatform.isDesktop) {
-        apiSetRemoteHostsFolder(remoteHostsDir.absolutePath)
-      }
-      apiSetXFTPConfig(getXFTPCfg())
-      apiSetEncryptLocalFiles(appPrefs.privacyEncryptLocalFiles.get())
       val justStarted = apiStartChat()
+      appPrefs.chatStopped.set(false)
       val users = listUsers(null)
       chatModel.users.clear()
       chatModel.users.addAll(users)
@@ -365,6 +360,9 @@ object ChatController {
         chatModel.chatRunning.value = true
         startReceiver()
         setLocalDeviceName(appPrefs.deviceNameForRemoteAccess.get()!!)
+        if (appPreferences.onboardingStage.get() == OnboardingStage.OnboardingComplete && !chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.get()) {
+          chatModel.setDeliveryReceipts.value = true
+        }
         Log.d(TAG, "startChat: started")
       } else {
         updatingChatsMutex.withLock {
@@ -383,13 +381,6 @@ object ChatController {
     Log.d(TAG, "user: null")
     try {
       if (chatModel.chatRunning.value == true) return
-      apiSetTempFolder(coreTmpDir.absolutePath)
-      apiSetFilesFolder(appFilesDir.absolutePath)
-      if (appPlatform.isDesktop) {
-        apiSetRemoteHostsFolder(remoteHostsDir.absolutePath)
-      }
-      apiSetXFTPConfig(getXFTPCfg())
-      apiSetEncryptLocalFiles(appPrefs.privacyEncryptLocalFiles.get())
       chatModel.users.clear()
       chatModel.currentUser.value = null
       chatModel.localUserCreated.value = false
@@ -596,19 +587,19 @@ object ChatController {
     }
   }
 
-  private suspend fun apiSetTempFolder(tempFolder: String) {
+  suspend fun apiSetTempFolder(tempFolder: String) {
     val r = sendCmd(null, CC.SetTempFolder(tempFolder))
     if (r is CR.CmdOk) return
     throw Error("failed to set temp folder: ${r.responseType} ${r.details}")
   }
 
-  private suspend fun apiSetFilesFolder(filesFolder: String) {
+  suspend fun apiSetFilesFolder(filesFolder: String) {
     val r = sendCmd(null, CC.SetFilesFolder(filesFolder))
     if (r is CR.CmdOk) return
     throw Error("failed to set files folder: ${r.responseType} ${r.details}")
   }
 
-  private suspend fun apiSetRemoteHostsFolder(remoteHostsFolder: String) {
+  suspend fun apiSetRemoteHostsFolder(remoteHostsFolder: String) {
     val r = sendCmd(null, CC.SetRemoteHostsFolder(remoteHostsFolder))
     if (r is CR.CmdOk) return
     throw Error("failed to set remote hosts folder: ${r.responseType} ${r.details}")

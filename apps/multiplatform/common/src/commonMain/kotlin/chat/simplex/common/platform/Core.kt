@@ -1,8 +1,11 @@
 package chat.simplex.common.platform
 
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.controller
+import chat.simplex.common.model.ChatModel.currentUser
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
+import chat.simplex.res.MR
 import kotlinx.serialization.decodeFromString
 import java.nio.ByteBuffer
 
@@ -39,7 +42,11 @@ val chatController: ChatController = ChatController
 fun initChatControllerAndRunMigrations(ignoreSelfDestruct: Boolean) {
   if (ignoreSelfDestruct || DatabaseUtils.ksSelfDestructPassword.get() == null) {
     withBGApi {
-      initChatController()
+      if (appPreferences.chatStopped.get()) {
+        showStartChatAfterRestartAlert()
+      } else {
+        initChatController()
+      }
       runMigrations()
     }
   }
@@ -62,45 +69,77 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     chatModel.chatDbStatus.value = res
     if (res != DBMigrationResult.OK) {
       Log.d(TAG, "Unable to migrate successfully: $res")
-    } else if (startChat) {
-      // If we migrated successfully means previous re-encryption process on database level finished successfully too
-      if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)
-      val user = chatController.apiGetActiveUser(null)
-      if (user == null) {
-        chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
-        chatModel.currentUser.value = null
-        chatModel.users.clear()
-        if (appPlatform.isDesktop) {
-          /**
-           * Setting it here to null because otherwise the screen will flash in [MainScreen] after the first start
-           * because of default value of [OnboardingStage.OnboardingComplete]
-           * */
-          chatModel.localUserCreated.value = null
-          if (chatController.listRemoteHosts()?.isEmpty() == true) {
-            chatController.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
-          }
-          chatController.startChatWithoutUser()
-        } else {
+      return
+    }
+    controller.apiSetNetworkConfig(controller.getNetCfg())
+    controller.apiSetTempFolder(coreTmpDir.absolutePath)
+    controller.apiSetFilesFolder(appFilesDir.absolutePath)
+    if (appPlatform.isDesktop) {
+      controller.apiSetRemoteHostsFolder(remoteHostsDir.absolutePath)
+    }
+    controller.apiSetXFTPConfig(controller.getXFTPCfg())
+    controller.apiSetEncryptLocalFiles(controller.appPrefs.privacyEncryptLocalFiles.get())
+    // If we migrated successfully means previous re-encryption process on database level finished successfully too
+    if (appPreferences.encryptionStartedAt.get() != null) appPreferences.encryptionStartedAt.set(null)
+    val user = chatController.apiGetActiveUser(null)
+    chatModel.currentUser.value = user
+    if (user == null) {
+      chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
+      chatModel.currentUser.value = null
+      chatModel.users.clear()
+      if (appPlatform.isDesktop) {
+        /**
+         * Setting it here to null because otherwise the screen will flash in [MainScreen] after the first start
+         * because of default value of [OnboardingStage.OnboardingComplete]
+         * */
+        chatModel.localUserCreated.value = null
+        if (chatController.listRemoteHosts()?.isEmpty() == true) {
           chatController.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
         }
+        chatController.startChatWithoutUser()
       } else {
-        val savedOnboardingStage = appPreferences.onboardingStage.get()
-        val newStage = if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {
-          OnboardingStage.Step3_CreateSimpleXAddress
-        } else {
-          savedOnboardingStage
-        }
-        if (appPreferences.onboardingStage.get() != newStage) {
-          appPreferences.onboardingStage.set(newStage)
-        }
-        if (appPreferences.onboardingStage.get() == OnboardingStage.OnboardingComplete && !chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.get()) {
-          chatModel.setDeliveryReceipts.value = true
-        }
-        chatController.startChat(user)
-        platform.androidChatInitializedAndStarted()
+        chatController.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
       }
+    } else if (startChat) {
+      val savedOnboardingStage = appPreferences.onboardingStage.get()
+      val newStage = if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {
+        OnboardingStage.Step3_CreateSimpleXAddress
+      } else {
+        savedOnboardingStage
+      }
+      if (appPreferences.onboardingStage.get() != newStage) {
+        appPreferences.onboardingStage.set(newStage)
+      }
+      chatController.startChat(user)
+      platform.androidChatInitializedAndStarted()
+    } else {
+      chatController.getUserChatData(null)
+      chatModel.localUserCreated.value = currentUser.value != null
+      chatModel.chatRunning.value = false
     }
   } finally {
     chatModel.ctrlInitInProgress.value = false
   }
+}
+
+fun showStartChatAfterRestartAlert() {
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.start_chat_question),
+    text = generalGetString(MR.strings.chat_is_stopped_you_should_transfer_database),
+    onConfirm = {
+      withBGApi {
+        initChatController(startChat = true)
+      }
+    },
+    onDismiss = {
+      withBGApi {
+        initChatController(startChat = false)
+      }
+    },
+    onDismissRequest = {
+      withBGApi {
+        initChatController(startChat = false)
+      }
+    }
+  )
 }
