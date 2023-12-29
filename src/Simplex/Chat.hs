@@ -2140,24 +2140,40 @@ processChatCommand' vr = \case
           user' <- updateUser
           asks currentUser >>= atomically . (`writeTVar` Just user')
           withChatLock "updateProfile" . procCmd $ do
-            ChatConfig {logLevel} <- asks config
-            summary <- foldM (processAndCount user' logLevel) (UserProfileUpdateSummary 0 0 0 []) contacts
+            -- changedContacts refers only to contacts with changed preferences
+            (notChangedCount, changedContacts, rs) <- foldM (processAndCount user') (0, [], []) contacts
+            let (errs, msgReqs) = partitionEithers rs
+            delivered <- deliverMessages msgReqs
+            let errs' = lefts delivered
+                errors = errs <> errs'
+            unless (null errors) $ toView $ CRChatErrors (Just user) errors
+            let summary =
+                  UserProfileUpdateSummary
+                    { notChanged = notChangedCount,
+                      updateSuccesses = length $ rights delivered,
+                      updateFailures = length errors,
+                      changedContacts
+                    }
             pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' summary
       where
-        processAndCount user' ll s@UserProfileUpdateSummary {notChanged, updateSuccesses, updateFailures, changedContacts = cts} ct = do
+        processAndCount :: User -> (Int, [Contact], [Either ChatError MsgReq]) -> Contact -> m (Int, [Contact], [Either ChatError MsgReq])
+        processAndCount user' (notChangedCnt, changedCts, rs) ct = do
           let mergedProfile = userProfileToSend user Nothing $ Just ct
               ct' = updateMergedPreferences user' ct
               mergedProfile' = userProfileToSend user' Nothing $ Just ct'
           if mergedProfile' == mergedProfile
-            then pure s {notChanged = notChanged + 1}
-            else
-              let cts' = if mergedPreferences ct == mergedPreferences ct' then cts else ct' : cts
-               in (notifyContact mergedProfile' ct' $> s {updateSuccesses = updateSuccesses + 1, changedContacts = cts'})
-                    `catchChatError` \e -> when (ll <= CLLInfo) (toView $ CRChatError (Just user) e) $> s {updateFailures = updateFailures + 1, changedContacts = cts'}
+            then pure (notChangedCnt + 1, changedCts, rs)
+            else do
+              let changedCts' = if mergedPreferences ct == mergedPreferences ct' then changedCts else ct' : changedCts
+              r <- prepareMsgReq mergedProfile' ct' `catchChatError` \e -> pure $ Left e
+              pure (notChangedCnt, changedCts', r : rs)
           where
-            notifyContact mergedProfile' ct' = do
-              void $ sendDirectContactMessage ct' (XInfo mergedProfile')
-              when (directOrUsed ct') $ createSndFeatureItems user' ct ct'
+            prepareMsgReq mergedProfile' ct' = case contactSendAction ct' of
+              CSASend conn@Connection {connId} -> do
+                SndMessage {msgId, msgBody} <- createSndMessage (XInfo mergedProfile') (ConnectionId connId)
+                when (directOrUsed ct') $ createSndFeatureItems user' ct ct'
+                pure $ Right $ (conn, MsgFlags {notification = hasNotification XInfo_}, msgBody, msgId)
+              CSAError e -> pure $ Left e
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -5612,12 +5628,23 @@ deleteOrUpdateMemberRecord user@User {userId} member =
       Nothing -> deleteGroupMember db user member
 
 sendDirectContactMessage :: (MsgEncodingI e, ChatMonad m) => Contact -> ChatMsgEvent e -> m (SndMessage, Int64)
-sendDirectContactMessage ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotReady ct
-sendDirectContactMessage ct@Contact {activeConn = Just conn@Connection {connId, connStatus}, contactStatus} chatMsgEvent
-  | connStatus /= ConnReady && connStatus /= ConnSndReady = throwChatError $ CEContactNotReady ct
-  | contactStatus /= CSActive = throwChatError $ CEContactNotActive ct
-  | connDisabled conn = throwChatError $ CEContactDisabled ct
-  | otherwise = sendDirectMessage conn chatMsgEvent (ConnectionId connId)
+sendDirectContactMessage ct chatMsgEvent =
+  case contactSendAction ct of
+    CSAError e -> throwError e
+    CSASend conn@Connection {connId} -> sendDirectMessage conn chatMsgEvent (ConnectionId connId)
+
+data ContactSendAction = CSASend Connection | CSAError ChatError
+
+contactSendAction :: Contact -> ContactSendAction
+contactSendAction ct@Contact {activeConn, contactStatus} = case activeConn of
+  Nothing -> err $ CEContactNotReady ct
+  Just conn@Connection {connStatus}
+    | connStatus /= ConnReady && connStatus /= ConnSndReady -> err $ CEContactNotReady ct
+    | contactStatus /= CSActive -> err $ CEContactNotActive ct
+    | connDisabled conn -> err $ CEContactDisabled ct
+    | otherwise -> CSASend conn
+  where
+    err = CSAError . ChatError
 
 sendDirectMessage :: (MsgEncodingI e, ChatMonad m) => Connection -> ChatMsgEvent e -> ConnOrGroupId -> m (SndMessage, Int64)
 sendDirectMessage conn chatMsgEvent connOrGroupId = do
@@ -5682,14 +5709,16 @@ deliverMessage' conn msgFlags msgBody msgId =
     [r] -> liftEither r
     rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
-deliverMessages :: ChatMonad' m => [(Connection, MsgFlags, LazyMsgBody, MessageId)] -> m [Either ChatError Int64]
+type MsgReq = (Connection, MsgFlags, LazyMsgBody, MessageId)
+
+deliverMessages :: ChatMonad' m => [MsgReq] -> m [Either ChatError Int64]
 deliverMessages msgReqs = do
   sent <- zipWith prepareBatch msgReqs <$> withAgent' (`sendMessages` aReqs)
   withStoreBatch $ \db -> map (bindRight $ createDelivery db) sent
   where
     aReqs = map (\(conn, msgFlags, msgBody, _msgId) -> (aConnId conn, msgFlags, LB.toStrict msgBody)) msgReqs
     prepareBatch req = bimap (`ChatErrorAgent` Nothing) (req,)
-    createDelivery :: DB.Connection -> ((Connection, MsgFlags, LazyMsgBody, MessageId), AgentMsgId) -> IO (Either ChatError Int64)
+    createDelivery :: DB.Connection -> (MsgReq, AgentMsgId) -> IO (Either ChatError Int64)
     createDelivery db ((Connection {connId}, _, _, msgId), agentMsgId) =
       Right <$> createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId}) msgId
 
