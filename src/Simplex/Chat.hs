@@ -38,6 +38,7 @@ import Data.Constraint (Dict (..))
 import Data.Either (fromRight, lefts, partitionEithers, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
+import Data.Functor.Identity
 import Data.Int (Int64)
 import Data.List (find, foldl', isSuffixOf, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty (..), nonEmpty, toList, (<|))
@@ -5651,16 +5652,17 @@ sendDirectMessage conn chatMsgEvent connOrGroupId = do
   (msg,) <$> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
 
 createSndMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> ConnOrGroupId -> m SndMessage
-createSndMessage chatMsgEvent connOrGroupId = do
-  createSndMessages [(connOrGroupId, chatMsgEvent)] >>= \case
-    [r] -> liftEither r
-    rs -> throwChatError $ CEInternalError $ "createSndMessage: expected 1 result, got " <> show (length rs)
+createSndMessage chatMsgEvent connOrGroupId =
+  liftEither . runIdentity =<< createSndMessagesB (Identity (Right (connOrGroupId, chatMsgEvent)))
 
-createSndMessages :: forall e m. (MsgEncodingI e, ChatMonad m) => [(ConnOrGroupId, ChatMsgEvent e)] -> m [Either ChatError SndMessage]
-createSndMessages idsEvnts = do
+createSndMessages :: (MsgEncodingI e, ChatMonad m) => [(ConnOrGroupId, ChatMsgEvent e)] -> m [Either ChatError SndMessage]
+createSndMessages = createSndMessagesB . map Right
+
+createSndMessagesB :: forall e m t. (MsgEncodingI e, ChatMonad' m, Traversable t) => t (Either ChatError (ConnOrGroupId, ChatMsgEvent e)) -> m (t (Either ChatError SndMessage))
+createSndMessagesB idsEvents = do
   gVar <- asks random
   vr <- chatVersionRange
-  withStoreBatch $ \db -> map (uncurry (createMsg db gVar vr)) idsEvnts
+  withStoreBatch $ \db -> fmap (bindRight $ uncurry (createMsg db gVar vr)) idsEvents
   where
     createMsg db gVar chatVRange connOrGroupId evnt = do
       r <- runExceptT $ createNewSndMessage db gVar connOrGroupId evnt (encodeMessage chatVRange evnt)
@@ -5863,7 +5865,7 @@ saveSndChatItem' user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem 
     ciId <- createNewSndChatItem db user cd msg content quotedItem itemTimed live createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     pure ciId
-  liftIO $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) itemTimed live createdAt Nothing createdAt
+  pure $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) itemTimed live createdAt Nothing createdAt
 
 saveRcvChatItem :: ChatMonad m => User -> ChatDirection c 'MDRcv -> RcvMessage -> UTCTime -> CIContent 'MDRcv -> m (ChatItem c 'MDRcv)
 saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} brokerTs content =
@@ -5877,14 +5879,14 @@ saveRcvChatItem' user cd msg@RcvMessage {forwardedByMember} sharedMsgId_ brokerT
     (ciId, quotedItem) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     pure (ciId, quotedItem)
-  liftIO $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemTimed live brokerTs forwardedByMember createdAt
+  pure $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemTimed live brokerTs forwardedByMember createdAt
 
-mkChatItem :: forall c d. MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CITimed -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> IO (ChatItem c d)
+mkChatItem :: forall c d. MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CITimed -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
 mkChatItem cd ciId content file quotedItem sharedMsgId itemTimed live itemTs forwardedByMember currentTs = do
   let itemText = ciContentToText content
       itemStatus = ciCreateStatus content
       meta = mkCIMeta ciId content itemText itemStatus sharedMsgId Nothing False itemTimed (justTrue live) currentTs itemTs forwardedByMember currentTs currentTs
-  pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, reactions = [], file}
+  ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, reactions = [], file}
 
 deleteDirectCI :: (ChatMonad m, MsgDirectionI d) => User -> Contact -> ChatItem 'CTDirect d -> Bool -> Bool -> m ChatResponse
 deleteDirectCI user ct ci@ChatItem {file} byUser timed = do
@@ -6046,8 +6048,30 @@ createInternalChatItem user cd content itemTs_ = do
   ciId <- withStore' $ \db -> do
     when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
     createNewChatItemNoMsg db user cd content itemTs createdAt
-  ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
+  let ci = mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
   toView $ CRNewChatItem user (AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci)
+
+-- createInternalChatItems :: forall c d m. (ChatTypeI c, MsgDirectionI d, ChatMonad m) => User -> [(ChatDirection c d, CIContent d)] -> Maybe UTCTime -> m [Either ChatError AChatItem]
+-- createInternalChatItems user dirsCIContents itemTs_ = do
+--   createdAt <- liftIO getCurrentTime
+--   let itemTs = fromMaybe createdAt itemTs_
+--   -- aChatItems <- withStoreBatch $ \db -> forM_ dirsCIContents $ \(cd, content) -> do
+--   --   -- when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
+--   --   ciId <- createNewChatItemNoMsg db user cd content itemTs createdAt
+--   --   let ci = mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
+--   --   pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
+--   withStoreBatch' $ \db -> map (uncurry $ createACI db itemTs createdAt) dirsCIContents
+--   -- let cdsToUpdate
+--   -- ciId <- withStore' $ \db -> do
+--   --   -- when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
+--   --   createNewChatItemNoMsg db user cd content itemTs createdAt
+--   -- ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
+--   -- toView $ CRNewChatItem user (AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci)
+--   where
+--     createACI db itemTs createdAt cd content = do
+--       ciId <- createNewChatItemNoMsg db user cd content itemTs createdAt
+--       let ci = mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
+--       pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
 
 getCreateActiveUser :: SQLiteStore -> Bool -> IO User
 getCreateActiveUser st testView = do
