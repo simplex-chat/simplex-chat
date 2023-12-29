@@ -78,7 +78,7 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
     drawerGesturesEnabled = appPlatform.isAndroid,
     floatingActionButton = {
-      if (searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote) {
+      if (searchText.value.text.isEmpty() && !chatModel.desktopNoUserNoRemote && chatModel.chatRunning.value == true) {
         FloatingActionButton(
           onClick = {
             if (!stopped) {
@@ -109,10 +109,12 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
           ChatList(chatModel, searchText = searchText)
         } else if (!chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
           Box(Modifier.fillMaxSize()) {
-            if (!stopped && !newChatSheetState.collectAsState().value.isVisible()) {
+            if (!stopped && !newChatSheetState.collectAsState().value.isVisible() && chatModel.chatRunning.value == true) {
               OnboardingButtons(showNewChatSheet)
             }
-            Text(stringResource(MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
+            if (chatModel.chatRunning.value == true) {
+              Text(stringResource(MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
+            }
           }
         }
       }
