@@ -355,7 +355,7 @@ fun ChatInfoLayout(
 
     if (contact.contactLink != null) {
       SectionView(stringResource(MR.strings.address_section_title).uppercase()) {
-        SimpleXLinkQRCode(contact.contactLink, Modifier.padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF).aspectRatio(1f))
+        SimpleXLinkQRCode(contact.contactLink)
         val clipboard = LocalClipboardManager.current
         ShareAddressButton { clipboard.shareText(simplexChatLink(contact.contactLink)) }
         SectionTextFooter(stringResource(MR.strings.you_can_share_this_address_with_your_contacts).format(contact.displayName))

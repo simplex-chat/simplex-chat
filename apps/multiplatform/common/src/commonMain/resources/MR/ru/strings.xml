@@ -267,12 +267,10 @@
     <string name="to_start_a_new_chat_help_header">Чтобы начать новый чат</string>
     <string name="chat_help_tap_button">Нажмите кнопку</string>
     <string name="above_then_preposition_continuation">сверху, затем:</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Добавить новый контакт</b>: чтобы создать одноразовый QR код/ссылку для Вашего контакта.]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Сканировать QR код</b>: чтобы соединиться с контактом, который показывает Вам QR код.]]></string>
     <string name="to_connect_via_link_title">Чтобы соединиться через ссылку</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Если Вы получили ссылку с приглашением из SimpleX Chat, Вы можете открыть ее в браузере:</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 на компьютере: сосканируйте показанный QR код из приложения через <b>Сканировать QR код</b>.]]></string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 на мобильном: намжите кнопку <b>Open in mobile app</b> на веб странице, затем нажмите <b>Соединиться</b> в приложении.]]></string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 на мобильном: нажмите кнопку <b>Open in mobile app</b> на веб странице, затем нажмите <b>Соединиться</b> в приложении.]]></string>
     <!-- Contact Request Alert Dialogue - CharListNavLinkView.kt -->
     <string name="accept_connection_request__question">Принять запрос на соединение?</string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Отправителю НЕ будет послано уведомление, если Вы отклоните запрос на соединение.</string>
@@ -339,7 +337,6 @@
     <string name="connect_button">Соединиться</string>
     <string name="paste_button">Вставить</string>
     <!-- CreateLinkView.kt -->
-    <string name="create_one_time_link">Создать одноразовую ссылку</string>
     <string name="one_time_link">Одноразовая ссылка</string>
     <!-- settings - SettingsView.kt -->
     <string name="your_settings">Настройки</string>
@@ -1566,9 +1563,9 @@
     <string name="block_member_desc">Все новые сообщения от %s будут скрыты!</string>
     <string name="desktop_app_version_is_incompatible">Версия настольного приложения %s несовместима с этим приложением.</string>
     <string name="blocked_item_description">заблокировано</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Вы уже соединяетесь с %1$s.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Вы уже соединяетесь с <b>%1$s</b>.]]></string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Вы уже вступаете в группу по этой ссылке.</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Вы уже вступаете в группу %1$s.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Вы уже вступаете в группу <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_one_time_link">Это ваша собственная одноразовая ссылка!</string>
     <string name="v5_4_link_mobile_desktop_descr">Через безопасный квантово-устойчивый протокол.</string>
     <string name="v5_4_block_group_members_descr">Чтобы скрыть нежелательные сообщения.</string>
@@ -1580,7 +1577,7 @@
     <string name="unblock_member_button">Разблокировать члена группы</string>
     <string name="contact_tap_to_connect">Нажмите чтобы соединиться</string>
     <string name="this_device_name">Имя этого устройства</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Вы уже состоите в группе %1$s.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Вы уже состоите в группе <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">Это ваш собственный адрес SimpleX!</string>
     <string name="unblock_member_question">Разблокировать члена группы?</string>
     <string name="settings_section_title_use_from_desktop">Использовать с компьютера</string>
@@ -1590,7 +1587,7 @@
     <string name="this_device_name_shared_with_mobile">Имя устройства будет доступно подключенному мобильному клиенту.</string>
     <string name="verify_code_on_mobile">Сверьте код на мобильном</string>
     <string name="non_content_uri_alert_text">Указан неверный путь к файлу. Сообщите о проблеме разработчикам приложения.</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Это ваша ссылка на группу %1$s!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Это ваша ссылка на группу <b>%1$s</b>!]]></string>
     <string name="verify_code_with_desktop">Сверьте код с компьютером</string>
     <string name="scan_qr_code_from_desktop">Сканировать QR код с компьютера</string>
     <string name="unblock_member_confirmation">Разблокировать</string>

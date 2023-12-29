@@ -293,9 +293,11 @@
   <string name="tap_to_start_new_chat">Tap to start a new chat</string>
   <string name="chat_with_developers">Chat with the developers</string>
   <string name="you_have_no_chats">You have no chats</string>
+  <string name="loading_chats">Loading chats…</string>
   <string name="no_filtered_chats">No filtered chats</string>
   <string name="contact_tap_to_connect">Tap to Connect</string>
   <string name="connect_with_contact_name_question">Connect with %1$s?</string>
+  <string name="search_or_paste_simplex_link">Search or paste SimpleX link</string>
 
   <!-- ChatView.kt -->
   <string name="no_selected_chat">No selected chat</string>
@@ -427,6 +429,11 @@
   <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(scan or paste from clipboard)</string>
   <string name="only_stored_on_members_devices">(only stored by group members)</string>
 
+  <!-- QRCodeScanner -->
+  <string name="enable_camera_access">Enable camera access</string>
+  <string name="tap_to_scan">Tap to scan</string>
+  <string name="camera_not_available">Camera not available</string>
+
   <!-- GetImageView -->
   <string name="toast_permission_denied">Permission Denied!</string>
   <string name="use_camera_button">Camera</string>
@@ -442,8 +449,8 @@
   <string name="to_start_a_new_chat_help_header">To start a new chat</string>
   <string name="chat_help_tap_button">Tap button</string>
   <string name="above_then_preposition_continuation">above, then:</string>
-  <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Add new contact</b>: to create your one-time QR Code for your contact.]]></string>
-  <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Scan QR code</b>: to connect to your contact who shows QR code to you.]]></string>
+  <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Add contact</b>: to create a new invitation link, or connect via a link you received.]]></string>
+  <string name="create_group_button_to_create_new_group"><![CDATA[<b>Create group</b>: to create a new group.]]></string>
   <string name="to_connect_via_link_title">To connect via link</string>
   <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">If you received SimpleX Chat invitation link, you can open it in your browser:</string>
   <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 desktop: scan displayed QR code from the app, via <b>Scan QR code</b>.]]></string>
@@ -546,11 +553,26 @@
   <string name="this_string_is_not_a_connection_link">This string is not a connection link!</string>
   <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[You can also connect by clicking the link. If it opens in the browser, click <b>Open in mobile app</b> button.]]></string>
 
-  <!-- CreateLinkView.kt -->
-  <string name="create_one_time_link">Create one-time invitation link</string>
+  <!-- NewChatView.kt -->
+  <string name="new_chat">New chat</string>
+  <string name="add_contact_tab">Add contact</string>
   <string name="one_time_link">One-time invitation link</string>
   <string name="one_time_link_short">1-time link</string>
   <string name="simplex_address">SimpleX address</string>
+  <string name="or_show_this_qr_code">Or show this code</string>
+  <string name="or_scan_qr_code">Or scan QR code</string>
+  <string name="keep_unused_invitation_question">Keep unused invitation?</string>
+  <string name="you_can_view_invitation_link_again">You can view invitation link again in connection details.</string>
+  <string name="keep_invitation_link">Keep</string>
+  <string name="creating_link">Creating link…</string>
+  <string name="retry_verb">Retry</string>
+  <string name="share_this_1_time_link">Share this 1-time invite link</string>
+  <string name="paste_the_link_you_received">Paste the link you received</string>
+  <string name="the_text_you_pasted_is_not_a_link">The text you pasted is not a SimpleX link.</string>
+  <string name="tap_to_paste_link">Tap to paste link</string>
+
+  <string name="invalid_qr_code">Invalid QR code</string>
+  <string name="code_you_scanned_is_not_simplex_link_qr_code">The code you scanned is not a SimpleX link QR code.</string>
 
   <!-- ScanCodeView.kt -->
   <string name="scan_code">Scan code</string>
@@ -1708,20 +1730,20 @@
   <!-- Connection plan -->
   <string name="connect_plan_connect_to_yourself">Connect to yourself?</string>
   <string name="connect_plan_this_is_your_own_one_time_link">This is your own one-time link!</string>
-  <string name="connect_plan_you_are_already_connecting_to_vName">You are already connecting to %1$s.</string>
+  <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[You are already connecting to <b>%1$s</b>.]]></string>
   <string name="connect_plan_already_connecting">Already connecting!</string>
   <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">You are already connecting via this one-time link!</string>
   <string name="connect_plan_this_is_your_own_simplex_address">This is your own SimpleX address!</string>
   <string name="connect_plan_repeat_connection_request">Repeat connection request?</string>
   <string name="connect_plan_you_have_already_requested_connection_via_this_address">You have already requested connection via this address!</string>
   <string name="connect_plan_join_your_group">Join your group?</string>
-  <string name="connect_plan_this_is_your_link_for_group_vName">This is your link for group %1$s!</string>
+  <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[This is your link for group <b>%1$s</b>!]]></string>
   <string name="connect_plan_open_group">Open group</string>
   <string name="connect_plan_repeat_join_request">Repeat join request?</string>
   <string name="connect_plan_group_already_exists">Group already exists!</string>
-  <string name="connect_plan_you_are_already_joining_the_group_vName">You are already joining the group %1$s.</string>
+  <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[You are already joining the group <b>%1$s</b>.]]></string>
   <string name="connect_plan_already_joining_the_group">Already joining the group!</string>
   <string name="connect_plan_you_are_already_joining_the_group_via_this_link">You are already joining the group via this link.</string>
-  <string name="connect_plan_you_are_already_in_group_vName">You are already in group %1$s.</string>
+  <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[You are already in group <b>%1$s</b>.]]></string>
   <string name="connect_plan_connect_via_link">Connect via link?</string>
 </resources>

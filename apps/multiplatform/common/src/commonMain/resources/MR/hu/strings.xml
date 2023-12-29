@@ -44,7 +44,6 @@
     <string name="network_session_mode_user_description"><![CDATA[Külön TCP kapcsolat (és SOCKS bejelentkezési adatok) lesznek használva <b>minden chat profilodra az appban</b>.]]></string>
     <string name="both_you_and_your_contact_can_send_disappearing">Mindketten, te és az ismerősöd is küldhettek eltűnő üzeneteket.</string>
     <string name="keychain_is_storing_securely">Az Android Keystore-t jelmondat biztonságos tárolására használják - lehetővé teszi az értesítési szolgáltatás működését.</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>QR-kód beolvasása</b>: kapcsolódás ismerőshöz a megmutatott QR-kódja alapján]]></string>
     <string name="alert_title_msg_bad_hash">Téves üzenet hash</string>
     <string name="cant_delete_user_profile">Felhasználói profil törlése nem lehetséges!</string>
     <string name="color_background">Háttér</string>
@@ -117,7 +116,6 @@
     <string name="bold_text">vastagított</string>
     <string name="app_passcode_replaced_with_self_destruct">Az app számkód helyettesítésre kerül egy önmegsemmisítő számkóddal.</string>
     <string name="v5_3_new_interface_languages_descr">Arab, bulgár, finn, héber, thai és ukrán - köszönet a felhasználóknak és a Weblate-nek!</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Új ismerős hozzáadása</b>: egyszer használatos QR-kód készítése az ismerős számára.]]></string>
     <string name="allow_voice_messages_question">Hangüzenetek engedélyezése?</string>
     <string name="always_use_relay">Mindig használt relay szervert</string>
     <string name="chat_preferences_always">mindig</string>
@@ -338,7 +336,6 @@
     <string name="connected_to_mobile">Csatlakoztatva a mobilhoz</string>
     <string name="current_passphrase">Jelenlegi jelmondat…</string>
     <string name="choose_file_title">Fájl választása</string>
-    <string name="create_one_time_link">Egyszer használatos meghívó link létrehozása</string>
     <string name="delete_image">Kép törlése</string>
     <string name="smp_server_test_create_file">Fájl létrehozása</string>
     <string name="create_secret_group_title">Tikos csoport létrehozása</string>
@@ -1432,7 +1429,7 @@
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">A chat szolgáltatást elindíthatod a beállítások / adatbázis pontban vagy az app újraindításával.</string>
     <string name="verify_code_on_mobile">Ellenőrizd a kódot a mobilon!</string>
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Csatlakoztál ehhez a csoporthoz. Kapcsolódás a meghívó csoporttaghoz.</string>
-    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Kapcsolatba léphetsz <font color=#0088ff>a SimpleX Chat fejlesztőivel és kérdezhetsz bármit és értesülhetsz az újdonságokról</font>.]]></string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Kapcsolatba léphetsz <font color="#0088ff">a SimpleX Chat fejlesztőivel és kérdezhetsz bármit és értesülhetsz az újdonságokról</font>.]]></string>
     <string name="v4_2_auto_accept_contact_requests_desc">Opcionális üdvözlő szöveggel.</string>
     <string name="unknown_database_error_with_info">Ismeretlen adatbázis hiba: %s</string>
     <string name="you_can_hide_or_mute_user_profile">Elrejtheted vagy némíthatod egy felhasználó profilját - tartsd lenyomva a menühöz!</string>
@@ -1518,13 +1515,13 @@
     <string name="sync_connection_force_desc">A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Ez a művelet nem vonható vissza - profilod, ismerőseid, üzeneteid és fájljaid visszafordíthatatlanul törlésre kerülnek.</string>
     <string name="info_row_updated_at">A bejegyzés frissítve</string>
-    <string name="read_more_in_user_guide_with_link"><![CDATA[További információ a <font color=#0088ff>Felhasználói útmutatóban</font> olvasható.]]></string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[További információ a <font color="#0088ff">Felhasználói útmutatóban</font> olvasható.]]></string>
     <string name="settings_is_storing_in_clear_text">A jelmondat a beállításokban egyszerű szövegként van tárolva.</string>
     <string name="terminal_always_visible">Konzol megjelenítése új ablakban</string>
     <string name="alert_text_msg_bad_hash">Az előző üzenet hash-e más.</string>
     <string name="receipts_section_description">Ezek a beállítások a jelenlegi profilodra vonatkoznak</string>
     <string name="loading_remote_file_desc">Kérjük, várj, amíg a fájl betöltődik az összekapcsolt mobilról.</string>
-    <string name="read_more_in_github_with_link"><![CDATA[További információ a <font color=#0088ff>GitHub tárolónkban</font>.]]></string>
+    <string name="read_more_in_github_with_link"><![CDATA[További információ a <font color="#0088ff">GitHub tárolónkban</font>.]]></string>
     <string name="error_showing_content">hiba a tartalom megjelenítése közben</string>
     <string name="error_showing_message">hiba az üzenet megjelenítésekor</string>
 </resources>
