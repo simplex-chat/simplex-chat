@@ -2143,6 +2143,11 @@ processChatCommand' vr = \case
           withChatLock "updateProfile" . procCmd $ do
             -- changedContacts refers only to contacts with changed preferences
             (notChangedCount, changedContacts, rs) <- foldM (processAndCount user') (0, [], []) contacts
+            -- processAndCount (rename) should return list of contacts to create items for (directOrUsed changedCts?);
+            -- processAndCount should return list of contacts to send messages to (mergedProfile' /= mergedProfile);
+            -- perhaps summary or processAndCount have to be revised - to avoid working with 3 different lists of contacts;
+            -- use createContactsSndFeatureItems;
+            -- use createSndMessages
             let (errs, msgReqs) = partitionEithers rs
             delivered <- deliverMessages msgReqs
             let errs' = lefts delivered
