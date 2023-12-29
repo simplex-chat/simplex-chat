@@ -505,14 +505,14 @@
         <target>Abbrechen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort changing address" xml:space="preserve">
+      <trans-unit id="Abort changing address" xml:space="preserve" approved="no">
         <source>Abort changing address</source>
-        <target>Wechsel der Adresse abbrechen</target>
+        <target state="translated">Wechsel der Empfängeradresse abbrechen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort changing address?" xml:space="preserve">
+      <trans-unit id="Abort changing address?" xml:space="preserve" approved="no">
         <source>Abort changing address?</source>
-        <target>Wechsel der Adresse abbrechen?</target>
+        <target state="translated">Wechsel der Empfängeradresse abbrechen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About SimpleX" xml:space="preserve">
@@ -556,9 +556,9 @@
         <target>Inkognito akzeptieren</target>
         <note>accept contact request via notification</note>
       </trans-unit>
-      <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve">
+      <trans-unit id="Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." xml:space="preserve" approved="no">
         <source>Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts.</source>
-        <target>Fügen Sie die Adresse zu Ihrem Profil hinzu, damit Ihre Kontakte sie mit anderen Personen teilen können. Es wird eine Profilaktualisierung an Ihre Kontakte gesendet.</target>
+        <target state="translated">Fügen Sie die Adresse Ihrem Profil hinzu, damit Ihre Kontakte sie mit anderen Personen teilen können. Es wird eine Profilaktualisierung an Ihre Kontakte gesendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Add contact" xml:space="preserve">
@@ -600,9 +600,9 @@
         <target>Adresse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve">
+      <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve" approved="no">
         <source>Address change will be aborted. Old receiving address will be used.</source>
-        <target>Der Wechsel der Adresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.</target>
+        <target state="translated">Der Wechsel der Empfängeradresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Admins can create the links to join groups." xml:space="preserve">
@@ -665,9 +665,9 @@
         <target>Erlauben Sie Anrufe nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve">
+      <trans-unit id="Allow disappearing messages only if your contact allows it to you." xml:space="preserve" approved="no">
         <source>Allow disappearing messages only if your contact allows it to you.</source>
-        <target>Erlauben Sie verschwindende Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt.</target>
+        <target state="translated">Erlauben Sie verschwindende Nachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you." xml:space="preserve">
@@ -1090,8 +1090,9 @@
         <target>Der Chat ist beendet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve">
+      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve" approved="no">
         <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
+        <target state="translated">Der Chat ist angehalten. Wenn Sie diese Datenbank bereits auf einem anderen Gerät genutzt haben, sollten Sie diese vor dem Starten des Chats wieder zurückspielen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat preferences" xml:space="preserve">
@@ -1214,10 +1215,10 @@
         <target>Mit Ihnen selbst verbinden?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect to yourself?&#10;This is your own SimpleX address!" xml:space="preserve">
+      <trans-unit id="Connect to yourself?&#10;This is your own SimpleX address!" xml:space="preserve" approved="no">
         <source>Connect to yourself?
 This is your own SimpleX address!</source>
-        <target>Mit Ihnen selbst verbinden?
+        <target state="translated">Sich mit Ihnen selbst verbinden?
 Das ist Ihre eigene SimpleX-Adresse!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -1867,9 +1868,9 @@ Das kann nicht rückgängig gemacht werden!</target>
         <target>Verschwindende Nachricht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Disappearing messages" xml:space="preserve">
+      <trans-unit id="Disappearing messages" xml:space="preserve" approved="no">
         <source>Disappearing messages</source>
-        <target>verschwindende Nachrichten</target>
+        <target state="translated">Verschwindende Nachrichten</target>
         <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Disappearing messages are prohibited in this chat." xml:space="preserve">
@@ -2061,8 +2062,9 @@ Das kann nicht rückgängig gemacht werden!</target>
         <target>Verschlüsselte Nachricht oder ein anderes Ereignis</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: app is stopped" xml:space="preserve">
+      <trans-unit id="Encrypted message: app is stopped" xml:space="preserve" approved="no">
         <source>Encrypted message: app is stopped</source>
+        <target state="translated">Verschlüsselte Nachricht: Die App ist angehalten</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: database error" xml:space="preserve">
@@ -2175,9 +2177,9 @@ Das kann nicht rückgängig gemacht werden!</target>
         <target>Fehler beim Hinzufügen von Mitgliedern</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing address" xml:space="preserve">
+      <trans-unit id="Error changing address" xml:space="preserve" approved="no">
         <source>Error changing address</source>
-        <target>Fehler beim Wechseln der Adresse</target>
+        <target state="translated">Fehler beim Wechseln der Empfängeradresse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing role" xml:space="preserve">
@@ -2295,8 +2297,9 @@ Das kann nicht rückgängig gemacht werden!</target>
         <target>Fehler beim Laden von %@ Servern</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error opening chat" xml:space="preserve">
+      <trans-unit id="Error opening chat" xml:space="preserve" approved="no">
         <source>Error opening chat</source>
+        <target state="translated">Fehler beim Öffnen des Chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
@@ -2993,8 +2996,9 @@ Das kann nicht rückgängig gemacht werden!</target>
         <target>Ungültiger Name!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invalid response" xml:space="preserve">
+      <trans-unit id="Invalid response" xml:space="preserve" approved="no">
         <source>Invalid response</source>
+        <target state="translated">Ungültige Reaktion</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid server address!" xml:space="preserve">
@@ -3258,9 +3262,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Stellen Sie sicher, dass die %@-Server-Adressen das richtige Format haben, zeilenweise getrennt und nicht doppelt vorhanden sind (%@).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve">
+      <trans-unit id="Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated." xml:space="preserve" approved="no">
         <source>Make sure WebRTC ICE server addresses are in correct format, line separated and are not duplicated.</source>
-        <target>Stellen Sie sicher, dass die WebRTC ICE-Server Adressen das richtige Format haben, zeilenweise angeordnet und nicht doppelt vorhanden sind.</target>
+        <target state="translated">Stellen Sie sicher, dass die WebRTC ICE-Server Adressen das richtige Format haben, zeilenweise getrennt und nicht doppelt vorhanden sind.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Many people asked: *if SimpleX has no user identifiers, how can it deliver messages?*" xml:space="preserve">
@@ -3735,8 +3739,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Open-Source-Protokoll und -Code – Jede Person kann ihre eigenen Server aufsetzen und nutzen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Opening app…" xml:space="preserve">
+      <trans-unit id="Opening app…" xml:space="preserve" approved="no">
         <source>Opening app…</source>
+        <target state="translated">App wird geöffnet…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or scan QR code" xml:space="preserve">
@@ -3836,9 +3841,11 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Bitte überprüfen sie sowohl Ihre, als auch die Präferenzen Ihres Kontakts.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please contact developers.&#10;Error: %@" xml:space="preserve">
+      <trans-unit id="Please contact developers.&#10;Error: %@" xml:space="preserve" approved="no">
         <source>Please contact developers.
 Error: %@</source>
+        <target state="translated">Bitte nehmen Sie Kontakt mit den Entwicklern auf.
+Fehler: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please contact group admin." xml:space="preserve">
@@ -4827,8 +4834,9 @@ Error: %@</source>
         <target>Starten Sie den Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Start chat?" xml:space="preserve">
+      <trans-unit id="Start chat?" xml:space="preserve" approved="no">
         <source>Start chat?</source>
+        <target state="translated">Chat starten?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start migration" xml:space="preserve">
@@ -5090,9 +5098,9 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Der Absender wird NICHT benachrichtigt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve">
+      <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve" approved="no">
         <source>The servers for new connections of your current chat profile **%@**.</source>
-        <target>Server der neuen Verbindungen von Ihrem aktuellen Chat-Profil **%@**.</target>
+        <target state="translated">Mögliche Server für neue Verbindungen von Ihrem aktuellen Chat-Profil **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The text you pasted is not a SimpleX link." xml:space="preserve">
@@ -5453,8 +5461,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Nutzen Sie das neue Inkognito-Profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use only local notifications?" xml:space="preserve">
+      <trans-unit id="Use only local notifications?" xml:space="preserve" approved="no">
         <source>Use only local notifications?</source>
+        <target state="translated">Nur lokale Benachrichtigungen nutzen?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -5739,8 +5748,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>Sie können ein Benutzerprofil verbergen oder stummschalten - wischen Sie es nach rechts.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can make it visible to your SimpleX contacts via Settings." xml:space="preserve">
+      <trans-unit id="You can make it visible to your SimpleX contacts via Settings." xml:space="preserve" approved="no">
         <source>You can make it visible to your SimpleX contacts via Settings.</source>
+        <target state="translated">Sie können sie über Einstellungen für Ihre SimpleX-Kontakte sichtbar machen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
@@ -5899,9 +5909,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>Sie werden von dieser Gruppe keine Nachrichten mehr erhalten. Der Chatverlauf wird beibehalten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You won't lose your contacts if you later delete your address." xml:space="preserve">
+      <trans-unit id="You won't lose your contacts if you later delete your address." xml:space="preserve" approved="no">
         <source>You won't lose your contacts if you later delete your address.</source>
-        <target>Sie werden Ihre mit dieser Adresse verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.</target>
+        <target state="translated">Sie werden Ihre damit verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You're trying to invite contact with whom you've shared an incognito profile to the group in which you're using your main profile" xml:space="preserve">
@@ -6153,9 +6163,9 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>abgebrochen %@</target>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="changed address for you" xml:space="preserve">
+      <trans-unit id="changed address for you" xml:space="preserve" approved="no">
         <source>changed address for you</source>
-        <target>wechselte die Adresse für Sie</target>
+        <target state="translated">Wechselte die Empfängeradresse für Sie</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="changed role of %@ to %@" xml:space="preserve">
@@ -6168,14 +6178,14 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>änderte Ihre Rolle auf %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="changing address for %@…" xml:space="preserve">
+      <trans-unit id="changing address for %@…" xml:space="preserve" approved="no">
         <source>changing address for %@…</source>
-        <target>Adresse von %@ wechseln…</target>
+        <target state="translated">Empfängeradresse für %@ wechseln…</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="changing address…" xml:space="preserve">
+      <trans-unit id="changing address…" xml:space="preserve" approved="no">
         <source>changing address…</source>
-        <target>Wechsel der Adresse…</target>
+        <target state="translated">Wechsel der Empfängeradresse…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
@@ -6765,14 +6775,14 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Sie sind Beobachter</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="you changed address" xml:space="preserve">
+      <trans-unit id="you changed address" xml:space="preserve" approved="no">
         <source>you changed address</source>
-        <target>Sie haben die Adresse gewechselt</target>
+        <target state="translated">Sie haben die Empfängeradresse gewechselt</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="you changed address for %@" xml:space="preserve">
+      <trans-unit id="you changed address for %@" xml:space="preserve" approved="no">
         <source>you changed address for %@</source>
-        <target>Sie haben die Adresse für %@ gewechselt</target>
+        <target state="translated">Sie haben die Empfängeradresse für %@ gewechselt</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="you changed role for yourself to %@" xml:space="preserve">
