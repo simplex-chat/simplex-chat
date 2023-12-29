@@ -14,7 +14,7 @@ chatListTests = do
   it "filter favorite" testFilterFavorite
   it "filter unread" testFilterUnread
   it "filter favorite or unread" testFilterFavoriteOrUnread
-  fit "sort and filter chats of all types" testPaginationAllChatTypes
+  it "sort and filter chats of all types" testPaginationAllChatTypes
 
 testPaginationLast :: HasCallStack => FilePath -> IO ()
 testPaginationLast =

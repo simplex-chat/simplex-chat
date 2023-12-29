@@ -8,13 +8,16 @@ import ChatTests.Utils
 import System.Directory (copyFile, doesFileExist)
 import Test.Hspec
 import System.FilePath (takeFileName, (</>))
+import Data.Time (getCurrentTime)
+import ChatTests.ChatList (getChats_)
+import Data.Time.Format.ISO8601 (iso8601Show)
 
 chatLocalTests :: SpecWith FilePath
 chatLocalTests = do
   describe "note folders" $ do
     it "create folders, add notes, read, search" testNotes
     it "switch users" testUserNotes
-    it "pagination in all modes" testPagination
+    it "preview pagination for notes" testPreviewsPagination
     it "stores files" testFiles
 
 testNotes :: FilePath -> IO ()
@@ -59,6 +62,22 @@ testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
 
   alice ##> "/_delete item $1 1 internal"
   alice <## "chat db error: SENoteFolderNotFound {noteFolderId = 1}"
+
+testPreviewsPagination :: FilePath -> IO ()
+testPreviewsPagination tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+  tsS <- iso8601Show <$> getCurrentTime
+  alice #> "$notes first"
+  tsM <- iso8601Show <$> getCurrentTime
+  alice #> "$notes last"
+  tsE <- iso8601Show <$> getCurrentTime
+
+  -- there's only one folder that got updated after tsM and before tsE
+  getChats_ alice "count=3" [("$notes", "last")]
+  getChats_ alice ("after=" <> tsE <> " count=10") []
+  getChats_ alice ("after=" <> tsS <> " count=10") [("$notes", "last")]
+  getChats_ alice ("before=" <> tsM <> " count=10") []
+  getChats_ alice ("before=" <> tsE <> " count=10") [("$notes", "last")]
+  getChats_ alice ("before=" <> tsS <> " count=10") []
 
 testFiles :: FilePath -> IO ()
 testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
