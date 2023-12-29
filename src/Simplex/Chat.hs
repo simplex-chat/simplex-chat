@@ -3593,7 +3593,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             createGroupFeatureItems gInfo m
             let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
             memberConnectedChatItem gInfo m
-            forM_ description $ groupDescriptionChatItem gInfo m
+            unless expectHistory $ forM_ description $ groupDescriptionChatItem gInfo m
+            where
+              expectHistory =
+                groupFeatureAllowed SGFHistory gInfo
+                  && isCompatibleRange (memberChatVRange' m) groupHistoryIncludeWelcomeVRange
           GCInviteeMember -> do
             memberConnectedChatItem gInfo m
             toView $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected}
@@ -3636,8 +3640,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   (errs', events) <- partitionEithers <$> mapM (tryChatError . itemForwardEvents) items
                   let errors = map ChatErrorStore errs <> errs'
                   unless (null errors) $ toView $ CRChatErrors (Just user) errors
-                  forM_ (L.nonEmpty $ concat events) $ \events' ->
-                    sendGroupMemberMessages user conn events' groupId
+                  let events' = maybe (concat events) (\x -> concat events <> [x]) descrEvent_
+                  forM_ (L.nonEmpty events') $ \events'' ->
+                    sendGroupMemberMessages user conn events'' groupId
+              descrEvent_ :: Maybe (ChatMsgEvent 'Json)
+              descrEvent_
+                | isCompatibleRange (memberChatVRange' m) groupHistoryIncludeWelcomeVRange = do
+                    let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
+                    fmap (\descr -> XMsgNew $ MCSimple $ extMsgContent (MCText descr) Nothing) description
+                | otherwise = Nothing
               itemForwardEvents :: CChatItem 'CTGroup -> m [ChatMsgEvent 'Json]
               itemForwardEvents cci = case cci of
                 (CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv sender, content = CIRcvMsgContent mc, file}) -> do
