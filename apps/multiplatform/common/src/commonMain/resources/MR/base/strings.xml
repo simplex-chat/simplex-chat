@@ -1461,6 +1461,7 @@
   <string name="message_reactions">Message reactions</string>
   <string name="voice_messages">Voice messages</string>
   <string name="files_and_media">Files and media</string>
+  <string name="recent_history">Visible history</string>
   <string name="audio_video_calls">Audio/video calls</string>
   <string name="available_in_v51">\nAvailable in v5.1</string>
   <string name="feature_enabled">enabled</string>
@@ -1473,8 +1474,8 @@
   <string name="allow_your_contacts_to_send_disappearing_messages">Allow your contacts to send disappearing messages.</string>
   <string name="allow_disappearing_messages_only_if">Allow disappearing messages only if your contact allows them.</string>
   <string name="prohibit_sending_disappearing_messages">Prohibit sending disappearing messages.</string>
-  <string name="allow_your_contacts_irreversibly_delete">Allow your contacts to irreversibly delete sent messages.</string>
-  <string name="allow_irreversible_message_deletion_only_if">Allow irreversible message deletion only if your contact allows it to you.</string>
+  <string name="allow_your_contacts_irreversibly_delete">Allow your contacts to irreversibly delete sent messages. (24 hours)</string>
+  <string name="allow_irreversible_message_deletion_only_if">Allow irreversible message deletion only if your contact allows it to you. (24 hours)</string>
   <string name="contacts_can_mark_messages_for_deletion">Contacts can mark messages for deletion; you will be able to view them.</string>
   <string name="allow_your_contacts_to_send_voice_messages">Allow your contacts to send voice messages.</string>
   <string name="allow_voice_messages_only_if">Allow voice messages only if your contact allows them.</string>
@@ -1489,9 +1490,9 @@
   <string name="only_you_can_send_disappearing">Only you can send disappearing messages.</string>
   <string name="only_your_contact_can_send_disappearing">Only your contact can send disappearing messages.</string>
   <string name="disappearing_prohibited_in_this_chat">Disappearing messages are prohibited in this chat.</string>
-  <string name="both_you_and_your_contacts_can_delete">Both you and your contact can irreversibly delete sent messages.</string>
-  <string name="only_you_can_delete_messages">Only you can irreversibly delete messages (your contact can mark them for deletion).</string>
-  <string name="only_your_contact_can_delete">Only your contact can irreversibly delete messages (you can mark them for deletion).</string>
+  <string name="both_you_and_your_contacts_can_delete">Both you and your contact can irreversibly delete sent messages. (24 hours)</string>
+  <string name="only_you_can_delete_messages">Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)</string>
+  <string name="only_your_contact_can_delete">Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)</string>
   <string name="message_deletion_prohibited">Irreversible message deletion is prohibited in this chat.</string>
   <string name="both_you_and_your_contact_can_send_voice">Both you and your contact can send voice messages.</string>
   <string name="only_you_can_send_voice">Only you can send voice messages.</string>
@@ -1509,7 +1510,7 @@
   <string name="prohibit_sending_disappearing">Prohibit sending disappearing messages.</string>
   <string name="allow_direct_messages">Allow sending direct messages to members.</string>
   <string name="prohibit_direct_messages">Prohibit sending direct messages to members.</string>
-  <string name="allow_to_delete_messages">Allow to irreversibly delete sent messages.</string>
+  <string name="allow_to_delete_messages">Allow to irreversibly delete sent messages. (24 hours)</string>
   <string name="prohibit_message_deletion">Prohibit irreversible message deletion.</string>
   <string name="allow_to_send_voice">Allow to send voice messages.</string>
   <string name="prohibit_sending_voice">Prohibit sending voice messages.</string>
@@ -1517,11 +1518,13 @@
   <string name="prohibit_message_reactions_group">Prohibit messages reactions.</string>
   <string name="allow_to_send_files">Allow to send files and media.</string>
   <string name="prohibit_sending_files">Prohibit sending files and media.</string>
+  <string name="enable_sending_recent_history">Send up to 100 last messages to new members.</string>
+  <string name="disable_sending_recent_history">Do not send history to new members.</string>
   <string name="group_members_can_send_disappearing">Group members can send disappearing messages.</string>
   <string name="disappearing_messages_are_prohibited">Disappearing messages are prohibited in this group.</string>
   <string name="group_members_can_send_dms">Group members can send direct messages.</string>
   <string name="direct_messages_are_prohibited_in_chat">Direct messages between members are prohibited in this group.</string>
-  <string name="group_members_can_delete">Group members can irreversibly delete sent messages.</string>
+  <string name="group_members_can_delete">Group members can irreversibly delete sent messages. (24 hours)</string>
   <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited in this group.</string>
   <string name="group_members_can_send_voice">Group members can send voice messages.</string>
   <string name="voice_messages_are_prohibited">Voice messages are prohibited in this group.</string>
@@ -1529,6 +1532,8 @@
   <string name="message_reactions_are_prohibited">Message reactions are prohibited in this group.</string>
   <string name="group_members_can_send_files">Group members can send files and media.</string>
   <string name="files_are_prohibited_in_group">Files and media are prohibited in this group.</string>
+  <string name="recent_history_is_sent_to_new_members">Up to 100 last messages are sent to new members.</string>
+  <string name="recent_history_is_not_sent_to_new_members">History is not sent to new members.</string>
   <string name="delete_after">Delete after</string>
   <string name="ttl_sec">%d sec</string>
   <string name="ttl_s">%ds</string>
