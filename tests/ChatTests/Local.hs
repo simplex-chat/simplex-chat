@@ -5,20 +5,20 @@ module ChatTests.Local where
 
 import ChatClient
 import ChatTests.Utils
+import System.Directory (copyFile, doesFileExist)
 import Test.Hspec
-import System.Directory (copyFile)
+import System.FilePath (takeFileName, (</>))
 
 chatLocalTests :: SpecWith FilePath
 chatLocalTests = do
-  fdescribe "note folders" $ do
+  describe "note folders" $ do
     it "create folders, add notes, read, search" testNotes
     it "switch users" testUserNotes
+    it "pagination in all modes" testPagination
     it "stores files" testFiles
 
 testNotes :: FilePath -> IO ()
 testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-  -- createFolder alice "self"
-
   alice ##> "/contacts"
   -- not a contact
 
@@ -46,7 +46,6 @@ testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
 
 testUserNotes :: FilePath -> IO ()
 testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-
   alice #> "$notes keep in mind"
   alice ##> "/tail"
   alice <# "$notes keep in mind"
@@ -63,17 +62,32 @@ testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
 
 testFiles :: FilePath -> IO ()
 testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-  -- createFolder alice "self"
+  -- setup
+  let files = "./tests/tmp/app_files"
+  alice ##> ("/_files_folder " <> files)
+  alice <## "ok"
 
-  alice #$> ("/_files_folder ./tests/tmp/app_files", id, "ok")
-  copyFile "./tests/fixtures/test.jpg" "./tests/tmp/app_files/test.jpg"
-  alice ##> "/_create $1 json {\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+  -- ui-like upload
+  let source = "./tests/fixtures/test.jpg"
+  let stored = files </> takeFileName source
+  copyFile source stored
+  alice ##> "/_create $1 json {\"filePath\": \"test.jpg\", \"msgContent\": {\"text\":\"hi myself\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+  alice <# "$notes hi myself"
   alice <# "$notes file 1 (test.jpg)"
+
   alice ##> "/tail"
+  alice <# "$notes hi myself"
   alice <# "$notes file 1 (test.jpg)"
+
+  alice ##> "/_get chat $1 count=100"
+  r <- chatF <$> getTermLine alice
+  r `shouldBe` [((1, "hi myself"), Just "test.jpg")]
+
   alice ##> "/fs 1"
   alice <## "local file 1 (test.jpg)"
 
   alice ##> "/clear $notes"
+  alice ##> "/tail"
+  doesFileExist stored `shouldReturn` False
   alice ##> "/fs 1"
   alice <## "chat db error: SEChatItemNotFoundByFileId {fileId = 1}"

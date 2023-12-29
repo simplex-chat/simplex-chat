@@ -795,7 +795,7 @@ processChatCommand' vr = \case
     nf <- withStore $ \db -> getNoteFolder db user folderId
     ci'@ChatItem {meta = CIMeta {itemId, itemTs}} <- createLocalChatItem user (CDLocalSnd nf) (CISndMsgContent mc) Nothing
     ciFile_ <- forM file_ $ \cf@CryptoFile {filePath, cryptoArgs} -> do
-      fsFilePath <- toFSFilePath filePath -- XXX: only used for size?..
+      fsFilePath <- toFSFilePath filePath
       fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cryptoArgs
       chunkSize <- asks $ fileChunkSize . config
       withStore' $ \db -> do
