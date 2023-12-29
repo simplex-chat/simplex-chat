@@ -97,7 +97,6 @@ struct GroupPreferencesView: View {
             }
         } footer: {
             Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.canEdit))
-                .frame(height: 36, alignment: .topLeading)
         }
     }
 
