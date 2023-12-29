@@ -793,15 +793,18 @@ processChatCommand' vr = \case
   APICreateChatItem folderId (ComposedMessage file_ quotedItemId_ mc) -> withUser $ \user -> do
     forM_ quotedItemId_ $ \_ -> throwError $ ChatError $ CECommandError "not supported"
     nf <- withStore $ \db -> getNoteFolder db user folderId
-    ci'@ChatItem {meta = CIMeta {itemId, itemTs}} <- createLocalChatItem user (CDLocalSnd nf) (CISndMsgContent mc) Nothing
+    createdAt <- liftIO getCurrentTime
+    let content = CISndMsgContent mc
+    let cd = CDLocalSnd nf
+    ciId <- createLocalChatItem user cd content createdAt
     ciFile_ <- forM file_ $ \cf@CryptoFile {filePath, cryptoArgs} -> do
       fsFilePath <- toFSFilePath filePath
       fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cryptoArgs
       chunkSize <- asks $ fileChunkSize . config
       withStore' $ \db -> do
-        fileId <- createLocalFile CIFSSndComplete db user nf itemId itemTs cf fileSize chunkSize
+        fileId <- createLocalFile CIFSSndComplete db user nf ciId createdAt cf fileSize chunkSize
         pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndComplete, fileProtocol = FPLocal}
-    let ci = (ci' :: ChatItem 'CTLocal 'MDSnd) {file = ciFile_}
+    ci <- liftIO $ mkChatItem cd ciId content ciFile_ Nothing Nothing Nothing False createdAt Nothing createdAt
     pure . CRNewChatItem user $ AChatItem SCTLocal SMDSnd (LocalChat nf) ci
   APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> withChatLock "updateChatItem" $ case cType of
     CTDirect -> do
@@ -6092,17 +6095,14 @@ createInternalChatItem user cd content itemTs_ = do
   ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
   toView $ CRNewChatItem user (AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci)
 
-createLocalChatItem :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTLocal d -> CIContent d -> Maybe UTCTime -> m (ChatItem 'CTLocal d)
-createLocalChatItem user cd content itemTs_ = do
-  createdAt <- liftIO getCurrentTime
-  let itemTs = fromMaybe createdAt itemTs_
+createLocalChatItem :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTLocal d -> CIContent d -> UTCTime -> m ChatItemId
+createLocalChatItem user cd content createdAt = do
   gVar <- asks random
-  ciId <- withStore $ \db -> do
+  withStore $ \db -> do
     liftIO $ updateChatTs db user cd createdAt
     createWithRandomId gVar $ \sharedMsgId ->
       let smi_ = Just (SharedMsgId sharedMsgId)
-       in createNewChatItem_ db user cd Nothing smi_ content (Nothing, Nothing, Nothing, Nothing, Nothing) Nothing False itemTs Nothing createdAt
-  liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
+       in createNewChatItem_ db user cd Nothing smi_ content (Nothing, Nothing, Nothing, Nothing, Nothing) Nothing False createdAt Nothing createdAt
 
 getCreateActiveUser :: SQLiteStore -> Bool -> IO User
 getCreateActiveUser st testView = do
