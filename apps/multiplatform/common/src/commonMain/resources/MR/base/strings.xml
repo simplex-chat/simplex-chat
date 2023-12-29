@@ -919,6 +919,7 @@
   <string name="authentication_cancelled">Authentication cancelled</string>
   <string name="la_mode_system">System</string>
   <string name="la_mode_passcode">Passcode</string>
+  <string name="la_app_passcode">App passcode</string>
   <string name="la_mode_off">Off</string>
   <string name="passcode_set">Passcode set!</string>
   <string name="passcode_changed">Passcode changed!</string>

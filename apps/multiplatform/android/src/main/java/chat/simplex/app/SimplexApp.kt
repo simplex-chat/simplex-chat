@@ -63,10 +63,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
 
-    withBGApi {
-      initChatController()
-      runMigrations()
-    }
+    initChatControllerAndRunMigrations(false)
     ProcessLifecycleOwner.get().lifecycle.addObserver(this@SimplexApp)
   }
 
