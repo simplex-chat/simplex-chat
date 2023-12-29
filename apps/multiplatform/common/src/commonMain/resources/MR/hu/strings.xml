@@ -418,7 +418,7 @@
     <string name="delete_chat_archive_question">Chat archív törlése?</string>
     <string name="failed_to_create_user_duplicate_title">Duplikálódott megjelenítési név!</string>
     <string name="receipts_contacts_disable_keep_overrides">Letiltás (felülírások megtartásával)</string>
-    <string name="database_upgrade">Adatbázis upgrade</string>
+    <string name="database_upgrade">Adatbázis fejlesztése</string>
     <string name="blocked_items_description">%d üzenet blokkolva</string>
     <string name="info_row_disappears_at">Eltűnik ekkor</string>
     <string name="ttl_weeks">%d hét</string>
@@ -1020,7 +1020,7 @@
     <string name="share_text_sent_at">Elküldve ekkor: %s</string>
     <string name="connect_use_current_profile">Jelenlegi profil használata</string>
     <string name="this_device">Ez az eszköz</string>
-    <string name="share_address_with_contacts_question">"Azonosító megosztása  az ismerősökkel?"</string>
+    <string name="share_address_with_contacts_question">Megosztod a címet az ismerőseiddel?</string>
     <string name="profile_password">Profil jelszó</string>
     <string name="theme">Színséma</string>
     <string name="remove_passphrase_from_settings">Jelmondat eltávolítása a beállításokból?</string>
@@ -1524,4 +1524,5 @@
     <string name="read_more_in_github_with_link"><![CDATA[További információ a <font color="#0088ff">GitHub tárolónkban</font>.]]></string>
     <string name="error_showing_content">hiba a tartalom megjelenítése közben</string>
     <string name="error_showing_message">hiba az üzenet megjelenítésekor</string>
+    <string name="you_can_make_address_visible_via_settings">Láthatóvá teheted a SimpleX ismerőseid számára a Beállításokban.</string>
 </resources>
