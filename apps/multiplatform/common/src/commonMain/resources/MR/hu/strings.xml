@@ -9,7 +9,7 @@
     <string name="v5_3_new_interface_languages">6 új kezelőfelület nyelv</string>
     <string name="send_disappearing_message_5_minutes">5 perc</string>
     <string name="send_disappearing_message_1_minute">1 perc</string>
-    <string name="learn_more_about_address">A SimpleX azonosítóról</string>
+    <string name="learn_more_about_address">A SimpleX címről</string>
     <string name="abort_switch_receiving_address_question">Címváltoztatás megszakítása?</string>
     <string name="abort_switch_receiving_address_confirm">Megszakítás</string>
     <string name="send_disappearing_message_30_seconds">30 másodperc</string>
@@ -332,7 +332,7 @@
     <string name="smp_server_test_delete_queue">Várólista törlése</string>
     <string name="button_delete_contact">Ismerős törlése</string>
     <string name="archive_created_on_ts">Létrehozva: %1$s</string>
-    <string name="rcv_conn_event_switch_queue_phase_changing">azonosító megváltoztatása…</string>
+    <string name="rcv_conn_event_switch_queue_phase_changing">use \"cím\"? (google translates current translation as \"ID\", perhaps a different word should be used here and in other places for SimpleX address, not ID)</string>
     <string name="connected_to_mobile">Csatlakoztatva a mobilhoz</string>
     <string name="current_passphrase">Jelenlegi jelmondat…</string>
     <string name="choose_file_title">Fájl választása</string>
