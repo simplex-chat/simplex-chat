@@ -5997,6 +5997,12 @@ createSndFeatureItems user ct ct' =
   where
     getPref u = (userPreference u).preference
 
+createContactsSndFeatureItems :: forall m. ChatMonad m => User -> [(Contact, Contact)] -> m ()
+createContactsSndFeatureItems user cts =
+  createContactsFeatureItems user cts CDDirectSnd CISndChatFeature CISndChatPreference getPref
+  where
+    getPref u = (userPreference u).preference
+
 type FeatureContent a d = ChatFeature -> a -> Maybe Int -> CIContent d
 
 createFeatureItems ::
@@ -6010,24 +6016,44 @@ createFeatureItems ::
   FeatureContent FeatureAllowed d ->
   (forall f. ContactUserPreference (FeaturePreference f) -> FeaturePreference f) ->
   m ()
-createFeatureItems user Contact {mergedPreferences = cups} ct'@Contact {mergedPreferences = cups'} chatDir ciFeature ciOffer getPref =
-  forM_ allChatFeatures $ \(ACF f) -> createItem f
+createFeatureItems user ct ct' = createContactsFeatureItems user [(ct, ct')]
+
+createContactsFeatureItems ::
+  forall d m.
+  (MsgDirectionI d, ChatMonad m) =>
+  User ->
+  [(Contact, Contact)] ->
+  (Contact -> ChatDirection 'CTDirect d) ->
+  FeatureContent PrefEnabled d ->
+  FeatureContent FeatureAllowed d ->
+  (forall f. ContactUserPreference (FeaturePreference f) -> FeaturePreference f) ->
+  m ()
+createContactsFeatureItems user cts chatDir ciFeature ciOffer getPref = do
+  let contents = concatMap contactChangedFeatures cts
+  (errs, acis) <- partitionEithers <$> createInternalItemsForChatsB user Nothing contents
+  unless (null errs) $ toView $ CRChatErrors (Just user) errs
+  forM_ acis $ \aci -> toView $ CRNewChatItem user aci
   where
-    createItem :: forall f. FeatureI f => SChatFeature f -> m ()
-    createItem f
-      | state /= state' = create ciFeature state'
-      | prefState /= prefState' = create ciOffer prefState'
-      | otherwise = pure ()
+    contactChangedFeatures :: (Contact, Contact) -> [(ChatDirection 'CTDirect d, CIContent d)]
+    contactChangedFeatures (Contact {mergedPreferences = cups}, ct'@Contact {mergedPreferences = cups'}) = do
+      let contents = mapMaybe (\(ACF f) -> featureCIContent_ f) allChatFeatures
+      map (chatDir ct',) contents
       where
-        create :: FeatureContent a d -> (a, Maybe Int) -> m ()
-        create ci (s, param) = createInternalChatItem user (chatDir ct') (ci f' s param) Nothing
-        f' = chatFeature f
-        state = featureState cup
-        state' = featureState cup'
-        prefState = preferenceState $ getPref cup
-        prefState' = preferenceState $ getPref cup'
-        cup = getContactUserPreference f cups
-        cup' = getContactUserPreference f cups'
+      featureCIContent_ :: forall f. FeatureI f => SChatFeature f -> Maybe (CIContent d)
+      featureCIContent_ f
+        | state /= state' = Just $ fContent ciFeature state'
+        | prefState /= prefState' = Just $ fContent ciOffer prefState'
+        | otherwise = Nothing
+        where
+          fContent :: FeatureContent a d -> (a, Maybe Int) -> CIContent d
+          fContent ci (s, param) = ci f' s param
+          f' = chatFeature f
+          state = featureState cup
+          state' = featureState cup'
+          prefState = preferenceState $ getPref cup
+          prefState' = preferenceState $ getPref cup'
+          cup = getContactUserPreference f cups
+          cup' = getContactUserPreference f cups'
 
 createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> CIContent d) -> GroupInfo -> GroupInfo -> m ()
 createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences = gps} GroupInfo {fullGroupPreferences = gps'} =
