@@ -97,7 +97,7 @@ jobs:
           path: |
             ${{ matrix.cache_path }}
             dist-newstyle
-          key: ${{ matrix.os }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
+          key: ${{ matrix.os }}-${{ matrix.ghc }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
 
       # / Unix
 
