@@ -105,6 +105,17 @@ testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice ##> "/fs 1"
   alice <## "local file 1 (test.jpg)"
 
+  -- one more file
+  let stored2 = files </> "another_test.jpg"
+  copyFile source stored2
+  alice ##> "/_create $1 json {\"filePath\": \"another_test.jpg\", \"msgContent\": {\"text\":\"\",\"type\":\"image\",\"image\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}"
+  alice <# "$notes file 2 (another_test.jpg)"
+
+  alice ##> "/_delete item $1 2 internal"
+  alice <## "message deleted"
+  doesFileExist stored2 `shouldReturn` False
+  doesFileExist stored `shouldReturn` True
+
   alice ##> "/clear $notes"
   alice ##> "/tail"
   doesFileExist stored `shouldReturn` False
