@@ -2172,7 +2172,7 @@ processChatCommand' vr = \case
               CSASend conn@Connection {connId} -> do
                 SndMessage {msgId, msgBody} <- createSndMessage (XInfo mergedProfile') (ConnectionId connId)
                 when (directOrUsed ct') $ createSndFeatureItems user' ct ct'
-                pure $ Right $ (conn, MsgFlags {notification = hasNotification XInfo_}, msgBody, msgId)
+                pure $ Right (conn, MsgFlags {notification = hasNotification XInfo_}, msgBody, msgId)
               CSAError e -> pure $ Left e
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
