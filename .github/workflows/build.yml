@@ -128,16 +128,11 @@ jobs:
           echo "    flags: +openssl"      >> cabal.project.local
 
       - name: Unix build CLI
-        id: unix_build
+        id: unix_cli_build
         if: matrix.os != 'windows-latest'
         shell: bash
-        run: cabal build --enable-tests
-
-      - name: Unix hash CLI
-        id: unix_cli_hash
-        if: matrix.asset_name && matrix.os != 'windows-latest'
-        shell: bash
         run: |
+          cabal build --enable-tests
           path=$(cabal list-bin simplex-chat)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
           echo "bin_hash=$(echo SHA2-512\(${{ matrix.asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
@@ -307,13 +302,6 @@ jobs:
           sed -i "s/, unix /--, unix /" simplex-chat.cabal
           cabal build --enable-tests
           rm -rf dist-newstyle/src/direct-sq*
-
-      - name: Windows hash
-        id: windows_hash
-        if: matrix.asset_name && matrix.os == 'windows-latest'
-        shell: msys2 {0}
-        run: |
-          export PATH=$PATH:/c/ghcup/bin
           path=$(cabal list-bin simplex-chat | tail -n 1)
           echo "bin_path=$path" >> $GITHUB_OUTPUT
           echo "bin_hash=$(echo SHA2-512\(${{ matrix.asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
