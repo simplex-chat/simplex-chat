@@ -1529,4 +1529,5 @@
     <string name="open_port_in_firewall_title">Apri porta nel firewall</string>
     <string name="error_showing_content">errore di visualizzazione del contenuto</string>
     <string name="error_showing_message">errore di visualizzazione del messaggio</string>
+    <string name="you_can_make_address_visible_via_settings">Puoi renderlo visibile ai tuoi contatti SimpleX nelle impostazioni.</string>
 </resources>
