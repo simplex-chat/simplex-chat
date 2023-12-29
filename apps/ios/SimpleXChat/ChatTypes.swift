@@ -616,8 +616,8 @@ public enum ChatFeature: String, Decodable, Feature {
             }
         case .fullDelete:
             switch allowed {
-            case .always: return "Allow your contacts to irreversibly delete sent messages."
-            case .yes: return "Allow irreversible message deletion only if your contact allows it to you."
+            case .always: return "Allow your contacts to irreversibly delete sent messages. (24 hours)"
+            case .yes: return "Allow irreversible message deletion only if your contact allows it to you. (24 hours)"
             case .no: return "Contacts can mark messages for deletion; you will be able to view them."
             }
         case .reactions:
@@ -653,11 +653,11 @@ public enum ChatFeature: String, Decodable, Feature {
                     : "Disappearing messages are prohibited in this chat."
         case .fullDelete:
             return enabled.forUser && enabled.forContact
-                    ? "Both you and your contact can irreversibly delete sent messages."
+                    ? "Both you and your contact can irreversibly delete sent messages. (24 hours)"
                     : enabled.forUser
-                    ? "Only you can irreversibly delete messages (your contact can mark them for deletion)."
+                    ? "Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)"
                     : enabled.forContact
-                    ? "Only your contact can irreversibly delete messages (you can mark them for deletion)."
+                    ? "Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)"
                     : "Irreversible message deletion is prohibited in this chat."
         case .reactions:
             return enabled.forUser && enabled.forContact
@@ -713,7 +713,7 @@ public enum GroupFeature: String, Decodable, Feature {
         case .reactions: return NSLocalizedString("Message reactions", comment: "chat feature")
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
         case .files: return NSLocalizedString("Files and media", comment: "chat feature")
-        case .history: return NSLocalizedString("Recent history", comment: "chat feature")
+        case .history: return NSLocalizedString("Visible history", comment: "chat feature")
         }
     }
 
@@ -763,7 +763,7 @@ public enum GroupFeature: String, Decodable, Feature {
                 }
             case .fullDelete:
                 switch enabled {
-                case .on: return "Allow to irreversibly delete sent messages."
+                case .on: return "Allow to irreversibly delete sent messages. (24 hours)"
                 case .off: return "Prohibit irreversible message deletion."
                 }
             case .reactions:
@@ -783,8 +783,8 @@ public enum GroupFeature: String, Decodable, Feature {
                 }
             case .history:
                 switch enabled {
-                case .on: return "Send recent history to new members."
-                case .off: return "Do not send recent history to new members."
+                case .on: return "Send up to 100 last messages to new members."
+                case .off: return "Do not send history to new members."
                 }
             }
         } else {
@@ -801,7 +801,7 @@ public enum GroupFeature: String, Decodable, Feature {
                 }
             case .fullDelete:
                 switch enabled {
-                case .on: return "Group members can irreversibly delete sent messages."
+                case .on: return "Group members can irreversibly delete sent messages. (24 hours)"
                 case .off: return "Irreversible message deletion is prohibited in this group."
                 }
             case .reactions:
@@ -821,8 +821,8 @@ public enum GroupFeature: String, Decodable, Feature {
                 }
             case .history:
                 switch enabled {
-                case .on: return "Recent history is sent to new members."
-                case .off: return "Recent history is not sent to new members."
+                case .on: return "Up to 100 last messages are sent to new members."
+                case .off: return "History is not sent to new members."
                 }
             }
         }
