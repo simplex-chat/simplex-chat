@@ -107,12 +107,10 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
       ) {
         ChatList(chatModel, searchText = searchText)
         if (chatModel.chats.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
-          Box(Modifier.fillMaxSize()) {
-            Text(stringResource(
-              if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
-            if (!stopped && !newChatSheetState.collectAsState().value.isVisible() && chatModel.chatRunning.value == true && searchText.value.text.isEmpty()) {
-              OnboardingButtons(showNewChatSheet)
-            }
+          Text(stringResource(
+            if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
+          if (!stopped && !newChatSheetState.collectAsState().value.isVisible() && chatModel.chatRunning.value == true && searchText.value.text.isEmpty()) {
+            OnboardingButtons(showNewChatSheet)
           }
         }
       }
