@@ -3593,11 +3593,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             createGroupFeatureItems gInfo m
             let GroupInfo {groupProfile = GroupProfile {description}} = gInfo
             memberConnectedChatItem gInfo m
-            when shouldCreateDescr $ forM_ description $ groupDescriptionChatItem gInfo m
+            unless expectHistory $ forM_ description $ groupDescriptionChatItem gInfo m
             where
-              shouldCreateDescr =
-                not (groupFeatureAllowed SGFHistory gInfo)
-                  || not (isCompatibleRange (memberChatVRange' m) groupHistoryIncludeWelcomeVRange)
+              expectHistory =
+                groupFeatureAllowed SGFHistory gInfo
+                  && isCompatibleRange (memberChatVRange' m) groupHistoryIncludeWelcomeVRange
           GCInviteeMember -> do
             memberConnectedChatItem gInfo m
             toView $ CRJoinedGroupMember user gInfo m {memberStatus = GSMemConnected}
