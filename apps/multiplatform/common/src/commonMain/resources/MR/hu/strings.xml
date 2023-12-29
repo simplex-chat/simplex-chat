@@ -207,7 +207,7 @@
     <string name="connection_error_auth">Kapcsolódási hiba (AUTH)</string>
     <string name="notification_preview_mode_contact">Ismerős neve</string>
     <string name="connect_via_contact_link">Kapcsolódás ismerős azonosítója által?</string>
-    <string name="create_address">Azonosító létrehozása</string>
+    <string name="create_address">Cím létrehozása</string>
     <string name="copy_verb">Másolás</string>
     <string name="continue_to_next_step">Folytatás</string>
     <string name="connect_plan_connect_via_link">Kapcsolódás egy linken keresztül?</string>
@@ -418,7 +418,7 @@
     <string name="delete_chat_archive_question">Chat archív törlése?</string>
     <string name="failed_to_create_user_duplicate_title">Duplikálódott megjelenítési név!</string>
     <string name="receipts_contacts_disable_keep_overrides">Letiltás (felülírások megtartásával)</string>
-    <string name="database_upgrade">"Adatbázis  upgrade"</string>
+    <string name="database_upgrade">Adatbázis upgrade</string>
     <string name="blocked_items_description">%d üzenet blokkolva</string>
     <string name="info_row_disappears_at">Eltűnik ekkor</string>
     <string name="ttl_weeks">%d hét</string>
