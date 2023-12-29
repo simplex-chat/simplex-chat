@@ -1882,6 +1882,9 @@
 "Live messages" = "ข้อความสด";
 
 /* No comment provided by engineer. */
+"Local" = "ในเครื่อง";
+
+/* No comment provided by engineer. */
 "Local name" = "ชื่อภายในเครื่องเท่านั้น";
 
 /* No comment provided by engineer. */
@@ -2135,9 +2138,6 @@
 /* No comment provided by engineer. */
 "Off" = "ปิด";
 
-/* No comment provided by engineer. */
-"Off (Local)" = "ปิด (ในเครื่อง)";
-
 /* feature offered item */
 "offered %@" = "เสนอแล้ว %@";
 
@@ -2224,9 +2224,6 @@
 
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "โปรโตคอลและโค้ดโอเพ่นซอร์ส – ใคร ๆ ก็สามารถเปิดใช้เซิร์ฟเวอร์ได้";
-
-/* No comment provided by engineer. */
-"Opening database…" = "กำลังเปิดฐานข้อมูล…";
 
 /* member role */
 "owner" = "เจ้าของ";
@@ -3090,9 +3087,6 @@
 "Turn off" = "ปิด";
 
 /* No comment provided by engineer. */
-"Turn off notifications?" = "ปิดการแจ้งเตือนไหม?";
-
-/* No comment provided by engineer. */
 "Turn on" = "เปิด";
 
 /* No comment provided by engineer. */
@@ -3502,9 +3496,6 @@
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "ผู้ติดต่อของคุณสามารถอนุญาตให้ลบข้อความทั้งหมดได้";
-
-/* No comment provided by engineer. */
-"Your contacts in SimpleX will see it.\nYou can change it in Settings." = "ผู้ติดต่อของคุณใน SimpleX จะเห็น\nคุณสามารถเปลี่ยนได้ในการตั้งค่า";
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "ผู้ติดต่อของคุณจะยังคงเชื่อมต่ออยู่";
