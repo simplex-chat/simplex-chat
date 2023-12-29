@@ -698,7 +698,7 @@
     <string name="icon_descr_call_missed">Nem fogadott hívás</string>
     <string name="theme_light">Világos</string>
     <string name="delete_message_cannot_be_undone_warning">Az üzenet törlésre kerül - ezt nem lehet visszafordítani!</string>
-    <string name="markdown_help">Segítség \"markdown\" funkcióhoz: Üzenetek formázása a szövegbe szúrt speciális karakterekkel</string>
+    <string name="markdown_help">Markdown segítség</string>
     <string name="notification_preview_new_message">új üzenet</string>
     <string name="old_database_archive">Régi adatbázis archívum</string>
     <string name="network_settings_title">Hálózati beállítások</string>
@@ -708,7 +708,7 @@
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">Győződj meg róla, hogy az XFTP-kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nem duplikáltak.</string>
     <string name="no_contacts_selected">Nincsenek ismerősök kiválasztva</string>
     <string name="no_received_app_files">Nincsenek fogadott vagy küldött fájlok</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobil: koppints a <b>Megnyitás mobil alkalmazásban</b>, majd koppints a <b>Csatlakozás</b> \u0020gombra az alkalmazásban.]]></string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 mobil: koppints a <b>Megnyitás mobil alkalmazásban</b>, majd koppints a <b>Csatlakozás</b> gombra az alkalmazásban.</string>
     <string name="markdown_in_messages">Markdown az üzenetekben</string>
     <string name="group_invitation_item_description">meghívás a %1$s csoportba</string>
     <string name="lock_mode">Lezárás mód</string>
@@ -1012,7 +1012,7 @@
     <string name="system_restricted_background_desc">A SimpleX nem tud a háttérben futni. Csak az app futása közben fogod az üzeneteket megkapni.</string>
     <string name="images_limit_title">Túl sok kép!</string>
     <string name="save_archive">Archív mentése</string>
-    <string name="group_members_n">"%s, %s és %d  tagok"</string>
+    <string name="group_members_n">%s, %s és %d tagok</string>
     <string name="auth_stop_chat">Chat szolgáltatás megállítása</string>
     <string name="simplex_link_mode">SimpleX linkek</string>
     <string name="v4_4_disappearing_messages_desc">Az elküldött üzenetek törlésre kerülnek a beállított idő után.</string>
@@ -1062,7 +1062,7 @@
     <string name="unknown_message_format">ismeretlen üzenet formátum</string>
     <string name="smp_servers_save">Szerverek elmentése</string>
     <string name="group_welcome_title">Üdvözlő üzenet</string>
-    <string name="network_option_seconds_label">másodperc</string>
+    <string name="network_option_seconds_label">mp</string>
     <string name="profile_update_will_be_sent_to_contacts">Profil változtatása frissítésre kerül az ismerőseidnél.</string>
     <string name="v5_3_simpler_incognito_mode">Egyszerűsített inkognító mód</string>
     <string name="save_welcome_message_question">Üdvözlőszöbeg elmentése?</string>
@@ -1147,7 +1147,7 @@
     <string name="button_remove_member_question">Tag eltávolítása?</string>
     <string name="verify_security_code">Biztonsági kód megtekintése</string>
     <string name="rcv_group_event_user_deleted">eltávolított téged</string>
-    <string name="simplex_address">SimpleX azonosító</string>
+    <string name="simplex_address">SimpleX cím</string>
     <string name="show_dev_options">Mutat:</string>
     <string name="callstate_received_answer">fogadott válasz…</string>
     <string name="restore_database_alert_title">Adatbázis mentés visszaállítása?</string>
@@ -1209,7 +1209,7 @@
     <string name="icon_descr_video_call">videóhívás</string>
     <string name="unfavorite_chat">Nem kedvenc</string>
     <string name="send_receipts">Küldési visszaigazolások</string>
-    <string name="icon_descr_address">SimpleX Azonosító</string>
+    <string name="icon_descr_address">SimpleX cím</string>
     <string name="chat_help_tap_button">Érintsd meg a gombot</string>
     <string name="save_and_notify_contact">Mentés és az ismerős értesítése</string>
     <string name="icon_descr_call_rejected">Elutasított hívás</string>
@@ -1343,7 +1343,7 @@
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Az adatok védelme érdekében kapcsold be a SimpleX Lock funkciót.
 \nA funkció engedélyezése előtt a rendszer felszólít téged a hitelesítés befejezésére.</string>
     <string name="video_will_be_received_when_contact_is_online">A videó akkor érkezik, amikor az ismerősöd elérhető, kérlek várj vagy nézd meg később!</string>
-    <string name="network_error_desc">"Kérjük, ellenőrizd hálózati kapcsolatodat a(z)  %1$s segítségével, és próbáld meg újra."</string>
+    <string name="network_error_desc">Kérjük, ellenőrizd hálózati kapcsolatodat a(z) %1$s segítségével, és próbáld meg újra.</string>
     <string name="you_can_turn_on_lock">A SimpleX Lock-ot a Beállításokon keresztül kapcsolhatod be.</string>
     <string name="app_was_crashed">Az alkalmazás összeomlott</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Kérjük, ellenőrizd, hogy a megfelelő linket használtad-e, vagy kérd meg az ismerősödet, hogy küldjön egy másikat.</string>
@@ -1391,7 +1391,7 @@
     <string name="sender_at_ts">%s at %s</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Csatlakoztok amikor az ismerősöd eszköze online lesz. Kérlek várj vagy nézz vissza később!</string>
     <string name="v5_4_block_group_members_descr">Kéretlen üzenetek elrejtése.</string>
-    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Állítsd a <i>Használd az .onion hostokat</i> \u0020NEM-re ha a SOCKS proxy nem támogatja.]]></string>
+    <string name="disable_onion_hosts_when_not_supported">Állítsd a <i>Használd az .onion hostokat</i> NEM-re ha a SOCKS proxy nem támogatja.</string>
     <string name="you_can_share_your_address">Megoszthatod a SimpleX azonosítódat linkben vagy QR-kódban - bárki kapcsolatfelvételt kezdeményezhet veled.</string>
     <string name="you_can_create_it_later">Később létrehozhatod</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">A profilod a te eszközödön van tárolva és csak az ismerőseiddel kerül megosztásra! A SimpleX chat szerverek nem láthatják a profilodat!</string>
