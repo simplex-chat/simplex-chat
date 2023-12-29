@@ -293,6 +293,7 @@
   <string name="tap_to_start_new_chat">Tap to start a new chat</string>
   <string name="chat_with_developers">Chat with the developers</string>
   <string name="you_have_no_chats">You have no chats</string>
+  <string name="loading_chats">Loading chats…</string>
   <string name="no_filtered_chats">No filtered chats</string>
   <string name="contact_tap_to_connect">Tap to Connect</string>
   <string name="connect_with_contact_name_question">Connect with %1$s?</string>

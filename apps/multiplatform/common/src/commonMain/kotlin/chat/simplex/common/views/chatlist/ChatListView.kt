@@ -112,9 +112,8 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
             if (!stopped && !newChatSheetState.collectAsState().value.isVisible() && chatModel.chatRunning.value == true) {
               OnboardingButtons(showNewChatSheet)
             }
-            if (chatModel.chatRunning.value == true) {
-              Text(stringResource(MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
-            }
+            Text(stringResource(
+              if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
           }
         }
       }
