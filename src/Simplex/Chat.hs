@@ -5652,17 +5652,27 @@ sendDirectMessage conn chatMsgEvent connOrGroupId = do
 
 createSndMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> ConnOrGroupId -> m SndMessage
 createSndMessage chatMsgEvent connOrGroupId = do
+  createSndMessages [(connOrGroupId, chatMsgEvent)] >>= \case
+    [r] -> liftEither r
+    rs -> throwChatError $ CEInternalError $ "createSndMessage: expected 1 result, got " <> show (length rs)
+
+createSndMessages :: forall e m. (MsgEncodingI e, ChatMonad m) => [(ConnOrGroupId, ChatMsgEvent e)] -> m [Either ChatError SndMessage]
+createSndMessages idsEvnts = do
   gVar <- asks random
   vr <- chatVersionRange
-  withStore $ \db -> createNewSndMessage db gVar connOrGroupId chatMsgEvent (encodeMessage vr)
+  withStoreBatch $ \db -> map (uncurry (createMsg db gVar vr)) idsEvnts
   where
-    encodeMessage chatVRange sharedMsgId =
-      encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
+    createMsg db gVar chatVRange connOrGroupId evnt = do
+      r <- runExceptT $ createNewSndMessage db gVar connOrGroupId evnt (encodeMessage chatVRange evnt)
+      pure $ first ChatErrorStore r
+    encodeMessage chatVRange evnt sharedMsgId =
+      encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
 sendGroupMemberMessages :: forall e m. (MsgEncodingI e, ChatMonad m) => User -> Connection -> NonEmpty (ChatMsgEvent e) -> GroupId -> m ()
 sendGroupMemberMessages user conn@Connection {connId} events groupId = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
-  (errs, msgs) <- partitionEithers <$> createSndMessages
+  let idsEvts = map (GroupId groupId,) $ L.toList events
+  (errs, msgs) <- partitionEithers <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CRChatErrors (Just user) errs
   unless (null msgs) $ do
     let (errs', msgBatches) = partitionEithers $ batchMessages maxChatMsgSize msgs
@@ -5677,16 +5687,6 @@ sendGroupMemberMessages user conn@Connection {connId} events groupId = do
       agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) MsgFlags {notification = True} batchBody
       let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
       void . withStoreBatch' $ \db -> map (\SndMessage {msgId} -> createSndMsgDelivery db sndMsgDelivery msgId) sndMsgs
-    createSndMessages :: m [Either ChatError SndMessage]
-    createSndMessages = do
-      gVar <- asks random
-      vr <- chatVersionRange
-      withStoreBatch $ \db -> map (createMsg db gVar vr) (toList events)
-    createMsg db gVar chatVRange evnt = do
-      r <- runExceptT $ createNewSndMessage db gVar (GroupId groupId) evnt (encodeMessage chatVRange evnt)
-      pure $ first ChatErrorStore r
-    encodeMessage chatVRange evnt sharedMsgId =
-      encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
 directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
 directMessage chatMsgEvent = do
