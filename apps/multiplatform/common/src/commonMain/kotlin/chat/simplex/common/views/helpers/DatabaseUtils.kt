@@ -82,7 +82,7 @@ sealed class DBMigrationResult {
   @Serializable @SerialName("unknown") data class Unknown(val json: String): DBMigrationResult()
 }
 
-data class DBMigrationResultBox(val result: DBMigrationResult, val startChat: Boolean)
+data class DBMigrationStatus(val result: DBMigrationResult, val triedToStartChat: Boolean)
 
 enum class MigrationConfirmation(val value: String) {
   YesUp("yesUp"),

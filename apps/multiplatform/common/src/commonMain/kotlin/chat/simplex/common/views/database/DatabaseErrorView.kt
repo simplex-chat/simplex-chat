@@ -33,7 +33,7 @@ import kotlin.io.path.Path
 
 @Composable
 fun DatabaseErrorView(
-  chatDbStatus: State<DBMigrationResultBox?>,
+  chatDbStatus: State<DBMigrationStatus?>,
   appPreferences: AppPreferences,
 ) {
   val progressIndicator = remember { mutableStateOf(false) }
@@ -188,7 +188,7 @@ fun DatabaseErrorView(
 private fun runChat(
   dbKey: String? = null,
   confirmMigrations: MigrationConfirmation? = null,
-  chatDbStatus: State<DBMigrationResultBox?>,
+  chatDbStatus: State<DBMigrationStatus?>,
   progressIndicator: MutableState<Boolean>,
   prefs: AppPreferences
 ) = CoroutineScope(Dispatchers.Default).launch {
@@ -196,7 +196,7 @@ private fun runChat(
   if (progressIndicator.value) return@launch
   progressIndicator.value = true
   try {
-    initChatController(dbKey, confirmMigrations, startChat = chatDbStatus.value?.startChat ?: true)
+    initChatController(dbKey, confirmMigrations, startChat = chatDbStatus.value?.triedToStartChat ?: true)
   } catch (e: Exception) {
     Log.d(TAG, "initializeChat ${e.stackTraceToString()}")
   }
@@ -306,7 +306,7 @@ private fun ColumnScope.RestoreDbButton(onClick: () -> Unit) {
 fun PreviewChatInfoLayout() {
   SimpleXTheme {
     DatabaseErrorView(
-      remember { mutableStateOf(DBMigrationResultBox(DBMigrationResult.ErrorNotADatabase("simplex_v1_chat.db"), true)) },
+      remember { mutableStateOf(DBMigrationStatus(DBMigrationResult.ErrorNotADatabase("simplex_v1_chat.db"), true)) },
       AppPreferences()
     )
   }
