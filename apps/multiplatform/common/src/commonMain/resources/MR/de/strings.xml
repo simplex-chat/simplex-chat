@@ -23,7 +23,7 @@
     <string name="receiving_files_not_yet_supported">Der Empfang von Dateien wird noch nicht unterstützt</string>
     <string name="sender_you_pronoun">Ihre Daten</string>
     <string name="unknown_message_format">Unbekanntes Nachrichtenformat</string>
-    <string name="invalid_message_format">Unzulässiges Nachrichtenformat</string>
+    <string name="invalid_message_format">Ungültiges Nachrichtenformat</string>
     <!-- PendingContactConnection - ChatModel.kt -->
     <string name="connection_local_display_name">verbindung %1$d</string>
     <string name="display_name_connection_established">verbindung hergestellt</string>
@@ -75,7 +75,7 @@
     <string name="error_deleting_group">Fehler beim Löschen der Gruppe</string>
     <string name="error_deleting_contact_request">Fehler beim Löschen der Kontaktanfrage</string>
     <string name="error_deleting_pending_contact_connection">Fehler beim Löschen der anstehenden Kontaktaufnahme</string>
-    <string name="error_changing_address">Fehler beim Wechseln der Adresse</string>
+    <string name="error_changing_address">Fehler beim Wechseln der Empfängeradresse</string>
     <string name="error_smp_test_failed_at_step">Der Test ist beim Schritt %s fehlgeschlagen.</string>
     <string name="error_smp_test_server_auth">Um Warteschlangen zu erzeugen, benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort.</string>
     <string name="error_smp_test_certificate">Der Fingerabdruck des Zertifikats in der Serveradresse ist wahrscheinlich ungültig.</string>
@@ -386,7 +386,7 @@
     <string name="configure_ICE_servers">ICE-Server konfigurieren</string>
     <string name="enter_one_ICE_server_per_line">ICE-Server (einer pro Zeile)</string>
     <string name="error_saving_ICE_servers">Fehler beim Speichern der ICE-Server</string>
-    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die WebRTC-ICE-Server-Adressen das richtige Format haben, zeilenweise separiert und nicht doppelt vorhanden sind.</string>
+    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die WebRTC-ICE-Server-Adressen das richtige Format haben, zeilenweise getrennt und nicht doppelt vorhanden sind.</string>
     <string name="save_servers_button">Speichern</string>
     <string name="network_and_servers">Netzwerk &amp; Server</string>
     <string name="network_settings">Erweiterte Netzwerkeinstellungen</string>
@@ -724,12 +724,12 @@
     <string name="snd_group_event_user_left">hat die Gruppe verlassen</string>
     <string name="snd_group_event_group_profile_updated">Gruppenprofil aktualisiert</string>
     <!-- Conn event chat items -->
-    <string name="rcv_conn_event_switch_queue_phase_completed">wechselte die Adresse für Sie</string>
-    <string name="rcv_conn_event_switch_queue_phase_changing">Wechsel der Adresse…</string>
-    <string name="snd_conn_event_switch_queue_phase_completed_for_member">Sie haben die Adresse für %s gewechselt</string>
-    <string name="snd_conn_event_switch_queue_phase_changing_for_member">Wechsel der Adresse für %s…</string>
-    <string name="snd_conn_event_switch_queue_phase_completed">Sie haben die Adresse gewechselt</string>
-    <string name="snd_conn_event_switch_queue_phase_changing">Wechsel der Adresse…</string>
+    <string name="rcv_conn_event_switch_queue_phase_completed">wechselte die Empfängeradresse für Sie</string>
+    <string name="rcv_conn_event_switch_queue_phase_changing">Wechsel der Empfängeradresse…</string>
+    <string name="snd_conn_event_switch_queue_phase_completed_for_member">Sie haben die Empfängeradresse für %s gewechselt</string>
+    <string name="snd_conn_event_switch_queue_phase_changing_for_member">Wechsel der Empfängeradresse für %s…</string>
+    <string name="snd_conn_event_switch_queue_phase_completed">Sie haben die Empfängeradresse gewechselt</string>
+    <string name="snd_conn_event_switch_queue_phase_changing">Wechsel der Empfängeradresse…</string>
     <!-- GroupMemberRole -->
     <string name="group_member_role_member">Mitglied</string>
     <string name="group_member_role_admin">Admin</string>
@@ -993,7 +993,7 @@
     <string name="users_delete_profile_for">Chat-Profil löschen für</string>
     <string name="network_option_ping_count">PING-Zähler</string>
     <string name="update_network_session_mode_question">Transport-Isolations-Modus aktualisieren\?</string>
-    <string name="smp_servers_per_user">Server der neuen Verbindungen von Ihrem aktuellen Chat-Profil</string>
+    <string name="smp_servers_per_user">Mögliche Server für neue Verbindungen über Ihr aktuelles Chat-Profil</string>
     <string name="files_and_media_section">Dateien &amp; Medien</string>
     <string name="network_session_mode_transport_isolation">Transport-Isolation</string>
     <string name="users_delete_question">Chat-Profil löschen\?</string>
@@ -1154,7 +1154,7 @@
     <string name="alert_title_msg_bad_hash">Ungültiger Nachrichten-Hash</string>
     <string name="la_auth_failed">Authentifizierung fehlgeschlagen</string>
     <string name="alert_title_msg_bad_id">Falsche Nachrichten-ID</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die XFTP-Server-Adressen das richtige Format haben, zeilenweise separiert und nicht doppelt vorhanden sind.</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die XFTP-Server-Adressen das richtige Format haben, zeilenweise getrennt und nicht doppelt vorhanden sind.</string>
     <string name="network_socks_toggle_use_socks_proxy">SOCKS-Proxy nutzen</string>
     <string name="la_lock_mode">SimpleX-Sperrmodus</string>
     <string name="lock_not_enabled">SimpleX-Sperre ist nicht aktiviert!</string>
@@ -1209,10 +1209,10 @@
     <string name="scan_qr_to_connect_to_contact">Um eine Verbindung herzustellen, kann Ihr Kontakt den QR-Code scannen oder den Link in der App verwenden.</string>
     <string name="simplex_address">SimpleX-Adresse</string>
     <string name="you_can_accept_or_reject_connection">Wenn Personen eine Verbindung anfordern, können Sie diese annehmen oder ablehnen.</string>
-    <string name="you_wont_lose_your_contacts_if_delete_address">Sie werden Ihre Kontakte nicht verlieren, falls Sie Ihre Adresse später löschen.</string>
+    <string name="you_wont_lose_your_contacts_if_delete_address">Sie werden Ihre damit verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.</string>
     <string name="customize_theme_title">Design anpassen</string>
     <string name="theme_colors_section_title">DESIGN-FARBEN</string>
-    <string name="add_address_to_your_profile">Fügen Sie die Adresse zu Ihrem Profil hinzu, damit Ihre Kontakte sie mit anderen Personen teilen können. Es wird eine Profilaktualisierung an Ihre Kontakte gesendet.</string>
+    <string name="add_address_to_your_profile">Fügen Sie die Adresse Ihrem Profil hinzu, damit Ihre Kontakte sie mit anderen Personen teilen können. Es wird eine Profilaktualisierung an Ihre Kontakte gesendet.</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Alle Ihre Kontakte bleiben verbunden. Es wird eine Profilaktualisierung an Ihre Kontakte gesendet.</string>
     <string name="create_address_and_let_people_connect">Erstellen Sie eine Adresse, damit sich Personen mit Ihnen verbinden können.</string>
     <string name="create_simplex_address">SimpleX-Adresse erstellen</string>
@@ -1341,12 +1341,12 @@
     <string name="files_and_media">Dateien und Medien</string>
     <string name="allow_to_send_files">Das Senden von Dateien und Medien erlauben.</string>
     <string name="prohibit_sending_files">Das Senden von Dateien und Medien nicht erlauben.</string>
-    <string name="abort_switch_receiving_address">Wechsel der Adresse abbrechen</string>
-    <string name="abort_switch_receiving_address_question">Wechsel der Adresse abbrechen\?</string>
+    <string name="abort_switch_receiving_address">Wechsel der Empfängeradresse abbrechen</string>
+    <string name="abort_switch_receiving_address_question">Wechsel der Empfängeradresse abbrechen?</string>
     <string name="files_and_media_prohibited">Dateien und Medien sind nicht erlaubt!</string>
     <string name="only_owners_can_enable_files_and_media">Nur Gruppenbesitzer können Dateien und Medien aktivieren.</string>
     <string name="group_members_can_send_files">Gruppenmitglieder können Dateien und Medien senden.</string>
-    <string name="abort_switch_receiving_address_desc">Der Wechsel der Adresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.</string>
+    <string name="abort_switch_receiving_address_desc">Der Wechsel der Empfängeradresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.</string>
     <string name="files_are_prohibited_in_group">In dieser Gruppe sind Dateien und Medien nicht erlaubt.</string>
     <string name="unfavorite_chat">Favorit entfernen</string>
     <string name="favorite_chat">Favorit</string>
@@ -1610,4 +1610,5 @@
     <string name="app_was_crashed">Ansicht abgestürzt</string>
     <string name="error_showing_content">Fehler beim Anzeigen des Inhalts</string>
     <string name="error_showing_message">Fehler beim Anzeigen der Nachricht</string>
+    <string name="you_can_make_address_visible_via_settings">Sie können sie über Einstellungen für Ihre SimpleX-Kontakte sichtbar machen.</string>
 </resources>
