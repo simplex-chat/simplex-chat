@@ -101,15 +101,14 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
     }
   ) {
     Box(Modifier.padding(it).padding(end = endPadding)) {
-      Column(
+      Box(
         modifier = Modifier
           .fillMaxSize()
       ) {
-        if (chatModel.chats.isNotEmpty()) {
-          ChatList(chatModel, searchText = searchText)
-        } else if (!chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
+        ChatList(chatModel, searchText = searchText)
+        if (chatModel.chats.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
           Box(Modifier.fillMaxSize()) {
-            if (!stopped && !newChatSheetState.collectAsState().value.isVisible() && chatModel.chatRunning.value == true) {
+            if (!stopped && !newChatSheetState.collectAsState().value.isVisible() && chatModel.chatRunning.value == true && searchText.value.text.isEmpty()) {
               OnboardingButtons(showNewChatSheet)
             }
             Text(stringResource(
@@ -481,7 +480,7 @@ private fun ChatList(chatModel: ChatModel, searchText: MutableState<TextFieldVal
       ChatListNavLinkView(chat, nextChatSelected)
     }
   }
-  if (chats.isEmpty() && !chatModel.chats.isEmpty()) {
+  if (chats.isEmpty() && chatModel.chats.isNotEmpty()) {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
       Text(generalGetString(MR.strings.no_filtered_chats), color = MaterialTheme.colors.secondary)
     }
