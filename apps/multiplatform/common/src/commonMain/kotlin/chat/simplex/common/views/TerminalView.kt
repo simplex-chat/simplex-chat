@@ -34,7 +34,6 @@ fun TerminalView(chatModel: ChatModel, close: () -> Unit) {
     close()
   })
   TerminalLayout(
-    remember { chatModel.terminalItems },
     composeState,
     sendCommand = { sendCommand(chatModel, composeState) },
     close
@@ -63,7 +62,6 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
 
 @Composable
 fun TerminalLayout(
-  terminalItems: List<TerminalItem>,
   composeState: MutableState<ComposeState>,
   sendCommand: () -> Unit,
   close: () -> Unit
@@ -111,7 +109,7 @@ fun TerminalLayout(
           .fillMaxWidth(),
         color = MaterialTheme.colors.background
       ) {
-        TerminalLog(terminalItems)
+        TerminalLog()
       }
     }
   }
@@ -120,22 +118,13 @@ fun TerminalLayout(
 private var lazyListState = 0 to 0
 
 @Composable
-fun TerminalLog(terminalItems: List<TerminalItem>) {
+fun TerminalLog() {
   val listState = rememberLazyListState(lazyListState.first, lazyListState.second)
   DisposableEffect(Unit) {
     onDispose { lazyListState = listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset }
   }
   val reversedTerminalItems by remember {
-    derivedStateOf {
-      // Such logic prevents concurrent modification
-      val res = ArrayList<TerminalItem>()
-      var i = 0
-      while (i < terminalItems.size) {
-        res.add(terminalItems[i])
-        i++
-      }
-      res.asReversed()
-    }
+    derivedStateOf { chatModel.terminalItems.value.asReversed() }
   }
   val clipboard = LocalClipboardManager.current
   LazyColumn(state = listState, reverseLayout = true) {
@@ -152,7 +141,12 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
           .clickable {
             ModalManager.start.showModal(endButtons = { ShareButton { clipboard.shareText(item.details) } }) {
               SelectionContainer(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                Text(item.details, modifier = Modifier.padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING))
+                val details = item.details
+                  .let {
+                    if (it.length < 100_000) it
+                    else it.substring(0, 100_000)
+                  }
+                Text(details, modifier = Modifier.heightIn(max = 50_000.dp).padding(horizontal = DEFAULT_PADDING).padding(bottom = DEFAULT_PADDING))
               }
             }
           }.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -170,7 +164,6 @@ fun TerminalLog(terminalItems: List<TerminalItem>) {
 fun PreviewTerminalLayout() {
   SimpleXTheme {
     TerminalLayout(
-      terminalItems = TerminalItem.sampleData,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = false)) },
       sendCommand = {},
       close = {}

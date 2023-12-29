@@ -93,7 +93,6 @@
     <string name="v4_2_auto_accept_contact_requests">אשר אוטומטית בקשות ליצירת קשר.</string>
     <string name="authentication_cancelled">אימות בוטל</string>
     <string name="auth_unavailable">אימות לא זמין</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>הוסיפו איש קשר חדש</b>: ליצירת קוד QR חד־פעמי עבור איש הקשר שלכם.]]></string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>הטוב ביותר לסוללה</b>. התראות יוצגו רק כאשר האפליקציה מופעלת (ללא שירות רקע).]]></string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>טוב לסוללה</b>. שירות הרקע ייבדוק הודעות כל 10 דקות. שיחות או הודעות דחופות עלולות להתפספס.]]></string>
     <string name="both_you_and_your_contacts_can_delete">גם אתם וגם איש הקשר יכולים למחוק באופן בלתי הפיך הודעות שנשלחו.</string>
@@ -103,7 +102,6 @@
     <string name="cancel_verb">ביטול</string>
     <string name="icon_descr_cancel_live_message">בטל הודעה חיה</string>
     <string name="use_camera_button">מצלמה</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>סירקו קוד QR</b>: כדי להתחבר לאיש קשר המציג לכם קוד QR.]]></string>
     <string name="icon_descr_cancel_link_preview">בטל תצוגה מקדימה של קישורים</string>
     <string name="callstatus_error">שגיאת שיחה</string>
     <string name="callstatus_in_progress">שיחה מתמשכת</string>
@@ -219,7 +217,6 @@
     <string name="copied">הועתק ללוח</string>
     <string name="share_one_time_link">צור קישור הזמנה חד־פעמי</string>
     <string name="create_group">צור קבוצה סודית</string>
-    <string name="create_one_time_link">צור קישור הזמנה חד־פעמי</string>
     <string name="contribute">תרומה</string>
     <string name="core_version">גרסת ליבה: v%s</string>
     <string name="create_address">צור כתובת</string>
@@ -1222,8 +1219,6 @@
 \nלא ניתן לבטל פעולה זו – הפרופיל, אנשי הקשר, ההודעות והקבצים שלך ייאבדו באופן בלתי הפיך.</string>
     <string name="your_current_profile">הפרופיל הנוכחי שלך</string>
     <string name="your_contacts_will_remain_connected">אנשי הקשר שלך יישארו מחוברים.</string>
-    <string name="your_contacts_will_see_it">אנשי הקשר שלך ב־SimpleX ייראו זאת.
-\nניתן לשנות זאת בהגדרות.</string>
     <string name="your_ice_servers">שרתי ה־ICE שלך</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">אתם תהיו מחוברים כאשר בקשת החיבור תאושר, אנא חכו או בידקו מאוחר יותר!</string>
     <string name="profile_will_be_sent_to_contact_sending_link">הפרופיל שלך יישלח לאיש הקשר ממנו קיבלת קישור זה.</string>

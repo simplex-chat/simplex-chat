@@ -24,8 +24,6 @@
     <string name="icon_descr_cancel_live_message">Cancelar mensagem ao vivo</string>
     <string name="back">Voltar</string>
     <string name="choose_file">Arquivo</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Adicionar novo contato</b>: para criar seu QR code de uso único para seu contato.]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Escanear código QR</b>: para se conectar ao seu contato que mostra o código QR para você.]]></string>
     <string name="accept_contact_button">Aceitar</string>
     <string name="clear_chat_question">Limpar chat\?</string>
     <string name="clear_verb">Limpar</string>
@@ -374,7 +372,6 @@
     <string name="auth_device_authentication_is_disabled_turning_off">A autenticação do dispositivo está desativada. Desativando o bloqueio SimpleX.</string>
     <string name="for_everybody">Para todos</string>
     <string name="notification_preview_mode_hidden">Oculto</string>
-    <string name="create_one_time_link">Gerar um link de convite de uso único.</string>
     <string name="how_to_use_your_servers">Como usar seus servidores</string>
     <string name="import_database_confirmation">Importar</string>
     <string name="import_database_question">Importar banco de dados de chat\?</string>
@@ -1170,8 +1167,6 @@
     <string name="opening_database">Abrindo banco de dados…</string>
     <string name="auth_open_chat_profiles">Abrir perfis de bate-papo</string>
     <string name="share_address_with_contacts_question">Compartilhar endereço com os contatos\?</string>
-    <string name="your_contacts_will_see_it">Seus contatos no SimpleX o verão.
-\nVocê pode alterá-la nas Configurações.</string>
     <string name="your_contacts_will_remain_connected">Seus contatos continuarão conectados.</string>
     <string name="all_app_data_will_be_cleared">Todos os dados do aplicativo serão excluídos.</string>
     <string name="app_passcode_replaced_with_self_destruct">A senha do aplicativo é substituída por uma senha de auto-destruição.</string>

@@ -9,7 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-private let uiLinkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
+let uiLinkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
 
 private let noTyping = Text("   ")
 
@@ -144,7 +144,7 @@ private func linkText(_ s: String, _ link: String, _ preview: Bool, prefix: Stri
     ]))).underline()
 }
 
-private func simplexLinkText(_ linkType: SimplexLinkType, _ smpHosts: [String]) -> String {
+func simplexLinkText(_ linkType: SimplexLinkType, _ smpHosts: [String]) -> String {
     linkType.description + " " + "(via \(smpHosts.first ?? "?"))"
 }
 

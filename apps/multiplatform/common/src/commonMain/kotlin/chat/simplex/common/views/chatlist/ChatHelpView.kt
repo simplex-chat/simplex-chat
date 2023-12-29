@@ -50,8 +50,8 @@ fun ChatHelpView(addContact: (() -> Unit)? = null) {
         )
         Text(stringResource(MR.strings.above_then_preposition_continuation))
       }
-      Text(annotatedStringResource(MR.strings.add_new_contact_to_create_one_time_QR_code), lineHeight = 22.sp)
-      Text(annotatedStringResource(MR.strings.scan_QR_code_to_connect_to_contact_who_shows_QR_code), lineHeight = 22.sp)
+      Text(annotatedStringResource(MR.strings.add_contact_button_to_create_link_or_connect_via_link), lineHeight = 22.sp)
+      Text(annotatedStringResource(MR.strings.create_group_button_to_create_new_group), lineHeight = 22.sp)
     }
 
     Column(

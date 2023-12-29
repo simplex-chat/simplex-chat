@@ -15,6 +15,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         logger.debug("AppDelegate: didFinishLaunchingWithOptions")
         application.registerForRemoteNotifications()
         if #available(iOS 17.0, *) { trackKeyboard() }
+        NotificationCenter.default.addObserver(self, selector: #selector(pasteboardChanged), name: UIPasteboard.changedNotification, object: nil)
         return true
     }
 
@@ -34,6 +35,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     @available(iOS 17.0, *)
     @objc func keyboardWillHide(_ notification: Notification) {
         ChatModel.shared.keyboardHeight = 0
+    }
+
+    @objc func pasteboardChanged() {
+        ChatModel.shared.pasteboardHasStrings = UIPasteboard.general.hasStrings
     }
 
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {

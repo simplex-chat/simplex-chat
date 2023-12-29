@@ -118,7 +118,6 @@
     <string name="network_session_mode_entity_description">每个联系人和群组成员 <b>将使用单独的 TCP 连接（和 SOCKS 凭证）</b>。
 \n<b>请注意</b>：如果您有很多连接，您的电池和流量消耗可能会大大增加，并且某些连接可能会失败。</string>
     <string name="back">返回</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>添加新联系人</b>：为您的联系人创建一次性二维码。]]></string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b> 最长续航 </b>。您只会在应用程序运行时收到通知（无后台服务）。]]></string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> 较长续航 </b>。后台服务每 10 分钟检查一次消息。您可能会错过来电或者紧急信息。]]></string>
     <string name="bold_text">加粗</string>
@@ -129,7 +128,6 @@
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b> 使用更多电量 </b>！后台服务始终运行——一旦收到消息，就会显示通知。]]></string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>请注意</b>：如果您丢失密码，您将无法恢复或者更改密码。]]></string>
     <string name="call_already_ended">通话已结束！</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>扫描二维码</b> ：与向您展示二维码的联系人联系。]]></string>
     <string name="alert_title_cant_invite_contacts">无法邀请联系人！</string>
     <string name="invite_prohibited">无法邀请联系人！</string>
     <string name="cancel_verb">取消</string>
@@ -338,7 +336,6 @@
     <string name="create_secret_group_title">创建私密群组</string>
     <string name="v4_5_multiple_chat_profiles_descr">不同的名字、头像和传输隔离。</string>
     <string name="v4_4_french_interface">法语界面</string>
-    <string name="create_one_time_link">创建一次性邀请链接</string>
     <string name="how_to_use_simplex_chat">如何使用它</string>
     <string name="server_error">错误</string>
     <string name="display_name_connecting">连接中……</string>
@@ -1211,8 +1208,6 @@
     <string name="email_invite_body">你好！
 \n用 SimpleX Chat 与我联系：%s</string>
     <string name="email_invite_subject">让我们一起在 SimpleX Chat 里聊天</string>
-    <string name="your_contacts_will_see_it">您的 SimpleX 的联系人会看到它。
-\n您可以在设置中更改它。</string>
     <string name="you_can_create_it_later">您可以以后创建它</string>
     <string name="share_address">分享地址</string>
     <string name="you_can_share_this_address_with_your_contacts">您可以与您的联系人分享该地址，让他们与 %s 联系。</string>
@@ -1409,14 +1404,14 @@
     <string name="expand_verb">展开</string>
     <string name="connect_plan_repeat_connection_request">重复连接请求吗？</string>
     <string name="rcv_direct_event_contact_deleted">已删除联系人</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">你已经在连接到 %1$s。</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[你已经在连接到 <b>%1$s</b>。]]></string>
     <string name="error_alert_title">错误</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">你已经在通过此链接加入该群。</string>
     <string name="create_group_button">建群</string>
     <string name="create_another_profile_button">创建个人资料</string>
     <string name="group_members_2">%s 和 %s</string>
     <string name="connect_plan_join_your_group">加入你的群吗？</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">你已经在加入 %1$s 群。</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[你已经在加入 <b>%1$s</b> 群。]]></string>
     <string name="connect_plan_this_is_your_own_one_time_link">这是你自己的一次性链接！</string>
     <string name="marked_deleted_items_description">%d 条消息被标记为删除</string>
     <string name="connect_plan_group_already_exists">群已存在！</string>
@@ -1430,7 +1425,7 @@
     <string name="unblock_member_button">解封成员</string>
     <string name="connect_plan_connect_to_yourself">连接到你自己？</string>
     <string name="contact_tap_to_connect">轻按连接</string>
-    <string name="connect_plan_you_are_already_in_group_vName">你已经在%1$s 群内。</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[你已经在<b>%1$s</b> 群内。]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">这是你自己的 SimpleX 地址！</string>
     <string name="correct_name_to">更正名称为 %s?</string>
     <string name="delete_messages__question">删除 %d 条消息吗？</string>
@@ -1451,7 +1446,7 @@
     <string name="block_member_question">封禁成员吗？</string>
     <string name="rcv_group_events_count">%d 个群事件</string>
     <string name="invalid_name">无效名称！</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">这是给你的 %1$s 群链接！</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[这是给你的 <b>%1$s</b> 群链接！]]></string>
     <string name="unblock_member_confirmation">解封</string>
     <string name="non_content_uri_alert_title">无效的文件路径</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">你已经请求通过此地址进行连接！</string>
@@ -1523,4 +1518,15 @@
     <string name="found_desktop">找到了桌面</string>
     <string name="not_compatible">不兼容！</string>
     <string name="multicast_discoverable_via_local_network">可通过本地网络发现</string>
+    <string name="refresh_qr_code">刷新</string>
+    <string name="create_chat_profile">创建聊天资料</string>
+    <string name="no_connected_mobile">没有已连接的移动设备</string>
+    <string name="disconnect_remote_hosts">断开移动设备连接</string>
+    <string name="random_port">随机</string>
+    <string name="open_port_in_firewall_desc">要允许移动应用连接到桌面，请在防火墙中打开此端口，如果你已启用了它</string>
+    <string name="open_port_in_firewall_title">在防火墙中打开端口</string>
+    <string name="app_was_crashed">查看崩溃</string>
+    <string name="moderated_items_description">%d 条消息由 %s 主持</string>
+    <string name="error_showing_content">显示内容出错</string>
+    <string name="error_showing_message">显示消息出错</string>
 </resources>
