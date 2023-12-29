@@ -91,8 +91,9 @@ jobs:
           ghc-version: ${{ matrix.ghc }}
           cabal-version: "3.10.1.0"
 
-      - name: Cache dependencies
-        uses: actions/cache@v3
+      - name: Restore cached build
+        id: restore_cache
+        uses: actions/cache/restore@v3
         with:
           path: |
             ${{ matrix.cache_path }}
@@ -257,14 +258,14 @@ jobs:
           body: |
             ${{ steps.mac_desktop_build.outputs.package_hash }}
 
-      - name: Cache build
+      - name: Cache unix build
         uses: actions/cache/save@v3
-        if: always()
+        if: matrix.os != 'windows-latest'
         with:
           path: |
             ${{ matrix.cache_path }}
             dist-newstyle
-          key: ${{ matrix.os }}-ghc${{ matrix.ghc }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
+          key: ${{ steps.restore_cache.outputs.cache-primary-key }}
 
       - name: Unix test
         if: matrix.os != 'windows-latest'
@@ -365,5 +366,14 @@ jobs:
           append_body: true
           body: |
             ${{ steps.windows_desktop_build.outputs.package_hash }}
+
+      - name: Cache windows build
+        uses: actions/cache/save@v3
+        if: matrix.os == 'windows-latest'
+        with:
+          path: |
+            ${{ matrix.cache_path }}
+            dist-newstyle
+          key: ${{ steps.restore_cache.outputs.cache-primary-key }}
 
       # Windows /
