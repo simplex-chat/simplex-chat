@@ -33,7 +33,7 @@ import kotlin.io.path.Path
 
 @Composable
 fun DatabaseErrorView(
-  chatDbStatus: State<DBMigrationResult?>,
+  chatDbStatus: State<DBMigrationResultBox?>,
   appPreferences: AppPreferences,
 ) {
   val progressIndicator = remember { mutableStateOf(false) }
@@ -81,7 +81,7 @@ fun DatabaseErrorView(
     verticalArrangement = Arrangement.Center,
   ) {
     val buttonEnabled = validKey(dbKey.value) && !progressIndicator.value
-    when (val status = chatDbStatus.value) {
+    when (val status = chatDbStatus.value?.result) {
       is DBMigrationResult.ErrorNotADatabase ->
         if (useKeychain && !storedDBKey.isNullOrEmpty()) {
           DatabaseErrorDetails(MR.strings.wrong_passphrase) {
@@ -188,7 +188,7 @@ fun DatabaseErrorView(
 private fun runChat(
   dbKey: String? = null,
   confirmMigrations: MigrationConfirmation? = null,
-  chatDbStatus: State<DBMigrationResult?>,
+  chatDbStatus: State<DBMigrationResultBox?>,
   progressIndicator: MutableState<Boolean>,
   prefs: AppPreferences
 ) = CoroutineScope(Dispatchers.Default).launch {
@@ -196,12 +196,12 @@ private fun runChat(
   if (progressIndicator.value) return@launch
   progressIndicator.value = true
   try {
-    initChatController(dbKey, confirmMigrations)
+    initChatController(dbKey, confirmMigrations, startChat = chatDbStatus.value?.startChat ?: true)
   } catch (e: Exception) {
     Log.d(TAG, "initializeChat ${e.stackTraceToString()}")
   }
   progressIndicator.value = false
-  when (val status = chatDbStatus.value) {
+  when (val status = chatDbStatus.value?.result) {
     is DBMigrationResult.OK -> {
       platform.androidChatStartedAfterBeingOff()
     }
@@ -306,7 +306,7 @@ private fun ColumnScope.RestoreDbButton(onClick: () -> Unit) {
 fun PreviewChatInfoLayout() {
   SimpleXTheme {
     DatabaseErrorView(
-      remember { mutableStateOf(DBMigrationResult.ErrorNotADatabase("simplex_v1_chat.db")) },
+      remember { mutableStateOf(DBMigrationResultBox(DBMigrationResult.ErrorNotADatabase("simplex_v1_chat.db"), true)) },
       AppPreferences()
     )
   }

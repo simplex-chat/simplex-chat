@@ -61,9 +61,9 @@ class MessagesFetcherWork(
         val chatController = ChatController
         SimplexService.waitDbMigrationEnds(chatController)
         val chatDbStatus = chatController.chatModel.chatDbStatus.value
-        if (chatDbStatus != DBMigrationResult.OK) {
+        if (chatDbStatus?.result != DBMigrationResult.OK) {
           Log.w(TAG, "Worker: problem with the database: $chatDbStatus")
-          showPassphraseNotification(chatDbStatus)
+          showPassphraseNotification(chatDbStatus?.result)
           shouldReschedule = false
           return@withTimeout
         }

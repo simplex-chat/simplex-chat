@@ -66,7 +66,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     } else null
     chatController.ctrl = ctrl
     chatModel.chatDbEncrypted.value = dbKey != ""
-    chatModel.chatDbStatus.value = res
+    chatModel.chatDbStatus.value = DBMigrationResultBox(res, startChat)
     if (res != DBMigrationResult.OK) {
       Log.d(TAG, "Unable to migrate successfully: $res")
       return
