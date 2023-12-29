@@ -1090,8 +1090,9 @@
         <target>Chat fermata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve">
+      <trans-unit id="Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat." xml:space="preserve" approved="no">
         <source>Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</source>
+        <target state="translated">La chat è ferma. Se hai già usato questo database su un altro dispositivo, dovresti trasferirlo prima di avviare la chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chat preferences" xml:space="preserve">
@@ -2061,8 +2062,9 @@ Non è reversibile!</target>
         <target>Messaggio crittografato o altro evento</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="Encrypted message: app is stopped" xml:space="preserve">
+      <trans-unit id="Encrypted message: app is stopped" xml:space="preserve" approved="no">
         <source>Encrypted message: app is stopped</source>
+        <target state="translated">Messaggio cifrato: l'app è ferma</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="Encrypted message: database error" xml:space="preserve">
@@ -2295,8 +2297,9 @@ Non è reversibile!</target>
         <target>Errore nel caricamento dei server %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error opening chat" xml:space="preserve">
+      <trans-unit id="Error opening chat" xml:space="preserve" approved="no">
         <source>Error opening chat</source>
+        <target state="translated">Errore di apertura della chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error receiving file" xml:space="preserve">
@@ -2993,8 +2996,9 @@ Non è reversibile!</target>
         <target>Nome non valido!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invalid response" xml:space="preserve">
+      <trans-unit id="Invalid response" xml:space="preserve" approved="no">
         <source>Invalid response</source>
+        <target state="translated">Risposta non valida</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid server address!" xml:space="preserve">
@@ -3735,8 +3739,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Protocollo e codice open source: chiunque può gestire i server.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Opening app…" xml:space="preserve">
+      <trans-unit id="Opening app…" xml:space="preserve" approved="no">
         <source>Opening app…</source>
+        <target state="translated">Apertura dell'app…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Or scan QR code" xml:space="preserve">
@@ -3836,9 +3841,11 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Controlla le preferenze tue e del tuo contatto.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please contact developers.&#10;Error: %@" xml:space="preserve">
+      <trans-unit id="Please contact developers.&#10;Error: %@" xml:space="preserve" approved="no">
         <source>Please contact developers.
 Error: %@</source>
+        <target state="translated">Contatta gli sviluppatori.
+Errore: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please contact group admin." xml:space="preserve">
@@ -4827,8 +4834,9 @@ Error: %@</source>
         <target>Avvia chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Start chat?" xml:space="preserve">
+      <trans-unit id="Start chat?" xml:space="preserve" approved="no">
         <source>Start chat?</source>
+        <target state="translated">Avviare la chat?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start migration" xml:space="preserve">
@@ -5453,8 +5461,9 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
         <target>Usa nuovo profilo in incognito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use only local notifications?" xml:space="preserve">
+      <trans-unit id="Use only local notifications?" xml:space="preserve" approved="no">
         <source>Use only local notifications?</source>
+        <target state="translated">Usare solo notifiche locali?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use server" xml:space="preserve">
@@ -5739,8 +5748,9 @@ Ripetere la richiesta di ingresso?</target>
         <target>Puoi nascondere o silenziare un profilo utente - scorrilo verso destra.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can make it visible to your SimpleX contacts via Settings." xml:space="preserve">
+      <trans-unit id="You can make it visible to your SimpleX contacts via Settings." xml:space="preserve" approved="no">
         <source>You can make it visible to your SimpleX contacts via Settings.</source>
+        <target state="translated">Puoi renderlo visibile ai tuoi contatti SimpleX nelle impostazioni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can now send messages to %@" xml:space="preserve">
