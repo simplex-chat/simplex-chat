@@ -150,7 +150,7 @@ struct ChatPreviewView: View {
         let msg = draft.message
         return image("rectangle.and.pencil.and.ellipsis", color: .accentColor)
                 + attachment()
-                + messageText(msg, parseSimpleXMarkdown(msg), nil, preview: true)
+                + messageText(msg, parseSimpleXMarkdown(msg), nil, preview: true, showSecrets: false)
 
         func image(_ s: String, color: Color = Color(uiColor: .tertiaryLabel)) -> Text {
             Text(Image(systemName: s)).foregroundColor(color) + Text(" ")
@@ -169,7 +169,7 @@ struct ChatPreviewView: View {
     func chatItemPreview(_ cItem: ChatItem) -> Text {
         let itemText = cItem.meta.itemDeleted == nil ? cItem.text : NSLocalizedString("marked deleted", comment: "marked deleted chat item preview text")
         let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
-        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: attachment(), preview: true)
+        return messageText(itemText, itemFormattedText, cItem.memberDisplayName, icon: attachment(), preview: true, showSecrets: false)
 
         func attachment() -> String? {
             switch cItem.content.msgContent {

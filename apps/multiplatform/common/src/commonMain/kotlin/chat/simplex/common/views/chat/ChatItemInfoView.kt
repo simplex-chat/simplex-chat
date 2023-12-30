@@ -53,6 +53,7 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
         text, if (text.isEmpty()) emptyList() else formattedText,
         sender = sender,
         senderBold = true,
+        toggleSecrets = true,
         linkMode = SimplexLinkMode.DESCRIPTION, uriHandler = uriHandler,
         onLinkLongClick = { showMenu.value = true }
       )
