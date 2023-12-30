@@ -480,7 +480,7 @@
 "always" = "altijd";
 
 /* No comment provided by engineer. */
-"Always use relay" = "Verbinden via relais";
+"Always use relay" = "Altijd relay gebruiken";
 
 /* No comment provided by engineer. */
 "An empty chat profile with the provided name is created, and the app opens as usual." = "Er wordt een leeg chatprofiel met de opgegeven naam gemaakt en de app wordt zoals gewoonlijk geopend.";
@@ -1096,7 +1096,7 @@
 "Delete all files" = "Verwijder alle bestanden";
 
 /* No comment provided by engineer. */
-"Delete and notify contact" = "Contact verwijderen en op de hoogte stellen";
+"Delete and notify contact" = "Verwijderen en contact op de hoogte stellen";
 
 /* No comment provided by engineer. */
 "Delete archive" = "Archief verwijderen";
@@ -1651,7 +1651,7 @@
 "Exit without saving" = "Afsluiten zonder opslaan";
 
 /* chat item action */
-"Expand" = "Uitbreiden";
+"Expand" = "Uitklappen";
 
 /* No comment provided by engineer. */
 "Export database" = "Database exporteren";
@@ -1993,7 +1993,7 @@
 "Instant push notifications will be hidden!\n" = "Directe push meldingen worden verborgen!\n";
 
 /* No comment provided by engineer. */
-"Instantly" = "Meteen";
+"Instantly" = "Direct";
 
 /* No comment provided by engineer. */
 "Interface" = "Interface";
@@ -2162,6 +2162,9 @@
 
 /* No comment provided by engineer. */
 "Live messages" = "Live berichten";
+
+/* No comment provided by engineer. */
+"Local" = "Lokaal";
 
 /* No comment provided by engineer. */
 "Local name" = "Lokale naam";
@@ -2432,9 +2435,6 @@
 /* No comment provided by engineer. */
 "Off" = "Uit";
 
-/* No comment provided by engineer. */
-"Off (Local)" = "Uit (lokaal)";
-
 /* feature offered item */
 "offered %@" = "voorgesteld %@";
 
@@ -2527,9 +2527,6 @@
 
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "Open-source protocol en code. Iedereen kan de servers draaien.";
-
-/* No comment provided by engineer. */
-"Opening database…" = "Database openen…";
 
 /* member role */
 "owner" = "Eigenaar";
@@ -3468,9 +3465,6 @@
 "Turn off" = "Uitschakelen";
 
 /* No comment provided by engineer. */
-"Turn off notifications?" = "Schakel meldingen uit?";
-
-/* No comment provided by engineer. */
 "Turn on" = "Zet aan";
 
 /* No comment provided by engineer. */
@@ -3642,7 +3636,7 @@
 "via one-time link" = "via een eenmalige link";
 
 /* No comment provided by engineer. */
-"via relay" = "via relais";
+"via relay" = "via relay";
 
 /* No comment provided by engineer. */
 "Via secure quantum resistant protocol." = "Via een beveiligd kwantumbestendig protocol.";
@@ -3958,9 +3952,6 @@
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "Uw contacten kunnen volledige verwijdering van berichten toestaan.";
-
-/* No comment provided by engineer. */
-"Your contacts in SimpleX will see it.\nYou can change it in Settings." = "Uw contacten in SimpleX kunnen het zien. \nU kunt dit wijzigen in Instellingen.";
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "Uw contacten blijven verbonden.";

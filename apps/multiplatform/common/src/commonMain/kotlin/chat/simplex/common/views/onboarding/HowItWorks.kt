@@ -78,17 +78,6 @@ fun ReadableText(text: String, textAlign: TextAlign = TextAlign.Start, padding: 
   Text(text, modifier = Modifier.padding(padding), textAlign = textAlign, lineHeight = 22.sp)
 }
 
-@Composable
-fun ReadableMarkdownText(text: String, textAlign: TextAlign = TextAlign.Start, padding: PaddingValues = PaddingValues(bottom = 12.dp)) {
-  MarkdownText(
-    text,
-    formattedText = remember(text) { parseToMarkdown(text) },
-    modifier = Modifier.padding(padding),
-    style = TextStyle(textAlign = textAlign, lineHeight = 22.sp, fontSize = 16.sp),
-    linkMode = ChatController.appPrefs.simplexLinkMode.get(),
-  )
-}
-
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
   showBackground = true,

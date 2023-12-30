@@ -28,7 +28,9 @@ struct FramedItemView: View {
     @State var metaColor = Color.secondary
     @State var showFullScreenImage = false
     @Binding var allowMenu: Bool
-    
+    @State private var showSecrets = false
+    @State private var showQuoteSecrets = false
+
     @Binding var audioPlayer: AudioPlayer?
     @Binding var playbackState: VoiceMessagePlaybackState
     @Binding var playbackTime: TimeInterval?
@@ -252,10 +254,12 @@ struct FramedItemView: View {
     }
     
     private func ciQuotedMsgTextView(_ qi: CIQuote, lines: Int) -> some View {
-        MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText)
-            .lineLimit(lines)
-            .font(.subheadline)
-            .padding(.bottom, 6)
+        toggleSecrets(qi.formattedText, $showQuoteSecrets,
+            MsgContentView(chat: chat, text: qi.text, formattedText: qi.formattedText, showSecrets: showQuoteSecrets)
+                .lineLimit(lines)
+                .font(.subheadline)
+                .padding(.bottom, 6)
+        )
     }
 
     private func ciQuoteIconView(_ image: String) -> some View {
@@ -278,13 +282,15 @@ struct FramedItemView: View {
     @ViewBuilder private func ciMsgContentView(_ ci: ChatItem) -> some View {
         let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
         let rtl = isRightToLeft(text)
-        let v = MsgContentView(
+        let ft = text == "" ? [] : ci.formattedText
+        let v = toggleSecrets(ft, $showSecrets, MsgContentView(
             chat: chat,
             text: text,
-            formattedText: text == "" ? [] : ci.formattedText,
+            formattedText: ft,
             meta: ci.meta,
-            rightToLeft: rtl
-        )
+            rightToLeft: rtl,
+            showSecrets: showSecrets
+        ))
         .multilineTextAlignment(rtl ? .trailing : .leading)
         .padding(.vertical, 6)
         .padding(.horizontal, 12)
@@ -298,7 +304,7 @@ struct FramedItemView: View {
             v
         }
     }
-    
+
     @ViewBuilder private func ciFileView(_ ci: ChatItem, _ text: String) -> some View {
         CIFileView(file: chatItem.file, edited: chatItem.meta.itemEdited)
             .overlay(DetermineWidth())
@@ -315,6 +321,14 @@ struct FramedItemView: View {
         } else {
             return videoWidth
         }
+    }
+}
+
+@ViewBuilder func toggleSecrets<V: View>(_ ft: [FormattedText]?, _ showSecrets: Binding<Bool>, _ v: V) -> some View {
+    if let ft = ft, ft.contains(where: { $0.isSecret }) {
+        v.onTapGesture { showSecrets.wrappedValue.toggle() }
+    } else {
+        v
     }
 }
 

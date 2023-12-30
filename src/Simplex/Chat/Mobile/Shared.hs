@@ -16,7 +16,7 @@ type JSONByteString = LB.ByteString
 getByteString :: Ptr Word8 -> CInt -> IO ByteString
 getByteString ptr len = do
   fp <- newForeignPtr_ ptr
-  pure $ PS fp 0 $ fromIntegral len
+  pure $ PS fp 0 (fromIntegral len)
 {-# INLINE getByteString #-}
 
 putByteString :: Ptr Word8 -> ByteString -> IO ()

@@ -9,7 +9,6 @@ module Simplex.Chat.Bot where
 import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Monad
-import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import Simplex.Chat.Controller

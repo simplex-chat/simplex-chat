@@ -139,7 +139,8 @@ fun AddGroupLayout(
               createGroup(incognito.value, GroupProfile(
                 displayName = displayName.value.trim(),
                 fullName = "",
-                image = profileImage.value
+                image = profileImage.value,
+                groupPreferences = GroupPreferences(history = GroupPreference(GroupFeatureEnabled.ON))
               ))
             },
             textColor = MaterialTheme.colors.primary,

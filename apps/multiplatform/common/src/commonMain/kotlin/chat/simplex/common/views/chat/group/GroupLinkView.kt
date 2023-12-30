@@ -153,7 +153,7 @@ fun GroupLinkLayout(
           }
           initialLaunch = false
         }
-        SimpleXLinkQRCode(groupLink, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
+        SimpleXLinkQRCode(groupLink)
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,

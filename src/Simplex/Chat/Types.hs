@@ -60,21 +60,21 @@ class IsContact a where
   preferences' :: a -> Maybe Preferences
 
 instance IsContact User where
-  contactId' = userContactId
+  contactId' User {userContactId} = userContactId
   {-# INLINE contactId' #-}
-  profile' = profile
+  profile' User {profile} = profile
   {-# INLINE profile' #-}
-  localDisplayName' = localDisplayName
+  localDisplayName' User {localDisplayName} = localDisplayName
   {-# INLINE localDisplayName' #-}
   preferences' User {profile = LocalProfile {preferences}} = preferences
   {-# INLINE preferences' #-}
 
 instance IsContact Contact where
-  contactId' = contactId
+  contactId' Contact {contactId} = contactId
   {-# INLINE contactId' #-}
-  profile' = profile
+  profile' Contact {profile} = profile
   {-# INLINE profile' #-}
-  localDisplayName' = localDisplayName
+  localDisplayName' Contact {localDisplayName} = localDisplayName
   {-# INLINE localDisplayName' #-}
   preferences' Contact {profile = LocalProfile {preferences}} = preferences
   {-# INLINE preferences' #-}
