@@ -67,7 +67,7 @@
     <string name="connect_via_group_link">加群吗？</string>
     <string name="connect_via_link_or_qr">通过群组链接/二维码连接</string>
     <string name="always_use_relay">总是通过中继连接</string>
-    <string name="allow_your_contacts_irreversibly_delete">允许您的联系人不可撤回地删除已发送消息。</string>
+    <string name="allow_your_contacts_irreversibly_delete">允许您的联系人不不可逆地删除已发送消息。（24小时）</string>
     <string name="chat_preferences_contact_allows">联系人允许</string>
     <string name="allow_voice_messages_only_if">仅有您的联系人许可后才允许语音消息。</string>
     <string name="group_info_member_you">您: %1$s</string>
@@ -88,8 +88,8 @@
     <string name="rcv_group_event_group_deleted">已删除群组</string>
     <string name="delete_image">删除图片</string>
     <string name="allow_disappearing_messages_only_if">仅有您的联系人许可后才允许限时消息。</string>
-    <string name="allow_irreversible_message_deletion_only_if">仅有您的联系人许可后才允许不可撤回消息移除。</string>
-    <string name="allow_to_delete_messages">允许不可撤回地删除已发送消息。</string>
+    <string name="allow_irreversible_message_deletion_only_if">只有您的联系人同意才允许不可逆地删除消息。（24小时）</string>
+    <string name="allow_to_delete_messages">允许不可逆地删除已发送消息。（24小时）</string>
     <string name="users_delete_profile_for">为此删除聊天资料</string>
     <string name="delete_database">删除数据库</string>
     <string name="keychain_allows_to_receive_ntfs">在您重启应用程序或者更换密码后安卓密钥库系统用来安全地保存密码——来确保收到通知。</string>
@@ -121,7 +121,7 @@
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b> 最长续航 </b>。您只会在应用程序运行时收到通知（无后台服务）。]]></string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> 较长续航 </b>。后台服务每 10 分钟检查一次消息。您可能会错过来电或者紧急信息。]]></string>
     <string name="bold_text">加粗</string>
-    <string name="both_you_and_your_contacts_can_delete">您和您的联系人都可以永久删除已发送的消息。</string>
+    <string name="both_you_and_your_contacts_can_delete">您和您的联系人都可以不可逆地删除已发送的消息。（24小时）</string>
     <string name="both_you_and_your_contact_can_send_disappearing">您和您的联系人都可以发送限时消息。</string>
     <string name="both_you_and_your_contact_can_send_voice">您和您的联系人都可以发送语音消息。</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b> 可以在设置里禁用它 </b> - 应用程序运行时仍会显示通知。]]></string>
@@ -430,7 +430,7 @@
     <string name="section_title_for_console">用于控制台</string>
     <string name="direct_messages_are_prohibited_in_chat">此群中禁止成员之间私信。</string>
     <string name="disappearing_messages_are_prohibited">该组禁止限时消息。</string>
-    <string name="group_members_can_delete">群组成员可以不可撤回地删除已发送的消息。</string>
+    <string name="group_members_can_delete">群组成员可以不可逆地删除已发送的消息。（24小时）</string>
     <string name="group_members_can_send_dms">群组成员可以私信。</string>
     <string name="v4_4_disappearing_messages">限时消息</string>
     <string name="v4_3_improved_privacy_and_security_desc">在最近的应用程序中隐藏应用程序屏幕。</string>
@@ -460,7 +460,7 @@
     <string name="icon_descr_add_members">邀请成员</string>
     <string name="group_member_status_left">已离开</string>
     <string name="theme_light">浅色</string>
-    <string name="message_deletion_prohibited">此聊天中禁止不可撤回消息移除。</string>
+    <string name="message_deletion_prohibited">此聊天中禁止不可逆消息移除。</string>
     <string name="v4_5_italian_interface">意大利语界面</string>
     <string name="incorrect_code">安全码不正确！</string>
     <string name="service_notifications_disabled">即时通知被禁用！</string>
@@ -475,8 +475,8 @@
     <string name="large_file">大文件！</string>
     <string name="invalid_contact_link">链接无效！</string>
     <string name="rcv_group_event_member_left">已离开</string>
-    <string name="message_deletion_prohibited_in_chat">此群组中禁止不可撤回消息移除。</string>
-    <string name="v4_3_irreversible_message_deletion">不可撤回消息移除</string>
+    <string name="message_deletion_prohibited_in_chat">此群组中禁止不可逆消息移除。</string>
+    <string name="v4_3_irreversible_message_deletion">不可逆消息移除</string>
     <string name="v4_4_live_messages">实时消息</string>
     <string name="notification_preview_mode_message">消息正文</string>
     <string name="callstate_waiting_for_confirmation">等待确认中……</string>
@@ -513,11 +513,11 @@
     <string name="callstate_starting">启动中……</string>
     <string name="prohibit_sending_disappearing_messages">禁止发送限时消息。</string>
     <string name="only_you_can_send_disappearing">只有您可以发送限时消息。</string>
-    <string name="only_your_contact_can_delete">只有您的联系人才能不可撤回地删除消息（您可以将它们标记为删除）。</string>
+    <string name="only_your_contact_can_delete">只有您的联系人能不可逆地删除消息（您可以将它们标记为删除）。（24小时）</string>
     <string name="prohibit_sending_disappearing">禁止发送限时消息。</string>
     <string name="notifications_will_be_hidden">通知只会在应用程序停止之前发送！</string>
     <string name="chat_preferences_no">否</string>
-    <string name="prohibit_message_deletion">禁止不可撤回消息删除。</string>
+    <string name="prohibit_message_deletion">禁止不可逆消息删除。</string>
     <string name="notification_new_contact_request">新联系人请求</string>
     <string name="callstate_waiting_for_answer">等待答复中……</string>
     <string name="la_notice_title_simplex_lock">SimpleX 锁定</string>
@@ -584,7 +584,7 @@
 \n给您的联系人</string>
     <string name="users_delete_with_connections">资料和服务器连接</string>
     <string name="update_network_settings_question">更新网络设置？</string>
-    <string name="only_you_can_delete_messages">只有您可以不可撤回地删除消息（您的联系人可以将它们标记为删除）。</string>
+    <string name="only_you_can_delete_messages">只有您可以不可逆地删除消息（您的联系人可以将它们标记为删除）。（24小时）</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">重新启动应用程序以创建新的聊天资料。</string>
     <string name="error_smp_test_server_auth">服务器需要授权才能创建队列，检查密码</string>
     <string name="error_smp_test_failed_at_step">测试在步骤 %s 失败。</string>
@@ -611,14 +611,14 @@
     <string name="your_profile_is_stored_on_your_device">您的资料、联系人和发送的消息存储在您的设备上。</string>
     <string name="profile_is_only_shared_with_your_contacts">该资料仅与您的联系人共享。</string>
     <string name="chat_preferences_on">开启</string>
-    <string name="delete_chat_profile_action_cannot_be_undone_warning">此操作无法撤消——您的个人资料、联系人、消息和文件将不可撤回地丢失。</string>
+    <string name="delete_chat_profile_action_cannot_be_undone_warning">此操作无法撤消——您的个人资料、联系人、消息和文件将不可逆地丢失。</string>
     <string name="messages_section_description">此设置适用于您当前聊天资料中的消息</string>
     <string name="database_restore_error">恢复数据库错误</string>
     <string name="restore_database_alert_confirm">恢复</string>
     <string name="you_sent_group_invitation">您发送了群组邀请</string>
     <string name="you_rejected_group_invitation">您拒绝了群组邀请</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">您当前的聊天数据库将被删除并替换为导入的数据库。
-\n此操作无法撤消——您的个人资料、联系人、消息和文件将不可撤回地丢失。</string>
+\n此操作无法撤消——您的个人资料、联系人、消息和文件将不可逆地丢失。</string>
     <string name="rcv_group_event_member_added">已邀请 %1$s</string>
     <string name="save_group_profile">保存群组资料</string>
     <string name="error_smp_test_certificate">服务器地址中的证书指纹可能不正确</string>
@@ -773,7 +773,7 @@
     <string name="strikethrough_text">删去</string>
     <string name="people_can_connect_only_via_links_you_share">人们只能通过您共享的链接与您建立联系。</string>
     <string name="next_generation_of_private_messaging">下一代私密通讯软件</string>
-    <string name="paste_the_link_you_received">粘贴收到的链接</string>
+    <string name="paste_the_link_you_received">粘贴您收到的链接</string>
     <string name="alert_title_skipped_messages">已跳过消息</string>
     <string name="settings_section_title_support">支持 SIMPLEX CHAT</string>
     <string name="send_link_previews">发送链接预览</string>
@@ -1178,7 +1178,7 @@
     <string name="sent_message">已发信息</string>
     <string name="edit_history">历史记录</string>
     <string name="send_disappearing_message_send">发送</string>
-    <string name="if_you_enter_passcode_data_removed">如果您在打开应用时输入该密码，所有应用程序数据将被不可撤回地删除！</string>
+    <string name="if_you_enter_passcode_data_removed">如果您在打开应用时输入该密码，所有应用程序数据将被不可逆地删除！</string>
     <string name="self_destruct_new_display_name">新的显示名：</string>
     <string name="info_row_moderated_at">已被管理员移除于</string>
     <string name="info_row_sent_at">已发送于</string>
@@ -1530,4 +1530,31 @@
     <string name="error_showing_content">显示内容出错</string>
     <string name="error_showing_message">显示消息出错</string>
     <string name="you_can_make_address_visible_via_settings">你可以通过设置让它对你的 SimpleX 联系人可见。</string>
+    <string name="recent_history_is_not_sent_to_new_members">未发送历史消息给新成员。</string>
+    <string name="retry_verb">重试</string>
+    <string name="camera_not_available">相机不可用</string>
+    <string name="enable_sending_recent_history">给新成员发送最多 100 条历史消息。</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>添加联系人</b>: 来创建新的邀请链接，或通过你收到的链接进行连接。</string>
+    <string name="disable_sending_recent_history">不给新成员发送历史消息。</string>
+    <string name="or_show_this_qr_code">或者显示此码</string>
+    <string name="recent_history_is_sent_to_new_members">给新成员发送了最多 100 条历史消息。</string>
+    <string name="code_you_scanned_is_not_simplex_link_qr_code">您扫描的码不是 SimpleX 链接的二维码。</string>
+    <string name="the_text_you_pasted_is_not_a_link">您粘贴的文本不是 SimpleX 链接。</string>
+    <string name="enable_camera_access">启用相机访问</string>
+    <string name="you_can_view_invitation_link_again">您可以在连接详情中再次查看邀请链接。</string>
+    <string name="keep_unused_invitation_question">保留未使用的邀请吗？</string>
+    <string name="share_this_1_time_link">分享此一次性邀请链接</string>
+    <string name="create_group_button_to_create_new_group"><b>建群</b>: 来建立新群。</string>
+    <string name="recent_history">可见的历史</string>
+    <string name="la_app_passcode">应用程序密码</string>
+    <string name="new_chat">新聊天</string>
+    <string name="loading_chats">加载聊天中…</string>
+    <string name="creating_link">创建链接中…</string>
+    <string name="or_scan_qr_code">或者扫描二维码</string>
+    <string name="invalid_qr_code">无效的二维码</string>
+    <string name="add_contact_tab">添加联系人</string>
+    <string name="tap_to_scan">轻按扫描</string>
+    <string name="keep_invitation_link">保留</string>
+    <string name="tap_to_paste_link">轻按粘贴链接</string>
+    <string name="search_or_paste_simplex_link">搜索或粘贴 SimpleX 链接</string>
 </resources>
