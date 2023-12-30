@@ -505,14 +505,14 @@
         <target>Cancelar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort changing address" xml:space="preserve">
+      <trans-unit id="Abort changing address" xml:space="preserve" approved="no">
         <source>Abort changing address</source>
-        <target>Cancelar cambio de dirección</target>
+        <target state="translated">Cancelar cambio de servidor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Abort changing address?" xml:space="preserve">
+      <trans-unit id="Abort changing address?" xml:space="preserve" approved="no">
         <source>Abort changing address?</source>
-        <target>¿Cancelar el cambio de dirección?</target>
+        <target state="translated">¿Cancelar el cambio de servidor?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="About SimpleX" xml:space="preserve">
@@ -680,9 +680,9 @@
         <target>Se permiten las reacciones a los mensajes pero sólo si tu contacto también las permite.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow message reactions." xml:space="preserve">
+      <trans-unit id="Allow message reactions." xml:space="preserve" approved="no">
         <source>Allow message reactions.</source>
-        <target>Permitir reacciones a los mensajes.</target>
+        <target state="translated">Se permiten reacciones a los mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow sending direct messages to members." xml:space="preserve">
@@ -1019,9 +1019,9 @@
         <target>Cambiar el modo de bloqueo</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Change member role?" xml:space="preserve">
+      <trans-unit id="Change member role?" xml:space="preserve" approved="no">
         <source>Change member role?</source>
-        <target>¿Cambiar el rol del miembro?</target>
+        <target state="translated">¿Cambiar rol?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Change passcode" xml:space="preserve">
@@ -2175,14 +2175,14 @@ This cannot be undone!</source>
         <target>Error al añadir miembro(s)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing address" xml:space="preserve">
+      <trans-unit id="Error changing address" xml:space="preserve" approved="no">
         <source>Error changing address</source>
-        <target>Error al cambiar dirección</target>
+        <target state="translated">Error al cambiar servidor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error changing role" xml:space="preserve">
+      <trans-unit id="Error changing role" xml:space="preserve" approved="no">
         <source>Error changing role</source>
-        <target>Error al cambiar rol</target>
+        <target state="translated">Error al cambiar rol</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error changing setting" xml:space="preserve">
@@ -2708,9 +2708,9 @@ This cannot be undone!</source>
         <target>Moderación de grupos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group preferences" xml:space="preserve">
+      <trans-unit id="Group preferences" xml:space="preserve" approved="no">
         <source>Group preferences</source>
-        <target>Preferencias de grupo</target>
+        <target state="translated">Preferencias del grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group profile" xml:space="preserve">
@@ -3298,14 +3298,14 @@ This is your link for group %@!</source>
         <target>Miembro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve">
+      <trans-unit id="Member role will be changed to &quot;%@&quot;. All group members will be notified." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". All group members will be notified.</source>
-        <target>El rol de miembro cambiará a "%@". Todos los miembros del grupo serán notificados.</target>
+        <target state="translated">El rol del miembro cambiará a "%@" y se notificará al grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve">
+      <trans-unit id="Member role will be changed to &quot;%@&quot;. The member will receive a new invitation." xml:space="preserve" approved="no">
         <source>Member role will be changed to "%@". The member will receive a new invitation.</source>
-        <target>El rol del miembro cambiará a "%@". El miembro recibirá una invitación nueva.</target>
+        <target state="translated">El rol del miembro cambiará a "%@" y recibirá una invitación nueva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member will be removed from group - this cannot be undone!" xml:space="preserve">
@@ -3635,9 +3635,9 @@ This is your link for group %@!</source>
         <target>Sólo los dispositivos cliente almacenan perfiles de usuario, contactos, grupos y mensajes enviados con **cifrado de extremo a extremo de 2 capas**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only group owners can change group preferences." xml:space="preserve">
+      <trans-unit id="Only group owners can change group preferences." xml:space="preserve" approved="no">
         <source>Only group owners can change group preferences.</source>
-        <target>Sólo los propietarios pueden modificar las preferencias de grupo.</target>
+        <target state="translated">Sólo los propietarios pueden modificar las preferencias del grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can enable files and media." xml:space="preserve">
@@ -3841,9 +3841,9 @@ This is your link for group %@!</source>
 Error: %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please contact group admin." xml:space="preserve">
+      <trans-unit id="Please contact group admin." xml:space="preserve" approved="no">
         <source>Please contact group admin.</source>
-        <target>Póngase en contacto con el administrador del grupo.</target>
+        <target state="translated">Ponte en contacto con el administrador del grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please enter correct current passphrase." xml:space="preserve">
@@ -4319,14 +4319,14 @@ Error: %@</source>
         <target>Guardar y notificar contacto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save and notify group members" xml:space="preserve">
+      <trans-unit id="Save and notify group members" xml:space="preserve" approved="no">
         <source>Save and notify group members</source>
-        <target>Guardar y notificar a los miembros del grupo</target>
+        <target state="translated">Guardar y notificar grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save and update group profile" xml:space="preserve">
+      <trans-unit id="Save and update group profile" xml:space="preserve" approved="no">
         <source>Save and update group profile</source>
-        <target>Guardar y actualizar perfil de grupo</target>
+        <target state="translated">Guardar y actualizar perfil del grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save archive" xml:space="preserve">
@@ -5221,9 +5221,9 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <target>Para permitir las notificaciones automáticas instantáneas, la base de datos se debe migrar.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve">
+      <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve" approved="no">
         <source>To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</source>
-        <target>Para comprobar el cifrado de extremo a extremo con tu contacto compara (o escanea) el código en tus dispositivos.</target>
+        <target state="translated">Para verificar el cifrado de extremo a extremo con tu contacto, compara (o escanea) el código en ambos dispositivos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Toggle incognito when connecting." xml:space="preserve">
@@ -5754,9 +5754,9 @@ Repeat join request?</source>
         <target>Puedes configurar las notificaciones de la pantalla de bloqueo desde Configuración.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve">
+      <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve" approved="no">
         <source>You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.</source>
-        <target>Puedes compartir un enlace o un código QR: cualquiera podrá unirse al grupo. Si lo eliminas más tarde los miembros del grupo no se perderán.</target>
+        <target state="translated">Puedes compartir un enlace o código QR para que cualquiera pueda unirse al grupo. Si decides eliminarlo más tarde, los miembros del grupo se mantendrán.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share this address with your contacts to let them connect with **%@**." xml:space="preserve">
@@ -5764,9 +5764,9 @@ Repeat join request?</source>
         <target>Puedes compartir esta dirección con tus contactos para que puedan conectar con **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can share your address as a link or QR code - anybody can connect to you." xml:space="preserve">
+      <trans-unit id="You can share your address as a link or QR code - anybody can connect to you." xml:space="preserve" approved="no">
         <source>You can share your address as a link or QR code - anybody can connect to you.</source>
-        <target>Puedes compartir tu dirección como enlace o como código QR: cualquiera podrá conectarse contigo.</target>
+        <target state="translated">Puedes compartir tu dirección como enlace o código QR para que cualquiera pueda conectarse contigo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve">
@@ -6154,9 +6154,9 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>cancelado %@</target>
         <note>feature offered item</note>
       </trans-unit>
-      <trans-unit id="changed address for you" xml:space="preserve">
+      <trans-unit id="changed address for you" xml:space="preserve" approved="no">
         <source>changed address for you</source>
-        <target>el servidor de envío ha cambiado para tí</target>
+        <target state="translated">ha cambiado tu servidor de envío</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="changed role of %@ to %@" xml:space="preserve">
@@ -6169,14 +6169,14 @@ Los servidores de SimpleX no pueden ver tu perfil.</target>
         <target>ha cambiado tu rol a %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="changing address for %@…" xml:space="preserve">
+      <trans-unit id="changing address for %@…" xml:space="preserve" approved="no">
         <source>changing address for %@…</source>
-        <target>cambiando dirección para %@…</target>
+        <target state="translated">cambiando el servidor para %@…</target>
         <note>chat item text</note>
       </trans-unit>
-      <trans-unit id="changing address…" xml:space="preserve">
+      <trans-unit id="changing address…" xml:space="preserve" approved="no">
         <source>changing address…</source>
-        <target>cambiando dirección…</target>
+        <target state="translated">cambiando de servidor…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
