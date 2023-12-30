@@ -289,16 +289,16 @@ struct ChatListSearchBar: View {
                 HStack(spacing: 4) {
                     Image(systemName: "magnifyingglass")
                     TextField("Search or paste SimpleX link", text: $searchText)
+                        .foregroundColor(searchShowingSimplexLink ? .secondary : .primary)
                         .disabled(searchShowingSimplexLink)
                         .focused($searchFocussed)
                         .frame(maxWidth: .infinity)
-                    if searchFocussed || searchShowingSimplexLink {
+                    if !searchText.isEmpty {
                         Image(systemName: "xmark.circle.fill")
-                            .opacity(searchText == "" ? 0 : 1)
                             .onTapGesture {
                                 searchText = ""
                             }
-                    } else if searchText == "" {
+                    } else if !searchFocussed {
                         HStack(spacing: 24) {
                             if m.pasteboardHasStrings {
                                 Image(systemName: "doc")
