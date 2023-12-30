@@ -16,12 +16,12 @@ type JSONByteString = LB.ByteString
 getByteString :: Ptr Word8 -> CInt -> IO ByteString
 getByteString ptr len = do
   fp <- newForeignPtr_ ptr
-  pure $ BS fp $ fromIntegral len
+  pure $ PS fp 0 (fromIntegral len)
 {-# INLINE getByteString #-}
 
 putByteString :: Ptr Word8 -> ByteString -> IO ()
-putByteString ptr (BS fp len) =
-  withForeignPtr fp $ \p -> memcpy ptr p len
+putByteString ptr (PS fp offset len) =
+  withForeignPtr fp $ \p -> memcpy ptr (p `plusPtr` offset) len
 {-# INLINE putByteString #-}
 
 putLazyByteString :: Ptr Word8 -> LB.ByteString -> IO ()

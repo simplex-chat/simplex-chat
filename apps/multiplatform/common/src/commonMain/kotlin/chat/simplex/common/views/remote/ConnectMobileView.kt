@@ -187,11 +187,7 @@ private fun ConnectMobileViewLayout(
     SectionView {
       if (invitation != null && sessionCode == null && port != null) {
         Box {
-          QRCode(
-            invitation, Modifier
-              .padding(start = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING_HALF)
-              .aspectRatio(1f)
-          )
+          QRCode(invitation)
           if (staleQrCode) {
             Box(Modifier.matchParentSize().background(MaterialTheme.colors.background.copy(alpha = 0.9f)), contentAlignment = Alignment.Center) {
               SimpleButtonDecorated(stringResource(MR.strings.refresh_qr_code), painterResource(MR.images.ic_refresh), click = refreshQrCode)

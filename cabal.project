@@ -2,8 +2,6 @@ packages: .
 -- packages: . ../simplexmq
 -- packages: . ../simplexmq ../direct-sqlcipher ../sqlcipher-simple
 
-with-compiler: ghc-9.6.3
-
 index-state: 2023-12-12T00:00:00Z
 
 package cryptostore

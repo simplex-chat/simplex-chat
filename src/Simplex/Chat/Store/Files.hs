@@ -2,7 +2,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -929,7 +928,7 @@ getLocalCryptoFile db userId fileId sent =
     _ -> do
       unless sent $ throwError $ SEFileNotFound fileId
       FileTransferMeta {filePath, xftpSndFile} <- getFileTransferMeta_ db userId fileId
-      pure $ CryptoFile filePath $ xftpSndFile >>= \f -> f.cryptoArgs
+      pure $ CryptoFile filePath $ xftpSndFile >>= \XFTPSndFile {cryptoArgs} -> cryptoArgs
 
 updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> VersionRange -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
 updateDirectCIFileStatus db vr user fileId fileStatus = do
