@@ -132,14 +132,12 @@ fun MarkdownText (
       var hasAnnotations = false
       val annotatedText = buildAnnotatedString {
         appendSender(this, sender, senderBold)
-        var secretId = 0
-        for (ft in formattedText) {
+        for ((i, ft) in formattedText.withIndex()) {
           if (ft.format == null) append(ft.text)
           else if (toggleSecrets && ft.format is Format.Secret) {
             val ftStyle = ft.format.style
             hasAnnotations = true
-            secretId += 1
-            val key = secretId.toString()
+            val key = i.toString()
             withAnnotation(tag = "SECRET", annotation = key) {
               if (showSecrets[key] == true) append(ft.text) else withStyle(ftStyle) { append(ft.text) }
             }
