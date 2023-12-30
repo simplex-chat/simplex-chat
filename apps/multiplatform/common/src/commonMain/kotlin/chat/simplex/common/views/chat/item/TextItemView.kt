@@ -90,7 +90,7 @@ fun MarkdownText (
   ) {
     var timer: Job? by remember { mutableStateOf(null) }
     var typingIdx by rememberSaveable { mutableStateOf(0) }
-    var showSecrets by remember { mutableStateOf(false) }
+    val showSecrets = remember { mutableStateMapOf<String, Boolean>() }
     fun stopTyping() {
       timer?.cancel()
       timer = null
@@ -132,13 +132,16 @@ fun MarkdownText (
       var hasAnnotations = false
       val annotatedText = buildAnnotatedString {
         appendSender(this, sender, senderBold)
+        var secretId = 0
         for (ft in formattedText) {
           if (ft.format == null) append(ft.text)
           else if (toggleSecrets && ft.format is Format.Secret) {
             val ftStyle = ft.format.style
             hasAnnotations = true
-            withAnnotation(tag = "SECRET", annotation = ft.text) {
-              if (showSecrets) append(ft.text) else withStyle(ftStyle) { append(ft.text) }
+            secretId += 1
+            val key = secretId.toString()
+            withAnnotation(tag = "SECRET", annotation = key) {
+              if (showSecrets[key] == true) append(ft.text) else withStyle(ftStyle) { append(ft.text) }
             }
           } else {
             val link = ft.link(linkMode)
@@ -186,7 +189,10 @@ fun MarkdownText (
                 uriHandler.openVerifiedSimplexUri(annotation.item)
               }
             annotatedText.getStringAnnotations(tag = "SECRET", start = offset, end = offset)
-              .firstOrNull()?.let { showSecrets = !showSecrets }
+              .firstOrNull()?.let { annotation ->
+                val key = annotation.item
+                showSecrets[key] = !(showSecrets[key] ?: false)
+              }
           },
           onHover = { offset ->
             icon.value = annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
