@@ -42,3 +42,4 @@ fun SwipeToDismissModifier(
     reverseDirection = isRtl,
   ).offset { IntOffset(state.offset.value.roundToInt(), 0) }
 }
+

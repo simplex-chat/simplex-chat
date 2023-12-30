@@ -3,6 +3,7 @@ package chat.simplex.common.views.chat.item
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -11,6 +12,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.UriHandler
 import dev.icerock.moko.resources.compose.painterResource
@@ -50,7 +52,7 @@ fun FramedItemView(
   fun Color.toQuote(): Color = if (isInDarkTheme()) lighter(0.12f) else darker(0.12f)
 
   @Composable
-  fun ciQuotedMsgTextView(qi: CIQuote, lines: Int) {
+  fun ciQuotedMsgTextViewMarkdown(qi: CIQuote, lines: Int) {
     MarkdownText(
       qi.text,
       qi.formattedText,
@@ -60,6 +62,22 @@ fun FramedItemView(
       linkMode = linkMode,
       uriHandler = if (appPlatform.isDesktop) uriHandler else null
     )
+  }
+
+  @Composable
+  fun ciQuotedMsgTextView(qi: CIQuote, lines: Int) {
+    if (appPlatform.isDesktop) {
+      SelectionContainer(
+        modifier = Modifier.onClick(
+          matcher = PointerMatcher.mouse(PointerButton.Secondary),
+          onClick = { showMenu.value = true }
+        )
+      ) {
+        ciQuotedMsgTextViewMarkdown(qi, lines)
+      }
+    } else {
+      ciQuotedMsgTextViewMarkdown(qi, lines)
+    }
   }
 
   @Composable
@@ -265,7 +283,7 @@ fun FramedItemView(
                   CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick)
                 }
               }
-              else -> CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick)
+              else -> CIMarkdownText(ci, chatTTL, linkMode, uriHandler, onLinkLongClick, showMenu = showMenu)
             }
           }
         }
@@ -278,20 +296,44 @@ fun FramedItemView(
 }
 
 @Composable
-fun CIMarkdownText(
+fun CIMarkdownTextMarkdown(
+  text: String,
   ci: ChatItem,
   chatTTL: Int?,
   linkMode: SimplexLinkMode,
   uriHandler: UriHandler?,
   onLinkLongClick: (link: String) -> Unit = {}
 ) {
+  MarkdownText(
+    text, if (text.isEmpty()) emptyList() else ci.formattedText,
+    meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
+    uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
+  )
+}
+
+@Composable
+fun CIMarkdownText(
+  ci: ChatItem,
+  chatTTL: Int?,
+  linkMode: SimplexLinkMode,
+  uriHandler: UriHandler?,
+  onLinkLongClick: (link: String) -> Unit = {},
+  showMenu: MutableState<Boolean> = mutableStateOf(false)
+) {
   Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
     val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
-    MarkdownText(
-      text, if (text.isEmpty()) emptyList() else ci.formattedText,
-      meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
-      uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
-    )
+    if (appPlatform.isDesktop) {
+      SelectionContainer(
+        modifier = Modifier.onClick(
+          matcher = PointerMatcher.mouse(PointerButton.Secondary),
+          onClick = { showMenu.value = true }
+        )
+      ) {
+      CIMarkdownTextMarkdown(text, ci, chatTTL, linkMode, uriHandler, onLinkLongClick)
+      }
+    } else {
+      CIMarkdownTextMarkdown(text, ci, chatTTL, linkMode, uriHandler, onLinkLongClick)
+    }
   }
 }
 

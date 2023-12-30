@@ -124,7 +124,7 @@ fun ChatItemView(
       Column(
         Modifier
           .clip(RoundedCornerShape(18.dp))
-          .combinedClickable(onLongClick = { showMenu.value = true }, onClick = onClick)
+          .combinedClickable(onLongClick = { if (!appPlatform.isDesktop) showMenu.value = true }, onClick = onClick)
           .onRightClick { showMenu.value = true },
       ) {
         @Composable
