@@ -283,14 +283,14 @@ struct FramedItemView: View {
         let text = ci.meta.isLive ? ci.content.msgContent?.text ?? ci.text : ci.text
         let rtl = isRightToLeft(text)
         let ft = text == "" ? [] : ci.formattedText
-        let v = MsgContentView(
+        let v = toggleSecrets(ft, $showSecrets, MsgContentView(
             chat: chat,
             text: text,
             formattedText: ft,
             meta: ci.meta,
             rightToLeft: rtl,
             showSecrets: showSecrets
-        )
+        ))
         .multilineTextAlignment(rtl ? .trailing : .leading)
         .padding(.vertical, 6)
         .padding(.horizontal, 12)
@@ -299,9 +299,9 @@ struct FramedItemView: View {
         .textSelection(.enabled)
 
         if let mediaWidth = maxMediaWidth(), mediaWidth < maxWidth {
-            toggleSecrets(ft, $showSecrets, v.frame(maxWidth: mediaWidth, alignment: .leading))
+            v.frame(maxWidth: mediaWidth, alignment: .leading)
         } else {
-            toggleSecrets(ft, $showSecrets, v)
+            v
         }
     }
 
