@@ -124,6 +124,7 @@ private fun TextPreview(text: String, linkMode: SimplexLinkMode, markdown: Boole
       MarkdownText(
         text,
         formattedText = if (markdown) remember(text) { parseToMarkdown(text) } else null,
+        toggleSecrets = false,
         modifier = Modifier.fillMaxHeight().padding(horizontal = DEFAULT_PADDING),
         linkMode = linkMode,
         style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp)
