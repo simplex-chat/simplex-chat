@@ -5,7 +5,6 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -345,7 +344,9 @@ contactTimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessag
   | forUser enabled && forContact enabled = Just ttl
   | otherwise = Nothing
   where
-    TimedMessagesPreference {ttl} = userPreference.preference
+    TimedMessagesPreference {ttl} = case userPreference of
+      CUPContact {preference} -> preference
+      CUPUser {preference} -> preference
 
 groupTimedTTL :: GroupInfo -> Maybe (Maybe Int)
 groupTimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}
