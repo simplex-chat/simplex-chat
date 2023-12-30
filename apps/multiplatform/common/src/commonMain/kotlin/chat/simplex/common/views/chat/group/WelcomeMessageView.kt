@@ -15,6 +15,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -119,6 +120,7 @@ private fun GroupWelcomeLayout(
 
 @Composable
 private fun TextPreview(text: String, linkMode: SimplexLinkMode, markdown: Boolean = true) {
+  val uriHandler = LocalUriHandler.current
   Column {
     SelectionContainer(Modifier.fillMaxWidth()) {
       MarkdownText(
@@ -126,7 +128,7 @@ private fun TextPreview(text: String, linkMode: SimplexLinkMode, markdown: Boole
         formattedText = if (markdown) remember(text) { parseToMarkdown(text) } else null,
         toggleSecrets = false,
         modifier = Modifier.fillMaxHeight().padding(horizontal = DEFAULT_PADDING),
-        linkMode = linkMode,
+        linkMode = linkMode, uriHandler = uriHandler,
         style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp)
       )
     }

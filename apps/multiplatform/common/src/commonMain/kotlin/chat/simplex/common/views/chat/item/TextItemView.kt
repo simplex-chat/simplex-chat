@@ -186,10 +186,7 @@ fun MarkdownText (
                 uriHandler.openVerifiedSimplexUri(annotation.item)
               }
             annotatedText.getStringAnnotations(tag = "SECRET", start = offset, end = offset)
-              .firstOrNull()?.let {
-                Log.e(TAG, "LALAL clicked secret")
-                showSecrets = !showSecrets
-              }
+              .firstOrNull()?.let { showSecrets = !showSecrets }
           },
           onHover = { offset ->
             icon.value = annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
