@@ -1742,7 +1742,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
         // This delay is needed to cancel the session that fails on network failure,
         // e.g. when user did not grant permission to access local network yet.
         if let sess = m.remoteCtrlSession {
-            m.remoteCtrlSession = nil
+            await MainActor.run {
+                m.remoteCtrlSession = nil
+            }
             if case .connected = sess.sessionState {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     switchToLocalSession()
