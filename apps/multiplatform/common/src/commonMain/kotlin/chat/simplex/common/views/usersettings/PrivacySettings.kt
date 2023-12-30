@@ -429,6 +429,7 @@ fun SimplexLockView(
           ModalManager.fullscreen.showCustomModal { close ->
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
               SetAppPasscodeView(
+                reason = generalGetString(MR.strings.la_app_passcode),
                 submit = {
                   passcodeAlert(generalGetString(MR.strings.passcode_changed))
                 }, cancel = {
@@ -453,6 +454,7 @@ fun SimplexLockView(
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
               SetAppPasscodeView(
                 passcodeKeychain = ksSelfDestructPassword,
+                reason = generalGetString(MR.strings.self_destruct),
                 submit = {
                   selfDestructPasscodeAlert(generalGetString(MR.strings.self_destruct_passcode_changed))
                 }, cancel = {
@@ -553,7 +555,7 @@ fun SimplexLockView(
                 fontSize = 16.sp,
                 modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
               )
-              ProfileNameField(selfDestructDisplayName, "", ::isValidDisplayName)
+              ProfileNameField(selfDestructDisplayName, "", { isValidDisplayName(it.trim()) })
               LaunchedEffect(selfDestructDisplayName.value) {
                 val new = selfDestructDisplayName.value
                 if (isValidDisplayName(new) && selfDestructDisplayNamePref.get() != new) {

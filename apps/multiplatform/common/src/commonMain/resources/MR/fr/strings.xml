@@ -206,7 +206,6 @@
     <string name="gallery_video_button">Vidéo</string>
     <string name="to_start_a_new_chat_help_header">Pour démarrer une nouvelle discussion</string>
     <string name="chat_help_tap_button">Appuyez sur le bouton</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Scanner un code QR</b> : pour vous connecter à votre contact qui vous montre un code QR.]]></string>
     <string name="to_connect_via_link_title">Pour se connecter via un lien</string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Si vous avez reçu un lien d\'invitation SimpleX Chat, vous pouvez l\'ouvrir dans votre navigateur :</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 bureau : scanner le code QR affiché depuis l\'app, via <b>Scanner le code QR</b>.]]></string>
@@ -246,7 +245,6 @@
     <string name="paste_button">Coller</string>
     <string name="this_string_is_not_a_connection_link">Cette chaîne n\'est pas un lien de connexion !</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Vous pouvez aussi vous connecter en cliquant sur le lien. Si il s\'ouvre dans le navigateur, cliquez sur <b>Ouvrir dans l\'app mobile</b>.]]></string>
-    <string name="create_one_time_link">Créer un lien d\'invitation unique</string>
     <string name="text_field_set_contact_placeholder">Définir le nom du contact…</string>
     <string name="icon_descr_server_status_disconnected">Déconnecté</string>
     <string name="icon_descr_server_status_error">Erreur</string>
@@ -296,7 +294,6 @@
     <string name="thank_you_for_installing_simplex">Merci d\'avoir installé SimpleX Chat !</string>
     <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Vous pouvez <font color="#0088ff">vous connecter aux développeurs de SimpleX Chat pour leur poser des questions et recevoir des réponses :</font>.]]></string>
     <string name="above_then_preposition_continuation">ci-dessus, puis :</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Ajouter un nouveau contact</b> : afin de créer un code QR à usage unique pour votre contact.]]></string>
     <string name="if_you_choose_to_reject_the_sender_will_not_be_notified">Si vous choisissez de la rejeter, l\'expéditeur·rice NE sera PAS notifié·e.</string>
     <string name="accept_contact_button">Accepter</string>
     <string name="mute_chat">Muet</string>
@@ -901,8 +898,8 @@
     <string name="invalid_data">données invalides</string>
     <string name="invalid_chat">chat invalide</string>
     <string name="icon_descr_cancel_live_message">Annuler le message dynamique</string>
-    <string name="feature_offered_item">offert %s</string>
-    <string name="feature_offered_item_with_param">offert %s: %2s</string>
+    <string name="feature_offered_item">propose %s</string>
+    <string name="feature_offered_item_with_param">propose %s : %2s</string>
     <string name="feature_cancelled_item">annulé %s</string>
     <string name="app_version_title">Version de l\'app</string>
     <string name="core_simplexmq_version">simplexmq : v%s (%2s)</string>
@@ -1407,14 +1404,14 @@
     <string name="expand_verb">Développer</string>
     <string name="connect_plan_repeat_connection_request">Répéter la demande de connexion ?</string>
     <string name="rcv_direct_event_contact_deleted">contact supprimé</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Vous êtes déjà connecté(e) à %1$s.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Vous êtes déjà connecté(e) à <b>%1$s</b>.]]></string>
     <string name="error_alert_title">Erreur</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Vous êtes déjà en train de rejoindre le groupe via ce lien.</string>
     <string name="create_group_button">Créer un groupe</string>
     <string name="create_another_profile_button">Créer le profil</string>
     <string name="group_members_2">%s et %s</string>
     <string name="connect_plan_join_your_group">Rejoindre votre groupe ?</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Vous êtes déjà en train de rejoindre le groupe %1$s.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Vous êtes déjà en train de rejoindre le groupe <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_one_time_link">Voici votre propre lien unique !</string>
     <string name="marked_deleted_items_description">%d messages marqués comme supprimés</string>
     <string name="connect_plan_group_already_exists">Ce groupe existe déjà !</string>
@@ -1429,7 +1426,7 @@
     <string name="unblock_member_button">Débloquer ce membre</string>
     <string name="connect_plan_connect_to_yourself">Se connecter à soi-même ?</string>
     <string name="contact_tap_to_connect">Tapez pour vous connecter</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Vous êtes déjà dans le groupe %1$s.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Vous êtes déjà dans le groupe <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">Voici votre propre adresse SimpleX !</string>
     <string name="correct_name_to">Corriger le nom pour %s ?</string>
     <string name="delete_messages__question">Supprimer %d messages ?</string>
@@ -1450,7 +1447,7 @@
     <string name="block_member_question">Bloquer ce membre ?</string>
     <string name="rcv_group_events_count">%d événements de groupe</string>
     <string name="invalid_name">Nom invalide !</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Voici votre lien pour le groupe %1$s !</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Voici votre lien pour le groupe <b>%1$s</b> !]]></string>
     <string name="unblock_member_confirmation">Débloquer</string>
     <string name="non_content_uri_alert_title">Chemin du fichier invalide</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Vous avez déjà demandé une connexion via cette adresse !</string>
@@ -1522,4 +1519,14 @@
     <string name="found_desktop">Bureau trouvé</string>
     <string name="not_compatible">Non compatible !</string>
     <string name="multicast_discoverable_via_local_network">Accessible via le réseau local</string>
+    <string name="refresh_qr_code">Rafraîchir</string>
+    <string name="create_chat_profile">Créer un profil de chat</string>
+    <string name="no_connected_mobile">Pas de mobile connecté</string>
+    <string name="disconnect_remote_hosts">Déconnecter les mobiles</string>
+    <string name="random_port">Aléatoire</string>
+    <string name="open_port_in_firewall_desc">Afin de permettre à une application mobile de se connecter à votre ordinateur, ouvrez ce port dans votre pare-feu, si vous l\'avez activé</string>
+    <string name="app_was_crashed">Crash d\'aperçu</string>
+    <string name="open_port_in_firewall_title">Ouvrir le port de votre pare-feu</string>
+    <string name="error_showing_content">erreur d\'affichage de contenu</string>
+    <string name="error_showing_message">erreur d\'affichage de message</string>
 </resources>

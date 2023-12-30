@@ -492,7 +492,7 @@ createRcvFileTransfer :: DB.Connection -> UserId -> Contact -> FileInvitation ->
 createRcvFileTransfer db userId Contact {contactId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq, fileInline, fileDescr} rcvFileInline chunkSize = do
   currentTs <- liftIO getCurrentTime
   rfd_ <- mapM (createRcvFD_ db userId currentTs) fileDescr
-  let rfdId = (fileDescrId :: RcvFileDescr -> Int64) <$> rfd_
+  let rfdId = (\RcvFileDescr {fileDescrId} -> fileDescrId) <$> rfd_
       -- cryptoArgs = Nothing here, the decision to encrypt is made when receiving it
       xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False}) <$> rfd_
       fileProtocol = if isJust rfd_ then FPXFTP else FPSMP
@@ -513,7 +513,7 @@ createRcvGroupFileTransfer :: DB.Connection -> UserId -> GroupMember -> FileInvi
 createRcvGroupFileTransfer db userId GroupMember {groupId, groupMemberId, localDisplayName = c} f@FileInvitation {fileName, fileSize, fileConnReq, fileInline, fileDescr} rcvFileInline chunkSize = do
   currentTs <- liftIO getCurrentTime
   rfd_ <- mapM (createRcvFD_ db userId currentTs) fileDescr
-  let rfdId = (fileDescrId :: RcvFileDescr -> Int64) <$> rfd_
+  let rfdId = (\RcvFileDescr {fileDescrId} -> fileDescrId) <$> rfd_
       -- cryptoArgs = Nothing here, the decision to encrypt is made when receiving it
       xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId = Nothing, agentRcvFileDeleted = False}) <$> rfd_
       fileProtocol = if isJust rfd_ then FPXFTP else FPSMP
