@@ -3131,6 +3131,10 @@ extension MsgContent: Encodable {
 public struct FormattedText: Decodable {
     public var text: String
     public var format: Format?
+
+    public var isSecret: Bool {
+        if case .secret = format { true } else { false }
+    }
 }
 
 public enum Format: Decodable, Equatable {

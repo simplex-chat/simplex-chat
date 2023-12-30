@@ -34,6 +34,7 @@ fun ContextItemView(
   fun msgContentView(lines: Int) {
     MarkdownText(
       contextItem.text, contextItem.formattedText,
+      toggleSecrets = false,
       maxLines = lines,
       linkMode = SimplexLinkMode.DESCRIPTION,
       modifier = Modifier.fillMaxWidth(),
