@@ -344,7 +344,9 @@ contactTimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessag
   | forUser enabled && forContact enabled = Just ttl
   | otherwise = Nothing
   where
-    TimedMessagesPreference {ttl} = preference (userPreference :: ContactUserPref TimedMessagesPreference)
+    TimedMessagesPreference {ttl} = case userPreference of
+      CUPContact {preference} -> preference
+      CUPUser {preference} -> preference
 
 groupTimedTTL :: GroupInfo -> Maybe (Maybe Int)
 groupTimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}

@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.ui.theme.DEFAULT_PADDING
 import chat.simplex.common.views.helpers.AppBarTitle
 import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.common.views.onboarding.ReadableTextWithLink
 import chat.simplex.res.MR
 
 @Composable
@@ -31,6 +32,7 @@ fun IncognitoLayout() {
       Text(generalGetString(MR.strings.incognito_info_protects))
       Text(generalGetString(MR.strings.incognito_info_allows))
       Text(generalGetString(MR.strings.incognito_info_share))
+      ReadableTextWithLink(MR.strings.read_more_in_user_guide_with_link, "https://simplex.chat/docs/guide/chat-profiles.html#incognito-mode")
       SectionBottomSpacer()
     }
   }

@@ -116,7 +116,10 @@ fun UserPicker(
       }
   }
   LaunchedEffect(Unit) {
-    controller.reloadRemoteHosts()
+    // Controller.ctrl can be null when self-destructing activates
+    if (controller.ctrl != null && controller.ctrl != -1L) {
+      controller.reloadRemoteHosts()
+    }
   }
   val UsersView: @Composable ColumnScope.() -> Unit = {
     users.forEach { u ->

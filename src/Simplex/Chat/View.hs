@@ -211,7 +211,9 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactConnecting u _ -> ttyUser u []
   CRContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
   CRContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
-  CRSubscriptionEnd u acEntity -> ttyUser u [sShow (connId (entityConnection acEntity :: Connection)) <> ": END"]
+  CRSubscriptionEnd u acEntity ->
+    let Connection {connId} = entityConnection acEntity
+     in ttyUser u [sShow connId <> ": END"]
   CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactsSubscribed srv cs -> [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactSubError u c e -> ttyUser u [ttyContact' c <> ": contact error " <> sShow e]
@@ -952,7 +954,7 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
     removedOrLeft m = let s = memberStatus m in s == GSMemRemoved || s == GSMemLeft
     groupMember m = memIncognito m <> ttyFullMember m <> ": " <> plain (intercalate ", " $ [role m] <> category m <> status m <> muted m)
     role :: GroupMember -> String
-    role m = B.unpack . strEncode $ memberRole (m :: GroupMember)
+    role GroupMember {memberRole} = B.unpack $ strEncode memberRole
     category m = case memberCategory m of
       GCUserMember -> ["you"]
       GCInviteeMember -> ["invited"]
@@ -990,7 +992,7 @@ viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <nam
 viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
   where
     ldn_ :: GroupInfo -> Text
-    ldn_ = T.toLower . (localDisplayName :: GroupInfo -> GroupName)
+    ldn_ GroupInfo {localDisplayName} = T.toLower localDisplayName
     groupSS (g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}}, GroupSummary {currentMembers}) =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
@@ -1905,7 +1907,7 @@ viewChatError logLevel testView = \case
           "[" <> connEntityLabel entity <> ", userContactLinkId: " <> sShow userContactLinkId <> ", connId: " <> cId conn <> "] "
         Nothing -> ""
       cId :: Connection -> StyledString
-      cId conn = sShow (connId (conn :: Connection))
+      cId Connection {connId} = sShow connId
   ChatErrorRemoteCtrl e -> [plain $ "remote controller error: " <> show e]
   ChatErrorRemoteHost RHNew e -> [plain $ "new remote host error: " <> show e]
   ChatErrorRemoteHost (RHId rhId) e -> [plain $ "remote host " <> show rhId <> " error: " <> show e]
