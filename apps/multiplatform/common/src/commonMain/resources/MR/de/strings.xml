@@ -21,7 +21,7 @@
     <string name="marked_deleted_description">als gelöscht markiert</string>
     <string name="sending_files_not_yet_supported">Das Senden von Dateien wird noch nicht unterstützt</string>
     <string name="receiving_files_not_yet_supported">Der Empfang von Dateien wird noch nicht unterstützt</string>
-    <string name="sender_you_pronoun">Ihre Daten</string>
+    <string name="sender_you_pronoun">Profil</string>
     <string name="unknown_message_format">Unbekanntes Nachrichtenformat</string>
     <string name="invalid_message_format">Ungültiges Nachrichtenformat</string>
     <!-- PendingContactConnection - ChatModel.kt -->
@@ -341,7 +341,7 @@
     <!-- CreateLinkView.kt -->
     <string name="one_time_link">Einmal-Einladungslink</string>
     <!-- settings - SettingsView.kt -->
-    <string name="your_settings">Ihre Einstellungen</string>
+    <string name="your_settings">Einstellungen</string>
     <string name="your_simplex_contact_address">Ihre SimpleX-Adresse</string>
     <string name="database_passphrase_and_export">Datenbank-Passwort &amp; -Export</string>
     <string name="about_simplex_chat">Über SimpleX Chat</string>
@@ -725,11 +725,11 @@
     <string name="snd_group_event_group_profile_updated">Gruppenprofil aktualisiert</string>
     <!-- Conn event chat items -->
     <string name="rcv_conn_event_switch_queue_phase_completed">wechselte die Empfängeradresse für Sie</string>
-    <string name="rcv_conn_event_switch_queue_phase_changing">Wechsel der Empfängeradresse…</string>
-    <string name="snd_conn_event_switch_queue_phase_completed_for_member">Sie haben die Empfängeradresse für %s gewechselt</string>
-    <string name="snd_conn_event_switch_queue_phase_changing_for_member">Wechsel der Empfängeradresse für %s…</string>
-    <string name="snd_conn_event_switch_queue_phase_completed">Sie haben die Empfängeradresse gewechselt</string>
-    <string name="snd_conn_event_switch_queue_phase_changing">Wechsel der Empfängeradresse…</string>
+    <string name="rcv_conn_event_switch_queue_phase_changing">Wechsel der Empfängeradresse wurde gestartet…</string>
+    <string name="snd_conn_event_switch_queue_phase_completed_for_member">Die Empfängeradresse für %s wurde gewechselt</string>
+    <string name="snd_conn_event_switch_queue_phase_changing_for_member">Wechsel der Empfängeradresse für %s wurde gestartet…</string>
+    <string name="snd_conn_event_switch_queue_phase_completed">Die Empfängeradresse wurde gewechselt</string>
+    <string name="snd_conn_event_switch_queue_phase_changing">Wechsel der Empfängeradresse wurde gestartet…</string>
     <!-- GroupMemberRole -->
     <string name="group_member_role_member">Mitglied</string>
     <string name="group_member_role_admin">Admin</string>
@@ -867,13 +867,13 @@
     <string name="feature_enabled_for_contact">Für Kontakt aktiviert</string>
     <string name="feature_off">Aus</string>
     <string name="feature_received_prohibited">empfangen, nicht erlaubt</string>
-    <string name="allow_your_contacts_irreversibly_delete">Erlauben Sie Ihren Kontakten gesendete Nachrichten unwiederbringlich zu löschen (24 Stunden).</string>
-    <string name="allow_irreversible_message_deletion_only_if">Erlauben Sie das unwiederbringliche Löschen von Nachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt (24 Stunden).</string>
+    <string name="allow_your_contacts_irreversibly_delete">Erlauben Sie Ihren Kontakten gesendete Nachrichten unwiederbringlich zu löschen (bis zu 24 Stunden).</string>
+    <string name="allow_irreversible_message_deletion_only_if">Erlauben Sie das unwiederbringliche Löschen von Nachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt (bis zu 24 Stunden).</string>
     <string name="contacts_can_mark_messages_for_deletion">Ihre Kontakte können Nachrichten zum Löschen markieren. Sie können diese Nachrichten trotzdem anschauen.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Erlauben Sie Ihre Kontakten Sprachnachrichten zu versenden.</string>
     <string name="allow_voice_messages_only_if">Erlauben Sie Sprachnachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</string>
     <string name="prohibit_sending_voice_messages">Das Senden von Sprachnachrichten nicht erlauben.</string>
-    <string name="both_you_and_your_contacts_can_delete">Sowohl Ihr Kontakt als auch Sie können Nachrichten unwiederbringlich löschen (24 Stunden).</string>
+    <string name="both_you_and_your_contacts_can_delete">Sowohl Ihr Kontakt als auch Sie können Nachrichten unwiederbringlich löschen (bis zu 24 Stunden).</string>
     <string name="only_you_can_delete_messages">Nur Sie können Nachrichten unwiederbringlich löschen (Ihr Kontakt kann sie zum Löschen markieren) (bis zu 24 Stunden).</string>
     <string name="only_your_contact_can_delete">Nur Ihr Kontakt kann Nachrichten unwiederbringlich löschen (Sie können sie zum Löschen markieren) (bis zu 24 Stunden).</string>
     <string name="message_deletion_prohibited">In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten nicht erlaubt.</string>
@@ -883,13 +883,13 @@
     <string name="voice_prohibited_in_this_chat">In diesem Chat sind Sprachnachrichten nicht erlaubt.</string>
     <string name="allow_direct_messages">Das Senden von Direktnachrichten an Gruppenmitglieder erlauben.</string>
     <string name="prohibit_direct_messages">Das Senden von Direktnachrichten an Gruppenmitglieder nicht erlauben.</string>
-    <string name="allow_to_delete_messages">Unwiederbringliches löschen von gesendeten Nachrichten erlauben (24 Stunden).</string>
+    <string name="allow_to_delete_messages">Unwiederbringliches löschen von gesendeten Nachrichten erlauben (bis zu 24 Stunden).</string>
     <string name="prohibit_message_deletion">Unwiederbringliches Löschen von Nachrichten nicht erlauben.</string>
     <string name="allow_to_send_voice">Das Senden von Sprachnachrichten erlauben.</string>
     <string name="prohibit_sending_voice">Das Senden von Sprachnachrichten nicht erlauben.</string>
     <string name="group_members_can_send_dms">Gruppenmitglieder können Direktnachrichten versenden.</string>
     <string name="direct_messages_are_prohibited_in_chat">In dieser Gruppe sind Direktnachrichten zwischen Mitgliedern nicht erlaubt.</string>
-    <string name="group_members_can_delete">Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen (24 Stunden).</string>
+    <string name="group_members_can_delete">Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen (bis zu 24 Stunden).</string>
     <string name="message_deletion_prohibited_in_chat">In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten nicht erlaubt.</string>
     <string name="group_members_can_send_voice">Gruppenmitglieder können Sprachnachrichten versenden.</string>
     <string name="voice_messages_are_prohibited">In dieser Gruppe sind Sprachnachrichten nicht erlaubt.</string>
