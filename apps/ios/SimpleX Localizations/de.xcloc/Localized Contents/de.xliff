@@ -5675,9 +5675,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>XFTP-Server</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You" xml:space="preserve">
+      <trans-unit id="You" xml:space="preserve" approved="no">
         <source>You</source>
-        <target>Ihre Daten</target>
+        <target state="translated">Profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You accepted connection" xml:space="preserve">
@@ -6073,9 +6073,9 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
         <target>Ihre Serveradresse</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your settings" xml:space="preserve">
+      <trans-unit id="Your settings" xml:space="preserve" approved="no">
         <source>Your settings</source>
-        <target>Ihre Einstellungen</target>
+        <target state="translated">Einstellungen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" xml:space="preserve">
@@ -6190,7 +6190,7 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="changed address for you" xml:space="preserve" approved="no">
         <source>changed address for you</source>
-        <target state="translated">Wechselte die Empfängeradresse für Sie</target>
+        <target state="translated">Wechselte die Empfängeradresse von Ihnen</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="changed role of %@ to %@" xml:space="preserve">
@@ -6205,12 +6205,12 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="changing address for %@…" xml:space="preserve" approved="no">
         <source>changing address for %@…</source>
-        <target state="translated">Empfängeradresse für %@ wechseln…</target>
+        <target state="translated">Empfängeradresse für %@ wechseln wird gestartet…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="changing address…" xml:space="preserve" approved="no">
         <source>changing address…</source>
-        <target state="translated">Wechsel der Empfängeradresse…</target>
+        <target state="translated">Wechsel der Empfängeradresse wurde gestartet…</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="colored" xml:space="preserve">
@@ -6802,12 +6802,12 @@ SimpleX-Server können Ihr Profil nicht einsehen.</target>
       </trans-unit>
       <trans-unit id="you changed address" xml:space="preserve" approved="no">
         <source>you changed address</source>
-        <target state="translated">Sie haben die Empfängeradresse gewechselt</target>
+        <target state="translated">Die Empfängeradresse wurde gewechselt</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="you changed address for %@" xml:space="preserve" approved="no">
         <source>you changed address for %@</source>
-        <target state="translated">Sie haben die Empfängeradresse für %@ gewechselt</target>
+        <target state="translated">Die Empfängeradresse für %@ wurde gewechselt</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="you changed role for yourself to %@" xml:space="preserve">
