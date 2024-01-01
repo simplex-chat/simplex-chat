@@ -196,7 +196,7 @@ private fun runChat(
   progressIndicator.value = true
   try {
     initChatController(dbKey, confirmMigrations,
-      startChat = if (appPreferences.chatStopped.get()) showStartChatAfterRestartAlert() else CompletableDeferred(true)
+      startChat = if (appPreferences.chatStopped.get()) ::showStartChatAfterRestartAlert else { { CompletableDeferred(true) } }
     )
   } catch (e: Exception) {
     Log.d(TAG, "initializeChat ${e.stackTraceToString()}")

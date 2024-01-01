@@ -45,7 +45,7 @@ fun initChatControllerAndRunMigrations(ignoreSelfDestruct: Boolean) {
   if (ignoreSelfDestruct || DatabaseUtils.ksSelfDestructPassword.get() == null) {
     withBGApi {
       if (appPreferences.chatStopped.get() && appPreferences.storeDBPassphrase.get() && ksDatabasePassword.get() != null) {
-        initChatController(startChat = showStartChatAfterRestartAlert())
+        initChatController(startChat = ::showStartChatAfterRestartAlert)
       } else {
         initChatController()
       }
@@ -54,7 +54,7 @@ fun initChatControllerAndRunMigrations(ignoreSelfDestruct: Boolean) {
   }
 }
 
-suspend fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: CompletableDeferred<Boolean> = CompletableDeferred(true)) {
+suspend fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: () -> CompletableDeferred<Boolean> = { CompletableDeferred(true) }) {
   try {
     chatModel.ctrlInitInProgress.value = true
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
@@ -101,7 +101,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
       } else {
         chatController.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
       }
-    } else if (startChat.await()) {
+    } else if (startChat().await()) {
       val savedOnboardingStage = appPreferences.onboardingStage.get()
       val newStage = if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {
         OnboardingStage.Step3_CreateSimpleXAddress
