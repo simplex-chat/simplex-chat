@@ -283,7 +283,21 @@ fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
   val theme by CurrentColors.collectAsState()
   MaterialTheme(
     colors = theme.colors,
-    typography = Typography,
+    typography = Typography.copy(
+      h1 = Typography.h1.copy(color = theme.colors.onBackground),
+      h2 = Typography.h2.copy(color = theme.colors.onBackground),
+      h3 = Typography.h3.copy(color = theme.colors.onBackground),
+      h4 = Typography.h4.copy(color = theme.colors.onBackground),
+      h5 = Typography.h5.copy(color = theme.colors.onBackground),
+      h6 = Typography.h6.copy(color = theme.colors.onBackground),
+      subtitle1 = Typography.subtitle1.copy(color = theme.colors.onBackground),
+      subtitle2 = Typography.subtitle2.copy(color = theme.colors.onBackground),
+      body1 = Typography.body1.copy(color = theme.colors.onBackground),
+      body2 = Typography.body2.copy(color = theme.colors.onBackground),
+      button = Typography.button.copy(color = theme.colors.onBackground),
+      caption = Typography.caption.copy(color = theme.colors.onBackground),
+      overline = Typography.overline.copy(color = theme.colors.onBackground)
+    ),
     shapes = Shapes,
     content = {
       ProvideTextStyle(
