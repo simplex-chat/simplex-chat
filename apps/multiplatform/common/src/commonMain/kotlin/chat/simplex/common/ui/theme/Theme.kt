@@ -6,6 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController
 import chat.simplex.common.platform.isInNightMode
@@ -284,6 +285,11 @@ fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
     colors = theme.colors,
     typography = Typography,
     shapes = Shapes,
-    content = content
+    content = {
+      ProvideTextStyle(
+        value = TextStyle(color = theme.colors.onBackground),
+        content = content
+      )
+    }
   )
 }
