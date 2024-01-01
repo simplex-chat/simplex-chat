@@ -4,8 +4,10 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.ChatModel.currentUser
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.helpers.DatabaseUtils.ksDatabasePassword
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
+import kotlinx.coroutines.*
 import kotlinx.serialization.decodeFromString
 import java.nio.ByteBuffer
 
@@ -42,8 +44,8 @@ val chatController: ChatController = ChatController
 fun initChatControllerAndRunMigrations(ignoreSelfDestruct: Boolean) {
   if (ignoreSelfDestruct || DatabaseUtils.ksSelfDestructPassword.get() == null) {
     withBGApi {
-      if (appPreferences.chatStopped.get()) {
-        showStartChatAfterRestartAlert()
+      if (appPreferences.chatStopped.get() && appPreferences.storeDBPassphrase.get() && ksDatabasePassword.get() != null) {
+        initChatController(startChat = showStartChatAfterRestartAlert())
       } else {
         initChatController()
       }
@@ -52,7 +54,7 @@ fun initChatControllerAndRunMigrations(ignoreSelfDestruct: Boolean) {
   }
 }
 
-suspend fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: Boolean = true) {
+suspend fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: CompletableDeferred<Boolean> = CompletableDeferred(true)) {
   try {
     chatModel.ctrlInitInProgress.value = true
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
@@ -66,7 +68,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     } else null
     chatController.ctrl = ctrl
     chatModel.chatDbEncrypted.value = dbKey != ""
-    chatModel.chatDbStatus.value = DBMigrationStatus(res, startChat)
+    chatModel.chatDbStatus.value = res
     if (res != DBMigrationResult.OK) {
       Log.d(TAG, "Unable to migrate successfully: $res")
       return
@@ -99,7 +101,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
       } else {
         chatController.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
       }
-    } else if (startChat) {
+    } else if (startChat.await()) {
       val savedOnboardingStage = appPreferences.onboardingStage.get()
       val newStage = if (listOf(OnboardingStage.Step1_SimpleXInfo, OnboardingStage.Step2_CreateProfile).contains(savedOnboardingStage) && chatModel.users.size == 1) {
         OnboardingStage.Step3_CreateSimpleXAddress
@@ -121,24 +123,14 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
   }
 }
 
-fun showStartChatAfterRestartAlert() {
+fun showStartChatAfterRestartAlert(): CompletableDeferred<Boolean> {
+  val deferred = CompletableDeferred<Boolean>()
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.start_chat_question),
     text = generalGetString(MR.strings.chat_is_stopped_you_should_transfer_database),
-    onConfirm = {
-      withBGApi {
-        initChatController(startChat = true)
-      }
-    },
-    onDismiss = {
-      withBGApi {
-        initChatController(startChat = false)
-      }
-    },
-    onDismissRequest = {
-      withBGApi {
-        initChatController(startChat = false)
-      }
-    }
+    onConfirm = { deferred.complete(true) },
+    onDismiss = { deferred.complete(false) },
+    onDismissRequest = { deferred.complete(false) }
   )
+  return deferred
 }

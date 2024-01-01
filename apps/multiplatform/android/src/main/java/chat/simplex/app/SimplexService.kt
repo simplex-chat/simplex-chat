@@ -106,9 +106,9 @@ class SimplexService: Service() {
       try {
         Log.w(TAG, "Starting foreground service")
         val chatDbStatus = chatController.chatModel.chatDbStatus.value
-        if (chatDbStatus?.result != DBMigrationResult.OK) {
+        if (chatDbStatus != DBMigrationResult.OK) {
           Log.w(chat.simplex.app.TAG, "SimplexService: problem with the database: $chatDbStatus")
-          showPassphraseNotification(chatDbStatus?.result)
+          showPassphraseNotification(chatDbStatus)
           safeStopService()
           return@withApi
         }

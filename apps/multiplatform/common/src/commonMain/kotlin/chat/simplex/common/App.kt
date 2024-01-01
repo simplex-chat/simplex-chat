@@ -55,10 +55,10 @@ fun AppScreen() {
 fun MainScreen() {
   val chatModel = ChatModel
   var showChatDatabaseError by rememberSaveable {
-    mutableStateOf(chatModel.chatDbStatus.value?.result != DBMigrationResult.OK && chatModel.chatDbStatus.value != null)
+    mutableStateOf(chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null)
   }
   LaunchedEffect(chatModel.chatDbStatus.value) {
-    showChatDatabaseError = chatModel.chatDbStatus.value?.result != DBMigrationResult.OK && chatModel.chatDbStatus.value != null
+    showChatDatabaseError = chatModel.chatDbStatus.value != DBMigrationResult.OK && chatModel.chatDbStatus.value != null
   }
   var showAdvertiseLAAlert by remember { mutableStateOf(false) }
   LaunchedEffect(showAdvertiseLAAlert) {

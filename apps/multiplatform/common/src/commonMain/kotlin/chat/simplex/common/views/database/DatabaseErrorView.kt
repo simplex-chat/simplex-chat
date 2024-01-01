@@ -33,7 +33,7 @@ import kotlin.io.path.Path
 
 @Composable
 fun DatabaseErrorView(
-  chatDbStatus: State<DBMigrationStatus?>,
+  chatDbStatus: State<DBMigrationResult?>,
   appPreferences: AppPreferences,
 ) {
   val progressIndicator = remember { mutableStateOf(false) }
@@ -44,7 +44,7 @@ fun DatabaseErrorView(
 
   fun callRunChat(confirmMigrations: MigrationConfirmation? = null) {
     val useKey = if (useKeychain) null else dbKey.value
-    runChat(useKey, confirmMigrations, chatDbStatus, progressIndicator, appPreferences)
+    runChat(useKey, confirmMigrations, chatDbStatus, progressIndicator)
   }
 
   fun saveAndRunChatOnClick() {
@@ -81,7 +81,7 @@ fun DatabaseErrorView(
     verticalArrangement = Arrangement.Center,
   ) {
     val buttonEnabled = validKey(dbKey.value) && !progressIndicator.value
-    when (val status = chatDbStatus.value?.result) {
+    when (val status = chatDbStatus.value) {
       is DBMigrationResult.ErrorNotADatabase ->
         if (useKeychain && !storedDBKey.isNullOrEmpty()) {
           DatabaseErrorDetails(MR.strings.wrong_passphrase) {
@@ -188,20 +188,21 @@ fun DatabaseErrorView(
 private fun runChat(
   dbKey: String? = null,
   confirmMigrations: MigrationConfirmation? = null,
-  chatDbStatus: State<DBMigrationStatus?>,
+  chatDbStatus: State<DBMigrationResult?>,
   progressIndicator: MutableState<Boolean>,
-  prefs: AppPreferences
 ) = CoroutineScope(Dispatchers.Default).launch {
   // Don't do things concurrently. Shouldn't be here concurrently, just in case
   if (progressIndicator.value) return@launch
   progressIndicator.value = true
   try {
-    initChatController(dbKey, confirmMigrations, startChat = chatDbStatus.value?.triedToStartChat ?: true)
+    initChatController(dbKey, confirmMigrations,
+      startChat = if (appPreferences.chatStopped.get()) showStartChatAfterRestartAlert() else CompletableDeferred(true)
+    )
   } catch (e: Exception) {
     Log.d(TAG, "initializeChat ${e.stackTraceToString()}")
   }
   progressIndicator.value = false
-  when (val status = chatDbStatus.value?.result) {
+  when (val status = chatDbStatus.value) {
     is DBMigrationResult.OK -> {
       platform.androidChatStartedAfterBeingOff()
     }
@@ -306,7 +307,7 @@ private fun ColumnScope.RestoreDbButton(onClick: () -> Unit) {
 fun PreviewChatInfoLayout() {
   SimpleXTheme {
     DatabaseErrorView(
-      remember { mutableStateOf(DBMigrationStatus(DBMigrationResult.ErrorNotADatabase("simplex_v1_chat.db"), true)) },
+      remember { mutableStateOf(DBMigrationResult.ErrorNotADatabase("simplex_v1_chat.db")) },
       AppPreferences()
     )
   }
