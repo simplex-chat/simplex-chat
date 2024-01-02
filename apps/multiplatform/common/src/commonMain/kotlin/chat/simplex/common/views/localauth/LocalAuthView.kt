@@ -84,7 +84,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       m.chatDbChanged.value = true
       m.chatDbStatus.value = null
       try {
-        initChatController(startChat = true)
+        initChatController()
       } catch (e: Exception) {
         Log.d(TAG, "initializeChat ${e.stackTraceToString()}")
       }
