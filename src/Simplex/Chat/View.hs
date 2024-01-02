@@ -394,7 +394,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
         toChatView :: AChat -> (Text, Text, Maybe ConnStatus)
         toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items Nothing, connStatus <$> activeConn)
         toChatView (AChat _ (Chat (GroupChat GroupInfo {membership, localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items (Just membership), Nothing)
-        toChatView (AChat _ (Chat (LocalChat _) items _)) = ("$notes", toCIPreview items Nothing, Nothing)
+        toChatView (AChat _ (Chat (LocalChat _) items _)) = ("-", toCIPreview items Nothing, Nothing)
         toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items Nothing, Nothing)
         toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items Nothing, Just pccConnStatus)
         toCIPreview :: [CChatItem c] -> Maybe GroupMember -> Text
@@ -559,14 +559,14 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {forwardedByMember}, 
           CISndGroupEvent {} -> showSndItemProhibited to
           _ -> showSndItem to
           where
-            to = "$notes "
+            to = "- "
         CILocalRcv -> case content of
           CIRcvMsgContent mc -> withLocalFile from $ rcvMsg from quote mc
           CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
           CIRcvGroupEvent {} -> showRcvItemProhibited from
           _ -> showRcvItem from
           where
-            from = "$??? "
+            from = "- "
         where
           quote = []
       ContactRequest {} -> []
@@ -727,7 +727,7 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
       Just mc -> view from $ reactionMsg mc
       _ -> []
       where
-        from = "$??? "
+        from = "$ "
         reactionMsg mc = quoteText mc $ if toMsgDirection md == MDSnd then ">>" else ">"
     (_, CIDirectSnd) -> [sentText]
     (_, CIGroupSnd) -> [sentText]

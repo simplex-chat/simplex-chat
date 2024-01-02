@@ -17,7 +17,7 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 getNoteFolderIdByName :: DB.Connection -> User -> NoteFolderName -> ExceptT StoreError IO NoteFolderId
 getNoteFolderIdByName db User {userId} ldn =
   ExceptT . firstRow fromOnly (SENoteFolderNotFoundByName ldn) $
-    DB.query db [sql| SELECT note_folder_id FROM note_folders WHERE user_id = ? AND "notes" = ? |] (userId, ldn)
+    DB.query db [sql| SELECT note_folder_id FROM note_folders WHERE user_id = ? AND "-" = ? |] (userId, ldn)
 
 getNoteFolder :: DB.Connection -> User -> NoteFolderId -> ExceptT StoreError IO NoteFolder
 getNoteFolder db User {userId} noteFolderId =
