@@ -2,8 +2,7 @@ package chat.simplex.common.platform
 
 import chat.simplex.common.model.*
 import chat.simplex.common.views.call.RcvCallInvitation
-import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.common.views.helpers.withBGApi
+import chat.simplex.common.views.helpers.*
 import java.util.*
 import chat.simplex.res.MR
 
@@ -25,10 +24,7 @@ fun initApp() {
     override fun cancelAllNotifications() = chat.simplex.common.model.NtfManager.cancelAllNotifications()
   }
   applyAppLocale()
-  withBGApi {
-    initChatController()
-    runMigrations()
-  }
+  initChatControllerAndRunMigrations(false)
   // LALAL
   //testCrypto()
 }

@@ -54,6 +54,7 @@ fun FramedItemView(
     MarkdownText(
       qi.text,
       qi.formattedText,
+      toggleSecrets = true,
       maxLines = lines,
       overflow = TextOverflow.Ellipsis,
       style = TextStyle(fontSize = 15.sp, color = MaterialTheme.colors.onSurface),
@@ -288,7 +289,7 @@ fun CIMarkdownText(
   Box(Modifier.padding(vertical = 6.dp, horizontal = 12.dp)) {
     val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
     MarkdownText(
-      text, if (text.isEmpty()) emptyList() else ci.formattedText,
+      text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
       meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
       uriHandler = uriHandler, senderBold = true, onLinkLongClick = onLinkLongClick
     )

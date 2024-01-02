@@ -9,7 +9,6 @@ import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
-import chat.simplex.common.views.newchat.ConnectViaLinkTab
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
 import com.charleskorn.kaml.Yaml
@@ -135,7 +134,6 @@ class AppPreferences {
   val networkTCPKeepIntvl = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_INTVL, KeepAliveOpts.defaults.keepIntvl)
   val networkTCPKeepCnt = mkIntPreference(SHARED_PREFS_NETWORK_TCP_KEEP_CNT, KeepAliveOpts.defaults.keepCnt)
   val incognito = mkBoolPreference(SHARED_PREFS_INCOGNITO, false)
-  val connectViaLinkTab = mkStrPreference(SHARED_PREFS_CONNECT_VIA_LINK_TAB, ConnectViaLinkTab.SCAN.name)
   val liveMessageAlertShown = mkBoolPreference(SHARED_PREFS_LIVE_MESSAGE_ALERT_SHOWN, false)
   val showHiddenProfilesNotice = mkBoolPreference(SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE, true)
   val showMuteProfileAlert = mkBoolPreference(SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT, true)
@@ -292,7 +290,6 @@ class AppPreferences {
     private const val SHARED_PREFS_NETWORK_TCP_KEEP_INTVL = "NetworkTCPKeepIntvl"
     private const val SHARED_PREFS_NETWORK_TCP_KEEP_CNT = "NetworkTCPKeepCnt"
     private const val SHARED_PREFS_INCOGNITO = "Incognito"
-    private const val SHARED_PREFS_CONNECT_VIA_LINK_TAB = "ConnectViaLinkTab"
     private const val SHARED_PREFS_LIVE_MESSAGE_ALERT_SHOWN = "LiveMessageAlertShown"
     private const val SHARED_PREFS_SHOW_HIDDEN_PROFILES_NOTICE = "ShowHiddenProfilesNotice"
     private const val SHARED_PREFS_SHOW_MUTE_PROFILE_ALERT = "ShowMuteProfileAlert"
@@ -890,19 +887,19 @@ object ChatController {
 
 
 
-  suspend fun apiAddContact(rh: Long?, incognito: Boolean): Pair<String, PendingContactConnection>? {
+  suspend fun apiAddContact(rh: Long?, incognito: Boolean): Pair<Pair<String, PendingContactConnection>?, (() -> Unit)?> {
     val userId = chatModel.currentUser.value?.userId ?: run {
       Log.e(TAG, "apiAddContact: no current user")
-      return null
+      return null to null
     }
     val r = sendCmd(rh, CC.APIAddContact(userId, incognito))
     return when (r) {
-      is CR.Invitation -> r.connReqInvitation to r.connection
+      is CR.Invitation -> (r.connReqInvitation to r.connection) to null
       else -> {
         if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiAddContact", generalGetString(MR.strings.connection_error), r)
+          return null to { apiErrorAlert("apiAddContact", generalGetString(MR.strings.connection_error), r) }
         }
-        null
+        null to null
       }
     }
   }
@@ -978,6 +975,13 @@ object ChatController {
         }
         return null
       }
+    }
+  }
+
+  suspend fun deleteChat(chat: Chat, notify: Boolean? = null) {
+    val cInfo = chat.chatInfo
+    if (apiDeleteChat(rh = chat.remoteHostId, type = cInfo.chatType, id = cInfo.apiId, notify = notify)) {
+      chatModel.removeChat(chat.remoteHostId, cInfo.id)
     }
   }
 
@@ -1568,7 +1572,7 @@ object ChatController {
           chatModel.updateContact(rhId, r.contact)
           val conn = r.contact.activeConn
           if (conn != null) {
-            chatModel.dismissConnReqView(conn.id)
+            chatModel.replaceConnReqView(conn.id, "@${r.contact.contactId}")
             chatModel.removeChat(rhId, conn.id)
           }
         }
@@ -1582,7 +1586,7 @@ object ChatController {
           chatModel.updateContact(rhId, r.contact)
           val conn = r.contact.activeConn
           if (conn != null) {
-            chatModel.dismissConnReqView(conn.id)
+            chatModel.replaceConnReqView(conn.id, "@${r.contact.contactId}")
             chatModel.removeChat(rhId, conn.id)
           }
         }
@@ -1717,7 +1721,7 @@ object ChatController {
         chatModel.updateGroup(rhId, r.groupInfo)
         val conn = r.hostContact?.activeConn
         if (conn != null) {
-          chatModel.dismissConnReqView(conn.id)
+          chatModel.replaceConnReqView(conn.id, "#${r.groupInfo.groupId}")
           chatModel.removeChat(rhId, conn.id)
         }
       }
@@ -1727,7 +1731,7 @@ object ChatController {
         chatModel.updateGroup(rhId, r.groupInfo)
         val hostConn = r.hostMember.activeConn
         if (hostConn != null) {
-          chatModel.dismissConnReqView(hostConn.id)
+          chatModel.replaceConnReqView(hostConn.id, "#${r.groupInfo.groupId}")
           chatModel.removeChat(rhId, hostConn.id)
         }
       }
@@ -2141,7 +2145,15 @@ class SharedPreference<T>(val get: () -> T, set: (T) -> Unit) {
   init {
     this.set = { value ->
       set(value)
-      _state.value = value
+      try {
+        _state.value = value
+      } catch (e: IllegalStateException) {
+        // Can be `Reading a state that was created after the snapshot was taken or in a snapshot that has not yet been applied`
+        Log.i(TAG, e.stackTraceToString())
+        withApi {
+          _state.value = value
+        }
+      }
     }
   }
 }
@@ -3304,7 +3316,8 @@ enum class GroupFeature: Feature {
   @SerialName("fullDelete") FullDelete,
   @SerialName("reactions") Reactions,
   @SerialName("voice") Voice,
-  @SerialName("files") Files;
+  @SerialName("files") Files,
+  @SerialName("history") History;
 
   override val hasParam: Boolean get() = when(this) {
     TimedMessages -> true
@@ -3319,6 +3332,7 @@ enum class GroupFeature: Feature {
       Reactions -> generalGetString(MR.strings.message_reactions)
       Voice -> generalGetString(MR.strings.voice_messages)
       Files -> generalGetString(MR.strings.files_and_media)
+      History -> generalGetString(MR.strings.recent_history)
     }
 
   val icon: Painter
@@ -3329,6 +3343,7 @@ enum class GroupFeature: Feature {
       Reactions -> painterResource(MR.images.ic_add_reaction)
       Voice -> painterResource(MR.images.ic_keyboard_voice)
       Files -> painterResource(MR.images.ic_draft)
+      History -> painterResource(MR.images.ic_schedule)
     }
 
   @Composable
@@ -3339,6 +3354,7 @@ enum class GroupFeature: Feature {
     Reactions -> painterResource(MR.images.ic_add_reaction_filled)
     Voice -> painterResource(MR.images.ic_keyboard_voice_filled)
     Files -> painterResource(MR.images.ic_draft_filled)
+    History -> painterResource(MR.images.ic_schedule_filled)
   }
 
   fun enableDescription(enabled: GroupFeatureEnabled, canEdit: Boolean): String =
@@ -3368,6 +3384,10 @@ enum class GroupFeature: Feature {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.allow_to_send_files)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.prohibit_sending_files)
         }
+        History -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.enable_sending_recent_history)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.disable_sending_recent_history)
+        }
       }
     } else {
       when(this) {
@@ -3394,6 +3414,10 @@ enum class GroupFeature: Feature {
         Files -> when(enabled) {
           GroupFeatureEnabled.ON -> generalGetString(MR.strings.group_members_can_send_files)
           GroupFeatureEnabled.OFF -> generalGetString(MR.strings.files_are_prohibited_in_group)
+        }
+        History -> when(enabled) {
+          GroupFeatureEnabled.ON -> generalGetString(MR.strings.recent_history_is_sent_to_new_members)
+          GroupFeatureEnabled.OFF -> generalGetString(MR.strings.recent_history_is_not_sent_to_new_members)
         }
       }
     }
@@ -3509,6 +3533,7 @@ data class FullGroupPreferences(
   val reactions: GroupPreference,
   val voice: GroupPreference,
   val files: GroupPreference,
+  val history: GroupPreference,
 ) {
   fun toGroupPreferences(): GroupPreferences =
     GroupPreferences(
@@ -3518,6 +3543,7 @@ data class FullGroupPreferences(
       reactions = reactions,
       voice = voice,
       files = files,
+      history = history
     )
 
   companion object {
@@ -3528,18 +3554,20 @@ data class FullGroupPreferences(
       reactions = GroupPreference(GroupFeatureEnabled.ON),
       voice = GroupPreference(GroupFeatureEnabled.ON),
       files = GroupPreference(GroupFeatureEnabled.ON),
+      history = GroupPreference(GroupFeatureEnabled.ON),
     )
   }
 }
 
 @Serializable
 data class GroupPreferences(
-  val timedMessages: TimedMessagesGroupPreference?,
-  val directMessages: GroupPreference?,
-  val fullDelete: GroupPreference?,
-  val reactions: GroupPreference?,
-  val voice: GroupPreference?,
-  val files: GroupPreference?,
+  val timedMessages: TimedMessagesGroupPreference? = null,
+  val directMessages: GroupPreference? = null,
+  val fullDelete: GroupPreference? = null,
+  val reactions: GroupPreference? = null,
+  val voice: GroupPreference? = null,
+  val files: GroupPreference? = null,
+  val history: GroupPreference? = null,
 ) {
   companion object {
     val sampleData = GroupPreferences(
@@ -3549,6 +3577,7 @@ data class GroupPreferences(
       reactions = GroupPreference(GroupFeatureEnabled.ON),
       voice = GroupPreference(GroupFeatureEnabled.ON),
       files = GroupPreference(GroupFeatureEnabled.ON),
+      history = GroupPreference(GroupFeatureEnabled.ON),
     )
   }
 }

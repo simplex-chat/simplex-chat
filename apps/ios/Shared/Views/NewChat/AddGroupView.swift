@@ -187,6 +187,7 @@ struct AddGroupView: View {
         hideKeyboard()
         do {
             profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
+            profile.groupPreferences = GroupPreferences(history: GroupPreference(enable: .on))
             let gInfo = try apiNewGroup(incognito: incognitoDefault, groupProfile: profile)
             Task {
                 let groupMembers = await apiListMembers(gInfo.groupId)

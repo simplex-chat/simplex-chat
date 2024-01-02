@@ -3,7 +3,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -978,7 +977,7 @@ getLocalCryptoFile db userId fileId sent =
     [(Just _, Nothing, _)] -> do
       unless sent $ throwError $ SEFileNotFound fileId
       FileTransferMeta {filePath, xftpSndFile} <- getFileTransferMeta_ db userId fileId
-      pure $ CryptoFile filePath $ xftpSndFile >>= \f -> f.cryptoArgs
+      pure $ CryptoFile filePath $ xftpSndFile >>= \XFTPSndFile {cryptoArgs} -> cryptoArgs
     [(Nothing, Nothing, FPLocal)] -> do
       LocalFileMeta {filePath, fileCryptoArgs} <- getLocalFileMeta db userId fileId
       pure $ CryptoFile filePath fileCryptoArgs

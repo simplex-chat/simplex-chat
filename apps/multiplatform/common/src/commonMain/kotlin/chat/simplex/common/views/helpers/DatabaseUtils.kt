@@ -17,7 +17,7 @@ object DatabaseUtils {
   val ksAppPassword = KeyStoreItem(APP_PASSWORD_ALIAS, appPreferences.encryptedAppPassphrase, appPreferences.initializationVectorAppPassphrase)
   val ksSelfDestructPassword = KeyStoreItem(SELF_DESTRUCT_PASSWORD_ALIAS, appPreferences.encryptedSelfDestructPassphrase, appPreferences.initializationVectorSelfDestructPassphrase)
 
-  class KeyStoreItem(private val alias: String, val passphrase: SharedPreference<String?>, val initVector: SharedPreference<String?>) {
+  class KeyStoreItem(val alias: String, val passphrase: SharedPreference<String?>, val initVector: SharedPreference<String?>) {
     fun get(): String? {
       return cryptor.decryptData(
         passphrase.get()?.toByteArrayFromBase64ForPassphrase() ?: return null,
@@ -75,11 +75,11 @@ object DatabaseUtils {
 sealed class DBMigrationResult {
   @Serializable @SerialName("ok") object OK: DBMigrationResult()
   @Serializable @SerialName("invalidConfirmation") object InvalidConfirmation: DBMigrationResult()
-  @Serializable @SerialName("errorNotADatabase") class ErrorNotADatabase(val dbFile: String): DBMigrationResult()
-  @Serializable @SerialName("errorMigration") class ErrorMigration(val dbFile: String, val migrationError: MigrationError): DBMigrationResult()
-  @Serializable @SerialName("errorSQL") class ErrorSQL(val dbFile: String, val migrationSQLError: String): DBMigrationResult()
+  @Serializable @SerialName("errorNotADatabase") data class ErrorNotADatabase(val dbFile: String): DBMigrationResult()
+  @Serializable @SerialName("errorMigration") data class ErrorMigration(val dbFile: String, val migrationError: MigrationError): DBMigrationResult()
+  @Serializable @SerialName("errorSQL") data class ErrorSQL(val dbFile: String, val migrationSQLError: String): DBMigrationResult()
   @Serializable @SerialName("errorKeychain") object ErrorKeychain: DBMigrationResult()
-  @Serializable @SerialName("unknown") class Unknown(val json: String): DBMigrationResult()
+  @Serializable @SerialName("unknown") data class Unknown(val json: String): DBMigrationResult()
 }
 
 

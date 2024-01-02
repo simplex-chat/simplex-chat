@@ -616,8 +616,8 @@ public enum ChatFeature: String, Decodable, Feature {
             }
         case .fullDelete:
             switch allowed {
-            case .always: return "Allow your contacts to irreversibly delete sent messages."
-            case .yes: return "Allow irreversible message deletion only if your contact allows it to you."
+            case .always: return "Allow your contacts to irreversibly delete sent messages. (24 hours)"
+            case .yes: return "Allow irreversible message deletion only if your contact allows it to you. (24 hours)"
             case .no: return "Contacts can mark messages for deletion; you will be able to view them."
             }
         case .reactions:
@@ -653,11 +653,11 @@ public enum ChatFeature: String, Decodable, Feature {
                     : "Disappearing messages are prohibited in this chat."
         case .fullDelete:
             return enabled.forUser && enabled.forContact
-                    ? "Both you and your contact can irreversibly delete sent messages."
+                    ? "Both you and your contact can irreversibly delete sent messages. (24 hours)"
                     : enabled.forUser
-                    ? "Only you can irreversibly delete messages (your contact can mark them for deletion)."
+                    ? "Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)"
                     : enabled.forContact
-                    ? "Only your contact can irreversibly delete messages (you can mark them for deletion)."
+                    ? "Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)"
                     : "Irreversible message deletion is prohibited in this chat."
         case .reactions:
             return enabled.forUser && enabled.forContact
@@ -694,6 +694,7 @@ public enum GroupFeature: String, Decodable, Feature {
     case reactions
     case voice
     case files
+    case history
 
     public var id: Self { self }
 
@@ -712,6 +713,7 @@ public enum GroupFeature: String, Decodable, Feature {
         case .reactions: return NSLocalizedString("Message reactions", comment: "chat feature")
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
         case .files: return NSLocalizedString("Files and media", comment: "chat feature")
+        case .history: return NSLocalizedString("Visible history", comment: "chat feature")
         }
     }
 
@@ -723,6 +725,7 @@ public enum GroupFeature: String, Decodable, Feature {
         case .reactions: return "face.smiling"
         case .voice: return "mic"
         case .files: return "doc"
+        case .history: return "clock"
         }
     }
 
@@ -734,6 +737,7 @@ public enum GroupFeature: String, Decodable, Feature {
         case .reactions: return "face.smiling.fill"
         case .voice: return "mic.fill"
         case .files: return "doc.fill"
+        case .history: return "clock.fill"
         }
     }
 
@@ -759,7 +763,7 @@ public enum GroupFeature: String, Decodable, Feature {
                 }
             case .fullDelete:
                 switch enabled {
-                case .on: return "Allow to irreversibly delete sent messages."
+                case .on: return "Allow to irreversibly delete sent messages. (24 hours)"
                 case .off: return "Prohibit irreversible message deletion."
                 }
             case .reactions:
@@ -777,6 +781,11 @@ public enum GroupFeature: String, Decodable, Feature {
                 case .on: return "Allow to send files and media."
                 case .off: return "Prohibit sending files and media."
                 }
+            case .history:
+                switch enabled {
+                case .on: return "Send up to 100 last messages to new members."
+                case .off: return "Do not send history to new members."
+                }
             }
         } else {
             switch self {
@@ -792,7 +801,7 @@ public enum GroupFeature: String, Decodable, Feature {
                 }
             case .fullDelete:
                 switch enabled {
-                case .on: return "Group members can irreversibly delete sent messages."
+                case .on: return "Group members can irreversibly delete sent messages. (24 hours)"
                 case .off: return "Irreversible message deletion is prohibited in this group."
                 }
             case .reactions:
@@ -809,6 +818,11 @@ public enum GroupFeature: String, Decodable, Feature {
                 switch enabled {
                 case .on: return "Group members can send files and media."
                 case .off: return "Files and media are prohibited in this group."
+                }
+            case .history:
+                switch enabled {
+                case .on: return "Up to 100 last messages are sent to new members."
+                case .off: return "History is not sent to new members."
                 }
             }
         }
@@ -949,6 +963,7 @@ public struct FullGroupPreferences: Decodable, Equatable {
     public var reactions: GroupPreference
     public var voice: GroupPreference
     public var files: GroupPreference
+    public var history: GroupPreference
 
     public init(
         timedMessages: TimedMessagesGroupPreference,
@@ -956,7 +971,8 @@ public struct FullGroupPreferences: Decodable, Equatable {
         fullDelete: GroupPreference,
         reactions: GroupPreference,
         voice: GroupPreference,
-        files: GroupPreference
+        files: GroupPreference,
+        history: GroupPreference
     ) {
         self.timedMessages = timedMessages
         self.directMessages = directMessages
@@ -964,6 +980,7 @@ public struct FullGroupPreferences: Decodable, Equatable {
         self.reactions = reactions
         self.voice = voice
         self.files = files
+        self.history = history
     }
 
     public static let sampleData = FullGroupPreferences(
@@ -972,7 +989,8 @@ public struct FullGroupPreferences: Decodable, Equatable {
         fullDelete: GroupPreference(enable: .off),
         reactions: GroupPreference(enable: .on),
         voice: GroupPreference(enable: .on),
-        files: GroupPreference(enable: .on)
+        files: GroupPreference(enable: .on),
+        history: GroupPreference(enable: .on)
     )
 }
 
@@ -983,14 +1001,16 @@ public struct GroupPreferences: Codable {
     public var reactions: GroupPreference?
     public var voice: GroupPreference?
     public var files: GroupPreference?
+    public var history: GroupPreference?
 
     public init(
-        timedMessages: TimedMessagesGroupPreference?,
-        directMessages: GroupPreference?,
-        fullDelete: GroupPreference?,
-        reactions: GroupPreference?,
-        voice: GroupPreference?,
-        files: GroupPreference?
+        timedMessages: TimedMessagesGroupPreference? = nil,
+        directMessages: GroupPreference? = nil,
+        fullDelete: GroupPreference? = nil,
+        reactions: GroupPreference? = nil,
+        voice: GroupPreference? = nil,
+        files: GroupPreference? = nil,
+        history: GroupPreference? = nil
     ) {
         self.timedMessages = timedMessages
         self.directMessages = directMessages
@@ -998,6 +1018,7 @@ public struct GroupPreferences: Codable {
         self.reactions = reactions
         self.voice = voice
         self.files = files
+        self.history = history
     }
 
     public static let sampleData = GroupPreferences(
@@ -1006,7 +1027,8 @@ public struct GroupPreferences: Codable {
         fullDelete: GroupPreference(enable: .off),
         reactions: GroupPreference(enable: .on),
         voice: GroupPreference(enable: .on),
-        files: GroupPreference(enable: .on)
+        files: GroupPreference(enable: .on),
+        history: GroupPreference(enable: .on)
     )
 }
 
@@ -1017,7 +1039,8 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         fullDelete: fullPreferences.fullDelete,
         reactions: fullPreferences.reactions,
         voice: fullPreferences.voice,
-        files: fullPreferences.files
+        files: fullPreferences.files,
+        history: fullPreferences.history
     )
 }
 
@@ -3108,6 +3131,10 @@ extension MsgContent: Encodable {
 public struct FormattedText: Decodable {
     public var text: String
     public var format: Format?
+
+    public var isSecret: Bool {
+        if case .secret = format { true } else { false }
+    }
 }
 
 public enum Format: Decodable, Equatable {
@@ -3121,6 +3148,15 @@ public enum Format: Decodable, Equatable {
     case simplexLink(linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
     case email
     case phone
+
+    public var isSimplexLink: Bool {
+        get {
+            switch (self) {
+            case .simplexLink: return true
+            default: return false
+            }
+        }
+    }
 }
 
 public enum SimplexLinkType: String, Decodable {

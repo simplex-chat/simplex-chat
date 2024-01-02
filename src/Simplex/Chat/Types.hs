@@ -9,7 +9,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -61,21 +60,21 @@ class IsContact a where
   preferences' :: a -> Maybe Preferences
 
 instance IsContact User where
-  contactId' u = u.userContactId
+  contactId' User {userContactId} = userContactId
   {-# INLINE contactId' #-}
-  profile' u = u.profile
+  profile' User {profile} = profile
   {-# INLINE profile' #-}
-  localDisplayName' u = u.localDisplayName
+  localDisplayName' User {localDisplayName} = localDisplayName
   {-# INLINE localDisplayName' #-}
   preferences' User {profile = LocalProfile {preferences}} = preferences
   {-# INLINE preferences' #-}
 
 instance IsContact Contact where
-  contactId' c = c.contactId
+  contactId' Contact {contactId} = contactId
   {-# INLINE contactId' #-}
-  profile' c = c.profile
+  profile' Contact {profile} = profile
   {-# INLINE profile' #-}
-  localDisplayName' c = c.localDisplayName
+  localDisplayName' Contact {localDisplayName} = localDisplayName
   {-# INLINE localDisplayName' #-}
   preferences' Contact {profile = LocalProfile {preferences}} = preferences
   {-# INLINE preferences' #-}
@@ -196,7 +195,7 @@ directOrUsed ct@Contact {contactUsed} =
   contactDirect ct || contactUsed
 
 anyDirectOrUsed :: Contact -> Bool
-anyDirectOrUsed Contact {contactUsed, activeConn} = ((\c -> c.connLevel) <$> activeConn) == Just 0 || contactUsed
+anyDirectOrUsed Contact {contactUsed, activeConn} = ((\Connection {connLevel} -> connLevel) <$> activeConn) == Just 0 || contactUsed
 
 contactReady :: Contact -> Bool
 contactReady Contact {activeConn} = maybe False connReady activeConn

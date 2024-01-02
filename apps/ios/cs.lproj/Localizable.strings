@@ -1957,6 +1957,9 @@
 "Live messages" = "Živé zprávy";
 
 /* No comment provided by engineer. */
+"Local" = "Místní";
+
+/* No comment provided by engineer. */
 "Local name" = "Místní název";
 
 /* No comment provided by engineer. */
@@ -2219,9 +2222,6 @@
 /* No comment provided by engineer. */
 "Off" = "Vypnout";
 
-/* No comment provided by engineer. */
-"Off (Local)" = "Vypnuto (místní)";
-
 /* feature offered item */
 "offered %@" = "nabídl %@";
 
@@ -2311,9 +2311,6 @@
 
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "Protokol a kód s otevřeným zdrojovým kódem - servery může provozovat kdokoli.";
-
-/* No comment provided by engineer. */
-"Opening database…" = "Otvírání databáze…";
 
 /* member role */
 "owner" = "vlastník";
@@ -3216,9 +3213,6 @@
 "Turn off" = "Vypnout";
 
 /* No comment provided by engineer. */
-"Turn off notifications?" = "Vypnout upozornění?";
-
-/* No comment provided by engineer. */
 "Turn on" = "Zapnout";
 
 /* No comment provided by engineer. */
@@ -3637,9 +3631,6 @@
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "Vaše kontakty mohou povolit úplné mazání zpráv.";
-
-/* No comment provided by engineer. */
-"Your contacts in SimpleX will see it.\nYou can change it in Settings." = "Vaše kontakty v SimpleX ji uvidí.\nMůžete ji změnit v Nastavení.";
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "Vaše kontakty zůstanou připojeny.";

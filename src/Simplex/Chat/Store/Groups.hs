@@ -2,7 +2,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -320,7 +319,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
 createGroupInvitation :: DB.Connection -> VersionRange -> User -> Contact -> GroupInvitation -> Maybe ProfileId -> ExceptT StoreError IO (GroupInfo, GroupMemberId)
 createGroupInvitation _ _ _ Contact {localDisplayName, activeConn = Nothing} _ _ = throwError $ SEContactNotReady localDisplayName
-createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activeConn = Just hostConn@Connection {customUserProfileId}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile} incognitoProfileId = do
+createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activeConn = Just Connection {customUserProfileId, peerChatVRange}} GroupInvitation {fromMember, invitedMember, connRequest, groupProfile} incognitoProfileId = do
   liftIO getInvitationGroupId_ >>= \case
     Nothing -> createGroupInvitation_
     Just gId -> do
@@ -358,7 +357,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
               "INSERT INTO groups (group_profile_id, local_display_name, inv_queue_info, host_conn_custom_user_profile_id, user_id, enable_ntfs, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?,?,?)"
               (profileId, localDisplayName, connRequest, customUserProfileId, userId, True, currentTs, currentTs, currentTs)
             insertedRowId db
-          let JVersionRange hostVRange = hostConn.peerChatVRange
+          let JVersionRange hostVRange = peerChatVRange
           GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId Nothing contact fromMember GCHostMember GSMemInvited IBUnknown Nothing currentTs hostVRange
           membership <- createContactMemberInv_ db user groupId (Just groupMemberId) user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfileId currentTs vr
           let chatSettings = ChatSettings {enableNtfs = MFAll, sendRcpts = Nothing, favorite = False}
@@ -1041,7 +1040,7 @@ updateIntroStatus db introId introStatus = do
     [":intro_status" := introStatus, ":updated_at" := currentTs, ":intro_id" := introId]
 
 saveIntroInvitation :: DB.Connection -> GroupMember -> GroupMember -> IntroInvitation -> ExceptT StoreError IO GroupMemberIntro
-saveIntroInvitation db reMember toMember introInv = do
+saveIntroInvitation db reMember toMember introInv@IntroInvitation {groupConnReq} = do
   intro <- getIntroduction db reMember toMember
   liftIO $ do
     currentTs <- getCurrentTime
@@ -1056,7 +1055,7 @@ saveIntroInvitation db reMember toMember introInv = do
         WHERE group_member_intro_id = :intro_id
       |]
       [ ":intro_status" := GMIntroInvReceived,
-        ":group_queue_info" := introInv.groupConnReq,
+        ":group_queue_info" := groupConnReq,
         ":direct_queue_info" := directConnReq introInv,
         ":updated_at" := currentTs,
         ":intro_id" := introId intro
