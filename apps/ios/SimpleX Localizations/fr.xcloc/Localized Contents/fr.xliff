@@ -1104,9 +1104,9 @@
         <target>Préférences de chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chats" xml:space="preserve">
+      <trans-unit id="Chats" xml:space="preserve" approved="no">
         <source>Chats</source>
-        <target>Chats</target>
+        <target state="translated">Discussions</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Check server address and try again." xml:space="preserve">
@@ -1209,9 +1209,9 @@
         <target>Se connecter incognito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect to desktop" xml:space="preserve">
+      <trans-unit id="Connect to desktop" xml:space="preserve" approved="no">
         <source>Connect to desktop</source>
-        <target>Se connecter au bureau</target>
+        <target state="translated">Connexion au bureau</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect to yourself?" xml:space="preserve">
@@ -2438,9 +2438,9 @@ Cette opération ne peut être annulée !</target>
         <target>Même s'il est désactivé dans la conversation.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Exit without saving" xml:space="preserve">
+      <trans-unit id="Exit without saving" xml:space="preserve" approved="no">
         <source>Exit without saving</source>
-        <target>Quitter sans sauvegarder</target>
+        <target state="translated">Quitter sans enregistrer</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Expand" xml:space="preserve">
@@ -2538,9 +2538,9 @@ Cette opération ne peut être annulée !</target>
         <target>Enfin, les voilà ! 🚀</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Find chats faster" xml:space="preserve">
+      <trans-unit id="Find chats faster" xml:space="preserve" approved="no">
         <source>Find chats faster</source>
-        <target>Trouver des messages plus rapidement</target>
+        <target state="translated">Recherche de message plus rapide</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -3553,9 +3553,9 @@ Voici votre lien pour le groupe %@ !</target>
         <target>Pas de token d'appareil !</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No filtered chats" xml:space="preserve">
+      <trans-unit id="No filtered chats" xml:space="preserve" approved="no">
         <source>No filtered chats</source>
-        <target>Pas de chats filtrés</target>
+        <target state="translated">Aucune discussion filtrés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No group!" xml:space="preserve">
@@ -4329,59 +4329,59 @@ Erreur : %@</target>
         <target>Serveurs SMP</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save" xml:space="preserve">
+      <trans-unit id="Save" xml:space="preserve" approved="no">
         <source>Save</source>
-        <target>Sauvegarder</target>
+        <target state="translated">Enregistrer</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Save (and notify contacts)" xml:space="preserve">
+      <trans-unit id="Save (and notify contacts)" xml:space="preserve" approved="no">
         <source>Save (and notify contacts)</source>
-        <target>Sauvegarder (et en informer les contacts)</target>
+        <target state="translated">Enregistrer (et en informer les contacts)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save and notify contact" xml:space="preserve">
+      <trans-unit id="Save and notify contact" xml:space="preserve" approved="no">
         <source>Save and notify contact</source>
-        <target>Sauvegarder et en informer les contacts</target>
+        <target state="translated">Enregistrer et en informer le contact</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save and notify group members" xml:space="preserve">
+      <trans-unit id="Save and notify group members" xml:space="preserve" approved="no">
         <source>Save and notify group members</source>
-        <target>Sauvegarder et en informer les membres du groupe</target>
+        <target state="translated">Enregistrer et en informer les membres du groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save and update group profile" xml:space="preserve">
+      <trans-unit id="Save and update group profile" xml:space="preserve" approved="no">
         <source>Save and update group profile</source>
-        <target>Sauvegarder et mettre à jour le profil du groupe</target>
+        <target state="translated">Enregistrer et mettre à jour le profil du groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save archive" xml:space="preserve">
+      <trans-unit id="Save archive" xml:space="preserve" approved="no">
         <source>Save archive</source>
-        <target>Sauvegarder l'archive</target>
+        <target state="translated">Enregistrer l'archive</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save auto-accept settings" xml:space="preserve">
+      <trans-unit id="Save auto-accept settings" xml:space="preserve" approved="no">
         <source>Save auto-accept settings</source>
-        <target>Sauvegarder les paramètres d'acceptation automatique</target>
+        <target state="translated">Enregistrer les paramètres de validation automatique</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save group profile" xml:space="preserve">
+      <trans-unit id="Save group profile" xml:space="preserve" approved="no">
         <source>Save group profile</source>
-        <target>Sauvegarder le profil du groupe</target>
+        <target state="translated">Enregistrer le profil du groupe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save passphrase and open chat" xml:space="preserve">
+      <trans-unit id="Save passphrase and open chat" xml:space="preserve" approved="no">
         <source>Save passphrase and open chat</source>
-        <target>Sauvegarder la phrase secrète et ouvrir le chat</target>
+        <target state="translated">Enregistrer la phrase secrète et ouvrir le chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save passphrase in Keychain" xml:space="preserve">
+      <trans-unit id="Save passphrase in Keychain" xml:space="preserve" approved="no">
         <source>Save passphrase in Keychain</source>
-        <target>Sauvegarder la phrase secrète dans la keychain</target>
+        <target state="translated">Enregistrer la phrase secrète dans la Keychain</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save preferences?" xml:space="preserve">
+      <trans-unit id="Save preferences?" xml:space="preserve" approved="no">
         <source>Save preferences?</source>
-        <target>Sauvegarder les préférences ?</target>
+        <target state="translated">Enregistrer les préférences ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save profile password" xml:space="preserve">
@@ -4389,24 +4389,24 @@ Erreur : %@</target>
         <target>Enregistrer le mot de passe du profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save servers" xml:space="preserve">
+      <trans-unit id="Save servers" xml:space="preserve" approved="no">
         <source>Save servers</source>
-        <target>Sauvegarder les serveurs</target>
+        <target state="translated">Enregistrer les serveurs</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save servers?" xml:space="preserve">
+      <trans-unit id="Save servers?" xml:space="preserve" approved="no">
         <source>Save servers?</source>
-        <target>Sauvegarder les serveurs ?</target>
+        <target state="translated">Enregistrer les serveurs ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save settings?" xml:space="preserve">
+      <trans-unit id="Save settings?" xml:space="preserve" approved="no">
         <source>Save settings?</source>
-        <target>Sauvegarder les paramètres ?</target>
+        <target state="translated">Enregistrer les paramètres ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save welcome message?" xml:space="preserve">
+      <trans-unit id="Save welcome message?" xml:space="preserve" approved="no">
         <source>Save welcome message?</source>
-        <target>Sauvegarder le message d'accueil ?</target>
+        <target state="translated">Enregistrer le message d'accueil ?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
@@ -4419,9 +4419,9 @@ Erreur : %@</target>
         <target>Scanner un code QR</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan QR code from desktop" xml:space="preserve">
+      <trans-unit id="Scan QR code from desktop" xml:space="preserve" approved="no">
         <source>Scan QR code from desktop</source>
-        <target>Scanner le code QR du bureau</target>
+        <target state="translated">Scannez le code QR du bureau</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Scan code" xml:space="preserve">
@@ -4439,9 +4439,9 @@ Erreur : %@</target>
         <target>Scanner un code QR de serveur</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search" xml:space="preserve">
+      <trans-unit id="Search" xml:space="preserve" approved="no">
         <source>Search</source>
-        <target>Recherche</target>
+        <target state="translated">Rechercher</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Search or paste SimpleX link" xml:space="preserve" approved="no">
@@ -4544,9 +4544,9 @@ Erreur : %@</target>
         <target>Envoyez vos questions et idées</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send receipts" xml:space="preserve">
+      <trans-unit id="Send receipts" xml:space="preserve" approved="no">
         <source>Send receipts</source>
-        <target>Envoyer les justificatifs</target>
+        <target state="translated">Envoi de justificatifs</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send them from gallery or custom keyboards." xml:space="preserve">
@@ -5171,9 +5171,9 @@ Cela peut se produire en raison d'un bug ou lorsque la connexion est compromise.
         <target>Cette action ne peut être annulée - votre profil, vos contacts, vos messages et vos fichiers seront irréversiblement perdus.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This device name" xml:space="preserve">
+      <trans-unit id="This device name" xml:space="preserve" approved="no">
         <source>This device name</source>
-        <target>Ce nom d'appareil</target>
+        <target state="translated">Nom de cet appareil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve">
@@ -5470,9 +5470,9 @@ Pour vous connecter, veuillez demander à votre contact de créer un autre lien 
         <target>Utiliser pour les nouvelles connexions</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use from desktop" xml:space="preserve">
+      <trans-unit id="Use from desktop" xml:space="preserve" approved="no">
         <source>Use from desktop</source>
-        <target>Utilisation depuis le bureau</target>
+        <target state="translated">Accès au bureau</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use iOS call interface" xml:space="preserve">
