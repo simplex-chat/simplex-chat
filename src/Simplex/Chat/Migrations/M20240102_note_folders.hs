@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Migrations.M20231219_note_folders where
+module Simplex.Chat.Migrations.M20240102_note_folders where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20231219_note_folders :: Query
-m20231219_note_folders =
+m20240102_note_folders :: Query
+m20240102_note_folders =
   [sql|
     CREATE TABLE note_folders (
       note_folder_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,8 +33,8 @@ m20231219_note_folders =
       FROM users u;
 |]
 
-down_m20231219_note_folders :: Query
-down_m20231219_note_folders =
+down_m20240102_note_folders :: Query
+down_m20240102_note_folders =
   [sql|
 DROP TABLE note_folders;
 ALTER TABLE chat_items DROP COLUMN note_folder_id;
