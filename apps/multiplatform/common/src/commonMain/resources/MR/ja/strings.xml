@@ -181,7 +181,7 @@
     <string name="chat_preferences">チャット設定</string>
     <string name="clear_chat_button">消す</string>
     <string name="icon_descr_close_button">閉じるボタン</string>
-    <string name="clear_verification">検証を消す</string>
+    <string name="clear_verification">未検証の状態に戻す</string>
     <string name="image_saved">画像をギャラリーに保存しました。</string>
     <string name="choose_file">ファイル</string>
     <string name="clear_chat_menu_action">消す</string>
@@ -210,9 +210,9 @@
     <string name="connection_timeout">接続タイムアウト</string>
     <string name="connection_request_sent">接続リクエストを送信しました！</string>
     <string name="connection_local_display_name">接続 %1$d</string>
-    <string name="connect_via_contact_link">連絡先リンク経由で繋がりますか？</string>
+    <string name="connect_via_contact_link">連絡先アドレスと接続？</string>
     <string name="connect_via_group_link">グループリンク経由で繋がりますか？</string>
-    <string name="connect_via_invitation_link">招待リンク経由で繋がりますか？</string>
+    <string name="connect_via_invitation_link">ワンタイムリンクで接続？</string>
     <string name="status_contact_has_e2e_encryption">連絡先はエンドツーエンド暗号化があります。</string>
     <string name="description_via_group_link_incognito">グループリンク経由でシークレットモード</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">連絡先と全メッセージが削除されます (※元に戻せません※)！</string>
@@ -389,7 +389,7 @@
     <string name="group_member_status_connected">接続中</string>
     <string name="group_member_status_announced">接続待ち (アナウンス済み)</string>
     <string name="icon_descr_contact_checked">連絡先が確認済み</string>
-    <string name="delete_group_question">グループを削除しますか？</string>
+    <string name="delete_group_question">グループ削除？</string>
     <string name="delete_link">リンクを削除</string>
     <string name="group_member_status_group_deleted">グループ削除済み</string>
     <string name="delete_group_for_all_members_cannot_undo_warning">全員にとってグループが削除されます (※元に戻せません※)！</string>
@@ -530,7 +530,7 @@
     <string name="network_use_onion_hosts_required_desc">接続にオニオンのホストが必要となります。
 \n注意: .onion アドレスがないとサーバーに接続できません。</string>
     <string name="create_address">アドレスを作成</string>
-    <string name="delete_address__question">アドレスを削除しますか？</string>
+    <string name="delete_address__question">アドレスの削除？</string>
     <string name="display_name__field">表示の名前：</string>
     <string name="full_name__field">フルネーム：</string>
     <string name="create_profile_button">作成</string>
@@ -751,7 +751,7 @@
     <string name="secret_text">シークレット</string>
     <string name="strikethrough_text">取り消し線</string>
     <string name="callstate_starting">接続中…</string>
-    <string name="next_generation_of_private_messaging">次世代のプライバシー・メッセンジャー</string>
+    <string name="next_generation_of_private_messaging">次世代のプライベートメッセンジャー</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[あなたがメッセージの<b>受信</b>サーバを決められます。あなたの連絡先が同じく、自分に対する受信サーバを決められます。]]></string>
     <string name="icon_descr_video_call">ビデオ通話</string>
     <string name="onboarding_notifications_mode_off">アプリが稼働中に</string>
@@ -825,7 +825,7 @@
     <string name="star_on_github">GithubでStar</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">あなたのプロフィールはご自分の端末に保存され、あなたの連絡先のみに共有されます。 SimpleXのサーバには開示されません。</string>
     <string name="your_calls">あなたの通話</string>
-    <string name="integrity_msg_skipped">%1$d飛ばしたメッセージ</string>
+    <string name="integrity_msg_skipped">%1$dスキップしたメッセージ</string>
     <string name="send_link_previews">リンクのプレビューを送信</string>
     <string name="set_password_to_export">暗証フレーズを設定してからエキスポート</string>
     <string name="stop_chat_question">チャットを閉じますか？</string>
@@ -982,7 +982,7 @@
     <string name="database_upgrade">データベースアップグレード</string>
     <string name="audio_video_calls">音声/ビデオ通話</string>
     <string name="calls_prohibited_with_this_contact">音声/ビデオ通話は禁止されています。</string>
-    <string name="feature_received_prohibited">禁帯出</string>
+    <string name="feature_received_prohibited">受信拒絶</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">XFTPサーバーのアドレスが正しい形式で、行で区切られており、重複していないことを確認してください。</string>
     <string name="smp_server_test_delete_file">ファイルの削除</string>
     <string name="icon_descr_waiting_for_video">ビデオ待機中</string>
@@ -1085,7 +1085,7 @@
     <string name="v4_6_chinese_spanish_interface_descr">ユーザーに感謝します – Weblate 経由で貢献してください!</string>
     <string name="v4_6_audio_video_calls_descr">Bluetooth およびその他の改善をサポートします。</string>
     <string name="relay_server_if_necessary">中継サーバーは必要な場合にのみ使用されます。 別の当事者があなたの IP アドレスを監視できます。</string>
-    <string name="stop_sharing_address">アドレスの共有を停止しますか？</string>
+    <string name="stop_sharing_address">アドレス共有の停止？</string>
     <string name="color_sent_message">送信</string>
     <string name="color_received_message">受信したメッセージ</string>
     <string name="alert_text_msg_bad_hash">以前のメッセージとハッシュ値が異なります。</string>
@@ -1359,7 +1359,7 @@
     <string name="receipts_contacts_disable_keep_overrides">無効にする（設定の優先を維持）</string>
     <string name="v5_2_disappear_one_message_descr">会話中に無効になっている場合でも。</string>
     <string name="v5_2_message_delivery_receipts">Message delivery receipts!</string>
-    <string name="delivery_receipts_title">Delivery receipts!</string>
+    <string name="delivery_receipts_title">配信通知！</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</string>
     <string name="message_delivery_error_title">Message delivery error</string>
     <string name="send_receipts_disabled_alert_title">Receipts are disabled</string>
@@ -1396,4 +1396,37 @@
     <string name="v5_3_simpler_incognito_mode_descr">接続時にシークレットモードを切り替えます。</string>
     <string name="member_contact_send_direct_message">ダイレクトメッセージを送る</string>
     <string name="rcv_group_event_member_created_contact">直接接続中</string>
+    <string name="rcv_direct_event_contact_deleted">削除済の連絡先</string>
+    <string name="v5_4_incognito_groups_descr">ランダムなプロフィールを使用してグループを作成します。</string>
+    <string name="create_group_button">グループの作成</string>
+    <string name="create_another_profile_button">プロフィールの作成</string>
+    <string name="connected_desktop">デスクトップに接続済</string>
+    <string name="multicast_connect_automatically">自動的に接続</string>
+    <string name="desktop_address">デスクトップアドレス</string>
+    <string name="camera_not_available">カメラが見つかりません</string>
+    <string name="discover_on_network">ローカルネットワーク上で検出</string>
+    <string name="connect_plan_connect_via_link">リンクで接続？</string>
+    <string name="connect_plan_connect_to_yourself">自分自身と接続？</string>
+    <string name="desktop_device">デスクトップ</string>
+    <string name="connected_to_desktop">デスクトップに接続済</string>
+    <string name="connecting_to_desktop">デスクトップに接続中</string>
+    <string name="desktop_devices">デスクトップ機器</string>
+    <string name="delete_messages__question">%d件のメッセージを削除？</string>
+    <string name="connect_with_contact_name_question">%1$sと接続？</string>
+    <string name="blocked_items_description">%d件のメッセージをブロック</string>
+    <string name="connected_mobile">モバイルに接続済</string>
+    <string name="create_chat_profile">チャットプロフィールの作成</string>
+    <string name="delete_and_notify_contact">削除と連絡先への通知</string>
+    <string name="desktop_connection_terminated">接続停止</string>
+    <string name="connect_to_desktop">デスクトップに接続</string>
+    <string name="disconnect_remote_hosts">モバイルの接続解除</string>
+    <string name="disconnect_remote_host">接続解除</string>
+    <string name="creating_link">リンクの作成中…</string>
+    <string name="rcv_group_events_count">%d件のグループイベント</string>
+    <string name="connected_to_mobile">モバイルに接続済</string>
+    <string name="devices">デバイス</string>
+    <string name="multicast_discoverable_via_local_network">ローカルネットワーク上で検出可能</string>
+    <string name="add_contact_tab">連絡先に追加</string>
+    <string name="disconnect_desktop_question">デスクトップの接続解除？</string>
+    <string name="desktop_app_version_is_incompatible">デスクトップ版アプリ%sはこのアプリと互換性がありません。</string>
 </resources>
