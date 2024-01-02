@@ -582,7 +582,7 @@
     <string name="v4_5_private_filenames">プライベートなファイル名</string>
     <string name="v4_5_reduced_battery_usage">電池使用量低減</string>
     <string name="error_removing_member">メンバー除名にエラー発生</string>
-    <string name="conn_level_desc_indirect">関節 (%1$s)</string>
+    <string name="conn_level_desc_indirect">間接 (%1$s)</string>
     <string name="incognito">シークレットモード</string>
     <string name="incognito_info_protects">シークレット モードでは、連絡先ごとに新しいランダムなプロファイルを使用してプライバシーを保護します。</string>
     <string name="chat_preferences_no">いいえ</string>
@@ -1358,7 +1358,7 @@
     <string name="receipts_groups_enable_keep_overrides">有効にする（グループの設定の優先を維持）</string>
     <string name="receipts_contacts_disable_keep_overrides">無効にする（設定の優先を維持）</string>
     <string name="v5_2_disappear_one_message_descr">会話中に無効になっている場合でも。</string>
-    <string name="v5_2_message_delivery_receipts">Message delivery receipts!</string>
+    <string name="v5_2_message_delivery_receipts">メッセージ配信の通知！</string>
     <string name="delivery_receipts_title">配信通知！</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Sending delivery receipts will be enabled for all contacts in all visible chat profiles.</string>
     <string name="message_delivery_error_title">Message delivery error</string>
@@ -1456,4 +1456,10 @@
     <string name="invalid_qr_code">不正なQRコード</string>
     <string name="non_content_uri_alert_title">不正なファイルパス</string>
     <string name="keep_invitation_link">保持</string>
+    <string name="v5_4_link_mobile_desktop">モバイルとデスクトップのアプリを接続！</string>
+    <string name="linked_desktop_options">接続済のデスクトップのオプション</string>
+    <string name="linked_desktops">接続済のデスクトップ</string>
+    <string name="linked_mobiles">接続済のモバイル</string>
+    <string name="loading_remote_file_title">ファイルの読み込み中</string>
+    <string name="loading_chats">チャットの読み込み中…</string>
 </resources>
