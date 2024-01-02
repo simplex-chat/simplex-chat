@@ -344,19 +344,19 @@
         <target>**警告**: 即時の プッシュ通知には、キーチェーンに保存されたパスフレーズが必要です。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
+      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** audio call</source>
-        <target>**e2e 暗号化**された音声通話</target>
+        <target state="translated">**e2e 暗号化**音声通話</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** video call" xml:space="preserve">
+      <trans-unit id="**e2e encrypted** video call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** video call</source>
-        <target>**エンドツーエンド暗号化済み**のビデオ通話</target>
+        <target state="translated">**e2e暗号化**ビデオ通話</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="*bold*" xml:space="preserve">
+      <trans-unit id="*bold*" xml:space="preserve" approved="no">
         <source>\*bold*</source>
-        <target>\*太文字*</target>
+        <target state="translated">\*太字*</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=", " xml:space="preserve">
@@ -528,9 +528,9 @@
         <note>accept contact request via notification
    accept incoming call via notification</note>
       </trans-unit>
-      <trans-unit id="Accept connection request?" xml:space="preserve">
+      <trans-unit id="Accept connection request?" xml:space="preserve" approved="no">
         <source>Accept connection request?</source>
-        <target>連絡を受け入れる</target>
+        <target state="translated">接続要求を承認？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve">
@@ -636,9 +636,9 @@
         <target>あなたの連絡先が繋がったまま継続します。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="All your contacts will remain connected. Profile update will be sent to your contacts." xml:space="preserve">
+      <trans-unit id="All your contacts will remain connected. Profile update will be sent to your contacts." xml:space="preserve" approved="no">
         <source>All your contacts will remain connected. Profile update will be sent to your contacts.</source>
-        <target>あなたの連絡先が繋がったまま継続します。</target>
+        <target state="translated">すべての連絡先は維持されます。連絡先に更新されたプロフィールを送信します。</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow" xml:space="preserve">
@@ -1208,9 +1208,9 @@ This is your own one-time link!</source>
         <target>リンク経由で接続</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connect via one-time link" xml:space="preserve">
+      <trans-unit id="Connect via one-time link" xml:space="preserve" approved="no">
         <source>Connect via one-time link</source>
-        <target>使い捨てリンク経由で接続しますか？</target>
+        <target state="translated">ワンタイムリンクで接続</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Connect with %@" xml:space="preserve">
@@ -1729,14 +1729,14 @@ This cannot be undone!</source>
         <target>削除完了: %@</target>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Delivery" xml:space="preserve">
+      <trans-unit id="Delivery" xml:space="preserve" approved="no">
         <source>Delivery</source>
-        <target>Delivery</target>
+        <target state="translated">配信</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delivery receipts are disabled!" xml:space="preserve">
+      <trans-unit id="Delivery receipts are disabled!" xml:space="preserve" approved="no">
         <source>Delivery receipts are disabled!</source>
-        <target>Delivery receipts are disabled!</target>
+        <target state="translated">配信通知の停止！</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delivery receipts!" xml:space="preserve">
