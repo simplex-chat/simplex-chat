@@ -671,7 +671,7 @@
     <string name="database_restore_error">Fehler bei der Wiederherstellung der Datenbank</string>
     <string name="restore_passphrase_not_found_desc">Das Passwort wurde nicht im Schlüsselbund gefunden. Bitte geben Sie es manuell ein. Das kann passieren, wenn Sie die App-Daten mit einem Backup-Programm wieder hergestellt haben. Bitte nehmen Sie Kontakt mit den Entwicklern auf, wenn das nicht der Fall ist.</string>
     <!-- ChatModel.chatRunning interactions -->
-    <string name="chat_is_stopped_indication">Chat wurde beendet</string>
+    <string name="chat_is_stopped_indication">Der Chat wurde beendet</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Sie können den Chat über die App-Einstellungen/Datenbank oder durch Neustart der App starten.</string>
     <!-- ChatArchiveView.kt -->
     <string name="chat_archive_header">Datenbank-Archiv</string>
@@ -1638,4 +1638,6 @@
     <string name="keep_invitation_link">Behalten</string>
     <string name="tap_to_paste_link">Zum Link einfügen tippen</string>
     <string name="search_or_paste_simplex_link">Suchen oder fügen Sie den SimpleX-Link ein</string>
+    <string name="chat_is_stopped_you_should_transfer_database">Der Chat wurde gestoppt. Wenn diese Datenbank bereits auf einem anderen Gerät von Ihnen verwendet wurde, sollten Sie diese dorthin zurück übertragen, bevor Sie den Chat starten.</string>
+    <string name="start_chat_question">Chat starten?</string>
 </resources>
