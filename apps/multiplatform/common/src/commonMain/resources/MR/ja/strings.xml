@@ -149,7 +149,7 @@
     <string name="group_invitation_expired">グループ招待が期限切れ</string>
     <string name="icon_descr_group_inactive">非アクティブなグループ</string>
     <string name="group_members_can_send_voice">グループのメンバーが音声メッセージを送信できます。</string>
-    <string name="group_members_can_delete">グループのメンバーがメッセージを完全削除することができます。</string>
+    <string name="group_members_can_delete">送信したメッセージをグループのメンバーが完全削除することができます。（24時間）</string>
     <string name="group_profile_is_stored_on_members_devices">グループのプロフィールはサーバではなく、メンバーの端末に保存されます。</string>
     <string name="snd_group_event_group_profile_updated">グループのプロフィールが更新されました。</string>
     <string name="notification_display_mode_hidden_desc">連絡先とメッセージ内容をプライベートにする。</string>
@@ -211,7 +211,7 @@
     <string name="connection_request_sent">接続リクエストを送信しました！</string>
     <string name="connection_local_display_name">接続 %1$d</string>
     <string name="connect_via_contact_link">連絡先アドレスと接続？</string>
-    <string name="connect_via_group_link">グループリンク経由で繋がりますか？</string>
+    <string name="connect_via_group_link">グループに参加？</string>
     <string name="connect_via_invitation_link">ワンタイムリンクで接続？</string>
     <string name="status_contact_has_e2e_encryption">連絡先はエンドツーエンド暗号化があります。</string>
     <string name="description_via_group_link_incognito">グループリンク経由でシークレットモード</string>
@@ -788,7 +788,7 @@
     <string name="member_role_will_be_changed_with_notification">役割が「%s」となります。グループの全員に通知が出ます。</string>
     <string name="conn_stats_section_title_servers">サーバ</string>
     <string name="member_role_will_be_changed_with_invitation">役割が「%s」となります。メンバーに新しい招待が届きます。</string>
-    <string name="group_is_decentralized">グループは完全分散型で、メンバーしか内容を見れません。</string>
+    <string name="group_is_decentralized">非中央集権型で、メンバーのみ閲覧可能。</string>
     <string name="network_options_save">保存</string>
     <string name="update_network_settings_question">ネットワーク設定を更新しますか？</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">設定を更新すると、全サーバにクライントの再接続が行われます。</string>
@@ -1440,4 +1440,20 @@
     <string name="error_sending_message_contact_invitation">招待状の送信エラー</string>
     <string name="enter_this_device_name">このデバイスの名前を入力…</string>
     <string name="error">エラー</string>
+    <string name="expand_verb">展開</string>
+    <string name="connect_plan_join_your_group">グループに参加？</string>
+    <string name="connect_plan_group_already_exists">グループはすでに存在します！</string>
+    <string name="recent_history_is_not_sent_to_new_members">過去の会話は新規メンバーに送信されません。</string>
+    <string name="desktop_incompatible_version">非互換バージョン</string>
+    <string name="new_desktop"><i>（新規）</i></string>
+    <string name="v5_4_incognito_groups">匿名グループ</string>
+    <string name="v5_4_better_groups_descr">より高速な参加と、より信頼性の高いメッセージ。</string>
+    <string name="found_desktop">デスクトップの検出</string>
+    <string name="error_showing_message">メッセージ表示エラー</string>
+    <string name="link_a_mobile">モバイルにリンク</string>
+    <string name="keep_unused_invitation_question">未使用の招待状を保持？</string>
+    <string name="invalid_name">不正な名前！</string>
+    <string name="invalid_qr_code">不正なQRコード</string>
+    <string name="non_content_uri_alert_title">不正なファイルパス</string>
+    <string name="keep_invitation_link">保持</string>
 </resources>
