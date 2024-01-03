@@ -25,7 +25,7 @@ import Control.Monad.Reader
 import qualified Data.Aeson as J
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.Bifunctor (bimap, first)
+import Data.Bifunctor (bimap, first, second)
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base64 as B64
@@ -79,7 +79,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
-import Simplex.Chat.Util (encryptFile, shuffle, partitionWith)
+import Simplex.Chat.Util (encryptFile, partitionWith, shuffle)
 import Simplex.FileTransfer.Client.Main (maxFileSize)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
@@ -2143,23 +2143,18 @@ processChatCommand' vr = \case
           withChatLock "updateProfile" . procCmd $ do
             let (notChangedCount, changedCts, errs) = foldr (addChangedProfileContact user') (0, [], []) contacts
                 idsEvts = map ctSndMsg changedCts
-            rs <- zip changedCts <$> createSndMessages idsEvts
-            let (errs', ctMsgs) = partitionWith (\(changedCt, r) -> fmap (changedCt,) r) rs
-                ctMsgReqs = map ctMsgReq ctMsgs
-            -- TODO zip and partition as above, use only Right results for creating items
-            (errs'', deliveredCtMsgs) <- partitionEithers <$> deliverMessages (map snd ctMsgReqs)
-            let errors = errs <> errs' <> errs''
+            msgReqs_ <- zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
+            (errs', cts) <- partitionEithers . zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
+            let errors = errs <> errs'
             unless (null errors) $ toView $ CRChatErrors (Just user) errors
-            let changedCts' = map fst ctMsgs
-                prefChangedCts = filter (\ChangedProfileContact {ct, ct'} -> mergedPreferences ct' /= mergedPreferences ct) changedCts'
-                featureItemsCts = filter (\ChangedProfileContact {ct'} -> directOrUsed ct') prefChangedCts
-            createContactsSndFeatureItems user' $ map (\ChangedProfileContact {ct, ct'} -> (ct, ct')) featureItemsCts
+            let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> directOrUsed ct' && mergedPreferences ct' /= mergedPreferences ct) cts
+            createContactsSndFeatureItems user' changedCts'
             let summary =
                   UserProfileUpdateSummary
                     { notChanged = notChangedCount,
-                      updateSuccesses = length deliveredCtMsgs,
+                      updateSuccesses = length cts,
                       updateFailures = length errors,
-                      changedContacts = map (\ChangedProfileContact {ct'} -> ct') prefChangedCts
+                      changedContacts = map (\ChangedProfileContact {ct'} -> ct') changedCts'
                     }
             pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' summary
       where
@@ -2175,9 +2170,9 @@ processChatCommand' vr = \case
             mergedProfile' = userProfileToSend user' Nothing $ Just ct'
         ctSndMsg :: ChangedProfileContact -> (ConnOrGroupId, ChatMsgEvent 'Json)
         ctSndMsg ChangedProfileContact {mergedProfile', conn = Connection {connId}} = (ConnectionId connId, XInfo mergedProfile')
-        ctMsgReq :: (ChangedProfileContact, SndMessage) -> (ChangedProfileContact, MsgReq)
-        ctMsgReq (changedCt@ChangedProfileContact {conn}, SndMessage {msgId, msgBody}) =
-          (changedCt, (conn, MsgFlags {notification = hasNotification XInfo_}, msgBody, msgId))
+        ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError MsgReq
+        ctMsgReq ChangedProfileContact {conn} = fmap $ \SndMessage {msgId, msgBody} ->
+          (conn, MsgFlags {notification = hasNotification XInfo_}, msgBody, msgId)
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -5718,6 +5713,13 @@ deliverMessage' conn msgFlags msgBody msgId =
 
 type MsgReq = (Connection, MsgFlags, LazyMsgBody, MessageId)
 
+deliverMessagesB :: ChatMonad' m => [Either ChatError MsgReq] -> m [Either ChatError Int64]
+deliverMessagesB msgReqs_ = do
+  let (iErrs, iReqs) = partitionEithers $ zipWith (\i -> either (Left . (i,) . Left) (Right . (i,))) ([1 ..] :: [Int]) msgReqs_
+      (is, reqs) = unzip iReqs
+  rs <- zip is <$> deliverMessages reqs
+  pure $ map snd $ sortOn fst $ iErrs <> rs
+
 deliverMessages :: ChatMonad' m => [MsgReq] -> m [Either ChatError Int64]
 deliverMessages msgReqs = do
   sent <- zipWith prepareBatch msgReqs <$> withAgent' (`sendMessages` aReqs)
@@ -6004,10 +6006,11 @@ createSndFeatureItems user ct ct' =
   where
     getPref u = (userPreference u).preference
 
-createContactsSndFeatureItems :: forall m. ChatMonad m => User -> [(Contact, Contact)] -> m ()
+createContactsSndFeatureItems :: forall m. ChatMonad m => User -> [ChangedProfileContact] -> m ()
 createContactsSndFeatureItems user cts =
-  createContactsFeatureItems user cts CDDirectSnd CISndChatFeature CISndChatPreference getPref
+  createContactsFeatureItems user cts' CDDirectSnd CISndChatFeature CISndChatPreference getPref
   where
+    cts' = map (\ChangedProfileContact {ct, ct'} -> (ct, ct')) cts
     getPref u = (userPreference u).preference
 
 type FeatureContent a d = ChatFeature -> a -> Maybe Int -> CIContent d

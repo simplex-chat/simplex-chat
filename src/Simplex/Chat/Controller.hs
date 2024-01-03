@@ -1308,6 +1308,9 @@ withAgent action =
 withAgent' :: ChatMonad' m => (AgentClient -> m a) -> m a
 withAgent' action = asks smpAgent >>= action
 
+withAgentBatch :: ChatMonad' m => (AgentClient -> m (t (Either ChatError a))) -> m (t (Either ChatError a))
+withAgentBatch action = undefined -- asks smpAgent >>= action
+
 $(JQ.deriveJSON (enumJSON $ dropPrefix "HS") ''HelpSection)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CLQ") ''ChatListQuery)
