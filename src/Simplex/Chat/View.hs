@@ -24,7 +24,7 @@ import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
+import Data.Maybe (fromMaybe, isJust, isNothing, listToMaybe, mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeLatin1)
@@ -411,7 +411,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
               Just CIQuote {chatDir = quoteDir, content} ->
                 Just (msgDirectionInt $ quoteMsgDirection quoteDir, msgContentText content)
             fPath = case file of
-              Just CIFile {fileSource = Just (CryptoFile fp _)} -> Just fp
+              CIFile {fileSource = Just (CryptoFile fp _)} : _ -> Just fp
               _ -> Nothing
     testViewItem :: CChatItem c -> Maybe GroupMember -> Text
     testViewItem (CChatItem _ ci@ChatItem {meta = CIMeta {itemText}}) membership_ =
@@ -561,12 +561,12 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {forwardedByMember}, 
       Just _ -> item <> styled (colored Yellow) (" [>>]" :: String)
     withSndFile = withFile viewSentFileInvitation
     withRcvFile = withFile viewReceivedFileInvitation
-    withFile view dir l = maybe l (\f -> l <> view dir f ts tz meta) file
+    withFile view dir l = maybe l (\f -> l <> view dir f ts tz meta) $ listToMaybe file
     sndMsg = msg viewSentMessage
     rcvMsg = msg viewReceivedMessage
     msg view dir quote mc = case (msgContentText mc, file, quote) of
-      ("", Just _, []) -> []
-      ("", Just CIFile {fileName}, _) -> view dir quote (MCText $ T.pack fileName) ts tz meta
+      ("", _ : _, []) -> []
+      ("", CIFile {fileName} : _, _) -> view dir quote (MCText $ T.pack fileName) ts tz meta
       _ -> view dir quote mc ts tz meta
     showSndItem to = showItem $ sentWithTime_ ts tz [to <> plainContent content] meta
     showRcvItem from = showItem $ receivedWithTime_ ts tz from [] meta [plainContent content] False
@@ -1514,9 +1514,9 @@ sendingFile_ status ft@SndFileTransfer {recipientDisplayName = c} =
   [status <> " sending " <> sndFile ft <> " to " <> ttyContact c]
 
 uploadingFile :: StyledString -> AChatItem -> [StyledString]
-uploadingFile status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIDirectSnd}) =
+uploadingFile status (AChatItem _ _ (DirectChat Contact {localDisplayName = c}) ChatItem {file = CIFile {fileId, fileName} : _, chatDir = CIDirectSnd}) =
   [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyContact c]
-uploadingFile status (AChatItem _ _ (GroupChat g) ChatItem {file = Just CIFile {fileId, fileName}, chatDir = CIGroupSnd}) =
+uploadingFile status (AChatItem _ _ (GroupChat g) ChatItem {file = CIFile {fileId, fileName} : _, chatDir = CIGroupSnd}) =
   [status <> " uploading " <> fileTransferStr fileId fileName <> " for " <> ttyGroup' g]
 uploadingFile status _ = [status <> " uploading file"] -- shouldn't happen
 
@@ -1546,12 +1546,12 @@ humanReadableSize size
     gB = mB * 1024
 
 savingFile' :: AChatItem -> [StyledString]
-savingFile' (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileSource = Just (CryptoFile filePath _)}, chatDir}) =
+savingFile' (AChatItem _ _ chat ChatItem {file = CIFile {fileId, fileSource = Just (CryptoFile filePath _)} : _, chatDir}) =
   ["saving file " <> sShow fileId <> fileFrom chat chatDir <> " to " <> plain filePath]
 savingFile' _ = ["saving file"] -- shouldn't happen
 
 receivingFile_' :: (Maybe RemoteHostId, Maybe User) -> Bool -> String -> AChatItem -> [StyledString]
-receivingFile_' hu testView status (AChatItem _ _ chat ChatItem {file = Just CIFile {fileId, fileName, fileSource = Just f@(CryptoFile _ cfArgs_)}, chatDir}) =
+receivingFile_' hu testView status (AChatItem _ _ chat ChatItem {file = CIFile {fileId, fileName, fileSource = Just f@(CryptoFile _ cfArgs_)} : _, chatDir}) =
   [plain status <> " receiving " <> fileTransferStr fileId fileName <> fileFrom chat chatDir] <> cfArgsStr cfArgs_ <> getRemoteFileStr
   where
     cfArgsStr (Just cfArgs) = [plain (cryptoFileArgsStr testView cfArgs) | status == "completed"]
@@ -1620,7 +1620,7 @@ viewFileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileI
       RFSCancelled Nothing -> "cancelled"
 
 viewFileTransferStatusXFTP :: AChatItem -> [StyledString]
-viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = Just CIFile {fileId, fileName, fileSize, fileStatus, fileSource}}) =
+viewFileTransferStatusXFTP (AChatItem _ _ _ ChatItem {file = CIFile {fileId, fileName, fileSize, fileStatus, fileSource} : _}) =
   case fileStatus of
     CIFSSndStored -> ["sending " <> fstr <> " just started"]
     CIFSSndTransfer progress total -> ["sending " <> fstr <> " in progress " <> fileProgressXFTP progress total fileSize]

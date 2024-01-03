@@ -146,7 +146,7 @@ data ChatItem (c :: ChatType) (d :: MsgDirection) = ChatItem
     formattedText :: Maybe MarkdownList,
     quotedItem :: Maybe (CIQuote c),
     reactions :: [CIReactionCount],
-    file :: Maybe (CIFile d)
+    file :: [CIFile d]
   }
   deriving (Show)
 
@@ -300,10 +300,11 @@ aChatItemId (AChatItem _ _ _ ci) = chatItemId' ci
 aChatItemTs :: AChatItem -> UTCTime
 aChatItemTs (AChatItem _ _ _ ci) = chatItemTs' ci
 
+-- TODO multiple files
 updateFileStatus :: forall c d. ChatItem c d -> CIFileStatus d -> ChatItem c d
 updateFileStatus ci@ChatItem {file} status = case file of
-  Just f -> ci {file = Just (f :: CIFile d) {fileStatus = status}}
-  Nothing -> ci
+  f : _ -> ci {file = [(f :: CIFile d) {fileStatus = status}]}
+  [] -> ci
 
 -- This type is not saved to DB, so all JSON encodings are platform-specific
 data CIMeta (c :: ChatType) (d :: MsgDirection) = CIMeta
