@@ -112,7 +112,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Either (fromRight, rights)
 import Data.Int (Int64)
 import Data.List (sortBy)
-import Data.Maybe (fromMaybe, isJust, mapMaybe)
+import Data.Maybe (fromMaybe, isJust, mapMaybe, maybeToList)
 import Data.Ord (Down (..), comparing)
 import Data.Text (Text)
 import Data.Time (addUTCTime)
@@ -1122,7 +1122,7 @@ toDirectChatItem currentTs (((itemId, itemTs, AMsgDirection msgDir, itemContentT
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTDirect d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTDirect
     cItem d chatDir ciStatus content file =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toDirectQuote quoteRow, reactions = [], file}
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toDirectQuote quoteRow, reactions = [], file = maybeToList file}
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTDirect d
     ciMeta content status =
@@ -1173,7 +1173,7 @@ toGroupChatItem currentTs userContactId (((itemId, itemTs, AMsgDirection msgDir,
         _ -> Nothing
     cItem :: MsgDirectionI d => SMsgDirection d -> CIDirection 'CTGroup d -> CIStatus d -> CIContent d -> Maybe (CIFile d) -> CChatItem 'CTGroup
     cItem d chatDir ciStatus content file =
-      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file}
+      CChatItem d ChatItem {chatDir, meta = ciMeta content ciStatus, content, formattedText = parseMaybeMarkdownList itemText, quotedItem = toGroupQuote quoteRow quotedMember_, reactions = [], file = maybeToList file}
     badItem = Left $ SEBadChatItem itemId
     ciMeta :: CIContent d -> CIStatus d -> CIMeta 'CTGroup d
     ciMeta content status =

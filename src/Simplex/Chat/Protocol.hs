@@ -225,7 +225,7 @@ data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMess
 
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
-  XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
+  XMsgFileDescr :: {msgId :: SharedMsgId, fileId :: Maybe Int, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
   XMsgUpdate :: {msgId :: SharedMsgId, content :: MsgContent, ttl :: Maybe Int, live :: Maybe Bool} -> ChatMsgEvent 'Json
   XMsgDel :: SharedMsgId -> Maybe MemberId -> ChatMsgEvent 'Json
   XMsgDeleted :: ChatMsgEvent 'Json
@@ -277,10 +277,10 @@ deriving instance Show AChatMsgEvent
 
 isForwardedGroupMsg :: ChatMsgEvent e -> Bool
 isForwardedGroupMsg ev = case ev of
-  XMsgNew mc -> case mcExtMsgContent mc of
-    ExtMsgContent {file = Just FileInvitation {fileInline = Just _}} -> False
-    _ -> True
-  XMsgFileDescr _ _ -> True
+  XMsgNew mc ->
+    let ExtMsgContent {file} = mcExtMsgContent mc
+     in all (\case FileInvitation {fileInline = Just _} -> False; _ -> True) file
+  XMsgFileDescr _ _ _ -> True
   XMsgUpdate {} -> True
   XMsgDel _ _ -> True
   XMsgReact {} -> True
@@ -488,7 +488,7 @@ msgContentTag = \case
   MCFile {} -> MCFile_
   MCUnknown {tag} -> MCUnknown_ tag
 
-data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: Maybe FileInvitation, ttl :: Maybe Int, live :: Maybe Bool}
+data ExtMsgContent = ExtMsgContent {content :: MsgContent, file :: [FileInvitation], ttl :: Maybe Int, live :: Maybe Bool}
   deriving (Eq, Show)
 
 $(JQ.deriveJSON defaultJSON ''QuotedMsg)
@@ -528,9 +528,9 @@ parseMsgContainer v =
     <|> (v .: "forward" >>= \f -> (if f then MCForward else MCSimple) <$> mc)
     <|> MCSimple <$> mc
   where
-    mc = ExtMsgContent <$> v .: "content" <*> v .:? "file" <*> v .:? "ttl" <*> v .:? "live"
+    mc = ExtMsgContent <$> v .: "content" <*> (maybe [] msgFiles <$> v .:? "file") <*> v .:? "ttl" <*> v .:? "live"
 
-extMsgContent :: MsgContent -> Maybe FileInvitation -> ExtMsgContent
+extMsgContent :: MsgContent -> [FileInvitation] -> ExtMsgContent
 extMsgContent mc file = ExtMsgContent mc file Nothing Nothing
 
 justTrue :: Bool -> Maybe Bool
@@ -575,7 +575,19 @@ msgContainerJSON = \case
   MCSimple mc -> o $ msgContent mc
   where
     o = JM.fromList
-    msgContent (ExtMsgContent c file ttl live) = ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) ["content" .= c]
+    msgContent (ExtMsgContent c file ttl live) = ("file" .=? filesToJSON file) $ ("ttl" .=? ttl) $ ("live" .=? live) ["content" .= c]
+
+newtype MsgFiles = MsgFiles {msgFiles :: [FileInvitation]}
+  deriving (Eq, Show)
+
+instance FromJSON MsgFiles where
+  parseJSON v = MsgFiles <$> (((: []) <$> parseJSON v) <|> parseJSON v)
+
+filesToJSON :: [FileInvitation] -> Maybe J.Value
+filesToJSON = \case
+  [] -> Nothing
+  [f] -> Just $ J.toJSON f
+  fs -> Just $ J.toJSON fs
 
 instance ToJSON MsgContent where
   toJSON = \case
@@ -750,7 +762,7 @@ instance StrEncoding ACMEventTag where
 toCMEventTag :: ChatMsgEvent e -> CMEventTag e
 toCMEventTag msg = case msg of
   XMsgNew _ -> XMsgNew_
-  XMsgFileDescr _ _ -> XMsgFileDescr_
+  XMsgFileDescr _ _ _ -> XMsgFileDescr_
   XMsgUpdate {} -> XMsgUpdate_
   XMsgDel {} -> XMsgDel_
   XMsgDeleted -> XMsgDeleted_
@@ -849,7 +861,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
     msg :: CMEventTag 'Json -> Either String (ChatMsgEvent 'Json)
     msg = \case
       XMsgNew_ -> XMsgNew <$> JT.parseEither parseMsgContainer params
-      XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> p "fileDescr"
+      XMsgFileDescr_ -> XMsgFileDescr <$> p "msgId" <*> opt "fileId" <*> p "fileDescr"
       XMsgUpdate_ -> XMsgUpdate <$> p "msgId" <*> p "content" <*> opt "ttl" <*> opt "live"
       XMsgDel_ -> XMsgDel <$> p "msgId" <*> opt "memberId"
       XMsgDeleted_ -> pure XMsgDeleted
@@ -909,7 +921,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
     params :: ChatMsgEvent 'Json -> J.Object
     params = \case
       XMsgNew container -> msgContainerJSON container
-      XMsgFileDescr msgId' fileDescr -> o ["msgId" .= msgId', "fileDescr" .= fileDescr]
+      XMsgFileDescr msgId' fileId fileDescr -> o $ ("fileId" .=? fileId) ["msgId" .= msgId', "fileDescr" .= fileDescr]
       XMsgUpdate msgId' content ttl live -> o $ ("ttl" .=? ttl) $ ("live" .=? live) ["msgId" .= msgId', "content" .= content]
       XMsgDel msgId' memberId -> o $ ("memberId" .=? memberId) ["msgId" .= msgId']
       XMsgDeleted -> JM.empty
