@@ -31,9 +31,11 @@ m20240102_note_folders =
 down_m20240102_note_folders :: Query
 down_m20240102_note_folders =
   [sql|
-DROP TABLE note_folders;
+DROP INDEX chat_items_note_folder_id;
+DROP INDEX files_note_folder_id;
+
 ALTER TABLE chat_items DROP COLUMN note_folder_id;
-ALTER TABLE chat_items DROP INDEX chat_items_note_folder_id;
 ALTER TABLE files DROP COLUMN note_folder_id;
-ALTER TABLE files DROP INDEX files_note_folder_id;
+
+DROP TABLE note_folders;
 |]
