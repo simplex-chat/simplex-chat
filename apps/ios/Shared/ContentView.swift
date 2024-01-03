@@ -75,7 +75,7 @@ struct ContentView: View {
                         alertManager.showAlert(laPasscodeNotSetAlert())
                     }
                 } else {
-                    if chatModel.chatDbStatus == nil {
+                    if chatModel.chatDbStatus == nil && AppChatState.shared.value != .stopped {
                         initializationView()
                     }
                 }
