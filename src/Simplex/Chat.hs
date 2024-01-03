@@ -2163,7 +2163,7 @@ processChatCommand' vr = \case
                     }
             pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' summary
       where
-        addChangedProfileContact :: User -> Contact -> (Int, [(Contact, Contact, Profile, Connection)], [ChatError]) -> (Int, [(Contact, Contact, Profile, Connection)], [ChatError])
+        addChangedProfileContact :: User -> Contact -> (Int, [ChangedProfileContact], [ChatError]) -> (Int, [ChangedProfileContact], [ChatError])
         addChangedProfileContact user' ct (notChangedCnt, changedCts, errs)
           | mergedProfile' == mergedProfile = (notChangedCnt + 1, changedCts, errs)
           | otherwise = case contactSendConn_ ct' of
@@ -2173,10 +2173,10 @@ processChatCommand' vr = \case
             mergedProfile = userProfileToSend user Nothing $ Just ct
             ct' = updateMergedPreferences user' ct
             mergedProfile' = userProfileToSend user' Nothing $ Just ct'
-        ctSndMsg :: (Contact, Contact, Profile, Connection) -> ((Contact, Contact, Profile, Connection), ConnOrGroupId, ChatMsgEvent 'Json)
+        ctSndMsg :: ChangedProfileContact -> (ChangedProfileContact, ConnOrGroupId, ChatMsgEvent 'Json)
         ctSndMsg changedCt@(_, _, mergedProfile', Connection {connId}) =
           (changedCt, ConnectionId connId, XInfo mergedProfile')
-        ctMsgReq :: ((Contact, Contact, Profile, Connection), SndMessage) -> ((Contact, Contact, Profile, Connection), MsgReq)
+        ctMsgReq :: (ChangedProfileContact, SndMessage) -> (ChangedProfileContact, MsgReq)
         ctMsgReq (changedCt@(_, _, _, conn), SndMessage {msgId, msgBody}) =
           (changedCt, (conn, MsgFlags {notification = hasNotification XInfo_}, msgBody, msgId))
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
@@ -2418,6 +2418,8 @@ processChatCommand' vr = \case
         cReqHashes :: (ConnReqUriHash, ConnReqUriHash)
         cReqHashes = bimap hash hash cReqSchemas
         hash = ConnReqUriHash . C.sha256Hash . strEncode
+
+type ChangedProfileContact = (Contact, Contact, Profile, Connection)
 
 prepareGroupMsg :: forall m. ChatMonad m => User -> GroupInfo -> MsgContent -> Maybe ChatItemId -> Maybe FileInvitation -> Maybe CITimed -> Bool -> m (MsgContainer, Maybe (CIQuote 'CTGroup))
 prepareGroupMsg user GroupInfo {groupId, membership} mc quotedItemId_ fInv_ timed_ live = case quotedItemId_ of
@@ -5660,7 +5662,7 @@ createSndMessage chatMsgEvent connOrGroupId = do
   (_, msg) <- liftEither . runIdentity =<< createSndMessagesB (Identity (Right ((), connOrGroupId, chatMsgEvent)))
   pure msg
 
-createSndMessages :: (MsgEncodingI e, ChatMonad' m) => [(x, ConnOrGroupId, ChatMsgEvent e)] -> m [Either ChatError (x, SndMessage)]
+createSndMessages :: (MsgEncodingI e, ChatMonad' m) => [(a, ConnOrGroupId, ChatMsgEvent e)] -> m [Either ChatError (a, SndMessage)]
 createSndMessages = createSndMessagesB . map Right
 
 createSndMessagesB :: forall e m t a. (MsgEncodingI e, ChatMonad' m, Traversable t) => t (Either ChatError (a, ConnOrGroupId, ChatMsgEvent e)) -> m (t (Either ChatError (a, SndMessage)))
