@@ -1112,6 +1112,8 @@
   <!-- ChatModel.chatRunning interactions -->
   <string name="chat_is_stopped_indication">Chat is stopped</string>
   <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">You can start chat via app Settings / Database or by restarting the app.</string>
+  <string name="start_chat_question">Start chat?</string>
+  <string name="chat_is_stopped_you_should_transfer_database">Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</string>
 
   <!-- ChatArchiveView.kt -->
   <string name="chat_archive_header">Chat archive</string>
