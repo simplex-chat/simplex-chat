@@ -1,12 +1,6 @@
 {-# LANGUAGE TupleSections #-}
 
-module Simplex.Chat.Util
-  ( week,
-    encryptFile,
-    chunkSize,
-    shuffle,
-    partitionWith,
-  ) where
+module Simplex.Chat.Util (week, encryptFile, chunkSize, shuffle) where
 
 import Control.Monad
 import Control.Monad.Except
@@ -48,12 +42,3 @@ shuffle xs = map snd . sortBy (comparing fst) <$> mapM (\x -> (,x) <$> random) x
   where
     random :: IO Word16
     random = randomRIO (0, 65535)
-
--- can be instead imported from GHC.Utils.Misc
-partitionWith :: (a -> Either b c) -> [a] -> ([b], [c])
-partitionWith _ [] = ([], [])
-partitionWith f (x : xs) = case f x of
-  Left b -> (b : bs, cs)
-  Right c -> (bs, c : cs)
-  where
-    (bs, cs) = partitionWith f xs
