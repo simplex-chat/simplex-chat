@@ -79,7 +79,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Util
-import Simplex.Chat.Util (encryptFile, shuffle)
+import Simplex.Chat.Util (encryptFile, shuffle, partitionWith)
 import Simplex.FileTransfer.Client.Main (maxFileSize)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
@@ -2142,24 +2142,24 @@ processChatCommand' vr = \case
           asks currentUser >>= atomically . (`writeTVar` Just user')
           withChatLock "updateProfile" . procCmd $ do
             let (notChangedCount, changedCts, errs) = foldr (addChangedProfileContact user') (0, [], []) contacts
-                ctSndMsgs = map ctSndMsg changedCts
-            (errs', ctMsgs) <- partitionEithers <$> createSndMessages ctSndMsgs
-            let ctMsgReqs = map ctMsgReq ctMsgs
-            -- TODO return tuple with entity same as createSndMessages to filter out for next step
+                idsEvts = map ctSndMsg changedCts
+            rs <- zip changedCts <$> createSndMessages idsEvts
+            let (errs', ctMsgs) = partitionWith (\(changedCt, r) -> fmap (changedCt,) r) rs
+                ctMsgReqs = map ctMsgReq ctMsgs
+            -- TODO zip and partition as above, use only Right results for creating items
             (errs'', deliveredCtMsgs) <- partitionEithers <$> deliverMessages (map snd ctMsgReqs)
             let errors = errs <> errs' <> errs''
             unless (null errors) $ toView $ CRChatErrors (Just user) errors
-            -- TODO use deliveredCtMsgs
             let changedCts' = map fst ctMsgs
-                prefChangedCts = filter (\(ct, ct', _, _) -> mergedPreferences ct' /= mergedPreferences ct) changedCts'
-                featureItemsCts = filter (\(_, ct', _, _) -> directOrUsed ct') prefChangedCts
-            createContactsSndFeatureItems user' $ map (\(ct, ct', _, _) -> (ct, ct')) featureItemsCts
+                prefChangedCts = filter (\ChangedProfileContact {ct, ct'} -> mergedPreferences ct' /= mergedPreferences ct) changedCts'
+                featureItemsCts = filter (\ChangedProfileContact {ct'} -> directOrUsed ct') prefChangedCts
+            createContactsSndFeatureItems user' $ map (\ChangedProfileContact {ct, ct'} -> (ct, ct')) featureItemsCts
             let summary =
                   UserProfileUpdateSummary
                     { notChanged = notChangedCount,
                       updateSuccesses = length deliveredCtMsgs,
                       updateFailures = length errors,
-                      changedContacts = map (\(_, ct', _, _) -> ct') prefChangedCts
+                      changedContacts = map (\ChangedProfileContact {ct'} -> ct') prefChangedCts
                     }
             pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' summary
       where
@@ -2167,17 +2167,16 @@ processChatCommand' vr = \case
         addChangedProfileContact user' ct (notChangedCnt, changedCts, errs)
           | mergedProfile' == mergedProfile = (notChangedCnt + 1, changedCts, errs)
           | otherwise = case contactSendConn_ ct' of
-              Right conn -> (notChangedCnt, (ct, ct', mergedProfile', conn) : changedCts, errs)
+              Right conn -> (notChangedCnt, ChangedProfileContact ct ct' mergedProfile' conn : changedCts, errs)
               Left e -> (notChangedCnt, changedCts, e : errs)
           where
             mergedProfile = userProfileToSend user Nothing $ Just ct
             ct' = updateMergedPreferences user' ct
             mergedProfile' = userProfileToSend user' Nothing $ Just ct'
-        ctSndMsg :: ChangedProfileContact -> (ChangedProfileContact, ConnOrGroupId, ChatMsgEvent 'Json)
-        ctSndMsg changedCt@(_, _, mergedProfile', Connection {connId}) =
-          (changedCt, ConnectionId connId, XInfo mergedProfile')
+        ctSndMsg :: ChangedProfileContact -> (ConnOrGroupId, ChatMsgEvent 'Json)
+        ctSndMsg ChangedProfileContact {mergedProfile', conn = Connection {connId}} = (ConnectionId connId, XInfo mergedProfile')
         ctMsgReq :: (ChangedProfileContact, SndMessage) -> (ChangedProfileContact, MsgReq)
-        ctMsgReq (changedCt@(_, _, _, conn), SndMessage {msgId, msgBody}) =
+        ctMsgReq (changedCt@ChangedProfileContact {conn}, SndMessage {msgId, msgBody}) =
           (changedCt, (conn, MsgFlags {notification = hasNotification XInfo_}, msgBody, msgId))
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
@@ -2419,7 +2418,12 @@ processChatCommand' vr = \case
         cReqHashes = bimap hash hash cReqSchemas
         hash = ConnReqUriHash . C.sha256Hash . strEncode
 
-type ChangedProfileContact = (Contact, Contact, Profile, Connection)
+data ChangedProfileContact = ChangedProfileContact
+  { ct :: Contact,
+    ct' :: Contact,
+    mergedProfile' :: Profile,
+    conn :: Connection
+  }
 
 prepareGroupMsg :: forall m. ChatMonad m => User -> GroupInfo -> MsgContent -> Maybe ChatItemId -> Maybe FileInvitation -> Maybe CITimed -> Bool -> m (MsgContainer, Maybe (CIQuote 'CTGroup))
 prepareGroupMsg user GroupInfo {groupId, membership} mc quotedItemId_ fInv_ timed_ live = case quotedItemId_ of
@@ -5658,34 +5662,29 @@ sendDirectMessage conn chatMsgEvent connOrGroupId = do
   (msg,) <$> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
 
 createSndMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> ConnOrGroupId -> m SndMessage
-createSndMessage chatMsgEvent connOrGroupId = do
-  (_, msg) <- liftEither . runIdentity =<< createSndMessagesB (Identity (Right ((), connOrGroupId, chatMsgEvent)))
-  pure msg
+createSndMessage chatMsgEvent connOrGroupId =
+  liftEither . runIdentity =<< createSndMessages (Identity (connOrGroupId, chatMsgEvent))
 
-createSndMessages :: (MsgEncodingI e, ChatMonad' m) => [(a, ConnOrGroupId, ChatMsgEvent e)] -> m [Either ChatError (a, SndMessage)]
-createSndMessages = createSndMessagesB . map Right
-
-createSndMessagesB :: forall e m t a. (MsgEncodingI e, ChatMonad' m, Traversable t) => t (Either ChatError (a, ConnOrGroupId, ChatMsgEvent e)) -> m (t (Either ChatError (a, SndMessage)))
-createSndMessagesB idsEvents = do
+createSndMessages :: forall e m t. (MsgEncodingI e, ChatMonad' m, Traversable t) => t (ConnOrGroupId, ChatMsgEvent e) -> m (t (Either ChatError SndMessage))
+createSndMessages idsEvents = do
   gVar <- asks random
   vr <- chatVersionRange
-  withStoreBatch $ \db -> fmap (bindRight $ \(x, connOrGroupId, evnt) -> createMsg db gVar vr x connOrGroupId evnt) idsEvents
+  withStoreBatch $ \db -> fmap (uncurry (createMsg db gVar vr)) idsEvents
   where
-    createMsg db gVar chatVRange x connOrGroupId evnt = do
+    createMsg db gVar chatVRange connOrGroupId evnt = do
       r <- runExceptT $ createNewSndMessage db gVar connOrGroupId evnt (encodeMessage chatVRange evnt)
-      pure $ bimap ChatErrorStore (x,) r
+      pure $ first ChatErrorStore r
     encodeMessage chatVRange evnt sharedMsgId =
       encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
 sendGroupMemberMessages :: forall e m. (MsgEncodingI e, ChatMonad m) => User -> Connection -> NonEmpty (ChatMsgEvent e) -> GroupId -> m ()
 sendGroupMemberMessages user conn@Connection {connId} events groupId = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
-  let idsEvts = map ((),GroupId groupId,) $ L.toList events
+  let idsEvts = map (GroupId groupId,) $ L.toList events
   (errs, msgs) <- partitionEithers <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CRChatErrors (Just user) errs
   unless (null msgs) $ do
-    let msgs' = map snd msgs
-        (errs', msgBatches) = partitionEithers $ batchMessages maxChatMsgSize msgs'
+    let (errs', msgBatches) = partitionEithers $ batchMessages maxChatMsgSize msgs
     -- shouldn't happen, as large messages would have caused createNewSndMessage to throw SELargeMsg
     unless (null errs') $ toView $ CRChatErrors (Just user) errs'
     forM_ msgBatches $ \batch ->
