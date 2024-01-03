@@ -51,7 +51,8 @@ struct ContextItemView: View {
         MsgContentView(
             chat: chat,
             text: contextItem.text,
-            formattedText: contextItem.formattedText
+            formattedText: contextItem.formattedText,
+            showSecrets: false
         )
         .multilineTextAlignment(isRightToLeft(contextItem.text) ? .trailing : .leading)
         .lineLimit(lines)

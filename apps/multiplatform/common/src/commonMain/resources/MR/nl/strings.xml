@@ -66,7 +66,6 @@
     <string name="allow_voice_messages_question">Spraak berichten toestaan\?</string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Goed voor de batterij</b>. Achtergrondservice controleert berichten elke 10 minuten. Mogelijk mist u oproepen of dringende berichten.]]></string>
     <string name="integrity_msg_bad_hash">Onjuiste bericht hash</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Scan QR-code</b>: om verbinding te maken met uw contact die u de QR-code laat zien.]]></string>
     <string name="integrity_msg_bad_id">Onjuiste bericht-ID</string>
     <string name="call_already_ended">Oproep al beëindigd!</string>
     <string name="chat_item_ttl_month">1 maand</string>
@@ -94,7 +93,6 @@
     <string name="network_session_mode_user_description"><![CDATA[Er wordt een aparte TCP-verbinding (en SOCKS-referentie) gebruikt <b> voor elk chat profiel dat je in de app hebt </b>.]]></string>
     <string name="audio_call_no_encryption">audio oproep (niet e2e versleuteld)</string>
     <string name="notifications_mode_service_desc">Achtergrondservice is altijd actief, meldingen worden weergegeven zodra de berichten beschikbaar zijn.</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Nieuw contact toevoegen</b>: om een eenmalige QR-code voor uw contact te maken.]]></string>
     <string name="icon_descr_call_ended">Oproep beëindigd</string>
     <string name="turning_off_service_and_periodic">Batterijoptimalisatie is actief, waardoor achtergrondservice en periodieke verzoeken om nieuwe berichten worden uitgeschakeld. Je kunt ze weer inschakelen via instellingen.</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Het beste voor de batterij</b>. U ontvangt alleen meldingen wanneer de app wordt uitgevoerd (GEEN achtergrondservice).]]></string>
@@ -203,7 +201,6 @@
     <string name="clear_verification">Verwijderd verificatie</string>
     <string name="connect_button">Verbind</string>
     <string name="connect_via_link">Maak verbinding via link</string>
-    <string name="create_one_time_link">Maak een eenmalige uitnodiging link</string>
     <string name="colored_text">gekleurd</string>
     <string name="callstatus_connecting">Oproep verbinden…</string>
     <string name="create_profile_button">Maak</string>
@@ -1442,17 +1439,17 @@
     <string name="terminal_always_visible">Console in nieuw venster weergeven</string>
     <string name="block_member_desc">Alle nieuwe berichten van %s worden verborgen!</string>
     <string name="blocked_item_description">geblokkeerd</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Je bent al verbonden met %1$s.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Je bent al verbonden met <b>%1$s</b>.]]></string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Je wordt al lid van de groep via deze link.</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Je bent al lid van de groep %1$s.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Je bent al lid van de groep <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_one_time_link">Dit is uw eigen eenmalige link!</string>
     <string name="unblock_member_button">Lid deblokkeren</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Je zit al in groep %1$s.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Je zit al in groep <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">Dit is uw eigen SimpleX adres!</string>
     <string name="unblock_member_question">Lid deblokkeren?</string>
     <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">Je maakt al verbinding via deze eenmalige link!</string>
     <string name="non_content_uri_alert_text">Je hebt een ongeldig bestandslocatie gedeeld. Rapporteer het probleem aan de app-ontwikkelaars.</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Dit is jouw link voor groep %1$s!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Dit is jouw link voor groep <b>%1$s</b>!]]></string>
     <string name="unblock_member_confirmation">Deblokkeren</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">U heeft al een verbinding aangevraagd via dit adres!</string>
     <string name="encryption_renegotiation_error">Fout bij heronderhandeling van codering</string>

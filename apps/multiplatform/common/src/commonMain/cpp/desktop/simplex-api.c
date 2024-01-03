@@ -30,6 +30,7 @@ typedef long* chat_ctrl;
 */
 
 extern char *chat_migrate_init(const char *path, const char *key, const char *confirm, chat_ctrl *ctrl);
+extern char *chat_close_store(chat_ctrl ctrl);
 extern char *chat_send_cmd(chat_ctrl ctrl, const char *cmd);
 extern char *chat_send_remote_cmd(chat_ctrl ctrl, const int rhId, const char *cmd);
 extern char *chat_recv_msg(chat_ctrl ctrl); // deprecated
@@ -104,6 +105,12 @@ Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, jclass cla
         (*env)->GetMethodID(env, (*env)->FindClass(env, "java/lang/Long"), "<init>", "(J)V"),
         _ctrl));
     return ret;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatCloseStore(JNIEnv *env, jclass clazz, jlong controller) {
+    jstring res = decode_to_utf8_string(env, chat_close_store((void*)controller));
+    return res;
 }
 
 JNIEXPORT jstring JNICALL

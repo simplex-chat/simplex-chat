@@ -292,8 +292,6 @@
     <string name="delete_group_menu_action">Elimina</string>
     <string name="direct_messages_are_prohibited_in_chat">I messaggi diretti tra i membri sono vietati in questo gruppo.</string>
     <string name="display_name">Inserisci il tuo nome:</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Aggiungi un contatto</b>: per creare il tuo codice QR una tantum per il tuo contatto.]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Scansiona codice QR</b>: per connetterti al contatto che ti mostra il codice QR.]]></string>
     <string name="choose_file">File</string>
     <string name="clear_chat_button">Svuota chat</string>
     <string name="clear_chat_question">Svuotare la chat\?</string>
@@ -319,7 +317,6 @@
     <string name="clear_verification">Annulla la verifica</string>
     <string name="connect_button">Connetti</string>
     <string name="connect_via_link">Connetti via link</string>
-    <string name="create_one_time_link">Crea link di invito una tantum</string>
     <string name="database_passphrase_and_export">Password del database ed esportazione</string>
     <string name="smp_servers_enter_manually">Inserisci il server manualmente</string>
     <string name="how_to_use_simplex_chat">Come si usa</string>
@@ -1407,14 +1404,14 @@
     <string name="expand_verb">Espandi</string>
     <string name="connect_plan_repeat_connection_request">Ripetere la richiesta di connessione?</string>
     <string name="rcv_direct_event_contact_deleted">contatto eliminato</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Ti stai già connettendo a %1$s.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Ti stai già connettendo a <b>%1$s</b>.]]></string>
     <string name="error_alert_title">Errore</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Stai già entrando nel gruppo tramite questo link.</string>
     <string name="create_group_button">Crea gruppo</string>
     <string name="create_another_profile_button">Crea profilo</string>
     <string name="group_members_2">%s e %s</string>
     <string name="connect_plan_join_your_group">Entrare nel tuo gruppo?</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Stai già entrando nel gruppo %1$s.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Stai già entrando nel gruppo <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_one_time_link">Questo è il tuo link una tantum!</string>
     <string name="marked_deleted_items_description">%d messaggi contrassegnati eliminati</string>
     <string name="connect_plan_group_already_exists">Il gruppo esiste già!</string>
@@ -1429,7 +1426,7 @@
     <string name="unblock_member_button">Sblocca membro</string>
     <string name="connect_plan_connect_to_yourself">Connettersi a te stesso?</string>
     <string name="contact_tap_to_connect">Tocca per connettere</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Sei già nel gruppo %1$s.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Sei già nel gruppo <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">Questo è il tuo indirizzo SimpleX!</string>
     <string name="correct_name_to">Correggere il nome a %s?</string>
     <string name="delete_messages__question">Eliminare %d messaggi?</string>
@@ -1450,7 +1447,7 @@
     <string name="block_member_question">Bloccare il membro?</string>
     <string name="rcv_group_events_count">%d eventi del gruppo</string>
     <string name="invalid_name">Nome non valido!</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Questo è il tuo link per il gruppo %1$s!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Questo è il tuo link per il gruppo <b>%1$s</b>!]]></string>
     <string name="unblock_member_confirmation">Sblocca</string>
     <string name="non_content_uri_alert_title">Percorso file non valido</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">Hai già richiesto la connessione tramite questo indirizzo!</string>

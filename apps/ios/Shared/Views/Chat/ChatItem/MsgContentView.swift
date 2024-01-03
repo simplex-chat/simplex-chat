@@ -9,7 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-private let uiLinkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
+let uiLinkColor = UIColor(red: 0, green: 0.533, blue: 1, alpha: 1)
 
 private let noTyping = Text("   ")
 
@@ -31,6 +31,7 @@ struct MsgContentView: View {
     var sender: String? = nil
     var meta: CIMeta? = nil
     var rightToLeft = false
+    var showSecrets: Bool
     @State private var typingIdx = 0
     @State private var timer: Timer?
 
@@ -62,7 +63,7 @@ struct MsgContentView: View {
     }
 
     private func msgContentView() -> Text {
-        var v = messageText(text, formattedText, sender)
+        var v = messageText(text, formattedText, sender, showSecrets: showSecrets)
         if let mt = meta {
             if mt.isLive {
                 v = v + typingIndicator(mt.recent)
@@ -84,14 +85,14 @@ struct MsgContentView: View {
     }
 }
 
-func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false) -> Text {
+func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: String?, icon: String? = nil, preview: Bool = false, showSecrets: Bool) -> Text {
     let s = text
     var res: Text
     if let ft = formattedText, ft.count > 0 && ft.count <= 200 {
-        res = formatText(ft[0], preview)
+        res = formatText(ft[0], preview, showSecret: showSecrets)
         var i = 1
         while i < ft.count {
-            res = res + formatText(ft[i], preview)
+            res = res + formatText(ft[i], preview, showSecret: showSecrets)
             i = i + 1
         }
     } else {
@@ -110,7 +111,7 @@ func messageText(_ text: String, _ formattedText: [FormattedText]?, _ sender: St
     }
 }
 
-private func formatText(_ ft: FormattedText, _ preview: Bool) -> Text {
+private func formatText(_ ft: FormattedText, _ preview: Bool, showSecret: Bool) -> Text {
     let t = ft.text
     if let f = ft.format {
         switch (f) {
@@ -118,7 +119,13 @@ private func formatText(_ ft: FormattedText, _ preview: Bool) -> Text {
         case .italic: return Text(t).italic()
         case .strikeThrough: return Text(t).strikethrough()
         case .snippet: return Text(t).font(.body.monospaced())
-        case .secret: return Text(t).foregroundColor(.clear).underline(color: .primary)
+        case .secret: return
+            showSecret
+            ? Text(t)
+            : Text(AttributedString(t, attributes: AttributeContainer([
+                .foregroundColor: UIColor.clear as Any,
+                .backgroundColor: UIColor.secondarySystemFill as Any
+            ])))
         case let .colored(color): return Text(t).foregroundColor(color.uiColor)
         case .uri: return linkText(t, t, preview, prefix: "")
         case let .simplexLink(linkType, simplexUri, smpHosts):
@@ -144,7 +151,7 @@ private func linkText(_ s: String, _ link: String, _ preview: Bool, prefix: Stri
     ]))).underline()
 }
 
-private func simplexLinkText(_ linkType: SimplexLinkType, _ smpHosts: [String]) -> String {
+func simplexLinkText(_ linkType: SimplexLinkType, _ smpHosts: [String]) -> String {
     linkType.description + " " + "(via \(smpHosts.first ?? "?"))"
 }
 
@@ -156,7 +163,8 @@ struct MsgContentView_Previews: PreviewProvider {
             text: chatItem.text,
             formattedText: chatItem.formattedText,
             sender: chatItem.memberDisplayName,
-            meta: chatItem.meta
+            meta: chatItem.meta,
+            showSecrets: false
         )
         .environmentObject(Chat.sampleData)
     }

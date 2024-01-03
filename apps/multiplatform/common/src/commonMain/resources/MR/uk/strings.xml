@@ -104,7 +104,6 @@
     <string name="integrity_msg_bad_hash">поганий хеш повідомлення</string>
     <string name="integrity_msg_bad_id">поганий ідентифікатор повідомлення</string>
     <string name="color_background">Фон</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Додайте новий контакт</b>: щоб створити одноразовий QR-код для вашого контакту.]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown">Це можна вимкнути у налаштуваннях – сповіщення все одно будуть відображатися, коли програма працює.</string>
     <string name="notifications_mode_service_desc">Служба фонового режиму завжди активна – сповіщення відображатимуться, як тільки повідомлення будуть доступні.</string>
     <string name="icon_descr_asked_to_receive">Запит на отримання зображення</string>
@@ -356,7 +355,6 @@
     <string name="this_link_is_not_a_valid_connection_link">Це посилання не є дійсним з\'єднувальним посиланням!</string>
     <string name="connection_request_sent">Запит на з\'єднання відправлено!</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Ви також можете підключитися, клацнувши посилання. Якщо воно відкривається у браузері, клацніть кнопку <b>Відкрити у мобільному додатку</b>.]]></string>
-    <string name="create_one_time_link">Створити одноразове запрошення</string>
     <string name="scan_code">Сканувати код</string>
     <string name="scan_code_from_contacts_app">Скануйте код безпеки з додатка вашого контакту.</string>
     <string name="smp_servers_invalid_address">Невірна адреса сервера!</string>
@@ -529,7 +527,7 @@
     <string name="image_descr_profile_image">зображення профілю</string>
     <string name="icon_descr_more_button">Більше</string>
     <string name="create_profile">Створити профіль</string>
-    <string name="read_more_in_github_with_link"><![CDATA[Докладніше читайте в нашому репозиторії на <font color=#0088ff>GitHub</font>.]]></string>
+    <string name="read_more_in_github_with_link"><![CDATA[Докладніше читайте в нашому репозиторії на <font color="#0088ff">GitHub</font>.]]></string>
     <string name="icon_descr_video_on">Відео увімкнено</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Це може трапитися, якщо ви або ваше з\'єднання використовували застарілу резервну копію бази даних.</string>
     <string name="restore_database">Відновити резервну копію бази даних</string>
@@ -606,7 +604,6 @@
     <string name="toast_permission_denied">Доступ відхилено!</string>
     <string name="use_camera_button">Камера</string>
     <string name="thank_you_for_installing_simplex">Дякуємо за установку SimpleX Chat!</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Сканувати QR-код</b>: щоб підключитися до вашого контакту, який вам показує QR-код.]]></string>
     <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Якщо ви отримали запрошення від SimpleX Chat, ви можете відкрити його у вашому браузері:</string>
     <string name="clear_chat_menu_action">Очистити</string>
     <string name="delete_contact_menu_action">Видалити</string>
@@ -1028,7 +1025,7 @@
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Вас підключать, коли пристрій вашого контакту буде в мережі, зачекайте або перевірте пізніше!</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Ви не втратите свої контакти, якщо ви пізніше видалите свою адресу.</string>
     <string name="you_can_accept_or_reject_connection">Коли люди просять про з\'єднання, ви можете його прийняти чи відхилити.</string>
-    <string name="read_more_in_user_guide_with_link"><![CDATA[Докладніше читайте в <font color=#0088ff>Посібнику користувача</font>.]]></string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[Докладніше читайте в <font color="#0088ff">Посібнику користувача</font>.]]></string>
     <string name="simplex_address">SimpleX-адреса</string>
     <string name="clear_verification">Очистити перевірку</string>
     <string name="is_verified">%s перевірено</string>
@@ -1200,7 +1197,7 @@
     <string name="create_group">Створити секретну групу</string>
     <string name="to_share_with_your_contact">(щоб поділитися з вашим контактом)</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(сканувати або вставити з буферу обміну)</string>
-    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Ви можете <font color=#0088ff>підключитися до розробників SimpleX Chat, щоб задати будь-які питання і отримувати оновлення</font>.]]></string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Ви можете <font color="#0088ff">підключитися до розробників SimpleX Chat, щоб задати будь-які питання і отримувати оновлення</font>.]]></string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 настільний комп\'ютер: скануйте відображений QR-код з додатка за допомогою <b>Сканувати QR-код</b>.]]></string>
     <string name="icon_descr_address">Адреса SimpleX</string>
     <string name="show_QR_code">Показати QR-код</string>

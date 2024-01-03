@@ -119,8 +119,6 @@
     <string name="back">Назад</string>
     <string name="cancel_verb">Отказ</string>
     <string name="icon_descr_cancel_live_message">Спри живото съобщение</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Добави нов контакт</b>: за да създадете своя еднократен QR код за вашия контакт.]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Сканирай QR код</b>: за да се свържете с вашия контакт, който ви показва QR код.]]></string>
     <string name="use_camera_button">Камера</string>
     <string name="if_you_cant_meet_in_person">Ако не можете да се срещнете лично, покажете QR код във видеоразговора или споделете линка.</string>
     <string name="icon_descr_cancel_link_preview">спри визуализацията на линка</string>
@@ -404,7 +402,6 @@
     <string name="delete_contact_menu_action">Изтрий</string>
     <string name="delete_group_menu_action">Изтрий</string>
     <string name="connect_via_link">Свърване чрез линк</string>
-    <string name="create_one_time_link">Създай линк за еднократна покана</string>
     <string name="database_passphrase_and_export">Парола за базата данни и експортиране</string>
     <string name="contribute">Допринеси</string>
     <string name="continue_to_next_step">Продължи</string>
@@ -794,7 +791,7 @@
     <string name="mute_chat">Без звук</string>
     <string name="image_descr_qr_code">QR код</string>
     <string name="icon_descr_more_button">Повече</string>
-    <string name="read_more_in_user_guide_with_link"><![CDATA[Прочетете повече в <font color=#0088ff>Ръководство за потребителя</font>.]]></string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[Прочетете повече в <font color="#0088ff">Ръководство за потребителя</font>.]]></string>
     <string name="mark_code_verified">Маркирай като проверено</string>
     <string name="is_not_verified">%s не е потвърдено</string>
     <string name="is_verified">%s е потвърдено</string>
@@ -814,7 +811,7 @@
     <string name="network_use_onion_hosts_no_desc">Няма се използват Onion хостове.</string>
     <string name="email_invite_subject">Нека да поговорим в SimpleX Chat</string>
     <string name="password_to_show">Парола за показване</string>
-    <string name="read_more_in_github_with_link"><![CDATA[Прочетете повече в нашето <font color=#0088ff>GitHub хранилище</font>.]]></string>
+    <string name="read_more_in_github_with_link"><![CDATA[Прочетете повече в нашето <font color="#0088ff">GitHub хранилище</font>.]]></string>
     <string name="onboarding_notifications_mode_off">Когато приложението работи</string>
     <string name="onboarding_notifications_mode_periodic">Периодично</string>
     <string name="paste_the_link_you_received">Постави получения линк</string>
@@ -1328,7 +1325,7 @@
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Ще трябва да се идентифицирате, когато стартирате или възобновите приложението след 30 секунди във фонов режим.</string>
     <string name="you_are_observer">вие сте наблюдател</string>
     <string name="gallery_video_button">Видео</string>
-    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Можете да <font color=#0088ff>се свържете с разработчиците на SimpleX Chat, за да задавате въпроси и да получавате актуализации</font>;.]]></string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Можете да <font color="#0088ff">се свържете с разработчиците на SimpleX Chat, за да задавате въпроси и да получавате актуализации</font>;.]]></string>
     <string name="contact_wants_to_connect_with_you">иска да се свърже с вас!</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Можете също да се свържете, като натиснете върху линка. Ако се отвори в браузъра, натиснете върху бутона <b>Отваряне в мобилно приложение</b>.]]></string>
     <string name="xftp_servers">XFTP сървъри</string>

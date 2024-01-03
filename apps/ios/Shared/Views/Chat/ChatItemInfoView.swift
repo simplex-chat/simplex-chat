@@ -168,7 +168,6 @@ struct ChatItemInfoView: View {
     @ViewBuilder private func itemVersionView(_ itemVersion: ChatItemVersion, _ maxWidth: CGFloat, current: Bool) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             textBubble(itemVersion.msgContent.text, itemVersion.formattedText, nil)
-                .allowsHitTesting(false)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(chatItemFrameColor(ci, colorScheme))
@@ -198,11 +197,22 @@ struct ChatItemInfoView: View {
 
     @ViewBuilder private func textBubble(_ text: String, _ formattedText: [FormattedText]?, _ sender: String? = nil) -> some View {
         if text != "" {
-            messageText(text, formattedText, sender)
+            TextBubble(text: text, formattedText: formattedText, sender: sender)
         } else {
             Text("no text")
                 .italic()
                 .foregroundColor(.secondary)
+        }
+    }
+
+    private struct TextBubble: View {
+        var text: String
+        var formattedText: [FormattedText]?
+        var sender: String? = nil
+        @State private var showSecrets = false
+
+        var body: some View {
+            toggleSecrets(formattedText, $showSecrets, messageText(text, formattedText, sender, showSecrets: showSecrets))
         }
     }
 
@@ -227,7 +237,6 @@ struct ChatItemInfoView: View {
     @ViewBuilder private func quotedMsgView(_ qi: CIQuote, _ maxWidth: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             textBubble(qi.text, qi.formattedText, qi.getSender(nil))
-                .allowsHitTesting(false)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(quotedMsgFrameColor(qi, colorScheme))

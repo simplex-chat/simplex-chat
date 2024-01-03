@@ -17,7 +17,8 @@ actual fun ChatListNavLinkLayout(
   dropdownMenuItems: (@Composable () -> Unit)?,
   showMenu: MutableState<Boolean>,
   stopped: Boolean,
-  selectedChat: State<Boolean>
+  selectedChat: State<Boolean>,
+  nextChatSelected: State<Boolean>,
 ) {
   var modifier = Modifier.fillMaxWidth()
   if (!stopped) modifier = modifier

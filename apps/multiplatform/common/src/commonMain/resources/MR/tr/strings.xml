@@ -3,7 +3,6 @@
     <string name="notifications">Bildirimler</string>
     <string name="connect_via_link_or_qr">Bağlantı ya da karekod ile bağlan</string>
     <string name="create_group">Gizli grup oluştur</string>
-    <string name="create_one_time_link">Tek seferlik davet bağlantısı oluştur</string>
     <string name="your_simplex_contact_address">SimpleX addresin</string>
     <string name="callstatus_missed">cevapsız çağrı</string>
     <string name="incoming_video_call">Gelen görüntülü arama</string>
@@ -736,7 +735,6 @@
     <string name="v4_3_irreversible_message_deletion">Geri alınamaz mesaj silme</string>
     <string name="v4_5_italian_interface">İtalyanca arayüz</string>
     <string name="choose_file_title">Dosya seç</string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>QR kodunu tara</b>: size QR kodunu gösteren kişiyle bağlantı kurmak için.]]></string>
     <string name="invite_friends">Arkadaşlarınızı davet edin</string>
     <string name="bold_text">kalın</string>
     <string name="italic_text">İtalik</string>
@@ -790,7 +788,6 @@
     <string name="delete_message_cannot_be_undone_warning">Mesajlar silinecek - bu geri alınamaz!</string>
     <string name="switch_receiving_address_question">Alıcı adresini değiştir\?</string>
     <string name="back">Geri</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Yeni kişi ekle</b>: Kişiniz için tek seferlik QR Kodunuzu oluşturmak için.]]></string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Bağlantı isteğiniz kabul edildiğinde bağlanacaksınız, lütfen bekleyin veya daha sonra kontrol edin!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Kişinizin cihazı çevrimiçi olduğunda bağlanacaksınız, lütfen bekleyin veya daha sonra kontrol edin!</string>
     <string name="learn_more">Daha fazla bilgi edinin</string>
@@ -902,7 +899,7 @@
     <string name="contact_sent_large_file">Kişiniz desteklenen maksimum boyuttan (%1$s) daha büyük bir dosya gönderdi.</string>
     <string name="video_will_be_received_when_contact_completes_uploading">Kişiniz yüklemeyi tamamladığında video alınacaktır.</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[Ayrıca bağlantıya tıklayarak da bağlanabilirsiniz. Eğer bağlantı tarayıcda açılırsa, <b>mobil uygulamada aç</b> seçeneğine tıklayın.]]></string>
-    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Soru sormak ve güncellemeleri almak için <font color=#0088ff>SimpleX Chat geliştiricilerine bağlanabilirsiniz</font>.]]></string>
+    <string name="you_can_connect_to_simplex_chat_founder"><![CDATA[Soru sormak ve güncellemeleri almak için <font color="#0088ff">SimpleX Chat geliştiricilerine bağlanabilirsiniz</font>.]]></string>
     <string name="you_can_hide_or_mute_user_profile">Bir kullanıcının profilini gizleyebilir veya sessize alabilirsiniz - menü için basılı tutun.</string>
     <string name="you_must_use_the_most_recent_version_of_database">Sohbet veritabanınızın en son sürümünü SADECE bir cihazda kullanmalısınız, aksi takdirde bazı kişilerden daha fazla mesaj alamayabilirsiniz.</string>
     <string name="wrong_passphrase">Yanlış veritabanı parolası</string>
@@ -976,7 +973,7 @@
     <string name="to_connect_via_link_title">Link ile bağlanmak için</string>
     <string name="this_link_is_not_a_valid_connection_link">Bu geçerli bir bağlantı linki değil</string>
     <string name="this_QR_code_is_not_a_link">Bu QR kodu bir bağlantı değil!</string>
-    <string name="read_more_in_user_guide_with_link"><![CDATA[Daha fazla bilgi için <font color=#0088ff>Kullanıcı Kılavuzu</font>.]]></string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[Daha fazla bilgi için <font color="#0088ff">Kullanıcı Kılavuzu</font>.]]></string>
     <string name="paste_button">Yapıştır</string>
     <string name="this_string_is_not_a_connection_link">Bu dize bir bağlantı linki değil!</string>
     <string name="rate_the_app">Uygulamaya puan verin</string>
@@ -1020,7 +1017,7 @@
     <string name="unfavorite_chat">Favorilerden çıkar</string>
     <string name="make_profile_private">Sohbeti gizli yap!</string>
     <string name="profile_update_will_be_sent_to_contacts">Profil güncellemesi kişilerinize gönderilecektir.</string>
-    <string name="read_more_in_github_with_link"><![CDATA[<font color=#0088ff>GitHub repomuzda</font> daha fazlasını okuyun.]]></string>
+    <string name="read_more_in_github_with_link"><![CDATA[<font color="#0088ff">GitHub repomuzda</font> daha fazlasını okuyun.]]></string>
     <string name="alert_text_fragment_please_report_to_developers">Lütfen geliştiricilere bildirin.</string>
     <string name="users_delete_with_connections">Profil ve sunucu bağlantıları</string>
     <string name="user_unhide">gizlemeyi kaldır</string>

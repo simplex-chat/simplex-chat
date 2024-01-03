@@ -56,7 +56,7 @@ import Simplex.Messaging.Version hiding (version)
 -- This indirection is needed for backward/forward compatibility testing.
 -- Testing with real app versions is still needed, as tests use the current code with different version ranges, not the old code.
 currentChatVersion :: Version
-currentChatVersion = 5
+currentChatVersion = 6
 
 -- This should not be used directly in code, instead use `chatVRange` from ChatConfig (see comment above)
 supportedChatVRange :: VersionRange
@@ -81,6 +81,10 @@ groupForwardVRange = mkVersionRange 4 currentChatVersion
 -- version range that supports batch sending in groups
 batchSendVRange :: VersionRange
 batchSendVRange = mkVersionRange 5 currentChatVersion
+
+-- version range that supports sending group welcome message in group history
+groupHistoryIncludeWelcomeVRange :: VersionRange
+groupHistoryIncludeWelcomeVRange = mkVersionRange 6 currentChatVersion
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
