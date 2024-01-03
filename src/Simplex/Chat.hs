@@ -2134,36 +2134,34 @@ processChatCommand' vr = \case
       | otherwise = do
           when (n /= n') $ checkValidName n'
           -- read contacts before user update to correctly merge preferences
-          -- [incognito] filter out contacts with whom user has incognito connections
-          contacts <-
-            filter (\ct -> contactReady ct && contactActive ct && not (contactConnIncognito ct))
-              <$> withStore' (`getUserContacts` user)
+          contacts <- withStore' (`getUserContacts` user)
           user' <- updateUser
           asks currentUser >>= atomically . (`writeTVar` Just user')
           withChatLock "updateProfile" . procCmd $ do
-            let (notChangedCount, changedCts, errs) = foldr (addChangedProfileContact user') (0, [], []) contacts
+            let (notChanged, changedCts) = foldr (addChangedProfileContact user') (0, []) contacts
                 idsEvts = map ctSndMsg changedCts
             msgReqs_ <- zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
-            (errs', cts) <- partitionEithers . zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
-            let errors = errs <> errs'
-            unless (null errors) $ toView $ CRChatErrors (Just user) errors
+            (errs, cts) <- partitionEithers . zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
+            unless (null errs) $ toView $ CRChatErrors (Just user) errs
             let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> directOrUsed ct' && mergedPreferences ct' /= mergedPreferences ct) cts
             createContactsSndFeatureItems user' changedCts'
             let summary =
                   UserProfileUpdateSummary
-                    { notChanged = notChangedCount,
+                    { notChanged,
                       updateSuccesses = length cts,
-                      updateFailures = length errors,
+                      updateFailures = length errs,
                       changedContacts = map (\ChangedProfileContact {ct'} -> ct') changedCts'
                     }
             pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' summary
       where
-        addChangedProfileContact :: User -> Contact -> (Int, [ChangedProfileContact], [ChatError]) -> (Int, [ChangedProfileContact], [ChatError])
-        addChangedProfileContact user' ct (notChangedCnt, changedCts, errs)
-          | mergedProfile' == mergedProfile = (notChangedCnt + 1, changedCts, errs)
-          | otherwise = case contactSendConn_ ct' of
-              Right conn -> (notChangedCnt, ChangedProfileContact ct ct' mergedProfile' conn : changedCts, errs)
-              Left e -> (notChangedCnt, changedCts, e : errs)
+        -- [incognito] filter out contacts with whom user has incognito connections
+        addChangedProfileContact :: User -> Contact -> (Int, [ChangedProfileContact]) -> (Int, [ChangedProfileContact])
+        addChangedProfileContact user' ct (notChangedCnt, changedCts) = case contactSendConn_ ct' of
+          Left _ -> (notChangedCnt, changedCts)
+          Right conn
+            | connIncognito conn -> (notChangedCnt, changedCts)
+            | mergedProfile' == mergedProfile -> (notChangedCnt + 1, changedCts)
+            | otherwise -> (notChangedCnt, ChangedProfileContact ct ct' mergedProfile' conn : changedCts)
           where
             mergedProfile = userProfileToSend user Nothing $ Just ct
             ct' = updateMergedPreferences user' ct
@@ -5640,11 +5638,11 @@ sendDirectContactMessage ct chatMsgEvent =
     Left e -> throwError e
 
 contactSendConn_ :: Contact -> Either ChatError Connection
-contactSendConn_ ct@Contact {activeConn, contactStatus} = case activeConn of
+contactSendConn_ ct@Contact {activeConn} = case activeConn of
   Nothing -> err $ CEContactNotReady ct
-  Just conn@Connection {connStatus}
-    | connStatus /= ConnReady && connStatus /= ConnSndReady -> err $ CEContactNotReady ct
-    | contactStatus /= CSActive -> err $ CEContactNotActive ct
+  Just conn
+    | not (connReady conn) -> err $ CEContactNotReady ct
+    | not (contactActive ct) -> err $ CEContactNotActive ct
     | connDisabled conn -> err $ CEContactDisabled ct
     | otherwise -> Right conn
   where
