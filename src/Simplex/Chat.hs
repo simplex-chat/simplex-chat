@@ -6077,29 +6077,30 @@ sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferenc
 
 createInternalChatItem :: (ChatTypeI c, MsgDirectionI d, ChatMonad m) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> m ()
 createInternalChatItem user cd content itemTs_ =
-  createInternalItemsForChats user itemTs_ (Identity (cd, [content])) >>= \case
+  createInternalItemsForChats user itemTs_ [(cd, [content])] >>= \case
     [Right aci] -> toView $ CRNewChatItem user aci
     [Left e] -> throwError e
     rs -> throwChatError $ CEInternalError $ "createInternalChatItem: expected 1 result, got " <> show (length rs)
 
 createInternalItemsForChats ::
-  forall c d m t.
-  (ChatTypeI c, MsgDirectionI d, ChatMonad' m, Traversable t) =>
+  forall c d m.
+  (ChatTypeI c, MsgDirectionI d, ChatMonad' m) =>
   User ->
   Maybe UTCTime ->
-  t (ChatDirection c d, [CIContent d]) ->
+  [(ChatDirection c d, [CIContent d])] ->
   m [Either ChatError AChatItem]
 createInternalItemsForChats user itemTs_ dirsCIContents = do
   createdAt <- liftIO getCurrentTime
   let itemTs = fromMaybe createdAt itemTs_
-  acis <- withStoreBatch' $ \db -> do
+  void . withStoreBatch' $ \db ->
+    (\cd -> updateChatTs db user cd createdAt) <$> dirsToUpdate
+  withStoreBatch' $ \db ->
     fmap (uncurry (createACI db itemTs createdAt)) (flatten dirsCIContents)
-  pure $ foldr (:) [] acis
   where
+    dirsToUpdate = map fst . filter (any ciRequiresAttention . snd) $ dirsCIContents
     flatten = concatMap (\(dir, contents) -> map (dir,) contents)
     createACI :: DB.Connection -> UTCTime -> UTCTime -> ChatDirection c d -> CIContent d -> IO AChatItem
     createACI db itemTs createdAt cd content = do
-      when (ciRequiresAttention content) $ updateChatTs db user cd createdAt -- TODO optimize to not repeat
       ciId <- createNewChatItemNoMsg db user cd content itemTs createdAt
       let ci = mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
       pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
