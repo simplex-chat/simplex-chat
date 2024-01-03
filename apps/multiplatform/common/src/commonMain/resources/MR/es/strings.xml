@@ -298,7 +298,7 @@
     <string name="icon_descr_cancel_live_message">Cancelar mensaje en directo</string>
     <string name="confirm_verb">Confirmar</string>
     <string name="clear_chat_menu_action">Vaciar</string>
-    <string name="app_version_code">Build de la aplicación</string>
+    <string name="app_version_code">Build de la aplicación: %s</string>
     <string name="call_already_ended">¡La llamada ha terminado!</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">el servidor de envío ha cambiado para tí</string>
     <string name="icon_descr_cancel_link_preview">cancelar vista previa del enlace</string>
@@ -1174,8 +1174,6 @@
     <string name="share_with_contacts">Compartir con contactos</string>
     <string name="color_title">Título</string>
     <string name="you_can_share_this_address_with_your_contacts">Puedes compartir esta dirección con tus contactos para que puedan conectar con %s.</string>
-    <string name="your_contacts_will_see_it">Tus contactos en SimpleX lo verán.
-\nPuedes cambiarlo en Configuración.</string>
     <string name="your_contacts_will_remain_connected">Tus contactos permanecerán conectados.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Si más tarde decides eliminar tu dirección los contactos no se perderán.</string>
     <string name="all_app_data_will_be_cleared">Todos los datos de la aplicación se eliminarán.</string>

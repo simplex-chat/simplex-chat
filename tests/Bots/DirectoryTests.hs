@@ -30,6 +30,7 @@ directoryServiceTests = do
   it "should suspend and resume group" testSuspendResume
   it "should join found group via link" testJoinGroup
   it "should support group names with spaces" testGroupNameWithSpaces
+  it "should return more groups in search, all and recent groups" testSearchGroups
   describe "de-listing the group" $ do
     it "should de-list if owner leaves the group" testDelistedOwnerLeaves
     it "should de-list if owner is removed from the group" testDelistedOwnerRemoved
@@ -67,6 +68,7 @@ mkDirectoryOpts tmp superUsers =
       superUsers,
       directoryLog = Just $ tmp </> "directory_service.log",
       serviceName = "SimpleX-Directory",
+      searchResults = 3,
       testing = True
     }
 
@@ -158,7 +160,7 @@ testDirectoryService tmp =
     search u s welcome = do
       u #> ("@SimpleX-Directory " <> s)
       u <# ("SimpleX-Directory> > " <> s)
-      u <## "      Found 1 group(s)"
+      u <## "      Found 1 group(s)."
       u <# "SimpleX-Directory> PSA (Privacy, Security & Anonymity)"
       u <## "Welcome message:"
       u <## welcome
@@ -206,7 +208,7 @@ testJoinGroup tmp =
           cath `connectVia` dsLink
           cath #> "@SimpleX-Directory privacy"
           cath <# "SimpleX-Directory> > privacy"
-          cath <## "      Found 1 group(s)"
+          cath <## "      Found 1 group(s)."
           cath <# "SimpleX-Directory> privacy (Privacy)"
           cath <## "Welcome message:"
           welcomeMsg <- getTermLine cath
@@ -262,6 +264,92 @@ testGroupNameWithSpaces tmp =
       superUser <## "      Group listing resumed!"
       bob <# "SimpleX-Directory> The group ID 1 (Privacy & Security) is listed in the directory again!"
       groupFound bob "Privacy & Security"
+
+testSearchGroups :: HasCallStack => FilePath -> IO ()
+testSearchGroups tmp =
+  withDirectoryService tmp $ \superUser dsLink ->
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      withNewTestChat tmp "cath" cathProfile $ \cath -> do
+        bob `connectVia` dsLink
+        cath `connectVia` dsLink
+        forM_ [1..8 :: Int] $ \i -> registerGroupId superUser bob (groups !! (i - 1)) "" i i
+        connectUsers bob cath
+        fullAddMember "MyGroup" "" bob cath GRMember
+        joinGroup "MyGroup" cath bob
+        cath <## "#MyGroup: member SimpleX-Directory_1 is connected"
+        cath <## "contact and member are merged: SimpleX-Directory, #MyGroup SimpleX-Directory_1"
+        cath <## "use @SimpleX-Directory <message> to send messages"
+        cath #> "@SimpleX-Directory MyGroup"
+        cath <# "SimpleX-Directory> > MyGroup"
+        cath <## "      Found 7 group(s), sending top 3."
+        receivedGroup cath 0 3
+        receivedGroup cath 1 2
+        receivedGroup cath 2 2
+        cath <# "SimpleX-Directory> Send /next or just . for 4 more result(s)."
+        cath #> "@SimpleX-Directory /next"
+        cath <# "SimpleX-Directory> > /next"
+        cath <## "      Sending 3 more group(s)."
+        receivedGroup cath 3 2
+        receivedGroup cath 4 2
+        receivedGroup cath 5 2
+        cath <# "SimpleX-Directory> Send /next or just . for 1 more result(s)."
+        -- search of another user does not affect the search of the first user
+        groupFound bob "Another"
+        cath #> "@SimpleX-Directory ."
+        cath <# "SimpleX-Directory> > ."
+        cath <## "      Sending 1 more group(s)."
+        receivedGroup cath 6 2
+        cath #> "@SimpleX-Directory /all"
+        cath <# "SimpleX-Directory> > /all"
+        cath <## "      8 group(s) listed, sending top 3."
+        receivedGroup cath 0 3
+        receivedGroup cath 1 2
+        receivedGroup cath 2 2
+        cath <# "SimpleX-Directory> Send /next or just . for 5 more result(s)."
+        cath #> "@SimpleX-Directory /new"
+        cath <# "SimpleX-Directory> > /new"
+        cath <## "      8 group(s) listed, sending the most recent 3."
+        receivedGroup cath 7 2
+        receivedGroup cath 6 2
+        receivedGroup cath 5 2
+        cath <# "SimpleX-Directory> Send /next or just . for 5 more result(s)."
+        cath #> "@SimpleX-Directory term3"
+        cath <# "SimpleX-Directory> > term3"
+        cath <## "      Found 3 group(s)."
+        receivedGroup cath 4 2
+        receivedGroup cath 5 2
+        receivedGroup cath 6 2
+        cath #> "@SimpleX-Directory term1"
+        cath <# "SimpleX-Directory> > term1"
+        cath <## "      Found 6 group(s), sending top 3."
+        receivedGroup cath 1 2
+        receivedGroup cath 2 2
+        receivedGroup cath 3 2
+        cath <# "SimpleX-Directory> Send /next or just . for 3 more result(s)."
+        cath #> "@SimpleX-Directory ."
+        cath <# "SimpleX-Directory> > ."
+        cath <## "      Sending 3 more group(s)."
+        receivedGroup cath 4 2
+        receivedGroup cath 5 2
+        receivedGroup cath 6 2
+  where
+    groups :: [String]
+    groups =
+      [ "MyGroup",
+        "MyGroup term1 1",
+        "MyGroup term1 2",
+        "MyGroup term1 term2",
+        "MyGroup term1 term2 term3",
+        "MyGroup term1 term2 term3 term4",
+        "MyGroup term1 term2 term3 term4 term5",
+        "Another"
+      ]
+    receivedGroup :: TestCC -> Int -> Int -> IO ()
+    receivedGroup u ix count = do
+      u <#. ("SimpleX-Directory> " <> groups !! ix)
+      u <## "Welcome message:"
+      u <##. "Link to join the group "
+      u <## (show count <> " members")
 
 testDelistedOwnerLeaves :: HasCallStack => FilePath -> IO ()
 testDelistedOwnerLeaves tmp =
@@ -930,6 +1018,7 @@ u `connectVia` dsLink = do
   u <## "Send a search string to find groups or /help to learn how to add groups to directory."
   u <## ""
   u <## "For example, send privacy to find groups about privacy."
+  u <## "Or send /all or /new to list groups."
   u <## ""
   u <## "Content and privacy policy: https://simplex.chat/docs/directory.html"
 
@@ -967,7 +1056,7 @@ groupFoundN :: Int -> TestCC -> String -> IO ()
 groupFoundN count u name = do
   u #> ("@SimpleX-Directory " <> name)
   u <# ("SimpleX-Directory> > " <> name)
-  u <## "      Found 1 group(s)"
+  u <## "      Found 1 group(s)."
   u <#. ("SimpleX-Directory> " <> name)
   u <## "Welcome message:"
   u <##. "Link to join the group "

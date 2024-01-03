@@ -1159,8 +1159,6 @@
     <string name="theme_colors_section_title">สีของธีม</string>
     <string name="your_contacts_will_remain_connected">ผู้ติดต่อของคุณจะยังคงเชื่อมต่ออยู่</string>
     <string name="you_can_create_it_later">คุณสามารถสร้างได้ในภายหลัง</string>
-    <string name="your_contacts_will_see_it">ผู้ติดต่อของคุณใน SimpleX จะเห็น
-\nคุณสามารถเปลี่ยนได้ในการตั้งค่า</string>
     <string name="you_control_your_chat">คุณเป็นผู้ควบคุมการแชทของคุณ!</string>
     <string name="profile_is_only_shared_with_your_contacts">โปรไฟล์นี้แชร์กับผู้ติดต่อของคุณเท่านั้น</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">เราไม่เก็บผู้ติดต่อหรือข้อความของคุณ (เมื่อส่งแล้ว) ไว้บนเซิร์ฟเวอร์</string>

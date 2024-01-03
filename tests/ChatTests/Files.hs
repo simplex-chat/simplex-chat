@@ -16,14 +16,11 @@ import Simplex.Chat (roundedFDCount)
 import Simplex.Chat.Controller (ChatConfig (..), InlineFilesConfig (..), XFTPFileConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Options (ChatOpts (..))
-import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..))
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util (unlessM)
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, getFileSize)
-import System.Environment (withArgs)
-import System.IO.Silently (capture_)
 import Test.Hspec
 
 chatFileTests :: SpecWith FilePath
@@ -1094,7 +1091,7 @@ testXFTPFileTransferEncrypted =
     let srcPath = "./tests/tmp/alice/test.pdf"
     createDirectoryIfMissing True "./tests/tmp/alice/"
     createDirectoryIfMissing True "./tests/tmp/bob/"
-    WFResult cfArgs <- chatWriteFile srcPath src
+    WFResult cfArgs <- chatWriteFile (chatController alice) srcPath src
     let fileJSON = LB.unpack $ J.encode $ CryptoFile srcPath $ Just cfArgs
     withXFTPServer $ do
       connectUsers alice bob
@@ -1496,7 +1493,7 @@ testXFTPCancelRcvRepeat =
       dest <- B.readFile "./tests/tmp/testfile_1"
       dest `shouldBe` src
   where
-    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+    cfg = testCfg {xftpDescrPartSize = 200, xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
 
 testAutoAcceptFile :: HasCallStack => FilePath -> IO ()
 testAutoAcceptFile =
@@ -1547,9 +1544,6 @@ testProhibitFiles =
     (cath </)
   where
     cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
-
-xftpCLI :: [String] -> IO [String]
-xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)
 
 startFileTransfer :: HasCallStack => TestCC -> TestCC -> IO ()
 startFileTransfer alice bob =

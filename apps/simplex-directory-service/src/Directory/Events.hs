@@ -21,14 +21,18 @@ where
 import Control.Applicative ((<|>))
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
+import Data.Functor (($>))
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Directory.Store
 import Simplex.Chat.Controller
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Types
+import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Util ((<$?>))
 import Data.Char (isSpace)
 import Data.Either (fromRight)
 
@@ -83,6 +87,10 @@ deriving instance Show (SDirectoryRole r)
 
 data DirectoryCmdTag (r :: DirectoryRole) where
   DCHelp_ :: DirectoryCmdTag 'DRUser
+  DCSearchNext_ :: DirectoryCmdTag 'DRUser
+  DCAllGroups_ :: DirectoryCmdTag 'DRUser
+  DCRecentGroups_ :: DirectoryCmdTag 'DRUser
+  DCSubmitGroup_ :: DirectoryCmdTag 'DRUser
   DCConfirmDuplicateGroup_ :: DirectoryCmdTag 'DRUser
   DCListUserGroups_ :: DirectoryCmdTag 'DRUser
   DCDeleteGroup_ :: DirectoryCmdTag 'DRUser
@@ -100,6 +108,10 @@ data ADirectoryCmdTag = forall r. ADCT (SDirectoryRole r) (DirectoryCmdTag r)
 data DirectoryCmd (r :: DirectoryRole) where
   DCHelp :: DirectoryCmd 'DRUser
   DCSearchGroup :: Text -> DirectoryCmd 'DRUser
+  DCSearchNext :: DirectoryCmd 'DRUser
+  DCAllGroups :: DirectoryCmd 'DRUser
+  DCRecentGroups :: DirectoryCmd 'DRUser
+  DCSubmitGroup :: ConnReqContact -> DirectoryCmd 'DRUser
   DCConfirmDuplicateGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
   DCListUserGroups :: DirectoryCmd 'DRUser
   DCDeleteGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
@@ -120,7 +132,9 @@ deriving instance Show ADirectoryCmd
 
 directoryCmdP :: Parser ADirectoryCmd
 directoryCmdP =
-  (A.char '/' *> cmdStrP) <|> (ADC SDRUser . DCSearchGroup <$> A.takeText)
+  (A.char '/' *> cmdStrP)
+    <|> (A.char '.' $> ADC SDRUser DCSearchNext)
+    <|> (ADC SDRUser . DCSearchGroup <$> A.takeText)
   where
     cmdStrP =
       (tagP >>= \(ADCT u t) -> ADC u <$> (cmdP t <|> pure (DCCommandError t)))
@@ -128,6 +142,10 @@ directoryCmdP =
     tagP = A.takeTill (== ' ') >>= \case
       "help" -> u DCHelp_
       "h" -> u DCHelp_
+      "next" -> u DCSearchNext_
+      "all" -> u DCAllGroups_
+      "new" -> u DCRecentGroups_
+      "submit" -> u DCSubmitGroup_
       "confirm" -> u DCConfirmDuplicateGroup_
       "list" -> u DCListUserGroups_
       "ls" -> u DCListUserGroups_
@@ -146,6 +164,10 @@ directoryCmdP =
     cmdP :: DirectoryCmdTag r -> Parser (DirectoryCmd r)
     cmdP = \case
       DCHelp_ -> pure DCHelp
+      DCSearchNext_ -> pure DCSearchNext
+      DCAllGroups_ -> pure DCAllGroups
+      DCRecentGroups_ -> pure DCRecentGroups
+      DCSubmitGroup_ -> fmap DCSubmitGroup . strDecode . encodeUtf8 <$?> (A.takeWhile1 isSpace *> A.takeText)
       DCConfirmDuplicateGroup_ -> gc DCConfirmDuplicateGroup
       DCListUserGroups_ -> pure DCListUserGroups
       DCDeleteGroup_ -> gc DCDeleteGroup

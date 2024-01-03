@@ -58,7 +58,7 @@ object ChatModel {
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
   val groupMembers = mutableStateListOf<GroupMember>()
 
-  val terminalItems = mutableStateListOf<TerminalItem>()
+  val terminalItems = mutableStateOf<List<TerminalItem>>(listOf())
   val userAddress = mutableStateOf<UserContactLinkRec?>(null)
   // Allows to temporary save servers that are being edited on multiple screens
   val userSMPServersUnsaved = mutableStateOf<(List<ServerCfg>)?>(null)
@@ -70,8 +70,8 @@ object ChatModel {
   // Only needed during onboarding when user skipped password setup (left as random password)
   val desktopOnboardingRandomPassword = mutableStateOf(false)
 
-  // set when app is opened via contact or invitation URI
-  val appOpenUrl = mutableStateOf<URI?>(null)
+  // set when app is opened via contact or invitation URI (rhId, uri)
+  val appOpenUrl = mutableStateOf<Pair<Long?, URI>?>(null)
 
   // preferences
   val notificationPreviewMode by lazy {
@@ -620,10 +620,10 @@ object ChatModel {
   }
 
   fun addTerminalItem(item: TerminalItem) {
-    if (terminalItems.size >= 500) {
-      terminalItems.removeAt(0)
+    if (terminalItems.value.size >= 500) {
+      terminalItems.value = terminalItems.value.subList(1, terminalItems.value.size)
     }
-    terminalItems.add(item)
+    terminalItems.value += item
   }
 
   val connectedToRemote: Boolean @Composable get() = currentRemoteHost.value != null || remoteCtrlSession.value?.active == true

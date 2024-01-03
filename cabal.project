@@ -4,24 +4,22 @@ packages: .
 
 with-compiler: ghc-9.6.3
 
-index-state: 2023-10-20T00:00:00Z
+index-state: 2023-12-12T00:00:00Z
+
+package cryptostore
+    flags: +use_crypton
 
 constraints: zip +disable-bzip2 +disable-zstd
 
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/simplexmq.git
-    tag: a860936072172e261480fa6bdd95203976e366b2
+    tag: d0588bd0ac23a459cbfc9a4789633014e91ffa19
 
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/hs-socks.git
     tag: a30cc7a79a08d8108316094f8f2f82a0c5e1ac51
-
-source-repository-package
-    type: git
-    location: https://github.com/kazu-yamamoto/http2.git
-    tag: f5525b755ff2418e6e6ecc69e877363b0d0bcaeb
 
 source-repository-package
     type: git

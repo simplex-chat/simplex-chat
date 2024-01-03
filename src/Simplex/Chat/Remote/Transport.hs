@@ -24,7 +24,7 @@ type EncryptedFile = ((Handle, Word32), C.CbNonce, LC.SbState)
 
 prepareEncryptedFile :: RemoteCrypto -> (Handle, Word32) -> ExceptT RemoteProtocolError IO EncryptedFile
 prepareEncryptedFile RemoteCrypto {drg, hybridKey} f = do
-  nonce <- atomically $ C.pseudoRandomCbNonce drg
+  nonce <- atomically $ C.randomCbNonce drg
   sbState <- liftEitherWith (const $ PRERemoteControl RCEEncrypt) $ LC.kcbInit hybridKey nonce
   pure (f, nonce, sbState)
 

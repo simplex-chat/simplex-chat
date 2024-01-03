@@ -1211,8 +1211,6 @@
     <string name="email_invite_body">你好！
 \n用 SimpleX Chat 与我联系：%s</string>
     <string name="email_invite_subject">让我们一起在 SimpleX Chat 里聊天</string>
-    <string name="your_contacts_will_see_it">您的 SimpleX 的联系人会看到它。
-\n您可以在设置中更改它。</string>
     <string name="you_can_create_it_later">您可以以后创建它</string>
     <string name="share_address">分享地址</string>
     <string name="you_can_share_this_address_with_your_contacts">您可以与您的联系人分享该地址，让他们与 %s 联系。</string>
@@ -1344,7 +1342,7 @@
     <string name="v5_2_message_delivery_receipts_descr">我们错过的第二个\"√\"！✅</string>
     <string name="setup_database_passphrase">设定数据库密码</string>
     <string name="receipts_groups_title_disable">为群组禁用回执吗？</string>
-    <string name="rcv_group_event_3_members_connected">%s、%s 和 %d 已连接</string>
+    <string name="rcv_group_event_3_members_connected">%s、%s 和 %s 已连接</string>
     <string name="fix_connection_not_supported_by_group_member">修复群组成员不支持的问题</string>
     <string name="receipts_groups_override_enabled">已为 %d 组启用送达回执功能</string>
     <string name="sync_connection_force_confirm">重新协商</string>
@@ -1427,7 +1425,6 @@
     <string name="connect_plan_connect_via_link">通过链接进行连接吗？</string>
     <string name="connect_plan_already_joining_the_group">已经加入了该群组！</string>
     <string name="group_members_n">%s、 %s 和 %d 名成员</string>
-    <string name="moderated_items_description">%s 审核了 %d 条消息</string>
     <string name="unblock_member_button">解封成员</string>
     <string name="connect_plan_connect_to_yourself">连接到你自己？</string>
     <string name="contact_tap_to_connect">轻按连接</string>

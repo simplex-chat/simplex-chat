@@ -228,7 +228,8 @@ func apiStopChat() async throws {
 }
 
 func apiActivateChat() {
-    let r = chatSendCmdSync(.apiActivateChat)
+    chatReopenStore()
+    let r = chatSendCmdSync(.apiActivateChat(restoreChat: true))
     if case .cmdOk = r { return }
     logger.error("apiActivateChat error: \(String(describing: r))")
 }
@@ -1234,6 +1235,9 @@ func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool 
         try startChat(refreshInvitations: refreshInvitations)
     } else {
         m.chatRunning = false
+        try getUserChatData()
+        NtfManager.shared.setNtfBadgeCount(m.totalUnreadCountForAllUsers())
+        m.onboardingStage = onboardingStageDefault.get()
     }
 }
 
@@ -1250,6 +1254,8 @@ func startChat(refreshInvitations: Bool = true) throws {
             try refreshCallInvitations()
         }
         (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
+        // deviceToken is set when AppDelegate.application(didRegisterForRemoteNotificationsWithDeviceToken:) is called,
+        // when it is called before startChat
         if let token = m.deviceToken {
             registerToken(token: token)
         }
@@ -1736,7 +1742,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
         // This delay is needed to cancel the session that fails on network failure,
         // e.g. when user did not grant permission to access local network yet.
         if let sess = m.remoteCtrlSession {
-            m.remoteCtrlSession = nil
+            await MainActor.run {
+                m.remoteCtrlSession = nil
+            }
             if case .connected = sess.sessionState {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     switchToLocalSession()

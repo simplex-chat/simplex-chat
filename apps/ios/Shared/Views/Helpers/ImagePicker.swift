@@ -13,112 +13,130 @@ import SimpleXChat
 
 struct LibraryImagePicker: View {
     @Binding var image: UIImage?
-    var didFinishPicking: (_ didSelectItems: Bool) -> Void
-    @State var images: [UploadContent] = []
+    var didFinishPicking: (_ didSelectImage: Bool) async -> Void
+    @State var mediaAdded = false
 
     var body: some View {
-        LibraryMediaListPicker(media: $images, selectionLimit: 1, didFinishPicking: didFinishPicking)
-            .onChange(of: images) { _ in
-                if let img = images.first {
-                    image = img.uiImage
-                }
-            }
+        LibraryMediaListPicker(addMedia: addMedia, selectionLimit: 1, didFinishPicking: didFinishPicking)
+    }
+
+    private func addMedia(_ content: UploadContent) async {
+        if mediaAdded { return }
+        await MainActor.run {
+            mediaAdded = true
+            image = content.uiImage
+        }
     }
 }
 
 struct LibraryMediaListPicker: UIViewControllerRepresentable {
     typealias UIViewControllerType = PHPickerViewController
-    @Binding var media: [UploadContent]
+    var addMedia: (_ content: UploadContent) async -> Void
     var selectionLimit: Int
-    var didFinishPicking: (_ didSelectItems: Bool) -> Void
+    var finishedPreprocessing: () -> Void = {}
+    var didFinishPicking: (_ didSelectItems: Bool) async -> Void
 
     class Coordinator: PHPickerViewControllerDelegate {
         let parent: LibraryMediaListPicker
         let dispatchQueue = DispatchQueue(label: "chat.simplex.app.LibraryMediaListPicker")
-        var media: [UploadContent] = []
-        var mediaCount: Int = 0
 
         init(_ parent: LibraryMediaListPicker) {
             self.parent = parent
         }
 
         func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
-            parent.didFinishPicking(!results.isEmpty)
-            guard !results.isEmpty else {
-                return
+            Task {
+                await parent.didFinishPicking(!results.isEmpty)
+                if results.isEmpty { return }
+                for r in results {
+                    await loadItem(r.itemProvider)
+                }
+                parent.finishedPreprocessing()
             }
+        }
 
-            parent.media = []
-            media = []
-            mediaCount = results.count
-            for result in results {
-                logger.log("LibraryMediaListPicker result")
-                let p = result.itemProvider
-                if p.hasItemConformingToTypeIdentifier(UTType.movie.identifier) {
-                    p.loadFileRepresentation(forTypeIdentifier: UTType.movie.identifier) { url, error in
-                        if let url = url {
-                            let tempUrl = URL(fileURLWithPath: getTempFilesDirectory().path + "/" + generateNewFileName("video", url.pathExtension))
-                            if ((try? FileManager.default.copyItem(at: url, to: tempUrl)) != nil) {
-                                ChatModel.shared.filesToDelete.insert(tempUrl)
-                                self.loadVideo(url: tempUrl, error: error)
+        private func loadItem(_ p: NSItemProvider) async {
+            logger.debug("LibraryMediaListPicker result")
+            if p.hasItemConformingToTypeIdentifier(UTType.movie.identifier) {
+                if let video = await loadVideo(p) {
+                    await self.parent.addMedia(video)
+                    logger.debug("LibraryMediaListPicker: added video")
+                }
+            } else if p.hasItemConformingToTypeIdentifier(UTType.data.identifier) {
+                if let img = await loadImageData(p) {
+                    await self.parent.addMedia(img)
+                    logger.debug("LibraryMediaListPicker: added image")
+                }
+            } else if p.canLoadObject(ofClass: UIImage.self) {
+                if let img = await loadImage(p) {
+                    await self.parent.addMedia(.simpleImage(image: img))
+                    logger.debug("LibraryMediaListPicker: added image")
+                }
+            }
+        }
+
+        private func loadImageData(_ p: NSItemProvider) async -> UploadContent? {
+            await withCheckedContinuation { cont in
+                loadFileURL(p, type: UTType.data) { url in
+                    if let url = url {
+                        let img = UploadContent.loadFromURL(url: url)
+                        cont.resume(returning: img)
+                    } else {
+                        cont.resume(returning: nil)
+                    }
+                }
+            }
+        }
+
+        private func loadImage(_ p: NSItemProvider) async -> UIImage? {
+            await withCheckedContinuation { cont in
+                p.loadObject(ofClass: UIImage.self)  { obj, err in
+                    if let err = err {
+                        logger.error("LibraryMediaListPicker result image error: \(err.localizedDescription)")
+                        cont.resume(returning: nil)
+                    } else  {
+                        cont.resume(returning: obj as? UIImage)
+                    }
+                }
+            }
+        }
+
+        private func loadVideo(_ p: NSItemProvider) async -> UploadContent? {
+            await withCheckedContinuation { cont in
+                loadFileURL(p, type: UTType.movie) { url in
+                    if let url = url  {
+                        let tempUrl = URL(fileURLWithPath: generateNewFileName(getTempFilesDirectory().path + "/" + "rawvideo", url.pathExtension, fullPath: true))
+                        let convertedVideoUrl = URL(fileURLWithPath: generateNewFileName(getTempFilesDirectory().path + "/" + "video", "mp4", fullPath: true))
+                        do {
+//                          logger.debug("LibraryMediaListPicker copyItem \(url) to \(tempUrl)")
+                            try FileManager.default.copyItem(at: url, to: tempUrl)
+                        } catch let err {
+                            logger.error("LibraryMediaListPicker copyItem error: \(err.localizedDescription)")
+                            return cont.resume(returning: nil)
+                        }
+                        Task {
+                            let success = await makeVideoQualityLower(tempUrl, outputUrl: convertedVideoUrl)
+                            try? FileManager.default.removeItem(at: tempUrl)
+                            if success {
+                                _ = ChatModel.shared.filesToDelete.insert(convertedVideoUrl)
+                                let video = UploadContent.loadVideoFromURL(url: convertedVideoUrl)
+                                return cont.resume(returning: video)
                             }
+                            try? FileManager.default.removeItem(at: convertedVideoUrl)
+                            cont.resume(returning: nil)
                         }
                     }
-                } else if p.hasItemConformingToTypeIdentifier(UTType.data.identifier) {
-                    p.loadFileRepresentation(forTypeIdentifier: UTType.data.identifier) { url, error in
-                        self.loadImage(object: url, error: error)
-                    }
-                } else if p.canLoadObject(ofClass: UIImage.self) {
-                    p.loadObject(ofClass: UIImage.self)  { image, error in
-                        DispatchQueue.main.async {
-                            self.loadImage(object: image, error: error)
-                        }
-                    }
+                }
+            }
+        }
+
+        private func loadFileURL(_ p: NSItemProvider, type: UTType, completion: @escaping (URL?) -> Void) {
+            p.loadFileRepresentation(forTypeIdentifier: type.identifier) { url, err in
+                if let err = err {
+                    logger.error("LibraryMediaListPicker loadFileURL error: \(err.localizedDescription)")
+                    completion(nil)
                 } else {
-                    dispatchQueue.sync { self.mediaCount -= 1}
-                }
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
-                self.dispatchQueue.sync {
-                    if self.parent.media.count == 0 {
-                        logger.log("LibraryMediaListPicker: added \(self.media.count) images out of \(results.count)")
-                        self.parent.media = self.media
-                    }
-                }
-            }
-        }
-
-        func loadImage(object: Any?, error: Error? = nil) {
-            if let error = error {
-                logger.error("LibraryMediaListPicker: couldn't load image with error: \(error.localizedDescription)")
-            } else if let image = object as? UIImage {
-                media.append(.simpleImage(image: image))
-                logger.log("LibraryMediaListPicker: added image")
-            } else if let url = object as? URL, let image = UploadContent.loadFromURL(url: url) {
-                media.append(image)
-            }
-            dispatchQueue.sync {
-                self.mediaCount -= 1
-                if self.mediaCount == 0 && self.parent.media.count == 0 {
-                    logger.log("LibraryMediaListPicker: added all media")
-                    self.parent.media = self.media
-                    self.media = []
-                }
-            }
-        }
-
-        func loadVideo(url: URL?, error: Error? = nil) {
-            if let error = error {
-                logger.error("LibraryMediaListPicker: couldn't load video with error: \(error.localizedDescription)")
-            } else if let url = url as URL?, let video = UploadContent.loadVideoFromURL(url: url) {
-                media.append(video)
-            }
-            dispatchQueue.sync {
-                self.mediaCount -= 1
-                if self.mediaCount == 0 && self.parent.media.count == 0 {
-                    logger.log("LibraryMediaListPicker: added all media")
-                    self.parent.media = self.media
-                    self.media = []
+                    completion(url)
                 }
             }
         }

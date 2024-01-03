@@ -16,20 +16,15 @@ struct SimpleXApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @StateObject private var chatModel = ChatModel.shared
     @ObservedObject var alertManager = AlertManager.shared
+
     @Environment(\.scenePhase) var scenePhase
-    @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
-    @State private var userAuthorized: Bool?
-    @State private var doAuthenticate = false
-    @State private var enteredBackground: TimeInterval? = nil
-    @State private var canConnectCall = false
-    @State private var lastSuccessfulUnlock: TimeInterval? = nil
-    @State private var showInitializationView = false
+    @State private var enteredBackgroundAuthenticated: TimeInterval? = nil
 
     init() {
-//        DispatchQueue.global(qos: .background).sync {
+        DispatchQueue.global(qos: .background).sync {
             haskell_init()
 //            hs_init(0, nil)
-//        }
+        }
         UserDefaults.standard.register(defaults: appDefaults)
         setGroupDefaults()
         registerGroupDefaults()
@@ -39,22 +34,17 @@ struct SimpleXApp: App {
     }
 
     var body: some Scene {
-        return WindowGroup {
-            ContentView(
-                doAuthenticate: $doAuthenticate,
-                userAuthorized: $userAuthorized,
-                canConnectCall: $canConnectCall,
-                lastSuccessfulUnlock: $lastSuccessfulUnlock,
-                showInitializationView: $showInitializationView
-            )
+        WindowGroup {
+            // contentAccessAuthenticationExtended has to be passed to ContentView on view initialization,
+            // so that it's computed by the time view renders, and not on event after rendering
+            ContentView(contentAccessAuthenticationExtended: !authenticationExpired())
                 .environmentObject(chatModel)
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
-                    showInitializationView = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                         initChatAndMigrate()
                     }
                 }
@@ -62,30 +52,35 @@ struct SimpleXApp: App {
                     logger.debug("scenePhase was \(String(describing: scenePhase)), now \(String(describing: phase))")
                     switch (phase) {
                     case .background:
+                        // --- authentication
+                        // see ContentView .onChange(of: scenePhase) for remaining authentication logic
+                        if chatModel.contentViewAccessAuthenticated {
+                            enteredBackgroundAuthenticated = ProcessInfo.processInfo.systemUptime
+                        }
+                        chatModel.contentViewAccessAuthenticated = false
+                        // authentication ---
+
                         if CallController.useCallKit() && chatModel.activeCall != nil {
                             CallController.shared.shouldSuspendChat = true
                         } else {
                             suspendChat()
                             BGManager.shared.schedule()
                         }
-                        if userAuthorized == true {
-                            enteredBackground = ProcessInfo.processInfo.systemUptime
-                        }
-                        doAuthenticate = false
-                        canConnectCall = false
                         NtfManager.shared.setNtfBadgeCount(chatModel.totalUnreadCountForAllUsers())
                     case .active:
                         CallController.shared.shouldSuspendChat = false
-                        let appState = appStateGroupDefault.get()
-                        startChatAndActivate()
-                        if appState.inactive && chatModel.chatRunning == true {
-                            updateChats()
-                            if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
-                                updateCallInvitations()
+                        let appState = AppChatState.shared.value
+
+                        if appState != .stopped {
+                            startChatAndActivate {
+                                if appState.inactive && chatModel.chatRunning == true {
+                                    updateChats()
+                                    if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
+                                        updateCallInvitations()
+                                    }
+                                }
                             }
                         }
-                        doAuthenticate = authenticationExpired()
-                        canConnectCall = !(doAuthenticate && prefPerformLA) || unlockedRecently()
                     default:
                         break
                     }
@@ -118,19 +113,11 @@ struct SimpleXApp: App {
     }
 
     private func authenticationExpired() -> Bool {
-        if let enteredBackground = enteredBackground {
+        if let enteredBackgroundAuthenticated = enteredBackgroundAuthenticated {
             let delay = Double(UserDefaults.standard.integer(forKey: DEFAULT_LA_LOCK_DELAY))
-            return ProcessInfo.processInfo.systemUptime - enteredBackground >= delay
+            return ProcessInfo.processInfo.systemUptime - enteredBackgroundAuthenticated >= delay
         } else {
             return true
-        }
-    }
-
-    private func unlockedRecently() -> Bool {
-        if let lastSuccessfulUnlock = lastSuccessfulUnlock {
-            return ProcessInfo.processInfo.systemUptime - lastSuccessfulUnlock < 2
-        } else {
-            return false
         }
     }
 

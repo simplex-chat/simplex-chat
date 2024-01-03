@@ -22,13 +22,13 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {core
       withGlobalLogging logCfg initRun
     _ -> initRun
   where
-    initRun = createChatDatabase dbFilePrefix dbKey confirmMigrations >>= either exit run
+    initRun = createChatDatabase dbFilePrefix dbKey False confirmMigrations >>= either exit run
     exit e = do
       putStrLn $ "Error opening database: " <> show e
       exitFailure
     run db@ChatDatabase {chatStore} = do
       u <- getCreateActiveUser chatStore testView
-      cc <- newChatController db (Just u) cfg opts
+      cc <- newChatController db (Just u) cfg opts False
       runSimplexChat opts u cc chat
 
 runSimplexChat :: ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
