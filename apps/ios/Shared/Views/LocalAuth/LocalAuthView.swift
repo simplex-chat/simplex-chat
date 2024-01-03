@@ -46,6 +46,10 @@ struct LocalAuthView: View {
     private func deleteStorageAndRestart(_ password: String, completed: @escaping (LAResult) -> Void) {
         Task {
             do {
+                /** Waiting until [initializeChat] finishes */
+                while (m.ctrlInitInProgress) {
+                    try await Task.sleep(nanoseconds: 50_000000)
+                }
                 if m.chatRunning == true {
                     try await stopChatAsync()
                 }
