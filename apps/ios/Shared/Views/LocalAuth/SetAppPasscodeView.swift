@@ -41,7 +41,10 @@ struct SetAppPasscodeView: View {
                     }
                 }
             } else {
-                setPasswordView(title: title, submitLabel: "Save") {
+                setPasswordView(title: title,
+                                submitLabel: "Save",
+                                // Do not allow to set app passcode == selfDestruct passcode
+                                submitEnabled: { pwd in pwd != (passcodeKeychain.forKey == kcSelfDestructPassword.forKey ? kcAppPassword : kcSelfDestructPassword).get() }) {
                     enteredPassword = passcode
                     passcode = ""
                     confirming = true
@@ -54,7 +57,7 @@ struct SetAppPasscodeView: View {
     }
 
     private func setPasswordView(title: LocalizedStringKey, submitLabel: LocalizedStringKey, submitEnabled: (((String) -> Bool))? = nil, submit: @escaping () -> Void) -> some View {
-        PasscodeView(passcode: $passcode, title: title, reason: reason, submitLabel: submitLabel, submitEnabled: submitEnabled, submit: submit) {
+        PasscodeView(passcode: $passcode, title: title, reason: reason, submitLabel: submitLabel, submitEnabled: submitEnabled, buttonsEnabled: Binding.constant(true), submit: submit) {
             dismiss()
             cancel()
         }

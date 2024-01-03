@@ -61,21 +61,24 @@ struct ContentView: View {
             }
             if !showSettings, let la = chatModel.laRequest {
                 LocalAuthView(authRequest: la)
-            } else if showSetPasscode {
-                SetAppPasscodeView {
-                    chatModel.contentViewAccessAuthenticated = true
-                    prefPerformLA = true
-                    showSetPasscode = false
-                    privacyLocalAuthModeDefault.set(.passcode)
-                    alertManager.showAlert(laTurnedOnAlert())
-                } cancel: {
-                    prefPerformLA = false
-                    showSetPasscode = false
-                    alertManager.showAlert(laPasscodeNotSetAlert())
+            } else {
+                if showSetPasscode {
+                    SetAppPasscodeView {
+                        chatModel.contentViewAccessAuthenticated = true
+                        prefPerformLA = true
+                        showSetPasscode = false
+                        privacyLocalAuthModeDefault.set(.passcode)
+                        alertManager.showAlert(laTurnedOnAlert())
+                    } cancel: {
+                        prefPerformLA = false
+                        showSetPasscode = false
+                        alertManager.showAlert(laPasscodeNotSetAlert())
+                    }
+                } else {
+                    if chatModel.chatDbStatus == nil {
+                        initializationView()
+                    }
                 }
-            }
-            if chatModel.chatDbStatus == nil {
-                initializationView()
             }
         }
         .alert(isPresented: $alertManager.presentAlert) { alertManager.alertView! }

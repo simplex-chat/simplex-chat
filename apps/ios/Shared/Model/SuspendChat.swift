@@ -101,7 +101,9 @@ func activateChat(appState: AppState = .active) {
     }
 }
 
-func initChatAndMigrate(refreshInvitations: Bool = true) {
+func initChatAndMigrate(ignoreSelfDestruct: Bool = false, refreshInvitations: Bool = true) {
+    if !ignoreSelfDestruct && kcSelfDestructPassword.get() != nil { return }
+
     let m = ChatModel.shared
     if (!m.chatInitialized) {
         m.v3DBMigration = v3DBMigrationDefault.get()
