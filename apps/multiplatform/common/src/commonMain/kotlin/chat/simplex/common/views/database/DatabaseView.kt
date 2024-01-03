@@ -378,12 +378,12 @@ private fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatD
         ModalManager.closeAllModalsEverywhere()
         return@withApi
       }
-      if (m.currentUser.value == null) {
+      val user = m.currentUser.value
+      if (user == null) {
         ModalManager.closeAllModalsEverywhere()
         return@withApi
       } else {
-        m.controller.apiStartChat()
-        m.chatRunning.value = true
+        m.controller.startChat(user)
       }
       val ts = Clock.System.now()
       m.controller.appPrefs.chatLastStart.set(ts)
@@ -453,6 +453,7 @@ private fun stopChat(m: ChatModel) {
 suspend fun stopChatAsync(m: ChatModel) {
   m.controller.apiStopChat()
   m.chatRunning.value = false
+  controller.appPrefs.chatStopped.set(true)
 }
 
 suspend fun deleteChatAsync(m: ChatModel) {
