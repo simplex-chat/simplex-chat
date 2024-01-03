@@ -1557,4 +1557,6 @@
     <string name="keep_invitation_link">保留</string>
     <string name="tap_to_paste_link">轻按粘贴链接</string>
     <string name="search_or_paste_simplex_link">搜索或粘贴 SimpleX 链接</string>
+    <string name="chat_is_stopped_you_should_transfer_database">聊天已停止。如果你已经在另一台设备商使用过此数据库，你应该在启动聊天前将数据库传输回来。</string>
+    <string name="start_chat_question">启动聊天吗？</string>
 </resources>
