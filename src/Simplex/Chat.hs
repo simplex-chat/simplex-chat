@@ -461,6 +461,7 @@ processChatCommand' vr = \case
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withStore $ \db -> createUserRecordAt db (AgentUserId auId) p True ts
     when (auId == 1) $ withStore (\db -> createContact db user simplexContactProfile) `catchChatError` \_ -> pure ()
+    withStore $ \db -> createNoteFolder db user
     storeServers user smpServers
     storeServers user xftpServers
     atomically . writeTVar u $ Just user
@@ -6149,7 +6150,9 @@ getCreateActiveUser st testView = do
               putStrLn "chosen display name is already used by another profile on this device, choose another one"
               loop
             Left e -> putStrLn ("database error " <> show e) >> exitFailure
-            Right user -> pure user
+            Right user -> do
+              void . withTransaction st $ \db -> runExceptT $ createNoteFolder db user
+              pure user
     selectUser :: [User] -> IO User
     selectUser [user@User {userId}] = do
       withTransaction st (`setActiveUser` userId)

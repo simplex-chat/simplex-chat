@@ -26,6 +26,7 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDataba
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Store
+import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Terminal
 import Simplex.Chat.Terminal.Output (newChatTerminal)
@@ -191,7 +192,10 @@ groupLinkViaContactVRange = mkVersionRange 1 2
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
   Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False MCError
-  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
+  Right user <- withTransaction chatStore $ \db' -> runExceptT $ do
+    user <- createUserRecord db' (AgentUserId 1) profile True
+    createNoteFolder db' user
+    pure user
   startTestChat_ db cfg opts user
 
 startTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> IO TestCC

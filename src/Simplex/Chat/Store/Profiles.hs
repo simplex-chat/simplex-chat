@@ -121,10 +121,6 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
       (profileId, displayName, userId, True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    DB.execute
-      db
-      "INSERT INTO note_folders (user_id, created_at, updated_at, chat_ts, favorite, unread_chat) VALUES (?, ?, ?, ?, ?, ?)"
-      (userId, currentTs, currentTs, currentTs, False, False)
 
     pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing)
 
