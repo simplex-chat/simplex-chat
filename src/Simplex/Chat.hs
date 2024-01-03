@@ -6029,7 +6029,9 @@ createContactsSndFeatureItems user cts =
   createContactsFeatureItems user cts' CDDirectSnd CISndChatFeature CISndChatPreference getPref
   where
     cts' = map (\ChangedProfileContact {ct, ct'} -> (ct, ct')) cts
-    getPref u = (userPreference u).preference
+    getPref ContactUserPreference {userPreference} = case userPreference of
+      CUPContact {preference} -> preference
+      CUPUser {preference} -> preference
 
 type FeatureContent a d = ChatFeature -> a -> Maybe Int -> CIContent d
 
