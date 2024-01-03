@@ -18,6 +18,7 @@ chatLocalTests = do
     it "create folders, add notes, read, search" testNotes
     it "switch users" testUserNotes
     it "preview pagination for notes" testPreviewsPagination
+    it "chat pagination" testChatPagination
     it "stores files" testFiles
 
 testNotes :: FilePath -> IO ()
@@ -78,6 +79,22 @@ testPreviewsPagination tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -
   getChats_ alice ("before=" <> tsM <> " count=10") []
   getChats_ alice ("before=" <> tsE <> " count=10") [("-", "last")]
   getChats_ alice ("before=" <> tsS <> " count=10") []
+
+testChatPagination :: FilePath -> IO ()
+testChatPagination tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+  alice /- "hello world"
+  alice /- "memento mori"
+  alice /- "knock-knock"
+  alice /- "who's there?"
+
+  alice #$> ("/_get chat $1 count=100", chat, [(1, "hello world"), (1, "memento mori"), (1, "knock-knock"), (1, "who's there?")])
+  alice #$> ("/_get chat $1 count=1", chat, [(1, "who's there?")])
+  alice #$> ("/_get chat $1 after=2 count=10", chat, [(1, "knock-knock"), (1, "who's there?")])
+  alice #$> ("/_get chat $1 after=2 count=2", chat, [(1, "knock-knock"), (1, "who's there?")])
+  alice #$> ("/_get chat $1 before=3 count=10", chat, [(1, "hello world"), (1, "memento mori")])
+  alice #$> ("/_get chat $1 before=3 count=2", chat, [(1, "hello world"), (1, "memento mori")])
+
+  alice #$> ("/_get chat $1 count=10 search=k-k", chat, [(1, "knock-knock")])
 
 testFiles :: FilePath -> IO ()
 testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
