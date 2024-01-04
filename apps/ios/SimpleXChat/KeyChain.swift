@@ -22,7 +22,7 @@ public let kcAppPassword = KeyChainItem(forKey: APP_PASSWORD_ITEM)
 public let kcSelfDestructPassword = KeyChainItem(forKey: SELF_DESTRUCT_PASSWORD_ITEM)
 
 public struct KeyChainItem {
-    public var forKey: String
+    var forKey: String
 
     public func get() -> String? {
         getItemString(forKey: forKey)

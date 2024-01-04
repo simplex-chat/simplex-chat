@@ -11,6 +11,7 @@ import SimpleXChat
 
 struct SetAppPasscodeView: View {
     var passcodeKeychain: KeyChainItem = kcAppPassword
+    var prohibitedPasscodeKeychain: KeyChainItem = kcSelfDestructPassword
     var title: LocalizedStringKey = "New Passcode"
     var reason: String?
     var submit: () -> Void
@@ -44,7 +45,7 @@ struct SetAppPasscodeView: View {
                 setPasswordView(title: title,
                                 submitLabel: "Save",
                                 // Do not allow to set app passcode == selfDestruct passcode
-                                submitEnabled: { pwd in pwd != (passcodeKeychain.forKey == kcSelfDestructPassword.forKey ? kcAppPassword : kcSelfDestructPassword).get() }) {
+                                submitEnabled: { pwd in pwd != prohibitedPasscodeKeychain.get() }) {
                     enteredPassword = passcode
                     passcode = ""
                     confirming = true
