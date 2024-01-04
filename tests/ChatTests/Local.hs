@@ -4,13 +4,15 @@
 module ChatTests.Local where
 
 import ChatClient
-import ChatTests.Utils
-import System.Directory (copyFile, doesFileExist)
-import Test.Hspec
-import System.FilePath ((</>))
-import Data.Time (getCurrentTime)
 import ChatTests.ChatList (getChats_)
+import ChatTests.Utils
+import Data.Time (getCurrentTime)
 import Data.Time.Format.ISO8601 (iso8601Show)
+import Simplex.Chat.Controller (ChatConfig (..), InlineFilesConfig (..), defaultInlineFilesConfig)
+import System.Directory (copyFile, doesFileExist)
+import System.FilePath ((</>))
+import Test.Hspec
+import UnliftIO.Async (concurrently_)
 
 chatLocalTests :: SpecWith FilePath
 chatLocalTests = do
@@ -20,6 +22,7 @@ chatLocalTests = do
     it "preview pagination for notes" testPreviewsPagination
     it "chat pagination" testChatPagination
     it "stores files" testFiles
+    it "deleting files does not interfere with other chat types" testOtherFiles
 
 testNotes :: FilePath -> IO ()
 testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
@@ -149,3 +152,35 @@ testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice <## "chat db error: SEChatItemNotFoundByFileId {fileId = 1}"
   alice ##> "/tail"
   doesFileExist stored `shouldReturn` False
+
+testOtherFiles :: FilePath -> IO ()
+testOtherFiles =
+  testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
+    connectUsers alice bob
+    createCCNoteFolder bob
+    bob ##> "/_files_folder ./tests/tmp/"
+    bob <## "ok"
+    alice ##> "/_send @2 json {\"msgContent\":{\"type\":\"voice\", \"duration\":10, \"text\":\"\"}, \"filePath\":\"./tests/fixtures/test.jpg\"}"
+    alice <# "@bob voice message (00:10)"
+    alice <# "/f @bob ./tests/fixtures/test.jpg"
+    -- below is not shown in "sent" mode
+    -- alice <## "use /fc 1 to cancel sending"
+    bob <# "alice> voice message (00:10)"
+    bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+    -- below is not shown in "sent" mode
+    -- bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+    bob <## "started receiving file 1 (test.jpg) from alice"
+    concurrently_
+      (alice <## "completed sending file 1 (test.jpg) to bob")
+      (bob <## "completed receiving file 1 (test.jpg) from alice")
+
+    bob /* "test"
+    bob ##> "/tail *"
+    bob <# "* test"
+    bob ##> "/clear *"
+    bob ##> "/tail *"
+    bob ##> "/fs 1"
+    bob <## "receiving file 1 (test.jpg) complete, path: test.jpg"
+    doesFileExist "./tests/tmp/test.jpg" `shouldReturn` True
+  where
+    cfg = testCfg {inlineFiles = defaultInlineFilesConfig {offerChunks = 100, sendChunks = 100, receiveChunks = 100}}
