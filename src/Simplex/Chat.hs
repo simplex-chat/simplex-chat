@@ -454,8 +454,9 @@ processChatCommand' vr = \case
       withStore' getUsers >>= \case
         [] -> pure 1
         users -> do
-          when (any (\User {localDisplayName = n} -> n == displayName) users) $
-            throwChatError (CEUserExists displayName)
+          forM_ users $ \User {localDisplayName = n, activeUser, viewPwdHash} ->
+            when (n == displayName) . throwChatError $
+              if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
           withAgent (\a -> createUser a smp xftp)
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withStore $ \db -> createUserRecordAt db (AgentUserId auId) p True ts
