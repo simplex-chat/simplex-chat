@@ -33,7 +33,8 @@ CREATE TABLE users(
   view_pwd_salt BLOB,
   show_ntfs INTEGER NOT NULL DEFAULT 1,
   send_rcpts_contacts INTEGER NOT NULL DEFAULT 0,
-  send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0,
+  last_profile_update_ts TEXT, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -150,6 +151,7 @@ CREATE TABLE group_members(
   invited_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
+  last_profile_sent_ts TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
