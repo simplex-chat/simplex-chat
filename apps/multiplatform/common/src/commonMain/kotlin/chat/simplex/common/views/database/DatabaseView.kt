@@ -460,10 +460,10 @@ suspend fun deleteChatAsync(m: ChatModel) {
   m.controller.apiDeleteStorage()
   DatabaseUtils.ksDatabasePassword.remove()
   m.controller.appPrefs.storeDBPassphrase.set(true)
-  deleteChatDatabaseFiles()
+  deleteAppDatabaseAndFiles()
 }
 
-fun deleteChatDatabaseFiles() {
+fun deleteAppDatabaseAndFiles() {
   val chat = File(dataDir, chatDatabaseFileName)
   val chatBak = File(dataDir, "$chatDatabaseFileName.bak")
   val agent = File(dataDir, agentDatabaseFileName)
@@ -473,6 +473,7 @@ fun deleteChatDatabaseFiles() {
   agent.delete()
   agentBak.delete()
   filesDir.deleteRecursively()
+  filesDir.mkdir()
   remoteHostsDir.deleteRecursively()
   tmpDir.deleteRecursively()
   tmpDir.mkdir()

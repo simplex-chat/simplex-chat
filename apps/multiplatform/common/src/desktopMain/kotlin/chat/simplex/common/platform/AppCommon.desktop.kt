@@ -24,7 +24,9 @@ fun initApp() {
     override fun cancelAllNotifications() = chat.simplex.common.model.NtfManager.cancelAllNotifications()
   }
   applyAppLocale()
-  initChatControllerAndRunMigrations(false)
+  if (DatabaseUtils.ksSelfDestructPassword.get() == null) {
+    initChatControllerAndRunMigrations()
+  }
   // LALAL
   //testCrypto()
 }

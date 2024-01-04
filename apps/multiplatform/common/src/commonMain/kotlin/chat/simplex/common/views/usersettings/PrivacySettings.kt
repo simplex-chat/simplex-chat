@@ -454,6 +454,7 @@ fun SimplexLockView(
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
               SetAppPasscodeView(
                 passcodeKeychain = ksSelfDestructPassword,
+                prohibitedPasscodeKeychain = ksAppPassword,
                 reason = generalGetString(MR.strings.self_destruct),
                 submit = {
                   selfDestructPasscodeAlert(generalGetString(MR.strings.self_destruct_passcode_changed))
@@ -600,7 +601,7 @@ private fun EnableSelfDestruct(
 ) {
   Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
     SetAppPasscodeView(
-      passcodeKeychain = ksSelfDestructPassword, title = generalGetString(MR.strings.set_passcode), reason = generalGetString(MR.strings.enabled_self_destruct_passcode),
+      passcodeKeychain = ksSelfDestructPassword, prohibitedPasscodeKeychain = ksAppPassword, title = generalGetString(MR.strings.set_passcode), reason = generalGetString(MR.strings.enabled_self_destruct_passcode),
       submit = {
         selfDestruct.set(true)
         selfDestructPasscodeAlert(generalGetString(MR.strings.self_destruct_passcode_enabled))

@@ -63,7 +63,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
 
-    initChatControllerAndRunMigrations(false)
+    if (DatabaseUtils.ksSelfDestructPassword.get() == null) {
+      initChatControllerAndRunMigrations()
+    }
     ProcessLifecycleOwner.get().lifecycle.addObserver(this@SimplexApp)
   }
 

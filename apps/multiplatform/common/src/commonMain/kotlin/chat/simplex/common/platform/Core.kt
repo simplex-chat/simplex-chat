@@ -41,16 +41,14 @@ val appPreferences: AppPreferences
 
 val chatController: ChatController = ChatController
 
-fun initChatControllerAndRunMigrations(ignoreSelfDestruct: Boolean) {
-  if (ignoreSelfDestruct || DatabaseUtils.ksSelfDestructPassword.get() == null) {
-    withBGApi {
-      if (appPreferences.chatStopped.get() && appPreferences.storeDBPassphrase.get() && ksDatabasePassword.get() != null) {
-        initChatController(startChat = ::showStartChatAfterRestartAlert)
-      } else {
-        initChatController()
-      }
-      runMigrations()
+fun initChatControllerAndRunMigrations() {
+  withBGApi {
+    if (appPreferences.chatStopped.get() && appPreferences.storeDBPassphrase.get() && ksDatabasePassword.get() != null) {
+      initChatController(startChat = ::showStartChatAfterRestartAlert)
+    } else {
+      initChatController()
     }
+    runMigrations()
   }
 }
 
