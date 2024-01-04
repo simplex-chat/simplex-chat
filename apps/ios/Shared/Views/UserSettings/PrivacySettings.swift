@@ -503,7 +503,11 @@ struct SimplexLockView: View {
                     revertSelfDestruct()
                 }
             case .changeSelfDestructPasscode:
-                SetAppPasscodeView(passcodeKeychain: kcSelfDestructPassword, reason: NSLocalizedString("Change self-destruct passcode", comment: "set passcode view")) {
+                SetAppPasscodeView(
+                    passcodeKeychain: kcSelfDestructPassword,
+                    prohibitedPasscodeKeychain: kcAppPassword,
+                    reason: NSLocalizedString("Change self-destruct passcode", comment: "set passcode view")
+                ) {
                     showLAAlert(.laSelfDestructPasscodeChangedAlert)
                 } cancel: {
                     showLAAlert(.laPasscodeNotChangedAlert)
