@@ -88,6 +88,7 @@ import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentCl
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
+import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withConnection)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
@@ -5721,20 +5722,21 @@ deliverMessage' conn msgFlags msgBody msgId =
 
 type MsgReq = (Connection, MsgFlags, LazyMsgBody, MessageId)
 
-deliverMessagesB :: ChatMonad' m => [Either ChatError MsgReq] -> m [Either ChatError Int64]
-deliverMessagesB msgReqs_ = do
-  let (iErrs, iReqs) = partitionEithers $ zipWith (\i -> either (Left . (i,) . Left) (Right . (i,))) ([1 ..] :: [Int]) msgReqs_
-      (is, reqs) = unzip iReqs
-  rs <- zip is <$> deliverMessages reqs
-  pure $ map snd $ sortOn fst $ iErrs <> rs
-
 deliverMessages :: ChatMonad' m => [MsgReq] -> m [Either ChatError Int64]
-deliverMessages msgReqs = do
-  sent <- zipWith prepareBatch msgReqs <$> withAgent' (`sendMessages` aReqs)
+deliverMessages = deliverMessagesB . map Right
+
+deliverMessagesB :: ChatMonad' m => [Either ChatError MsgReq] -> m [Either ChatError Int64]
+deliverMessagesB msgReqs = do
+  sent <- zipWith prepareBatch msgReqs <$> withAgent' (`sendMessagesB` map toAgent msgReqs)
   withStoreBatch $ \db -> map (bindRight $ createDelivery db) sent
   where
-    aReqs = map (\(conn, msgFlags, msgBody, _msgId) -> (aConnId conn, msgFlags, LB.toStrict msgBody)) msgReqs
-    prepareBatch req = bimap (`ChatErrorAgent` Nothing) (req,)
+    toAgent = \case
+      Right (conn, msgFlags, msgBody, _msgId) -> Right (aConnId conn, msgFlags, LB.toStrict msgBody)
+      Left _ce -> Left (AP.INTERNAL "ChatError, skip") -- as long as it is Left, the agent batchers should just step over it
+    prepareBatch mreq ares = case (mreq, ares) of
+      (Left ce, _) -> Left ce -- restore original ChatError
+      (_, Left ae) -> Left $ ChatErrorAgent ae Nothing
+      (Right req, Right ar) -> Right (req, ar)
     createDelivery :: DB.Connection -> (MsgReq, AgentMsgId) -> IO (Either ChatError Int64)
     createDelivery db ((Connection {connId}, _, _, msgId), agentMsgId) =
       Right <$> createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId}) msgId
