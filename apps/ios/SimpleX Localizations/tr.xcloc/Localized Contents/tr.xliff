@@ -3350,52 +3350,64 @@
         <target state="translated">Muhtemelen, sunucu adresindeki parmakizi sertifikası doğru değil</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
+      <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve" approved="no">
         <source>Preserve the last message draft, with attachments.</source>
+        <target state="translated">Son mesaj taslağını ekleriyle birlikte koru.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Preset server" xml:space="preserve">
+      <trans-unit id="Preset server" xml:space="preserve" approved="no">
         <source>Preset server</source>
+        <target state="translated">Ön ayarlı sunucu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Preset server address" xml:space="preserve">
+      <trans-unit id="Preset server address" xml:space="preserve" approved="no">
         <source>Preset server address</source>
+        <target state="translated">Ön ayarlı sunucu adresi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Preview" xml:space="preserve">
+      <trans-unit id="Preview" xml:space="preserve" approved="no">
         <source>Preview</source>
+        <target state="translated">Ön izleme</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Privacy &amp; security" xml:space="preserve">
+      <trans-unit id="Privacy &amp; security" xml:space="preserve" approved="no">
         <source>Privacy &amp; security</source>
+        <target state="translated">Gizlilik &amp; güvenlik</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Privacy redefined" xml:space="preserve">
+      <trans-unit id="Privacy redefined" xml:space="preserve" approved="no">
         <source>Privacy redefined</source>
+        <target state="translated">Gizlilik yeniden tanımlandı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Private filenames" xml:space="preserve">
+      <trans-unit id="Private filenames" xml:space="preserve" approved="no">
         <source>Private filenames</source>
+        <target state="translated">Gizli dosya adları</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile and server connections" xml:space="preserve">
+      <trans-unit id="Profile and server connections" xml:space="preserve" approved="no">
         <source>Profile and server connections</source>
+        <target state="translated">Profil ve sunucu bağlantıları</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile image" xml:space="preserve">
+      <trans-unit id="Profile image" xml:space="preserve" approved="no">
         <source>Profile image</source>
+        <target state="translated">Profil fotoğrafı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile password" xml:space="preserve">
+      <trans-unit id="Profile password" xml:space="preserve" approved="no">
         <source>Profile password</source>
+        <target state="translated">Profil parolası</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Profile update will be sent to your contacts." xml:space="preserve">
+      <trans-unit id="Profile update will be sent to your contacts." xml:space="preserve" approved="no">
         <source>Profile update will be sent to your contacts.</source>
+        <target state="translated">Profil güncellemesi kişilerinize gönderilecektir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
+      <trans-unit id="Prohibit audio/video calls." xml:space="preserve" approved="no">
         <source>Prohibit audio/video calls.</source>
+        <target state="translated">Sesli/görüntülü aramaları yasakla.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit irreversible message deletion." xml:space="preserve">
@@ -3426,40 +3438,49 @@
         <source>Prohibit sending voice messages.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect app screen" xml:space="preserve">
+      <trans-unit id="Protect app screen" xml:space="preserve" approved="no">
         <source>Protect app screen</source>
+        <target state="translated">Uygulama ekranını koru</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve">
+      <trans-unit id="Protect your chat profiles with a password!" xml:space="preserve" approved="no">
         <source>Protect your chat profiles with a password!</source>
+        <target state="translated">Bir parolayla birlikte sohbet profillerini koru!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protocol timeout" xml:space="preserve">
+      <trans-unit id="Protocol timeout" xml:space="preserve" approved="no">
         <source>Protocol timeout</source>
+        <target state="translated">Protokol zaman aşımı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Protocol timeout per KB" xml:space="preserve">
+      <trans-unit id="Protocol timeout per KB" xml:space="preserve" approved="no">
         <source>Protocol timeout per KB</source>
+        <target state="translated">KB başına protokol zaman aşımı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Push notifications" xml:space="preserve">
+      <trans-unit id="Push notifications" xml:space="preserve" approved="no">
         <source>Push notifications</source>
+        <target state="translated">Anında bildirimler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Rate the app" xml:space="preserve">
+      <trans-unit id="Rate the app" xml:space="preserve" approved="no">
         <source>Rate the app</source>
+        <target state="translated">Uygulamayı değerlendir</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="React…" xml:space="preserve">
+      <trans-unit id="React…" xml:space="preserve" approved="no">
         <source>React…</source>
+        <target state="translated">Tepki ver…</target>
         <note>chat item menu</note>
       </trans-unit>
-      <trans-unit id="Read" xml:space="preserve">
+      <trans-unit id="Read" xml:space="preserve" approved="no">
         <source>Read</source>
+        <target state="translated">Oku</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more" xml:space="preserve">
+      <trans-unit id="Read more" xml:space="preserve" approved="no">
         <source>Read more</source>
+        <target state="translated">Dahasını oku</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read more in [User Guide](https://simplex.chat/docs/guide/app-settings.html#your-simplex-contact-address)." xml:space="preserve">
@@ -3470,8 +3491,9 @@
         <source>Read more in [User Guide](https://simplex.chat/docs/guide/readme.html#connect-to-friends).</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Read more in our GitHub repository." xml:space="preserve">
+      <trans-unit id="Read more in our GitHub repository." xml:space="preserve" approved="no">
         <source>Read more in our GitHub repository.</source>
+        <target state="translated">Daha fazlasını GitHub depomuzdan oku.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Read more in our [GitHub repository](https://github.com/simplex-chat/simplex-chat#readme)." xml:space="preserve">
@@ -3514,8 +3536,9 @@
         <source>Reconnect all connected servers to force message delivery. It uses additional traffic.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reconnect servers?" xml:space="preserve">
+      <trans-unit id="Reconnect servers?" xml:space="preserve" approved="no">
         <source>Reconnect servers?</source>
+        <target state="translated">Sunuculara yeniden bağlanılsın mı?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Record updated at" xml:space="preserve">
@@ -3526,20 +3549,23 @@
         <source>Record updated at: %@</source>
         <note>copied message info</note>
       </trans-unit>
-      <trans-unit id="Reduced battery usage" xml:space="preserve">
+      <trans-unit id="Reduced battery usage" xml:space="preserve" approved="no">
         <source>Reduced battery usage</source>
+        <target state="translated">Azaltılmış pil kullanımı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reject" xml:space="preserve">
+      <trans-unit id="Reject" xml:space="preserve" approved="no">
         <source>Reject</source>
+        <target state="translated">Reddet</target>
         <note>reject incoming call via notification</note>
       </trans-unit>
       <trans-unit id="Reject contact (sender NOT notified)" xml:space="preserve">
         <source>Reject contact (sender NOT notified)</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reject contact request" xml:space="preserve">
+      <trans-unit id="Reject contact request" xml:space="preserve" approved="no">
         <source>Reject contact request</source>
+        <target state="translated">Bağlanma isteğini reddet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Relay server is only used if necessary. Another party can observe your IP address." xml:space="preserve">
@@ -3550,16 +3576,19 @@
         <source>Relay server protects your IP address, but it can observe the duration of the call.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Remove" xml:space="preserve">
+      <trans-unit id="Remove" xml:space="preserve" approved="no">
         <source>Remove</source>
+        <target state="translated">Sil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Remove member" xml:space="preserve">
+      <trans-unit id="Remove member" xml:space="preserve" approved="no">
         <source>Remove member</source>
+        <target state="translated">Kişiyi sil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Remove member?" xml:space="preserve">
+      <trans-unit id="Remove member?" xml:space="preserve" approved="no">
         <source>Remove member?</source>
+        <target state="translated">Kişi silinsin mi?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove passphrase from keychain?" xml:space="preserve">
@@ -3578,8 +3607,9 @@
         <source>Renegotiate encryption?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reply" xml:space="preserve">
+      <trans-unit id="Reply" xml:space="preserve" approved="no">
         <source>Reply</source>
+        <target state="translated">Yanıtla</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Required" xml:space="preserve">
@@ -3590,12 +3620,14 @@
         <source>Reset</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reset colors" xml:space="preserve">
+      <trans-unit id="Reset colors" xml:space="preserve" approved="no">
         <source>Reset colors</source>
+        <target state="translated">Renkleri sıfırla</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reset to defaults" xml:space="preserve">
+      <trans-unit id="Reset to defaults" xml:space="preserve" approved="no">
         <source>Reset to defaults</source>
+        <target state="translated">Varsayılanlara sıfırla</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Restart the app to create a new chat profile" xml:space="preserve">
@@ -3606,12 +3638,14 @@
         <source>Restart the app to use imported chat database</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Restore" xml:space="preserve">
+      <trans-unit id="Restore" xml:space="preserve" approved="no">
         <source>Restore</source>
+        <target state="translated">Geri yükle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Restore database backup" xml:space="preserve">
+      <trans-unit id="Restore database backup" xml:space="preserve" approved="no">
         <source>Restore database backup</source>
+        <target state="translated">Veritabanı yedeğini geri yükle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Restore database backup?" xml:space="preserve">
@@ -3622,8 +3656,9 @@
         <source>Restore database error</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reveal" xml:space="preserve">
+      <trans-unit id="Reveal" xml:space="preserve" approved="no">
         <source>Reveal</source>
+        <target state="translated">Göster</target>
         <note>chat item action</note>
       </trans-unit>
       <trans-unit id="Revert" xml:space="preserve">
@@ -3642,48 +3677,59 @@
         <source>Revoke file?</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Role" xml:space="preserve">
+      <trans-unit id="Role" xml:space="preserve" approved="no">
         <source>Role</source>
+        <target state="translated">Rol</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Run chat" xml:space="preserve">
+      <trans-unit id="Run chat" xml:space="preserve" approved="no">
         <source>Run chat</source>
+        <target state="translated">Sohbeti çalıştır</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SMP servers" xml:space="preserve">
+      <trans-unit id="SMP servers" xml:space="preserve" approved="no">
         <source>SMP servers</source>
+        <target state="translated">SMP sunucuları</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save" xml:space="preserve">
+      <trans-unit id="Save" xml:space="preserve" approved="no">
         <source>Save</source>
+        <target state="translated">Kaydet</target>
         <note>chat item action</note>
       </trans-unit>
-      <trans-unit id="Save (and notify contacts)" xml:space="preserve">
+      <trans-unit id="Save (and notify contacts)" xml:space="preserve" approved="no">
         <source>Save (and notify contacts)</source>
+        <target state="translated">Kaydet (ve kişilere bildir)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save and notify contact" xml:space="preserve">
+      <trans-unit id="Save and notify contact" xml:space="preserve" approved="no">
         <source>Save and notify contact</source>
+        <target state="translated">Kaydet ve kişilere bildir</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save and notify group members" xml:space="preserve">
+      <trans-unit id="Save and notify group members" xml:space="preserve" approved="no">
         <source>Save and notify group members</source>
+        <target state="translated">Kaydet ve grup üyelerine bildir</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save and update group profile" xml:space="preserve">
+      <trans-unit id="Save and update group profile" xml:space="preserve" approved="no">
         <source>Save and update group profile</source>
+        <target state="translated">Kaydet ve grup profilini güncelle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save archive" xml:space="preserve">
+      <trans-unit id="Save archive" xml:space="preserve" approved="no">
         <source>Save archive</source>
+        <target state="translated">Arşivi kaydet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save auto-accept settings" xml:space="preserve">
+      <trans-unit id="Save auto-accept settings" xml:space="preserve" approved="no">
         <source>Save auto-accept settings</source>
+        <target state="translated">Otomatik kabul et ayarlarını kaydet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save group profile" xml:space="preserve">
+      <trans-unit id="Save group profile" xml:space="preserve" approved="no">
         <source>Save group profile</source>
+        <target state="translated">Grup profilini kaydet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Save passphrase and open chat" xml:space="preserve">
@@ -3694,72 +3740,89 @@
         <source>Save passphrase in Keychain</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save preferences?" xml:space="preserve">
+      <trans-unit id="Save preferences?" xml:space="preserve" approved="no">
         <source>Save preferences?</source>
+        <target state="translated">Tercihler kaydedilsin mi?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save profile password" xml:space="preserve">
+      <trans-unit id="Save profile password" xml:space="preserve" approved="no">
         <source>Save profile password</source>
+        <target state="translated">Profil şifresini kaydet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save servers" xml:space="preserve">
+      <trans-unit id="Save servers" xml:space="preserve" approved="no">
         <source>Save servers</source>
+        <target state="translated">Sunucuları kaydet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save servers?" xml:space="preserve">
+      <trans-unit id="Save servers?" xml:space="preserve" approved="no">
         <source>Save servers?</source>
+        <target state="translated">Sunucular kaydedilsin mi?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save settings?" xml:space="preserve">
+      <trans-unit id="Save settings?" xml:space="preserve" approved="no">
         <source>Save settings?</source>
+        <target state="translated">Ayarlar kaydedilsin mi?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Save welcome message?" xml:space="preserve">
+      <trans-unit id="Save welcome message?" xml:space="preserve" approved="no">
         <source>Save welcome message?</source>
+        <target state="translated">Hoşgeldin mesajı kaydedilsin mi?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve">
+      <trans-unit id="Saved WebRTC ICE servers will be removed" xml:space="preserve" approved="no">
         <source>Saved WebRTC ICE servers will be removed</source>
+        <target state="translated">Kaydedilmiş WebRTC ICE sunucuları silinecek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan QR code" xml:space="preserve">
+      <trans-unit id="Scan QR code" xml:space="preserve" approved="no">
         <source>Scan QR code</source>
+        <target state="translated">QR kodu okut</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan code" xml:space="preserve">
+      <trans-unit id="Scan code" xml:space="preserve" approved="no">
         <source>Scan code</source>
+        <target state="translated">Kod okut</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan security code from your contact's app." xml:space="preserve">
+      <trans-unit id="Scan security code from your contact's app." xml:space="preserve" approved="no">
         <source>Scan security code from your contact's app.</source>
+        <target state="translated">Kişinin uygulamasından güvenlik kodunu okut.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Scan server QR code" xml:space="preserve">
+      <trans-unit id="Scan server QR code" xml:space="preserve" approved="no">
         <source>Scan server QR code</source>
+        <target state="translated">Sunucu QR kodu okut</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Search" xml:space="preserve">
+      <trans-unit id="Search" xml:space="preserve" approved="no">
         <source>Search</source>
+        <target state="translated">Ara</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Secure queue" xml:space="preserve">
+      <trans-unit id="Secure queue" xml:space="preserve" approved="no">
         <source>Secure queue</source>
+        <target state="translated">Sırayı koru</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Security assessment" xml:space="preserve">
+      <trans-unit id="Security assessment" xml:space="preserve" approved="no">
         <source>Security assessment</source>
+        <target state="translated">Güvenlik değerlendirmesi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Security code" xml:space="preserve">
+      <trans-unit id="Security code" xml:space="preserve" approved="no">
         <source>Security code</source>
+        <target state="translated">Güvenlik kodu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Select" xml:space="preserve">
+      <trans-unit id="Select" xml:space="preserve" approved="no">
         <source>Select</source>
+        <target state="translated">Seç</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Self-destruct" xml:space="preserve">
+      <trans-unit id="Self-destruct" xml:space="preserve" approved="no">
         <source>Self-destruct</source>
+        <target state="translated">Kendi kendini imha</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Self-destruct passcode" xml:space="preserve">
@@ -6178,6 +6241,41 @@ Hata: %@</target>
       <trans-unit id="Or scan QR code" xml:space="preserve" approved="no">
         <source>Or scan QR code</source>
         <target state="translated">Veya QR kodu okut</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Search or paste SimpleX link" xml:space="preserve" approved="no">
+        <source>Search or paste SimpleX link</source>
+        <target state="translated">Ara veya SimpleX bağlantısını yapıştır</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Retry" xml:space="preserve" approved="no">
+        <source>Retry</source>
+        <target state="translated">Yeniden dene</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Receipts are disabled" xml:space="preserve" approved="no">
+        <source>Receipts are disabled</source>
+        <target state="translated">Görüldü devre dışı bırakıldı</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Profile name" xml:space="preserve" approved="no">
+        <source>Profile name</source>
+        <target state="translated">Profil ismi</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Reject (sender NOT notified)" xml:space="preserve" approved="no">
+        <source>Reject (sender NOT notified)</source>
+        <target state="translated">Reddet (göndericiye bildirim GİTMEYECEKTİR)</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Scan QR code from desktop" xml:space="preserve" approved="no">
+        <source>Scan QR code from desktop</source>
+        <target state="translated">Bilgisayardan QR kodu okut</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Profile name:" xml:space="preserve" approved="no">
+        <source>Profile name:</source>
+        <target state="translated">Profil ismi:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
