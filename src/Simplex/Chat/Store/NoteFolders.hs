@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
 module Simplex.Chat.Store.NoteFolders where
@@ -18,12 +19,12 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 createNoteFolder :: DB.Connection -> User -> ExceptT StoreError IO ()
 createNoteFolder db User {userId} =
   checkConstraint SENoteFolderAlreadyCreated . liftIO $
-    DB.execute db [sql| INSERT INTO note_folders (user_id) VALUES (?) |] (Only userId)
+    DB.execute db "INSERT INTO note_folders (user_id) VALUES (?)" (Only userId)
 
 getNoteFolderIdByName :: DB.Connection -> User -> NoteFolderName -> ExceptT StoreError IO NoteFolderId
 getNoteFolderIdByName db User {userId} ldn =
   ExceptT . firstRow fromOnly (SENoteFolderNotFoundByName ldn) $
-    DB.query db [sql| SELECT note_folder_id FROM note_folders WHERE user_id = ? AND "" = ? |] (userId, ldn)
+    DB.query db "SELECT note_folder_id FROM note_folders WHERE user_id = ? AND '' = ?" (userId, ldn)
 
 getNoteFolder :: DB.Connection -> User -> NoteFolderId -> ExceptT StoreError IO NoteFolder
 getNoteFolder db User {userId} noteFolderId =
@@ -45,7 +46,7 @@ getNoteFolder db User {userId} noteFolderId =
 updateNoteFolderUnreadChat :: DB.Connection -> User -> NoteFolder -> Bool -> IO ()
 updateNoteFolderUnreadChat db User {userId} NoteFolder {noteFolderId} unreadChat = do
   updatedAt <- getCurrentTime
-  DB.execute db [sql| UPDATE note_folders SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND note_folder_id = ? |] (unreadChat, updatedAt, userId, noteFolderId)
+  DB.execute db "UPDATE note_folders SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND note_folder_id = ?" (unreadChat, updatedAt, userId, noteFolderId)
 
 deleteNoteFolderFiles :: DB.Connection -> UserId -> NoteFolder -> IO ()
 deleteNoteFolderFiles db userId NoteFolder {noteFolderId} = do
@@ -62,4 +63,4 @@ deleteNoteFolderFiles db userId NoteFolder {noteFolderId} = do
 
 deleteNoteFolderCIs :: DB.Connection -> User -> NoteFolder -> IO ()
 deleteNoteFolderCIs db User {userId} NoteFolder {noteFolderId} =
-  DB.execute db [sql| DELETE FROM chat_items WHERE user_id = ? AND note_folder_id = ? |] (userId, noteFolderId)
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND note_folder_id = ?" (userId, noteFolderId)
