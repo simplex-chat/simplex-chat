@@ -5644,10 +5644,9 @@ deleteOrUpdateMemberRecord user@User {userId} member =
       Nothing -> deleteGroupMember db user member
 
 sendDirectContactMessage :: (MsgEncodingI e, ChatMonad m) => Contact -> ChatMsgEvent e -> m (SndMessage, Int64)
-sendDirectContactMessage ct chatMsgEvent =
-  case contactSendConn_ ct of
-    Right conn@Connection {connId} -> sendDirectMessage conn chatMsgEvent (ConnectionId connId)
-    Left e -> throwError e
+sendDirectContactMessage ct chatMsgEvent = do
+  conn@Connection {connId} <- liftEither $ contactSendConn_ ct
+  sendDirectMessage conn chatMsgEvent (ConnectionId connId)
 
 contactSendConn_ :: Contact -> Either ChatError Connection
 contactSendConn_ ct@Contact {activeConn} = case activeConn of
