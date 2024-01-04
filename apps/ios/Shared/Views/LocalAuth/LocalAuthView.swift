@@ -61,7 +61,7 @@ struct LocalAuthView: View {
                      * */
                     chatCloseStore()
                 }
-                deleteChatDatabaseFiles()
+                deleteAppDatabaseAndFiles()
                 // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
                 m.chatId = nil
                 m.reversedChatItems = []

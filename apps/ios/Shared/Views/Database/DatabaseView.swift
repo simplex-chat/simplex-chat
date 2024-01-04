@@ -484,24 +484,7 @@ func deleteChatAsync() async throws {
     try await apiDeleteStorage()
     _ = kcDatabasePassword.remove()
     storeDBPassphraseGroupDefault.set(true)
-    deleteChatDatabaseFiles()
-}
-
-func deleteChatDatabaseFiles() {
-    do {
-        try FileManager.default.removeItem(atPath: getAppDatabasePath().path + "_chat.db")
-        try FileManager.default.removeItem(atPath: getAppDatabasePath().path + "_agent.db")
-    } catch let error {
-        logger.error("Failed to delete all databases: \(error)")
-    }
-    try? FileManager.default.removeItem(atPath: getAppDatabasePath().path + "_chat.db.bak")
-    try? FileManager.default.removeItem(atPath: getAppDatabasePath().path + "_agent.db.bak")
-    try? FileManager.default.removeItem(at: getTempFilesDirectory())
-    try? FileManager.default.createDirectory(at: getTempFilesDirectory(), withIntermediateDirectories: true)
-
-    deleteAppFiles()
-    _ = kcDatabasePassword.remove()
-    storeDBPassphraseGroupDefault.set(true)
+    deleteAppDatabaseAndFiles()
 }
 
 struct DatabaseView_Previews: PreviewProvider {
