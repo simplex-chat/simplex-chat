@@ -64,7 +64,7 @@ chatTypeStr :: ChatType -> Text
 chatTypeStr = \case
   CTDirect -> "@"
   CTGroup -> "#"
-  CTLocal -> "-"
+  CTLocal -> "*"
   CTContactRequest -> "<@"
   CTContactConnection -> ":"
 

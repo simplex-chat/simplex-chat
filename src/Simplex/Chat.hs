@@ -6294,7 +6294,7 @@ chatCommandP =
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessage <$> chatRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
-      "/_create -" *> (APICreateChatItem <$> A.decimal <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
+      "/_create *" *> (APICreateChatItem <$> A.decimal <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <* A.space <*> A.decimal <* A.space <*> A.decimal),
@@ -6403,7 +6403,7 @@ chatCommandP =
       ("/leave " <|> "/l ") *> char_ '#' *> (LeaveGroup <$> displayName),
       ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName),
       ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayName),
-      "/clear -" $> ClearNoteFolder "",
+      "/clear *" $> ClearNoteFolder "",
       "/clear #" *> (ClearGroup <$> displayName),
       "/clear " *> char_ '@' *> (ClearContact <$> displayName),
       ("/members " <|> "/ms ") *> char_ '#' *> (ListMembers <$> displayName),
@@ -6437,7 +6437,7 @@ chatCommandP =
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       SendMessage <$> chatNameP <* A.space <*> msgTextP,
-      "/- " *> (SendMessage (ChatName CTLocal "") <$> msgTextP),
+      "/* " *> (SendMessage (ChatName CTLocal "") <$> msgTextP),
       "@#" *> (SendMemberContactMessage <$> displayName <* A.space <* char_ '@' <*> displayName <* A.space <*> msgTextP),
       "/live " *> (SendLiveMessage <$> chatNameP <*> (A.space *> msgTextP <|> pure "")),
       (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv),
@@ -6528,7 +6528,7 @@ chatCommandP =
     incognitoOnOffP = (A.space *> "incognito=" *> onOffP) <|> pure False
     imagePrefix = (<>) <$> "data:" <*> ("image/png;base64," <|> "image/jpg;base64,")
     imageP = safeDecodeUtf8 <$> ((<>) <$> imagePrefix <*> (B64.encode <$> base64P))
-    chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup <|> A.char '-' $> CTLocal <|> A.char ':' $> CTContactConnection
+    chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup <|> A.char '*' $> CTLocal <|> A.char ':' $> CTContactConnection
     chatPaginationP =
       (CPLast <$ "count=" <*> A.decimal)
         <|> (CPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)

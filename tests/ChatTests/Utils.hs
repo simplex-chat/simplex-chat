@@ -289,10 +289,10 @@ cc <##.. ls = do
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
 
-(/-) :: HasCallStack => TestCC -> String -> IO ()
-cc /- note = do
-  cc `send` ("/- " <> note)
-  (dropTime <$> getTermLine cc) `shouldReturn` ("- " <> note)
+(/*) :: HasCallStack => TestCC -> String -> IO ()
+cc /* note = do
+  cc `send` ("/* " <> note)
+  (dropTime <$> getTermLine cc) `shouldReturn` ("* " <> note)
 
 data ConsoleResponse
   = ConsoleString String
