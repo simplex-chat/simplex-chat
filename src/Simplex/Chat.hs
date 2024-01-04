@@ -5684,8 +5684,8 @@ createSndMessages idsEvents = do
 sendGroupMemberMessages :: forall e m. (MsgEncodingI e, ChatMonad m) => User -> Connection -> NonEmpty (ChatMsgEvent e) -> GroupId -> m ()
 sendGroupMemberMessages user conn@Connection {connId} events groupId = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
-  let idsEvts = map (GroupId groupId,) $ L.toList events
-  (errs, msgs) <- partitionEithers <$> createSndMessages idsEvts
+  let idsEvts = L.map (GroupId groupId,) events
+  (errs, msgs) <- partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CRChatErrors (Just user) errs
   unless (null msgs) $ do
     let (errs', msgBatches) = partitionEithers $ batchMessages maxChatMsgSize msgs
