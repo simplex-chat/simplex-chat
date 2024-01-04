@@ -96,6 +96,7 @@ fun SettingsLayout(
 ) {
   val scope = rememberCoroutineScope()
   val closeSettings: () -> Unit = { scope.launch { drawerState.close() } }
+  val toggleSettings: () -> Unit = { scope.launch { if (drawerState.isOpen) drawerState.close() else drawerState.open() } }
   if (drawerState.isOpen) {
     BackHandler {
       closeSettings()
@@ -119,7 +120,7 @@ fun SettingsLayout(
           SectionItemView(showCustomModal { chatModel, close -> UserProfileView(chatModel, close) }, 80.dp, padding = PaddingValues(start = 16.dp, end = DEFAULT_PADDING), disabled = stopped) {
             ProfilePreview(profile, stopped = stopped)
           }
-          SettingsActionItem(painterResource(MR.images.ic_manage_accounts), stringResource(MR.strings.your_chat_profiles), { withAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden) } } }, disabled = stopped, extraPadding = true)
+          SettingsActionItem(painterResource(MR.images.ic_manage_accounts), stringResource(MR.strings.your_chat_profiles), { withAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) { showSettingsModalWithSearch { it, search -> UserProfilesView(it, search, profileHidden, toggleSettings) } } }, disabled = stopped, extraPadding = true)
           SettingsActionItem(painterResource(MR.images.ic_qr_code), stringResource(MR.strings.your_simplex_contact_address), showCustomModal { it, close -> UserAddressView(it, shareViaProfile = it.currentUser.value!!.addressShared, close = close) }, disabled = stopped, extraPadding = true)
           ChatPreferencesItem(showCustomModal, stopped = stopped)
         } else if (chatModel.localUserCreated.value == false) {
