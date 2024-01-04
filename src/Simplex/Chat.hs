@@ -6151,7 +6151,7 @@ getCreateActiveUser st testView = do
               loop
             Left e -> putStrLn ("database error " <> show e) >> exitFailure
             Right user -> do
-              void . withTransaction st $ \db -> runExceptT $ createNoteFolder db user
+              void . withTransaction st $ \db -> runExceptT $ createNoteFolder db user >> createNoteFolder db user
               pure user
     selectUser :: [User] -> IO User
     selectUser [user@User {userId}] = do

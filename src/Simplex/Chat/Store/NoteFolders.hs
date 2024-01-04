@@ -1,25 +1,28 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 
 module Simplex.Chat.Store.NoteFolders where
 
-import Control.Monad.Except (ExceptT (..))
+import Control.Monad.Except (ExceptT (..), throwError)
 import Control.Monad.IO.Class (liftIO)
 import Data.Time (getCurrentTime)
 import Database.SQLite.Simple (Only (..))
 import Database.SQLite.Simple.QQ (sql)
-import Simplex.Chat.Store.Shared (StoreError (..), checkConstraint)
+import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Types (NoteFolder (..), NoteFolderId, NoteFolderName, User (..))
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 
 createNoteFolder :: DB.Connection -> User -> ExceptT StoreError IO ()
-createNoteFolder db User {userId} =
-  checkConstraint SENoteFolderAlreadyCreated . liftIO $
-    DB.execute db "INSERT INTO note_folders (user_id) VALUES (?)" (Only userId)
+createNoteFolder db User {userId} = do
+  liftIO (DB.query db "SELECT note_folder_id FROM note_folders WHERE user_id = ? LIMIT 1" $ Only userId) >>= \case
+    [] -> liftIO $ DB.execute db "INSERT INTO note_folders (user_id) VALUES (?)" (Only userId)
+    Only noteFolderId : _ -> throwError $ SENoteFolderAlreadyCreated {noteFolderId}
 
 getNoteFolderIdByName :: DB.Connection -> User -> NoteFolderName -> ExceptT StoreError IO NoteFolderId
 getNoteFolderIdByName db User {userId} ldn =

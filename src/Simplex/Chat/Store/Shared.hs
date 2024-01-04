@@ -69,7 +69,7 @@ data StoreError
   | SEDuplicateGroupMember
   | SEGroupAlreadyJoined
   | SEGroupInvitationNotFound
-  | SENoteFolderAlreadyCreated
+  | SENoteFolderAlreadyCreated {noteFolderId :: NoteFolderId}
   | SENoteFolderNotFound {noteFolderId :: NoteFolderId}
   | SENoteFolderNotFoundByName {noteFolderName :: NoteFolderName}
   | SESndFileNotFound {fileId :: FileTransferId}
