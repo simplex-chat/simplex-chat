@@ -6105,15 +6105,15 @@ createInternalItemsForChats ::
 createInternalItemsForChats user itemTs_ dirsCIContents = do
   createdAt <- liftIO getCurrentTime
   let itemTs = fromMaybe createdAt itemTs_
-  void . withStoreBatch' $ \db ->
-    (\cd -> updateChatTs db user cd createdAt) <$> dirsToUpdate
-  withStoreBatch' $ \db ->
-    fmap (uncurry (createACI db itemTs createdAt)) (flatten dirsCIContents)
+  void . withStoreBatch' $ \db -> mapMaybe (uncurry (updateChat db createdAt)) dirsCIContents
+  withStoreBatch' $ \db -> concatMap (uncurry $ createACIs db itemTs createdAt) dirsCIContents
   where
-    dirsToUpdate = map fst . filter (any ciRequiresAttention . snd) $ dirsCIContents
-    flatten = concatMap (\(dir, contents) -> map (dir,) contents)
-    createACI :: DB.Connection -> UTCTime -> UTCTime -> ChatDirection c d -> CIContent d -> IO AChatItem
-    createACI db itemTs createdAt cd content = do
+    updateChat :: DB.Connection -> UTCTime -> ChatDirection c d -> [CIContent d] -> Maybe (IO ())
+    updateChat db createdAt cd contents
+      | any ciRequiresAttention contents = Just $ updateChatTs db user cd createdAt
+      | otherwise = Nothing
+    createACIs :: DB.Connection -> UTCTime -> UTCTime -> ChatDirection c d -> [CIContent d] -> [IO AChatItem]
+    createACIs db itemTs createdAt cd = map $ \content -> do
       ciId <- createNewChatItemNoMsg db user cd content itemTs createdAt
       let ci = mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
       pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
