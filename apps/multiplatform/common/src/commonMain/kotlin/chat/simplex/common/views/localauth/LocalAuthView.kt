@@ -68,6 +68,8 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
         chatCloseStore(ctrl)
       }
       deleteChatDatabaseFiles()
+      DatabaseUtils.ksDatabasePassword.remove()
+      controller.appPrefs.storeDBPassphrase.set(true)
       // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
       m.chatId.value = null
       m.chatItems.clear()

@@ -27,9 +27,9 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.item.ItemAction
 import chat.simplex.common.views.chatlist.UserProfilePickerItem
 import chat.simplex.common.views.chatlist.UserProfileRow
-import chat.simplex.common.views.database.PassphraseField
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.CreateProfile
+import chat.simplex.common.views.database.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
@@ -351,9 +351,25 @@ private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, de
           m.controller.changeActiveUser_(user.remoteHostId, newActive.userId, null)
           m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
         } else {
-          // Deleting the last visible user
-          m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
-          m.controller.changeActiveUser_(user.remoteHostId, null, null)
+          if (users.size > 1) {
+            // Deleting the last visible user while having hidden one(s)
+            m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
+            m.controller.changeActiveUser_(user.remoteHostId, null, null)
+          } else {
+            // Deleting the last user by deleting the whole storage
+            if (m.chatRunning.value == true) {
+              stopChatAsync(m)
+            }
+            val ctrl = m.controller.ctrl
+            if (ctrl != null && ctrl != -1L) {
+              chatCloseStore(ctrl)
+            }
+            deleteChatDatabaseFiles()
+            m.chatId.value = null
+            m.chatItems.clear()
+            m.chats.clear()
+            m.users.clear()
+          }
           controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
           ModalManager.closeAllModalsEverywhere()
         }
