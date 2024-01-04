@@ -5733,10 +5733,9 @@ deliverMessagesB msgReqs = do
     toAgent = \case
       Right (conn, msgFlags, msgBody, _msgId) -> Right (aConnId conn, msgFlags, LB.toStrict msgBody)
       Left _ce -> Left (AP.INTERNAL "ChatError, skip") -- as long as it is Left, the agent batchers should just step over it
-    prepareBatch mreq ares = case (mreq, ares) of
-      (Left ce, _) -> Left ce -- restore original ChatError
-      (_, Left ae) -> Left $ ChatErrorAgent ae Nothing
-      (Right req, Right ar) -> Right (req, ar)
+    prepareBatch (Right req) (Right ar) = Right (req, ar)
+    prepareBatch (Left ce) _ = Left ce -- restore original ChatError
+    prepareBatch _ (Left ae) = Left $ ChatErrorAgent ae Nothing
     createDelivery :: DB.Connection -> (MsgReq, AgentMsgId) -> IO (Either ChatError Int64)
     createDelivery db ((Connection {connId}, _, _, msgId), agentMsgId) =
       Right <$> createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId}) msgId
