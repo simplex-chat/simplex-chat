@@ -3356,6 +3356,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   sendXGrpMemInv hostConnId (Just directConnReq) xGrpMemIntroCont
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
+          checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
           cmdId <- createAckCmd conn
           withAckMessage agentConnId cmdId msgMeta $ do
             (conn', msg@RcvMessage {chatMsgEvent = ACME _ event}) <- saveDirectRcvMSG conn msgMeta cmdId msgBody
@@ -3364,14 +3365,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             updateChatLock "directMessage" event
             case event of
               XMsgNew mc -> newContentMessage ct' mc msg msgMeta
-              XMsgFileDescr sharedMsgId fileDescr -> messageFileDescription ct' sharedMsgId fileDescr msgMeta
+              XMsgFileDescr sharedMsgId fileDescr -> messageFileDescription ct' sharedMsgId fileDescr
               XMsgUpdate sharedMsgId mContent ttl live -> messageUpdate ct' sharedMsgId mContent msg msgMeta ttl live
               XMsgDel sharedMsgId _ -> messageDelete ct' sharedMsgId msg msgMeta
               XMsgReact sharedMsgId _ reaction add -> directMsgReaction ct' sharedMsgId reaction add msg msgMeta
               -- TODO discontinue XFile
               XFile fInv -> processFileInvitation' ct' fInv msg msgMeta
-              XFileCancel sharedMsgId -> xFileCancel ct' sharedMsgId msgMeta
-              XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInv ct' sharedMsgId fileConnReq_ fName msgMeta
+              XFileCancel sharedMsgId -> xFileCancel ct' sharedMsgId
+              XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInv ct' sharedMsgId fileConnReq_ fName
               XInfo p -> xInfo ct' p
               XDirectDel -> xDirectDel ct' msg msgMeta
               XGrpInv gInv -> processGroupInvitation ct' gInv msg msgMeta
@@ -3379,10 +3380,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XInfoProbeCheck probeHash -> xInfoProbeCheck (COMContact ct') probeHash
               XInfoProbeOk probe -> xInfoProbeOk (COMContact ct') probe
               XCallInv callId invitation -> xCallInv ct' callId invitation msg msgMeta
-              XCallOffer callId offer -> xCallOffer ct' callId offer msg msgMeta
-              XCallAnswer callId answer -> xCallAnswer ct' callId answer msg msgMeta
-              XCallExtra callId extraInfo -> xCallExtra ct' callId extraInfo msg msgMeta
-              XCallEnd callId -> xCallEnd ct' callId msg msgMeta
+              XCallOffer callId offer -> xCallOffer ct' callId offer msg
+              XCallAnswer callId answer -> xCallAnswer ct' callId answer msg
+              XCallExtra callId extraInfo -> xCallExtra ct' callId extraInfo msg
+              XCallEnd callId -> xCallEnd ct' callId msg
               BFileChunk sharedMsgId chunk -> bFileChunk ct' sharedMsgId chunk msgMeta
               _ -> messageError $ "unsupported message: " <> T.pack (show event)
             let Contact {chatSettings = ChatSettings {sendRcpts}} = ct'
@@ -3740,7 +3741,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       void $ sendDirectMessage imConn (XGrpMemCon memberId) (GroupId groupId)
                 _ -> messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
       MSG msgMeta _msgFlags msgBody -> do
-        checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta `catchChatError` \_ -> pure ()
+        checkIntegrityCreateItem (CDGroupRcv gInfo m) msgMeta
         cmdId <- createAckCmd conn
         let aChatMsgs = parseChatMessages msgBody
         withAckMessage agentConnId cmdId msgMeta $ do
@@ -4231,7 +4232,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     newContentMessage :: Contact -> MsgContainer -> RcvMessage -> MsgMeta -> m ()
     newContentMessage ct@Contact {contactUsed} mc msg@RcvMessage {sharedMsgId_} msgMeta = do
       unless contactUsed $ withStore' $ \db -> updateContactUsed db user ct
-      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       let ExtMsgContent content fInv_ _ _ = mcExtMsgContent mc
       -- Uncomment to test stuck delivery on errors - see test testDirectMessageDelete
       -- case content of
@@ -4261,9 +4261,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       ChatConfig {autoAcceptFileSize = sz} <- asks config
       when (sz > fileSize) $ receiveFile' user ft Nothing Nothing >>= toView
 
-    messageFileDescription :: Contact -> SharedMsgId -> FileDescr -> MsgMeta -> m ()
-    messageFileDescription ct@Contact {contactId} sharedMsgId fileDescr msgMeta = do
-      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
+    messageFileDescription :: Contact -> SharedMsgId -> FileDescr -> m ()
+    messageFileDescription Contact {contactId} sharedMsgId fileDescr = do
       fileId <- withStore $ \db -> getFileIdBySharedMsgId db userId contactId sharedMsgId
       processFDMessage fileId fileDescr
 
@@ -4306,7 +4305,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     messageUpdate :: Contact -> SharedMsgId -> MsgContent -> RcvMessage -> MsgMeta -> Maybe Int -> Maybe Bool -> m ()
     messageUpdate ct@Contact {contactId} sharedMsgId mc msg@RcvMessage {msgId} msgMeta ttl live_ = do
-      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       updateRcvChatItem `catchCINotFound` \_ -> do
         -- This patches initial sharedMsgId into chat item when locally deleted chat item
         -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
@@ -4339,10 +4337,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             _ -> messageError "x.msg.update: contact attempted invalid message update"
 
     messageDelete :: Contact -> SharedMsgId -> RcvMessage -> MsgMeta -> m ()
-    messageDelete ct@Contact {contactId} sharedMsgId RcvMessage {msgId} msgMeta@MsgMeta {broker = (_, brokerTs)} = do
-      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
+    messageDelete ct@Contact {contactId} sharedMsgId RcvMessage {msgId} msgMeta = do
       deleteRcvChatItem `catchCINotFound` (toView . CRChatItemDeletedNotFound user ct)
       where
+        brokerTs = metaBrokerTs msgMeta
         deleteRcvChatItem = do
           CChatItem msgDir ci <- withStore $ \db -> getDirectChatItemBySharedMsgId db user contactId sharedMsgId
           case msgDir of
@@ -4510,7 +4508,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     -- TODO remove once XFile is discontinued
     processFileInvitation' :: Contact -> FileInvitation -> RcvMessage -> MsgMeta -> m ()
     processFileInvitation' ct fInv@FileInvitation {fileName, fileSize} msg@RcvMessage {sharedMsgId_} msgMeta = do
-      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       ChatConfig {fileChunkSize} <- asks config
       inline <- receiveInlineMode fInv Nothing fileChunkSize
       RcvFileTransfer {fileId, xftpRcvFile} <- withStore $ \db -> createRcvFileTransfer db userId ct fInv inline fileChunkSize
@@ -4547,9 +4544,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           inline' receiveInstant = if mode == IFMOffer || (receiveInstant && maybe False isVoice mc_) then fileInline else Nothing
       _ -> pure Nothing
 
-    xFileCancel :: Contact -> SharedMsgId -> MsgMeta -> m ()
-    xFileCancel ct@Contact {contactId} sharedMsgId msgMeta = do
-      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
+    xFileCancel :: Contact -> SharedMsgId -> m ()
+    xFileCancel Contact {contactId} sharedMsgId = do
       fileId <- withStore $ \db -> getFileIdBySharedMsgId db userId contactId sharedMsgId
       ft <- withStore (\db -> getRcvFileTransfer db user fileId)
       unless (rcvFileCompleteOrCancelled ft) $ do
@@ -4557,9 +4553,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         ci <- withStore $ \db -> getChatItemByFileId db vr user fileId
         toView $ CRRcvFileSndCancelled user ci ft
 
-    xFileAcptInv :: Contact -> SharedMsgId -> Maybe ConnReqInvitation -> String -> MsgMeta -> m ()
-    xFileAcptInv ct sharedMsgId fileConnReq_ fName msgMeta = do
-      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
+    xFileAcptInv :: Contact -> SharedMsgId -> Maybe ConnReqInvitation -> String -> m ()
+    xFileAcptInv ct sharedMsgId fileConnReq_ fName = do
       fileId <- withStore $ \db -> getDirectFileIdBySharedMsgId db user ct sharedMsgId
       (AChatItem _ _ _ ci) <- withStore $ \db -> getChatItemByFileId db vr user fileId
       assertSMPAcceptNotProhibited ci
@@ -4693,7 +4688,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       let Contact {localDisplayName = c, activeConn} = ct
           GroupInvitation {fromMember = (MemberIdRole fromMemId fromRole), invitedMember = (MemberIdRole memId memRole), connRequest, groupLinkId} = inv
       forM_ activeConn $ \Connection {connId, peerChatVRange, customUserProfileId, groupLinkId = groupLinkId'} -> do
-        checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
         when (fromRole < GRAdmin || fromRole < memRole) $ throwChatError (CEGroupContactRole c)
         when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
         -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
@@ -4725,7 +4719,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     checkIntegrityCreateItem :: forall c. ChatTypeI c => ChatDirection c 'MDRcv -> MsgMeta -> m ()
     checkIntegrityCreateItem cd MsgMeta {integrity, broker = (_, brokerTs)} = case integrity of
       MsgOk -> pure ()
-      MsgError e -> createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
+      MsgError e ->
+        createInternalChatItem user cd (CIRcvIntegrityError e) (Just brokerTs)
+          `catchChatError` \_ -> pure ()
 
     xInfo :: Contact -> Profile -> m ()
     xInfo c p' = void $ processContactProfileUpdate c p' True
@@ -4734,7 +4730,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xDirectDel c msg msgMeta =
       if directOrUsed c
         then do
-          checkIntegrityCreateItem (CDDirectRcv c) msgMeta
           ct' <- withStore' $ \db -> updateContactStatus db user c CSDeleted
           contactConns <- withStore' $ \db -> getContactConnections db userId ct'
           deleteAgentConnectionsAsync user $ map aConnId contactConns
@@ -4894,7 +4889,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     -- to party accepting call
     xCallInv :: Contact -> CallId -> CallInvitation -> RcvMessage -> MsgMeta -> m ()
     xCallInv ct@Contact {contactId} callId CallInvitation {callType, callDhPubKey} msg@RcvMessage {sharedMsgId_} msgMeta = do
-      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
       if featureAllowed SCFCalls forContact ct
         then do
           g <- asks random
@@ -4921,9 +4915,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           toView $ CRNewChatItem user (AChatItem SCTDirect SMDRcv (DirectChat ct) ci)
 
     -- to party initiating call
-    xCallOffer :: Contact -> CallId -> CallOffer -> RcvMessage -> MsgMeta -> m ()
-    xCallOffer ct callId CallOffer {callType, rtcSession, callDhPubKey} msg msgMeta = do
-      msgCurrentCall ct callId "x.call.offer" msg msgMeta $
+    xCallOffer :: Contact -> CallId -> CallOffer -> RcvMessage -> m ()
+    xCallOffer ct callId CallOffer {callType, rtcSession, callDhPubKey} msg = do
+      msgCurrentCall ct callId "x.call.offer" msg $
         \call -> case callState call of
           CallInvitationSent {localCallType, localDhPrivKey} -> do
             let sharedKey = C.Key . C.dhBytes' <$> (C.dh' <$> callDhPubKey <*> localDhPrivKey)
@@ -4936,9 +4930,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             pure (Just call, Nothing)
 
     -- to party accepting call
-    xCallAnswer :: Contact -> CallId -> CallAnswer -> RcvMessage -> MsgMeta -> m ()
-    xCallAnswer ct callId CallAnswer {rtcSession} msg msgMeta = do
-      msgCurrentCall ct callId "x.call.answer" msg msgMeta $
+    xCallAnswer :: Contact -> CallId -> CallAnswer -> RcvMessage -> m ()
+    xCallAnswer ct callId CallAnswer {rtcSession} msg = do
+      msgCurrentCall ct callId "x.call.answer" msg $
         \call -> case callState call of
           CallOfferSent {localCallType, peerCallType, localCallSession, sharedKey} -> do
             let callState' = CallNegotiated {localCallType, peerCallType, localCallSession, peerCallSession = rtcSession, sharedKey}
@@ -4949,9 +4943,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             pure (Just call, Nothing)
 
     -- to any call party
-    xCallExtra :: Contact -> CallId -> CallExtraInfo -> RcvMessage -> MsgMeta -> m ()
-    xCallExtra ct callId CallExtraInfo {rtcExtraInfo} msg msgMeta = do
-      msgCurrentCall ct callId "x.call.extra" msg msgMeta $
+    xCallExtra :: Contact -> CallId -> CallExtraInfo -> RcvMessage -> m ()
+    xCallExtra ct callId CallExtraInfo {rtcExtraInfo} msg = do
+      msgCurrentCall ct callId "x.call.extra" msg $
         \call -> case callState call of
           CallOfferReceived {localCallType, peerCallType, peerCallSession, sharedKey} -> do
             -- TODO update the list of ice servers in peerCallSession
@@ -4968,15 +4962,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             pure (Just call, Nothing)
 
     -- to any call party
-    xCallEnd :: Contact -> CallId -> RcvMessage -> MsgMeta -> m ()
-    xCallEnd ct callId msg msgMeta =
-      msgCurrentCall ct callId "x.call.end" msg msgMeta $ \Call {chatItemId} -> do
+    xCallEnd :: Contact -> CallId -> RcvMessage -> m ()
+    xCallEnd ct callId msg =
+      msgCurrentCall ct callId "x.call.end" msg $ \Call {chatItemId} -> do
         toView $ CRCallEnded user ct
         (Nothing,) <$> callStatusItemContent user ct chatItemId WCSDisconnected
 
-    msgCurrentCall :: Contact -> CallId -> Text -> RcvMessage -> MsgMeta -> (Call -> m (Maybe Call, Maybe ACIContent)) -> m ()
-    msgCurrentCall ct@Contact {contactId = ctId'} callId' eventName RcvMessage {msgId} msgMeta action = do
-      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta
+    msgCurrentCall :: Contact -> CallId -> Text -> RcvMessage -> (Call -> m (Maybe Call, Maybe ACIContent)) -> m ()
+    msgCurrentCall ct@Contact {contactId = ctId'} callId' eventName RcvMessage {msgId} action = do
       calls <- asks currentCalls
       atomically (TM.lookup ctId' calls) >>= \case
         Nothing -> messageError $ eventName <> ": no current call"
