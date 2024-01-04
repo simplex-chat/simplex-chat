@@ -460,10 +460,10 @@ suspend fun deleteChatAsync(m: ChatModel) {
   m.controller.apiDeleteStorage()
   DatabaseUtils.ksDatabasePassword.remove()
   m.controller.appPrefs.storeDBPassphrase.set(true)
-  deleteChatDatabaseFiles()
+  deleteChatDatabaseFilesAndState()
 }
 
-fun deleteChatDatabaseFiles() {
+fun deleteChatDatabaseFilesAndState() {
   val chat = File(dataDir, chatDatabaseFileName)
   val chatBak = File(dataDir, "$chatDatabaseFileName.bak")
   val agent = File(dataDir, agentDatabaseFileName)
@@ -476,6 +476,14 @@ fun deleteChatDatabaseFiles() {
   remoteHostsDir.deleteRecursively()
   tmpDir.deleteRecursively()
   tmpDir.mkdir()
+  DatabaseUtils.ksDatabasePassword.remove()
+  controller.appPrefs.storeDBPassphrase.set(true)
+
+  // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
+  chatModel.chatId.value = null
+  chatModel.chatItems.clear()
+  chatModel.chats.clear()
+  chatModel.users.clear()
 }
 
 private fun exportArchive(

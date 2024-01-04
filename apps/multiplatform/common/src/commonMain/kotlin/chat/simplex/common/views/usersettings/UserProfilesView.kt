@@ -30,6 +30,7 @@ import chat.simplex.common.views.chatlist.UserProfileRow
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.CreateProfile
 import chat.simplex.common.views.database.*
+import chat.simplex.common.views.localauth.reinitChatController
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
@@ -356,19 +357,17 @@ private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, de
             m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
             m.controller.changeActiveUser_(user.remoteHostId, null, null)
           } else {
+            ModalManager.fullscreen.showCustomModal {
+              Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+                DefaultProgressView(stringResource(MR.strings.opening_database))
+              }
+            }
             // Deleting the last user by deleting the whole storage
             if (m.chatRunning.value == true) {
               stopChatAsync(m)
             }
-            val ctrl = m.controller.ctrl
-            if (ctrl != null && ctrl != -1L) {
-              chatCloseStore(ctrl)
-            }
-            deleteChatDatabaseFiles()
-            m.chatId.value = null
-            m.chatItems.clear()
-            m.chats.clear()
-            m.users.clear()
+            deleteChatAsync(m)
+            reinitChatController()
           }
           controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
           ModalManager.closeAllModalsEverywhere()
