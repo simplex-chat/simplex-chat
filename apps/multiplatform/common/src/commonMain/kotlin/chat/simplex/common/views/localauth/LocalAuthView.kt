@@ -100,7 +100,6 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       m.currentUser.value = createdUser
       m.controller.appPrefs.onboardingStage.set(OnboardingStage.OnboardingComplete)
       if (createdUser != null) {
-        controller.chatModel.chatRunning.value = false
         m.controller.startChat(createdUser)
       }
       ModalManager.closeAllModalsEverywhere()

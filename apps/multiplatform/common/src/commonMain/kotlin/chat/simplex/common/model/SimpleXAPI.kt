@@ -346,7 +346,6 @@ object ChatController {
   suspend fun startChat(user: User) {
     Log.d(TAG, "user: $user")
     try {
-      if (chatModel.chatRunning.value == true) return
       apiSetNetworkConfig(getNetCfg())
       val justStarted = apiStartChat()
       appPrefs.chatStopped.set(false)

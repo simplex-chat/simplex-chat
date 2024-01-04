@@ -170,20 +170,10 @@ private fun ProgressIndicator() {
 
 private fun prepareChatBeforeAddressCreation(rhId: Long?) {
   if (chatModel.users.isNotEmpty()) return
+
   withApi {
     val user = chatModel.controller.apiGetActiveUser(rhId) ?: return@withApi
     chatModel.currentUser.value = user
-    if (chatModel.users.isEmpty()) {
-      if (appPlatform.isDesktop) {
-        // Make possible to use chat after going to remote device linking and returning back to local profile creation
-        chatModel.chatRunning.value = false
-      }
-      chatModel.controller.startChat(user)
-    } else {
-      val users = chatModel.controller.listUsers(rhId)
-      chatModel.users.clear()
-      chatModel.users.addAll(users)
-      chatModel.controller.getUserChatData(rhId)
-    }
+    chatModel.controller.startChat(user)
   }
 }
