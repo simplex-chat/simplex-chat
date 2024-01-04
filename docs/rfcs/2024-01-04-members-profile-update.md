@@ -21,11 +21,28 @@ Keep track of which members received latest profile updates. Send profile update
 - changes to preferences aren't necessary to send as they only apply to user contacts
 - changes to contactLink may be sent, but can also be excluded for purposes of privacy
   - some users don't expect that sharing address (contactLink) shares it not only with contacts, but also group members
-  - this is a broader issue, as the user's contact link may also be sent in user's profile by admin when introducing members - it makes sense to either ignore this for the purposes of this feature, of change it in handshake as well
-- it then makes sense to remember new timestamp on users record only if name or image is changed
+  - this is a broader issue, as the user's contact link may also be sent in user's profile by admin when introducing members - it makes sense to either ignore this for the purposes of this feature, of change it in group handshake as well
+- it then makes sense to remember new timestamp on user record only if name or image is changed
   - users.last_profile_update_ts -> users.last_name_or_image_update_ts?
 
-### When to send
+### When/To whom to send
 
 - when user is active in group (i.e. broadcasts message via sendGroupMessage), compare group_members.last_profile_sent_ts against users.last_name_or_image_update_ts to determine whether latest profile update wasn't yet sent
-- perhaps it doesn't make sense to send profile updates when sending service messages to individual members, as 1. members would have different profiles of user in different time points
+- don't send to members in groups where user is incognito
+- don't send to members with whom user has direct contact (as it would overwrite full profile update sent to contact)?
+  - alternatively it may be better to send the same pruned profile to such members, and for them to ignore this update:
+    - this would ensure that they do receive it in case they silently deleted contact without notifying user
+    - it simplifies processing, as then the same message is sent to all group members
+- it seems unnecessary to send profile updates on service messages to individual members:
+  - it would otherwise lead to members having different profiles of user at different points in time
+  - not all of these messages don't create chat items anyway (forward, intro messages), so user name/image wouldn't matter
+  - most if not all of these messages are sent by admins, who are likely to send either some content messages, group updates, or announce new members (x.grp.mem.new, which is also broadcasted)
+  - it simplifies processing, as then profile update is sent to all current members
+- considering above points, perhaps we can simplify to track last_profile_sent_ts on groups instead of group_members
+  - group_members.last_profile_sent_ts -> groups.last_profile_sent_ts
+
+### How to send
+
+Two options:
+- send as a separate message, don't special case
+- send batched with the main message (using chat protocol batching mechanism), it would avoid broadcasting additional message for users without profile images, and likely in some cases (when main message is short) even with them
