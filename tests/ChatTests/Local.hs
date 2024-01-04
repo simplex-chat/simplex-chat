@@ -23,6 +23,8 @@ chatLocalTests = do
 
 testNotes :: FilePath -> IO ()
 testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+  createCCNoteFolder alice
+
   alice ##> "/contacts"
   -- not a contact
 
@@ -50,6 +52,8 @@ testNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
 
 testUserNotes :: FilePath -> IO ()
 testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+  createCCNoteFolder alice
+
   alice /- "keep in mind"
   alice ##> "/tail"
   alice <# "- keep in mind"
@@ -66,6 +70,8 @@ testUserNotes tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
 
 testPreviewsPagination :: FilePath -> IO ()
 testPreviewsPagination tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+  createCCNoteFolder alice
+
   tsS <- iso8601Show <$> getCurrentTime
   alice /- "first"
   tsM <- iso8601Show <$> getCurrentTime
@@ -82,6 +88,8 @@ testPreviewsPagination tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -
 
 testChatPagination :: FilePath -> IO ()
 testChatPagination tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+  createCCNoteFolder alice
+
   alice /- "hello world"
   alice /- "memento mori"
   alice /- "knock-knock"
@@ -99,6 +107,7 @@ testChatPagination tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
 testFiles :: FilePath -> IO ()
 testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   -- setup
+  createCCNoteFolder alice
   let files = "./tests/tmp/app_files"
   alice ##> ("/_files_folder " <> files)
   alice <## "ok"
@@ -138,8 +147,3 @@ testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   alice <## "chat db error: SEChatItemNotFoundByFileId {fileId = 1}"
   alice ##> "/tail"
   doesFileExist stored `shouldReturn` False
-
-(/-) :: HasCallStack => TestCC -> String -> IO ()
-cc /- note = do
-  cc `send` ("/- " <> note)
-  (dropTime <$> getTermLine cc) `shouldReturn` ("- " <> note)

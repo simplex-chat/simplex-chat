@@ -193,9 +193,9 @@ testPaginationAllChatTypes =
 
       _ts6 <- iso8601Show <$> getCurrentTime
 
-      -- $notes
-      alice `send` "/- psst"
-      dropTime <$> getTermLine alice `shouldReturn` "- psst"
+      -- -notes
+      createCCNoteFolder alice
+      alice /- "psst"
 
       ts7 <- iso8601Show <$> getCurrentTime
 
