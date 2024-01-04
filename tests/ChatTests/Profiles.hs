@@ -67,7 +67,7 @@ chatProfileTests = do
     xit'' "enable timed messages with contact" testEnableTimedMessagesContact
     it "enable timed messages in group" testEnableTimedMessagesGroup
     xit'' "timed messages enabled globally, contact turns on" testTimedMessagesEnabledGlobally
-    it "update multiple user preferences" testUpdateMultipleUserPrefs
+    it "update multiple user preferences for multiple contacts" testUpdateMultipleUserPrefs
 
 testUpdateProfile :: HasCallStack => FilePath -> IO ()
 testUpdateProfile =
