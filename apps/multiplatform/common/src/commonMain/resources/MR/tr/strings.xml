@@ -1322,23 +1322,23 @@
     <string name="share_text_updated_at">Kayıt %s te güncellendi</string>
     <string name="v5_3_encrypt_local_files_descr">Uygulama yeni yerel dosyaları şifreler (videolar dışında).</string>
     <string name="sender_at_ts">%s , %s de</string>
-    <string name="network_use_onion_hosts_required_desc_in_alert">Bağlantı için Onion sunucuları gerekli olacaktır.</string>
+    <string name="network_use_onion_hosts_required_desc_in_alert">Bağlantı için Onion ana bilgisayarları gerekli olacaktır.</string>
     <string name="receipts_contacts_title_disable">Alıcılar devre dışı bırakılsın mı?</string>
     <string name="sync_connection_force_question">Bağlantı yeniden senkronizasyonunu şifrele?</string>
     <string name="receipts_section_description_1">Grup ayarlarından ve kişilerden geçersiz kılınmış olabilirler</string>
     <string name="recent_history_is_not_sent_to_new_members">Yeni üyelere geçmiş gönderilmedi.</string>
     <string name="v4_2_security_assessment">Güvenlik değerlendirmesi</string>
     <string name="retry_verb">Yeniden dene</string>
-    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion sunucuları mümkün olduğunda kullanılacaktır.</string>
+    <string name="network_use_onion_hosts_prefer_desc_in_alert">Onion ana bilgisayarları mümkün olduğunda kullanılacaktır.</string>
     <string name="network_enable_socks_info">Sunuculara %d bağlantı noktasındaki vekil SOCKS aracılığıyla erişilsin mi? Vekil bu seçeneği etkinleştirmeden önce başlatılmak zorundadır.</string>
     <string name="v5_4_block_group_members_descr">İstenmeyen mesajları gizlemek için.</string>
     <string name="error_smp_test_failed_at_step">Test %s adımında hata yaşandı.</string>
-    <string name="disable_onion_hosts_when_not_supported"><i> .onion sunucularını kullan</i> seçeneğini eğer SOCKS vekili destek vermiyorsa devre dışı bırak</string>
+    <string name="disable_onion_hosts_when_not_supported"><i> .onion ana bilgisayarlarını kullan</i> seçeneğini eğer SOCKS vekili destek vermiyorsa devre dışı bırak</string>
     <string name="you_can_change_it_later">Rasgele şifreler düz metin olarak ayarlarda saklanacaktır.
 \nBunu sonra değiştirebilirsin.</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">SMP sunucu adreslerinin doğru formatta olduğundan, satırın ayrılmış ve kopyalanmamış olduğundan emin olun.</string>
     <string name="group_invitation_tap_to_join_incognito">Sahte İsimle katılmak için tıkla</string>
-    <string name="network_use_onion_hosts_no_desc">Onion sunucuları kullanılmayacaktır.</string>
+    <string name="network_use_onion_hosts_no_desc">Onion ana bilgisayarları kullanılmayacaktır.</string>
     <string name="set_password_to_export">Dışarıya çıkarmak için parola belirle</string>
     <string name="snd_conn_event_ratchet_sync_started">%s için şifreleme kabul ediliyor…</string>
     <string name="receipts_groups_override_disabled">Alıcılar %d grupları için devre dışı bırakılacak</string>
@@ -1366,7 +1366,7 @@
     <string name="remove_passphrase_from_settings">Ayarlardaki parola silinsin mi?</string>
     <string name="receipts_contacts_title_enable">Alıcılar etkinleştirilsin mi?</string>
     <string name="tap_to_start_new_chat">Yeni bir sohbet başlatmak için tıkla</string>
-    <string name="network_use_onion_hosts_no_desc_in_alert">Onion sunucuları kullanılmayacaktır.</string>
+    <string name="network_use_onion_hosts_no_desc_in_alert">Onion ana bilgisayarları kullanılmayacaktır.</string>
     <string name="unblock_member_button">Kişinin engelini kaldır</string>
     <string name="relay_server_if_necessary">Yönlendirici sunucusu sadece lazım ise kullanılacak. Diğer taraf IP adresini görebilir.</string>
     <string name="remote_host_was_disconnected_toast">Telefon bağlantılı <b>%s</b> ın bağlantısı kesildi</string>
@@ -1383,7 +1383,7 @@
     <string name="run_chat_section">SOHBETİ ÇALIŞTIR</string>
     <string name="network_disable_socks">Direkt internet bağlantısı kullan?</string>
     <string name="rcv_group_event_updated_group_profile">grup profili güncellendi</string>
-    <string name="network_use_onion_hosts_required_desc">Onion sunucuları bağlantı için gerekli olacaktır.
+    <string name="network_use_onion_hosts_required_desc">Onion ana bilgisayarları bağlantı için gerekli olacaktır.
 \nLütfen unutmayın: artık .onion adresi olmayan sunuculara bağlanamayacaksınız.</string>
     <string name="switch_receiving_address_desc">Alınan adres başka bir sunucuda değiştirilecektir. Adres değişimi gönderen çevrimiçi olunca tamamlanacaktır.</string>
     <string name="error_smp_test_server_auth">Sunucunun sıralar oluşturması için yetkilendirilmesi gerekli, şifreyi kontrol et</string>
@@ -1481,7 +1481,7 @@
 \n1. Mesajların süresi, gönderen istemcide 2 gün sonra veya sunucuda 30 gün sonra sona erdi.
 \n2. Siz veya kişiniz eski veritabanı yedeğini kullandığınız için mesajın şifresini çözme işlemi başarısız oldu.
 \n3. Bağlantı tehlikeye girdi.</string>
-    <string name="network_use_onion_hosts_prefer_desc">Onion sunucuları mümkün olduğu zaman kullanılacaktır.</string>
+    <string name="network_use_onion_hosts_prefer_desc">Onion ana bilgisayarları mümkün olduğu zaman kullanılacaktır.</string>
     <string name="switch_verb">Değiştir</string>
     <string name="open_port_in_firewall_title">Güvenlik duvarında port aç</string>
     <string name="callstate_starting">başlatılıyor…</string>
@@ -1506,7 +1506,7 @@
     <string name="receipts_groups_title_enable">Gruplar için alıcılar etkinleştirilsin mi?</string>
     <string name="group_member_role_author">Yetkili</string>
     <string name="v4_5_multiple_chat_profiles_descr">Farklı isimler, profil fotoğrafları ve ulaşım izolasyonu.</string>
-    <string name="network_use_onion_hosts">.onion sunucularını kullan</string>
+    <string name="network_use_onion_hosts">.onion ana bilgisayarlarını kullan</string>
     <string name="revoke_file__action">Dosyayı geri çek</string>
     <string name="info_row_moderated_at">de yönetildi</string>
     <string name="call_connection_via_relay">yönlendirici aracılığıyla</string>
@@ -1514,7 +1514,7 @@
     <string name="connected_to_mobile">Telefona bağlandı</string>
     <string name="v5_3_simpler_incognito_mode_descr">Bağlanırken takma ada geçiş yap.</string>
     <string name="v5_2_message_delivery_receipts">Mesaj gönderildi!</string>
-    <string name="update_onion_hosts_settings_question">.onion sunucuları ayarını güncellensin mi?</string>
+    <string name="update_onion_hosts_settings_question">.onion ana bilgisayarları ayarı güncellensin mi?</string>
     <string name="smp_servers_use_server_for_new_conn">Yeni bağlantılar için kullan</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">senin için adres değiştirildi</string>
     <string name="network_enable_socks">SOCKS vekilini kullan?</string>
