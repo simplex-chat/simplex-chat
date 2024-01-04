@@ -35,7 +35,7 @@ Keep track of which members received latest profile updates. Send profile update
     - it simplifies processing, as then the same message is sent to all group members
 - it seems unnecessary to send profile updates on service messages to individual members:
   - it would otherwise lead to members having different profiles of user at different points in time
-  - not all of these messages don't create chat items anyway (forward, intro messages), so user name/image wouldn't matter
+  - not all of these messages create chat items anyway (forward, intro messages), so user name/image wouldn't matter
   - most if not all of these messages are sent by admins, who are likely to send either some content messages, group updates, or announce new members (x.grp.mem.new, which is also broadcasted)
   - it simplifies processing, as then profile update is sent to all current members
 - considering above points, perhaps we can simplify to track last_profile_sent_ts on groups instead of group_members
