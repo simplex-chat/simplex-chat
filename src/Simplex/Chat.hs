@@ -2140,7 +2140,7 @@ processChatCommand' vr = \case
           user' <- updateUser
           asks currentUser >>= atomically . (`writeTVar` Just user')
           withChatLock "updateProfile" . procCmd $ do
-            let (notChanged, changedCts) = foldr (addChangedProfileContact user') (0, []) contacts
+            let changedCts = foldr (addChangedProfileContact user') [] contacts
                 idsEvts = map ctSndMsg changedCts
             msgReqs_ <- zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
             (errs, cts) <- partitionEithers . zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
@@ -2149,21 +2149,19 @@ processChatCommand' vr = \case
             createContactsSndFeatureItems user' changedCts'
             let summary =
                   UserProfileUpdateSummary
-                    { notChanged,
-                      updateSuccesses = length cts,
+                    { updateSuccesses = length cts,
                       updateFailures = length errs,
                       changedContacts = map (\ChangedProfileContact {ct'} -> ct') changedCts'
                     }
             pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' summary
       where
         -- [incognito] filter out contacts with whom user has incognito connections
-        addChangedProfileContact :: User -> Contact -> (Int, [ChangedProfileContact]) -> (Int, [ChangedProfileContact])
-        addChangedProfileContact user' ct (notChangedCnt, changedCts) = case contactSendConn_ ct' of
-          Left _ -> (notChangedCnt, changedCts)
+        addChangedProfileContact :: User -> Contact -> [ChangedProfileContact] -> [ChangedProfileContact]
+        addChangedProfileContact user' ct changedCts = case contactSendConn_ ct' of
+          Left _ -> changedCts
           Right conn
-            | connIncognito conn -> (notChangedCnt, changedCts)
-            | mergedProfile' == mergedProfile -> (notChangedCnt + 1, changedCts)
-            | otherwise -> (notChangedCnt, ChangedProfileContact ct ct' mergedProfile' conn : changedCts)
+            | connIncognito conn || mergedProfile' == mergedProfile -> changedCts
+            | otherwise -> ChangedProfileContact ct ct' mergedProfile' conn : changedCts
           where
             mergedProfile = userProfileToSend user Nothing $ Just ct
             ct' = updateMergedPreferences user' ct
