@@ -825,4 +825,4 @@ CREATE INDEX idx_msg_deliveries_agent_msg_id ON "msg_deliveries"(
 );
 CREATE INDEX chat_items_note_folder_id ON chat_items(note_folder_id);
 CREATE INDEX files_note_folder_id ON files(note_folder_id);
-CREATE INDEX note_folders_user_id ON note_folders(user_id);
+CREATE UNIQUE INDEX note_folders_user_id ON note_folders(user_id);

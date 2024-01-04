@@ -1114,82 +1114,66 @@ getLocalChat db user folderId pagination search_ = do
     CPBefore beforeId count -> getLocalChatBefore_ db user nf beforeId count search
 
 getLocalChatLast_ :: DB.Connection -> User -> NoteFolder -> Int -> String -> ExceptT StoreError IO (Chat 'CTLocal)
-getLocalChatLast_ db user nf@NoteFolder {noteFolderId} count search = do
+getLocalChatLast_ db user@User {userId} nf@NoteFolder {noteFolderId} count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItems <- getLocalChatItemsLast db user noteFolderId count search
+  chatItemIds <- liftIO getLocalChatItemIdsLast_
+  chatItems <- mapM (getLocalChatItem db user noteFolderId) chatItemIds
   pure $ Chat (LocalChat nf) (reverse chatItems) stats
-
--- the last items in reverse order (the last item in the conversation is the first in the returned list)
-getLocalChatItemsLast :: DB.Connection -> User -> NoteFolderId -> Int -> String -> ExceptT StoreError IO [CChatItem 'CTLocal]
-getLocalChatItemsLast db User {userId} noteFolderId count search = ExceptT $ do
-  currentTs <- getCurrentTime
-  mapM (toLocalChatItem currentTs)
-    <$> DB.query
-      db
-      [sql|
-        SELECT
-          -- ChatItem
-          i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
-          -- CIFile
-          f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol
-        FROM chat_items i
-        LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-        WHERE i.user_id = ? AND i.note_folder_id = ? AND i.item_text LIKE '%' || ? || '%'
-        ORDER BY i.created_at DESC, i.chat_item_id DESC
-        LIMIT ?
-      |]
-      (userId, noteFolderId, search, count)
-
-getLocalChatAfter_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTLocal)
-getLocalChatAfter_ db User {userId} nf@NoteFolder {noteFolderId} afterChatItemId count search = do
-  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItems <- ExceptT getLocalChatItemsAfter_
-  pure $ Chat (LocalChat nf) chatItems stats
   where
-    getLocalChatItemsAfter_ :: IO (Either StoreError [CChatItem 'CTLocal])
-    getLocalChatItemsAfter_ = do
-      currentTs <- getCurrentTime
-      mapM (toLocalChatItem currentTs)
+    getLocalChatItemIdsLast_ :: IO [ChatItemId]
+    getLocalChatItemIdsLast_ =
+      map fromOnly
         <$> DB.query
           db
           [sql|
-            SELECT
-              -- ChatItem
-              i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
-              -- CIFile
-              f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol
-            FROM chat_items i
-            LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-            WHERE i.user_id = ? AND i.note_folder_id = ? AND i.item_text LIKE '%' || ? || '%'
-              AND i.chat_item_id > ?
-            ORDER BY i.created_at ASC, i.chat_item_id ASC
+            SELECT chat_item_id
+            FROM chat_items
+            WHERE user_id = ? AND note_folder_id = ? AND item_text LIKE '%' || ? || '%'
+            ORDER BY created_at DESC, chat_item_id DESC
+            LIMIT ?
+          |]
+          (userId, noteFolderId, search, count)
+
+getLocalChatAfter_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTLocal)
+getLocalChatAfter_ db user@User {userId} nf@NoteFolder {noteFolderId} afterChatItemId count search = do
+  let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
+  chatItemIds <- liftIO getLocalChatItemIdsAfter_
+  chatItems <- mapM (getLocalChatItem db user noteFolderId) chatItemIds
+  pure $ Chat (LocalChat nf) chatItems stats
+  where
+    getLocalChatItemIdsAfter_ :: IO [ChatItemId]
+    getLocalChatItemIdsAfter_ =
+      map fromOnly
+        <$> DB.query
+          db
+          [sql|
+            SELECT chat_item_id
+            FROM chat_items
+            WHERE user_id = ? AND note_folder_id = ? AND item_text LIKE '%' || ? || '%'
+              AND chat_item_id > ?
+            ORDER BY created_at ASC, chat_item_id ASC
             LIMIT ?
           |]
           (userId, noteFolderId, search, afterChatItemId, count)
 
 getLocalChatBefore_ :: DB.Connection -> User -> NoteFolder -> ChatItemId -> Int -> String -> ExceptT StoreError IO (Chat 'CTLocal)
-getLocalChatBefore_ db User {userId} nf@NoteFolder {noteFolderId} beforeChatItemId count search = do
+getLocalChatBefore_ db user@User {userId} nf@NoteFolder {noteFolderId} beforeChatItemId count search = do
   let stats = ChatStats {unreadCount = 0, minUnreadItemId = 0, unreadChat = False}
-  chatItems <- ExceptT getLocalChatItemsBefore_
+  chatItemIds <- liftIO getLocalChatItemIdsBefore_
+  chatItems <- mapM (getLocalChatItem db user noteFolderId) chatItemIds
   pure $ Chat (LocalChat nf) (reverse chatItems) stats
   where
-    getLocalChatItemsBefore_ :: IO (Either StoreError [CChatItem 'CTLocal])
-    getLocalChatItemsBefore_ = do
-      currentTs <- getCurrentTime
-      mapM (toLocalChatItem currentTs)
+    getLocalChatItemIdsBefore_ :: IO [ChatItemId]
+    getLocalChatItemIdsBefore_ =
+      map fromOnly
         <$> DB.query
           db
           [sql|
-            SELECT
-              -- ChatItem
-              i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.shared_msg_id, i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at, i.timed_ttl, i.timed_delete_at, i.item_live,
-              -- CIFile
-              f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol
-            FROM chat_items i
-            LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
-            WHERE i.user_id = ? AND i.note_folder_id = ? AND i.item_text LIKE '%' || ? || '%'
-              AND i.chat_item_id < ?
-            ORDER BY i.created_at DESC, i.chat_item_id DESC
+            SELECT chat_item_id
+            FROM chat_items
+            WHERE user_id = ? AND note_folder_id = ? AND item_text LIKE '%' || ? || '%'
+              AND chat_item_id < ?
+            ORDER BY created_at DESC, chat_item_id DESC
             LIMIT ?
           |]
           (userId, noteFolderId, search, beforeChatItemId, count)
