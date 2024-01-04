@@ -728,7 +728,7 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
       Just mc -> view from $ reactionMsg mc
       _ -> []
       where
-        from = "$ "
+        from = "- "
         reactionMsg mc = quoteText mc $ if toMsgDirection md == MDSnd then ">>" else ">"
     (_, CIDirectSnd) -> [sentText]
     (_, CIGroupSnd) -> [sentText]
@@ -2023,7 +2023,7 @@ ttyGroup' :: GroupInfo -> StyledString
 ttyGroup' = ttyGroup . groupName'
 
 ttyLocal :: NoteFolderName -> StyledString
-ttyLocal l = styled (colored Green) $ "$" <> viewName l
+ttyLocal l = styled (colored Green) $ "-" <> viewName l
 
 viewContactName :: Contact -> Text
 viewContactName = viewName . localDisplayName'

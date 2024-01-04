@@ -6294,7 +6294,7 @@ chatCommandP =
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> stringP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessage <$> chatRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
-      "/_create $" *> (APICreateChatItem <$> A.decimal <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
+      "/_create -" *> (APICreateChatItem <$> A.decimal <*> (" json " *> jsonP <|> " text " *> (ComposedMessage Nothing Nothing <$> mcTextP))),
       "/_update item " *> (APIUpdateChatItem <$> chatRefP <* A.space <*> A.decimal <*> liveMessageP <* A.space <*> msgContentP),
       "/_delete item " *> (APIDeleteChatItem <$> chatRefP <* A.space <*> A.decimal <* A.space <*> ciDeleteMode),
       "/_delete member item #" *> (APIDeleteMemberChatItem <$> A.decimal <* A.space <*> A.decimal <* A.space <*> A.decimal),
@@ -6403,7 +6403,7 @@ chatCommandP =
       ("/leave " <|> "/l ") *> char_ '#' *> (LeaveGroup <$> displayName),
       ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName),
       ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayName),
-      "/clear -" $> ClearNoteFolder "-",
+      "/clear -" $> ClearNoteFolder "",
       "/clear #" *> (ClearGroup <$> displayName),
       "/clear " *> char_ '@' *> (ClearContact <$> displayName),
       ("/members " <|> "/ms ") *> char_ '#' *> (ListMembers <$> displayName),
@@ -6437,23 +6437,23 @@ chatCommandP =
       ("/connect" <|> "/c") *> (Connect <$> incognitoP <* A.space <*> ((Just <$> strP) <|> A.takeTill isSpace $> Nothing)),
       ("/connect" <|> "/c") *> (AddContact <$> incognitoP),
       SendMessage <$> chatNameP <* A.space <*> msgTextP,
-      "/- " *> (SendMessage (ChatName CTLocal "-") <$> msgTextP),
+      "/- " *> (SendMessage (ChatName CTLocal "") <$> msgTextP),
       "@#" *> (SendMemberContactMessage <$> displayName <* A.space <* char_ '@' <*> displayName <* A.space <*> msgTextP),
       "/live " *> (SendLiveMessage <$> chatNameP <*> (A.space *> msgTextP <|> pure "")),
       (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv),
       (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd),
       ("\\ " <|> "\\") *> (DeleteMessage <$> chatNameP <* A.space <*> textP),
       ("\\\\ #" <|> "\\\\#") *> (DeleteMemberMessage <$> displayName <* A.space <* char_ '@' <*> displayName <* A.space <*> textP),
-      ("! " <|> "!") *> (EditMessage <$> (notesNameP <|> chatNameP) <* A.space <*> (quotedMsg <|> pure "") <*> msgTextP),
+      ("! " <|> "!") *> (EditMessage <$> chatNameP <* A.space <*> (quotedMsg <|> pure "") <*> msgTextP),
       ReactToMessage <$> (("+" $> True) <|> ("-" $> False)) <*> reactionP <* A.space <*> chatNameP' <* A.space <*> textP,
       "/feed " *> (SendMessageBroadcast <$> msgTextP),
       ("/chats" <|> "/cs") *> (LastChats <$> (" all" $> Nothing <|> Just <$> (A.space *> A.decimal <|> pure 20))),
-      ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> (notesNameP <|> chatNameP)) <*> msgCountP <*> pure Nothing),
-      ("/search" <|> "/?") *> (LastMessages <$> optional (A.space *> (notesNameP <|> chatNameP)) <*> msgCountP <*> (Just <$> (A.space *> stringP))),
-      "/last_item_id" *> (LastChatItemId <$> optional (A.space *> (notesNameP <|> chatNameP)) <*> (A.space *> A.decimal <|> pure 0)),
+      ("/tail" <|> "/t") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> pure Nothing),
+      ("/search" <|> "/?") *> (LastMessages <$> optional (A.space *> chatNameP) <*> msgCountP <*> (Just <$> (A.space *> stringP))),
+      "/last_item_id" *> (LastChatItemId <$> optional (A.space *> chatNameP) <*> (A.space *> A.decimal <|> pure 0)),
       "/show" *> (ShowLiveItems <$> (A.space *> onOffP <|> pure True)),
       "/show " *> (ShowChatItem . Just <$> A.decimal),
-      "/item info " *> (ShowChatItemInfo <$> (notesNameP <|> chatNameP) <* A.space <*> msgTextP),
+      "/item info " *> (ShowChatItemInfo <$> chatNameP <* A.space <*> msgTextP),
       ("/file " <|> "/f ") *> (SendFile <$> chatNameP' <* A.space <*> cryptoFileP),
       ("/image " <|> "/img ") *> (SendImage <$> chatNameP' <* A.space <*> cryptoFileP),
       ("/fforward " <|> "/ff ") *> (ForwardFile <$> chatNameP' <* A.space <*> A.decimal),
@@ -6528,7 +6528,7 @@ chatCommandP =
     incognitoOnOffP = (A.space *> "incognito=" *> onOffP) <|> pure False
     imagePrefix = (<>) <$> "data:" <*> ("image/png;base64," <|> "image/jpg;base64,")
     imageP = safeDecodeUtf8 <$> ((<>) <$> imagePrefix <*> (B64.encode <$> base64P))
-    chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup <|> A.char '$' $> CTLocal <|> A.char ':' $> CTContactConnection
+    chatTypeP = A.char '@' $> CTDirect <|> A.char '#' $> CTGroup <|> A.char '-' $> CTLocal <|> A.char ':' $> CTContactConnection
     chatPaginationP =
       (CPLast <$ "count=" <*> A.decimal)
         <|> (CPAfter <$ "after=" <*> A.decimal <* A.space <* "count=" <*> A.decimal)
@@ -6601,8 +6601,9 @@ chatCommandP =
           " member" $> GRMember,
           " observer" $> GRObserver
         ]
-    notesNameP = A.char '-' $> ChatName CTLocal "-"
-    chatNameP = ChatName <$> chatTypeP <*> displayName
+    chatNameP = chatTypeP >>= \case
+      CTLocal -> pure $ ChatName CTLocal ""
+      ct -> ChatName ct <$> displayName
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayName
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
     msgCountP = A.space *> A.decimal <|> pure 10
