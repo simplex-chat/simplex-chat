@@ -63,6 +63,7 @@ struct ContentView: View {
             if !showSettings, let la = chatModel.laRequest {
                 LocalAuthView(authRequest: la)
                     .onDisappear {
+                        // this flag is separate from accessAuthenticated to show initializationView while we wait for authentication
                         shouldRetryAuth = !accessAuthenticated
                     }
             } else if showSetPasscode {
