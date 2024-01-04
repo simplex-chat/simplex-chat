@@ -5675,9 +5675,8 @@ createSndMessages idsEvents = do
   vr <- chatVersionRange
   withStoreBatch $ \db -> fmap (uncurry (createMsg db gVar vr)) idsEvents
   where
-    createMsg db gVar chatVRange connOrGroupId evnt = do
-      r <- runExceptT $ createNewSndMessage db gVar connOrGroupId evnt (encodeMessage chatVRange evnt)
-      pure $ first ChatErrorStore r
+    createMsg db gVar chatVRange connOrGroupId evnt = runExceptT $ do
+      withExceptT ChatErrorStore $ createNewSndMessage db gVar connOrGroupId evnt (encodeMessage chatVRange evnt)
     encodeMessage chatVRange evnt sharedMsgId =
       encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
