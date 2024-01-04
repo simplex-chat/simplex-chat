@@ -981,7 +981,7 @@ getLocalCryptoFile db userId fileId sent =
     [(Nothing, Nothing, FPLocal)] -> do
       LocalFileMeta {filePath, fileCryptoArgs} <- getLocalFileMeta db userId fileId
       pure $ CryptoFile filePath fileCryptoArgs
-    _ -> throwError $ SEBadFileTransfer fileId
+    _ -> throwError $ SEFileNotFound fileId
 
 updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> VersionRange -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
 updateDirectCIFileStatus db vr user fileId fileStatus = do
