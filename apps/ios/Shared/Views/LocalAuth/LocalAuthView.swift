@@ -29,7 +29,7 @@ struct LocalAuthView: View {
             let r: LAResult
             if password == authRequest.password {
                 if authRequest.selfDestruct && kcSelfDestructPassword.get() != nil && !m.chatInitialized {
-                    initChatAndMigrate(ignoreSelfDestruct: true)
+                    initChatAndMigrate()
                 }
                 r = .success
             } else {
