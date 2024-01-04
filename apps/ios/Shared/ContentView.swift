@@ -31,6 +31,7 @@ struct ContentView: View {
     @State private var showWhatsNew = false
     @State private var showChooseLAMode = false
     @State private var showSetPasscode = false
+    @State private var shouldRetryAuth = false
     @State private var chatListActionSheet: ChatListActionSheet? = nil
 
     private enum ChatListActionSheet: Identifiable {
@@ -61,6 +62,9 @@ struct ContentView: View {
             }
             if !showSettings, let la = chatModel.laRequest {
                 LocalAuthView(authRequest: la)
+                    .onDisappear {
+                        shouldRetryAuth = !accessAuthenticated
+                    }
             } else if showSetPasscode {
                 SetAppPasscodeView {
                     chatModel.contentViewAccessAuthenticated = true
@@ -73,7 +77,7 @@ struct ContentView: View {
                     showSetPasscode = false
                     alertManager.showAlert(laPasscodeNotSetAlert())
                 }
-            } else if chatModel.chatDbStatus == nil && AppChatState.shared.value != .stopped {
+            } else if chatModel.chatDbStatus == nil && AppChatState.shared.value != .stopped && !shouldRetryAuth {
                 initializationView()
             }
         }
