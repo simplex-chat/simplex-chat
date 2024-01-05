@@ -478,6 +478,7 @@ fun deleteChatDatabaseFilesAndState() {
   tmpDir.mkdir()
   DatabaseUtils.ksDatabasePassword.remove()
   controller.appPrefs.storeDBPassphrase.set(true)
+  controller.ctrl = null
 
   // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
   chatModel.chatId.value = null
