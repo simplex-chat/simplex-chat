@@ -1525,4 +1525,14 @@
     <string name="error_showing_content">hiba a tartalom megjelenítése közben</string>
     <string name="error_showing_message">hiba az üzenet megjelenítésekor</string>
     <string name="you_can_make_address_visible_via_settings">Láthatóvá teheted a SimpleX ismerőseid számára a Beállításokban.</string>
+    <string name="recent_history_is_sent_to_new_members">Legfeljebb az utolsó 100 üzenet kerül elküldésre az új tagoknak.</string>
+    <string name="code_you_scanned_is_not_simplex_link_qr_code">A beolvasott kód nem egy SimpleX link QR-kód.</string>
+    <string name="the_text_you_pasted_is_not_a_link">A beillesztett szöveg nem SimpleX link.</string>
+    <string name="you_can_view_invitation_link_again">A meghívó linket újra megtekintheti a kapcsolat részletei között.</string>
+    <string name="start_chat_question">Csevegés indítása?</string>
+    <string name="recent_history">Látható előzmények</string>
+    <string name="la_app_passcode">Alkalmazás jelszó</string>
+    <string name="add_contact_tab">Kapcsolat hozzáadása</string>
+    <string name="tap_to_scan">Koppints a beolvasáshoz</string>
+    <string name="tap_to_paste_link">Koppints a hivatkozás beillesztéséhez</string>
 </resources>
