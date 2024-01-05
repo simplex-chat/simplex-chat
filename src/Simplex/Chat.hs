@@ -800,7 +800,7 @@ processChatCommand' vr = \case
     createdAt <- liftIO getCurrentTime
     let content = CISndMsgContent mc
     let cd = CDLocalSnd nf
-    ciId <- createLocalChatItem user cd content createdAt
+    ciId <- creaсteLocalChatItem user cd content createdAt
     ciFile_ <- forM file_ $ \cf@CryptoFile {filePath, cryptoArgs} -> do
       fsFilePath <- toFSFilePath filePath
       fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cryptoArgs
@@ -808,7 +808,7 @@ processChatCommand' vr = \case
       withStore' $ \db -> do
         fileId <- createLocalFile CIFSSndStored db user nf ciId createdAt cf fileSize chunkSize
         pure CIFile {fileId, fileName = takeFileName filePath, fileSize, fileSource = Just cf, fileStatus = CIFSSndStored, fileProtocol = FPLocal}
-    ci <- liftIO $ mkChatItem cd ciId content ciFile_ Nothing Nothing Nothing False createdAt Nothing createdAt
+    let ci = mkChatItem cd ciId content ciFile_ Nothing Nothing Nothing False createdAt Nothing createdAt
     pure . CRNewChatItem user $ AChatItem SCTLocal SMDSnd (LocalChat nf) ci
   APIUpdateChatItem (ChatRef cType chatId) itemId live mc -> withUser $ \user -> withChatLock "updateChatItem" $ case cType of
     CTDirect -> do
