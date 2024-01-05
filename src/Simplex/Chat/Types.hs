@@ -889,7 +889,7 @@ memberRemoved m = case memberStatus m of
   GSMemRemoved -> True
   GSMemLeft -> True
   GSMemGroupDeleted -> True
-  GSMemUnknown -> True
+  GSMemUnknown -> False
   GSMemInvited -> False
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
