@@ -978,7 +978,7 @@ object ChatController {
   }
 
   suspend fun apiDeleteChat(rh: Long?, type: ChatType, id: Long, notify: Boolean? = null): Boolean {
-    chatModel.deletedChats.value += rh to id
+    chatModel.deletedChats.value += rh to type.type + id
     val r = sendCmd(rh, CC.ApiDeleteChat(type, id, notify))
     val success = when {
       r is CR.ContactDeleted && type == ChatType.Direct -> true
@@ -995,7 +995,7 @@ object ChatController {
         false
       }
     }
-    chatModel.deletedChats.value -= rh to id
+    chatModel.deletedChats.value -= rh to type.type + id
     return success
   }
 
