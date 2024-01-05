@@ -24,7 +24,7 @@ import Control.Monad.Reader
 import qualified Data.Aeson as J
 import Data.Attoparsec.ByteString.Char8 (Parser)
 import qualified Data.Attoparsec.ByteString.Char8 as A
-import Data.Bifunctor (bimap, first)
+import Data.Bifunctor (bimap, first, second)
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base64 as B64
@@ -37,6 +37,7 @@ import Data.Constraint (Dict (..))
 import Data.Either (fromRight, lefts, partitionEithers, rights)
 import Data.Fixed (div')
 import Data.Functor (($>))
+import Data.Functor.Identity
 import Data.Int (Int64)
 import Data.List (find, foldl', isSuffixOf, partition, sortOn)
 import Data.List.NonEmpty (NonEmpty (..), nonEmpty, toList, (<|))
@@ -87,6 +88,7 @@ import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentCl
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
+import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, SQLiteStore (dbNew), execSQL, upMigration, withConnection)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
@@ -2136,31 +2138,41 @@ processChatCommand' vr = \case
       | otherwise = do
           when (n /= n') $ checkValidName n'
           -- read contacts before user update to correctly merge preferences
-          -- [incognito] filter out contacts with whom user has incognito connections
-          contacts <-
-            filter (\ct -> contactReady ct && contactActive ct && not (contactConnIncognito ct))
-              <$> withStore' (`getUserContacts` user)
+          contacts <- withStore' (`getUserContacts` user)
           user' <- updateUser
           asks currentUser >>= atomically . (`writeTVar` Just user')
           withChatLock "updateProfile" . procCmd $ do
-            ChatConfig {logLevel} <- asks config
-            summary <- foldM (processAndCount user' logLevel) (UserProfileUpdateSummary 0 0 0 []) contacts
+            let changedCts = foldr (addChangedProfileContact user') [] contacts
+                idsEvts = map ctSndMsg changedCts
+            msgReqs_ <- zipWith ctMsgReq changedCts <$> createSndMessages idsEvts
+            (errs, cts) <- partitionEithers . zipWith (second . const) changedCts <$> deliverMessagesB msgReqs_
+            unless (null errs) $ toView $ CRChatErrors (Just user) errs
+            let changedCts' = filter (\ChangedProfileContact {ct, ct'} -> directOrUsed ct' && mergedPreferences ct' /= mergedPreferences ct) cts
+            createContactsSndFeatureItems user' changedCts'
+            let summary =
+                  UserProfileUpdateSummary
+                    { updateSuccesses = length cts,
+                      updateFailures = length errs,
+                      changedContacts = map (\ChangedProfileContact {ct'} -> ct') changedCts'
+                    }
             pure $ CRUserProfileUpdated user' (fromLocalProfile p) p' summary
       where
-        processAndCount user' ll s@UserProfileUpdateSummary {notChanged, updateSuccesses, updateFailures, changedContacts = cts} ct = do
-          let mergedProfile = userProfileToSend user Nothing $ Just ct
-              ct' = updateMergedPreferences user' ct
-              mergedProfile' = userProfileToSend user' Nothing $ Just ct'
-          if mergedProfile' == mergedProfile
-            then pure s {notChanged = notChanged + 1}
-            else
-              let cts' = if mergedPreferences ct == mergedPreferences ct' then cts else ct' : cts
-               in (notifyContact mergedProfile' ct' $> s {updateSuccesses = updateSuccesses + 1, changedContacts = cts'})
-                    `catchChatError` \e -> when (ll <= CLLInfo) (toView $ CRChatError (Just user) e) $> s {updateFailures = updateFailures + 1, changedContacts = cts'}
+        -- [incognito] filter out contacts with whom user has incognito connections
+        addChangedProfileContact :: User -> Contact -> [ChangedProfileContact] -> [ChangedProfileContact]
+        addChangedProfileContact user' ct changedCts = case contactSendConn_ ct' of
+          Left _ -> changedCts
+          Right conn
+            | connIncognito conn || mergedProfile' == mergedProfile -> changedCts
+            | otherwise -> ChangedProfileContact ct ct' mergedProfile' conn : changedCts
           where
-            notifyContact mergedProfile' ct' = do
-              void $ sendDirectContactMessage ct' (XInfo mergedProfile')
-              when (directOrUsed ct') $ createSndFeatureItems user' ct ct'
+            mergedProfile = userProfileToSend user Nothing $ Just ct
+            ct' = updateMergedPreferences user' ct
+            mergedProfile' = userProfileToSend user' Nothing $ Just ct'
+        ctSndMsg :: ChangedProfileContact -> (ConnOrGroupId, ChatMsgEvent 'Json)
+        ctSndMsg ChangedProfileContact {mergedProfile', conn = Connection {connId}} = (ConnectionId connId, XInfo mergedProfile')
+        ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError MsgReq
+        ctMsgReq ChangedProfileContact {conn} = fmap $ \SndMessage {msgId, msgBody} ->
+          (conn, MsgFlags {notification = hasNotification XInfo_}, msgBody, msgId)
     updateContactPrefs :: User -> Contact -> Preferences -> m ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
     updateContactPrefs user@User {userId} ct@Contact {activeConn = Just Connection {customUserProfileId}, userPreferences = contactUserPrefs} contactUserPrefs'
@@ -2399,6 +2411,13 @@ processChatCommand' vr = \case
         cReqHashes :: (ConnReqUriHash, ConnReqUriHash)
         cReqHashes = bimap hash hash cReqSchemas
         hash = ConnReqUriHash . C.sha256Hash . strEncode
+
+data ChangedProfileContact = ChangedProfileContact
+  { ct :: Contact,
+    ct' :: Contact,
+    mergedProfile' :: Profile,
+    conn :: Connection
+  }
 
 prepareGroupMsg :: forall m. ChatMonad m => User -> GroupInfo -> MsgContent -> Maybe ChatItemId -> Maybe FileInvitation -> Maybe CITimed -> Bool -> m (MsgContainer, Maybe (CIQuote 'CTGroup))
 prepareGroupMsg user GroupInfo {groupId, membership} mc quotedItemId_ fInv_ timed_ live = case quotedItemId_ of
@@ -5625,12 +5644,20 @@ deleteOrUpdateMemberRecord user@User {userId} member =
       Nothing -> deleteGroupMember db user member
 
 sendDirectContactMessage :: (MsgEncodingI e, ChatMonad m) => Contact -> ChatMsgEvent e -> m (SndMessage, Int64)
-sendDirectContactMessage ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotReady ct
-sendDirectContactMessage ct@Contact {activeConn = Just conn@Connection {connId, connStatus}, contactStatus} chatMsgEvent
-  | connStatus /= ConnReady && connStatus /= ConnSndReady = throwChatError $ CEContactNotReady ct
-  | contactStatus /= CSActive = throwChatError $ CEContactNotActive ct
-  | connDisabled conn = throwChatError $ CEContactDisabled ct
-  | otherwise = sendDirectMessage conn chatMsgEvent (ConnectionId connId)
+sendDirectContactMessage ct chatMsgEvent = do
+  conn@Connection {connId} <- liftEither $ contactSendConn_ ct
+  sendDirectMessage conn chatMsgEvent (ConnectionId connId)
+
+contactSendConn_ :: Contact -> Either ChatError Connection
+contactSendConn_ ct@Contact {activeConn} = case activeConn of
+  Nothing -> err $ CEContactNotReady ct
+  Just conn
+    | not (connReady conn) -> err $ CEContactNotReady ct
+    | not (contactActive ct) -> err $ CEContactNotActive ct
+    | connDisabled conn -> err $ CEContactDisabled ct
+    | otherwise -> Right conn
+  where
+    err = Left . ChatError
 
 sendDirectMessage :: (MsgEncodingI e, ChatMonad m) => Connection -> ChatMsgEvent e -> ConnOrGroupId -> m (SndMessage, Int64)
 sendDirectMessage conn chatMsgEvent connOrGroupId = do
@@ -5639,18 +5666,25 @@ sendDirectMessage conn chatMsgEvent connOrGroupId = do
   (msg,) <$> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
 
 createSndMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> ConnOrGroupId -> m SndMessage
-createSndMessage chatMsgEvent connOrGroupId = do
+createSndMessage chatMsgEvent connOrGroupId =
+  liftEither . runIdentity =<< createSndMessages (Identity (connOrGroupId, chatMsgEvent))
+
+createSndMessages :: forall e m t. (MsgEncodingI e, ChatMonad' m, Traversable t) => t (ConnOrGroupId, ChatMsgEvent e) -> m (t (Either ChatError SndMessage))
+createSndMessages idsEvents = do
   gVar <- asks random
   vr <- chatVersionRange
-  withStore $ \db -> createNewSndMessage db gVar connOrGroupId chatMsgEvent (encodeMessage vr)
+  withStoreBatch $ \db -> fmap (uncurry (createMsg db gVar vr)) idsEvents
   where
-    encodeMessage chatVRange sharedMsgId =
-      encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent}
+    createMsg db gVar chatVRange connOrGroupId evnt = runExceptT $ do
+      withExceptT ChatErrorStore $ createNewSndMessage db gVar connOrGroupId evnt (encodeMessage chatVRange evnt)
+    encodeMessage chatVRange evnt sharedMsgId =
+      encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
 sendGroupMemberMessages :: forall e m. (MsgEncodingI e, ChatMonad m) => User -> Connection -> NonEmpty (ChatMsgEvent e) -> GroupId -> m ()
 sendGroupMemberMessages user conn@Connection {connId} events groupId = do
   when (connDisabled conn) $ throwChatError (CEConnectionDisabled conn)
-  (errs, msgs) <- partitionEithers <$> createSndMessages
+  let idsEvts = L.map (GroupId groupId,) events
+  (errs, msgs) <- partitionEithers . L.toList <$> createSndMessages idsEvts
   unless (null errs) $ toView $ CRChatErrors (Just user) errs
   unless (null msgs) $ do
     let (errs', msgBatches) = partitionEithers $ batchMessages maxChatMsgSize msgs
@@ -5665,16 +5699,6 @@ sendGroupMemberMessages user conn@Connection {connId} events groupId = do
       agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) MsgFlags {notification = True} batchBody
       let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
       void . withStoreBatch' $ \db -> map (\SndMessage {msgId} -> createSndMsgDelivery db sndMsgDelivery msgId) sndMsgs
-    createSndMessages :: m [Either ChatError SndMessage]
-    createSndMessages = do
-      gVar <- asks random
-      vr <- chatVersionRange
-      withStoreBatch $ \db -> map (createMsg db gVar vr) (toList events)
-    createMsg db gVar chatVRange evnt = do
-      r <- runExceptT $ createNewSndMessage db gVar (GroupId groupId) evnt (encodeMessage chatVRange evnt)
-      pure $ first ChatErrorStore r
-    encodeMessage chatVRange evnt sharedMsgId =
-      encodeChatMessage ChatMessage {chatVRange, msgId = Just sharedMsgId, chatMsgEvent = evnt}
 
 directMessage :: (MsgEncodingI e, ChatMonad m) => ChatMsgEvent e -> m ByteString
 directMessage chatMsgEvent = do
@@ -5695,14 +5719,23 @@ deliverMessage' conn msgFlags msgBody msgId =
     [r] -> liftEither r
     rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
-deliverMessages :: ChatMonad' m => [(Connection, MsgFlags, LazyMsgBody, MessageId)] -> m [Either ChatError Int64]
-deliverMessages msgReqs = do
-  sent <- zipWith prepareBatch msgReqs <$> withAgent' (`sendMessages` aReqs)
+type MsgReq = (Connection, MsgFlags, LazyMsgBody, MessageId)
+
+deliverMessages :: ChatMonad' m => [MsgReq] -> m [Either ChatError Int64]
+deliverMessages = deliverMessagesB . map Right
+
+deliverMessagesB :: ChatMonad' m => [Either ChatError MsgReq] -> m [Either ChatError Int64]
+deliverMessagesB msgReqs = do
+  sent <- zipWith prepareBatch msgReqs <$> withAgent' (`sendMessagesB` map toAgent msgReqs)
   withStoreBatch $ \db -> map (bindRight $ createDelivery db) sent
   where
-    aReqs = map (\(conn, msgFlags, msgBody, _msgId) -> (aConnId conn, msgFlags, LB.toStrict msgBody)) msgReqs
-    prepareBatch req = bimap (`ChatErrorAgent` Nothing) (req,)
-    createDelivery :: DB.Connection -> ((Connection, MsgFlags, LazyMsgBody, MessageId), AgentMsgId) -> IO (Either ChatError Int64)
+    toAgent = \case
+      Right (conn, msgFlags, msgBody, _msgId) -> Right (aConnId conn, msgFlags, LB.toStrict msgBody)
+      Left _ce -> Left (AP.INTERNAL "ChatError, skip") -- as long as it is Left, the agent batchers should just step over it
+    prepareBatch (Right req) (Right ar) = Right (req, ar)
+    prepareBatch (Left ce) _ = Left ce -- restore original ChatError
+    prepareBatch _ (Left ae) = Left $ ChatErrorAgent ae Nothing
+    createDelivery :: DB.Connection -> (MsgReq, AgentMsgId) -> IO (Either ChatError Int64)
     createDelivery db ((Connection {connId}, _, _, msgId), agentMsgId) =
       Right <$> createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId}) msgId
 
@@ -5848,7 +5881,7 @@ saveSndChatItem' user cd msg@SndMessage {sharedMsgId} content ciFile quotedItem 
     ciId <- createNewSndChatItem db user cd msg content quotedItem itemTimed live createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     pure ciId
-  liftIO $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) itemTimed live createdAt Nothing createdAt
+  pure $ mkChatItem cd ciId content ciFile quotedItem (Just sharedMsgId) itemTimed live createdAt Nothing createdAt
 
 saveRcvChatItem :: ChatMonad m => User -> ChatDirection c 'MDRcv -> RcvMessage -> UTCTime -> CIContent 'MDRcv -> m (ChatItem c 'MDRcv)
 saveRcvChatItem user cd msg@RcvMessage {sharedMsgId_} brokerTs content =
@@ -5862,14 +5895,14 @@ saveRcvChatItem' user cd msg@RcvMessage {forwardedByMember} sharedMsgId_ brokerT
     (ciId, quotedItem) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     pure (ciId, quotedItem)
-  liftIO $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemTimed live brokerTs forwardedByMember createdAt
+  pure $ mkChatItem cd ciId content ciFile quotedItem sharedMsgId_ itemTimed live brokerTs forwardedByMember createdAt
 
-mkChatItem :: forall c d. MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CITimed -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> IO (ChatItem c d)
-mkChatItem cd ciId content file quotedItem sharedMsgId itemTimed live itemTs forwardedByMember currentTs = do
+mkChatItem :: forall c d. MsgDirectionI d => ChatDirection c d -> ChatItemId -> CIContent d -> Maybe (CIFile d) -> Maybe (CIQuote c) -> Maybe SharedMsgId -> Maybe CITimed -> Bool -> ChatItemTs -> Maybe GroupMemberId -> UTCTime -> ChatItem c d
+mkChatItem cd ciId content file quotedItem sharedMsgId itemTimed live itemTs forwardedByMember currentTs =
   let itemText = ciContentToText content
       itemStatus = ciCreateStatus content
       meta = mkCIMeta ciId content itemText itemStatus sharedMsgId Nothing False itemTimed (justTrue live) currentTs itemTs forwardedByMember currentTs currentTs
-  pure ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, reactions = [], file}
+   in ChatItem {chatDir = toCIDirection cd, meta, content, formattedText = parseMaybeMarkdownList itemText, quotedItem, reactions = [], file}
 
 deleteDirectCI :: (ChatMonad m, MsgDirectionI d) => User -> Contact -> ChatItem 'CTDirect d -> Bool -> Bool -> m ChatResponse
 deleteDirectCI user ct ci@ChatItem {file} byUser timed = do
@@ -5982,6 +6015,15 @@ createSndFeatureItems user ct ct' =
       CUPContact {preference} -> preference
       CUPUser {preference} -> preference
 
+createContactsSndFeatureItems :: forall m. ChatMonad m => User -> [ChangedProfileContact] -> m ()
+createContactsSndFeatureItems user cts =
+  createContactsFeatureItems user cts' CDDirectSnd CISndChatFeature CISndChatPreference getPref
+  where
+    cts' = map (\ChangedProfileContact {ct, ct'} -> (ct, ct')) cts
+    getPref ContactUserPreference {userPreference} = case userPreference of
+      CUPContact {preference} -> preference
+      CUPUser {preference} -> preference
+
 type FeatureContent a d = ChatFeature -> a -> Maybe Int -> CIContent d
 
 createFeatureItems ::
@@ -5995,24 +6037,44 @@ createFeatureItems ::
   FeatureContent FeatureAllowed d ->
   (forall f. ContactUserPreference (FeaturePreference f) -> FeaturePreference f) ->
   m ()
-createFeatureItems user Contact {mergedPreferences = cups} ct'@Contact {mergedPreferences = cups'} chatDir ciFeature ciOffer getPref =
-  forM_ allChatFeatures $ \(ACF f) -> createItem f
+createFeatureItems user ct ct' = createContactsFeatureItems user [(ct, ct')]
+
+createContactsFeatureItems ::
+  forall d m.
+  (MsgDirectionI d, ChatMonad m) =>
+  User ->
+  [(Contact, Contact)] ->
+  (Contact -> ChatDirection 'CTDirect d) ->
+  FeatureContent PrefEnabled d ->
+  FeatureContent FeatureAllowed d ->
+  (forall f. ContactUserPreference (FeaturePreference f) -> FeaturePreference f) ->
+  m ()
+createContactsFeatureItems user cts chatDir ciFeature ciOffer getPref = do
+  let dirsCIContents = map contactChangedFeatures cts
+  (errs, acis) <- partitionEithers <$> createInternalItemsForChats user Nothing dirsCIContents
+  unless (null errs) $ toView $ CRChatErrors (Just user) errs
+  forM_ acis $ \aci -> toView $ CRNewChatItem user aci
   where
-    createItem :: forall f. FeatureI f => SChatFeature f -> m ()
-    createItem f
-      | state /= state' = create ciFeature state'
-      | prefState /= prefState' = create ciOffer prefState'
-      | otherwise = pure ()
+    contactChangedFeatures :: (Contact, Contact) -> (ChatDirection 'CTDirect d, [CIContent d])
+    contactChangedFeatures (Contact {mergedPreferences = cups}, ct'@Contact {mergedPreferences = cups'}) = do
+      let contents = mapMaybe (\(ACF f) -> featureCIContent_ f) allChatFeatures
+      (chatDir ct', contents)
       where
-        create :: FeatureContent a d -> (a, Maybe Int) -> m ()
-        create ci (s, param) = createInternalChatItem user (chatDir ct') (ci f' s param) Nothing
-        f' = chatFeature f
-        state = featureState cup
-        state' = featureState cup'
-        prefState = preferenceState $ getPref cup
-        prefState' = preferenceState $ getPref cup'
-        cup = getContactUserPreference f cups
-        cup' = getContactUserPreference f cups'
+        featureCIContent_ :: forall f. FeatureI f => SChatFeature f -> Maybe (CIContent d)
+        featureCIContent_ f
+          | state /= state' = Just $ fContent ciFeature state'
+          | prefState /= prefState' = Just $ fContent ciOffer prefState'
+          | otherwise = Nothing
+          where
+            fContent :: FeatureContent a d -> (a, Maybe Int) -> CIContent d
+            fContent ci (s, param) = ci f' s param
+            f' = chatFeature f
+            state = featureState cup
+            state' = featureState cup'
+            prefState = preferenceState $ getPref cup
+            prefState' = preferenceState $ getPref cup'
+            cup = getContactUserPreference f cups
+            cup' = getContactUserPreference f cups'
 
 createGroupFeatureChangedItems :: (MsgDirectionI d, ChatMonad m) => User -> ChatDirection 'CTGroup d -> (GroupFeature -> GroupPreference -> Maybe Int -> CIContent d) -> GroupInfo -> GroupInfo -> m ()
 createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences = gps} GroupInfo {fullGroupPreferences = gps'} =
@@ -6026,15 +6088,35 @@ createGroupFeatureChangedItems user cd ciContent GroupInfo {fullGroupPreferences
 sameGroupProfileInfo :: GroupProfile -> GroupProfile -> Bool
 sameGroupProfileInfo p p' = p {groupPreferences = Nothing} == p' {groupPreferences = Nothing}
 
-createInternalChatItem :: forall c d m. (ChatTypeI c, MsgDirectionI d, ChatMonad m) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> m ()
-createInternalChatItem user cd content itemTs_ = do
+createInternalChatItem :: (ChatTypeI c, MsgDirectionI d, ChatMonad m) => User -> ChatDirection c d -> CIContent d -> Maybe UTCTime -> m ()
+createInternalChatItem user cd content itemTs_ =
+  createInternalItemsForChats user itemTs_ [(cd, [content])] >>= \case
+    [Right aci] -> toView $ CRNewChatItem user aci
+    [Left e] -> throwError e
+    rs -> throwChatError $ CEInternalError $ "createInternalChatItem: expected 1 result, got " <> show (length rs)
+
+createInternalItemsForChats ::
+  forall c d m.
+  (ChatTypeI c, MsgDirectionI d, ChatMonad' m) =>
+  User ->
+  Maybe UTCTime ->
+  [(ChatDirection c d, [CIContent d])] ->
+  m [Either ChatError AChatItem]
+createInternalItemsForChats user itemTs_ dirsCIContents = do
   createdAt <- liftIO getCurrentTime
   let itemTs = fromMaybe createdAt itemTs_
-  ciId <- withStore' $ \db -> do
-    when (ciRequiresAttention content) $ updateChatTs db user cd createdAt
-    createNewChatItemNoMsg db user cd content itemTs createdAt
-  ci <- liftIO $ mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
-  toView $ CRNewChatItem user (AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci)
+  void . withStoreBatch' $ \db -> map (uncurry $ updateChat db createdAt) dirsCIContents
+  withStoreBatch' $ \db -> concatMap (uncurry $ createACIs db itemTs createdAt) dirsCIContents
+  where
+    updateChat :: DB.Connection -> UTCTime -> ChatDirection c d -> [CIContent d] -> IO ()
+    updateChat db createdAt cd contents
+      | any ciRequiresAttention contents = updateChatTs db user cd createdAt
+      | otherwise = pure ()
+    createACIs :: DB.Connection -> UTCTime -> UTCTime -> ChatDirection c d -> [CIContent d] -> [IO AChatItem]
+    createACIs db itemTs createdAt cd = map $ \content -> do
+      ciId <- createNewChatItemNoMsg db user cd content itemTs createdAt
+      let ci = mkChatItem cd ciId content Nothing Nothing Nothing Nothing False itemTs Nothing createdAt
+      pure $ AChatItem (chatTypeI @c) (msgDirection @d) (toChatInfo cd) ci
 
 getCreateActiveUser :: SQLiteStore -> Bool -> IO User
 getCreateActiveUser st testView = do
