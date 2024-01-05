@@ -408,8 +408,12 @@ private fun stopChatAlert(m: ChatModel) {
 }
 
 fun restartChatAlert() {
-  authStopChat(chatModel) {
+  if (chatModel.chatRunning.value == false) {
     startChat(chatModel, mutableStateOf(Instant.DISTANT_PAST), chatModel.chatDbChanged)
+  } else {
+    authStopChat(chatModel) {
+      startChat(chatModel, mutableStateOf(Instant.DISTANT_PAST), chatModel.chatDbChanged)
+    }
   }
 }
 
