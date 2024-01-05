@@ -880,7 +880,7 @@
     <string name="incoming_audio_call">Bejövő hanghívás</string>
     <string name="keychain_error">Kulcstartó hiba</string>
     <string name="join_group_question">Csatlakozol a csoporthoz?</string>
-    <string name="incognito_info_protects">Az inkognitó mód úgy védi a magánéletedet, hogy minden egyes kapcsolathoz új, véletlenszerű profilt használ.</string>
+    <string name="incognito_info_protects">Az inkognitó mód úgy védi a magánszférádat, hogy minden egyes kapcsolathoz új, véletlenszerű profilt használ.</string>
     <string name="v5_2_more_things_descr">- stabilabb üzenetkézbesítés.
 \n- egy kicsit jobb csoportok.
 \n- és még sok más!</string>
