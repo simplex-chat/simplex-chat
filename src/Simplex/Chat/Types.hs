@@ -793,7 +793,7 @@ data GroupMemberCategory
   | GCHostMember -- member who invited the user
   | GCPreMember -- member who joined before the user and was introduced to the user (user receives x.grp.mem.intro about such members)
   | GCPostMember -- member who joined after the user to whom the user was introduced (user receives x.grp.mem.new announcing these members and then x.grp.mem.fwd with invitation from these members)
-  | GCUnknownMember -- unknown member (see GroupMemberStatus GSMemUnknown)
+  | GCUnknownMember -- unknown member, whose message was forwarded by an admin (likely member wasn't introduced due to not being a current member, but message was included in history)
   deriving (Eq, Show)
 
 instance FromField GroupMemberCategory where fromField = fromTextField_ textDecode
@@ -828,7 +828,7 @@ data GroupMemberStatus
   = GSMemRemoved -- member who was removed from the group
   | GSMemLeft -- member who left the group
   | GSMemGroupDeleted -- user member of the deleted group
-  | GSMemUnknown -- unknown member, whose message was forwarded by an admin (likely member wasn't introduced due to not being a current member, but message was included in history)
+  | GSMemUnknown -- unknown member (see GroupMemberCategory GCUnknownMember)
   | GSMemInvited -- member is sent to or received invitation to join the group
   | GSMemIntroduced -- user received x.grp.mem.intro for this member (only with GCPreMember)
   | GSMemIntroInvited -- member is sent to or received from intro invitation
