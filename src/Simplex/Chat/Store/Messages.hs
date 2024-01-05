@@ -482,7 +482,7 @@ getChatPreviews :: DB.Connection -> VersionRange -> User -> Bool -> PaginationBy
 getChatPreviews db vr user withPCC pagination query = do
   directChats <- findDirectChatPreviews_ db user pagination query
   groupChats <- findGroupChatPreviews_ db user pagination query
-  localChats <- findLocalChatPreview_ db user pagination query
+  localChats <- findLocalChatPreviews_ db user pagination query
   cReqChats <- getContactRequestChatPreviews_ db user pagination query
   connChats <- if withPCC then getContactConnectionChatPreviews_ db user pagination query else pure []
   let refs = sortTake $ concat [directChats, groupChats, localChats, cReqChats, connChats]
@@ -717,8 +717,8 @@ getGroupChatPreview_ db vr user (GroupChatPD _ groupId lastItemId_ stats) = do
     Nothing -> pure []
   pure $ AChat SCTGroup (Chat (GroupChat groupInfo) lastItem stats)
 
-findLocalChatPreview_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
-findLocalChatPreview_ db User {userId} pagination clq =
+findLocalChatPreviews_ :: DB.Connection -> User -> PaginationByTime -> ChatListQuery -> IO [AChatPreviewData]
+findLocalChatPreviews_ db User {userId} pagination clq =
   map toPreview <$> getPreviews
   where
     toPreview :: (NoteFolderId, UTCTime, Maybe ChatItemId) :. ChatStatsRow -> AChatPreviewData
