@@ -47,6 +47,10 @@ object NtfManager {
     }
   }
 
+  fun showMessage(title: String, text: String) {
+    displayNotificationViaLib("MESSAGE", title, text, null, emptyList()) {}
+  }
+
   fun hasNotificationsForChat(chatId: ChatId) = false//prevNtfs.any { it.first == chatId }
 
   fun cancelNotificationsForChat(chatId: ChatId) {

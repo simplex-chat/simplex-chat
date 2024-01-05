@@ -1,6 +1,9 @@
 package chat.simplex.common.views.helpers
 
 import chat.simplex.common.model.AgentErrorType
+import chat.simplex.common.platform.Log
+import chat.simplex.common.platform.TAG
+import chat.simplex.common.platform.ntfManager
 import chat.simplex.common.views.database.restartChatAlert
 import chat.simplex.res.MR
 import kotlinx.coroutines.Job
@@ -21,18 +24,30 @@ class ProcessedErrors <T: AgentErrorType>(val interval: Long) {
       lastShownTimestamp = System.currentTimeMillis()
       lastShownOfferRestart = offerRestart
       AlertManager.shared.hideAllAlerts()
+      ntfManager
       when (error) {
         is AgentErrorType.CRITICAL -> {
-          AlertManager.shared.showAlertDialog(
-            title = generalGetString(MR.strings.agent_critical_error_title),
-            text = generalGetString(MR.strings.agent_critical_error_desc).format(error.criticalErr),
-            confirmText = if (offerRestart) generalGetString(MR.strings.restart_chat_button) else generalGetString(MR.strings.ok),
-            onConfirm = {
-              if (offerRestart) {
+          val title = generalGetString(MR.strings.agent_critical_error_title)
+          val text = generalGetString(MR.strings.agent_critical_error_desc).format(error.criticalErr)
+          try {
+            ntfManager.showMessage(title, text)
+          } catch (e: Throwable) {
+            Log.e(TAG, e.stackTraceToString())
+          }
+          if (offerRestart) {
+            AlertManager.shared.showAlertDialog(
+              title = title,
+              text = text,
+              confirmText = generalGetString(MR.strings.restart_chat_button),
+              onConfirm = {
                 withApi { restartChatAlert() }
-              }
-            }
-          )
+              })
+          } else {
+            AlertManager.shared.showAlertMsg(
+              title = title,
+              text = text,
+            )
+          }
         }
         is AgentErrorType.INTERNAL -> {
           AlertManager.shared.showAlertMsg(
