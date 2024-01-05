@@ -108,6 +108,7 @@ class AppPreferences {
   val chatArchiveTime = mkDatePreference(SHARED_PREFS_CHAT_ARCHIVE_TIME, null)
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
+  val showInternalErrors = mkBoolPreference(SHARED_PREFS_SHOW_INTERNAL_ERRORS, false)
   val terminalAlwaysVisible = mkBoolPreference(SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
   val networkProxyHostPort = mkStrPreference(SHARED_PREFS_NETWORK_PROXY_HOST_PORT, "localhost:9050")
@@ -276,6 +277,7 @@ class AppPreferences {
     private const val SHARED_PREFS_ONBOARDING_STAGE = "OnboardingStage"
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
+    private const val SHARED_PREFS_SHOW_INTERNAL_ERRORS = "ShowInternalErrors"
     private const val SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE = "TerminalAlwaysVisible"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
     private const val SHARED_PREFS_NETWORK_PROXY_HOST_PORT = "NetworkProxyHostPort"
@@ -1918,6 +1920,14 @@ object ChatController {
           if (sess.sessionState is UIRemoteCtrlSessionState.Connected) {
             switchToLocalSession()
           }
+        }
+      }
+      is CR.ChatCmdError -> when {
+        r.chatError is ChatError.ChatErrorAgent && r.chatError.agentError is AgentErrorType.CRITICAL -> {
+          chatModel.processedCriticalError.newError(r.chatError.agentError, r.chatError.agentError.offerRestart)
+        }
+        r.chatError is ChatError.ChatErrorAgent && r.chatError.agentError is AgentErrorType.INTERNAL && appPrefs.showInternalErrors.get() -> {
+          chatModel.processedInternalError.newError(r.chatError.agentError, false)
         }
       }
       else ->
@@ -4710,6 +4720,7 @@ sealed class AgentErrorType {
     is AGENT -> "AGENT ${agentErr.string}"
     is INTERNAL -> "INTERNAL $internalErr"
     is INACTIVE -> "INACTIVE"
+    is CRITICAL -> "CRITICAL $offerRestart $criticalErr"
   }
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
@@ -4721,6 +4732,7 @@ sealed class AgentErrorType {
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
   @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
+  @Serializable @SerialName("CRITICAL") data class CRITICAL(val offerRestart: Boolean, val criticalErr: String): AgentErrorType()
 }
 
 @Serializable

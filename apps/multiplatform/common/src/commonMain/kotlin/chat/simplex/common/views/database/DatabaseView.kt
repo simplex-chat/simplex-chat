@@ -407,6 +407,12 @@ private fun stopChatAlert(m: ChatModel) {
   )
 }
 
+fun restartChatAlert() {
+  authStopChat(chatModel) {
+    startChat(chatModel, mutableStateOf(Instant.DISTANT_PAST), chatModel.chatDbChanged)
+  }
+}
+
 private fun exportProhibitedAlert() {
   AlertManager.shared.showAlertMsg(
     title = generalGetString(MR.strings.set_password_to_export),
@@ -414,7 +420,7 @@ private fun exportProhibitedAlert() {
   )
 }
 
-private fun authStopChat(m: ChatModel) {
+private fun authStopChat(m: ChatModel, onStop: (() -> Unit)? = null) {
   if (m.controller.appPrefs.performLA.get()) {
     authenticate(
       generalGetString(MR.strings.auth_stop_chat),
@@ -422,7 +428,7 @@ private fun authStopChat(m: ChatModel) {
       completed = { laResult ->
         when (laResult) {
           LAResult.Success, is LAResult.Unavailable -> {
-            stopChat(m)
+            stopChat(m, onStop)
           }
           is LAResult.Error -> {
             m.chatRunning.value = true
@@ -434,15 +440,16 @@ private fun authStopChat(m: ChatModel) {
       }
     )
   } else {
-    stopChat(m)
+    stopChat(m, onStop)
   }
 }
 
-private fun stopChat(m: ChatModel) {
+private fun stopChat(m: ChatModel, onStop: (() -> Unit)? = null) {
   withApi {
     try {
       stopChatAsync(m)
       platform.androidChatStopped()
+      onStop?.invoke()
     } catch (e: Error) {
       m.chatRunning.value = true
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_stopping_chat), e.toString())

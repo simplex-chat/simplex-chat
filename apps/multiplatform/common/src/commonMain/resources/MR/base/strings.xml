@@ -662,6 +662,7 @@
   <string name="hide_dev_options">Hide:</string>
   <string name="show_developer_options">Show developer options</string>
   <string name="developer_options">Database IDs and Transport isolation option.</string>
+  <string name="show_internal_errors">Show internal errors</string>
   <string name="shutdown_alert_question">Shutdown?</string>
   <string name="shutdown_alert_desc">Notifications will stop working until you re-launch the app</string>
 
@@ -1724,4 +1725,11 @@
   <string name="connect_plan_you_are_already_joining_the_group_via_this_link">You are already joining the group via this link.</string>
   <string name="connect_plan_you_are_already_in_group_vName">You are already in group %1$s.</string>
   <string name="connect_plan_connect_via_link">Connect via link?</string>
+
+  <!-- Errors -->
+  <string name="agent_critical_error_title">Critical error</string>
+  <string name="agent_critical_error_desc">Critical problem occurred with message delivery. Report the issue to the app developers: \n%s\n\nYou can restart the chat to repeat the failed process.</string>
+  <string name="agent_internal_error_title">Internal error</string>
+  <string name="agent_internal_error_desc">Internal problem occurred with message delivery. Report the issue to the app developers: \n%s</string>
+  <string name="restart_chat_button">Restart chat</string>
 </resources>
