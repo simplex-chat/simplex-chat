@@ -4942,60 +4942,74 @@ Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını iste
         <target state="translated">Daha sonra oluşturabilirsiniz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can enable them later via app Privacy &amp; Security settings." xml:space="preserve">
+      <trans-unit id="You can enable them later via app Privacy &amp; Security settings." xml:space="preserve" approved="no">
         <source>You can enable them later via app Privacy &amp; Security settings.</source>
+        <target state="translated">Daha sonra uygulamanın Gizlilik ve Güvenlik ayarlarından etkinleştirebilirsiniz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can hide or mute a user profile - swipe it to the right." xml:space="preserve">
+      <trans-unit id="You can hide or mute a user profile - swipe it to the right." xml:space="preserve" approved="no">
         <source>You can hide or mute a user profile - swipe it to the right.</source>
+        <target state="translated">Bir kullanıcı profilini gizleyebilir veya sessize alabilirsiniz - sağa kaydırın.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can now send messages to %@" xml:space="preserve">
+      <trans-unit id="You can now send messages to %@" xml:space="preserve" approved="no">
         <source>You can now send messages to %@</source>
+        <target state="translated">Artık %@ adresine mesaj gönderebilirsin</target>
         <note>notification body</note>
       </trans-unit>
-      <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve">
+      <trans-unit id="You can set lock screen notification preview via settings." xml:space="preserve" approved="no">
         <source>You can set lock screen notification preview via settings.</source>
+        <target state="translated">Kilit ekranı bildirim önizlemesini ayarlar üzerinden ayarlayabilirsiniz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve">
+      <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve" approved="no">
         <source>You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.</source>
+        <target state="translated">Bir bağlantı veya QR kodu paylaşabilirsiniz - bu durumda herkes gruba katılabilir. Daha sonra silseniz bile grubun üyelerini kaybetmezsiniz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can share this address with your contacts to let them connect with **%@**." xml:space="preserve">
+      <trans-unit id="You can share this address with your contacts to let them connect with **%@**." xml:space="preserve" approved="no">
         <source>You can share this address with your contacts to let them connect with **%@**.</source>
+        <target state="translated">Bu adresi kişilerinizle paylaşarak onların **%@** ile bağlantı kurmasını sağlayabilirsiniz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can share your address as a link or QR code - anybody can connect to you." xml:space="preserve">
+      <trans-unit id="You can share your address as a link or QR code - anybody can connect to you." xml:space="preserve" approved="no">
         <source>You can share your address as a link or QR code - anybody can connect to you.</source>
+        <target state="translated">Adresinizi bir bağlantı veya QR kodu olarak paylaşabilirsiniz - herkes size bağlanabilir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve">
+      <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve" approved="no">
         <source>You can start chat via app Settings / Database or by restarting the app</source>
+        <target state="translated">Sohbeti uygulamada Ayarlar / Veritabanı üzerinden veya uygulamayı yeniden başlatarak başlatabilirsiniz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve">
+      <trans-unit id="You can turn on SimpleX Lock via Settings." xml:space="preserve" approved="no">
         <source>You can turn on SimpleX Lock via Settings.</source>
+        <target state="translated">SimpleX Kilidini Ayarlar üzerinden açabilirsiniz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can use markdown to format messages:" xml:space="preserve">
+      <trans-unit id="You can use markdown to format messages:" xml:space="preserve" approved="no">
         <source>You can use markdown to format messages:</source>
+        <target state="translated">Mesajları biçimlendirmek için markdown kullanabilirsiniz:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can't send messages!" xml:space="preserve">
+      <trans-unit id="You can't send messages!" xml:space="preserve" approved="no">
         <source>You can't send messages!</source>
+        <target state="translated">Mesajlar gönderemezsiniz!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve">
+      <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve" approved="no">
         <source>You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them.</source>
+        <target state="translated">Mesajların hangi sunucu(lar)dan **alınacağını**, kişilerinizi - onlara mesaj göndermek için kullandığınız sunucuları - siz kontrol edersiniz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You could not be verified; please try again." xml:space="preserve">
+      <trans-unit id="You could not be verified; please try again." xml:space="preserve" approved="no">
         <source>You could not be verified; please try again.</source>
+        <target state="translated">Doğrulanamadınız; lütfen tekrar deneyin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You have no chats" xml:space="preserve">
+      <trans-unit id="You have no chats" xml:space="preserve" approved="no">
         <source>You have no chats</source>
+        <target state="translated">Hiç sohbetiniz yok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You have to enter passphrase every time the app starts - it is not stored on the device." xml:space="preserve">
@@ -6786,6 +6800,28 @@ Katılma isteği tekrarlansın mı?</target>
       <trans-unit id="Send direct message to connect" xml:space="preserve" approved="no">
         <source>Send direct message to connect</source>
         <target state="translated">Bağlanmak için doğrudan mesaj gönder</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You have already requested connection via this address!" xml:space="preserve" approved="no">
+        <source>You have already requested connection via this address!</source>
+        <target state="translated">Bu adres üzerinden zaten bağlantı talebinde bulundunuz!</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can make it visible to your SimpleX contacts via Settings." xml:space="preserve" approved="no">
+        <source>You can make it visible to your SimpleX contacts via Settings.</source>
+        <target state="translated">Ayarlardan SimpleX kişilerinize görünür yapabilirsiniz.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You have already requested connection!&#10;Repeat connection request?" xml:space="preserve" approved="no">
+        <source>You have already requested connection!
+Repeat connection request?</source>
+        <target state="translated">Zaten bağlantı isteğinde bulundunuz!
+Bağlantı isteği tekrarlansın mı?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You can view invitation link again in connection details." xml:space="preserve" approved="no">
+        <source>You can view invitation link again in connection details.</source>
+        <target state="translated">Bağlantı detaylarından davet bağlantısını yeniden görüntüleyebilirsin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
     </body>
