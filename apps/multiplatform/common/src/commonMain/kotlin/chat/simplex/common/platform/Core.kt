@@ -54,6 +54,7 @@ fun initChatControllerAndRunMigrations() {
 
 suspend fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: () -> CompletableDeferred<Boolean> = { CompletableDeferred(true) }) {
   try {
+    if (chatModel.ctrlInitInProgress.value) return
     chatModel.ctrlInitInProgress.value = true
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
     val confirm = confirmMigrations ?: if (appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
