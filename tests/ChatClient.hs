@@ -399,6 +399,7 @@ xftpServerConfig :: XFTPServerConfig
 xftpServerConfig =
   XFTPServerConfig
     { xftpPort = xftpTestPort,
+      controlPort = Nothing,
       fileIdSize = 16,
       storeLogFile = Just "tests/tmp/xftp-server-store.log",
       filesPath = xftpServerFiles,
