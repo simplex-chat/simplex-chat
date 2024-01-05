@@ -1164,7 +1164,7 @@
     <string name="smp_servers_preset_address">Előre beállított szerver címe</string>
     <string name="periodic_notifications_disabled">Rendszeres értesítések letiltva!</string>
     <string name="passcode_changed">A jelkód megváltozott!</string>
-    <string name="notifications_mode_off">Akkor fut, amikor az alkalmazány meg van nyitva</string>
+    <string name="notifications_mode_off">Akkor fut, amikor az alkalmazás meg van nyitva</string>
     <string name="this_QR_code_is_not_a_link">Ez a QR-kód nem egy link!</string>
     <string name="waiting_for_file">Fájlra várakozás</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
