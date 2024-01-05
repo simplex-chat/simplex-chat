@@ -33,6 +33,7 @@ down_m20240102_note_folders =
   [sql|
 DROP INDEX chat_items_note_folder_id;
 DROP INDEX files_note_folder_id;
+DROP INDEX note_folders_user_id;
 
 ALTER TABLE chat_items DROP COLUMN note_folder_id;
 ALTER TABLE files DROP COLUMN note_folder_id;
