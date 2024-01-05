@@ -352,33 +352,13 @@ private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, de
           m.controller.changeActiveUser_(user.remoteHostId, newActive.userId, null)
           m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
         } else {
-          if (users.size > 1) {
-            // Deleting the last visible user while having hidden one(s)
-            m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
-            m.controller.changeActiveUser_(user.remoteHostId, null, null)
-          } else {
-            ModalManager.fullscreen.showCustomModal(animated = false) {
-              BackHandler {
-                // do nothing to prevent closing the modal
-              }
-              Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
-                DefaultProgressView(stringResource(MR.strings.opening_database))
-              }
-            }
-            // Deleting the last user by deleting the whole storage
-            if (m.chatRunning.value == true) {
-              stopChatAsync(m)
-            }
-            val ctrl = m.controller.ctrl
-            if (ctrl != null && ctrl != -1L) {
-              chatCloseStore(ctrl)
-            }
-            controller.ctrl = null
-            deleteChatDatabaseFilesAndState()
-            reinitChatController()
+          // Deleting the last visible user while having hidden one(s)
+          m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
+          m.controller.changeActiveUser_(user.remoteHostId, null, null)
+          if (appPlatform.isAndroid) {
+            controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
+            ModalManager.closeAllModalsEverywhere()
           }
-          controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)
-          ModalManager.closeAllModalsEverywhere()
         }
       }
       else -> {
