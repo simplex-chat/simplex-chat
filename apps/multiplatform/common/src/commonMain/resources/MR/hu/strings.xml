@@ -1009,7 +1009,7 @@
     <string name="send_disappearing_message_send">Küldés</string>
     <string name="chat_item_ttl_seconds">%s másodperc</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
-    <string name="system_restricted_background_desc">A SimpleX nem tud a háttérben futni. Csak az app futása közben fogod az üzeneteket megkapni.</string>
+    <string name="system_restricted_background_desc">A SimpleX nem tud a háttérben futni. Csak az alkalmazás futása közben fogod az üzeneteket megkapni.</string>
     <string name="images_limit_title">Túl sok kép!</string>
     <string name="save_archive">Archív mentése</string>
     <string name="group_members_n">%s, %s és %d tag</string>
@@ -1164,7 +1164,7 @@
     <string name="smp_servers_preset_address">Előre beállított szerver címe</string>
     <string name="periodic_notifications_disabled">Rendszeres értesítések letiltva!</string>
     <string name="passcode_changed">A jelkód megváltozott!</string>
-    <string name="notifications_mode_off">Akkor fut, amikor az app nyitva van</string>
+    <string name="notifications_mode_off">Akkor fut, amikor az alkalmazány meg van nyitva</string>
     <string name="this_QR_code_is_not_a_link">Ez a QR-kód nem egy link!</string>
     <string name="waiting_for_file">Fájlra várakozás</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
@@ -1309,8 +1309,8 @@
     <string name="receiving_files_not_yet_supported">fájlok fogadása egyelőre még nem támogatott</string>
     <string name="save_group_profile">Csoport profil elmentése</string>
     <string name="network_options_reset_to_defaults">Alaphelyzetbe állítás</string>
-    <string name="connection_error_auth_desc">Hacsaknem az ismerősöd megszakította a kapcsolatot avagy ez a link már használva volt, ez egy programhiba lehet - kérlek jelentsd be.
-\nA kapcsolatfelvételhez kérd meg az ismerősödet, hogy készítsen egy új linket a kapcsolatfelvételhez és ellenőrizd az internet kapcsolatodat.</string>
+    <string name="connection_error_auth_desc">Hacsak az ismerősöd nem törölte a kapcsolatot, vagy ez a hivatkozás már használatban volt, akkor ez hiba lehet – kérjük, jelentsd.
+\nA csatlakozáshoz kérd meg az ismerősöd, hogy hozzon létre egy másik kapcsolati hivatkozást, és ellenőrizze, hogy a hálózati kapcsolat stabil-e.</string>
     <string name="video_call_no_encryption">videóhívás (nem e2e titkosított)</string>
     <string name="smp_servers_use_server_for_new_conn">Alkalmazás új kapcsolatokhoz</string>
     <string name="periodic_notifications_desc">Az app rendszeresen lekéri az új üzeneteket - ez naponta néhány százalék akkumulátort használ. Az app nem használja a Google push értesítési rendszert — az eszközödön lévő adat nem kerül megküldésre a szervereknek.</string>
