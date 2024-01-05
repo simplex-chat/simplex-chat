@@ -12,7 +12,7 @@ chatTests :: SpecWith FilePath
 chatTests = do
   describe "direct tests" chatDirectTests
   describe "group tests" chatGroupTests
-  describe "local tests" chatLocalTests
+  describe "local chats tests" chatLocalChatsTests
   describe "file tests" chatFileTests
   describe "profile tests" chatProfileTests
   describe "chat list pagination tests" chatListTests

@@ -14,8 +14,8 @@ import System.FilePath ((</>))
 import Test.Hspec
 import UnliftIO.Async (concurrently_)
 
-chatLocalTests :: SpecWith FilePath
-chatLocalTests = do
+chatLocalChatsTests :: SpecWith FilePath
+chatLocalChatsTests = do
   describe "note folders" $ do
     it "create folders, add notes, read, search" testNotes
     it "switch users" testUserNotes
