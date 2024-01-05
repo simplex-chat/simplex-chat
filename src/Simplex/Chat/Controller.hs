@@ -630,6 +630,7 @@ data ChatResponse
   | CRDeletedMemberUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRLeftMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRUnknownMemberCreatedOnForward {user :: User, groupInfo :: GroupInfo, forwardedByMember :: GroupMember, member :: GroupMember}
+  | CRUnknownMemberAnnounced {user :: User, groupInfo :: GroupInfo, announcingMember :: GroupMember, unknownMember :: GroupMember, announcedMember :: GroupMember}
   | CRGroupEmpty {user :: User, groupInfo :: GroupInfo}
   | CRGroupRemoved {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}

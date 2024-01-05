@@ -111,6 +111,7 @@ module Simplex.Chat.Store.Groups
     getXGrpLinkMemReceived,
     setXGrpLinkMemReceived,
     createNewUnknownGroupMember,
+    updateUnknownMemberAnnounced,
   )
 where
 
@@ -1989,3 +1990,28 @@ createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {g
   getGroupMemberById db user groupMemberId
   where
     VersionRange minV maxV = vr
+
+updateUnknownMemberAnnounced :: DB.Connection -> User -> GroupMember -> GroupMember -> MemberInfo -> ExceptT StoreError IO GroupMember
+updateUnknownMemberAnnounced db user@User {userId} invitingMember unknownMember@GroupMember {groupMemberId, memberChatVRange} MemberInfo {memberRole, v, profile} = do
+  _ <- updateMemberProfile db user unknownMember profile
+  currentTs <- liftIO getCurrentTime
+  liftIO $
+    DB.execute
+      db
+      [sql|
+        UPDATE group_members
+        SET member_role = ?,
+            member_category = ?,
+            member_status = ?,
+            invited_by_group_member_id = ?,
+            peer_chat_min_version = ?,
+            peer_chat_max_version = ?,
+            updated_at = ?
+        WHERE user_id = ? AND group_member_id = ?
+      |]
+      ( (memberRole, GCPostMember, GSMemAnnounced, groupMemberId' invitingMember)
+          :. (minV, maxV, currentTs, userId, groupMemberId)
+      )
+  getGroupMemberById db user groupMemberId
+  where
+    VersionRange minV maxV = maybe (fromJVersionRange memberChatVRange) fromChatVRange v

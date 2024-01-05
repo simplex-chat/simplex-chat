@@ -5091,17 +5091,24 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         _ -> pure conn'
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> RcvMessage -> UTCTime -> m ()
-    xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ memberProfile) msg brokerTs = do
+    xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _) msg brokerTs = do
       checkHostRole m memRole
       unless (sameMemberId memId $ membership gInfo) $
-        -- TODO if unknown member is found, update profile
         withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
+          Right unknownMember@GroupMember {memberCategory = GCUnknownMember} -> do
+            updatedMember <- withStore $ \db -> updateUnknownMemberAnnounced db user m unknownMember memInfo
+            toView $ CRUnknownMemberAnnounced user gInfo m unknownMember updatedMember
+            memberAnnouncedToView updatedMember
           Right _ -> messageError "x.grp.mem.new error: member already exists"
           Left _ -> do
-            newMember@GroupMember {groupMemberId} <- withStore $ \db -> createNewGroupMember db user gInfo m memInfo GCPostMember GSMemAnnounced
-            ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs (CIRcvGroupEvent $ RGEMemberAdded groupMemberId memberProfile)
-            groupMsgToView gInfo ci
-            toView $ CRJoinedGroupMemberConnecting user gInfo m newMember
+            newMember <- withStore $ \db -> createNewGroupMember db user gInfo m memInfo GCPostMember GSMemAnnounced
+            memberAnnouncedToView newMember
+      where
+        memberAnnouncedToView announcedMember@GroupMember {groupMemberId, memberProfile} = do
+          let event = RGEMemberAdded groupMemberId (fromLocalProfile memberProfile)
+          ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs (CIRcvGroupEvent event)
+          groupMsgToView gInfo ci
+          toView $ CRJoinedGroupMemberConnecting user gInfo m announcedMember
 
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> m ()
     xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _) = do
