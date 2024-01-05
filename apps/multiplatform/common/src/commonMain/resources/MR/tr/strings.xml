@@ -298,7 +298,7 @@
     <string name="chat_database_section">SOHBET VERİ TABANI</string>
     <string name="remove_passphrase">Kaldır</string>
     <string name="wrong_passphrase_title">Yanlış parola!</string>
-    <string name="confirm_database_upgrades">Veri tabanının yapısal ilerlemelerini onayla</string>
+    <string name="confirm_database_upgrades">Veritabanı yükseltmelerini onayla</string>
     <string name="rcv_group_event_member_deleted">%1$s çıkarıldı</string>
     <string name="rcv_group_event_user_deleted">seni çıkardı</string>
     <string name="group_member_status_connected">bağlanıldı</string>
@@ -442,7 +442,7 @@
     <string name="group_member_status_creator">oluşturan</string>
     <string name="no_contacts_selected">Hiçbir konuşma seçilmedi</string>
     <string name="num_contacts_selected">%d tane konuşma seçildi</string>
-    <string name="share_text_database_id">Veri tabanı kimliği: %d</string>
+    <string name="share_text_database_id">Veritabanı kimliği: %d</string>
     <string name="info_row_deleted_at">Şu tarihte silindi</string>
     <string name="share_text_deleted_at">Şu tarihte silindi: %s</string>
     <string name="item_info_current">(güncel)</string>
@@ -465,7 +465,7 @@
     <string name="database_encryption_will_be_updated">Veri tabanının şifrelemesinde kullanılan parola güncellenecek ve Keystore\'da barındıralacak.</string>
     <string name="passphrase_is_different">Veri tabanı parolası, Keystore\'da barındırılandan değişik.</string>
     <string name="database_passphrase_is_required">Konuşmayı açmak için veri tabanı parolası gerekli.</string>
-    <string name="database_upgrade">Veri tabanını yapısal olarak ilerlet</string>
+    <string name="database_upgrade">Veritabanı yükseltmesi</string>
     <string name="rcv_group_event_changed_your_role">yetkin, %s olarak değişti</string>
     <string name="snd_group_event_changed_member_role">%s üyesinin yetkisini, %s olarak değiştirdin</string>
     <string name="group_member_role_owner">iye/sahip</string>
@@ -476,7 +476,7 @@
     <string name="delete_group_question">Grup silinsin mi?</string>
     <string name="button_create_group_link">Bağlantı oluştur</string>
     <string name="delete_link">Bağlantıyı sil</string>
-    <string name="info_row_database_id">Veri tabanı kimliği</string>
+    <string name="info_row_database_id">Veritabanı kimliği</string>
     <string name="change_role">Yetkiyi değiştir</string>
     <string name="create_secret_group_title">Gizli grup oluştur</string>
     <string name="chat_preferences_no">hayır</string>
@@ -584,7 +584,7 @@
     <string name="incorrect_code">Yanlış güvenlik kodu!</string>
     <string name="how_to_use_your_servers">Sunucuların nasıl kullanılır</string>
     <string name="enter_one_ICE_server_per_line">ICE sunucuları (her satır başı bir tane)</string>
-    <string name="host_verb">Barındır</string>
+    <string name="host_verb">Ana bilgisayar</string>
     <string name="hide_dev_options">Gizle:</string>
     <string name="full_name__field">Ad ve soyad:</string>
     <string name="email_invite_body">Merhaba!
@@ -645,7 +645,7 @@
     <string name="error_updating_link_for_group">Toplu konuşma bağlantısı güncellenirken hata oluştu</string>
     <string name="section_title_for_console">UÇBİRİM İÇİN</string>
     <string name="group_link">Grup bağlantısı</string>
-    <string name="info_row_group">Toplu konuşma</string>
+    <string name="info_row_group">Grup</string>
     <string name="conn_level_desc_indirect">dolaylı (%1$s)</string>
     <string name="fix_connection">Bağlantıyı onar</string>
     <string name="fix_connection_question">Bağlantı onarılsın mı?</string>
@@ -1347,7 +1347,7 @@
     <string name="camera_not_available">Kamera hazır değil</string>
     <string name="use_simplex_chat_servers__question">SimpleX Chat sunucularını kullan?</string>
     <string name="linked_desktop_options">Bağlanmış bilgisayar ayarları</string>
-    <string name="developer_options">Veritabanı IDleri ve Taşıma izolasyonu seçeneği.</string>
+    <string name="developer_options">Veritabanı kimlikleri ve Taşıma izolasyonu seçeneği.</string>
     <string name="network_option_ping_count">PING sayısı</string>
     <string name="update_network_session_mode_question">Ulaşım izolasyonu modu güncellensin mi?</string>
     <string name="random_port">Rasgele</string>
@@ -1407,7 +1407,7 @@
     <string name="the_text_you_pasted_is_not_a_link">Yapıştırdığın bağlantı bir SimpleX bağlantısı değil.</string>
     <string name="color_sent_message">Gönderilmiş mesaj</string>
     <string name="receipts_groups_title_disable">Gruplar için alıcılar devre dışı bırakılsın mı?</string>
-    <string name="relay_server_protects_ip">Yönlendirici sunucusu IP adresini koruyacak, fakat bu çağrı süresini görebilir.</string>
+    <string name="relay_server_protects_ip">Aktarıcı sunucu IP adresinizi korur, ancak aramanın süresini gözlemleyebilir.</string>
     <string name="loading_remote_file_title">Dosya yükleniyor</string>
     <string name="connecting_to_desktop">Masaüstüne bağlanıyor</string>
     <string name="no_contacts_to_add">Eklenecek kişi yok</string>
@@ -1473,8 +1473,8 @@
     <string name="error_enabling_delivery_receipts">Teslim alan alıcılar etkinleştirilirken hata!</string>
     <string name="chat_preferences_contact_allows">Kişi izin verir</string>
     <string name="alert_title_skipped_messages">Atlanmış mesajlar</string>
-    <string name="alert_text_msg_bad_id">Sonraki mesajın ID si doğru değil (az veya önceki ile aynı.)
-\nBu bir hata veya bağlantının sınırlı olmasından olabilir.</string>
+    <string name="alert_text_msg_bad_id">Bir sonraki mesajın kimliği yanlış (bir öncekinden az veya aynı).
+\nBazı hatalar nedeniyle veya bağlantı tehlikeye girdiğinde meydana gelebilir.</string>
     <string name="notification_preview_somebody">Kişi gizlendi:</string>
     <string name="many_people_asked_how_can_it_deliver">Bir sürü kişi sordu: <i> eğer SimpleX’in hiç kullanıcı tanımlayıcısı yok, nasıl mesajları gönderiyor? </i></string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Şu durumlarda gerçekleşebilir:
@@ -1533,7 +1533,7 @@
     <string name="multicast_discoverable_via_local_network">Yerel ağ üzerinden keşfedilebilir</string>
     <string name="info_row_updated_at">Kayıt güncellendi</string>
     <string name="smp_servers_use_server">Sunucu kullan</string>
-    <string name="share_text_received_at">%s de alındı</string>
+    <string name="share_text_received_at">Şuradan alındı: %s</string>
     <string name="add_contact_tab">Kişi Ekle</string>
     <string name="v5_3_discover_join_groups_descr">- dizin hizmetine bağlan
 \n(BETADA!)
@@ -1552,7 +1552,7 @@
     <string name="delivery">Gönderim</string>
     <string name="no_connected_mobile">Telefona bağlı değil</string>
     <string name="search_or_paste_simplex_link">Ara veya SimpleX bağlantısını yapıştır</string>
-    <string name="info_row_received_at">da alındı</string>
+    <string name="info_row_received_at">Şuradan alındı</string>
     <string name="accept_feature_set_1_day">1 güne ayarla</string>
     <string name="color_received_message">Alınmış mesaj</string>
     <string name="rcv_group_event_member_created_contact">Doğrudan bağlandı</string>
