@@ -357,7 +357,10 @@ private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, de
             m.controller.apiDeleteUser(user, delSMPQueues, viewPwd)
             m.controller.changeActiveUser_(user.remoteHostId, null, null)
           } else {
-            ModalManager.fullscreen.showCustomModal {
+            ModalManager.fullscreen.showCustomModal(animated = false) {
+              BackHandler {
+                // do nothing to prevent closing the modal
+              }
               Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
                 DefaultProgressView(stringResource(MR.strings.opening_database))
               }
@@ -366,7 +369,12 @@ private suspend fun doRemoveUser(m: ChatModel, user: User, users: List<User>, de
             if (m.chatRunning.value == true) {
               stopChatAsync(m)
             }
-            deleteChatAsync(m)
+            val ctrl = m.controller.ctrl
+            if (ctrl != null && ctrl != -1L) {
+              chatCloseStore(ctrl)
+            }
+            controller.ctrl = null
+            deleteChatDatabaseFilesAndState()
             reinitChatController()
           }
           controller.appPrefs.onboardingStage.set(OnboardingStage.Step1_SimpleXInfo)

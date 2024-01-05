@@ -67,6 +67,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
          * */
         chatCloseStore(ctrl)
       }
+      controller.ctrl = null
       deleteChatDatabaseFilesAndState()
       ksAppPassword.set(password)
       ksSelfDestructPassword.remove()
