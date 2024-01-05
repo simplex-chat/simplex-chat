@@ -1349,7 +1349,7 @@
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Kérjük, ellenőrizd, hogy a megfelelő linket használtad-e, vagy kérd meg az ismerősödet, hogy küldjön egy másikat.</string>
     <string name="image_decoding_exception_desc">A kép nem dekódolható. Kérjük, próbálj meg egy másik képet, vagy lépj kapcsolatba a fejlesztőkkel.</string>
     <string name="non_content_uri_alert_text">Érvénytelen fájl elérési útvonalat osztottál meg. Jelentsd a problémát az alkalmazás fejlesztőinek.</string>
-    <string name="failed_to_create_user_duplicate_desc">Önnek már van egy chat-profilja ugyanazzal a megjelenített névvel. Kérjük, válassz másik nevet.</string>
+    <string name="failed_to_create_user_duplicate_desc">Már van egy chat-profilod ugyanezzel a megjelenített névvel. Kérjük, válassz másik nevet.</string>
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">Csatlakozási kísérlet a kapcsolat üzeneteinek fogadására használt szerverhez ettől az ismerősödtől (hiba: %1$s).</string>
     <string name="stop_rcv_file__message">A fájl fogadása leállt.</string>
     <string name="la_please_remember_to_store_password">Kérjük, jegyezd meg vagy tárold biztonságosan - az elveszett jelszót nem lehet visszaállítani!</string>
