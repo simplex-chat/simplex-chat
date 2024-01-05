@@ -854,7 +854,7 @@
     <string name="group_preview_you_are_invited">gruba davet edildiniz</string>
     <string name="you_have_no_chats">Hiç sohbetiniz yok</string>
     <string name="you_are_observer">Gözlemcisiniz</string>
-    <string name="observer_cant_send_message_title">Mesaj gönderemezsiniz</string>
+    <string name="observer_cant_send_message_title">Mesajlar gönderemezsiniz!</string>
     <string name="view_security_code">Güvenlik kodunu görüntüle</string>
     <string name="you_need_to_allow_to_send_voice">Sesli mesaj gönderebilmeniz için kişinizin de sesli mesaj göndermesine izin vermeniz gerekir.</string>
     <string name="xftp_servers">XFTP sunucuları</string>
@@ -893,7 +893,7 @@
     <string name="you_can_share_your_address">Adresinizi bir bağlantı veya QR kodu olarak paylaşabilirsiniz - herkes size bağlanabilir.</string>
     <string name="snd_conn_event_switch_queue_phase_completed">bağlantı değiştirdiniz</string>
     <string name="you_can_enable_delivery_receipts_later">Daha sonra Ayarlardan etkinleştirebilirsin</string>
-    <string name="you_can_enable_delivery_receipts_later_alert">Sonrasında uygulamanın Gizlilik ve Güvenlik ayarlarından etkinleştirebilirsiniz.</string>
+    <string name="you_can_enable_delivery_receipts_later_alert">Daha sonra uygulamanın Gizlilik ve Güvenlik ayarlarından etkinleştirebilirsiniz.</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Bağlantının tamamlanması için kişinizin çevrimiçi olması gerekir.
 \nBu bağlantıyı iptal edebilir ve kişiyi kaldırabilirsiniz (ve daha sonra yeni bir bağlantıyla deneyebilirsiniz).</string>
     <string name="contact_sent_large_file">Kişiniz desteklenen maksimum boyuttan (%1$s) daha büyük bir dosya gönderdi.</string>
