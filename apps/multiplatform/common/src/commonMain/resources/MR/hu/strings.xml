@@ -557,7 +557,7 @@
     <string name="from_gallery_button">A Galériából</string>
     <string name="receipts_groups_enable_keep_overrides">Engedélyezés (csoport felülírások megtartásával)</string>
     <string name="error_deleting_contact">Hiba az ismerős törlésekor</string>
-    <string name="group_members_can_delete">A csoporttagok visszafordíthatatlanul törölhetnek elküldött üzeneteket.</string>
+    <string name="group_members_can_delete">A csoporttagok visszafordíthatatlanul törölhetnek elküldött üzeneteket. (24 óra)</string>
     <string name="error_changing_role">Hiba a szerepkör megváltoztatásakor</string>
     <string name="fix_connection_confirm">Javítás</string>
     <string name="group_members_can_send_disappearing">A csoporttagok küldhetnek eltünő üzeneteket.</string>
@@ -1285,7 +1285,7 @@
     <string name="accept_feature_set_1_day">Beállítva 1 nap</string>
     <string name="user_unhide">Felfedés</string>
     <string name="color_received_message">Fogadott üzenet</string>
-    <string name="only_your_contact_can_delete">Kizárólag az ismerősöd tud véglegesen törölni üzeneteket (te csak törlendőként tudod megjelölni azokat).</string>
+    <string name="only_your_contact_can_delete">Kizárólag az ismerősöd tud véglegesen törölni üzeneteket (te csak törlendőként tudod megjelölni azokat). (24 óra)</string>
     <string name="self_destruct_passcode_changed">Önmegsemmisítési számkód megváltozott</string>
     <string name="using_simplex_chat_servers">SimpleX Chat szerverek használatban.</string>
     <string name="use_simplex_chat_servers__question">SimpleX Chat szerverek használata?</string>
@@ -1537,4 +1537,21 @@
     <string name="tap_to_paste_link">Koppints a hivatkozás beillesztéséhez</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><b>Ismerős hozzáadása</b>: új meghívó link létrehozásához, vagy egy kapott linken keresztül történő csatlakozáshoz.</string>
     <string name="create_group_button_to_create_new_group"><b>Új csoport létrehozása</b>: új csoport létrehozásához.</string>
+    <string name="chat_is_stopped_you_should_transfer_database">A csevegés leállt. Ha már használta ezt az adatbázist egy másik eszközön, vissza kell küldenie a csevegés megkezdése előtt.</string>
+    <string name="recent_history_is_not_sent_to_new_members">Az előzmények nem kerülnek elküldésre új tagok részére.</string>
+    <string name="retry_verb">Újrapróbálkozás</string>
+    <string name="camera_not_available">A kamera nem elérhető</string>
+    <string name="enable_sending_recent_history">Utolsó 100 üzenet küldése új tagoknak.</string>
+    <string name="disable_sending_recent_history">Ne küldjön előzményeket új tagoknak.</string>
+    <string name="or_show_this_qr_code">Vagy mutassa meg ezt a kódot</string>
+    <string name="enable_camera_access">Kamera-hozzáférés engedélyezése</string>
+    <string name="keep_unused_invitation_question">Megtartja a fel nem használt meghívót?</string>
+    <string name="share_this_1_time_link">Egyszer használatos link megosztása</string>
+    <string name="new_chat">Új beszélgetés</string>
+    <string name="loading_chats">Csevegések betöltése…</string>
+    <string name="creating_link">Link létrehozása…</string>
+    <string name="or_scan_qr_code">Vagy QR-kód beolvasása</string>
+    <string name="invalid_qr_code">Érvénytelen QR-kód</string>
+    <string name="keep_invitation_link">Megtart</string>
+    <string name="search_or_paste_simplex_link">Keresés vagy SimpleX link beillesztése</string>
 </resources>
