@@ -101,13 +101,16 @@ fun TerminalLayout(
           )
         }
       },
+      contentColor = LocalContentColor.current,
+      drawerContentColor = LocalContentColor.current,
       modifier = Modifier.navigationBarsWithImePadding()
     ) { contentPadding ->
       Surface(
         modifier = Modifier
           .padding(contentPadding)
           .fillMaxWidth(),
-        color = MaterialTheme.colors.background
+        color = MaterialTheme.colors.background,
+        contentColor = LocalContentColor.current
       ) {
         TerminalLog()
       }

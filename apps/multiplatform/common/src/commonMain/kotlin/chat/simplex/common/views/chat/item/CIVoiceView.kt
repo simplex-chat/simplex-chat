@@ -225,7 +225,8 @@ private fun PlayPauseButton(
   Surface(
     Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
     color = if (sent) sentColor else receivedColor,
-    shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
+    shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
+    contentColor = LocalContentColor.current
   ) {
     Box(
       Modifier
