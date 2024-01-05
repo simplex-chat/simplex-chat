@@ -2002,7 +2002,7 @@ updateLocalChatItem' db User {userId} noteFolderId ci newContent = do
   liftIO $ updateLocalChatItem_ db userId noteFolderId ci'
   pure ci'
 
--- this function assumes that direct item with correct chat direction already exists,
+-- this function assumes that local item with correct chat direction already exists,
 -- it should be checked before calling it
 updateLocalChatItem_ :: forall d. MsgDirectionI d => DB.Connection -> UserId -> NoteFolderId -> ChatItem 'CTLocal d -> IO ()
 updateLocalChatItem_ db userId noteFolderId ChatItem {meta, content} = do
