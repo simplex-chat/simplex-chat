@@ -800,7 +800,7 @@ processChatCommand' vr = \case
     createdAt <- liftIO getCurrentTime
     let content = CISndMsgContent mc
     let cd = CDLocalSnd nf
-    ciId <- creaсteLocalChatItem user cd content createdAt
+    ciId <- createLocalChatItem user cd content createdAt
     ciFile_ <- forM file_ $ \cf@CryptoFile {filePath, cryptoArgs} -> do
       fsFilePath <- toFSFilePath filePath
       fileSize <- liftIO $ CF.getFileContentsSize $ CryptoFile fsFilePath cryptoArgs
