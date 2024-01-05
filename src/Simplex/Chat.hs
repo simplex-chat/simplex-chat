@@ -2579,15 +2579,17 @@ deleteFile user fileInfo = deleteFile' user fileInfo False
 deleteFile' :: forall m. ChatMonad m => User -> CIFileInfo -> Bool -> m [ConnId]
 deleteFile' user ciFileInfo@CIFileInfo {filePath} sendCancel = do
   aConnIds <- cancelFile' user ciFileInfo sendCancel
-  delete `catchChatError` (toView . CRChatError (Just user))
+  forM_ filePath $ \fPath ->
+    deleteFileLocally fPath `catchChatError` (toView . CRChatError (Just user))
   pure aConnIds
+
+deleteFileLocally :: forall m. ChatMonad m => FilePath -> m ()
+deleteFileLocally fPath =
+  withFilesFolder $ \filesFolder -> liftIO $ do
+    let fsFilePath = filesFolder </> fPath
+    removeFile fsFilePath `catchAll` \_ ->
+      removePathForcibly fsFilePath `catchAll_` pure ()
   where
-    delete :: m ()
-    delete = withFilesFolder $ \filesFolder ->
-      liftIO . forM_ filePath $ \fPath -> do
-        let fsFilePath = filesFolder </> fPath
-        removeFile fsFilePath `catchAll` \_ ->
-          removePathForcibly fsFilePath `catchAll_` pure ()
     -- perform an action only if filesFolder is set (i.e. on mobile devices)
     withFilesFolder :: (FilePath -> m ()) -> m ()
     withFilesFolder action = asks filesFolder >>= readTVarIO >>= mapM_ action
@@ -5968,7 +5970,9 @@ deleteGroupCI user gInfo ci@ChatItem {file} byUser timed byGroupMember_ deletedT
 
 deleteLocalCI :: (ChatMonad m, MsgDirectionI d) => User -> NoteFolder -> ChatItem 'CTLocal d -> Bool -> Bool -> m ChatResponse
 deleteLocalCI user nf ci@ChatItem {file} byUser timed = do
-  deleteCIFile user file
+  forM_ file $ \CIFile {fileSource} -> do
+    forM_ (CF.filePath <$> fileSource) $ \fPath ->
+      deleteFileLocally fPath `catchChatError` (toView . CRChatError (Just user))
   withStore' $ \db -> deleteLocalChatItem db user nf ci
   pure $ CRChatItemDeleted user (AChatItem SCTLocal msgDirection (LocalChat nf) ci) Nothing byUser timed
 
