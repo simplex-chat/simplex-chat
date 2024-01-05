@@ -37,7 +37,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   val showMarkRead = remember(chat.chatStats.unreadCount, chat.chatStats.unreadChat) {
     chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
   }
-  val stopped = chatModel.chatRunning.value == false
+  val stoppedOrDeleted = chatModel.chatRunning.value == false || chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.apiId)
   val linkMode by remember { chatModel.controller.appPrefs.simplexLinkMode.state }
   LaunchedEffect(chat.id) {
     showMenu.value = false
@@ -62,7 +62,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
       ChatListNavLinkLayout(
         chatLinkPreview = {
           tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
-            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, stopped, linkMode, inProgress = false, progressByTimeout = false)
+            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, stoppedOrDeleted, linkMode, inProgress = false, progressByTimeout = false)
           }
         },
         click = { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) },
@@ -72,7 +72,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
           }
         },
         showMenu,
-        stopped,
+        stoppedOrDeleted,
         selectedChat,
         nextChatSelected,
       )
@@ -81,7 +81,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
       ChatListNavLinkLayout(
         chatLinkPreview = {
           tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
-            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, stopped, linkMode, inProgress.value, progressByTimeout)
+            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, stoppedOrDeleted, linkMode, inProgress.value, progressByTimeout)
           }
         },
         click = { if (!inProgress.value) groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel, inProgress) },
@@ -91,7 +91,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
           }
         },
         showMenu,
-        stopped,
+        stoppedOrDeleted,
         selectedChat,
         nextChatSelected,
       )
@@ -109,7 +109,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
           }
         },
         showMenu,
-        stopped,
+        stoppedOrDeleted,
         selectedChat,
         nextChatSelected,
       )
@@ -129,7 +129,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
           }
         },
         showMenu,
-        stopped,
+        stoppedOrDeleted,
         selectedChat,
         nextChatSelected,
       )
@@ -145,7 +145,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         },
         dropdownMenuItems = null,
         showMenu,
-        stopped,
+        stoppedOrDeleted,
         selectedChat,
         nextChatSelected,
       )
@@ -798,7 +798,7 @@ expect fun ChatListNavLinkLayout(
   click: () -> Unit,
   dropdownMenuItems: (@Composable () -> Unit)?,
   showMenu: MutableState<Boolean>,
-  stopped: Boolean,
+  stoppedOrDeleted: Boolean,
   selectedChat: State<Boolean>,
   nextChatSelected: State<Boolean>,
 )
@@ -832,7 +832,7 @@ fun PreviewChatListNavLinkDirect() {
           null,
           null,
           null,
-          stopped = false,
+          stoppedOrDeleted = false,
           linkMode = SimplexLinkMode.DESCRIPTION,
           inProgress = false,
           progressByTimeout = false
@@ -841,7 +841,7 @@ fun PreviewChatListNavLinkDirect() {
       click = {},
       dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) },
-      stopped = false,
+      stoppedOrDeleted = false,
       selectedChat = remember { mutableStateOf(false) },
       nextChatSelected = remember { mutableStateOf(false) }
     )
@@ -877,7 +877,7 @@ fun PreviewChatListNavLinkGroup() {
           null,
           null,
           null,
-          stopped = false,
+          stoppedOrDeleted = false,
           linkMode = SimplexLinkMode.DESCRIPTION,
           inProgress = false,
           progressByTimeout = false
@@ -886,7 +886,7 @@ fun PreviewChatListNavLinkGroup() {
       click = {},
       dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) },
-      stopped = false,
+      stoppedOrDeleted = false,
       selectedChat = remember { mutableStateOf(false) },
       nextChatSelected = remember { mutableStateOf(false) }
     )
@@ -908,7 +908,7 @@ fun PreviewChatListNavLinkContactRequest() {
       click = {},
       dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) },
-      stopped = false,
+      stoppedOrDeleted = false,
       selectedChat = remember { mutableStateOf(false) },
       nextChatSelected = remember { mutableStateOf(false) }
     )

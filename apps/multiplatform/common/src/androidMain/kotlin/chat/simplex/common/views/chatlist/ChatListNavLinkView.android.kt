@@ -16,12 +16,12 @@ actual fun ChatListNavLinkLayout(
   click: () -> Unit,
   dropdownMenuItems: (@Composable () -> Unit)?,
   showMenu: MutableState<Boolean>,
-  stopped: Boolean,
+  stoppedOrDeleted: Boolean,
   selectedChat: State<Boolean>,
   nextChatSelected: State<Boolean>,
 ) {
   var modifier = Modifier.fillMaxWidth()
-  if (!stopped) modifier = modifier
+  if (!stoppedOrDeleted) modifier = modifier
     .combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
     .onRightClick { showMenu.value = true }
   Box(modifier) {

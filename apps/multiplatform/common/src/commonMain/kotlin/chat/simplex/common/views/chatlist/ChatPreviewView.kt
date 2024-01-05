@@ -36,7 +36,7 @@ fun ChatPreviewView(
   chatModelDraftChatId: ChatId?,
   currentUserProfileDisplayName: String?,
   contactNetworkStatus: NetworkStatus?,
-  stopped: Boolean,
+  stoppedOrDeleted: Boolean,
   linkMode: SimplexLinkMode,
   inProgress: Boolean,
   progressByTimeout: Boolean
@@ -293,7 +293,7 @@ fun ChatPreviewView(
             color = Color.White,
             fontSize = 11.sp,
             modifier = Modifier
-              .background(if (stopped || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
+              .background(if (stoppedOrDeleted || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
               .badgeLayout()
               .padding(horizontal = 3.dp)
               .padding(vertical = 1.dp)
@@ -374,6 +374,6 @@ fun unreadCountStr(n: Int): String {
 @Composable
 fun PreviewChatPreviewView() {
   SimpleXTheme {
-    ChatPreviewView(Chat.sampleData, true, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), stopped = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false)
+    ChatPreviewView(Chat.sampleData, true, null, null, "", contactNetworkStatus = NetworkStatus.Connected(), stoppedOrDeleted = false, linkMode = SimplexLinkMode.DESCRIPTION, inProgress = false, progressByTimeout = false)
   }
 }

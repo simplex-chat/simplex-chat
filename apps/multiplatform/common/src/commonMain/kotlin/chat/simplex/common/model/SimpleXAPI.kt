@@ -978,11 +978,12 @@ object ChatController {
   }
 
   suspend fun apiDeleteChat(rh: Long?, type: ChatType, id: Long, notify: Boolean? = null): Boolean {
+    chatModel.deletedChats.value += rh to id
     val r = sendCmd(rh, CC.ApiDeleteChat(type, id, notify))
-    when {
-      r is CR.ContactDeleted && type == ChatType.Direct -> return true
-      r is CR.ContactConnectionDeleted && type == ChatType.ContactConnection -> return true
-      r is CR.GroupDeletedUser && type == ChatType.Group -> return true
+    val success = when {
+      r is CR.ContactDeleted && type == ChatType.Direct -> true
+      r is CR.ContactConnectionDeleted && type == ChatType.ContactConnection -> true
+      r is CR.GroupDeletedUser && type == ChatType.Group -> true
       else -> {
         val titleId = when (type) {
           ChatType.Direct -> MR.strings.error_deleting_contact
@@ -991,9 +992,11 @@ object ChatController {
           ChatType.ContactConnection -> MR.strings.error_deleting_pending_contact_connection
         }
         apiErrorAlert("apiDeleteChat", generalGetString(titleId), r)
+        false
       }
     }
-    return false
+    chatModel.deletedChats.value -= rh to id
+    return success
   }
 
   suspend fun apiClearChat(rh: Long?, type: ChatType, id: Long): ChatInfo? {
