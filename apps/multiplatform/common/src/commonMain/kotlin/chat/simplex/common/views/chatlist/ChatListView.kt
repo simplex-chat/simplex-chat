@@ -105,7 +105,9 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
         modifier = Modifier
           .fillMaxSize()
       ) {
-        ChatList(chatModel, searchText = searchText)
+        if (!chatModel.desktopNoUserNoRemote) {
+          ChatList(chatModel, searchText = searchText)
+        }
         if (chatModel.chats.isEmpty() && !chatModel.switchingUsersAndHosts.value && !chatModel.desktopNoUserNoRemote) {
           Text(stringResource(
             if (chatModel.chatRunning.value == null) MR.strings.loading_chats else MR.strings.you_have_no_chats), Modifier.align(Alignment.Center), color = MaterialTheme.colors.secondary)
