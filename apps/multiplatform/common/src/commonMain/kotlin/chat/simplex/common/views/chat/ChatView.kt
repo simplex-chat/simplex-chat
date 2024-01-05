@@ -570,6 +570,8 @@ fun ChatLayout(
           bottomBar = composeView,
           modifier = Modifier.navigationBarsWithImePadding(),
           floatingActionButton = { floatingButton.value() },
+          contentColor = LocalContentColor.current,
+          drawerContentColor = LocalContentColor.current,
         ) { contentPadding ->
           BoxWithConstraints(Modifier
             .fillMaxHeight()

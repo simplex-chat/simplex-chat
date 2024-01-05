@@ -26,6 +26,7 @@ fun MarkedDeletedItemView(ci: ChatItem, timedMessagesTTL: Int?, revealed: Mutabl
   Surface(
     shape = RoundedCornerShape(18.dp),
     color = if (ci.chatDir.sent) sentColor else receivedColor,
+    contentColor = LocalContentColor.current
   ) {
     Row(
       Modifier.padding(horizontal = 12.dp, vertical = 6.dp),

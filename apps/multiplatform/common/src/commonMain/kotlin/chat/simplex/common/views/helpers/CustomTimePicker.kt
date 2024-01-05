@@ -152,7 +152,8 @@ fun CustomTimePickerDialog(
 ) {
   DefaultDialog(onDismissRequest = cancel) {
     Surface(
-      shape = RoundedCornerShape(corner = CornerSize(25.dp))
+      shape = RoundedCornerShape(corner = CornerSize(25.dp)),
+      contentColor = LocalContentColor.current
     ) {
       Box(
         contentAlignment = Alignment.Center
