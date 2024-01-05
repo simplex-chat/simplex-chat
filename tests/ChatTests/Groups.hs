@@ -132,6 +132,7 @@ chatGroupTests = do
     it "deleted message is not included" testGroupHistoryDeletedMessage
     it "disappearing message is sent as disappearing" testGroupHistoryDisappearingMessage
     it "welcome message (group description) is sent after history" testGroupHistoryWelcomeMessage
+    it "unknown member messages are processed" testGroupHistoryUnknownMember
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -5179,3 +5180,71 @@ testGroupHistoryWelcomeMessage =
       [alice, cath] *<# "#team bob> 2"
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
+
+testGroupHistoryUnknownMember :: HasCallStack => FilePath -> IO ()
+testGroupHistoryUnknownMember =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000
+
+      alice #> "#team hi from alice"
+      [bob, cath] *<# "#team alice> hi from alice"
+
+      threadDelay 1000000
+
+      bob #> "#team hi from bob"
+      [alice, cath] *<# "#team bob> hi from bob"
+
+      threadDelay 1000000
+
+      cath #> "#team hi from cath"
+      [alice, bob] *<# "#team cath> hi from cath"
+
+      bob ##> "/l team"
+      concurrentlyN_
+        [ do
+            bob <## "#team: you left the group"
+            bob <## "use /d #team to delete the group",
+          alice <## "#team: bob left the group",
+          cath <## "#team: bob left the group"
+        ]
+
+      connectUsers alice dan
+      addMember "team" alice dan GRAdmin
+      dan ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: dan joined the group",
+          dan
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> hi from alice [>>]",
+                   StartsWith "#team: alice forwarded a message from an unknown member, creating unknown member record",
+                   EndsWith "hi from bob [>>]",
+                   WithTime "#team cath> hi from cath [>>]",
+                   "#team: member cath (Catherine) is connected"
+                 ],
+          do
+            cath <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            cath <## "#team: new member dan is connected"
+        ]
+
+      dan ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine dan
+      r `shouldContain` [(0, "hi from alice"), (0, "hi from bob"), (0, "hi from cath")]
+
+      dan ##> "/ms team"
+      dan
+        <### [ "dan (Daniel): admin, you, connected",
+               "alice (Alice): owner, host, connected",
+               "cath (Catherine): admin, connected",
+               EndsWith "author, unknown member, status unknown"
+             ]
+
+      -- message delivery works after sending history
+      alice #> "#team 1"
+      [cath, dan] *<# "#team alice> 1"
+      cath #> "#team 2"
+      [alice, dan] *<# "#team cath> 2"
+      dan #> "#team 3"
+      [alice, cath] *<# "#team dan> 3"

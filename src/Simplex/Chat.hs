@@ -63,7 +63,7 @@ import Simplex.Chat.Messages.Batch (MsgBatch (..), batchMessages)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Options
-import Simplex.Chat.ProfileGenerator (generateRandomProfile)
+import Simplex.Chat.ProfileGenerator (generateRandomProfile, generateRandomName)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote
 import Simplex.Chat.Remote.Types
@@ -5094,6 +5094,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ memberProfile) msg brokerTs = do
       checkHostRole m memRole
       unless (sameMemberId memId $ membership gInfo) $
+        -- TODO if unknown member is found, update profile
         withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
           Right _ -> messageError "x.grp.mem.new error: member already exists"
           Left _ -> do
@@ -5346,8 +5347,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpMsgForward :: GroupInfo -> GroupMember -> MemberId -> ChatMessage 'Json -> UTCTime -> m ()
     xGrpMsgForward gInfo@GroupInfo {groupId} m@GroupMember {memberRole, localDisplayName} memberId msg msgTs = do
       when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole localDisplayName)
-      author <- withStore $ \db -> getGroupMemberByMemberId db user gInfo memberId
-      processForwardedMsg author msg
+      withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memberId) >>= \case
+        Right author -> processForwardedMsg author msg
+        Left (SEGroupMemberNotFoundByMemberId _) -> do
+          randomName <- liftIO generateRandomName
+          unknownAuthor <- withStore $ \db -> createNewUnknownGroupMember db vr user gInfo memberId randomName
+          toView $ CRUnknownMemberCreatedOnForward user gInfo m unknownAuthor
+          processForwardedMsg unknownAuthor msg
+        Left e -> throwError $ ChatErrorStore e
       where
         -- Note: forwarded group events (see forwardedGroupMsg) should include msgId to be deduplicated
         processForwardedMsg :: GroupMember -> ChatMessage 'Json -> m ()
