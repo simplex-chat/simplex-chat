@@ -326,8 +326,6 @@ type ContactName = Text
 
 type GroupName = Text
 
-type NoteFolderName = Text
-
 optionalFullName :: ContactName -> Text -> Text
 optionalFullName displayName fullName
   | T.null fullName || displayName == fullName = ""

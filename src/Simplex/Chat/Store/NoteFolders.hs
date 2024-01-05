@@ -13,7 +13,7 @@ import Data.Time (getCurrentTime)
 import Database.SQLite.Simple (Only (..))
 import Database.SQLite.Simple.QQ (sql)
 import Simplex.Chat.Store.Shared (StoreError (..))
-import Simplex.Chat.Types (NoteFolder (..), NoteFolderId, NoteFolderName, User (..))
+import Simplex.Chat.Types (NoteFolder (..), NoteFolderId, User (..))
 import Simplex.Messaging.Agent.Protocol (UserId)
 import Simplex.Messaging.Agent.Store.SQLite (firstRow)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
@@ -24,10 +24,10 @@ createNoteFolder db User {userId} = do
     [] -> liftIO $ DB.execute db "INSERT INTO note_folders (user_id) VALUES (?)" (Only userId)
     Only noteFolderId : _ -> throwError $ SENoteFolderAlreadyCreated {noteFolderId}
 
-getNoteFolderIdByName :: DB.Connection -> User -> NoteFolderName -> ExceptT StoreError IO NoteFolderId
-getNoteFolderIdByName db User {userId} ldn =
-  ExceptT . firstRow fromOnly (SENoteFolderNotFoundByName ldn) $
-    DB.query db "SELECT note_folder_id FROM note_folders WHERE user_id = ? AND '' = ?" (userId, ldn)
+getUserNoteFolderId :: DB.Connection -> User -> ExceptT StoreError IO NoteFolderId
+getUserNoteFolderId db User {userId} =
+  ExceptT . firstRow fromOnly SEUserNoteFolderNotFound $
+    DB.query db "SELECT note_folder_id FROM note_folders WHERE user_id = ?" (Only userId)
 
 getNoteFolder :: DB.Connection -> User -> NoteFolderId -> ExceptT StoreError IO NoteFolder
 getNoteFolder db User {userId} noteFolderId =

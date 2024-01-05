@@ -71,7 +71,7 @@ data StoreError
   | SEGroupInvitationNotFound
   | SENoteFolderAlreadyCreated {noteFolderId :: NoteFolderId}
   | SENoteFolderNotFound {noteFolderId :: NoteFolderId}
-  | SENoteFolderNotFoundByName {noteFolderName :: NoteFolderName}
+  | SEUserNoteFolderNotFound
   | SESndFileNotFound {fileId :: FileTransferId}
   | SESndFileInvalid {fileId :: FileTransferId}
   | SERcvFileNotFound {fileId :: FileTransferId}

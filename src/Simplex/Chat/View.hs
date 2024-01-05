@@ -1907,7 +1907,7 @@ viewChatError logLevel testView = \case
     SEDuplicateGroupMessage {groupId, sharedMsgId}
       | testView -> ["duplicate group message, group id: " <> sShow groupId <> ", message id: " <> sShow sharedMsgId]
       | otherwise -> []
-    SENoteFolderNotFoundByName f -> ["no notes folder " <> ttyLocal f]
+    SEUserNoteFolderNotFound -> ["no notes folder"]
     e -> ["chat db error: " <> sShow e]
   ChatErrorDatabase err -> case err of
     DBErrorEncrypted -> ["error: chat database is already encrypted"]
@@ -2021,9 +2021,6 @@ ttyGroup g = styled (colored Blue) $ "#" <> viewName g
 
 ttyGroup' :: GroupInfo -> StyledString
 ttyGroup' = ttyGroup . groupName'
-
-ttyLocal :: NoteFolderName -> StyledString
-ttyLocal l = styled (colored Green) $ "*" <> viewName l
 
 viewContactName :: Contact -> Text
 viewContactName = viewName . localDisplayName'

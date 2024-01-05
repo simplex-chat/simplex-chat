@@ -1559,9 +1559,11 @@ processChatCommand' vr = \case
         gId <- withStore $ \db -> getGroupIdByName db user name
         let chatRef = ChatRef CTGroup gId
         processChatCommand . APISendMessage chatRef False Nothing $ ComposedMessage Nothing Nothing mc
-      CTLocal -> do
-        folderId <- withStore $ \db -> getNoteFolderIdByName db user name
-        processChatCommand . APICreateChatItem folderId $ ComposedMessage Nothing Nothing mc
+      CTLocal
+        | name == "" -> do
+            folderId <- withStore (`getUserNoteFolderId` user)
+            processChatCommand . APICreateChatItem folderId $ ComposedMessage Nothing Nothing mc
+        | otherwise -> throwChatError $ CECommandError "not supported"
       _ -> throwChatError $ CECommandError "not supported"
   SendMemberContactMessage gName mName msg -> withUser $ \user -> do
     (gId, mId) <- getGroupAndMemberId user gName mName
@@ -1855,8 +1857,8 @@ processChatCommand' vr = \case
     quotedItemId <- withStore $ \db -> getGroupChatItemIdByText db user groupId cName quotedMsg
     let mc = MCText msg
     processChatCommand . APISendMessage (ChatRef CTGroup groupId) False Nothing $ ComposedMessage Nothing (Just quotedItemId) mc
-  ClearNoteFolder displayName -> withUser $ \user -> do
-    folderId <- withStore $ \db -> getNoteFolderIdByName db user displayName
+  ClearNoteFolder -> withUser $ \user -> do
+    folderId <- withStore (`getUserNoteFolderId` user)
     processChatCommand $ APIClearChat (ChatRef CTLocal folderId)
   LastChats count_ -> withUser' $ \user -> do
     let count = fromMaybe 5000 count_
@@ -2082,7 +2084,9 @@ processChatCommand' vr = \case
       ChatRef cType <$> case cType of
         CTDirect -> withStore $ \db -> getContactIdByName db user name
         CTGroup -> withStore $ \db -> getGroupIdByName db user name
-        CTLocal -> withStore $ \db -> getNoteFolderIdByName db user name
+        CTLocal
+          | name == "" -> withStore (`getUserNoteFolderId` user)
+          | otherwise -> throwChatError $ CECommandError "not supported"
         _ -> throwChatError $ CECommandError "not supported"
     checkChatStopped :: m ChatResponse -> m ChatResponse
     checkChatStopped a = asks agentAsync >>= readTVarIO >>= maybe a (const $ throwChatError CEChatNotStopped)
@@ -6403,7 +6407,7 @@ chatCommandP =
       ("/leave " <|> "/l ") *> char_ '#' *> (LeaveGroup <$> displayName),
       ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName),
       ("/delete " <|> "/d ") *> char_ '@' *> (DeleteContact <$> displayName),
-      "/clear *" $> ClearNoteFolder "",
+      "/clear *" $> ClearNoteFolder,
       "/clear #" *> (ClearGroup <$> displayName),
       "/clear " *> char_ '@' *> (ClearContact <$> displayName),
       ("/members " <|> "/ms ") *> char_ '#' *> (ListMembers <$> displayName),
@@ -6601,9 +6605,10 @@ chatCommandP =
           " member" $> GRMember,
           " observer" $> GRObserver
         ]
-    chatNameP = chatTypeP >>= \case
-      CTLocal -> pure $ ChatName CTLocal ""
-      ct -> ChatName ct <$> displayName
+    chatNameP =
+      chatTypeP >>= \case
+        CTLocal -> pure $ ChatName CTLocal ""
+        ct -> ChatName ct <$> displayName
     chatNameP' = ChatName <$> (chatTypeP <|> pure CTDirect) <*> displayName
     chatRefP = ChatRef <$> chatTypeP <*> A.decimal
     msgCountP = A.space *> A.decimal <|> pure 10
