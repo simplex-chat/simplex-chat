@@ -108,10 +108,13 @@ build() {
 
     if [ "$arch" = "armv7a" ] && [ -n "$tag_full" ] ; then
       git checkout "${tag_version}-armv7a"
+      android_simplex_lib="${folder}#hydraJobs.${arch}-android:lib:simplex-chat.x86_64-linux"
+      android_support_lib="${folder}#hydraJobs.${arch}-android:lib:support.x86_64-linux"
+    else
+      android_simplex_lib="${folder}#hydraJobs.x86_64-linux.${arch}-android:lib:simplex-chat"
+      android_support_lib="${folder}#hydraJobs.x86_64-linux.${arch}-android:lib:support"
     fi
     
-    android_simplex_lib="${folder}#hydraJobs.${arch}-android:lib:simplex-chat.x86_64-linux"
-    android_support_lib="${folder}#hydraJobs.${arch}-android:lib:support.x86_64-linux"
     android_simplex_lib_output="${PWD}/result/pkg-${arch}-android-libsimplex.zip"
     android_support_lib_output="${PWD}/result/pkg-${arch}-android-libsupport.zip"
 
