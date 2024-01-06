@@ -2,6 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections #-}
 
 module Simplex.Chat.Terminal where
 
@@ -47,9 +48,9 @@ simplexChatTerminal :: WithTerminal t => ChatConfig -> ChatOpts -> t -> IO ()
 simplexChatTerminal cfg options t = run options
   where
     run opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {dbKey}} =
-      handle checkDBKeyError . simplexChatCore cfg opts $ \u cc -> do
+      handle checkDBKeyError . simplexChatCore' cfg opts $ \fstTime u cc -> do
         ct <- newChatTerminal t opts
-        when (firstTime cc) . printToTerminal ct $ chatWelcome u
+        when fstTime . printToTerminal ct $ chatWelcome u
         runChatTerminal ct cc opts
       where
         checkDBKeyError :: SQLError -> IO ()

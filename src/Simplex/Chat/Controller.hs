@@ -175,7 +175,7 @@ data ChatDatabase = ChatDatabase {chatStore :: SQLiteStore, agentStore :: SQLite
 data ChatController = ChatController
   { currentUser :: TVar (Maybe User),
     currentRemoteHost :: TVar (Maybe RemoteHostId),
-    firstTime :: Bool,
+    firstTime :: TVar Bool,
     smpAgent :: AgentClient,
     agentAsync :: TVar (Maybe (Async (), Maybe (Async ()))),
     chatStore :: SQLiteStore,
