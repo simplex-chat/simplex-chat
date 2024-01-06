@@ -21,8 +21,6 @@ let activationDelay: TimeInterval = 1.5
 
 let nseSuspendTimeout: TimeInterval = 5
 
-let callNSESuspendTimeout: TimeInterval = 3
-
 private func _suspendChat(timeout: Int) {
     // this is a redundant check to prevent logical errors, like the one fixed in this PR
     let state = AppChatState.shared.value

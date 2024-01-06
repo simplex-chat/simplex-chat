@@ -343,7 +343,7 @@ class NotificationService: UNNotificationServiceExtension {
 
     private func deliverCallkitOrNotification(urgent: Bool, suspend: Bool = false) {
         if case .callkit = bestAttemptNtf {
-            logger.debug("NotificationService.deliverBestAttemptNtf: will suspend, callkit")
+            logger.debug("NotificationService.deliverCallkitOrNotification: will suspend, callkit")
             if urgent {
                 // suspending NSE even though there may be other notifications
                 // to allow the app to process callkit call
@@ -361,7 +361,7 @@ class NotificationService: UNNotificationServiceExtension {
             }
         } else {
             if suspend {
-                logger.debug("NotificationService.deliverBestAttemptNtf: will suspend")
+                logger.debug("NotificationService.deliverCallkitOrNotification: will suspend")
                 if urgent {
                     suspendNow()
                 } else {
@@ -381,7 +381,7 @@ class NotificationService: UNNotificationServiceExtension {
 
         func suspendNow(timeout: Int = 0) {
             if shouldSuspend() {
-                logger.debug("NotificationService.suspendNSE: suspending...")
+                logger.debug("NotificationService.deliverCallkitOrNotification: suspending...")
                 suspendChat(timeout)
             }
         }
