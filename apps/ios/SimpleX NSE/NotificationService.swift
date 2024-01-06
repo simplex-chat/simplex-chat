@@ -476,17 +476,22 @@ let xftpConfig: XFTPFileConfig? = getXFTPCfg()
 // Subsequent calls to didReceive will be waiting on semaphore and won't start chat again, as it will be .active
 func startChat() -> DBMigrationResult? {
     logger.debug("NotificationService: startChat")
-    if case .active = NSEChatState.shared.value { return .ok }
+    if case .active = NSEChatState.shared.value, hasChatCtrl() { return .ok }
 
     startLock.wait()
     defer { startLock.signal() }
     
-    return switch NSEChatState.shared.value {
-    case .created: doStartChat()
-    case .starting: .ok // it should never get to this branch, as it would be waiting for start on startLock
-    case .active: .ok
-    case .suspending: activateChat()
-    case .suspended: activateChat()
+    if hasChatCtrl() {
+        return switch NSEChatState.shared.value {
+        case .created: doStartChat()
+        case .starting: .ok // it should never get to this branch, as it would be waiting for start on startLock
+        case .active: .ok
+        case .suspending: activateChat()
+        case .suspended: activateChat()
+        }
+    } else {
+        NSEChatState.shared.set(.created)
+        return doStartChat()
     }
 }
 
@@ -688,10 +693,15 @@ func updateNetCfg() {
 
 func apiGetActiveUser() -> User? {
     let r = sendSimpleXCmd(.showActiveUser)
-    logger.debug("apiGetActiveUser sendSimpleXCmd response: \(String(describing: r))")
+    logger.debug("apiGetActiveUser sendSimpleXCmd response: \(r.responseType, privacy: .public)")
     switch r {
     case let .activeUser(user): return user
-    case .chatCmdError(_, .error(.noActiveUser)): return nil
+    case .chatCmdError(_, .error(.noActiveUser)):
+        logger.debug("apiGetActiveUser sendSimpleXCmd no active user")
+        return nil
+    case let .chatCmdError(_, err):
+        logger.debug("apiGetActiveUser sendSimpleXCmd error: \(String(describing: err), privacy: .public)")
+        return nil
     default:
         logger.error("NotificationService apiGetActiveUser unexpected response: \(String(describing: r))")
         return nil
@@ -753,9 +763,10 @@ func apiGetNtfMessage(nonce: String, encNtfInfo: String) -> NtfMessages? {
     }
     let r = sendSimpleXCmd(.apiGetNtfMessage(nonce: nonce, encNtfInfo: encNtfInfo))
     if case let .ntfMessages(user, connEntity_, msgTs, ntfMessages) = r, let user = user {
+        logger.debug("apiGetNtfMessage response ntfMessages: \(ntfMessages.count, privacy: .public)")
         return NtfMessages(user: user, connEntity_: connEntity_, msgTs: msgTs, ntfMessages: ntfMessages)
     } else if case let .chatCmdError(_, error) = r {
-        logger.debug("apiGetNtfMessage error response: \(String.init(describing: error))")
+        logger.debug("apiGetNtfMessage error response: \(String.init(describing: error), privacy: .public)")
     } else {
         logger.debug("apiGetNtfMessage ignored response: \(r.responseType, privacy: .public) \(String.init(describing: r), privacy: .private)")
     }

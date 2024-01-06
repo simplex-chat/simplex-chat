@@ -91,14 +91,14 @@ private func withBGTask<T>(bgDelay: Double? = nil, f: @escaping () -> T) -> T {
 }
 
 func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil) -> ChatResponse {
-    logger.debug("chatSendCmd \(cmd.cmdType)")
+    logger.debug("chatSendCmd \(cmd.cmdType, privacy: .public)")
     let start = Date.now
     let resp = bgTask
                 ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd) }
                 : sendSimpleXCmd(cmd)
-    logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
+    logger.debug("chatSendCmd \(cmd.cmdType, privacy: .public): \(resp.responseType, privacy: .public)")
     if case let .response(_, json) = resp {
-        logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
+        logger.debug("chatSendCmd \(cmd.cmdType, privacy: .public) response: \(json)")
     }
     Task {
         await TerminalItems.shared.addCommand(start, cmd.obfuscated, resp)

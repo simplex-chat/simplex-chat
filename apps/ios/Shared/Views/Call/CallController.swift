@@ -151,14 +151,17 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
             completion()
             return
         }
-        logger.debug("CallController: initializing chat")
         if (!ChatModel.shared.chatInitialized) {
+            logger.debug("CallController: initializing chat")
             initChatAndMigrate(refreshInvitations: false)
         }
+        logger.debug("CallController: initialized chat")
         startChatForCall()
+        logger.debug("CallController: started chat")
         self.shouldSuspendChat = true
         // There are no invitations in the model, as it was processed by NSE
         _ = try? justRefreshCallInvitations()
+        logger.debug("CallController: updated call invitations chat")
         // logger.debug("CallController justRefreshCallInvitations: \(String(describing: m.callInvitations))")
         // Extract the call information from the push notification payload
         let m = ChatModel.shared
