@@ -1,8 +1,11 @@
 LIBRARY libsimplex
 EXPORTS
     hs_init
+    hs_init_with_rtsopts
     chat_migrate_init
+    chat_close_store
     chat_send_cmd
+    chat_send_remote_cmd
     chat_recv_msg
     chat_recv_msg_wait
     chat_parse_markdown

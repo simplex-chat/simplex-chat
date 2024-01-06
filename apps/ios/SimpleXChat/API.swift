@@ -17,7 +17,7 @@ public func getChatCtrl(_ useKey: String? = nil) -> chat_ctrl {
     fatalError("chat controller not initialized")
 }
 
-public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: MigrationConfirmation? = nil) -> (Bool, DBMigrationResult) {
+public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: MigrationConfirmation? = nil, backgroundMode: Bool = false) -> (Bool, DBMigrationResult) {
     if let res = migrationResult { return res }
     let dbPath = getAppDatabasePath().path
     var dbKey = ""
@@ -41,7 +41,7 @@ public func chatMigrateInit(_ useKey: String? = nil, confirmMigrations: Migratio
     var cKey = dbKey.cString(using: .utf8)!
     var cConfirm = confirm.rawValue.cString(using: .utf8)!
     // the last parameter of chat_migrate_init is used to return the pointer to chat controller
-    let cjson = chat_migrate_init(&cPath, &cKey, &cConfirm, &chatController)!
+    let cjson = chat_migrate_init_key(&cPath, &cKey, 1, &cConfirm, backgroundMode ? 1 : 0, &chatController)!
     let dbRes = dbMigrationResult(fromCString(cjson))
     let encrypted = dbKey != ""
     let keychainErr = dbRes == .ok && useKeychain && encrypted && !kcDatabasePassword.set(dbKey)
@@ -54,6 +54,13 @@ public func chatCloseStore() {
     let err = fromCString(chat_close_store(getChatCtrl()))
     if err != "" {
         logger.error("chatCloseStore error: \(err)")
+    }
+}
+
+public func chatReopenStore() {
+    let err = fromCString(chat_reopen_store(getChatCtrl()))
+    if err != "" {
+        logger.error("chatReopenStore error: \(err)")
     }
 }
 

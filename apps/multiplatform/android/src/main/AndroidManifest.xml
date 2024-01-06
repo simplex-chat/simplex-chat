@@ -15,7 +15,6 @@
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
   <uses-permission android:name="android.permission.VIBRATE" />
   <uses-permission android:name="android.permission.INTERNET" />
-  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
   <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
       tools:ignore="ScopedStorage" />
@@ -40,6 +39,7 @@
         android:exported="true"
         android:label="${app_name}"
         android:windowSoftInputMode="adjustResize"
+        android:configChanges="uiMode"
         android:theme="@style/Theme.SimpleX">
       <intent-filter>
         <category android:name="android.intent.category.LAUNCHER" />

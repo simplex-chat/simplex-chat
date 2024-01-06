@@ -32,31 +32,33 @@ import kotlinx.coroutines.launch
 import java.net.URI
 
 @Composable
-fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
+fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit) {
+  val rhId = rh?.remoteHostId
   AddGroupLayout(
     createGroup = { incognito, groupProfile ->
       withApi {
-        val groupInfo = chatModel.controller.apiNewGroup(incognito, groupProfile)
+        val groupInfo = chatModel.controller.apiNewGroup(rhId, incognito, groupProfile)
         if (groupInfo != null) {
-          chatModel.addChat(Chat(chatInfo = ChatInfo.Group(groupInfo), chatItems = listOf()))
+          chatModel.addChat(Chat(remoteHostId = rhId, chatInfo = ChatInfo.Group(groupInfo), chatItems = listOf()))
           chatModel.chatItems.clear()
           chatModel.chatItemStatuses.clear()
           chatModel.chatId.value = groupInfo.id
-          setGroupMembers(groupInfo, chatModel)
+          setGroupMembers(rhId, groupInfo, chatModel)
           close.invoke()
           if (!groupInfo.incognito) {
             ModalManager.end.showModalCloseable(true) { close ->
-              AddGroupMembersView(groupInfo, creatingGroup = true, chatModel, close)
+              AddGroupMembersView(rhId, groupInfo, creatingGroup = true, chatModel, close)
             }
           } else {
             ModalManager.end.showModalCloseable(true) { close ->
-              GroupLinkView(chatModel, groupInfo, connReqContact = null, memberRole = null, onGroupLinkUpdated = null, creatingGroup = true, close)
+              GroupLinkView(chatModel, rhId, groupInfo, connReqContact = null, memberRole = null, onGroupLinkUpdated = null, creatingGroup = true, close)
             }
           }
         }
       }
     },
     incognitoPref = chatModel.controller.appPrefs.incognito,
+    rhId,
     close
   )
 }
@@ -65,6 +67,7 @@ fun AddGroupView(chatModel: ChatModel, close: () -> Unit) {
 fun AddGroupLayout(
   createGroup: (Boolean, GroupProfile) -> Unit,
   incognitoPref: SharedPreference<Boolean>,
+  rhId: Long?,
   close: () -> Unit
 ) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
@@ -97,7 +100,7 @@ fun AddGroupLayout(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = DEFAULT_PADDING)
         ) {
-          AppBarTitle(stringResource(MR.strings.create_secret_group_title))
+          AppBarTitle(stringResource(MR.strings.create_secret_group_title), hostDevice(rhId))
           Box(
             Modifier
               .fillMaxWidth()
@@ -136,7 +139,8 @@ fun AddGroupLayout(
               createGroup(incognito.value, GroupProfile(
                 displayName = displayName.value.trim(),
                 fullName = "",
-                image = profileImage.value
+                image = profileImage.value,
+                groupPreferences = GroupPreferences(history = GroupPreference(GroupFeatureEnabled.ON))
               ))
             },
             textColor = MaterialTheme.colors.primary,
@@ -173,7 +177,8 @@ fun PreviewAddGroupLayout() {
     AddGroupLayout(
       createGroup = { _, _ -> },
       incognitoPref = SharedPreference({ false }, {}),
-      close = {}
+      close = {},
+      rhId = null,
     )
   }
 }

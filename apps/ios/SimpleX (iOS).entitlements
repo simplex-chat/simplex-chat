@@ -18,5 +18,9 @@
 	<array>
 		<string>$(AppIdentifierPrefix)chat.simplex.app</string>
 	</array>
+	<key>com.apple.developer.networking.multicast</key>
+	<true/>
+	<key>com.apple.developer.device-information.user-assigned-device-name</key>
+	<true/>
 </dict>
 </plist>

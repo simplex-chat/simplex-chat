@@ -23,18 +23,23 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
+import Simplex.FileTransfer.Client.Main (xftpClientCLI)
 import Simplex.Messaging.Agent.Store.SQLite (maybeFirstRow, withTransaction)
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Version
 import System.Directory (doesFileExist)
-import System.Environment (lookupEnv)
+import System.Environment (lookupEnv, withArgs)
 import System.FilePath ((</>))
+import System.IO.Silently (capture_)
 import System.Info (os)
 import Test.Hspec
 
 defaultPrefs :: Maybe Preferences
 defaultPrefs = Just $ toChatPrefs defaultChatPrefs
+
+aliceDesktopProfile :: Profile
+aliceDesktopProfile = Profile {displayName = "alice_desktop", fullName = "Alice Desktop", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
 aliceProfile :: Profile
 aliceProfile = Profile {displayName = "alice", fullName = "Alice", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
@@ -64,20 +69,22 @@ ifCI xrun run d t = do
 
 versionTestMatrix2 :: (HasCallStack => TestCC -> TestCC -> IO ()) -> SpecWith FilePath
 versionTestMatrix2 runTest = do
-  it "v2" $ testChat2 aliceProfile bobProfile runTest
+  it "current" $ testChat2 aliceProfile bobProfile runTest
+  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile runTest
+  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev runTest
+  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg runTest
   it "v1" $ testChatCfg2 testCfgV1 aliceProfile bobProfile runTest
   it "v1 to v2" $ runTestCfg2 testCfg testCfgV1 runTest
   it "v2 to v1" $ runTestCfg2 testCfgV1 testCfg runTest
 
--- versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
--- versionTestMatrix3 runTest = do
---   it "v2" $ testChat3 aliceProfile bobProfile cathProfile runTest
-
--- it "v1" $ testChatCfg3 testCfgV1 aliceProfile bobProfile cathProfile runTest
--- it "v1 to v2" $ runTestCfg3 testCfg testCfgV1 testCfgV1 runTest
--- it "v2+v1 to v2" $ runTestCfg3 testCfg testCfg testCfgV1 runTest
--- it "v2 to v1" $ runTestCfg3 testCfgV1 testCfg testCfg runTest
--- it "v2+v1 to v1" $ runTestCfg3 testCfgV1 testCfg testCfgV1 runTest
+versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith FilePath
+versionTestMatrix3 runTest = do
+  it "current" $ testChat3 aliceProfile bobProfile cathProfile runTest
+  it "prev" $ testChatCfg3 testCfgVPrev aliceProfile bobProfile cathProfile runTest
+  it "prev to curr" $ runTestCfg3 testCfg testCfgVPrev testCfgVPrev runTest
+  it "curr+prev to curr" $ runTestCfg3 testCfg testCfg testCfgVPrev runTest
+  it "curr to prev" $ runTestCfg3 testCfgVPrev testCfg testCfg runTest
+  it "curr+prev to prev" $ runTestCfg3 testCfgVPrev testCfg testCfgVPrev runTest
 
 inlineCfg :: Integer -> ChatConfig
 inlineCfg n = testCfg {inlineFiles = defaultInlineFilesConfig {sendChunks = 0, offerChunks = n, receiveChunks = n}}
@@ -216,7 +223,8 @@ groupFeatures'' =
     ((0, "Full deletion: off"), Nothing, Nothing),
     ((0, "Message reactions: on"), Nothing, Nothing),
     ((0, "Voice messages: on"), Nothing, Nothing),
-    ((0, "Files and media: on"), Nothing, Nothing)
+    ((0, "Files and media: on"), Nothing, Nothing),
+    ((0, "Recent history: on"), Nothing, Nothing)
   ]
 
 itemId :: Int -> String
@@ -279,8 +287,12 @@ cc <##.. ls = do
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
 
-data ConsoleResponse = ConsoleString String | WithTime String | EndsWith String | StartsWith String
-  deriving (Show)
+data ConsoleResponse
+  = ConsoleString String
+  | WithTime String
+  | EndsWith String
+  | StartsWith String
+  | Predicate (String -> Bool)
 
 instance IsString ConsoleResponse where fromString = ConsoleString
 
@@ -300,9 +312,10 @@ getInAnyOrder f cc ls = do
       WithTime s -> dropTime_ l == Just s
       EndsWith s -> s `isSuffixOf` l
       StartsWith s -> s `isPrefixOf` l
+      Predicate p -> p l
     filterFirst :: (a -> Bool) -> [a] -> [a]
     filterFirst _ [] = []
-    filterFirst p (x:xs)
+    filterFirst p (x : xs)
       | p x = xs
       | otherwise = x : filterFirst p xs
 
@@ -323,6 +336,9 @@ cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
 
 ($<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
 (cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine cc) `shouldReturn` line
+
+(^<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
+(cc, p) ^<# line = (dropTime . dropStrPrefix p <$> getTermLine cc) `shouldReturn` line
 
 (⩗) :: HasCallStack => TestCC -> String -> Expectation
 cc ⩗ line = (dropTime . dropReceipt <$> getTermLine cc) `shouldReturn` line
@@ -582,7 +598,10 @@ vRangeStr (VersionRange minVer maxVer) = "(" <> show minVer <> ", " <> show maxV
 linkAnotherSchema :: String -> String
 linkAnotherSchema link
   | "https://simplex.chat/" `isPrefixOf` link =
-    T.unpack $ T.replace "https://simplex.chat/" "simplex:/" $ T.pack link
+      T.unpack $ T.replace "https://simplex.chat/" "simplex:/" $ T.pack link
   | "simplex:/" `isPrefixOf` link =
-    T.unpack $ T.replace "simplex:/" "https://simplex.chat/" $ T.pack link
+      T.unpack $ T.replace "simplex:/" "https://simplex.chat/" $ T.pack link
   | otherwise = error "link starts with neither https://simplex.chat/ nor simplex:/"
+
+xftpCLI :: [String] -> IO [String]
+xftpCLI params = lines <$> capture_ (withArgs params xftpClientCLI)

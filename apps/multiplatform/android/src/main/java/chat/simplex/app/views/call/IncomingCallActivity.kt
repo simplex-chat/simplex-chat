@@ -97,7 +97,8 @@ fun IncomingCallActivityView(m: ChatModel) {
     Surface(
       Modifier
         .fillMaxSize(),
-      color = MaterialTheme.colors.background
+      color = MaterialTheme.colors.background,
+      contentColor = LocalContentColor.current
     ) {
       if (showCallView) {
         Box {
@@ -200,7 +201,8 @@ private fun SimpleXLogo() {
 private fun LockScreenCallButton(text: String, icon: Painter, color: Color, action: () -> Unit) {
   Surface(
     shape = RoundedCornerShape(10.dp),
-    color = Color.Transparent
+    color = Color.Transparent,
+    contentColor = LocalContentColor.current
   ) {
     Column(
       Modifier
@@ -227,10 +229,12 @@ fun PreviewIncomingCallLockScreenAlert() {
     Surface(
       Modifier
         .fillMaxSize(),
-      color = MaterialTheme.colors.background
+      color = MaterialTheme.colors.background,
+      contentColor = LocalContentColor.current
     ) {
       IncomingCallLockScreenAlertLayout(
         invitation = RcvCallInvitation(
+          remoteHostId = null,
           user = User.sampleData,
           contact = Contact.sampleData,
           callType = CallType(media = CallMediaType.Audio, capabilities = CallCapabilities(encryption = false)),

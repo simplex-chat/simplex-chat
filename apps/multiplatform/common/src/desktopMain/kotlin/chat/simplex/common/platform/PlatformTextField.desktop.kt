@@ -22,12 +22,21 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.views.chat.*
-import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.delay
+import java.awt.Image
+import java.awt.Toolkit
+import java.awt.datatransfer.DataFlavor
+import java.awt.datatransfer.UnsupportedFlavorException
+import java.awt.image.BufferedImage
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.net.URI
+import java.util.*
+import javax.imageio.ImageIO
+import kotlin.collections.ArrayList
 import kotlin.io.path.*
 import kotlin.math.min
 import kotlin.text.substring
@@ -36,6 +45,7 @@ import kotlin.text.substring
 actual fun PlatformTextField(
   composeState: MutableState<ComposeState>,
   sendMsgEnabled: Boolean,
+  sendMsgButtonDisabled: Boolean,
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
   userIsObserver: Boolean,
@@ -94,7 +104,7 @@ actual fun PlatformTextField(
       .padding(vertical = 4.dp)
       .focusRequester(focusRequester)
       .onPreviewKeyEvent {
-        if (it.key == Key.Enter && it.type == KeyEventType.KeyDown) {
+        if ((it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyDown) {
           if (it.isShiftPressed) {
             val start = if (minOf(textFieldValue.selection.min) == 0) "" else textFieldValue.text.substring(0 until textFieldValue.selection.min)
             val newText = start + "\n" +
@@ -104,7 +114,7 @@ actual fun PlatformTextField(
               selection = TextRange(textFieldValue.selection.min + 1)
             )
             onMessageChange(newText)
-          } else if (cs.message.isNotEmpty()) {
+          } else if (!sendMsgButtonDisabled) {
             onDone()
           }
           true
@@ -112,19 +122,53 @@ actual fun PlatformTextField(
           onUpArrow()
           true
         } else if (it.key == Key.V &&
-          it.type == KeyEventType.KeyDown &&
-          ((it.isCtrlPressed && !desktopPlatform.isMac()) || (it.isMetaPressed && desktopPlatform.isMac())) &&
-          parseToFiles(clipboard.getText()).isNotEmpty()) {
-          onFilesPasted(parseToFiles(clipboard.getText()))
-          true
-        }
+            it.type == KeyEventType.KeyDown &&
+            ((it.isCtrlPressed && !desktopPlatform.isMac()) || (it.isMetaPressed && desktopPlatform.isMac()))) {
+            if (parseToFiles(clipboard.getText()).isNotEmpty()) {
+              onFilesPasted(parseToFiles(clipboard.getText()))
+              true
+            } else {
+              // It's much faster to getData instead of getting transferable first
+              val image = try {
+                Toolkit.getDefaultToolkit().systemClipboard.getData(DataFlavor.imageFlavor) as Image
+              } catch (e: UnsupportedFlavorException) {
+                null
+              }
+              if (image != null) {
+                try {
+                  // create BufferedImage from Image
+                  val bi = BufferedImage(image.getWidth(null), image.getHeight(null), BufferedImage.TYPE_INT_ARGB)
+                  val bgr = bi.createGraphics()
+                  bgr.drawImage(image, 0, 0, null)
+                  bgr.dispose()
+                  // create byte array from BufferedImage
+                  val baos = ByteArrayOutputStream()
+                  ImageIO.write(bi, "png", baos)
+                  val bytes = baos.toByteArray()
+                  withBGApi {
+                    val tempFile = File(tmpDir, "${UUID.randomUUID()}.png")
+                    chatModel.filesToDelete.add(tempFile)
+
+                    tempFile.writeBytes(bytes)
+                    composeState.processPickedMedia(listOf(tempFile.toURI()), composeState.value.message)
+                  }
+                } catch (e: Exception) {
+                  Log.e(TAG, "Pasting image exception: ${e.stackTraceToString()}")
+                }
+                true
+              } else {
+                false
+              }
+            }
+          }
         else false
       },
     cursorBrush = SolidColor(MaterialTheme.colors.secondary),
     decorationBox = { innerTextField ->
       Surface(
         shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colors.secondary)
+        border = BorderStroke(1.dp, MaterialTheme.colors.secondary),
+        contentColor = LocalContentColor.current
       ) {
         Row(
           Modifier.background(MaterialTheme.colors.background),

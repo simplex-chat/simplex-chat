@@ -142,6 +142,7 @@ fun DecryptionErrorItemFixButton(
     Modifier.clickable(onClick = onClick),
     shape = RoundedCornerShape(18.dp),
     color = receivedColor,
+    contentColor = LocalContentColor.current
   ) {
     Box(
       Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
@@ -188,6 +189,7 @@ fun DecryptionErrorItem(
     Modifier.clickable(onClick = onClick),
     shape = RoundedCornerShape(18.dp),
     color = receivedColor,
+    contentColor = LocalContentColor.current
   ) {
     Box(
       Modifier.padding(vertical = 6.dp, horizontal = 12.dp),
@@ -218,5 +220,7 @@ private fun alertMessage(msgDecryptError: MsgDecryptError, msgCount: UInt): Stri
 
     MsgDecryptError.Other -> String.format(generalGetString(MR.strings.alert_text_decryption_error_n_messages_failed_to_decrypt), msgCount.toLong()) + "\n" +
         generalGetString(MR.strings.alert_text_fragment_encryption_out_of_sync_old_database)
+
+    MsgDecryptError.RatchetSync -> generalGetString(MR.strings.alert_text_encryption_renegotiation_failed)
   }
 }

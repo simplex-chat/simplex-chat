@@ -54,6 +54,8 @@ final class ChatModel: ObservableObject {
     @Published var chatDbChanged = false
     @Published var chatDbEncrypted: Bool?
     @Published var chatDbStatus: DBMigrationResult?
+    // local authentication
+    @Published var contentViewAccessAuthenticated: Bool = false
     @Published var laRequest: LocalAuthRequest?
     // list of chat "previews"
     @Published var chats: [Chat] = []
@@ -83,16 +85,19 @@ final class ChatModel: ObservableObject {
     // current WebRTC call
     @Published var callInvitations: Dictionary<ChatId, RcvCallInvitation> = [:]
     @Published var activeCall: Call?
-    @Published var callCommand: WCallCommand?
+    let callCommand: WebRTCCommandProcessor = WebRTCCommandProcessor()
     @Published var showCallView = false
-    // currently showing QR code
-    @Published var connReqInv: String?
+    // remote desktop
+    @Published var remoteCtrlSession: RemoteCtrlSession?
+    // currently showing invitation
+    @Published var showingInvitation: ShowingInvitation?
     // audio recording and playback
     @Published var stopPreviousRecPlay: URL? = nil // coordinates currently playing source
     @Published var draft: ComposeState?
     @Published var draftChatId: String?
     // tracks keyboard height via subscription in AppDelegate
     @Published var keyboardHeight: CGFloat = 0
+    @Published var pasteboardHasStrings: Bool = UIPasteboard.general.hasStrings
 
     var messageDelivery: Dictionary<Int64, () -> Void> = [:]
 
@@ -102,12 +107,14 @@ final class ChatModel: ObservableObject {
 
     static var ok: Bool { ChatModel.shared.chatDbStatus == .ok }
 
-    var ntfEnableLocal: Bool {
-        notificationMode == .off || ntfEnableLocalGroupDefault.get()
-    }
+    let ntfEnableLocal = true
 
     var ntfEnablePeriodic: Bool {
-        notificationMode == .periodic || ntfEnablePeriodicGroupDefault.get()
+        notificationMode != .off
+    }
+
+    var activeRemoteCtrl: Bool {
+        remoteCtrlSession?.active ?? false
     }
 
     func getUser(_ userId: Int64) -> User? {
@@ -261,7 +268,20 @@ final class ChatModel: ObservableObject {
     func addChatItem(_ cInfo: ChatInfo, _ cItem: ChatItem) {
         // update previews
         if let i = getChatIndex(cInfo.id) {
-            chats[i].chatItems = [cItem]
+            chats[i].chatItems = switch cInfo {
+            case .group:
+                if let currentPreviewItem = chats[i].chatItems.first {
+                    if cItem.meta.itemTs >= currentPreviewItem.meta.itemTs {
+                        [cItem]
+                    } else {
+                        [currentPreviewItem]
+                    }
+                } else {
+                    [cItem]
+                }
+            default:
+                [cItem]
+            }
             if case .rcvNew = cItem.meta.itemStatus {
                 chats[i].chatStats.unreadCount = chats[i].chatStats.unreadCount + 1
                 increaseUnreadCounter(user: currentUser!)
@@ -601,12 +621,14 @@ final class ChatModel: ObservableObject {
     }
 
     func dismissConnReqView(_ id: String) {
-        if let connReqInv = connReqInv,
-           let c = getChat(id),
-           case let .contactConnection(contactConnection) = c.chatInfo,
-           connReqInv == contactConnection.connReqInv {
+        if id == showingInvitation?.connId {
+            markShowingInvitationUsed()
             dismissAllSheets()
         }
+    }
+
+    func markShowingInvitationUsed() {
+        showingInvitation?.connChatUsed = true
     }
 
     func removeChat(_ id: String) {
@@ -685,6 +707,11 @@ final class ChatModel: ObservableObject {
     }
 }
 
+struct ShowingInvitation {
+    var connId: String
+    var connChatUsed: Bool
+}
+
 struct NTFContactRequest {
     var incognito: Bool
     var chatId: String
@@ -761,4 +788,39 @@ final class GMember: ObservableObject, Identifiable {
     var displayName: String { wrapped.displayName }
     var viewId: String { get { "\(wrapped.id) \(created.timeIntervalSince1970)" } }
     static let sampleData = GMember(GroupMember.sampleData)
+}
+
+struct RemoteCtrlSession {
+    var ctrlAppInfo: CtrlAppInfo?
+    var appVersion: String
+    var sessionState: UIRemoteCtrlSessionState
+
+    func updateState(_ state: UIRemoteCtrlSessionState) -> RemoteCtrlSession {
+        RemoteCtrlSession(ctrlAppInfo: ctrlAppInfo, appVersion: appVersion, sessionState: state)
+    }
+
+    var active: Bool {
+        if case .connected = sessionState { true } else { false }
+    }
+
+    var discovery: Bool {
+        if case .searching = sessionState { true } else { false }
+    }
+
+    var sessionCode: String? {
+        switch sessionState {
+        case let .pendingConfirmation(_, sessionCode): sessionCode
+        case let .connected(_, sessionCode): sessionCode
+        default: nil
+        }
+    }
+}
+
+enum UIRemoteCtrlSessionState {
+    case starting
+    case searching
+    case found(remoteCtrl: RemoteCtrlInfo, compatible: Bool)
+    case connecting(remoteCtrl_: RemoteCtrlInfo?)
+    case pendingConfirmation(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
+    case connected(remoteCtrl: RemoteCtrlInfo, sessionCode: String)
 }

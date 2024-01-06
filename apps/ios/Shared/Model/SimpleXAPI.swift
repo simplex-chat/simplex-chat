@@ -228,7 +228,8 @@ func apiStopChat() async throws {
 }
 
 func apiActivateChat() {
-    let r = chatSendCmdSync(.apiActivateChat)
+    chatReopenStore()
+    let r = chatSendCmdSync(.apiActivateChat(restoreChat: true))
     if case .cmdOk = r { return }
     logger.error("apiActivateChat error: \(String(describing: r))")
 }
@@ -580,15 +581,15 @@ func apiVerifyGroupMember(_ groupId: Int64, _ groupMemberId: Int64, connectionCo
     return nil
 }
 
-func apiAddContact(incognito: Bool) async -> (String, PendingContactConnection)? {
+func apiAddContact(incognito: Bool) async -> ((String, PendingContactConnection)?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiAddContact: no current user")
-        return nil
+        return (nil, nil)
     }
     let r = await chatSendCmd(.apiAddContact(userId: userId, incognito: incognito), bgTask: false)
-    if case let .invitation(_, connReqInvitation, connection) = r { return (connReqInvitation, connection) }
-    AlertManager.shared.showAlert(connectionErrorAlert(r))
-    return nil
+    if case let .invitation(_, connReqInvitation, connection) = r { return ((connReqInvitation, connection), nil) }
+    let alert = connectionErrorAlert(r)
+    return (nil, alert)
 }
 
 func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> PendingContactConnection? {
@@ -605,27 +606,29 @@ func apiConnectPlan(connReq: String) async throws -> ConnectionPlan {
     throw r
 }
 
-func apiConnect(incognito: Bool, connReq: String) async -> ConnReqType? {
-    let (connReqType, alert) = await apiConnect_(incognito: incognito, connReq: connReq)
+func apiConnect(incognito: Bool, connReq: String) async -> (ConnReqType, PendingContactConnection)? {
+    let (r, alert) = await apiConnect_(incognito: incognito, connReq: connReq)
     if let alert = alert {
         AlertManager.shared.showAlert(alert)
         return nil
     } else {
-        return connReqType
+        return r
     }
 }
 
-func apiConnect_(incognito: Bool, connReq: String) async -> (ConnReqType?, Alert?) {
+func apiConnect_(incognito: Bool, connReq: String) async -> ((ConnReqType, PendingContactConnection)?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiConnect: no current user")
         return (nil, nil)
     }
     let r = await chatSendCmd(.apiConnect(userId: userId, incognito: incognito, connReq: connReq))
+    let m = ChatModel.shared
     switch r {
-    case .sentConfirmation: return (.invitation, nil)
-    case .sentInvitation: return (.contact, nil)
+    case let .sentConfirmation(_, connection):
+        return ((.invitation, connection), nil)
+    case let .sentInvitation(_, connection):
+        return ((.contact, connection), nil)
     case let .contactAlreadyExists(_, contact):
-        let m = ChatModel.shared
         if let c = m.getContactChat(contact.contactId) {
             await MainActor.run { m.chatId = c.id }
         }
@@ -905,6 +908,46 @@ func apiCancelFile(fileId: Int64) async -> AChatItem? {
     }
 }
 
+func setLocalDeviceName(_ displayName: String) throws {
+    try sendCommandOkRespSync(.setLocalDeviceName(displayName: displayName))
+}
+
+func connectRemoteCtrl(desktopAddress: String) async throws -> (RemoteCtrlInfo?, CtrlAppInfo, String) {
+    let r = await chatSendCmd(.connectRemoteCtrl(xrcpInvitation: desktopAddress))
+    if case let .remoteCtrlConnecting(rc_, ctrlAppInfo, v) = r { return (rc_, ctrlAppInfo, v) }
+    throw r
+}
+
+func findKnownRemoteCtrl() async throws {
+    try await sendCommandOkResp(.findKnownRemoteCtrl)
+}
+
+func confirmRemoteCtrl(_ rcId: Int64) async throws -> (RemoteCtrlInfo?, CtrlAppInfo, String) {
+    let r = await chatSendCmd(.confirmRemoteCtrl(remoteCtrlId: rcId))
+    if case let .remoteCtrlConnecting(rc_, ctrlAppInfo, v) = r { return (rc_, ctrlAppInfo, v) }
+    throw r
+}
+
+func verifyRemoteCtrlSession(_ sessCode: String) async throws -> RemoteCtrlInfo {
+    let r = await chatSendCmd(.verifyRemoteCtrlSession(sessionCode: sessCode))
+    if case let .remoteCtrlConnected(rc) = r { return rc }
+    throw r
+}
+
+func listRemoteCtrls() throws -> [RemoteCtrlInfo] {
+    let r = chatSendCmdSync(.listRemoteCtrls)
+    if case let .remoteCtrlList(rcInfo) = r { return rcInfo }
+    throw r
+}
+
+func stopRemoteCtrl() async throws {
+    try await sendCommandOkResp(.stopRemoteCtrl)
+}
+
+func deleteRemoteCtrl(_ rcId: Int64) async throws {
+    try await sendCommandOkResp(.deleteRemoteCtrl(remoteCtrlId: rcId))
+}
+
 func networkErrorAlert(_ r: ChatResponse) -> Alert? {
     switch r {
     case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TIMEOUT))):
@@ -1029,6 +1072,12 @@ func apiMarkChatItemRead(_ cInfo: ChatInfo, _ cItem: ChatItem) async {
 
 private func sendCommandOkResp(_ cmd: ChatCommand) async throws {
     let r = await chatSendCmd(cmd)
+    if case .cmdOk = r { return }
+    throw r
+}
+
+private func sendCommandOkRespSync(_ cmd: ChatCommand) throws {
+    let r = chatSendCmdSync(cmd)
     if case .cmdOk = r { return }
     throw r
 }
@@ -1163,7 +1212,7 @@ private func currentUserId(_ funcName: String) throws -> Int64 {
     throw RuntimeError("\(funcName): no current user")
 }
 
-func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool = true, confirmMigrations: MigrationConfirmation? = nil) throws {
+func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = nil, refreshInvitations: Bool = true, confirmMigrations: MigrationConfirmation? = nil) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared
     (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey, confirmMigrations: confirmMigrations)
@@ -1182,10 +1231,43 @@ func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool 
         onboardingStageDefault.set(.step1_SimpleXInfo)
         privacyDeliveryReceiptsSet.set(true)
         m.onboardingStage = .step1_SimpleXInfo
-    } else if start {
+    } else if confirmStart {
+        showStartChatAfterRestartAlert { start in
+            do {
+                if start { AppChatState.shared.set(.active) }
+                try chatInitialized(start: start, refreshInvitations: refreshInvitations)
+            } catch let error {
+                logger.error("ChatInitialized error: \(error)")
+            }
+        }
+    } else {
+        try chatInitialized(start: start, refreshInvitations: refreshInvitations)
+    }
+}
+
+func showStartChatAfterRestartAlert(result: @escaping (_ start: Bool) -> Void) {
+    AlertManager.shared.showAlert(Alert(
+        title: Text("Start chat?"),
+        message: Text("Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat."),
+        primaryButton: .default(Text("Ok")) {
+            result(true)
+        },
+        secondaryButton: .cancel {
+            result(false)
+        }
+    ))
+}
+
+private func chatInitialized(start: Bool, refreshInvitations: Bool) throws {
+    let m = ChatModel.shared
+    if m.currentUser == nil { return }
+    if start {
         try startChat(refreshInvitations: refreshInvitations)
     } else {
         m.chatRunning = false
+        try getUserChatData()
+        NtfManager.shared.setNtfBadgeCount(m.totalUnreadCountForAllUsers())
+        m.onboardingStage = onboardingStageDefault.get()
     }
 }
 
@@ -1202,6 +1284,8 @@ func startChat(refreshInvitations: Bool = true) throws {
             try refreshCallInvitations()
         }
         (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
+        // deviceToken is set when AppDelegate.application(didRegisterForRemoteNotificationsWithDeviceToken:) is called,
+        // when it is called before startChat
         if let token = m.deviceToken {
             registerToken(token: token)
         }
@@ -1316,18 +1400,6 @@ func processReceivedMsg(_ res: ChatResponse) async {
     let m = ChatModel.shared
     logger.debug("processReceivedMsg: \(res.responseType)")
     switch res {
-    case let .newContactConnection(user, connection):
-        if active(user) {
-            await MainActor.run {
-                m.updateContactConnection(connection)
-            }
-        }
-    case let .contactConnectionDeleted(user, connection):
-        if active(user) {
-            await MainActor.run {
-                m.removeChat(connection.id)
-            }
-        }
     case let .contactDeletedByContact(user, contact):
         if active(user) && contact.directOrUsed {
             await MainActor.run {
@@ -1620,36 +1692,40 @@ func processReceivedMsg(_ res: ChatResponse) async {
         activateCall(invitation)
     case let .callOffer(_, contact, callType, offer, sharedKey, _):
         await withCall(contact) { call in
-            call.callState = .offerReceived
-            call.peerMedia = callType.media
-            call.sharedKey = sharedKey
+            await MainActor.run {
+                call.callState = .offerReceived
+                call.peerMedia = callType.media
+                call.sharedKey = sharedKey
+            }
             let useRelay = UserDefaults.standard.bool(forKey: DEFAULT_WEBRTC_POLICY_RELAY)
             let iceServers = getIceServers()
             logger.debug(".callOffer useRelay \(useRelay)")
             logger.debug(".callOffer iceServers \(String(describing: iceServers))")
-            m.callCommand = .offer(
+            await m.callCommand.processCommand(.offer(
                 offer: offer.rtcSession,
                 iceCandidates: offer.rtcIceCandidates,
                 media: callType.media, aesKey: sharedKey,
                 iceServers: iceServers,
                 relay: useRelay
-            )
+            ))
         }
     case let .callAnswer(_, contact, answer):
         await withCall(contact) { call in
-            call.callState = .answerReceived
-            m.callCommand = .answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates)
+            await MainActor.run {
+                call.callState = .answerReceived
+            }
+            await m.callCommand.processCommand(.answer(answer: answer.rtcSession, iceCandidates: answer.rtcIceCandidates))
         }
     case let .callExtraInfo(_, contact, extraInfo):
         await withCall(contact) { _ in
-            m.callCommand = .ice(iceCandidates: extraInfo.rtcIceCandidates)
+            await m.callCommand.processCommand(.ice(iceCandidates: extraInfo.rtcIceCandidates))
         }
     case let .callEnded(_, contact):
         if let invitation = await MainActor.run(body: { m.callInvitations.removeValue(forKey: contact.id) }) {
             CallController.shared.reportCallRemoteEnded(invitation: invitation)
         }
         await withCall(contact) { call in
-            m.callCommand = .end
+            await m.callCommand.processCommand(.end)
             CallController.shared.reportCallRemoteEnded(call: call)
         }
     case .chatSuspended:
@@ -1670,16 +1746,64 @@ func processReceivedMsg(_ res: ChatResponse) async {
         await MainActor.run {
             m.updateGroupMemberConnectionStats(groupInfo, member, ratchetSyncProgress.connectionStats)
         }
+    case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible):
+        await MainActor.run {
+            if let sess = m.remoteCtrlSession, case .searching = sess.sessionState {
+                let state = UIRemoteCtrlSessionState.found(remoteCtrl: remoteCtrl, compatible: compatible)
+                m.remoteCtrlSession = RemoteCtrlSession(
+                    ctrlAppInfo: ctrlAppInfo_,
+                    appVersion: appVersion,
+                    sessionState: state
+                )
+            }
+        }
+    case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode):
+        await MainActor.run {
+            let state = UIRemoteCtrlSessionState.pendingConfirmation(remoteCtrl_: remoteCtrl_, sessionCode: sessionCode)
+            m.remoteCtrlSession = m.remoteCtrlSession?.updateState(state)
+        }
+    case let .remoteCtrlConnected(remoteCtrl):
+        // TODO currently it is returned in response to command, so it is redundant
+        await MainActor.run {
+            let state = UIRemoteCtrlSessionState.connected(remoteCtrl: remoteCtrl, sessionCode: m.remoteCtrlSession?.sessionCode ?? "")
+            m.remoteCtrlSession = m.remoteCtrlSession?.updateState(state)
+        }
+    case .remoteCtrlStopped:
+        // This delay is needed to cancel the session that fails on network failure,
+        // e.g. when user did not grant permission to access local network yet.
+        if let sess = m.remoteCtrlSession {
+            await MainActor.run {
+                m.remoteCtrlSession = nil
+            }
+            if case .connected = sess.sessionState {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    switchToLocalSession()
+                }
+            }
+        }
     default:
         logger.debug("unsupported event: \(res.responseType)")
     }
 
-    func withCall(_ contact: Contact, _ perform: (Call) -> Void) async {
+    func withCall(_ contact: Contact, _ perform: (Call) async -> Void) async {
         if let call = m.activeCall, call.contact.apiId == contact.apiId {
-            await MainActor.run { perform(call) }
+            await perform(call)
         } else {
             logger.debug("processReceivedMsg: ignoring \(res.responseType), not in call with the contact \(contact.id)")
         }
+    }
+}
+
+func switchToLocalSession() {
+    let m = ChatModel.shared
+    m.remoteCtrlSession = nil
+    do {
+        m.users = try listUsers()
+        try getUserChatData()
+        let statuses = (try apiGetNetworkStatuses()).map { s in (s.agentConnId, s.networkStatus) }
+        m.networkStatuses = Dictionary(uniqueKeysWithValues: statuses)
+    } catch let error {
+        logger.debug("error updating chat data: \(responseError(error))")
     }
 }
 

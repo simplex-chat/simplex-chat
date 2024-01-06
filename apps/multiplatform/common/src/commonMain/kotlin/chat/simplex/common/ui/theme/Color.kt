@@ -1,5 +1,7 @@
 package chat.simplex.common.ui.theme
 
+import androidx.compose.material.LocalContentColor
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
 val Purple200 = Color(0xFFBB86FC)
@@ -25,4 +27,5 @@ val WarningOrange = Color(255, 127, 0, 255)
 val WarningYellow = Color(255, 192, 0, 255)
 val FileLight = Color(183, 190, 199, 255)
 val FileDark = Color(101, 101, 106, 255)
-val MenuTextColorDark = Color.White.copy(alpha = 0.8f)
+
+val MenuTextColor: Color @Composable get () = if (isInDarkTheme()) LocalContentColor.current.copy(alpha = 0.8f) else Color.Black

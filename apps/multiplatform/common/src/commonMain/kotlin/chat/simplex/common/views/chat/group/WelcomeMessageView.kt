@@ -15,6 +15,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -30,7 +31,7 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
 @Composable
-fun GroupWelcomeView(m: ChatModel, groupInfo: GroupInfo, close: () -> Unit) {
+fun GroupWelcomeView(m: ChatModel, rhId: Long?, groupInfo: GroupInfo, close: () -> Unit) {
   var gInfo by remember { mutableStateOf(groupInfo) }
   val welcomeText = remember { mutableStateOf(gInfo.groupProfile.description ?: "") }
 
@@ -41,10 +42,10 @@ fun GroupWelcomeView(m: ChatModel, groupInfo: GroupInfo, close: () -> Unit) {
         welcome = null
       }
       val groupProfileUpdated = gInfo.groupProfile.copy(description = welcome)
-      val res = m.controller.apiUpdateGroup(gInfo.groupId, groupProfileUpdated)
+      val res = m.controller.apiUpdateGroup(rhId, gInfo.groupId, groupProfileUpdated)
       if (res != null) {
         gInfo = res
-        m.updateGroup(res)
+        m.updateGroup(rhId, res)
         welcomeText.value = welcome ?: ""
       }
       afterSave()
@@ -119,13 +120,15 @@ private fun GroupWelcomeLayout(
 
 @Composable
 private fun TextPreview(text: String, linkMode: SimplexLinkMode, markdown: Boolean = true) {
+  val uriHandler = LocalUriHandler.current
   Column {
     SelectionContainer(Modifier.fillMaxWidth()) {
       MarkdownText(
         text,
         formattedText = if (markdown) remember(text) { parseToMarkdown(text) } else null,
+        toggleSecrets = false,
         modifier = Modifier.fillMaxHeight().padding(horizontal = DEFAULT_PADDING),
-        linkMode = linkMode,
+        linkMode = linkMode, uriHandler = uriHandler,
         style = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground, lineHeight = 22.sp)
       )
     }

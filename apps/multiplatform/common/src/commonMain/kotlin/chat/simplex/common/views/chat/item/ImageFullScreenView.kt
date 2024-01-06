@@ -86,6 +86,8 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
                 provider.scrollToStart()
                 pagerState.scrollToPage(0)
               }
+              // Current media was deleted or moderated, close gallery
+              index -> close()
             }
           }
         }

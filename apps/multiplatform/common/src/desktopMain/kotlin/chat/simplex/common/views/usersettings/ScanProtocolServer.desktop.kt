@@ -4,6 +4,6 @@ import androidx.compose.runtime.Composable
 import chat.simplex.common.model.ServerCfg
 
 @Composable
-actual fun ScanProtocolServer(onNext: (ServerCfg) -> Unit) {
-  ScanProtocolServerLayout(onNext)
+actual fun ScanProtocolServer(rhId: Long?, onNext: (ServerCfg) -> Unit) {
+  ScanProtocolServerLayout(rhId, onNext)
 }

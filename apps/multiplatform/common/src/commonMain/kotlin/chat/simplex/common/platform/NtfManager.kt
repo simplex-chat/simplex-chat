@@ -49,7 +49,8 @@ abstract class NtfManager {
       null
     }
     val apiId = chatId.replace("<@", "").toLongOrNull() ?: return
-    acceptContactRequest(incognito, apiId, cInfo, isCurrentUser, ChatModel)
+    // TODO include remote host in notification
+    acceptContactRequest(null, incognito, apiId, cInfo, isCurrentUser, ChatModel)
     cancelNotificationsForChat(chatId)
   }
 
@@ -57,11 +58,14 @@ abstract class NtfManager {
     withBGApi {
       awaitChatStartedIfNeeded(chatModel)
       if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
-        chatModel.controller.changeActiveUser(userId, null)
+        // TODO include remote host ID in desktop notifications?
+        chatModel.controller.showProgressIfNeeded {
+          chatModel.controller.changeActiveUser(null, userId, null)
+        }
       }
       val cInfo = chatModel.getChat(chatId)?.chatInfo
       chatModel.clearOverlays.value = true
-      if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(cInfo, chatModel)
+      if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(null, cInfo, chatModel)
     }
   }
 
@@ -69,7 +73,10 @@ abstract class NtfManager {
     withBGApi {
       awaitChatStartedIfNeeded(chatModel)
       if (userId != null && userId != chatModel.currentUser.value?.userId && chatModel.currentUser.value != null) {
-        chatModel.controller.changeActiveUser(userId, null)
+        // TODO include remote host ID in desktop notifications?
+        chatModel.controller.showProgressIfNeeded {
+          chatModel.controller.changeActiveUser(null, userId, null)
+        }
       }
       chatModel.chatId.value = null
       chatModel.clearOverlays.value = true

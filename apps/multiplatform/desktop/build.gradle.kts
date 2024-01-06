@@ -102,9 +102,8 @@ compose {
         // Packaging requires to have version like MAJOR.MINOR.PATCH
         var adjustedVersion = rootProject.extra["desktop.version_name"] as String
         adjustedVersion = adjustedVersion.replace(Regex("[^0-9.]"), "")
-        if (adjustedVersion.split(".").size != 3) {
-          adjustedVersion += ".0"
-        }
+        val split = adjustedVersion.split(".")
+        adjustedVersion = split[0] + "." + (split.getOrNull(1) ?: "0") + "." + (split.getOrNull(2) ?: "0")
         version = adjustedVersion
       }
     }

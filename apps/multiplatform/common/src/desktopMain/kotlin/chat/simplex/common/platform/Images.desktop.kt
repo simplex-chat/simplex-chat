@@ -157,7 +157,7 @@ actual fun ImageBitmap.scale(width: Int, height: Int): ImageBitmap {
 
 // LALAL
 actual fun isImage(uri: URI): Boolean {
-  val path = uri.path.lowercase()
+  val path = uri.toFile().path.lowercase()
   return path.endsWith(".gif") ||
       path.endsWith(".webp") ||
       path.endsWith(".png") ||
@@ -166,7 +166,7 @@ actual fun isImage(uri: URI): Boolean {
 }
 
 actual fun isAnimImage(uri: URI, drawable: Any?): Boolean {
-  val path = uri.path.lowercase()
+  val path = uri.toFile().path.lowercase()
   return path.endsWith(".gif") || path.endsWith(".webp")
 }
 

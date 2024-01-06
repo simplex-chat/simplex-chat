@@ -3,6 +3,7 @@ package chat.simplex.common.platform
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
+import java.io.File
 
 expect fun Modifier.navigationBarsWithImePadding(): Modifier
 
@@ -16,9 +17,11 @@ expect fun ProvideWindowInsets(
 @Composable
 expect fun Modifier.desktopOnExternalDrag(
   enabled: Boolean = true,
-  onFiles: (List<String>) -> Unit = {},
+  onFiles: (List<File>) -> Unit = {},
   onImage: (Painter) -> Unit = {},
   onText: (String) -> Unit = {}
 ): Modifier
 
 expect fun Modifier.onRightClick(action: () -> Unit): Modifier
+
+expect fun Modifier.desktopPointerHoverIconHand(): Modifier

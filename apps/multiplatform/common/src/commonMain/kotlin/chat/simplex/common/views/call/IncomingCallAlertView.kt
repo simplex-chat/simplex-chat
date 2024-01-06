@@ -85,7 +85,8 @@ fun IncomingCallInfo(invitation: RcvCallInvitation, chatModel: ChatModel) {
 private fun CallButton(text: String, icon: Painter, color: Color, action: () -> Unit) {
   Surface(
     shape = RoundedCornerShape(10.dp),
-    color = Color.Transparent
+    color = Color.Transparent,
+    contentColor = LocalContentColor.current
   ) {
     Column(
       Modifier
@@ -106,6 +107,7 @@ fun PreviewIncomingCallAlertLayout() {
   SimpleXTheme {
     IncomingCallAlertLayout(
       invitation = RcvCallInvitation(
+        remoteHostId = null,
         user = User.sampleData,
         contact = Contact.sampleData,
         callType = CallType(media = CallMediaType.Audio, capabilities = CallCapabilities(encryption = false)),

@@ -25,6 +25,7 @@ import chat.simplex.res.MR
 fun ContactPreferencesView(
   m: ChatModel,
   user: User,
+  rhId: Long?,
   contactId: Long,
   close: () -> Unit,
 ) {
@@ -36,9 +37,9 @@ fun ContactPreferencesView(
   fun savePrefs(afterSave: () -> Unit = {}) {
     withApi {
       val prefs = contactFeaturesAllowedToPrefs(featuresAllowed)
-      val toContact = m.controller.apiSetContactPrefs(ct.contactId, prefs)
+      val toContact = m.controller.apiSetContactPrefs(rhId, ct.contactId, prefs)
       if (toContact != null) {
-        m.updateContact(toContact)
+        m.updateContact(rhId, toContact)
         currentFeaturesAllowed = featuresAllowed
       }
       afterSave()

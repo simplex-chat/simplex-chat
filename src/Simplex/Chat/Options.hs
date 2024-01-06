@@ -18,7 +18,9 @@ where
 
 import Control.Logger.Simple (LogLevel (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteString.Char8 as B
+import Data.Text (Text)
 import Numeric.Natural (Natural)
 import Options.Applicative
 import Simplex.Chat.Controller (ChatLogLevel (..), updateStr, versionNumber, versionString)
@@ -32,6 +34,7 @@ import System.FilePath (combine)
 
 data ChatOpts = ChatOpts
   { coreOptions :: CoreChatOpts,
+    deviceName :: Maybe Text,
     chatCmd :: String,
     chatCmdDelay :: Int,
     chatServerPort :: Maybe String,
@@ -40,12 +43,13 @@ data ChatOpts = ChatOpts
     allowInstantFiles :: Bool,
     autoAcceptFileSize :: Integer,
     muteNotifications :: Bool,
+    markRead :: Bool,
     maintenance :: Bool
   }
 
 data CoreChatOpts = CoreChatOpts
   { dbFilePrefix :: String,
-    dbKey :: String,
+    dbKey :: ScrubbedBytes,
     smpServers :: [SMPServerWithAuth],
     xftpServers :: [XFTPServerWithAuth],
     networkConfig :: NetworkConfig,
@@ -54,7 +58,8 @@ data CoreChatOpts = CoreChatOpts
     logServerHosts :: Bool,
     logAgent :: Maybe LogLevel,
     logFile :: Maybe FilePath,
-    tbqSize :: Natural
+    tbqSize :: Natural,
+    highlyAvailable :: Bool
   }
 
 agentLogLevel :: ChatLogLevel -> LogLevel
@@ -172,6 +177,11 @@ coreChatOptsP appDir defaultDbFileName = do
           <> value 1024
           <> showDefault
       )
+  highlyAvailable <-
+    switch
+      ( long "ha"
+          <> help "Run as a highly available client (this may increase traffic in groups)"
+      )
   pure
     CoreChatOpts
       { dbFilePrefix,
@@ -184,7 +194,8 @@ coreChatOptsP appDir defaultDbFileName = do
         logServerHosts = logServerHosts || logLevel <= CLLInfo,
         logAgent = if logAgent || logLevel == CLLDebug then Just $ agentLogLevel logLevel else Nothing,
         logFile,
-        tbqSize
+        tbqSize,
+        highlyAvailable
       }
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 5 (const 10) p
@@ -193,6 +204,13 @@ coreChatOptsP appDir defaultDbFileName = do
 chatOptsP :: FilePath -> FilePath -> Parser ChatOpts
 chatOptsP appDir defaultDbFileName = do
   coreOptions <- coreChatOptsP appDir defaultDbFileName
+  deviceName <-
+    optional $
+      strOption
+        ( long "device-name"
+            <> metavar "DEVICE"
+            <> help "Device name to use in connections with remote hosts and controller"
+        )
   chatCmd <-
     strOption
       ( long "execute"
@@ -252,6 +270,12 @@ chatOptsP appDir defaultDbFileName = do
       ( long "mute"
           <> help "Mute notifications"
       )
+  markRead <-
+    switch
+      ( long "mark-read"
+          <> short 'r'
+          <> help "Mark shown messages as read"
+      )
   maintenance <-
     switch
       ( long "maintenance"
@@ -261,6 +285,7 @@ chatOptsP appDir defaultDbFileName = do
   pure
     ChatOpts
       { coreOptions,
+        deviceName,
         chatCmd,
         chatCmdDelay,
         chatServerPort,
@@ -269,6 +294,7 @@ chatOptsP appDir defaultDbFileName = do
         allowInstantFiles,
         autoAcceptFileSize,
         muteNotifications,
+        markRead,
         maintenance
       }
 

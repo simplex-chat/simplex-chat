@@ -164,6 +164,28 @@ struct ContactConnectionInfo: View {
     }
 }
 
+private func shareLinkButton(_ connReqInvitation: String) -> some View {
+    Button {
+        showShareSheet(items: [simplexChatLink(connReqInvitation)])
+    } label: {
+        settingsRow("square.and.arrow.up") {
+            Text("Share 1-time link")
+        }
+    }
+}
+
+private func oneTimeLinkLearnMoreButton() -> some View {
+    NavigationLink {
+        AddContactLearnMore(showTitle: false)
+            .navigationTitle("One-time invitation link")
+            .navigationBarTitleDisplayMode(.large)
+    } label: {
+        settingsRow("info.circle") {
+            Text("Learn more")
+        }
+    }
+}
+
 struct ContactConnectionInfo_Previews: PreviewProvider {
     static var previews: some View {
         ContactConnectionInfo(contactConnection: PendingContactConnection.getSampleData())

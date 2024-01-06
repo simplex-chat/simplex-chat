@@ -44,7 +44,7 @@ fun DatabaseErrorView(
 
   fun callRunChat(confirmMigrations: MigrationConfirmation? = null) {
     val useKey = if (useKeychain) null else dbKey.value
-    runChat(useKey, confirmMigrations, chatDbStatus, progressIndicator, appPreferences)
+    runChat(useKey, confirmMigrations, chatDbStatus, progressIndicator)
   }
 
   fun saveAndRunChatOnClick() {
@@ -190,13 +190,14 @@ private fun runChat(
   confirmMigrations: MigrationConfirmation? = null,
   chatDbStatus: State<DBMigrationResult?>,
   progressIndicator: MutableState<Boolean>,
-  prefs: AppPreferences
 ) = CoroutineScope(Dispatchers.Default).launch {
   // Don't do things concurrently. Shouldn't be here concurrently, just in case
   if (progressIndicator.value) return@launch
   progressIndicator.value = true
   try {
-    initChatController(dbKey, confirmMigrations)
+    initChatController(dbKey, confirmMigrations,
+      startChat = if (appPreferences.chatStopped.get()) ::showStartChatAfterRestartAlert else { { CompletableDeferred(true) } }
+    )
   } catch (e: Exception) {
     Log.d(TAG, "initializeChat ${e.stackTraceToString()}")
   }
@@ -264,12 +265,13 @@ private fun DatabaseKeyField(text: MutableState<String>, enabled: Boolean, onCli
     text,
     generalGetString(MR.strings.enter_passphrase),
     isValid = ::validKey,
-    keyboardActions = KeyboardActions(onDone = if (enabled) {
+    // Don't enable this on desktop since it interfere with key event listener
+    keyboardActions = KeyboardActions(onDone = if (enabled && appPlatform.isAndroid) {
       { onClick?.invoke() }
     } else null
     ),
     modifier = Modifier.focusRequester(focusRequester).onPreviewKeyEvent {
-      if (onClick != null && it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+      if (onClick != null && (it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyUp) {
         onClick()
         true
       } else {

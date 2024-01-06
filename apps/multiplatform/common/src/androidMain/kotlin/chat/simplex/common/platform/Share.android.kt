@@ -8,15 +8,12 @@ import android.provider.MediaStore
 import android.webkit.MimeTypeMap
 import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.UriHandler
-import androidx.core.content.FileProvider
-import androidx.core.net.toUri
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.views.helpers.*
 import java.io.BufferedOutputStream
 import java.io.File
 import chat.simplex.res.MR
-import java.io.ByteArrayOutputStream
 
 actual fun ClipboardManager.shareText(text: String) {
   val sendIntent: Intent = Intent().apply {
@@ -35,7 +32,12 @@ actual fun shareFile(text: String, fileSource: CryptoFile) {
     val tmpFile = File(tmpDir, fileSource.filePath)
     tmpFile.deleteOnExit()
     ChatModel.filesToDelete.add(tmpFile)
-    decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs, tmpFile.absolutePath)
+    try {
+      decryptCryptoFile(getAppFilePath(fileSource.filePath), fileSource.cryptoArgs, tmpFile.absolutePath)
+    } catch (e: Exception) {
+      Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
+      return
+    }
     getAppFileUri(tmpFile.absolutePath)
   } else {
     getAppFileUri(fileSource.filePath)
@@ -96,15 +98,21 @@ fun saveImage(ciFile: CIFile?) {
         val outputStream = BufferedOutputStream(stream)
         if (ciFile.fileSource?.cryptoArgs != null) {
           createTmpFileAndDelete { tmpFile ->
-            decryptCryptoFile(filePath, ciFile.fileSource.cryptoArgs, tmpFile.absolutePath)
+            try {
+              decryptCryptoFile(filePath, ciFile.fileSource.cryptoArgs, tmpFile.absolutePath)
+            } catch (e: Exception) {
+              Log.e(TAG, "Unable to decrypt crypto file: " + e.stackTraceToString())
+              return@createTmpFileAndDelete
+            }
             tmpFile.inputStream().use { it.copyTo(outputStream) }
+            showToast(generalGetString(MR.strings.image_saved))
           }
           outputStream.close()
         } else {
           File(filePath).inputStream().use { it.copyTo(outputStream) }
           outputStream.close()
+          showToast(generalGetString(MR.strings.image_saved))
         }
-        showToast(generalGetString(MR.strings.image_saved))
       }
     }
   } else {

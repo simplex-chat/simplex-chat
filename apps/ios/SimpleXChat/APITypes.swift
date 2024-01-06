@@ -27,7 +27,7 @@ public enum ChatCommand {
     case apiDeleteUser(userId: Int64, delSMPQueues: Bool, viewPwd: String?)
     case startChat(subscribe: Bool, expire: Bool, xftp: Bool)
     case apiStopChat
-    case apiActivateChat
+    case apiActivateChat(restoreChat: Bool)
     case apiSuspendChat(timeoutMicroseconds: Int)
     case setTempFolder(tempFolder: String)
     case setFilesFolder(filesFolder: String)
@@ -120,6 +120,16 @@ public enum ChatCommand {
     case receiveFile(fileId: Int64, encrypted: Bool?, inline: Bool?)
     case setFileToReceive(fileId: Int64, encrypted: Bool?)
     case cancelFile(fileId: Int64)
+    // remote desktop commands
+    case setLocalDeviceName(displayName: String)
+    case connectRemoteCtrl(xrcpInvitation: String)
+    case findKnownRemoteCtrl
+    case confirmRemoteCtrl(remoteCtrlId: Int64)
+    case verifyRemoteCtrlSession(sessionCode: String)
+    case listRemoteCtrls
+    case stopRemoteCtrl
+    case deleteRemoteCtrl(remoteCtrlId: Int64)
+    // misc
     case showVersion
     case string(String)
 
@@ -146,7 +156,7 @@ public enum ChatCommand {
             case let .apiDeleteUser(userId, delSMPQueues, viewPwd): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))\(maybePwd(viewPwd))"
             case let .startChat(subscribe, expire, xftp): return "/_start subscribe=\(onOff(subscribe)) expire=\(onOff(expire)) xftp=\(onOff(xftp))"
             case .apiStopChat: return "/_stop"
-            case .apiActivateChat: return "/_app activate"
+            case let .apiActivateChat(restore): return "/_app activate restore=\(onOff(restore))"
             case let .apiSuspendChat(timeoutMicroseconds): return "/_app suspend \(timeoutMicroseconds)"
             case let .setTempFolder(tempFolder): return "/_temp_folder \(tempFolder)"
             case let .setFilesFolder(filesFolder): return "/_files_folder \(filesFolder)"
@@ -260,6 +270,14 @@ public enum ChatCommand {
             case let .receiveFile(fileId, encrypt, inline): return "/freceive \(fileId)\(onOffParam("encrypt", encrypt))\(onOffParam("inline", inline))"
             case let .setFileToReceive(fileId, encrypt): return "/_set_file_to_receive \(fileId)\(onOffParam("encrypt", encrypt))"
             case let .cancelFile(fileId): return "/fcancel \(fileId)"
+            case let .setLocalDeviceName(displayName): return "/set device name \(displayName)"
+            case let .connectRemoteCtrl(xrcpInv): return "/connect remote ctrl \(xrcpInv)"
+            case .findKnownRemoteCtrl: return "/find remote ctrl"
+            case let .confirmRemoteCtrl(rcId): return "/confirm remote ctrl \(rcId)"
+            case let .verifyRemoteCtrlSession(sessCode): return "/verify remote ctrl \(sessCode)"
+            case .listRemoteCtrls: return "/list remote ctrls"
+            case .stopRemoteCtrl: return "/stop remote ctrl"
+            case let .deleteRemoteCtrl(rcId): return "/delete remote ctrl \(rcId)"
             case .showVersion: return "/version"
             case let .string(str): return str
             }
@@ -375,6 +393,14 @@ public enum ChatCommand {
             case .receiveFile: return "receiveFile"
             case .setFileToReceive: return "setFileToReceive"
             case .cancelFile: return "cancelFile"
+            case .setLocalDeviceName: return "setLocalDeviceName"
+            case .connectRemoteCtrl: return "connectRemoteCtrl"
+            case .findKnownRemoteCtrl: return "findKnownRemoteCtrl"
+            case .confirmRemoteCtrl: return "confirmRemoteCtrl"
+            case .verifyRemoteCtrlSession: return "verifyRemoteCtrlSession"
+            case .listRemoteCtrls: return "listRemoteCtrls"
+            case .stopRemoteCtrl: return "stopRemoteCtrl"
+            case .deleteRemoteCtrl: return "deleteRemoteCtrl"
             case .showVersion: return "showVersion"
             case .string: return "console command"
             }
@@ -479,8 +505,8 @@ public enum ChatResponse: Decodable, Error {
     case invitation(user: UserRef, connReqInvitation: String, connection: PendingContactConnection)
     case connectionIncognitoUpdated(user: UserRef, toConnection: PendingContactConnection)
     case connectionPlan(user: UserRef, connectionPlan: ConnectionPlan)
-    case sentConfirmation(user: UserRef)
-    case sentInvitation(user: UserRef)
+    case sentConfirmation(user: UserRef, connection: PendingContactConnection)
+    case sentInvitation(user: UserRef, connection: PendingContactConnection)
     case sentInvitationToContact(user: UserRef, contact: Contact, customUserProfile: Profile?)
     case contactAlreadyExists(user: UserRef, contact: Contact)
     case contactRequestAlreadyAccepted(user: UserRef, contact: Contact)
@@ -578,9 +604,17 @@ public enum ChatResponse: Decodable, Error {
     case callInvitations(callInvitations: [RcvCallInvitation])
     case ntfTokenStatus(status: NtfTknStatus)
     case ntfToken(token: DeviceToken, status: NtfTknStatus, ntfMode: NotificationsMode)
-    case ntfMessages(user_: User?, connEntity: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
-    case newContactConnection(user: UserRef, connection: PendingContactConnection)
+    case ntfMessages(user_: User?, connEntity_: ConnectionEntity?, msgTs: Date?, ntfMessages: [NtfMsgInfo])
+    case ntfMessage(user: UserRef, connEntity: ConnectionEntity, ntfMessage: NtfMsgInfo)
     case contactConnectionDeleted(user: UserRef, connection: PendingContactConnection)
+    // remote desktop responses/events
+    case remoteCtrlList(remoteCtrls: [RemoteCtrlInfo])
+    case remoteCtrlFound(remoteCtrl: RemoteCtrlInfo, ctrlAppInfo_: CtrlAppInfo?, appVersion: String, compatible: Bool)
+    case remoteCtrlConnecting(remoteCtrl_: RemoteCtrlInfo?, ctrlAppInfo: CtrlAppInfo, appVersion: String)
+    case remoteCtrlSessionCode(remoteCtrl_: RemoteCtrlInfo?, sessionCode: String)
+    case remoteCtrlConnected(remoteCtrl: RemoteCtrlInfo)
+    case remoteCtrlStopped(rcsState: RemoteCtrlSessionState, rcStopReason: RemoteCtrlStopReason)
+    // misc
     case versionInfo(versionInfo: CoreVersionInfo, chatMigrations: [UpMigration], agentMigrations: [UpMigration])
     case cmdOk(user: UserRef?)
     case chatCmdError(user_: UserRef?, chatError: ChatError)
@@ -718,8 +752,14 @@ public enum ChatResponse: Decodable, Error {
             case .ntfTokenStatus: return "ntfTokenStatus"
             case .ntfToken: return "ntfToken"
             case .ntfMessages: return "ntfMessages"
-            case .newContactConnection: return "newContactConnection"
+            case .ntfMessage: return "ntfMessage"
             case .contactConnectionDeleted: return "contactConnectionDeleted"
+            case .remoteCtrlList: return "remoteCtrlList"
+            case .remoteCtrlFound: return "remoteCtrlFound"
+            case .remoteCtrlConnecting: return "remoteCtrlConnecting"
+            case .remoteCtrlSessionCode: return "remoteCtrlSessionCode"
+            case .remoteCtrlConnected: return "remoteCtrlConnected"
+            case .remoteCtrlStopped: return "remoteCtrlStopped"
             case .versionInfo: return "versionInfo"
             case .cmdOk: return "cmdOk"
             case .chatCmdError: return "chatCmdError"
@@ -763,11 +803,11 @@ public enum ChatResponse: Decodable, Error {
             case let .contactCode(u, contact, connectionCode): return withUser(u, "contact: \(String(describing: contact))\nconnectionCode: \(connectionCode)")
             case let .groupMemberCode(u, groupInfo, member, connectionCode): return withUser(u, "groupInfo: \(String(describing: groupInfo))\nmember: \(String(describing: member))\nconnectionCode: \(connectionCode)")
             case let .connectionVerified(u, verified, expectedCode): return withUser(u, "verified: \(verified)\nconnectionCode: \(expectedCode)")
-            case let .invitation(u, connReqInvitation, _): return withUser(u, connReqInvitation)
+            case let .invitation(u, connReqInvitation, connection): return withUser(u, "connReqInvitation: \(connReqInvitation)\nconnection: \(connection)")
             case let .connectionIncognitoUpdated(u, toConnection): return withUser(u, String(describing: toConnection))
             case let .connectionPlan(u, connectionPlan): return withUser(u, String(describing: connectionPlan))
-            case .sentConfirmation: return noDetails
-            case .sentInvitation: return noDetails
+            case let .sentConfirmation(u, connection): return withUser(u, String(describing: connection))
+            case let .sentInvitation(u, connection): return withUser(u, String(describing: connection))
             case let .sentInvitationToContact(u, contact, _): return withUser(u, String(describing: contact))
             case let .contactAlreadyExists(u, contact): return withUser(u, String(describing: contact))
             case let .contactRequestAlreadyAccepted(u, contact): return withUser(u, String(describing: contact))
@@ -860,8 +900,14 @@ public enum ChatResponse: Decodable, Error {
             case let .ntfTokenStatus(status): return String(describing: status)
             case let .ntfToken(token, status, ntfMode): return "token: \(token)\nstatus: \(status.rawValue)\nntfMode: \(ntfMode.rawValue)"
             case let .ntfMessages(u, connEntity, msgTs, ntfMessages): return withUser(u, "connEntity: \(String(describing: connEntity))\nmsgTs: \(String(describing: msgTs))\nntfMessages: \(String(describing: ntfMessages))")
-            case let .newContactConnection(u, connection): return withUser(u, String(describing: connection))
+            case let .ntfMessage(u, connEntity, ntfMessage): return withUser(u, "connEntity: \(String(describing: connEntity))\nntfMessage: \(String(describing: ntfMessage))")
             case let .contactConnectionDeleted(u, connection): return withUser(u, String(describing: connection))
+            case let .remoteCtrlList(remoteCtrls): return String(describing: remoteCtrls)
+            case let .remoteCtrlFound(remoteCtrl, ctrlAppInfo_, appVersion, compatible): return "remoteCtrl:\n\(String(describing: remoteCtrl))\nctrlAppInfo_:\n\(String(describing: ctrlAppInfo_))\nappVersion: \(appVersion)\ncompatible: \(compatible)"
+            case let .remoteCtrlConnecting(remoteCtrl_, ctrlAppInfo, appVersion): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nctrlAppInfo:\n\(String(describing: ctrlAppInfo))\nappVersion: \(appVersion)"
+            case let .remoteCtrlSessionCode(remoteCtrl_, sessionCode): return "remoteCtrl_:\n\(String(describing: remoteCtrl_))\nsessionCode: \(sessionCode)"
+            case let .remoteCtrlConnected(remoteCtrl): return String(describing: remoteCtrl)
+            case .remoteCtrlStopped: return noDetails
             case let .versionInfo(versionInfo, chatMigrations, agentMigrations): return "\(String(describing: versionInfo))\n\nchat migrations: \(chatMigrations.map(\.upName))\n\nagent migrations: \(agentMigrations.map(\.upName))"
             case .cmdOk: return noDetails
             case let .chatCmdError(u, chatError): return withUser(u, String(describing: chatError))
@@ -1161,9 +1207,9 @@ public struct NetCfg: Codable, Equatable {
     public static let defaults: NetCfg = NetCfg(
         socksProxy: nil,
         sessionMode: TransportSessionMode.user,
-        tcpConnectTimeout: 15_000_000,
-        tcpTimeout: 10_000_000,
-        tcpTimeoutPerKb: 30_000,
+        tcpConnectTimeout: 20_000_000,
+        tcpTimeout: 15_000_000,
+        tcpTimeoutPerKb: 45_000,
         tcpKeepAlive: KeepAliveOpts.defaults,
         smpPingInterval: 1200_000_000,
         smpPingCount: 3,
@@ -1452,6 +1498,8 @@ public enum PushProvider: String, Decodable {
     }
 }
 
+// This notification mode is for app core, UI uses AppNotificationsMode.off to mean completely disable,
+// and .local for periodic background checks
 public enum NotificationsMode: String, Decodable, SelectableItem {
     case off = "OFF"
     case periodic = "PERIODIC"
@@ -1459,9 +1507,9 @@ public enum NotificationsMode: String, Decodable, SelectableItem {
 
     public var label: LocalizedStringKey {
         switch self {
-        case .off: return "Off (Local)"
-        case .periodic: return "Periodically"
-        case .instant: return "Instantly"
+        case .off: "Local"
+        case .periodic: "Periodically"
+        case .instant: "Instantly"
         }
     }
 
@@ -1486,6 +1534,41 @@ public enum NotificationPreviewMode: String, SelectableItem {
     public var id: String { self.rawValue }
 
     public static var values: [NotificationPreviewMode] = [.message, .contact, .hidden]
+}
+
+public struct RemoteCtrlInfo: Decodable {
+    public var remoteCtrlId: Int64
+    public var ctrlDeviceName: String
+    public var sessionState: RemoteCtrlSessionState?
+
+    public var deviceViewName: String {
+        ctrlDeviceName == "" ? "\(remoteCtrlId)" : ctrlDeviceName
+    }
+}
+
+public enum RemoteCtrlSessionState: Decodable {
+    case starting
+    case searching
+    case connecting
+    case pendingConfirmation(sessionCode: String)
+    case connected(sessionCode: String)
+}
+
+public enum RemoteCtrlStopReason: Decodable {
+    case discoveryFailed(chatError: ChatError)
+    case connectionFailed(chatError: ChatError)
+    case setupFailed(chatError: ChatError)
+    case disconnected
+}
+
+public struct CtrlAppInfo: Decodable {
+    public var appVersionRange: AppVersionRange
+    public var deviceName: String
+}
+
+public struct AppVersionRange: Decodable {
+    public var minVersion: String
+    public var maxVersion: String
 }
 
 public struct CoreVersionInfo: Decodable {
@@ -1515,6 +1598,7 @@ public enum ChatError: Decodable {
     case errorAgent(agentError: AgentErrorType)
     case errorStore(storeError: StoreError)
     case errorDatabase(databaseError: DatabaseError)
+    case errorRemoteCtrl(remoteCtrlError: RemoteCtrlError)
     case invalidJSON(json: String)
 }
 
@@ -1674,6 +1758,7 @@ public enum AgentErrorType: Decodable {
     case SMP(smpErr: ProtocolErrorType)
     case NTF(ntfErr: ProtocolErrorType)
     case XFTP(xftpErr: XFTPErrorType)
+    case RCP(rcpErr: RCErrorType)
     case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
     case INTERNAL(internalErr: String)
@@ -1731,6 +1816,22 @@ public enum XFTPErrorType: Decodable {
     case INTERNAL
 }
 
+public enum RCErrorType: Decodable {
+    case `internal`(internalErr: String)
+    case identity
+    case noLocalAddress
+    case tlsStartFailed
+    case exception(exception: String)
+    case ctrlAuth
+    case ctrlNotFound
+    case ctrlError(ctrlErr: String)
+    case version
+    case encrypt
+    case decrypt
+    case blockSize
+    case syntax(syntaxErr: String)
+}
+
 public enum ProtocolCommandError: Decodable {
     case UNKNOWN
     case SYNTAX
@@ -1765,4 +1866,15 @@ public enum SMPAgentError: Decodable {
 public enum ArchiveError: Decodable {
     case `import`(chatError: ChatError)
     case importFile(file: String, chatError: ChatError)
+}
+
+public enum RemoteCtrlError: Decodable {
+    case inactive
+    case badState
+    case busy
+    case timeout
+    case disconnected(remoteCtrlId: Int64, reason: String)
+    case badInvitation
+    case badVersion(appVersion: String)
+//    case protocolError(protocolError: RemoteProtocolError)
 }

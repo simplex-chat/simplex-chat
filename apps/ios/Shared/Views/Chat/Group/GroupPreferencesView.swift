@@ -28,6 +28,7 @@ struct GroupPreferencesView: View {
                 featureSection(.reactions, $preferences.reactions.enable)
                 featureSection(.voice, $preferences.voice.enable)
                 featureSection(.files, $preferences.files.enable)
+                featureSection(.history, $preferences.history.enable)
 
                 if groupInfo.canEdit {
                     Section {
@@ -96,7 +97,6 @@ struct GroupPreferencesView: View {
             }
         } footer: {
             Text(feature.enableDescription(enableFeature.wrappedValue, groupInfo.canEdit))
-                .frame(height: 36, alignment: .topLeading)
         }
     }
 

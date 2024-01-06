@@ -11,34 +11,22 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 
 @Composable
-expect fun ScanCodeView(verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit, close: () -> Unit)
-
-@Composable
-fun ScanCodeLayout(verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit, close: () -> Unit) {
+fun ScanCodeView(verifyCode: (String?, cb: (Boolean) -> Unit) -> Unit, close: () -> Unit) {
   Column(
-    Modifier
-      .fillMaxSize()
-      .padding(horizontal = DEFAULT_PADDING)
+    Modifier.fillMaxSize()
   ) {
-    AppBarTitle(stringResource(MR.strings.scan_code), false)
-    Box(
-      Modifier
-        .fillMaxWidth()
-        .aspectRatio(ratio = 1F)
-        .padding(bottom = DEFAULT_PADDING)
-    ) {
-      QRCodeScanner { text ->
-        verifyCode(text) {
-          if (it) {
-            close()
-          } else {
-            AlertManager.shared.showAlertMsg(
-              title = generalGetString(MR.strings.incorrect_code)
-            )
-          }
+    AppBarTitle(stringResource(MR.strings.scan_code))
+    QRCodeScanner { text ->
+      verifyCode(text) {
+        if (it) {
+          close()
+        } else {
+          AlertManager.shared.showAlertMsg(
+            title = generalGetString(MR.strings.incorrect_code)
+          )
         }
       }
     }
-    Text(stringResource(MR.strings.scan_code_from_contacts_app))
+    Text(stringResource(MR.strings.scan_code_from_contacts_app), Modifier.padding(horizontal = DEFAULT_PADDING))
   }
 }

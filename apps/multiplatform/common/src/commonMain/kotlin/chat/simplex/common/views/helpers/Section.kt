@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalDensity
 import dev.icerock.moko.resources.compose.painterResource
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
 import chat.simplex.common.platform.onRightClick
@@ -202,13 +203,14 @@ fun SectionTextFooter(text: String) {
 }
 
 @Composable
-fun SectionTextFooter(text: AnnotatedString) {
+fun SectionTextFooter(text: AnnotatedString, textAlign: TextAlign = TextAlign.Start) {
   Text(
     text,
     Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF).fillMaxWidth(0.9F),
     color = MaterialTheme.colors.secondary,
     lineHeight = 18.sp,
-    fontSize = 14.sp
+    fontSize = 14.sp,
+    textAlign = textAlign
   )
 }
 

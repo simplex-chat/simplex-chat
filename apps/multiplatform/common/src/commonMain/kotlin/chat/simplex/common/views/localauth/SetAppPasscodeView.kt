@@ -5,6 +5,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import chat.simplex.common.platform.BackHandler
 import chat.simplex.common.views.helpers.DatabaseUtils
 import chat.simplex.common.views.helpers.DatabaseUtils.ksAppPassword
+import chat.simplex.common.views.helpers.DatabaseUtils.ksSelfDestructPassword
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 
@@ -48,7 +49,9 @@ fun SetAppPasscodeView(
       }
     }
   } else {
-    SetPasswordView(title, generalGetString(MR.strings.save_verb)) {
+    SetPasswordView(title, generalGetString(MR.strings.save_verb),
+      // Do not allow to set app passcode == selfDestruct passcode
+      submitEnabled = { pwd -> pwd != (if (passcodeKeychain.alias == ksSelfDestructPassword.alias) ksAppPassword else ksSelfDestructPassword).get() }) {
       enteredPassword = passcode.value
       passcode.value = ""
       confirming = true

@@ -2,10 +2,13 @@ package chat.simplex.common.platform
 
 import chat.simplex.common.model.*
 import chat.simplex.common.views.call.RcvCallInvitation
-import chat.simplex.common.views.helpers.withBGApi
+import chat.simplex.common.views.helpers.*
 import java.util.*
+import chat.simplex.res.MR
 
 actual val appPlatform = AppPlatform.DESKTOP
+
+actual val deviceName = generalGetString(MR.strings.desktop_device)
 
 @Suppress("ConstantLocale")
 val defaultLocale: Locale = Locale.getDefault()
@@ -21,10 +24,7 @@ fun initApp() {
     override fun cancelAllNotifications() = chat.simplex.common.model.NtfManager.cancelAllNotifications()
   }
   applyAppLocale()
-  withBGApi {
-    initChatController()
-    runMigrations()
-  }
+  initChatControllerAndRunMigrations(false)
   // LALAL
   //testCrypto()
 }

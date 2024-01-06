@@ -220,37 +220,3 @@ Uživatelská adresa je "dlouhodobá" v tom smyslu, že se jedná o odkaz pro v�
 Pro ostatní příkazy použijte `/help address`.
 
 ![simplex-chat](/images/user-addresses.gif)
-
-### Přístup k historii chatu
-
-SimpleX chat ukládá všechny vaše kontakty a konverzace do místní databáze SQLite, takže jsou soukromé a přenosné, vlastněné a kontrolované uživatelem.
-
-Historii chatu můžete zobrazit a prohledávat dotazem do databáze. Spusťte níže uvedený skript pro vytvoření zobrazení zpráv ve vaší databázi.
-
-```sh
-curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/scripts/message_views.sql | sqlite3 ~/.simplex/simplex_v1_chat.db
-```
-
-Otevřete SQLite Command Line Shell:
-
-```sh
-sqlite3 ~/.simplex/simplex_v1_chat.db
-```
-
-Příklady viz [Message queries](./SQL.md).
-
-> **Upozornění:** Omezení cizích klíčů SQLite jsou ve výchozím nastavení vypnuta a musí být **[povolena pro každé připojení k databázi zvlášť](https://sqlite.org/foreignkeys.html#fk_enable)**. Toho lze dosáhnout spuštěním příkazu `PRAGMA foreign_keys = ON;` na otevřeném databázovém připojení. Spouštěním dotazů měnících data bez předchozího povolení cizích klíčů můžete riskovat, že se databáze dostane do nekonzistentního stavu.
-
-**Pohodlné dotazy**
-
-Získat všechny zprávy z dnešního dne (`chat_dt` je v UTC):
-
-```sql
-select * from all_messages_plain where date(chat_dt) > date('now', '-1 day') order by chat_dt;
-```
-
-Získejte ranní noční zprávy:
-
-```sql
-select * from all_messages_plain where chat_dt > datetime('now', '-15 hours') order by chat_dt;
-```

@@ -8,7 +8,7 @@ title: App settings
 To open app settings:
 
 - Open the app.
-- Tap on your user profile image in the upper right-hand of the screen.
+- Tap on your user profile image in the upper left-hand of the screen.
 - If you have more than one profile, tap the current profile again or choose Settings.
 
 ## Your profile settings
@@ -44,6 +44,8 @@ This page allows you to create a long term address that can be used by other peo
 When people connect to you via this address, you will receive a connection request that you can accept or reject. You can configure an automatic acceptance of connection request and an automatic welcome message that will be sent to the new contacts.
 
 If you start receiving too many requests via this address it is always safe to remove it – all the connections you created via this address will remain active, as this address is not used to deliver the messages.
+
+See the comparison with [1-time invitation links](./making-connections.md#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).
 
 Read more in [this post](../../blog/20221108-simplex-chat-v4.2-security-audit-new-website.md#auto-accept-contact-requests).
 

@@ -21,8 +21,12 @@ import chat.simplex.common.model.*
 import chat.simplex.res.MR
 
 @Composable
-fun GroupPreferencesView(m: ChatModel, chatId: String, close: () -> Unit,) {
-  val groupInfo = remember { derivedStateOf { (m.getChat(chatId)?.chatInfo as? ChatInfo.Group)?.groupInfo } }
+fun GroupPreferencesView(m: ChatModel, rhId: Long?, chatId: String, close: () -> Unit,) {
+  val groupInfo = remember { derivedStateOf {
+    val ch = m.getChat(chatId)
+    val g = (ch?.chatInfo as? ChatInfo.Group)?.groupInfo
+    if (g == null || ch?.remoteHostId != rhId) null else g
+  }}
   val gInfo = groupInfo.value ?: return
   var preferences by rememberSaveable(gInfo, stateSaver = serializableSaver()) { mutableStateOf(gInfo.fullGroupPreferences) }
   var currentPreferences by rememberSaveable(gInfo, stateSaver = serializableSaver()) { mutableStateOf(preferences) }
@@ -30,9 +34,9 @@ fun GroupPreferencesView(m: ChatModel, chatId: String, close: () -> Unit,) {
   fun savePrefs(afterSave: () -> Unit = {}) {
     withApi {
       val gp = gInfo.groupProfile.copy(groupPreferences = preferences.toGroupPreferences())
-      val g = m.controller.apiUpdateGroup(gInfo.groupId, gp)
+      val g = m.controller.apiUpdateGroup(rhId, gInfo.groupId, gp)
       if (g != null) {
-        m.updateGroup(g)
+        m.updateGroup(rhId, g)
         currentPreferences = preferences
       }
       afterSave()
@@ -107,6 +111,11 @@ private fun GroupPreferencesLayout(
     val allowFiles = remember(preferences) { mutableStateOf(preferences.files.enable) }
     FeatureSection(GroupFeature.Files, allowFiles, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(files = GroupPreference(enable = it)))
+    }
+    SectionDividerSpaced(true, maxBottomPadding = false)
+    val enableHistory = remember(preferences) { mutableStateOf(preferences.history.enable) }
+    FeatureSection(GroupFeature.History, enableHistory, groupInfo, preferences, onTTLUpdated) {
+      applyPrefs(preferences.copy(history = GroupPreference(enable = it)))
     }
     if (groupInfo.canEdit) {
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)

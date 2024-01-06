@@ -52,7 +52,7 @@ struct LocalAuthView: View {
                 resetChatCtrl()
                 try initializeChat(start: true)
                 m.chatDbChanged = false
-                appStateGroupDefault.set(.active)
+                AppChatState.shared.set(.active)
                 if m.currentUser != nil { return }
                 var profile: Profile? = nil
                 if let displayName = displayName, displayName != "" {

@@ -53,17 +53,21 @@ getKey =
 runInputLoop :: ChatTerminal -> ChatController -> IO ()
 runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
   s <- atomically . readTBQueue $ inputQ cc
+  rh <- readTVarIO $ currentRemoteHost cc
   let bs = encodeUtf8 $ T.pack s
       cmd = parseChatCommand bs
+      rh' = if either (const False) allowRemoteCommand cmd then rh else Nothing
   unless (isMessage cmd) $ echo s
-  r <- runReaderT (execChatCommand bs) cc
-  processResp s cmd r
-  printRespToTerminal ct cc False r
+  r <- runReaderT (execChatCommand rh' bs) cc
+  processResp s cmd rh r
+  printRespToTerminal ct cc False rh r
   startLiveMessage cmd r
   where
     echo s = printToTerminal ct [plain s]
-    processResp s cmd = \case
-      CRActiveUser _ -> setActive ct ""
+    processResp s cmd rh = \case
+      CRActiveUser u -> case rh of
+        Nothing -> setActive ct ""
+        Just rhId -> updateRemoteUser ct u rhId
       CRChatItems u chatName_ _ -> whenCurrUser cc u $ mapM_ (setActive ct . chatActiveTo) chatName_
       CRNewChatItem u (AChatItem _ SMDSnd cInfo _) -> whenCurrUser cc u $ setActiveChat ct cInfo
       CRChatItemUpdated u (AChatItem _ SMDSnd cInfo _) -> whenCurrUser cc u $ setActiveChat ct cInfo
@@ -146,7 +150,7 @@ runTerminalInput ct cc = withChatTerm ct $ do
   receiveFromTTY cc ct
 
 receiveFromTTY :: forall m. MonadTerminal m => ChatController -> ChatTerminal -> m ()
-receiveFromTTY cc@ChatController {inputQ, currentUser, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState, activeTo} =
+receiveFromTTY cc@ChatController {inputQ, currentUser, currentRemoteHost, chatStore} ct@ChatTerminal {termSize, termState, liveMessageState, activeTo} =
   forever $ getKey >>= liftIO . processKey >> withTermLock ct (updateInput ct)
   where
     processKey :: (Key, Modifiers) -> IO ()
@@ -178,7 +182,8 @@ receiveFromTTY cc@ChatController {inputQ, currentUser, chatStore} ct@ChatTermina
       kill promptThreadId
       atomically $ writeTVar liveMessageState Nothing
       r <- sendUpdatedLiveMessage cc sentMsg lm False
-      printRespToTerminal ct cc False r
+      rh <- readTVarIO currentRemoteHost -- XXX: should be inherited from live message state
+      printRespToTerminal ct cc False rh r
       where
         kill sel = deRefWeak (sel lm) >>= mapM_ killThread
 
@@ -189,19 +194,19 @@ receiveFromTTY cc@ChatController {inputQ, currentUser, chatStore} ct@ChatTermina
       case lm_ of
         Just LiveMessage {chatName}
           | live -> do
-            writeTVar termState ts' {previousInput}
-            writeTBQueue inputQ $ "/live " <> chatNameStr chatName
+              writeTVar termState ts' {previousInput}
+              writeTBQueue inputQ $ "/live " <> chatNameStr chatName
           | otherwise ->
-            writeTVar termState ts' {inputPrompt = "> ", previousInput}
+              writeTVar termState ts' {inputPrompt = "> ", previousInput}
           where
             previousInput = chatNameStr chatName <> " " <> s
         _
           | live -> when (isSend s) $ do
-            writeTVar termState ts' {previousInput = s}
-            writeTBQueue inputQ $ "/live " <> s
+              writeTVar termState ts' {previousInput = s}
+              writeTBQueue inputQ $ "/live " <> s
           | otherwise -> do
-            writeTVar termState ts' {inputPrompt = "> ", previousInput = s}
-            writeTBQueue inputQ s
+              writeTVar termState ts' {inputPrompt = "> ", previousInput = s}
+              writeTBQueue inputQ s
       pure $ (s,) <$> lm_
       where
         isSend s = length s > 1 && (head s == '@' || head s == '#')
@@ -338,9 +343,9 @@ updateTermState user_ st chatPrefix live tw (key, ms) ts@TerminalState {inputStr
     charsWithContact cs
       | live = cs
       | null s && cs /= "@" && cs /= "#" && cs /= "/" && cs /= ">" && cs /= "\\" && cs /= "!" && cs /= "+" && cs /= "-" =
-        chatPrefix <> cs
+          chatPrefix <> cs
       | (s == ">" || s == "\\" || s == "!") && cs == " " =
-        cs <> chatPrefix
+          cs <> chatPrefix
       | otherwise = cs
     insertChars = ts' . if p >= length s then append else insert
     append cs = let s' = s <> cs in (s', length s')
@@ -376,13 +381,13 @@ updateTermState user_ st chatPrefix live tw (key, ms) ts@TerminalState {inputStr
     prevWordPos
       | p == 0 || null s = p
       | otherwise =
-        let before = take p s
-            beforeWord = dropWhileEnd (/= ' ') $ dropWhileEnd (== ' ') before
-         in max 0 $ p - length before + length beforeWord
+          let before = take p s
+              beforeWord = dropWhileEnd (/= ' ') $ dropWhileEnd (== ' ') before
+           in max 0 $ p - length before + length beforeWord
     nextWordPos
       | p >= length s || null s = p
       | otherwise =
-        let after = drop p s
-            afterWord = dropWhile (/= ' ') $ dropWhile (== ' ') after
-         in min (length s) $ p + length after - length afterWord
+          let after = drop p s
+              afterWord = dropWhile (/= ' ') $ dropWhile (== ' ') after
+           in min (length s) $ p + length after - length afterWord
     ts' (s', p') = ts {inputString = s', inputPosition = p', autoComplete = acp {acTabPressed = False}}

@@ -112,8 +112,6 @@
     <string name="both_you_and_your_contact_can_add_message_reactions">ทั้งคุณและผู้ติดต่อของคุณสามารถเพิ่มปฏิกิริยาต่อข้อความได้</string>
     <string name="both_you_and_your_contacts_can_delete">ทั้งคุณและผู้ติดต่อของคุณสามารถลบข้อความที่ส่งแล้วอย่างถาวรได้</string>
     <string name="use_camera_button">กล้อง</string>
-    <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b> เพิ่มผู้ติดต่อใหม่ </b>: เพื่อสร้างรหัส QR แบบใช้ครั้งเดียวสําหรับผู้ติดต่อของคุณ]]></string>
-    <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>สแกนรหัส QR</b>: เพื่อเชื่อมต่อกับผู้ติดต่อที่แสดงรหัส QR ให้คุณ]]></string>
     <string name="learn_more_about_address">เกี่ยวกับที่อยู่ SimpleX</string>
     <string name="bold_text">ตัวหนา</string>
     <string name="callstatus_calling">กำลังโทร…</string>
@@ -205,7 +203,6 @@
     <string name="icon_descr_close_button">ปุ่มปิด</string>
     <string name="connect_button">เชื่อมต่อ</string>
     <string name="connect_via_link">เชื่อมต่อผ่านลิงก์</string>
-    <string name="create_one_time_link">สร้างลิงก์เชิญแบบใช้ครั้งเดียว</string>
     <string name="clear_verification">ล้างการยืนยัน</string>
     <string name="chat_console">คอนโซลแชท</string>
     <string name="smp_servers_check_address">ตรวจสอบที่อยู่เซิร์ฟเวอร์แล้วลองอีกครั้ง</string>
@@ -1159,8 +1156,6 @@
     <string name="theme_colors_section_title">สีของธีม</string>
     <string name="your_contacts_will_remain_connected">ผู้ติดต่อของคุณจะยังคงเชื่อมต่ออยู่</string>
     <string name="you_can_create_it_later">คุณสามารถสร้างได้ในภายหลัง</string>
-    <string name="your_contacts_will_see_it">ผู้ติดต่อของคุณใน SimpleX จะเห็น
-\nคุณสามารถเปลี่ยนได้ในการตั้งค่า</string>
     <string name="you_control_your_chat">คุณเป็นผู้ควบคุมการแชทของคุณ!</string>
     <string name="profile_is_only_shared_with_your_contacts">โปรไฟล์นี้แชร์กับผู้ติดต่อของคุณเท่านั้น</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">เราไม่เก็บผู้ติดต่อหรือข้อความของคุณ (เมื่อส่งแล้ว) ไว้บนเซิร์ฟเวอร์</string>

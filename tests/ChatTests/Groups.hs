@@ -7,12 +7,15 @@ import ChatClient
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad (when)
+import Control.Monad (void, when)
+import qualified Data.ByteString as B
+import Data.List (isInfixOf)
 import qualified Data.Text as T
-import Simplex.Chat.Controller (ChatConfig (..))
+import Simplex.Chat.Controller (ChatConfig (..), XFTPFileConfig (..))
 import Simplex.Chat.Protocol (supportedChatVRange)
 import Simplex.Chat.Store (agentStoreFile, chatStoreFile)
 import Simplex.Chat.Types (GroupMemberRole (..))
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Version
 import System.Directory (copyFile)
 import System.FilePath ((</>))
@@ -21,8 +24,9 @@ import Test.Hspec
 chatGroupTests :: SpecWith FilePath
 chatGroupTests = do
   describe "chat groups" $ do
-    it "add contacts, create group and send/receive messages" testGroup
-    it "add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
+    describe "add contacts, create group and send/receive messages" testGroupMatrix
+    it "v1: add contacts, create group and send/receive messages" testGroup
+    it "v1: add contacts, create group and send/receive messages, check messages" testGroupCheckMessages
     it "create group with incognito membership" testNewGroupIncognito
     it "create and join group with 4 members" testGroup2
     it "create and delete group" testGroupDelete
@@ -66,6 +70,8 @@ chatGroupTests = do
     it "re-join existing group after leaving" testPlanGroupLinkLeaveRejoin
   describe "group links without contact" $ do
     it "join via group link without creating contact" testGroupLinkNoContact
+    it "invitees were previously connected as contacts" testGroupLinkNoContactInviteesWereConnected
+    it "all members were previously connected as contacts" testGroupLinkNoContactAllMembersWereConnected
     it "group link member role" testGroupLinkNoContactMemberRole
     it "host incognito" testGroupLinkNoContactHostIncognito
     it "invitee incognito" testGroupLinkNoContactInviteeIncognito
@@ -103,6 +109,29 @@ chatGroupTests = do
     it "invited member replaces member contact reference if it already exists" testMemberContactInvitedConnectionReplaced
     it "share incognito profile" testMemberContactIncognito
     it "sends and updates profile when creating contact" testMemberContactProfileUpdate
+  describe "group message forwarding" $ do
+    it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForward
+    it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
+    it "forward message edit (x.msg.update)" testGroupMsgForwardEdit
+    it "forward message reaction (x.msg.react)" testGroupMsgForwardReaction
+    it "forward message deletion (x.msg.del)" testGroupMsgForwardDeletion
+    it "forward file (x.msg.file.descr)" testGroupMsgForwardFile
+    it "forward role change (x.grp.mem.role)" testGroupMsgForwardChangeRole
+    it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
+  describe "group history" $ do
+    it "text messages" testGroupHistory
+    it "history is sent when joining via group link" testGroupHistoryGroupLink
+    it "history is not sent if preference is disabled" testGroupHistoryPreferenceOff
+    it "host's file" testGroupHistoryHostFile
+    it "member's file" testGroupHistoryMemberFile
+    it "large file with text" testGroupHistoryLargeFile
+    it "multiple files" testGroupHistoryMultipleFiles
+    it "cancelled files are not attached (text message is still sent)" testGroupHistoryFileCancel
+    it "cancelled files without text are excluded" testGroupHistoryFileCancelNoText
+    it "quoted messages" testGroupHistoryQuotes
+    it "deleted message is not included" testGroupHistoryDeletedMessage
+    it "disappearing message is sent as disappearing" testGroupHistoryDisappearingMessage
+    it "welcome message (group description) is sent after history" testGroupHistoryWelcomeMessage
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -110,7 +139,8 @@ chatGroupTests = do
     -- because host uses current code and sends version in MemberInfo
     testNoDirect vrMem2 vrMem3 noConns =
       it
-        ( "host " <> vRangeStr supportedChatVRange
+        ( "host "
+            <> vRangeStr supportedChatVRange
             <> (", 2nd mem " <> vRangeStr vrMem2)
             <> (", 3rd mem " <> vRangeStr vrMem3)
             <> (if noConns then " : 2 <!!> 3" else " : 2 <##> 3")
@@ -120,15 +150,19 @@ chatGroupTests = do
 testGroup :: HasCallStack => FilePath -> IO ()
 testGroup =
   testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
-    \alice bob cath -> testGroupShared alice bob cath False
+    \alice bob cath -> testGroupShared alice bob cath False True
 
 testGroupCheckMessages :: HasCallStack => FilePath -> IO ()
 testGroupCheckMessages =
   testChatCfg3 testCfgCreateGroupDirect aliceProfile bobProfile cathProfile $
-    \alice bob cath -> testGroupShared alice bob cath True
+    \alice bob cath -> testGroupShared alice bob cath True True
 
-testGroupShared :: HasCallStack => TestCC -> TestCC -> TestCC -> Bool -> IO ()
-testGroupShared alice bob cath checkMessages = do
+testGroupMatrix :: SpecWith FilePath
+testGroupMatrix =
+  versionTestMatrix3 $ \alice bob cath -> testGroupShared alice bob cath False False
+
+testGroupShared :: HasCallStack => TestCC -> TestCC -> TestCC -> Bool -> Bool -> IO ()
+testGroupShared alice bob cath checkMessages directConnections = do
   connectUsers alice bob
   connectUsers alice cath
   alice ##> "/g team"
@@ -180,7 +214,8 @@ testGroupShared alice bob cath checkMessages = do
     (alice <# "#team cath> hey team")
     (bob <# "#team cath> hey team")
   msgItem2 <- lastItemId alice
-  bob <##> cath
+  when directConnections $
+    bob <##> cath
   when checkMessages $ getReadChats msgItem1 msgItem2
   -- list groups
   alice ##> "/gs"
@@ -237,17 +272,34 @@ testGroupShared alice bob cath checkMessages = do
     (cath </)
   cath ##> "#team hello"
   cath <## "you are no longer a member of the group"
-  bob <##> cath
+  when directConnections $
+    bob <##> cath
   -- delete contact
   alice ##> "/d bob"
   alice <## "bob: contact is deleted"
   bob <## "alice (Alice) deleted contact with you"
   alice `send` "@bob hey"
-  alice
-    <### [ "@bob hey",
-           "member #team bob does not have direct connection, creating",
-           "peer chat protocol version range incompatible"
-         ]
+  if directConnections
+    then
+      alice
+        <### [ "@bob hey",
+               "member #team bob does not have direct connection, creating",
+               "peer chat protocol version range incompatible"
+             ]
+    else do
+      alice
+        <### [ WithTime "@bob hey",
+               "member #team bob does not have direct connection, creating",
+               "contact for member #team bob is created",
+               "sent invitation to connect directly to member #team bob",
+               "bob (Bob): contact is connected"
+             ]
+      bob
+        <### [ "#team alice is creating direct contact alice with you",
+               WithTime "alice> hey",
+               "alice: security code changed",
+               "alice (Alice): contact is connected"
+             ]
   when checkMessages $ threadDelay 1000000
   alice #> "#team checking connection"
   bob <# "#team alice> checking connection"
@@ -1434,6 +1486,7 @@ testGroupDescription = testChat4 aliceProfile bobProfile cathProfile danProfile 
       alice <## "Message reactions: on"
       alice <## "Voice messages: on"
       alice <## "Files and media: on"
+      alice <## "Recent history: on"
     bobAddedDan :: HasCallStack => TestCC -> IO ()
     bobAddedDan cc = do
       cc <## "#team: bob added dan (Daniel) to the group (connecting...)"
@@ -1522,6 +1575,13 @@ testGroupDelayedModeration tmp = do
           cath <## "#team: you joined the group"
         ]
       threadDelay 1000000
+
+      -- imitate not implemented group forwarding
+      -- (real client wouldn't have forwarding code, but tests use "current code" with configured version,
+      -- and forwarding client doesn't check compatibility)
+      void $ withCCTransaction alice $ \db ->
+        DB.execute_ db "UPDATE group_member_intros SET intro_status='con'"
+
       cath #> "#team hi" -- message is pending for bob
       alice <# "#team cath> hi"
       alice ##> "\\\\ #team @cath hi"
@@ -1561,6 +1621,13 @@ testGroupDelayedModerationFullDelete tmp = do
           cath <## "#team: you joined the group"
         ]
       threadDelay 1000000
+
+      -- imitate not implemented group forwarding
+      -- (real client wouldn't have forwarding code, but tests use "current code" with configured version,
+      -- and forwarding client doesn't check compatibility)
+      void $ withCCTransaction alice $ \db ->
+        DB.execute_ db "UPDATE group_member_intros SET intro_status='con'"
+
       cath #> "#team hi" -- message is pending for bob
       alice <# "#team cath> hi"
       alice ##> "\\\\ #team @cath hi"
@@ -2592,11 +2659,16 @@ testPlanGroupLinkLeaveRejoin =
 
 testGroupLinkNoContact :: HasCallStack => FilePath -> IO ()
 testGroupLinkNoContact =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
+
+      alice ##> "/set history #team off"
+      alice <## "updated group preferences:"
+      alice <## "Recent history: off"
+
       alice ##> "/create link #team"
       gLink <- getGroupLink alice "team" GRMember True
       bob ##> ("/c " <> gLink)
@@ -2610,7 +2682,7 @@ testGroupLinkNoContact =
         ]
 
       threadDelay 100000
-      alice #$> ("/_get chat #1 count=100", chat, [(0, "invited via your group link"), (0, "connected")])
+      alice #$> ("/_get chat #1 count=100", chat, [(1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
 
       alice @@@ [("#team", "connected")]
       bob @@@ [("#team", "connected")]
@@ -2622,10 +2694,196 @@ testGroupLinkNoContact =
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
 
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      concurrentlyN_
+        [ do
+            alice <## "cath (Catherine): accepting request to join group #team..."
+            alice <## "#team: cath joined the group",
+          do
+            cath <## "#team: joining the group..."
+            cath <## "#team: you joined the group"
+            cath <## "#team: member bob (Bob) is connected",
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath #> "#team hey"
+      alice <# "#team cath> hey"
+      bob <# "#team cath> hey"
+
+      bob #> "#team hi cath"
+      alice <# "#team bob> hi cath"
+      cath <# "#team bob> hi cath"
+
+testGroupLinkNoContactInviteesWereConnected :: HasCallStack => FilePath -> IO ()
+testGroupLinkNoContactInviteesWereConnected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers bob cath
+      bob <##> cath
+
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+
+      alice ##> "/set history #team off"
+      alice <## "updated group preferences:"
+      alice <## "Recent history: off"
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+        ]
+
+      threadDelay 100000
+      alice #$> ("/_get chat #1 count=100", chat, [(1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
+
+      alice @@@ [("#team", "connected")]
+      bob @@@ [("#team", "connected"), ("@cath", "hey")]
+      alice ##> "/contacts"
+      bob ##> "/contacts"
+      bob <## "cath (Catherine)"
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      concurrentlyN_
+        [ do
+            alice <## "cath (Catherine): accepting request to join group #team..."
+            alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   "#team: member bob_1 (Bob) is connected",
+                   "contact and member are merged: bob, #team bob_1",
+                   "use @bob <message> to send messages"
+                 ],
+          bob
+            <### [ "#team: alice added cath_1 (Catherine) to the group (connecting...)",
+                   "#team: new member cath_1 is connected",
+                   "contact and member are merged: cath, #team cath_1",
+                   "use @cath <message> to send messages"
+                 ]
+        ]
+
+      -- message delivery works
+      bob <##> cath
+
+      alice #> "#team 1"
+      [bob, cath] *<# "#team alice> 1"
+      bob #> "#team 2"
+      [alice, cath] *<# "#team bob> 2"
+      cath #> "#team 3"
+      [alice, bob] *<# "#team cath> 3"
+
+testGroupLinkNoContactAllMembersWereConnected :: HasCallStack => FilePath -> IO ()
+testGroupLinkNoContactAllMembersWereConnected =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      connectUsers alice bob
+      alice <##> bob
+      connectUsers alice cath
+      alice <##> cath
+      connectUsers bob cath
+      bob <##> cath
+
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+
+      alice ##> "/set history #team off"
+      alice <## "updated group preferences:"
+      alice <## "Recent history: off"
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      bob ##> ("/c " <> gLink)
+      bob <## "connection request sent!"
+      alice <## "bob_1 (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ do
+            alice <## "#team: bob_1 joined the group"
+            alice <## "contact and member are merged: bob, #team bob_1"
+            alice <## "use @bob <message> to send messages",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+            bob <## "contact and member are merged: alice, #team alice_1"
+            bob <## "use @alice <message> to send messages"
+        ]
+
+      threadDelay 100000
+      alice #$> ("/_get chat #1 count=100", chat, [(1, "Recent history: off"), (0, "invited via your group link"), (0, "connected")])
+
+      alice @@@ [("#team", "connected"), ("@bob", "hey"), ("@cath", "hey")]
+      bob @@@ [("#team", "connected"), ("@alice", "hey"), ("@cath", "hey")]
+      alice ##> "/contacts"
+      alice <## "bob (Bob)"
+      alice <## "cath (Catherine)"
+      bob ##> "/contacts"
+      bob <## "alice (Alice)"
+      bob <## "cath (Catherine)"
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      concurrentlyN_
+        [ alice
+            <### [ "cath_1 (Catherine): accepting request to join group #team...",
+                   "#team: cath_1 joined the group",
+                   "contact and member are merged: cath, #team cath_1",
+                   "use @cath <message> to send messages"
+                 ],
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   "#team: member bob_1 (Bob) is connected",
+                   "contact and member are merged: bob, #team bob_1",
+                   "use @bob <message> to send messages",
+                   "contact and member are merged: alice, #team alice_1",
+                   "use @alice <message> to send messages"
+                 ],
+          bob
+            <### [ "#team: alice added cath_1 (Catherine) to the group (connecting...)",
+                   "#team: new member cath_1 is connected",
+                   "contact and member are merged: cath, #team cath_1",
+                   "use @cath <message> to send messages"
+                 ]
+        ]
+
+      -- message delivery works
+      alice <##> bob
+      alice <##> cath
+      bob <##> cath
+
+      alice #> "#team 1"
+      [bob, cath] *<# "#team alice> 1"
+      bob #> "#team 2"
+      [alice, cath] *<# "#team bob> 2"
+      cath #> "#team 3"
+      [alice, bob] *<# "#team cath> 3"
+
 testGroupLinkNoContactMemberRole :: HasCallStack => FilePath -> IO ()
 testGroupLinkNoContactMemberRole =
-  testChat2 aliceProfile bobProfile $
-    \alice bob -> do
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
       alice ##> "/g team"
       alice <## "group #team is created"
       alice <## "to add members use /a team <name> or /create link #team"
@@ -2664,6 +2922,43 @@ testGroupLinkNoContactMemberRole =
 
       bob #> "#team hey now"
       alice <# "#team bob> hey now"
+
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      concurrentlyN_
+        [ do
+            alice <## "cath (Catherine): accepting request to join group #team..."
+            alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   WithTime "#team bob> hey now [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+      bob #> "#team hi cath"
+      alice <# "#team bob> hi cath"
+      cath <# "#team bob> hi cath"
+
+      cath ##> "#team hey"
+      cath <## "#team: you don't have permission to send messages"
+
+      alice ##> "/mr #team cath admin"
+      alice <## "#team: you changed the role of cath from observer to admin"
+      cath <## "#team: alice changed your role from observer to admin"
+      bob <## "#team: alice changed the role of cath from observer to admin"
+
+      cath #> "#team hey"
+      alice <# "#team cath> hey"
+      bob <# "#team cath> hey"
+
+      cath ##> "/mr #team bob admin"
+      cath <## "#team: you changed the role of bob from member to admin"
+      bob <## "#team: cath changed your role from member to admin"
+      alice <## "#team: cath changed the role of bob from member to admin"
 
 testGroupLinkNoContactHostIncognito :: HasCallStack => FilePath -> IO ()
 testGroupLinkNoContactHostIncognito =
@@ -3644,9 +3939,9 @@ testMemberContactProhibitedRepeatInv =
 
 testMemberContactInvitedConnectionReplaced :: HasCallStack => FilePath -> IO ()
 testMemberContactInvitedConnectionReplaced tmp = do
-  withNewTestChat tmp "alice" aliceProfile $ \a -> withTestOutput a $ \alice -> do
-    withNewTestChat tmp "bob" bobProfile $ \b -> withTestOutput b $ \bob -> do
-      withNewTestChat tmp "cath" cathProfile $ \c -> withTestOutput c $ \cath -> do
+  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+    withNewTestChat tmp "bob" bobProfile $ \bob -> do
+      withNewTestChat tmp "cath" cathProfile $ \cath -> do
         createGroup3 "team" alice bob cath
 
         alice ##> "/d bob"
@@ -3833,11 +4128,9 @@ testMemberContactProfileUpdate =
       bob #> "#team hello too"
       alice <# "#team rob> hello too"
       cath <# "#team bob> hello too" -- not updated profile
-
       cath #> "#team hello there"
       alice <# "#team kate> hello there"
       bob <# "#team cath> hello there" -- not updated profile
-
       bob `send` "@cath hi"
       bob
         <### [ "member #team cath does not have direct connection, creating",
@@ -3877,7 +4170,1012 @@ testMemberContactProfileUpdate =
       bob #> "#team hello too"
       alice <# "#team rob> hello too"
       cath <# "#team rob> hello too" -- updated profile
-
       cath #> "#team hello there"
       alice <# "#team kate> hello there"
       bob <# "#team kate> hello there" -- updated profile
+
+testGroupMsgForward :: HasCallStack => FilePath -> IO ()
+testGroupMsgForward =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      setupGroupForwarding3 "team" alice bob cath
+
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
+
+      threadDelay 1000000
+
+      cath #> "#team hey team"
+      alice <# "#team cath> hey team"
+      bob <# "#team cath> hey team [>>]"
+
+      alice ##> "/tail #team 2"
+      alice <# "#team bob> hi there"
+      alice <# "#team cath> hey team"
+
+      bob ##> "/tail #team 2"
+      bob <# "#team hi there"
+      bob <# "#team cath> hey team [>>]"
+
+      cath ##> "/tail #team 2"
+      cath <# "#team bob> hi there [>>]"
+      cath <# "#team hey team"
+
+setupGroupForwarding3 :: String -> TestCC -> TestCC -> TestCC -> IO ()
+setupGroupForwarding3 gName alice bob cath = do
+  createGroup3 gName alice bob cath
+
+  threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
+  void $ withCCTransaction bob $ \db ->
+    DB.execute_ db "UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3"
+  void $ withCCTransaction cath $ \db ->
+    DB.execute_ db "UPDATE connections SET conn_status='deleted' WHERE group_member_id = 3"
+  void $ withCCTransaction alice $ \db ->
+    DB.execute_ db "UPDATE group_member_intros SET intro_status='fwd'"
+
+testGroupMsgForwardDeduplicate :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardDeduplicate =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
+      void $ withCCTransaction alice $ \db ->
+        DB.execute_ db "UPDATE group_member_intros SET intro_status='fwd'"
+
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath
+        <### [ Predicate ("#team bob> hi there" `isInfixOf`),
+               StartsWith "duplicate group message, group id: 1"
+             ]
+
+      threadDelay 1000000
+
+      -- cath sends x.grp.mem.con on deduplication, so alice doesn't forward anymore
+
+      cath #> "#team hey team"
+      alice <# "#team cath> hey team"
+      bob <# "#team cath> hey team"
+
+      alice ##> "/tail #team 2"
+      alice <# "#team bob> hi there"
+      alice <# "#team cath> hey team"
+
+      bob ##> "/tail #team 2"
+      bob <# "#team hi there"
+      bob <# "#team cath> hey team"
+
+      cath ##> "/tail #team 2"
+      cath <#. "#team bob> hi there"
+      cath <# "#team hey team"
+
+testGroupMsgForwardEdit :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardEdit =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      setupGroupForwarding3 "team" alice bob cath
+
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
+
+      bob ##> "! #team hello there"
+      bob <# "#team [edited] hello there"
+      alice <# "#team bob> [edited] hello there"
+      cath <# "#team bob> [edited] hello there" -- TODO show as forwarded
+      alice ##> "/tail #team 1"
+      alice <# "#team bob> hello there"
+
+      bob ##> "/tail #team 1"
+      bob <# "#team hello there"
+
+      cath ##> "/tail #team 1"
+      cath <# "#team bob> hello there [>>]"
+
+testGroupMsgForwardReaction :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardReaction =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      setupGroupForwarding3 "team" alice bob cath
+
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
+
+      cath ##> "+1 #team hi there"
+      cath <## "added 👍"
+      alice <# "#team cath> > bob hi there"
+      alice <## "    + 👍"
+      bob <# "#team cath> > bob hi there"
+      bob <## "    + 👍"
+
+testGroupMsgForwardDeletion :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardDeletion =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      setupGroupForwarding3 "team" alice bob cath
+
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
+
+      bob ##> "\\ #team hi there"
+      bob <## "message marked deleted"
+      alice <# "#team bob> [marked deleted] hi there"
+      cath <# "#team bob> [marked deleted] hi there" -- TODO show as forwarded
+
+testGroupMsgForwardFile :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardFile =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      setupGroupForwarding3 "team" alice bob cath
+
+      bob #> "/f #team ./tests/fixtures/test.jpg"
+      bob <## "use /fc 1 to cancel sending"
+      bob <## "completed uploading file 1 (test.jpg) for #team"
+      concurrentlyN_
+        [ do
+            alice <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            alice <## "use /fr 1 [<dir>/ | <path>] to receive it",
+          do
+            cath <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+            cath <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+        ]
+      cath ##> "/fr 1 ./tests/tmp"
+      cath <## "saving file 1 from bob to ./tests/tmp/test.jpg"
+      cath <## "started receiving file 1 (test.jpg) from bob"
+      cath <## "completed receiving file 1 (test.jpg) from bob"
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testGroupMsgForwardChangeRole :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardChangeRole =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      setupGroupForwarding3 "team" alice bob cath
+
+      cath ##> "/mr #team bob member"
+      cath <## "#team: you changed the role of bob from admin to member"
+      alice <## "#team: cath changed the role of bob from admin to member"
+      bob <## "#team: cath changed your role from admin to member" -- TODO show as forwarded
+
+testGroupMsgForwardNewMember :: HasCallStack => FilePath -> IO ()
+testGroupMsgForwardNewMember =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      setupGroupForwarding3 "team" alice bob cath
+
+      connectUsers cath dan
+      cath ##> "/a #team dan"
+      cath <## "invitation to join the group #team sent to dan"
+      dan <## "#team: cath invites you to join the group as member"
+      dan <## "use /j team to accept"
+      dan ##> "/j #team"
+      dan <## "#team: you joined the group"
+      concurrentlyN_
+        [ cath <## "#team: dan joined the group",
+          do
+            alice <## "#team: cath added dan (Daniel) to the group (connecting...)"
+            alice <## "#team: new member dan is connected",
+          -- bob will not connect to dan, as introductions are not forwarded (yet?)
+          bob <## "#team: cath added dan (Daniel) to the group (connecting...)", -- TODO show as forwarded
+          dan <## "#team: member alice (Alice) is connected"
+        ]
+
+      dan #> "#team hello all"
+      alice <# "#team dan> hello all"
+      -- bob <# "#team dan> hello all [>>]"
+      cath <# "#team dan> hello all"
+
+      bob #> "#team hi all"
+      alice <# "#team bob> hi all"
+      cath <# "#team bob> hi all [>>]"
+      -- dan <# "#team bob> hi all [>>]"
+
+      bob ##> "/ms team"
+      bob
+        <### [ "alice (Alice): owner, host, connected",
+               "bob (Bob): admin, you, connected",
+               "cath (Catherine): admin, connected",
+               "dan (Daniel): member"
+             ]
+
+testGroupHistory :: HasCallStack => FilePath -> IO ()
+testGroupHistory =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      threadDelay 1000000
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+
+      threadDelay 1000000
+
+      bob #> "#team hey!"
+      alice <# "#team bob> hey!"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> hello [>>]",
+                   WithTime "#team bob> hey! [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine cath
+      r `shouldContain` [(0, "hello"), (0, "hey!")]
+
+      -- message delivery works after sending history
+      alice #> "#team 1"
+      [bob, cath] *<# "#team alice> 1"
+      bob #> "#team 2"
+      [alice, cath] *<# "#team bob> 2"
+      cath #> "#team 3"
+      [alice, bob] *<# "#team cath> 3"
+
+testGroupHistoryGroupLink :: HasCallStack => FilePath -> IO ()
+testGroupHistoryGroupLink =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      threadDelay 1000000
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+
+      threadDelay 1000000
+
+      bob #> "#team hey!"
+      alice <# "#team bob> hey!"
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+
+      cath ##> ("/c " <> gLink)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: joining the group...",
+                   "#team: you joined the group",
+                   WithTime "#team alice> hello [>>]",
+                   WithTime "#team bob> hey! [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine cath
+      r `shouldContain` [(0, "hello"), (0, "hey!")]
+
+      -- message delivery works after sending history
+      alice #> "#team 1"
+      [bob, cath] *<# "#team alice> 1"
+      bob #> "#team 2"
+      [alice, cath] *<# "#team bob> 2"
+      cath #> "#team 3"
+      [alice, bob] *<# "#team cath> 3"
+
+testGroupHistoryPreferenceOff :: HasCallStack => FilePath -> IO ()
+testGroupHistoryPreferenceOff =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup2 "team" alice bob
+
+      threadDelay 1000000
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+
+      threadDelay 1000000
+
+      bob #> "#team hey!"
+      alice <# "#team bob> hey!"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> hello [>>]",
+                   WithTime "#team bob> hey! [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine cath
+      r `shouldContain` [(0, "hello"), (0, "hey!")]
+
+      alice ##> "/set history #team off"
+      alice <## "updated group preferences:"
+      alice <## "Recent history: off"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team:"
+            bob <## "updated group preferences:"
+            bob <## "Recent history: off",
+          do
+            cath <## "alice updated group #team:"
+            cath <## "updated group preferences:"
+            cath <## "Recent history: off"
+        ]
+
+      connectUsers alice dan
+      addMember "team" alice dan GRAdmin
+      dan ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: dan joined the group",
+          do
+            dan <## "#team: you joined the group"
+            dan
+              <### [ "#team: member bob (Bob) is connected",
+                     "#team: member cath (Catherine) is connected"
+                   ],
+          aliceAddedDan bob,
+          aliceAddedDan cath
+        ]
+
+      dan ##> "/_get chat #1 count=100"
+      r' <- chat <$> getTermLine dan
+      r' `shouldNotContain` [(0, "hello")]
+      r' `shouldNotContain` [(0, "hey!")]
+
+      -- message delivery works
+      alice #> "#team 1"
+      [bob, cath, dan] *<# "#team alice> 1"
+      bob #> "#team 2"
+      [alice, cath, dan] *<# "#team bob> 2"
+      cath #> "#team 3"
+      [alice, bob, dan] *<# "#team cath> 3"
+      dan #> "#team 4"
+      [alice, bob, cath] *<# "#team dan> 4"
+  where
+    aliceAddedDan :: HasCallStack => TestCC -> IO ()
+    aliceAddedDan cc = do
+      cc <## "#team: alice added dan (Daniel) to the group (connecting...)"
+      cc <## "#team: new member dan is connected"
+
+testGroupHistoryHostFile :: HasCallStack => FilePath -> IO ()
+testGroupHistoryHostFile =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      createGroup2 "team" alice bob
+
+      alice #> "/f #team ./tests/fixtures/test.jpg"
+      alice <## "use /fc 1 to cancel sending"
+      alice <## "completed uploading file 1 (test.jpg) for #team"
+
+      bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]",
+                   "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/fr 1 ./tests/tmp"
+      cath
+        <### [ "saving file 1 from alice to ./tests/tmp/test.jpg",
+               "started receiving file 1 (test.jpg) from alice"
+             ]
+      cath <## "completed receiving file 1 (test.jpg) from alice"
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testGroupHistoryMemberFile :: HasCallStack => FilePath -> IO ()
+testGroupHistoryMemberFile =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      createGroup2 "team" alice bob
+
+      bob #> "/f #team ./tests/fixtures/test.jpg"
+      bob <## "use /fc 1 to cancel sending"
+      bob <## "completed uploading file 1 (test.jpg) for #team"
+
+      alice <# "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team bob> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]",
+                   "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/fr 1 ./tests/tmp"
+      cath
+        <### [ "saving file 1 from bob to ./tests/tmp/test.jpg",
+               "started receiving file 1 (test.jpg) from bob"
+             ]
+      cath <## "completed receiving file 1 (test.jpg) from bob"
+      src <- B.readFile "./tests/fixtures/test.jpg"
+      dest <- B.readFile "./tests/tmp/test.jpg"
+      dest `shouldBe` src
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testGroupHistoryLargeFile :: HasCallStack => FilePath -> IO ()
+testGroupHistoryLargeFile =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      xftpCLI ["rand", "./tests/tmp/testfile", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile"]
+
+      createGroup2 "team" alice bob
+
+      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile\", \"msgContent\": {\"text\":\"hello\",\"type\":\"file\"}}"
+      bob <# "#team hello"
+      bob <# "/f #team ./tests/tmp/testfile"
+      bob <## "use /fc 1 to cancel sending"
+      bob <## "completed uploading file 1 (testfile) for #team"
+
+      alice <# "#team bob> hello"
+      alice <# "#team bob> sends file testfile (17.0 MiB / 17825792 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      -- admin receiving file does not prevent the new member from receiving it later
+      alice ##> "/fr 1 ./tests/tmp"
+      alice
+        <### [ "saving file 1 from bob to ./tests/tmp/testfile_1",
+               "started receiving file 1 (testfile) from bob"
+             ]
+      alice <## "completed receiving file 1 (testfile) from bob"
+      src <- B.readFile "./tests/tmp/testfile"
+      destAlice <- B.readFile "./tests/tmp/testfile_1"
+      destAlice `shouldBe` src
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team bob> hello [>>]",
+                   WithTime "#team bob> sends file testfile (17.0 MiB / 17825792 bytes) [>>]",
+                   "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/fr 1 ./tests/tmp"
+      cath
+        <### [ "saving file 1 from bob to ./tests/tmp/testfile_2",
+               "started receiving file 1 (testfile) from bob"
+             ]
+      cath <## "completed receiving file 1 (testfile) from bob"
+
+      destCath <- B.readFile "./tests/tmp/testfile_2"
+      destCath `shouldBe` src
+  where
+    cfg = testCfg {xftpDescrPartSize = 200, xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testGroupHistoryMultipleFiles :: HasCallStack => FilePath -> IO ()
+testGroupHistoryMultipleFiles =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      xftpCLI ["rand", "./tests/tmp/testfile_bob", "2mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_bob"]
+      xftpCLI ["rand", "./tests/tmp/testfile_alice", "1mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_alice"]
+
+      createGroup2 "team" alice bob
+
+      threadDelay 1000000
+
+      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}"
+      bob <# "#team hi alice"
+      bob <# "/f #team ./tests/tmp/testfile_bob"
+      bob <## "use /fc 1 to cancel sending"
+      bob <## "completed uploading file 1 (testfile_bob) for #team"
+
+      alice <# "#team bob> hi alice"
+      alice <# "#team bob> sends file testfile_bob (2.0 MiB / 2097152 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      threadDelay 1000000
+
+      alice ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}"
+      alice <# "#team hey bob"
+      alice <# "/f #team ./tests/tmp/testfile_alice"
+      alice <## "use /fc 2 to cancel sending"
+      alice <## "completed uploading file 2 (testfile_alice) for #team"
+
+      bob <# "#team alice> hey bob"
+      bob <# "#team alice> sends file testfile_alice (1.0 MiB / 1048576 bytes)"
+      bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team bob> hi alice [>>]",
+                   WithTime "#team bob> sends file testfile_bob (2.0 MiB / 2097152 bytes) [>>]",
+                   "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                   WithTime "#team alice> hey bob [>>]",
+                   WithTime "#team alice> sends file testfile_alice (1.0 MiB / 1048576 bytes) [>>]",
+                   "use /fr 2 [<dir>/ | <path>] to receive it [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/fr 1 ./tests/tmp"
+      cath
+        <### [ "saving file 1 from bob to ./tests/tmp/testfile_bob_1",
+               "started receiving file 1 (testfile_bob) from bob"
+             ]
+      cath <## "completed receiving file 1 (testfile_bob) from bob"
+      srcBob <- B.readFile "./tests/tmp/testfile_bob"
+      destBob <- B.readFile "./tests/tmp/testfile_bob_1"
+      destBob `shouldBe` srcBob
+
+      cath ##> "/fr 2 ./tests/tmp"
+      cath
+        <### [ "saving file 2 from alice to ./tests/tmp/testfile_alice_1",
+               "started receiving file 2 (testfile_alice) from alice"
+             ]
+      cath <## "completed receiving file 2 (testfile_alice) from alice"
+      srcAlice <- B.readFile "./tests/tmp/testfile_alice"
+      destAlice <- B.readFile "./tests/tmp/testfile_alice_1"
+      destAlice `shouldBe` srcAlice
+
+      cath ##> "/_get chat #1 count=100"
+      r <- chatF <$> getTermLine cath
+      r
+        `shouldContain` [ ((0, "hi alice"), Just "./tests/tmp/testfile_bob_1"),
+                          ((0, "hey bob"), Just "./tests/tmp/testfile_alice_1")
+                        ]
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testGroupHistoryFileCancel :: HasCallStack => FilePath -> IO ()
+testGroupHistoryFileCancel =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      xftpCLI ["rand", "./tests/tmp/testfile_bob", "2mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_bob"]
+      xftpCLI ["rand", "./tests/tmp/testfile_alice", "1mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_alice"]
+
+      createGroup2 "team" alice bob
+
+      bob ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_bob\", \"msgContent\": {\"text\":\"hi alice\",\"type\":\"file\"}}"
+      bob <# "#team hi alice"
+      bob <# "/f #team ./tests/tmp/testfile_bob"
+      bob <## "use /fc 1 to cancel sending"
+      bob <## "completed uploading file 1 (testfile_bob) for #team"
+
+      alice <# "#team bob> hi alice"
+      alice <# "#team bob> sends file testfile_bob (2.0 MiB / 2097152 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      bob ##> "/fc 1"
+      bob <## "cancelled sending file 1 (testfile_bob) to alice"
+      alice <## "bob cancelled sending file 1 (testfile_bob)"
+
+      threadDelay 1000000
+
+      alice ##> "/_send #1 json {\"filePath\": \"./tests/tmp/testfile_alice\", \"msgContent\": {\"text\":\"hey bob\",\"type\":\"file\"}}"
+      alice <# "#team hey bob"
+      alice <# "/f #team ./tests/tmp/testfile_alice"
+      alice <## "use /fc 2 to cancel sending"
+      alice <## "completed uploading file 2 (testfile_alice) for #team"
+
+      bob <# "#team alice> hey bob"
+      bob <# "#team alice> sends file testfile_alice (1.0 MiB / 1048576 bytes)"
+      bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+
+      alice ##> "/fc 2"
+      alice <## "cancelled sending file 2 (testfile_alice) to bob"
+      bob <## "alice cancelled sending file 2 (testfile_alice)"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team bob> hi alice [>>]",
+                   WithTime "#team alice> hey bob [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testGroupHistoryFileCancelNoText :: HasCallStack => FilePath -> IO ()
+testGroupHistoryFileCancelNoText =
+  testChatCfg3 cfg aliceProfile bobProfile cathProfile $
+    \alice bob cath -> withXFTPServer $ do
+      xftpCLI ["rand", "./tests/tmp/testfile_bob", "2mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_bob"]
+      xftpCLI ["rand", "./tests/tmp/testfile_alice", "1mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile_alice"]
+
+      createGroup2 "team" alice bob
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+
+      -- bob file
+
+      bob #> "/f #team ./tests/tmp/testfile_bob"
+      bob <## "use /fc 1 to cancel sending"
+      bob <## "completed uploading file 1 (testfile_bob) for #team"
+
+      alice <# "#team bob> sends file testfile_bob (2.0 MiB / 2097152 bytes)"
+      alice <## "use /fr 1 [<dir>/ | <path>] to receive it"
+
+      bob ##> "/fc 1"
+      bob <## "cancelled sending file 1 (testfile_bob) to alice"
+      alice <## "bob cancelled sending file 1 (testfile_bob)"
+
+      -- alice file
+
+      alice #> "/f #team ./tests/tmp/testfile_alice"
+      alice <## "use /fc 2 to cancel sending"
+      alice <## "completed uploading file 2 (testfile_alice) for #team"
+
+      bob <# "#team alice> sends file testfile_alice (1.0 MiB / 1048576 bytes)"
+      bob <## "use /fr 2 [<dir>/ | <path>] to receive it"
+
+      alice ##> "/fc 2"
+      alice <## "cancelled sending file 2 (testfile_alice) to bob"
+      bob <## "alice cancelled sending file 2 (testfile_alice)"
+
+      -- other messages are sent
+
+      bob #> "#team hey!"
+      alice <# "#team bob> hey!"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> hello [>>]",
+                   WithTime "#team bob> hey! [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+  where
+    cfg = testCfg {xftpFileConfig = Just $ XFTPFileConfig {minFileSize = 0}, tempDir = Just "./tests/tmp"}
+
+testGroupHistoryQuotes :: HasCallStack => FilePath -> IO ()
+testGroupHistoryQuotes =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      threadDelay 1000000
+
+      alice #> "#team ALICE"
+      bob <# "#team alice> ALICE"
+
+      threadDelay 1000000
+
+      bob #> "#team BOB"
+      alice <# "#team bob> BOB"
+
+      threadDelay 1000000
+
+      alice `send` "> #team @alice (ALICE) 1"
+      alice <# "#team > alice ALICE"
+      alice <## "      1"
+      bob <# "#team alice> > alice ALICE"
+      bob <## "      1"
+
+      threadDelay 1000000
+
+      alice `send` "> #team @bob (BOB) 2"
+      alice <# "#team > bob BOB"
+      alice <## "      2"
+      bob <# "#team alice> > bob BOB"
+      bob <## "      2"
+
+      threadDelay 1000000
+
+      bob `send` "> #team @alice (ALICE) 3"
+      bob <# "#team > alice ALICE"
+      bob <## "      3"
+      alice <# "#team bob> > alice ALICE"
+      alice <## "      3"
+
+      threadDelay 1000000
+
+      bob `send` "> #team @bob (BOB) 4"
+      bob <# "#team > bob BOB"
+      bob <## "      4"
+      alice <# "#team bob> > bob BOB"
+      alice <## "      4"
+
+      alice
+        #$> ( "/_get chat #1 count=6",
+              chat',
+              [ ((1, "ALICE"), Nothing),
+                ((0, "BOB"), Nothing),
+                ((1, "1"), Just (1, "ALICE")),
+                ((1, "2"), Just (0, "BOB")),
+                ((0, "3"), Just (1, "ALICE")),
+                ((0, "4"), Just (0, "BOB"))
+              ]
+            )
+      bob
+        #$> ( "/_get chat #1 count=6",
+              chat',
+              [ ((0, "ALICE"), Nothing),
+                ((1, "BOB"), Nothing),
+                ((0, "1"), Just (0, "ALICE")),
+                ((0, "2"), Just (1, "BOB")),
+                ((1, "3"), Just (0, "ALICE")),
+                ((1, "4"), Just (1, "BOB"))
+              ]
+            )
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> ALICE [>>]",
+                   WithTime "#team bob> BOB [>>]",
+                   WithTime "#team alice> > alice ALICE [>>]",
+                   "      1 [>>]",
+                   WithTime "#team alice> > bob BOB [>>]",
+                   "      2 [>>]",
+                   WithTime "#team bob> > alice ALICE [>>]",
+                   "      3 [>>]",
+                   WithTime "#team bob> > bob BOB [>>]",
+                   "      4 [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/_get chat #1 count=100"
+      r <- chat' <$> getTermLine cath
+      r
+        `shouldContain` [ ((0, "ALICE"), Nothing),
+                          ((0, "BOB"), Nothing),
+                          ((0, "1"), Just (0, "ALICE")),
+                          ((0, "2"), Just (0, "BOB")),
+                          ((0, "3"), Just (0, "ALICE")),
+                          ((0, "4"), Just (0, "BOB"))
+                        ]
+
+testGroupHistoryDeletedMessage :: HasCallStack => FilePath -> IO ()
+testGroupHistoryDeletedMessage =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+
+      threadDelay 1000000
+
+      bob #> "#team hey!"
+      alice <# "#team bob> hey!"
+
+      bobMsgId <- lastItemId bob
+      bob #$> ("/_delete item #1 " <> bobMsgId <> " broadcast", id, "message marked deleted")
+      alice <# "#team bob> [marked deleted] hey!"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> hello [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine cath
+      r `shouldContain` [(0, "hello")]
+      r `shouldNotContain` [(0, "hey!")]
+
+testGroupHistoryDisappearingMessage :: HasCallStack => FilePath -> IO ()
+testGroupHistoryDisappearingMessage =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      threadDelay 1000000
+
+      alice #> "#team 1"
+      bob <# "#team alice> 1"
+
+      threadDelay 1000000
+
+      -- 3 seconds so that messages 2 and 3 are not deleted for alice before sending history to cath
+      alice ##> "/set disappear #team on 3"
+      alice <## "updated group preferences:"
+      alice <## "Disappearing messages: on (3 sec)"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "Disappearing messages: on (3 sec)"
+
+      bob #> "#team 2"
+      alice <# "#team bob> 2"
+
+      threadDelay 1000000
+
+      alice #> "#team 3"
+      bob <# "#team alice> 3"
+
+      threadDelay 1000000
+
+      alice ##> "/set disappear #team off"
+      alice <## "updated group preferences:"
+      alice <## "Disappearing messages: off"
+      bob <## "alice updated group #team:"
+      bob <## "updated group preferences:"
+      bob <## "Disappearing messages: off"
+
+      bob #> "#team 4"
+      alice <# "#team bob> 4"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> 1 [>>]",
+                   WithTime "#team bob> 2 [>>]",
+                   WithTime "#team alice> 3 [>>]",
+                   WithTime "#team bob> 4 [>>]",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/_get chat #1 count=100"
+      r1 <- chat <$> getTermLine cath
+      r1 `shouldContain` [(0, "1"), (0, "2"), (0, "3"), (0, "4")]
+
+      concurrentlyN_
+        [ do
+            alice <## "timed message deleted: 2"
+            alice <## "timed message deleted: 3",
+          do
+            bob <## "timed message deleted: 2"
+            bob <## "timed message deleted: 3",
+          do
+            cath <## "timed message deleted: 2"
+            cath <## "timed message deleted: 3"
+        ]
+
+      cath ##> "/_get chat #1 count=100"
+      r2 <- chat <$> getTermLine cath
+      r2 `shouldContain` [(0, "1"), (0, "4")]
+      r2 `shouldNotContain` [(0, "2")]
+      r2 `shouldNotContain` [(0, "3")]
+
+testGroupHistoryWelcomeMessage :: HasCallStack => FilePath -> IO ()
+testGroupHistoryWelcomeMessage =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/set welcome #team welcome to team"
+      alice <## "description changed to:"
+      alice <## "welcome to team"
+
+      bob <## "alice updated group #team:"
+      bob <## "description changed to:"
+      bob <## "welcome to team"
+
+      threadDelay 1000000
+
+      alice #> "#team hello"
+      bob <# "#team alice> hello"
+
+      threadDelay 1000000
+
+      bob #> "#team hey!"
+      alice <# "#team bob> hey!"
+
+      connectUsers alice cath
+      addMember "team" alice cath GRAdmin
+      cath ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: cath joined the group",
+          cath
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> hello [>>]",
+                   WithTime "#team bob> hey! [>>]",
+                   WithTime "#team alice> welcome to team",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
+            bob <## "#team: new member cath is connected"
+        ]
+
+      cath ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine cath
+      r `shouldContain` [(0, "hello"), (0, "hey!"), (0, "welcome to team")]
+
+      -- message delivery works after sending history
+      alice #> "#team 1"
+      [bob, cath] *<# "#team alice> 1"
+      bob #> "#team 2"
+      [alice, cath] *<# "#team bob> 2"
+      cath #> "#team 3"
+      [alice, bob] *<# "#team cath> 3"

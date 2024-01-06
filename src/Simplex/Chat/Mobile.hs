@@ -1,19 +1,22 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeApplications #-}
+{-# OPTIONS_GHC -fobject-code #-}
 
 module Simplex.Chat.Mobile where
 
 import Control.Concurrent.STM
-import Control.Exception (catch, SomeException)
+import Control.Exception (SomeException, catch)
 import Control.Monad.Except
 import Control.Monad.Reader
-import Data.Aeson (ToJSON (..))
 import qualified Data.Aeson as J
+import qualified Data.Aeson.TH as JQ
 import Data.Bifunctor (first)
+import Data.ByteArray (ScrubbedBytes)
+import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base64.URL as U
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -29,8 +32,7 @@ import Foreign.C.Types (CInt (..))
 import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (poke)
-import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
-import GHC.Generics (Generic)
+import GHC.IO.Encoding (setFileSystemEncoding, setForeignEncoding, setLocaleEncoding)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList)
@@ -38,26 +40,47 @@ import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
 import Simplex.Chat.Options
+import Simplex.Chat.Remote.Types
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
-import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, closeSQLiteStore)
+import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..), MigrationError, closeSQLiteStore, reopenSQLiteStore)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), CorrId (..), ProtoServerWithAuth (..), ProtocolServer (..))
 import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
 import System.IO (utf8)
 import System.Timeout (timeout)
 
+data DBMigrationResult
+  = DBMOk
+  | DBMInvalidConfirmation
+  | DBMErrorNotADatabase {dbFile :: String}
+  | DBMErrorMigration {dbFile :: String, migrationError :: MigrationError}
+  | DBMErrorSQL {dbFile :: String, migrationSQLError :: String}
+  deriving (Show)
+
+$(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "DBM") ''DBMigrationResult)
+
+data APIResponse = APIResponse {corr :: Maybe CorrId, remoteHostId :: Maybe RemoteHostId, resp :: ChatResponse}
+
+$(JQ.deriveToJSON defaultJSON ''APIResponse)
+
 foreign export ccall "chat_migrate_init" cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
+
+foreign export ccall "chat_migrate_init_key" cChatMigrateInitKey :: CString -> CString -> CInt -> CString -> CInt -> Ptr (StablePtr ChatController) -> IO CJSONString
 
 foreign export ccall "chat_close_store" cChatCloseStore :: StablePtr ChatController -> IO CString
 
+foreign export ccall "chat_reopen_store" cChatReopenStore :: StablePtr ChatController -> IO CString
+
 foreign export ccall "chat_send_cmd" cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
+
+foreign export ccall "chat_send_remote_cmd" cChatSendRemoteCmd :: StablePtr ChatController -> CInt -> CString -> IO CJSONString
 
 foreign export ccall "chat_recv_msg" cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
 
@@ -71,32 +94,35 @@ foreign export ccall "chat_password_hash" cChatPasswordHash :: CString -> CStrin
 
 foreign export ccall "chat_valid_name" cChatValidName :: CString -> IO CString
 
-foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
+foreign export ccall "chat_encrypt_media" cChatEncryptMedia :: StablePtr ChatController -> CString -> Ptr Word8 -> CInt -> IO CString
 
 foreign export ccall "chat_decrypt_media" cChatDecryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
 
-foreign export ccall "chat_write_file" cChatWriteFile :: CString -> Ptr Word8 -> CInt -> IO CJSONString
+foreign export ccall "chat_write_file" cChatWriteFile :: StablePtr ChatController -> CString -> Ptr Word8 -> CInt -> IO CJSONString
 
 foreign export ccall "chat_read_file" cChatReadFile :: CString -> CString -> CString -> IO (Ptr Word8)
 
-foreign export ccall "chat_encrypt_file" cChatEncryptFile :: CString -> CString -> IO CJSONString
+foreign export ccall "chat_encrypt_file" cChatEncryptFile :: StablePtr ChatController -> CString -> CString -> IO CJSONString
 
 foreign export ccall "chat_decrypt_file" cChatDecryptFile :: CString -> CString -> CString -> CString -> IO CString
 
 -- | check / migrate database and initialize chat controller on success
 cChatMigrateInit :: CString -> CString -> CString -> Ptr (StablePtr ChatController) -> IO CJSONString
-cChatMigrateInit fp key conf ctrl = do
+cChatMigrateInit fp key conf = cChatMigrateInitKey fp key 0 conf 0
+
+cChatMigrateInitKey :: CString -> CString -> CInt -> CString -> CInt -> Ptr (StablePtr ChatController) -> IO CJSONString
+cChatMigrateInitKey fp key keepKey conf background ctrl = do
   -- ensure we are set to UTF-8; iOS does not have locale, and will default to
   -- US-ASCII all the time.
   setLocaleEncoding utf8
   setFileSystemEncoding utf8
   setForeignEncoding utf8
 
-  dbPath <- peekCAString fp
-  dbKey <- peekCAString key
+  dbPath <- peekCString fp
+  dbKey <- BA.convert <$> B.packCString key
   confirm <- peekCAString conf
   r <-
-    chatMigrateInit dbPath dbKey confirm >>= \case
+    chatMigrateInitKey dbPath dbKey (keepKey /= 0) confirm (background /= 0) >>= \case
       Right cc -> (newStablePtr cc >>= poke ctrl) $> DBMOk
       Left e -> pure e
   newCStringFromLazyBS $ J.encode r
@@ -104,12 +130,25 @@ cChatMigrateInit fp key conf ctrl = do
 cChatCloseStore :: StablePtr ChatController -> IO CString
 cChatCloseStore cPtr = deRefStablePtr cPtr >>= chatCloseStore >>= newCAString
 
+cChatReopenStore :: StablePtr ChatController -> IO CString
+cChatReopenStore cPtr = do
+  c <- deRefStablePtr cPtr
+  newCAString =<< chatReopenStore c
+
 -- | send command to chat (same syntax as in terminal for now)
 cChatSendCmd :: StablePtr ChatController -> CString -> IO CJSONString
 cChatSendCmd cPtr cCmd = do
   c <- deRefStablePtr cPtr
   cmd <- B.packCString cCmd
   newCStringFromLazyBS =<< chatSendCmd c cmd
+
+-- | send command to chat (same syntax as in terminal for now)
+cChatSendRemoteCmd :: StablePtr ChatController -> CInt -> CString -> IO CJSONString
+cChatSendRemoteCmd cPtr cRemoteHostId cCmd = do
+  c <- deRefStablePtr cPtr
+  cmd <- B.packCString cCmd
+  let rhId = Just $ fromIntegral cRemoteHostId
+  newCStringFromLazyBS =<< chatSendRemoteCmd c rhId cmd
 
 -- | receive message from chat (blocking)
 cChatRecvMsg :: StablePtr ChatController -> IO CJSONString
@@ -137,13 +176,13 @@ cChatPasswordHash cPwd cSalt = do
 cChatValidName :: CString -> IO CString
 cChatValidName cName = newCString . mkValidName =<< peekCString cName
 
-mobileChatOpts :: String -> String -> ChatOpts
-mobileChatOpts dbFilePrefix dbKey =
+mobileChatOpts :: String -> ChatOpts
+mobileChatOpts dbFilePrefix =
   ChatOpts
     { coreOptions =
         CoreChatOpts
           { dbFilePrefix,
-            dbKey,
+            dbKey = "", -- for API database is already opened, and the key in options is not used
             smpServers = [],
             xftpServers = [],
             networkConfig = defaultNetworkConfig,
@@ -152,8 +191,10 @@ mobileChatOpts dbFilePrefix dbKey =
             logServerHosts = True,
             logAgent = Nothing,
             logFile = Nothing,
-            tbqSize = 1024
+            tbqSize = 1024,
+            highlyAvailable = False
           },
+      deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatServerPort = Nothing,
@@ -162,6 +203,7 @@ mobileChatOpts dbFilePrefix dbKey =
       allowInstantFiles = True,
       autoAcceptFileSize = 0,
       muteNotifications = True,
+      markRead = False,
       maintenance = True
     }
 
@@ -170,26 +212,18 @@ defaultMobileConfig =
   defaultChatConfig
     { confirmMigrations = MCYesUp,
       logLevel = CLLError,
-      coreApi = True
+      coreApi = True,
+      deviceNameForRemote = "Mobile"
     }
 
 getActiveUser_ :: SQLiteStore -> IO (Maybe User)
 getActiveUser_ st = find activeUser <$> withTransaction st getUsers
 
-data DBMigrationResult
-  = DBMOk
-  | DBMInvalidConfirmation
-  | DBMErrorNotADatabase {dbFile :: String}
-  | DBMErrorMigration {dbFile :: String, migrationError :: MigrationError}
-  | DBMErrorSQL {dbFile :: String, migrationSQLError :: String}
-  deriving (Show, Generic)
+chatMigrateInit :: String -> ScrubbedBytes -> String -> IO (Either DBMigrationResult ChatController)
+chatMigrateInit dbFilePrefix dbKey confirm = chatMigrateInitKey dbFilePrefix dbKey False confirm False
 
-instance ToJSON DBMigrationResult where
-  toJSON = J.genericToJSON . sumTypeJSON $ dropPrefix "DBM"
-  toEncoding = J.genericToEncoding . sumTypeJSON $ dropPrefix "DBM"
-
-chatMigrateInit :: String -> String -> String -> IO (Either DBMigrationResult ChatController)
-chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
+chatMigrateInitKey :: String -> ScrubbedBytes -> Bool -> String -> Bool -> IO (Either DBMigrationResult ChatController)
+chatMigrateInitKey dbFilePrefix dbKey keepKey confirm backgroundMode = runExceptT $ do
   confirmMigrations <- liftEitherWith (const DBMInvalidConfirmation) $ strDecode $ B.pack confirm
   chatStore <- migrate createChatStore (chatStoreFile dbFilePrefix) confirmMigrations
   agentStore <- migrate createAgentStore (agentStoreFile dbFilePrefix) confirmMigrations
@@ -197,12 +231,12 @@ chatMigrateInit dbFilePrefix dbKey confirm = runExceptT $ do
   where
     initialize st db = do
       user_ <- getActiveUser_ st
-      newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix dbKey)
+      newChatController db user_ defaultMobileConfig (mobileChatOpts dbFilePrefix) backgroundMode
     migrate createStore dbFile confirmMigrations =
       ExceptT $
-        (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey confirmMigrations)
+        (first (DBMErrorMigration dbFile) <$> createStore dbFile dbKey keepKey confirmMigrations)
           `catch` (pure . checkDBError)
-            `catchAll` (pure . dbError)
+          `catchAll` (pure . dbError)
       where
         checkDBError e = case sqlError e of
           DB.ErrorNotADatabase -> Left $ DBMErrorNotADatabase dbFile
@@ -214,16 +248,24 @@ chatCloseStore ChatController {chatStore, smpAgent} = handleErr $ do
   closeSQLiteStore chatStore
   closeSQLiteStore $ agentClientStore smpAgent
 
+chatReopenStore :: ChatController -> IO String
+chatReopenStore ChatController {chatStore, smpAgent} = handleErr $ do
+  reopenSQLiteStore chatStore
+  reopenSQLiteStore (agentClientStore smpAgent)
+
 handleErr :: IO () -> IO String
 handleErr a = (a $> "") `catch` (pure . show @SomeException)
-  
-chatSendCmd :: ChatController -> ByteString -> IO JSONByteString
-chatSendCmd cc s = J.encode . APIResponse Nothing <$> runReaderT (execChatCommand s) cc
+
+chatSendCmd :: ChatController -> B.ByteString -> IO JSONByteString
+chatSendCmd cc = chatSendRemoteCmd cc Nothing
+
+chatSendRemoteCmd :: ChatController -> Maybe RemoteHostId -> B.ByteString -> IO JSONByteString
+chatSendRemoteCmd cc rh s = J.encode . APIResponse Nothing rh <$> runReaderT (execChatCommand rh s) cc
 
 chatRecvMsg :: ChatController -> IO JSONByteString
 chatRecvMsg ChatController {outputQ} = json <$> atomically (readTBQueue outputQ)
   where
-    json (corr, resp) = J.encode APIResponse {corr, resp}
+    json (corr, remoteHostId, resp) = J.encode APIResponse {corr, remoteHostId, resp}
 
 chatRecvMsgWait :: ChatController -> Int -> IO JSONByteString
 chatRecvMsgWait cc time = fromMaybe "" <$> timeout time (chatRecvMsg cc)
@@ -248,10 +290,3 @@ chatPasswordHash pwd salt = either (const "") passwordHash salt'
   where
     salt' = U.decode salt
     passwordHash = U.encode . C.sha512Hash . (pwd <>)
-
-data APIResponse = APIResponse {corr :: Maybe CorrId, resp :: ChatResponse}
-  deriving (Generic)
-
-instance ToJSON APIResponse where
-  toJSON = J.genericToJSON J.defaultOptions {J.omitNothingFields = True}
-  toEncoding = J.genericToEncoding J.defaultOptions {J.omitNothingFields = True}

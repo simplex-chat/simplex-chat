@@ -23,29 +23,33 @@ import chat.simplex.common.views.chatlist.deleteContactConnectionAlert
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.PendingContactConnection
-import chat.simplex.common.platform.shareText
+import chat.simplex.common.platform.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 
 @Composable
 fun ContactConnectionInfoView(
   chatModel: ChatModel,
+  rhId: Long?,
   connReqInvitation: String?,
   contactConnection: PendingContactConnection,
   focusAlias: Boolean,
   close: () -> Unit
 ) {
   LaunchedEffect(connReqInvitation) {
-    chatModel.connReqInv.value = connReqInvitation
+    if (connReqInvitation != null) {
+      chatModel.showingInvitation.value = ShowingInvitation(contactConnection.id, connReqInvitation, false)
+    }
   }
-  /** When [AddContactView] is open, we don't need to drop [chatModel.connReqInv].
-   * Otherwise, it will be called here AFTER [AddContactView] is launched and will clear the value too soon.
+  /** When [AddContactLearnMore] is open, we don't need to drop [ChatModel.showingInvitation].
+   * Otherwise, it will be called here AFTER [AddContactLearnMore] is launched and will clear the value too soon.
    * It will be dropped automatically when connection established or when user goes away from this screen.
+   * It applies only to Android because on Desktop center space will not be overlapped by [AddContactLearnMore]
    **/
   DisposableEffect(Unit) {
     onDispose {
-      if (!ModalManager.center.hasModalsOpen()) {
-        chatModel.connReqInv.value = null
+      if (!ModalManager.center.hasModalsOpen() || appPlatform.isDesktop) {
+        chatModel.showingInvitation.value = null
       }
     }
   }
@@ -55,18 +59,19 @@ fun ContactConnectionInfoView(
     connReq = connReqInvitation,
     contactConnection = contactConnection,
     focusAlias = focusAlias,
-    deleteConnection = { deleteContactConnectionAlert(contactConnection, chatModel, close) },
-    onLocalAliasChanged = { setContactAlias(contactConnection, it, chatModel) },
+    rhId = rhId,
+    deleteConnection = { deleteContactConnectionAlert(rhId, contactConnection, chatModel, close) },
+    onLocalAliasChanged = { setContactAlias(rhId, contactConnection, it, chatModel) },
     share = { if (connReqInvitation != null) clipboard.shareText(connReqInvitation) },
     learnMore = {
-      ModalManager.center.showModal {
+      ModalManager.end.showModalCloseable { close ->
         Column(
           Modifier
             .fillMaxHeight()
             .padding(horizontal = DEFAULT_PADDING),
           verticalArrangement = Arrangement.SpaceBetween
         ) {
-          AddContactLearnMore()
+          AddContactLearnMore(close)
         }
       }
     }
@@ -79,6 +84,7 @@ private fun ContactConnectionInfoLayout(
   connReq: String?,
   contactConnection: PendingContactConnection,
   focusAlias: Boolean,
+  rhId: Long?,
   deleteConnection: () -> Unit,
   onLocalAliasChanged: (String) -> Unit,
   share: () -> Unit,
@@ -113,7 +119,8 @@ private fun ContactConnectionInfoLayout(
       stringResource(
         if (contactConnection.initiated) MR.strings.you_invited_a_contact
         else MR.strings.you_accepted_connection
-      )
+      ),
+      hostDevice(rhId)
     )
     Text(
       stringResource(
@@ -131,11 +138,7 @@ private fun ContactConnectionInfoLayout(
 
     SectionView {
       if (!connReq.isNullOrEmpty() && contactConnection.initiated) {
-        SimpleXLinkQRCode(
-          connReq, Modifier
-            .padding(horizontal = DEFAULT_PADDING, vertical = DEFAULT_PADDING_HALF)
-            .aspectRatio(1f)
-        )
+        SimpleXLinkQRCode(connReq)
         incognitoEnabled()
         ShareLinkButton(connReq)
         OneTimeLinkLearnMoreButton(learnMore)
@@ -155,6 +158,30 @@ private fun ContactConnectionInfoLayout(
 }
 
 @Composable
+fun ShareLinkButton(connReqInvitation: String) {
+  val clipboard = LocalClipboardManager.current
+  SettingsActionItem(
+    painterResource(MR.images.ic_share),
+    stringResource(MR.strings.share_invitation_link),
+    click = {
+      chatModel.showingInvitation.value = chatModel.showingInvitation.value?.copy(connChatUsed = true)
+      clipboard.shareText(simplexChatLink(connReqInvitation))
+    },
+    iconColor = MaterialTheme.colors.primary,
+    textColor = MaterialTheme.colors.primary,
+  )
+}
+
+@Composable
+fun OneTimeLinkLearnMoreButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_info),
+    stringResource(MR.strings.learn_more),
+    onClick,
+  )
+}
+
+@Composable
 fun DeleteButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_delete),
@@ -165,9 +192,9 @@ fun DeleteButton(onClick: () -> Unit) {
   )
 }
 
-private fun setContactAlias(contactConnection: PendingContactConnection, localAlias: String, chatModel: ChatModel) = withApi {
-  chatModel.controller.apiSetConnectionAlias(contactConnection.pccConnId, localAlias)?.let {
-    chatModel.updateContactConnection(it)
+private fun setContactAlias(rhId: Long?, contactConnection: PendingContactConnection, localAlias: String, chatModel: ChatModel) = withApi {
+  chatModel.controller.apiSetConnectionAlias(rhId, contactConnection.pccConnId, localAlias)?.let {
+    chatModel.updateContactConnection(rhId, it)
   }
 }
 
@@ -184,6 +211,7 @@ private fun PreviewContactConnectionInfoView() {
       connReq = "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D",
       contactConnection = PendingContactConnection.getSampleData(),
       focusAlias = false,
+      rhId = null,
       deleteConnection = {},
       onLocalAliasChanged = {},
       share = {},

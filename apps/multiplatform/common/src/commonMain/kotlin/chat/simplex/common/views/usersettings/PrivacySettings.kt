@@ -92,14 +92,13 @@ fun PrivacySettingsView(
         chatModel.simplexLinkMode.value = it
       })
     }
-    SectionDividerSpaced()
 
     val currentUser = chatModel.currentUser.value
     if (currentUser != null) {
       fun setSendReceiptsContacts(enable: Boolean, clearOverrides: Boolean) {
         withApi {
           val mrs = UserMsgReceiptSettings(enable, clearOverrides)
-          chatModel.controller.apiSetUserContactReceipts(currentUser.userId, mrs)
+          chatModel.controller.apiSetUserContactReceipts(currentUser, mrs)
           chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
           chatModel.currentUser.value = currentUser.copy(sendRcptsContacts = enable)
           if (clearOverrides) {
@@ -111,7 +110,7 @@ fun PrivacySettingsView(
                 val sendRcpts = contact.chatSettings.sendRcpts
                 if (sendRcpts != null && sendRcpts != enable) {
                   contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
-                  chatModel.updateContact(contact)
+                  chatModel.updateContact(currentUser.remoteHostId, contact)
                 }
               }
             }
@@ -122,7 +121,7 @@ fun PrivacySettingsView(
       fun setSendReceiptsGroups(enable: Boolean, clearOverrides: Boolean) {
         withApi {
           val mrs = UserMsgReceiptSettings(enable, clearOverrides)
-          chatModel.controller.apiSetUserGroupReceipts(currentUser.userId, mrs)
+          chatModel.controller.apiSetUserGroupReceipts(currentUser, mrs)
           chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
           chatModel.currentUser.value = currentUser.copy(sendRcptsSmallGroups = enable)
           if (clearOverrides) {
@@ -134,7 +133,7 @@ fun PrivacySettingsView(
                 val sendRcpts = groupInfo.chatSettings.sendRcpts
                 if (sendRcpts != null && sendRcpts != enable) {
                   groupInfo = groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(sendRcpts = null))
-                  chatModel.updateGroup(groupInfo)
+                  chatModel.updateGroup(currentUser.remoteHostId, groupInfo)
                 }
               }
             }
@@ -142,39 +141,42 @@ fun PrivacySettingsView(
         }
       }
 
-      DeliveryReceiptsSection(
-        currentUser = currentUser,
-        setOrAskSendReceiptsContacts = { enable ->
-          val contactReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
-            if (chat.chatInfo is ChatInfo.Direct) {
-              val sendRcpts = chat.chatInfo.contact.chatSettings.sendRcpts
-              count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
+      if (!chatModel.desktopNoUserNoRemote) {
+        SectionDividerSpaced()
+        DeliveryReceiptsSection(
+          currentUser = currentUser,
+          setOrAskSendReceiptsContacts = { enable ->
+            val contactReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
+              if (chat.chatInfo is ChatInfo.Direct) {
+                val sendRcpts = chat.chatInfo.contact.chatSettings.sendRcpts
+                count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
+              } else {
+                count
+              }
+            }
+            if (contactReceiptsOverrides == 0) {
+              setSendReceiptsContacts(enable, clearOverrides = false)
             } else {
-              count
+              showUserContactsReceiptsAlert(enable, contactReceiptsOverrides, ::setSendReceiptsContacts)
+            }
+          },
+          setOrAskSendReceiptsGroups = { enable ->
+            val groupReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
+              if (chat.chatInfo is ChatInfo.Group) {
+                val sendRcpts = chat.chatInfo.groupInfo.chatSettings.sendRcpts
+                count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
+              } else {
+                count
+              }
+            }
+            if (groupReceiptsOverrides == 0) {
+              setSendReceiptsGroups(enable, clearOverrides = false)
+            } else {
+              showUserGroupsReceiptsAlert(enable, groupReceiptsOverrides, ::setSendReceiptsGroups)
             }
           }
-          if (contactReceiptsOverrides == 0) {
-            setSendReceiptsContacts(enable, clearOverrides = false)
-          } else {
-            showUserContactsReceiptsAlert(enable, contactReceiptsOverrides, ::setSendReceiptsContacts)
-          }
-        },
-        setOrAskSendReceiptsGroups = { enable ->
-          val groupReceiptsOverrides = chatModel.chats.fold(0) { count, chat ->
-            if (chat.chatInfo is ChatInfo.Group) {
-              val sendRcpts = chat.chatInfo.groupInfo.chatSettings.sendRcpts
-              count + (if (sendRcpts == null || sendRcpts == enable) 0 else 1)
-            } else {
-              count
-            }
-          }
-          if (groupReceiptsOverrides == 0) {
-            setSendReceiptsGroups(enable, clearOverrides = false)
-          } else {
-            showUserGroupsReceiptsAlert(enable, groupReceiptsOverrides, ::setSendReceiptsGroups)
-          }
-        }
-      )
+        )
+      }
     }
     SectionBottomSpacer()
   }
@@ -381,7 +383,7 @@ fun SimplexLockView(
             }
             LAMode.PASSCODE -> {
               ModalManager.fullscreen.showCustomModal { close ->
-                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
                   SetAppPasscodeView(
                     submit = {
                       laLockDelay.set(30)
@@ -425,8 +427,9 @@ fun SimplexLockView(
       when (laResult) {
         LAResult.Success -> {
           ModalManager.fullscreen.showCustomModal { close ->
-            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
               SetAppPasscodeView(
+                reason = generalGetString(MR.strings.la_app_passcode),
                 submit = {
                   passcodeAlert(generalGetString(MR.strings.passcode_changed))
                 }, cancel = {
@@ -448,9 +451,10 @@ fun SimplexLockView(
       when (laResult) {
         LAResult.Success -> {
           ModalManager.fullscreen.showCustomModal { close ->
-            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
               SetAppPasscodeView(
                 passcodeKeychain = ksSelfDestructPassword,
+                reason = generalGetString(MR.strings.self_destruct),
                 submit = {
                   selfDestructPasscodeAlert(generalGetString(MR.strings.self_destruct_passcode_changed))
                 }, cancel = {
@@ -483,7 +487,7 @@ fun SimplexLockView(
             }
             LAMode.PASSCODE -> {
               ModalManager.fullscreen.showCustomModal { close ->
-                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
                   SetAppPasscodeView(
                     submit = {
                       laLockDelay.set(30)
@@ -551,7 +555,7 @@ fun SimplexLockView(
                 fontSize = 16.sp,
                 modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
               )
-              ProfileNameField(selfDestructDisplayName, "", ::isValidDisplayName)
+              ProfileNameField(selfDestructDisplayName, "", { isValidDisplayName(it.trim()) })
               LaunchedEffect(selfDestructDisplayName.value) {
                 val new = selfDestructDisplayName.value
                 if (isValidDisplayName(new) && selfDestructDisplayNamePref.get() != new) {
@@ -594,7 +598,7 @@ private fun EnableSelfDestruct(
   selfDestruct: SharedPreference<Boolean>,
   close: () -> Unit
 ) {
-  Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+  Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
     SetAppPasscodeView(
       passcodeKeychain = ksSelfDestructPassword, title = generalGetString(MR.strings.set_passcode), reason = generalGetString(MR.strings.enabled_self_destruct_passcode),
       submit = {

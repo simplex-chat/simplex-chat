@@ -26,10 +26,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 @Composable
 fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stopped: Boolean) {
   var searchInList by rememberSaveable { mutableStateOf("") }
-  val (userPickerState, scaffoldState, switchingUsers) = settingsState
+  val (userPickerState, scaffoldState) = settingsState
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   Scaffold(
     Modifier.padding(end = endPadding),
+    contentColor = LocalContentColor.current,
+    drawerContentColor = LocalContentColor.current,
     scaffoldState = scaffoldState,
     topBar = { Column { ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() } } },
   ) {
@@ -47,9 +49,12 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
     }
   }
   if (appPlatform.isAndroid) {
-    UserPicker(chatModel, userPickerState, switchingUsers, showSettings = false, showCancel = true, cancelClicked = {
-      chatModel.sharedContent.value = null
-    })
+    tryOrShowError("UserPicker", error = {}) {
+      UserPicker(chatModel, userPickerState, showSettings = false, showCancel = true, cancelClicked = {
+        chatModel.sharedContent.value = null
+        userPickerState.value = AnimatedViewState.GONE
+      })
+    }
   }
 }
 
@@ -72,7 +77,7 @@ private fun ShareListToolbar(chatModel: ChatModel, userPickerState: MutableState
   val navButton: @Composable RowScope.() -> Unit = {
     when {
       showSearch -> NavigationButtonBack(hideSearchOnBack)
-      users.size > 1 -> {
+      users.size > 1 || chatModel.remoteHosts.isNotEmpty() -> {
         val allRead = users
           .filter { u -> !u.user.activeUser && !u.user.hidden }
           .all { u -> u.unreadCount == 0 }

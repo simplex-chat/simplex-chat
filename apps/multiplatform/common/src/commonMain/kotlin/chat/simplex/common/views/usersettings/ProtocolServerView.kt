@@ -160,7 +160,7 @@ private fun CustomServer(
   if (valid.value) {
     SectionDividerSpaced()
     SectionView(stringResource(MR.strings.smp_servers_add_to_another_device).uppercase()) {
-      QRCode(serverAddress.value, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
+      QRCode(serverAddress.value)
     }
   }
 }
@@ -197,7 +197,7 @@ fun ShowTestStatus(server: ServerCfg, modifier: Modifier = Modifier) =
 
 suspend fun testServerConnection(server: ServerCfg, m: ChatModel): Pair<ServerCfg, ProtocolTestFailure?> =
   try {
-    val r = m.controller.testProtoServer(server.server)
+    val r = m.controller.testProtoServer(server.remoteHostId, server.server)
     server.copy(tested = r == null) to r
   } catch (e: Exception) {
     Log.e(TAG, "testServerConnection ${e.stackTraceToString()}")
