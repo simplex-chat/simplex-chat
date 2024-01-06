@@ -417,7 +417,7 @@
     <string name="create_profile_button">Създай</string>
     <string name="create_profile">Създай профил</string>
     <string name="delete_image">Изтрий изображение</string>
-    <string name="create_your_profile">Създай своя профил</string>
+    <string name="create_your_profile">Създай профил</string>
     <string name="decentralized">Децентрализиран</string>
     <string name="status_contact_has_e2e_encryption">контактът има e2e криптиране</string>
     <string name="status_contact_has_no_e2e_encryption">контактът няма e2e криптиране</string>
@@ -446,7 +446,7 @@
     <string name="smp_servers_enter_manually">Въведи сървъра ръчно</string>
     <string name="smp_servers_delete_server">Изтрий сървър</string>
     <string name="dont_create_address">Не създавай адрес</string>
-    <string name="display_name__field">Профилно име:</string>
+    <string name="display_name__field">Име на профила:</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Само потребителските устройства съхраняват потребителски профили, контакти, групи и съобщения, изпратени с <b>двуслойно криптиране от край до край</b>.]]></string>
     <string name="receipts_contacts_title_disable">Деактивирай потвърждениeто\?</string>
     <string name="receipts_contacts_enable_keep_overrides">Активиране (запазване на промените)</string>
@@ -475,7 +475,7 @@
     <string name="delivery_receipts_are_disabled">Потвърждениeто за доставка е деактивирано!</string>
     <string name="scan_qr_to_connect_to_contact">За да се свърже, вашият контакт може да сканира QR код или да използва линка в приложението.</string>
     <string name="direct_messages">Лични съобщения</string>
-    <string name="display_name">Въведи твоето име:</string>
+    <string name="display_name">Въведи своето име:</string>
     <string name="display_name_cannot_contain_whitespace">Показваното име не може да съдържа интервал.</string>
     <string name="sending_delivery_receipts_will_be_enabled">Изпращането на потвърждениe за доставка ще бъде активирано за всички контакти.</string>
     <string name="receipts_contacts_enable_for_all">Активиране за всички</string>
@@ -1554,4 +1554,6 @@
     <string name="keep_invitation_link">Запази</string>
     <string name="tap_to_paste_link">Докосни за поставяне на линк за връзка</string>
     <string name="search_or_paste_simplex_link">Търсене или поставяне на SimpleX линк</string>
+    <string name="start_chat_question">Стартирай чата?</string>
+    <string name="chat_is_stopped_you_should_transfer_database">Чатът е спрян. Ако вече сте използвали тази база данни на друго устройство, трябва да я прехвърлите обратно, преди да стартирате чата отново.</string>
 </resources>
