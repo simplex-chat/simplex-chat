@@ -155,32 +155,31 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         if (!ChatModel.shared.chatInitialized) {
             initChatAndMigrate(refreshInvitations: false)
         }
-        startChatAndActivate(dispatchQueue: DispatchQueue.global()) {
-            self.shouldSuspendChat = true
-            // There are no invitations in the model, as it was processed by NSE
-            _ = try? justRefreshCallInvitations()
-            // logger.debug("CallController justRefreshCallInvitations: \(String(describing: m.callInvitations))")
-            // Extract the call information from the push notification payload
-            let m = ChatModel.shared
-            if let contactId = payload.dictionaryPayload["contactId"] as? String,
-               let invitation = m.callInvitations[contactId] {
+        startChatForCall()
+        self.shouldSuspendChat = true
+        // There are no invitations in the model, as it was processed by NSE
+        _ = try? justRefreshCallInvitations()
+        // logger.debug("CallController justRefreshCallInvitations: \(String(describing: m.callInvitations))")
+        // Extract the call information from the push notification payload
+        let m = ChatModel.shared
+        if let contactId = payload.dictionaryPayload["contactId"] as? String,
+           let invitation = m.callInvitations[contactId] {
+            let update = self.cxCallUpdate(invitation: invitation)
+            if let uuid = invitation.callkitUUID {
+                logger.debug("CallController: report pushkit call via CallKit")
                 let update = self.cxCallUpdate(invitation: invitation)
-                if let uuid = invitation.callkitUUID {
-                    logger.debug("CallController: report pushkit call via CallKit")
-                    let update = self.cxCallUpdate(invitation: invitation)
-                    self.provider.reportNewIncomingCall(with: uuid, update: update) { error in
-                        if error != nil {
-                            m.callInvitations.removeValue(forKey: contactId)
-                        }
-                        // Tell PushKit that the notification is handled.
-                        completion()
+                self.provider.reportNewIncomingCall(with: uuid, update: update) { error in
+                    if error != nil {
+                        m.callInvitations.removeValue(forKey: contactId)
                     }
-                } else {
-                    self.reportExpiredCall(update: update, completion)
+                    // Tell PushKit that the notification is handled.
+                    completion()
                 }
             } else {
-                self.reportExpiredCall(payload: payload, completion)
+                self.reportExpiredCall(update: update, completion)
             }
+        } else {
+            self.reportExpiredCall(payload: payload, completion)
         }
     }
 

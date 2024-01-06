@@ -16,9 +16,11 @@ let logger = Logger()
 
 let appSuspendingDelay: UInt64 = 2_500_000_000
 
-let nseSuspendDelay: TimeInterval = 2
+typealias SuspendSchedule = (delay: TimeInterval, timeout: Int)
 
-let nseSuspendTimeout: Int = 5
+let nseSuspendSchedule: SuspendSchedule = (2, 4)
+
+let fastNSESuspendSchedule: SuspendSchedule = (1, 1)
 
 typealias NtfStream = ConcurrentQueue<NSENotification>
 
@@ -297,7 +299,7 @@ class NotificationService: UNNotificationServiceExtension {
 
     override func serviceExtensionTimeWillExpire() {
         logger.debug("DEBUGGING: NotificationService.serviceExtensionTimeWillExpire")
-        deliverBestAttemptNtf()
+        deliverBestAttemptNtf(urgent: true)
     }
 
     func setBadgeCount() {
@@ -319,7 +321,7 @@ class NotificationService: UNNotificationServiceExtension {
         }
     }
 
-    private func deliverBestAttemptNtf() {
+    private func deliverBestAttemptNtf(urgent: Bool = false) {
         logger.debug("NotificationService.deliverBestAttemptNtf")
         if let cancel = cancelRead {
             cancelRead = nil
@@ -329,20 +331,72 @@ class NotificationService: UNNotificationServiceExtension {
             receiveEntityId = nil
             NtfStreamSemaphores.shared.signalStreamReady(id)
         }
+        let suspend: Bool
         if let t = threadId {
             threadId = nil
-            if NSEThreads.shared.endThread(t) {
-                logger.debug("NotificationService.deliverBestAttemptNtf: will suspend")
-                // suspension is delayed to allow chat core finalise any processing
-                // (e.g., send delivery receipts)
-                DispatchQueue.global().asyncAfter(deadline: .now() + nseSuspendDelay) {
-                    if NSEThreads.shared.noThreads {
-                        logger.debug("NotificationService.deliverBestAttemptNtf: suspending...")
-                        suspendChat(nseSuspendTimeout)
+            suspend = NSEThreads.shared.endThread(t)
+        } else {
+            suspend = false
+        }
+        deliverCallkitOrNotification(urgent: urgent, suspend: suspend)
+    }
+
+    private func deliverCallkitOrNotification(urgent: Bool, suspend: Bool = false) {
+        if case .callkit = bestAttemptNtf {
+            logger.debug("NotificationService.deliverBestAttemptNtf: will suspend, callkit")
+            if urgent {
+                // suspending NSE even though there may be other notifications
+                // to allow the app to process callkit call
+                suspendNow()
+                deliverNotification()
+            } else {
+                // suspending NSE with delay and delivering after the suspension
+                // because pushkit notification must be processed without delay
+                // to avoid app termination
+                suspendWithDelay(schedule: fastNSESuspendSchedule) {
+                    DispatchQueue.global().asyncAfter(deadline: .now() + Double(fastNSESuspendSchedule.timeout)) {
+                        self.deliverNotification()
                     }
                 }
             }
+        } else {
+            if suspend {
+                logger.debug("NotificationService.deliverBestAttemptNtf: will suspend")
+                if urgent {
+                    suspendNow()
+                } else {
+                    suspendWithDelay(schedule: nseSuspendSchedule)
+                }
+            }
+            deliverNotification()
         }
+
+        func shouldSuspend() -> Bool {
+            if case .callkit = bestAttemptNtf {
+                true
+            } else {
+                suspend && NSEThreads.shared.noThreads
+            }
+        }
+
+        func suspendNow(timeout: Int = 0) {
+            if shouldSuspend() {
+                logger.debug("NotificationService.suspendNSE: suspending...")
+                suspendChat(timeout)
+            }
+        }
+
+        func suspendWithDelay(schedule: SuspendSchedule, _ suspended: (() -> Void)? = nil) {
+            // suspension is delayed to allow chat core finalise any processing
+            // (e.g., send delivery receipts)
+            DispatchQueue.global().asyncAfter(deadline: .now() + schedule.delay) {
+                suspendNow(timeout: schedule.timeout)
+                suspended?()
+            }
+        }
+    }
+
+    private func deliverNotification() {
         if let handler = contentHandler, let ntf = bestAttemptNtf {
             contentHandler = nil
             bestAttemptNtf = nil
@@ -357,17 +411,14 @@ class NotificationService: UNNotificationServiceExtension {
             switch ntf {
             case let .nse(content): deliver(content)
             case let .callkit(invitation):
+                logger.debug("NotificationService reportNewIncomingVoIPPushPayload for \(invitation.contact.id)")
                 CXProvider.reportNewIncomingVoIPPushPayload([
                     "displayName": invitation.contact.displayName,
                     "contactId": invitation.contact.id,
                     "media": invitation.callType.media.rawValue
                 ]) { error in
-                    if error == nil {
-                        deliver(nil)
-                    } else {
-                        logger.debug("NotificationService reportNewIncomingVoIPPushPayload success to CallController for \(invitation.contact.id)")
-                        deliver(createCallInvitationNtf(invitation))
-                    }
+                    logger.debug("reportNewIncomingVoIPPushPayload result: \(error, privacy: .public)")
+                    deliver(error == nil ? nil : createCallInvitationNtf(invitation))
                 }
             case .empty: deliver(nil) // used to mute notifications that did not unsubscribe yet
             case .msgInfo: deliver(nil) // unreachable, the best attempt is never set to msgInfo
@@ -402,7 +453,7 @@ var appSubscriber: AppSubscriber = appStateSubscriber { state in
     logger.debug("NotificationService: appSubscriber")
     if state.running && NSEChatState.shared.value.canSuspend {
         logger.debug("NotificationService: appSubscriber app state \(state.rawValue), suspending")
-        suspendChat(nseSuspendTimeout)
+        suspendChat(fastNSESuspendSchedule.timeout)
     }
 }
 
@@ -612,6 +663,9 @@ func receivedMsgNtf(_ res: ChatResponse) async -> (String, NSENotification)? {
         return if let id = connEntity.id { (id, .msgInfo(ntfMessage)) } else { nil }
     case .chatSuspended:
         chatSuspended()
+        return nil
+    case let .chatError(_, err):
+        logger.error("NotificationService receivedMsgNtf error: \(String(describing: err), privacy: .public)")
         return nil
     default:
         logger.debug("NotificationService receivedMsgNtf ignored event: \(res.responseType)")
