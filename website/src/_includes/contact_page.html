@@ -8,13 +8,8 @@
 <section class="hidden xl:block h-screen pt-[66px] bg-white dark:bg-gradient-radial-mobile dark:lg:bg-gradient-radial">
     <div class="container m-auto h-full flex items-center justify-between px-5">
         <div class="flex flex-col items-start justify-center w-full h-full">
-
-            <noscript>
-                <h1 class="text-[38px] leading-[43px] font-bold mb-[100px] primary-header-contact">{{ "please-enable-javascript" | i18n({}, lang ) | safe }}</h1>
-            </noscript>
-
-            <h1 class="text-[38px] leading-[43px] font-bold max-w-[500px] mb-[30px] primary-header-contact d-none-if-js-disabled">{{ header | i18n({}, lang ) | safe }}</h1>
-            <h2 class="text-[20px] leading-[28px] text-[#606C71] dark:text-white font-bold max-w-[475px] mb-[80px] secondary-header-contact d-none-if-js-disabled">{{ "contact-hero-subheader" | i18n({}, lang ) | safe }}</h2>
+            <h1 class="text-[38px] leading-[43px] font-bold max-w-[500px] mb-[30px] primary-header-contact">{{ header | i18n({}, lang ) | safe }}</h1>
+            <h2 class="text-[20px] leading-[28px] text-[#606C71] dark:text-white font-bold max-w-[475px] mb-[80px] secondary-header-contact">{{ "contact-hero-subheader" | i18n({}, lang ) | safe }}</h2>
             <p class="text-grey-black dark:text-white text-base mb-[16px]">
                 {{ "contact-hero-p-1" | i18n({}, lang ) | safe }}
             </p>
@@ -30,13 +25,17 @@
             </div>
         </div>
 
-        <div class="h-full pt-[30px] w-[630px] relative d-none-if-js-disabled">
+        <div class="h-full pt-[30px] w-[630px] relative">
             <div class="relative h-full w-[inherit] flex items-center justify-center">
                 <div class="absolute mt-[-100px]">
                     <img class="" src="/img/new/contact_page_mobile.png" alt="">
                 </div>
+                
+                <noscript class="z-10 flex flex-col items-center pt-[40px] ml-[-15px]">
+                    <p class="text-2xl font-medium text-center max-w-[234px] mb-32">{{ "please-enable-javascript" | i18n({}, lang ) | safe }}</p>
+                </noscript>
 
-                <div class="z-10 flex flex-col items-center pt-[40px] ml-[-15px]">
+                <div class="z-10 flex flex-col items-center pt-[40px] ml-[-15px] d-none-if-js-disabled">
                     <p class="text-base font-medium text-center max-w-[234px]">{{ "scan-qr-code-from-mobile-app" | i18n({}, lang ) | safe }}</p>
                     <canvas class="conn_req_uri_qrcode"></canvas>
                 </div>
@@ -66,8 +65,12 @@
             </div>
 
             <div class="flex flex-col justify-center items-center w-full max-w-[468px] h-[131px] rounded-[30px] border-[1px] border-[#A8B0B4] dark:border-white border-opacity-60 mb-6 relative">
-                <p class="text-xl font-medium text-grey-black dark:text-white mb-4">{{ "connect-in-app" | i18n({}, lang ) | safe }}</p>
-                <a id="mobile_conn_req_uri" class="bg-[#0053D0] text-white py-3 px-8 rounded-[34px] h-[44px] text-[16px] leading-[19px] tracking-[0.02em] d-none-if-js-disabled">{{ "open-simplex-app" | i18n({}, lang ) | safe }}</a>
+                <p class="text-xl font-medium text-grey-black dark:text-white mb-4 d-none-if-js-disabled">{{ "connect-in-app" | i18n({}, lang ) | safe }}</p>
+                <noscript>
+                    <p class="text-xl font-medium text-grey-black dark:text-white mb-4">{{ "please-use-link-in-mobile-app" | i18n({}, lang ) | safe }}</p>
+                </noscript>
+
+                <a id="mobile_conn_req_uri" class="bg-[#0053D0] text-white py-3 px-8 rounded-[34px] h-[44px] text-[16px] leading-[19px] tracking-[0.02em]">{{ "open-simplex-app" | i18n({}, lang ) | safe }}</a>
 
                 <div class="absolute bg-[#0197FF] h-[44px] w-[44px] rounded-full flex items-center justify-center top-0 left-0 translate-x-[-30%] translate-y-[-30%]">
                     <p class="text-base text-white font-bold leading-[36px]">2</p>
