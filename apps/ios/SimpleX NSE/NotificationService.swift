@@ -334,7 +334,7 @@ class NotificationService: UNNotificationServiceExtension {
         let suspend: Bool
         if let t = threadId {
             threadId = nil
-            suspend = NSEThreads.shared.endThread(t)
+            suspend = NSEThreads.shared.endThread(t) && NSEThreads.shared.noThreads
         } else {
             suspend = false
         }
@@ -347,13 +347,14 @@ class NotificationService: UNNotificationServiceExtension {
             if urgent {
                 // suspending NSE even though there may be other notifications
                 // to allow the app to process callkit call
-                suspendNow()
+                suspendChat(0)
                 deliverNotification()
             } else {
                 // suspending NSE with delay and delivering after the suspension
                 // because pushkit notification must be processed without delay
                 // to avoid app termination
-                suspendWithDelay(schedule: fastNSESuspendSchedule) {
+                DispatchQueue.global().asyncAfter(deadline: .now() + fastNSESuspendSchedule.delay) {
+                    suspendChat(fastNSESuspendSchedule.timeout)
                     DispatchQueue.global().asyncAfter(deadline: .now() + Double(fastNSESuspendSchedule.timeout)) {
                         self.deliverNotification()
                     }
@@ -363,36 +364,18 @@ class NotificationService: UNNotificationServiceExtension {
             if suspend {
                 logger.debug("NotificationService.deliverCallkitOrNotification: will suspend")
                 if urgent {
-                    suspendNow()
+                    suspendChat(0)
                 } else {
-                    suspendWithDelay(schedule: nseSuspendSchedule)
+                    // suspension is delayed to allow chat core finalise any processing
+                    // (e.g., send delivery receipts)
+                    DispatchQueue.global().asyncAfter(deadline: .now() + nseSuspendSchedule.delay) {
+                        if NSEThreads.shared.noThreads {
+                            suspendChat(nseSuspendSchedule.timeout)
+                        }
+                    }
                 }
             }
             deliverNotification()
-        }
-
-        func shouldSuspend() -> Bool {
-            if case .callkit = bestAttemptNtf {
-                true
-            } else {
-                suspend && NSEThreads.shared.noThreads
-            }
-        }
-
-        func suspendNow(timeout: Int = 0) {
-            if shouldSuspend() {
-                logger.debug("NotificationService.deliverCallkitOrNotification: suspending...")
-                suspendChat(timeout)
-            }
-        }
-
-        func suspendWithDelay(schedule: SuspendSchedule, _ suspended: (() -> Void)? = nil) {
-            // suspension is delayed to allow chat core finalise any processing
-            // (e.g., send delivery receipts)
-            DispatchQueue.global().asyncAfter(deadline: .now() + schedule.delay) {
-                suspendNow(timeout: schedule.timeout)
-                suspended?()
-            }
         }
     }
 
