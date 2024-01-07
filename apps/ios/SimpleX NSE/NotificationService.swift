@@ -476,6 +476,7 @@ let xftpConfig: XFTPFileConfig? = getXFTPCfg()
 // Subsequent calls to didReceive will be waiting on semaphore and won't start chat again, as it will be .active
 func startChat() -> DBMigrationResult? {
     logger.debug("NotificationService: startChat")
+    // only skip creating if there is chat controller
     if case .active = NSEChatState.shared.value, hasChatCtrl() { return .ok }
 
     startLock.wait()
@@ -490,6 +491,8 @@ func startChat() -> DBMigrationResult? {
         case .suspended: activateChat()
         }
     } else {
+        // Ignore state in preference if there is no chat controller.
+        // State in preference may have failed to update e.g. because of a crash.
         NSEChatState.shared.set(.created)
         return doStartChat()
     }
@@ -562,6 +565,8 @@ func suspendChat(_ timeout: Int) {
     if !state.canSuspend {
         logger.error("NotificationService suspendChat called, current state: \(state.rawValue)")
     } else if hasChatCtrl() {
+        // only suspend if we have chat controller to avoid crashes when suspension is
+        // attempted when chat controller was not created
         suspendLock.wait()
         defer { suspendLock.signal() }
 
