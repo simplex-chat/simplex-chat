@@ -158,7 +158,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
         if (!ChatModel.shared.chatInitialized) {
             logger.debug("CallController: initializing chat")
             do {
-                try initializeChat(start: true, refreshInvitations: false, withChatData: false)
+                try initializeChat(start: true, refreshInvitations: false)
             } catch let error {
                 logger.error("CallController: initializing chat error: \(error)")
                 self.reportExpiredCall(payload: payload, completion)
