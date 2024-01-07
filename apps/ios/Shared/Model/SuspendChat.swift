@@ -25,7 +25,7 @@ private func _suspendChat(timeout: Int) {
     // this is a redundant check to prevent logical errors, like the one fixed in this PR
     let state = AppChatState.shared.value
     if !state.canSuspend {
-        logger.error("_suspendChat called, current state: \(state.rawValue, privacy: .public)")
+        logger.error("_suspendChat called, current state: \(state.rawValue)")
     } else if ChatModel.ok {
         AppChatState.shared.set(.suspending)
         apiSuspendChat(timeoutMicroseconds: timeout * 1000000)

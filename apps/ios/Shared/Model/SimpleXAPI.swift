@@ -91,14 +91,14 @@ private func withBGTask<T>(bgDelay: Double? = nil, f: @escaping () -> T) -> T {
 }
 
 func chatSendCmdSync(_ cmd: ChatCommand, bgTask: Bool = true, bgDelay: Double? = nil) -> ChatResponse {
-    logger.debug("chatSendCmd \(cmd.cmdType, privacy: .public)")
+    logger.debug("chatSendCmd \(cmd.cmdType)")
     let start = Date.now
     let resp = bgTask
                 ? withBGTask(bgDelay: bgDelay) { sendSimpleXCmd(cmd) }
                 : sendSimpleXCmd(cmd)
-    logger.debug("chatSendCmd \(cmd.cmdType, privacy: .public): \(resp.responseType, privacy: .public)")
+    logger.debug("chatSendCmd \(cmd.cmdType): \(resp.responseType)")
     if case let .response(_, json) = resp {
-        logger.debug("chatSendCmd \(cmd.cmdType, privacy: .public) response: \(json)")
+        logger.debug("chatSendCmd \(cmd.cmdType) response: \(json)")
     }
     Task {
         await TerminalItems.shared.addCommand(start, cmd.obfuscated, resp)
@@ -403,7 +403,7 @@ func apiGetNtfToken() -> (DeviceToken?, NtfTknStatus?, NotificationsMode) {
     case let .ntfToken(token, status, ntfMode): return (token, status, ntfMode)
     case .chatCmdError(_, .errorAgent(.CMD(.PROHIBITED))): return (nil, nil, .off)
     default:
-        logger.debug("apiGetNtfToken response: \(String(describing: r), privacy: .public)")
+        logger.debug("apiGetNtfToken response: \(String(describing: r))")
         return (nil, nil, .off)
     }
 }

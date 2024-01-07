@@ -130,7 +130,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
             // The delay allows to accept the second call before suspending a chat
             // see `.onChange(of: scenePhase)` in SimpleXApp
             DispatchQueue.main.asyncAfter(deadline: .now() + 3) { [weak self] in
-                logger.debug("CallController: shouldSuspendChat \(String(describing: self?.shouldSuspendChat), privacy: .public)")
+                logger.debug("CallController: shouldSuspendChat \(String(describing: self?.shouldSuspendChat))")
                 if ChatModel.shared.activeCall == nil && self?.shouldSuspendChat == true {
                     self?.shouldSuspendChat = false
                     suspendChat()
@@ -142,18 +142,28 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
 
     @objc(pushRegistry:didUpdatePushCredentials:forType:)
     func pushRegistry(_ registry: PKPushRegistry, didUpdate pushCredentials: PKPushCredentials, for type: PKPushType) {
-        logger.debug("CallController: didUpdate push credentials for type \(type.rawValue, privacy: .public)")
+        logger.debug("CallController: didUpdate push credentials for type \(type.rawValue)")
     }
 
     func pushRegistry(_ registry: PKPushRegistry, didReceiveIncomingPushWith payload: PKPushPayload, for type: PKPushType, completion: @escaping () -> Void) {
-        logger.debug("CallController: did receive push with type \(type.rawValue, privacy: .public)")
+        logger.debug("CallController: did receive push with type \(type.rawValue)")
         if type != .voIP {
             completion()
             return
         }
+        if AppChatState.shared.value == .stopped {
+            self.reportExpiredCall(payload: payload, completion)
+            return
+        }
         if (!ChatModel.shared.chatInitialized) {
             logger.debug("CallController: initializing chat")
-            initChatAndMigrate(refreshInvitations: false)
+            do {
+                try initializeChat(start: true, refreshInvitations: false, withChatData: false)
+            } catch let error {
+                logger.error("CallController: initializing chat error: \(error)")
+                self.reportExpiredCall(payload: payload, completion)
+                return
+            }
         }
         logger.debug("CallController: initialized chat")
         startChatForCall()
@@ -213,7 +223,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     }
 
     func reportNewIncomingCall(invitation: RcvCallInvitation, completion: @escaping (Error?) -> Void) {
-        logger.debug("CallController.reportNewIncomingCall, UUID=\(String(describing: invitation.callkitUUID), privacy: .public)")
+        logger.debug("CallController.reportNewIncomingCall, UUID=\(String(describing: invitation.callkitUUID))")
         if CallController.useCallKit(), let uuid = invitation.callkitUUID {
             if invitation.callTs.timeIntervalSinceNow >= -180 {
                 let update = cxCallUpdate(invitation: invitation)
@@ -353,7 +363,7 @@ class CallController: NSObject, CXProviderDelegate, PKPushRegistryDelegate, Obse
     private func requestTransaction(with action: CXAction, onSuccess: @escaping () -> Void = {}) {
         controller.request(CXTransaction(action: action)) { error in
             if let error = error {
-                logger.error("CallController.requestTransaction error requesting transaction: \(error.localizedDescription, privacy: .public)")
+                logger.error("CallController.requestTransaction error requesting transaction: \(error.localizedDescription)")
             } else {
                 logger.debug("CallController.requestTransaction requested transaction successfully")
                 onSuccess()
