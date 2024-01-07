@@ -117,7 +117,7 @@
     <string name="app_passcode_replaced_with_self_destruct">Az alkalmazás jelkód helyettesítésre kerül egy önmegsemmisítő jelkóddal.</string>
     <string name="v5_3_new_interface_languages_descr">Arab, bulgár, finn, héber, thai és ukrán - köszönet a felhasználóknak és a Weblate-nek!</string>
     <string name="allow_voice_messages_question">Hangüzenetek engedélyezése?</string>
-    <string name="always_use_relay">Mindig használt relay szervert</string>
+    <string name="always_use_relay">Mindig használjon relay szervert</string>
     <string name="chat_preferences_always">mindig</string>
     <string name="call_already_ended">A hívás már befejeződött!</string>
     <string name="turn_off_battery_optimization_button">Engedélyez</string>
@@ -143,14 +143,14 @@
     <string name="abort_switch_receiving_address_desc">A cím változtatás megszakításra kerül. A régi fogadó cím marad használatban.</string>
     <string name="allow_verb">Engedélyez</string>
     <string name="bad_desktop_address">Téves számítógép cím</string>
-    <string name="users_add">Adj hozzá profilt</string>
+    <string name="users_add">Profil hozzáadása</string>
     <string name="attach">Csatolás</string>
     <string name="v5_0_app_passcode">Alkalmazás jelkód</string>
     <string name="icon_descr_asked_to_receive">Felkértek a kép fogadására</string>
     <string name="use_camera_button">Fényképező</string>
     <string name="cannot_access_keychain">A Keystore-hoz nem sikerül hozzáférni az adatbázis jelszó elmentése végett</string>
     <string name="callstatus_in_progress">hívás folyamatban</string>
-    <string name="auto_accept_images">Fényképek automatiklus elfogadása</string>
+    <string name="auto_accept_images">Fényképek automatikus elfogadása</string>
     <string name="allow_your_contacts_to_call">Hang- és videóhívás engedélyezése az ismerőseid számára.</string>
     <string name="settings_section_title_icon">ALKALMAZÁS IKON</string>
     <string name="v4_3_improved_server_configuration_desc">Szerver hozzáadása QR kód befotózásával.</string>
@@ -201,7 +201,7 @@
     <string name="status_contact_has_e2e_encryption">az ismerősnél az e2e titkosítás elérhető</string>
     <string name="v5_4_incognito_groups_descr">Csoport létrehozása véletlenszerűen létrehozott profillal.</string>
     <string name="delete_contact_all_messages_deleted_cannot_undo_warning">Az ismerős és az összes üzenet törlésre kerül - ez visszafordíthatatlan!</string>
-    <string name="contacts_can_mark_messages_for_deletion">Ismerősök megjelölhetik az üzeneteket törlendőként; de láthatod azokat.</string>
+    <string name="contacts_can_mark_messages_for_deletion">Ismerősök megjelölhetik az üzeneteket törlendőként; de te láthatod azokat.</string>
     <string name="connect_via_invitation_link">Kapcsolódás Egyszer használatos linkkel?</string>
     <string name="connect_via_link_or_qr">Kapcsolódás egy link / QR-kód által</string>
     <string name="connection_error_auth">Kapcsolódási hiba (AUTH)</string>
@@ -654,7 +654,7 @@
     <string name="invalid_chat">Érvénytelen chat</string>
     <string name="custom_time_unit_hours">órák</string>
     <string name="incognito">Inkognitó</string>
-    <string name="how_to_use_simplex_chat">Hogyan használjuk</string>
+    <string name="how_to_use_simplex_chat">Hogyan használd</string>
     <string name="v4_3_improved_privacy_and_security_desc">App képernyőjének elrejtése a gyakran használt appok között.</string>
     <string name="v4_3_improved_server_configuration">Javított szerver konfiguráció</string>
     <string name="edit_history">Történet</string>
@@ -814,7 +814,7 @@
     <string name="only_group_owners_can_change_prefs">Csak a csoporttulajdonosok módosíthatják a csoportbeállításokat.</string>
     <string name="no_history">Nincsenek előzmények</string>
     <string name="invalid_QR_code">Érvénytelen QR-kód</string>
-    <string name="mark_read">Olvasottnak jelölve</string>
+    <string name="mark_read">Megjelölés olvasottként</string>
     <string name="live">ÉLŐ</string>
     <string name="mark_unread">Olvasatlannak jelölve</string>
     <string name="icon_descr_more_button">Több</string>
@@ -955,7 +955,7 @@
     <string name="connect_use_new_incognito_profile">Az új inkognító profil használata</string>
     <string name="contact_developers">Kérlek frissítsd az appot és jelentsd a fejlesztőknek!</string>
     <string name="theme_simplex">SimpleX</string>
-    <string name="send_link_previews">Link előnézet küldése</string>
+    <string name="send_link_previews">Link előnézetek küldése</string>
     <string name="rcv_conn_event_verification_code_reset">biztonsági kód megváltozott</string>
     <string name="notification_preview_mode_contact_desc">Kizárólag az ismerős mutatása</string>
     <string name="icon_descr_speaker_on">Hangszóró bekapcsolva</string>
@@ -1422,7 +1422,7 @@
     <string name="this_string_is_not_a_connection_link">Ez a karakterlánc nem meghívó link!</string>
     <string name="to_start_a_new_chat_help_header">Új chat kezdése</string>
     <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">Csatlakozásod már folyamatban van ezzel az Egyszer használatos link-el!</string>
-    <string name="you_wont_lose_your_contacts_if_delete_address">Nem fogod leveszíteni az ismerőseidet ha később törlöd a SimpleX azonosítódat.</string>
+    <string name="you_wont_lose_your_contacts_if_delete_address">Nem fogod elveszíteni az ismerőseidet ha később törlöd a SimpleX azonosítódat.</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">A beállítások frissítése a szerverekhez újra kapcsolódással jár.</string>
     <string name="contact_wants_to_connect_with_you">kapcsolatba akar lépni veled!</string>
     <string name="snd_group_event_changed_role_for_yourself">a saját szerepkörödet megváltoztattad erre: %s</string>
@@ -1483,7 +1483,7 @@
     <string name="save_passphrase_in_settings">Jelmondat mentése a beállításokban</string>
     <string name="send_receipts_disabled_alert_msg">Ennek a csoportnak több mint %1$d tagja van, a kézbesítési jelentések nem kerülnek elküldésre.</string>
     <string name="v5_2_message_delivery_receipts_descr">A második jelölés, amit kihagytunk! ✅</string>
-    <string name="relay_server_protects_ip">A relés szerver védi az IP-címedet, de megfigyelheti a hívás időtartamát.</string>
+    <string name="relay_server_protects_ip">A relay szerver védi az IP-címedet, de megfigyelheti a hívás időtartamát.</string>
     <string name="read_more_in_github">További információ a GitHub tárolónkban.</string>
     <string name="v4_5_message_draft_descr">Az utolsó üzenet tervezetének megőrzése a mellékletekkel együtt.</string>
     <string name="saved_ICE_servers_will_be_removed">A mentett WebRTC ICE-kiszolgálók eltávolításra kerülnek.</string>
