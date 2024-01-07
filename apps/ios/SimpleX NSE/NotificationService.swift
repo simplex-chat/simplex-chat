@@ -561,7 +561,7 @@ func suspendChat(_ timeout: Int) {
     let state = NSEChatState.shared.value
     if !state.canSuspend {
         logger.error("NotificationService suspendChat called, current state: \(state.rawValue)")
-    } else {
+    } else if hasChatCtrl() {
         suspendLock.wait()
         defer { suspendLock.signal() }
 
