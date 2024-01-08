@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Simplex.Chat.ProfileGenerator ( generateRandomProfile  ) where
+module Simplex.Chat.ProfileGenerator where
 
 import Data.Text (Text)
 import Simplex.Chat.Types (Profile (..))
