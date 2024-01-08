@@ -4,7 +4,7 @@ import chat.simplex.common.model.AgentErrorType
 import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.TAG
 import chat.simplex.common.platform.ntfManager
-import chat.simplex.common.views.database.restartChatAlert
+import chat.simplex.common.views.database.restartChatOrApp
 import chat.simplex.res.MR
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -24,7 +24,6 @@ class ProcessedErrors <T: AgentErrorType>(val interval: Long) {
       lastShownTimestamp = System.currentTimeMillis()
       lastShownOfferRestart = offerRestart
       AlertManager.shared.hideAllAlerts()
-      ntfManager
       when (error) {
         is AgentErrorType.CRITICAL -> {
           val title = generalGetString(MR.strings.agent_critical_error_title)
@@ -40,7 +39,7 @@ class ProcessedErrors <T: AgentErrorType>(val interval: Long) {
               text = text,
               confirmText = generalGetString(MR.strings.restart_chat_button),
               onConfirm = {
-                withApi { restartChatAlert() }
+                withApi { restartChatOrApp() }
               })
           } else {
             AlertManager.shared.showAlertMsg(

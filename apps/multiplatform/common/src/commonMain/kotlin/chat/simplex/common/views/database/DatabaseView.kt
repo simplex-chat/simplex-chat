@@ -4,7 +4,6 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionTextFooter
 import SectionItemView
-import SectionSpacer
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
@@ -367,7 +366,7 @@ fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
   return stringResource(if (chatArchiveTime < chatLastStart) MR.strings.old_database_archive else MR.strings.new_database_archive)
 }
 
-private fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
+fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
   withApi {
     try {
       if (chatDbChanged.value) {
@@ -407,15 +406,7 @@ private fun stopChatAlert(m: ChatModel) {
   )
 }
 
-fun restartChatAlert() {
-  if (chatModel.chatRunning.value == false) {
-    startChat(chatModel, mutableStateOf(Instant.DISTANT_PAST), chatModel.chatDbChanged)
-  } else {
-    authStopChat(chatModel) {
-      startChat(chatModel, mutableStateOf(Instant.DISTANT_PAST), chatModel.chatDbChanged)
-    }
-  }
-}
+expect fun restartChatOrApp()
 
 private fun exportProhibitedAlert() {
   AlertManager.shared.showAlertMsg(
@@ -424,7 +415,7 @@ private fun exportProhibitedAlert() {
   )
 }
 
-private fun authStopChat(m: ChatModel, onStop: (() -> Unit)? = null) {
+fun authStopChat(m: ChatModel, onStop: (() -> Unit)? = null) {
   if (m.controller.appPrefs.performLA.get()) {
     authenticate(
       generalGetString(MR.strings.auth_stop_chat),
