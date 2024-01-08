@@ -403,7 +403,7 @@ func apiGetNtfToken() -> (DeviceToken?, NtfTknStatus?, NotificationsMode) {
     case let .ntfToken(token, status, ntfMode): return (token, status, ntfMode)
     case .chatCmdError(_, .errorAgent(.CMD(.PROHIBITED))): return (nil, nil, .off)
     default:
-        logger.debug("apiGetNtfToken response: \(String(describing: r), privacy: .public)")
+        logger.debug("apiGetNtfToken response: \(String(describing: r))")
         return (nil, nil, .off)
     }
 }
