@@ -234,6 +234,7 @@ newChatController
     expireCIFlags <- newTVarIO M.empty
     cleanupManagerAsync <- newTVarIO Nothing
     timedItemThreads <- atomically TM.empty
+    timedItemsFlag <- newTVarIO (not backgroundMode)
     showLiveItems <- newTVarIO False
     encryptLocalFiles <- newTVarIO False
     userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
@@ -269,6 +270,7 @@ newChatController
           expireCIFlags,
           cleanupManagerAsync,
           timedItemThreads,
+          timedItemsFlag,
           showLiveItems,
           encryptLocalFiles,
           userXFTPFileConfig,
@@ -387,7 +389,7 @@ restoreCalls = do
   atomically $ writeTVar calls callsMap
 
 stopChatController :: forall m. MonadUnliftIO m => ChatController -> m ()
-stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, remoteHostSessions, remoteCtrlSession} = do
+stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles, expireCIFlags, timedItemsFlag, remoteHostSessions, remoteCtrlSession} = do
   readTVarIO remoteHostSessions >>= mapM_ (liftIO . cancelRemoteHost False . snd)
   atomically (stateTVar remoteCtrlSession (,Nothing)) >>= mapM_ (liftIO . cancelRemoteCtrl False . snd)
   disconnectAgentClient smpAgent
@@ -397,6 +399,7 @@ stopChatController ChatController {smpAgent, agentAsync = s, sndFiles, rcvFiles,
   atomically $ do
     keys <- M.keys <$> readTVar expireCIFlags
     forM_ keys $ \k -> TM.insert k False expireCIFlags
+    writeTVar timedItemsFlag False
     writeTVar s Nothing
   where
     closeFiles :: TVar (Map Int64 Handle) -> m ()
@@ -559,9 +562,11 @@ processChatCommand' vr = \case
       void . forkIO $ subscribeUsers True users
       void . forkIO $ startFilesToReceive users
       setAllExpireCIFlags True
+      chatWriteVar timedItemsFlag True
     ok_
   APISuspendChat t -> do
     setAllExpireCIFlags False
+    chatWriteVar timedItemsFlag False
     stopRemoteCtrl
     withAgent (`suspendAgent` t)
     ok_
@@ -3038,6 +3043,7 @@ deleteTimedItem user (ChatRef cType chatId, itemId) deleteAt = do
   ts <- liftIO getCurrentTime
   liftIO $ threadDelay' $ diffToMicroseconds $ diffUTCTime deleteAt ts
   waitChatStarted
+  waitTimedItemsFlag
   vr <- chatVersionRange
   case cType of
     CTDirect -> do
@@ -3048,6 +3054,10 @@ deleteTimedItem user (ChatRef cType chatId, itemId) deleteAt = do
       deletedTs <- liftIO getCurrentTime
       deleteGroupCI user gInfo ci True True Nothing deletedTs >>= toView
     _ -> toView . CRChatError (Just user) . ChatError $ CEInternalError "bad deleteTimedItem cType"
+  where
+    waitTimedItemsFlag = do
+      timedItemsFlag <- asks timedItemsFlag
+      atomically $ readTVar timedItemsFlag >>= \b -> unless b retry
 
 startUpdatedTimedItemThread :: ChatMonad m => User -> ChatRef -> ChatItem c d -> ChatItem c d -> m ()
 startUpdatedTimedItemThread user chatRef ci ci' =

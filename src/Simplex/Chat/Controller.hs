@@ -201,6 +201,7 @@ data ChatController = ChatController
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
+    timedItemsFlag :: TVar Bool,
     showLiveItems :: TVar Bool,
     encryptLocalFiles :: TVar Bool,
     userXFTPFileConfig :: TVar (Maybe XFTPFileConfig),
