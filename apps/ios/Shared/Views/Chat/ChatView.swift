@@ -250,8 +250,8 @@ struct ChatView: View {
     }
 
     private func searchToolbar() -> some View {
-        HStack {
-            HStack {
+        HStack(spacing: 12) {
+            HStack(spacing: 4) {
                 Image(systemName: "magnifyingglass")
                 TextField("Search", text: $searchText)
                     .focused($searchFocussed)
@@ -264,9 +264,9 @@ struct ChatView: View {
                     Image(systemName: "xmark.circle.fill").opacity(searchText == "" ? 0 : 1)
                 }
             }
-            .padding(EdgeInsets(top: 8, leading: 6, bottom: 8, trailing: 6))
+            .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
             .foregroundColor(.secondary)
-            .background(Color(.secondarySystemBackground))
+            .background(Color(.tertiarySystemFill))
             .cornerRadius(10.0)
 
             Button ("Cancel") {
@@ -723,9 +723,14 @@ struct ChatView: View {
                 if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
                     menu.append(replyUIAction(ci))
                 }
-                menu.append(shareUIAction(ci))
-                menu.append(copyUIAction(ci))
-                if let fileSource = getLoadedFileSource(ci.file) {
+                let fileSource = getLoadedFileSource(ci.file)
+                let fileExists = if let fs = fileSource, FileManager.default.fileExists(atPath: getAppFilePath(fs.filePath).path) { true } else { false }
+                let copyAndShareAllowed = !ci.content.text.isEmpty || (ci.content.msgContent?.isImage == true && fileExists)
+                if copyAndShareAllowed {
+                    menu.append(shareUIAction(ci))
+                    menu.append(copyUIAction(ci))
+                }
+                if let fileSource = fileSource, fileExists {
                     if case .image = ci.content.msgContent, let image = getLoadedImage(ci.file) {
                         if image.imageData != nil {
                             menu.append(saveFileAction(fileSource))

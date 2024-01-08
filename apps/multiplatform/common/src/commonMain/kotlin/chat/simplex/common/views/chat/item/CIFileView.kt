@@ -131,7 +131,8 @@ fun CIFileView(
     Surface(
       Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
       color = Color.Transparent,
-      shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
+      shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
+      contentColor = LocalContentColor.current
     ) {
       Box(Modifier.size(32.dp))
     }

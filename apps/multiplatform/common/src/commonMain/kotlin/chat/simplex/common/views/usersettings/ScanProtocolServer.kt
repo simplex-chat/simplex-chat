@@ -20,25 +20,17 @@ fun ScanProtocolServerLayout(rhId: Long?, onNext: (ServerCfg) -> Unit) {
   Column(
     Modifier
       .fillMaxSize()
-      .padding(horizontal = DEFAULT_PADDING)
   ) {
-    AppBarTitle(stringResource(MR.strings.smp_servers_scan_qr), withPadding = false)
-    Box(
-      Modifier
-        .fillMaxWidth()
-        .aspectRatio(ratio = 1F)
-        .padding(bottom = 12.dp)
-    ) {
-      QRCodeScanner { text ->
-        val res = parseServerAddress(text)
-        if (res != null) {
-          onNext(ServerCfg(remoteHostId = rhId, text, false, null, true))
-        } else {
-          AlertManager.shared.showAlertMsg(
-            title = generalGetString(MR.strings.smp_servers_invalid_address),
-            text = generalGetString(MR.strings.smp_servers_check_address)
-          )
-        }
+    AppBarTitle(stringResource(MR.strings.smp_servers_scan_qr))
+    QRCodeScanner { text ->
+      val res = parseServerAddress(text)
+      if (res != null) {
+        onNext(ServerCfg(remoteHostId = rhId, text, false, null, true))
+      } else {
+        AlertManager.shared.showAlertMsg(
+          title = generalGetString(MR.strings.smp_servers_invalid_address),
+          text = generalGetString(MR.strings.smp_servers_check_address)
+        )
       }
     }
   }

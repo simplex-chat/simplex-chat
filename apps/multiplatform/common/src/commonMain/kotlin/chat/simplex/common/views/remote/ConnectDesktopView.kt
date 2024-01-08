@@ -339,16 +339,9 @@ private fun DevicesView(deviceName: String, remoteCtrls: SnapshotStateList<Remot
 @Composable
 private fun ScanDesktopAddressView(sessionAddress: MutableState<String>) {
   SectionView(stringResource(MR.strings.scan_qr_code_from_desktop).uppercase()) {
-    Box(
-      Modifier
-        .fillMaxWidth()
-        .aspectRatio(ratio = 1F)
-        .padding(DEFAULT_PADDING)
-    ) {
-      QRCodeScanner { text ->
-        sessionAddress.value = text
-        processDesktopQRCode(sessionAddress, text)
-      }
+    QRCodeScanner { text ->
+      sessionAddress.value = text
+      processDesktopQRCode(sessionAddress, text)
     }
   }
 }

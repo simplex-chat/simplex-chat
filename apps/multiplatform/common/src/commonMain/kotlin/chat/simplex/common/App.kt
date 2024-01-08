@@ -44,7 +44,7 @@ data class SettingsViewState(
 fun AppScreen() {
   SimpleXTheme {
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
-      Surface(color = MaterialTheme.colors.background) {
+      Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
         MainScreen()
       }
     }
@@ -85,7 +85,7 @@ fun MainScreen() {
 
   @Composable
   fun AuthView() {
-    Surface(color = MaterialTheme.colors.background) {
+    Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
       Box(
         Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -103,13 +103,15 @@ fun MainScreen() {
   }
 
   Box {
+    val unauthorized = remember { derivedStateOf { AppLock.userAuthorized.value != true } }
     val onboarding by remember { chatModel.controller.appPrefs.onboardingStage.state }
     val localUserCreated = chatModel.localUserCreated.value
     var showInitializationView by remember { mutableStateOf(false) }
     when {
-      chatModel.chatDbStatus.value == null && showInitializationView -> InitializationView()
+      chatModel.chatDbStatus.value == null && showInitializationView -> DefaultProgressView(stringResource(MR.strings.opening_database))
       showChatDatabaseError -> {
-        chatModel.chatDbStatus.value?.let {
+        // Prevent showing keyboard on Android when: passcode enabled and database password not saved
+        if (!unauthorized.value && chatModel.chatDbStatus.value != null) {
           DatabaseErrorView(chatModel.chatDbStatus, chatModel.controller.appPrefs)
         }
       }
@@ -125,6 +127,7 @@ fun MainScreen() {
           }
           val scaffoldState = rememberScaffoldState()
           val settingsState = remember { SettingsViewState(userPickerState, scaffoldState) }
+          SetupClipboardListener()
           if (appPlatform.isAndroid) {
             AndroidScreen(settingsState)
           } else {
@@ -149,7 +152,6 @@ fun MainScreen() {
       SwitchingUsersView()
     }
 
-    val unauthorized = remember { derivedStateOf { AppLock.userAuthorized.value != true } }
     if (unauthorized.value && !(chatModel.activeCallViewIsVisible.value && chatModel.showCallView.value)) {
       LaunchedEffect(Unit) {
         // With these constrains when user presses back button while on ChatList, activity destroys and shows auth request
@@ -162,11 +164,26 @@ fun MainScreen() {
         AuthView()
       } else {
         SplashView()
+        ModalManager.fullscreen.showPasscodeInView()
       }
-    } else if (chatModel.showCallView.value) {
-      ActiveCallView()
+    } else {
+      if (chatModel.showCallView.value) {
+        ActiveCallView()
+      } else {
+        // It's needed for privacy settings toggle, so it can be shown even if the app is passcode unlocked
+        ModalManager.fullscreen.showPasscodeInView()
+      }
+      AlertManager.privacySensitive.showInView()
+      if (onboarding == OnboardingStage.OnboardingComplete) {
+        LaunchedEffect(chatModel.currentUser.value, chatModel.appOpenUrl.value) {
+          val (rhId, url) = chatModel.appOpenUrl.value ?: (null to null)
+          if (url != null) {
+            chatModel.appOpenUrl.value = null
+            connectIfOpenedViaUri(rhId, url, chatModel)
+          }
+        }
+      }
     }
-    ModalManager.fullscreen.showPasscodeInView()
     val invitation = chatModel.activeCallInvitation.value
     if (invitation != null) IncomingCallAlertView(invitation, chatModel)
     AlertManager.shared.showInView()
@@ -317,27 +334,13 @@ fun DesktopScreen(settingsState: SettingsViewState) {
       )
     }
     VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH))
-    UserPicker(chatModel, userPickerState) {
-      scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
-      userPickerState.value = AnimatedViewState.GONE
+    tryOrShowError("UserPicker", error = {}) {
+      UserPicker(chatModel, userPickerState) {
+        scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
+        userPickerState.value = AnimatedViewState.GONE
+      }
     }
     ModalManager.fullscreen.showInView()
-  }
-}
-
-@Composable
-fun InitializationView() {
-  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      CircularProgressIndicator(
-        Modifier
-          .padding(bottom = DEFAULT_PADDING)
-          .size(30.dp),
-        color = MaterialTheme.colors.secondary,
-        strokeWidth = 2.5.dp
-      )
-      Text(stringResource(MR.strings.opening_database))
-    }
   }
 }
 

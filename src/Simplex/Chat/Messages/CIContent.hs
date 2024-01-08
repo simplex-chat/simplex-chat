@@ -574,3 +574,38 @@ dbParseACIContent = fmap aciContentDBJSON . J.eitherDecodeStrict' . encodeUtf8
 -- platform specific
 instance FromJSON ACIContent where
   parseJSON = fmap aciContentJSON . J.parseJSON
+
+sndMsgContentTag :: Text
+sndMsgContentTag = "sndMsgContent"
+
+rcvMsgContentTag :: Text
+rcvMsgContentTag = "rcvMsgContent"
+
+toCIContentTag :: CIContent e -> Text
+toCIContentTag ciContent = case ciContent of
+  CISndMsgContent _ -> sndMsgContentTag
+  CIRcvMsgContent _ -> rcvMsgContentTag
+  CISndDeleted _ -> "sndDeleted"
+  CIRcvDeleted _ -> "rcvDeleted"
+  CISndCall {} -> "sndCall"
+  CIRcvCall {} -> "rcvCall"
+  CIRcvIntegrityError _ -> "rcvIntegrityError"
+  CIRcvDecryptionError {} -> "rcvDecryptionError"
+  CIRcvGroupInvitation {} -> "rcvGroupInvitation"
+  CISndGroupInvitation {} -> "sndGroupInvitation"
+  CIRcvDirectEvent _ -> "rcvDirectEvent"
+  CIRcvGroupEvent _ -> "rcvGroupEvent"
+  CISndGroupEvent _ -> "sndGroupEvent"
+  CIRcvConnEvent _ -> "rcvConnEvent"
+  CISndConnEvent _ -> "sndConnEvent"
+  CIRcvChatFeature {} -> "rcvChatFeature"
+  CISndChatFeature {} -> "sndChatFeature"
+  CIRcvChatPreference {} -> "rcvChatPreference"
+  CISndChatPreference {} -> "sndChatPreference"
+  CIRcvGroupFeature {} -> "rcvGroupFeature"
+  CISndGroupFeature {} -> "sndGroupFeature"
+  CIRcvChatFeatureRejected _ -> "rcvChatFeatureRejected"
+  CIRcvGroupFeatureRejected _ -> "rcvGroupFeatureRejected"
+  CISndModerated -> "sndModerated"
+  CIRcvModerated -> "rcvModerated"
+  CIInvalidJSON _ -> "invalidJSON"

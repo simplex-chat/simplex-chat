@@ -383,7 +383,7 @@ fun SimplexLockView(
             }
             LAMode.PASSCODE -> {
               ModalManager.fullscreen.showCustomModal { close ->
-                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
                   SetAppPasscodeView(
                     submit = {
                       laLockDelay.set(30)
@@ -427,8 +427,9 @@ fun SimplexLockView(
       when (laResult) {
         LAResult.Success -> {
           ModalManager.fullscreen.showCustomModal { close ->
-            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
               SetAppPasscodeView(
+                reason = generalGetString(MR.strings.la_app_passcode),
                 submit = {
                   passcodeAlert(generalGetString(MR.strings.passcode_changed))
                 }, cancel = {
@@ -450,9 +451,10 @@ fun SimplexLockView(
       when (laResult) {
         LAResult.Success -> {
           ModalManager.fullscreen.showCustomModal { close ->
-            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+            Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
               SetAppPasscodeView(
                 passcodeKeychain = ksSelfDestructPassword,
+                reason = generalGetString(MR.strings.self_destruct),
                 submit = {
                   selfDestructPasscodeAlert(generalGetString(MR.strings.self_destruct_passcode_changed))
                 }, cancel = {
@@ -485,7 +487,7 @@ fun SimplexLockView(
             }
             LAMode.PASSCODE -> {
               ModalManager.fullscreen.showCustomModal { close ->
-                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+                Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
                   SetAppPasscodeView(
                     submit = {
                       laLockDelay.set(30)
@@ -553,7 +555,7 @@ fun SimplexLockView(
                 fontSize = 16.sp,
                 modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
               )
-              ProfileNameField(selfDestructDisplayName, "", ::isValidDisplayName)
+              ProfileNameField(selfDestructDisplayName, "", { isValidDisplayName(it.trim()) })
               LaunchedEffect(selfDestructDisplayName.value) {
                 val new = selfDestructDisplayName.value
                 if (isValidDisplayName(new) && selfDestructDisplayNamePref.get() != new) {
@@ -596,7 +598,7 @@ private fun EnableSelfDestruct(
   selfDestruct: SharedPreference<Boolean>,
   close: () -> Unit
 ) {
-  Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+  Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
     SetAppPasscodeView(
       passcodeKeychain = ksSelfDestructPassword, title = generalGetString(MR.strings.set_passcode), reason = generalGetString(MR.strings.enabled_self_destruct_passcode),
       submit = {

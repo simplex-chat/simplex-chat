@@ -60,6 +60,9 @@ fun annotatedStringResource(id: StringResource, vararg args: Any?): AnnotatedStr
   }
 }
 
+@Composable
+expect fun SetupClipboardListener()
+
 // maximum image file size to be auto-accepted
 const val MAX_IMAGE_SIZE: Long = 261_120 // 255KB
 const val MAX_IMAGE_SIZE_AUTO_RCV: Long = MAX_IMAGE_SIZE * 2
@@ -389,6 +392,28 @@ fun IntSize.Companion.Saver(): Saver<IntSize, *> = Saver(
   save = { it.width to it.height },
   restore = { IntSize(it.first, it.second) }
 )
+
+private var lastExecutedComposables = HashSet<Any>()
+private val failedComposables = HashSet<Any>()
+
+@Composable
+fun tryOrShowError(key: Any = Exception().stackTraceToString().lines()[2], error: @Composable () -> Unit = {}, content: @Composable () -> Unit) {
+  if (!failedComposables.contains(key)) {
+    lastExecutedComposables.add(key)
+    content()
+    lastExecutedComposables.remove(key)
+  } else {
+    error()
+  }
+}
+
+fun includeMoreFailedComposables() {
+  lastExecutedComposables.forEach {
+    failedComposables.add(it)
+    Log.i(TAG, "Added composable key as failed: $it")
+  }
+  lastExecutedComposables.clear()
+}
 
 @Composable
 fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenGone: () -> Unit) {

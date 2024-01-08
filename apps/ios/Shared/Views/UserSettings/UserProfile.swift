@@ -120,8 +120,10 @@ struct UserProfile: View {
             }
         }
         .sheet(isPresented: $showImagePicker) {
-            LibraryImagePicker(image: $chosenImage) {
-                didSelectItem in showImagePicker = false
+            LibraryImagePicker(image: $chosenImage) { _ in
+                await MainActor.run {
+                    showImagePicker = false
+                }
             }
         }
         .onChange(of: chosenImage) { image in

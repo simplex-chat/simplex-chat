@@ -154,20 +154,20 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
       SectionItemView {
         TimeoutSettingRow(
           stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
-          listOf(5_000000, 7_500000, 10_000000, 15_000000, 20_000000, 30_000_000, 45_000_000), secondsLabel
+          listOf(7_500000, 10_000000, 15_000000, 20_000000, 30_000_000, 45_000_000), secondsLabel
         )
       }
       SectionItemView {
         TimeoutSettingRow(
           stringResource(MR.strings.network_option_protocol_timeout), networkTCPTimeout,
-          listOf(3_000000, 5_000000, 7_000000, 10_000000, 15_000000, 20_000_000, 30_000_000), secondsLabel
+          listOf(5_000000, 7_000000, 10_000000, 15_000000, 20_000_000, 30_000_000), secondsLabel
         )
       }
       SectionItemView {
         // can't be higher than 130ms to avoid overflow on 32bit systems
         TimeoutSettingRow(
           stringResource(MR.strings.network_option_protocol_timeout_per_kb), networkTCPTimeoutPerKb,
-          listOf(15_000, 30_000, 60_000, 90_000, 120_000), secondsLabel
+          listOf(15_000, 30_000, 45_000, 60_000, 90_000, 120_000), secondsLabel
         )
       }
       SectionItemView {
@@ -380,7 +380,8 @@ fun SettingsSectionFooter(revert: () -> Unit, save: () -> Unit, disabled: Boolea
 fun FooterButton(icon: Painter, title: String, action: () -> Unit, disabled: Boolean) {
   Surface(
     shape = RoundedCornerShape(20.dp),
-    color = Color.Black.copy(alpha = 0f)
+    color = Color.Black.copy(alpha = 0f),
+    contentColor = LocalContentColor.current
   ) {
     val modifier = if (disabled) Modifier else Modifier.clickable { action() }
     Row(

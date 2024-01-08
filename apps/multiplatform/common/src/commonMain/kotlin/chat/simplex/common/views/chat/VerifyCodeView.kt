@@ -74,9 +74,7 @@ private fun VerifyCodeLayout(
       }
     }
 
-    SectionView {
-      QRCode(connectionCode, Modifier.aspectRatio(1f))
-    }
+    QRCode(connectionCode, padding = PaddingValues(vertical = DEFAULT_PADDING_HALF))
 
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
       Spacer(Modifier.weight(2f))

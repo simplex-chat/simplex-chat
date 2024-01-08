@@ -112,6 +112,11 @@ private fun GroupPreferencesLayout(
     FeatureSection(GroupFeature.Files, allowFiles, groupInfo, preferences, onTTLUpdated) {
       applyPrefs(preferences.copy(files = GroupPreference(enable = it)))
     }
+    SectionDividerSpaced(true, maxBottomPadding = false)
+    val enableHistory = remember(preferences) { mutableStateOf(preferences.history.enable) }
+    FeatureSection(GroupFeature.History, enableHistory, groupInfo, preferences, onTTLUpdated) {
+      applyPrefs(preferences.copy(history = GroupPreference(enable = it)))
+    }
     if (groupInfo.canEdit) {
       SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
       ResetSaveButtons(

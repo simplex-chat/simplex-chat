@@ -228,7 +228,8 @@ func apiStopChat() async throws {
 }
 
 func apiActivateChat() {
-    let r = chatSendCmdSync(.apiActivateChat)
+    chatReopenStore()
+    let r = chatSendCmdSync(.apiActivateChat(restoreChat: true))
     if case .cmdOk = r { return }
     logger.error("apiActivateChat error: \(String(describing: r))")
 }
@@ -580,15 +581,15 @@ func apiVerifyGroupMember(_ groupId: Int64, _ groupMemberId: Int64, connectionCo
     return nil
 }
 
-func apiAddContact(incognito: Bool) async -> (String, PendingContactConnection)? {
+func apiAddContact(incognito: Bool) async -> ((String, PendingContactConnection)?, Alert?) {
     guard let userId = ChatModel.shared.currentUser?.userId else {
         logger.error("apiAddContact: no current user")
-        return nil
+        return (nil, nil)
     }
     let r = await chatSendCmd(.apiAddContact(userId: userId, incognito: incognito), bgTask: false)
-    if case let .invitation(_, connReqInvitation, connection) = r { return (connReqInvitation, connection) }
-    AlertManager.shared.showAlert(connectionErrorAlert(r))
-    return nil
+    if case let .invitation(_, connReqInvitation, connection) = r { return ((connReqInvitation, connection), nil) }
+    let alert = connectionErrorAlert(r)
+    return (nil, alert)
 }
 
 func apiSetConnectionIncognito(connId: Int64, incognito: Bool) async throws -> PendingContactConnection? {
@@ -1211,7 +1212,7 @@ private func currentUserId(_ funcName: String) throws -> Int64 {
     throw RuntimeError("\(funcName): no current user")
 }
 
-func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool = true, confirmMigrations: MigrationConfirmation? = nil) throws {
+func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = nil, refreshInvitations: Bool = true, confirmMigrations: MigrationConfirmation? = nil) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared
     (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey, confirmMigrations: confirmMigrations)
@@ -1230,10 +1231,43 @@ func initializeChat(start: Bool, dbKey: String? = nil, refreshInvitations: Bool 
         onboardingStageDefault.set(.step1_SimpleXInfo)
         privacyDeliveryReceiptsSet.set(true)
         m.onboardingStage = .step1_SimpleXInfo
-    } else if start {
+    } else if confirmStart {
+        showStartChatAfterRestartAlert { start in
+            do {
+                if start { AppChatState.shared.set(.active) }
+                try chatInitialized(start: start, refreshInvitations: refreshInvitations)
+            } catch let error {
+                logger.error("ChatInitialized error: \(error)")
+            }
+        }
+    } else {
+        try chatInitialized(start: start, refreshInvitations: refreshInvitations)
+    }
+}
+
+func showStartChatAfterRestartAlert(result: @escaping (_ start: Bool) -> Void) {
+    AlertManager.shared.showAlert(Alert(
+        title: Text("Start chat?"),
+        message: Text("Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat."),
+        primaryButton: .default(Text("Ok")) {
+            result(true)
+        },
+        secondaryButton: .cancel {
+            result(false)
+        }
+    ))
+}
+
+private func chatInitialized(start: Bool, refreshInvitations: Bool) throws {
+    let m = ChatModel.shared
+    if m.currentUser == nil { return }
+    if start {
         try startChat(refreshInvitations: refreshInvitations)
     } else {
         m.chatRunning = false
+        try getUserChatData()
+        NtfManager.shared.setNtfBadgeCount(m.totalUnreadCountForAllUsers())
+        m.onboardingStage = onboardingStageDefault.get()
     }
 }
 
@@ -1250,6 +1284,8 @@ func startChat(refreshInvitations: Bool = true) throws {
             try refreshCallInvitations()
         }
         (m.savedToken, m.tokenStatus, m.notificationMode) = apiGetNtfToken()
+        // deviceToken is set when AppDelegate.application(didRegisterForRemoteNotificationsWithDeviceToken:) is called,
+        // when it is called before startChat
         if let token = m.deviceToken {
             registerToken(token: token)
         }
@@ -1736,7 +1772,9 @@ func processReceivedMsg(_ res: ChatResponse) async {
         // This delay is needed to cancel the session that fails on network failure,
         // e.g. when user did not grant permission to access local network yet.
         if let sess = m.remoteCtrlSession {
-            m.remoteCtrlSession = nil
+            await MainActor.run {
+                m.remoteCtrlSession = nil
+            }
             if case .connected = sess.sessionState {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                     switchToLocalSession()

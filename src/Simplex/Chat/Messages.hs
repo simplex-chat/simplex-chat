@@ -5,7 +5,6 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE StandaloneDeriving #-}
@@ -22,6 +21,7 @@ import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
+import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace)
 import Data.Int (Int64)
@@ -344,7 +344,9 @@ contactTimedTTL Contact {mergedPreferences = ContactUserPreferences {timedMessag
   | forUser enabled && forContact enabled = Just ttl
   | otherwise = Nothing
   where
-    TimedMessagesPreference {ttl} = userPreference.preference
+    TimedMessagesPreference {ttl} = case userPreference of
+      CUPContact {preference} -> preference
+      CUPUser {preference} -> preference
 
 groupTimedTTL :: GroupInfo -> Maybe (Maybe Int)
 groupTimedTTL GroupInfo {fullGroupPreferences = FullGroupPreferences {timedMessages = TimedMessagesGroupPreference {enable, ttl}}}
@@ -369,6 +371,9 @@ data CIQuote (c :: ChatType) = CIQuote
     formattedText :: Maybe MarkdownList
   }
   deriving (Show)
+
+quoteItemId :: CIQuote c -> Maybe ChatItemId
+quoteItemId CIQuote {itemId} = itemId
 
 data CIReaction (c :: ChatType) (d :: MsgDirection) = CIReaction
   { chatDir :: CIDirection c d,
@@ -713,12 +718,6 @@ type ChatItemId = Int64
 
 type ChatItemTs = UTCTime
 
-data ChatPagination
-  = CPLast Int
-  | CPAfter ChatItemId Int
-  | CPBefore ChatItemId Int
-  deriving (Show)
-
 data SChatType (c :: ChatType) where
   SCTDirect :: SChatType 'CTDirect
   SCTGroup :: SChatType 'CTGroup
@@ -766,17 +765,20 @@ checkChatType x = case testEquality (chatTypeI @c) (chatTypeI @c') of
   Just Refl -> Right x
   Nothing -> Left "bad chat type"
 
-data NewMessage e = NewMessage
-  { chatMsgEvent :: ChatMsgEvent e,
-    msgBody :: MsgBody
-  }
-  deriving (Show)
+type LazyMsgBody = L.ByteString
 
 data SndMessage = SndMessage
   { msgId :: MessageId,
     sharedMsgId :: SharedMsgId,
+    msgBody :: LazyMsgBody
+  }
+  deriving (Show)
+
+data NewRcvMessage e = NewRcvMessage
+  { chatMsgEvent :: ChatMsgEvent e,
     msgBody :: MsgBody
   }
+  deriving (Show)
 
 data RcvMessage = RcvMessage
   { msgId :: MessageId,
@@ -790,7 +792,7 @@ data RcvMessage = RcvMessage
 data PendingGroupMessage = PendingGroupMessage
   { msgId :: MessageId,
     cmEventTag :: ACMEventTag,
-    msgBody :: MsgBody,
+    msgBody :: LazyMsgBody,
     introId_ :: Maybe Int64
   }
 

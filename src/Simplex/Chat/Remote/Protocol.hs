@@ -38,7 +38,6 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Remote.Transport
 import Simplex.Chat.Remote.Types
 import Simplex.FileTransfer.Description (FileDigest (..))
-import Simplex.Messaging.Agent.Client (agentDRG)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Crypto.Lazy (LazyByteString)
@@ -78,7 +77,7 @@ $(deriveJSON (taggedObjectJSON $ dropPrefix "RR") ''RemoteResponse)
 
 mkRemoteHostClient :: ChatMonad m => HTTP2Client -> HostSessKeys -> SessionCode -> FilePath -> HostAppInfo -> m RemoteHostClient
 mkRemoteHostClient httpClient sessionKeys sessionCode storePath HostAppInfo {encoding, deviceName, encryptFiles} = do
-  drg <- asks $ agentDRG . smpAgent
+  drg <- asks random
   counter <- newTVarIO 1
   let HostSessKeys {hybridKey, idPrivKey, sessPrivKey} = sessionKeys
       signatures = RSSign {idPrivKey, sessPrivKey}
@@ -95,7 +94,7 @@ mkRemoteHostClient httpClient sessionKeys sessionCode storePath HostAppInfo {enc
 
 mkCtrlRemoteCrypto :: ChatMonad m => CtrlSessKeys -> SessionCode -> m RemoteCrypto
 mkCtrlRemoteCrypto CtrlSessKeys {hybridKey, idPubKey, sessPubKey} sessionCode = do
-  drg <- asks $ agentDRG . smpAgent
+  drg <- asks random
   counter <- newTVarIO 1
   let signatures = RSVerify {idPubKey, sessPubKey}
   pure RemoteCrypto {drg, counter, sessionCode, hybridKey, signatures}

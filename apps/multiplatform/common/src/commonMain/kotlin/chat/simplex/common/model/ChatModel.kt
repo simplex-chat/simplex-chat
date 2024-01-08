@@ -48,6 +48,7 @@ object ChatModel {
   val chatDbChanged = mutableStateOf<Boolean>(false)
   val chatDbEncrypted = mutableStateOf<Boolean?>(false)
   val chatDbStatus = mutableStateOf<DBMigrationResult?>(null)
+  val ctrlInitInProgress = mutableStateOf(false)
   val chats = mutableStateListOf<Chat>()
   // map of connections network statuses, key is agent connection id
   val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
@@ -59,7 +60,7 @@ object ChatModel {
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
   val groupMembers = mutableStateListOf<GroupMember>()
 
-  val terminalItems = mutableStateListOf<TerminalItem>()
+  val terminalItems = mutableStateOf<List<TerminalItem>>(listOf())
   val userAddress = mutableStateOf<UserContactLinkRec?>(null)
   // Allows to temporary save servers that are being edited on multiple screens
   val userSMPServersUnsaved = mutableStateOf<(List<ServerCfg>)?>(null)
@@ -71,8 +72,8 @@ object ChatModel {
   // Only needed during onboarding when user skipped password setup (left as random password)
   val desktopOnboardingRandomPassword = mutableStateOf(false)
 
-  // set when app is opened via contact or invitation URI
-  val appOpenUrl = mutableStateOf<URI?>(null)
+  // set when app is opened via contact or invitation URI (rhId, uri)
+  val appOpenUrl = mutableStateOf<Pair<Long?, URI>?>(null)
 
   // preferences
   val notificationPreviewMode by lazy {
@@ -98,8 +99,8 @@ object ChatModel {
   val showCallView = mutableStateOf(false)
   val switchingCall = mutableStateOf(false)
 
-  // currently showing QR code
-  val connReqInv = mutableStateOf(null as String?)
+  // currently showing invitation
+  val showingInvitation = mutableStateOf(null as ShowingInvitation?)
 
   var draft = mutableStateOf(null as ComposeState?)
   var draftChatId = mutableStateOf(null as String?)
@@ -109,6 +110,8 @@ object ChatModel {
 
   val filesToDelete = mutableSetOf<File>()
   val simplexLinkMode by lazy { mutableStateOf(ChatController.appPrefs.simplexLinkMode.get()) }
+
+  val clipboardHasText = mutableStateOf(false)
 
   var updatingChatsMutex: Mutex = Mutex()
 
@@ -562,13 +565,28 @@ object ChatModel {
     chats.add(index = 0, chat)
   }
 
-  fun dismissConnReqView(id: String) {
-    if (connReqInv.value == null) return
-    val info = getChat(id)?.chatInfo as? ChatInfo.ContactConnection ?: return
-    if (info.contactConnection.connReqInv == connReqInv.value) {
-      connReqInv.value = null
-      ModalManager.center.closeModals()
+  fun replaceConnReqView(id: String, withId: String) {
+    if (id == showingInvitation.value?.connId) {
+      showingInvitation.value = null
+      chatModel.chatItems.clear()
+      chatModel.chatId.value = withId
+      ModalManager.end.closeModals()
     }
+  }
+
+  fun dismissConnReqView(id: String) {
+    if (id == showingInvitation.value?.connId) {
+      showingInvitation.value = null
+      chatModel.chatItems.clear()
+      chatModel.chatId.value = null
+      // Close NewChatView
+      ModalManager.center.closeModals()
+      ModalManager.end.closeModals()
+    }
+  }
+
+  fun markShowingInvitationUsed() {
+    showingInvitation.value = showingInvitation.value?.copy(connChatUsed = true)
   }
 
   fun removeChat(rhId: Long?, id: String) {
@@ -621,15 +639,21 @@ object ChatModel {
   }
 
   fun addTerminalItem(item: TerminalItem) {
-    if (terminalItems.size >= 500) {
-      terminalItems.removeAt(0)
+    if (terminalItems.value.size >= 500) {
+      terminalItems.value = terminalItems.value.subList(1, terminalItems.value.size)
     }
-    terminalItems.add(item)
+    terminalItems.value += item
   }
 
   val connectedToRemote: Boolean @Composable get() = currentRemoteHost.value != null || remoteCtrlSession.value?.active == true
   fun connectedToRemote(): Boolean = currentRemoteHost.value != null || remoteCtrlSession.value?.active == true
 }
+
+data class ShowingInvitation(
+  val connId: String,
+  val connReq: String,
+  val connChatUsed: Boolean
+)
 
 enum class ChatType(val type: String) {
   Direct("@"),
@@ -1128,7 +1152,6 @@ data class LocalProfile(
 
 @Serializable
 data class UserProfileUpdateSummary(
-  val notChanged: Int,
   val updateSuccesses: Int,
   val updateFailures: Int,
   val changedContacts: List<Contact>
@@ -2696,6 +2719,8 @@ sealed class Format {
     is Email -> linkStyle
     is Phone -> linkStyle
   }
+
+  val isSimplexLink = this is SimplexLink
 
   companion object {
     val linkStyle @Composable get() = SpanStyle(color = MaterialTheme.colors.primary, textDecoration = TextDecoration.Underline)

@@ -24,7 +24,7 @@ import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
 
 class AlertManager {
-  var alertViews = mutableStateListOf<(@Composable () -> Unit)>()
+  private var alertViews = mutableStateListOf<(@Composable () -> Unit)>()
 
   fun showAlert(alert: @Composable () -> Unit) {
     Log.d(TAG, "AlertManager.showAlert")
@@ -34,6 +34,12 @@ class AlertManager {
   fun hideAlert() {
     alertViews.removeLastOrNull()
   }
+
+  fun hideAllAlerts() {
+    alertViews.clear()
+  }
+
+  fun hasAlertsShown() = alertViews.isNotEmpty()
 
   fun showAlertDialogButtons(
     title: String,
@@ -56,7 +62,28 @@ class AlertManager {
 
   fun showAlertDialogButtonsColumn(
     title: String,
-    text: AnnotatedString? = null,
+    text: String? = null,
+    onDismissRequest: (() -> Unit)? = null,
+    hostDevice: Pair<Long?, String>? = null,
+    buttons: @Composable () -> Unit,
+  ) {
+    showAlert {
+      AlertDialog(
+        onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
+        title = alertTitle(title),
+        buttons = {
+          AlertContent(text, hostDevice, extraPadding = true) {
+            buttons()
+          }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+      )
+    }
+  }
+
+  fun showAlertDialogButtonsColumn(
+    title: String,
+    text: AnnotatedString,
     onDismissRequest: (() -> Unit)? = null,
     hostDevice: Pair<Long?, String>? = null,
     buttons: @Composable () -> Unit,
@@ -220,6 +247,7 @@ class AlertManager {
 
   companion object {
     val shared = AlertManager()
+    val privacySensitive = AlertManager()
   }
 }
 

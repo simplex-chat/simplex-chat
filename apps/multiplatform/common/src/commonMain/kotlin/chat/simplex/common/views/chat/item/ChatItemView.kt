@@ -195,7 +195,13 @@ fun ChatItemView(
                 }
                 val clipboard = LocalClipboardManager.current
                 val cachedRemoteReqs = remember { CIFile.cachedRemoteFileRequests }
-                val copyAndShareAllowed = cItem.file == null || !chatModel.connectedToRemote() || getLoadedFilePath(cItem.file) != null || cachedRemoteReqs[cItem.file.fileSource] != false
+                val copyAndShareAllowed = when {
+                  cItem.content.text.isNotEmpty() -> true
+                  cItem.file != null && chatModel.connectedToRemote() && cachedRemoteReqs[cItem.file.fileSource] != false && cItem.file.loaded -> true
+                  getLoadedFilePath(cItem.file) != null -> true
+                  else -> false
+                }
+
                 if (copyAndShareAllowed) {
                   ItemAction(stringResource(MR.strings.share_verb), painterResource(MR.images.ic_share), onClick = {
                     var fileSource = getLoadedFileSource(cItem.file)
@@ -221,7 +227,7 @@ fun ChatItemView(
                     showMenu.value = false
                   })
                 }
-                if ((cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) && (getLoadedFilePath(cItem.file) != null || (chatModel.connectedToRemote() && cachedRemoteReqs[cItem.file?.fileSource] != false))) {
+                if ((cItem.content.msgContent is MsgContent.MCImage || cItem.content.msgContent is MsgContent.MCVideo || cItem.content.msgContent is MsgContent.MCFile || cItem.content.msgContent is MsgContent.MCVoice) && (getLoadedFilePath(cItem.file) != null || (chatModel.connectedToRemote() && cachedRemoteReqs[cItem.file?.fileSource] != false && cItem.file?.loaded == true))) {
                   SaveContentItemAction(cItem, saveFileLauncher, showMenu)
                 }
                 if (cItem.meta.editable && cItem.content.msgContent !is MsgContent.MCVoice && !live) {
@@ -607,7 +613,7 @@ private fun ShrinkItemAction(revealed: MutableState<Boolean>, showMenu: MutableS
 @Composable
 fun ItemAction(text: String, icon: Painter, color: Color = Color.Unspecified, onClick: () -> Unit) {
   val finalColor = if (color == Color.Unspecified) {
-    if (isInDarkTheme()) MenuTextColorDark else Color.Black
+    MenuTextColor
   } else color
   DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -627,7 +633,7 @@ fun ItemAction(text: String, icon: Painter, color: Color = Color.Unspecified, on
 @Composable
 fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = Color.Unspecified) {
   val finalColor = if (color == Color.Unspecified) {
-    if (isInDarkTheme()) MenuTextColorDark else Color.Black
+    MenuTextColor
   } else color
   DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
     Row(verticalAlignment = Alignment.CenterVertically) {

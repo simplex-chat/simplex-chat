@@ -4,7 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.graphics.Rect
-import android.os.Build
+import android.os.*
 import android.view.*
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
@@ -80,6 +80,7 @@ actual fun androidIsFinishingMainActivity(): Boolean = (mainActivity.get()?.isFi
 actual class GlobalExceptionsHandler: Thread.UncaughtExceptionHandler {
   actual override fun uncaughtException(thread: Thread, e: Throwable) {
     Log.e(TAG, "App crashed, thread name: " + thread.name + ", exception: " + e.stackTraceToString())
+    includeMoreFailedComposables()
     if (ModalManager.start.hasModalsOpen()) {
       ModalManager.start.closeModal()
     } else if (chatModel.chatId.value != null) {
@@ -94,19 +95,27 @@ actual class GlobalExceptionsHandler: Thread.UncaughtExceptionHandler {
         chatModel.callManager.endCall(it)
       }
     }
-    AlertManager.shared.showAlertMsg(
-      title = generalGetString(MR.strings.app_was_crashed),
-      text = e.stackTraceToString()
-    )
-    //mainActivity.get()?.recreate()
-    mainActivity.get()?.apply {
-      window
-        ?.decorView
-        ?.findViewById<ViewGroup>(android.R.id.content)
-        ?.removeViewAt(0)
-      setContent {
-        AppScreen()
+    if (thread.name == "main") {
+      mainActivity.get()?.recreate()
+    } else {
+      mainActivity.get()?.apply {
+        runOnUiThread {
+          window
+            ?.decorView
+            ?.findViewById<ViewGroup>(android.R.id.content)
+            ?.removeViewAt(0)
+          setContent {
+            AppScreen()
+          }
+        }
       }
+    }
+    // Wait until activity recreates to prevent showing two alerts (in case `main` was crashed)
+    Handler(Looper.getMainLooper()).post {
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.app_was_crashed),
+        text = e.stackTraceToString()
+      )
     }
   }
 }
