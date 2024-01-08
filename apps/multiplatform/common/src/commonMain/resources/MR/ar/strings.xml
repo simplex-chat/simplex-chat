@@ -1555,4 +1555,6 @@
     <string name="keep_invitation_link">أبقِ</string>
     <string name="tap_to_paste_link">انقر للصق الرابط</string>
     <string name="search_or_paste_simplex_link">ابحث أو ألصِق رابط SimpleX</string>
+    <string name="start_chat_question">بدء الدردشة؟</string>
+    <string name="chat_is_stopped_you_should_transfer_database">توقفت الدردشة. إذا كنت قد استخدمت قاعدة البيانات هذه بالفعل على جهاز آخر، فيجب عليك نقلها مرة أخرى قبل بدء الدردشة.</string>
 </resources>
