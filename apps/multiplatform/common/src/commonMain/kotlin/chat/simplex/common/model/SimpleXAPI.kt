@@ -585,7 +585,7 @@ object ChatController {
   }
 
   suspend fun apiStartChat(): Boolean {
-    val r = sendCmd(null, CC.StartChat(expire = true))
+    val r = sendCmd(null, CC.StartChat(mainApp = true))
     when (r) {
       is CR.ChatStarted -> return true
       is CR.ChatRunning -> return false
@@ -2171,7 +2171,7 @@ sealed class CC {
   class ApiMuteUser(val userId: Long): CC()
   class ApiUnmuteUser(val userId: Long): CC()
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
-  class StartChat(val expire: Boolean): CC()
+  class StartChat(val mainApp: Boolean): CC()
   class ApiStopChat: CC()
   class SetTempFolder(val tempFolder: String): CC()
   class SetFilesFolder(val filesFolder: String): CC()
@@ -2298,7 +2298,7 @@ sealed class CC {
     is ApiMuteUser -> "/_mute user $userId"
     is ApiUnmuteUser -> "/_unmute user $userId"
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
-    is StartChat -> "/_start subscribe=on expire=${onOff(expire)} xftp=on"
+    is StartChat -> "/_start main=${onOff(mainApp)}"
     is ApiStopChat -> "/_stop"
     is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
