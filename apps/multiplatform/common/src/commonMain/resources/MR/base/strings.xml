@@ -1214,6 +1214,7 @@
   <string name="group_member_status_removed">removed</string>
   <string name="group_member_status_left">left</string>
   <string name="group_member_status_group_deleted">group deleted</string>
+  <string name="group_member_status_unknown">unknown status</string>
   <string name="group_member_status_invited">invited</string>
   <string name="group_member_status_introduced">connecting (introduced)</string>
   <string name="group_member_status_intro_invitation">connecting (introduction invitation)</string>
@@ -1224,6 +1225,9 @@
   <string name="group_member_status_creator">creator</string>
 
   <string name="group_member_status_connecting">connecting</string>
+  <string name="group_member_status_unknown_short">unknown</string>
+
+  <string name="previous_member_vName"><![CDATA[<i>Previous member</i> %1$s]]></string>
 
   <!-- AddGroupMembersView.kt -->
   <string name="no_contacts_to_add">No contacts to add</string>
