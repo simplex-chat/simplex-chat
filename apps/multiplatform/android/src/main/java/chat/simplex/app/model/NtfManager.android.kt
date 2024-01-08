@@ -30,7 +30,7 @@ object NtfManager {
   const val ShowChatsAction: String = "chat.simplex.app.SHOW_CHATS"
 
   // DO NOT change notification channel settings / names
-  const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION_1"
+  const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION_2"
   const val AcceptCallAction: String = "chat.simplex.app.ACCEPT_CALL"
   const val RejectCallAction: String = "chat.simplex.app.REJECT_CALL"
   const val CallNotificationId: Int = -1
@@ -280,6 +280,7 @@ object NtfManager {
     manager.createNotificationChannel(callNotificationChannel(CallChannel, generalGetString(MR.strings.ntf_channel_calls)))
     // Remove old channels since they can't be edited
     manager.deleteNotificationChannel("chat.simplex.app.CALL_NOTIFICATION")
+    manager.deleteNotificationChannel("chat.simplex.app.CALL_NOTIFICATION_1")
     manager.deleteNotificationChannel("chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION")
   }
 
