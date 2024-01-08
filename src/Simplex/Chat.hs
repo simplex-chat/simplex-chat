@@ -63,7 +63,7 @@ import Simplex.Chat.Messages.Batch (MsgBatch (..), batchMessages)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Options
-import Simplex.Chat.ProfileGenerator (generateRandomProfile, generateRandomName)
+import Simplex.Chat.ProfileGenerator (generateRandomProfile)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Remote
 import Simplex.Chat.Remote.Types
@@ -5357,8 +5357,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memberId) >>= \case
         Right author -> processForwardedMsg author msg
         Left (SEGroupMemberNotFoundByMemberId _) -> do
-          randomName <- liftIO generateRandomName
-          unknownAuthor <- withStore $ \db -> createNewUnknownGroupMember db vr user gInfo memberId randomName
+          let name = T.take 7 . safeDecodeUtf8 . B64.encode . unMemberId $ memberId
+          unknownAuthor <- withStore $ \db -> createNewUnknownGroupMember db vr user gInfo memberId name
           toView $ CRUnknownMemberCreatedOnForward user gInfo m unknownAuthor
           processForwardedMsg unknownAuthor msg
         Left e -> throwError $ ChatErrorStore e

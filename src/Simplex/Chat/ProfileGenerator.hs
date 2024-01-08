@@ -1,9 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Simplex.Chat.ProfileGenerator
-  ( generateRandomProfile,
-    generateRandomName,
-  ) where
+module Simplex.Chat.ProfileGenerator ( generateRandomProfile  ) where
 
 import Data.Text (Text)
 import Simplex.Chat.Types (Profile (..))
@@ -11,14 +8,9 @@ import System.Random (randomRIO)
 
 generateRandomProfile :: IO Profile
 generateRandomProfile = do
-  randomName <- generateRandomName
-  pure $ Profile {displayName = randomName, fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
-
-generateRandomName :: IO Text
-generateRandomName = do
   adjective <- pick adjectives
   noun <- pickNoun adjective 2
-  pure $ adjective <> noun
+  pure $ Profile {displayName = adjective <> noun, fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
   where
     pick :: [a] -> IO a
     pick xs = (xs !!) <$> randomRIO (0, length xs - 1)
