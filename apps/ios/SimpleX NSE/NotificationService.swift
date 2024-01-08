@@ -697,7 +697,7 @@ func apiGetActiveUser() -> User? {
 }
 
 func apiStartChat() throws -> Bool {
-    let r = sendSimpleXCmd(.startChat(subscribe: false, expire: false, xftp: false))
+    let r = sendSimpleXCmd(.startChat(mainApp: false))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false

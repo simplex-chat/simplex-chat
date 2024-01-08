@@ -211,7 +211,7 @@ func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool, viewPwd: String?) asyn
 }
 
 func apiStartChat() throws -> Bool {
-    let r = chatSendCmdSync(.startChat(subscribe: true, expire: true, xftp: true))
+    let r = chatSendCmdSync(.startChat(mainApp: true))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
