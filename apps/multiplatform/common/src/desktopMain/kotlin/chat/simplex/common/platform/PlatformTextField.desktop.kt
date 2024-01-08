@@ -167,7 +167,8 @@ actual fun PlatformTextField(
     decorationBox = { innerTextField ->
       Surface(
         shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colors.secondary)
+        border = BorderStroke(1.dp, MaterialTheme.colors.secondary),
+        contentColor = LocalContentColor.current
       ) {
         Row(
           Modifier.background(MaterialTheme.colors.background),

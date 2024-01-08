@@ -894,8 +894,7 @@ data PendingSubStatus = PendingSubStatus
   deriving (Show)
 
 data UserProfileUpdateSummary = UserProfileUpdateSummary
-  { notChanged :: Int,
-    updateSuccesses :: Int,
+  { updateSuccesses :: Int,
     updateFailures :: Int,
     changedContacts :: [Contact]
   }

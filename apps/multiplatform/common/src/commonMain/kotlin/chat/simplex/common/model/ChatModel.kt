@@ -1151,7 +1151,6 @@ data class LocalProfile(
 
 @Serializable
 data class UserProfileUpdateSummary(
-  val notChanged: Int,
   val updateSuccesses: Int,
   val updateFailures: Int,
   val changedContacts: List<Contact>
