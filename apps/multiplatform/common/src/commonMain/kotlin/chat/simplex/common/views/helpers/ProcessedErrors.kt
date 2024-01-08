@@ -10,15 +10,15 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 
 class ProcessedErrors <T: AgentErrorType>(val interval: Long) {
-  private var lastShownTimestamp: Long = 0
+  private var lastShownTimestamp: Long = -1
   private var lastShownOfferRestart: Boolean = false
   private var timer: Job = Job()
 
   fun newError(error: T, offerRestart: Boolean) {
     timer.cancel()
-    val job = withBGApi {
+    timer = withBGApi {
       val delayBeforeNext = (lastShownTimestamp + interval) - System.currentTimeMillis()
-      if ((lastShownOfferRestart || !offerRestart) && delayBeforeNext > 0) {
+      if ((lastShownOfferRestart || !offerRestart) && delayBeforeNext >= 0) {
         delay(delayBeforeNext)
       }
       lastShownTimestamp = System.currentTimeMillis()
@@ -26,7 +26,6 @@ class ProcessedErrors <T: AgentErrorType>(val interval: Long) {
       AlertManager.shared.hideAllAlerts()
       showMessage(error, offerRestart)
     }
-    timer = job
   }
 
   private fun showMessage(error: T, offerRestart: Boolean) {
