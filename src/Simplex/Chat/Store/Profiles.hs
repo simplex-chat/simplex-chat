@@ -248,11 +248,15 @@ updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO U
 updateUserProfile db user p'
   | displayName == newName = do
       liftIO $ updateContactProfile_ db userId profileId p'
+      when nameOrImageChanged . liftIO $ do
+        currentTs <- getCurrentTime
+        updateUserProfileTs_ currentTs
       pure user {profile, fullPreferences}
   | otherwise =
       checkConstraint SEDuplicateName . liftIO $ do
         currentTs <- getCurrentTime
         DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
+        when nameOrImageChanged $ updateUserProfileTs_ currentTs
         DB.execute
           db
           "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
@@ -261,8 +265,11 @@ updateUserProfile db user p'
         updateContact_ db userId userContactId localDisplayName newName currentTs
         pure user {localDisplayName = newName, profile, fullPreferences}
   where
-    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}} = user
-    Profile {displayName = newName, preferences} = p'
+    updateUserProfileTs_ currentTs =
+      DB.execute db "UPDATE users SET last_name_or_image_update_ts = ? WHERE user_id = ?" (currentTs, userId)
+    nameOrImageChanged = newName /= displayName || newFullName /= fullName || newImage /= image
+    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, image, localAlias}} = user
+    Profile {displayName = newName, fullName = newFullName, image = newImage, preferences} = p'
     profile = toLocalProfile profileId p' localAlias
     fullPreferences = mergePreferences Nothing preferences
 
