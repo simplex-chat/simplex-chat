@@ -1728,8 +1728,8 @@
 
   <!-- Errors -->
   <string name="agent_critical_error_title">Critical error</string>
-  <string name="agent_critical_error_desc">Critical problem occurred with message delivery. Report the issue to the app developers: \n%s\n\nYou can restart the chat to repeat the failed process.</string>
+  <string name="agent_critical_error_desc">Report the issue to the app developers: \n%s\n\nIt is recommended to restart the app.</string>
   <string name="agent_internal_error_title">Internal error</string>
-  <string name="agent_internal_error_desc">Internal problem occurred with message delivery. Report the issue to the app developers: \n%s</string>
+  <string name="agent_internal_error_desc">Report the issue to the app developers: \n%s</string>
   <string name="restart_chat_button">Restart chat</string>
 </resources>
