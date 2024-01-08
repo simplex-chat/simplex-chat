@@ -4,7 +4,6 @@ import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionTextFooter
 import SectionItemView
-import SectionSpacer
 import SectionView
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.layout.*
@@ -367,7 +366,7 @@ fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
   return stringResource(if (chatArchiveTime < chatLastStart) MR.strings.old_database_archive else MR.strings.new_database_archive)
 }
 
-private fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
+fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
   withApi {
     try {
       if (chatDbChanged.value) {
@@ -407,6 +406,8 @@ private fun stopChatAlert(m: ChatModel) {
   )
 }
 
+expect fun restartChatOrApp()
+
 private fun exportProhibitedAlert() {
   AlertManager.shared.showAlertMsg(
     title = generalGetString(MR.strings.set_password_to_export),
@@ -414,7 +415,7 @@ private fun exportProhibitedAlert() {
   )
 }
 
-private fun authStopChat(m: ChatModel) {
+fun authStopChat(m: ChatModel, onStop: (() -> Unit)? = null) {
   if (m.controller.appPrefs.performLA.get()) {
     authenticate(
       generalGetString(MR.strings.auth_stop_chat),
@@ -422,7 +423,7 @@ private fun authStopChat(m: ChatModel) {
       completed = { laResult ->
         when (laResult) {
           LAResult.Success, is LAResult.Unavailable -> {
-            stopChat(m)
+            stopChat(m, onStop)
           }
           is LAResult.Error -> {
             m.chatRunning.value = true
@@ -434,15 +435,16 @@ private fun authStopChat(m: ChatModel) {
       }
     )
   } else {
-    stopChat(m)
+    stopChat(m, onStop)
   }
 }
 
-private fun stopChat(m: ChatModel) {
+private fun stopChat(m: ChatModel, onStop: (() -> Unit)? = null) {
   withApi {
     try {
       stopChatAsync(m)
       platform.androidChatStopped()
+      onStop?.invoke()
     } catch (e: Error) {
       m.chatRunning.value = true
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_stopping_chat), e.toString())
