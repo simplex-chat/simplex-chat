@@ -44,7 +44,7 @@ data class SettingsViewState(
 fun AppScreen() {
   SimpleXTheme {
     ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
-      Surface(color = MaterialTheme.colors.background) {
+      Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
         MainScreen()
       }
     }
@@ -85,7 +85,7 @@ fun MainScreen() {
 
   @Composable
   fun AuthView() {
-    Surface(color = MaterialTheme.colors.background) {
+    Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
       Box(
         Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
