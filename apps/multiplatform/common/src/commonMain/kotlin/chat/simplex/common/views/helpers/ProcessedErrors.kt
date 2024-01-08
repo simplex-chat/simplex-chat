@@ -10,7 +10,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 
 class ProcessedErrors <T: AgentErrorType>(val interval: Long) {
-  private var lastShownTimestamp: Long = System.currentTimeMillis() - interval
+  private var lastShownTimestamp: Long = 0
   private var lastShownOfferRestart: Boolean = false
   private var timer: Job = Job()
 
