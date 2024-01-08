@@ -335,6 +335,7 @@ startChatController subConns enableExpireCIs startXFTPWorkers = do
         void $ forkIO $ startFilesToReceive users
       startCleanupManager
       when enableExpireCIs $ startExpireCIs users
+      chatWriteVar timedItemsFlag True
       pure a1
     startXFTP = do
       tmp <- readTVarIO =<< asks tempDirectory
