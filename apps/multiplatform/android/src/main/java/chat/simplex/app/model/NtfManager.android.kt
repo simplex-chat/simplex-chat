@@ -140,7 +140,7 @@ object NtfManager {
     }
   }
 
-  fun notifyCallInvitation(invitation: RcvCallInvitation) {
+  fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean {
     val keyguardManager = getKeyguardManager(context)
     Log.d(
       TAG,
@@ -149,7 +149,7 @@ object NtfManager {
           "callOnLockScreen ${appPreferences.callOnLockScreen.get()}, " +
           "onForeground ${isAppOnForeground}"
     )
-    if (isAppOnForeground) return
+    if (isAppOnForeground) return false
     val contactId = invitation.contact.id
     Log.d(TAG, "notifyCallInvitation $contactId")
     val image = invitation.contact.image
@@ -206,6 +206,7 @@ object NtfManager {
         notify(CallNotificationId, notification)
       }
     }
+    return true
   }
 
   fun showMessage(title: String, text: String) {
