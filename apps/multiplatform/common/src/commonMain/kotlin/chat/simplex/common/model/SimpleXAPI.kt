@@ -108,6 +108,7 @@ class AppPreferences {
   val chatLastStart = mkDatePreference(SHARED_PREFS_CHAT_LAST_START, null)
   val chatStopped = mkBoolPreference(SHARED_PREFS_CHAT_STOPPED, false)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
+  val showInternalErrors = mkBoolPreference(SHARED_PREFS_SHOW_INTERNAL_ERRORS, false)
   val terminalAlwaysVisible = mkBoolPreference(SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
   val networkProxyHostPort = mkStrPreference(SHARED_PREFS_NETWORK_PROXY_HOST_PORT, "localhost:9050")
@@ -276,6 +277,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CHAT_LAST_START = "ChatLastStart"
     private const val SHARED_PREFS_CHAT_STOPPED = "ChatStopped"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
+    private const val SHARED_PREFS_SHOW_INTERNAL_ERRORS = "ShowInternalErrors"
     private const val SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE = "TerminalAlwaysVisible"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
     private const val SHARED_PREFS_NETWORK_PROXY_HOST_PORT = "NetworkProxyHostPort"
@@ -504,6 +506,10 @@ object ChatController {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat && r.chatError.errorType is ChatErrorType.UserExists
     ) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_duplicate_title), generalGetString(MR.strings.failed_to_create_user_duplicate_desc))
+    } else if (
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat && r.chatError.errorType is ChatErrorType.InvalidDisplayName
+    ) {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_invalid_title), generalGetString(MR.strings.failed_to_create_user_invalid_desc))
     } else {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_title), r.details)
     }
@@ -572,7 +578,7 @@ object ChatController {
   }
 
   suspend fun apiStartChat(): Boolean {
-    val r = sendCmd(null, CC.StartChat(expire = true))
+    val r = sendCmd(null, CC.StartChat(mainApp = true))
     when (r) {
       is CR.ChatStarted -> return true
       is CR.ChatRunning -> return false
@@ -1123,6 +1129,13 @@ object ChatController {
     if (r is CR.ContactRequestRejected) return true
     Log.e(TAG, "apiRejectContactRequest bad response: ${r.responseType} ${r.details}")
     return false
+  }
+
+  suspend fun apiGetCallInvitations(rh: Long?): List<RcvCallInvitation> {
+    val r = sendCmd(rh, CC.ApiGetCallInvitations())
+    if (r is CR.CallInvitations) return r.callInvitations
+    Log.e(TAG, "apiGetCallInvitations bad response: ${r.responseType} ${r.details}")
+    return emptyList()
   }
 
   suspend fun apiSendCallInvitation(rh: Long?, contact: Contact, callType: CallType): Boolean {
@@ -1881,9 +1894,34 @@ object ChatController {
         val disconnectedHost = chatModel.remoteHosts.firstOrNull { it.remoteHostId == r.remoteHostId_ }
         chatModel.remoteHostPairing.value = null
         if (disconnectedHost != null) {
-          showToast(
-            generalGetString(MR.strings.remote_host_was_disconnected_toast).format(disconnectedHost.hostDeviceName.ifEmpty { disconnectedHost.remoteHostId.toString() })
-          )
+          val deviceName = disconnectedHost.hostDeviceName.ifEmpty { disconnectedHost.remoteHostId.toString() }
+          when (r.rhStopReason) {
+            is RemoteHostStopReason.ConnectionFailed -> {
+              AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.remote_host_was_disconnected_title),
+                if (r.rhStopReason.chatError is ChatError.ChatErrorRemoteHost) {
+                  r.rhStopReason.chatError.remoteHostError.localizedString(deviceName)
+                } else {
+                  generalGetString(MR.strings.remote_host_disconnected_from).format(deviceName, r.rhStopReason.chatError.string)
+                }
+              )
+            }
+            is RemoteHostStopReason.Crashed -> {
+              AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.remote_host_was_disconnected_title),
+                if (r.rhStopReason.chatError is ChatError.ChatErrorRemoteHost) {
+                  r.rhStopReason.chatError.remoteHostError.localizedString(deviceName)
+                } else {
+                  generalGetString(MR.strings.remote_host_disconnected_from).format(deviceName, r.rhStopReason.chatError.string)
+                }
+              )
+            }
+            is RemoteHostStopReason.Disconnected -> {
+              if (r.rhsState is RemoteHostSessionState.Connected || r.rhsState is RemoteHostSessionState.Confirmed) {
+                showToast(generalGetString(MR.strings.remote_host_was_disconnected_toast).format(deviceName))
+              }
+            }
+          }
         }
         if (chatModel.remoteHostId() == r.remoteHostId_) {
           chatModel.currentRemoteHost.value = null
@@ -1914,9 +1952,38 @@ object ChatController {
         val sess = chatModel.remoteCtrlSession.value
         if (sess != null) {
           chatModel.remoteCtrlSession.value = null
+          fun showAlert(chatError: ChatError) {
+            AlertManager.shared.showAlertMsg(
+              generalGetString(MR.strings.remote_ctrl_was_disconnected_title),
+              if (chatError is ChatError.ChatErrorRemoteCtrl) {
+                chatError.remoteCtrlError.localizedString
+              } else {
+                generalGetString(MR.strings.remote_ctrl_disconnected_with_reason).format(chatError.string)
+              }
+            )
+          }
+          when (r.rcStopReason) {
+            is RemoteCtrlStopReason.DiscoveryFailed -> showAlert(r.rcStopReason.chatError)
+            is RemoteCtrlStopReason.ConnectionFailed -> showAlert(r.rcStopReason.chatError)
+            is RemoteCtrlStopReason.SetupFailed -> showAlert(r.rcStopReason.chatError)
+            is RemoteCtrlStopReason.Disconnected -> {
+              /*AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.remote_ctrl_was_disconnected_title),
+              )*/
+            }
+          }
+
           if (sess.sessionState is UIRemoteCtrlSessionState.Connected) {
             switchToLocalSession()
           }
+        }
+      }
+      is CR.ChatCmdError -> when {
+        r.chatError is ChatError.ChatErrorAgent && r.chatError.agentError is AgentErrorType.CRITICAL -> {
+          chatModel.processedCriticalError.newError(r.chatError.agentError, r.chatError.agentError.offerRestart)
+        }
+        r.chatError is ChatError.ChatErrorAgent && r.chatError.agentError is AgentErrorType.INTERNAL && appPrefs.showInternalErrors.get() -> {
+          chatModel.processedInternalError.newError(r.chatError.agentError, false)
         }
       }
       else ->
@@ -2168,7 +2235,7 @@ sealed class CC {
   class ApiMuteUser(val userId: Long): CC()
   class ApiUnmuteUser(val userId: Long): CC()
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
-  class StartChat(val expire: Boolean): CC()
+  class StartChat(val mainApp: Boolean): CC()
   class ApiStopChat: CC()
   class SetTempFolder(val tempFolder: String): CC()
   class SetFilesFolder(val filesFolder: String): CC()
@@ -2239,6 +2306,7 @@ sealed class CC {
   class ApiShowMyAddress(val userId: Long): CC()
   class ApiSetProfileAddress(val userId: Long, val on: Boolean): CC()
   class ApiAddressAutoAccept(val userId: Long, val autoAccept: AutoAccept?): CC()
+  class ApiGetCallInvitations: CC()
   class ApiSendCallInvitation(val contact: Contact, val callType: CallType): CC()
   class ApiRejectCall(val contact: Contact): CC()
   class ApiSendCallOffer(val contact: Contact, val callOffer: WebRTCCallOffer): CC()
@@ -2295,7 +2363,7 @@ sealed class CC {
     is ApiMuteUser -> "/_mute user $userId"
     is ApiUnmuteUser -> "/_unmute user $userId"
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
-    is StartChat -> "/_start subscribe=on expire=${onOff(expire)} xftp=on"
+    is StartChat -> "/_start main=${onOff(mainApp)}"
     is ApiStopChat -> "/_stop"
     is SetTempFolder -> "/_temp_folder $tempFolder"
     is SetFilesFolder -> "/_files_folder $filesFolder"
@@ -2375,6 +2443,7 @@ sealed class CC {
     is ApiAddressAutoAccept -> "/_auto_accept $userId ${AutoAccept.cmdString(autoAccept)}"
     is ApiAcceptContact -> "/_accept incognito=${onOff(incognito)} $contactReqId"
     is ApiRejectContact -> "/_reject $contactReqId"
+    is ApiGetCallInvitations -> "/_call get"
     is ApiSendCallInvitation -> "/_call invite @${contact.apiId} ${json.encodeToString(callType)}"
     is ApiRejectCall -> "/_call reject @${contact.apiId}"
     is ApiSendCallOffer -> "/_call offer @${contact.apiId} ${json.encodeToString(callOffer)}"
@@ -2498,6 +2567,7 @@ sealed class CC {
     is ApiAddressAutoAccept -> "apiAddressAutoAccept"
     is ApiAcceptContact -> "apiAcceptContact"
     is ApiRejectContact -> "apiRejectContact"
+    is ApiGetCallInvitations -> "apiGetCallInvitations"
     is ApiSendCallInvitation -> "apiSendCallInvitation"
     is ApiRejectCall -> "apiRejectCall"
     is ApiSendCallOffer -> "apiSendCallOffer"
@@ -3873,6 +3943,7 @@ sealed class CR {
   @Serializable @SerialName("sndFileError") class SndFileError(val user: UserRef, val chatItem: AChatItem): CR()
   // call events
   @Serializable @SerialName("callInvitation") class CallInvitation(val callInvitation: RcvCallInvitation): CR()
+  @Serializable @SerialName("callInvitations") class CallInvitations(val callInvitations: List<RcvCallInvitation>): CR()
   @Serializable @SerialName("callOffer") class CallOffer(val user: UserRef, val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String? = null, val askConfirmation: Boolean): CR()
   @Serializable @SerialName("callAnswer") class CallAnswer(val user: UserRef, val contact: Contact, val answer: WebRTCSession): CR()
   @Serializable @SerialName("callExtraInfo") class CallExtraInfo(val user: UserRef, val contact: Contact, val extraInfo: WebRTCExtraInfo): CR()
@@ -4020,6 +4091,7 @@ sealed class CR {
     is SndFileProgressXFTP -> "sndFileProgressXFTP"
     is SndFileCompleteXFTP -> "sndFileCompleteXFTP"
     is SndFileError -> "sndFileError"
+    is CallInvitations -> "callInvitations"
     is CallInvitation -> "callInvitation"
     is CallOffer -> "callOffer"
     is CallAnswer -> "callAnswer"
@@ -4166,6 +4238,7 @@ sealed class CR {
     is SndFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\nsentSize: $sentSize\ntotalSize: $totalSize")
     is SndFileCompleteXFTP -> withUser(user, json.encodeToString(chatItem))
     is SndFileError -> withUser(user, json.encodeToString(chatItem))
+    is CallInvitations -> "callInvitations: ${json.encodeToString(callInvitations)}"
     is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: $callInvitation.callType\nsharedKey: ${callInvitation.sharedKey ?: ""}"
     is CallOffer -> withUser(user, "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}")
     is CallAnswer -> withUser(user, "contact: ${contact.id}\nanswer: ${json.encodeToString(answer)}")
@@ -4440,6 +4513,7 @@ sealed class ChatErrorType {
       is EmptyUserPassword -> "emptyUserPassword"
       is UserAlreadyHidden -> "userAlreadyHidden"
       is UserNotHidden -> "userNotHidden"
+      is InvalidDisplayName -> "invalidDisplayName"
       is ChatNotStarted -> "chatNotStarted"
       is ChatNotStopped -> "chatNotStopped"
       is ChatStoreChanged -> "chatStoreChanged"
@@ -4517,6 +4591,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("emptyUserPassword") class EmptyUserPassword(val userId: Long): ChatErrorType()
   @Serializable @SerialName("userAlreadyHidden") class UserAlreadyHidden(val userId: Long): ChatErrorType()
   @Serializable @SerialName("userNotHidden") class UserNotHidden(val userId: Long): ChatErrorType()
+  @Serializable @SerialName("invalidDisplayName") object InvalidDisplayName: ChatErrorType()
   @Serializable @SerialName("chatNotStarted") object ChatNotStarted: ChatErrorType()
   @Serializable @SerialName("chatNotStopped") object ChatNotStopped: ChatErrorType()
   @Serializable @SerialName("chatStoreChanged") object ChatStoreChanged: ChatErrorType()
@@ -4734,6 +4809,7 @@ sealed class AgentErrorType {
     is AGENT -> "AGENT ${agentErr.string}"
     is INTERNAL -> "INTERNAL $internalErr"
     is INACTIVE -> "INACTIVE"
+    is CRITICAL -> "CRITICAL $offerRestart $criticalErr"
   }
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
@@ -4745,6 +4821,7 @@ sealed class AgentErrorType {
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
   @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
+  @Serializable @SerialName("CRITICAL") data class CRITICAL(val offerRestart: Boolean, val criticalErr: String): AgentErrorType()
 }
 
 @Serializable
@@ -4964,6 +5041,15 @@ sealed class RemoteHostError {
     is BadVersion -> "badVersion"
     is Disconnected -> "disconnected"
   }
+  fun localizedString(name: String): String = when (this) {
+    is Missing -> generalGetString(MR.strings.remote_host_error_missing)
+    is Inactive -> generalGetString(MR.strings.remote_host_error_inactive)
+    is Busy -> generalGetString(MR.strings.remote_host_error_busy)
+    is Timeout -> generalGetString(MR.strings.remote_host_error_timeout)
+    is BadState -> generalGetString(MR.strings.remote_host_error_bad_state)
+    is BadVersion -> generalGetString(MR.strings.remote_host_error_bad_version)
+    is Disconnected -> generalGetString(MR.strings.remote_host_error_disconnected)
+  }.format(name)
   @Serializable @SerialName("missing") object Missing: RemoteHostError()
   @Serializable @SerialName("inactive") object Inactive: RemoteHostError()
   @Serializable @SerialName("busy") object Busy: RemoteHostError()
@@ -4984,6 +5070,16 @@ sealed class RemoteCtrlError {
     is BadInvitation -> "badInvitation"
     is BadVersion -> "badVersion"
   }
+  val localizedString: String get() = when (this) {
+    is Inactive -> generalGetString(MR.strings.remote_ctrl_error_inactive)
+    is BadState -> generalGetString(MR.strings.remote_ctrl_error_bad_state)
+    is Busy -> generalGetString(MR.strings.remote_ctrl_error_busy)
+    is Timeout -> generalGetString(MR.strings.remote_ctrl_error_timeout)
+    is Disconnected -> generalGetString(MR.strings.remote_ctrl_error_disconnected)
+    is BadInvitation -> generalGetString(MR.strings.remote_ctrl_error_bad_invitation)
+    is BadVersion -> generalGetString(MR.strings.remote_ctrl_error_bad_version)
+  }
+
   @Serializable @SerialName("inactive") object Inactive: RemoteCtrlError()
   @Serializable @SerialName("badState") object BadState: RemoteCtrlError()
   @Serializable @SerialName("busy") object Busy: RemoteCtrlError()

@@ -12,6 +12,7 @@ import chat.simplex.res.MR
 @Composable
 fun SetAppPasscodeView(
   passcodeKeychain: DatabaseUtils.KeyStoreItem = ksAppPassword,
+  prohibitedPasscodeKeychain: DatabaseUtils.KeyStoreItem = ksSelfDestructPassword,
   title: String = generalGetString(MR.strings.new_passcode),
   reason: String? = null,
   submit: () -> Unit,
@@ -51,7 +52,7 @@ fun SetAppPasscodeView(
   } else {
     SetPasswordView(title, generalGetString(MR.strings.save_verb),
       // Do not allow to set app passcode == selfDestruct passcode
-      submitEnabled = { pwd -> pwd != (if (passcodeKeychain.alias == ksSelfDestructPassword.alias) ksAppPassword else ksSelfDestructPassword).get() }) {
+      submitEnabled = { pwd -> pwd != prohibitedPasscodeKeychain.get() }) {
       enteredPassword = passcode.value
       passcode.value = ""
       confirming = true

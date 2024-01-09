@@ -38,13 +38,13 @@ struct ActiveCallView: View {
             }
         }
         .onAppear {
-            logger.debug("ActiveCallView: appear client is nil \(client == nil), scenePhase \(String(describing: scenePhase), privacy: .public), canConnectCall \(canConnectCall)")
+            logger.debug("ActiveCallView: appear client is nil \(client == nil), scenePhase \(String(describing: scenePhase)), canConnectCall \(canConnectCall)")
             AppDelegate.keepScreenOn(true)
             createWebRTCClient()
             dismissAllSheets()
         }
         .onChange(of: canConnectCall) { _ in
-            logger.debug("ActiveCallView: canConnectCall changed to \(canConnectCall, privacy: .public)")
+            logger.debug("ActiveCallView: canConnectCall changed to \(canConnectCall)")
             createWebRTCClient()
         }
         .onDisappear {

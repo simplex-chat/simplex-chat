@@ -380,7 +380,8 @@ fun SettingsSectionFooter(revert: () -> Unit, save: () -> Unit, disabled: Boolea
 fun FooterButton(icon: Painter, title: String, action: () -> Unit, disabled: Boolean) {
   Surface(
     shape = RoundedCornerShape(20.dp),
-    color = Color.Black.copy(alpha = 0f)
+    color = Color.Black.copy(alpha = 0f),
+    contentColor = LocalContentColor.current
   ) {
     val modifier = if (disabled) Modifier else Modifier.clickable { action() }
     Row(

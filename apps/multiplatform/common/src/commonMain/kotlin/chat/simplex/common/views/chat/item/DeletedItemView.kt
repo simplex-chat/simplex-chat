@@ -23,6 +23,7 @@ fun DeletedItemView(ci: ChatItem, timedMessagesTTL: Int?) {
   Surface(
     shape = RoundedCornerShape(18.dp),
     color = if (sent) sentColor else receivedColor,
+    contentColor = LocalContentColor.current
   ) {
     Row(
       Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
