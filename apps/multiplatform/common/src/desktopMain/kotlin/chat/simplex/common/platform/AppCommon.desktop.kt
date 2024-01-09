@@ -23,6 +23,7 @@ fun initApp() {
     override fun androidCreateNtfChannelsMaybeShowAlert() {}
     override fun cancelCallNotification() {}
     override fun cancelAllNotifications() = chat.simplex.common.model.NtfManager.cancelAllNotifications()
+    override fun showMessage(title: String, text: String) = chat.simplex.common.model.NtfManager.showMessage(title, text)
   }
   applyAppLocale()
   withBGApi {

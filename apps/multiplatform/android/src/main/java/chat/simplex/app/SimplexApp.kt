@@ -171,6 +171,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun androidCreateNtfChannelsMaybeShowAlert() = NtfManager.createNtfChannelsMaybeShowAlert()
       override fun cancelCallNotification() = NtfManager.cancelCallNotification()
       override fun cancelAllNotifications() = NtfManager.cancelAllNotifications()
+      override fun showMessage(title: String, text: String) = NtfManager.showMessage(title, text)
     }
     platform = object : PlatformInterface {
       override suspend fun androidServiceStart() {

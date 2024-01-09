@@ -211,7 +211,7 @@ func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool, viewPwd: String?) asyn
 }
 
 func apiStartChat() throws -> Bool {
-    let r = chatSendCmdSync(.startChat(subscribe: true, expire: true, xftp: true))
+    let r = chatSendCmdSync(.startChat(mainApp: true))
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -403,7 +403,7 @@ func apiGetNtfToken() -> (DeviceToken?, NtfTknStatus?, NotificationsMode) {
     case let .ntfToken(token, status, ntfMode): return (token, status, ntfMode)
     case .chatCmdError(_, .errorAgent(.CMD(.PROHIBITED))): return (nil, nil, .off)
     default:
-        logger.debug("apiGetNtfToken response: \(String(describing: r), privacy: .public)")
+        logger.debug("apiGetNtfToken response: \(String(describing: r))")
         return (nil, nil, .off)
     }
 }

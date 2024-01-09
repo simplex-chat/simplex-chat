@@ -19,11 +19,13 @@ let terminationTimeout: Int = 3 // seconds
 
 let activationDelay: TimeInterval = 1.5
 
+let nseSuspendTimeout: TimeInterval = 5
+
 private func _suspendChat(timeout: Int) {
     // this is a redundant check to prevent logical errors, like the one fixed in this PR
     let state = AppChatState.shared.value
     if !state.canSuspend {
-        logger.error("_suspendChat called, current state: \(state.rawValue, privacy: .public)")
+        logger.error("_suspendChat called, current state: \(state.rawValue)")
     } else if ChatModel.ok {
         AppChatState.shared.set(.suspending)
         apiSuspendChat(timeoutMicroseconds: timeout * 1000000)
@@ -134,20 +136,33 @@ func initChatAndMigrate(refreshInvitations: Bool = true) {
     }
 }
 
-func startChatAndActivate(dispatchQueue: DispatchQueue = DispatchQueue.main, _ completion: @escaping () -> Void) {
+func startChatForCall() {
+    logger.debug("DEBUGGING: startChatForCall")
+    if ChatModel.shared.chatRunning == true {
+        ChatReceiver.shared.start()
+        logger.debug("DEBUGGING: startChatForCall: after ChatReceiver.shared.start")
+    }
+    if .active != AppChatState.shared.value {
+        logger.debug("DEBUGGING: startChatForCall: before activateChat")
+        activateChat()
+        logger.debug("DEBUGGING: startChatForCall: after activateChat")
+    }
+}
+
+func startChatAndActivate(_ completion: @escaping () -> Void) {
     logger.debug("DEBUGGING: startChatAndActivate")
     if ChatModel.shared.chatRunning == true {
         ChatReceiver.shared.start()
         logger.debug("DEBUGGING: startChatAndActivate: after ChatReceiver.shared.start")
     }
-    if .active == AppChatState.shared.value {
+    if case .active = AppChatState.shared.value {
         completion()
     } else if nseStateGroupDefault.get().inactive {
         activate()
     } else {
         // setting app state to "activating" to notify NSE that it should suspend
         setAppState(.activating)
-        waitNSESuspended(timeout: 10, dispatchQueue: dispatchQueue) { ok in
+        waitNSESuspended(timeout: nseSuspendTimeout) { ok in
             if !ok {
                 // if for some reason NSE failed to suspend,
                 // e.g., it crashed previously without setting its state to "suspended",
