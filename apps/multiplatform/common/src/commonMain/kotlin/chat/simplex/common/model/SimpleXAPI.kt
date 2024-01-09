@@ -1128,6 +1128,13 @@ object ChatController {
     return false
   }
 
+  suspend fun apiGetCallInvitations(rh: Long?): List<RcvCallInvitation> {
+    val r = sendCmd(rh, CC.ApiGetCallInvitations())
+    if (r is CR.CallInvitations) return r.callInvitations
+    Log.e(TAG, "apiGetCallInvitations bad response: ${r.responseType} ${r.details}")
+    return emptyList()
+  }
+
   suspend fun apiSendCallInvitation(rh: Long?, contact: Contact, callType: CallType): Boolean {
     val r = sendCmd(rh, CC.ApiSendCallInvitation(contact, callType))
     return r is CR.CmdOk
@@ -2296,6 +2303,7 @@ sealed class CC {
   class ApiShowMyAddress(val userId: Long): CC()
   class ApiSetProfileAddress(val userId: Long, val on: Boolean): CC()
   class ApiAddressAutoAccept(val userId: Long, val autoAccept: AutoAccept?): CC()
+  class ApiGetCallInvitations: CC()
   class ApiSendCallInvitation(val contact: Contact, val callType: CallType): CC()
   class ApiRejectCall(val contact: Contact): CC()
   class ApiSendCallOffer(val contact: Contact, val callOffer: WebRTCCallOffer): CC()
@@ -2432,6 +2440,7 @@ sealed class CC {
     is ApiAddressAutoAccept -> "/_auto_accept $userId ${AutoAccept.cmdString(autoAccept)}"
     is ApiAcceptContact -> "/_accept incognito=${onOff(incognito)} $contactReqId"
     is ApiRejectContact -> "/_reject $contactReqId"
+    is ApiGetCallInvitations -> "/_call get"
     is ApiSendCallInvitation -> "/_call invite @${contact.apiId} ${json.encodeToString(callType)}"
     is ApiRejectCall -> "/_call reject @${contact.apiId}"
     is ApiSendCallOffer -> "/_call offer @${contact.apiId} ${json.encodeToString(callOffer)}"
@@ -2555,6 +2564,7 @@ sealed class CC {
     is ApiAddressAutoAccept -> "apiAddressAutoAccept"
     is ApiAcceptContact -> "apiAcceptContact"
     is ApiRejectContact -> "apiRejectContact"
+    is ApiGetCallInvitations -> "apiGetCallInvitations"
     is ApiSendCallInvitation -> "apiSendCallInvitation"
     is ApiRejectCall -> "apiRejectCall"
     is ApiSendCallOffer -> "apiSendCallOffer"
@@ -3930,6 +3940,7 @@ sealed class CR {
   @Serializable @SerialName("sndFileError") class SndFileError(val user: UserRef, val chatItem: AChatItem): CR()
   // call events
   @Serializable @SerialName("callInvitation") class CallInvitation(val callInvitation: RcvCallInvitation): CR()
+  @Serializable @SerialName("callInvitations") class CallInvitations(val callInvitations: List<RcvCallInvitation>): CR()
   @Serializable @SerialName("callOffer") class CallOffer(val user: UserRef, val contact: Contact, val callType: CallType, val offer: WebRTCSession, val sharedKey: String? = null, val askConfirmation: Boolean): CR()
   @Serializable @SerialName("callAnswer") class CallAnswer(val user: UserRef, val contact: Contact, val answer: WebRTCSession): CR()
   @Serializable @SerialName("callExtraInfo") class CallExtraInfo(val user: UserRef, val contact: Contact, val extraInfo: WebRTCExtraInfo): CR()
@@ -4077,6 +4088,7 @@ sealed class CR {
     is SndFileProgressXFTP -> "sndFileProgressXFTP"
     is SndFileCompleteXFTP -> "sndFileCompleteXFTP"
     is SndFileError -> "sndFileError"
+    is CallInvitations -> "callInvitations"
     is CallInvitation -> "callInvitation"
     is CallOffer -> "callOffer"
     is CallAnswer -> "callAnswer"
@@ -4223,6 +4235,7 @@ sealed class CR {
     is SndFileProgressXFTP -> withUser(user, "chatItem: ${json.encodeToString(chatItem)}\nsentSize: $sentSize\ntotalSize: $totalSize")
     is SndFileCompleteXFTP -> withUser(user, json.encodeToString(chatItem))
     is SndFileError -> withUser(user, json.encodeToString(chatItem))
+    is CallInvitations -> "callInvitations: ${json.encodeToString(callInvitations)}"
     is CallInvitation -> "contact: ${callInvitation.contact.id}\ncallType: $callInvitation.callType\nsharedKey: ${callInvitation.sharedKey ?: ""}"
     is CallOffer -> withUser(user, "contact: ${contact.id}\ncallType: $callType\nsharedKey: ${sharedKey ?: ""}\naskConfirmation: $askConfirmation\noffer: ${json.encodeToString(offer)}")
     is CallAnswer -> withUser(user, "contact: ${contact.id}\nanswer: ${json.encodeToString(answer)}")
