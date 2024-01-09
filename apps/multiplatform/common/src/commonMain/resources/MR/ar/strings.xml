@@ -1557,4 +1557,14 @@
     <string name="search_or_paste_simplex_link">ابحث أو ألصِق رابط SimpleX</string>
     <string name="start_chat_question">بدء الدردشة؟</string>
     <string name="chat_is_stopped_you_should_transfer_database">توقفت الدردشة. إذا كنت قد استخدمت قاعدة البيانات هذه بالفعل على جهاز آخر، فيجب عليك نقلها مرة أخرى قبل بدء الدردشة.</string>
+    <string name="show_internal_errors">اعرض الأخطاء الداخلية</string>
+    <string name="agent_critical_error_title">خطأ فادح</string>
+    <string name="agent_internal_error_title">خطأ داخلي</string>
+    <string name="agent_internal_error_desc">يُرجى إبلاغ المطورين بذلك:
+\n%s</string>
+    <string name="agent_critical_error_desc">يُرجى إبلاغ المطورين بذلك:
+\n%s
+\n
+\nيوصى بإعادة تشغيل التطبيق.</string>
+    <string name="restart_chat_button">أعد تشغيل الدردشة</string>
 </resources>
