@@ -41,21 +41,20 @@ val appPreferences: AppPreferences
 
 val chatController: ChatController = ChatController
 
-fun initChatControllerAndRunMigrations(ignoreSelfDestruct: Boolean) {
-  if (ignoreSelfDestruct || DatabaseUtils.ksSelfDestructPassword.get() == null) {
-    withBGApi {
-      if (appPreferences.chatStopped.get() && appPreferences.storeDBPassphrase.get() && ksDatabasePassword.get() != null) {
-        initChatController(startChat = ::showStartChatAfterRestartAlert)
-      } else {
-        initChatController()
-      }
-      runMigrations()
+fun initChatControllerAndRunMigrations() {
+  withBGApi {
+    if (appPreferences.chatStopped.get() && appPreferences.storeDBPassphrase.get() && ksDatabasePassword.get() != null) {
+      initChatController(startChat = ::showStartChatAfterRestartAlert)
+    } else {
+      initChatController()
     }
+    runMigrations()
   }
 }
 
 suspend fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: () -> CompletableDeferred<Boolean> = { CompletableDeferred(true) }) {
   try {
+    if (chatModel.ctrlInitInProgress.value) return
     chatModel.ctrlInitInProgress.value = true
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
     val confirm = confirmMigrations ?: if (appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp

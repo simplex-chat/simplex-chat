@@ -1149,7 +1149,7 @@ testSubscribeAppNSE tmp =
         alice ##> "/_app suspend 1"
         alice <## "ok"
         alice <## "chat suspended"
-        nseAlice ##> "/_start subscribe=off expire=off xftp=off"
+        nseAlice ##> "/_start main=off"
         nseAlice <## "chat started"
         nseAlice ##> "/ad"
         cLink <- getContactLink nseAlice True

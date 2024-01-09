@@ -235,6 +235,7 @@ newChatController
     expireCIFlags <- newTVarIO M.empty
     cleanupManagerAsync <- newTVarIO Nothing
     timedItemThreads <- atomically TM.empty
+    chatActivated <- newTVarIO True
     showLiveItems <- newTVarIO False
     encryptLocalFiles <- newTVarIO False
     userXFTPFileConfig <- newTVarIO $ xftpFileConfig cfg
@@ -270,6 +271,7 @@ newChatController
           expireCIFlags,
           cleanupManagerAsync,
           timedItemThreads,
+          chatActivated,
           showLiveItems,
           encryptLocalFiles,
           userXFTPFileConfig,
@@ -313,10 +315,10 @@ cfgServers p DefaultAgentServers {smp, xftp} = case p of
   SPSMP -> smp
   SPXFTP -> xftp
 
-startChatController :: forall m. ChatMonad' m => Bool -> Bool -> Bool -> m (Async ())
-startChatController subConns enableExpireCIs startXFTPWorkers = do
+startChatController :: forall m. ChatMonad' m => Bool -> m (Async ())
+startChatController mainApp = do
   asks smpAgent >>= resumeAgentClient
-  unless subConns $
+  unless mainApp $
     chatWriteVar subscriptionMode SMOnlyCreate
   users <- fromRight [] <$> runExceptT (withStoreCtx' (Just "startChatController, getUsers") getUsers)
   restoreCalls
@@ -326,15 +328,15 @@ startChatController subConns enableExpireCIs startXFTPWorkers = do
     start s users = do
       a1 <- async agentSubscriber
       a2 <-
-        if subConns
+        if mainApp
           then Just <$> async (subscribeUsers False users)
           else pure Nothing
       atomically . writeTVar s $ Just (a1, a2)
-      when startXFTPWorkers $ do
+      when mainApp $ do
         startXFTP
         void $ forkIO $ startFilesToReceive users
-      startCleanupManager
-      when enableExpireCIs $ startExpireCIs users
+        startCleanupManager
+        startExpireCIs users
       pure a1
     startXFTP = do
       tmp <- readTVarIO =<< asks tempDirectory
@@ -547,16 +549,17 @@ processChatCommand' vr = \case
     checkDeleteChatUser user'
     withChatLock "deleteUser" . procCmd $ deleteChatUser user' delSMPQueues
   DeleteUser uName delSMPQueues viewPwd_ -> withUserName uName $ \userId -> APIDeleteUser userId delSMPQueues viewPwd_
-  StartChat subConns enableExpireCIs startXFTPWorkers -> withUser' $ \_ ->
+  StartChat mainApp -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
-      _ -> checkStoreNotChanged $ startChatController subConns enableExpireCIs startXFTPWorkers $> CRChatStarted
+      _ -> checkStoreNotChanged $ startChatController mainApp $> CRChatStarted
   APIStopChat -> do
     ask >>= stopChatController
     pure CRChatStopped
   APIActivateChat restoreChat -> withUser $ \_ -> do
     when restoreChat restoreCalls
     withAgent foregroundAgent
+    chatWriteVar chatActivated True
     when restoreChat $ do
       users <- withStoreCtx' (Just "APIActivateChat, getUsers") getUsers
       void . forkIO $ subscribeUsers True users
@@ -564,6 +567,7 @@ processChatCommand' vr = \case
       setAllExpireCIFlags True
     ok_
   APISuspendChat t -> do
+    chatWriteVar chatActivated False
     setAllExpireCIFlags False
     stopRemoteCtrl
     withAgent (`suspendAgent` t)
@@ -2500,6 +2504,7 @@ startExpireCIThread user@User {userId} = do
         flip catchChatError (toView . CRChatError (Just user)) $ do
           expireFlags <- asks expireCIFlags
           atomically $ TM.lookup userId expireFlags >>= \b -> unless (b == Just True) retry
+          waitChatStartedAndActivated
           ttl <- withStoreCtx' (Just "startExpireCIThread, getChatItemTTL") (`getChatItemTTL` user)
           forM_ ttl $ \t -> expireChatItems user t False
         liftIO $ threadDelay' interval
@@ -2993,7 +2998,7 @@ cleanupManager = do
   stepDelay <- asks (cleanupManagerStepDelay . config)
   forever $ do
     flip catchChatError (toView . CRChatError Nothing) $ do
-      waitChatStarted
+      waitChatStartedAndActivated
       users <- withStoreCtx' (Just "cleanupManager, getUsers 1") getUsers
       let (us, us') = partition activeUser users
       forM_ us $ cleanupUser interval stepDelay
@@ -3003,7 +3008,7 @@ cleanupManager = do
     liftIO $ threadDelay' $ diffToMicroseconds interval
   where
     runWithoutInitialDelay cleanupInterval = flip catchChatError (toView . CRChatError Nothing) $ do
-      waitChatStarted
+      waitChatStartedAndActivated
       users <- withStoreCtx' (Just "cleanupManager, getUsers 2") getUsers
       let (us, us') = partition activeUser users
       forM_ us $ \u -> cleanupTimedItems cleanupInterval u `catchChatError` (toView . CRChatError (Just u))
@@ -3058,7 +3063,7 @@ deleteTimedItem :: ChatMonad m => User -> (ChatRef, ChatItemId) -> UTCTime -> m 
 deleteTimedItem user (ChatRef cType chatId, itemId) deleteAt = do
   ts <- liftIO getCurrentTime
   liftIO $ threadDelay' $ diffToMicroseconds $ diffUTCTime deleteAt ts
-  waitChatStarted
+  waitChatStartedAndActivated
   vr <- chatVersionRange
   case cType of
     CTDirect -> do
@@ -3084,8 +3089,10 @@ expireChatItems user@User {userId} ttl sync = do
   let expirationDate = addUTCTime (-1 * fromIntegral ttl) currentTs
       -- this is to keep group messages created during last 12 hours even if they're expired according to item_ts
       createdAtCutoff = addUTCTime (-43200 :: NominalDiffTime) currentTs
+  waitChatStartedAndActivated
   contacts <- withStoreCtx' (Just "expireChatItems, getUserContacts") (`getUserContacts` user)
   loop contacts $ processContact expirationDate
+  waitChatStartedAndActivated
   groups <- withStoreCtx' (Just "expireChatItems, getUserGroupDetails") (\db -> getUserGroupDetails db vr user Nothing Nothing)
   loop groups $ processGroup expirationDate createdAtCutoff
   where
@@ -3104,11 +3111,13 @@ expireChatItems user@User {userId} ttl sync = do
           when (expire == Just True) $ threadDelay 100000 >> a
     processContact :: UTCTime -> Contact -> m ()
     processContact expirationDate ct = do
+      waitChatStartedAndActivated
       filesInfo <- withStoreCtx' (Just "processContact, getContactExpiredFileInfo") $ \db -> getContactExpiredFileInfo db user ct expirationDate
       deleteFilesAndConns user filesInfo
       withStoreCtx' (Just "processContact, deleteContactExpiredCIs") $ \db -> deleteContactExpiredCIs db user ct expirationDate
     processGroup :: UTCTime -> UTCTime -> GroupInfo -> m ()
     processGroup expirationDate createdAtCutoff gInfo = do
+      waitChatStartedAndActivated
       filesInfo <- withStoreCtx' (Just "processGroup, getGroupExpiredFileInfo") $ \db -> getGroupExpiredFileInfo db user gInfo expirationDate createdAtCutoff
       deleteFilesAndConns user filesInfo
       withStoreCtx' (Just "processGroup, deleteGroupExpiredCIs") $ \db -> deleteGroupExpiredCIs db user gInfo expirationDate createdAtCutoff
@@ -6223,10 +6232,14 @@ checkSameUser userId User {userId = activeUserId} = when (userId /= activeUserId
 chatStarted :: ChatMonad m => m Bool
 chatStarted = fmap isJust . readTVarIO =<< asks agentAsync
 
-waitChatStarted :: ChatMonad m => m ()
-waitChatStarted = do
+waitChatStartedAndActivated :: ChatMonad m => m ()
+waitChatStartedAndActivated = do
   agentStarted <- asks agentAsync
-  atomically $ readTVar agentStarted >>= \a -> unless (isJust a) retry
+  chatActivated <- asks chatActivated
+  atomically $ do
+    started <- readTVar agentStarted
+    activated <- readTVar chatActivated
+    unless (isJust started && activated) retry
 
 chatVersionRange :: ChatMonad' m => m VersionRange
 chatVersionRange = do
@@ -6263,8 +6276,8 @@ chatCommandP =
       "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP <*> optional (A.space *> jsonP)),
       "/delete user " *> (DeleteUser <$> displayName <*> pure True <*> optional (A.space *> pwdP)),
       ("/user" <|> "/u") $> ShowActiveUser,
-      "/_start subscribe=" *> (StartChat <$> onOffP <* " expire=" <*> onOffP <* " xftp=" <*> onOffP),
-      "/_start" $> StartChat True True True,
+      "/_start main=" *> (StartChat <$> onOffP),
+      "/_start" $> StartChat True,
       "/_stop" $> APIStopChat,
       "/_app activate restore=" *> (APIActivateChat <$> onOffP),
       "/_app activate" $> APIActivateChat True,
