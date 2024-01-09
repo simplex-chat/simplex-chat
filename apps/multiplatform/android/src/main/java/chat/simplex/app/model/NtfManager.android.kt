@@ -208,6 +208,38 @@ object NtfManager {
     }
   }
 
+  fun showMessage(title: String, text: String) {
+    val builder = NotificationCompat.Builder(context, MessageChannel)
+      .setContentTitle(title)
+      .setContentText(text)
+      .setPriority(NotificationCompat.PRIORITY_HIGH)
+      .setGroup(MessageGroup)
+      .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
+      .setSmallIcon(R.drawable.ntf_icon)
+      .setLargeIcon(null)
+      .setColor(0x88FFFF)
+      .setAutoCancel(true)
+      .setVibrate(null)
+      .setContentIntent(chatPendingIntent(ShowChatsAction, null, null))
+      .setSilent(false)
+
+    val summary = NotificationCompat.Builder(context, MessageChannel)
+      .setSmallIcon(R.drawable.ntf_icon)
+      .setColor(0x88FFFF)
+      .setGroup(MessageGroup)
+      .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
+      .setGroupSummary(true)
+      .setContentIntent(chatPendingIntent(ShowChatsAction, null))
+      .build()
+
+    with(NotificationManagerCompat.from(context)) {
+      if (ActivityCompat.checkSelfPermission(SimplexApp.context, android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+        notify("MESSAGE".hashCode(), builder.build())
+        notify(0, summary)
+      }
+    }
+  }
+
   fun cancelCallNotification() {
     manager.cancel(CallNotificationId)
   }

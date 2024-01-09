@@ -28,7 +28,7 @@ actual fun SettingsSectionApp(
 }
 
 
-private fun restartApp() {
+fun restartApp() {
   ProcessPhoenix.triggerRebirth(androidAppContext)
   shutdownApp()
 }
