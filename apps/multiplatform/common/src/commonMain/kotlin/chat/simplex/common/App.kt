@@ -37,15 +37,16 @@ import kotlinx.coroutines.flow.*
 
 data class SettingsViewState(
   val userPickerState: MutableStateFlow<AnimatedViewState>,
-  val scaffoldState: ScaffoldState,
-  val switchingUsersAndHosts: MutableState<Boolean>
+  val scaffoldState: ScaffoldState
 )
 
 @Composable
 fun AppScreen() {
-  ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
-    Surface(color = MaterialTheme.colors.background) {
-      MainScreen()
+  SimpleXTheme {
+    ProvideWindowInsets(windowInsetsAnimationsEnabled = true) {
+      Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
+        MainScreen()
+      }
     }
   }
 }
@@ -84,7 +85,7 @@ fun MainScreen() {
 
   @Composable
   fun AuthView() {
-    Surface(color = MaterialTheme.colors.background) {
+    Surface(color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
       Box(
         Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -102,27 +103,31 @@ fun MainScreen() {
   }
 
   Box {
-    var onboarding by remember { mutableStateOf(chatModel.controller.appPrefs.onboardingStage.get()) }
-    LaunchedEffect(Unit) {
-      snapshotFlow { chatModel.controller.appPrefs.onboardingStage.state.value }.distinctUntilChanged().collect { onboarding = it }
-    }
-    val userCreated = chatModel.userCreated.value
+    val unauthorized = remember { derivedStateOf { AppLock.userAuthorized.value != true } }
+    val onboarding by remember { chatModel.controller.appPrefs.onboardingStage.state }
+    val localUserCreated = chatModel.localUserCreated.value
     var showInitializationView by remember { mutableStateOf(false) }
     when {
-      chatModel.chatDbStatus.value == null && showInitializationView -> InitializationView()
+      chatModel.chatDbStatus.value == null && showInitializationView -> DefaultProgressView(stringResource(MR.strings.opening_database))
       showChatDatabaseError -> {
-        chatModel.chatDbStatus.value?.let {
+        // Prevent showing keyboard on Android when: passcode enabled and database password not saved
+        if (!unauthorized.value && chatModel.chatDbStatus.value != null) {
           DatabaseErrorView(chatModel.chatDbStatus, chatModel.controller.appPrefs)
         }
       }
-      remember { chatModel.chatDbEncrypted }.value == null || userCreated == null -> SplashView()
-      onboarding == OnboardingStage.OnboardingComplete && userCreated -> {
+      remember { chatModel.chatDbEncrypted }.value == null || localUserCreated == null -> SplashView()
+      onboarding == OnboardingStage.OnboardingComplete -> {
         Box {
           showAdvertiseLAAlert = true
-          val userPickerState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(AnimatedViewState.GONE)) }
+          val userPickerState by rememberSaveable(stateSaver = AnimatedViewState.saver()) { mutableStateOf(MutableStateFlow(if (chatModel.desktopNoUserNoRemote()) AnimatedViewState.VISIBLE else AnimatedViewState.GONE)) }
+          KeyChangeEffect(chatModel.desktopNoUserNoRemote) {
+            if (chatModel.desktopNoUserNoRemote() && !ModalManager.start.hasModalsOpen()) {
+              userPickerState.value = AnimatedViewState.VISIBLE
+            }
+          }
           val scaffoldState = rememberScaffoldState()
-          val switchingUsersAndHosts = rememberSaveable { mutableStateOf(false) }
-          val settingsState = remember { SettingsViewState(userPickerState, scaffoldState, switchingUsersAndHosts) }
+          val settingsState = remember { SettingsViewState(userPickerState, scaffoldState) }
+          SetupClipboardListener()
           if (appPlatform.isAndroid) {
             AndroidScreen(settingsState)
           } else {
@@ -137,15 +142,16 @@ fun MainScreen() {
         }
       }
       onboarding == OnboardingStage.Step2_CreateProfile -> CreateFirstProfile(chatModel) {}
+      onboarding == OnboardingStage.LinkAMobile -> LinkAMobile()
       onboarding == OnboardingStage.Step2_5_SetupDatabasePassphrase -> SetupDatabasePassphrase(chatModel)
       onboarding == OnboardingStage.Step3_CreateSimpleXAddress -> CreateSimpleXAddress(chatModel, null)
       onboarding == OnboardingStage.Step4_SetNotificationsMode -> SetNotificationsMode(chatModel)
     }
     if (appPlatform.isAndroid) {
       ModalManager.fullscreen.showInView()
+      SwitchingUsersView()
     }
 
-    val unauthorized = remember { derivedStateOf { AppLock.userAuthorized.value != true } }
     if (unauthorized.value && !(chatModel.activeCallViewIsVisible.value && chatModel.showCallView.value)) {
       LaunchedEffect(Unit) {
         // With these constrains when user presses back button while on ChatList, activity destroys and shows auth request
@@ -158,11 +164,26 @@ fun MainScreen() {
         AuthView()
       } else {
         SplashView()
+        ModalManager.fullscreen.showPasscodeInView()
       }
-    } else if (chatModel.showCallView.value) {
-      ActiveCallView()
+    } else {
+      if (chatModel.showCallView.value) {
+        ActiveCallView()
+      } else {
+        // It's needed for privacy settings toggle, so it can be shown even if the app is passcode unlocked
+        ModalManager.fullscreen.showPasscodeInView()
+      }
+      AlertManager.privacySensitive.showInView()
+      if (onboarding == OnboardingStage.OnboardingComplete) {
+        LaunchedEffect(chatModel.currentUser.value, chatModel.appOpenUrl.value) {
+          val (rhId, url) = chatModel.appOpenUrl.value ?: (null to null)
+          if (url != null) {
+            chatModel.appOpenUrl.value = null
+            connectIfOpenedViaUri(rhId, url, chatModel)
+          }
+        }
+      }
     }
-    ModalManager.fullscreen.showPasscodeInView()
     val invitation = chatModel.activeCallInvitation.value
     if (invitation != null) IncomingCallAlertView(invitation, chatModel)
     AlertManager.shared.showInView()
@@ -262,7 +283,7 @@ fun CenterPartOfScreen() {
             .background(MaterialTheme.colors.background),
           contentAlignment = Alignment.Center
         ) {
-          Text(stringResource(MR.strings.no_selected_chat))
+          Text(stringResource(if (chatModel.desktopNoUserNoRemote) MR.strings.no_connected_mobile else MR.strings.no_selected_chat))
         }
       } else {
         ModalManager.center.showInView()
@@ -286,6 +307,7 @@ fun DesktopScreen(settingsState: SettingsViewState) {
     }
     Box(Modifier.widthIn(max = DEFAULT_START_MODAL_WIDTH)) {
       ModalManager.start.showInView()
+      SwitchingUsersView()
     }
     Row(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH).clipToBounds()) {
       Box(Modifier.widthIn(min = DEFAULT_MIN_CENTER_MODAL_WIDTH).weight(1f)) {
@@ -298,7 +320,7 @@ fun DesktopScreen(settingsState: SettingsViewState) {
         EndPartOfScreen()
       }
     }
-    val (userPickerState, scaffoldState, switchingUsersAndHosts ) = settingsState
+    val (userPickerState, scaffoldState ) = settingsState
     val scope = rememberCoroutineScope()
     if (scaffoldState.drawerState.isOpen) {
       Box(
@@ -312,26 +334,35 @@ fun DesktopScreen(settingsState: SettingsViewState) {
       )
     }
     VerticalDivider(Modifier.padding(start = DEFAULT_START_MODAL_WIDTH))
-    UserPicker(chatModel, userPickerState, switchingUsersAndHosts) {
-      scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
-      userPickerState.value = AnimatedViewState.GONE
+    tryOrShowError("UserPicker", error = {}) {
+      UserPicker(chatModel, userPickerState) {
+        scope.launch { if (scaffoldState.drawerState.isOpen) scaffoldState.drawerState.close() else scaffoldState.drawerState.open() }
+        userPickerState.value = AnimatedViewState.GONE
+      }
     }
     ModalManager.fullscreen.showInView()
   }
 }
 
 @Composable
-fun InitializationView() {
-  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      CircularProgressIndicator(
-        Modifier
-          .padding(bottom = DEFAULT_PADDING)
-          .size(30.dp),
-        color = MaterialTheme.colors.secondary,
-        strokeWidth = 2.5.dp
-      )
-      Text(stringResource(MR.strings.opening_database))
+private fun SwitchingUsersView() {
+  if (remember { chatModel.switchingUsersAndHosts }.value) {
+    Box(
+      Modifier.fillMaxSize().clickable(enabled = false, onClick = {}),
+      contentAlignment = Alignment.Center
+    ) {
+      ProgressIndicator()
     }
   }
+}
+
+@Composable
+private fun ProgressIndicator() {
+  CircularProgressIndicator(
+    Modifier
+      .padding(horizontal = 2.dp)
+      .size(30.dp),
+    color = MaterialTheme.colors.secondary,
+    strokeWidth = 2.5.dp
+  )
 }

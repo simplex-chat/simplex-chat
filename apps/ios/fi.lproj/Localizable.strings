@@ -1939,6 +1939,9 @@
 "Live messages" = "Live-viestit";
 
 /* No comment provided by engineer. */
+"Local" = "Paikallinen";
+
+/* No comment provided by engineer. */
 "Local name" = "Paikallinen nimi";
 
 /* No comment provided by engineer. */
@@ -2198,9 +2201,6 @@
 /* No comment provided by engineer. */
 "Off" = "Pois";
 
-/* No comment provided by engineer. */
-"Off (Local)" = "Pois (Paikallinen)";
-
 /* feature offered item */
 "offered %@" = "tarjottu %@";
 
@@ -2287,9 +2287,6 @@
 
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "Avoimen lähdekoodin protokolla ja koodi - kuka tahansa voi käyttää palvelimia.";
-
-/* No comment provided by engineer. */
-"Opening database…" = "Avataan tietokantaa…";
 
 /* member role */
 "owner" = "omistaja";
@@ -3180,9 +3177,6 @@
 "Turn off" = "Sammuta";
 
 /* No comment provided by engineer. */
-"Turn off notifications?" = "Kytke ilmoitukset pois päältä?";
-
-/* No comment provided by engineer. */
 "Turn on" = "Kytke päälle";
 
 /* No comment provided by engineer. */
@@ -3601,9 +3595,6 @@
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "Kontaktisi voivat sallia viestien täydellisen poistamisen.";
-
-/* No comment provided by engineer. */
-"Your contacts in SimpleX will see it.\nYou can change it in Settings." = "Kontaktisi SimpleX:ssä näkevät sen.\nVoit muuttaa sitä Asetuksista.";
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "Kontaktisi pysyvät yhdistettyinä.";

@@ -15,6 +15,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         logger.debug("AppDelegate: didFinishLaunchingWithOptions")
         application.registerForRemoteNotifications()
         if #available(iOS 17.0, *) { trackKeyboard() }
+        NotificationCenter.default.addObserver(self, selector: #selector(pasteboardChanged), name: UIPasteboard.changedNotification, object: nil)
         return true
     }
 
@@ -36,12 +37,17 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         ChatModel.shared.keyboardHeight = 0
     }
 
+    @objc func pasteboardChanged() {
+        ChatModel.shared.pasteboardHasStrings = UIPasteboard.general.hasStrings
+    }
+
     func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         let token = deviceToken.map { String(format: "%02hhx", $0) }.joined()
         logger.debug("AppDelegate: didRegisterForRemoteNotificationsWithDeviceToken \(token)")
         let m = ChatModel.shared
         let deviceToken = DeviceToken(pushProvider: PushProvider(env: pushEnvironment), token: token)
         m.deviceToken = deviceToken
+        // savedToken is set in startChat, when it is started before this method is called
         if m.savedToken != nil {
             registerToken(token: deviceToken)
         }
@@ -80,7 +86,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                 }
             } else if let checkMessages = ntfData["checkMessages"] as? Bool, checkMessages {
                 logger.debug("AppDelegate: didReceiveRemoteNotification: checkMessages")
-                if appStateGroupDefault.get().inactive && m.ntfEnablePeriodic {
+                if m.ntfEnablePeriodic && allowBackgroundRefresh() && BGManager.shared.lastRanLongAgo {
                     receiveMessages(completionHandler)
                 } else {
                     completionHandler(.noData)

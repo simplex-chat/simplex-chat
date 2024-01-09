@@ -18,6 +18,7 @@ where
 
 import Control.Logger.Simple (LogLevel (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteString.Char8 as B
 import Data.Text (Text)
 import Numeric.Natural (Natural)
@@ -42,12 +43,13 @@ data ChatOpts = ChatOpts
     allowInstantFiles :: Bool,
     autoAcceptFileSize :: Integer,
     muteNotifications :: Bool,
+    markRead :: Bool,
     maintenance :: Bool
   }
 
 data CoreChatOpts = CoreChatOpts
   { dbFilePrefix :: String,
-    dbKey :: String,
+    dbKey :: ScrubbedBytes,
     smpServers :: [SMPServerWithAuth],
     xftpServers :: [XFTPServerWithAuth],
     networkConfig :: NetworkConfig,
@@ -268,6 +270,12 @@ chatOptsP appDir defaultDbFileName = do
       ( long "mute"
           <> help "Mute notifications"
       )
+  markRead <-
+    switch
+      ( long "mark-read"
+          <> short 'r'
+          <> help "Mark shown messages as read"
+      )
   maintenance <-
     switch
       ( long "maintenance"
@@ -286,6 +294,7 @@ chatOptsP appDir defaultDbFileName = do
         allowInstantFiles,
         autoAcceptFileSize,
         muteNotifications,
+        markRead,
         maintenance
       }
 

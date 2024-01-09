@@ -2,8 +2,7 @@ package chat.simplex.common.platform
 
 import chat.simplex.common.model.*
 import chat.simplex.common.views.call.RcvCallInvitation
-import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.common.views.helpers.withBGApi
+import chat.simplex.common.views.helpers.*
 import java.util.*
 import chat.simplex.res.MR
 
@@ -23,11 +22,11 @@ fun initApp() {
     override fun androidCreateNtfChannelsMaybeShowAlert() {}
     override fun cancelCallNotification() {}
     override fun cancelAllNotifications() = chat.simplex.common.model.NtfManager.cancelAllNotifications()
+    override fun showMessage(title: String, text: String) = chat.simplex.common.model.NtfManager.showMessage(title, text)
   }
   applyAppLocale()
-  withBGApi {
-    initChatController()
-    runMigrations()
+  if (DatabaseUtils.ksSelfDestructPassword.get() == null) {
+    initChatControllerAndRunMigrations()
   }
   // LALAL
   //testCrypto()

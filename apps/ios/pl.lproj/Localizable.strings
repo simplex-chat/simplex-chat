@@ -2164,6 +2164,9 @@
 "Live messages" = "Wiadomości na żywo";
 
 /* No comment provided by engineer. */
+"Local" = "Lokalnie";
+
+/* No comment provided by engineer. */
 "Local name" = "Nazwa lokalna";
 
 /* No comment provided by engineer. */
@@ -2432,9 +2435,6 @@
 /* No comment provided by engineer. */
 "Off" = "Wyłączony";
 
-/* No comment provided by engineer. */
-"Off (Local)" = "Wyłączony (Lokalnie)";
-
 /* feature offered item */
 "offered %@" = "zaoferował %@";
 
@@ -2527,9 +2527,6 @@
 
 /* No comment provided by engineer. */
 "Open-source protocol and code – anybody can run the servers." = "Otwarto źródłowy protokół i kod - każdy może uruchomić serwery.";
-
-/* No comment provided by engineer. */
-"Opening database…" = "Otwieranie bazy danych…";
 
 /* member role */
 "owner" = "właściciel";
@@ -3468,9 +3465,6 @@
 "Turn off" = "Wyłącz";
 
 /* No comment provided by engineer. */
-"Turn off notifications?" = "Wyłączyć powiadomienia?";
-
-/* No comment provided by engineer. */
 "Turn on" = "Włącz";
 
 /* No comment provided by engineer. */
@@ -3958,9 +3952,6 @@
 
 /* No comment provided by engineer. */
 "Your contacts can allow full message deletion." = "Twoje kontakty mogą zezwolić na pełne usunięcie wiadomości.";
-
-/* No comment provided by engineer. */
-"Your contacts in SimpleX will see it.\nYou can change it in Settings." = "Twoje kontakty w SimpleX będą to widzieć.\nMożesz to zmienić w Ustawieniach.";
 
 /* No comment provided by engineer. */
 "Your contacts will remain connected." = "Twoje kontakty pozostaną połączone.";

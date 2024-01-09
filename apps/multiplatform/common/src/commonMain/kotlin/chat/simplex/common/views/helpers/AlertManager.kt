@@ -1,8 +1,11 @@
 package chat.simplex.common.views.helpers
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,7 +24,7 @@ import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
 
 class AlertManager {
-  var alertViews = mutableStateListOf<(@Composable () -> Unit)>()
+  private var alertViews = mutableStateListOf<(@Composable () -> Unit)>()
 
   fun showAlert(alert: @Composable () -> Unit) {
     Log.d(TAG, "AlertManager.showAlert")
@@ -31,6 +34,12 @@ class AlertManager {
   fun hideAlert() {
     alertViews.removeLastOrNull()
   }
+
+  fun hideAllAlerts() {
+    alertViews.clear()
+  }
+
+  fun hasAlertsShown() = alertViews.isNotEmpty()
 
   fun showAlertDialogButtons(
     title: String,
@@ -53,7 +62,28 @@ class AlertManager {
 
   fun showAlertDialogButtonsColumn(
     title: String,
-    text: AnnotatedString? = null,
+    text: String? = null,
+    onDismissRequest: (() -> Unit)? = null,
+    hostDevice: Pair<Long?, String>? = null,
+    buttons: @Composable () -> Unit,
+  ) {
+    showAlert {
+      AlertDialog(
+        onDismissRequest = { onDismissRequest?.invoke(); hideAlert() },
+        title = alertTitle(title),
+        buttons = {
+          AlertContent(text, hostDevice, extraPadding = true) {
+            buttons()
+          }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+      )
+    }
+  }
+
+  fun showAlertDialogButtonsColumn(
+    title: String,
+    text: AnnotatedString,
     onDismissRequest: (() -> Unit)? = null,
     hostDevice: Pair<Long?, String>? = null,
     buttons: @Composable () -> Unit,
@@ -217,6 +247,7 @@ class AlertManager {
 
   companion object {
     val shared = AlertManager()
+    val privacySensitive = AlertManager()
   }
 }
 
@@ -233,53 +264,71 @@ private fun alertTitle(title: String): (@Composable () -> Unit)? {
 
 @Composable
 private fun AlertContent(text: String?, hostDevice: Pair<Long?, String>?, extraPadding: Boolean = false, content: @Composable (() -> Unit)) {
-  Column(
-    Modifier
-      .padding(bottom = if (appPlatform.isDesktop) DEFAULT_PADDING else DEFAULT_PADDING_HALF)
-  ) {
-    if (appPlatform.isDesktop) {
-      HostDeviceTitle(hostDevice, extraPadding = extraPadding)
-    } else {
-      Spacer(Modifier.size(DEFAULT_PADDING_HALF))
-    }
-    CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
-      if (text != null) {
-        Text(
-          escapedHtmlToAnnotatedString(text, LocalDensity.current),
-          Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f),
-          fontSize = 16.sp,
-          textAlign = TextAlign.Center,
-          color = MaterialTheme.colors.secondary
-        )
+  BoxWithConstraints {
+    Column(
+      Modifier
+        .padding(bottom = if (appPlatform.isDesktop) DEFAULT_PADDING else DEFAULT_PADDING_HALF)
+    ) {
+      if (appPlatform.isDesktop) {
+        HostDeviceTitle(hostDevice, extraPadding = extraPadding)
+      } else {
+        Spacer(Modifier.size(DEFAULT_PADDING_HALF))
       }
+      CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
+        if (text != null) {
+          Column(Modifier.heightIn(max = this@BoxWithConstraints.maxHeight * 0.7f)
+            .verticalScroll(rememberScrollState())
+          ) {
+            SelectionContainer {
+              Text(
+                escapedHtmlToAnnotatedString(text, LocalDensity.current),
+                Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f),
+                fontSize = 16.sp,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colors.secondary
+              )
+            }
+          }
+        }
+      }
+      content()
     }
-    content()
   }
 }
 
 @Composable
 private fun AlertContent(text: AnnotatedString?, hostDevice: Pair<Long?, String>?, extraPadding: Boolean = false, content: @Composable (() -> Unit)) {
-  Column(
-    Modifier
-      .padding(bottom = if (appPlatform.isDesktop) DEFAULT_PADDING else DEFAULT_PADDING_HALF)
-  ) {
-    if (appPlatform.isDesktop) {
-      HostDeviceTitle(hostDevice, extraPadding = extraPadding)
-    } else {
-      Spacer(Modifier.size(DEFAULT_PADDING_HALF))
-    }
-    CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
-      if (text != null) {
-        Text(
-          text,
-          Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f),
-          fontSize = 16.sp,
-          textAlign = TextAlign.Center,
-          color = MaterialTheme.colors.secondary
-        )
+  BoxWithConstraints {
+    Column(
+      Modifier
+        .verticalScroll(rememberScrollState())
+        .padding(bottom = if (appPlatform.isDesktop) DEFAULT_PADDING else DEFAULT_PADDING_HALF)
+    ) {
+      if (appPlatform.isDesktop) {
+        HostDeviceTitle(hostDevice, extraPadding = extraPadding)
+      } else {
+        Spacer(Modifier.size(DEFAULT_PADDING_HALF))
       }
+      CompositionLocalProvider(LocalContentAlpha provides ContentAlpha.high) {
+        if (text != null) {
+          Column(
+            Modifier.heightIn(max = this@BoxWithConstraints.maxHeight * 0.7f)
+              .verticalScroll(rememberScrollState())
+          ) {
+            SelectionContainer {
+              Text(
+                text,
+                Modifier.fillMaxWidth().padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = DEFAULT_PADDING * 1.5f),
+                fontSize = 16.sp,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colors.secondary
+              )
+            }
+          }
+        }
+      }
+      content()
     }
-    content()
   }
 }
 

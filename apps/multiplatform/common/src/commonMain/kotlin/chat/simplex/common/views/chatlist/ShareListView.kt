@@ -26,10 +26,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 @Composable
 fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stopped: Boolean) {
   var searchInList by rememberSaveable { mutableStateOf("") }
-  val (userPickerState, scaffoldState, switchingUsersAndHosts) = settingsState
+  val (userPickerState, scaffoldState) = settingsState
   val endPadding = if (appPlatform.isDesktop) 56.dp else 0.dp
   Scaffold(
     Modifier.padding(end = endPadding),
+    contentColor = LocalContentColor.current,
+    drawerContentColor = LocalContentColor.current,
     scaffoldState = scaffoldState,
     topBar = { Column { ShareListToolbar(chatModel, userPickerState, stopped) { searchInList = it.trim() } } },
   ) {
@@ -47,10 +49,12 @@ fun ShareListView(chatModel: ChatModel, settingsState: SettingsViewState, stoppe
     }
   }
   if (appPlatform.isAndroid) {
-    UserPicker(chatModel, userPickerState, switchingUsersAndHosts, showSettings = false, showCancel = true, cancelClicked = {
-      chatModel.sharedContent.value = null
-      userPickerState.value = AnimatedViewState.GONE
-    })
+    tryOrShowError("UserPicker", error = {}) {
+      UserPicker(chatModel, userPickerState, showSettings = false, showCancel = true, cancelClicked = {
+        chatModel.sharedContent.value = null
+        userPickerState.value = AnimatedViewState.GONE
+      })
+    }
   }
 }
 

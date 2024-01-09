@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module Simplex.Chat.Mobile.WebRTC
   ( cChatEncryptMedia,
@@ -21,11 +22,14 @@ import Data.Either (fromLeft)
 import Data.Word (Word8)
 import Foreign.C (CInt, CString, newCAString)
 import Foreign.Ptr (Ptr)
+import Foreign.StablePtr
+import Simplex.Chat.Controller (ChatController (..))
 import Simplex.Chat.Mobile.Shared
 import qualified Simplex.Messaging.Crypto as C
+import UnliftIO (atomically)
 
-cChatEncryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
-cChatEncryptMedia = cTransformMedia chatEncryptMedia
+cChatEncryptMedia :: StablePtr ChatController -> CString -> Ptr Word8 -> CInt -> IO CString
+cChatEncryptMedia = cTransformMedia . chatEncryptMedia
 
 cChatDecryptMedia :: CString -> Ptr Word8 -> CInt -> IO CString
 cChatDecryptMedia = cTransformMedia chatDecryptMedia
@@ -39,11 +43,12 @@ cTransformMedia f cKey cFrame cFrameLen = do
     putFrame s = when (B.length s <= fromIntegral cFrameLen) $ putByteString cFrame s
 {-# INLINE cTransformMedia #-}
 
-chatEncryptMedia :: ByteString -> ByteString -> ExceptT String IO ByteString
-chatEncryptMedia keyStr frame = do
+chatEncryptMedia :: StablePtr ChatController -> ByteString -> ByteString -> ExceptT String IO ByteString
+chatEncryptMedia cc keyStr frame = do
+  ChatController {random} <- liftIO $ deRefStablePtr cc
   len <- checkFrameLen frame
   key <- decodeKey keyStr
-  iv <- liftIO C.randomGCMIV
+  iv <- atomically $ C.randomGCMIV random
   (tag, frame') <- withExceptT show $ C.encryptAESNoPad key iv $ B.take len frame
   pure $ frame' <> BA.convert (C.unAuthTag tag) <> C.unGCMIV iv
 

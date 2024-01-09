@@ -26,10 +26,11 @@ import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.CreateProfile
 import chat.simplex.common.views.remote.*
+import chat.simplex.common.views.usersettings.doWithAuth
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -38,7 +39,6 @@ import kotlin.math.roundToInt
 fun UserPicker(
   chatModel: ChatModel,
   userPickerState: MutableStateFlow<AnimatedViewState>,
-  switchingUsersAndHosts: MutableState<Boolean>,
   showSettings: Boolean = true,
   showCancel: Boolean = false,
   cancelClicked: () -> Unit = {},
@@ -115,7 +115,10 @@ fun UserPicker(
       }
   }
   LaunchedEffect(Unit) {
-    controller.reloadRemoteHosts()
+    // Controller.ctrl can be null when self-destructing activates
+    if (controller.ctrl != null && controller.ctrl != -1L) {
+      controller.reloadRemoteHosts()
+    }
   }
   val UsersView: @Composable ColumnScope.() -> Unit = {
     users.forEach { u ->
@@ -123,14 +126,10 @@ fun UserPicker(
         userPickerState.value = AnimatedViewState.HIDING
         if (!u.user.activeUser) {
           scope.launch {
-            val job = launch {
-              delay(500)
-              switchingUsersAndHosts.value = true
+            controller.showProgressIfNeeded {
+              ModalManager.closeAllModalsEverywhere()
+              chatModel.controller.changeActiveUser(u.user.remoteHostId, u.user.userId, null)
             }
-            ModalManager.closeAllModalsEverywhere()
-            chatModel.controller.changeActiveUser(u.user.remoteHostId, u.user.userId, null)
-            job.cancel()
-            switchingUsersAndHosts.value = false
           }
         }
       }
@@ -162,13 +161,13 @@ fun UserPicker(
       val currentRemoteHost = remember { chatModel.currentRemoteHost }.value
       Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
         if (remoteHosts.isNotEmpty()) {
-          if (currentRemoteHost == null) {
+          if (currentRemoteHost == null && chatModel.localUserCreated.value == true) {
             LocalDevicePickerItem(true) {
               userPickerState.value = AnimatedViewState.HIDING
               switchToLocalDevice()
             }
             Divider(Modifier.requiredHeight(1.dp))
-          } else {
+          } else if (currentRemoteHost != null) {
             val connecting = rememberSaveable { mutableStateOf(false) }
             RemoteHostPickerItem(currentRemoteHost,
               actionButtonClick = {
@@ -176,7 +175,7 @@ fun UserPicker(
                 stopRemoteHostAndReloadHosts(currentRemoteHost, true)
               }) {
                 userPickerState.value = AnimatedViewState.HIDING
-                switchToRemoteHost(currentRemoteHost, switchingUsersAndHosts, connecting)
+                switchToRemoteHost(currentRemoteHost, connecting)
               }
             Divider(Modifier.requiredHeight(1.dp))
           }
@@ -184,7 +183,7 @@ fun UserPicker(
 
         UsersView()
 
-        if (remoteHosts.isNotEmpty() && currentRemoteHost != null) {
+        if (remoteHosts.isNotEmpty() && currentRemoteHost != null && chatModel.localUserCreated.value == true) {
           LocalDevicePickerItem(false) {
             userPickerState.value = AnimatedViewState.HIDING
             switchToLocalDevice()
@@ -199,7 +198,7 @@ fun UserPicker(
               stopRemoteHostAndReloadHosts(h, false)
             }) {
               userPickerState.value = AnimatedViewState.HIDING
-              switchToRemoteHost(h, switchingUsersAndHosts, connecting)
+              switchToRemoteHost(h, connecting)
           }
           Divider(Modifier.requiredHeight(1.dp))
         }
@@ -218,6 +217,18 @@ fun UserPicker(
             ConnectMobileView()
           }
           userPickerState.value = AnimatedViewState.GONE
+        }
+        Divider(Modifier.requiredHeight(1.dp))
+      } else if (chatModel.desktopNoUserNoRemote) {
+        CreateInitialProfile {
+          doWithAuth(generalGetString(MR.strings.auth_open_chat_profiles), generalGetString(MR.strings.auth_log_in_using_credential)) {
+            ModalManager.center.showModalCloseable { close ->
+              LaunchedEffect(Unit) {
+                userPickerState.value = AnimatedViewState.HIDING
+              }
+              CreateProfile(chat.simplex.common.platform.chatModel, close)
+            }
+          }
         }
         Divider(Modifier.requiredHeight(1.dp))
       }
@@ -291,7 +302,7 @@ fun UserProfileRow(u: User) {
       u.displayName,
       modifier = Modifier
         .padding(start = 10.dp, end = 8.dp),
-      color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
+      color = MenuTextColor,
       fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
     )
   }
@@ -334,7 +345,7 @@ fun RemoteHostRow(h: RemoteHostInfo) {
     Text(
       h.hostDeviceName,
       modifier = Modifier.padding(start = 26.dp, end = 8.dp),
-      color = if (h.activeHost) MaterialTheme.colors.onBackground else if (isInDarkTheme()) MenuTextColorDark else Color.Black,
+      color = if (h.activeHost) MaterialTheme.colors.onBackground else MenuTextColor,
       fontSize = 14.sp,
     )
   }
@@ -375,7 +386,7 @@ fun LocalDeviceRow(active: Boolean) {
     Text(
       stringResource(MR.strings.this_device),
       modifier = Modifier.padding(start = 26.dp, end = 8.dp),
-      color = if (active) MaterialTheme.colors.onBackground else if (isInDarkTheme()) MenuTextColorDark else Color.Black,
+      color = if (active) MaterialTheme.colors.onBackground else MenuTextColor,
       fontSize = 14.sp,
     )
   }
@@ -387,7 +398,7 @@ private fun UseFromDesktopPickerItem(onClick: () -> Unit) {
     val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
     Icon(painterResource(MR.images.ic_desktop), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+    Text(text, color = MenuTextColor)
   }
 }
 
@@ -397,7 +408,17 @@ private fun LinkAMobilePickerItem(onClick: () -> Unit) {
     val text = generalGetString(MR.strings.link_a_mobile)
     Icon(painterResource(MR.images.ic_smartphone_300), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+    Text(text, color = MenuTextColor)
+  }
+}
+
+@Composable
+private fun CreateInitialProfile(onClick: () -> Unit) {
+  SectionItemView(onClick, padding = PaddingValues(start = DEFAULT_PADDING + 7.dp, end = DEFAULT_PADDING), minHeight = 68.dp) {
+    val text = generalGetString(MR.strings.create_chat_profile)
+    Icon(painterResource(MR.images.ic_manage_accounts), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
+    Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
+    Text(text, color = MenuTextColor)
   }
 }
 
@@ -407,7 +428,7 @@ private fun SettingsPickerItem(onClick: () -> Unit) {
     val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
     Icon(painterResource(MR.images.ic_settings), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+    Text(text, color = MenuTextColor)
   }
 }
 
@@ -417,7 +438,7 @@ private fun CancelPickerItem(onClick: () -> Unit) {
     val text = generalGetString(MR.strings.cancel_verb)
     Icon(painterResource(MR.images.ic_close), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+    Text(text, color = MenuTextColor)
   }
 }
 
@@ -441,21 +462,15 @@ private fun switchToLocalDevice() {
   }
 }
 
-private fun switchToRemoteHost(h: RemoteHostInfo, switchingUsersAndHosts: MutableState<Boolean>, connecting: MutableState<Boolean>) {
+private fun switchToRemoteHost(h: RemoteHostInfo, connecting: MutableState<Boolean>) {
   if (!h.activeHost()) {
     withBGApi {
-      val job = launch {
-        delay(500)
-        switchingUsersAndHosts.value = true
-      }
       ModalManager.closeAllModalsEverywhere()
       if (h.sessionState != null) {
         chatModel.controller.switchUIRemoteHost(h.remoteHostId)
       } else {
         connectMobileDevice(h, connecting)
       }
-      job.cancel()
-      switchingUsersAndHosts.value = false
     }
   } else {
     connectMobileDevice(h, connecting)

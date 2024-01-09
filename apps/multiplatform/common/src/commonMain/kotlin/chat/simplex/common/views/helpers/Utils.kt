@@ -55,10 +55,13 @@ fun annotatedStringResource(id: StringResource): AnnotatedString {
 @Composable
 fun annotatedStringResource(id: StringResource, vararg args: Any?): AnnotatedString {
   val density = LocalDensity.current
-  return remember(id) {
+  return remember(id, args) {
     escapedHtmlToAnnotatedString(id.localized().format(args = args), density)
   }
 }
+
+@Composable
+expect fun SetupClipboardListener()
 
 // maximum image file size to be auto-accepted
 const val MAX_IMAGE_SIZE: Long = 261_120 // 255KB
@@ -389,6 +392,28 @@ fun IntSize.Companion.Saver(): Saver<IntSize, *> = Saver(
   save = { it.width to it.height },
   restore = { IntSize(it.first, it.second) }
 )
+
+private var lastExecutedComposables = HashSet<Any>()
+private val failedComposables = HashSet<Any>()
+
+@Composable
+fun tryOrShowError(key: Any = Exception().stackTraceToString().lines()[2], error: @Composable () -> Unit = {}, content: @Composable () -> Unit) {
+  if (!failedComposables.contains(key)) {
+    lastExecutedComposables.add(key)
+    content()
+    lastExecutedComposables.remove(key)
+  } else {
+    error()
+  }
+}
+
+fun includeMoreFailedComposables() {
+  lastExecutedComposables.forEach {
+    failedComposables.add(it)
+    Log.i(TAG, "Added composable key as failed: $it")
+  }
+  lastExecutedComposables.clear()
+}
 
 @Composable
 fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}, whenGone: () -> Unit) {

@@ -18,6 +18,7 @@
   <string name="opening_database">Opening database…</string>
   <string name="non_content_uri_alert_title">Invalid file path</string>
   <string name="non_content_uri_alert_text">You shared an invalid file path. Report the issue to the app developers.</string>
+  <string name="app_was_crashed">View crashed</string>
 
   <!-- Server info - ChatModel.kt -->
   <string name="server_connected">connected</string>
@@ -44,6 +45,9 @@
   <string name="moderated_description">moderated</string>
   <string name="invalid_chat">invalid chat</string>
   <string name="invalid_data">invalid data</string>
+  <string name="error_showing_message">error showing message</string>
+  <string name="error_showing_content">error showing content</string>
+
   <string name="decryption_error">Decryption error</string>
   <string name="encryption_renegotiation_error">Encryption re-negotiation error</string>
 
@@ -289,9 +293,11 @@
   <string name="tap_to_start_new_chat">Tap to start a new chat</string>
   <string name="chat_with_developers">Chat with the developers</string>
   <string name="you_have_no_chats">You have no chats</string>
+  <string name="loading_chats">Loading chats…</string>
   <string name="no_filtered_chats">No filtered chats</string>
   <string name="contact_tap_to_connect">Tap to Connect</string>
   <string name="connect_with_contact_name_question">Connect with %1$s?</string>
+  <string name="search_or_paste_simplex_link">Search or paste SimpleX link</string>
 
   <!-- ChatView.kt -->
   <string name="no_selected_chat">No selected chat</string>
@@ -423,6 +429,11 @@
   <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(scan or paste from clipboard)</string>
   <string name="only_stored_on_members_devices">(only stored by group members)</string>
 
+  <!-- QRCodeScanner -->
+  <string name="enable_camera_access">Enable camera access</string>
+  <string name="tap_to_scan">Tap to scan</string>
+  <string name="camera_not_available">Camera not available</string>
+
   <!-- GetImageView -->
   <string name="toast_permission_denied">Permission Denied!</string>
   <string name="use_camera_button">Camera</string>
@@ -438,8 +449,8 @@
   <string name="to_start_a_new_chat_help_header">To start a new chat</string>
   <string name="chat_help_tap_button">Tap button</string>
   <string name="above_then_preposition_continuation">above, then:</string>
-  <string name="add_new_contact_to_create_one_time_QR_code"><![CDATA[<b>Add new contact</b>: to create your one-time QR Code for your contact.]]></string>
-  <string name="scan_QR_code_to_connect_to_contact_who_shows_QR_code"><![CDATA[<b>Scan QR code</b>: to connect to your contact who shows QR code to you.]]></string>
+  <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Add contact</b>: to create a new invitation link, or connect via a link you received.]]></string>
+  <string name="create_group_button_to_create_new_group"><![CDATA[<b>Create group</b>: to create a new group.]]></string>
   <string name="to_connect_via_link_title">To connect via link</string>
   <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">If you received SimpleX Chat invitation link, you can open it in your browser:</string>
   <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 desktop: scan displayed QR code from the app, via <b>Scan QR code</b>.]]></string>
@@ -542,11 +553,26 @@
   <string name="this_string_is_not_a_connection_link">This string is not a connection link!</string>
   <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[You can also connect by clicking the link. If it opens in the browser, click <b>Open in mobile app</b> button.]]></string>
 
-  <!-- CreateLinkView.kt -->
-  <string name="create_one_time_link">Create one-time invitation link</string>
+  <!-- NewChatView.kt -->
+  <string name="new_chat">New chat</string>
+  <string name="add_contact_tab">Add contact</string>
   <string name="one_time_link">One-time invitation link</string>
   <string name="one_time_link_short">1-time link</string>
   <string name="simplex_address">SimpleX address</string>
+  <string name="or_show_this_qr_code">Or show this code</string>
+  <string name="or_scan_qr_code">Or scan QR code</string>
+  <string name="keep_unused_invitation_question">Keep unused invitation?</string>
+  <string name="you_can_view_invitation_link_again">You can view invitation link again in connection details.</string>
+  <string name="keep_invitation_link">Keep</string>
+  <string name="creating_link">Creating link…</string>
+  <string name="retry_verb">Retry</string>
+  <string name="share_this_1_time_link">Share this 1-time invite link</string>
+  <string name="paste_the_link_you_received">Paste the link you received</string>
+  <string name="the_text_you_pasted_is_not_a_link">The text you pasted is not a SimpleX link.</string>
+  <string name="tap_to_paste_link">Tap to paste link</string>
+
+  <string name="invalid_qr_code">Invalid QR code</string>
+  <string name="code_you_scanned_is_not_simplex_link_qr_code">The code you scanned is not a SimpleX link QR code.</string>
 
   <!-- ScanCodeView.kt -->
   <string name="scan_code">Scan code</string>
@@ -565,6 +591,7 @@
   <string name="your_settings">Your settings</string>
   <string name="your_simplex_contact_address">Your SimpleX address</string>
   <string name="your_chat_profiles">Your chat profiles</string>
+  <string name="create_chat_profile">Create chat profile</string>
   <string name="database_passphrase_and_export">Database passphrase &amp; export</string>
   <string name="about_simplex_chat">About SimpleX Chat</string>
   <string name="how_to_use_simplex_chat">How to use it</string>
@@ -657,6 +684,7 @@
   <string name="hide_dev_options">Hide:</string>
   <string name="show_developer_options">Show developer options</string>
   <string name="developer_options">Database IDs and Transport isolation option.</string>
+  <string name="show_internal_errors">Show internal errors</string>
   <string name="shutdown_alert_question">Shutdown?</string>
   <string name="shutdown_alert_desc">Notifications will stop working until you re-launch the app</string>
 
@@ -688,7 +716,7 @@
   <string name="continue_to_next_step">Continue</string>
   <string name="dont_create_address">Don\'t create address</string>
   <string name="you_can_create_it_later">You can create it later</string>
-  <string name="your_contacts_will_see_it">Your contacts in SimpleX will see it.\nYou can change it in Settings.</string>
+  <string name="you_can_make_address_visible_via_settings">You can make it visible to your SimpleX contacts via Settings.</string>
 
   <!-- User profile details - UserProfileView.kt -->
   <string name="display_name__field">Profile name:</string>
@@ -794,9 +822,6 @@
   <string name="you_can_change_it_later">Random passphrase is stored in settings as plaintext.\nYou can change it later.</string>
   <string name="use_random_passphrase">Use random passphrase</string>
 
-  <!-- MakeConnection -->
-  <string name="paste_the_link_you_received">Paste received link</string>
-
   <!-- Call -->
   <string name="incoming_video_call">Incoming video call</string>
   <string name="incoming_audio_call">Incoming audio call</string>
@@ -892,6 +917,7 @@
   <string name="authentication_cancelled">Authentication cancelled</string>
   <string name="la_mode_system">System</string>
   <string name="la_mode_passcode">Passcode</string>
+  <string name="la_app_passcode">App passcode</string>
   <string name="la_mode_off">Off</string>
   <string name="passcode_set">Passcode set!</string>
   <string name="passcode_changed">Passcode changed!</string>
@@ -1087,6 +1113,8 @@
   <!-- ChatModel.chatRunning interactions -->
   <string name="chat_is_stopped_indication">Chat is stopped</string>
   <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">You can start chat via app Settings / Database or by restarting the app.</string>
+  <string name="start_chat_question">Start chat?</string>
+  <string name="chat_is_stopped_you_should_transfer_database">Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</string>
 
   <!-- ChatArchiveView.kt -->
   <string name="chat_archive_header">Chat archive</string>
@@ -1434,6 +1462,7 @@
   <string name="message_reactions">Message reactions</string>
   <string name="voice_messages">Voice messages</string>
   <string name="files_and_media">Files and media</string>
+  <string name="recent_history">Visible history</string>
   <string name="audio_video_calls">Audio/video calls</string>
   <string name="available_in_v51">\nAvailable in v5.1</string>
   <string name="feature_enabled">enabled</string>
@@ -1446,8 +1475,8 @@
   <string name="allow_your_contacts_to_send_disappearing_messages">Allow your contacts to send disappearing messages.</string>
   <string name="allow_disappearing_messages_only_if">Allow disappearing messages only if your contact allows them.</string>
   <string name="prohibit_sending_disappearing_messages">Prohibit sending disappearing messages.</string>
-  <string name="allow_your_contacts_irreversibly_delete">Allow your contacts to irreversibly delete sent messages.</string>
-  <string name="allow_irreversible_message_deletion_only_if">Allow irreversible message deletion only if your contact allows it to you.</string>
+  <string name="allow_your_contacts_irreversibly_delete">Allow your contacts to irreversibly delete sent messages. (24 hours)</string>
+  <string name="allow_irreversible_message_deletion_only_if">Allow irreversible message deletion only if your contact allows it to you. (24 hours)</string>
   <string name="contacts_can_mark_messages_for_deletion">Contacts can mark messages for deletion; you will be able to view them.</string>
   <string name="allow_your_contacts_to_send_voice_messages">Allow your contacts to send voice messages.</string>
   <string name="allow_voice_messages_only_if">Allow voice messages only if your contact allows them.</string>
@@ -1462,9 +1491,9 @@
   <string name="only_you_can_send_disappearing">Only you can send disappearing messages.</string>
   <string name="only_your_contact_can_send_disappearing">Only your contact can send disappearing messages.</string>
   <string name="disappearing_prohibited_in_this_chat">Disappearing messages are prohibited in this chat.</string>
-  <string name="both_you_and_your_contacts_can_delete">Both you and your contact can irreversibly delete sent messages.</string>
-  <string name="only_you_can_delete_messages">Only you can irreversibly delete messages (your contact can mark them for deletion).</string>
-  <string name="only_your_contact_can_delete">Only your contact can irreversibly delete messages (you can mark them for deletion).</string>
+  <string name="both_you_and_your_contacts_can_delete">Both you and your contact can irreversibly delete sent messages. (24 hours)</string>
+  <string name="only_you_can_delete_messages">Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)</string>
+  <string name="only_your_contact_can_delete">Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)</string>
   <string name="message_deletion_prohibited">Irreversible message deletion is prohibited in this chat.</string>
   <string name="both_you_and_your_contact_can_send_voice">Both you and your contact can send voice messages.</string>
   <string name="only_you_can_send_voice">Only you can send voice messages.</string>
@@ -1482,7 +1511,7 @@
   <string name="prohibit_sending_disappearing">Prohibit sending disappearing messages.</string>
   <string name="allow_direct_messages">Allow sending direct messages to members.</string>
   <string name="prohibit_direct_messages">Prohibit sending direct messages to members.</string>
-  <string name="allow_to_delete_messages">Allow to irreversibly delete sent messages.</string>
+  <string name="allow_to_delete_messages">Allow to irreversibly delete sent messages. (24 hours)</string>
   <string name="prohibit_message_deletion">Prohibit irreversible message deletion.</string>
   <string name="allow_to_send_voice">Allow to send voice messages.</string>
   <string name="prohibit_sending_voice">Prohibit sending voice messages.</string>
@@ -1490,11 +1519,13 @@
   <string name="prohibit_message_reactions_group">Prohibit messages reactions.</string>
   <string name="allow_to_send_files">Allow to send files and media.</string>
   <string name="prohibit_sending_files">Prohibit sending files and media.</string>
+  <string name="enable_sending_recent_history">Send up to 100 last messages to new members.</string>
+  <string name="disable_sending_recent_history">Do not send history to new members.</string>
   <string name="group_members_can_send_disappearing">Group members can send disappearing messages.</string>
   <string name="disappearing_messages_are_prohibited">Disappearing messages are prohibited in this group.</string>
   <string name="group_members_can_send_dms">Group members can send direct messages.</string>
   <string name="direct_messages_are_prohibited_in_chat">Direct messages between members are prohibited in this group.</string>
-  <string name="group_members_can_delete">Group members can irreversibly delete sent messages.</string>
+  <string name="group_members_can_delete">Group members can irreversibly delete sent messages. (24 hours)</string>
   <string name="message_deletion_prohibited_in_chat">Irreversible message deletion is prohibited in this group.</string>
   <string name="group_members_can_send_voice">Group members can send voice messages.</string>
   <string name="voice_messages_are_prohibited">Voice messages are prohibited in this group.</string>
@@ -1502,6 +1533,8 @@
   <string name="message_reactions_are_prohibited">Message reactions are prohibited in this group.</string>
   <string name="group_members_can_send_files">Group members can send files and media.</string>
   <string name="files_are_prohibited_in_group">Files and media are prohibited in this group.</string>
+  <string name="recent_history_is_sent_to_new_members">Up to 100 last messages are sent to new members.</string>
+  <string name="recent_history_is_not_sent_to_new_members">History is not sent to new members.</string>
   <string name="delete_after">Delete after</string>
   <string name="ttl_sec">%d sec</string>
   <string name="ttl_s">%ds</string>
@@ -1659,6 +1692,7 @@
   <string name="unlink_desktop_question">Unlink desktop?</string>
   <string name="unlink_desktop">Unlink</string>
   <string name="disconnect_remote_host">Disconnect</string>
+  <string name="disconnect_remote_hosts">Disconnect mobiles</string>
   <string name="remote_host_was_disconnected_toast"><![CDATA[Mobile <b>%s</b> was disconnected]]></string>
   <string name="remote_host_was_disconnected_title">Connection stopped</string>
   <string name="remote_ctrl_was_disconnected_title">Connection stopped</string>
@@ -1667,7 +1701,7 @@
   <string name="disconnect_desktop_question">Disconnect desktop?</string>
   <string name="only_one_device_can_work_at_the_same_time">Only one device can work at the same time</string>
   <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Open <i>Use from desktop</i> in mobile app and scan QR code.]]></string>
-  <string name="waiting_for_mobile_to_connect_on_port"><![CDATA[Waiting for mobile to connect on port <i>%s</i>]]></string>
+  <string name="waiting_for_mobile_to_connect">Waiting for mobile to connect:</string>
   <string name="bad_desktop_address">Bad desktop address</string>
   <string name="desktop_incompatible_version">Incompatible version</string>
   <string name="desktop_app_version_is_incompatible">Desktop app version %s is not compatible with this app.</string>
@@ -1693,6 +1727,11 @@
   <string name="paste_desktop_address">Paste desktop address</string>
   <string name="desktop_device">Desktop</string>
   <string name="not_compatible">Not compatible!</string>
+  <string name="refresh_qr_code">Refresh</string>
+  <string name="no_connected_mobile">No connected mobile</string>
+  <string name="random_port">Random</string>
+  <string name="open_port_in_firewall_title">Open port in firewall</string>
+  <string name="open_port_in_firewall_desc">To allow a mobile app to connect to the desktop, open this port in your firewall, if you have it enabled</string>
   <string name="remote_host_error_missing"><![CDATA[Mobile <b>%s</b> is missing]]></string>
   <string name="remote_host_error_inactive"><![CDATA[Mobile <b>%s</b> is inactive]]></string>
   <string name="remote_host_error_busy"><![CDATA[Mobile <b>%s</b> is busy]]></string>
@@ -1715,20 +1754,27 @@
   <!-- Connection plan -->
   <string name="connect_plan_connect_to_yourself">Connect to yourself?</string>
   <string name="connect_plan_this_is_your_own_one_time_link">This is your own one-time link!</string>
-  <string name="connect_plan_you_are_already_connecting_to_vName">You are already connecting to %1$s.</string>
+  <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[You are already connecting to <b>%1$s</b>.]]></string>
   <string name="connect_plan_already_connecting">Already connecting!</string>
   <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">You are already connecting via this one-time link!</string>
   <string name="connect_plan_this_is_your_own_simplex_address">This is your own SimpleX address!</string>
   <string name="connect_plan_repeat_connection_request">Repeat connection request?</string>
   <string name="connect_plan_you_have_already_requested_connection_via_this_address">You have already requested connection via this address!</string>
   <string name="connect_plan_join_your_group">Join your group?</string>
-  <string name="connect_plan_this_is_your_link_for_group_vName">This is your link for group %1$s!</string>
+  <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[This is your link for group <b>%1$s</b>!]]></string>
   <string name="connect_plan_open_group">Open group</string>
   <string name="connect_plan_repeat_join_request">Repeat join request?</string>
   <string name="connect_plan_group_already_exists">Group already exists!</string>
-  <string name="connect_plan_you_are_already_joining_the_group_vName">You are already joining the group %1$s.</string>
+  <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[You are already joining the group <b>%1$s</b>.]]></string>
   <string name="connect_plan_already_joining_the_group">Already joining the group!</string>
   <string name="connect_plan_you_are_already_joining_the_group_via_this_link">You are already joining the group via this link.</string>
-  <string name="connect_plan_you_are_already_in_group_vName">You are already in group %1$s.</string>
+  <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[You are already in group <b>%1$s</b>.]]></string>
   <string name="connect_plan_connect_via_link">Connect via link?</string>
+
+  <!-- Errors -->
+  <string name="agent_critical_error_title">Critical error</string>
+  <string name="agent_critical_error_desc">Please report it to the developers: \n%s\n\nIt is recommended to restart the app.</string>
+  <string name="agent_internal_error_title">Internal error</string>
+  <string name="agent_internal_error_desc">Please report it to the developers: \n%s</string>
+  <string name="restart_chat_button">Restart chat</string>
 </resources>

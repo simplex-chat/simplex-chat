@@ -222,37 +222,3 @@ L'adresse de l'utilisateur est "à long terme" dans le sens où il s'agit d'un l
 Utilisez `/help address` pour les autres commandes.
 
 ![simplex-chat](/images/user-addresses.gif)
-
-### Accéder à l'historique des chats
-
-SimpleX chat stocke tous vos contacts et conversations dans une base de données SQLite locale, ce qui la rend privée et portable par définition, appartenant et contrôlée par l'utilisateur.
-
-Vous pouvez visualiser et rechercher votre historique de chat en interrogeant votre base de données. Exécutez le script ci-dessous pour créer des aperçus de messages dans votre base de données.
-
-```sh
-curl -o- https://raw.githubusercontent.com/simplex-chat/simplex-chat/stable/scripts/message_views.sql | sqlite3 ~/.simplex/simplex_v1_chat.db
-```
-
-Ouvrir un terminal de commande SQLite :
-
-```sh
-sqlite3 ~/.simplex/simplex_v1_chat.db
-```
-
-Voir les [requêtes de message](./SQL.md) à titre d'exemple.
-
-> **Veuillez noter :** Les contraintes de clé étrangère SQLite sont désactivées par défaut, et doivent être **[activé séparément pour chaque connexion de base de données](https://sqlite.org/foreignkeys.html#fk_enable)**. Cette dernière peut être réalisée en exécutant la commande `PRAGMA foreign_keys = ON;` sur une connexion de base de données ouverte. En exécutant des requêtes modifiant les données sans activer les clés étrangères au préalable, vous risquez de mettre votre base de données dans un état inconsistant.
-
-**Requêtes de commodité**
-
-Pour recevoir tous les messages du jour (`chat_dt` est en UTC) :
-
-```sql
-select * from all_messages_plain where date(chat_dt) > date('now', '-1 day') order by chat_dt;
-```
-
-Pour recevoir les messages de la nuit dans la matinée :
-
-```sql
-select * from all_messages_plain where chat_dt > datetime('now', '-15 hours') order by chat_dt;
-```

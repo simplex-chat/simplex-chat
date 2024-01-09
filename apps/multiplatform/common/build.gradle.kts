@@ -110,7 +110,7 @@ android {
   compileSdkVersion(34)
   sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
   defaultConfig {
-    minSdkVersion(26)
+    minSdkVersion(28)
     targetSdkVersion(33)
   }
   compileOptions {
@@ -154,7 +154,41 @@ afterEvaluate {
       val endStringRegex = Regex("</string>[ ]*")
       val endTagRegex = Regex("</")
       val anyHtmlRegex = Regex("[^>]*>.*(<|>).*</string>|[^>]*>.*(&lt;|&gt;).*</string>")
+      val fontLtGtRegex = Regex("[^>]*>.*&lt;font[^>]*&gt;.*&lt;/font&gt;.*</string>")
+      val unbracketedColorRegex = Regex("color=#[abcdefABCDEF0-9]{3,6}")
       val correctHtmlRegex = Regex("[^>]*>.*<b>.*</b>.*</string>|[^>]*>.*<i>.*</i>.*</string>|[^>]*>.*<u>.*</u>.*</string>|[^>]*>.*<font[^>]*>.*</font>.*</string>")
+      val possibleFormat = listOf("s", "d", "1\$s", "2\$s", "3\$s", "4\$s", "1\$d", "2\$d", "3\$d", "4\$d", "2s", "f")
+
+      fun String.id(): String = replace("<string name=\"", "").trim().substringBefore("\"")
+
+      fun String.formatting(filepath: String): List<String> {
+        if (!contains("%")) return emptyList()
+        val value = substringAfter("\">").substringBeforeLast("</string>")
+
+        val formats = ArrayList<String>()
+        var substring = value.substringAfter("%")
+        while (true) {
+          var foundFormat = false
+          for (format in possibleFormat) {
+            if (substring.startsWith(format)) {
+              formats.add(format)
+              foundFormat = true
+              break
+            }
+          }
+          if (!foundFormat) {
+            throw Exception("Unknown formatting in string. Add it to 'possibleFormat' in common/build.gradle.kts if needed: $this \nin $filepath")
+          }
+          val was = substring
+          substring = substring.substringAfter("%")
+          if (was.length == substring.length) break
+        }
+        return if (formats.any { it.startsWith("1$") || it.startsWith("2$") || it.startsWith("3$") || it.startsWith("4$") }) {
+          formats.sortedBy { it.trim('s', 'd', 'f', '$').toIntOrNull() ?: throw Exception("Formatting don't have positional arguments: $this \nin $filepath") }
+        } else {
+          formats
+        }
+      }
 
       fun String.removeCDATA(): String =
         if (contains("<![CDATA")) {
@@ -166,9 +200,12 @@ afterEvaluate {
       fun String.addCDATA(filepath: String): String {
         //return this
         if (anyHtmlRegex.matches(this)) {
-          val countOfStartTag = count { it == '<' }
-          val countOfEndTag = count { it == '>' }
-          if (countOfStartTag != countOfEndTag || countOfStartTag != endTagRegex.findAll(this).count() * 2 || !correctHtmlRegex.matches(this)) {
+          val prepared = if (fontLtGtRegex.matches(this) || unbracketedColorRegex.containsMatchIn(this)) {
+            replace("&lt;", "<").replace("&gt;", ">").replace(unbracketedColorRegex) { it.value.replace("color=#", "color=\"#") + "\"" }
+          } else this
+          val countOfStartTag = prepared.count { it == '<' }
+          val countOfEndTag = prepared.count { it == '>' }
+          if (countOfStartTag != countOfEndTag || countOfStartTag != endTagRegex.findAll(prepared).count() * 2 || !correctHtmlRegex.matches(prepared)) {
             if (debug) {
               println("Wrong string:")
               println(this)
@@ -178,7 +215,7 @@ afterEvaluate {
               throw Exception("Wrong string: $this \nin $filepath")
             }
           }
-          val res = replace(startStringRegex) { it.value + "<![CDATA[" }.replace(endStringRegex) { "]]>" + it.value }
+          val res = prepared.replace(startStringRegex) { it.value + "<![CDATA[" }.replace(endStringRegex) { "]]>" + it.value }
           if (debug) {
             println("Changed string:")
             println(this)
@@ -195,20 +232,44 @@ afterEvaluate {
         return this
       }
       val fileRegex = Regex("MR/../strings.xml$|MR/..-.../strings.xml$|MR/..-../strings.xml$|MR/base/strings.xml$")
-      kotlin.sourceSets["commonMain"].resources.filter { fileRegex.containsMatchIn(it.absolutePath) }.asFileTree.forEach { file ->
+      val tree = kotlin.sourceSets["commonMain"].resources.filter { fileRegex.containsMatchIn(it.absolutePath.replace("\\", "/")) }.asFileTree
+      val baseStringsFile = tree.firstOrNull { it.absolutePath.replace("\\", "/").endsWith("base/strings.xml") } ?: throw Exception("No base/strings.xml found")
+      val treeList = ArrayList(tree.toList())
+      treeList.remove(baseStringsFile)
+      treeList.add(0, baseStringsFile)
+      val baseFormatting = mutableMapOf<String, List<String>>()
+      treeList.forEachIndexed { index, file ->
+        val isBase = index == 0
         val initialLines = ArrayList<String>()
         val finalLines = ArrayList<String>()
+        val errors = ArrayList<String>()
+
         file.useLines { lines ->
           val multiline = ArrayList<String>()
           lines.forEach { line ->
             initialLines.add(line)
             if (stringRegex.matches(line)) {
-              finalLines.add(line.removeCDATA().addCDATA(file.absolutePath))
+              val fixedLine = line.removeCDATA().addCDATA(file.absolutePath)
+              val lineId = fixedLine.id()
+              if (isBase) {
+                baseFormatting[lineId] = fixedLine.formatting(file.absolutePath)
+              } else if (baseFormatting[lineId] != fixedLine.formatting(file.absolutePath)) {
+                errors.add("Incorrect formatting in string: $fixedLine \nin ${file.absolutePath}")
+              }
+              finalLines.add(fixedLine)
             } else if (multiline.isEmpty() && startStringRegex.containsMatchIn(line)) {
               multiline.add(line)
             } else if (multiline.isNotEmpty() && endStringRegex.containsMatchIn(line)) {
               multiline.add(line)
-              finalLines.addAll(multiline.joinToString("\n").removeCDATA().addCDATA(file.absolutePath).split("\n"))
+              val fixedLines = multiline.joinToString("\n").removeCDATA().addCDATA(file.absolutePath).split("\n")
+              val fixedLinesJoined = fixedLines.joinToString("")
+              val lineId = fixedLinesJoined.id()
+              if (isBase) {
+                baseFormatting[lineId] = fixedLinesJoined.formatting(file.absolutePath)
+              } else if (baseFormatting[lineId] != fixedLinesJoined.formatting(file.absolutePath)) {
+                errors.add("Incorrect formatting in string: $fixedLinesJoined \nin ${file.absolutePath}")
+              }
+              finalLines.addAll(fixedLines)
               multiline.clear()
             } else if (multiline.isNotEmpty()) {
               multiline.add(line)
@@ -217,8 +278,12 @@ afterEvaluate {
             }
           }
           if (multiline.isNotEmpty()) {
-            throw Exception("Unclosed string tag: ${multiline.joinToString("\n")} \nin ${file.absolutePath}")
+            errors.add("Unclosed string tag: ${multiline.joinToString("\n")} \nin ${file.absolutePath}")
           }
+        }
+
+        if (errors.isNotEmpty()) {
+          throw Exception("Found errors: \n\n${errors.joinToString("\n\n")}")
         }
 
         if (!debug && finalLines != initialLines) {

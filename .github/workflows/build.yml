@@ -42,7 +42,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build:
-    name: build-${{ matrix.os }}
+    name: build-${{ matrix.os }}-${{ matrix.ghc }}
     if: always()
     needs: prepare-release
     runs-on: ${{ matrix.os }}
@@ -51,18 +51,25 @@ jobs:
       matrix:
         include:
           - os: ubuntu-20.04
+            ghc: "8.10.7"
+            cache_path: ~/.cabal/store
+          - os: ubuntu-20.04
+            ghc: "9.6.3"
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-ubuntu-20_04-x86-64
             desktop_asset_name: simplex-desktop-ubuntu-20_04-x86_64.deb
           - os: ubuntu-22.04
+            ghc: "9.6.3"
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-ubuntu-22_04-x86-64
             desktop_asset_name: simplex-desktop-ubuntu-22_04-x86_64.deb
           - os: macos-latest
+            ghc: "9.6.3"
             cache_path: ~/.cabal/store
             asset_name: simplex-chat-macos-x86-64
             desktop_asset_name: simplex-desktop-macos-x86_64.dmg
           - os: windows-latest
+            ghc: "9.6.3"
             cache_path: C:/cabal
             asset_name: simplex-chat-windows-x86-64
             desktop_asset_name: simplex-desktop-windows-x86_64.msi
@@ -81,16 +88,17 @@ jobs:
       - name: Setup Haskell
         uses: haskell-actions/setup@v2
         with:
-          ghc-version: "9.6.3"
+          ghc-version: ${{ matrix.ghc }}
           cabal-version: "3.10.1.0"
 
-      - name: Cache dependencies
-        uses: actions/cache@v3
+      - name: Restore cached build
+        id: restore_cache
+        uses: actions/cache/restore@v3
         with:
           path: |
             ${{ matrix.cache_path }}
             dist-newstyle
-          key: ${{ matrix.os }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
+          key: ${{ matrix.os }}-ghc${{ matrix.ghc }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
 
       # / Unix
 
@@ -105,7 +113,7 @@ jobs:
           echo "    flags: +openssl"                                        >> cabal.project.local
 
       - name: Install AppImage dependencies
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-20.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && matrix.os == 'ubuntu-20.04'
         run: sudo apt install -y desktop-file-utils
 
       - name: Install pkg-config for Mac
@@ -131,7 +139,7 @@ jobs:
           echo "bin_hash=$(echo SHA2-512\(${{ matrix.asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Unix upload CLI binary to release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os != 'windows-latest'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && matrix.os != 'windows-latest'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -140,7 +148,7 @@ jobs:
           tag: ${{ github.ref }}
 
       - name: Unix update CLI binary hash
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os != 'windows-latest'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && matrix.os != 'windows-latest'
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -150,7 +158,7 @@ jobs:
             ${{ steps.unix_cli_build.outputs.bin_hash }}
 
       - name: Setup Java
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name
         uses: actions/setup-java@v3
         with:
           distribution: 'corretto'
@@ -159,7 +167,7 @@ jobs:
 
       - name: Linux build desktop
         id: linux_desktop_build
-        if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
         shell: bash
         run: |
           scripts/desktop/build-lib-linux.sh
@@ -168,10 +176,10 @@ jobs:
           path=$(echo $PWD/release/main/deb/simplex_*_amd64.deb)
           echo "package_path=$path" >> $GITHUB_OUTPUT
           echo "package_hash=$(echo SHA2-512\(${{ matrix.desktop_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
-      
+
       - name: Linux make AppImage
         id: linux_appimage_build
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-20.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && matrix.os == 'ubuntu-20.04'
         shell: bash
         run: |
           scripts/desktop/make-appimage-linux.sh
@@ -194,7 +202,7 @@ jobs:
           echo "package_hash=$(echo SHA2-512\(${{ matrix.desktop_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Linux upload desktop package to release
-        if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -203,7 +211,7 @@ jobs:
           tag: ${{ github.ref }}
 
       - name: Linux update desktop package hash
-        if: startsWith(github.ref, 'refs/tags/v') && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && (matrix.os == 'ubuntu-20.04' || matrix.os == 'ubuntu-22.04')
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -213,7 +221,7 @@ jobs:
             ${{ steps.linux_desktop_build.outputs.package_hash }}
 
       - name: Linux upload AppImage to release
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-20.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && matrix.os == 'ubuntu-20.04'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
@@ -222,7 +230,7 @@ jobs:
           tag: ${{ github.ref }}
 
       - name: Linux update AppImage hash
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'ubuntu-20.04'
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.asset_name && matrix.os == 'ubuntu-20.04'
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -250,6 +258,15 @@ jobs:
           body: |
             ${{ steps.mac_desktop_build.outputs.package_hash }}
 
+      - name: Cache unix build
+        uses: actions/cache/save@v3
+        if: matrix.os != 'windows-latest'
+        with:
+          path: |
+            ${{ matrix.cache_path }}
+            dist-newstyle
+          key: ${{ steps.restore_cache.outputs.cache-primary-key }}
+
       - name: Unix test
         if: matrix.os != 'windows-latest'
         timeout-minutes: 30
@@ -262,7 +279,7 @@ jobs:
       # rm -rf dist-newstyle/src/direct-sq* is here because of the bug in cabal's dependency which prevents second build from finishing
 
       - name: 'Setup MSYS2'
-        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
+        if: matrix.os == 'windows-latest'
         uses: msys2/setup-msys2@v2
         with:
           msystem: ucrt64
@@ -330,7 +347,7 @@ jobs:
           path=$(echo $PWD/release/main/msi/*imple*.msi | sed 's#/\([a-z]\)#\1:#' | sed 's#/#\\#g')
           echo "package_path=$path" >> $GITHUB_OUTPUT
           echo "package_hash=$(echo SHA2-512\(${{ matrix.desktop_asset_name }}\)= $(openssl sha512 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
-      
+
       - name: Windows upload desktop package to release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == 'windows-latest'
         uses: svenstaro/upload-release-action@v2
@@ -349,5 +366,14 @@ jobs:
           append_body: true
           body: |
             ${{ steps.windows_desktop_build.outputs.package_hash }}
+
+      - name: Cache windows build
+        uses: actions/cache/save@v3
+        if: matrix.os == 'windows-latest'
+        with:
+          path: |
+            ${{ matrix.cache_path }}
+            dist-newstyle
+          key: ${{ steps.restore_cache.outputs.cache-primary-key }}
 
       # Windows /

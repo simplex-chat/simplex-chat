@@ -1,7 +1,11 @@
 package chat.simplex.app
 
 import android.app.Application
+import android.content.Context
+import androidx.compose.ui.platform.ClipboardManager
 import chat.simplex.common.platform.Log
+import android.app.UiModeManager
+import android.os.*
 import androidx.lifecycle.*
 import androidx.work.*
 import chat.simplex.app.model.NtfManager
@@ -10,16 +14,19 @@ import chat.simplex.common.helpers.requiresIgnoringBattery
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.updatingChatsMutex
+import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.CurrentColors
+import chat.simplex.common.ui.theme.DefaultTheme
+import chat.simplex.common.views.call.RcvCallInvitation
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
-import chat.simplex.common.platform.*
-import chat.simplex.common.views.call.RcvCallInvitation
 import com.jakewharton.processphoenix.ProcessPhoenix
 import kotlinx.coroutines.*
 import kotlinx.coroutines.sync.withLock
 import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.system.exitProcess
 
 const val TAG = "SIMPLEX"
 
@@ -32,7 +39,24 @@ class SimplexApp: Application(), LifecycleEventObserver {
   override fun onCreate() {
     super.onCreate()
     if (ProcessPhoenix.isPhoenixProcess(this)) {
-      return;
+      return
+    } else {
+      registerGlobalErrorHandler()
+      Handler(Looper.getMainLooper()).post {
+        while (true) {
+          try {
+            Looper.loop()
+          } catch (e: Throwable) {
+            if (e is UnsatisfiedLinkError || e.message?.startsWith("Unable to start activity") == true) {
+              Process.killProcess(Process.myPid())
+              break
+            } else {
+              // Send it to our exception handled because it will not get the exception otherwise
+              Thread.getDefaultUncaughtExceptionHandler()?.uncaughtException(Looper.getMainLooper().thread, e)
+            }
+          }
+        }
+      }
     }
     context = this
     initHaskell()
@@ -40,9 +64,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
 
-    withBGApi {
-      initChatController()
-      runMigrations()
+    if (DatabaseUtils.ksSelfDestructPassword.get() == null) {
+      initChatControllerAndRunMigrations()
     }
     ProcessLifecycleOwner.get().lifecycle.addObserver(this@SimplexApp)
   }
@@ -75,7 +98,14 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         Lifecycle.Event.ON_RESUME -> {
           isAppOnForeground = true
-          if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
+          /**
+           * When the app calls [ClipboardManager.shareText] and a user copies text in clipboard, Android denies
+           * access to clipboard because the app considered in background.
+           * This will ensure that the app will get the event on resume
+           * */
+          val service = androidAppContext.getSystemService(Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+          chatModel.clipboardHasText.value = service.hasPrimaryClip()
+          if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete && chatModel.currentUser.value != null) {
             SimplexService.showBackgroundServiceNoticeIfNeeded()
           }
           /**
@@ -151,6 +181,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun androidCreateNtfChannelsMaybeShowAlert() = NtfManager.createNtfChannelsMaybeShowAlert()
       override fun cancelCallNotification() = NtfManager.cancelCallNotification()
       override fun cancelAllNotifications() = NtfManager.cancelAllNotifications()
+      override fun showMessage(title: String, text: String) = NtfManager.showMessage(title, text)
     }
     platform = object : PlatformInterface {
       override suspend fun androidServiceStart() {
@@ -205,6 +236,23 @@ class SimplexApp: Application(), LifecycleEventObserver {
       }
 
       override fun androidIsBackgroundCallAllowed(): Boolean = !SimplexService.isBackgroundRestricted()
+
+      override fun androidSetNightModeIfSupported() {
+        if (Build.VERSION.SDK_INT < 31) return
+
+        val light = if (CurrentColors.value.name == DefaultTheme.SYSTEM.name) {
+          null
+        } else {
+          CurrentColors.value.colors.isLight
+        }
+        val mode = when (light) {
+          null -> UiModeManager.MODE_NIGHT_AUTO
+          true -> UiModeManager.MODE_NIGHT_NO
+          false -> UiModeManager.MODE_NIGHT_YES
+        }
+        val uiModeManager = androidAppContext.getSystemService(UI_MODE_SERVICE) as UiModeManager
+        uiModeManager.setApplicationNightMode(mode)
+      }
 
       override suspend fun androidAskToAllowBackgroundCalls(): Boolean {
         if (SimplexService.isBackgroundRestricted()) {

@@ -130,8 +130,10 @@ struct AddGroupView: View {
             }
         }
         .sheet(isPresented: $showImagePicker) {
-            LibraryImagePicker(image: $chosenImage) {
-                didSelectItem in showImagePicker = false
+            LibraryImagePicker(image: $chosenImage) { _ in
+                await MainActor.run {
+                    showImagePicker = false
+                }
             }
         }
         .alert(isPresented: $showInvalidNameAlert) {
@@ -185,6 +187,7 @@ struct AddGroupView: View {
         hideKeyboard()
         do {
             profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
+            profile.groupPreferences = GroupPreferences(history: GroupPreference(enable: .on))
             let gInfo = try apiNewGroup(incognito: incognitoDefault, groupProfile: profile)
             Task {
                 let groupMembers = await apiListMembers(gInfo.groupId)

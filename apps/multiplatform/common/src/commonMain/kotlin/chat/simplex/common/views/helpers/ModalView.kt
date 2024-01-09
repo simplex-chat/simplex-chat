@@ -26,7 +26,7 @@ fun ModalView(
   if (showClose) {
     BackHandler(onBack = close)
   }
-  Surface(Modifier.fillMaxSize()) {
+  Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
     Column(if (background != MaterialTheme.colors.background) Modifier.background(background) else Modifier.themedBackground()) {
       CloseSheetBar(close, showClose, endButtons)
       Box(modifier) { content() }
@@ -38,6 +38,12 @@ enum class ModalPlacement {
   START, CENTER, END, FULLSCREEN
 }
 
+class ModalData {
+  private val state = mutableMapOf<String, MutableState<Any>>()
+  fun <T> stateGetOrPut (key: String, default: () -> T): MutableState<T> =
+    state.getOrPut(key) { mutableStateOf(default() as Any) } as MutableState<T>
+}
+
 class ModalManager(private val placement: ModalPlacement? = null) {
   private val modalViews = arrayListOf<Pair<Boolean, (@Composable (close: () -> Unit) -> Unit)>>()
   private val modalCount = mutableStateOf(0)
@@ -45,15 +51,17 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   private var oldViewChanging = AtomicBoolean(false)
   private var passcodeView: MutableState<(@Composable (close: () -> Unit) -> Unit)?> = mutableStateOf(null)
 
-  fun showModal(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable () -> Unit) {
+  fun showModal(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
+    val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, endButtons = endButtons, content = content)
+      ModalView(close, showClose = showClose, endButtons = endButtons, content = { data.content() })
     }
   }
 
-  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, content: @Composable (close: () -> Unit) -> Unit) {
+  fun showModalCloseable(settings: Boolean = false, showClose: Boolean = true, content: @Composable ModalData.(close: () -> Unit) -> Unit) {
+    val data = ModalData()
     showCustomModal { close ->
-      ModalView(close, showClose = showClose, content = { content(close) })
+      ModalView(close, showClose = showClose, content = { data.content(close) })
     }
   }
 

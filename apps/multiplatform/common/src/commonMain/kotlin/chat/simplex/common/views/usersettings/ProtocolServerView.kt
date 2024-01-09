@@ -160,7 +160,7 @@ private fun CustomServer(
   if (valid.value) {
     SectionDividerSpaced()
     SectionView(stringResource(MR.strings.smp_servers_add_to_another_device).uppercase()) {
-      QRCode(serverAddress.value, Modifier.aspectRatio(1f).padding(horizontal = DEFAULT_PADDING))
+      QRCode(serverAddress.value)
     }
   }
 }

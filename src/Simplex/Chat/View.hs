@@ -3,7 +3,6 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -164,8 +163,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRInvitation u cReq _ -> ttyUser u $ viewConnReqInvitation cReq
   CRConnectionIncognitoUpdated u c -> ttyUser u $ viewConnectionIncognitoUpdated c
   CRConnectionPlan u connectionPlan -> ttyUser u $ viewConnectionPlan connectionPlan
-  CRSentConfirmation u -> ttyUser u ["confirmation sent!"]
-  CRSentInvitation u customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
+  CRSentConfirmation u _ -> ttyUser u ["confirmation sent!"]
+  CRSentInvitation u _ customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRSentInvitationToContact u _c customUserProfile -> ttyUser u $ viewSentInvitation customUserProfile testView
   CRContactDeleted u c -> ttyUser u [ttyContact' c <> ": contact is deleted"]
   CRContactDeletedByContact u c -> ttyUser u [ttyFullContact c <> " deleted contact with you"]
@@ -212,7 +211,9 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRContactConnecting u _ -> ttyUser u []
   CRContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
   CRContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
-  CRSubscriptionEnd u acEntity -> ttyUser u [sShow ((entityConnection acEntity).connId) <> ": END"]
+  CRSubscriptionEnd u acEntity ->
+    let Connection {connId} = entityConnection acEntity
+     in ttyUser u [sShow connId <> ": END"]
   CRContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactsSubscribed srv cs -> [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CRContactSubError u c e -> ttyUser u [ttyContact' c <> ": contact error " <> sShow e]
@@ -275,11 +276,11 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRCallInvitations _ -> []
   CRUserContactLinkSubscribed -> ["Your address is active! To show: " <> highlight' "/sa"]
   CRUserContactLinkSubError e -> ["user address error: " <> sShow e, "to delete your address: " <> highlight' "/da"]
-  CRNewContactConnection u _ -> ttyUser u []
   CRContactConnectionDeleted u PendingContactConnection {pccConnId} -> ttyUser u ["connection :" <> sShow pccConnId <> " deleted"]
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRNtfToken _ status mode -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode)]
   CRNtfMessages {} -> []
+  CRNtfMessage {} -> []
   CRCurrentRemoteHost rhi_ ->
     [ maybe
         "Using local profile"
@@ -365,6 +366,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRMessageError u prefix err -> ttyUser u [plain prefix <> ": " <> plain err | prefix == "error" || logLevel <= CLLWarning]
   CRChatCmdError u e -> ttyUserPrefix' u $ viewChatError logLevel testView e
   CRChatError u e -> ttyUser' u $ viewChatError logLevel testView e
+  CRChatErrors u errs -> ttyUser' u $ concatMap (viewChatError logLevel testView) errs
   CRArchiveImported archiveErrs -> if null archiveErrs then ["ok"] else ["archive import errors: " <> plain (show archiveErrs)]
   CRTimedAction _ _ -> []
   where
@@ -473,7 +475,9 @@ chatItemDeletedText ChatItem {meta = CIMeta {itemDeleted}, content} membership_ 
       _ -> ""
 
 viewUsersList :: [UserInfo] -> [StyledString]
-viewUsersList = mapMaybe userInfo . sortOn ldn
+viewUsersList us =
+  let ss = mapMaybe userInfo $ sortOn ldn us
+   in if null ss then ["no users"] else ss
   where
     ldn (UserInfo User {localDisplayName = n} _) = T.toLower n
     userInfo (UserInfo User {localDisplayName = n, profile = LocalProfile {fullName}, activeUser, showNtfs, viewPwdHash} count)
@@ -491,7 +495,7 @@ viewGroupSubscribed :: GroupInfo -> [StyledString]
 viewGroupSubscribed g = [membershipIncognito g <> ttyFullGroup g <> ": connected to server(s)"]
 
 showSMPServer :: SMPServer -> String
-showSMPServer srv = B.unpack $ strEncode srv.host
+showSMPServer ProtocolServer {host} = B.unpack $ strEncode host
 
 viewHostEvent :: AProtocolType -> TransportHost -> String
 viewHostEvent p h = map toUpper (B.unpack $ strEncode p) <> " host " <> B.unpack (strEncode h)
@@ -950,7 +954,7 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
     removedOrLeft m = let s = memberStatus m in s == GSMemRemoved || s == GSMemLeft
     groupMember m = memIncognito m <> ttyFullMember m <> ": " <> plain (intercalate ", " $ [role m] <> category m <> status m <> muted m)
     role :: GroupMember -> String
-    role m = B.unpack . strEncode $ m.memberRole
+    role GroupMember {memberRole} = B.unpack $ strEncode memberRole
     category m = case memberCategory m of
       GCUserMember -> ["you"]
       GCInviteeMember -> ["invited"]
@@ -988,7 +992,7 @@ viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <nam
 viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
   where
     ldn_ :: GroupInfo -> Text
-    ldn_ g = T.toLower g.localDisplayName
+    ldn_ GroupInfo {localDisplayName} = T.toLower localDisplayName
     groupSS (g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}}, GroupSummary {currentMembers}) =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
@@ -1903,7 +1907,7 @@ viewChatError logLevel testView = \case
           "[" <> connEntityLabel entity <> ", userContactLinkId: " <> sShow userContactLinkId <> ", connId: " <> cId conn <> "] "
         Nothing -> ""
       cId :: Connection -> StyledString
-      cId conn = sShow conn.connId
+      cId Connection {connId} = sShow connId
   ChatErrorRemoteCtrl e -> [plain $ "remote controller error: " <> show e]
   ChatErrorRemoteHost RHNew e -> [plain $ "new remote host error: " <> show e]
   ChatErrorRemoteHost (RHId rhId) e -> [plain $ "remote host " <> show rhId <> " error: " <> show e]

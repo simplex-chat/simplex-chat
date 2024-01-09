@@ -57,6 +57,7 @@ typedef long* chat_ctrl;
 */
 
 extern char *chat_migrate_init(const char *path, const char *key, const char *confirm, chat_ctrl *ctrl);
+extern char *chat_close_store(chat_ctrl ctrl);
 extern char *chat_send_cmd(chat_ctrl ctrl, const char *cmd);
 extern char *chat_send_remote_cmd(chat_ctrl ctrl, const int rhId, const char *cmd);
 extern char *chat_recv_msg(chat_ctrl ctrl); // deprecated
@@ -65,9 +66,9 @@ extern char *chat_parse_markdown(const char *str);
 extern char *chat_parse_server(const char *str);
 extern char *chat_password_hash(const char *pwd, const char *salt);
 extern char *chat_valid_name(const char *name);
-extern char *chat_write_file(const char *path, char *ptr, int length);
+extern char *chat_write_file(chat_ctrl ctrl, const char *path, char *ptr, int length);
 extern char *chat_read_file(const char *path, const char *key, const char *nonce);
-extern char *chat_encrypt_file(const char *from_path, const char *to_path);
+extern char *chat_encrypt_file(chat_ctrl ctrl, const char *from_path, const char *to_path);
 extern char *chat_decrypt_file(const char *from_path, const char *key, const char *nonce, const char *to_path);
 
 JNIEXPORT jobjectArray JNICALL
@@ -91,6 +92,12 @@ Java_chat_simplex_common_platform_CoreKt_chatMigrateInit(JNIEnv *env, __unused j
         (*env)->GetMethodID(env, (*env)->FindClass(env, "java/lang/Long"), "<init>", "(J)V"),
         _ctrl));
     return ret;
+}
+
+JNIEXPORT jstring JNICALL
+Java_chat_simplex_common_platform_CoreKt_chatCloseStore(JNIEnv *env, __unused jclass clazz, jlong controller) {
+    jstring res = (*env)->NewStringUTF(env, chat_close_store((void*)controller));
+    return res;
 }
 
 JNIEXPORT jstring JNICALL
@@ -157,11 +164,11 @@ Java_chat_simplex_common_platform_CoreKt_chatValidName(JNIEnv *env, jclass clazz
 }
 
 JNIEXPORT jstring JNICALL
-Java_chat_simplex_common_platform_CoreKt_chatWriteFile(JNIEnv *env, jclass clazz, jstring path, jobject buffer) {
+Java_chat_simplex_common_platform_CoreKt_chatWriteFile(JNIEnv *env, jclass clazz, jlong controller, jstring path, jobject buffer) {
     const char *_path = (*env)->GetStringUTFChars(env, path, JNI_FALSE);
     jbyte *buff = (jbyte *) (*env)->GetDirectBufferAddress(env, buffer);
     jlong capacity = (*env)->GetDirectBufferCapacity(env, buffer);
-    jstring res = (*env)->NewStringUTF(env, chat_write_file(_path, buff, capacity));
+    jstring res = (*env)->NewStringUTF(env, chat_write_file((void*)controller, _path, buff, capacity));
     (*env)->ReleaseStringUTFChars(env, path, _path);
     return res;
 }
@@ -206,10 +213,10 @@ Java_chat_simplex_common_platform_CoreKt_chatReadFile(JNIEnv *env, jclass clazz,
 }
 
 JNIEXPORT jstring JNICALL
-Java_chat_simplex_common_platform_CoreKt_chatEncryptFile(JNIEnv *env, jclass clazz, jstring from_path, jstring to_path) {
+Java_chat_simplex_common_platform_CoreKt_chatEncryptFile(JNIEnv *env, jclass clazz, jlong controller, jstring from_path, jstring to_path) {
     const char *_from_path = (*env)->GetStringUTFChars(env, from_path, JNI_FALSE);
     const char *_to_path = (*env)->GetStringUTFChars(env, to_path, JNI_FALSE);
-    jstring res = (*env)->NewStringUTF(env, chat_encrypt_file(_from_path, _to_path));
+    jstring res = (*env)->NewStringUTF(env, chat_encrypt_file((void*)controller, _from_path, _to_path));
     (*env)->ReleaseStringUTFChars(env, from_path, _from_path);
     (*env)->ReleaseStringUTFChars(env, to_path, _to_path);
     return res;

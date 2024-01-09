@@ -9,7 +9,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE OverloadedRecordDot #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PatternSynonyms #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -61,21 +60,21 @@ class IsContact a where
   preferences' :: a -> Maybe Preferences
 
 instance IsContact User where
-  contactId' u = u.userContactId
+  contactId' User {userContactId} = userContactId
   {-# INLINE contactId' #-}
-  profile' u = u.profile
+  profile' User {profile} = profile
   {-# INLINE profile' #-}
-  localDisplayName' u = u.localDisplayName
+  localDisplayName' User {localDisplayName} = localDisplayName
   {-# INLINE localDisplayName' #-}
   preferences' User {profile = LocalProfile {preferences}} = preferences
   {-# INLINE preferences' #-}
 
 instance IsContact Contact where
-  contactId' c = c.contactId
+  contactId' Contact {contactId} = contactId
   {-# INLINE contactId' #-}
-  profile' c = c.profile
+  profile' Contact {profile} = profile
   {-# INLINE profile' #-}
-  localDisplayName' c = c.localDisplayName
+  localDisplayName' Contact {localDisplayName} = localDisplayName
   {-# INLINE localDisplayName' #-}
   preferences' Contact {profile = LocalProfile {preferences}} = preferences
   {-# INLINE preferences' #-}
@@ -186,16 +185,17 @@ contactConnIncognito :: Contact -> IncognitoEnabled
 contactConnIncognito = maybe False connIncognito . contactConn
 
 contactDirect :: Contact -> Bool
-contactDirect Contact {activeConn} = maybe True direct activeConn
-  where
-    direct Connection {connLevel, viaGroupLink} = connLevel == 0 && not viaGroupLink
+contactDirect Contact {activeConn} = maybe True connDirect activeConn
+
+connDirect :: Connection -> Bool
+connDirect Connection {connLevel, viaGroupLink} = connLevel == 0 && not viaGroupLink
 
 directOrUsed :: Contact -> Bool
 directOrUsed ct@Contact {contactUsed} =
   contactDirect ct || contactUsed
 
 anyDirectOrUsed :: Contact -> Bool
-anyDirectOrUsed Contact {contactUsed, activeConn} = ((\c -> c.connLevel) <$> activeConn) == Just 0 || contactUsed
+anyDirectOrUsed Contact {contactUsed, activeConn} = ((\Connection {connLevel} -> connLevel) <$> activeConn) == Just 0 || contactUsed
 
 contactReady :: Contact -> Bool
 contactReady Contact {activeConn} = maybe False connReady activeConn
@@ -626,7 +626,8 @@ data GroupMember = GroupMember
     memberContactProfileId :: ProfileId,
     activeConn :: Maybe Connection,
     -- member chat protocol version range; if member has active connection, its version range is preferred;
-    -- for membership current supportedChatVRange is set, it's not updated on protocol version increase
+    -- for membership current supportedChatVRange is set, it's not updated on protocol version increase in database,
+    -- but it's correctly set on read (see toGroupInfo)
     memberChatVRange :: JVersionRange
   }
   deriving (Eq, Show)
@@ -1011,9 +1012,11 @@ data XFTPRcvFile = XFTPRcvFile
   }
   deriving (Eq, Show)
 
+type RcvFileDescrText = Text
+
 data RcvFileDescr = RcvFileDescr
   { fileDescrId :: Int64,
-    fileDescrText :: Text,
+    fileDescrText :: RcvFileDescrText,
     fileDescrPartNo :: Int,
     fileDescrComplete :: Bool
   }
