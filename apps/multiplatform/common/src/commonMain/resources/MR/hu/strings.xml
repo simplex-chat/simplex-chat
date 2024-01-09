@@ -1554,4 +1554,17 @@
     <string name="invalid_qr_code">Érvénytelen QR-kód</string>
     <string name="keep_invitation_link">Megtart</string>
     <string name="search_or_paste_simplex_link">Keresés vagy SimpleX link beillesztése</string>
+    <string name="show_internal_errors">Belső hibák megjelenítése</string>
+    <string name="agent_critical_error_title">Kritikus hiba</string>
+    <string name="agent_internal_error_title">Belső hiba</string>
+    <string name="remote_ctrl_error_bad_version">Az asztali kliens verziója nem támogatott. Kérlek, győződj meg arról, hogy mindkét eszközön ugyanazt a verziót használod</string>
+    <string name="remote_ctrl_error_bad_invitation">Az asztali kliensen hibás meghívókód szerepel</string>
+    <string name="remote_ctrl_error_busy">Az asztali kliens elfoglalt</string>
+    <string name="remote_ctrl_error_inactive">Az asztali kliens inaktív</string>
+    <string name="restart_chat_button">Csevegés újraindítása</string>
+    <string name="remote_ctrl_error_timeout">Időtúllépés az asztali klienshez való kapcsolódás közben</string>
+    <string name="remote_ctrl_error_disconnected">Az asztali kliens kapcsolata megszakadt</string>
+    <string name="remote_host_was_disconnected_title">A kapcsolat megszakadt</string>
+    <string name="remote_ctrl_was_disconnected_title">A kapcsolat megszakadt</string>
+    <string name="remote_ctrl_error_bad_state">Az asztali kliens kapcsolata rossz állapotban van</string>
 </resources>
