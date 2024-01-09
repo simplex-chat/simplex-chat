@@ -1576,7 +1576,7 @@
     <string name="v5_4_better_groups_descr">Schnellerer Gruppenbeitritt und zuverlässigere Nachrichtenzustellung.</string>
     <string name="linked_mobiles">Verknüpfte Mobiltelefone</string>
     <string name="this_device_name">Dieser Gerätename</string>
-    <string name="waiting_for_mobile_to_connect">Auf die Mobiltelefonverbindung warten:</string>
+    <string name="waiting_for_mobile_to_connect">Auf die Verbindung des Mobiltelefons warten:</string>
     <string name="loading_remote_file_title">Laden der Datei</string>
     <string name="link_a_mobile">Zu einem Mobiltelefon verbinden</string>
     <string name="settings_section_title_use_from_desktop">Vom Desktop aus nutzen</string>
@@ -1640,4 +1640,34 @@
     <string name="search_or_paste_simplex_link">Suchen oder fügen Sie den SimpleX-Link ein</string>
     <string name="chat_is_stopped_you_should_transfer_database">Der Chat wurde gestoppt. Wenn diese Datenbank bereits auf einem anderen Gerät von Ihnen verwendet wurde, sollten Sie diese dorthin zurück übertragen, bevor Sie den Chat starten.</string>
     <string name="start_chat_question">Chat starten?</string>
+    <string name="show_internal_errors">Interne Fehler anzeigen</string>
+    <string name="remote_ctrl_error_timeout">Während der Verbindung zum Desktop erfolgte eine Zeitüberschreitung</string>
+    <string name="failed_to_create_user_invalid_title">Ungültiger Anzeigename!</string>
+    <string name="remote_host_disconnected_from">Vom Mobiltelefon <b>%s</b> aus folgendem Grund getrennt: %s</string>
+    <string name="remote_host_error_inactive">Mobiltelefon <b>%s</b> ist nicht aktiv</string>
+    <string name="remote_ctrl_error_bad_state">Die Verbindung zum Desktop ist in einem schlechten Zustand</string>
+    <string name="remote_host_error_bad_state">Die Verbindung zum Mobiltelefon <b>%s</b> ist in einem schlechten Zustand</string>
+    <string name="remote_ctrl_error_busy">Desktop ist besetzt</string>
+    <string name="remote_ctrl_error_inactive">Desktop ist nicht aktiv</string>
+    <string name="remote_ctrl_error_disconnected">Desktop ist getrennt</string>
+    <string name="remote_host_error_disconnected">Mobiltelefon <b>%s</b> wurde getrennt</string>
+    <string name="remote_ctrl_error_bad_version">Auf dem Desktop wird eine nicht unterstützte Version verwendet. Bitte stellen Sie sicher, dass beide Geräte die selbe Version nutzen</string>
+    <string name="remote_ctrl_error_bad_invitation">Desktop hat einen falschen Einladungscode</string>
+    <string name="agent_critical_error_title">Kritischer Fehler</string>
+    <string name="remote_host_error_missing">Mobiltelefon <b>%s</b> ist nicht vorhanden</string>
+    <string name="agent_internal_error_desc">Bitte melden Sie diesen Fehler den Entwicklern:
+\n%s</string>
+    <string name="agent_critical_error_desc">Bitte melden Sie diesen Fehler den Entwicklern:
+\n%s
+\n
+\nEs wird empfohlen die App neu zu starten.</string>
+    <string name="restart_chat_button">Chat neu starten</string>
+    <string name="failed_to_create_user_invalid_desc">Der Anzeigename ist ungültig. Bitte wählen Sie einen anderen Namen.</string>
+    <string name="remote_host_error_timeout">Während der Verbindung zum Mobiltelefon <b>%s</b> erfolgte eine Zeitüberschreitung</string>
+    <string name="remote_host_was_disconnected_title">Verbindung wurde getrennt</string>
+    <string name="remote_ctrl_was_disconnected_title">Verbindung wurde getrennt</string>
+    <string name="remote_ctrl_disconnected_with_reason">Aus folgendem Grund getrennt: %s</string>
+    <string name="agent_internal_error_title">Interner Fehler</string>
+    <string name="remote_host_error_bad_version">Auf dem Mobiltelefon <b>%s</b> wird eine nicht unterstützte Version verwendet. Bitte stellen Sie sicher, dass beide Geräte die selbe Version nutzen</string>
+    <string name="remote_host_error_busy">Mobiltelefon <b>%s</b> ist besetzt</string>
 </resources>
