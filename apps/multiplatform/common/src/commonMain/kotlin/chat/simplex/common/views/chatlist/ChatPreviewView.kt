@@ -133,7 +133,12 @@ fun ChatPreviewView(
           if (cInfo.contact.verified) {
             VerifiedIcon()
           }
-          chatPreviewTitleText()
+          chatPreviewTitleText(
+            if (inProgress)
+              MaterialTheme.colors.secondary
+            else
+              Color.Unspecified
+          )
         }
       is ChatInfo.Group ->
         when (cInfo.groupInfo.membership.memberStatus) {
@@ -144,7 +149,12 @@ fun ChatPreviewView(
               if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.primary
           )
           GroupMemberStatus.MemAccepted -> chatPreviewTitleText(MaterialTheme.colors.secondary)
-          else -> chatPreviewTitleText()
+          else -> chatPreviewTitleText(
+            if (inProgress)
+              MaterialTheme.colors.secondary
+            else
+              Color.Unspecified
+          )
         }
       else -> chatPreviewTitleText()
     }
@@ -220,7 +230,9 @@ fun ChatPreviewView(
   @Composable
   fun chatStatusImage() {
     if (cInfo is ChatInfo.Direct) {
-      if (cInfo.contact.active && cInfo.contact.activeConn != null) {
+      if (progressByTimeout) {
+        progressView()
+      } else if (cInfo.contact.active && cInfo.contact.activeConn != null) {
         val descr = contactNetworkStatus?.statusString
         when (contactNetworkStatus) {
           is NetworkStatus.Connected ->
