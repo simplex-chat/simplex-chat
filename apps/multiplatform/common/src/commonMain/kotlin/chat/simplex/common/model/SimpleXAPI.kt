@@ -506,6 +506,10 @@ object ChatController {
       r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat && r.chatError.errorType is ChatErrorType.UserExists
     ) {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_duplicate_title), generalGetString(MR.strings.failed_to_create_user_duplicate_desc))
+    } else if (
+      r is CR.ChatCmdError && r.chatError is ChatError.ChatErrorChat && r.chatError.errorType is ChatErrorType.InvalidDisplayName
+    ) {
+      AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_invalid_title), generalGetString(MR.strings.failed_to_create_user_invalid_desc))
     } else {
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.failed_to_create_user_title), r.details)
     }
@@ -4493,6 +4497,7 @@ sealed class ChatErrorType {
       is EmptyUserPassword -> "emptyUserPassword"
       is UserAlreadyHidden -> "userAlreadyHidden"
       is UserNotHidden -> "userNotHidden"
+      is InvalidDisplayName -> "invalidDisplayName"
       is ChatNotStarted -> "chatNotStarted"
       is ChatNotStopped -> "chatNotStopped"
       is ChatStoreChanged -> "chatStoreChanged"
@@ -4570,6 +4575,7 @@ sealed class ChatErrorType {
   @Serializable @SerialName("emptyUserPassword") class EmptyUserPassword(val userId: Long): ChatErrorType()
   @Serializable @SerialName("userAlreadyHidden") class UserAlreadyHidden(val userId: Long): ChatErrorType()
   @Serializable @SerialName("userNotHidden") class UserNotHidden(val userId: Long): ChatErrorType()
+  @Serializable @SerialName("invalidDisplayName") object InvalidDisplayName: ChatErrorType()
   @Serializable @SerialName("chatNotStarted") object ChatNotStarted: ChatErrorType()
   @Serializable @SerialName("chatNotStopped") object ChatNotStopped: ChatErrorType()
   @Serializable @SerialName("chatStoreChanged") object ChatStoreChanged: ChatErrorType()

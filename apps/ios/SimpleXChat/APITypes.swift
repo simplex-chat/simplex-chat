@@ -1610,6 +1610,7 @@ public enum ChatErrorType: Decodable {
     case userUnknown
     case activeUserExists
     case userExists
+    case invalidDisplayName
     case differentActiveUser(commandUserId: Int64, activeUserId: Int64)
     case cantDeleteActiveUser(userId: Int64)
     case cantDeleteLastUser(userId: Int64)
