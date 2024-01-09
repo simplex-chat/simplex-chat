@@ -1559,4 +1559,14 @@
     <string name="search_or_paste_simplex_link">Cerca o incolla un link SimpleX</string>
     <string name="chat_is_stopped_you_should_transfer_database">La chat è ferma. Se hai già usato questo database su un altro dispositivo, dovresti trasferirlo prima di avviare la chat.</string>
     <string name="start_chat_question">Avviare la chat?</string>
+    <string name="agent_critical_error_title">Errore critico</string>
+    <string name="agent_internal_error_title">Errore interno</string>
+    <string name="agent_critical_error_desc">Si prega di segnalarlo agli sviluppatori:
+\n%s
+\n
+\nSi consiglia di riavviare l\'app.</string>
+    <string name="agent_internal_error_desc">Si prega di segnalarlo agli sviluppatori:
+\n%s</string>
+    <string name="restart_chat_button">Riavvia la chat</string>
+    <string name="show_internal_errors">Mostra errori interni</string>
 </resources>
