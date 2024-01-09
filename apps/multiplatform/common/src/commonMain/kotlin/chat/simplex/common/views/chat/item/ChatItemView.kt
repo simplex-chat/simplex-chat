@@ -613,7 +613,7 @@ private fun ShrinkItemAction(revealed: MutableState<Boolean>, showMenu: MutableS
 @Composable
 fun ItemAction(text: String, icon: Painter, color: Color = Color.Unspecified, onClick: () -> Unit) {
   val finalColor = if (color == Color.Unspecified) {
-    if (isInDarkTheme()) MenuTextColorDark else Color.Black
+    MenuTextColor
   } else color
   DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -633,7 +633,7 @@ fun ItemAction(text: String, icon: Painter, color: Color = Color.Unspecified, on
 @Composable
 fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = Color.Unspecified) {
   val finalColor = if (color == Color.Unspecified) {
-    if (isInDarkTheme()) MenuTextColorDark else Color.Black
+    MenuTextColor
   } else color
   DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
