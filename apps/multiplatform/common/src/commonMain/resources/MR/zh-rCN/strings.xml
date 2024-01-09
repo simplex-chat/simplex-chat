@@ -1559,4 +1559,14 @@
     <string name="search_or_paste_simplex_link">搜索或粘贴 SimpleX 链接</string>
     <string name="chat_is_stopped_you_should_transfer_database">聊天已停止。如果你已经在另一台设备商使用过此数据库，你应该在启动聊天前将数据库传输回来。</string>
     <string name="start_chat_question">启动聊天吗？</string>
+    <string name="agent_internal_error_title">内部错误</string>
+    <string name="agent_internal_error_desc">请将它报告给开发者：
+\n%s</string>
+    <string name="agent_critical_error_desc">请将它报告给开发者：
+\n%s
+\n
+\n建议重启应用。</string>
+    <string name="agent_critical_error_title">严重错误</string>
+    <string name="restart_chat_button">重启聊天</string>
+    <string name="show_internal_errors">显示内部错误</string>
 </resources>
