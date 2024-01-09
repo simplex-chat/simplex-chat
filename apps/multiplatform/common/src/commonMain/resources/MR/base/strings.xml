@@ -90,6 +90,8 @@
   <string name="failed_to_create_user_title">Error creating profile!</string>
   <string name="failed_to_create_user_duplicate_title">Duplicate display name!</string>
   <string name="failed_to_create_user_duplicate_desc">You already have a chat profile with the same display name. Please choose another name.</string>
+  <string name="failed_to_create_user_invalid_title">Invalid display name!</string>
+  <string name="failed_to_create_user_invalid_desc">This display name is invalid. Please choose another name.</string>
   <string name="failed_to_active_user_title">Error switching profile!</string>
 
   <!-- API Error Responses - SimpleXAPI.kt -->
