@@ -30,7 +30,7 @@ Keep track of which members received latest profile updates. Send profile update
 - when user is active in group (i.e. broadcasts message via sendGroupMessage), compare group_members.last_profile_sent_ts against users.last_name_or_image_update_ts to determine whether latest profile update wasn't yet sent
 - don't send to members in groups where user is incognito
 - don't send to members with whom user has direct contact (as it would overwrite full profile update sent to contact)?
-  - alternatively it may be better to send the same pruned profile to such members, and for them to ignore this update:
+  - alternatively it may be better to send the same pruned profile to such members, and for them to ignore this update (or only apply name and image updates, in case sender has silently deleted them as contact without notifying?):
     - this would ensure that they do receive it in case they silently deleted contact without notifying user
     - it simplifies processing, as then the same message is sent to all group members
 - it seems unnecessary to send profile updates on service messages to individual members:
