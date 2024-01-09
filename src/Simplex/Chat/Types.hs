@@ -112,7 +112,8 @@ data User = User
     viewPwdHash :: Maybe UserPwdHash,
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
-    sendRcptsSmallGroups :: Bool
+    sendRcptsSmallGroups :: Bool,
+    membershipsProfileUpdateTs :: Maybe UTCTime
   }
   deriving (Show)
 
