@@ -10,10 +10,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import chat.simplex.common.model.*
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
-import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.appPlatform
+import chat.simplex.common.platform.appPreferences
 import chat.simplex.common.views.TerminalView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
@@ -44,6 +45,7 @@ fun DeveloperView(
             m.controller.appPrefs.terminalAlwaysVisible.set(false)
           }
         }
+        SettingsPreferenceItem(painterResource(MR.images.ic_report), stringResource(MR.strings.show_internal_errors), appPreferences.showInternalErrors)
       }
     }
     SectionTextFooter(

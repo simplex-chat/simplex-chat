@@ -8,9 +8,9 @@ u="$USER"
 tmp="$(mktemp -d -t)"
 folder="$tmp/simplex-chat"
 
-nix_ver="nix-2.15.1"
+nix_ver="nix-2.19.2"
 nix_url="https://releases.nixos.org/nix/$nix_ver/install"
-nix_hash="67aa37f0115195d8ddf32b5d6f471f1e60ecca0fdb3e98bcf54bc147c3078640"
+nix_hash="435f0d7e11f7c7dffeeab0ec9cc55723f6d3c03352379d785633cf4ddb5caf90"
 nix_config="sandbox = true
 max-jobs = auto
 experimental-features = nix-command flakes"
@@ -102,8 +102,19 @@ build() {
   sed -i.bak '/android {/a lint {abortOnError = false}' "$folder/apps/multiplatform/android/build.gradle.kts"
 
   for arch in $arches; do
-    android_simplex_lib="${folder}#hydraJobs.${arch}-android:lib:simplex-chat.x86_64-linux"
-    android_support_lib="${folder}#hydraJobs.${arch}-android:lib:support.x86_64-linux"
+
+    tag_full="$(git tag --points-at HEAD)"
+    tag_version="${tag_full%%-*}"
+
+    if [ "$arch" = "armv7a" ] && [ -n "$tag_full" ] ; then
+      git checkout "${tag_version}-armv7a"
+      android_simplex_lib="${folder}#hydraJobs.${arch}-android:lib:simplex-chat.x86_64-linux"
+      android_support_lib="${folder}#hydraJobs.${arch}-android:lib:support.x86_64-linux"
+    else
+      android_simplex_lib="${folder}#hydraJobs.x86_64-linux.${arch}-android:lib:simplex-chat"
+      android_support_lib="${folder}#hydraJobs.x86_64-linux.${arch}-android:lib:support"
+    fi
+    
     android_simplex_lib_output="${PWD}/result/pkg-${arch}-android-libsimplex.zip"
     android_support_lib_output="${PWD}/result/pkg-${arch}-android-libsupport.zip"
 
@@ -139,6 +150,10 @@ build() {
     zipalign -p -f 4 "$tmp/$android_apk_output_final" "$PWD/$android_apk_output_final"
 
     rm -rf "$libs_folder/$android_arch"
+
+    if [ "$arch" = "armv7a" ] && [ -n "$tag_full" ] ; then
+      git checkout "${tag_full}"
+    fi
   done
 }
 

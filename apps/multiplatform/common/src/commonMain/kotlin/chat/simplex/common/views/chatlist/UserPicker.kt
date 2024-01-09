@@ -31,7 +31,6 @@ import chat.simplex.common.views.remote.*
 import chat.simplex.common.views.usersettings.doWithAuth
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -303,7 +302,7 @@ fun UserProfileRow(u: User) {
       u.displayName,
       modifier = Modifier
         .padding(start = 10.dp, end = 8.dp),
-      color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
+      color = MenuTextColor,
       fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
     )
   }
@@ -346,7 +345,7 @@ fun RemoteHostRow(h: RemoteHostInfo) {
     Text(
       h.hostDeviceName,
       modifier = Modifier.padding(start = 26.dp, end = 8.dp),
-      color = if (h.activeHost) MaterialTheme.colors.onBackground else if (isInDarkTheme()) MenuTextColorDark else Color.Black,
+      color = if (h.activeHost) MaterialTheme.colors.onBackground else MenuTextColor,
       fontSize = 14.sp,
     )
   }
@@ -387,7 +386,7 @@ fun LocalDeviceRow(active: Boolean) {
     Text(
       stringResource(MR.strings.this_device),
       modifier = Modifier.padding(start = 26.dp, end = 8.dp),
-      color = if (active) MaterialTheme.colors.onBackground else if (isInDarkTheme()) MenuTextColorDark else Color.Black,
+      color = if (active) MaterialTheme.colors.onBackground else MenuTextColor,
       fontSize = 14.sp,
     )
   }
@@ -399,7 +398,7 @@ private fun UseFromDesktopPickerItem(onClick: () -> Unit) {
     val text = generalGetString(MR.strings.settings_section_title_use_from_desktop).lowercase().capitalize(Locale.current)
     Icon(painterResource(MR.images.ic_desktop), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+    Text(text, color = MenuTextColor)
   }
 }
 
@@ -409,7 +408,7 @@ private fun LinkAMobilePickerItem(onClick: () -> Unit) {
     val text = generalGetString(MR.strings.link_a_mobile)
     Icon(painterResource(MR.images.ic_smartphone_300), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+    Text(text, color = MenuTextColor)
   }
 }
 
@@ -419,7 +418,7 @@ private fun CreateInitialProfile(onClick: () -> Unit) {
     val text = generalGetString(MR.strings.create_chat_profile)
     Icon(painterResource(MR.images.ic_manage_accounts), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+    Text(text, color = MenuTextColor)
   }
 }
 
@@ -429,7 +428,7 @@ private fun SettingsPickerItem(onClick: () -> Unit) {
     val text = generalGetString(MR.strings.settings_section_title_settings).lowercase().capitalize(Locale.current)
     Icon(painterResource(MR.images.ic_settings), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+    Text(text, color = MenuTextColor)
   }
 }
 
@@ -439,7 +438,7 @@ private fun CancelPickerItem(onClick: () -> Unit) {
     val text = generalGetString(MR.strings.cancel_verb)
     Icon(painterResource(MR.images.ic_close), text, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     Spacer(Modifier.width(DEFAULT_PADDING + 6.dp))
-    Text(text, color = if (isInDarkTheme()) MenuTextColorDark else Color.Black)
+    Text(text, color = MenuTextColor)
   }
 }
 

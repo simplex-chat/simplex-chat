@@ -70,7 +70,7 @@ fun <T> ExposedDropDownSetting(
             selectionOption.second + (if (label != null) " $label" else ""),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            color = if (isInDarkTheme()) MenuTextColorDark else Color.Black,
+            color = MenuTextColor,
             fontSize = fontSize,
           )
         }

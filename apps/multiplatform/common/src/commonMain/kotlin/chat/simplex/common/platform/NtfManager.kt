@@ -99,6 +99,7 @@ abstract class NtfManager {
   abstract fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<Pair<NotificationAction, () -> Unit>> = emptyList())
   abstract fun cancelCallNotification()
   abstract fun cancelAllNotifications()
+  abstract fun showMessage(title: String, text: String)
   // Android only
   abstract fun androidCreateNtfChannelsMaybeShowAlert()
 

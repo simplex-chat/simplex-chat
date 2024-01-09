@@ -684,6 +684,7 @@
   <string name="hide_dev_options">Hide:</string>
   <string name="show_developer_options">Show developer options</string>
   <string name="developer_options">Database IDs and Transport isolation option.</string>
+  <string name="show_internal_errors">Show internal errors</string>
   <string name="shutdown_alert_question">Shutdown?</string>
   <string name="shutdown_alert_desc">Notifications will stop working until you re-launch the app</string>
 
@@ -1112,6 +1113,8 @@
   <!-- ChatModel.chatRunning interactions -->
   <string name="chat_is_stopped_indication">Chat is stopped</string>
   <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">You can start chat via app Settings / Database or by restarting the app.</string>
+  <string name="start_chat_question">Start chat?</string>
+  <string name="chat_is_stopped_you_should_transfer_database">Chat is stopped. If you already used this database on another device, you should transfer it back before starting chat.</string>
 
   <!-- ChatArchiveView.kt -->
   <string name="chat_archive_header">Chat archive</string>
@@ -1749,4 +1752,11 @@
   <string name="connect_plan_you_are_already_joining_the_group_via_this_link">You are already joining the group via this link.</string>
   <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[You are already in group <b>%1$s</b>.]]></string>
   <string name="connect_plan_connect_via_link">Connect via link?</string>
+
+  <!-- Errors -->
+  <string name="agent_critical_error_title">Critical error</string>
+  <string name="agent_critical_error_desc">Please report it to the developers: \n%s\n\nIt is recommended to restart the app.</string>
+  <string name="agent_internal_error_title">Internal error</string>
+  <string name="agent_internal_error_desc">Please report it to the developers: \n%s</string>
+  <string name="restart_chat_button">Restart chat</string>
 </resources>

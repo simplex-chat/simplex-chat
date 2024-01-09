@@ -3,7 +3,7 @@
 module Simplex.Chat.Mobile.Shared where
 
 import qualified Data.ByteString as B
-import Data.ByteString.Internal (ByteString (..), memcpy)
+import Data.ByteString.Internal (ByteString (..))
 import qualified Data.ByteString.Lazy as LB
 import qualified Data.ByteString.Lazy.Internal as LB
 import Foreign
@@ -21,7 +21,7 @@ getByteString ptr len = do
 
 putByteString :: Ptr Word8 -> ByteString -> IO ()
 putByteString ptr (PS fp offset len) =
-  withForeignPtr fp $ \p -> memcpy ptr (p `plusPtr` offset) len
+  withForeignPtr fp $ \p -> copyBytes ptr (p `plusPtr` offset) len
 {-# INLINE putByteString #-}
 
 putLazyByteString :: Ptr Word8 -> LB.ByteString -> IO ()
