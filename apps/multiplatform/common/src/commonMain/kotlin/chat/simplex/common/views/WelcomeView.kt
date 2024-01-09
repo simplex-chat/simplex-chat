@@ -239,7 +239,7 @@ fun OnboardingButtons(displayName: MutableState<String>, close: () -> Unit) {
     val enabled = canCreateProfile(displayName.value)
     val createModifier: Modifier = Modifier.clickable(enabled) {  createProfileOnboarding(chatModel, displayName.value, close) }.padding(8.dp)
     val createColor: Color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
-    Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent) {
+    Surface(shape = RoundedCornerShape(20.dp), color = Color.Transparent, contentColor = LocalContentColor.current) {
       Row(verticalAlignment = Alignment.CenterVertically, modifier = createModifier) {
         Text(stringResource(MR.strings.create_profile_button), style = MaterialTheme.typography.caption, color = createColor, fontWeight = FontWeight.Medium)
         Icon(painterResource(MR.images.ic_arrow_forward_ios), stringResource(MR.strings.create_profile_button), tint = createColor)

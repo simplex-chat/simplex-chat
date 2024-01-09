@@ -23,3 +23,17 @@ void haskell_init(void) {
     char **pargv = argv;
     hs_init_with_rtsopts(&argc, &pargv);
 }
+
+void haskell_init_nse(void) {
+    int argc = 5;
+    char *argv[] = {
+        "simplex",
+        "+RTS", // requires `hs_init_with_rtsopts`
+        "-A1m", // chunk size for new allocations
+        "-H1m", // initial heap size
+        "-xn", // non-moving GC
+        0
+    };
+    char **pargv = argv;
+    hs_init_with_rtsopts(&argc, &pargv);
+}

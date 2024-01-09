@@ -366,7 +366,7 @@ fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
   return stringResource(if (chatArchiveTime < chatLastStart) MR.strings.old_database_archive else MR.strings.new_database_archive)
 }
 
-private fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
+fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
   withApi {
     try {
       if (chatDbChanged.value) {
@@ -378,12 +378,12 @@ private fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatD
         ModalManager.closeAllModalsEverywhere()
         return@withApi
       }
-      if (m.currentUser.value == null) {
+      val user = m.currentUser.value
+      if (user == null) {
         ModalManager.closeAllModalsEverywhere()
         return@withApi
       } else {
-        m.controller.apiStartChat()
-        m.chatRunning.value = true
+        m.controller.startChat(user)
       }
       val ts = Clock.System.now()
       m.controller.appPrefs.chatLastStart.set(ts)
@@ -406,6 +406,8 @@ private fun stopChatAlert(m: ChatModel) {
   )
 }
 
+expect fun restartChatOrApp()
+
 private fun exportProhibitedAlert() {
   AlertManager.shared.showAlertMsg(
     title = generalGetString(MR.strings.set_password_to_export),
@@ -413,7 +415,7 @@ private fun exportProhibitedAlert() {
   )
 }
 
-private fun authStopChat(m: ChatModel) {
+fun authStopChat(m: ChatModel, onStop: (() -> Unit)? = null) {
   if (m.controller.appPrefs.performLA.get()) {
     authenticate(
       generalGetString(MR.strings.auth_stop_chat),
@@ -421,7 +423,7 @@ private fun authStopChat(m: ChatModel) {
       completed = { laResult ->
         when (laResult) {
           LAResult.Success, is LAResult.Unavailable -> {
-            stopChat(m)
+            stopChat(m, onStop)
           }
           is LAResult.Error -> {
             m.chatRunning.value = true
@@ -434,15 +436,16 @@ private fun authStopChat(m: ChatModel) {
       }
     )
   } else {
-    stopChat(m)
+    stopChat(m, onStop)
   }
 }
 
-private fun stopChat(m: ChatModel) {
+private fun stopChat(m: ChatModel, onStop: (() -> Unit)? = null) {
   withApi {
     try {
       stopChatAsync(m)
       platform.androidChatStopped()
+      onStop?.invoke()
     } catch (e: Error) {
       m.chatRunning.value = true
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_stopping_chat), e.toString())
@@ -453,16 +456,17 @@ private fun stopChat(m: ChatModel) {
 suspend fun stopChatAsync(m: ChatModel) {
   m.controller.apiStopChat()
   m.chatRunning.value = false
+  controller.appPrefs.chatStopped.set(true)
 }
 
 suspend fun deleteChatAsync(m: ChatModel) {
   m.controller.apiDeleteStorage()
   DatabaseUtils.ksDatabasePassword.remove()
   m.controller.appPrefs.storeDBPassphrase.set(true)
-  deleteChatDatabaseFiles()
+  deleteAppDatabaseAndFiles()
 }
 
-fun deleteChatDatabaseFiles() {
+fun deleteAppDatabaseAndFiles() {
   val chat = File(dataDir, chatDatabaseFileName)
   val chatBak = File(dataDir, "$chatDatabaseFileName.bak")
   val agent = File(dataDir, agentDatabaseFileName)
@@ -472,6 +476,7 @@ fun deleteChatDatabaseFiles() {
   agent.delete()
   agentBak.delete()
   filesDir.deleteRecursively()
+  filesDir.mkdir()
   remoteHostsDir.deleteRecursively()
   tmpDir.deleteRecursively()
   tmpDir.mkdir()
