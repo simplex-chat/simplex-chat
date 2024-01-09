@@ -12,7 +12,11 @@ private var chatController: chat_ctrl?
 
 private var migrationResult: (Bool, DBMigrationResult)?
 
-public func getChatCtrl(_ useKey: String? = nil) -> chat_ctrl {
+public func hasChatCtrl() -> Bool {
+    chatController != nil
+}
+
+public func getChatCtrl() -> chat_ctrl {
     if let controller = chatController { return controller }
     fatalError("chat controller not initialized")
 }

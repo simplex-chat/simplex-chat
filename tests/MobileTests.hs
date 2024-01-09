@@ -16,11 +16,12 @@ import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BS
-import Data.ByteString.Internal (create, memcpy)
+import Data.ByteString.Internal (create)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Word (Word8, Word32)
 import Foreign.C
 import Foreign.Marshal.Alloc (mallocBytes)
+import Foreign.Marshal.Utils (copyBytes)
 import Foreign.Ptr
 import Foreign.StablePtr
 import Foreign.Storable (peek)
@@ -291,7 +292,7 @@ testFileCApi fileName tmp = do
   peek ptr' `shouldReturn` (0 :: Word8)
   sz :: Word32 <- peek (ptr' `plusPtr` 1)
   let sz' = fromIntegral sz
-  contents <- create sz' $ \toPtr -> memcpy toPtr (ptr' `plusPtr` 5) sz'
+  contents <- create sz' $ \toPtr -> copyBytes toPtr (ptr' `plusPtr` 5) sz'
   contents `shouldBe` src
   sz' `shouldBe` fromIntegral len
 

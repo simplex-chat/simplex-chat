@@ -258,7 +258,8 @@ private fun CustomDisappearingMessageDialog(
 
     DefaultDialog(onDismissRequest = { setShowDialog(false) }) {
       Surface(
-        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+        shape = RoundedCornerShape(corner = CornerSize(25.dp)),
+        contentColor = LocalContentColor.current
       ) {
         Box(
           contentAlignment = Alignment.Center

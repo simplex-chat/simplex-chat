@@ -26,7 +26,7 @@ fun ModalView(
   if (showClose) {
     BackHandler(onBack = close)
   }
-  Surface(Modifier.fillMaxSize()) {
+  Surface(Modifier.fillMaxSize(), contentColor = LocalContentColor.current) {
     Column(if (background != MaterialTheme.colors.background) Modifier.background(background) else Modifier.themedBackground()) {
       CloseSheetBar(close, showClose, endButtons)
       Box(modifier) { content() }

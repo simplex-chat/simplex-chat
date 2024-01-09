@@ -415,6 +415,7 @@ xftpServerConfig =
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
+      controlPort = Nothing,
       transportConfig = defaultTransportServerConfig
     }
 

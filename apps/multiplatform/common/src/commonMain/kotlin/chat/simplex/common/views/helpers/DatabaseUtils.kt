@@ -17,7 +17,7 @@ object DatabaseUtils {
   val ksAppPassword = KeyStoreItem(APP_PASSWORD_ALIAS, appPreferences.encryptedAppPassphrase, appPreferences.initializationVectorAppPassphrase)
   val ksSelfDestructPassword = KeyStoreItem(SELF_DESTRUCT_PASSWORD_ALIAS, appPreferences.encryptedSelfDestructPassphrase, appPreferences.initializationVectorSelfDestructPassphrase)
 
-  class KeyStoreItem(val alias: String, val passphrase: SharedPreference<String?>, val initVector: SharedPreference<String?>) {
+  class KeyStoreItem(private val alias: String, val passphrase: SharedPreference<String?>, val initVector: SharedPreference<String?>) {
     fun get(): String? {
       return cryptor.decryptData(
         passphrase.get()?.toByteArrayFromBase64ForPassphrase() ?: return null,
