@@ -72,6 +72,10 @@ class SimplexService: Service() {
       stopSelf()
     } else {
       isServiceStarted = true
+      // In case of self-destruct is enabled the initialization process will not start in SimplexApp, Let's start it here
+      if (DatabaseUtils.ksSelfDestructPassword.get() != null && chatModel.chatDbStatus.value == null) {
+        initChatControllerAndRunMigrations()
+      }
     }
   }
 
