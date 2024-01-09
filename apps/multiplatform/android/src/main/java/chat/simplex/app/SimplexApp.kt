@@ -26,6 +26,7 @@ import kotlinx.coroutines.sync.withLock
 import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.system.exitProcess
 
 const val TAG = "SIMPLEX"
 
@@ -46,8 +47,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
           try {
             Looper.loop()
           } catch (e: Throwable) {
-            if (e.message != null && e.message!!.startsWith("Unable to start activity")) {
-              android.os.Process.killProcess(android.os.Process.myPid())
+            if (e is UnsatisfiedLinkError || e.message?.startsWith("Unable to start activity") == true) {
+              Process.killProcess(Process.myPid())
               break
             } else {
               // Send it to our exception handled because it will not get the exception otherwise
@@ -63,7 +64,9 @@ class SimplexApp: Application(), LifecycleEventObserver {
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
 
-    initChatControllerAndRunMigrations(false)
+    if (DatabaseUtils.ksSelfDestructPassword.get() == null) {
+      initChatControllerAndRunMigrations()
+    }
     ProcessLifecycleOwner.get().lifecycle.addObserver(this@SimplexApp)
   }
 
