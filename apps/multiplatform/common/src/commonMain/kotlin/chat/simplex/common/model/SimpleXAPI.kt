@@ -1880,9 +1880,34 @@ object ChatController {
         val disconnectedHost = chatModel.remoteHosts.firstOrNull { it.remoteHostId == r.remoteHostId_ }
         chatModel.remoteHostPairing.value = null
         if (disconnectedHost != null) {
-          showToast(
-            generalGetString(MR.strings.remote_host_was_disconnected_toast).format(disconnectedHost.hostDeviceName.ifEmpty { disconnectedHost.remoteHostId.toString() })
-          )
+          val deviceName = disconnectedHost.hostDeviceName.ifEmpty { disconnectedHost.remoteHostId.toString() }
+          when (r.rhStopReason) {
+            is RemoteHostStopReason.ConnectionFailed -> {
+              AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.remote_host_was_disconnected_title),
+                if (r.rhStopReason.chatError is ChatError.ChatErrorRemoteHost) {
+                  r.rhStopReason.chatError.remoteHostError.localizedString(deviceName)
+                } else {
+                  generalGetString(MR.strings.remote_host_disconnected_from).format(deviceName, r.rhStopReason.chatError.string)
+                }
+              )
+            }
+            is RemoteHostStopReason.Crashed -> {
+              AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.remote_host_was_disconnected_title),
+                if (r.rhStopReason.chatError is ChatError.ChatErrorRemoteHost) {
+                  r.rhStopReason.chatError.remoteHostError.localizedString(deviceName)
+                } else {
+                  generalGetString(MR.strings.remote_host_disconnected_from).format(deviceName, r.rhStopReason.chatError.string)
+                }
+              )
+            }
+            is RemoteHostStopReason.Disconnected -> {
+              if (r.rhsState is RemoteHostSessionState.Connected || r.rhsState is RemoteHostSessionState.Confirmed) {
+                showToast(generalGetString(MR.strings.remote_host_was_disconnected_toast).format(deviceName))
+              }
+            }
+          }
         }
         if (chatModel.remoteHostId() == r.remoteHostId_) {
           chatModel.currentRemoteHost.value = null
@@ -1913,6 +1938,27 @@ object ChatController {
         val sess = chatModel.remoteCtrlSession.value
         if (sess != null) {
           chatModel.remoteCtrlSession.value = null
+          fun showAlert(chatError: ChatError) {
+            AlertManager.shared.showAlertMsg(
+              generalGetString(MR.strings.remote_ctrl_was_disconnected_title),
+              if (chatError is ChatError.ChatErrorRemoteCtrl) {
+                chatError.remoteCtrlError.localizedString
+              } else {
+                generalGetString(MR.strings.remote_ctrl_disconnected_with_reason).format(chatError.string)
+              }
+            )
+          }
+          when (r.rcStopReason) {
+            is RemoteCtrlStopReason.DiscoveryFailed -> showAlert(r.rcStopReason.chatError)
+            is RemoteCtrlStopReason.ConnectionFailed -> showAlert(r.rcStopReason.chatError)
+            is RemoteCtrlStopReason.SetupFailed -> showAlert(r.rcStopReason.chatError)
+            is RemoteCtrlStopReason.Disconnected -> {
+              /*AlertManager.shared.showAlertMsg(
+                generalGetString(MR.strings.remote_ctrl_was_disconnected_title),
+              )*/
+            }
+          }
+
           if (sess.sessionState is UIRemoteCtrlSessionState.Connected) {
             switchToLocalSession()
           }
@@ -4973,6 +5019,15 @@ sealed class RemoteHostError {
     is BadVersion -> "badVersion"
     is Disconnected -> "disconnected"
   }
+  fun localizedString(name: String): String = when (this) {
+    is Missing -> generalGetString(MR.strings.remote_host_error_missing)
+    is Inactive -> generalGetString(MR.strings.remote_host_error_inactive)
+    is Busy -> generalGetString(MR.strings.remote_host_error_busy)
+    is Timeout -> generalGetString(MR.strings.remote_host_error_timeout)
+    is BadState -> generalGetString(MR.strings.remote_host_error_bad_state)
+    is BadVersion -> generalGetString(MR.strings.remote_host_error_bad_version)
+    is Disconnected -> generalGetString(MR.strings.remote_host_error_disconnected)
+  }.format(name)
   @Serializable @SerialName("missing") object Missing: RemoteHostError()
   @Serializable @SerialName("inactive") object Inactive: RemoteHostError()
   @Serializable @SerialName("busy") object Busy: RemoteHostError()
@@ -4993,6 +5048,16 @@ sealed class RemoteCtrlError {
     is BadInvitation -> "badInvitation"
     is BadVersion -> "badVersion"
   }
+  val localizedString: String get() = when (this) {
+    is Inactive -> generalGetString(MR.strings.remote_ctrl_error_inactive)
+    is BadState -> generalGetString(MR.strings.remote_ctrl_error_bad_state)
+    is Busy -> generalGetString(MR.strings.remote_ctrl_error_busy)
+    is Timeout -> generalGetString(MR.strings.remote_ctrl_error_timeout)
+    is Disconnected -> generalGetString(MR.strings.remote_ctrl_error_disconnected)
+    is BadInvitation -> generalGetString(MR.strings.remote_ctrl_error_bad_invitation)
+    is BadVersion -> generalGetString(MR.strings.remote_ctrl_error_bad_version)
+  }
+
   @Serializable @SerialName("inactive") object Inactive: RemoteCtrlError()
   @Serializable @SerialName("badState") object BadState: RemoteCtrlError()
   @Serializable @SerialName("busy") object Busy: RemoteCtrlError()
