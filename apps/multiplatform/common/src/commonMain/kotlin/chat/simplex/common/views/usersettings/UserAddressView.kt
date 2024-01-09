@@ -155,7 +155,7 @@ fun UserAddressView(
       contentAlignment = Alignment.Center
     ) {
       if (userAddress.value != null) {
-        Surface(Modifier.size(50.dp), color = MaterialTheme.colors.background.copy(0.9f), shape = RoundedCornerShape(50)){}
+        Surface(Modifier.size(50.dp), color = MaterialTheme.colors.background.copy(0.9f), contentColor = LocalContentColor.current, shape = RoundedCornerShape(50)){}
       }
       CircularProgressIndicator(
         Modifier

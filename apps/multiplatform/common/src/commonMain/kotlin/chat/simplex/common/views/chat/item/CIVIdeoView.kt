@@ -153,7 +153,8 @@ private fun BoxScope.PlayButton(error: Boolean = false, onLongClick: () -> Unit,
   Surface(
     Modifier.align(Alignment.Center),
     color = Color.Black.copy(alpha = 0.25f),
-    shape = RoundedCornerShape(percent = 50)
+    shape = RoundedCornerShape(percent = 50),
+    contentColor = LocalContentColor.current
   ) {
     Box(
       Modifier
@@ -264,7 +265,8 @@ private fun progressCircle(progress: Long, total: Long) {
   Surface(
     Modifier.drawRingModifier(angle, strokeColor, strokeWidth),
     color = Color.Transparent,
-    shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50))
+    shape = MaterialTheme.shapes.small.copy(CornerSize(percent = 50)),
+    contentColor = LocalContentColor.current
   ) {
     Box(Modifier.size(16.dp))
   }

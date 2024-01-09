@@ -11,4 +11,6 @@
 
 void haskell_init(void);
 
+void haskell_init_nse(void);
+
 #endif /* hs_init_h */

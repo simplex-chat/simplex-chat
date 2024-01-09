@@ -1,8 +1,7 @@
 package chat.simplex.common
 
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Surface
+import androidx.compose.material.*
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import chat.simplex.common.model.*
@@ -107,7 +106,7 @@ object AppLock {
   private fun setPasscode() {
     val appPrefs = ChatController.appPrefs
     ModalManager.fullscreen.showCustomModal { close ->
-      Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background) {
+      Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
         SetAppPasscodeView(
           submit = {
             ChatModel.performLA.value = true

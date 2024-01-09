@@ -97,12 +97,14 @@ actual class GlobalExceptionsHandler: Thread.UncaughtExceptionHandler {
       mainActivity.get()?.recreate()
     } else {
       mainActivity.get()?.apply {
-        window
-          ?.decorView
-          ?.findViewById<ViewGroup>(android.R.id.content)
-          ?.removeViewAt(0)
-        setContent {
-          AppScreen()
+        runOnUiThread {
+          window
+            ?.decorView
+            ?.findViewById<ViewGroup>(android.R.id.content)
+            ?.removeViewAt(0)
+          setContent {
+            AppScreen()
+          }
         }
       }
     }

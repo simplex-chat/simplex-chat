@@ -172,7 +172,6 @@ public func fromLocalProfile (_ profile: LocalProfile) -> Profile {
 }
 
 public struct UserProfileUpdateSummary: Decodable {
-    public var notChanged: Int
     public var updateSuccesses: Int
     public var updateFailures: Int
     public var changedContacts: [Contact]
