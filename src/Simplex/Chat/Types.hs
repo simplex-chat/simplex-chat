@@ -347,7 +347,7 @@ data GroupInfo = GroupInfo
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
-    lastProfileSentTs :: Maybe UTCTime
+    membershipProfileSentTs :: Maybe UTCTime
   }
   deriving (Eq, Show)
 

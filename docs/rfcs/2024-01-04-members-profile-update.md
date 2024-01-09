@@ -10,9 +10,9 @@ Keep track of which members received latest profile updates. Send profile update
 
 ### How to track
 
-- users.last_profile_update_ts
-- group_members.last_profile_sent_ts
-- when user updates profile, remember new last_profile_update_ts, later to be compared against group_members.last_profile_sent_ts
+- users.memberships_profile_update_ts
+- group_members.membership_profile_sent_ts
+- when user updates profile, remember new memberships_profile_update_ts, later to be compared against group_members.membership_profile_sent_ts
 
 ### What to track
 
@@ -23,23 +23,23 @@ Keep track of which members received latest profile updates. Send profile update
   - some users don't expect that sharing address (contactLink) shares it not only with contacts, but also group members
   - this is a broader issue, as the user's contact link may also be sent in user's profile by admin when introducing members - it makes sense to either ignore this for the purposes of this feature, of change it in group handshake as well
 - it then makes sense to remember new timestamp on user record only if name or image is changed
-  - users.last_profile_update_ts -> users.last_name_or_image_update_ts?
 
 ### When/To whom to send
 
-- when user is active in group (i.e. broadcasts message via sendGroupMessage), compare group_members.last_profile_sent_ts against users.last_name_or_image_update_ts to determine whether latest profile update wasn't yet sent
+- when user is active in group (i.e. broadcasts message via sendGroupMessage), compare group_members.membership_profile_sent_ts against users.memberships_profile_update_ts to determine whether latest profile update wasn't yet sent
 - don't send to members in groups where user is incognito
 - don't send to members with whom user has direct contact (as it would overwrite full profile update sent to contact)?
   - alternatively it may be better to send the same pruned profile to such members, and for them to ignore this update (or only apply name and image updates, in case sender has silently deleted them as contact without notifying?):
     - this would ensure that they do receive it in case they silently deleted contact without notifying user
     - it simplifies processing, as then the same message is sent to all group members
+    - may remember "profile update hashes" on receiving side to not apply profile updates received via member connection to contact profile, if they arrive after previously processed updates received via contact connection (e.g. update that was received late would overwrite more up-to-date updates received via contact connection, until following messages arrive)
 - it seems unnecessary to send profile updates on service messages to individual members:
   - it would otherwise lead to members having different profiles of user at different points in time
   - not all of these messages create chat items anyway (forward, intro messages), so user name/image wouldn't matter
   - most if not all of these messages are sent by admins, who are likely to send either some content messages, group updates, or announce new members (x.grp.mem.new, which is also broadcasted)
   - it simplifies processing, as then profile update is sent to all current members
-- considering above points, perhaps we can simplify to track last_profile_sent_ts on groups instead of group_members
-  - group_members.last_profile_sent_ts -> groups.last_profile_sent_ts
+- considering above points, perhaps we can simplify to track membership_profile_sent_ts on groups instead of group_members
+  - group_members.membership_profile_sent_ts -> groups.membership_profile_sent_ts
 
 ### How to send
 

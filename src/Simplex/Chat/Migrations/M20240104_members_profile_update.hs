@@ -8,13 +8,13 @@ import Database.SQLite.Simple.QQ (sql)
 m20240104_members_profile_update :: Query
 m20240104_members_profile_update =
   [sql|
-ALTER TABLE users ADD COLUMN last_name_or_image_update_ts TEXT;
-ALTER TABLE groups ADD COLUMN last_profile_sent_ts TEXT;
+ALTER TABLE users ADD COLUMN memberships_profile_update_ts TEXT;
+ALTER TABLE groups ADD COLUMN membership_profile_sent_ts TEXT;
 |]
 
 down_m20240104_members_profile_update :: Query
 down_m20240104_members_profile_update =
   [sql|
-ALTER TABLE groups DROP COLUMN last_profile_sent_ts;
-ALTER TABLE users DROP COLUMN last_name_or_image_update_ts;
+ALTER TABLE groups DROP COLUMN membership_profile_sent_ts;
+ALTER TABLE users DROP COLUMN memberships_profile_update_ts;
 |]

@@ -266,7 +266,7 @@ updateUserProfile db user p'
         pure user {localDisplayName = newName, profile, fullPreferences}
   where
     updateUserProfileTs_ currentTs =
-      DB.execute db "UPDATE users SET last_name_or_image_update_ts = ? WHERE user_id = ?" (currentTs, userId)
+      DB.execute db "UPDATE users SET memberships_profile_update_ts = ? WHERE user_id = ?" (currentTs, userId)
     nameOrImageChanged = newName /= displayName || newFullName /= fullName || newImage /= image
     User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, image, localAlias}} = user
     Profile {displayName = newName, fullName = newFullName, image = newImage, preferences} = p'
