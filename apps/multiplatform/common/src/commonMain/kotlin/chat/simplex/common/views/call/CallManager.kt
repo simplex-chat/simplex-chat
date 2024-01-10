@@ -13,8 +13,8 @@ class CallManager(val chatModel: ChatModel) {
       callInvitations[invitation.contact.id] = invitation
       if (invitation.user.showNotifications) {
         if (Clock.System.now() - invitation.callTs <= 3.minutes) {
+          invitation.sentNotification = ntfManager.notifyCallInvitation(invitation)
           activeCallInvitation.value = invitation
-          ntfManager.notifyCallInvitation(invitation)
         } else {
           val contact = invitation.contact
           ntfManager.displayNotification(user = invitation.user, chatId = contact.id, displayName = contact.displayName, msgText = invitation.callTypeText)
