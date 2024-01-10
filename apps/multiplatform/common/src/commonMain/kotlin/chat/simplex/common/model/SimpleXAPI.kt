@@ -349,7 +349,7 @@ object ChatController {
         Log.e(TAG, error)
         throw Exception(error)
       }
-      return userId
+      userId
     }
   }
 
@@ -539,6 +539,8 @@ object ChatController {
   }
 
   suspend fun apiSetActiveUser(rh: Long?, userId: Long, viewPwd: String?): User {
+    throw Exception("failed to set the user as active ")
+
     val r = sendCmd(rh, CC.ApiSetActiveUser(userId, viewPwd))
     if (r is CR.ActiveUser) return r.user.updateRemoteHostId(rh)
     Log.d(TAG, "apiSetActiveUser: ${r.responseType} ${r.details}")
