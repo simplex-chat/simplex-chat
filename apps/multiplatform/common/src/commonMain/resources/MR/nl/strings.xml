@@ -1532,7 +1532,7 @@
     <string name="retry_verb">Opnieuw proberen</string>
     <string name="camera_not_available">Camera niet beschikbaar</string>
     <string name="enable_sending_recent_history">Stuur tot 100 laatste berichten naar nieuwe leden.</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>Contact toevoegen</b>: om een nieuwe uitnodigingslink te maken, of om verbinding te maken via een link die u heeft ontvangen.</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Contact toevoegen</b>: om een nieuwe uitnodigingslink te maken, of om verbinding te maken via een link die u heeft ontvangen.]]></string>
     <string name="disable_sending_recent_history">Stuur geen geschiedenis naar nieuwe leden.</string>
     <string name="or_show_this_qr_code">Of laat deze code zien</string>
     <string name="recent_history_is_sent_to_new_members">Er worden maximaal 100 laatste berichten naar nieuwe leden verzonden.</string>
@@ -1542,7 +1542,7 @@
     <string name="you_can_view_invitation_link_again">U kunt de uitnodigingslink opnieuw bekijken in de verbindingsdetails.</string>
     <string name="keep_unused_invitation_question">Ongebruikte uitnodiging bewaren?</string>
     <string name="share_this_1_time_link">Deel deze eenmalige uitnodigingslink</string>
-    <string name="create_group_button_to_create_new_group"><b>Groep aanmaken</b>: om een nieuwe groep aan te maken.</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>Groep aanmaken</b>: om een nieuwe groep aan te maken.]]></string>
     <string name="recent_history">Zichtbare geschiedenis</string>
     <string name="la_app_passcode">App toegangscode</string>
     <string name="new_chat">Nieuw gesprek</string>

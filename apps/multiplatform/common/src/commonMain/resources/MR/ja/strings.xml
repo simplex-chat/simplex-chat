@@ -1445,7 +1445,7 @@
     <string name="connect_plan_group_already_exists">グループはすでに存在します！</string>
     <string name="recent_history_is_not_sent_to_new_members">過去の会話は新規メンバーに送信されません。</string>
     <string name="desktop_incompatible_version">非互換バージョン</string>
-    <string name="new_desktop"><i>（新規）</i></string>
+    <string name="new_desktop"><![CDATA[<i>（新規）</i>]]></string>
     <string name="v5_4_incognito_groups">匿名グループ</string>
     <string name="v5_4_better_groups_descr">より高速な参加と、より信頼性の高いメッセージ。</string>
     <string name="found_desktop">デスクトップの検出</string>
@@ -1464,18 +1464,18 @@
     <string name="loading_chats">チャットの読み込み中…</string>
     <string name="v5_4_block_group_members">ブロックしたグループメンバー</string>
     <string name="connect_plan_repeat_connection_request">接続要求を繰り返しますか？</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">すでに<b>%1$s</b>に接続しています。</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[すでに<b>%1$s</b>に接続しています。]]></string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">あなたはすでにこのリンクでグループに参加しています。</string>
     <string name="refresh_qr_code">再読み込み</string>
     <string name="group_members_2">%sと%s</string>
     <string name="new_mobile_device">新規モバイルデバイス</string>
     <string name="only_one_device_can_work_at_the_same_time">同時に動作するのはひとつのデバイスだけです。</string>
     <string name="you_can_make_address_visible_via_settings">設定でSimpleXの連絡先に表示させることができます。</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">あなたはすでにグループ<b>%1$s</b>に参加しています。</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[あなたはすでにグループ<b>%1$s</b>に参加しています。]]></string>
     <string name="connect_plan_this_is_your_own_one_time_link">これはあなた自身のワンタイムリンクです！</string>
     <string name="chat_is_stopped_you_should_transfer_database">チャットが停止しています。このデータベースを他のデバイスで既に使用している場合は、チャットを開始する前に転送し直してください。</string>
     <string name="v5_4_link_mobile_desktop_descr">セキュアな量子耐性プロトコル。</string>
-    <string name="open_on_mobile_and_scan_qr_code">モバイルアプリで<i>デスクトップから使用</i>を開いてQRコードをスキャンします。</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[モバイルアプリで<i>デスクトップから使用</i>を開いてQRコードをスキャンします。]]></string>
     <string name="connect_plan_already_connecting">すでに接続しています！</string>
     <string name="retry_verb">再試行</string>
     <string name="v5_4_block_group_members_descr">不要なメッセージを隠す。</string>
@@ -1490,16 +1490,16 @@
     <string name="this_device">このデバイス</string>
     <string name="enable_sending_recent_history">新規メンバーに最大100通のメッセージ履歴を送信する。</string>
     <string name="unblock_member_button">ブロックしていないメンバー</string>
-    <string name="remote_host_was_disconnected_toast">モバイル<b>%s</b>が切断されました</string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[モバイル<b>%s</b>が切断されました]]></string>
     <string name="waiting_for_desktop">デスクトップを待機中…</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>コンタクトの追加</b>: 新しい招待リンクを作成するか、受け取ったリンクから接続します。</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>コンタクトの追加</b>: 新しい招待リンクを作成するか、受け取ったリンクから接続します。]]></string>
     <string name="or_show_this_qr_code">またはこのコードを見せる</string>
     <string name="recent_history_is_sent_to_new_members">新規メンバーには最大100通のメッセージ履歴が送信されます。</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">読み取ったコードはSimpleXのリンクQRコードではありません。</string>
     <string name="contact_tap_to_connect">タップして接続</string>
     <string name="this_device_name">このデバイス名</string>
     <string name="the_text_you_pasted_is_not_a_link">あなたがペーストしたテキストはSimpleXのリンクではありません。</string>
-    <string name="connect_plan_you_are_already_in_group_vName">あなたはすでにグループ<b>%1$s</b>に参加しています。</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[あなたはすでにグループ<b>%1$s</b>に参加しています。]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">これはあなた自身のSimpleXアドレスです！</string>
     <string name="correct_name_to">正しい名前は%s？</string>
     <string name="not_compatible">非互換です！</string>
@@ -1510,7 +1510,7 @@
     <string name="block_member_confirmation">ブロック</string>
     <string name="share_this_1_time_link">このワンタイム招待コードを共有する</string>
     <string name="unblock_member_question">メンバーのブロックを解除？</string>
-    <string name="create_group_button_to_create_new_group"><b>グループ作成</b>：新しいグループを作成する。</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>グループ作成</b>：新しいグループを作成する。]]></string>
     <string name="open_port_in_firewall_desc">モバイルアプリからデスクトップへの接続を許可するには、ファイアウォールでこのポートを開いてください。</string>
     <string name="block_member_button">ブロックしたメンバー</string>
     <string name="recent_history">表示可能な履歴</string>
@@ -1522,7 +1522,7 @@
     <string name="la_app_passcode">アプリのパスコード</string>
     <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">あなたはすでにこのワンタイムリンクで接続しています！</string>
     <string name="connect_plan_open_group">公開グループ</string>
-    <string name="this_device_version"><i>(このデバイスv%s)</i></string>
+    <string name="this_device_version"><![CDATA[<i>(このデバイスv%s)</i>]]></string>
     <string name="unlink_desktop">リンク解除</string>
     <string name="new_chat">新規チャット</string>
     <string name="unblock_member_desc">%sからのメッセージが表示されます！</string>
@@ -1536,11 +1536,11 @@
     <string name="bad_desktop_address">不正なデスクトップアドレス</string>
     <string name="or_scan_qr_code">またはQRコードでスキャンする</string>
     <string name="paste_desktop_address">デスクトップアドレスを貼り付ける</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">これはグループ<b>%1$s</b>のリンクです！</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[これはグループ<b>%1$s</b>のリンクです！]]></string>
     <string name="verify_code_with_desktop">デスクトップでコードを検証</string>
     <string name="scan_qr_code_from_desktop">デスクトップからQRコードをスキャン</string>
     <string name="unblock_member_confirmation">ブロック解除</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery">プライバシーを守るためアプリはプッシュ通知の代わりに<b>SimpleXバックグラウンドサービス</b>を備えています。- この機能は1日に数パーセントのバッテリーを消費します。</string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[プライバシーを守るためアプリはプッシュ通知の代わりに<b>SimpleXバックグラウンドサービス</b>を備えています。- この機能は1日に数パーセントのバッテリーを消費します。]]></string>
     <string name="v5_4_more_things_descr">- オプションで削除された連絡先を通知します。
 \n- プロフィール名に空白を含めることが可能になりました。
 \n- その他にも！</string>

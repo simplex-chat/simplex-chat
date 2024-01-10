@@ -617,7 +617,7 @@
     <string name="image_descr_profile_image">imagen del perfil</string>
     <string name="prohibit_sending_voice_messages">No se permiten mensajes de voz.</string>
     <string name="protect_app_screen">Proteger la pantalla de la aplicación</string>
-    <string name="read_more_in_github_with_link">Saber más en nuestro &lt;font color=#0088ff&gt;repositorio GitHub&lt;/font&gt; .</string>
+    <string name="read_more_in_github_with_link"><![CDATA[Saber más en nuestro <font color="#0088ff">repositorio GitHub</font> .]]></string>
     <string name="icon_descr_record_voice_message">Grabar mensaje de voz</string>
     <string name="rcv_group_event_member_deleted">ha expulsado a %1$s</string>
     <string name="send_link_previews">Enviar previsualizacion de enlaces</string>
@@ -1127,7 +1127,7 @@
     <string name="group_welcome_preview">Vista previa</string>
     <string name="opening_database">Abriendo base de datos…</string>
     <string name="error_setting_address">Error al introducir dirección</string>
-    <string name="read_more_in_user_guide_with_link">Saber más en la &lt;font color=#0088ff&gt;Guía de Usuario&lt;/font&gt;.</string>
+    <string name="read_more_in_user_guide_with_link"><![CDATA[Saber más en la <font color="#0088ff">Guía de Usuario</font>.]]></string>
     <string name="one_time_link_short">Enlace un uso</string>
     <string name="simplex_address">Dirección SimpleX</string>
     <string name="you_can_accept_or_reject_connection">Cuando alguien solicite conectarse podrás aceptar o rechazar su solicitud.</string>
@@ -1464,13 +1464,13 @@
     <string name="blocked_item_description">bloqueado</string>
     <string name="v5_4_block_group_members">Bloquear miembros del grupo</string>
     <string name="connect_plan_repeat_connection_request">¿Repetir solicitud de conexión?</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Ya estás conectando con <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Ya estás conectando con <b>%1$s</b>.]]></string>
     <string name="v5_4_incognito_groups_descr">Crear grupo usando perfil aleatorio.</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Ya estás uniéndote al grupo mediante este enlace.</string>
     <string name="refresh_qr_code">Recargar</string>
     <string name="group_members_2">%s y %s</string>
     <string name="multicast_connect_automatically">Conectar automáticamente</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Ya estás uniéndote al grupo <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Ya estás uniéndote al grupo <b>%1$s</b>.]]></string>
     <string name="v5_4_link_mobile_desktop">¡Enlazar aplicación móvil con ordenador!</string>
     <string name="connect_plan_this_is_your_own_one_time_link">¡Este es tu propio enlace de un solo uso!</string>
     <string name="v5_4_link_mobile_desktop_descr">Mediante protocolo seguro de resistencia cuántica.</string>
@@ -1490,7 +1490,7 @@
     <string name="v5_4_better_groups_descr">Mensajería más segura y conexión más rápida.</string>
     <string name="contact_tap_to_connect">Pulsa para conectar</string>
     <string name="this_device_name">Nombre del dispositivo</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Ya estás en el grupo <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Ya estás en el grupo <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">¡Esta es tu propia dirección SimpleX!</string>
     <string name="found_desktop">Ordenador encontrado</string>
     <string name="not_compatible">¡No compatible!</string>
@@ -1512,7 +1512,7 @@
     <string name="disconnect_remote_hosts">Desconectar móviles</string>
     <string name="group_member_role_author">autor</string>
     <string name="paste_desktop_address">Pegar dirección de ordenador</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">¡Este es tu enlace para el grupo <b>%1$s</b>!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[¡Este es tu enlace para el grupo <b>%1$s</b>!]]></string>
     <string name="verify_code_with_desktop">Verificar código con ordenador</string>
     <string name="scan_qr_code_from_desktop">Escanear código QR desde ordenador</string>
     <string name="unblock_member_confirmation">Desbloquear</string>
@@ -1535,7 +1535,7 @@
     <string name="retry_verb">Reintentar</string>
     <string name="camera_not_available">Cámara no disponible</string>
     <string name="enable_sending_recent_history">Enviar hasta 100 últimos mensajes a los miembros nuevos.</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>Añadir contacto</b>: crea un enlace de invitación nuevo o usa un enlace recibido.</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Añadir contacto</b>: crea un enlace de invitación nuevo o usa un enlace recibido.]]></string>
     <string name="disable_sending_recent_history">No enviar historial a miembros nuevos.</string>
     <string name="or_show_this_qr_code">O mostrar este código</string>
     <string name="recent_history_is_sent_to_new_members">Hasta 100 últimos mensajes son enviados a los miembros nuevos.</string>
@@ -1545,7 +1545,7 @@
     <string name="you_can_view_invitation_link_again">Podrás ver el enlace de invitación en detalles de conexión.</string>
     <string name="keep_unused_invitation_question">¿Guardar invitación no usada?</string>
     <string name="share_this_1_time_link">Compartir este enlace de un uso</string>
-    <string name="create_group_button_to_create_new_group"><b>Crear grupo</b>: crea un grupo nuevo.</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>Crear grupo</b>: crea un grupo nuevo.]]></string>
     <string name="recent_history">Historial visible</string>
     <string name="la_app_passcode">Código acceso app</string>
     <string name="new_chat">Nuevo chat</string>

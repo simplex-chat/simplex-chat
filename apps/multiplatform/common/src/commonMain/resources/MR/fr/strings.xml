@@ -1534,7 +1534,7 @@
     <string name="retry_verb">Réessayer</string>
     <string name="camera_not_available">Caméra non disponible</string>
     <string name="enable_sending_recent_history">Envoi des 100 derniers messages aux nouveaux membres.</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>Ajouter un contact</b> : pour créer un nouveau lien d\'invitation ou se connecter via un lien que vous avez reçu.</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Ajouter un contact</b> : pour créer un nouveau lien d\'invitation ou se connecter via un lien que vous avez reçu.]]></string>
     <string name="disable_sending_recent_history">Ne pas envoyer d\'historique aux nouveaux membres.</string>
     <string name="or_show_this_qr_code">Ou présenter ce code</string>
     <string name="recent_history_is_sent_to_new_members">Les 100 derniers messages sont envoyés aux nouveaux membres.</string>
@@ -1544,7 +1544,7 @@
     <string name="you_can_view_invitation_link_again">Vous pouvez à nouveau consulter le lien d\'invitation dans les détails de la connexion.</string>
     <string name="keep_unused_invitation_question">Conserver l\'invitation inutilisée ?</string>
     <string name="share_this_1_time_link">Partager ce lien d\'invitation unique</string>
-    <string name="create_group_button_to_create_new_group"><b>Créer un groupe</b> : pour créer un nouveau groupe.</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>Créer un groupe</b> : pour créer un nouveau groupe.]]></string>
     <string name="recent_history">Historique visible</string>
     <string name="la_app_passcode">Code d\'accès à l\'app</string>
     <string name="new_chat">Nouveau chat</string>

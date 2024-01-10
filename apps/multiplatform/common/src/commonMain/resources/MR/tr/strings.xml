@@ -712,7 +712,7 @@
     <string name="icon_descr_instant_notifications">Anlık bildirimler</string>
     <string name="service_notifications">Anlık bildirimler</string>
     <string name="service_notifications_disabled">Anlık bildirimler devre dışı!</string>
-    <string name="turn_off_battery_optimization">Kullanmak için, lütfen bir sonraki iletişim kutusunda <b>SimpleX in arkaplanda çalışmasına izin ver</b> seçeneğini işaretleyin. Aksi takdirde, bildirimler devre dışı bırakılacaktır.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[Kullanmak için, lütfen bir sonraki iletişim kutusunda <b>SimpleX in arkaplanda çalışmasına izin ver</b> seçeneğini işaretleyin. Aksi takdirde, bildirimler devre dışı bırakılacaktır.]]></string>
     <string name="notification_preview_mode_contact">Kişi ismi</string>
     <string name="auth_device_authentication_is_disabled_turning_off">Cihaz doğrulaması devre dışı. SimpleX Kilidi Kapatılıyor.</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">Cihaz doğrulaması etkin değil. Cihaz doğrulamasını etkinleştirdikten sonra SimpleX Kilidini Ayarlar üzerinden açabilirsiniz.</string>
@@ -1253,11 +1253,11 @@
     <string name="member_contact_send_direct_message">doğrudan mesaj gönder</string>
     <string name="sender_cancelled_file_transfer">Gönderen kişi dosya aktarımını iptal etti.</string>
     <string name="only_you_can_delete_messages">Mesajları yalnızca siz geri döndürülemez şekilde silebilirsiniz (kişiniz bunları silinmek üzere işaretleyebilir). (24 saat içinde)</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Zaten <b>%1$s</b>’ye bağlanıyorsunuz.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Zaten <b>%1$s</b>’ye bağlanıyorsunuz.]]></string>
     <string name="whats_new_thanks_to_users_contribute_weblate">Kullanıcılara teşekkürler - Weblate aracılığıyla katkıda bulunun!</string>
     <string name="lock_mode">Kilit modu</string>
     <string name="only_one_device_can_work_at_the_same_time">Aynı anda yalnızca bir cihaz çalışabilir</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Zaten <b>%1$s</b> grubuna katılıyorsunuz.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Zaten <b>%1$s</b> grubuna katılıyorsunuz.]]></string>
     <string name="group_invitation_tap_to_join">Katılmak için dokun</string>
     <string name="v5_0_polish_interface_descr">Kullanıcılara teşekkürler - Weblate aracılığıyla katkıda bulunun!</string>
     <string name="v5_4_link_mobile_desktop_descr">Güvenli kuantum dirençli protokol ile.</string>
@@ -1267,7 +1267,7 @@
     <string name="waiting_for_desktop">Masaüstü bekleniyor…</string>
     <string name="database_is_not_encrypted">Sohbet veritabanınız şifreli değildir - korumak için parola ayarlayın.</string>
     <string name="you_will_still_receive_calls_and_ntfs">Aktif olduklarında sessize alınmış profillerden arama ve bildirim almaya devam edersiniz.</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Zaten<b> %1$s </b>grubundasınız.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Zaten<b> %1$s </b>grubundasınız.]]></string>
     <string name="v4_4_french_interface_descr">Kullanıcılara teşekkürler - Weblate aracılığıyla katkıda bulunun!</string>
     <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">Bu tek seferlik bağlantı üzerinden zaten bağlanıyorsunuz!</string>
     <string name="non_content_uri_alert_text">Geçersiz bir dosya yolu paylaştınız. Sorunu uygulama geliştiricilerine bildirin.</string>
@@ -1295,8 +1295,8 @@
     <string name="sending_delivery_receipts_will_be_enabled">Çoklu gönderim bütün kişiler için etkinleştirilecektir.</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">XFTP sunucu adreslerinin doğru formatta olduğundan, satırın ayrılmış ve kopyalanmamış olduğundan emin olun.</string>
     <string name="refresh_qr_code">Yenile</string>
-    <string name="socks_proxy_setting_limitations"><b>Lütfen unutmayın</b>: mesaj ve dosya yönlendiricileri SOCKS vekili tarafından bağlandı. Aramalar ve bağlantı ön gösterimleri doğrudan bağlantı kullanıyor.</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱mobil: <b>Telefon uygulamasında aç</b> seçeneğine tıkla, sonra uygulama içinden <b>Bağlan</b> seçeneğine tıkla.</string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Lütfen unutmayın</b>: mesaj ve dosya yönlendiricileri SOCKS vekili tarafından bağlandı. Aramalar ve bağlantı ön gösterimleri doğrudan bağlantı kullanıyor.]]></string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱mobil: <b>Telefon uygulamasında aç</b> seçeneğine tıkla, sonra uygulama içinden <b>Bağlan</b> seçeneğine tıkla.]]></string>
     <string name="smp_server_test_secure_queue">Gizli sıra</string>
     <string name="connected_desktop">Masaüstü bağlandı</string>
     <string name="group_members_2">%s ve %s</string>
@@ -1317,7 +1317,7 @@
     <string name="icon_descr_sent_msg_status_unauthorized_send">yetkisiz gönder</string>
     <string name="v4_5_transport_isolation">Ulaşım izolasyonu</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Çoklu gönderim bütün görünebilir sohbet profillerinde etkinleştirilecektir.</string>
-    <string name="system_restricted_background_in_call_warn">Arkaplanda arama yapmak için, lütfen uygulama ayarlarından <b>Uygulama pil kullanımı</b> / <b>Sınırsız</b> seçeneğini seç.</string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[Arkaplanda arama yapmak için, lütfen uygulama ayarlarından <b>Uygulama pil kullanımı</b> / <b>Sınırsız</b> seçeneğini seç.]]></string>
     <string name="callstate_received_confirmation">onaylama alındı…</string>
     <string name="share_text_updated_at">Kayıt %s te güncellendi</string>
     <string name="v5_3_encrypt_local_files_descr">Uygulama yeni yerel dosyaları şifreler (videolar dışında).</string>
@@ -1333,7 +1333,7 @@
     <string name="network_enable_socks_info">Sunuculara %d bağlantı noktasındaki vekil SOCKS aracılığıyla erişilsin mi? Vekil bu seçeneği etkinleştirmeden önce başlatılmak zorundadır.</string>
     <string name="v5_4_block_group_members_descr">İstenmeyen mesajları gizlemek için.</string>
     <string name="error_smp_test_failed_at_step">Test %s adımında hata yaşandı.</string>
-    <string name="disable_onion_hosts_when_not_supported"><i> .onion ana bilgisayarlarını kullan</i> seçeneğini eğer SOCKS vekili destek vermiyorsa devre dışı bırak</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[<i> .onion ana bilgisayarlarını kullan</i> seçeneğini eğer SOCKS vekili destek vermiyorsa devre dışı bırak]]></string>
     <string name="you_can_change_it_later">Rasgele şifreler düz metin olarak ayarlarda saklanacaktır.
 \nBunu sonra değiştirebilirsin.</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">SMP sunucu adreslerinin doğru formatta olduğundan, satırın ayrılmış ve kopyalanmamış olduğundan emin olun.</string>
@@ -1369,13 +1369,13 @@
     <string name="network_use_onion_hosts_no_desc_in_alert">Onion ana bilgisayarları kullanılmayacaktır.</string>
     <string name="unblock_member_button">Kişinin engelini kaldır</string>
     <string name="relay_server_if_necessary">Yönlendirici sunucusu sadece lazım ise kullanılacak. Diğer taraf IP adresini görebilir.</string>
-    <string name="remote_host_was_disconnected_toast">Telefon bağlantılı <b>%s</b> ın bağlantısı kesildi</string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[Telefon bağlantılı <b>%s</b> ın bağlantısı kesildi]]></string>
     <string name="smp_servers_test_server">Sunucuyu test et</string>
     <string name="conn_stats_section_title_servers">SUNUCULAR</string>
     <string name="smp_servers_test_servers">Sunucuları test et</string>
     <string name="privacy_message_draft">Mesaj taslağı</string>
     <string name="v5_2_disappear_one_message">Bir mesajı yok edin</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>Kişi ekle</b> yeni bir davet bağlantısı oluşturmak için, veya aldığın bir davet bağlantısından bağlan.</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Kişi ekle</b> yeni bir davet bağlantısı oluşturmak için, veya aldığın bir davet bağlantısından bağlan.]]></string>
     <string name="disable_sending_recent_history">Yeni üyelere geçmişi gönderme.</string>
     <string name="icon_descr_contact_checked">Kişi doğrulandı</string>
     <string name="use_random_passphrase">Rasgele parola kullan</string>
@@ -1433,13 +1433,13 @@
     <string name="share_this_1_time_link">Bu tek-kullanımlık davet bağlantısını paylaş</string>
     <string name="unblock_member_question">Kişinin engeli kaldırılsın mı?</string>
     <string name="blocked_items_description">%d mesajları engellendi</string>
-    <string name="create_group_button_to_create_new_group"><b>Grup oluştur</b>: yeni bir grup oluşturmak için.</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>Grup oluştur</b>: yeni bir grup oluşturmak için.]]></string>
     <string name="icon_descr_video_asked_to_receive">Videoyu almak için soruldu</string>
     <string name="open_port_in_firewall_desc">Telefon uygulamanın bilgisayarına bağlanmasına izin vermek için, güvenlik duvarın etkin ise bu portu aç</string>
     <string name="block_member_button">Üye engelle</string>
     <string name="receipts_contacts_override_disabled">Alıcılar %d bağlantıları için devre dışı bırakılacak</string>
     <string name="receipts_groups_enable_keep_overrides">Etkinleştir (grup geçersiz kılmalarını tut)</string>
-    <string name="system_restricted_background_warn">Bildirimleri etkinleştirmek için, Lütfen uygulama ayarlarından <b>Uygulama pil kullanımı</b> / <b>Sınırsız</b> seçeneğini seç.</string>
+    <string name="system_restricted_background_warn"><![CDATA[Bildirimleri etkinleştirmek için, Lütfen uygulama ayarlarından <b>Uygulama pil kullanımı</b> / <b>Sınırsız</b> seçeneğini seç.]]></string>
     <string name="send_receipts_disabled_alert_title">Alıcılar devre dışı bırakıldı.</string>
     <string name="set_group_preferences">Grup tercihlerini ayarla</string>
     <string name="invalid_migration_confirmation">Geçerli olmayan taşıma onayı</string>
@@ -1476,7 +1476,7 @@
     <string name="alert_text_msg_bad_id">Bir sonraki mesajın kimliği yanlış (bir öncekinden az veya aynı).
 \nBazı hatalar nedeniyle veya bağlantı tehlikeye girdiğinde meydana gelebilir.</string>
     <string name="notification_preview_somebody">Kişi gizlendi:</string>
-    <string name="many_people_asked_how_can_it_deliver">Bir sürü kişi sordu: <i> eğer SimpleX’in hiç kullanıcı tanımlayıcısı yok, nasıl mesajları gönderiyor? </i></string>
+    <string name="many_people_asked_how_can_it_deliver"><![CDATA[Bir sürü kişi sordu: <i> eğer SimpleX’in hiç kullanıcı tanımlayıcısı yok, nasıl mesajları gönderiyor? </i>]]></string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Şu durumlarda gerçekleşebilir:
 \n1. Mesajların süresi, gönderen istemcide 2 gün sonra veya sunucuda 30 gün sonra sona erdi.
 \n2. Siz veya kişiniz eski veritabanı yedeğini kullandığınız için mesajın şifresini çözme işlemi başarısız oldu.
@@ -1524,7 +1524,7 @@
     <string name="la_lock_mode_system">Sistem yetkilendirmesi</string>
     <string name="or_scan_qr_code">Veya QR kod okut</string>
     <string name="database_migrations">Taşınmalar: %s</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Bu senin grup için bağlantın! <b>%1$s</b></string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Bu senin grup için bağlantın! <b>%1$s</b>]]></string>
     <string name="unblock_member_confirmation">Engeli kaldır</string>
     <string name="icon_descr_asked_to_receive">Fotoğrafı almak için soruldu</string>
     <string name="invalid_qr_code">Geçerli olmayan QR kodu</string>

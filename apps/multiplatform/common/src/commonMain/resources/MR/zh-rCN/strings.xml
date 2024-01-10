@@ -1534,7 +1534,7 @@
     <string name="retry_verb">重试</string>
     <string name="camera_not_available">相机不可用</string>
     <string name="enable_sending_recent_history">给新成员发送最多 100 条历史消息。</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>添加联系人</b>: 来创建新的邀请链接，或通过你收到的链接进行连接。</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>添加联系人</b>: 来创建新的邀请链接，或通过你收到的链接进行连接。]]></string>
     <string name="disable_sending_recent_history">不给新成员发送历史消息。</string>
     <string name="or_show_this_qr_code">或者显示此码</string>
     <string name="recent_history_is_sent_to_new_members">给新成员发送了最多 100 条历史消息。</string>
@@ -1544,7 +1544,7 @@
     <string name="you_can_view_invitation_link_again">您可以在连接详情中再次查看邀请链接。</string>
     <string name="keep_unused_invitation_question">保留未使用的邀请吗？</string>
     <string name="share_this_1_time_link">分享此一次性邀请链接</string>
-    <string name="create_group_button_to_create_new_group"><b>建群</b>: 来建立新群。</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>建群</b>: 来建立新群。]]></string>
     <string name="recent_history">可见的历史</string>
     <string name="la_app_passcode">应用程序密码</string>
     <string name="new_chat">新聊天</string>
@@ -1569,7 +1569,7 @@
     <string name="agent_critical_error_title">严重错误</string>
     <string name="restart_chat_button">重启聊天</string>
     <string name="show_internal_errors">显示内部错误</string>
-    <string name="remote_host_disconnected_from">和移动设备<b>%s</b>的连接已断开，原因是：%s</string>
+    <string name="remote_host_disconnected_from"><![CDATA[和移动设备<b>%s</b>的连接已断开，原因是：%s]]></string>
     <string name="remote_ctrl_disconnected_with_reason">断连原因：%s</string>
     <string name="remote_ctrl_error_timeout">连接到桌面时超时</string>
     <string name="remote_ctrl_error_busy">桌面繁忙</string>
@@ -1580,13 +1580,13 @@
     <string name="remote_ctrl_error_disconnected">桌面连接已断开</string>
     <string name="failed_to_create_user_invalid_title">无效的显示名！</string>
     <string name="remote_ctrl_was_disconnected_title">连接停止</string>
-    <string name="remote_host_error_bad_version">移动设备 <b>%s</b> 的版本不受支持。请确保两台设备安装的版本相同</string>
-    <string name="remote_host_error_busy">移动设备 <b>%s</b> 繁忙</string>
-    <string name="remote_host_error_inactive">移动设备 <b>%s</b>不活跃</string>
-    <string name="remote_host_error_missing">移动设备 <b>%s</b> 缺失</string>
-    <string name="remote_host_error_disconnected">未与移动设备<b>%s</b>建立连接</string>
+    <string name="remote_host_error_bad_version"><![CDATA[移动设备 <b>%s</b> 的版本不受支持。请确保两台设备安装的版本相同]]></string>
+    <string name="remote_host_error_busy"><![CDATA[移动设备 <b>%s</b> 繁忙]]></string>
+    <string name="remote_host_error_inactive"><![CDATA[移动设备 <b>%s</b>不活跃]]></string>
+    <string name="remote_host_error_missing"><![CDATA[移动设备 <b>%s</b> 缺失]]></string>
+    <string name="remote_host_error_disconnected"><![CDATA[未与移动设备<b>%s</b>建立连接]]></string>
     <string name="remote_host_was_disconnected_title">连接停止</string>
-    <string name="remote_host_error_bad_state">到移动设备 <b>%s</b>的连接处于糟糕状态</string>
-    <string name="remote_host_error_timeout">连接到移动设备<b>%s</b>时超时</string>
+    <string name="remote_host_error_bad_state"><![CDATA[到移动设备 <b>%s</b>的连接处于糟糕状态]]></string>
+    <string name="remote_host_error_timeout"><![CDATA[连接到移动设备<b>%s</b>时超时]]></string>
     <string name="failed_to_create_user_invalid_desc">显示名无效。请另选一个名称。</string>
 </resources>

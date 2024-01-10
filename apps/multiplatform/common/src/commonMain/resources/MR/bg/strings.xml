@@ -1403,7 +1403,7 @@
     <string name="connect_plan_repeat_connection_request">Изпрати отново заявката за свързване?</string>
     <string name="encryption_renegotiation_error">Грешка при повторно договаряне на криптиране</string>
     <string name="rcv_direct_event_contact_deleted">изтрит контакт</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Вече се свързвате с <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Вече се свързвате с <b>%1$s</b>.]]></string>
     <string name="error_alert_title">Грешка</string>
     <string name="v5_4_incognito_groups_descr">Създай група с автоматично генериран профилл.</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">Вие вече се присъединявате към групата чрез този линк.</string>
@@ -1417,7 +1417,7 @@
     <string name="desktop_address">Адрес на настолно устройство</string>
     <string name="only_one_device_can_work_at_the_same_time">Само едно устройство може да работи едновременно</string>
     <string name="connect_plan_join_your_group">Влез в твоята група?</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Вече се присъединявате към групата <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Вече се присъединявате към групата <b>%1$s</b>.]]></string>
     <string name="v5_4_link_mobile_desktop">Свържете мобилни и настолни приложения! 🔗</string>
     <string name="connect_plan_this_is_your_own_one_time_link">Това е вашят еднократен линк за връзка!</string>
     <string name="marked_deleted_items_description">%d съобщения са маркирани като изтрити</string>
@@ -1453,7 +1453,7 @@
     <string name="connected_to_desktop">Свързан с настолно устройство</string>
     <string name="contact_tap_to_connect">Докосни за свързване</string>
     <string name="this_device_name">Името на това устройство</string>
-    <string name="connect_plan_you_are_already_in_group_vName">Вече сте в група <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Вече сте в група <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">Това е вашият личен SimpleX адрес!</string>
     <string name="loading_remote_file_title">Зареждане на файла</string>
     <string name="connecting_to_desktop">Свързване с настолно устройство</string>
@@ -1503,7 +1503,7 @@
     <string name="connected_to_mobile">Свързан с мобилно устройство</string>
     <string name="bad_desktop_address">Грешен адрес на настолното устройство</string>
     <string name="paste_desktop_address">Постави адрес на настолно устройство</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Това е вашят линк за група <b>%1$s</b>!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Това е вашят линк за група <b>%1$s</b>!]]></string>
     <string name="verify_code_with_desktop">Потвръди кода с настолното устройство</string>
     <string name="scan_qr_code_from_desktop">Сканирай QR код от настолното устройство</string>
     <string name="unblock_member_confirmation">Отблокирай</string>
@@ -1529,7 +1529,7 @@
     <string name="retry_verb">Опитай отново</string>
     <string name="camera_not_available">Камерата е неодстъпна</string>
     <string name="enable_sending_recent_history">Изпращане до последните 100 съобщения на нови членове.</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>Добави контакт</b>: за създаване на нов линк или свързване чрез получен линк за връзка.</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Добави контакт</b>: за създаване на нов линк или свързване чрез получен линк за връзка.]]></string>
     <string name="disable_sending_recent_history">Не изпращай история на нови членове.</string>
     <string name="error_showing_content">грешка при показване на съдържанието</string>
     <string name="or_show_this_qr_code">Или покажи този код</string>
@@ -1541,7 +1541,7 @@
     <string name="you_can_view_invitation_link_again">Можете да видите отново линкът за покана в подробностите за връзката.</string>
     <string name="keep_unused_invitation_question">Запази неизползваната покана за връзка?</string>
     <string name="share_this_1_time_link">Сподели този еднократен линк за връзка</string>
-    <string name="create_group_button_to_create_new_group"><b>Създай група</b>: за създаване на нова група.</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>Създай група</b>: за създаване на нова група.]]></string>
     <string name="recent_history">Видима история</string>
     <string name="la_app_passcode">Код за достъп до приложението</string>
     <string name="new_chat">Нов чат</string>

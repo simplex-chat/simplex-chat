@@ -1451,11 +1451,11 @@
     <string name="connect_plan_this_is_your_own_one_time_link">To je váš vlastní jednorázový odkaz!</string>
     <string name="marked_deleted_items_description">%d zpráv označeno jako smazaná</string>
     <string name="v5_4_link_mobile_desktop_descr">Prostřednictvím zabezpečeného kvant rezistentního protokolu.</string>
-    <string name="open_on_mobile_and_scan_qr_code">Otevřete <i>Použijte z PC</i> v aplikaci telefonu a naskenujte QR kód.</string>
+    <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Otevřete <i>Použijte z PC</i> v aplikaci telefonu a naskenujte QR kód.]]></string>
     <string name="connect_plan_already_connecting">Již připojuji!</string>
     <string name="v5_4_block_group_members_descr">Skrýt nežádoucí zprávy.</string>
     <string name="desktop_incompatible_version">Nekompatibilní verze</string>
-    <string name="new_desktop"><i>(nový)</i></string>
+    <string name="new_desktop"><![CDATA[<i>(nový)</i>]]></string>
     <string name="unlink_desktop_question">Odpojit PC?</string>
     <string name="linked_desktop_options">Možnosti připojeného PC</string>
     <string name="video_decoding_exception_desc">Video nelze dekódovat.
@@ -1470,7 +1470,7 @@
     <string name="group_members_n">%s, %s a %d členů</string>
     <string name="moderated_items_description">%1$d zpráv moderoval %2$s</string>
     <string name="unblock_member_button">Odblokovat člena</string>
-    <string name="remote_host_was_disconnected_toast">Telefon <b>%s</b> byl odpojen</string>
+    <string name="remote_host_was_disconnected_toast"><![CDATA[Telefon <b>%s</b> byl odpojen]]></string>
     <string name="waiting_for_desktop">Čekání na PC…</string>
     <string name="v5_4_better_groups_descr">Rychlejší připojování a spolehlivější zprávy.</string>
     <string name="error_showing_content">chyba zobrazení obsahu</string>
@@ -1501,7 +1501,7 @@
     <string name="app_was_crashed">Zobrazit havarované</string>
     <string name="delete_and_notify_contact">Smazat a informovat kontakt</string>
     <string name="connect_plan_you_are_already_connecting_via_this_one_time_link">Již se připojujete přes tento jednorázový odkaz!</string>
-    <string name="this_device_version"><i>(toto zařízení v%s)</i></string>
+    <string name="this_device_version"><![CDATA[<i>(toto zařízení v%s)</i>]]></string>
     <string name="unlink_desktop">Odpojit</string>
     <string name="unblock_member_desc">Zprávy od %s budou zobrazeny!</string>
     <string name="this_device_name_shared_with_mobile">Název zařízení bude sdílen s připojeným mobilním klientem.</string>
@@ -1536,8 +1536,8 @@
     <string name="camera_not_available">Kamera není k dispozici</string>
     <string name="enable_camera_access">Povolit fotoaparát</string>
     <string name="tap_to_scan">Klepnutím skenovat</string>
-    <string name="create_group_button_to_create_new_group"><b>Vytvořit skupinu</b>: vytvořit novou skupinu.</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>Přidat kontakt</b>: vytvořit novou pozvánku nebo připojit přes odkaz, který jste obdrželi.</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>Vytvořit skupinu</b>: vytvořit novou skupinu.]]></string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Přidat kontakt</b>: vytvořit novou pozvánku nebo připojit přes odkaz, který jste obdrželi.]]></string>
     <string name="add_contact_tab">Přidat kontakt</string>
     <string name="new_chat">Nový chat</string>
     <string name="creating_link">Vytvořit odkaz…</string>

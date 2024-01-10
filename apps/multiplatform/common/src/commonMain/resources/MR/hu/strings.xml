@@ -87,7 +87,7 @@
     <string name="allow_to_send_voice">Hangüzenetek küldésének engedélyezése.</string>
     <string name="allow_message_reactions_only_if">Üzenet reakciók engedélyezése kizárólag abban az esetben, ha a másik fél is engedélyezi.</string>
     <string name="back">Vissza</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><b>Kikapcsolható a beállításokban</b> – az értesítések továbbra is megjelenítésre kerülnek amíg az alkalmazás fut.</string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Kikapcsolható a beállításokban</b> – az értesítések továbbra is megjelenítésre kerülnek amíg az alkalmazás fut.]]></string>
     <string name="v4_2_group_links_desc">Az adminok létrehozhatnak linkeket a csoporthoz való csatlakozáshoz.</string>
     <string name="call_on_lock_screen">Hívások a lezárási képernyőn:</string>
     <string name="conn_event_ratchet_sync_started">titkosítás elfogadása…</string>
@@ -708,7 +708,7 @@
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">Győződj meg róla, hogy az XFTP-kiszolgáló címei megfelelő formátumúak, sorszeparáltak és nem duplikáltak.</string>
     <string name="no_contacts_selected">Nincsenek ismerősök kiválasztva</string>
     <string name="no_received_app_files">Nincsenek fogadott vagy küldött fájlok</string>
-    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app">📱 mobil: koppints a <b>Megnyitás mobil alkalmazásban</b>, majd koppints a <b>Csatlakozás</b> gombra az alkalmazásban.</string>
+    <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobil: koppints a <b>Megnyitás mobil alkalmazásban</b>, majd koppints a <b>Csatlakozás</b> gombra az alkalmazásban.]]></string>
     <string name="markdown_in_messages">Markdown az üzenetekben</string>
     <string name="group_invitation_item_description">meghívás a %1$s csoportba</string>
     <string name="lock_mode">Lezárás mód</string>
@@ -1359,7 +1359,7 @@
     <string name="you_can_enable_delivery_receipts_later">Később engedélyezheted a Beállításokban</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Csatlakozni fogsz a csoporthoz amikor a csoport tulajdonosának az eszköze online lesz. Kérlek várj vagy nézz vissza később!</string>
     <string name="mtr_error_different">eltérő migráció az appban/adatbázisban: %s / %s</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">Már kapcsolatban vagy vele: <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Már kapcsolatban vagy vele: <b>%1$s</b>.]]></string>
     <string name="unhide_profile">Profil felfedése</string>
     <string name="this_link_is_not_a_valid_connection_link">Ez a link nem érvényes meghívó link!</string>
     <string name="to_verify_compare">A felek közötti titkosítás (e2e) ellenőrzéséhez hasonlítsd össze (vagy olvasd be) a kódot az ismerősöddel együtt az eszközeiteken!</string>
@@ -1376,7 +1376,7 @@
     <string name="your_chat_profile_will_be_sent_to_your_contact">A chat profilod megküldésre kerül
 \naz ismerősöd számára</string>
     <string name="invite_prohibited_description">Egy olyan ismerőst próbálsz meghívni, akivel inkognító profilt osztottál meg abban a csoportban, amelyben a saját fő profilodat használod</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">Már folyamatban van a csatlakozásod a(z) <b>%1$s</b> csoporthoz.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[Már folyamatban van a csatlakozásod a(z) <b>%1$s</b> csoporthoz.]]></string>
     <string name="onboarding_notifications_mode_off">Amikor az app fut</string>
     <string name="alert_title_cant_invite_contacts_descr">Inkognító profilt használsz ehhez a csoporthoz - a fő profilod megosztásának elkerülése érdekében meghívók küldése tiltott</string>
     <string name="v4_5_transport_isolation">Kapcsolat izolációs mód</string>
@@ -1391,7 +1391,7 @@
     <string name="sender_at_ts">%s at %s</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Csatlakoztok amikor az ismerősöd eszköze online lesz. Kérlek várj vagy nézz vissza később!</string>
     <string name="v5_4_block_group_members_descr">Kéretlen üzenetek elrejtése.</string>
-    <string name="disable_onion_hosts_when_not_supported">Állítsd a <i>Használd az .onion hostokat</i> NEM-re ha a SOCKS proxy nem támogatja.</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Állítsd a <i>Használd az .onion hostokat</i> NEM-re ha a SOCKS proxy nem támogatja.]]></string>
     <string name="you_can_share_your_address">Megoszthatod a SimpleX azonosítódat linkben vagy QR-kódban - bárki kapcsolatfelvételt kezdeményezhet veled.</string>
     <string name="you_can_create_it_later">Később létrehozhatod</string>
     <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">A profilod a te eszközödön van tárolva és csak az ismerőseiddel kerül megosztásra! A SimpleX chat szerverek nem láthatják a profilodat!</string>
@@ -1412,7 +1412,7 @@
     <string name="upgrade_and_open_chat">A chat frissítése és megnyitása</string>
     <string name="you_need_to_allow_to_send_voice">Ahhoz, hogy hangüzeneteket küldhess, engedélyezned kell az ismerőseidnek is azok küldését.</string>
     <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Te kontrollálod, hogy melyik szerveren(-ken) keresztül <b>fogadod</b>az üzeneteket, míg az ismerőseid a szervereket amelyeken át üzensz nekik.]]></string>
-    <string name="connect_plan_you_are_already_in_group_vName">Már a(z) <b>%1$s</b> csoportban vagy.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Már a(z) <b>%1$s</b> csoportban vagy.]]></string>
     <string name="snd_conn_event_switch_queue_phase_completed">megváltoztattad az azonosítót</string>
     <string name="v4_3_irreversible_message_deletion_desc">Az ismerőseid engedélyezhetik a teljes üzenet törlést.</string>
     <string name="you_have_to_enter_passphrase_every_time">Be kell írd a jelmondatodat a SimpleX app minden indulásakor - nem az eszközön lesz tárolva.</string>
@@ -1437,7 +1437,7 @@
     <string name="update_onion_hosts_settings_question">TOR .onion host beállítások frissítése?</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Megoszthatsz egy linket vagy QR-kódot - így bárki csatlakozhat a csoporthoz. Csoporttagokat nem fogsz elveszíteni, az esetben sem ha kásőbb törlöd a csoportot.</string>
     <string name="you_joined_this_group">Csatlakoztál ehhez a csoporthoz</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">Ez a linked a(z) <b>%1$s</b> csoporthoz!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[Ez a linked a(z) <b>%1$s</b> csoporthoz!]]></string>
     <string name="voice_prohibited_in_this_chat">A hangüzenetek tiltottak ebben a chatben.</string>
     <string name="you_control_your_chat">Te tartod kézben chatedet!</string>
     <string name="verify_code_with_desktop">Kód ellenőrzése a számítógépen</string>
@@ -1535,8 +1535,8 @@
     <string name="add_contact_tab">Kapcsolat hozzáadása</string>
     <string name="tap_to_scan">Koppints a beolvasáshoz</string>
     <string name="tap_to_paste_link">Koppints a hivatkozás beillesztéséhez</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>Ismerős hozzáadása</b>: új meghívó link létrehozásához, vagy egy kapott linken keresztül történő csatlakozáshoz.</string>
-    <string name="create_group_button_to_create_new_group"><b>Új csoport létrehozása</b>: új csoport létrehozásához.</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Ismerős hozzáadása</b>: új meghívó link létrehozásához, vagy egy kapott linken keresztül történő csatlakozáshoz.]]></string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>Új csoport létrehozása</b>: új csoport létrehozásához.]]></string>
     <string name="chat_is_stopped_you_should_transfer_database">A csevegés leállt. Ha már használtad ezt az adatbázist egy másik eszközön, a csevegés megkezdése előtt vissza kell állítanod.</string>
     <string name="recent_history_is_not_sent_to_new_members">Az előzmények nem kerülnek elküldésre új tagok részére.</string>
     <string name="retry_verb">Újrapróbálkozás</string>

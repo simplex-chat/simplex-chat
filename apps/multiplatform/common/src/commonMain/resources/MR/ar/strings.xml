@@ -533,7 +533,7 @@
     <string name="onboarding_notifications_mode_service">فوري</string>
     <string name="host_verb">المضيف</string>
     <string name="hide_notification">إخفاء</string>
-    <string name="turn_off_battery_optimization">من أجل استخدامها، <b>يُرجى السماح لSimpleX للتشغيل في الخلفية</b> في مربع الحوار التالي. وإلا، سيتم تعطيل الإشعارات.</string>
+    <string name="turn_off_battery_optimization"><![CDATA[من أجل استخدامها، <b>يُرجى السماح لSimpleX للتشغيل في الخلفية</b> في مربع الحوار التالي. وإلا، سيتم تعطيل الإشعارات.]]></string>
     <string name="in_reply_to">ردًا على</string>
     <string name="icon_descr_instant_notifications">إشعارات فورية</string>
     <string name="enter_one_ICE_server_per_line">خوادم ICE (واحد لكل سطر)</string>
@@ -1358,8 +1358,8 @@
     <string name="system_restricted_background_in_call_desc">قد يغلق التطبيق بعد دقيقة واحدة في الخلفية.</string>
     <string name="turn_off_battery_optimization_button">سماح</string>
     <string name="system_restricted_background_in_call_title">لا مكالمات في الخلفية</string>
-    <string name="system_restricted_background_warn">لتفعيل الإشعارات، يُرجى اختيار <b>استهلاك بطارية التطبيق</b> / <b>غير مقيد</b> في إعدادات التطبيق.</string>
-    <string name="system_restricted_background_in_call_warn">لإجراء مكالمات في الخلفية، يُرجى اختيار <b>استهلاك بطارية التطبيق</b> / <b>غير مقيد</b> في إعدادات التطبيق.</string>
+    <string name="system_restricted_background_warn"><![CDATA[لتفعيل الإشعارات، يُرجى اختيار <b>استهلاك بطارية التطبيق</b> / <b>غير مقيد</b> في إعدادات التطبيق.]]></string>
+    <string name="system_restricted_background_in_call_warn"><![CDATA[لإجراء مكالمات في الخلفية، يُرجى اختيار <b>استهلاك بطارية التطبيق</b> / <b>غير مقيد</b> في إعدادات التطبيق.]]></string>
     <string name="connect_use_new_incognito_profile">استخدم ملف تعريف متخفي جديد</string>
     <string name="you_invited_a_contact">أنت دعوت جهة اتصال</string>
     <string name="privacy_message_draft">مسودة الرسالة</string>
@@ -1443,14 +1443,14 @@
     <string name="expand_verb">توسيع</string>
     <string name="connect_plan_repeat_connection_request">هل تريد تكرار طلب الاتصال؟</string>
     <string name="encryption_renegotiation_error">خطأ في إعادة التفاوض بشأن التشفير</string>
-    <string name="connect_plan_you_are_already_connecting_to_vName">أنت متصل بالفعل بـ <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[أنت متصل بالفعل بـ <b>%1$s</b>.]]></string>
     <string name="error_alert_title">خطأ</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">لقد انضممت بالفعل إلى المجموعة عبر هذا الرابط.</string>
     <string name="group_members_2">%s و%s</string>
     <string name="new_mobile_device">جوّال جديد</string>
     <string name="only_one_device_can_work_at_the_same_time">يمكن لجهاز واحد فقط العمل في نفس الوقت</string>
     <string name="connect_plan_join_your_group">انضمام إلى مجموعتك؟</string>
-    <string name="connect_plan_you_are_already_joining_the_group_vName">أنت تنضم بالفعل إلى المجموعة <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_joining_the_group_vName"><![CDATA[أنت تنضم بالفعل إلى المجموعة <b>%1$s</b>.]]></string>
     <string name="v5_4_link_mobile_desktop">ربط تطبيقات الجوّال وسطح المكتب! 🔗</string>
     <string name="connect_plan_this_is_your_own_one_time_link">هذا هو الرابط الخاص بك لمرة واحدة!</string>
     <string name="connect_plan_group_already_exists">المجموعة موجودة بالفعل!</string>
@@ -1475,7 +1475,7 @@
     <string name="linked_mobiles">الجوّالات المرتبطة</string>
     <string name="contact_tap_to_connect">انقر للاتصال</string>
     <string name="this_device_name">اسم هذا الجهاز</string>
-    <string name="connect_plan_you_are_already_in_group_vName">أنت بالفعل في المجموعة <b>%1$s</b>.</string>
+    <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[أنت بالفعل في المجموعة <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">هذا هو عنوان SimpleX الخاص بك!</string>
     <string name="loading_remote_file_title">جارِ تحميل الملف</string>
     <string name="found_desktop">وجدت سطح المكتب</string>
@@ -1501,7 +1501,7 @@
     <string name="non_content_uri_alert_text">لقد شاركت مسار ملف غير صالح. أبلغ عن المشكلة لمطوري التطبيق.</string>
     <string name="invalid_name">اسم غير صالح!</string>
     <string name="paste_desktop_address">لصق عنوان سطح المكتب</string>
-    <string name="connect_plan_this_is_your_link_for_group_vName">هذا هو الرابط الخاص بك للمجموعة <b>%1$s</b>!</string>
+    <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[هذا هو الرابط الخاص بك للمجموعة <b>%1$s</b>!]]></string>
     <string name="verify_code_with_desktop">تحقق من الرمز مع سطح المكتب</string>
     <string name="scan_qr_code_from_desktop">مسح رمز QR من سطح المكتب</string>
     <string name="unblock_member_confirmation">إلغاء الحظر</string>
@@ -1532,7 +1532,7 @@
     <string name="retry_verb">حاول مجددًا</string>
     <string name="camera_not_available">الكاميرا غير متوفرة</string>
     <string name="enable_sending_recent_history">أرسل ما يصل إلى 100 رسالة أخيرة للأعضاء الجدد.</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>إضافة جهة اتصال</b>: لإنشاء رابط دعوة جديد، أو الاتصال عبر رابط تلقيته.</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>إضافة جهة اتصال</b>: لإنشاء رابط دعوة جديد، أو الاتصال عبر رابط تلقيته.]]></string>
     <string name="disable_sending_recent_history">لا ترسل التاريخ للأعضاء الجدد.</string>
     <string name="or_show_this_qr_code">أو أظهر هذا الرمز</string>
     <string name="recent_history_is_sent_to_new_members">يتم إرسال ما يصل إلى 100 رسالة أخيرة إلى الأعضاء الجدد.</string>
@@ -1542,7 +1542,7 @@
     <string name="you_can_view_invitation_link_again">يمكنك عرض رابط الدعوة مرة أخرى في تفاصيل الاتصال.</string>
     <string name="keep_unused_invitation_question">أبقِ الدعوة غير المستخدمة؟</string>
     <string name="share_this_1_time_link">شارك رابط الدعوة هذا لمرة واحدة</string>
-    <string name="create_group_button_to_create_new_group"><b>أنشِئ مجموعة</b>: لإنشاء مجموعة جديدة.</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>أنشِئ مجموعة</b>: لإنشاء مجموعة جديدة.]]></string>
     <string name="recent_history">التاريخ المرئي</string>
     <string name="la_app_passcode">رمز مرور التطبيق</string>
     <string name="new_chat">دردشة جديدة</string>
