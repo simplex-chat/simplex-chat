@@ -5,7 +5,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import chat.simplex.common.model.ChatModel.updatingChatsMutex
-import chat.simplex.common.model.ChatModel.updatingCurrentUserMutex
+import chat.simplex.common.model.ChatModel.changingActiveUserMutex
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -338,7 +338,7 @@ object ChatController {
 
   private suspend fun currentUserId(funcName: String): Long {
     val wasUserId = chatModel.currentUser.value?.userId
-    return updatingCurrentUserMutex.withLock {
+    return changingActiveUserMutex.withLock {
       val userId = chatModel.currentUser.value?.userId
       if (userId == null) {
         val error = "$funcName: no current user"
@@ -416,7 +416,7 @@ object ChatController {
   }
 
   suspend fun changeActiveUser_(rhId: Long?, toUserId: Long, viewPwd: String?) {
-    val currentUser = updatingCurrentUserMutex.withLock {
+    val currentUser = changingActiveUserMutex.withLock {
       apiSetActiveUser(rhId, toUserId, viewPwd).also {
         chatModel.currentUser.value = it
       }
