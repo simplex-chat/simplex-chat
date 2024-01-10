@@ -1569,4 +1569,24 @@
     <string name="agent_critical_error_title">严重错误</string>
     <string name="restart_chat_button">重启聊天</string>
     <string name="show_internal_errors">显示内部错误</string>
+    <string name="remote_host_disconnected_from">和移动设备<b>%s</b>的连接已断开，原因是：%s</string>
+    <string name="remote_ctrl_disconnected_with_reason">断连原因：%s</string>
+    <string name="remote_ctrl_error_timeout">连接到桌面时超时</string>
+    <string name="remote_ctrl_error_busy">桌面繁忙</string>
+    <string name="remote_ctrl_error_bad_invitation">桌面邀请码错误</string>
+    <string name="remote_ctrl_error_inactive">桌面不活跃</string>
+    <string name="remote_ctrl_error_bad_state">到桌面的连接处于糟糕状态</string>
+    <string name="remote_ctrl_error_bad_version">已安装的桌面版本不受支持。请确保两台设备所安装版本形同</string>
+    <string name="remote_ctrl_error_disconnected">桌面连接已断开</string>
+    <string name="failed_to_create_user_invalid_title">无效的显示名！</string>
+    <string name="remote_ctrl_was_disconnected_title">连接停止</string>
+    <string name="remote_host_error_bad_version">移动设备 <b>%s</b> 的版本不受支持。请确保两台设备安装的版本相同</string>
+    <string name="remote_host_error_busy">移动设备 <b>%s</b> 繁忙</string>
+    <string name="remote_host_error_inactive">移动设备 <b>%s</b>不活跃</string>
+    <string name="remote_host_error_missing">移动设备 <b>%s</b> 缺失</string>
+    <string name="remote_host_error_disconnected">未与移动设备<b>%s</b>建立连接</string>
+    <string name="remote_host_was_disconnected_title">连接停止</string>
+    <string name="remote_host_error_bad_state">到移动设备 <b>%s</b>的连接处于糟糕状态</string>
+    <string name="remote_host_error_timeout">连接到移动设备<b>%s</b>时超时</string>
+    <string name="failed_to_create_user_invalid_desc">显示名无效。请另选一个名称。</string>
 </resources>
