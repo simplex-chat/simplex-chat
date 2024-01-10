@@ -93,7 +93,7 @@ abstract class NtfManager {
     }
   }
 
-  abstract fun notifyCallInvitation(invitation: RcvCallInvitation)
+  abstract fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean
   abstract fun hasNotificationsForChat(chatId: String): Boolean
   abstract fun cancelNotificationsForChat(chatId: String)
   abstract fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String? = null, actions: List<Pair<NotificationAction, () -> Unit>> = emptyList())

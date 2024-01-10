@@ -484,6 +484,7 @@ func deleteChatAsync() async throws {
     try await apiDeleteStorage()
     _ = kcDatabasePassword.remove()
     storeDBPassphraseGroupDefault.set(true)
+    deleteAppDatabaseAndFiles()
 }
 
 struct DatabaseView_Previews: PreviewProvider {
