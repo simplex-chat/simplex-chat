@@ -336,21 +336,14 @@ object ChatController {
   var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
     private set
 
-  private suspend fun currentUserId(funcName: String): Long {
-    val wasUserId = chatModel.currentUser.value?.userId
-    return changingActiveUserMutex.withLock {
-      val userId = chatModel.currentUser.value?.userId
-      if (userId == null) {
-        val error = "$funcName: no current user"
-        Log.e(TAG, error)
-        throw Exception(error)
-      } else if (userId != wasUserId) {
-        val error = "$funcName: user was changed in parallel"
-        Log.e(TAG, error)
-        throw Exception(error)
-      }
-      userId
+  private suspend fun currentUserId(funcName: String): Long = changingActiveUserMutex.withLock {
+    val userId = chatModel.currentUser.value?.userId
+    if (userId == null) {
+      val error = "$funcName: no current user"
+      Log.e(TAG, error)
+      throw Exception(error)
     }
+    userId
   }
 
   suspend fun startChat(user: User) {
@@ -539,8 +532,6 @@ object ChatController {
   }
 
   suspend fun apiSetActiveUser(rh: Long?, userId: Long, viewPwd: String?): User {
-    throw Exception("failed to set the user as active ")
-
     val r = sendCmd(rh, CC.ApiSetActiveUser(userId, viewPwd))
     if (r is CR.ActiveUser) return r.user.updateRemoteHostId(rh)
     Log.d(TAG, "apiSetActiveUser: ${r.responseType} ${r.details}")
