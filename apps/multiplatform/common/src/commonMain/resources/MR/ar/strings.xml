@@ -1467,7 +1467,7 @@
     <string name="v5_4_incognito_groups">مجموعات التخفي</string>
     <string name="group_members_n">%s و%s و%d عضو</string>
     <string name="this_device">هذا الجهاز</string>
-    <string name="moderated_items_description">%d من الرسائل يُشرف عليها بواسطة %s</string>
+    <string name="moderated_items_description">%1d من الرسائل يُشرف عليها بواسطة %s2s</string>
     <string name="unblock_member_button">إلغاء حظر العضو</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[جوّال <b>%s</b> قُطع اتصاله]]></string>
     <string name="waiting_for_desktop">في انتظار سطح المكتب…</string>

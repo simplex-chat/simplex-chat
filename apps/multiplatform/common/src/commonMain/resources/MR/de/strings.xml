@@ -1503,7 +1503,7 @@
     <string name="connect_plan_connect_via_link">Über einen Link verbinden?</string>
     <string name="connect_plan_already_joining_the_group">Sie sind bereits Mitglied der Gruppe!</string>
     <string name="group_members_n">%s, %s und %d Mitglieder</string>
-    <string name="moderated_items_description">%d Nachrichten von %s moderiert</string>
+    <string name="moderated_items_description">%1d Nachrichten von %2s moderiert</string>
     <string name="unblock_member_button">Mitglied freigeben</string>
     <string name="connect_plan_connect_to_yourself">Mit Ihnen selbst verbinden?</string>
     <string name="contact_tap_to_connect">Zum Verbinden tippen</string>

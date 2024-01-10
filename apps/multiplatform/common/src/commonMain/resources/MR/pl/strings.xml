@@ -1409,7 +1409,7 @@
     <string name="rcv_group_and_other_events">i %d innych wydarzeń</string>
     <string name="connect_plan_connect_via_link">Połączyć przez link?</string>
     <string name="connect_plan_already_joining_the_group">Już dołączono do grupy!</string>
-    <string name="moderated_items_description">%d wiadomości zmoderowanych przez %s</string>
+    <string name="moderated_items_description">%1d wiadomości zmoderowanych przez %2s</string>
     <string name="connect_plan_connect_to_yourself">Połączyć się ze sobą?</string>
     <string name="correct_name_to">Poprawić nazwę do %s?</string>
     <string name="delete_messages__question">Usunąć %d wiadomości?</string>
@@ -1534,7 +1534,7 @@
     <string name="retry_verb">Ponów</string>
     <string name="camera_not_available">Kamera nie dostępna</string>
     <string name="enable_sending_recent_history">Wysyłaj do 100 ostatnich wiadomości do nowych członków.</string>
-    <string name="add_contact_button_to_create_link_or_connect_via_link"><b>Dodaj kontakt</b>: aby utworzyć nowy link z zaproszeniem lub połączyć się za pomocą otrzymanego linku.</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Dodaj kontakt</b>: aby utworzyć nowy link z zaproszeniem lub połączyć się za pomocą otrzymanego linku.]]></string>
     <string name="disable_sending_recent_history">Nie wysyłaj historii do nowych członków.</string>
     <string name="or_show_this_qr_code">Lub pokaż ten kod</string>
     <string name="recent_history_is_sent_to_new_members">Do nowych członków wysyłanych jest do 100 ostatnich wiadomości</string>
@@ -1544,7 +1544,7 @@
     <string name="you_can_view_invitation_link_again">Możesz zobaczyć link zaproszenia ponownie w szczegółach połączenia.</string>
     <string name="keep_unused_invitation_question">Zachować nieużyte zaproszenie?</string>
     <string name="share_this_1_time_link">Udostępnij ten jednorazowy link</string>
-    <string name="create_group_button_to_create_new_group"><b>Utwórz grupę</b>: aby utworzyć nową grupę.</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>Utwórz grupę</b>: aby utworzyć nową grupę.]]></string>
     <string name="recent_history">Widoczna historia</string>
     <string name="la_app_passcode">Pin aplikacji</string>
     <string name="new_chat">Nowy czat</string>

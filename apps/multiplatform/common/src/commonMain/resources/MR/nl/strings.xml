@@ -1416,7 +1416,7 @@
     <string name="connect_plan_connect_via_link">Verbinden via link?</string>
     <string name="connect_plan_already_joining_the_group">Al lid van de groep!</string>
     <string name="group_members_n">%s, %s en %d leden</string>
-    <string name="moderated_items_description">%d berichten gemodereerd door %s</string>
+    <string name="moderated_items_description">%1d berichten gemodereerd door %2s</string>
     <string name="connect_plan_connect_to_yourself">Verbinding maken met jezelf?</string>
     <string name="contact_tap_to_connect">Tik om verbinding te maken</string>
     <string name="correct_name_to">Juiste naam voor %s?</string>

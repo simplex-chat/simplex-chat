@@ -1422,7 +1422,7 @@
     <string name="connect_plan_connect_via_link">Se connecter via un lien ?</string>
     <string name="connect_plan_already_joining_the_group">Groupe déjà rejoint !</string>
     <string name="group_members_n">%s, %s et %d membres</string>
-    <string name="moderated_items_description">%d messages modérés par %s</string>
+    <string name="moderated_items_description">%1d messages modérés par %2s</string>
     <string name="unblock_member_button">Débloquer ce membre</string>
     <string name="connect_plan_connect_to_yourself">Se connecter à soi-même ?</string>
     <string name="contact_tap_to_connect">Tapez pour vous connecter</string>

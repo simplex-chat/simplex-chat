@@ -1425,7 +1425,7 @@
     <string name="rcv_group_and_other_events">y %d evento(s) más</string>
     <string name="connect_plan_connect_via_link">¿Conectar vía enlace?</string>
     <string name="connect_plan_already_joining_the_group">¡En proceso de unirte al grupo!</string>
-    <string name="moderated_items_description">%d mensaje(s) moderado(s) por %s</string>
+    <string name="moderated_items_description">%1d mensaje(s) moderado(s) por %2s</string>
     <string name="connect_plan_connect_to_yourself">¿Conectarte a tí mismo?</string>
     <string name="linked_mobiles">Móviles enlazados</string>
     <string name="desktop_device">Ordenador</string>
