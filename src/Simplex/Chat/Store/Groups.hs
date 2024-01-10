@@ -460,24 +460,23 @@ createGroupInvitedViaLink
               "INSERT INTO groups (group_profile_id, local_display_name, host_conn_custom_user_profile_id, user_id, enable_ntfs, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?,?)"
               (profileId, localDisplayName, customUserProfileId, userId, True, currentTs, currentTs, currentTs)
             insertedRowId db
-      insertHost_ currentTs groupId = ExceptT $ do
+      insertHost_ currentTs groupId = do
         let fromMemberProfile = profileFromName fromMemberName
-        withLocalDisplayName db userId fromMemberName $ \localDisplayName -> runExceptT $ do
-          (_, profileId) <- createNewMemberProfile_ db user fromMemberProfile currentTs
-          let MemberIdRole {memberId, memberRole} = fromMember
-          liftIO $ do
-            DB.execute
-              db
-              [sql|
-                INSERT INTO group_members
-                  ( group_id, member_id, member_role, member_category, member_status, invited_by,
-                    user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-              |]
-              ( (groupId, memberId, memberRole, GCHostMember, GSMemAccepted, fromInvitedBy userContactId IBUnknown)
-                  :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
-              )
-            insertedRowId db
+        (localDisplayName, profileId) <- createNewMemberProfile_ db user fromMemberProfile currentTs
+        let MemberIdRole {memberId, memberRole} = fromMember
+        liftIO $ do
+          DB.execute
+            db
+            [sql|
+              INSERT INTO group_members
+                ( group_id, member_id, member_role, member_category, member_status, invited_by,
+                  user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+            |]
+            ( (groupId, memberId, memberRole, GCHostMember, GSMemAccepted, fromInvitedBy userContactId IBUnknown)
+                :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
+            )
+          insertedRowId db
 
 setViaGroupLinkHash :: DB.Connection -> GroupId -> Int64 -> IO ()
 setViaGroupLinkHash db groupId connId =
