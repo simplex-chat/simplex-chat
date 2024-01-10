@@ -132,6 +132,8 @@ chatGroupTests = do
     it "deleted message is not included" testGroupHistoryDeletedMessage
     it "disappearing message is sent as disappearing" testGroupHistoryDisappearingMessage
     it "welcome message (group description) is sent after history" testGroupHistoryWelcomeMessage
+  describe "membership profile updates" $ do
+    it "send profile update on next message to group" testMembershipProfileUpdateNextGroupMessage
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -5179,3 +5181,100 @@ testGroupHistoryWelcomeMessage =
       [alice, cath] *<# "#team bob> 2"
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
+
+testMembershipProfileUpdateNextGroupMessage :: HasCallStack => FilePath -> IO ()
+testMembershipProfileUpdateNextGroupMessage =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      -- create group 1
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team"
+      gLinkTeam <- getGroupLink alice "team" GRMember True
+      bob ##> ("/c " <> gLinkTeam)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+        ]
+
+      -- create group 2
+      alice ##> "/g club"
+      alice <## "group #club is created"
+      alice <## "to add members use /a club <name> or /create link #club"
+      alice ##> "/create link #club"
+      gLinkClub <- getGroupLink alice "club" GRMember True
+      cath ##> ("/c " <> gLinkClub)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #club..."
+      concurrentlyN_
+        [ alice <## "#club: cath joined the group",
+          do
+            cath <## "#club: joining the group..."
+            cath <## "#club: you joined the group"
+        ]
+
+      -- alice has no contacts
+      alice ##> "/contacts"
+
+      threadDelay 1000000
+
+      alice #> "#team hello team"
+      bob <# "#team alice> hello team"
+
+      alice #> "#club hello club"
+      cath <# "#club alice> hello club"
+
+      threadDelay 1000000
+
+      alice ##> "/p alisa"
+      alice <## "user profile is changed to alisa (your 0 contacts are notified)"
+
+      -- update profile in group 1
+
+      bob ##> "/ms team"
+      bob
+        <### [ "bob (Bob): member, you, connected",
+               "alice (Alice): owner, host, connected"
+             ]
+
+      alice #> "#team team 1"
+      bob <# "#team alisa> team 1"
+      cath <// 50000
+
+      bob ##> "/ms team"
+      bob
+        <### [ "bob (Bob): member, you, connected",
+               "alisa: owner, host, connected"
+             ]
+
+      alice #> "#team team 2"
+      bob <# "#team alisa> team 2"
+
+      -- bob #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "hello team"), (0, "updated profile"), (0, "team 1"), (0, "team 2")])
+
+      -- update profile in group 2
+
+      cath ##> "/ms club"
+      cath
+        <### [ "cath (Catherine): member, you, connected",
+               "alice (Alice): owner, host, connected"
+             ]
+
+      alice #> "#club club 1"
+      cath <# "#club alisa> club 1"
+
+      cath ##> "/ms club"
+      cath
+        <### [ "cath (Catherine): member, you, connected",
+               "alisa: owner, host, connected"
+             ]
+
+      alice #> "#club club 2"
+      cath <# "#club alisa> club 2"
+
+      -- cath #$> ("/_get chat #1 count=100", chat, groupFeatures <> [(0, "connected"), (0, "hello club"), (0, "updated profile"), (0, "club 1"), (0, "club 2")])

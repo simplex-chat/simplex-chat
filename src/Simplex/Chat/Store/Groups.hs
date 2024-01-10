@@ -110,6 +110,7 @@ module Simplex.Chat.Store.Groups
     updateMemberProfile,
     getXGrpLinkMemReceived,
     setXGrpLinkMemReceived,
+    updateMembershipProfileSentTs,
   )
 where
 
@@ -2017,3 +2018,10 @@ setXGrpLinkMemReceived db mId xGrpLinkMemReceived = do
     db
     "UPDATE group_members SET xgrplinkmem_received = ?, updated_at = ? WHERE group_member_id = ?"
     (xGrpLinkMemReceived, currentTs, mId)
+
+updateMembershipProfileSentTs :: DB.Connection -> User -> GroupInfo -> UTCTime -> IO ()
+updateMembershipProfileSentTs db User {userId} GroupInfo {groupId} sentTs =
+  DB.execute
+    db
+    "UPDATE groups SET membership_profile_sent_ts = ? WHERE user_id = ? AND group_id = ?"
+    (sentTs, userId, groupId)

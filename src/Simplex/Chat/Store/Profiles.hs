@@ -246,29 +246,31 @@ updateUserGroupReceipts db User {userId} UserMsgReceiptSettings {enable, clearOv
 
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO User
 updateUserProfile db user p'
-  | displayName == newName = do
-      liftIO $ updateContactProfile_ db userId profileId p'
-      when nameOrImageChanged . liftIO $ do
-        currentTs <- getCurrentTime
-        updateUserProfileTs_ currentTs
-      pure user {profile, fullPreferences}
+  | displayName == newName = liftIO $ do
+      updateContactProfile_ db userId profileId p'
+      currentTs <- getCurrentTime
+      membershipsProfileUpdateTs' <- updateMembershipsProfileTs_ currentTs
+      pure user {profile, fullPreferences, membershipsProfileUpdateTs = membershipsProfileUpdateTs'}
   | otherwise =
       checkConstraint SEDuplicateName . liftIO $ do
         currentTs <- getCurrentTime
         DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
-        when nameOrImageChanged $ updateUserProfileTs_ currentTs
+        membershipsProfileUpdateTs' <- updateMembershipsProfileTs_ currentTs
         DB.execute
           db
           "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
           (newName, newName, userId, currentTs, currentTs)
         updateContactProfile_' db userId profileId p' currentTs
         updateContact_ db userId userContactId localDisplayName newName currentTs
-        pure user {localDisplayName = newName, profile, fullPreferences}
+        pure user {localDisplayName = newName, profile, fullPreferences, membershipsProfileUpdateTs = membershipsProfileUpdateTs'}
   where
-    updateUserProfileTs_ currentTs =
-      DB.execute db "UPDATE users SET memberships_profile_update_ts = ? WHERE user_id = ?" (currentTs, userId)
+    updateMembershipsProfileTs_ currentTs
+      | nameOrImageChanged = do
+        DB.execute db "UPDATE users SET memberships_profile_update_ts = ? WHERE user_id = ?" (currentTs, userId)
+        pure $ Just currentTs
+      | otherwise = pure membershipsProfileUpdateTs
     nameOrImageChanged = newName /= displayName || newFullName /= fullName || newImage /= image
-    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, image, localAlias}} = user
+    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, image, localAlias}, membershipsProfileUpdateTs} = user
     Profile {displayName = newName, fullName = newFullName, image = newImage, preferences} = p'
     profile = toLocalProfile profileId p' localAlias
     fullPreferences = mergePreferences Nothing preferences

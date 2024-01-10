@@ -483,6 +483,10 @@ profilesMatch
   LocalProfile {displayName = n2, fullName = fn2, image = i2} =
     n1 == n2 && fn1 == fn2 && i1 == i2
 
+keepMembershipProfileFields :: Profile -> Profile
+keepMembershipProfileFields Profile {displayName, fullName, image} =
+  Profile {displayName, fullName, image, contactLink = Nothing, preferences = Nothing}
+
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
 type LocalAlias = Text
