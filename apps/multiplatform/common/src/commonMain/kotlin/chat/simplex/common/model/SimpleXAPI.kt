@@ -654,6 +654,15 @@ object ChatController {
     return emptyList()
   }
 
+  // It's useful for situations when active user can be changed concurrently and there is no need to show alert in case of failure
+  suspend fun apiGetChatsWithoutAlert(rh: Long?): List<Chat>? {
+    val userId = kotlin.runCatching { currentUserId("apiGetChats") }.getOrElse { return null }
+    val r = sendCmd(rh, CC.ApiGetChats(userId))
+    if (r is CR.ApiChats) return if (rh == null) r.chats else r.chats.map { it.copy(remoteHostId = rh) }
+    Log.e(TAG, "failed getting the list of chats: ${r.responseType} ${r.details}")
+    return null
+  }
+
   suspend fun apiGetChat(rh: Long?, type: ChatType, id: Long, pagination: ChatPagination = ChatPagination.Last(ChatPagination.INITIAL_COUNT), search: String = ""): Chat? {
     val r = sendCmd(rh, CC.ApiGetChat(type, id, pagination, search))
     if (r is CR.ApiChat) return if (rh == null) r.chat else r.chat.copy(remoteHostId = rh)

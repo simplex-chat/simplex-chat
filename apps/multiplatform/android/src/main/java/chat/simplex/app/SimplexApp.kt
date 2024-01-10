@@ -80,7 +80,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
             updatingChatsMutex.withLock {
               kotlin.runCatching {
                 val currentUserId = chatModel.currentUser.value?.userId
-                val chats = ArrayList(chatController.apiGetChats(chatModel.remoteHostId()))
+                val chats = ArrayList(chatController.apiGetChatsWithoutAlert(chatModel.remoteHostId()) ?: return@runCatching)
                 /** Active user can be changed in background while [ChatController.apiGetChats] is executing */
                 if (chatModel.currentUser.value?.userId == currentUserId) {
                   val currentChatId = chatModel.chatId.value
