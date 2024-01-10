@@ -55,9 +55,6 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
       false
     }
   }
-  KeyChangeEffect(disabled) {
-    inProgress.value = chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)
-  }
 
   when (chat.chatInfo) {
     is ChatInfo.Direct -> {
@@ -65,7 +62,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
       ChatListNavLinkLayout(
         chatLinkPreview = {
           tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
-            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, disabled, linkMode, inProgress = inProgress.value, progressByTimeout = progressByTimeout)
+            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, disabled, linkMode, inProgress = false, progressByTimeout = false)
           }
         },
         click = { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) },

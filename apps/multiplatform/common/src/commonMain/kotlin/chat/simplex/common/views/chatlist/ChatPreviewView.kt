@@ -25,6 +25,7 @@ import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.GroupInfo
+import chat.simplex.common.platform.chatModel
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 
@@ -127,6 +128,7 @@ fun ChatPreviewView(
 
   @Composable
   fun chatPreviewTitle() {
+    val deleting by remember(disabled, chat.id) { mutableStateOf(chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)) }
     when (cInfo) {
       is ChatInfo.Direct ->
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -134,7 +136,7 @@ fun ChatPreviewView(
             VerifiedIcon()
           }
           chatPreviewTitleText(
-            if (inProgress)
+            if (deleting)
               MaterialTheme.colors.secondary
             else
               Color.Unspecified
@@ -143,14 +145,14 @@ fun ChatPreviewView(
       is ChatInfo.Group ->
         when (cInfo.groupInfo.membership.memberStatus) {
           GroupMemberStatus.MemInvited -> chatPreviewTitleText(
-            if (inProgress)
+            if (inProgress || deleting)
               MaterialTheme.colors.secondary
             else
               if (chat.chatInfo.incognito) Indigo else MaterialTheme.colors.primary
           )
           GroupMemberStatus.MemAccepted -> chatPreviewTitleText(MaterialTheme.colors.secondary)
           else -> chatPreviewTitleText(
-            if (inProgress)
+            if (deleting)
               MaterialTheme.colors.secondary
             else
               Color.Unspecified
@@ -230,9 +232,7 @@ fun ChatPreviewView(
   @Composable
   fun chatStatusImage() {
     if (cInfo is ChatInfo.Direct) {
-      if (progressByTimeout) {
-        progressView()
-      } else if (cInfo.contact.active && cInfo.contact.activeConn != null) {
+      if (cInfo.contact.active && cInfo.contact.activeConn != null) {
         val descr = contactNetworkStatus?.statusString
         when (contactNetworkStatus) {
           is NetworkStatus.Connected ->
