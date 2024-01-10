@@ -60,6 +60,7 @@ final class ChatModel: ObservableObject {
     @Published var laRequest: LocalAuthRequest?
     // list of chat "previews"
     @Published var chats: [Chat] = []
+    @Published var deletedChats: Set<String> = []
     // map of connections network statuses, key is agent connection id
     @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
     // current chat
