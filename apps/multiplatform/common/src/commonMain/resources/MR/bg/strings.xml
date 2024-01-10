@@ -1442,7 +1442,7 @@
     <string name="connect_plan_already_joining_the_group">Вече се присъединихте към групата!</string>
     <string name="group_members_n">%s, %s и %d членове</string>
     <string name="this_device">Това устройство</string>
-    <string name="moderated_items_description">%1d съобщения, модерирани от %2s</string>
+    <string name="moderated_items_description">%1$d съобщения, модерирани от %2$s</string>
     <string name="unblock_member_button">Отблокирай член</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[Връзкарта с <b>%s</b> мобилно устройство бе прекъсната]]></string>
     <string name="waiting_for_desktop">Изчакване на настолно устройство…</string>

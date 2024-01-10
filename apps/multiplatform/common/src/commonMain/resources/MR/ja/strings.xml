@@ -1432,7 +1432,7 @@
     <string name="encryption_renegotiation_error">暗号化再接続エラー</string>
     <string name="error_alert_title">エラー</string>
     <string name="marked_deleted_items_description">%d件のメッセージを削除</string>
-    <string name="moderated_items_description">%2sにより%1d件のメッセージを検閲</string>
+    <string name="moderated_items_description">%2$sにより%1$d件のメッセージを検閲</string>
     <string name="disable_sending_recent_history">新規メンバーに履歴を送信しません。</string>
     <string name="error_showing_content">コンテンツ表示エラー</string>
     <string name="alert_text_encryption_renegotiation_failed">暗号化再接続に失敗しました。</string>

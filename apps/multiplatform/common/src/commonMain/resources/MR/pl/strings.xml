@@ -1409,7 +1409,7 @@
     <string name="rcv_group_and_other_events">i %d innych wydarzeń</string>
     <string name="connect_plan_connect_via_link">Połączyć przez link?</string>
     <string name="connect_plan_already_joining_the_group">Już dołączono do grupy!</string>
-    <string name="moderated_items_description">%1d wiadomości zmoderowanych przez %2s</string>
+    <string name="moderated_items_description">%1$d wiadomości zmoderowanych przez %2$s</string>
     <string name="connect_plan_connect_to_yourself">Połączyć się ze sobą?</string>
     <string name="correct_name_to">Poprawić nazwę do %s?</string>
     <string name="delete_messages__question">Usunąć %d wiadomości?</string>

@@ -1362,7 +1362,7 @@
     <string name="share_text_sent_at">%s de gönderildi</string>
     <string name="enable_sending_recent_history">Yeni katılımcılara 100e kadar son mesajlar gönder</string>
     <string name="moderate_verb">Yönet</string>
-    <string name="moderated_items_description">%1d mesajları %2s tarafından yönetildi</string>
+    <string name="moderated_items_description">%1$d mesajları %2$s tarafından yönetildi</string>
     <string name="remove_passphrase_from_settings">Ayarlardaki parola silinsin mi?</string>
     <string name="receipts_contacts_title_enable">Alıcılar etkinleştirilsin mi?</string>
     <string name="tap_to_start_new_chat">Yeni bir sohbet başlatmak için tıkla</string>

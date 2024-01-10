@@ -221,7 +221,7 @@
     <string name="non_content_uri_alert_title">Μη έγκυρη διαδρομή αρχείου</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Είστε συνδεδεμένοι στον διακομιστή που χρησιμοποιείται για τη λήψη μηνυμάτων από αυτήν την επαφή.</string>
     <string name="marked_deleted_items_description">%d μύνημα επισημάνθηκε ως διαγραμμένο</string>
-    <string name="moderated_items_description">%1d μυνήματα συντονίζονται από %2s</string>
+    <string name="moderated_items_description">%1$d μυνήματα συντονίζονται από %2$s</string>
     <string name="marked_deleted_description">επισημάνθηκε ως διαγραμμένο</string>
     <string name="blocked_items_description">%d μυνήματα φραγμένα</string>
     <string name="deleted_description">διαγράφτηκε</string>

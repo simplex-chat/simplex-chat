@@ -1515,7 +1515,7 @@
     <string name="connect_plan_connect_via_link">Соединиться через ссылку?</string>
     <string name="v5_4_incognito_groups">Инкогнито группы</string>
     <string name="connect_plan_already_joining_the_group">Вступление в группу уже начато!</string>
-    <string name="moderated_items_description">%1d сообщений модерировано членом %2s</string>
+    <string name="moderated_items_description">%1$d сообщений модерировано членом %2$s</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[Мобильный <b>%s</b> был отключен]]></string>
     <string name="v5_4_better_groups_descr">Быстрое вступление и надежная доставка сообщений.</string>
     <string name="connect_plan_connect_to_yourself">Соединиться с самим собой?</string>

@@ -1468,7 +1468,7 @@
     <string name="v5_4_incognito_groups">Inkognito skupiny</string>
     <string name="connect_plan_already_joining_the_group">Už se ke skupině připojujete!</string>
     <string name="group_members_n">%s, %s a %d členů</string>
-    <string name="moderated_items_description">%1d zpráv moderoval %2s</string>
+    <string name="moderated_items_description">%1$d zpráv moderoval %2$s</string>
     <string name="unblock_member_button">Odblokovat člena</string>
     <string name="remote_host_was_disconnected_toast">Telefon <b>%s</b> byl odpojen</string>
     <string name="waiting_for_desktop">Čekání na PC…</string>

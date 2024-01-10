@@ -33,7 +33,7 @@
   <string name="marked_deleted_description">marked deleted</string>
   <string name="marked_deleted_items_description">%d messages marked deleted</string>
   <string name="moderated_item_description">moderated by %s</string>
-  <string name="moderated_items_description">%1d messages moderated by %s</string>
+  <string name="moderated_items_description">%1$d messages moderated by %2$s</string>
   <string name="blocked_item_description">blocked</string>
   <string name="blocked_items_description">%d messages blocked</string>
   <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
