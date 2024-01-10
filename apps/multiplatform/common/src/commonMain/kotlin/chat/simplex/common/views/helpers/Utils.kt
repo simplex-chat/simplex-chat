@@ -21,15 +21,46 @@ import java.net.URI
 import java.nio.file.Files
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.Executors
 import kotlin.math.*
+
+private val singleThreadDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
 fun withApi(action: suspend CoroutineScope.() -> Unit): Job = withScope(GlobalScope, action)
 
 fun withScope(scope: CoroutineScope, action: suspend CoroutineScope.() -> Unit): Job =
-  scope.launch { withContext(Dispatchers.Main, action) }
+  Exception().let {
+    scope.launch { withContext(Dispatchers.Main, block = { wrapWithLogging(action, it) }) }
+  }
 
 fun withBGApi(action: suspend CoroutineScope.() -> Unit): Job =
-  CoroutineScope(Dispatchers.Default).launch(block = action)
+  Exception().let {
+    CoroutineScope(singleThreadDispatcher).launch(block = { wrapWithLogging(action, it) })
+  }
+
+private suspend fun wrapWithLogging(action: suspend CoroutineScope.() -> Unit, exception: java.lang.Exception) {
+  coroutineScope {
+    val start = System.currentTimeMillis()
+    val job = launch {
+      delay(60_000)
+      Log.e(TAG, "Possible deadlock of the thread, not finished after 60s:\n${exception.stackTraceToString()}")
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.possible_deadlock_title),
+        text = generalGetString(MR.strings.possible_deadlock_desc).format(60, exception.stackTraceToString()),
+      )
+    }
+    action()
+    job.cancel()
+    val end = System.currentTimeMillis()
+    if (end - start > 10_000) {
+      Log.e(TAG, "Possible problem with execution of the thread, took ${(end - start) / 1000}s:\n${exception.stackTraceToString()}")
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.possible_slow_function_title),
+        text = generalGetString(MR.strings.possible_slow_function_desc).format((end - start) / 1000, exception.stackTraceToString()),
+      )
+    }
+  }
+}
 
 enum class KeyboardState {
   Opened, Closed
