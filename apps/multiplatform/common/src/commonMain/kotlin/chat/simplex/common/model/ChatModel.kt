@@ -113,6 +113,7 @@ object ChatModel {
   val clipboardHasText = mutableStateOf(false)
 
   var updatingChatsMutex: Mutex = Mutex()
+  var updatingCurrentUserMutex: Mutex = Mutex()
 
   val desktopNoUserNoRemote: Boolean @Composable get() = appPlatform.isDesktop && currentUser.value == null && currentRemoteHost.value == null
   fun desktopNoUserNoRemote(): Boolean = appPlatform.isDesktop && currentUser.value == null && currentRemoteHost.value == null
