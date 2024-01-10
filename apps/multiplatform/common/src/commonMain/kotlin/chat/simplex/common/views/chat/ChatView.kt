@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
+import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
 import chat.simplex.common.views.chat.group.*
@@ -317,11 +318,14 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
           },
           acceptCall = { contact ->
             hideKeyboard(view)
-            val invitation = chatModel.callInvitations.remove(contact.id)
-            if (invitation == null) {
-              AlertManager.shared.showAlertMsg(generalGetString(MR.strings.call_already_ended))
-            } else {
-              chatModel.callManager.acceptIncomingCall(invitation = invitation)
+            withApi {
+              val invitation = chatModel.callInvitations.remove(contact.id)
+                ?: controller.apiGetCallInvitations(chatModel.remoteHostId()).firstOrNull { it.contact.id == contact.id }
+              if (invitation == null) {
+                AlertManager.shared.showAlertMsg(generalGetString(MR.strings.call_already_ended))
+              } else {
+                chatModel.callManager.acceptIncomingCall(invitation = invitation)
+              }
             }
           },
           acceptFeature = { contact, feature, param ->
