@@ -9,7 +9,6 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.platform.onRightClick
@@ -33,16 +32,16 @@ actual fun ChatListNavLinkLayout(
   click: () -> Unit,
   dropdownMenuItems: (@Composable () -> Unit)?,
   showMenu: MutableState<Boolean>,
-  stopped: Boolean,
+  disabled: Boolean,
   selectedChat: State<Boolean>,
   nextChatSelected: State<Boolean>,
 ) {
   var modifier = Modifier.fillMaxWidth()
-  if (!stopped) modifier = modifier
+  if (!disabled) modifier = modifier
     .combinedClickable(onClick = click, onLongClick = { showMenu.value = true })
     .onRightClick { showMenu.value = true }
   CompositionLocalProvider(
-    LocalIndication provides if (selectedChat.value && !stopped) NoIndication else LocalIndication.current
+    LocalIndication provides if (selectedChat.value && !disabled) NoIndication else LocalIndication.current
   ) {
     Box(modifier) {
       Row(
