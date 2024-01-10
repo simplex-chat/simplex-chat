@@ -125,7 +125,7 @@ fun UserPicker(
       UserProfilePickerItem(u.user, u.unreadCount, openSettings = settingsClicked) {
         userPickerState.value = AnimatedViewState.HIDING
         if (!u.user.activeUser) {
-          scope.launch {
+          withBGApi {
             controller.showProgressIfNeeded {
               ModalManager.closeAllModalsEverywhere()
               chatModel.controller.changeActiveUser(u.user.remoteHostId, u.user.userId, null)

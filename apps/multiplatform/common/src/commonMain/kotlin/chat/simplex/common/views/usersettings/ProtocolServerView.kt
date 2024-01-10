@@ -35,14 +35,13 @@ import kotlinx.coroutines.launch
 @Composable
 fun ProtocolServerView(m: ChatModel, server: ServerCfg, serverProtocol: ServerProtocol, onUpdate: (ServerCfg) -> Unit, onDelete: () -> Unit) {
   var testing by remember { mutableStateOf(false) }
-  val scope = rememberCoroutineScope()
   ProtocolServerLayout(
     testing,
     server,
     serverProtocol,
     testServer = {
       testing = true
-      scope.launch {
+      withBGApi {
         val res = testServerConnection(server, m)
         if (isActive) {
           onUpdate(res.first)

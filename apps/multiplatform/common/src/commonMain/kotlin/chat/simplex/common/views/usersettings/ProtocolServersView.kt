@@ -91,7 +91,6 @@ fun ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: ServerProtoco
         })
     }
   }
-  val scope = rememberCoroutineScope()
   ModalView(
     close = {
       if (saveDisabled.value) close()
@@ -148,7 +147,7 @@ fun ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: ServerProtoco
         )
       },
       testServers = {
-        scope.launch {
+        withBGApi {
           testServers(testing, servers, m) {
             servers = it
             m.userSMPServersUnsaved.value = servers

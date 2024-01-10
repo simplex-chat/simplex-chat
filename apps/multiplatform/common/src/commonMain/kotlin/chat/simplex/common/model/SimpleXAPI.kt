@@ -460,19 +460,19 @@ object ChatController {
   suspend fun sendCmd(rhId: Long?, cmd: CC): CR {
     val ctrl = ctrl ?: throw Exception("Controller is not initialized")
 
-    return withContext(Dispatchers.IO) {
-      val c = cmd.cmdString
-      chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
-      Log.d(TAG, "sendCmd: ${cmd.cmdType}")
-      val json = if (rhId == null) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId.toInt(), c)
-      val r = APIResponse.decodeStr(json)
-      Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
-      if (r.resp is CR.Response || r.resp is CR.Invalid) {
-        Log.d(TAG, "sendCmd response json $json")
-      }
-      chatModel.addTerminalItem(TerminalItem.resp(rhId, r.resp))
-      r.resp
+    //return withContext(Dispatchers.IO) {
+    val c = cmd.cmdString
+    chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
+    Log.d(TAG, "sendCmd: ${cmd.cmdType}")
+    val json = if (rhId == null) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId.toInt(), c)
+    val r = APIResponse.decodeStr(json)
+    Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
+    if (r.resp is CR.Response || r.resp is CR.Invalid) {
+      Log.d(TAG, "sendCmd response json $json")
     }
+    chatModel.addTerminalItem(TerminalItem.resp(rhId, r.resp))
+    return r.resp
+    //}
   }
 
   private fun recvMsg(ctrl: ChatCtrl): APIResponse? {
