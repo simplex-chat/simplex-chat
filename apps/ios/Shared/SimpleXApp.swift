@@ -44,8 +44,10 @@ struct SimpleXApp: App {
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                        initChatAndMigrate()
+                    if kcAppPassword.get() == nil || kcSelfDestructPassword.get() == nil {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            initChatAndMigrate()
+                        }
                     }
                 }
                 .onChange(of: scenePhase) { phase in
