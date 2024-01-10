@@ -4784,7 +4784,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               else do
                 c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
                 updateContactProfile db user c' p'
-          when (directOrUsed c' && createItems) $ createRcvFeatureItems user c c'
+          when (directOrUsed c' && createItems) $ do
+            let ciContent = CIRcvDirectEvent $ RDEUpdatedProfile (fromLocalProfile p) p'
+            createInternalChatItem user (CDDirectRcv c') ciContent Nothing
+            createRcvFeatureItems user c c'
           toView $ CRContactUpdated user c c'
           pure c'
       | otherwise =
@@ -4805,29 +4808,32 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
            in setPreference_ SCFTimedMessages ctUserTMPref' ctUserPrefs
 
     xInfoMember :: GroupInfo -> GroupMember -> Profile -> m ()
-    xInfoMember gInfo m p' = void $ processMemberProfileUpdate gInfo m p'
+    xInfoMember gInfo m p' = void $ processMemberProfileUpdate gInfo m p' True
 
     xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> m ()
     xGrpLinkMem gInfo@GroupInfo {membership} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' = do
       xGrpLinkMemReceived <- withStore $ \db -> getXGrpLinkMemReceived db groupMemberId
       if viaGroupLink && isNothing (memberContactId m) && memberCategory == GCHostMember && not xGrpLinkMemReceived
         then do
-          m' <- processMemberProfileUpdate gInfo m p'
+          m' <- processMemberProfileUpdate gInfo m p' False
           withStore' $ \db -> setXGrpLinkMemReceived db groupMemberId True
           let connectedIncognito = memberIncognito membership
           probeMatchingMemberContact m' connectedIncognito
         else messageError "x.grp.link.mem error: invalid group link host profile update"
 
-    processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> m GroupMember
-    processMemberProfileUpdate gInfo m@GroupMember {memberContactId} p' =
+    processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Bool -> m GroupMember
+    processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} p' createItems =
       case memberContactId of
         Nothing -> do
           m' <- withStore $ \db -> updateMemberProfile db user m p'
+          when createItems $ do
+            let ciContent = CIRcvGroupEvent $ RGEMemberUpdatedProfile (fromLocalProfile p) p'
+            createInternalChatItem user (CDGroupRcv gInfo m') ciContent Nothing
           toView $ CRGroupMemberUpdated user gInfo m m'
           pure m'
         Just mContactId -> do
           mCt <- withStore $ \db -> getContact db user mContactId
-          Contact {profile} <- processContactProfileUpdate mCt p' True
+          Contact {profile} <- processContactProfileUpdate mCt p' createItems
           pure m {memberProfile = profile}
 
     createFeatureEnabledItems :: Contact -> m ()
