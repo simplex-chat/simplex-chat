@@ -1270,7 +1270,7 @@ data class GroupMember (
   val chatViewName: String
     get() {
       val name = memberProfile.localAlias.ifEmpty { displayName + (if (fullName == "" || fullName == displayName) "" else " / $fullName") }
-      return if (memberCategory == GroupMemberCategory.UnknownMember)
+      return if (memberStatus == GroupMemberStatus.MemUnknown)
         String.format(generalGetString(MR.strings.previous_member_vName), name)
       else
         name
@@ -1377,8 +1377,7 @@ enum class GroupMemberCategory {
   @SerialName("invitee") InviteeMember,
   @SerialName("host") HostMember,
   @SerialName("pre") PreMember,
-  @SerialName("post") PostMember,
-  @SerialName("unknown") UnknownMember;
+  @SerialName("post") PostMember;
 }
 
 @Serializable
