@@ -1801,7 +1801,8 @@ public struct GroupMember: Identifiable, Decodable {
     public var displayName: String {
         get {
             let p = memberProfile
-            return p.localAlias == "" ? p.displayName : p.localAlias
+            let name = p.localAlias == "" ? p.displayName : p.localAlias
+            return pastMember(name)
         }
     }
     public var fullName: String { get { memberProfile.fullName } }
@@ -1827,12 +1828,14 @@ public struct GroupMember: Identifiable, Decodable {
                 ? p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
                 : p.localAlias
             )
-            return (
-                memberStatus == .memUnknown
-                ? String.localizedStringWithFormat(NSLocalizedString("_Previous member_ %@", comment: "previous/unknown group member"), name)
-                : name
-            )
+            return pastMember(name)
         }
+    }
+
+    private func pastMember(_ name: String) -> String {
+        memberStatus == .memUnknown
+        ? String.localizedStringWithFormat(NSLocalizedString("Past member %@", comment: "past/unknown group member"), name)
+        : name
     }
 
     public var memberActive: Bool {
