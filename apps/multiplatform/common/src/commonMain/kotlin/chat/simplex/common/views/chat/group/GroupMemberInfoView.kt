@@ -370,7 +370,7 @@ fun GroupMemberInfoLayout(
 @Composable
 fun GroupMemberInfoHeader(member: GroupMember) {
   Column(
-    Modifier.padding(horizontal = 8.dp),
+    Modifier.padding(horizontal = 16.dp),
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     ProfileImage(size = 192.dp, member.image, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
