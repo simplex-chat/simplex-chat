@@ -727,7 +727,7 @@ processChatCommand' vr = \case
               (fInv_, ciFile_, ft_) <- unzipMaybe3 <$> setupSndFileTransfer g (length $ filter memberCurrent ms)
               timed_ <- sndGroupCITimed live gInfo itemTTL
               (msgContainer, quotedItem_) <- prepareGroupMsg user gInfo mc quotedItemId_ fInv_ timed_ live
-              (msg@SndMessage {sharedMsgId}, sentToMembers) <- sendGroupMessage user gInfo ms (XMsgNew msgContainer) True
+              (msg@SndMessage {sharedMsgId}, sentToMembers) <- sendGroupMessage user gInfo ms (XMsgNew msgContainer)
               ci <- saveSndChatItem' user (CDGroupSnd gInfo) msg (CISndMsgContent mc) ciFile_ quotedItem_ timed_ live
               withStore' $ \db ->
                 forM_ sentToMembers $ \GroupMember {groupMemberId} ->
@@ -848,8 +848,7 @@ processChatCommand' vr = \case
               let changed = mc /= oldMC
               if changed || fromMaybe False itemLive
                 then do
-                  let evnt = XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive)
-                  (SndMessage {msgId}, _) <- sendGroupMessage user gInfo ms evnt True
+                  (SndMessage {msgId}, _) <- sendGroupMessage user gInfo ms (XMsgUpdate itemSharedMId mc (ttl' <$> itemTimed) (justTrue . (live &&) =<< itemLive))
                   ci' <- withStore' $ \db -> do
                     currentTs <- liftIO getCurrentTime
                     when changed $
@@ -892,7 +891,7 @@ processChatCommand' vr = \case
         (CIDMInternal, _, _, _) -> deleteGroupCI user gInfo ci True False Nothing =<< liftIO getCurrentTime
         (CIDMBroadcast, SMDSnd, Just itemSharedMId, True) -> do
           assertUserGroupRole gInfo GRObserver -- can still delete messages sent earlier
-          (SndMessage {msgId}, _) <- sendGroupMessage user gInfo ms (XMsgDel itemSharedMId Nothing) True
+          (SndMessage {msgId}, _) <- sendGroupMessage user gInfo ms $ XMsgDel itemSharedMId Nothing
           delGroupChatItem user gInfo ci msgId Nothing
         (CIDMBroadcast, _, _, _) -> throwChatError CEInvalidChatItemDelete
     CTLocal -> do
@@ -907,7 +906,7 @@ processChatCommand' vr = \case
       (CIGroupRcv GroupMember {groupMemberId, memberRole, memberId}, Just itemSharedMId) -> do
         when (groupMemberId /= mId) $ throwChatError CEInvalidChatItemDelete
         assertUserGroupRole gInfo $ max GRAdmin memberRole
-        (SndMessage {msgId}, _) <- sendGroupMessage user gInfo ms (XMsgDel itemSharedMId $ Just memberId) True
+        (SndMessage {msgId}, _) <- sendGroupMessage user gInfo ms $ XMsgDel itemSharedMId $ Just memberId
         delGroupChatItem user gInfo ci msgId (Just membership)
       (_, _) -> throwChatError CEInvalidChatItemDelete
   APIChatItemReaction (ChatRef cType chatId) itemId add reaction -> withUser $ \user -> withChatLock "chatItemReaction" $ case cType of
@@ -939,8 +938,7 @@ processChatCommand' vr = \case
           let GroupMember {memberId = itemMemberId} = chatItemMember g ci
           rs <- withStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
           checkReactionAllowed rs
-          let evnt = XMsgReact itemSharedMId (Just itemMemberId) reaction add
-          (SndMessage {msgId}, _) <- sendGroupMessage user g ms evnt True
+          (SndMessage {msgId}, _) <- sendGroupMessage user g ms (XMsgReact itemSharedMId (Just itemMemberId) reaction add)
           createdAt <- liftIO getCurrentTime
           reactions <- withStore' $ \db -> do
             setGroupReaction db g membership itemMemberId itemSharedMId True reaction add msgId createdAt
@@ -1033,7 +1031,7 @@ processChatCommand' vr = \case
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
         deleteFilesAndConns user filesInfo
-        when (memberActive membership && isOwner) . void $ sendGroupMessage user gInfo members XGrpDel False
+        when (memberActive membership && isOwner) . void $ sendGroupMessage' user gInfo members XGrpDel
         deleteGroupLinkIfExists user gInfo
         deleteMembersConnections user members
         -- functions below are called in separate transactions to prevent crashes on android
@@ -1723,7 +1721,7 @@ processChatCommand' vr = \case
                   (Just ct, Just cReq) -> sendGrpInvitation user ct gInfo (m :: GroupMember) {memberRole = memRole} cReq
                   _ -> throwChatError $ CEGroupCantResendInvitation gInfo cName
               _ -> do
-                (msg, _) <- sendGroupMessage user gInfo members (XGrpMemRole mId memRole) True
+                (msg, _) <- sendGroupMessage user gInfo members $ XGrpMemRole mId memRole
                 ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent gEvent)
                 toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
           pure CRMemberRoleUser {user, groupInfo = gInfo, member = m {memberRole = memRole}, fromRole = mRole, toRole = memRole}
@@ -1739,7 +1737,7 @@ processChatCommand' vr = \case
               deleteMemberConnection user m
               withStore' $ \db -> deleteGroupMember db user m
             _ -> do
-              (msg, _) <- sendGroupMessage user gInfo members (XGrpMemDel mId) True
+              (msg, _) <- sendGroupMessage user gInfo members $ XGrpMemDel mId
               ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent $ SGEMemberDeleted memberId (fromLocalProfile memberProfile))
               toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
               deleteMemberConnection user m
@@ -1749,7 +1747,7 @@ processChatCommand' vr = \case
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db vr user groupId
     withChatLock "leaveGroup" . procCmd $ do
-      (msg, _) <- sendGroupMessage user gInfo members XGrpLeave False
+      (msg, _) <- sendGroupMessage' user gInfo members XGrpLeave
       ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent SGEUserLeft)
       toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
       -- TODO delete direct connections that were unused
@@ -1949,7 +1947,7 @@ processChatCommand' vr = \case
                   void . sendDirectContactMessage contact $ XFileCancel sharedMsgId
                 ChatRef CTGroup groupId -> do
                   Group gInfo ms <- withStore $ \db -> getGroup db vr user groupId
-                  void $ sendGroupMessage user gInfo ms (XFileCancel sharedMsgId) True
+                  void . sendGroupMessage user gInfo ms $ XFileCancel sharedMsgId
                 _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
               ci <- withStore $ \db -> getChatItemByFileId db vr user fileId
               pure $ CRSndFileCancelled user ci ftm fts
@@ -2271,7 +2269,7 @@ processChatCommand' vr = \case
       assertUserGroupRole g GROwner
       when (n /= n') $ checkValidName n'
       g' <- withStore $ \db -> updateGroupProfile db user g p'
-      (msg, _) <- sendGroupMessage user g' ms (XGrpInfo p') True
+      (msg, _) <- sendGroupMessage user g' ms (XGrpInfo p')
       let cd = CDGroupSnd g'
       unless (sameGroupProfileInfo p p') $ do
         ci <- saveSndChatItem user cd msg (CISndGroupEvent $ SGEGroupUpdated p')
@@ -3712,7 +3710,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             let Connection {viaUserContactLink} = conn
             when (isJust viaUserContactLink && isNothing (memberContactId m)) sendXGrpLinkMem
             members <- withStore' $ \db -> getGroupMembers db user gInfo
-            void $ sendGroupMessage user gInfo members (XGrpMemNew $ memberInfo m) True
+            void . sendGroupMessage user gInfo members . XGrpMemNew $ memberInfo m
             sendIntroductions members
             when (groupFeatureAllowed SGFHistory gInfo) sendHistory
             where
@@ -3921,7 +3919,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   ms = introducedMembers <> invitedMembers
                   msg = XGrpMsgForward memberId chatMsg' brokerTs
               unless (null ms) . void $
-                sendGroupMessage user gInfo ms msg False
+                sendGroupMessage' user gInfo ms msg
       RCVD msgMeta msgRcpt ->
         withAckMessage' agentConnId conn msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
@@ -5847,8 +5845,8 @@ deliverMessagesB msgReqs = do
     createDelivery db ((Connection {connId}, _, _, msgId), agentMsgId) =
       Right <$> createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId}) msgId
 
-sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> Bool -> m (SndMessage, [GroupMember])
-sendGroupMessage user gInfo members chatMsgEvent canSendProfileUpdate
+sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
+sendGroupMessage user gInfo members chatMsgEvent
   | shouldSendProfileUpdate = do
     sendProfileUpdate
     sendGroupMessage' user gInfo members chatMsgEvent
@@ -5857,7 +5855,6 @@ sendGroupMessage user gInfo members chatMsgEvent canSendProfileUpdate
   where
     shouldSendProfileUpdate
       | incognitoMembership gInfo = False
-      | not canSendProfileUpdate = False
       | otherwise =
           case (membershipProfileSentTs, membershipsProfileUpdateTs) of
             (Just lastSentTs, Just lastUpdateTs) -> lastSentTs < lastUpdateTs
