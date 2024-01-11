@@ -134,7 +134,10 @@ testFiles tmp = withNewTestChat tmp "alice" aliceProfile $ \alice -> do
   r `shouldBe` [((1, "hi myself"), Just "test.jpg")]
 
   alice ##> "/fs 1"
-  alice <## "local file 1 (test.jpg)"
+  alice <## "bad chat command: not supported for local files"
+
+  alice ##> "/fc 1"
+  alice <## "chat db error: SELocalFileNoTransfer {fileId = 1}"
 
   -- one more file
   let stored2 = files </> "another_test.jpg"

@@ -1971,13 +1971,11 @@ processChatCommand' vr = \case
                     updateRcvFileAgentId db fileId Nothing
                   getChatItemByFileId db vr user fileId
                 pure $ CRRcvFileCancelled user ci ftr
-  FileStatus fileId -> withUser $ \user@User {userId} -> do
+  FileStatus fileId -> withUser $ \user -> do
     ci@(AChatItem _ _ _ ChatItem {file}) <- withStore $ \db -> getChatItemByFileId db vr user fileId
     case file of
-      Just CIFile {fileProtocol = FPLocal} -> do
-        -- XXX: not stricly a file transfer but the file *has* some status
-        fileMeta <- withStore $ \db -> getLocalFileMeta db userId fileId
-        pure $ CRLocalFileStatus user fileMeta
+      Just CIFile {fileProtocol = FPLocal} ->
+        throwChatError $ CECommandError "not supported for local files"
       Just CIFile {fileProtocol = FPXFTP} ->
         pure $ CRFileTransferStatusXFTP user ci
       _ -> do

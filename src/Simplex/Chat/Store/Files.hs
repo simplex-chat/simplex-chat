@@ -846,7 +846,7 @@ getFileTransfer db user@User {userId} fileId =
   fileTransfer =<< liftIO (getFileTransferRow_ db userId fileId)
   where
     fileTransfer :: [(Maybe Int64, Maybe Int64, FileProtocol)] -> ExceptT StoreError IO FileTransfer
-    fileTransfer [(_, _, FPLocal)] = throwError $ SEBadFileTransfer fileId
+    fileTransfer [(_, _, FPLocal)] = throwError $ SELocalFileNoTransfer fileId
     fileTransfer [(Nothing, Just _, _)] = FTRcv <$> getRcvFileTransfer db user fileId
     fileTransfer _ = do
       (ftm, fts) <- getSndFileTransfer db user fileId

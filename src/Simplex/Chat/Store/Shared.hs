@@ -69,7 +69,7 @@ data StoreError
   | SEDuplicateGroupMember
   | SEGroupAlreadyJoined
   | SEGroupInvitationNotFound
-  | SENoteFolderAlreadyCreated {noteFolderId :: NoteFolderId}
+  | SENoteFolderAlreadyExists {noteFolderId :: NoteFolderId}
   | SENoteFolderNotFound {noteFolderId :: NoteFolderId}
   | SEUserNoteFolderNotFound
   | SESndFileNotFound {fileId :: FileTransferId}
@@ -79,7 +79,7 @@ data StoreError
   | SEFileNotFound {fileId :: FileTransferId}
   | SERcvFileInvalid {fileId :: FileTransferId}
   | SERcvFileInvalidDescrPart
-  | SEBadFileTransfer {fileId :: FileTransferId}
+  | SELocalFileNoTransfer {fileId :: FileTransferId}
   | SESharedMsgIdNotFoundByFileId {fileId :: FileTransferId}
   | SEFileIdNotFoundBySharedMsgId {sharedMsgId :: SharedMsgId}
   | SESndFileNotFoundXFTP {agentSndFileId :: AgentSndFileId}

@@ -22,7 +22,7 @@ createNoteFolder :: DB.Connection -> User -> ExceptT StoreError IO ()
 createNoteFolder db User {userId} = do
   liftIO (DB.query db "SELECT note_folder_id FROM note_folders WHERE user_id = ? LIMIT 1" $ Only userId) >>= \case
     [] -> liftIO $ DB.execute db "INSERT INTO note_folders (user_id) VALUES (?)" (Only userId)
-    Only noteFolderId : _ -> throwError $ SENoteFolderAlreadyCreated {noteFolderId}
+    Only noteFolderId : _ -> throwError $ SENoteFolderAlreadyExists noteFolderId
 
 getUserNoteFolderId :: DB.Connection -> User -> ExceptT StoreError IO NoteFolderId
 getUserNoteFolderId db User {userId} =

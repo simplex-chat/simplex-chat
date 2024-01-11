@@ -154,7 +154,6 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
           | viaGroupLink -> [ttyContact' c <> " invited to group " <> ttyGroup' g <> " via your group link"]
           | otherwise -> ["invitation to join the group " <> ttyGroup' g <> " sent to " <> ttyContact' c]
         Nothing -> []
-  CRLocalFileStatus u lfm -> ttyUser u $ viewLocalFileStatus lfm
   CRFileTransferStatus u ftStatus -> ttyUser u $ viewFileTransferStatus ftStatus
   CRFileTransferStatusXFTP u ci -> ttyUser u $ viewFileTransferStatusXFTP ci
   CRUserProfile u p -> ttyUser u $ viewUserProfile p
@@ -1597,9 +1596,6 @@ viewLocalFile :: StyledString -> CIFile d -> CurrentTime -> TimeZone -> CIMeta c
 viewLocalFile to CIFile {fileId, fileSource} ts tz = case fileSource of
   Just (CryptoFile fPath _) -> sentWithTime_ ts tz [to <> fileTransferStr fileId fPath]
   _ -> const []
-
-viewLocalFileStatus :: LocalFileMeta -> [StyledString]
-viewLocalFileStatus LocalFileMeta {fileId, filePath} = ["local " <> fileTransferStr fileId filePath]
 
 cryptoFileArgsStr :: Bool -> CryptoFileArgs -> ByteString
 cryptoFileArgsStr testView cfArgs@(CFArgs key nonce)

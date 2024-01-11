@@ -1531,7 +1531,7 @@ data XGrpMemIntroCont = XGrpMemIntroCont
   }
   deriving (Show)
 
--- | An entity for local chats
+-- | Entity for local chats
 data NoteFolder = NoteFolder
   { noteFolderId :: NoteFolderId,
     userId :: UserId,
