@@ -1008,6 +1008,8 @@ processChatCommand' vr = \case
           void (sendDirectContactMessage ct XDirectDel) `catchChatError` const (pure ())
         contactConnIds <- map aConnId <$> withStore' (\db -> getContactConnections db userId ct)
         deleteAgentConnectionsAsync user contactConnIds
+        -- functions below are called in separate transactions to prevent crashes on android
+        -- (possibly, race condition on integrity check?)
         withStore' $ \db -> deleteContactConnectionsAndFiles db userId ct
         withStore' $ \db -> deleteContact db user ct
         pure $ CRContactDeleted user ct
