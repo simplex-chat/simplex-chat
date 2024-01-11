@@ -5848,7 +5848,7 @@ deliverMessagesB msgReqs = do
 sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
 sendGroupMessage user gInfo members chatMsgEvent
   | shouldSendProfileUpdate = do
-    sendProfileUpdate
+    sendProfileUpdate `catchChatError` (\e -> toView (CRChatError (Just user) e))
     sendGroupMessage' user gInfo members chatMsgEvent
   | otherwise =
     sendGroupMessage' user gInfo members chatMsgEvent
