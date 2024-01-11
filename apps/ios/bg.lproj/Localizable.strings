@@ -420,6 +420,9 @@
 "Allow disappearing messages only if your contact allows it to you." = "Позволи изчезващи съобщения само ако вашият контакт ги разрешава.";
 
 /* No comment provided by engineer. */
+"Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Позволи необратимо изтриване на съобщение само ако вашият контакт го рарешава. (24 часа)";
+
+/* No comment provided by engineer. */
 "Allow message reactions only if your contact allows them." = "Позволи реакции на съобщения само ако вашият контакт ги разрешава.";
 
 /* No comment provided by engineer. */
@@ -430,6 +433,9 @@
 
 /* No comment provided by engineer. */
 "Allow sending disappearing messages." = "Разреши изпращането на изчезващи съобщения.";
+
+/* No comment provided by engineer. */
+"Allow to irreversibly delete sent messages. (24 hours)" = "Позволи необратимо изтриване на изпратените съобщения. (24 часа)";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Позволи изпращане на файлове и медия.";
@@ -448,6 +454,9 @@
 
 /* No comment provided by engineer. */
 "Allow your contacts to call you." = "Позволи на вашите контакти да ви се обаждат.";
+
+/* No comment provided by engineer. */
+"Allow your contacts to irreversibly delete sent messages. (24 hours)" = "Позволи на вашите контакти да изтриват необратимо изпратените съобщения. (24 часа)";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send disappearing messages." = "Позволи на вашите контакти да изпращат изчезващи съобщения.";
@@ -589,6 +598,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can add message reactions." = "И вие, и вашият контакт можете да добавяте реакции към съобщението.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can irreversibly delete sent messages. (24 hours)" = "И вие, и вашият контакт можете да изтриете необратимо изпратените съобщения. (24 часа)";
 
 /* No comment provided by engineer. */
 "Both you and your contact can make calls." = "И вие, и вашият контакт можете да осъществявате обаждания.";
@@ -1798,6 +1810,9 @@
 "Group members can add message reactions." = "Членовете на групата могат да добавят реакции към съобщенията.";
 
 /* No comment provided by engineer. */
+"Group members can irreversibly delete sent messages. (24 hours)" = "Членовете на групата могат необратимо да изтриват изпратените съобщения. (24 часа)";
+
+/* No comment provided by engineer. */
 "Group members can send direct messages." = "Членовете на групата могат да изпращат лични съобщения.";
 
 /* No comment provided by engineer. */
@@ -2496,6 +2511,9 @@
 "Only you can add message reactions." = "Само вие можете да добавяте реакции на съобщенията.";
 
 /* No comment provided by engineer. */
+"Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" = "Само вие можете необратимо да изтриете съобщения (вашият контакт може да ги маркира за изтриване). (24 часа)";
+
+/* No comment provided by engineer. */
 "Only you can make calls." = "Само вие можете да извършвате разговори.";
 
 /* No comment provided by engineer. */
@@ -2506,6 +2524,9 @@
 
 /* No comment provided by engineer. */
 "Only your contact can add message reactions." = "Само вашият контакт може да добавя реакции на съобщенията.";
+
+/* No comment provided by engineer. */
+"Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" = "Само вашият контакт може необратимо да изтрие съобщения (можете да ги маркирате за изтриване). (24 часа)";
 
 /* No comment provided by engineer. */
 "Only your contact can make calls." = "Само вашият контакт може да извършва разговори.";

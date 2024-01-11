@@ -372,6 +372,9 @@
 "Allow disappearing messages only if your contact allows it to you." = "Salli katoavat viestit vain, jos kontaktisi sallii sen sinulle.";
 
 /* No comment provided by engineer. */
+"Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Salli peruuttamaton viestien poisto vain, jos kontaktisi sallii ne sinulle. (24 tuntia)";
+
+/* No comment provided by engineer. */
 "Allow message reactions only if your contact allows them." = "Salli reaktiot viesteihin vain, jos kontaktisi sallii ne.";
 
 /* No comment provided by engineer. */
@@ -382,6 +385,9 @@
 
 /* No comment provided by engineer. */
 "Allow sending disappearing messages." = "Salli katoavien viestien lähettäminen.";
+
+/* No comment provided by engineer. */
+"Allow to irreversibly delete sent messages. (24 hours)" = "Salli lähetettyjen viestien peruuttamaton poistaminen. (24 tuntia)";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Salli tiedostojen ja median lähettäminen.";
@@ -400,6 +406,9 @@
 
 /* No comment provided by engineer. */
 "Allow your contacts to call you." = "Salli kontaktiesi soittaa sinulle.";
+
+/* No comment provided by engineer. */
+"Allow your contacts to irreversibly delete sent messages. (24 hours)" = "Salli kontaktiesi poistaa lähetetyt viestit peruuttamattomasti. (24 tuntia)";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send disappearing messages." = "Salli kontaktiesi lähettää katoavia viestejä.";
@@ -505,6 +514,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can add message reactions." = "Sekä sinä että kontaktisi voivat käyttää viestireaktioita.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can irreversibly delete sent messages. (24 hours)" = "Sekä sinä että kontaktisi voitte peruuttamattomasti poistaa lähetetyt viestit. (24 tuntia)";
 
 /* No comment provided by engineer. */
 "Both you and your contact can make calls." = "Sekä sinä että kontaktisi voitte soittaa puheluita.";
@@ -1573,6 +1585,9 @@
 "Group members can add message reactions." = "Ryhmän jäsenet voivat lisätä viestireaktioita.";
 
 /* No comment provided by engineer. */
+"Group members can irreversibly delete sent messages. (24 hours)" = "Ryhmän jäsenet voivat poistaa lähetetyt viestit peruuttamattomasti. (24 tuntia)";
+
+/* No comment provided by engineer. */
 "Group members can send direct messages." = "Ryhmän jäsenet voivat lähettää suoraviestejä.";
 
 /* No comment provided by engineer. */
@@ -2211,6 +2226,9 @@
 "Only you can add message reactions." = "Vain sinä voit lisätä viestireaktioita.";
 
 /* No comment provided by engineer. */
+"Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" = "Vain sinä voit poistaa viestejä peruuttamattomasti (kontaktisi voi merkitä ne poistettavaksi). (24 tuntia)";
+
+/* No comment provided by engineer. */
 "Only you can make calls." = "Vain sinä voit soittaa puheluita.";
 
 /* No comment provided by engineer. */
@@ -2221,6 +2239,9 @@
 
 /* No comment provided by engineer. */
 "Only your contact can add message reactions." = "Vain kontaktisi voi lisätä viestireaktioita.";
+
+/* No comment provided by engineer. */
+"Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" = "Vain kontaktisi voi poistaa viestejä peruuttamattomasti (voit merkitä ne poistettavaksi). (24 tuntia)";
 
 /* No comment provided by engineer. */
 "Only your contact can make calls." = "Vain kontaktisi voi soittaa puheluita.";

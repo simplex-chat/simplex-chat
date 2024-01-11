@@ -411,6 +411,9 @@
 "Allow disappearing messages only if your contact allows it to you." = "Дозволяйте зникати повідомленням, тільки якщо контакт дозволяє вам це робити.";
 
 /* No comment provided by engineer. */
+"Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Дозволяйте безповоротне видалення повідомлень, тільки якщо контакт дозволяє вам це зробити. (24 години)";
+
+/* No comment provided by engineer. */
 "Allow message reactions only if your contact allows them." = "Дозволяйте реакції на повідомлення, тільки якщо ваш контакт дозволяє їх.";
 
 /* No comment provided by engineer. */
@@ -421,6 +424,9 @@
 
 /* No comment provided by engineer. */
 "Allow sending disappearing messages." = "Дозволити надсилання зникаючих повідомлень.";
+
+/* No comment provided by engineer. */
+"Allow to irreversibly delete sent messages. (24 hours)" = "Дозволяє безповоротно видаляти надіслані повідомлення. (24 години)";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Дозволяє надсилати файли та медіа.";
@@ -439,6 +445,9 @@
 
 /* No comment provided by engineer. */
 "Allow your contacts to call you." = "Дозвольте вашим контактам телефонувати вам.";
+
+/* No comment provided by engineer. */
+"Allow your contacts to irreversibly delete sent messages. (24 hours)" = "Дозвольте вашим контактам безповоротно видаляти надіслані повідомлення. (24 години)";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send disappearing messages." = "Дозвольте своїм контактам надсилати зникаючі повідомлення.";
@@ -571,6 +580,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can add message reactions." = "Реакції на повідомлення можете додавати як ви, так і ваш контакт.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can irreversibly delete sent messages. (24 hours)" = "І ви, і ваш контакт можете безповоротно видалити надіслані повідомлення. (24 години)";
 
 /* No comment provided by engineer. */
 "Both you and your contact can make calls." = "Дзвонити можете як ви, так і ваш контакт.";
@@ -1654,6 +1666,9 @@
 "Group members can add message reactions." = "Учасники групи можуть додавати реакції на повідомлення.";
 
 /* No comment provided by engineer. */
+"Group members can irreversibly delete sent messages. (24 hours)" = "Учасники групи можуть безповоротно видаляти надіслані повідомлення. (24 години)";
+
+/* No comment provided by engineer. */
 "Group members can send direct messages." = "Учасники групи можуть надсилати прямі повідомлення.";
 
 /* No comment provided by engineer. */
@@ -2292,6 +2307,9 @@
 "Only you can add message reactions." = "Тільки ви можете додавати реакції на повідомлення.";
 
 /* No comment provided by engineer. */
+"Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" = "Тільки ви можете безповоротно видалити повідомлення (ваш контакт може позначити їх для видалення). (24 години)";
+
+/* No comment provided by engineer. */
 "Only you can make calls." = "Дзвонити можете тільки ви.";
 
 /* No comment provided by engineer. */
@@ -2302,6 +2320,9 @@
 
 /* No comment provided by engineer. */
 "Only your contact can add message reactions." = "Тільки ваш контакт може додавати реакції на повідомлення.";
+
+/* No comment provided by engineer. */
+"Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" = "Тільки ваш контакт може безповоротно видалити повідомлення (ви можете позначити їх для видалення). (24 години)";
 
 /* No comment provided by engineer. */
 "Only your contact can make calls." = "Тільки ваш контакт може здійснювати дзвінки.";

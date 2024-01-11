@@ -420,6 +420,9 @@
 "Allow disappearing messages only if your contact allows it to you." = "Zezwól na znikające wiadomości tylko wtedy, gdy Twój kontakt Ci na to pozwoli.";
 
 /* No comment provided by engineer. */
+"Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Zezwalaj na nieodwracalne usuwanie wiadomości tylko wtedy, gdy Twój kontakt Ci na to pozwoli. (24 godziny)";
+
+/* No comment provided by engineer. */
 "Allow message reactions only if your contact allows them." = "Zezwalaj na reakcje wiadomości tylko wtedy, gdy zezwala na to Twój kontakt.";
 
 /* No comment provided by engineer. */
@@ -430,6 +433,9 @@
 
 /* No comment provided by engineer. */
 "Allow sending disappearing messages." = "Zezwól na wysyłanie znikających wiadomości.";
+
+/* No comment provided by engineer. */
+"Allow to irreversibly delete sent messages. (24 hours)" = "Zezwól na nieodwracalne usunięcie wysłanych wiadomości. (24 godziny)";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Pozwól na wysyłanie plików i mediów.";
@@ -448,6 +454,9 @@
 
 /* No comment provided by engineer. */
 "Allow your contacts to call you." = "Zezwól swoim kontaktom na połączenia do Ciebie.";
+
+/* No comment provided by engineer. */
+"Allow your contacts to irreversibly delete sent messages. (24 hours)" = "Zezwól swoim kontaktom na nieodwracalne usuwanie wysłanych wiadomości. (24 godziny)";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send disappearing messages." = "Zezwól swoim kontaktom na wysyłanie znikających wiadomości.";
@@ -589,6 +598,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can add message reactions." = "Zarówno Ty, jak i Twój kontakt możecie dodawać reakcje wiadomości.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can irreversibly delete sent messages. (24 hours)" = "Zarówno Ty, jak i Twój kontakt możecie nieodwracalnie usunąć wysłane wiadomości. (24 godziny)";
 
 /* No comment provided by engineer. */
 "Both you and your contact can make calls." = "Zarówno Ty, jak i Twój kontakt możecie nawiązywać połączenia.";
@@ -1798,6 +1810,9 @@
 "Group members can add message reactions." = "Członkowie grupy mogą dodawać reakcje wiadomości.";
 
 /* No comment provided by engineer. */
+"Group members can irreversibly delete sent messages. (24 hours)" = "Członkowie grupy mogą nieodwracalnie usuwać wysłane wiadomości. (24 godziny)";
+
+/* No comment provided by engineer. */
 "Group members can send direct messages." = "Członkowie grupy mogą wysyłać bezpośrednie wiadomości.";
 
 /* No comment provided by engineer. */
@@ -2496,6 +2511,9 @@
 "Only you can add message reactions." = "Tylko Ty możesz dodawać reakcje wiadomości.";
 
 /* No comment provided by engineer. */
+"Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" = "Tylko Ty możesz nieodwracalnie usunąć wiadomości (Twój kontakt może oznaczyć je do usunięcia). (24 godziny)";
+
+/* No comment provided by engineer. */
 "Only you can make calls." = "Tylko Ty możesz wykonywać połączenia.";
 
 /* No comment provided by engineer. */
@@ -2506,6 +2524,9 @@
 
 /* No comment provided by engineer. */
 "Only your contact can add message reactions." = "Tylko Twój kontakt może dodawać reakcje wiadomości.";
+
+/* No comment provided by engineer. */
+"Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" = "Tylko Twój kontakt może nieodwracalnie usunąć wiadomości (możesz oznaczyć je do usunięcia). (24 godziny)";
 
 /* No comment provided by engineer. */
 "Only your contact can make calls." = "Tylko Twój kontakt może wykonywać połączenia.";

@@ -375,6 +375,9 @@
 "Allow disappearing messages only if your contact allows it to you." = "仅当您的联系人允许时才允许限时消息。";
 
 /* No comment provided by engineer. */
+"Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "仅有您的联系人许可后才允许不可撤回消息移除。";
+
+/* No comment provided by engineer. */
 "Allow message reactions only if your contact allows them." = "只有您的联系人允许时才允许消息回应。";
 
 /* No comment provided by engineer. */
@@ -385,6 +388,9 @@
 
 /* No comment provided by engineer. */
 "Allow sending disappearing messages." = "允许发送限时消息。";
+
+/* No comment provided by engineer. */
+"Allow to irreversibly delete sent messages. (24 hours)" = "允许不可撤回地删除已发送消息。";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "允许发送文件和媒体。";
@@ -403,6 +409,9 @@
 
 /* No comment provided by engineer. */
 "Allow your contacts to call you." = "允许您的联系人给您打电话。";
+
+/* No comment provided by engineer. */
+"Allow your contacts to irreversibly delete sent messages. (24 hours)" = "允许您的联系人不可撤回地删除已发送消息。";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send disappearing messages." = "允许您的联系人发送限时消息。";
@@ -511,6 +520,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can add message reactions." = "您和您的联系人都可以添加消息回应。";
+
+/* No comment provided by engineer. */
+"Both you and your contact can irreversibly delete sent messages. (24 hours)" = "您和您的联系人都可以不可逆转地删除已发送的消息。";
 
 /* No comment provided by engineer. */
 "Both you and your contact can make calls." = "您和您的联系人都可以拨打电话。";
@@ -1594,6 +1606,9 @@
 "Group members can add message reactions." = "群组成员可以添加信息回应。";
 
 /* No comment provided by engineer. */
+"Group members can irreversibly delete sent messages. (24 hours)" = "群组成员可以不可撤回地删除已发送的消息。";
+
+/* No comment provided by engineer. */
 "Group members can send direct messages." = "群组成员可以私信。";
 
 /* No comment provided by engineer. */
@@ -2235,6 +2250,9 @@
 "Only you can add message reactions." = "只有您可以添加消息回应。";
 
 /* No comment provided by engineer. */
+"Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" = "只有您可以不可撤回地删除消息（您的联系人可以将它们标记为删除）。";
+
+/* No comment provided by engineer. */
 "Only you can make calls." = "只有您可以拨打电话。";
 
 /* No comment provided by engineer. */
@@ -2245,6 +2263,9 @@
 
 /* No comment provided by engineer. */
 "Only your contact can add message reactions." = "只有您的联系人可以添加消息回应。";
+
+/* No comment provided by engineer. */
+"Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" = "只有您的联系人才能不可撤回地删除消息（您可以将它们标记为删除）。";
 
 /* No comment provided by engineer. */
 "Only your contact can make calls." = "只有您的联系人可以拨打电话。";

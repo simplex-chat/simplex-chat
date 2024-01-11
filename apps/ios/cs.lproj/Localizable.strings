@@ -381,6 +381,9 @@
 "Allow disappearing messages only if your contact allows it to you." = "Povolte mizící zprávy, pouze pokud vám to váš kontakt dovolí.";
 
 /* No comment provided by engineer. */
+"Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Povolte nevratné smazání zprávy pouze v případě, že vám to váš kontakt dovolí. (24 hodin)";
+
+/* No comment provided by engineer. */
 "Allow message reactions only if your contact allows them." = "Povolit reakce na zprávy, pokud je váš kontakt povolí.";
 
 /* No comment provided by engineer. */
@@ -391,6 +394,9 @@
 
 /* No comment provided by engineer. */
 "Allow sending disappearing messages." = "Povolit odesílání mizících zpráv.";
+
+/* No comment provided by engineer. */
+"Allow to irreversibly delete sent messages. (24 hours)" = "Povolit nevratné smazání odeslaných zpráv. (24 hodin)";
 
 /* No comment provided by engineer. */
 "Allow to send files and media." = "Povolit odesílání souborů a médii.";
@@ -409,6 +415,9 @@
 
 /* No comment provided by engineer. */
 "Allow your contacts to call you." = "Povolte svým kontaktům vám volat.";
+
+/* No comment provided by engineer. */
+"Allow your contacts to irreversibly delete sent messages. (24 hours)" = "Umožněte svým kontaktům nevratně odstranit odeslané zprávy. (24 hodin)";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send disappearing messages." = "Umožněte svým kontaktům odesílat mizící zprávy.";
@@ -517,6 +526,9 @@
 
 /* No comment provided by engineer. */
 "Both you and your contact can add message reactions." = "Vy i váš kontakt můžete přidávat reakce na zprávy.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can irreversibly delete sent messages. (24 hours)" = "Vy i váš kontakt můžete nevratně mazat odeslané zprávy. (24 hodin)";
 
 /* No comment provided by engineer. */
 "Both you and your contact can make calls." = "Volat můžete vy i váš kontakt.";
@@ -1597,6 +1609,9 @@
 "Group members can add message reactions." = "Členové skupin mohou přidávat reakce na zprávy.";
 
 /* No comment provided by engineer. */
+"Group members can irreversibly delete sent messages. (24 hours)" = "Členové skupiny mohou nevratně mazat odeslané zprávy. (24 hodin)";
+
+/* No comment provided by engineer. */
 "Group members can send direct messages." = "Členové skupiny mohou posílat přímé zprávy.";
 
 /* No comment provided by engineer. */
@@ -2238,6 +2253,9 @@
 "Only you can add message reactions." = "Reakce na zprávy můžete přidávat pouze vy.";
 
 /* No comment provided by engineer. */
+"Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)" = "Nevratně mazat zprávy můžete pouze vy (váš kontakt je může označit ke smazání). (24 hodin)";
+
+/* No comment provided by engineer. */
 "Only you can make calls." = "Volat můžete pouze vy.";
 
 /* No comment provided by engineer. */
@@ -2248,6 +2266,9 @@
 
 /* No comment provided by engineer. */
 "Only your contact can add message reactions." = "Reakce na zprávy může přidávat pouze váš kontakt.";
+
+/* No comment provided by engineer. */
+"Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)" = "Nevratně mazat zprávy může pouze váš kontakt (vy je můžete označit ke smazání). (24 hodin)";
 
 /* No comment provided by engineer. */
 "Only your contact can make calls." = "Volat může pouze váš kontakt.";
