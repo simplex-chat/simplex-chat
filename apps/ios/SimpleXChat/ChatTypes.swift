@@ -615,8 +615,8 @@ public enum ChatFeature: String, Decodable, Feature {
             }
         case .fullDelete:
             switch allowed {
-            case .always: return "Allow your contacts to irreversibly delete sent messages (24 hours)."
-            case .yes: return "Allow irreversible message deletion only if your contact allows it to you (24 hours)."
+            case .always: return "Allow your contacts to irreversibly delete sent messages. (24 hours)"
+            case .yes: return "Allow irreversible message deletion only if your contact allows it to you. (24 hours)"
             case .no: return "Contacts can mark messages for deletion; you will be able to view them."
             }
         case .reactions:
@@ -652,11 +652,11 @@ public enum ChatFeature: String, Decodable, Feature {
                     : "Disappearing messages are prohibited in this chat."
         case .fullDelete:
             return enabled.forUser && enabled.forContact
-                    ? "Both you and your contact can irreversibly delete sent messages (24 hours)."
+                    ? "Both you and your contact can irreversibly delete sent messages. (24 hours)"
                     : enabled.forUser
-                    ? "Only you can irreversibly delete messages (24 hours, your contact can mark them for deletion)."
+                    ? "Only you can irreversibly delete messages (your contact can mark them for deletion). (24 hours)"
                     : enabled.forContact
-                    ? "Only your contact can irreversibly delete messages (24 hours, you can mark them for deletion)."
+                    ? "Only your contact can irreversibly delete messages (you can mark them for deletion). (24 hours)"
                     : "Irreversible message deletion is prohibited in this chat."
         case .reactions:
             return enabled.forUser && enabled.forContact
@@ -762,7 +762,7 @@ public enum GroupFeature: String, Decodable, Feature {
                 }
             case .fullDelete:
                 switch enabled {
-                case .on: return "Allow to irreversibly delete sent messages (24 hours)."
+                case .on: return "Allow to irreversibly delete sent messages. (24 hours)"
                 case .off: return "Prohibit irreversible message deletion."
                 }
             case .reactions:
@@ -800,7 +800,7 @@ public enum GroupFeature: String, Decodable, Feature {
                 }
             case .fullDelete:
                 switch enabled {
-                case .on: return "Group members can irreversibly delete sent messages (24 hours)."
+                case .on: return "Group members can irreversibly delete sent messages. (24 hours)"
                 case .off: return "Irreversible message deletion is prohibited in this group."
                 }
             case .reactions:
