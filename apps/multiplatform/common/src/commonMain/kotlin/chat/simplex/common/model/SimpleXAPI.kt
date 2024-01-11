@@ -109,6 +109,7 @@ class AppPreferences {
   val chatStopped = mkBoolPreference(SHARED_PREFS_CHAT_STOPPED, false)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
   val showInternalErrors = mkBoolPreference(SHARED_PREFS_SHOW_INTERNAL_ERRORS, false)
+  val showSlowFunctions = mkBoolPreference(SHARED_PREFS_SHOW_SLOW_FUNCTIONS, false)
   val terminalAlwaysVisible = mkBoolPreference(SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
   val networkProxyHostPort = mkStrPreference(SHARED_PREFS_NETWORK_PROXY_HOST_PORT, "localhost:9050")
@@ -278,6 +279,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CHAT_STOPPED = "ChatStopped"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
     private const val SHARED_PREFS_SHOW_INTERNAL_ERRORS = "ShowInternalErrors"
+    private const val SHARED_PREFS_SHOW_SLOW_FUNCTIONS = "ShowSlowFunctions"
     private const val SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE = "TerminalAlwaysVisible"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
     private const val SHARED_PREFS_NETWORK_PROXY_HOST_PORT = "NetworkProxyHostPort"
@@ -1670,7 +1672,8 @@ object ChatController {
             ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
-          withApi { receiveFile(rhId, r.user, file.fileId, encrypted = cItem.encryptLocalFile && chatController.appPrefs.privacyEncryptLocalFiles.get(), auto = true) }
+          withBGApi { receiveFile(rhId, r.user, file.fileId, encrypted = cItem.encryptLocalFile && chatController.appPrefs
+            .privacyEncryptLocalFiles.get(), auto = true) }
         }
         if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id || chatModel.remoteHostId() != rhId)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
@@ -1868,10 +1871,8 @@ object ChatController {
         }
         withCall(r, r.contact) { _ ->
           chatModel.callCommand.add(WCallCommand.End)
-          withApi {
-            chatModel.activeCall.value = null
-            chatModel.showCallView.value = false
-          }
+          chatModel.activeCall.value = null
+          chatModel.showCallView.value = false
         }
       }
       is CR.ContactSwitch ->
@@ -1982,7 +1983,7 @@ object ChatController {
         r.chatError is ChatError.ChatErrorAgent && r.chatError.agentError is AgentErrorType.CRITICAL -> {
           chatModel.processedCriticalError.newError(r.chatError.agentError, r.chatError.agentError.offerRestart)
         }
-        r.chatError is ChatError.ChatErrorAgent && r.chatError.agentError is AgentErrorType.INTERNAL && appPrefs.showInternalErrors.get() -> {
+        r.chatError is ChatError.ChatErrorAgent && r.chatError.agentError is AgentErrorType.INTERNAL && appPrefs.developerTools.get() && appPrefs.showInternalErrors.get() -> {
           chatModel.processedInternalError.newError(r.chatError.agentError, false)
         }
       }

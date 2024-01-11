@@ -101,7 +101,7 @@ fun CIFileView(
               filePath = getLoadedFilePath(file)
             }
             if (filePath != null) {
-              withApi {
+              withBGApi {
                 saveFileLauncher.launch(file.fileName)
               }
             } else {

@@ -267,7 +267,7 @@ fun ComposeView(
   fun loadLinkPreview(url: String, wait: Long? = null) {
     if (pendingLinkUrl.value == url) {
       composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
-      withApi {
+      withBGApi {
         if (wait != null) delay(wait)
         val lp = getLinkPreview(url)
         if (lp != null && pendingLinkUrl.value == url) {
@@ -575,7 +575,7 @@ fun ComposeView(
 
   fun allowVoiceToContact() {
     val contact = (chat.chatInfo as ChatInfo.Direct?)?.contact ?: return
-    withApi {
+    withBGApi {
       chatModel.controller.allowFeatureToContact(chat.remoteHostId, contact, ChatFeature.Voice)
     }
   }

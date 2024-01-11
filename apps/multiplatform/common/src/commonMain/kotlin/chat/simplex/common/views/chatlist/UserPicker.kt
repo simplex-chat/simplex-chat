@@ -31,8 +31,8 @@ import chat.simplex.common.views.remote.*
 import chat.simplex.common.views.usersettings.doWithAuth
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
@@ -117,7 +117,9 @@ fun UserPicker(
   LaunchedEffect(Unit) {
     // Controller.ctrl can be null when self-destructing activates
     if (controller.ctrl != null && controller.ctrl != -1L) {
-      controller.reloadRemoteHosts()
+      withBGApi {
+        controller.reloadRemoteHosts()
+      }
     }
   }
   val UsersView: @Composable ColumnScope.() -> Unit = {

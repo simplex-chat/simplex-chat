@@ -26,7 +26,6 @@ import kotlinx.coroutines.sync.withLock
 import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit
-import kotlin.system.exitProcess
 
 const val TAG = "SIMPLEX"
 
@@ -72,7 +71,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
     Log.d(TAG, "onStateChanged: $event")
-    withApi {
+    withBGApi {
       when (event) {
         Lifecycle.Event.ON_START -> {
           isAppOnForeground = true

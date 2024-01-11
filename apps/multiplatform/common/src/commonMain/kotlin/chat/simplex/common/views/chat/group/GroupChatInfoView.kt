@@ -56,11 +56,9 @@ fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLi
       currentUser,
       sendReceipts = sendReceipts,
       setSendReceipts = { sendRcpts ->
-        withApi {
-          val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
-          updateChatSettings(chat, chatSettings, chatModel)
-          sendReceipts.value = sendRcpts
-        }
+        val chatSettings = (chat.chatInfo.chatSettings ?: ChatSettings.defaults).copy(sendRcpts = sendRcpts.bool)
+        updateChatSettings(chat, chatSettings, chatModel)
+        sendReceipts.value = sendRcpts
       },
       members = chatModel.groupMembers
         .filter { it.memberStatus != GroupMemberStatus.MemLeft && it.memberStatus != GroupMemberStatus.MemRemoved }
@@ -68,7 +66,7 @@ fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLi
       developerTools,
       groupLink,
       addMembers = {
-        withApi {
+        withBGApi {
           setGroupMembers(rhId, groupInfo, chatModel)
           ModalManager.end.showModalCloseable(true) { close ->
             AddGroupMembersView(rhId, groupInfo, false, chatModel, close)
@@ -76,7 +74,7 @@ fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLi
         }
       },
       showMemberInfo = { member ->
-        withApi {
+        withBGApi {
           val r = chatModel.controller.apiGroupMemberInfo(rhId, groupInfo.groupId, member.groupMemberId)
           val stats = r?.second
           val (_, code) = if (member.memberActive) {
@@ -131,7 +129,7 @@ fun deleteGroupDialog(chat: Chat, groupInfo: GroupInfo, chatModel: ChatModel, cl
     text = generalGetString(alertTextKey),
     confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = {
-      withApi {
+      withBGApi {
         val r = chatModel.controller.apiDeleteChat(chat.remoteHostId, chatInfo.chatType, chatInfo.apiId)
         if (r) {
           chatModel.removeChat(chat.remoteHostId, chatInfo.id)
@@ -154,7 +152,7 @@ fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
     text = generalGetString(MR.strings.you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved),
     confirmText = generalGetString(MR.strings.leave_group_button),
     onConfirm = {
-      withApi {
+      withBGApi {
         chatModel.controller.leaveGroup(rhId, groupInfo.groupId)
         close?.invoke()
       }
@@ -169,7 +167,7 @@ private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMembe
     text = generalGetString(MR.strings.member_will_be_removed_from_group_cannot_be_undone),
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
-      withApi {
+      withBGApi {
         val updatedMember = chatModel.controller.apiRemoveMember(rhId, groupInfo.groupId, mem.groupMemberId)
         if (updatedMember != null) {
           chatModel.upsertGroupMember(rhId, groupInfo, updatedMember)

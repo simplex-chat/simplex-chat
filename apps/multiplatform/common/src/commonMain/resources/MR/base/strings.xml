@@ -691,6 +691,7 @@
   <string name="show_developer_options">Show developer options</string>
   <string name="developer_options">Database IDs and Transport isolation option.</string>
   <string name="show_internal_errors">Show internal errors</string>
+  <string name="show_slow_functions">Show alerts for slow functions</string>
   <string name="shutdown_alert_question">Shutdown?</string>
   <string name="shutdown_alert_desc">Notifications will stop working until you re-launch the app</string>
 

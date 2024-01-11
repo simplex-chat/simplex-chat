@@ -239,7 +239,7 @@ fun DatabaseLayout(
       SettingsActionItem(
         painterResource(MR.images.ic_download),
         stringResource(MR.strings.import_database),
-        { withApi { importArchiveLauncher.launch("application/zip") } },
+        { withBGApi { importArchiveLauncher.launch("application/zip") } },
         textColor = Color.Red,
         iconColor = Color.Red,
         disabled = operationsDisabled
@@ -367,7 +367,7 @@ fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
 }
 
 fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
-  withApi {
+  withBGApi {
     try {
       if (chatDbChanged.value) {
         initChatController()
@@ -376,12 +376,12 @@ fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged
       if (m.chatDbStatus.value !is DBMigrationResult.OK) {
         /** Hide current view and show [DatabaseErrorView] */
         ModalManager.closeAllModalsEverywhere()
-        return@withApi
+        return@withBGApi
       }
       val user = m.currentUser.value
       if (user == null) {
         ModalManager.closeAllModalsEverywhere()
-        return@withApi
+        return@withBGApi
       } else {
         m.controller.startChat(user)
       }
@@ -441,7 +441,7 @@ fun authStopChat(m: ChatModel, onStop: (() -> Unit)? = null) {
 }
 
 private fun stopChat(m: ChatModel, onStop: (() -> Unit)? = null) {
-  withApi {
+  withBGApi {
     try {
       stopChatAsync(m)
       platform.androidChatStopped()
@@ -493,7 +493,7 @@ private fun exportArchive(
   saveArchiveLauncher: FileChooserLauncher
 ) {
   progressIndicator.value = true
-  withApi {
+  withBGApi {
     try {
       val archiveFile = exportChatArchive(m, chatArchiveName, chatArchiveTime, chatArchiveFile)
       chatArchiveFile.value = archiveFile
@@ -567,7 +567,7 @@ private fun importArchive(
   progressIndicator.value = true
   val archivePath = saveArchiveFromURI(importedArchiveURI)
   if (archivePath != null) {
-    withApi {
+    withBGApi {
       try {
         m.controller.apiDeleteStorage()
         try {
@@ -635,7 +635,7 @@ private fun deleteChatAlert(m: ChatModel, progressIndicator: MutableState<Boolea
 
 private fun deleteChat(m: ChatModel, progressIndicator: MutableState<Boolean>) {
   progressIndicator.value = true
-  withApi {
+  withBGApi {
     try {
       deleteChatAsync(m)
       operationEnded(m, progressIndicator) {
@@ -658,7 +658,7 @@ private fun setCiTTL(
 ) {
   Log.d(TAG, "DatabaseView setChatItemTTL ${chatItemTTL.value.seconds ?: -1}")
   progressIndicator.value = true
-  withApi {
+  withBGApi {
     try {
       m.controller.setChatItemTTL(rhId, chatItemTTL.value)
       // Update model on success
