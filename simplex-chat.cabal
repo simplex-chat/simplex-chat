@@ -129,6 +129,7 @@ library
       Simplex.Chat.Migrations.M20231207_chat_list_pagination
       Simplex.Chat.Migrations.M20231214_item_content_tag
       Simplex.Chat.Migrations.M20231215_recreate_msg_deliveries
+      Simplex.Chat.Migrations.M20240102_note_folders
       Simplex.Chat.Migrations.M20240104_members_profile_update
       Simplex.Chat.Mobile
       Simplex.Chat.Mobile.File
@@ -151,6 +152,7 @@ library
       Simplex.Chat.Store.Groups
       Simplex.Chat.Store.Messages
       Simplex.Chat.Store.Migrations
+      Simplex.Chat.Store.NoteFolders
       Simplex.Chat.Store.Profiles
       Simplex.Chat.Store.Remote
       Simplex.Chat.Store.Shared
@@ -542,6 +544,7 @@ test-suite simplex-chat-test
       ChatTests.Direct
       ChatTests.Files
       ChatTests.Groups
+      ChatTests.Local
       ChatTests.Profiles
       ChatTests.Utils
       JSONTests

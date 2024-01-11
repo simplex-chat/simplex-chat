@@ -1170,6 +1170,15 @@ data FileTransferMeta = FileTransferMeta
   }
   deriving (Eq, Show)
 
+data LocalFileMeta = LocalFileMeta
+  { fileId :: FileTransferId,
+    fileName :: String,
+    filePath :: String,
+    fileSize :: Integer,
+    fileCryptoArgs :: Maybe CryptoFileArgs
+  }
+  deriving (Eq, Show)
+
 data XFTPSndFile = XFTPSndFile
   { agentSndFileId :: AgentSndFileId,
     privateSndFileDescr :: Maybe Text,
@@ -1534,6 +1543,20 @@ data XGrpMemIntroCont = XGrpMemIntroCont
   }
   deriving (Show)
 
+-- | Entity for local chats
+data NoteFolder = NoteFolder
+  { noteFolderId :: NoteFolderId,
+    userId :: UserId,
+    createdAt :: UTCTime,
+    updatedAt :: UTCTime,
+    chatTs :: UTCTime,
+    favorite :: Bool,
+    unread :: Bool
+  }
+  deriving (Eq, Show)
+
+type NoteFolderId = Int64
+
 data ServerCfg p = ServerCfg
   { server :: ProtoServerWithAuth p,
     preset :: Bool,
@@ -1640,6 +1663,8 @@ $(JQ.deriveJSON defaultJSON ''XFTPSndFile)
 
 $(JQ.deriveJSON defaultJSON ''FileTransferMeta)
 
+$(JQ.deriveJSON defaultJSON ''LocalFileMeta)
+
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "FT") ''FileTransfer)
 
 $(JQ.deriveJSON defaultJSON ''UserPwdHash)
@@ -1653,6 +1678,8 @@ $(JQ.deriveJSON defaultJSON ''UserInfo)
 $(JQ.deriveJSON defaultJSON ''Contact)
 
 $(JQ.deriveJSON defaultJSON ''ContactRef)
+
+$(JQ.deriveJSON defaultJSON ''NoteFolder)
 
 instance ProtocolTypeI p => ToJSON (ServerCfg p) where
   toEncoding = $(JQ.mkToEncoding defaultJSON ''ServerCfg)

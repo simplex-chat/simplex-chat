@@ -398,6 +398,7 @@ setUserChatsRead db User {userId} = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE contacts SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND unread_chat = ?" (False, updatedAt, userId, True)
   DB.execute db "UPDATE groups SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND unread_chat = ?" (False, updatedAt, userId, True)
+  DB.execute db "UPDATE note_folders SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND unread_chat = ?" (False, updatedAt, userId, True)
   DB.execute db "UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND item_status = ?" (CISRcvRead, updatedAt, userId, CISRcvNew)
 
 updateContactStatus :: DB.Connection -> User -> Contact -> ContactStatus -> IO Contact

@@ -46,3 +46,5 @@ Keep track of which members received latest profile updates. Send profile update
 Two options:
 - send as a separate message, don't special case
 - send batched with the main message (using chat protocol batching mechanism), it would avoid broadcasting additional message for users without profile images, and likely in some cases (when main message is short) even with them
+  - conflicts with forwarding as forwarding of batched messages is not supported
+  - simply implementing forwarding of batched messages is not enough, because currently there is no way to differentiate between history and other batched messages (and received history shouldn't be forwarded)

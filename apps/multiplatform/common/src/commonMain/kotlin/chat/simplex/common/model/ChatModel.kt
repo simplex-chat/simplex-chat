@@ -1261,7 +1261,11 @@ data class GroupMember (
   var activeConn: Connection? = null
 ) {
   val id: String get() = "#$groupId @$groupMemberId"
-  val displayName: String get() = memberProfile.localAlias.ifEmpty { memberProfile.displayName }
+  val displayName: String
+    get() {
+      val name = memberProfile.localAlias.ifEmpty { memberProfile.displayName }
+      return pastMember(name)
+    }
   val fullName: String get() = memberProfile.fullName
   val image: String? get() = memberProfile.image
   val contactLink: String? = memberProfile.contactLink
@@ -1270,11 +1274,15 @@ data class GroupMember (
   val chatViewName: String
     get() {
       val name = memberProfile.localAlias.ifEmpty { displayName + (if (fullName == "" || fullName == displayName) "" else " / $fullName") }
-      return if (memberStatus == GroupMemberStatus.MemUnknown)
-        String.format(generalGetString(MR.strings.previous_member_vName), name)
-      else
-        name
+      return pastMember(name)
     }
+
+  private fun pastMember(name: String): String {
+    return if (memberStatus == GroupMemberStatus.MemUnknown)
+      String.format(generalGetString(MR.strings.past_member_vName), name)
+    else
+      name
+  }
 
   val memberActive: Boolean get() = when (this.memberStatus) {
     GroupMemberStatus.MemRemoved -> false

@@ -1386,14 +1386,14 @@ testMultipleUserAddresses =
       cLinkAlisa <- getContactLink alice True
       bob ##> ("/c " <> cLinkAlisa)
       alice <#? bob
-      alice #$> ("/_get chats 2 pcc=on", chats, [("<@bob", "")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("<@bob", ""), ("*", "")])
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request..."
       concurrently_
         (bob <## "alisa: contact is connected")
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", lastChatFeature)])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", lastChatFeature), ("*", "")])
       alice <##> bob
 
       bob #> "@alice hey alice"
@@ -1424,7 +1424,7 @@ testMultipleUserAddresses =
         (cath <## "alisa: contact is connected")
         (alice <## "cath (Catherine): contact is connected")
       threadDelay 100000
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", lastChatFeature), ("@bob", "hey")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", lastChatFeature), ("@bob", "hey"), ("*", "")])
       alice <##> cath
 
       -- first user doesn't have cath as contact

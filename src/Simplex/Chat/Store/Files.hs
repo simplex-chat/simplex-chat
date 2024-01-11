@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -72,7 +73,10 @@ module Simplex.Chat.Store.Files
     getSndFileTransfer,
     getSndFileTransfers,
     getContactFileInfo,
+    getNoteFolderFileInfo,
+    createLocalFile,
     getLocalCryptoFile,
+    getLocalFileMeta,
     updateDirectCIFileStatus,
   )
 where
@@ -90,6 +94,7 @@ import Data.Time.Clock (UTCTime (..), getCurrentTime, nominalDay)
 import Data.Type.Equality
 import Database.SQLite.Simple (Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
+import Database.SQLite.Simple.ToField (ToField)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Protocol
@@ -107,6 +112,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Version (VersionRange)
+import System.FilePath (takeFileName)
 
 getLiveSndFileTransfers :: DB.Connection -> User -> IO [SndFileTransfer]
 getLiveSndFileTransfers db User {userId} = do
@@ -839,18 +845,19 @@ getFileTransfer :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO FileT
 getFileTransfer db user@User {userId} fileId =
   fileTransfer =<< liftIO (getFileTransferRow_ db userId fileId)
   where
-    fileTransfer :: [(Maybe Int64, Maybe Int64)] -> ExceptT StoreError IO FileTransfer
-    fileTransfer [(Nothing, Just _)] = FTRcv <$> getRcvFileTransfer db user fileId
+    fileTransfer :: [(Maybe Int64, Maybe Int64, FileProtocol)] -> ExceptT StoreError IO FileTransfer
+    fileTransfer [(_, _, FPLocal)] = throwError $ SELocalFileNoTransfer fileId
+    fileTransfer [(Nothing, Just _, _)] = FTRcv <$> getRcvFileTransfer db user fileId
     fileTransfer _ = do
       (ftm, fts) <- getSndFileTransfer db user fileId
       pure $ FTSnd {fileTransferMeta = ftm, sndFileTransfers = fts}
 
-getFileTransferRow_ :: DB.Connection -> UserId -> Int64 -> IO [(Maybe Int64, Maybe Int64)]
+getFileTransferRow_ :: DB.Connection -> UserId -> Int64 -> IO [(Maybe Int64, Maybe Int64, FileProtocol)]
 getFileTransferRow_ db userId fileId =
   DB.query
     db
     [sql|
-      SELECT s.file_id, r.file_id
+      SELECT s.file_id, r.file_id, f.protocol
       FROM files f
       LEFT JOIN snd_files s ON s.file_id = f.file_id
       LEFT JOIN rcv_files r ON r.file_id = f.file_id
@@ -911,24 +918,70 @@ getFileTransferMeta_ db userId fileId =
           xftpSndFile = (\fId -> XFTPSndFile {agentSndFileId = fId, privateSndFileDescr, agentSndFileDeleted, cryptoArgs}) <$> aSndFileId_
        in FileTransferMeta {fileId, xftpSndFile, fileName, fileSize, chunkSize, filePath, fileInline, cancelled = fromMaybe False cancelled_}
 
+createLocalFile :: ToField (CIFileStatus d) => CIFileStatus d -> DB.Connection -> User -> NoteFolder -> ChatItemId -> UTCTime -> CryptoFile -> Integer -> Integer -> IO Int64
+createLocalFile fileStatus db User {userId} NoteFolder {noteFolderId} chatItemId itemTs CryptoFile {filePath, cryptoArgs} fileSize fileChunkSize = do
+  DB.execute
+    db
+    [sql|
+      INSERT INTO files
+        ( user_id, note_folder_id, chat_item_id,
+          file_name, file_path, file_size,
+          file_crypto_key, file_crypto_nonce,
+          chunk_size, file_inline, ci_file_status, protocol, created_at, updated_at
+        )
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    |]
+    ( (userId, noteFolderId, chatItemId)
+        :. (takeFileName filePath, filePath, fileSize)
+        :. maybe (Nothing, Nothing) (\(CFArgs key nonce) -> (Just key, Just nonce)) cryptoArgs
+        :. (fileChunkSize, Nothing :: Maybe InlineFileMode, fileStatus, FPLocal, itemTs, itemTs)
+    )
+  insertedRowId db
+
+getLocalFileMeta :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO LocalFileMeta
+getLocalFileMeta db userId fileId =
+  ExceptT . firstRow localFileMeta (SEFileNotFound fileId) $
+    DB.query
+      db
+      [sql|
+        SELECT file_name, file_size, file_path, file_crypto_key, file_crypto_nonce
+        FROM files
+        WHERE user_id = ? AND file_id = ?
+      |]
+      (userId, fileId)
+  where
+    localFileMeta :: (FilePath, Integer, FilePath, Maybe C.SbKey, Maybe C.CbNonce) -> LocalFileMeta
+    localFileMeta (fileName, fileSize, filePath, fileKey, fileNonce) =
+      let fileCryptoArgs = CFArgs <$> fileKey <*> fileNonce
+       in LocalFileMeta {fileId, fileName, fileSize, filePath, fileCryptoArgs}
+
 getContactFileInfo :: DB.Connection -> User -> Contact -> IO [CIFileInfo]
 getContactFileInfo db User {userId} Contact {contactId} =
   map toFileInfo
     <$> DB.query db (fileInfoQuery <> " WHERE i.user_id = ? AND i.contact_id = ?") (userId, contactId)
 
+getNoteFolderFileInfo :: DB.Connection -> User -> NoteFolder -> IO [CIFileInfo]
+getNoteFolderFileInfo db User {userId} NoteFolder {noteFolderId} =
+  map toFileInfo
+    <$> DB.query db (fileInfoQuery <> " WHERE i.user_id = ? AND i.note_folder_id = ?") (userId, noteFolderId)
+
 getLocalCryptoFile :: DB.Connection -> UserId -> Int64 -> Bool -> ExceptT StoreError IO CryptoFile
 getLocalCryptoFile db userId fileId sent =
   liftIO (getFileTransferRow_ db userId fileId) >>= \case
-    [(Nothing, Just _)] -> do
+    [(Nothing, Just _, _)] -> do
       when sent $ throwError $ SEFileNotFound fileId
       RcvFileTransfer {fileStatus, cryptoArgs} <- getRcvFileTransfer_ db userId fileId
       case fileStatus of
         RFSComplete RcvFileInfo {filePath} -> pure $ CryptoFile filePath cryptoArgs
         _ -> throwError $ SEFileNotFound fileId
-    _ -> do
+    [(Just _, Nothing, _)] -> do
       unless sent $ throwError $ SEFileNotFound fileId
       FileTransferMeta {filePath, xftpSndFile} <- getFileTransferMeta_ db userId fileId
       pure $ CryptoFile filePath $ xftpSndFile >>= \XFTPSndFile {cryptoArgs} -> cryptoArgs
+    [(Nothing, Nothing, FPLocal)] -> do
+      LocalFileMeta {filePath, fileCryptoArgs} <- getLocalFileMeta db userId fileId
+      pure $ CryptoFile filePath fileCryptoArgs
+    _ -> throwError $ SEFileNotFound fileId
 
 updateDirectCIFileStatus :: forall d. MsgDirectionI d => DB.Connection -> VersionRange -> User -> Int64 -> CIFileStatus d -> ExceptT StoreError IO AChatItem
 updateDirectCIFileStatus db vr user fileId fileStatus = do
