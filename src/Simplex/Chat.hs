@@ -5368,7 +5368,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         Left (SEGroupMemberNotFoundByMemberId _) -> do
           let name = T.take 7 . safeDecodeUtf8 . B64.encode . unMemberId $ memberId
           unknownAuthor <- withStore $ \db -> createNewUnknownGroupMember db vr user gInfo memberId name
-          toView $ CRUnknownMemberCreatedOnForward user gInfo m unknownAuthor
+          toView $ CRUnknownMemberCreated user gInfo m unknownAuthor
           processForwardedMsg unknownAuthor msg
         Left e -> throwError $ ChatErrorStore e
       where
