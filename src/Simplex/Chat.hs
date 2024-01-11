@@ -4834,10 +4834,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             createInternalChatItem user (CDGroupRcv gInfo m') ciContent Nothing
           toView $ CRGroupMemberUpdated user gInfo m m'
           pure m'
-        Just mContactId -> do
-          mCt <- withStore $ \db -> getContact db user mContactId
-          Contact {profile} <- processContactProfileUpdate mCt p' createItems
-          pure m {memberProfile = profile}
+        Just _mContactId -> do
+          -- TODO check auth err counter == 1
+          -- mCt <- withStore $ \db -> getContact db user mContactId
+          -- Contact {profile} <- processContactProfileUpdate mCt p' createItems
+          -- pure m {memberProfile = profile}
+          pure m
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
