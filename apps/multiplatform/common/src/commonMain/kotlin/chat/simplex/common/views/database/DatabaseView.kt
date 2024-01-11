@@ -89,13 +89,8 @@ fun DatabaseView(
       chatItemTTL,
       user,
       m.users,
-      startChat = {
-        progressIndicator.value = true
-        startChat(m, chatLastStart, m.chatDbChanged) {
-          progressIndicator.value = false
-        }
-      },
-      stopChatAlert = { stopChatAlert(m) },
+      startChat = { startChat(m, chatLastStart, m.chatDbChanged, progressIndicator) },
+      stopChatAlert = { stopChatAlert(m, progressIndicator) },
       exportArchive = { exportArchive(m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile, saveArchiveLauncher) },
       deleteChatAlert = { deleteChatAlert(m, progressIndicator) },
       deleteAppFilesAndMedia = { deleteFilesAndMediaAlert(appFilesCountAndSize) },
@@ -372,9 +367,10 @@ fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
   return stringResource(if (chatArchiveTime < chatLastStart) MR.strings.old_database_archive else MR.strings.new_database_archive)
 }
 
-fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>, onFinish: (() -> Unit)? = null) {
+fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>, progressIndicator: MutableState<Boolean>? = null) {
   withBGApi {
     try {
+      progressIndicator?.value = true
       if (chatDbChanged.value) {
         initChatController()
         chatDbChanged.value = false
@@ -399,17 +395,17 @@ fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged
       m.chatRunning.value = false
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_starting_chat), e.toString())
     } finally {
-      onFinish?.invoke()
+      progressIndicator?.value = false
     }
   }
 }
 
-private fun stopChatAlert(m: ChatModel) {
+private fun stopChatAlert(m: ChatModel, progressIndicator: MutableState<Boolean>? = null) {
   AlertManager.shared.showAlertDialog(
     title = generalGetString(MR.strings.stop_chat_question),
     text = generalGetString(MR.strings.stop_chat_to_export_import_or_delete_chat_database),
     confirmText = generalGetString(MR.strings.stop_chat_confirmation),
-    onConfirm = { authStopChat(m) },
+    onConfirm = { authStopChat(m, progressIndicator = progressIndicator) },
     onDismiss = { m.chatRunning.value = true }
   )
 }
@@ -423,7 +419,7 @@ private fun exportProhibitedAlert() {
   )
 }
 
-fun authStopChat(m: ChatModel, onStop: (() -> Unit)? = null) {
+fun authStopChat(m: ChatModel, progressIndicator: MutableState<Boolean>? = null, onStop: (() -> Unit)? = null) {
   if (m.controller.appPrefs.performLA.get()) {
     authenticate(
       generalGetString(MR.strings.auth_stop_chat),
@@ -431,7 +427,7 @@ fun authStopChat(m: ChatModel, onStop: (() -> Unit)? = null) {
       completed = { laResult ->
         when (laResult) {
           LAResult.Success, is LAResult.Unavailable -> {
-            stopChat(m, onStop)
+            stopChat(m, progressIndicator, onStop)
           }
           is LAResult.Error -> {
             m.chatRunning.value = true
@@ -444,19 +440,22 @@ fun authStopChat(m: ChatModel, onStop: (() -> Unit)? = null) {
       }
     )
   } else {
-    stopChat(m, onStop)
+    stopChat(m, progressIndicator, onStop)
   }
 }
 
-private fun stopChat(m: ChatModel, onStop: (() -> Unit)? = null) {
+private fun stopChat(m: ChatModel, progressIndicator: MutableState<Boolean>? = null, onStop: (() -> Unit)? = null) {
   withBGApi {
     try {
+      progressIndicator?.value = true
       stopChatAsync(m)
       platform.androidChatStopped()
       onStop?.invoke()
     } catch (e: Error) {
       m.chatRunning.value = true
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_stopping_chat), e.toString())
+    } finally {
+      progressIndicator?.value = false
     }
   }
 }
