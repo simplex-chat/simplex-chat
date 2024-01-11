@@ -5100,16 +5100,24 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         _ -> pure conn'
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> RcvMessage -> UTCTime -> m ()
-    xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ memberProfile) msg brokerTs = do
+    xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _) msg brokerTs = do
       checkHostRole m memRole
       unless (sameMemberId memId $ membership gInfo) $
         withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
+          Right unknownMember@GroupMember {memberStatus = GSMemUnknown} -> do
+            updatedMember <- withStore $ \db -> updateUnknownMemberAnnounced db user m unknownMember memInfo
+            toView $ CRUnknownMemberAnnounced user gInfo m unknownMember updatedMember
+            memberAnnouncedToView updatedMember
           Right _ -> messageError "x.grp.mem.new error: member already exists"
           Left _ -> do
-            newMember@GroupMember {groupMemberId} <- withStore $ \db -> createNewGroupMember db user gInfo m memInfo GCPostMember GSMemAnnounced
-            ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs (CIRcvGroupEvent $ RGEMemberAdded groupMemberId memberProfile)
-            groupMsgToView gInfo ci
-            toView $ CRJoinedGroupMemberConnecting user gInfo m newMember
+            newMember <- withStore $ \db -> createNewGroupMember db user gInfo m memInfo GCPostMember GSMemAnnounced
+            memberAnnouncedToView newMember
+      where
+        memberAnnouncedToView announcedMember@GroupMember {groupMemberId, memberProfile} = do
+          let event = RGEMemberAdded groupMemberId (fromLocalProfile memberProfile)
+          ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs (CIRcvGroupEvent event)
+          groupMsgToView gInfo ci
+          toView $ CRJoinedGroupMemberConnecting user gInfo m announcedMember
 
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> m ()
     xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _) = do
@@ -5355,8 +5363,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpMsgForward :: GroupInfo -> GroupMember -> MemberId -> ChatMessage 'Json -> UTCTime -> m ()
     xGrpMsgForward gInfo@GroupInfo {groupId} m@GroupMember {memberRole, localDisplayName} memberId msg msgTs = do
       when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole localDisplayName)
-      author <- withStore $ \db -> getGroupMemberByMemberId db user gInfo memberId
-      processForwardedMsg author msg
+      withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memberId) >>= \case
+        Right author -> processForwardedMsg author msg
+        Left (SEGroupMemberNotFoundByMemberId _) -> do
+          let name = T.take 7 . safeDecodeUtf8 . B64.encode . unMemberId $ memberId
+          unknownAuthor <- withStore $ \db -> createNewUnknownGroupMember db vr user gInfo memberId name
+          toView $ CRUnknownMemberCreated user gInfo m unknownAuthor
+          processForwardedMsg unknownAuthor msg
+        Left e -> throwError $ ChatErrorStore e
       where
         -- Note: forwarded group events (see forwardedGroupMsg) should include msgId to be deduplicated
         processForwardedMsg :: GroupMember -> ChatMessage 'Json -> m ()

@@ -825,6 +825,7 @@ data GroupMemberStatus
   = GSMemRemoved -- member who was removed from the group
   | GSMemLeft -- member who left the group
   | GSMemGroupDeleted -- user member of the deleted group
+  | GSMemUnknown -- unknown member, whose message was forwarded by an admin (likely member wasn't introduced due to not being a current member, but message was included in history)
   | GSMemInvited -- member is sent to or received invitation to join the group
   | GSMemIntroduced -- user received x.grp.mem.intro for this member (only with GCPreMember)
   | GSMemIntroInvited -- member is sent to or received from intro invitation
@@ -851,6 +852,7 @@ memberActive m = case memberStatus m of
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False
+  GSMemUnknown -> False
   GSMemInvited -> False
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
@@ -869,6 +871,7 @@ memberCurrent' = \case
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False
+  GSMemUnknown -> False
   GSMemInvited -> False
   GSMemIntroduced -> True
   GSMemIntroInvited -> True
@@ -883,6 +886,7 @@ memberRemoved m = case memberStatus m of
   GSMemRemoved -> True
   GSMemLeft -> True
   GSMemGroupDeleted -> True
+  GSMemUnknown -> False
   GSMemInvited -> False
   GSMemIntroduced -> False
   GSMemIntroInvited -> False
@@ -897,6 +901,7 @@ instance TextEncoding GroupMemberStatus where
     "removed" -> Just GSMemRemoved
     "left" -> Just GSMemLeft
     "deleted" -> Just GSMemGroupDeleted
+    "unknown" -> Just GSMemUnknown
     "invited" -> Just GSMemInvited
     "introduced" -> Just GSMemIntroduced
     "intro-inv" -> Just GSMemIntroInvited
@@ -910,6 +915,7 @@ instance TextEncoding GroupMemberStatus where
     GSMemRemoved -> "removed"
     GSMemLeft -> "left"
     GSMemGroupDeleted -> "deleted"
+    GSMemUnknown -> "unknown"
     GSMemInvited -> "invited"
     GSMemIntroduced -> "introduced"
     GSMemIntroInvited -> "intro-inv"

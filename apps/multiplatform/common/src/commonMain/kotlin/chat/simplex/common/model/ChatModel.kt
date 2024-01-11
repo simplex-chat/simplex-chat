@@ -1268,12 +1268,19 @@ data class GroupMember (
   val verified get() = activeConn?.connectionCode != null
 
   val chatViewName: String
-    get() = memberProfile.localAlias.ifEmpty { displayName + (if (fullName == "" || fullName == displayName) "" else " / $fullName") }
+    get() {
+      val name = memberProfile.localAlias.ifEmpty { displayName + (if (fullName == "" || fullName == displayName) "" else " / $fullName") }
+      return if (memberStatus == GroupMemberStatus.MemUnknown)
+        String.format(generalGetString(MR.strings.previous_member_vName), name)
+      else
+        name
+    }
 
   val memberActive: Boolean get() = when (this.memberStatus) {
     GroupMemberStatus.MemRemoved -> false
     GroupMemberStatus.MemLeft -> false
     GroupMemberStatus.MemGroupDeleted -> false
+    GroupMemberStatus.MemUnknown -> false
     GroupMemberStatus.MemInvited -> false
     GroupMemberStatus.MemIntroduced -> false
     GroupMemberStatus.MemIntroInvited -> false
@@ -1288,6 +1295,7 @@ data class GroupMember (
     GroupMemberStatus.MemRemoved -> false
     GroupMemberStatus.MemLeft -> false
     GroupMemberStatus.MemGroupDeleted -> false
+    GroupMemberStatus.MemUnknown -> false
     GroupMemberStatus.MemInvited -> false
     GroupMemberStatus.MemIntroduced -> true
     GroupMemberStatus.MemIntroInvited -> true
@@ -1377,6 +1385,7 @@ enum class GroupMemberStatus {
   @SerialName("removed") MemRemoved,
   @SerialName("left") MemLeft,
   @SerialName("deleted") MemGroupDeleted,
+  @SerialName("unknown") MemUnknown,
   @SerialName("invited") MemInvited,
   @SerialName("introduced") MemIntroduced,
   @SerialName("intro-inv") MemIntroInvited,
@@ -1390,6 +1399,7 @@ enum class GroupMemberStatus {
     MemRemoved -> generalGetString(MR.strings.group_member_status_removed)
     MemLeft -> generalGetString(MR.strings.group_member_status_left)
     MemGroupDeleted -> generalGetString(MR.strings.group_member_status_group_deleted)
+    MemUnknown -> generalGetString(MR.strings.group_member_status_unknown)
     MemInvited -> generalGetString(MR.strings.group_member_status_invited)
     MemIntroduced -> generalGetString(MR.strings.group_member_status_introduced)
     MemIntroInvited -> generalGetString(MR.strings.group_member_status_intro_invitation)
@@ -1404,6 +1414,7 @@ enum class GroupMemberStatus {
     MemRemoved -> generalGetString(MR.strings.group_member_status_removed)
     MemLeft -> generalGetString(MR.strings.group_member_status_left)
     MemGroupDeleted -> generalGetString(MR.strings.group_member_status_group_deleted)
+    MemUnknown -> generalGetString(MR.strings.group_member_status_unknown_short)
     MemInvited -> generalGetString(MR.strings.group_member_status_invited)
     MemIntroduced -> generalGetString(MR.strings.group_member_status_connecting)
     MemIntroInvited -> generalGetString(MR.strings.group_member_status_connecting)
