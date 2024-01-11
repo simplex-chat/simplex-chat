@@ -4835,11 +4835,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             createInternalChatItem user (CDGroupRcv gInfo m') ciContent Nothing
           toView $ CRGroupMemberUpdated user gInfo m m'
           pure m'
-        Just _mContactId -> do
-          -- mCt <- withStore $ \db -> getContact db user mContactId
-          -- Contact {profile} <- processContactProfileUpdate mCt p' createItems
-          -- pure m {memberProfile = profile}
-          pure m
+        Just mContactId -> do
+          mCt <- withStore $ \db -> getContact db user mContactId
+          Contact {profile} <- processContactProfileUpdate mCt p' createItems
+          pure m {memberProfile = profile}
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
@@ -5800,8 +5799,9 @@ sendGroupMessage user gInfo members chatMsgEvent canSendProfileUpdate
             (Nothing, Just _) -> True
             _ -> False
     sendProfileUpdate = do
-      let profileUpdateEvent = XGrpMemProfile $ toMemberProfile $ fromLocalProfile p
-      void $ sendGroupMessage' user gInfo members profileUpdateEvent
+      let members' = filter (\m -> isCompatibleRange (memberChatVRange' m) membershipProfileUpdateVRange) members
+          profileUpdateEvent = XGrpMemProfile $ toMemberProfile $ fromLocalProfile p
+      void $ sendGroupMessage' user gInfo members' profileUpdateEvent
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateMembershipProfileSentTs db user gInfo currentTs
     User {profile = p, membershipsProfileUpdateTs} = user
