@@ -5,6 +5,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import chat.simplex.common.model.ChatModel.updatingChatsMutex
+import chat.simplex.common.model.ChatModel.changingActiveUserMutex
 import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
@@ -335,14 +336,14 @@ object ChatController {
   var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
     private set
 
-  private fun currentUserId(funcName: String): Long {
+  private suspend fun currentUserId(funcName: String): Long = changingActiveUserMutex.withLock {
     val userId = chatModel.currentUser.value?.userId
     if (userId == null) {
       val error = "$funcName: no current user"
       Log.e(TAG, error)
       throw Exception(error)
     }
-    return userId
+    userId
   }
 
   suspend fun startChat(user: User) {
@@ -408,8 +409,11 @@ object ChatController {
   }
 
   suspend fun changeActiveUser_(rhId: Long?, toUserId: Long, viewPwd: String?) {
-    val currentUser = apiSetActiveUser(rhId, toUserId, viewPwd)
-    chatModel.currentUser.value = currentUser
+    val currentUser = changingActiveUserMutex.withLock {
+      apiSetActiveUser(rhId, toUserId, viewPwd).also {
+        chatModel.currentUser.value = it
+      }
+    }
     val users = listUsers(rhId)
     chatModel.users.clear()
     chatModel.users.addAll(users)
@@ -886,10 +890,7 @@ object ChatController {
 
 
   suspend fun apiAddContact(rh: Long?, incognito: Boolean): Pair<Pair<String, PendingContactConnection>?, (() -> Unit)?> {
-    val userId = chatModel.currentUser.value?.userId ?: run {
-      Log.e(TAG, "apiAddContact: no current user")
-      return null to null
-    }
+    val userId = try { currentUserId("apiAddContact") } catch (e: Exception) { return null to null }
     val r = sendCmd(rh, CC.APIAddContact(userId, incognito))
     return when (r) {
       is CR.Invitation -> (r.connReqInvitation to r.connection) to null
@@ -918,10 +919,7 @@ object ChatController {
   }
 
   suspend fun apiConnect(rh: Long?, incognito: Boolean, connReq: String): PendingContactConnection?  {
-    val userId = chatModel.currentUser.value?.userId ?: run {
-      Log.e(TAG, "apiConnect: no current user")
-      return null
-    }
+    val userId = try { currentUserId("apiConnect") } catch (e: Exception) { return null }
     val r = sendCmd(rh, CC.APIConnect(userId, incognito, connReq))
     when {
       r is CR.SentConfirmation -> return r.connection
@@ -960,10 +958,7 @@ object ChatController {
   }
 
   suspend fun apiConnectContactViaAddress(rh: Long?, incognito: Boolean, contactId: Long): Contact? {
-    val userId = chatModel.currentUser.value?.userId ?: run {
-      Log.e(TAG, "apiConnectContactViaAddress: no current user")
-      return null
-    }
+    val userId = try { currentUserId("apiConnectContactViaAddress") } catch (e: Exception) { return null }
     val r = sendCmd(rh, CC.ApiConnectContactViaAddress(userId, incognito, contactId))
     when {
       r is CR.SentInvitationToContact -> return r.contact
@@ -984,11 +979,12 @@ object ChatController {
   }
 
   suspend fun apiDeleteChat(rh: Long?, type: ChatType, id: Long, notify: Boolean? = null): Boolean {
+    chatModel.deletedChats.value += rh to type.type + id
     val r = sendCmd(rh, CC.ApiDeleteChat(type, id, notify))
-    when {
-      r is CR.ContactDeleted && type == ChatType.Direct -> return true
-      r is CR.ContactConnectionDeleted && type == ChatType.ContactConnection -> return true
-      r is CR.GroupDeletedUser && type == ChatType.Group -> return true
+    val success = when {
+      r is CR.ContactDeleted && type == ChatType.Direct -> true
+      r is CR.ContactConnectionDeleted && type == ChatType.ContactConnection -> true
+      r is CR.GroupDeletedUser && type == ChatType.Group -> true
       else -> {
         val titleId = when (type) {
           ChatType.Direct -> MR.strings.error_deleting_contact
@@ -997,9 +993,11 @@ object ChatController {
           ChatType.ContactConnection -> MR.strings.error_deleting_pending_contact_connection
         }
         apiErrorAlert("apiDeleteChat", generalGetString(titleId), r)
+        false
       }
     }
-    return false
+    chatModel.deletedChats.value -= rh to type.type + id
+    return success
   }
 
   suspend fun apiClearChat(rh: Long?, type: ChatType, id: Long): ChatInfo? {

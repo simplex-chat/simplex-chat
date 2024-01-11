@@ -2,14 +2,14 @@
 "CFBundleName" = "SimpleX";
 
 /* Privacy - Camera Usage Description */
-"NSCameraUsageDescription" = "SimpleX は、他のユーザーに接続したりビデオ通話を行うために QR コードをスキャンするためにカメラにアクセスする必要があります。";
+"NSCameraUsageDescription" = "SimpleXは他のユーザーに接続したりビデオ通話する際にQRコード読み取りのためにカメラにアクセスする必要があります。";
 
 /* Privacy - Face ID Usage Description */
-"NSFaceIDUsageDescription" = "SimpleX はローカル認証に Face ID を使用します";
+"NSFaceIDUsageDescription" = "SimpleXはローカル認証にFace IDを使用します";
 
 /* Privacy - Microphone Usage Description */
-"NSMicrophoneUsageDescription" = "SimpleX では、音声通話やビデオ通話、および音声メッセージの録音のためにマイクへのアクセスが必要です。";
+"NSMicrophoneUsageDescription" = "SimpleXは音声通話やビデオ通話および音声メッセージの録音のためにマイクにアクセスする必要があります。";
 
 /* Privacy - Photo Library Additions Usage Description */
-"NSPhotoLibraryAddUsageDescription" = "SimpleX は、キャプチャおよび受信したメディアを保存するためにフォト ライブラリにアクセスする必要があります";
+"NSPhotoLibraryAddUsageDescription" = "SimpleXはキャプチャおよび受信したメディアを保存するためにフォトライブラリにアクセスする必要があります";
 

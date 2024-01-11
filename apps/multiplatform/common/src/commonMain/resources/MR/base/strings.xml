@@ -33,7 +33,7 @@
   <string name="marked_deleted_description">marked deleted</string>
   <string name="marked_deleted_items_description">%d messages marked deleted</string>
   <string name="moderated_item_description">moderated by %s</string>
-  <string name="moderated_items_description">%d messages moderated by %s</string>
+  <string name="moderated_items_description">%1$d messages moderated by %2$s</string>
   <string name="blocked_item_description">blocked</string>
   <string name="blocked_items_description">%d messages blocked</string>
   <string name="sending_files_not_yet_supported">sending files is not supported yet</string>
@@ -1217,6 +1217,7 @@
   <string name="group_member_status_removed">removed</string>
   <string name="group_member_status_left">left</string>
   <string name="group_member_status_group_deleted">group deleted</string>
+  <string name="group_member_status_unknown">unknown status</string>
   <string name="group_member_status_invited">invited</string>
   <string name="group_member_status_introduced">connecting (introduced)</string>
   <string name="group_member_status_intro_invitation">connecting (introduction invitation)</string>
@@ -1227,6 +1228,9 @@
   <string name="group_member_status_creator">creator</string>
 
   <string name="group_member_status_connecting">connecting</string>
+  <string name="group_member_status_unknown_short">unknown</string>
+
+  <string name="previous_member_vName"><![CDATA[<i>Previous member</i> %1$s]]></string>
 
   <!-- AddGroupMembersView.kt -->
   <string name="no_contacts_to_add">No contacts to add</string>

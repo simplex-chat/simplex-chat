@@ -13,6 +13,7 @@ struct ChatPreviewView: View {
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
     @Binding var progressByTimeout: Bool
+    @State var deleting: Bool = false
     @Environment(\.colorScheme) var colorScheme
     var darkGreen = Color(red: 0, green: 0.5, blue: 0)
 
@@ -55,6 +56,9 @@ struct ChatPreviewView: View {
             .frame(maxHeight: .infinity)
         }
         .padding(.bottom, -8)
+        .onChange(of: chatModel.deletedChats.contains(chat.chatInfo.id)) { contains in
+            deleting = contains
+        }
     }
 
     @ViewBuilder private func chatPreviewImageOverlayIcon() -> some View {
@@ -87,13 +91,13 @@ struct ChatPreviewView: View {
         let t = Text(chat.chatInfo.chatViewName).font(.title3).fontWeight(.bold)
         switch chat.chatInfo {
         case let .direct(contact):
-            previewTitle(contact.verified == true ? verifiedIcon + t : t)
+            previewTitle(contact.verified == true ? verifiedIcon + t : t).foregroundColor(deleting ? Color.secondary : nil)
         case let .group(groupInfo):
-            let v = previewTitle(t)
+            let v = previewTitle(t).foregroundColor(deleting ? Color.secondary : nil)
             switch (groupInfo.membership.memberStatus) {
-            case .memInvited: v.foregroundColor(chat.chatInfo.incognito ? .indigo : .accentColor)
+            case .memInvited: v.foregroundColor(deleting ? .secondary : chat.chatInfo.incognito ? .indigo : .accentColor)
             case .memAccepted: v.foregroundColor(.secondary)
-            default: v
+            default: v.foregroundColor(deleting ? Color.secondary : nil)
             }
         default: previewTitle(t)
         }
