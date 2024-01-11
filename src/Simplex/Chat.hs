@@ -3802,6 +3802,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XFile fInv -> processGroupFileInvitation' gInfo m' fInv msg brokerTs
               XFileCancel sharedMsgId -> xFileCancelGroup gInfo m' sharedMsgId
               XFileAcptInv sharedMsgId fileConnReq_ fName -> xFileAcptInvGroup gInfo m' sharedMsgId fileConnReq_ fName
+              XInfo p -> xInfoMember gInfo m' p
               XGrpLinkMem p -> xGrpLinkMem gInfo m' conn' p
               XGrpMemNew memInfo -> xGrpMemNew gInfo m' memInfo msg brokerTs
               XGrpMemIntro memInfo -> xGrpMemIntro gInfo m' memInfo
@@ -3810,7 +3811,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpMemRole memId memRole -> xGrpMemRole gInfo m' memId memRole msg brokerTs
               XGrpMemCon memId -> xGrpMemCon gInfo m' memId
               XGrpMemDel memId -> xGrpMemDel gInfo m' memId msg brokerTs
-              XGrpMemProfile p -> xGrpMemProfile gInfo m' p
               XGrpLeave -> xGrpLeave gInfo m' msg brokerTs
               XGrpDel -> xGrpDel gInfo m' msg brokerTs
               XGrpInfo p' -> xGrpInfo gInfo m' p' msg brokerTs
@@ -4809,24 +4809,23 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   | otherwise -> Nothing
            in setPreference_ SCFTimedMessages ctUserTMPref' ctUserPrefs
 
-    xGrpMemProfile :: GroupInfo -> GroupMember -> MemberProfile -> m ()
-    xGrpMemProfile gInfo m p' = void $ processMemberProfileUpdate gInfo m p' True
+    xInfoMember :: GroupInfo -> GroupMember -> Profile -> m ()
+    xInfoMember gInfo m p' = void $ processMemberProfileUpdate gInfo m p' True
 
     xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> m ()
     xGrpLinkMem gInfo@GroupInfo {membership} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' = do
       xGrpLinkMemReceived <- withStore $ \db -> getXGrpLinkMemReceived db groupMemberId
       if viaGroupLink && isNothing (memberContactId m) && memberCategory == GCHostMember && not xGrpLinkMemReceived
         then do
-          m' <- processMemberProfileUpdate gInfo m (toMemberProfile p') False
+          m' <- processMemberProfileUpdate gInfo m p' False
           withStore' $ \db -> setXGrpLinkMemReceived db groupMemberId True
           let connectedIncognito = memberIncognito membership
           probeMatchingMemberContact m' connectedIncognito
         else messageError "x.grp.link.mem error: invalid group link host profile update"
 
-    processMemberProfileUpdate :: GroupInfo -> GroupMember -> MemberProfile -> Bool -> m GroupMember
-    processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} mp' createItems = do
-      -- TODO update only membership fields (name, image - use MemberProfile)
-      let p' = fromMemberProfile mp'
+    processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Bool -> m GroupMember
+    processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} p' createItems =
+      -- TODO update only membership fields (name, image)
       case memberContactId of
         Nothing -> do
           m' <- withStore $ \db -> updateMemberProfile db user m p'
@@ -5394,10 +5393,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XMsgDel sharedMsgId memId -> groupMessageDelete gInfo author sharedMsgId memId rcvMsg msgTs
             XMsgReact sharedMsgId (Just memId) reaction add -> groupMsgReaction gInfo author sharedMsgId memId reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> xFileCancelGroup gInfo author sharedMsgId
+            XInfo p -> xInfoMember gInfo author p
             XGrpMemNew memInfo -> xGrpMemNew gInfo author memInfo rcvMsg msgTs
             XGrpMemRole memId memRole -> xGrpMemRole gInfo author memId memRole rcvMsg msgTs
             XGrpMemDel memId -> xGrpMemDel gInfo author memId rcvMsg msgTs
-            XGrpMemProfile p -> xGrpMemProfile gInfo author p
             XGrpLeave -> xGrpLeave gInfo author rcvMsg msgTs
             XGrpDel -> xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> xGrpInfo gInfo author p' rcvMsg msgTs
@@ -5800,7 +5799,7 @@ sendGroupMessage user gInfo members chatMsgEvent canSendProfileUpdate
             _ -> False
     sendProfileUpdate = do
       let members' = filter (\m -> isCompatibleRange (memberChatVRange' m) membershipProfileUpdateVRange) members
-          profileUpdateEvent = XGrpMemProfile $ toMemberProfile $ fromLocalProfile p
+          profileUpdateEvent = XInfo $ keepMembershipProfileFields $ fromLocalProfile p
       void $ sendGroupMessage' user gInfo members' profileUpdateEvent
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateMembershipProfileSentTs db user gInfo currentTs

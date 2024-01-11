@@ -108,7 +108,7 @@ chatGroupTests = do
     it "prohibited to repeat sending x.grp.direct.inv" testMemberContactProhibitedRepeatInv
     it "invited member replaces member contact reference if it already exists" testMemberContactInvitedConnectionReplaced
     it "share incognito profile" testMemberContactIncognito
-    -- it "sends and updates profile when creating contact" testMemberContactProfileUpdate -- TODO behavior changed
+    it "sends and updates profile when creating contact" testMemberContactProfileUpdate
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForward
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
