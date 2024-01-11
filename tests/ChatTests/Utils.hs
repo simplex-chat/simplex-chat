@@ -11,6 +11,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Concurrent.STM
 import Control.Monad (unless, when)
+import Control.Monad.Except (runExceptT)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isDigit)
 import Data.List (isPrefixOf, isSuffixOf)
@@ -20,6 +21,7 @@ import qualified Data.Text as T
 import Database.SQLite.Simple (Only (..))
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), InlineFilesConfig (..), defaultInlineFilesConfig)
 import Simplex.Chat.Protocol
+import Simplex.Chat.Store.NoteFolders (createNoteFolder)
 import Simplex.Chat.Store.Profiles (getUserContactProfiles)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
@@ -287,6 +289,11 @@ cc <##.. ls = do
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
 
+(/*) :: HasCallStack => TestCC -> String -> IO ()
+cc /* note = do
+  cc `send` ("/* " <> note)
+  (dropTime <$> getTermLine cc) `shouldReturn` ("* " <> note)
+
 data ConsoleResponse
   = ConsoleString String
   | WithTime String
@@ -461,6 +468,12 @@ withCCUser cc action = do
 withCCTransaction :: TestCC -> (DB.Connection -> IO a) -> IO a
 withCCTransaction cc action =
   withTransaction (chatStore $ chatController cc) $ \db -> action db
+
+createCCNoteFolder :: TestCC -> IO ()
+createCCNoteFolder cc =
+  withCCTransaction cc $ \db ->
+    withCCUser cc $ \user ->
+      runExceptT (createNoteFolder db user) >>= either (fail . show) pure
 
 getProfilePictureByName :: TestCC -> String -> IO (Maybe String)
 getProfilePictureByName cc displayName =
