@@ -56,7 +56,7 @@ private suspend fun wrapWithLogging(action: suspend CoroutineScope.() -> Unit, e
   }
   action()
   job.cancel()
-  if (appPreferences.developerTools.get() && appPreferences.showSlowFunctions.get()) {
+  if (appPreferences.developerTools.get() && appPreferences.showSlowApiCalls.get()) {
     val end = System.currentTimeMillis()
     if (end - start > slow) {
       Log.e(TAG, "Possible problem with execution of the thread, took ${(end - start) / 1000}s:\n${exception.stackTraceToString()}")
