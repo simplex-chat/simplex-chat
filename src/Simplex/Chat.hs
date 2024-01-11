@@ -5862,7 +5862,7 @@ sendGroupMessage user gInfo members chatMsgEvent
             _ -> False
     sendProfileUpdate = do
       let members' = filter (\m -> isCompatibleRange (memberChatVRange' m) membershipProfileUpdateVRange) members
-          profileUpdateEvent = XInfo $ keepMembershipProfileFields $ fromLocalProfile p
+          profileUpdateEvent = XInfo $ onlyMemberProfileFields $ fromLocalProfile p
       void $ sendGroupMessage' user gInfo members' profileUpdateEvent
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateMembershipProfileSentTs db user gInfo currentTs
