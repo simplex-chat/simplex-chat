@@ -48,7 +48,7 @@ private suspend fun wrapWithLogging(action: suspend CoroutineScope.() -> Unit, e
   val start = System.currentTimeMillis()
   val job = launch {
     delay(deadlock)
-    Log.e(TAG, "Possible deadlock of the thread, not finished after 60s:\n${exception.stackTraceToString()}")
+    Log.e(TAG, "Possible deadlock of the thread, not finished after ${deadlock / 1000}s:\n${exception.stackTraceToString()}")
     AlertManager.shared.showAlertMsg(
       title = generalGetString(MR.strings.possible_deadlock_title),
       text = generalGetString(MR.strings.possible_deadlock_desc).format(deadlock / 1000, exception.stackTraceToString()),
