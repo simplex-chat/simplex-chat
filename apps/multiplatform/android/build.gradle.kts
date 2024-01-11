@@ -91,6 +91,7 @@ android {
         "es",
         "fi",
         "fr",
+        "hu",
         "it",
         "iw",
         "ja",
@@ -99,6 +100,7 @@ android {
         "pt-rBR",
         "ru",
         "th",
+        "tr",
         "uk",
         "zh-rCN"
     )

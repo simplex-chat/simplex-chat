@@ -208,6 +208,7 @@ object AppearanceScope {
       "es" to "Español",
       "fi" to "Suomi",
       "fr" to "Français",
+      "hu" to "Magyar",
       "it" to "Italiano",
       "iw" to "עִברִית",
       "ja" to "日本語",
@@ -216,6 +217,7 @@ object AppearanceScope {
       "pt-BR" to "Português, Brasil",
       "ru" to "Русский",
       "th" to "ภาษาไทย",
+      "tr" to "Türkçe",
       "uk" to "Українська",
       "zh-CN" to "简体中文"
     )
