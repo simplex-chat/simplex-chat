@@ -1404,7 +1404,7 @@
     <string name="database_encryption_will_be_updated_in_settings">Ключова фраза шифрування бази даних буде оновлена і збережена в налаштуваннях.</string>
     <string name="connect_plan_already_joining_the_group">Вже приєднано до групи!</string>
     <string name="group_members_n">%s, %s і %d учасників</string>
-    <string name="moderated_items_description">%d повідомлень модеровано %s</string>
+    <string name="moderated_items_description">%1$d повідомлень модеровано %2$s</string>
     <string name="remove_passphrase_from_settings">Вилучити ключову фразу із налаштувань?</string>
     <string name="unblock_member_button">Розблокувати учасника</string>
     <string name="use_random_passphrase">Використовувати випадковий пароль</string>

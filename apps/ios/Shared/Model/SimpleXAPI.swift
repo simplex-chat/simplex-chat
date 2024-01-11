@@ -691,6 +691,9 @@ func apiConnectContactViaAddress(incognito: Bool, contactId: Int64) async -> (Co
 }
 
 func apiDeleteChat(type: ChatType, id: Int64, notify: Bool? = nil) async throws {
+    let chatId = type.rawValue + id.description
+    DispatchQueue.main.async { ChatModel.shared.deletedChats.insert(chatId) }
+    defer { DispatchQueue.main.async { ChatModel.shared.deletedChats.remove(chatId) } }
     let r = await chatSendCmd(.apiDeleteChat(type: type, id: id, notify: notify), bgTask: false)
     if case .direct = type, case .contactDeleted = r { return }
     if case .contactConnection = type, case .contactConnectionDeleted = r { return }
@@ -1215,6 +1218,8 @@ private func currentUserId(_ funcName: String) throws -> Int64 {
 func initializeChat(start: Bool, confirmStart: Bool = false, dbKey: String? = nil, refreshInvitations: Bool = true, confirmMigrations: MigrationConfirmation? = nil) throws {
     logger.debug("initializeChat")
     let m = ChatModel.shared
+    m.ctrlInitInProgress = true
+    defer { m.ctrlInitInProgress = false }
     (m.chatDbEncrypted, m.chatDbStatus) = chatMigrateInit(dbKey, confirmMigrations: confirmMigrations)
     if  m.chatDbStatus != .ok { return }
     // If we migrated successfully means previous re-encryption process on database level finished successfully too

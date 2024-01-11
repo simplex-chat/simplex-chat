@@ -69,13 +69,29 @@ func fileModificationDate(_ path: String) -> Date? {
     }
 }
 
+public func deleteAppDatabaseAndFiles() {
+    let fm = FileManager.default
+    let dbPath = getAppDatabasePath().path
+    do {
+        try fm.removeItem(atPath: dbPath + CHAT_DB)
+        try fm.removeItem(atPath: dbPath + AGENT_DB)
+    } catch let error {
+        logger.error("Failed to delete all databases: \(error)")
+    }
+    try? fm.removeItem(atPath: dbPath + CHAT_DB_BAK)
+    try? fm.removeItem(atPath: dbPath + AGENT_DB_BAK)
+    try? fm.removeItem(at: getTempFilesDirectory())
+    try? fm.createDirectory(at: getTempFilesDirectory(), withIntermediateDirectories: true)
+    deleteAppFiles()
+    _ = kcDatabasePassword.remove()
+    storeDBPassphraseGroupDefault.set(true)
+}
+
 public func deleteAppFiles() {
     let fm = FileManager.default
     do {
-        let fileNames = try fm.contentsOfDirectory(atPath: getAppFilesDirectory().path)
-        for fileName in fileNames {
-            removeFile(fileName)
-        }
+        try fm.removeItem(at: getAppFilesDirectory())
+        try fm.createDirectory(at: getAppFilesDirectory(), withIntermediateDirectories: true)
     } catch {
         logger.error("FileUtils deleteAppFiles error: \(error.localizedDescription)")
     }

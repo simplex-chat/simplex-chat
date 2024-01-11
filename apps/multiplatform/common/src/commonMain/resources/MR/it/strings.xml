@@ -237,12 +237,12 @@
     <string name="accept">Accetta</string>
     <string name="v4_2_group_links_desc">Gli amministratori possono creare i link per entrare nei gruppi.</string>
     <string name="allow_disappearing_messages_only_if">Consenti i messaggi a tempo solo se il tuo contatto li consente.</string>
-    <string name="allow_to_delete_messages">Permetti di eliminare irreversibilmente i messaggi inviati.</string>
+    <string name="allow_to_delete_messages">Permetti di eliminare irreversibilmente i messaggi inviati. (24 ore)</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Permetti ai tuoi contatti di inviare messaggi a tempo.</string>
     <string name="network_enable_socks_info">Accedere ai server via proxy SOCKS sulla porta %d\? Il proxy deve essere avviato prima di attivare questa opzione.</string>
     <string name="v4_3_improved_server_configuration_desc">Aggiungi server scansionando codici QR.</string>
     <string name="all_group_members_will_remain_connected">Tutti i membri del gruppo resteranno connessi.</string>
-    <string name="allow_irreversible_message_deletion_only_if">Consenti l\'eliminazione irreversibile dei messaggi solo se il contatto la consente a te.</string>
+    <string name="allow_irreversible_message_deletion_only_if">Consenti l\'eliminazione irreversibile dei messaggi solo se il contatto la consente a te. (24 ore)</string>
     <string name="above_then_preposition_continuation">sopra, quindi:</string>
     <string name="accept_contact_button">Accetta</string>
     <string name="accept_connection_request__question">Accettare la richiesta di connessione\?</string>
@@ -257,7 +257,7 @@
     <string name="color_primary">Principale</string>
     <string name="accept_feature">Accetta</string>
     <string name="allow_voice_messages_only_if">Consenti i messaggi vocali solo se il tuo contatto li consente.</string>
-    <string name="allow_your_contacts_irreversibly_delete">Permetti ai tuoi contatti di eliminare irreversibilmente i messaggi inviati.</string>
+    <string name="allow_your_contacts_irreversibly_delete">Permetti ai tuoi contatti di eliminare irreversibilmente i messaggi inviati. (24 ore)</string>
     <string name="allow_direct_messages">Permetti l\'invio di messaggi diretti ai membri.</string>
     <string name="allow_to_send_disappearing">Permetti l\'invio di messaggi a tempo.</string>
     <string name="allow_to_send_voice">Permetti l\'invio di messaggi vocali.</string>
@@ -458,7 +458,7 @@
     <string name="group_display_name_field">Inserisci il nome del gruppo:</string>
     <string name="group_profile_is_stored_on_members_devices">Il profilo del gruppo è memorizzato sui dispositivi dei membri, non sui server.</string>
     <string name="chat_preferences_always">sempre</string>
-    <string name="both_you_and_your_contacts_can_delete">Sia tu che il tuo contatto potete eliminare irreversibilmente i messaggi inviati.</string>
+    <string name="both_you_and_your_contacts_can_delete">Sia tu che il tuo contatto potete eliminare irreversibilmente i messaggi inviati. (24 ore)</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Sia tu che il tuo contatto potete inviare messaggi a tempo.</string>
     <string name="both_you_and_your_contact_can_send_voice">Sia tu che il tuo contatto potete inviare messaggi vocali.</string>
     <string name="chat_preferences">Preferenze della chat</string>
@@ -495,7 +495,7 @@
     <string name="ttl_week">%d settimana</string>
     <string name="ttl_weeks">%d settimane</string>
     <string name="v4_2_group_links">Link del gruppo</string>
-    <string name="group_members_can_delete">I membri del gruppo possono eliminare irreversibilmente i messaggi inviati.</string>
+    <string name="group_members_can_delete">I membri del gruppo possono eliminare irreversibilmente i messaggi inviati. (24 ore)</string>
     <string name="group_members_can_send_dms">I membri del gruppo possono inviare messaggi diretti.</string>
     <string name="group_members_can_send_disappearing">I membri del gruppo possono inviare messaggi a tempo.</string>
     <string name="group_members_can_send_voice">I membri del gruppo possono inviare messaggi vocali.</string>
@@ -662,7 +662,7 @@
     <string name="many_people_asked_how_can_it_deliver"><![CDATA[Molte persone hanno chiesto: <i>se SimpleX non ha identificatori utente, come può recapitare i messaggi\?</i>]]></string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[Solo i dispositivi client memorizzano i profili utente, i contatti, i gruppi e i messaggi inviati con <b>crittografia end-to-end a 2 livelli</b>.]]></string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Protocollo e codice open source: chiunque può gestire i server.</string>
-    <string name="paste_the_link_you_received">Incolla il link ricevuto</string>
+    <string name="paste_the_link_you_received">Incolla il link che hai ricevuto</string>
     <string name="people_can_connect_only_via_links_you_share">Le persone possono connettersi a te solo tramite i link che condividi.</string>
     <string name="onboarding_notifications_mode_periodic">Periodico</string>
     <string name="privacy_redefined">Privacy ridefinita</string>
@@ -839,9 +839,9 @@
     <string name="chat_preferences_off">off</string>
     <string name="feature_off">off</string>
     <string name="chat_preferences_on">on</string>
-    <string name="only_you_can_delete_messages">Solo tu puoi eliminare irreversibilmente i messaggi (il tuo contatto può contrassegnarli per l\'eliminazione).</string>
+    <string name="only_you_can_delete_messages">Solo tu puoi eliminare irreversibilmente i messaggi (il tuo contatto può contrassegnarli per l\'eliminazione). (24 ore)</string>
     <string name="only_you_can_send_disappearing">Solo tu puoi inviare messaggi a tempo.</string>
-    <string name="only_your_contact_can_delete">Solo il tuo contatto può eliminare irreversibilmente i messaggi (tu puoi contrassegnarli per l\'eliminazione).</string>
+    <string name="only_your_contact_can_delete">Solo il tuo contatto può eliminare irreversibilmente i messaggi (tu puoi contrassegnarli per l\'eliminazione). (24 ore)</string>
     <string name="only_your_contact_can_send_disappearing">Solo il tuo contatto può inviare messaggi a tempo.</string>
     <string name="prohibit_sending_disappearing_messages">Proibisci l\'invio di messaggi a tempo.</string>
     <string name="prohibit_sending_voice_messages">Proibisci l\'invio di messaggi vocali.</string>
@@ -1422,7 +1422,7 @@
     <string name="connect_plan_connect_via_link">Connettere via link?</string>
     <string name="connect_plan_already_joining_the_group">Stai già entrando nel gruppo!</string>
     <string name="group_members_n">%s, %s e %d membri</string>
-    <string name="moderated_items_description">%d messaggi moderati da %s</string>
+    <string name="moderated_items_description">%1$d messaggi moderati da %2$s</string>
     <string name="unblock_member_button">Sblocca membro</string>
     <string name="connect_plan_connect_to_yourself">Connettersi a te stesso?</string>
     <string name="contact_tap_to_connect">Tocca per connettere</string>
@@ -1529,4 +1529,44 @@
     <string name="open_port_in_firewall_title">Apri porta nel firewall</string>
     <string name="error_showing_content">errore di visualizzazione del contenuto</string>
     <string name="error_showing_message">errore di visualizzazione del messaggio</string>
+    <string name="you_can_make_address_visible_via_settings">Puoi renderlo visibile ai tuoi contatti SimpleX nelle impostazioni.</string>
+    <string name="recent_history_is_not_sent_to_new_members">La cronologia non viene inviata ai nuovi membri.</string>
+    <string name="retry_verb">Riprova</string>
+    <string name="camera_not_available">Fotocamera non disponibile</string>
+    <string name="enable_sending_recent_history">Invia fino a 100 ultimi messaggi ai nuovi membri.</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Aggiungi contatto</b>: per creare un nuovo link di invito o connetterti tramite un link che hai ricevuto.]]></string>
+    <string name="disable_sending_recent_history">Non inviare la cronologia ai nuovi membri.</string>
+    <string name="or_show_this_qr_code">O mostra questo codice</string>
+    <string name="recent_history_is_sent_to_new_members">Vengono inviati ai nuovi membri fino a 100 ultimi messaggi.</string>
+    <string name="code_you_scanned_is_not_simplex_link_qr_code">Il codice che hai scansionato non è un codice QR di link SimpleX.</string>
+    <string name="the_text_you_pasted_is_not_a_link">Il testo che hai incollato non è un link SimpleX.</string>
+    <string name="enable_camera_access">Attiva l\'accesso alla fotocamera</string>
+    <string name="you_can_view_invitation_link_again">Puoi vedere di nuovo il link di invito nei dettagli di connessione.</string>
+    <string name="keep_unused_invitation_question">Tenere l\'invito inutilizzato?</string>
+    <string name="share_this_1_time_link">Condividi questo link di invito una tantum</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>Crea gruppo</b>: per creare un nuovo gruppo.]]></string>
+    <string name="recent_history">Cronologia visibile</string>
+    <string name="la_app_passcode">Password dell\'app</string>
+    <string name="new_chat">Nuova chat</string>
+    <string name="loading_chats">Caricamento delle chat…</string>
+    <string name="creating_link">Creazione link…</string>
+    <string name="or_scan_qr_code">O scansiona il codice QR</string>
+    <string name="invalid_qr_code">Codice QR non valido</string>
+    <string name="add_contact_tab">Aggiungi contatto</string>
+    <string name="tap_to_scan">Tocca per scansionare</string>
+    <string name="keep_invitation_link">Tieni</string>
+    <string name="tap_to_paste_link">Tocca per incollare il link</string>
+    <string name="search_or_paste_simplex_link">Cerca o incolla un link SimpleX</string>
+    <string name="chat_is_stopped_you_should_transfer_database">La chat è ferma. Se hai già usato questo database su un altro dispositivo, dovresti trasferirlo prima di avviare la chat.</string>
+    <string name="start_chat_question">Avviare la chat?</string>
+    <string name="agent_critical_error_title">Errore critico</string>
+    <string name="agent_internal_error_title">Errore interno</string>
+    <string name="agent_critical_error_desc">Si prega di segnalarlo agli sviluppatori:
+\n%s
+\n
+\nSi consiglia di riavviare l\'app.</string>
+    <string name="agent_internal_error_desc">Si prega di segnalarlo agli sviluppatori:
+\n%s</string>
+    <string name="restart_chat_button">Riavvia la chat</string>
+    <string name="show_internal_errors">Mostra errori interni</string>
 </resources>

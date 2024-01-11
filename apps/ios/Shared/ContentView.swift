@@ -31,6 +31,7 @@ struct ContentView: View {
     @State private var showWhatsNew = false
     @State private var showChooseLAMode = false
     @State private var showSetPasscode = false
+    @State private var waitingForOrPassedAuth = true
     @State private var chatListActionSheet: ChatListActionSheet? = nil
 
     private enum ChatListActionSheet: Identifiable {
@@ -61,6 +62,10 @@ struct ContentView: View {
             }
             if !showSettings, let la = chatModel.laRequest {
                 LocalAuthView(authRequest: la)
+                    .onDisappear {
+                        // this flag is separate from accessAuthenticated to show initializationView while we wait for authentication
+                        waitingForOrPassedAuth = accessAuthenticated
+                    }
             } else if showSetPasscode {
                 SetAppPasscodeView {
                     chatModel.contentViewAccessAuthenticated = true
@@ -73,8 +78,7 @@ struct ContentView: View {
                     showSetPasscode = false
                     alertManager.showAlert(laPasscodeNotSetAlert())
                 }
-            }
-            if chatModel.chatDbStatus == nil {
+            } else if chatModel.chatDbStatus == nil && AppChatState.shared.value != .stopped && waitingForOrPassedAuth {
                 initializationView()
             }
         }
