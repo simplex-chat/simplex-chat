@@ -54,7 +54,7 @@ fun ModalData.ProtocolServersView(m: ChatModel, rhId: Long?, serverProtocol: Ser
   }
 
   LaunchedEffect(rhId) {
-    withBGApi {
+    withApi {
       val res = m.controller.getUserProtoServers(rhId, serverProtocol)
       if (res != null) {
         currServers.value = res.protoServers

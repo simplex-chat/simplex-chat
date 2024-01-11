@@ -2010,20 +2010,18 @@ object ChatController {
     }
   }
 
-  fun switchToLocalSession() {
+  suspend fun switchToLocalSession() {
     val m = chatModel
     m.remoteCtrlSession.value = null
-    withBGApi {
-      val users = listUsers(null)
-      m.users.clear()
-      m.users.addAll(users)
-      getUserChatData(null)
-      val statuses = apiGetNetworkStatuses(null)
-      if (statuses != null) {
-        chatModel.networkStatuses.clear()
-        val ss = statuses.associate { it.agentConnId to it.networkStatus }.toMap()
-        chatModel.networkStatuses.putAll(ss)
-      }
+    val users = listUsers(null)
+    m.users.clear()
+    m.users.addAll(users)
+    getUserChatData(null)
+    val statuses = apiGetNetworkStatuses(null)
+    if (statuses != null) {
+      chatModel.networkStatuses.clear()
+      val ss = statuses.associate { it.agentConnId to it.networkStatus }.toMap()
+      chatModel.networkStatuses.putAll(ss)
     }
   }
 
