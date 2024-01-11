@@ -5850,16 +5850,6 @@ deliverMessagesB msgReqs = do
 sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> Bool -> m (SndMessage, [GroupMember])
 sendGroupMessage user gInfo members chatMsgEvent canSendProfileUpdate
   | shouldSendProfileUpdate = do
-    -- TODO batch together with chatMsgEvent
-    -- - only send profile update to members compatible with membershipProfileUpdateVRange?
-    --   - if yes, silent members might never receive profile updates
-    --   - if no (send to all), members with previous version might overwrite contact preferences,
-    --     though perhaps it's a rarer edge case
-    --     - could further be mitigated by two stage release
-    -- - create messages records, or skip them and send without shared msg id?
-    --   - sending without shared msg id would have less complexity
-    --   - likely will affect deduplication of forwarded messages,
-    --     perhaps we should exclude messages without shared msg id from forwarding
     sendProfileUpdate
     sendGroupMessage' user gInfo members chatMsgEvent
   | otherwise =
