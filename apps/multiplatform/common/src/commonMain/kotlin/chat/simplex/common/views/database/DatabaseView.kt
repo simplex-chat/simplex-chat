@@ -27,6 +27,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.*
 import java.io.*
@@ -88,7 +89,12 @@ fun DatabaseView(
       chatItemTTL,
       user,
       m.users,
-      startChat = { startChat(m, chatLastStart, m.chatDbChanged) },
+      startChat = {
+        progressIndicator.value = true
+        startChat(m, chatLastStart, m.chatDbChanged) {
+          progressIndicator.value = false
+        }
+      },
       stopChatAlert = { stopChatAlert(m) },
       exportArchive = { exportArchive(m, progressIndicator, chatArchiveName, chatArchiveTime, chatArchiveFile, saveArchiveLauncher) },
       deleteChatAlert = { deleteChatAlert(m, progressIndicator) },
@@ -187,7 +193,7 @@ fun DatabaseLayout(
             Text(generalGetString(MR.strings.disconnect_remote_hosts), Modifier.fillMaxWidth(), color = WarningOrange)
           }
         }
-        RunChatSetting(runChat, stopped, toggleEnabled, startChat, stopChatAlert)
+        RunChatSetting(runChat, stopped, toggleEnabled && !progressIndicator, startChat, stopChatAlert)
       }
       SectionTextFooter(
         if (stopped) {
@@ -366,7 +372,7 @@ fun chatArchiveTitle(chatArchiveTime: Instant, chatLastStart: Instant): String {
   return stringResource(if (chatArchiveTime < chatLastStart) MR.strings.old_database_archive else MR.strings.new_database_archive)
 }
 
-fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>) {
+fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged: MutableState<Boolean>, onFinish: (() -> Unit)? = null) {
   withBGApi {
     try {
       if (chatDbChanged.value) {
@@ -392,6 +398,8 @@ fun startChat(m: ChatModel, chatLastStart: MutableState<Instant?>, chatDbChanged
     } catch (e: Error) {
       m.chatRunning.value = false
       AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_starting_chat), e.toString())
+    } finally {
+      onFinish?.invoke()
     }
   }
 }
