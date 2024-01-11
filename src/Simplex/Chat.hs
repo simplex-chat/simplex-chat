@@ -5104,7 +5104,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       checkHostRole m memRole
       unless (sameMemberId memId $ membership gInfo) $
         withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
-          Right unknownMember@GroupMember {memberCategory = GCUnknownMember} -> do
+          Right unknownMember@GroupMember {memberStatus = GSMemUnknown} -> do
             updatedMember <- withStore $ \db -> updateUnknownMemberAnnounced db user m unknownMember memInfo
             toView $ CRUnknownMemberAnnounced user gInfo m unknownMember updatedMember
             memberAnnouncedToView updatedMember

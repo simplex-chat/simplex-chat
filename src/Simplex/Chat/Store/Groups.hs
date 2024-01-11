@@ -1981,7 +1981,7 @@ createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {g
             peer_chat_min_version, peer_chat_max_version)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       |]
-      ( (groupId, memberId, GRAuthor, GCUnknownMember, GSMemUnknown, fromInvitedBy userContactId IBUnknown)
+      ( (groupId, memberId, GRAuthor, GCPreMember, GSMemUnknown, fromInvitedBy userContactId IBUnknown)
           :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
           :. (minV, maxV)
       )

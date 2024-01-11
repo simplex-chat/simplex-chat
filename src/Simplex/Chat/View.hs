@@ -961,7 +961,6 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       GCUserMember -> ["you"]
       GCInviteeMember -> ["invited"]
       GCHostMember -> ["host"]
-      GCUnknownMember -> ["unknown member"]
       _ -> []
     status m = case memberStatus m of
       GSMemRemoved -> ["removed"]

@@ -5238,7 +5238,7 @@ testGroupHistoryUnknownMember =
         <### [ "dan (Daniel): admin, you, connected",
                "alice (Alice): owner, host, connected",
                "cath (Catherine): admin, connected",
-               EndsWith "author, unknown member, status unknown"
+               EndsWith "author, status unknown"
              ]
 
       -- message delivery works after sending history

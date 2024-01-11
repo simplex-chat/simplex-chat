@@ -1828,7 +1828,7 @@ public struct GroupMember: Identifiable, Decodable {
                 : p.localAlias
             )
             return (
-                memberCategory == .unknownMember
+                memberStatus == .memUnknown
                 ? String.localizedStringWithFormat(NSLocalizedString("_Previous member_ %@", comment: "previous/unknown group member"), name)
                 : name
             )
@@ -1956,7 +1956,6 @@ public enum GroupMemberCategory: String, Decodable {
     case hostMember = "host"
     case preMember = "pre"
     case postMember = "post"
-    case unknownMember = "unknown"
 }
 
 public enum GroupMemberStatus: String, Decodable {
