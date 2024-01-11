@@ -507,8 +507,8 @@ createGroupInvitedViaLink
               (profileId, localDisplayName, customUserProfileId, userId, True, currentTs, currentTs, currentTs, currentTs)
             insertedRowId db
       insertHost_ currentTs groupId = do
-        let fromMemberProfile = profileFromName fromMemberName
-        (localDisplayName, profileId) <- createNewMemberProfile_ db user fromMemberProfile currentTs
+        let fromMemProfile = profileFromName fromMemberName
+        (localDisplayName, profileId) <- createNewMemberProfile_ db user fromMemProfile currentTs
         let MemberIdRole {memberId, memberRole} = fromMember
         liftIO $ do
           DB.execute

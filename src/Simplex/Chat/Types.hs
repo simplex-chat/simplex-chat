@@ -483,10 +483,6 @@ profilesMatch
   LocalProfile {displayName = n2, fullName = fn2, image = i2} =
     n1 == n2 && fn1 == fn2 && i1 == i2
 
-keepMembershipProfileFields :: Profile -> Profile
-keepMembershipProfileFields Profile {displayName, fullName, image} =
-  Profile {displayName, fullName, image, contactLink = Nothing, preferences = Nothing}
-
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
 type LocalAlias = Text
@@ -512,6 +508,27 @@ toLocalProfile profileId Profile {displayName, fullName, image, contactLink, pre
 fromLocalProfile :: LocalProfile -> Profile
 fromLocalProfile LocalProfile {displayName, fullName, image, contactLink, preferences} =
   Profile {displayName, fullName, image, contactLink, preferences}
+
+data MemberProfile = MemberProfile
+  { displayName :: ContactName,
+    fullName :: Text,
+    image :: Maybe ImageData
+  }
+  deriving (Eq, Show)
+
+-- to use in contexts where regular Profile type has to be used in context of group member profiles,
+-- e.g. old protocol messages where we can't change it due to backwards compatibility
+keepMemberProfileFields :: Profile -> Profile
+keepMemberProfileFields Profile {displayName, fullName, image} =
+  Profile {displayName, fullName, image, contactLink = Nothing, preferences = Nothing}
+
+toMemberProfile :: Profile -> MemberProfile
+toMemberProfile Profile {displayName, fullName, image} =
+  MemberProfile {displayName, fullName, image}
+
+fromMemberProfile :: MemberProfile -> Profile
+fromMemberProfile MemberProfile {displayName, fullName, image} =
+  Profile {displayName, fullName, image, contactLink = Nothing, preferences = Nothing}
 
 data GroupProfile = GroupProfile
   { displayName :: GroupName,
@@ -1563,6 +1580,8 @@ instance ToJSON JVersionRange where
 $(JQ.deriveJSON defaultJSON ''UserContact)
 
 $(JQ.deriveJSON defaultJSON ''Profile)
+
+$(JQ.deriveJSON defaultJSON ''MemberProfile)
 
 $(JQ.deriveJSON defaultJSON ''LocalProfile)
 

@@ -254,6 +254,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpMemCon :: MemberId -> ChatMsgEvent 'Json
   XGrpMemConAll :: MemberId -> ChatMsgEvent 'Json -- TODO not implemented
   XGrpMemDel :: MemberId -> ChatMsgEvent 'Json
+  XGrpMemProfile :: MemberProfile -> ChatMsgEvent 'Json
   XGrpLeave :: ChatMsgEvent 'Json
   XGrpDel :: ChatMsgEvent 'Json
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
@@ -289,10 +290,10 @@ isForwardedGroupMsg ev = case ev of
   XMsgDel _ _ -> True
   XMsgReact {} -> True
   XFileCancel _ -> True
-  XInfo _ -> True
   XGrpMemNew _ -> True
   XGrpMemRole {} -> True
   XGrpMemDel _ -> True -- TODO there should be a special logic when deleting host member (e.g., host forwards it before deleting connections)
+  XGrpMemProfile _ -> True
   XGrpLeave -> True
   XGrpDel -> True -- TODO there should be a special logic - host should forward before deleting connections
   XGrpInfo _ -> True
@@ -634,6 +635,7 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpMemCon_ :: CMEventTag 'Json
   XGrpMemConAll_ :: CMEventTag 'Json
   XGrpMemDel_ :: CMEventTag 'Json
+  XGrpMemProfile_ :: CMEventTag 'Json
   XGrpLeave_ :: CMEventTag 'Json
   XGrpDel_ :: CMEventTag 'Json
   XGrpInfo_ :: CMEventTag 'Json
@@ -683,6 +685,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpMemCon_ -> "x.grp.mem.con"
     XGrpMemConAll_ -> "x.grp.mem.con.all"
     XGrpMemDel_ -> "x.grp.mem.del"
+    XGrpMemProfile_ -> "x.grp.mem.profile"
     XGrpLeave_ -> "x.grp.leave"
     XGrpDel_ -> "x.grp.del"
     XGrpInfo_ -> "x.grp.info"
@@ -733,6 +736,7 @@ instance StrEncoding ACMEventTag where
         "x.grp.mem.con" -> XGrpMemCon_
         "x.grp.mem.con.all" -> XGrpMemConAll_
         "x.grp.mem.del" -> XGrpMemDel_
+        "x.grp.mem.profile" -> XGrpMemProfile_
         "x.grp.leave" -> XGrpLeave_
         "x.grp.del" -> XGrpDel_
         "x.grp.info" -> XGrpInfo_
@@ -779,6 +783,7 @@ toCMEventTag msg = case msg of
   XGrpMemCon _ -> XGrpMemCon_
   XGrpMemConAll _ -> XGrpMemConAll_
   XGrpMemDel _ -> XGrpMemDel_
+  XGrpMemProfile _ -> XGrpMemProfile_
   XGrpLeave -> XGrpLeave_
   XGrpDel -> XGrpDel_
   XGrpInfo _ -> XGrpInfo_
@@ -878,6 +883,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpMemCon_ -> XGrpMemCon <$> p "memberId"
       XGrpMemConAll_ -> XGrpMemConAll <$> p "memberId"
       XGrpMemDel_ -> XGrpMemDel <$> p "memberId"
+      XGrpMemProfile_ -> XGrpMemProfile <$> p "profile"
       XGrpLeave_ -> pure XGrpLeave
       XGrpDel_ -> pure XGrpDel
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
@@ -938,6 +944,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpMemCon memId -> o ["memberId" .= memId]
       XGrpMemConAll memId -> o ["memberId" .= memId]
       XGrpMemDel memId -> o ["memberId" .= memId]
+      XGrpMemProfile profile -> o ["profile" .= profile]
       XGrpLeave -> JM.empty
       XGrpDel -> JM.empty
       XGrpInfo p -> o ["groupProfile" .= p]
