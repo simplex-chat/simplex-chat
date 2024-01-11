@@ -139,6 +139,10 @@
   <string name="smp_server_test_delete_file">Delete file</string>
   <string name="error_deleting_user">Error deleting user profile</string>
   <string name="error_updating_user_privacy">Error updating user privacy</string>
+  <string name="possible_deadlock_title">Deadlock</string>
+  <string name="possible_deadlock_desc">Execution of code takes too long time: %1$d seconds. Probably, the app is frozen: %2$s</string>
+  <string name="possible_slow_function_title">Slow function</string>
+  <string name="possible_slow_function_desc">Execution of function takes too long time: %1$d seconds: %2$s</string>
 
   <!-- background service notice - SimpleXAPI.kt -->
   <string name="icon_descr_instant_notifications">Instant notifications</string>
@@ -686,7 +690,9 @@
   <string name="hide_dev_options">Hide:</string>
   <string name="show_developer_options">Show developer options</string>
   <string name="developer_options">Database IDs and Transport isolation option.</string>
+  <string name="developer_options_section">Developer options</string>
   <string name="show_internal_errors">Show internal errors</string>
+  <string name="show_slow_api_calls">Show slow API calls</string>
   <string name="shutdown_alert_question">Shutdown?</string>
   <string name="shutdown_alert_desc">Notifications will stop working until you re-launch the app</string>
 

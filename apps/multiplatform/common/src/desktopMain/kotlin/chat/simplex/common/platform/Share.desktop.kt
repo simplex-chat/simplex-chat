@@ -4,8 +4,7 @@ import androidx.compose.ui.platform.ClipboardManager
 import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.text.AnnotatedString
 import chat.simplex.common.model.*
-import chat.simplex.common.views.helpers.generalGetString
-import chat.simplex.common.views.helpers.withApi
+import chat.simplex.common.views.helpers.*
 import java.io.File
 import java.net.URI
 import java.net.URLEncoder
@@ -23,7 +22,7 @@ actual fun ClipboardManager.shareText(text: String) {
 }
 
 actual fun shareFile(text: String, fileSource: CryptoFile) {
-  withApi {
+  withBGApi {
     FileChooserLauncher(false) { to: URI? ->
       if (to != null) {
         val absolutePath = if (fileSource.isAbsolutePath) fileSource.filePath else getAppFilePath(fileSource.filePath)

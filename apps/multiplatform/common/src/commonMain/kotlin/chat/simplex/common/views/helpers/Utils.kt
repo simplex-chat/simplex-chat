@@ -2,6 +2,7 @@ package chat.simplex.common.views.helpers
 
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
@@ -21,15 +22,71 @@ import java.net.URI
 import java.nio.file.Files
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.Executors
 import kotlin.math.*
+
+private val singleThreadDispatcher = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
 
 fun withApi(action: suspend CoroutineScope.() -> Unit): Job = withScope(GlobalScope, action)
 
 fun withScope(scope: CoroutineScope, action: suspend CoroutineScope.() -> Unit): Job =
-  scope.launch { withContext(Dispatchers.Main, action) }
+  Exception().let {
+    scope.launch { withContext(Dispatchers.Main, block = { wrapWithLogging(action, it) }) }
+  }
 
 fun withBGApi(action: suspend CoroutineScope.() -> Unit): Job =
-  CoroutineScope(Dispatchers.Default).launch(block = action)
+  Exception().let {
+    CoroutineScope(singleThreadDispatcher).launch(block = { wrapWithLogging(action, it) })
+  }
+
+fun withLongRunningApi(slow: Long = 120_000, deadlock: Long = 240_000, action: suspend CoroutineScope.() -> Unit): Job =
+  Exception().let {
+    CoroutineScope(Dispatchers.Default).launch(block = { wrapWithLogging(action, it, slow = slow, deadlock = deadlock) })
+  }
+
+private suspend fun wrapWithLogging(action: suspend CoroutineScope.() -> Unit, exception: java.lang.Exception, slow: Long = 10_000, deadlock: Long = 60_000) = coroutineScope {
+  val start = System.currentTimeMillis()
+  val job = launch {
+    delay(deadlock)
+    Log.e(TAG, "Possible deadlock of the thread, not finished after ${deadlock / 1000}s:\n${exception.stackTraceToString()}")
+    AlertManager.shared.showAlertMsg(
+      title = generalGetString(MR.strings.possible_deadlock_title),
+      text = generalGetString(MR.strings.possible_deadlock_desc).format(deadlock / 1000, exception.stackTraceToString()),
+    )
+  }
+  action()
+  job.cancel()
+  if (appPreferences.developerTools.get() && appPreferences.showSlowApiCalls.get()) {
+    val end = System.currentTimeMillis()
+    if (end - start > slow) {
+      Log.e(TAG, "Possible problem with execution of the thread, took ${(end - start) / 1000}s:\n${exception.stackTraceToString()}")
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.possible_slow_function_title),
+        text = generalGetString(MR.strings.possible_slow_function_desc).format((end - start) / 1000, exception.stackTraceToString()),
+      )
+    }
+  }
+}
+
+@OptIn(InternalCoroutinesApi::class)
+suspend fun interruptIfCancelled() = coroutineScope {
+  if (!isActive) {
+    Log.d(TAG, "Coroutine was cancelled and interrupted: ${Exception().stackTraceToString()}")
+    throw coroutineContext.job.getCancellationException()
+  }
+}
+
+/**
+ * This coroutine helper makes possible to cancel coroutine scope when a user goes back but not when the user rotates a screen
+ * */
+@Composable
+fun ModalData.CancellableOnGoneJob(key: String = rememberSaveable { UUID.randomUUID().toString() }): MutableState<Job> {
+  val job = remember { stateGetOrPut<Job>(key) { Job() } }
+  DisposableEffectOnGone {
+    job.value.cancel()
+  }
+  return job
+}
 
 enum class KeyboardState {
   Opened, Closed
@@ -422,8 +479,12 @@ fun DisposableEffectOnGone(always: () -> Unit = {}, whenDispose: () -> Unit = {}
     val orientation = windowOrientation()
     onDispose {
       whenDispose()
-      if (orientation == windowOrientation()) {
-        whenGone()
+      withApi {
+        // It needs some delay before check orientation again because it can still be not updated to actual value
+        delay(300)
+        if (orientation == windowOrientation()) {
+          whenGone()
+        }
       }
     }
   }

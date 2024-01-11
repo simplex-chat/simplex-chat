@@ -13,8 +13,7 @@ import chat.simplex.common.model.ChatItem
 import chat.simplex.common.model.MsgContent
 import chat.simplex.common.platform.FileChooserLauncher
 import chat.simplex.common.platform.saveImage
-import chat.simplex.common.views.helpers.SharedContent
-import chat.simplex.common.views.helpers.withApi
+import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import com.google.accompanist.permissions.rememberPermissionState
 import dev.icerock.moko.resources.compose.painterResource
@@ -37,7 +36,7 @@ actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
           writePermissionState.launchPermissionRequest()
         }
       }
-      is MsgContent.MCFile, is MsgContent.MCVoice, is MsgContent.MCVideo -> withApi { saveFileLauncher.launch(cItem.file?.fileName ?: "") }
+      is MsgContent.MCFile, is MsgContent.MCVoice, is MsgContent.MCVideo -> withBGApi { saveFileLauncher.launch(cItem.file?.fileName ?: "") }
       else -> {}
     }
     showMenu.value = false

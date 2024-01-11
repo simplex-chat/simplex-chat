@@ -319,7 +319,7 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
   if (chatModel.currentUser.value == null) {
     chatModel.appOpenUrl.value = rhId to uri
   } else {
-    withApi {
+    withBGApi {
       planAndConnect(rhId, uri, incognito = null, close = null)
     }
   }

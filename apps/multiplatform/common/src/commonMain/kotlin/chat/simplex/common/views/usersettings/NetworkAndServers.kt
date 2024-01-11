@@ -37,7 +37,7 @@ fun NetworkAndServersView(
   chatModel: ChatModel,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
+  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
 ) {
   val currentRemoteHost by remember { chatModel.currentRemoteHost }
   // It's not a state, just a one-time value. Shouldn't be used in any state-related situations
@@ -69,7 +69,7 @@ fun NetworkAndServersView(
           text = generalGetString(MR.strings.network_enable_socks_info).format(proxyPort.value),
           confirmText = generalGetString(MR.strings.confirm_verb),
           onConfirm = {
-            withApi {
+            withBGApi {
               val conf = NetCfg.proxyDefaults.withHostPort(chatModel.controller.appPrefs.networkProxyHostPort.get())
               chatModel.controller.apiSetNetworkConfig(conf)
               chatModel.controller.setNetCfg(conf)
@@ -84,7 +84,7 @@ fun NetworkAndServersView(
           text = generalGetString(MR.strings.network_disable_socks_info),
           confirmText = generalGetString(MR.strings.confirm_verb),
           onConfirm = {
-            withApi {
+            withBGApi {
               val conf = NetCfg.defaults
               chatModel.controller.apiSetNetworkConfig(conf)
               chatModel.controller.setNetCfg(conf)
@@ -111,7 +111,7 @@ fun NetworkAndServersView(
           onionHosts.value = prevValue
         }
       ) {
-        withApi {
+        withBGApi {
           val newCfg = chatModel.controller.getNetCfg().withOnionHosts(it)
           val res = chatModel.controller.apiSetNetworkConfig(newCfg)
           if (res) {
@@ -136,7 +136,7 @@ fun NetworkAndServersView(
         startsWith,
         onDismiss = { sessionMode.value = prevValue }
       ) {
-        withApi {
+        withBGApi {
           val newCfg = chatModel.controller.getNetCfg().copy(sessionMode = it)
           val res = chatModel.controller.apiSetNetworkConfig(newCfg)
           if (res) {
@@ -160,7 +160,7 @@ fun NetworkAndServersView(
   proxyPort: State<Int>,
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
+  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   toggleSocksProxy: (Boolean) -> Unit,
   useOnion: (OnionHosts) -> Unit,
   updateSessionMode: (TransportSessionMode) -> Unit,

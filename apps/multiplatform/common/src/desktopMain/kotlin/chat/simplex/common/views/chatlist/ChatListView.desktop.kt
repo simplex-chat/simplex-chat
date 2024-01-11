@@ -43,7 +43,7 @@ actual fun DesktopActiveCallOverlayLayout(newChatSheetState: MutableStateFlow<An
               .combinedClickable(onClick = {
                 val chat = chatModel.getChat(call.contact.id)
                 if (chat != null) {
-                  withApi {
+                  withBGApi {
                     openChat(chat.remoteHostId, chat.chatInfo, chatModel)
                   }
                 }
