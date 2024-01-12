@@ -36,6 +36,7 @@ import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpira
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
@@ -191,7 +192,8 @@ groupLinkViaContactVRange = mkVersionRange 1 2
 
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
-  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False MCError
+  Right db@ChatDatabase {chatStore, agentStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False MCError
+  withTransaction agentStore (`DB.execute_` "INSERT INTO users (user_id) VALUES (1);")
   Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
   startTestChat_ db cfg opts user
 
@@ -306,8 +308,8 @@ getTermLine cc =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
-      when True $ do
-      -- when (printOutput cc) $ do
+      -- when True $ do
+      when (printOutput cc) $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s

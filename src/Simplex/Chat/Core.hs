@@ -12,7 +12,6 @@ module Simplex.Chat.Core
   )
 where
 
-import Control.Concurrent.STM
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Reader
