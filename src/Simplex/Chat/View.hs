@@ -178,6 +178,8 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRGroupLinkConnecting u g _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
   CRUserDeletedMember u g m -> ttyUser u [ttyGroup' g <> ": you removed " <> ttyMember m <> " from the group"]
   CRLeftMemberUser u g -> ttyUser u $ [ttyGroup' g <> ": you left the group"] <> groupPreserved g
+  CRUnknownMemberCreated u g fwdM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember fwdM <> " forwarded a message from an unknown member, creating unknown member record " <> ttyMember um]
+  CRUnknownMemberAnnounced u g _ um m -> ttyUser u [ttyGroup' g <> ": unknown member " <> ttyMember um <> " updated to " <> ttyMember m]
   CRGroupDeletedUser u g -> ttyUser u [ttyGroup' g <> ": you deleted the group"]
   CRRcvFileDescrReady _ _ -> []
   CRRcvFileDescrNotReady _ _ -> []
@@ -394,6 +396,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
         toChatView :: AChat -> (Text, Text, Maybe ConnStatus)
         toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items Nothing, connStatus <$> activeConn)
         toChatView (AChat _ (Chat (GroupChat GroupInfo {membership, localDisplayName}) items _)) = ("#" <> localDisplayName, toCIPreview items (Just membership), Nothing)
+        toChatView (AChat _ (Chat (LocalChat _) items _)) = ("*", toCIPreview items Nothing, Nothing)
         toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items Nothing, Nothing)
         toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items Nothing, Just pccConnStatus)
         toCIPreview :: [CChatItem c] -> Maybe GroupMember -> Text
@@ -552,7 +555,24 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {forwardedByMember}, 
             from = ttyFromGroup g m
         where
           quote = maybe [] (groupQuote g) quotedItem
-      _ -> []
+      LocalChat _ -> case chatDir of
+        CILocalSnd -> case content of
+          CISndMsgContent mc -> hideLive meta $ withLocalFile to $ sndMsg to quote mc
+          CISndGroupEvent {} -> showSndItemProhibited to
+          _ -> showSndItem to
+          where
+            to = "* "
+        CILocalRcv -> case content of
+          CIRcvMsgContent mc -> withLocalFile from $ rcvMsg from quote mc
+          CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
+          CIRcvGroupEvent {} -> showRcvItemProhibited from
+          _ -> showRcvItem from
+          where
+            from = "* "
+        where
+          quote = []
+      ContactRequest {} -> []
+      ContactConnection {} -> []
     withItemDeleted item = case chatItemDeletedText ci (chatInfoMembership chat) of
       Nothing -> item
       Just t -> item <> styled (colored Red) (" [" <> t <> "]")
@@ -561,6 +581,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {forwardedByMember}, 
       Just _ -> item <> styled (colored Yellow) (" [>>]" :: String)
     withSndFile = withFile viewSentFileInvitation
     withRcvFile = withFile viewReceivedFileInvitation
+    withLocalFile = withFile viewLocalFile
     withFile view dir l = maybe l (\f -> l <> view dir f ts tz meta) file
     sndMsg = msg viewSentMessage
     rcvMsg = msg viewReceivedMessage
@@ -704,8 +725,15 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
       where
         from = ttyFromGroup g m
         reactionMsg mc = quoteText mc . ttyQuotedMember . Just $ sentByMember' g itemDir
+    (LocalChat _, CILocalRcv) -> case ciMsgContent content of
+      Just mc -> view from $ reactionMsg mc
+      _ -> []
+      where
+        from = "* "
+        reactionMsg mc = quoteText mc $ if toMsgDirection md == MDSnd then ">>" else ">"
     (_, CIDirectSnd) -> [sentText]
     (_, CIGroupSnd) -> [sentText]
+    (_, CILocalSnd) -> [sentText]
   where
     view from msg
       | showReactions = viewReceivedReaction from msg reactionText ts tz sentAt
@@ -963,6 +991,7 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
     status m = case memberStatus m of
       GSMemRemoved -> ["removed"]
       GSMemLeft -> ["left"]
+      GSMemUnknown -> ["status unknown"]
       GSMemInvited -> ["not yet joined"]
       GSMemConnected -> ["connected"]
       GSMemComplete -> ["connected"]
@@ -1566,6 +1595,11 @@ receivingFile_' hu testView status (AChatItem _ _ chat ChatItem {file = Just CIF
       _ -> []
 receivingFile_' _ _ status _ = [plain status <> " receiving file"] -- shouldn't happen
 
+viewLocalFile :: StyledString -> CIFile d -> CurrentTime -> TimeZone -> CIMeta c d -> [StyledString]
+viewLocalFile to CIFile {fileId, fileSource} ts tz = case fileSource of
+  Just (CryptoFile fPath _) -> sentWithTime_ ts tz [to <> fileTransferStr fileId fPath]
+  _ -> const []
+
 cryptoFileArgsStr :: Bool -> CryptoFileArgs -> ByteString
 cryptoFileArgsStr testView cfArgs@(CFArgs key nonce)
   | testView = LB.toStrict $ J.encode cfArgs
@@ -1872,6 +1906,7 @@ viewChatError logLevel testView = \case
     SEDuplicateGroupMessage {groupId, sharedMsgId}
       | testView -> ["duplicate group message, group id: " <> sShow groupId <> ", message id: " <> sShow sharedMsgId]
       | otherwise -> []
+    SEUserNoteFolderNotFound -> ["no notes folder"]
     e -> ["chat db error: " <> sShow e]
   ChatErrorDatabase err -> case err of
     DBErrorEncrypted -> ["error: chat database is already encrypted"]

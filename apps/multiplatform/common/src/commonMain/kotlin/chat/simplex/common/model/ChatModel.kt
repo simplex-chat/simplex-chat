@@ -56,6 +56,8 @@ object ChatModel {
   // current chat
   val chatId = mutableStateOf<String?>(null)
   val chatItems = mutableStateListOf<ChatItem>()
+  // rhId, chatId
+  val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
   val groupMembers = mutableStateListOf<GroupMember>()
 
@@ -112,7 +114,8 @@ object ChatModel {
 
   val clipboardHasText = mutableStateOf(false)
 
-  var updatingChatsMutex: Mutex = Mutex()
+  val updatingChatsMutex: Mutex = Mutex()
+  val changingActiveUserMutex: Mutex = Mutex()
 
   val desktopNoUserNoRemote: Boolean @Composable get() = appPlatform.isDesktop && currentUser.value == null && currentRemoteHost.value == null
   fun desktopNoUserNoRemote(): Boolean = appPlatform.isDesktop && currentUser.value == null && currentRemoteHost.value == null
@@ -124,6 +127,9 @@ object ChatModel {
   fun remoteHostId(): Long? = currentRemoteHost.value?.remoteHostId
   val remoteHostPairing = mutableStateOf<Pair<RemoteHostInfo?, RemoteHostSessionState>?>(null)
   val remoteCtrlSession = mutableStateOf<RemoteCtrlSession?>(null)
+
+  val processedCriticalError: ProcessedErrors<AgentErrorType.CRITICAL> = ProcessedErrors(60_000)
+  val processedInternalError: ProcessedErrors<AgentErrorType.INTERNAL> = ProcessedErrors(20_000)
 
   fun getUser(userId: Long): User? = if (currentUser.value?.userId == userId) {
     currentUser.value
@@ -1255,19 +1261,34 @@ data class GroupMember (
   var activeConn: Connection? = null
 ) {
   val id: String get() = "#$groupId @$groupMemberId"
-  val displayName: String get() = memberProfile.localAlias.ifEmpty { memberProfile.displayName }
+  val displayName: String
+    get() {
+      val name = memberProfile.localAlias.ifEmpty { memberProfile.displayName }
+      return pastMember(name)
+    }
   val fullName: String get() = memberProfile.fullName
   val image: String? get() = memberProfile.image
   val contactLink: String? = memberProfile.contactLink
   val verified get() = activeConn?.connectionCode != null
 
   val chatViewName: String
-    get() = memberProfile.localAlias.ifEmpty { displayName + (if (fullName == "" || fullName == displayName) "" else " / $fullName") }
+    get() {
+      val name = memberProfile.localAlias.ifEmpty { displayName + (if (fullName == "" || fullName == displayName) "" else " / $fullName") }
+      return pastMember(name)
+    }
+
+  private fun pastMember(name: String): String {
+    return if (memberStatus == GroupMemberStatus.MemUnknown)
+      String.format(generalGetString(MR.strings.past_member_vName), name)
+    else
+      name
+  }
 
   val memberActive: Boolean get() = when (this.memberStatus) {
     GroupMemberStatus.MemRemoved -> false
     GroupMemberStatus.MemLeft -> false
     GroupMemberStatus.MemGroupDeleted -> false
+    GroupMemberStatus.MemUnknown -> false
     GroupMemberStatus.MemInvited -> false
     GroupMemberStatus.MemIntroduced -> false
     GroupMemberStatus.MemIntroInvited -> false
@@ -1282,6 +1303,7 @@ data class GroupMember (
     GroupMemberStatus.MemRemoved -> false
     GroupMemberStatus.MemLeft -> false
     GroupMemberStatus.MemGroupDeleted -> false
+    GroupMemberStatus.MemUnknown -> false
     GroupMemberStatus.MemInvited -> false
     GroupMemberStatus.MemIntroduced -> true
     GroupMemberStatus.MemIntroInvited -> true
@@ -1371,6 +1393,7 @@ enum class GroupMemberStatus {
   @SerialName("removed") MemRemoved,
   @SerialName("left") MemLeft,
   @SerialName("deleted") MemGroupDeleted,
+  @SerialName("unknown") MemUnknown,
   @SerialName("invited") MemInvited,
   @SerialName("introduced") MemIntroduced,
   @SerialName("intro-inv") MemIntroInvited,
@@ -1384,6 +1407,7 @@ enum class GroupMemberStatus {
     MemRemoved -> generalGetString(MR.strings.group_member_status_removed)
     MemLeft -> generalGetString(MR.strings.group_member_status_left)
     MemGroupDeleted -> generalGetString(MR.strings.group_member_status_group_deleted)
+    MemUnknown -> generalGetString(MR.strings.group_member_status_unknown)
     MemInvited -> generalGetString(MR.strings.group_member_status_invited)
     MemIntroduced -> generalGetString(MR.strings.group_member_status_introduced)
     MemIntroInvited -> generalGetString(MR.strings.group_member_status_intro_invitation)
@@ -1398,6 +1422,7 @@ enum class GroupMemberStatus {
     MemRemoved -> generalGetString(MR.strings.group_member_status_removed)
     MemLeft -> generalGetString(MR.strings.group_member_status_left)
     MemGroupDeleted -> generalGetString(MR.strings.group_member_status_group_deleted)
+    MemUnknown -> generalGetString(MR.strings.group_member_status_unknown_short)
     MemInvited -> generalGetString(MR.strings.group_member_status_invited)
     MemIntroduced -> generalGetString(MR.strings.group_member_status_connecting)
     MemIntroInvited -> generalGetString(MR.strings.group_member_status_connecting)

@@ -200,6 +200,7 @@ data ChatController = ChatController
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
+    chatActivated :: TVar Bool,
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
     encryptLocalFiles :: TVar Bool,
@@ -233,7 +234,7 @@ data ChatCommand
   | UnmuteUser
   | APIDeleteUser UserId Bool (Maybe UserPwd)
   | DeleteUser UserName Bool (Maybe UserPwd)
-  | StartChat {subscribeConnections :: Bool, enableExpireChatItems :: Bool, startXFTPWorkers :: Bool}
+  | StartChat {mainApp :: Bool}
   | APIStopChat
   | APIActivateChat {restoreChat :: Bool}
   | APISuspendChat {suspendTimeout :: Int}
@@ -257,6 +258,7 @@ data ChatCommand
   | APIGetChatItems ChatPagination (Maybe String)
   | APIGetChatItemInfo ChatRef ChatItemId
   | APISendMessage {chatRef :: ChatRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessage :: ComposedMessage}
+  | APICreateChatItem {noteFolderId :: NoteFolderId, composedMessage :: ComposedMessage}
   | APIUpdateChatItem {chatRef :: ChatRef, chatItemId :: ChatItemId, liveMessage :: Bool, msgContent :: MsgContent}
   | APIDeleteChatItem ChatRef ChatItemId CIDeleteMode
   | APIDeleteMemberChatItem GroupId GroupMemberId ChatItemId
@@ -407,6 +409,7 @@ data ChatCommand
   | DeleteGroupLink GroupName
   | ShowGroupLink GroupName
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: Text, message :: Text}
+  | ClearNoteFolder
   | LastChats (Maybe Int) -- UserId (not used in UI)
   | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)
   | LastChatItemId (Maybe ChatName) Int -- UserId (not used in UI)
@@ -629,6 +632,8 @@ data ChatResponse
   | CRDeletedMember {user :: User, groupInfo :: GroupInfo, byMember :: GroupMember, deletedMember :: GroupMember}
   | CRDeletedMemberUser {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRLeftMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRUnknownMemberCreated {user :: User, groupInfo :: GroupInfo, forwardedByMember :: GroupMember, member :: GroupMember}
+  | CRUnknownMemberAnnounced {user :: User, groupInfo :: GroupInfo, announcingMember :: GroupMember, unknownMember :: GroupMember, announcedMember :: GroupMember}
   | CRGroupEmpty {user :: User, groupInfo :: GroupInfo}
   | CRGroupRemoved {user :: User, groupInfo :: GroupInfo}
   | CRGroupDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}

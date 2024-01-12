@@ -27,6 +27,7 @@ module Simplex.Chat.Store.Profiles
     getUserByARcvFileId,
     getUserByContactId,
     getUserByGroupId,
+    getUserByNoteFolderId,
     getUserByFileId,
     getUserFileInfo,
     deleteUserRecord,
@@ -120,6 +121,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
       (profileId, displayName, userId, True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
+
     pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing)
 
 getUsersInfo :: DB.Connection -> IO [UserInfo]
@@ -199,6 +201,11 @@ getUserByGroupId :: DB.Connection -> GroupId -> ExceptT StoreError IO User
 getUserByGroupId db groupId =
   ExceptT . firstRow toUser (SEUserNotFoundByGroupId groupId) $
     DB.query db (userQuery <> " JOIN groups g ON g.user_id = u.user_id WHERE g.group_id = ?") (Only groupId)
+
+getUserByNoteFolderId :: DB.Connection -> NoteFolderId -> ExceptT StoreError IO User
+getUserByNoteFolderId db contactId =
+  ExceptT . firstRow toUser (SEUserNotFoundByContactId contactId) $
+    DB.query db (userQuery <> " JOIN note_folders nf ON nf.user_id = u.user_id WHERE nf.note_folder_id = ?") (Only contactId)
 
 getUserByFileId :: DB.Connection -> FileTransferId -> ExceptT StoreError IO User
 getUserByFileId db fileId =

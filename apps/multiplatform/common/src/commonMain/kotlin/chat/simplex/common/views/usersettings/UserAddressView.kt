@@ -70,7 +70,7 @@ fun UserAddressView(
       shareViaProfile,
       onCloseHandler,
       createAddress = {
-        withApi {
+        withBGApi {
           progressIndicator = true
           val connReqContact = chatModel.controller.apiCreateUserAddress(user?.value?.remoteHostId)
           if (connReqContact != null) {
@@ -116,7 +116,7 @@ fun UserAddressView(
           confirmText = generalGetString(MR.strings.delete_verb),
           onConfirm = {
             progressIndicator = true
-            withApi {
+            withBGApi {
               val u = chatModel.controller.apiDeleteUserAddress(user?.value?.remoteHostId)
               if (u != null) {
                 chatModel.userAddress.value = null

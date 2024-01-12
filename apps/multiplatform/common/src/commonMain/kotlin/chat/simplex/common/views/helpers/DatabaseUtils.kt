@@ -17,7 +17,7 @@ object DatabaseUtils {
   val ksAppPassword = KeyStoreItem(APP_PASSWORD_ALIAS, appPreferences.encryptedAppPassphrase, appPreferences.initializationVectorAppPassphrase)
   val ksSelfDestructPassword = KeyStoreItem(SELF_DESTRUCT_PASSWORD_ALIAS, appPreferences.encryptedSelfDestructPassphrase, appPreferences.initializationVectorSelfDestructPassphrase)
 
-  class KeyStoreItem(val alias: String, val passphrase: SharedPreference<String?>, val initVector: SharedPreference<String?>) {
+  class KeyStoreItem(private val alias: String, val passphrase: SharedPreference<String?>, val initVector: SharedPreference<String?>) {
     fun get(): String? {
       return cryptor.decryptData(
         passphrase.get()?.toByteArrayFromBase64ForPassphrase() ?: return null,
@@ -89,7 +89,7 @@ enum class MigrationConfirmation(val value: String) {
 }
 
 fun defaultMigrationConfirmation(appPrefs: AppPreferences): MigrationConfirmation =
-  if (appPrefs.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
+  if (appPrefs.developerTools.get() && appPrefs.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
 
 @Serializable
 sealed class MigrationError {

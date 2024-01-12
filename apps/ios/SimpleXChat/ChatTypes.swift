@@ -1801,7 +1801,8 @@ public struct GroupMember: Identifiable, Decodable {
     public var displayName: String {
         get {
             let p = memberProfile
-            return p.localAlias == "" ? p.displayName : p.localAlias
+            let name = p.localAlias == "" ? p.displayName : p.localAlias
+            return pastMember(name)
         }
     }
     public var fullName: String { get { memberProfile.fullName } }
@@ -1822,10 +1823,19 @@ public struct GroupMember: Identifiable, Decodable {
     public var chatViewName: String {
         get {
             let p = memberProfile
-            return p.localAlias == ""
-            ? p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
-            : p.localAlias
+            let name = (
+                p.localAlias == ""
+                ? p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
+                : p.localAlias
+            )
+            return pastMember(name)
         }
+    }
+
+    private func pastMember(_ name: String) -> String {
+        memberStatus == .memUnknown
+        ? String.localizedStringWithFormat(NSLocalizedString("Past member %@", comment: "past/unknown group member"), name)
+        : name
     }
 
     public var memberActive: Bool {
@@ -1833,6 +1843,7 @@ public struct GroupMember: Identifiable, Decodable {
         case .memRemoved: return false
         case .memLeft: return false
         case .memGroupDeleted: return false
+        case .memUnknown: return false
         case .memInvited: return false
         case .memIntroduced: return false
         case .memIntroInvited: return false
@@ -1849,6 +1860,7 @@ public struct GroupMember: Identifiable, Decodable {
         case .memRemoved: return false
         case .memLeft: return false
         case .memGroupDeleted: return false
+        case .memUnknown: return false
         case .memInvited: return false
         case .memIntroduced: return true
         case .memIntroInvited: return true
@@ -1953,6 +1965,7 @@ public enum GroupMemberStatus: String, Decodable {
     case memRemoved = "removed"
     case memLeft = "left"
     case memGroupDeleted = "deleted"
+    case memUnknown = "unknown"
     case memInvited = "invited"
     case memIntroduced = "introduced"
     case memIntroInvited = "intro-inv"
@@ -1967,6 +1980,7 @@ public enum GroupMemberStatus: String, Decodable {
         case .memRemoved: return "removed"
         case .memLeft: return "left"
         case .memGroupDeleted: return "group deleted"
+        case .memUnknown: return "unknown status"
         case .memInvited: return "invited"
         case .memIntroduced: return "connecting (introduced)"
         case .memIntroInvited: return "connecting (introduction invitation)"
@@ -1983,6 +1997,7 @@ public enum GroupMemberStatus: String, Decodable {
         case .memRemoved: return "removed"
         case .memLeft: return "left"
         case .memGroupDeleted: return "group deleted"
+        case .memUnknown: return "unknown"
         case .memInvited: return "invited"
         case .memIntroduced: return "connecting"
         case .memIntroInvited: return "connecting"

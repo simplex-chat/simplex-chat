@@ -38,7 +38,7 @@ fun GroupLinkView(
   var creatingLink by rememberSaveable { mutableStateOf(false) }
   fun createLink() {
     creatingLink = true
-    withApi {
+    withBGApi {
       val link = chatModel.controller.apiCreateGroupLink(rhId, groupInfo.groupId)
       if (link != null) {
         groupLink = link.first
@@ -78,7 +78,7 @@ fun GroupLinkView(
         text = generalGetString(MR.strings.all_group_members_will_remain_connected),
         confirmText = generalGetString(MR.strings.delete_verb),
         onConfirm = {
-          withApi {
+          withBGApi {
             val r = chatModel.controller.apiDeleteGroupLink(rhId, groupInfo.groupId)
             if (r) {
               groupLink = null

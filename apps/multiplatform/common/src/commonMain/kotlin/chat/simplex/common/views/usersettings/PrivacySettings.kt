@@ -96,7 +96,7 @@ fun PrivacySettingsView(
     val currentUser = chatModel.currentUser.value
     if (currentUser != null) {
       fun setSendReceiptsContacts(enable: Boolean, clearOverrides: Boolean) {
-        withApi {
+        withBGApi {
           val mrs = UserMsgReceiptSettings(enable, clearOverrides)
           chatModel.controller.apiSetUserContactReceipts(currentUser, mrs)
           chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
@@ -119,7 +119,7 @@ fun PrivacySettingsView(
       }
 
       fun setSendReceiptsGroups(enable: Boolean, clearOverrides: Boolean) {
-        withApi {
+        withBGApi {
           val mrs = UserMsgReceiptSettings(enable, clearOverrides)
           chatModel.controller.apiSetUserGroupReceipts(currentUser, mrs)
           chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
@@ -454,6 +454,7 @@ fun SimplexLockView(
             Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
               SetAppPasscodeView(
                 passcodeKeychain = ksSelfDestructPassword,
+                prohibitedPasscodeKeychain = ksAppPassword,
                 reason = generalGetString(MR.strings.self_destruct),
                 submit = {
                   selfDestructPasscodeAlert(generalGetString(MR.strings.self_destruct_passcode_changed))
@@ -600,7 +601,7 @@ private fun EnableSelfDestruct(
 ) {
   Surface(Modifier.fillMaxSize(), color = MaterialTheme.colors.background, contentColor = LocalContentColor.current) {
     SetAppPasscodeView(
-      passcodeKeychain = ksSelfDestructPassword, title = generalGetString(MR.strings.set_passcode), reason = generalGetString(MR.strings.enabled_self_destruct_passcode),
+      passcodeKeychain = ksSelfDestructPassword, prohibitedPasscodeKeychain = ksAppPassword, title = generalGetString(MR.strings.set_passcode), reason = generalGetString(MR.strings.enabled_self_destruct_passcode),
       submit = {
         selfDestruct.set(true)
         selfDestructPasscodeAlert(generalGetString(MR.strings.self_destruct_passcode_enabled))
