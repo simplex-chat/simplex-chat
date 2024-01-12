@@ -21,7 +21,6 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
 import dev.icerock.moko.resources.StringResource
-import kotlinx.coroutines.flow.*
 import java.io.File
 import java.net.URI
 
@@ -32,7 +31,7 @@ fun CIVideoView(
   file: CIFile?,
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
-  receiveFile: (Long, Boolean) -> Unit
+  receiveFile: (Long) -> Unit
 ) {
   Box(
     Modifier.layoutId(CHAT_IMAGE_LAYOUT_ID),
@@ -52,21 +51,30 @@ fun CIVideoView(
     }
     val f = filePath.value
     if (file != null && f != null) {
-      val uri = remember(filePath) { getAppFileUri(f.substringAfterLast(File.separator))  }
       val view = LocalMultiplatformView()
-      VideoView(uri, file, preview, duration * 1000L, showMenu, onClick = {
+      val openFullscreen = {
         hideKeyboard(view)
         ModalManager.fullscreen.showCustomModal(animated = false) { close ->
           ImageFullScreenView(imageProvider, close)
         }
-      })
+      }
+
+      val uri = remember(filePath) { getAppFileUri(f.substringAfterLast(File.separator))  }
+      val autoPlay = remember { mutableStateOf(false) }
+      val uriDecrypted = remember(filePath) { mutableStateOf(if (file.fileSource?.cryptoArgs == null) uri else file.fileSource.decryptedGet()) }
+      val decrypted = uriDecrypted.value
+      if (decrypted != null) {
+        VideoView(decrypted, file, preview, duration * 1000L, autoPlay, showMenu, openFullscreen = openFullscreen)
+      } else {
+        VideoViewEncrypted(uriDecrypted, file, preview, duration * 1000L, autoPlay, showMenu, openFullscreen = openFullscreen)
+      }
     } else {
       Box {
         VideoPreviewImageView(preview, onClick = {
           if (file != null) {
             when (file.fileStatus) {
               CIFileStatus.RcvInvitation ->
-                receiveFileIfValidSize(file, encrypted = false, receiveFile)
+                receiveFileIfValidSize(file, receiveFile)
               CIFileStatus.RcvAccepted ->
                 when (file.fileProtocol) {
                   FileProtocol.XFTP ->
@@ -95,7 +103,7 @@ fun CIVideoView(
           DurationProgress(file, remember { mutableStateOf(false) }, remember { mutableStateOf(duration * 1000L) }, remember { mutableStateOf(0L) }/*, soundEnabled*/)
         }
         if (file?.fileStatus is CIFileStatus.RcvInvitation) {
-          PlayButton(error = false, { showMenu.value = true }) { receiveFileIfValidSize(file, encrypted = false, receiveFile) }
+          PlayButton(error = false, { showMenu.value = true }) { receiveFileIfValidSize(file, receiveFile) }
         }
       }
     }
@@ -104,7 +112,42 @@ fun CIVideoView(
 }
 
 @Composable
-private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defaultDuration: Long, showMenu: MutableState<Boolean>, onClick: () -> Unit) {
+private fun VideoViewEncrypted(
+  uriUnencrypted: MutableState<URI?>,
+  file: CIFile,
+  defaultPreview: ImageBitmap,
+  defaultDuration: Long,
+  autoPlay: MutableState<Boolean>,
+  showMenu: MutableState<Boolean>,
+  openFullscreen: () -> Unit,
+) {
+  var decryptionInProgress by rememberSaveable(file.fileName) { mutableStateOf(false) }
+  val onLongClick = { showMenu.value = true }
+  Box {
+    VideoPreviewImageView(defaultPreview, if (decryptionInProgress) {{}} else openFullscreen, onLongClick)
+    if (decryptionInProgress) {
+      Box(Modifier.align(Alignment.Center)) {
+        MediaProgressViewWithBackground(stringResource(MR.strings.decryption_in_progress))
+      }
+    } else {
+      PlayButton(false, onLongClick = onLongClick) {
+        decryptionInProgress = true
+        withBGApi {
+          try {
+            uriUnencrypted.value = file.fileSource?.decryptedGetOrCreate()
+            autoPlay.value = uriUnencrypted.value != null
+          } finally {
+            decryptionInProgress = false
+          }
+        }
+      }
+    }
+    DurationProgress(file, remember { mutableStateOf(false) }, remember { mutableStateOf(defaultDuration) }, remember { mutableStateOf(0L) })
+  }
+}
+
+@Composable
+private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defaultDuration: Long, autoPlay: MutableState<Boolean>, showMenu: MutableState<Boolean>, openFullscreen: () -> Unit) {
   val player = remember(uri) { VideoPlayerHolder.getOrCreate(uri, false, defaultPreview, defaultDuration, true) }
   val videoPlaying = remember(uri.path) { player.videoPlaying }
   val progress = remember(uri.path) { player.progress }
@@ -121,6 +164,13 @@ private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defau
     player.stop()
   }
   val showPreview = remember { derivedStateOf { !videoPlaying.value || progress.value == 0L } }
+  LaunchedEffect(uri) {
+    if (autoPlay.value) play()
+  }
+  // Drop autoPlay only when show preview changes to prevent blinking of the view
+  KeyChangeEffect(showPreview.value) {
+    autoPlay.value = false
+  }
   DisposableEffect(Unit) {
     onDispose {
       stop()
@@ -133,13 +183,15 @@ private fun VideoView(uri: URI, file: CIFile, defaultPreview: ImageBitmap, defau
     PlayerView(
       player,
       width,
-      onClick = onClick,
+      onClick = openFullscreen,
       onLongClick = onLongClick,
       stop
     )
     if (showPreview.value) {
-      VideoPreviewImageView(preview, onClick, onLongClick)
-      PlayButton(brokenVideo, onLongClick = onLongClick, play)
+      VideoPreviewImageView(preview, openFullscreen, onLongClick)
+      if (!autoPlay.value) {
+        PlayButton(brokenVideo, onLongClick = onLongClick, play)
+      }
     }
     DurationProgress(file, videoPlaying, duration, progress/*, soundEnabled*/)
   }
@@ -218,6 +270,29 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
 }
 
 @Composable
+fun MediaProgressViewWithBackground(description: String, textColor: Color = Color.White, backgroundColor: Color = Color.Black.copy(alpha = 0.35f)) {
+  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+      CircularProgressIndicator(
+        Modifier
+          .padding(bottom = DEFAULT_PADDING)
+          .size(30.dp),
+        color = MaterialTheme.colors.secondary,
+        strokeWidth = 2.5.dp
+      )
+      Box(
+        Modifier
+          .padding(DEFAULT_PADDING_HALF)
+          .background(backgroundColor, RoundedCornerShape(percent = 50))
+          .padding(vertical = 6.dp, horizontal = 12.dp)
+      ) {
+        Text(description, color = textColor)
+      }
+    }
+  }
+}
+
+@Composable
 fun VideoPreviewImageView(preview: ImageBitmap, onClick: () -> Unit, onLongClick: () -> Unit) {
   val windowWidth = LocalWindowWidth()
   val width = remember(preview) { if (preview.width * 0.97 <= preview.height) videoViewFullWidth(windowWidth) * 0.75f else DEFAULT_MAX_IMAGE_WIDTH }
@@ -226,6 +301,22 @@ fun VideoPreviewImageView(preview: ImageBitmap, onClick: () -> Unit, onLongClick
     contentDescription = stringResource(MR.strings.video_descr),
     modifier = Modifier
       .width(width)
+      .combinedClickable(
+        onLongClick = onLongClick,
+        onClick = onClick
+      )
+      .onRightClick(onLongClick),
+    contentScale = ContentScale.FillWidth,
+  )
+}
+
+@Composable
+fun VideoPreviewImageViewFullScreen(preview: ImageBitmap, onClick: () -> Unit, onLongClick: () -> Unit) {
+  Image(
+    preview,
+    contentDescription = stringResource(MR.strings.video_descr),
+    modifier = Modifier
+      .fillMaxSize()
       .combinedClickable(
         onLongClick = onLongClick,
         onClick = onClick
@@ -319,9 +410,9 @@ private fun fileSizeValid(file: CIFile?): Boolean {
   return false
 }
 
-private fun receiveFileIfValidSize(file: CIFile, encrypted: Boolean, receiveFile: (Long, Boolean) -> Unit) {
+private fun receiveFileIfValidSize(file: CIFile, receiveFile: (Long) -> Unit) {
   if (fileSizeValid(file)) {
-    receiveFile(file.fileId, encrypted)
+    receiveFile(file.fileId)
   } else {
     AlertManager.shared.showAlertMsg(
       generalGetString(MR.strings.large_file),

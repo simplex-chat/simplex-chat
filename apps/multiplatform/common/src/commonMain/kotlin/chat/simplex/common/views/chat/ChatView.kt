@@ -290,8 +290,8 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
               }
             }
           },
-          receiveFile = { fileId, encrypted ->
-            withBGApi { chatModel.controller.receiveFile(chatRh, user, fileId, encrypted) }
+          receiveFile = { fileId ->
+            withBGApi { chatModel.controller.receiveFile(chatRh, user, fileId, appPreferences.privacyEncryptLocalFiles.get()) }
           },
           cancelFile = { fileId ->
             withBGApi { chatModel.controller.cancelFile(chatRh, user, fileId) }
@@ -505,7 +505,7 @@ fun ChatLayout(
   loadPrevMessages: () -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
-  receiveFile: (Long, Boolean) -> Unit,
+  receiveFile: (Long) -> Unit,
   cancelFile: (Long) -> Unit,
   joinGroup: (Long, () -> Unit) -> Unit,
   startCall: (CallMediaType) -> Unit,
@@ -830,7 +830,7 @@ fun BoxWithConstraintsScope.ChatItemsList(
   loadPrevMessages: () -> Unit,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
-  receiveFile: (Long, Boolean) -> Unit,
+  receiveFile: (Long) -> Unit,
   cancelFile: (Long) -> Unit,
   joinGroup: (Long, () -> Unit) -> Unit,
   acceptCall: (Contact) -> Unit,
@@ -1344,7 +1344,7 @@ fun chatViewItemsRange(currIndex: Int?, prevHidden: Int?): IntRange? =
 
 sealed class ProviderMedia {
   data class Image(val data: ByteArray, val image: ImageBitmap): ProviderMedia()
-  data class Video(val uri: URI, val preview: String): ProviderMedia()
+  data class Video(val uri: URI, val fileSource: CryptoFile?, val preview: String): ProviderMedia()
 }
 
 private fun providerForGallery(
@@ -1394,7 +1394,7 @@ private fun providerForGallery(
           val filePath = if (chatModel.connectedToRemote() && item.file?.loaded == true) getAppFilePath(item.file.fileName) else getLoadedFilePath(item.file)
           if (filePath != null) {
             val uri = getAppFileUri(filePath.substringAfterLast(File.separator))
-            ProviderMedia.Video(uri, (item.content.msgContent as MsgContent.MCVideo).image)
+            ProviderMedia.Video(uri, item.file?.fileSource, (item.content.msgContent as MsgContent.MCVideo).image)
           } else null
         }
         else -> null
@@ -1487,7 +1487,7 @@ fun PreviewChatLayout() {
       loadPrevMessages = {},
       deleteMessage = { _, _ -> },
       deleteMessages = { _ -> },
-      receiveFile = { _, _ -> },
+      receiveFile = { _ -> },
       cancelFile = {},
       joinGroup = { _, _ -> },
       startCall = {},
@@ -1560,7 +1560,7 @@ fun PreviewGroupChatLayout() {
       loadPrevMessages = {},
       deleteMessage = { _, _ -> },
       deleteMessages = {},
-      receiveFile = { _, _ -> },
+      receiveFile = { _ -> },
       cancelFile = {},
       joinGroup = { _, _ -> },
       startCall = {},

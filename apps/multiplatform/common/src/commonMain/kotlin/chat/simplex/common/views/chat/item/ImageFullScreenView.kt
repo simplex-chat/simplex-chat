@@ -12,9 +12,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.layout.onGloballyPositioned
+import chat.simplex.common.model.CryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.helpers.*
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.net.URI
@@ -136,9 +139,15 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
           FullScreenImageView(modifier, data, imageBitmap)
         } else if (media is ProviderMedia.Video) {
           val preview = remember(media.uri.path) { base64ToBitmap(media.preview) }
-          VideoView(modifier, media.uri, preview, index == settledCurrentPage, close)
-          DisposableEffect(Unit) {
-            onDispose { playersToRelease.add(media.uri) }
+          val uriDecrypted = remember(media.uri.path) { mutableStateOf(if (media.fileSource?.cryptoArgs == null) media.uri else media.fileSource.decryptedGet()) }
+          val decrypted = uriDecrypted.value
+          if (decrypted != null) {
+            VideoView(modifier, decrypted, preview, index == settledCurrentPage, close)
+            DisposableEffect(Unit) {
+              onDispose { playersToRelease.add(decrypted) }
+            }
+          } else if (media.fileSource != null) {
+            VideoViewEncrypted(uriDecrypted, media.fileSource, preview)
           }
         }
       }
@@ -153,6 +162,19 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
 
 @Composable
 expect fun FullScreenImageView(modifier: Modifier, data: ByteArray, imageBitmap: ImageBitmap)
+
+@Composable
+private fun VideoViewEncrypted(uriUnencrypted: MutableState<URI?>, fileSource: CryptoFile, defaultPreview: ImageBitmap) {
+  LaunchedEffect(Unit) {
+    withBGApi {
+      uriUnencrypted.value = fileSource.decryptedGetOrCreate()
+    }
+  }
+  Box(contentAlignment = Alignment.Center) {
+    VideoPreviewImageViewFullScreen(defaultPreview, {}, {})
+    MediaProgressViewWithBackground(stringResource(MR.strings.decryption_in_progress))
+  }
+}
 
 @Composable
 private fun VideoView(modifier: Modifier, uri: URI, defaultPreview: ImageBitmap, currentPage: Boolean, close: () -> Unit) {

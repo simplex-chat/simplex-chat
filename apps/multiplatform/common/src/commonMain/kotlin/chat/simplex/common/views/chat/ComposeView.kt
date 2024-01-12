@@ -468,7 +468,7 @@ fun ComposeView(
                 if (remoteHost == null) saveAnimImage(it.uri, encrypted = encrypted)
                 else CryptoFile.desktopPlain(it.uri)
               is UploadContent.Video ->
-                if (remoteHost == null) saveFileFromUri(it.uri, encrypted = false)
+                if (remoteHost == null) saveFileFromUri(it.uri, encrypted = encrypted)
                 else CryptoFile.desktopPlain(it.uri)
             }
             if (file != null) {
