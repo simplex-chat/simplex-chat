@@ -36,7 +36,7 @@ actual fun SaveContentItemAction(cItem: ChatItem, saveFileLauncher: FileChooserL
           writePermissionState.launchPermissionRequest()
         }
       }
-      is MsgContent.MCFile, is MsgContent.MCVoice, is MsgContent.MCVideo -> withBGApi { saveFileLauncher.launch(cItem.file?.fileName ?: "") }
+      is MsgContent.MCFile, is MsgContent.MCVoice, is MsgContent.MCVideo -> withLongRunningApi { saveFileLauncher.launch(cItem.file?.fileName ?: "") }
       else -> {}
     }
     showMenu.value = false
