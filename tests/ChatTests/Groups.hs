@@ -108,7 +108,7 @@ chatGroupTests = do
     it "prohibited to repeat sending x.grp.direct.inv" testMemberContactProhibitedRepeatInv
     it "invited member replaces member contact reference if it already exists" testMemberContactInvitedConnectionReplaced
     it "share incognito profile" testMemberContactIncognito
-    -- it "sends and updates profile when creating contact" testMemberContactProfileUpdate -- TODO behavior changed
+    it "sends and updates profile when creating contact" testMemberContactProfileUpdate
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForward
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
@@ -4128,12 +4128,10 @@ testMemberContactProfileUpdate =
       bob <# "#team alice> hello"
       cath <# "#team alice> hello"
 
-      bob #> "#team hello too"
-      alice <# "#team rob> hello too"
-      cath <# "#team bob> hello too" -- not updated profile
-      cath #> "#team hello there"
-      alice <# "#team kate> hello there"
-      bob <# "#team cath> hello there" -- not updated profile
+      alice `hasContactProfiles` ["alice", "rob", "kate"]
+      bob `hasContactProfiles` ["rob", "alice", "cath"]
+      cath `hasContactProfiles` ["kate", "alice", "bob"]
+
       bob `send` "@cath hi"
       bob
         <### [ "member #team cath does not have direct connection, creating",
