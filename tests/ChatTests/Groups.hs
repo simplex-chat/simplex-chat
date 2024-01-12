@@ -135,6 +135,7 @@ chatGroupTests = do
     it "unknown member messages are processed" testGroupHistoryUnknownMember
   describe "membership profile updates" $ do
     it "send profile update on next message to group" testMembershipProfileUpdateNextGroupMessage
+    it "multiple groups with same member, update is applied only once" testMembershipProfileUpdateSameMember
     it "member contact is active" testMembershipProfileUpdateContactActive
     it "member contact is deleted" testMembershipProfileUpdateContactDeleted
     it "member contact is deleted silently, then considered disabled" testMembershipProfileUpdateContactDisabled
@@ -5350,6 +5351,64 @@ testMembershipProfileUpdateNextGroupMessage =
       cath ##> "/_get chat #1 count=100"
       rc <- chat <$> getTermLine cath
       rc `shouldContain` [(0, "updated profile")]
+
+testMembershipProfileUpdateSameMember :: HasCallStack => FilePath -> IO ()
+testMembershipProfileUpdateSameMember =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      createGroup2' "club" alice bob False
+
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      alice ##> "/p alisa"
+      alice <## "user profile is changed to alisa (your 0 contacts are notified)"
+
+      bob `hasContactProfiles` ["alice", "bob"]
+
+      alice #> "#team team 1"
+      bob <## "contact alice changed to alisa"
+      bob <## "use @alisa <message> to send messages"
+      bob <# "#team alisa> team 1"
+
+      -- since members were related to the same contact, both member records are updated
+      bob `hasContactProfiles` ["alisa", "bob"]
+      checkMembers bob
+      checkItems bob
+
+      -- profile update is not processed in second group, since it hasn't changed
+      alice #> "#club club 1"
+      bob <# "#club alisa> club 1"
+
+      bob `hasContactProfiles` ["alisa", "bob"]
+      checkMembers bob
+      checkItems bob
+  where
+    checkMembers bob = do
+      bob ##> "/ms team"
+      bob
+        <### [ "bob (Bob): admin, you, connected",
+               "alisa: owner, host, connected"
+             ]
+      bob ##> "/ms club"
+      bob
+        <### [ "bob (Bob): admin, you, connected",
+               "alisa: owner, host, connected"
+             ]
+    checkItems bob = do
+      bob ##> "/_get chat @2 count=100"
+      rCt <- chat <$> getTermLine bob
+      rCt `shouldNotContain` [(0, "updated profile")]
+
+      bob ##> "/_get chat #1 count=100"
+      rTeam <- chat <$> getTermLine bob
+      rTeam `shouldContain` [(0, "updated profile")]
+
+      bob ##> "/_get chat #2 count=100"
+      rClub <- chat <$> getTermLine bob
+      rClub `shouldNotContain` [(0, "updated profile")]
 
 testMembershipProfileUpdateContactActive :: HasCallStack => FilePath -> IO ()
 testMembershipProfileUpdateContactActive =
