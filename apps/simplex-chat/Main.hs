@@ -2,12 +2,13 @@
 
 module Main where
 
-import Control.Concurrent (threadDelay)
-import Control.Concurrent.STM.TVar (readTVarIO)
+import Control.Concurrent (forkIO, threadDelay)
+import Control.Concurrent.STM
+import Control.Monad
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Server
-import Simplex.Chat.Controller (currentRemoteHost, versionNumber, versionString)
+import Simplex.Chat.Controller (ChatController (..), currentRemoteHost, versionNumber, versionString)
 import Simplex.Chat.Core
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal
@@ -30,12 +31,17 @@ main = do
         simplexChatTerminal terminalChatConfig opts t
     else simplexChatCore terminalChatConfig opts $ \user cc -> do
       rh <- readTVarIO $ currentRemoteHost cc
-      let cmdRH = rh -- response RemoteHost is the same as for the command itself
+      void . forkIO . forever $ do
+        (_, _, r') <- atomically . readTBQueue $ outputQ cc
+        printResponse rh user r'
       r <- sendChatCmdStr cc chatCmd
+      printResponse rh user r
+      threadDelay $ chatCmdDelay opts * 1000000
+  where
+    printResponse rh user r = do
       ts <- getCurrentTime
       tz <- getCurrentTimeZone
-      putStrLn $ serializeChatResponse (rh, Just user) ts tz cmdRH r
-      threadDelay $ chatCmdDelay opts * 1000000
+      putStrLn $ serializeChatResponse (rh, Just user) ts tz rh r
 
 welcome :: ChatOpts -> IO ()
 welcome ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, networkConfig}} =
