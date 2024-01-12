@@ -4850,8 +4850,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         brokerTs = metaBrokerTs msgMeta
 
     processContactProfileUpdate :: Contact -> Profile -> Bool -> m Contact
-    processContactProfileUpdate c@Contact {profile = p} p' createItems
-      | fromLocalProfile p /= p' = do
+    processContactProfileUpdate c@Contact {profile = lp} p' createItems
+      | p /= p' = do
           c' <- withStore $ \db ->
             if userTTL == rcvTTL
               then updateContactProfile db user c p'
@@ -4859,14 +4859,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
                 updateContactProfile db user c' p'
           when (directOrUsed c' && createItems) $ do
-            let ciContent = CIRcvDirectEvent $ RDEUpdatedProfile (fromLocalProfile p) p'
-            createInternalChatItem user (CDDirectRcv c') ciContent Nothing
+            createProfileUpdateItem c'
             createRcvFeatureItems user c c'
           toView $ CRContactUpdated user c c'
           pure c'
       | otherwise =
           pure c
       where
+        p = fromLocalProfile lp
         Contact {userPreferences = ctUserPrefs@Preferences {timedMessages = ctUserTMPref}} = c
         userTTL = prefParam $ getPreference SCFTimedMessages ctUserPrefs
         Profile {preferences = rcvPrefs_} = p'
@@ -4880,6 +4880,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   | rcvTTL /= userDefaultTTL -> Just (userDefault :: TimedMessagesPreference) {ttl = rcvTTL}
                   | otherwise -> Nothing
            in setPreference_ SCFTimedMessages ctUserTMPref' ctUserPrefs
+        createProfileUpdateItem c' =
+          when anythingExcludingPrefsChanged $ do
+            let ciContent = CIRcvDirectEvent $ RDEUpdatedProfile p p'
+            createInternalChatItem user (CDDirectRcv c') ciContent Nothing
+          where
+            anythingExcludingPrefsChanged =
+              nn /= on || nfn /= ofn || ni /= oi || ncl /= ocl
+            Profile {displayName = on, fullName = ofn, image = oi, contactLink = ocl} = p
+            Profile {displayName = nn, fullName = nfn, image = ni, contactLink = ncl} = p'
 
     xInfoMember :: GroupInfo -> GroupMember -> Profile -> m ()
     xInfoMember gInfo m p' = void $ processMemberProfileUpdate gInfo m p' True
