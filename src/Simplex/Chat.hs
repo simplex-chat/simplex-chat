@@ -4896,22 +4896,37 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         else messageError "x.grp.link.mem error: invalid group link host profile update"
 
     processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Bool -> m GroupMember
-    processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} p' createItems =
-      -- TODO update only membership fields (name, image)
-      case memberContactId of
-        Nothing -> do
-          m' <- withStore $ \db -> updateMemberProfile db user m p'
+    processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} p' createItems
+      | onlyMemberProfileFields (fromLocalProfile p) /= onlyMemberProfileFields p' =
+          case memberContactId of
+            Nothing -> do
+              m' <- withStore $ \db -> updateMemberProfile db user m p'
+              createProfileUpdateItem m'
+              toView $ CRGroupMemberUpdated user gInfo m m'
+              pure m'
+            Just mContactId -> do
+              mCt <- withStore $ \db -> getContact db user mContactId
+              if canUpdateProfile mCt
+                then do
+                  (m', ct') <- withStore $ \db -> updateContactMemberProfile db user m mCt p'
+                  createProfileUpdateItem m'
+                  toView $ CRGroupMemberUpdated user gInfo m m'
+                  toView $ CRContactUpdated user mCt ct'
+                  pure m'
+                else pure m
+              where
+                canUpdateProfile ct
+                  | not (contactActive ct) = True
+                  | otherwise = case contactConn ct of
+                      Nothing -> True
+                      Just conn -> not (connReady conn) || (authErrCounter conn >= 1)
+      | otherwise =
+          pure m
+      where
+        createProfileUpdateItem m' =
           when createItems $ do
             let ciContent = CIRcvGroupEvent $ RGEMemberUpdatedProfile (fromLocalProfile p) p'
             createInternalChatItem user (CDGroupRcv gInfo m') ciContent Nothing
-          toView $ CRGroupMemberUpdated user gInfo m m'
-          pure m'
-        Just _mContactId -> do
-          -- TODO check auth err counter == 1
-          -- mCt <- withStore $ \db -> getContact db user mContactId
-          -- Contact {profile} <- processContactProfileUpdate mCt p' createItems
-          -- pure m {memberProfile = profile}
-          pure m
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
@@ -5848,10 +5863,10 @@ deliverMessagesB msgReqs = do
 sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
 sendGroupMessage user gInfo members chatMsgEvent
   | shouldSendProfileUpdate = do
-    sendProfileUpdate `catchChatError` (\e -> toView (CRChatError (Just user) e))
-    sendGroupMessage' user gInfo members chatMsgEvent
+      sendProfileUpdate `catchChatError` (\e -> toView (CRChatError (Just user) e))
+      sendGroupMessage' user gInfo members chatMsgEvent
   | otherwise =
-    sendGroupMessage' user gInfo members chatMsgEvent
+      sendGroupMessage' user gInfo members chatMsgEvent
   where
     shouldSendProfileUpdate
       | incognitoMembership gInfo = False

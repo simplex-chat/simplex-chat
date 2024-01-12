@@ -169,7 +169,9 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvIntegrityError _ -> True
     CIRcvDecryptionError {} -> True
     CIRcvGroupInvitation {} -> True
-    CIRcvDirectEvent _ -> False
+    CIRcvDirectEvent rde -> case rde of
+      RDEContactDeleted -> False
+      RDEUpdatedProfile {} -> True
     CIRcvGroupEvent rge -> case rge of
       RGEMemberAdded {} -> False
       RGEMemberConnected -> False

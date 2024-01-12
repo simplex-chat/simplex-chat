@@ -108,6 +108,7 @@ module Simplex.Chat.Store.Groups
     updateMemberContactInvited,
     resetMemberContactFields,
     updateMemberProfile,
+    updateContactMemberProfile,
     getXGrpLinkMemReceived,
     setXGrpLinkMemReceived,
     createNewUnknownGroupMember,
@@ -1989,12 +1990,12 @@ createMemberContactConn_
 updateMemberProfile :: DB.Connection -> User -> GroupMember -> Profile -> ExceptT StoreError IO GroupMember
 updateMemberProfile db User {userId} m p'
   | displayName == newName = do
-      liftIO $ updateContactProfile_ db userId profileId p'
+      liftIO $ updateMemberContactProfile_ db userId profileId p'
       pure m {memberProfile = profile}
   | otherwise =
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
-        updateContactProfile_' db userId profileId p' currentTs
+        updateMemberContactProfile_' db userId profileId p' currentTs
         DB.execute
           db
           "UPDATE group_members SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_member_id = ?"
@@ -2003,6 +2004,22 @@ updateMemberProfile db User {userId} m p'
         pure $ Right m {localDisplayName = ldn, memberProfile = profile}
   where
     GroupMember {groupMemberId, localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
+    Profile {displayName = newName} = p'
+    profile = toLocalProfile profileId p' localAlias
+
+updateContactMemberProfile :: DB.Connection -> User -> GroupMember -> Contact -> Profile -> ExceptT StoreError IO (GroupMember, Contact)
+updateContactMemberProfile db User {userId} m ct@Contact {contactId} p'
+  | displayName == newName = do
+      liftIO $ updateMemberContactProfile_ db userId profileId p'
+      pure (m {memberProfile = profile}, ct {profile})
+  | otherwise =
+      ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
+        currentTs <- getCurrentTime
+        updateMemberContactProfile_' db userId profileId p' currentTs
+        updateContactLDN_ db userId contactId localDisplayName ldn currentTs
+        pure $ Right (m {localDisplayName = ldn, memberProfile = profile}, ct {localDisplayName = ldn, profile})
+  where
+    GroupMember {localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
     Profile {displayName = newName} = p'
     profile = toLocalProfile profileId p' localAlias
 
