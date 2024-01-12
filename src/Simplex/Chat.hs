@@ -209,7 +209,7 @@ newChatController
   backgroundMode = do
     let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
         config = cfg {logLevel, showReactions, tbqSize, subscriptionEvents = logConnections, hostEvents = logServerHosts, defaultServers = configServers, inlineFiles = inlineFiles', autoAcceptFileSize, highlyAvailable}
-    firstTime <- newTVarIO $ dbNew chatStore
+        firstTime = dbNew chatStore
     currentUser <- newTVarIO user
     currentRemoteHost <- newTVarIO Nothing
     servers <- agentServers config
@@ -455,20 +455,14 @@ processChatCommand' vr = \case
     u <- asks currentUser
     (smp, smpServers) <- chooseServers SPSMP
     (xftp, xftpServers) <- chooseServers SPXFTP
-    fstTime <- chatReadVar firstTime
     users <- withStore' getUsers
-    auId <-
-      case users of
-        [] | fstTime -> pure 1
-        _ -> do
-          forM_ users $ \User {localDisplayName = n, activeUser, viewPwdHash} ->
-            when (n == displayName) . throwChatError $
-              if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
-          withAgent (\a -> createUser a smp xftp)
+    forM_ users $ \User {localDisplayName = n, activeUser, viewPwdHash} ->
+      when (n == displayName) . throwChatError $
+        if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
+    auId <- withAgent (\a -> createUser a smp xftp)
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withStore $ \db -> createUserRecordAt db (AgentUserId auId) p True ts
-    chatWriteVar firstTime False
-    when (null users && fstTime) $ withStore (\db -> createContact db user simplexContactProfile) `catchChatError` \_ -> pure ()
+    when (null users) $ withStore (\db -> createContact db user simplexContactProfile) `catchChatError` \_ -> pure ()
     withStore $ \db -> createNoteFolder db user
     storeServers user smpServers
     storeServers user xftpServers

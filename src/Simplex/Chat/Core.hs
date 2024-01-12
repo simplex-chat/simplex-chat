@@ -6,7 +6,6 @@
 
 module Simplex.Chat.Core
   ( simplexChatCore,
-    simplexChatCore',
     runSimplexChat,
     sendChatCmdStr,
     sendChatCmd,
@@ -35,10 +34,7 @@ import Text.Read (readMaybe)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg opts = simplexChatCore' cfg opts . const
-
-simplexChatCore' :: ChatConfig -> ChatOpts -> (Bool -> User -> ChatController -> IO ()) -> IO ()
-simplexChatCore' cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent}} chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbFilePrefix, dbKey, logAgent}} chat =
   case logAgent of
     Just level -> do
       setLogLevel level
@@ -52,10 +48,9 @@ simplexChatCore' cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {cor
     run db@ChatDatabase {chatStore} = do
       u_ <- getSelectActiveUser chatStore
       cc <- newChatController db u_ cfg opts False
-      fstTime <- readTVarIO $ firstTime cc
       u <- maybe (createActiveUser cc) pure u_
       unless testView $ putStrLn $ "Current user: " <> userStr u
-      runSimplexChat opts u cc $ chat fstTime
+      runSimplexChat opts u cc chat
 
 runSimplexChat :: ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
 runSimplexChat ChatOpts {maintenance} u cc chat

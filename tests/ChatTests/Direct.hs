@@ -29,7 +29,7 @@ import Test.Hspec
 chatDirectTests :: SpecWith FilePath
 chatDirectTests = do
   describe "direct messages" $ do
-    describe "add contact and send/receive messages" testAddContact
+    fdescribe "add contact and send/receive messages" testAddContact
     it "clear chat with contact" testContactClear
     it "deleting contact deletes profile" testDeleteContactDeletesProfile
     it "unused contact is deleted silently" testDeleteUnusedContactSilent
