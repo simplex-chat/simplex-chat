@@ -116,15 +116,19 @@ struct CIVideoView: View {
                 }
                 .onTapGesture {
                     decrypt(file: file) {
-                        showFullScreenPlayer = urlDecrypted != nil
+                        DispatchQueue.main.async {
+                            showFullScreenPlayer = urlDecrypted != nil
+                        }
                     }
                 }
                 if !decryptionInProgress {
                     Button {
                         decrypt(file: file) {
-                            if let decrypted = urlDecrypted {
-                                videoPlaying = true
-                                player?.play()
+                            DispatchQueue.main.async {
+                                if let decrypted = urlDecrypted {
+                                    videoPlaying = true
+                                    player?.play()
+                                }
                             }
                         }
                     } label: {
