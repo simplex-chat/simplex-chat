@@ -1525,7 +1525,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact")])
     bob <## "alice updated preferences for you:"
     bob <## "Voice messages: enabled for you (you allow: default (no), contact allows: always)"
-    bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "updated profile"), (0, "Voice messages: enabled for you")])
+    bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you")])
     alice ##> sendVoice
     alice <## voiceNotAllowed
     bob ##> sendVoice
@@ -1548,13 +1548,13 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off")])
     bob <## "alice updated preferences for you:"
     bob <## "Voice messages: off (you allow: default (no), contact allows: yes)"
-    bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "updated profile"), (0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "updated profile"), (0, "Voice messages: off")])
+    bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off")])
     (bob </)
     bob ##> "/_profile 1 {\"displayName\": \"bob\", \"fullName\": \"\", \"preferences\": {\"voice\": {\"allow\": \"yes\"}, \"receipts\": {\"allow\": \"yes\", \"activated\": true}}}"
     bob <## "user full name removed (your 1 contacts are notified)"
     bob <## "updated preferences:"
     bob <## "Voice messages allowed: yes"
-    bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "updated profile"), (0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "updated profile"), (0, "Voice messages: off"), (1, "Voice messages: enabled")])
+    bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off"), (1, "Voice messages: enabled")])
     (bob </)
     alice <## "contact bob removed full name"
     alice <## "bob updated preferences for you:"
@@ -1564,7 +1564,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     bob ##> "/_set prefs @2 {}"
     bob <## "your preferences for alice did not change"
     -- no change
-    bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "updated profile"), (0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "updated profile"), (0, "Voice messages: off"), (1, "Voice messages: enabled")])
+    bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off"), (1, "Voice messages: enabled")])
     (bob </)
     (alice </)
     alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"no\"}}"
@@ -1573,7 +1573,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "updated profile"), (0, "Voice messages: enabled"), (1, "Voice messages: off")])
     bob <## "alice updated preferences for you:"
     bob <## "Voice messages: off (you allow: default (yes), contact allows: no)"
-    bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "updated profile"), (0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "updated profile"), (0, "Voice messages: off"), (1, "Voice messages: enabled"), (0, "updated profile"), (0, "Voice messages: off")])
+    bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off"), (1, "Voice messages: enabled"), (0, "Voice messages: off")])
 
 testFeatureOffers :: HasCallStack => FilePath -> IO ()
 testFeatureOffers = testChat2 aliceProfile bobProfile $
@@ -1585,14 +1585,14 @@ testFeatureOffers = testChat2 aliceProfile bobProfile $
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Full deletion")])
     bob <## "alice updated preferences for you:"
     bob <## "Full deletion: off (you allow: default (no), contact allows: yes)"
-    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "updated profile"), (0, "offered Full deletion")])
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Full deletion")])
     alice ##> "/set delete @bob no"
     alice <## "you updated preferences for bob:"
     alice <## "Full deletion: off (you allow: no, contact allows: no)"
     alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "you offered Full deletion"), (1, "you cancelled Full deletion")])
     bob <## "alice updated preferences for you:"
     bob <## "Full deletion: off (you allow: default (no), contact allows: no)"
-    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "updated profile"), (0, "offered Full deletion"), (0, "updated profile"), (0, "cancelled Full deletion")])
+    bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "offered Full deletion"), (0, "cancelled Full deletion")])
 
 testUpdateGroupPrefs :: HasCallStack => FilePath -> IO ()
 testUpdateGroupPrefs =
@@ -1657,11 +1657,11 @@ testAllowFullDeletionContact =
       bob <## "alice updated preferences for you:"
       bob <## "Full deletion: enabled for you (you allow: default (no), contact allows: always)"
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (0, "hey"), (1, "Full deletion: enabled for contact")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (1, "hey"), (0, "updated profile"), (0, "Full deletion: enabled for you")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (1, "hey"), (0, "Full deletion: enabled for you")])
       bob #$> ("/_delete item @2 " <> itemId 2 <> " broadcast", id, "message deleted")
       alice <# "bob> [deleted] hey"
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi"), (1, "Full deletion: enabled for contact")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (0, "updated profile"), (0, "Full deletion: enabled for you")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "hi"), (0, "Full deletion: enabled for you")])
 
 testAllowFullDeletionGroup :: HasCallStack => FilePath -> IO ()
 testAllowFullDeletionGroup =
@@ -1762,14 +1762,14 @@ testEnableTimedMessagesContact =
       alice <##> bob
       threadDelay 500000
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "updated profile"), (0, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
       threadDelay 1000000
       alice <## "timed message deleted: hi"
       alice <## "timed message deleted: hey"
       bob <## "timed message deleted: hi"
       bob <## "timed message deleted: hey"
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "updated profile"), (0, "Disappearing messages: enabled (1 sec)")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)")])
       -- turn off, messages are not disappearing
       bob ##> "/set disappear @alice no"
       bob <## "you updated preferences for alice:"
@@ -1778,8 +1778,8 @@ testEnableTimedMessagesContact =
       alice <## "Disappearing messages: off (you allow: yes (1 sec), contact allows: no)"
       alice <##> bob
       threadDelay 1500000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (0, "updated profile"), (0, "Disappearing messages: off"), (1, "hi"), (0, "hey")])
-      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "updated profile"), (0, "Disappearing messages: enabled (1 sec)"), (1, "Disappearing messages: off"), (0, "hi"), (1, "hey")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (0, "Disappearing messages: off"), (1, "hi"), (0, "hey")])
+      bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (1, "Disappearing messages: off"), (0, "hi"), (1, "hey")])
       -- test api
       bob ##> "/set disappear @alice yes 30s"
       bob <## "you updated preferences for alice:"
@@ -1856,14 +1856,14 @@ testTimedMessagesEnabledGlobally =
       alice <## "Disappearing messages: enabled (you allow: yes (1 sec), contact allows: yes (1 sec))"
       alice <##> bob
       threadDelay 500000
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "updated profile"), (0, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
       threadDelay 1000000
       alice <## "timed message deleted: hi"
       bob <## "timed message deleted: hi"
       alice <## "timed message deleted: hey"
       bob <## "timed message deleted: hey"
-      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "updated profile"), (0, "Disappearing messages: enabled (1 sec)")])
+      alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)")])
 
 testUpdateMultipleUserPrefs :: HasCallStack => FilePath -> IO ()
