@@ -1642,9 +1642,6 @@ data class ChatItem (
 
   val encryptedFile: Boolean? = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
 
-  val encryptLocalFile: Boolean
-    get() = chatController.appPrefs.privacyEncryptLocalFiles.get()
-
   val memberDisplayName: String? get() =
     if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.chatViewName
     else null

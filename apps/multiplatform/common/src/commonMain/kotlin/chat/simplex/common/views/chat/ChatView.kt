@@ -291,7 +291,7 @@ fun ChatView(chatId: String, chatModel: ChatModel, onComposed: suspend (chatId: 
             }
           },
           receiveFile = { fileId ->
-            withBGApi { chatModel.controller.receiveFile(chatRh, user, fileId, appPreferences.privacyEncryptLocalFiles.get()) }
+            withBGApi { chatModel.controller.receiveFile(chatRh, user, fileId) }
           },
           cancelFile = { fileId ->
             withBGApi { chatModel.controller.cancelFile(chatRh, user, fileId) }

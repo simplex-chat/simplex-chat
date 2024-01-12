@@ -165,13 +165,14 @@ fun getThemeFromUri(uri: URI, withAlertOnException: Boolean = true): ThemeOverri
   return null
 }
 
-fun saveImage(uri: URI, encrypted: Boolean): CryptoFile? {
+fun saveImage(uri: URI): CryptoFile? {
   val bitmap = getBitmapFromUri(uri) ?: return null
-  return saveImage(bitmap, encrypted)
+  return saveImage(bitmap)
 }
 
-fun saveImage(image: ImageBitmap, encrypted: Boolean): CryptoFile? {
+fun saveImage(image: ImageBitmap): CryptoFile? {
   return try {
+    val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
     val ext = if (image.hasAlpha()) "png" else "jpg"
     val dataResized = resizeImageToDataSize(image, ext == "png", maxDataSize = MAX_IMAGE_SIZE)
     val destFileName = generateNewFileName("IMG", ext, File(getAppFilePath("")))
@@ -210,8 +211,9 @@ fun desktopSaveImageInTmp(uri: URI): CryptoFile? {
   }
 }
 
-fun saveAnimImage(uri: URI, encrypted: Boolean): CryptoFile? {
+fun saveAnimImage(uri: URI): CryptoFile? {
   return try {
+    val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
     val filename = getFileName(uri)?.lowercase()
     var ext = when {
       // remove everything but extension
@@ -237,8 +239,9 @@ fun saveAnimImage(uri: URI, encrypted: Boolean): CryptoFile? {
 
 expect suspend fun saveTempImageUncompressed(image: ImageBitmap, asPng: Boolean): File?
 
-fun saveFileFromUri(uri: URI, encrypted: Boolean, withAlertOnException: Boolean = true): CryptoFile? {
+fun saveFileFromUri(uri: URI, withAlertOnException: Boolean = true): CryptoFile? {
   return try {
+    val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
     val inputStream = uri.inputStream()
     val fileToSave = getFileName(uri)
     return if (inputStream != null && fileToSave != null) {
