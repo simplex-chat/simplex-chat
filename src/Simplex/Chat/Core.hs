@@ -99,9 +99,9 @@ createActiveUser :: ChatController -> IO User
 createActiveUser cc = do
   putStrLn
     "No user profiles found, it will be created now.\n\
-    \Please choose your display name and your full name.\n\
-    \They will be sent to your contacts when you connect.\n\
-    \They are only stored on your device and you can change them later."
+    \Please choose your display name.\n\
+    \It will be sent to your contacts when you connect.\n\
+    \It is only stored on your device and you can change it later."
   loop
   where
     loop = do
