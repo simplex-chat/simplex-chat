@@ -221,7 +221,7 @@ struct VoiceMessagePlayer: View {
         Button {
             Task {
                 if let user = chatModel.currentUser {
-                    await receiveFile(user: user, fileId: recordingFile.fileId, encrypted: privacyEncryptLocalFilesGroupDefault.get())
+                    await receiveFile(user: user, fileId: recordingFile.fileId)
                 }
             }
         } label: {
