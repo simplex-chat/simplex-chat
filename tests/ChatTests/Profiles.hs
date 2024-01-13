@@ -16,7 +16,7 @@ import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), Profile (..))
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import System.Directory (copyFile, createDirectoryIfMissing)
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 chatProfileTests :: SpecWith FilePath
 chatProfileTests = do

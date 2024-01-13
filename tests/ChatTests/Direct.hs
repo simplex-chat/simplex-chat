@@ -24,7 +24,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 chatDirectTests :: SpecWith FilePath
 chatDirectTests = do

@@ -19,7 +19,7 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Version
 import System.Directory (copyFile)
 import System.FilePath ((</>))
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 chatGroupTests :: SpecWith FilePath
 chatGroupTests = do
@@ -103,7 +103,7 @@ chatGroupTests = do
     it "new group link host contact should merge with single existing contact out of multiple" testMergeGroupLinkHostMultipleContacts
   describe "create member contact" $ do
     it "create contact with group member with invitation message" testMemberContactMessage
-    xit "create contact with group member without invitation message" testMemberContactNoMessage
+    it "create contact with group member without invitation message" testMemberContactNoMessage
     it "prohibited to create contact with group member if it already exists" testMemberContactProhibitedContactExists
     it "prohibited to repeat sending x.grp.direct.inv" testMemberContactProhibitedRepeatInv
     it "invited member replaces member contact reference if it already exists" testMemberContactInvitedConnectionReplaced
