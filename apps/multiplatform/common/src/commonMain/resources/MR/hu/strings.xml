@@ -1564,7 +1564,7 @@
     <string name="remote_host_was_disconnected_title">A kapcsolat megszakadt</string>
     <string name="remote_ctrl_was_disconnected_title">A kapcsolat megszakadt</string>
     <string name="remote_ctrl_error_bad_state">Az asztali kliens kapcsolata rossz állapotban van</string>
-    <string name="agent_critical_error_desc">Kérjük, jelezze ezt a fejlesztőknek:
+    <string name="agent_critical_error_desc">Kérjük, jelezd ezt a fejlesztőknek:
 \n%s
 \n
 \nJavasoljuk, hogy indítsd újra az alkalmazást.</string>
@@ -1578,7 +1578,7 @@
     <string name="remote_ctrl_disconnected_with_reason">%s probléma miatt megszakadt a kapcsolat</string>
     <string name="remote_host_error_missing">A(z) <b>%s</b> mobil eszköz nem található</string>
     <string name="remote_host_error_bad_state">A kapcsolat a(z) <b>%s</b> mobil eszközzel rossz állapotban van</string>
-    <string name="remote_host_error_timeout">Időtúllépés a(z) <b>%s</b> mobil eszközhöz való csatlakozás közben.</string>
+    <string name="remote_host_error_timeout">Időtúllépés a(z) <b>%s</b> mobil eszközhöz való csatlakozás közben</string>
     <string name="group_member_status_unknown_short">ismeretlen</string>
     <string name="possible_slow_function_title">Lassú funkció</string>
     <string name="show_slow_api_calls">Lassú API-hívások megjelenítése</string>
