@@ -47,9 +47,9 @@
         <target># %@</target>
         <note>copied message info title, # &lt;title&gt;</note>
       </trans-unit>
-      <trans-unit id="## History" xml:space="preserve">
+      <trans-unit id="## History" xml:space="preserve" approved="no">
         <source>## History</source>
-        <target>## Verlauf</target>
+        <target state="translated">## Nachrichtenverlauf</target>
         <note>copied message info</note>
       </trans-unit>
       <trans-unit id="## In reply to" xml:space="preserve">
@@ -404,13 +404,13 @@
 - Und mehr!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve">
+      <trans-unit id="- voice messages up to 5 minutes.&#10;- custom time to disappear.&#10;- editing history." xml:space="preserve" approved="no">
         <source>- voice messages up to 5 minutes.
 - custom time to disappear.
 - editing history.</source>
-        <target>- Bis zu 5 Minuten lange Sprachnachrichten.
-- Zeitdauer für verschwindende Nachrichten anpassen.
-- Nachrichten-Verlauf bearbeiten.</target>
+        <target state="translated">- Bis zu 5 Minuten lange Sprachnachrichten
+- Zeitdauer für verschwindende Nachrichten anpassen
+- Nachrichtenverlauf bearbeiten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="." xml:space="preserve">
@@ -1949,8 +1949,9 @@ Das kann nicht rückgängig gemacht werden!</target>
         <target>Später wiederholen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do not send history to new members." xml:space="preserve">
+      <trans-unit id="Do not send history to new members." xml:space="preserve" approved="no">
         <source>Do not send history to new members.</source>
+        <target state="translated">Den Nachrichtenverlauf nicht an neue Mitglieder senden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't create address" xml:space="preserve">
@@ -2817,13 +2818,14 @@ Das kann nicht rückgängig gemacht werden!</target>
         <target>Verberge:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="History" xml:space="preserve">
+      <trans-unit id="History" xml:space="preserve" approved="no">
         <source>History</source>
-        <target>Verlauf</target>
+        <target state="translated">Nachrichtenverlauf</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="History is not sent to new members." xml:space="preserve">
+      <trans-unit id="History is not sent to new members." xml:space="preserve" approved="no">
         <source>History is not sent to new members.</source>
+        <target state="translated">Der Nachrichtenverlauf wird nicht an neue Gruppenmitglieder gesendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
@@ -3032,8 +3034,9 @@ Das kann nicht rückgängig gemacht werden!</target>
         <target>Ungültiger Verbindungslink</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invalid display name!" xml:space="preserve">
+      <trans-unit id="Invalid display name!" xml:space="preserve" approved="no">
         <source>Invalid display name!</source>
+        <target state="translated">Ungültiger Anzeigename!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid link" xml:space="preserve">
@@ -3608,9 +3611,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Die Gruppe wurde nicht gefunden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No history" xml:space="preserve">
+      <trans-unit id="No history" xml:space="preserve" approved="no">
         <source>No history</source>
-        <target>Kein Verlauf</target>
+        <target state="translated">Kein Nachrichtenverlauf</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No permission to record voice message" xml:space="preserve">
@@ -4627,8 +4630,9 @@ Fehler: %@</target>
         <target>Senden Sie diese aus dem Fotoalbum oder von individuellen Tastaturen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send up to 100 last messages to new members." xml:space="preserve">
+      <trans-unit id="Send up to 100 last messages to new members." xml:space="preserve" approved="no">
         <source>Send up to 100 last messages to new members.</source>
+        <target state="translated">Bis zu 100 der letzten Nachrichten an neue Gruppenmitglieder senden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
@@ -5253,8 +5257,9 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Dieser Gerätename</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This display name is invalid. Please choose another name." xml:space="preserve">
+      <trans-unit id="This display name is invalid. Please choose another name." xml:space="preserve" approved="no">
         <source>This display name is invalid. Please choose another name.</source>
+        <target state="translated">Der Anzeigename ist ungültig. Bitte wählen Sie einen anderen Namen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve">
@@ -5485,8 +5490,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Ungelesen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
+      <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve" approved="no">
         <source>Up to 100 last messages are sent to new members.</source>
+        <target state="translated">Bis zu 100 der letzten Nachrichten werden an neue Mitglieder gesendet.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update" xml:space="preserve">
@@ -5659,8 +5665,9 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Schauen Sie sich den Sicherheitscode an</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Visible history" xml:space="preserve">
+      <trans-unit id="Visible history" xml:space="preserve" approved="no">
         <source>Visible history</source>
+        <target state="translated">Sichtbarer Nachrichtenverlauf</target>
         <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Voice messages" xml:space="preserve">
@@ -6030,9 +6037,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>Sie können Anrufe und Benachrichtigungen auch von stummgeschalteten Profilen empfangen, solange diese aktiv sind.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve">
+      <trans-unit id="You will stop receiving messages from this group. Chat history will be preserved." xml:space="preserve" approved="no">
         <source>You will stop receiving messages from this group. Chat history will be preserved.</source>
-        <target>Sie werden von dieser Gruppe keine Nachrichten mehr erhalten. Der Chatverlauf wird beibehalten.</target>
+        <target state="translated">Sie werden von dieser Gruppe keine Nachrichten mehr erhalten. Der Nachrichtenverlauf wird beibehalten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You won't lose your contacts if you later delete your address." xml:space="preserve">
