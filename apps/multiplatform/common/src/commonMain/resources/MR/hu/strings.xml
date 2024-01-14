@@ -1570,7 +1570,7 @@
 \nJavasoljuk, hogy indítsd újra az alkalmazást.</string>
     <string name="agent_internal_error_desc">Kérjük, jelezd a fejlesztőknek:
 \n%s</string>
-    <string name="remote_host_error_bad_version">A <b>%s</b> mobil eszköz nem támogatott verzióval rendelkezik. Kérjük, győződj meg róla, hogy ugyanazt a verzió van használatban mind a két eszközön.</string>
+    <string name="remote_host_error_bad_version">A(z) <b>%s</b> mobil eszköz verziója nem támogatott. Kérlek, győződj meg róla, hogy mindkét eszközön ugyanazt a verziót használod</string>
     <string name="remote_host_error_disconnected">Megszakadt a kapcsolat a(z) <b>%s</b> mobil eszközzel</string>
     <string name="failed_to_create_user_invalid_title">Érvénytelen megjelenítendő felhaszálónév!</string>
     <string name="failed_to_create_user_invalid_desc">Ez a megjelenített felhasználónév érvénytelen. Kérjük, válassz másikat.</string>
