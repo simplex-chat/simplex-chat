@@ -1949,8 +1949,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Doe het later</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do not send history to new members." xml:space="preserve">
+      <trans-unit id="Do not send history to new members." xml:space="preserve" approved="no">
         <source>Do not send history to new members.</source>
+        <target state="translated">Stuur geen geschiedenis naar nieuwe leden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't create address" xml:space="preserve">
@@ -2822,8 +2823,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Geschiedenis</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="History is not sent to new members." xml:space="preserve">
+      <trans-unit id="History is not sent to new members." xml:space="preserve" approved="no">
         <source>History is not sent to new members.</source>
+        <target state="translated">Geschiedenis wordt niet naar nieuwe leden gestuurd.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
@@ -3032,8 +3034,9 @@ Dit kan niet ongedaan gemaakt worden!</target>
         <target>Ongeldige verbinding link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invalid display name!" xml:space="preserve">
+      <trans-unit id="Invalid display name!" xml:space="preserve" approved="no">
         <source>Invalid display name!</source>
+        <target state="translated">Ongeldige weergavenaam!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid link" xml:space="preserve">
@@ -4627,8 +4630,9 @@ Fout: %@</target>
         <target>Stuur ze vanuit de galerij of aangepaste toetsenborden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send up to 100 last messages to new members." xml:space="preserve">
+      <trans-unit id="Send up to 100 last messages to new members." xml:space="preserve" approved="no">
         <source>Send up to 100 last messages to new members.</source>
+        <target state="translated">Stuur tot 100 laatste berichten naar nieuwe leden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
@@ -5253,8 +5257,9 @@ Het kan gebeuren vanwege een bug of wanneer de verbinding is aangetast.</target>
         <target>Deze apparaatnaam</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This display name is invalid. Please choose another name." xml:space="preserve">
+      <trans-unit id="This display name is invalid. Please choose another name." xml:space="preserve" approved="no">
         <source>This display name is invalid. Please choose another name.</source>
+        <target state="translated">Deze weergavenaam is ongeldig. Kies een andere naam.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve">
@@ -5485,8 +5490,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Ongelezen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
+      <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve" approved="no">
         <source>Up to 100 last messages are sent to new members.</source>
+        <target state="translated">Er worden maximaal 100 laatste berichten naar nieuwe leden verzonden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update" xml:space="preserve">
@@ -5659,8 +5665,9 @@ Om verbinding te maken, vraagt u uw contact om een andere verbinding link te mak
         <target>Beveiligingscode bekijken</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Visible history" xml:space="preserve">
+      <trans-unit id="Visible history" xml:space="preserve" approved="no">
         <source>Visible history</source>
+        <target state="translated">Zichtbare geschiedenis</target>
         <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Voice messages" xml:space="preserve">
