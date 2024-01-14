@@ -690,7 +690,7 @@
     <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Sie sind dieser Gruppe beigetreten. Sie werden mit dem einladenden Gruppenmitglied verbunden.</string>
     <string name="leave_group_button">Verlassen</string>
     <string name="leave_group_question">Die Gruppe verlassen?</string>
-    <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Sie werden von dieser Gruppe keine Nachrichten mehr erhalten. Der Chatverlauf wird beibehalten.</string>
+    <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Sie werden von dieser Gruppe keine Nachrichten mehr erhalten. Der Nachrichtenverlauf wird beibehalten.</string>
     <string name="icon_descr_add_members">Mitglieder einladen</string>
     <string name="icon_descr_group_inactive">Gruppe inaktiv</string>
     <string name="alert_title_group_invitation_expired">Die Einladung ist abgelaufen!</string>
@@ -1313,7 +1313,7 @@
     <string name="custom_time_unit_hours">Stunden</string>
     <string name="v5_1_better_messages_descr">- Bis zu 5 Minuten lange Sprachnachrichten
 \n- Zeitdauer für verschwindende Nachrichten anpassen
-\n- Nachrichten-Verlauf bearbeiten</string>
+\n- Nachrichtenverlauf bearbeiten</string>
     <string name="custom_time_picker_custom">benutzerdefiniert</string>
     <string name="custom_time_unit_months">Monate</string>
     <string name="custom_time_picker_select">Auswählen</string>
@@ -1324,7 +1324,7 @@
     <string name="share_text_deleted_at">Gelöscht um: %s</string>
     <string name="info_row_disappears_at">Verschwindet um</string>
     <string name="share_text_disappears_at">Verschwindet um: %s</string>
-    <string name="edit_history">Verlauf bearbeiten</string>
+    <string name="edit_history">Nachrichtenverlauf bearbeiten</string>
     <string name="message_reactions_prohibited_in_this_chat">In diesem Chat sind Reaktionen auf Nachrichten nicht erlaubt.</string>
     <string name="item_info_no_text">Kein Text</string>
     <string name="non_fatal_errors_occured_during_import">Während des Imports sind einige nicht schwerwiegende Fehler aufgetreten – weitere Details finden Sie in der Chat-Konsole.</string>
@@ -1356,7 +1356,7 @@
     <string name="error_synchronizing_connection">Fehler beim Synchronisieren der Verbindung</string>
     <string name="sync_connection_force_question">Verschlüsselung neu aushandeln\?</string>
     <string name="fix_connection_question">Verbindung reparieren\?</string>
-    <string name="no_history">Kein Verlauf</string>
+    <string name="no_history">Kein Nachrichtenverlauf</string>
     <string name="sync_connection_force_confirm">Neu aushandeln</string>
     <string name="sync_connection_force_desc">Die Verschlüsselung funktioniert und ein neues Verschlüsselungsabkommen ist nicht erforderlich. Es kann zu Verbindungsfehlern kommen!</string>
     <string name="renegotiate_encryption">Verschlüsselung neu aushandeln</string>
@@ -1608,12 +1608,12 @@
     <string name="error_showing_content">Fehler beim Anzeigen des Inhalts</string>
     <string name="error_showing_message">Fehler beim Anzeigen der Nachricht</string>
     <string name="you_can_make_address_visible_via_settings">Sie können sie über Einstellungen für Ihre SimpleX-Kontakte sichtbar machen.</string>
-    <string name="recent_history_is_not_sent_to_new_members">Der Verlauf wird nicht an neue Gruppenmitglieder gesendet.</string>
+    <string name="recent_history_is_not_sent_to_new_members">Der Nachrichtenverlauf wird nicht an neue Gruppenmitglieder gesendet.</string>
     <string name="retry_verb">Wiederholen</string>
     <string name="camera_not_available">Kamera nicht verfügbar</string>
     <string name="enable_sending_recent_history">Bis zu 100 der letzten Nachrichten an neue Gruppenmitglieder senden.</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Kontakt hinzufügen</b>: Um einen neuen Einladungslink zu erstellen oder eine Verbindung über einen Link herzustellen, den Sie erhalten haben.]]></string>
-    <string name="disable_sending_recent_history">Den Verlauf nicht an neue Mitglieder senden.</string>
+    <string name="disable_sending_recent_history">Den Nachrichtenverlauf nicht an neue Mitglieder senden.</string>
     <string name="or_show_this_qr_code">Oder diesen QR-Code anzeigen</string>
     <string name="recent_history_is_sent_to_new_members">Bis zu 100 der letzten Nachrichten werden an neue Mitglieder gesendet.</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">Der von Ihnen gescannte Code ist kein SimpleX-Link-QR-Code.</string>
@@ -1623,7 +1623,7 @@
     <string name="keep_unused_invitation_question">Nicht genutzte Einladung behalten?</string>
     <string name="share_this_1_time_link">Teilen Sie diesen Einmal-Einladungslink</string>
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>Gruppe erstellen</b>: Um eine neue Gruppe zu erstellen.]]></string>
-    <string name="recent_history">Sichtbarer Verlauf</string>
+    <string name="recent_history">Sichtbarer Nachrichtenverlauf</string>
     <string name="la_app_passcode">App-Zugangscode</string>
     <string name="new_chat">Neuer Chat</string>
     <string name="loading_chats">Chats werden geladen…</string>
@@ -1675,4 +1675,5 @@
     <string name="possible_deadlock_title">Blockade</string>
     <string name="developer_options_section">Optionen für Entwickler</string>
     <string name="possible_deadlock_desc">Die Code-Ausführung dauert zu lange: %1$d Sekunden. Wahrscheinlich ist die App eingefroren: %2$s</string>
+    <string name="group_member_status_unknown">unbekannter Gruppenmitglieds-Status</string>
 </resources>
