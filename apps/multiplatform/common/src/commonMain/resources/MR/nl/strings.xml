@@ -1552,4 +1552,45 @@
     <string name="keep_invitation_link">Bewaar</string>
     <string name="tap_to_paste_link">Tik om de link te plakken</string>
     <string name="search_or_paste_simplex_link">Zoek of plak de SimpleX link</string>
+    <string name="chat_is_stopped_you_should_transfer_database">De chat is gestopt. Als u deze database al op een ander apparaat heeft gebruikt, moet u deze terugzetten voordat u met chatten begint.</string>
+    <string name="start_chat_question">Begin chat?</string>
+    <string name="show_internal_errors">Toon interne fouten</string>
+    <string name="agent_critical_error_title">Kritische fout</string>
+    <string name="agent_internal_error_title">Interne fout</string>
+    <string name="agent_internal_error_desc">Rapporteer dit alstublieft aan de ontwikkelaars:
+\n%S</string>
+    <string name="agent_critical_error_desc">Rapporteer dit alstublieft aan de ontwikkelaars:
+\n%S
+\n
+\nHet wordt aanbevolen om de app opnieuw te starten.</string>
+    <string name="remote_ctrl_error_bad_version">Desktop heeft een niet-ondersteunde versie. Zorg ervoor dat u op beide apparaten dezelfde versie gebruikt</string>
+    <string name="failed_to_create_user_invalid_title">Ongeldige weergavenaam!</string>
+    <string name="failed_to_create_user_invalid_desc">Deze weergavenaam is ongeldig. Kies een andere naam.</string>
+    <string name="remote_host_was_disconnected_title">Verbinding gestopt</string>
+    <string name="remote_ctrl_was_disconnected_title">Verbinding gestopt</string>
+    <string name="remote_host_disconnected_from">Verbinding met mobiel <b>%s</b> \u0020is verbroken met als reden: %s</string>
+    <string name="remote_host_error_busy">Mobiel <b>%s</b> is bezet</string>
+    <string name="remote_host_error_inactive">Mobiel <b>%s</b> is inactief</string>
+    <string name="remote_host_error_missing">Mobiel <b>%s</b> ontbreekt</string>
+    <string name="remote_host_error_bad_state">De verbinding met de mobiel <b>%s</b> is in slechte staat</string>
+    <string name="remote_ctrl_error_disconnected">De verbinding met desktop is verbroken</string>
+    <string name="possible_deadlock_title">Impasse</string>
+    <string name="possible_slow_function_desc">Uitvoering van functie duurt te lang: %1$d seconden: %2$s</string>
+    <string name="possible_slow_function_title">Langzame functie</string>
+    <string name="developer_options_section">Ontwikkelaars opties</string>
+    <string name="show_slow_api_calls">Toon langzame API aanroepen</string>
+    <string name="past_member_vName">Voormalig lid %1$s</string>
+    <string name="group_member_status_unknown_short">onbekend</string>
+    <string name="remote_ctrl_disconnected_with_reason">Verbinding verbroken met als reden: %s</string>
+    <string name="remote_ctrl_error_busy">Desktop is bezet</string>
+    <string name="remote_ctrl_error_inactive">Desktop is inactief</string>
+    <string name="remote_host_error_disconnected">Mobiele verbinding <b>%s</b> is verbroken</string>
+    <string name="restart_chat_button">Chat opnieuw starten</string>
+    <string name="remote_host_error_timeout">Time-out bereikt tijdens het verbinden met de mobiel <b>%s</b></string>
+    <string name="remote_ctrl_error_bad_state">De verbinding met de desktop is in slechte staat</string>
+    <string name="possible_deadlock_desc">Het uitvoeren van de code duurt te lang: %1$d seconden. Waarschijnlijk is de app vastgelopen: %2$s</string>
+    <string name="remote_ctrl_error_bad_invitation">Desktop heeft verkeerde uitnodigingscode</string>
+    <string name="remote_host_error_bad_version">Mobiel <b>%s</b> heeft een niet-ondersteunde versie. Zorg ervoor dat u op beide apparaten dezelfde versie gebruikt</string>
+    <string name="remote_ctrl_error_timeout">Time-out bereikt tijdens het verbinden met de desktop</string>
+    <string name="group_member_status_unknown">onbekende status</string>
 </resources>
