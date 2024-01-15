@@ -459,16 +459,15 @@ fun ComposeView(
         is ComposePreview.CLinkPreview -> msgs.add(checkLinkPreview())
         is ComposePreview.MediaPreview -> {
           preview.content.forEachIndexed { index, it ->
-            val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
             val file = when (it) {
               is UploadContent.SimpleImage ->
-                if (remoteHost == null) saveImage(it.uri, encrypted = encrypted)
+                if (remoteHost == null) saveImage(it.uri)
                 else desktopSaveImageInTmp(it.uri)
               is UploadContent.AnimatedImage ->
-                if (remoteHost == null) saveAnimImage(it.uri, encrypted = encrypted)
+                if (remoteHost == null) saveAnimImage(it.uri)
                 else CryptoFile.desktopPlain(it.uri)
               is UploadContent.Video ->
-                if (remoteHost == null) saveFileFromUri(it.uri, encrypted = false)
+                if (remoteHost == null) saveFileFromUri(it.uri)
                 else CryptoFile.desktopPlain(it.uri)
             }
             if (file != null) {
@@ -506,7 +505,7 @@ fun ComposeView(
         }
         is ComposePreview.FilePreview -> {
           val file = if (remoteHost == null) {
-            saveFileFromUri(preview.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get())
+            saveFileFromUri(preview.uri)
           } else {
             CryptoFile.desktopPlain(preview.uri)
           }

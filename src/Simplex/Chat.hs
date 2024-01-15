@@ -28,7 +28,6 @@ import Data.Bifunctor (bimap, first, second)
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Base64 as B64
-import Data.ByteString.Builder (toLazyByteString)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -5824,8 +5823,7 @@ sendGroupMemberMessages user conn@Connection {connId} events groupId = do
       processBatch batch `catchChatError` (toView . CRChatError (Just user))
   where
     processBatch :: MsgBatch -> m ()
-    processBatch (MsgBatch builder sndMsgs) = do
-      let batchBody = LB.toStrict $ toLazyByteString builder
+    processBatch (MsgBatch batchBody sndMsgs) = do
       agentMsgId <- withAgent $ \a -> sendMessage a (aConnId conn) MsgFlags {notification = True} batchBody
       let sndMsgDelivery = SndMsgDelivery {connId, agentMsgId}
       void . withStoreBatch' $ \db -> map (\SndMessage {msgId} -> createSndMsgDelivery db sndMsgDelivery msgId) sndMsgs
@@ -5835,21 +5833,21 @@ directMessage chatMsgEvent = do
   chatVRange <- chatVersionRange
   let r = encodeChatMessage ChatMessage {chatVRange, msgId = Nothing, chatMsgEvent}
   case r of
-    ECMEncoded encodedBody -> pure . LB.toStrict $ encodedBody
+    ECMEncoded encodedBody -> pure encodedBody
     ECMLarge -> throwChatError $ CEException "large message"
 
-deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> LazyMsgBody -> MessageId -> m Int64
+deliverMessage :: ChatMonad m => Connection -> CMEventTag e -> MsgBody -> MessageId -> m Int64
 deliverMessage conn cmEventTag msgBody msgId = do
   let msgFlags = MsgFlags {notification = hasNotification cmEventTag}
   deliverMessage' conn msgFlags msgBody msgId
 
-deliverMessage' :: ChatMonad m => Connection -> MsgFlags -> LazyMsgBody -> MessageId -> m Int64
+deliverMessage' :: ChatMonad m => Connection -> MsgFlags -> MsgBody -> MessageId -> m Int64
 deliverMessage' conn msgFlags msgBody msgId =
   deliverMessages [(conn, msgFlags, msgBody, msgId)] >>= \case
     [r] -> liftEither r
     rs -> throwChatError $ CEInternalError $ "deliverMessage: expected 1 result, got " <> show (length rs)
 
-type MsgReq = (Connection, MsgFlags, LazyMsgBody, MessageId)
+type MsgReq = (Connection, MsgFlags, MsgBody, MessageId)
 
 deliverMessages :: ChatMonad' m => [MsgReq] -> m [Either ChatError Int64]
 deliverMessages = deliverMessagesB . map Right
@@ -5860,7 +5858,7 @@ deliverMessagesB msgReqs = do
   withStoreBatch $ \db -> map (bindRight $ createDelivery db) sent
   where
     toAgent = \case
-      Right (conn, msgFlags, msgBody, _msgId) -> Right (aConnId conn, msgFlags, LB.toStrict msgBody)
+      Right (conn, msgFlags, msgBody, _msgId) -> Right (aConnId conn, msgFlags, msgBody)
       Left _ce -> Left (AP.INTERNAL "ChatError, skip") -- as long as it is Left, the agent batchers should just step over it
     prepareBatch (Right req) (Right ar) = Right (req, ar)
     prepareBatch (Left ce) _ = Left ce -- restore original ChatError
