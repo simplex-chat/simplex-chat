@@ -1030,7 +1030,7 @@ processChatCommand' vr = \case
       filesInfo <- withStore' $ \db -> getGroupFileInfo db user gInfo
       withChatLock "deleteChat group" . procCmd $ do
         deleteFilesAndConns user filesInfo
-        when (memberActive membership && isOwner) . void $ sendGroupMessage user gInfo members XGrpDel
+        when (memberActive membership && isOwner) . void $ sendGroupMessage' user gInfo members XGrpDel
         deleteGroupLinkIfExists user gInfo
         deleteMembersConnections user members
         -- functions below are called in separate transactions to prevent crashes on android
@@ -1746,7 +1746,7 @@ processChatCommand' vr = \case
   APILeaveGroup groupId -> withUser $ \user@User {userId} -> do
     Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db vr user groupId
     withChatLock "leaveGroup" . procCmd $ do
-      (msg, _) <- sendGroupMessage user gInfo members XGrpLeave
+      (msg, _) <- sendGroupMessage' user gInfo members XGrpLeave
       ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent SGEUserLeft)
       toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
       -- TODO delete direct connections that were unused
@@ -3918,7 +3918,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   ms = introducedMembers <> invitedMembers
                   msg = XGrpMsgForward memberId chatMsg' brokerTs
               unless (null ms) . void $
-                sendGroupMessage user gInfo ms msg
+                sendGroupMessage' user gInfo ms msg
       RCVD msgMeta msgRcpt ->
         withAckMessage' agentConnId conn msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
@@ -4849,20 +4849,23 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         brokerTs = metaBrokerTs msgMeta
 
     processContactProfileUpdate :: Contact -> Profile -> Bool -> m Contact
-    processContactProfileUpdate c@Contact {profile = p} p' createItems
-      | fromLocalProfile p /= p' = do
+    processContactProfileUpdate c@Contact {profile = lp} p' createItems
+      | p /= p' = do
           c' <- withStore $ \db ->
             if userTTL == rcvTTL
               then updateContactProfile db user c p'
               else do
                 c' <- liftIO $ updateContactUserPreferences db user c ctUserPrefs'
                 updateContactProfile db user c' p'
-          when (directOrUsed c' && createItems) $ createRcvFeatureItems user c c'
+          when (directOrUsed c' && createItems) $ do
+            createProfileUpdatedItem c'
+            createRcvFeatureItems user c c'
           toView $ CRContactUpdated user c c'
           pure c'
       | otherwise =
           pure c
       where
+        p = fromLocalProfile lp
         Contact {userPreferences = ctUserPrefs@Preferences {timedMessages = ctUserTMPref}} = c
         userTTL = prefParam $ getPreference SCFTimedMessages ctUserPrefs
         Profile {preferences = rcvPrefs_} = p'
@@ -4876,32 +4879,62 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   | rcvTTL /= userDefaultTTL -> Just (userDefault :: TimedMessagesPreference) {ttl = rcvTTL}
                   | otherwise -> Nothing
            in setPreference_ SCFTimedMessages ctUserTMPref' ctUserPrefs
+        createProfileUpdatedItem c' =
+          when visibleProfileUpdated $ do
+            let ciContent = CIRcvDirectEvent $ RDEProfileUpdated p p'
+            createInternalChatItem user (CDDirectRcv c') ciContent Nothing
+          where
+            visibleProfileUpdated =
+              n' /= n || fn' /= fn || i' /= i || cl' /= cl
+            Profile {displayName = n, fullName = fn, image = i, contactLink = cl} = p
+            Profile {displayName = n', fullName = fn', image = i', contactLink = cl'} = p'
 
     xInfoMember :: GroupInfo -> GroupMember -> Profile -> m ()
-    xInfoMember gInfo m p' = void $ processMemberProfileUpdate gInfo m p'
+    xInfoMember gInfo m p' = void $ processMemberProfileUpdate gInfo m p' True
 
     xGrpLinkMem :: GroupInfo -> GroupMember -> Connection -> Profile -> m ()
     xGrpLinkMem gInfo@GroupInfo {membership} m@GroupMember {groupMemberId, memberCategory} Connection {viaGroupLink} p' = do
       xGrpLinkMemReceived <- withStore $ \db -> getXGrpLinkMemReceived db groupMemberId
       if viaGroupLink && isNothing (memberContactId m) && memberCategory == GCHostMember && not xGrpLinkMemReceived
         then do
-          m' <- processMemberProfileUpdate gInfo m p'
+          m' <- processMemberProfileUpdate gInfo m p' False
           withStore' $ \db -> setXGrpLinkMemReceived db groupMemberId True
           let connectedIncognito = memberIncognito membership
           probeMatchingMemberContact m' connectedIncognito
         else messageError "x.grp.link.mem error: invalid group link host profile update"
 
-    processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> m GroupMember
-    processMemberProfileUpdate gInfo m@GroupMember {memberContactId} p' =
-      case memberContactId of
-        Nothing -> do
-          m' <- withStore $ \db -> updateMemberProfile db user m p'
-          toView $ CRGroupMemberUpdated user gInfo m m'
-          pure m'
-        Just mContactId -> do
-          mCt <- withStore $ \db -> getContact db user mContactId
-          Contact {profile} <- processContactProfileUpdate mCt p' True
-          pure m {memberProfile = profile}
+    processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Bool -> m GroupMember
+    processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} p' createItems
+      | redactedMemberProfile (fromLocalProfile p) /= redactedMemberProfile p' =
+          case memberContactId of
+            Nothing -> do
+              m' <- withStore $ \db -> updateMemberProfile db user m p'
+              createProfileUpdatedItem m'
+              toView $ CRGroupMemberUpdated user gInfo m m'
+              pure m'
+            Just mContactId -> do
+              mCt <- withStore $ \db -> getContact db user mContactId
+              if canUpdateProfile mCt
+                then do
+                  (m', ct') <- withStore $ \db -> updateContactMemberProfile db user m mCt p'
+                  createProfileUpdatedItem m'
+                  toView $ CRGroupMemberUpdated user gInfo m m'
+                  toView $ CRContactUpdated user mCt ct'
+                  pure m'
+                else pure m
+              where
+                canUpdateProfile ct
+                  | not (contactActive ct) = True
+                  | otherwise = case contactConn ct of
+                      Nothing -> True
+                      Just conn -> not (connReady conn) || (authErrCounter conn >= 1)
+      | otherwise =
+          pure m
+      where
+        createProfileUpdatedItem m' =
+          when createItems $ do
+            let ciContent = CIRcvGroupEvent $ RGEMemberProfileUpdated (fromLocalProfile p) p'
+            createInternalChatItem user (CDGroupRcv gInfo m') ciContent Nothing
 
     createFeatureEnabledItems :: Contact -> m ()
     createFeatureEnabledItems ct@Contact {mergedPreferences} =
@@ -5835,7 +5868,29 @@ deliverMessagesB msgReqs = do
       Right <$> createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId}) msgId
 
 sendGroupMessage :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
-sendGroupMessage user GroupInfo {groupId} members chatMsgEvent = do
+sendGroupMessage user gInfo members chatMsgEvent = do
+  when shouldSendProfileUpdate $
+    sendProfileUpdate `catchChatError` (\e -> toView (CRChatError (Just user) e))
+  sendGroupMessage' user gInfo members chatMsgEvent
+  where
+    User {profile = p, userMemberProfileUpdatedAt} = user
+    GroupInfo {userMemberProfileSentAt} = gInfo
+    shouldSendProfileUpdate
+      | incognitoMembership gInfo = False
+      | otherwise =
+          case (userMemberProfileSentAt, userMemberProfileUpdatedAt) of
+            (Just lastSentTs, Just lastUpdateTs) -> lastSentTs < lastUpdateTs
+            (Nothing, Just _) -> True
+            _ -> False
+    sendProfileUpdate = do
+      let members' = filter (\m -> isCompatibleRange (memberChatVRange' m) memberProfileUpdateVRange) members
+          profileUpdateEvent = XInfo $ redactedMemberProfile $ fromLocalProfile p
+      void $ sendGroupMessage' user gInfo members' profileUpdateEvent
+      currentTs <- liftIO getCurrentTime
+      withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
+
+sendGroupMessage' :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
+sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
   msg@SndMessage {msgId, msgBody} <- createSndMessage chatMsgEvent (GroupId groupId)
   recipientMembers <- liftIO $ shuffleMembers (filter memberCurrent members)
   let msgFlags = MsgFlags {notification = hasNotification $ toCMEventTag chatMsgEvent}
