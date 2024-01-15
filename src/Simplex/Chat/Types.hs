@@ -619,7 +619,8 @@ data GroupMember = GroupMember
     memberCategory :: GroupMemberCategory,
     memberStatus :: GroupMemberStatus,
     memberSettings :: GroupMemberSettings,
-    memberGroupSettings :: MemberGroupWideSettings,
+    -- used to mark chat items as moderated by this member
+    blockedByGroupMemberId :: Maybe GroupMemberId,
     invitedBy :: InvitedBy,
     invitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
@@ -763,14 +764,6 @@ data GroupMemberSettings = GroupMemberSettings
 
 defaultMemberSettings :: GroupMemberSettings
 defaultMemberSettings = GroupMemberSettings {showMessages = True}
-
-data MemberGroupWideSettings = MemberGroupWideSettings
-  { groupShowMessages :: Bool
-  }
-  deriving (Eq, Show)
-
-defaultMemberGroupSettings :: MemberGroupWideSettings
-defaultMemberGroupSettings = MemberGroupWideSettings {groupShowMessages = True}
 
 newtype Probe = Probe {unProbe :: ByteString}
   deriving (Eq, Show)
@@ -1611,8 +1604,6 @@ $(JQ.deriveJSON defaultJSON ''GroupProfile)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "IB") ''InvitedBy)
 
 $(JQ.deriveJSON defaultJSON ''GroupMemberSettings)
-
-$(JQ.deriveJSON defaultJSON ''MemberGroupWideSettings)
 
 $(JQ.deriveJSON defaultJSON ''SecurityCode)
 
