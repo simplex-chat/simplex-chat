@@ -1556,4 +1556,43 @@
     <string name="search_or_paste_simplex_link">Rechercher ou coller un lien SimpleX</string>
     <string name="chat_is_stopped_you_should_transfer_database">Le chat est arrêté. Si vous avez déjà utilisé cette base de données sur un autre appareil, vous devez la transférer à nouveau avant de démarrer le chat.</string>
     <string name="start_chat_question">Lancer le chat ?</string>
+    <string name="remote_host_error_bad_state">État médiocre de la connexion au mobile <b>%s</b>.</string>
+    <string name="remote_ctrl_was_disconnected_title">Connexion interrompue</string>
+    <string name="remote_ctrl_error_bad_state">État médiocre de la connexion avec le bureau</string>
+    <string name="possible_deadlock_title">Impasse</string>
+    <string name="remote_ctrl_error_bad_version">La version de l\'ordinateur de bureau n\'est pas prise en charge. Veillez à utiliser la même version sur les deux appareils.</string>
+    <string name="remote_ctrl_error_disconnected">Le bureau a été déconnecté</string>
+    <string name="developer_options_section">Options pour les développeurs</string>
+    <string name="possible_deadlock_desc">Le code prend trop de temps à s\'exécuter : %1$d secondes. Il est probable que l\'application soit figée : %2$s</string>
+    <string name="agent_internal_error_title">Erreur interne</string>
+    <string name="remote_host_error_bad_version">La version du mobile <b>%s</b> n\'est pas prise en charge. Veillez à utiliser la même version sur les deux appareils.</string>
+    <string name="show_internal_errors">Afficher les erreurs internes</string>
+    <string name="remote_ctrl_disconnected_with_reason">Déconnecté pour la raison suivante : %s</string>
+    <string name="failed_to_create_user_invalid_title">Nom d\'affichage invalide !</string>
+    <string name="failed_to_create_user_invalid_desc">Ce nom d\'affichage est invalide. Veuillez choisir un autre nom.</string>
+    <string name="remote_ctrl_error_timeout">Délai d\'attente dépassé lors de la connexion au bureau</string>
+    <string name="agent_critical_error_title">Erreur critique</string>
+    <string name="agent_critical_error_desc">Veuillez le signaler aux développeurs :
+\n%s
+\n
+\nIl est recommandé de redémarrer l\'application.</string>
+    <string name="agent_internal_error_desc">Veuillez le signaler aux développeurs :
+\n%s</string>
+    <string name="restart_chat_button">Redémarrer le chat</string>
+    <string name="group_member_status_unknown_short">inconnu</string>
+    <string name="group_member_status_unknown">statut inconnu</string>
+    <string name="remote_host_was_disconnected_title">Connexion interrompue</string>
+    <string name="past_member_vName">Ancien membre %1$s</string>
+    <string name="possible_slow_function_desc">La fonctions prend trop de temps à s\'exécuter : %1$d secondes : %2$s</string>
+    <string name="possible_slow_function_title">Fonction lente</string>
+    <string name="show_slow_api_calls">Afficher les appels d\'API lents</string>
+    <string name="remote_host_disconnected_from">Déconnecté du mobile <b>%s</b> en raison de : %s</string>
+    <string name="remote_host_error_busy">Mobile <b>%s</b> est occupé</string>
+    <string name="remote_host_error_inactive">Le mobile <b>%s</b> est inactif</string>
+    <string name="remote_host_error_missing">Mobile <b>%s</b> est manquant</string>
+    <string name="remote_host_error_disconnected">Le mobile <b>%s</b> a été déconnecté</string>
+    <string name="remote_host_error_timeout">Délai d\'attente expiré lors de la connexion au mobile <b>%s</b></string>
+    <string name="remote_ctrl_error_bad_invitation">Le bureau ne possède pas le bon code d\'invitation</string>
+    <string name="remote_ctrl_error_busy">Le bureau est occupé</string>
+    <string name="remote_ctrl_error_inactive">Le bureau est inactif</string>
 </resources>
