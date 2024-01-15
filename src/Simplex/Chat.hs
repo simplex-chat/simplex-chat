@@ -5885,7 +5885,7 @@ sendGroupMessage user gInfo members chatMsgEvent = do
             (Nothing, Just _) -> True
             _ -> False
     sendProfileUpdate = do
-      let members' = filter (\m -> isCompatibleRange (memberChatVRange' m) membershipProfileUpdateVRange) members
+      let members' = filter (\m -> isCompatibleRange (memberChatVRange' m) memberProfileUpdateVRange) members
           profileUpdateEvent = XInfo $ redactedMemberProfile $ fromLocalProfile p
       void $ sendGroupMessage' user gInfo members' profileUpdateEvent
       currentTs <- liftIO getCurrentTime

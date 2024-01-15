@@ -86,9 +86,9 @@ batchSendVRange = mkVersionRange 5 currentChatVersion
 groupHistoryIncludeWelcomeVRange :: VersionRange
 groupHistoryIncludeWelcomeVRange = mkVersionRange 6 currentChatVersion
 
--- version range that supports sending membership profile updates
-membershipProfileUpdateVRange :: VersionRange
-membershipProfileUpdateVRange = mkVersionRange 7 currentChatVersion
+-- version range that supports sending member profile updates to groups
+memberProfileUpdateVRange :: VersionRange
+memberProfileUpdateVRange = mkVersionRange 7 currentChatVersion
 
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
