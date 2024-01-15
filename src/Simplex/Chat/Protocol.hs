@@ -29,9 +29,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
-import qualified Data.ByteString.Lazy as L
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.String
 import Data.Text (Text)
@@ -499,20 +497,20 @@ $(JQ.deriveJSON defaultJSON ''QuotedMsg)
 
 -- this limit reserves space for metadata in forwarded messages
 -- 15780 (limit used for fileChunkSize) - 161 (x.grp.msg.forward overhead) = 15619, round to 15610
-maxChatMsgSize :: Int64
+maxChatMsgSize :: Int
 maxChatMsgSize = 15610
 
-data EncodedChatMessage = ECMEncoded L.ByteString | ECMLarge
+data EncodedChatMessage = ECMEncoded ByteString | ECMLarge
 
 encodeChatMessage :: MsgEncodingI e => ChatMessage e -> EncodedChatMessage
 encodeChatMessage msg = do
   case chatToAppMessage msg of
     AMJson m -> do
-      let body = J.encode m
-      if LB.length body > maxChatMsgSize
+      let body = LB.toStrict $ J.encode m
+      if B.length body > maxChatMsgSize
         then ECMLarge
         else ECMEncoded body
-    AMBinary m -> ECMEncoded . LB.fromStrict $ strEncode m
+    AMBinary m -> ECMEncoded $ strEncode m
 
 parseChatMessages :: ByteString -> [Either String AChatMessage]
 parseChatMessages "" = [Left "empty string"]

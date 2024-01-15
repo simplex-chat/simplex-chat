@@ -1667,8 +1667,7 @@ object ChatController {
             ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
-          withBGApi { receiveFile(rhId, r.user, file.fileId, encrypted = cItem.encryptLocalFile && chatController.appPrefs
-            .privacyEncryptLocalFiles.get(), auto = true) }
+          withBGApi { receiveFile(rhId, r.user, file.fileId, auto = true) }
         }
         if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id || chatModel.remoteHostId() != rhId)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
@@ -2032,7 +2031,8 @@ object ChatController {
     }
   }
 
-  suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, encrypted: Boolean, auto: Boolean = false) {
+  suspend fun receiveFile(rhId: Long?, user: UserLike, fileId: Long, auto: Boolean = false) {
+    val encrypted = appPrefs.privacyEncryptLocalFiles.get()
     val chatItem = apiReceiveFile(rhId, fileId, encrypted = encrypted, auto = auto)
     if (chatItem != null) {
       chatItemSimpleUpdate(rhId, user, chatItem)
