@@ -101,7 +101,7 @@ fun CIFileView(
               filePath = getLoadedFilePath(file)
             }
             if (filePath != null) {
-              withBGApi {
+              withLongRunningApi {
                 saveFileLauncher.launch(file.fileName)
               }
             } else {

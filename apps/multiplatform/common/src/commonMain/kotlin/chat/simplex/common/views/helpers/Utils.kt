@@ -39,7 +39,7 @@ fun withBGApi(action: suspend CoroutineScope.() -> Unit): Job =
     CoroutineScope(singleThreadDispatcher).launch(block = { wrapWithLogging(action, it) })
   }
 
-fun withLongRunningApi(slow: Long = 120_000, deadlock: Long = 240_000, action: suspend CoroutineScope.() -> Unit): Job =
+fun withLongRunningApi(slow: Long = Long.MAX_VALUE, deadlock: Long = Long.MAX_VALUE, action: suspend CoroutineScope.() -> Unit): Job =
   Exception().let {
     CoroutineScope(Dispatchers.Default).launch(block = { wrapWithLogging(action, it, slow = slow, deadlock = deadlock) })
   }
