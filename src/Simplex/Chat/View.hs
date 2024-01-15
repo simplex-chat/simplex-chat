@@ -242,7 +242,7 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
   CRJoinedGroupMemberConnecting u g host m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember host <> " added " <> ttyFullMember m <> " to the group (connecting...)"]
   CRConnectedToGroupMember u g m _ -> ttyUser u [ttyGroup' g <> ": " <> connectedMember m <> " is connected"]
   CRMemberRole u g by m r r' -> ttyUser u $ viewMemberRoleChanged g by m r r'
-  CRMemberBlockedForAll u g by m -> ttyUser u $ viewMemberBlockedForAll g by m
+  CRMemberBlockedForAll u g by m blocked -> ttyUser u $ viewMemberBlockedForAll g by m blocked
   CRMemberRoleUser u g m r r' -> ttyUser u $ viewMemberRoleUserChanged g m r r'
   CRDeletedMemberUser u g by -> ttyUser u $ [ttyGroup' g <> ": " <> ttyMember by <> " removed you from the group"] <> groupPreserved g
   CRDeletedMember u g by m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember by <> " removed " <> ttyMember m <> " from the group"]
@@ -967,8 +967,8 @@ viewMemberRoleChanged g@GroupInfo {membership} by m r r'
     view s = [ttyGroup' g <> ": " <> ttyMember by <> " changed " <> s <> " from " <> showRole r <> " to " <> showRole r']
 
 -- TODO
-viewMemberBlockedForAll :: GroupInfo -> GroupMember -> GroupMember -> [StyledString]
-viewMemberBlockedForAll g by m = []
+viewMemberBlockedForAll :: GroupInfo -> GroupMember -> GroupMember -> Bool -> [StyledString]
+viewMemberBlockedForAll g by m blocked = []
 
 viewMemberRoleUserChanged :: GroupInfo -> GroupMember -> GroupMemberRole -> GroupMemberRole -> [StyledString]
 viewMemberRoleUserChanged g@GroupInfo {membership} m r r'
