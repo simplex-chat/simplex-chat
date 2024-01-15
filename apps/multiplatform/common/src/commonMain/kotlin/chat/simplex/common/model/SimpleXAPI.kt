@@ -110,6 +110,7 @@ class AppPreferences {
   val chatStopped = mkBoolPreference(SHARED_PREFS_CHAT_STOPPED, false)
   val developerTools = mkBoolPreference(SHARED_PREFS_DEVELOPER_TOOLS, false)
   val showInternalErrors = mkBoolPreference(SHARED_PREFS_SHOW_INTERNAL_ERRORS, false)
+  val showSlowApiCalls = mkBoolPreference(SHARED_PREFS_SHOW_SLOW_API_CALLS, false)
   val terminalAlwaysVisible = mkBoolPreference(SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE, false)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
   val networkProxyHostPort = mkStrPreference(SHARED_PREFS_NETWORK_PROXY_HOST_PORT, "localhost:9050")
@@ -279,6 +280,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CHAT_STOPPED = "ChatStopped"
     private const val SHARED_PREFS_DEVELOPER_TOOLS = "DeveloperTools"
     private const val SHARED_PREFS_SHOW_INTERNAL_ERRORS = "ShowInternalErrors"
+    private const val SHARED_PREFS_SHOW_SLOW_API_CALLS = "ShowSlowApiCalls"
     private const val SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE = "TerminalAlwaysVisible"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
     private const val SHARED_PREFS_NETWORK_PROXY_HOST_PORT = "NetworkProxyHostPort"
@@ -464,19 +466,19 @@ object ChatController {
   suspend fun sendCmd(rhId: Long?, cmd: CC): CR {
     val ctrl = ctrl ?: throw Exception("Controller is not initialized")
 
-    return withContext(Dispatchers.IO) {
-      val c = cmd.cmdString
-      chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
-      Log.d(TAG, "sendCmd: ${cmd.cmdType}")
-      val json = if (rhId == null) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId.toInt(), c)
-      val r = APIResponse.decodeStr(json)
-      Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
-      if (r.resp is CR.Response || r.resp is CR.Invalid) {
-        Log.d(TAG, "sendCmd response json $json")
-      }
-      chatModel.addTerminalItem(TerminalItem.resp(rhId, r.resp))
-      r.resp
+    //return withContext(Dispatchers.IO) {
+    val c = cmd.cmdString
+    chatModel.addTerminalItem(TerminalItem.cmd(rhId, cmd.obfuscated))
+    Log.d(TAG, "sendCmd: ${cmd.cmdType}")
+    val json = if (rhId == null) chatSendCmd(ctrl, c) else chatSendRemoteCmd(ctrl, rhId.toInt(), c)
+    val r = APIResponse.decodeStr(json)
+    Log.d(TAG, "sendCmd response type ${r.resp.responseType}")
+    if (r.resp is CR.Response || r.resp is CR.Invalid) {
+      Log.d(TAG, "sendCmd response json $json")
     }
+    chatModel.addTerminalItem(TerminalItem.resp(rhId, r.resp))
+    return r.resp
+    //}
   }
 
   private fun recvMsg(ctrl: ChatCtrl): APIResponse? {
@@ -1665,7 +1667,8 @@ object ChatController {
             ((mc is MsgContent.MCImage && file.fileSize <= MAX_IMAGE_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVideo && file.fileSize <= MAX_VIDEO_SIZE_AUTO_RCV)
                 || (mc is MsgContent.MCVoice && file.fileSize <= MAX_VOICE_SIZE_AUTO_RCV && file.fileStatus !is CIFileStatus.RcvAccepted))) {
-          withApi { receiveFile(rhId, r.user, file.fileId, encrypted = cItem.encryptLocalFile && chatController.appPrefs.privacyEncryptLocalFiles.get(), auto = true) }
+          withBGApi { receiveFile(rhId, r.user, file.fileId, encrypted = cItem.encryptLocalFile && chatController.appPrefs
+            .privacyEncryptLocalFiles.get(), auto = true) }
         }
         if (cItem.showNotification && (allowedToShowNotification() || chatModel.chatId.value != cInfo.id || chatModel.remoteHostId() != rhId)) {
           ntfManager.notifyMessageReceived(r.user, cInfo, cItem)
@@ -1863,10 +1866,8 @@ object ChatController {
         }
         withCall(r, r.contact) { _ ->
           chatModel.callCommand.add(WCallCommand.End)
-          withApi {
-            chatModel.activeCall.value = null
-            chatModel.showCallView.value = false
-          }
+          chatModel.activeCall.value = null
+          chatModel.showCallView.value = false
         }
       }
       is CR.ContactSwitch ->
@@ -1977,7 +1978,7 @@ object ChatController {
         r.chatError is ChatError.ChatErrorAgent && r.chatError.agentError is AgentErrorType.CRITICAL -> {
           chatModel.processedCriticalError.newError(r.chatError.agentError, r.chatError.agentError.offerRestart)
         }
-        r.chatError is ChatError.ChatErrorAgent && r.chatError.agentError is AgentErrorType.INTERNAL && appPrefs.showInternalErrors.get() -> {
+        r.chatError is ChatError.ChatErrorAgent && r.chatError.agentError is AgentErrorType.INTERNAL && appPrefs.developerTools.get() && appPrefs.showInternalErrors.get() -> {
           chatModel.processedInternalError.newError(r.chatError.agentError, false)
         }
       }
@@ -2004,20 +2005,18 @@ object ChatController {
     }
   }
 
-  fun switchToLocalSession() {
+  suspend fun switchToLocalSession() {
     val m = chatModel
     m.remoteCtrlSession.value = null
-    withBGApi {
-      val users = listUsers(null)
-      m.users.clear()
-      m.users.addAll(users)
-      getUserChatData(null)
-      val statuses = apiGetNetworkStatuses(null)
-      if (statuses != null) {
-        chatModel.networkStatuses.clear()
-        val ss = statuses.associate { it.agentConnId to it.networkStatus }.toMap()
-        chatModel.networkStatuses.putAll(ss)
-      }
+    val users = listUsers(null)
+    m.users.clear()
+    m.users.addAll(users)
+    getUserChatData(null)
+    val statuses = apiGetNetworkStatuses(null)
+    if (statuses != null) {
+      chatModel.networkStatuses.clear()
+      val ss = statuses.associate { it.agentConnId to it.networkStatus }.toMap()
+      chatModel.networkStatuses.putAll(ss)
     }
   }
 

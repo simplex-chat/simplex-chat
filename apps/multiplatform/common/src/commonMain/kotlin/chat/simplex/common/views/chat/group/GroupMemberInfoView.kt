@@ -66,7 +66,7 @@ fun GroupMemberInfoView(
       connectionCode,
       getContactChat = { chatModel.getContactChat(it) },
       openDirectChat = {
-        withApi {
+        withBGApi {
           val c = chatModel.controller.apiGetChat(rhId, ChatType.Direct, it)
           if (c != null) {
             if (chatModel.getContactChat(it) == null) {
@@ -81,7 +81,7 @@ fun GroupMemberInfoView(
         }
       },
       createMemberContact = {
-        withApi {
+        withBGApi {
           progressIndicator = true
           val memberContact = chatModel.controller.apiCreateMemberContact(rhId, groupInfo.apiId, member.groupMemberId)
           if (memberContact != null) {
@@ -107,7 +107,7 @@ fun GroupMemberInfoView(
         updateMemberRoleDialog(it, member, onDismiss = {
           newRole.value = prevValue
         }) {
-          withApi {
+          withBGApi {
             kotlin.runCatching {
               val mem = chatModel.controller.apiMemberRole(rhId, groupInfo.groupId, member.groupMemberId, it)
               chatModel.upsertGroupMember(rhId, groupInfo, mem)
@@ -119,7 +119,7 @@ fun GroupMemberInfoView(
       },
       switchMemberAddress = {
         showSwitchAddressAlert(switchAddress = {
-          withApi {
+          withBGApi {
             val r = chatModel.controller.apiSwitchGroupMember(rhId, groupInfo.apiId, member.groupMemberId)
             if (r != null) {
               connStats.value = r.second
@@ -131,7 +131,7 @@ fun GroupMemberInfoView(
       },
       abortSwitchMemberAddress = {
         showAbortSwitchAddressAlert(abortSwitchAddress = {
-          withApi {
+          withBGApi {
             val r = chatModel.controller.apiAbortSwitchGroupMember(rhId, groupInfo.apiId, member.groupMemberId)
             if (r != null) {
               connStats.value = r.second
@@ -142,7 +142,7 @@ fun GroupMemberInfoView(
         })
       },
       syncMemberConnection = {
-        withApi {
+        withBGApi {
           val r = chatModel.controller.apiSyncGroupMemberRatchet(rhId, groupInfo.apiId, member.groupMemberId, force = false)
           if (r != null) {
             connStats.value = r.second
@@ -153,7 +153,7 @@ fun GroupMemberInfoView(
       },
       syncMemberConnectionForce = {
         showSyncConnectionForceAlert(syncConnectionForce = {
-          withApi {
+          withBGApi {
             val r = chatModel.controller.apiSyncGroupMemberRatchet(rhId, groupInfo.apiId, member.groupMemberId, force = true)
             if (r != null) {
               connStats.value = r.second
@@ -204,7 +204,7 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
     text = generalGetString(MR.strings.member_will_be_removed_from_group_cannot_be_undone),
     confirmText = generalGetString(MR.strings.remove_member_confirmation),
     onConfirm = {
-      withApi {
+      withBGApi {
         val removedMember = chatModel.controller.apiRemoveMember(rhId, member.groupId, member.groupMemberId)
         if (removedMember != null) {
           chatModel.upsertGroupMember(rhId, groupInfo, removedMember)
@@ -505,7 +505,7 @@ private fun updateMemberRoleDialog(
 fun connectViaMemberAddressAlert(rhId: Long?, connReqUri: String) {
   try {
     val uri = URI(connReqUri)
-    withApi {
+    withBGApi {
       planAndConnect(rhId, uri, incognito = null, close = { ModalManager.closeAllModalsEverywhere() })
     }
   } catch (e: RuntimeException) {

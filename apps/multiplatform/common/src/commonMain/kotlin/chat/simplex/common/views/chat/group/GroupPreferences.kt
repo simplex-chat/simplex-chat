@@ -32,7 +32,7 @@ fun GroupPreferencesView(m: ChatModel, rhId: Long?, chatId: String, close: () ->
   var currentPreferences by rememberSaveable(gInfo, stateSaver = serializableSaver()) { mutableStateOf(preferences) }
 
   fun savePrefs(afterSave: () -> Unit = {}) {
-    withApi {
+    withBGApi {
       val gp = gInfo.groupProfile.copy(groupPreferences = preferences.toGroupPreferences())
       val g = m.controller.apiUpdateGroup(rhId, gInfo.groupId, gp)
       if (g != null) {
