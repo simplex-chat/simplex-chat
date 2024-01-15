@@ -1412,6 +1412,7 @@ processChatCommand' vr = \case
   SetShowMessages cName ntfOn -> updateChatSettings cName (\cs -> cs {enableNtfs = ntfOn})
   SetSendReceipts cName rcptsOn_ -> updateChatSettings cName (\cs -> cs {sendRcpts = rcptsOn_})
   SetShowMemberMessages gName mName showMessages -> withUser $ \user -> do
+    -- TODO if admin, use APIBlockMemberForAll
     (gId, mId) <- getGroupAndMemberId user gName mName
     m <- withStore $ \db -> getGroupMember db user gId mId
     let settings = (memberSettings m) {showMessages}
@@ -1724,6 +1725,15 @@ processChatCommand' vr = \case
                 ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent gEvent)
                 toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
           pure CRMemberRoleUser {user, groupInfo = gInfo, member = m {memberRole = memRole}, fromRole = mRole, toRole = memRole}
+  APIBlockMemberForAll groupId memberId -> withUser $ \user -> do
+    -- get group
+    -- assertUserGroupRole
+    -- filter out memberId member
+    -- send XGrpMemBlock to remaining members
+    -- set blocked_by_group_member_id
+    -- chat item CISndGroupEvent SGEMemberBlocked
+    -- response CRMemberBlockedForAll (or CRCmdOk? - to differentiate responce and received event)
+    throwChatError $ CECommandError "not implemented"
   APIRemoveMember groupId memberId -> withUser $ \user -> do
     Group gInfo members <- withStore $ \db -> getGroup db vr user groupId
     case find ((== memberId) . groupMemberId') members of
@@ -3881,6 +3891,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpMemInv memId introInv -> xGrpMemInv gInfo m' memId introInv
               XGrpMemFwd memInfo introInv -> xGrpMemFwd gInfo m' memInfo introInv
               XGrpMemRole memId memRole -> xGrpMemRole gInfo m' memId memRole msg brokerTs
+              XGrpMemBlock memId -> xGrpMemBlock gInfo m' memId msg brokerTs
               XGrpMemCon memId -> xGrpMemCon gInfo m' memId
               XGrpMemDel memId -> xGrpMemDel gInfo m' memId msg brokerTs
               XGrpLeave -> xGrpLeave gInfo m' msg brokerTs
@@ -4633,6 +4644,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       ci' <- blockedMember m ci $ withStore' $ \db -> markGroupChatItemBlocked db user gInfo ci
       groupMsgToView gInfo ci'
 
+    -- TODO if member is blocked by another member, mark as moderated (newGroupContentMessage applyModeration)
     blockedMember :: Monad m' => GroupMember -> ChatItem c d -> m' (ChatItem c d) -> m' (ChatItem c d)
     blockedMember m ci blockedCI
       | showMessages (memberSettings m) = pure ci
@@ -5314,6 +5326,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     checkHostRole :: GroupMember -> GroupMemberRole -> m ()
     checkHostRole GroupMember {memberRole, localDisplayName} memRole =
       when (memberRole < GRAdmin || memberRole < memRole) $ throwChatError (CEGroupContactRole localDisplayName)
+
+    xGrpMemBlock :: GroupInfo -> GroupMember -> MemberId -> RcvMessage -> UTCTime -> m ()
+    xGrpMemBlock gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId msg brokerTs
+      | membershipMemId == memId =
+        -- member shouldn't receive this message about themselves
+        messageError "x.grp.mem.block: admin blocks you"
+      | otherwise = do
+        -- getGroupMemberByMemberId
+        -- check role
+        -- set blocked_by_group_member_id
+        -- chat item CIRcvGroupEvent RGEMemberBlocked
+        -- event CRMemberBlockedForAll
+        pure ()
+      where
+        GroupMember {memberId = membershipMemId} = membership
 
     xGrpMemCon :: GroupInfo -> GroupMember -> MemberId -> m ()
     xGrpMemCon gInfo sendingMember memId = do
@@ -6499,6 +6526,7 @@ chatCommandP =
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal),
       "/_member role #" *> (APIMemberRole <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
+      "/_block #" *> (APIBlockMemberForAll <$> A.decimal <* A.space <*> A.decimal),
       "/_remove #" *> (APIRemoveMember <$> A.decimal <* A.space <*> A.decimal),
       "/_leave #" *> (APILeaveGroup <$> A.decimal),
       "/_members #" *> (APIListMembers <$> A.decimal),
