@@ -16,8 +16,6 @@ import chat.simplex.common.model.CryptoFile
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.ProviderMedia
 import chat.simplex.common.views.helpers.*
-import chat.simplex.res.MR
-import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import java.net.URI
@@ -172,7 +170,7 @@ private fun VideoViewEncrypted(uriUnencrypted: MutableState<URI?>, fileSource: C
   }
   Box(contentAlignment = Alignment.Center) {
     VideoPreviewImageViewFullScreen(defaultPreview, {}, {})
-    MediaProgressViewWithBackground(stringResource(MR.strings.decryption_in_progress))
+    VideoDecryptionProgress {}
   }
 }
 

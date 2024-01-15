@@ -126,9 +126,7 @@ private fun VideoViewEncrypted(
   Box {
     VideoPreviewImageView(defaultPreview, if (decryptionInProgress) {{}} else openFullscreen, onLongClick)
     if (decryptionInProgress) {
-      Box(Modifier.align(Alignment.Center)) {
-        MediaProgressViewWithBackground(stringResource(MR.strings.decryption_in_progress))
-      }
+      VideoDecryptionProgress(onLongClick = onLongClick)
     } else {
       PlayButton(false, onLongClick = onLongClick) {
         decryptionInProgress = true
@@ -225,6 +223,31 @@ private fun BoxScope.PlayButton(error: Boolean = false, onLongClick: () -> Unit,
 }
 
 @Composable
+fun BoxScope.VideoDecryptionProgress(onLongClick: () -> Unit) {
+  Surface(
+    Modifier.align(Alignment.Center),
+    color = Color.Black.copy(alpha = 0.25f),
+    shape = RoundedCornerShape(percent = 50),
+    contentColor = LocalContentColor.current
+  ) {
+    Box(
+      Modifier
+        .defaultMinSize(minWidth = 40.dp, minHeight = 40.dp)
+        .combinedClickable(onClick = {}, onLongClick = onLongClick)
+        .onRightClick { onLongClick.invoke() },
+      contentAlignment = Alignment.Center
+    ) {
+      CircularProgressIndicator(
+        Modifier
+          .size(30.dp),
+        color = Color.White,
+        strokeWidth = 2.5.dp
+      )
+    }
+  }
+}
+
+@Composable
 private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, duration: MutableState<Long>, progress: MutableState<Long>/*, soundEnabled: MutableState<Boolean>*/) {
   if (duration.value > 0L || progress.value > 0) {
     Row {
@@ -264,29 +287,6 @@ private fun DurationProgress(file: CIFile, playing: MutableState<Boolean>, durat
             color = Color.White
           )
         }
-      }
-    }
-  }
-}
-
-@Composable
-fun MediaProgressViewWithBackground(description: String, textColor: Color = Color.White, backgroundColor: Color = Color.Black.copy(alpha = 0.35f)) {
-  Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-      CircularProgressIndicator(
-        Modifier
-          .padding(bottom = DEFAULT_PADDING)
-          .size(30.dp),
-        color = MaterialTheme.colors.secondary,
-        strokeWidth = 2.5.dp
-      )
-      Box(
-        Modifier
-          .padding(DEFAULT_PADDING_HALF)
-          .background(backgroundColor, RoundedCornerShape(percent = 50))
-          .padding(vertical = 6.dp, horizontal = 12.dp)
-      ) {
-        Text(description, color = textColor)
       }
     }
   }

@@ -33,9 +33,9 @@ actual class VideoPlayer actual constructor(
   override val duration: MutableState<Long> = mutableStateOf(defaultDuration)
   override val preview: MutableState<ImageBitmap> = mutableStateOf(defaultPreview)
 
-  init {
-    setPreviewAndDuration()
-  }
+
+  // Currently unused because we use low-quality preview
+  // init { setPreviewAndDuration() }
 
   val player = ExoPlayer.Builder(androidAppContext,
     DefaultRenderersFactory(androidAppContext))
