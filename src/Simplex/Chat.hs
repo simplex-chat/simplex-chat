@@ -1466,7 +1466,7 @@ processChatCommand' vr = \case
     subMode <- chatReadVar subscriptionMode
     -- [incognito] generate profile to send
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-    let profileToSend = userProfileToSend user incognitoProfile Nothing
+    let profileToSend = userProfileToSend user incognitoProfile Nothing False
     dm <- directMessage $ XInfo profileToSend
     connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm subMode
     conn <- withStore' $ \db -> createDirectConnection db user connId cReq ConnJoined (incognitoProfile $> profileToSend) subMode
@@ -2146,36 +2146,36 @@ processChatCommand' vr = \case
             (_, xContactId_) -> procCmd $ do
               let randomXContactId = XContactId <$> drgRandomBytes 16
               xContactId <- maybe randomXContactId pure xContactId_
-              connect' Nothing cReqHash xContactId
+              connect' Nothing cReqHash xContactId False
         -- group link
         Just gLinkId ->
           withStore' (\db -> getConnReqContactXContactId db user cReqHash) >>= \case
             (Just _contact, _) -> procCmd $ do
               -- allow repeat contact request
               newXContactId <- XContactId <$> drgRandomBytes 16
-              connect' (Just gLinkId) cReqHash newXContactId
+              connect' (Just gLinkId) cReqHash newXContactId True
             (_, xContactId_) -> procCmd $ do
               let randomXContactId = XContactId <$> drgRandomBytes 16
               xContactId <- maybe randomXContactId pure xContactId_
-              connect' (Just gLinkId) cReqHash xContactId
+              connect' (Just gLinkId) cReqHash xContactId True
       where
-        connect' groupLinkId cReqHash xContactId = do
-          (connId, incognitoProfile, subMode) <- requestContact user incognito cReq xContactId
+        connect' groupLinkId cReqHash xContactId inGroup = do
+          (connId, incognitoProfile, subMode) <- requestContact user incognito cReq xContactId inGroup
           conn <- withStore' $ \db -> createConnReqConnection db userId connId cReqHash xContactId incognitoProfile groupLinkId subMode
           pure $ CRSentInvitation user conn incognitoProfile
     connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> ConnectionRequestUri 'CMContact -> m ChatResponse
     connectContactViaAddress user incognito ct cReq =
       withChatLock "connectViaContact" $ do
         newXContactId <- XContactId <$> drgRandomBytes 16
-        (connId, incognitoProfile, subMode) <- requestContact user incognito cReq newXContactId
+        (connId, incognitoProfile, subMode) <- requestContact user incognito cReq newXContactId False
         let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
         ct' <- withStore $ \db -> createAddressContactConnection db user ct connId cReqHash newXContactId incognitoProfile subMode
         pure $ CRSentInvitationToContact user ct' incognitoProfile
-    requestContact :: User -> IncognitoEnabled -> ConnectionRequestUri 'CMContact -> XContactId -> m (ConnId, Maybe Profile, SubscriptionMode)
-    requestContact user incognito cReq xContactId = do
+    requestContact :: User -> IncognitoEnabled -> ConnectionRequestUri 'CMContact -> XContactId -> Bool -> m (ConnId, Maybe Profile, SubscriptionMode)
+    requestContact user incognito cReq xContactId inGroup = do
       -- [incognito] generate profile to send
       incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-      let profileToSend = userProfileToSend user incognitoProfile Nothing
+      let profileToSend = userProfileToSend user incognitoProfile Nothing inGroup
       dm <- directMessage (XContact profileToSend $ Just xContactId)
       subMode <- chatReadVar subscriptionMode
       connId <- withAgent $ \a -> joinConnection a (aUserId user) True cReq dm subMode
@@ -2240,9 +2240,9 @@ processChatCommand' vr = \case
             | connIncognito conn || mergedProfile' == mergedProfile -> changedCts
             | otherwise -> ChangedProfileContact ct ct' mergedProfile' conn : changedCts
           where
-            mergedProfile = userProfileToSend user Nothing $ Just ct
+            mergedProfile = userProfileToSend user Nothing (Just ct) False
             ct' = updateMergedPreferences user' ct
-            mergedProfile' = userProfileToSend user' Nothing $ Just ct'
+            mergedProfile' = userProfileToSend user' Nothing (Just ct') False
         ctSndMsg :: ChangedProfileContact -> (ConnOrGroupId, ChatMsgEvent 'Json)
         ctSndMsg ChangedProfileContact {mergedProfile', conn = Connection {connId}} = (ConnectionId connId, XInfo mergedProfile')
         ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError MsgReq
@@ -2256,8 +2256,8 @@ processChatCommand' vr = \case
           assertDirectAllowed user MDSnd ct XInfo_
           ct' <- withStore' $ \db -> updateContactUserPreferences db user ct contactUserPrefs'
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
-          let mergedProfile = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct)
-              mergedProfile' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
+          let mergedProfile = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct) False
+              mergedProfile' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct') False
           when (mergedProfile' /= mergedProfile) $
             withChatLock "updateProfile" $ do
               void (sendDirectContactMessage ct' $ XInfo mergedProfile') `catchChatError` (toView . CRChatError (Just user))
@@ -2820,7 +2820,7 @@ getRcvFilePath fileId fPath_ fn keepHandle = case fPath_ of
 acceptContactRequest :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> Bool -> m Contact
 acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = cp, userContactLinkId, xContactId} incognitoProfile contactUsed = do
   subMode <- chatReadVar subscriptionMode
-  let profileToSend = profileToSendOnAccept user incognitoProfile
+  let profileToSend = profileToSendOnAccept user incognitoProfile False
   dm <- directMessage $ XInfo profileToSend
   acId <- withAgent $ \a -> acceptContact a True invId dm subMode
   withStore' $ \db -> createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId cp userContactLinkId xContactId incognitoProfile subMode contactUsed
@@ -2828,7 +2828,7 @@ acceptContactRequest user UserContactRequest {agentInvitationId = AgentInvId inv
 acceptContactRequestAsync :: ChatMonad m => User -> UserContactRequest -> Maybe IncognitoProfile -> Bool -> m Contact
 acceptContactRequestAsync user UserContactRequest {agentInvitationId = AgentInvId invId, cReqChatVRange, localDisplayName = cName, profileId, profile = p, userContactLinkId, xContactId} incognitoProfile contactUsed = do
   subMode <- chatReadVar subscriptionMode
-  let profileToSend = profileToSendOnAccept user incognitoProfile
+  let profileToSend = profileToSendOnAccept user incognitoProfile False
   (cmdId, acId) <- agentAcceptContactAsync user True invId (XInfo profileToSend) subMode
   withStore' $ \db -> do
     ct@Contact {activeConn} <- createAcceptedContact db user acId (fromJVersionRange cReqChatVRange) cName profileId p userContactLinkId xContactId incognitoProfile subMode contactUsed
@@ -2844,7 +2844,7 @@ acceptGroupJoinRequestAsync
   incognitoProfile = do
     gVar <- asks random
     (groupMemberId, memberId) <- withStore $ \db -> createAcceptedMember db gVar user gInfo ucr gLinkMemRole
-    let Profile {displayName} = profileToSendOnAccept user incognitoProfile
+    let Profile {displayName} = profileToSendOnAccept user incognitoProfile True
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         msg = XGrpLinkInv $ GroupLinkInvitation (MemberIdRole userMemberId userRole) displayName (MemberIdRole memberId gLinkMemRole) groupProfile
     subMode <- chatReadVar subscriptionMode
@@ -2853,7 +2853,7 @@ acceptGroupJoinRequestAsync
       liftIO $ createAcceptedMemberConnection db user connIds ucr groupMemberId subMode
       getGroupMemberById db user groupMemberId
 
-profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Profile
+profileToSendOnAccept :: User -> Maybe IncognitoProfile -> Bool -> Profile
 profileToSendOnAccept user ip = userProfileToSend user (getIncognitoProfile <$> ip) Nothing
   where
     getIncognitoProfile = \case
@@ -3416,7 +3416,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         CONF confId _ connInfo -> do
           -- [incognito] send saved profile
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-          let profileToSend = userProfileToSend user (fromLocalProfile <$> incognitoProfile) Nothing
+          let profileToSend = userProfileToSend user (fromLocalProfile <$> incognitoProfile) Nothing False
           conn' <- saveConnInfo conn connInfo
           -- [async agent commands] no continuation needed, but command should be asynchronous for stability
           allowAgentConnectionAsync user conn' confId $ XInfo profileToSend
@@ -3507,7 +3507,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               ct' <- processContactProfileUpdate ct profile False `catchChatError` const (pure ct)
               -- [incognito] send incognito profile
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
-              let p = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct')
+              let p = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct') False
               allowAgentConnectionAsync user conn' confId $ XInfo p
               void $ withStore' $ \db -> resetMemberContactFields db ct'
             _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
@@ -3666,9 +3666,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpMemInfo memId _memProfile
                 | sameMemberId memId m -> do
                     let GroupMember {memberId = membershipMemId} = membership
+                        membershipProfile = redactedMemberProfile $ fromLocalProfile $ memberProfile membership
                     -- TODO update member profile
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-                    allowAgentConnectionAsync user conn' confId $ XGrpMemInfo membershipMemId (fromLocalProfile $ memberProfile membership)
+                    allowAgentConnectionAsync user conn' confId $ XGrpMemInfo membershipMemId membershipProfile
                 | otherwise -> messageError "x.grp.mem.info: memberId is different from expected"
               _ -> messageError "CONF from member must have x.grp.mem.info"
       INFO connInfo -> do
@@ -3715,7 +3716,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             where
               sendXGrpLinkMem = do
                 let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                    profileToSend = profileToSendOnAccept user profileMode
+                    profileToSend = profileToSendOnAccept user profileMode True
                 void $ sendDirectMessage conn (XGrpLinkMem profileToSend) (GroupId groupId)
               sendIntroductions members = do
                 intros <- withStore' $ \db -> createIntroductions db (maxVersion vr) members m
@@ -5282,7 +5283,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       withStore' $ \db -> saveMemberInvitation db toMember introInv
       subMode <- chatReadVar subscriptionMode
       -- [incognito] send membership incognito profile, create direct connection as incognito
-      dm <- directMessage $ XGrpMemInfo membershipMemId (fromLocalProfile $ memberProfile membership)
+      let membershipProfile = redactedMemberProfile $ fromLocalProfile $ memberProfile membership
+      dm <- directMessage $ XGrpMemInfo membershipMemId membershipProfile
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       groupConnIds <- joinAgentConnectionAsync user (chatHasNtfs chatSettings) groupConnReq dm subMode
       directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user True dcr dm subMode
@@ -5451,7 +5453,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           createItems mCt' m'
         joinConn subMode = do
           -- [incognito] send membership incognito profile
-          let p = userProfileToSend user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing
+          let p = userProfileToSend user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing False
           dm <- directMessage $ XInfo p
           joinAgentConnectionAsync user True connReq dm subMode
         createItems mCt' m' = do
@@ -6155,11 +6157,14 @@ agentXFTPDeleteSndFileRemote user XFTPSndFile {agentSndFileId = AgentSndFileId a
       withAgent $ \a -> xftpDeleteSndFileRemote a (aUserId user) aFileId sd
       withStore' $ \db -> setSndFTAgentDeleted db user fileId
 
-userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Profile
-userProfileToSend user@User {profile = p} incognitoProfile ct =
+userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Bool -> Profile
+userProfileToSend user@User {profile = p} incognitoProfile ct inGroup = do
   let p' = fromMaybe (fromLocalProfile p) incognitoProfile
-      userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
-   in (p' :: Profile) {preferences = Just . toChatPrefs $ mergePreferences (userPreferences <$> ct) userPrefs}
+  if inGroup
+    then redactedMemberProfile p'
+    else
+      let userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
+       in (p' :: Profile) {preferences = Just . toChatPrefs $ mergePreferences (userPreferences <$> ct) userPrefs}
 
 createRcvFeatureItems :: forall m. ChatMonad m => User -> Contact -> Contact -> m ()
 createRcvFeatureItems user ct ct' =
