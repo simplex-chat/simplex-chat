@@ -29,7 +29,7 @@ actual class VideoPlayer actual constructor(
   override val brokenVideo: MutableState<Boolean> = mutableStateOf(false)
   override val videoPlaying: MutableState<Boolean> = mutableStateOf(false)
   override val progress: MutableState<Long> = mutableStateOf(0L)
-  override val duration: MutableState<Long> = mutableStateOf(0L)
+  override val duration: MutableState<Long> = mutableStateOf(defaultDuration)
   override val preview: MutableState<ImageBitmap> = mutableStateOf(defaultPreview)
 
   val mediaPlayerComponent by lazy { runBlocking(playerThread.asCoroutineDispatcher()) { getOrCreatePlayer() } }
