@@ -1263,7 +1263,8 @@ data class GroupMember (
   val id: String get() = "#$groupId @$groupMemberId"
   val displayName: String
     get() {
-      val name = memberProfile.localAlias.ifEmpty { memberProfile.displayName }
+      val p = memberProfile
+      val name = p.localAlias.ifEmpty { p.displayName }
       return pastMember(name)
     }
   val fullName: String get() = memberProfile.fullName
@@ -1273,7 +1274,8 @@ data class GroupMember (
 
   val chatViewName: String
     get() {
-      val name = memberProfile.localAlias.ifEmpty { displayName + (if (fullName == "" || fullName == displayName) "" else " / $fullName") }
+      val p = memberProfile
+      val name = p.localAlias.ifEmpty { p.displayName + (if (p.fullName == "" || p.fullName == p.displayName) "" else " / ${p.fullName}") }
       return pastMember(name)
     }
 

@@ -402,7 +402,7 @@ private fun MemberRow(member: GroupMember, user: Boolean = false, onClick: (() -
       }
     }
     val role = member.memberRole
-    if (role == GroupMemberRole.Owner || role == GroupMemberRole.Admin) {
+    if (role in listOf(GroupMemberRole.Owner, GroupMemberRole.Admin, GroupMemberRole.Observer)) {
       Text(role.text, color = MaterialTheme.colors.secondary)
     }
   }
