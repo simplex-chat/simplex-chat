@@ -10,9 +10,9 @@ Keep track of which members received latest profile updates. Send profile update
 
 ### How to track
 
-- users.memberships_profile_update_ts
-- group_members.membership_profile_sent_ts
-- when user updates profile, remember new memberships_profile_update_ts, later to be compared against group_members.membership_profile_sent_ts
+- users.user_member_profile_updated_at
+- group_members.user_member_profile_sent_at
+- when user updates profile, remember new user_member_profile_updated_at, later to be compared against group_members.user_member_profile_sent_at
 
 ### What to track
 
@@ -26,7 +26,7 @@ Keep track of which members received latest profile updates. Send profile update
 
 ### When/To whom to send
 
-- when user is active in group (i.e. broadcasts message via sendGroupMessage), compare group_members.membership_profile_sent_ts against users.memberships_profile_update_ts to determine whether latest profile update wasn't yet sent
+- when user is active in group (i.e. broadcasts message via sendGroupMessage), compare group_members.user_member_profile_sent_at against users.user_member_profile_updated_at to determine whether latest profile update wasn't yet sent
 - don't send to members in groups where user is incognito
 - don't send to members with whom user has direct contact (as it would overwrite full profile update sent to contact)?
   - alternatively it may be better to send the same pruned profile to such members, and for them to ignore this update (or only apply name and image updates, in case sender has silently deleted them as contact without notifying?):
@@ -38,8 +38,8 @@ Keep track of which members received latest profile updates. Send profile update
   - not all of these messages create chat items anyway (forward, intro messages), so user name/image wouldn't matter
   - most if not all of these messages are sent by admins, who are likely to send either some content messages, group updates, or announce new members (x.grp.mem.new, which is also broadcasted)
   - it simplifies processing, as then profile update is sent to all current members
-- considering above points, perhaps we can simplify to track membership_profile_sent_ts on groups instead of group_members
-  - group_members.membership_profile_sent_ts -> groups.membership_profile_sent_ts
+- considering above points, perhaps we can simplify to track user_member_profile_sent_at on groups instead of group_members
+  - group_members.user_member_profile_sent_at -> groups.user_member_profile_sent_at
 
 ### How to send
 

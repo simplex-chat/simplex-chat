@@ -113,7 +113,7 @@ data User = User
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
     sendRcptsSmallGroups :: Bool,
-    membershipsProfileUpdateTs :: Maybe UTCTime
+    userMemberProfileUpdatedAt :: Maybe UTCTime
   }
   deriving (Show)
 
@@ -348,7 +348,7 @@ data GroupInfo = GroupInfo
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     chatTs :: Maybe UTCTime,
-    membershipProfileSentTs :: Maybe UTCTime
+    userMemberProfileSentAt :: Maybe UTCTime
   }
   deriving (Eq, Show)
 
@@ -483,8 +483,8 @@ profilesMatch
   LocalProfile {displayName = n2, fullName = fn2, image = i2} =
     n1 == n2 && fn1 == fn2 && i1 == i2
 
-onlyMemberProfileFields :: Profile -> Profile
-onlyMemberProfileFields Profile {displayName, fullName, image} =
+redactedMemberProfile :: Profile -> Profile
+redactedMemberProfile Profile {displayName, fullName, image} =
   Profile {displayName, fullName, image, contactLink = Nothing, preferences = Nothing}
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
