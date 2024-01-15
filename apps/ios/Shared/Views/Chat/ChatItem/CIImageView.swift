@@ -43,7 +43,7 @@ struct CIImageView: View {
                                 }
                             case .rcvAccepted:
                                 switch file.fileProtocol {
-                                case .xftp:
+                                case .xftp, .local:
                                     AlertManager.shared.showAlertMsg(
                                         title: "Waiting for image",
                                         message: "Image will be received when your contact completes uploading it."
@@ -88,7 +88,7 @@ struct CIImageView: View {
             switch file.fileStatus {
             case .sndStored:
                 switch file.fileProtocol {
-                case .xftp: progressView()
+                case .xftp, .local: progressView()
                 case .smp: EmptyView()
                 }
             case .sndTransfer: progressView()

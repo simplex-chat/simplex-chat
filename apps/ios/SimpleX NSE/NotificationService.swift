@@ -782,6 +782,9 @@ func autoReceiveFile(_ file: CIFile, encrypted: Bool) -> ChatItem? {
     case .xftp:
         apiSetFileToReceive(fileId: file.fileId, encrypted: encrypted)
         return nil
+    case .local:
+        apiSetFileToReceive(fileId: file.fileId, encrypted: encrypted)
+        return nil
     }
 }
 

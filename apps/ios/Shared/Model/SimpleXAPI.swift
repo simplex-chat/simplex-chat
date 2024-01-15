@@ -365,6 +365,32 @@ func apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: 
     }
 }
 
+func apiCreateChatItem(noteFolderId: Int64, file: CryptoFile?, msg: MsgContent) async -> ChatItem? {
+    let chatModel = ChatModel.shared
+    let cmd: ChatCommand = .apiCreateChatItem(noteFolderId: noteFolderId, file: file, msg: msg)
+    var cItem: ChatItem? = nil
+    let endTask = beginBGTask({
+        if let cItem = cItem {
+            DispatchQueue.main.async {
+                chatModel.messageDelivery.removeValue(forKey: cItem.id)
+            }
+        }
+    })
+    let r: ChatResponse = await chatSendCmd(cmd, bgTask: false)
+    if case let .newChatItem(_, aChatItem) = r {
+        cItem = aChatItem.chatItem
+        chatModel.messageDelivery[aChatItem.chatItem.id] = endTask
+        return cItem
+    }
+    if let networkErrorAlert = networkErrorAlert(r) {
+        AlertManager.shared.showAlert(networkErrorAlert)
+    } else {
+        sendMessageErrorAlert(r)
+    }
+    endTask()
+    return nil
+}
+
 private func sendMessageErrorAlert(_ r: ChatResponse) {
     logger.error("apiSendMessage error: \(String(describing: r))")
     AlertManager.shared.showAlertMsg(
@@ -721,6 +747,12 @@ func apiClearChat(type: ChatType, id: Int64) async throws -> ChatInfo {
     throw r
 }
 
+func apiClearNoteFolder() async throws -> ChatInfo {
+    let r = await chatSendCmd(.apiClearNoteFolder, bgTask: false)
+    if case let .chatCleared(_, updatedChatInfo) = r { return updatedChatInfo }
+    throw r
+}
+
 func clearChat(_ chat: Chat) async {
     do {
         let cInfo = chat.chatInfo
@@ -728,6 +760,16 @@ func clearChat(_ chat: Chat) async {
         DispatchQueue.main.async { ChatModel.shared.clearChat(updatedChatInfo) }
     } catch {
         logger.error("clearChat apiClearChat error: \(responseError(error))")
+    }
+}
+
+func clearNoteFolder(_ chat: Chat) async {
+    do {
+        let cInfo = chat.chatInfo
+        let updatedChatInfo = try await apiClearNoteFolder()
+        DispatchQueue.main.async { ChatModel.shared.clearChat(updatedChatInfo) }
+    } catch {
+        logger.error("clearNoteFolder apiNoteFolder error: \(responseError(error))")
     }
 }
 

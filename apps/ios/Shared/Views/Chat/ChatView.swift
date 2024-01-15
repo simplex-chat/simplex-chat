@@ -720,7 +720,7 @@ struct ChatView: View {
                     }
                     menu.append(rm)
                 }
-                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live {
+                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && chat.chatInfo.chatType != .local {
                     menu.append(replyUIAction(ci))
                 }
                 let fileSource = getLoadedFileSource(ci.file)

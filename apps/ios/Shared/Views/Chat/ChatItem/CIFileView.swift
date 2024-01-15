@@ -98,7 +98,7 @@ struct CIFileView: View {
                 }
             case .rcvAccepted:
                 switch file.fileProtocol {
-                case .xftp:
+                case .xftp, .local:
                     AlertManager.shared.showAlertMsg(
                         title: "Waiting for file",
                         message: "File will be received when your contact completes uploading it."
@@ -124,12 +124,12 @@ struct CIFileView: View {
             switch file.fileStatus {
             case .sndStored:
                 switch file.fileProtocol {
-                case .xftp: progressView()
+                case .xftp, .local: progressView()
                 case .smp: fileIcon("doc.fill")
                 }
             case let .sndTransfer(sndProgress, sndTotal):
                 switch file.fileProtocol {
-                case .xftp: progressCircle(sndProgress, sndTotal)
+                case .xftp, .local: progressCircle(sndProgress, sndTotal)
                 case .smp: progressView()
                 }
             case .sndComplete: fileIcon("doc.fill", innerIcon: "checkmark", innerIconSize: 10)

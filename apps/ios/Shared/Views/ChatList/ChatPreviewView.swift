@@ -136,7 +136,7 @@ struct ChatPreviewView: View {
                     .frame(minWidth: 18, minHeight: 18)
                     .background(chat.chatInfo.ntfsEnabled ? Color.accentColor : Color.secondary)
                     .cornerRadius(10)
-            } else if !chat.chatInfo.ntfsEnabled {
+            } else if !chat.chatInfo.ntfsEnabled && chat.chatInfo.chatType != .local {
                 Image(systemName: "speaker.slash.fill")
                     .foregroundColor(.secondary)
             } else if chat.chatInfo.chatSettings?.favorite ?? false {

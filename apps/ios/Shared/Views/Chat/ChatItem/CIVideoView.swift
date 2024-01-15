@@ -65,7 +65,7 @@ struct CIVideoView: View {
                                 receiveFileIfValidSize(file: file, encrypted: false, receiveFile: receiveFile)
                             case .rcvAccepted:
                                 switch file.fileProtocol {
-                                case .xftp:
+                                case .xftp, .local:
                                     AlertManager.shared.showAlertMsg(
                                         title: "Waiting for video",
                                         message: "Video will be received when your contact completes uploading it."
@@ -200,12 +200,12 @@ struct CIVideoView: View {
             switch file.fileStatus {
             case .sndStored:
                 switch file.fileProtocol {
-                case .xftp: progressView()
+                case .xftp, .local: progressView()
                 case .smp: EmptyView()
                 }
             case let .sndTransfer(sndProgress, sndTotal):
                 switch file.fileProtocol {
-                case .xftp: progressCircle(sndProgress, sndTotal)
+                case .xftp, .local: progressCircle(sndProgress, sndTotal)
                 case .smp: progressView()
                 }
             case .sndComplete: fileIcon("checkmark", 10, 13)
