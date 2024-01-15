@@ -596,7 +596,7 @@ data MemberInfo = MemberInfo
 
 memberInfo :: GroupMember -> MemberInfo
 memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
-  MemberInfo memberId memberRole cvr (onlyMemberProfileFields $ fromLocalProfile memberProfile)
+  MemberInfo memberId memberRole cvr (redactedMemberProfile $ fromLocalProfile memberProfile)
   where
     cvr = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn
 

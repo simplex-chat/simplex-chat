@@ -3667,7 +3667,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpMemInfo memId _memProfile
                 | sameMemberId memId m -> do
                     let GroupMember {memberId = membershipMemId} = membership
-                        membershipProfile = onlyMemberProfileFields $ fromLocalProfile $ memberProfile membership
+                        membershipProfile = redactedMemberProfile $ fromLocalProfile $ memberProfile membership
                     -- TODO update member profile
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId $ XGrpMemInfo membershipMemId membershipProfile
@@ -5284,7 +5284,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       withStore' $ \db -> saveMemberInvitation db toMember introInv
       subMode <- chatReadVar subscriptionMode
       -- [incognito] send membership incognito profile, create direct connection as incognito
-      let membershipProfile = onlyMemberProfileFields $ fromLocalProfile $ memberProfile membership
+      let membershipProfile = redactedMemberProfile $ fromLocalProfile $ memberProfile membership
       dm <- directMessage $ XGrpMemInfo membershipMemId membershipProfile
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       groupConnIds <- joinAgentConnectionAsync user (chatHasNtfs chatSettings) groupConnReq dm subMode
@@ -6163,7 +6163,7 @@ userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Bool -> Profile
 userProfileToSend user@User {profile = p} incognitoProfile ct inGroup = do
   let p' = fromMaybe (fromLocalProfile p) incognitoProfile
   if inGroup
-    then onlyMemberProfileFields p'
+    then redactedMemberProfile p'
     else
       let userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
        in (p' :: Profile) {preferences = Just . toChatPrefs $ mergePreferences (userPreferences <$> ct) userPrefs}
