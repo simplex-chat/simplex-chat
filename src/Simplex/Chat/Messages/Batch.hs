@@ -12,7 +12,6 @@ where
 
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.List (intersperse)
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Messages
 
@@ -43,12 +42,9 @@ batchMessages maxLen = addBatch . foldr addToBatch ([], [], 0, 0)
         errLarge SndMessage {msgId} = Left $ ChatError $ CEInternalError ("large message " <> show msgId)
     addBatch :: ([Either ChatError MsgBatch], [SndMessage], Int, Int) -> [Either ChatError MsgBatch]
     addBatch (batches, batch, _, n) = if n == 0 then batches else msgBatch batch : batches
-
-encodeMessages :: [SndMessage] -> ByteString
-encodeMessages = \case
-  [] -> mempty
-  [SndMessage {msgBody}] -> msgBody
-  msgs -> B.concat ("[" : intersperse "," (map (\SndMessage {msgBody} -> msgBody) msgs)) `B.snoc` ']'
-    -- charUtf8 '[' <> encodeMsg msg <> mconcat [charUtf8 ',' <> encodeMsg msg' | msg' <- msgs] <> charUtf8 ']'
-  -- where
-  --   encodeMsg SndMessage {msgBody} = msgBody
+    encodeMessages :: [SndMessage] -> ByteString
+    encodeMessages = \case
+      [] -> mempty
+      [msg] -> body msg
+      msgs -> B.concat ["[", B.intercalate "," (map body msgs), "]"]
+    body SndMessage {msgBody} = msgBody
