@@ -255,28 +255,28 @@ updateUserProfile db user p'
   | displayName == newName = liftIO $ do
       updateContactProfile_ db userId profileId p'
       currentTs <- getCurrentTime
-      membershipsProfileUpdateTs' <- updateMembershipsProfileTs_ currentTs
-      pure user {profile, fullPreferences, membershipsProfileUpdateTs = membershipsProfileUpdateTs'}
+      userMemberProfileUpdatedAt' <- updateMembershipsProfileTs_ currentTs
+      pure user {profile, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   | otherwise =
       checkConstraint SEDuplicateName . liftIO $ do
         currentTs <- getCurrentTime
         DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
-        membershipsProfileUpdateTs' <- updateMembershipsProfileTs_ currentTs
+        userMemberProfileUpdatedAt' <- updateMembershipsProfileTs_ currentTs
         DB.execute
           db
           "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
           (newName, newName, userId, currentTs, currentTs)
         updateContactProfile_' db userId profileId p' currentTs
         updateContactLDN_ db userId userContactId localDisplayName newName currentTs
-        pure user {localDisplayName = newName, profile, fullPreferences, membershipsProfileUpdateTs = membershipsProfileUpdateTs'}
+        pure user {localDisplayName = newName, profile, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   where
     updateMembershipsProfileTs_ currentTs
       | nameOrImageChanged = do
-        DB.execute db "UPDATE users SET memberships_profile_update_ts = ? WHERE user_id = ?" (currentTs, userId)
+        DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (currentTs, userId)
         pure $ Just currentTs
-      | otherwise = pure membershipsProfileUpdateTs
+      | otherwise = pure userMemberProfileUpdatedAt
     nameOrImageChanged = newName /= displayName || newFullName /= fullName || newImage /= image
-    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, image, localAlias}, membershipsProfileUpdateTs} = user
+    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, image, localAlias}, userMemberProfileUpdatedAt} = user
     Profile {displayName = newName, fullName = newFullName, image = newImage, preferences} = p'
     profile = toLocalProfile profileId p' localAlias
     fullPreferences = mergePreferences Nothing preferences

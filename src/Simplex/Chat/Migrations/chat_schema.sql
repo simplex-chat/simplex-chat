@@ -34,7 +34,7 @@ CREATE TABLE users(
   show_ntfs INTEGER NOT NULL DEFAULT 1,
   send_rcpts_contacts INTEGER NOT NULL DEFAULT 0,
   send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0,
-  memberships_profile_update_ts TEXT, -- 1 for active user
+  user_member_profile_updated_at TEXT, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -120,7 +120,7 @@ CREATE TABLE groups(
   favorite INTEGER NOT NULL DEFAULT 0,
   send_rcpts INTEGER,
   via_group_link_uri_hash BLOB,
-  membership_profile_sent_ts TEXT, -- received
+  user_member_profile_sent_at TEXT, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
