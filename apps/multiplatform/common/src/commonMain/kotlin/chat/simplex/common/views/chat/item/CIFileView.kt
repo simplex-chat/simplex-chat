@@ -28,7 +28,7 @@ import java.net.URI
 fun CIFileView(
   file: CIFile?,
   edited: Boolean,
-  receiveFile: (Long, Boolean) -> Unit
+  receiveFile: (Long) -> Unit
 ) {
   val saveFileLauncher = rememberSaveFileLauncher(ciFile = file)
 
@@ -71,8 +71,7 @@ fun CIFileView(
       when (file.fileStatus) {
         is CIFileStatus.RcvInvitation -> {
           if (fileSizeValid()) {
-            val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
-            receiveFile(file.fileId, encrypted)
+            receiveFile(file.fileId)
           } else {
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.large_file),
@@ -101,7 +100,7 @@ fun CIFileView(
               filePath = getLoadedFilePath(file)
             }
             if (filePath != null) {
-              withBGApi {
+              withLongRunningApi {
                 saveFileLauncher.launch(file.fileName)
               }
             } else {

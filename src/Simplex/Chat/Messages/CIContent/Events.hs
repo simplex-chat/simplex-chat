@@ -25,6 +25,7 @@ data RcvGroupEvent
   -- and be created as unread without adding / working around new status for sent items
   | RGEInvitedViaGroupLink -- CRSentGroupInvitationViaLink
   | RGEMemberCreatedContact -- CRNewMemberContactReceivedInv
+  | RGEMemberProfileUpdated {fromProfile :: Profile, toProfile :: Profile} -- CRGroupMemberUpdated
   deriving (Show)
 
 data SndGroupEvent
@@ -47,8 +48,8 @@ data SndConnEvent
   deriving (Show)
 
 data RcvDirectEvent
-  = -- RDEProfileChanged {...}
-    RDEContactDeleted
+  = RDEContactDeleted
+  | RDEProfileUpdated {fromProfile :: Profile, toProfile :: Profile} -- CRContactUpdated
   deriving (Show)
 
 -- platform-specific JSON encoding (used in API)

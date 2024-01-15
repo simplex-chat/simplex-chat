@@ -121,8 +121,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, image, 
       (profileId, displayName, userId, True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-
-    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing)
+    pure $ toUser $ (userId, auId, contactId, profileId, activeUser, displayName, fullName, image, Nothing, userPreferences) :. (showNtfs, sendRcptsContacts, sendRcptsSmallGroups, Nothing, Nothing, Nothing)
 
 getUsersInfo :: DB.Connection -> IO [UserInfo]
 getUsersInfo db = getUsers db >>= mapM getUserInfo
@@ -253,23 +252,32 @@ updateUserGroupReceipts db User {userId} UserMsgReceiptSettings {enable, clearOv
 
 updateUserProfile :: DB.Connection -> User -> Profile -> ExceptT StoreError IO User
 updateUserProfile db user p'
-  | displayName == newName = do
-      liftIO $ updateContactProfile_ db userId profileId p'
-      pure user {profile, fullPreferences}
+  | displayName == newName = liftIO $ do
+      updateContactProfile_ db userId profileId p'
+      currentTs <- getCurrentTime
+      userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
+      pure user {profile, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   | otherwise =
       checkConstraint SEDuplicateName . liftIO $ do
         currentTs <- getCurrentTime
         DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
+        userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
         DB.execute
           db
           "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
           (newName, newName, userId, currentTs, currentTs)
         updateContactProfile_' db userId profileId p' currentTs
-        updateContact_ db userId userContactId localDisplayName newName currentTs
-        pure user {localDisplayName = newName, profile, fullPreferences}
+        updateContactLDN_ db userId userContactId localDisplayName newName currentTs
+        pure user {localDisplayName = newName, profile, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   where
-    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}} = user
-    Profile {displayName = newName, preferences} = p'
+    updateUserMemberProfileUpdatedAt_ currentTs
+      | userMemberProfileChanged = do
+        DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (currentTs, userId)
+        pure $ Just currentTs
+      | otherwise = pure userMemberProfileUpdatedAt
+    userMemberProfileChanged = newName /= displayName || newFullName /= fullName || newImage /= image
+    User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, image, localAlias}, userMemberProfileUpdatedAt} = user
+    Profile {displayName = newName, fullName = newFullName, image = newImage, preferences} = p'
     profile = toLocalProfile profileId p' localAlias
     fullPreferences = mergePreferences Nothing preferences
 
