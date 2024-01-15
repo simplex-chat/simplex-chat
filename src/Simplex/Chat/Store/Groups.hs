@@ -113,7 +113,7 @@ module Simplex.Chat.Store.Groups
     setXGrpLinkMemReceived,
     createNewUnknownGroupMember,
     updateUnknownMemberAnnounced,
-    updateuserMemberProfileSentAt,
+    updateUserMemberProfileSentAt,
   )
 where
 
@@ -2085,8 +2085,8 @@ updateUnknownMemberAnnounced db user@User {userId} invitingMember unknownMember@
   where
     VersionRange minV maxV = maybe (fromJVersionRange memberChatVRange) fromChatVRange v
 
-updateuserMemberProfileSentAt :: DB.Connection -> User -> GroupInfo -> UTCTime -> IO ()
-updateuserMemberProfileSentAt db User {userId} GroupInfo {groupId} sentTs =
+updateUserMemberProfileSentAt :: DB.Connection -> User -> GroupInfo -> UTCTime -> IO ()
+updateUserMemberProfileSentAt db User {userId} GroupInfo {groupId} sentTs =
   DB.execute
     db
     "UPDATE groups SET user_member_profile_sent_at = ? WHERE user_id = ? AND group_id = ?"

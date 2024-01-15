@@ -5891,7 +5891,7 @@ sendGroupMessage user gInfo members chatMsgEvent = do
           profileUpdateEvent = XInfo $ redactedMemberProfile $ fromLocalProfile p
       void $ sendGroupMessage' user gInfo members' profileUpdateEvent
       currentTs <- liftIO getCurrentTime
-      withStore' $ \db -> updateuserMemberProfileSentAt db user gInfo currentTs
+      withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs
 
 sendGroupMessage' :: (MsgEncodingI e, ChatMonad m) => User -> GroupInfo -> [GroupMember] -> ChatMsgEvent e -> m (SndMessage, [GroupMember])
 sendGroupMessage' user GroupInfo {groupId} members chatMsgEvent = do
