@@ -271,11 +271,11 @@ updateUserProfile db user p'
         pure user {localDisplayName = newName, profile, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   where
     updateUserMemberProfileUpdatedAt_ currentTs
-      | nameOrImageChanged = do
+      | userMemberProfileChanged = do
         DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (currentTs, userId)
         pure $ Just currentTs
       | otherwise = pure userMemberProfileUpdatedAt
-    nameOrImageChanged = newName /= displayName || newFullName /= fullName || newImage /= image
+    userMemberProfileChanged = newName /= displayName || newFullName /= fullName || newImage /= image
     User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, image, localAlias}, userMemberProfileUpdatedAt} = user
     Profile {displayName = newName, fullName = newFullName, image = newImage, preferences} = p'
     profile = toLocalProfile profileId p' localAlias
