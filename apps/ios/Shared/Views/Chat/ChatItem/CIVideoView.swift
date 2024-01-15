@@ -136,7 +136,7 @@ struct CIVideoView: View {
                     }
                     .disabled(!canBePlayed)
                 } else {
-                    decryptionView()
+                    videoDecryptionProgress()
                 }
             }
         }
@@ -203,6 +203,16 @@ struct CIVideoView: View {
         .frame(width: 40, height: 40)
         .background(Color.black.opacity(0.35))
         .clipShape(Circle())
+    }
+
+    private func videoDecryptionProgress(_ color: Color = .white) -> some View {
+        ProgressView()
+            .progressViewStyle(.circular)
+            .frame(width: 12, height: 12)
+            .tint(color)
+            .frame(width: 40, height: 40)
+            .background(Color.black.opacity(0.35))
+            .clipShape(Circle())
     }
 
     private func durationProgress() -> some View {
@@ -300,25 +310,6 @@ struct CIVideoView: View {
         .rotationEffect(.degrees(-90))
         .frame(width: 16, height: 16)
         .padding([.trailing, .top], 11)
-    }
-
-    private func decryptionView() -> some View {
-        VStack {
-            ProgressView()
-                .progressViewStyle(.circular)
-                .frame(width: 16, height: 16)
-                .tint(.white)
-                .padding(11)
-            Text("Decryption…")
-                .foregroundColor(.white)
-                .font(.caption)
-                .padding(.vertical, 3)
-                .padding(.horizontal, 6)
-                .background(Color.black.opacity(0.35))
-                .cornerRadius(10)
-                .padding([.top, .leading], 6)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity )
     }
 
     // TODO encrypt: where file size is checked?
