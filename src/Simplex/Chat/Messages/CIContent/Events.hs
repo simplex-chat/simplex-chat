@@ -31,7 +31,7 @@ data RcvGroupEvent
 
 data SndGroupEvent
   = SGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
-  | SGEMemberBlocked {groupMemberId :: GroupMemberId, profile :: Profile} -- CRMemberBlockedForAll
+  | SGEMemberBlocked {groupMemberId :: GroupMemberId, profile :: Profile}
   | SGEUserRole {role :: GroupMemberRole}
   | SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMember
   | SGEUserLeft -- CRLeftMemberUser
