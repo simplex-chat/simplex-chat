@@ -255,13 +255,13 @@ updateUserProfile db user p'
   | displayName == newName = liftIO $ do
       updateContactProfile_ db userId profileId p'
       currentTs <- getCurrentTime
-      userMemberProfileUpdatedAt' <- updateMembershipsProfileTs_ currentTs
+      userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
       pure user {profile, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   | otherwise =
       checkConstraint SEDuplicateName . liftIO $ do
         currentTs <- getCurrentTime
         DB.execute db "UPDATE users SET local_display_name = ?, updated_at = ? WHERE user_id = ?" (newName, currentTs, userId)
-        userMemberProfileUpdatedAt' <- updateMembershipsProfileTs_ currentTs
+        userMemberProfileUpdatedAt' <- updateUserMemberProfileUpdatedAt_ currentTs
         DB.execute
           db
           "INSERT INTO display_names (local_display_name, ldn_base, user_id, created_at, updated_at) VALUES (?,?,?,?,?)"
@@ -270,12 +270,12 @@ updateUserProfile db user p'
         updateContactLDN_ db userId userContactId localDisplayName newName currentTs
         pure user {localDisplayName = newName, profile, fullPreferences, userMemberProfileUpdatedAt = userMemberProfileUpdatedAt'}
   where
-    updateMembershipsProfileTs_ currentTs
-      | nameOrImageChanged = do
+    updateUserMemberProfileUpdatedAt_ currentTs
+      | userMemberProfileChanged = do
         DB.execute db "UPDATE users SET user_member_profile_updated_at = ? WHERE user_id = ?" (currentTs, userId)
         pure $ Just currentTs
       | otherwise = pure userMemberProfileUpdatedAt
-    nameOrImageChanged = newName /= displayName || newFullName /= fullName || newImage /= image
+    userMemberProfileChanged = newName /= displayName || newFullName /= fullName || newImage /= image
     User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, image, localAlias}, userMemberProfileUpdatedAt} = user
     Profile {displayName = newName, fullName = newFullName, image = newImage, preferences} = p'
     profile = toLocalProfile profileId p' localAlias

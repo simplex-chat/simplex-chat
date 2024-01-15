@@ -4887,7 +4887,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             createInternalChatItem user (CDDirectRcv c') ciContent Nothing
           where
             visibleProfileUpdated =
-              n /= n' || fn /= fn' || i /= i' || cl /= cl'
+              n' /= n || fn' /= fn || i' /= i || cl' /= cl
             Profile {displayName = n, fullName = fn, image = i, contactLink = cl} = p
             Profile {displayName = n', fullName = fn', image = i', contactLink = cl'} = p'
 
