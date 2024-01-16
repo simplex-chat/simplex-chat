@@ -1775,14 +1775,14 @@ pattern DBCIDeleted = 1
 pattern DBCIBlocked :: Int
 pattern DBCIBlocked = 2
 
-markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> MessageId -> Maybe GroupMember -> UTCTime -> IO (ChatItem 'CTGroup d)
-markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta} msgId byGroupMember_ deletedTs = do
+markGroupChatItemDeleted :: DB.Connection -> User -> GroupInfo -> ChatItem 'CTGroup d -> Maybe MessageId -> Maybe GroupMember -> UTCTime -> IO (ChatItem 'CTGroup d)
+markGroupChatItemDeleted db User {userId} GroupInfo {groupId} ci@ChatItem {meta} msgId_ byGroupMember_ deletedTs = do
   currentTs <- liftIO getCurrentTime
   let itemId = chatItemId' ci
       (deletedByGroupMemberId, itemDeleted) = case byGroupMember_ of
         Just m@GroupMember {groupMemberId} -> (Just groupMemberId, Just $ CIModerated (Just deletedTs) m)
         _ -> (Nothing, Just $ CIDeleted @'CTGroup (Just deletedTs))
-  insertChatItemMessage_ db itemId msgId currentTs
+  forM_ msgId_ $ \msgId -> insertChatItemMessage_ db itemId msgId currentTs
   DB.execute
     db
     [sql|

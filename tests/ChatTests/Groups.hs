@@ -141,6 +141,10 @@ chatGroupTests = do
     it "member contact is deleted silently, then considered disabled" testMembershipProfileUpdateContactDisabled
     it "profile update without change is ignored" testMembershipProfileUpdateNoChangeIgnored
     it "change of profile contact link is ignored" testMembershipProfileUpdateContactLinkIgnored
+  describe "block member for all" $ do
+    it "messages are marked as moderated" testBlockForAllModerated
+    it "messages are fully deleted" testBlockForAllFullDelete
+    it "another admin can unblock" testBlockForAllAnotherAdminUnblocks
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -5695,3 +5699,177 @@ testMembershipProfileUpdateContactLinkIgnored =
       bob <##. "sending messages via"
       bob <## "connection not verified, use /code command to see security code"
       bob <## currentChatVRangeInfo
+
+testBlockForAllModerated :: HasCallStack => FilePath -> IO ()
+testBlockForAllModerated =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000
+
+      bob #> "#team 1"
+      [alice, cath] *<# "#team bob> 1"
+
+      threadDelay 1000000
+
+      alice ##> "/block #team bob"
+      alice <## "ok"
+      cath <## "#team: alice blocked bob"
+      bob <// 50000
+
+      threadDelay 1000000
+
+      bob #> "#team 2"
+      alice <# "#team bob> [marked deleted by you] 2"
+      cath <# "#team bob> [marked deleted by alice] 2"
+
+      threadDelay 1000000
+
+      bob #> "#team 3"
+      alice <# "#team bob> [marked deleted by you] 3"
+      cath <# "#team bob> [marked deleted by alice] 3"
+
+      threadDelay 1000000
+
+      alice ##> "/unblock #team bob"
+      alice <## "ok"
+      cath <## "#team: alice unblocked bob"
+      bob <// 50000
+
+      threadDelay 1000000
+
+      bob #> "#team 4"
+      [alice, cath] *<# "#team bob> 4"
+
+      alice
+        #$> ( "/_get chat #1 count=6",
+              chat,
+              [ (0, "1"),
+                (1, "blocked bob (Bob)"),
+                (0, "2 [marked deleted by you]"),
+                (0, "3 [marked deleted by you]"),
+                (1, "unblocked bob (Bob)"),
+                (0, "4")
+              ]
+            )
+      cath
+        #$> ( "/_get chat #1 count=6",
+              chat,
+              [ (0, "1"),
+                (0, "blocked bob (Bob)"),
+                (0, "2 [marked deleted by alice]"),
+                (0, "3 [marked deleted by alice]"),
+                (0, "unblocked bob (Bob)"),
+                (0, "4")
+              ]
+            )
+      bob #$> ("/_get chat #1 count=4", chat, [(1, "1"), (1, "2"), (1, "3"), (1, "4")])
+
+testBlockForAllFullDelete :: HasCallStack => FilePath -> IO ()
+testBlockForAllFullDelete =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      alice ##> "/set delete #team on"
+      alice <## "updated group preferences:"
+      alice <## "Full deletion: on"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team:"
+            bob <## "updated group preferences:"
+            bob <## "Full deletion: on",
+          do
+            cath <## "alice updated group #team:"
+            cath <## "updated group preferences:"
+            cath <## "Full deletion: on"
+        ]
+
+      threadDelay 1000000
+
+      bob #> "#team 1"
+      [alice, cath] *<# "#team bob> 1"
+
+      threadDelay 1000000
+
+      alice ##> "/block #team bob"
+      alice <## "ok"
+      cath <## "#team: alice blocked bob"
+      bob <// 50000
+
+      threadDelay 1000000
+
+      bob #> "#team 2"
+      alice <# "#team bob> moderated [deleted by you]"
+      cath <# "#team bob> moderated [deleted by alice]"
+
+      threadDelay 1000000
+
+      bob #> "#team 3"
+      alice <# "#team bob> moderated [deleted by you]"
+      cath <# "#team bob> moderated [deleted by alice]"
+
+      threadDelay 1000000
+
+      alice ##> "/unblock #team bob"
+      alice <## "ok"
+      cath <## "#team: alice unblocked bob"
+      bob <// 50000
+
+      threadDelay 1000000
+
+      bob #> "#team 4"
+      [alice, cath] *<# "#team bob> 4"
+
+      alice
+        #$> ( "/_get chat #1 count=6",
+              chat,
+              [ (0, "1"),
+                (1, "blocked bob (Bob)"),
+                (0, "moderated [deleted by you]"),
+                (0, "moderated [deleted by you]"),
+                (1, "unblocked bob (Bob)"),
+                (0, "4")
+              ]
+            )
+      cath
+        #$> ( "/_get chat #1 count=6",
+              chat,
+              [ (0, "1"),
+                (0, "blocked bob (Bob)"),
+                (0, "moderated [deleted by alice]"),
+                (0, "moderated [deleted by alice]"),
+                (0, "unblocked bob (Bob)"),
+                (0, "4")
+              ]
+            )
+      bob #$> ("/_get chat #1 count=4", chat, [(1, "1"), (1, "2"), (1, "3"), (1, "4")])
+
+testBlockForAllAnotherAdminUnblocks :: HasCallStack => FilePath -> IO ()
+testBlockForAllAnotherAdminUnblocks =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      bob #> "#team 1"
+      [alice, cath] *<# "#team bob> 1"
+
+      alice ##> "/block #team bob"
+      alice <## "ok"
+      cath <## "#team: alice blocked bob"
+      bob <// 50000
+
+      bob #> "#team 2"
+      alice <# "#team bob> [marked deleted by you] 2"
+      cath <# "#team bob> [marked deleted by alice] 2"
+
+      cath ##> "/unblock #team bob"
+      cath <## "ok"
+      alice <## "#team: cath unblocked bob"
+      bob <// 50000
+
+      bob #> "#team 3"
+      [alice, cath] *<# "#team bob> 3"
+
+      bob #$> ("/_get chat #1 count=3", chat, [(1, "1"), (1, "2"), (1, "3")])
