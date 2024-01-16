@@ -1949,8 +1949,9 @@ This cannot be undone!</source>
         <target>Отложи</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do not send history to new members." xml:space="preserve">
+      <trans-unit id="Do not send history to new members." xml:space="preserve" approved="no">
         <source>Do not send history to new members.</source>
+        <target state="translated">Не изпращай история на нови членове.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't create address" xml:space="preserve">
@@ -1978,9 +1979,9 @@ This cannot be undone!</source>
         <target>Свали файл</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Duplicate display name!" xml:space="preserve">
+      <trans-unit id="Duplicate display name!" xml:space="preserve" approved="no">
         <source>Duplicate display name!</source>
-        <target>Дублирано показвано име!</target>
+        <target state="translated">Дублирано име!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Duration" xml:space="preserve">
@@ -2667,9 +2668,9 @@ This cannot be undone!</source>
         <target>Групата вече съществува!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Group display name" xml:space="preserve">
+      <trans-unit id="Group display name" xml:space="preserve" approved="no">
         <source>Group display name</source>
-        <target>Показвано име на групата</target>
+        <target state="translated">Име на групата</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Group full name (optional)" xml:space="preserve">
@@ -2822,8 +2823,9 @@ This cannot be undone!</source>
         <target>История</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="History is not sent to new members." xml:space="preserve">
+      <trans-unit id="History is not sent to new members." xml:space="preserve" approved="no">
         <source>History is not sent to new members.</source>
+        <target state="translated">Историята не се изпраща на нови членове.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How SimpleX works" xml:space="preserve">
@@ -3032,8 +3034,9 @@ This cannot be undone!</source>
         <target>Невалиден линк за връзка</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Invalid display name!" xml:space="preserve">
+      <trans-unit id="Invalid display name!" xml:space="preserve" approved="no">
         <source>Invalid display name!</source>
+        <target state="translated">Невалидно име!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Invalid link" xml:space="preserve">
@@ -3543,9 +3546,9 @@ This is your link for group %@!</source>
         <target>Ново настолно приложение!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="New display name" xml:space="preserve">
+      <trans-unit id="New display name" xml:space="preserve" approved="no">
         <source>New display name</source>
-        <target>Ново показвано име</target>
+        <target state="translated">Ново име</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New in %@" xml:space="preserve">
@@ -4627,8 +4630,9 @@ Error: %@</source>
         <target>Изпрати от галерия или персонализирани клавиатури.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send up to 100 last messages to new members." xml:space="preserve">
+      <trans-unit id="Send up to 100 last messages to new members." xml:space="preserve" approved="no">
         <source>Send up to 100 last messages to new members.</source>
+        <target state="translated">Изпращане до последните 100 съобщения на нови членове.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sender cancelled file transfer." xml:space="preserve">
@@ -5253,8 +5257,9 @@ It can happen because of some bug or when the connection is compromised.</source
         <target>Името на това устройство</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This display name is invalid. Please choose another name." xml:space="preserve">
+      <trans-unit id="This display name is invalid. Please choose another name." xml:space="preserve" approved="no">
         <source>This display name is invalid. Please choose another name.</source>
+        <target state="translated">Това име е невалидно. Моля, изберете друго име.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve">
@@ -5485,8 +5490,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Непрочетено</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve">
+      <trans-unit id="Up to 100 last messages are sent to new members." xml:space="preserve" approved="no">
         <source>Up to 100 last messages are sent to new members.</source>
+        <target state="translated">На новите членове се изпращат до последните 100 съобщения.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update" xml:space="preserve">
@@ -5659,8 +5665,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Виж кода за сигурност</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Visible history" xml:space="preserve">
+      <trans-unit id="Visible history" xml:space="preserve" approved="no">
         <source>Visible history</source>
+        <target state="translated">Видима история</target>
         <note>chat feature</note>
       </trans-unit>
       <trans-unit id="Voice messages" xml:space="preserve">
@@ -5791,9 +5798,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Вие позволявате</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You already have a chat profile with the same display name. Please choose another name." xml:space="preserve">
+      <trans-unit id="You already have a chat profile with the same display name. Please choose another name." xml:space="preserve" approved="no">
         <source>You already have a chat profile with the same display name. Please choose another name.</source>
-        <target>Вече имате чат профил със същото показвано име. Моля, изберете друго име.</target>
+        <target state="translated">Вече имате чат профил със същото име. Моля, изберете друго име.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You are already connected to %@." xml:space="preserve">
