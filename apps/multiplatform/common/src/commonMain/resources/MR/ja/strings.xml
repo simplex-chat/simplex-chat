@@ -566,7 +566,7 @@
     <string name="theme_light">ライトテーマ</string>
     <string name="chat_preferences_default">デフォルト (%s)</string>
     <string name="prohibit_sending_disappearing_messages">消えるメッセージを使用禁止にする。</string>
-    <string name="contacts_can_mark_messages_for_deletion">連絡先はメッセージを削除対象とすることができます。あなたには閲覧可能です。</string>
+    <string name="contacts_can_mark_messages_for_deletion">連絡先はメッセージを削除対象としてマークを付けられます。あなたには閲覧可能です。</string>
     <string name="only_you_can_send_disappearing">消えるメッセージを送れるのはあなただけです。</string>
     <string name="prohibit_message_deletion">メッセージの完全削除を使用禁止にする。</string>
     <string name="prohibit_sending_voice">音声メッセージを使用禁止にする。</string>
@@ -809,8 +809,8 @@
     <string name="ntf_channel_messages">SimpleX Chatメッセージ</string>
     <string name="ntf_channel_calls">SimpleX Chat通話</string>
     <string name="settings_notification_preview_mode_title">プレビューを表示</string>
-    <string name="notifications_mode_periodic">定期的に起動</string>
-    <string name="notifications_mode_off">アプリがアクティブ時に実行</string>
+    <string name="notifications_mode_periodic">定期的に更新</string>
+    <string name="notifications_mode_off">アプリがアクティブ時に通知を受ける</string>
     <string name="icon_descr_sent_msg_status_sent">送信済み</string>
     <string name="you_have_no_chats">あなたはチャットがありません。</string>
     <string name="share_message">メッセージを送る…</string>
@@ -848,7 +848,7 @@
 \nオンにするには、認証ステップが行われます。</string>
     <string name="la_notice_turn_on">オンにする</string>
     <string name="auth_unlock">ロック解除</string>
-    <string name="save_verb">保存する</string>
+    <string name="save_verb">保存</string>
     <string name="reveal_verb">開示する</string>
     <string name="tap_to_start_new_chat">タップして新しいチャットを始める</string>
     <string name="image_decoding_exception_desc">画像が解読できません。別のイメージで試すか、開発者に伝えてください。</string>
@@ -960,7 +960,7 @@
     <string name="read_more_in_user_guide_with_link"><![CDATA[<font color="#0088ff">ユーザーガイド</font>で詳細を見る]]></string>
     <string name="simplex_address">SimpleXアドレス</string>
     <string name="network_proxy_port">ポート %d</string>
-    <string name="enter_welcome_message_optional">ウェルカムメッセージを入力…（オプション）</string>
+    <string name="enter_welcome_message_optional">ウェルカムメッセージを入力…（任意）</string>
     <string name="save_settings_question">設定を保存しますか？</string>
     <string name="confirm_passcode">パスコードを確認</string>
     <string name="la_mode_passcode">パスコード</string>
@@ -1156,10 +1156,10 @@
     <string name="error_setting_address">アドレス設定エラー</string>
     <string name="you_can_share_your_address">アドレスをリンクまたは QR コードとして共有すると、誰でもあなたに接続できます。</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">後でアドレスを削除しても、連絡先が失われることはありません。</string>
-    <string name="your_contacts_will_remain_connected">連絡先は接続されたままになります。</string>
-    <string name="all_your_contacts_will_remain_connected_update_sent">すべての連絡先は接続されたままになります。 プロフィールの更新が連絡先に送信されます。</string>
+    <string name="your_contacts_will_remain_connected">連絡先との接続がそのまま続きます。</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">連絡先との接続がそのまま続きます。 プロフィールの更新が連絡先に共有されます。</string>
     <string name="create_simplex_address">SimpleX のアドレスを作成</string>
-    <string name="share_with_contacts">連絡先と共有する</string>
+    <string name="share_with_contacts">連絡先に公開する</string>
     <string name="profile_update_will_be_sent_to_contacts">プロフィールの更新は連絡先に送信されます。</string>
     <string name="dont_create_address">アドレスを作成しない</string>
     <string name="email_invite_subject">SimpleXチャットで会話しよう</string>
