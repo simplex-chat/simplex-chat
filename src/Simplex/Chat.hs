@@ -1294,7 +1294,7 @@ processChatCommand' vr = \case
       liftIO $ updateGroupMemberSettings db user gId gMemberId settings
       getGroupMember db user gId gMemberId
     let ntfOn = showMessages $ memberSettings m
-    setShowMessagesToggleNtf user m ntfOn
+    toggleNtf user m ntfOn
     ok user
   APIContactInfo contactId -> withUser $ \user@User {userId} -> do
     -- [incognito] print user's incognito profile for this contact
@@ -1746,7 +1746,7 @@ processChatCommand' vr = \case
         m <- withStore $ \db -> do
           liftIO $ updateGroupMemberBlockedForAll db user groupId gmId blockedByGroupMemberId
           getGroupMember db user groupId gmId
-        setShowMessagesToggleNtf user m (not blocked)
+        toggleNtf user m (not blocked)
         ok user
         where
           blockedByGroupMemberId = if blocked then Just (groupMemberId' membership) else Nothing
@@ -2516,8 +2516,8 @@ processChatCommand' vr = \case
         cReqHashes = bimap hash hash cReqSchemas
         hash = ConnReqUriHash . C.sha256Hash . strEncode
 
-setShowMessagesToggleNtf :: ChatMonad m => User -> GroupMember -> Bool -> m ()
-setShowMessagesToggleNtf user m ntfOn =
+toggleNtf :: ChatMonad m => User -> GroupMember -> Bool -> m ()
+toggleNtf user m ntfOn =
   when (memberActive m) $ forM_ (memberConnId m) $ \connId ->
     withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchChatError` (toView . CRChatError (Just user))
 
@@ -5374,7 +5374,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   bm' <- withStore $ \db -> do
                     liftIO $ updateGroupMemberBlockedForAll db user groupId bmId blockedByGroupMemberId
                     getGroupMember db user groupId bmId
-                  setShowMessagesToggleNtf user bm' (not blocked)
+                  toggleNtf user bm' (not blocked)
                   let ciContent = CIRcvGroupEvent $ RGEMemberBlocked bmId (fromLocalProfile bmp) blocked
                   ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs ciContent
                   groupMsgToView gInfo ci
