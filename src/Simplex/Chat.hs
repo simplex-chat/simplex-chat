@@ -4679,7 +4679,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       ci' <- blockedMember m ci $ withStore' $ \db -> markGroupChatItemBlocked db user gInfo ci
       groupMsgToView gInfo ci'
 
-    -- TODO if member is blocked by another member, mark as moderated (newGroupContentMessage applyModeration)
     blockedMember :: Monad m' => GroupMember -> ChatItem c d -> m' (ChatItem c d) -> m' (ChatItem c d)
     blockedMember m ci blockedCI
       | showMessages (memberSettings m) = pure ci
