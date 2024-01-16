@@ -475,7 +475,7 @@
     <string name="scan_qr_to_connect_to_contact">За да се свърже, вашият контакт може да сканира QR код или да използва линка в приложението.</string>
     <string name="direct_messages">Лични съобщения</string>
     <string name="display_name">Въведи своето име:</string>
-    <string name="display_name_cannot_contain_whitespace">Показваното име не може да съдържа интервал.</string>
+    <string name="display_name_cannot_contain_whitespace">Името не може да съдържа интервал.</string>
     <string name="sending_delivery_receipts_will_be_enabled">Изпращането на потвърждениe за доставка ще бъде активирано за всички контакти.</string>
     <string name="receipts_contacts_enable_for_all">Активиране за всички</string>
     <string name="error_enabling_delivery_receipts">Грешка при активирането на потвърждениeто за доставка!</string>
@@ -547,7 +547,7 @@
     <string name="smp_server_test_disconnect">Прекъсни връзката</string>
     <string name="smp_server_test_download_file">Свали файл</string>
     <string name="failed_to_create_user_duplicate_title">Дублирано име!</string>
-    <string name="failed_to_create_user_duplicate_desc">Вече имате чат профил със същото показвано име. Моля, изберете друго име.</string>
+    <string name="failed_to_create_user_duplicate_desc">Вече имате чат профил със същото име. Моля, изберете друго име.</string>
     <string name="la_minutes">%d минути</string>
     <string name="la_seconds">%d секунди</string>
     <string name="edit_verb">Редактирай</string>
@@ -566,7 +566,7 @@
     <string name="integrity_msg_duplicate">дублирано съобщение</string>
     <string name="privacy_and_security">Поверителност и сигурност</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Това може да се случи, когато вие или вашата връзка използвате старо резервно копие на базата данни.</string>
-    <string name="self_destruct_new_display_name">Ново показвано име:</string>
+    <string name="self_destruct_new_display_name">Ново име:</string>
     <string name="enable_lock">Активирай заключване</string>
     <string name="enable_self_destruct">Активирай самоунищожение</string>
     <string name="chat_item_ttl_none">никога</string>
@@ -1590,4 +1590,6 @@
 \n
 \nПрепоръчително е да рестартирате приложението.</string>
     <string name="developer_options_section">Опции за разработчици</string>
+    <string name="show_slow_api_calls">Показване на бавни API заявки</string>
+    <string name="possible_deadlock_title">Грешка в заключено положение</string>
 </resources>
