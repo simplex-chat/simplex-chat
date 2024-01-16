@@ -680,7 +680,7 @@
     <string name="run_chat_section">EJECUTAR CHAT</string>
     <string name="restart_the_app_to_use_imported_chat_database">Reinicia la aplicación para poder usar la base de datos importada.</string>
     <string name="enter_correct_current_passphrase">Introduce la contraseña actual correcta.</string>
-    <string name="feature_received_prohibited">recepción prohibida</string>
+    <string name="feature_received_prohibited">recepción no permitida</string>
     <string name="only_you_can_delete_messages">Sólo tú puedes eliminar mensajes de forma irreversible (tu contacto puede marcarlos para eliminar). (24 horas)</string>
     <string name="prohibit_direct_messages">No se permiten mensajes directos entre miembros.</string>
     <string name="prohibit_sending_disappearing">No se permiten mensajes temporales.</string>
