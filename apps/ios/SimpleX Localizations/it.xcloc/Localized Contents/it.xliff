@@ -5935,9 +5935,9 @@ Ripetere la richiesta di ingresso?</target>
         <target>Non puoi inviare messaggi!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve">
+      <trans-unit id="You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them." xml:space="preserve" approved="no">
         <source>You control through which server(s) **to receive** the messages, your contacts – the servers you use to message them.</source>
-        <target>Puoi controllare attraverso quale/i server **ricevere** i messaggi, i tuoi contatti – i server che usi per inviare loro i messaggi.</target>
+        <target state="translated">Tu decidi attraverso quale/i server **ricevere** i messaggi, i tuoi contatti quali server usi per inviare loro i messaggi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You could not be verified; please try again." xml:space="preserve">
