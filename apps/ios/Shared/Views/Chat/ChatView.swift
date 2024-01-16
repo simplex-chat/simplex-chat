@@ -205,6 +205,8 @@ struct ChatView: View {
                             Image(systemName: "ellipsis")
                         }
                     }
+                case .local:
+                    searchButton()
                 default:
                     EmptyView()
                 }

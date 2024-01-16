@@ -110,7 +110,11 @@ struct ChatItemInfoView: View {
                 .bold()
                 .padding(.bottom)
 
-            infoRow("Sent at", localTimestamp(meta.itemTs))
+            if !ci.localNote {
+                infoRow("Sent at", localTimestamp(meta.itemTs))
+            } else {
+                infoRow("Created at", localTimestamp(meta.itemTs))
+            }
             if !ci.chatDir.sent {
                 infoRow("Received at", localTimestamp(meta.createdAt))
             }
