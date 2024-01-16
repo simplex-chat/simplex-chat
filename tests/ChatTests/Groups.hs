@@ -5714,7 +5714,7 @@ testBlockForAllModerated =
       threadDelay 1000000
 
       alice ##> "/block #team bob"
-      alice <## "ok"
+      alice <## "#team: you blocked bob"
       cath <## "#team: alice blocked bob"
       bob <// 50000
 
@@ -5733,7 +5733,7 @@ testBlockForAllModerated =
       threadDelay 1000000
 
       alice ##> "/unblock #team bob"
-      alice <## "ok"
+      alice <## "#team: you unblocked bob"
       cath <## "#team: alice unblocked bob"
       bob <// 50000
 
@@ -5794,7 +5794,7 @@ testBlockForAllFullDelete =
       threadDelay 1000000
 
       alice ##> "/block #team bob"
-      alice <## "ok"
+      alice <## "#team: you blocked bob"
       cath <## "#team: alice blocked bob"
       bob <// 50000
 
@@ -5813,7 +5813,7 @@ testBlockForAllFullDelete =
       threadDelay 1000000
 
       alice ##> "/unblock #team bob"
-      alice <## "ok"
+      alice <## "#team: you unblocked bob"
       cath <## "#team: alice unblocked bob"
       bob <// 50000
 
@@ -5856,7 +5856,7 @@ testBlockForAllAnotherAdminUnblocks =
       [alice, cath] *<# "#team bob> 1"
 
       alice ##> "/block #team bob"
-      alice <## "ok"
+      alice <## "#team: you blocked bob"
       cath <## "#team: alice blocked bob"
       bob <// 50000
 
@@ -5865,7 +5865,7 @@ testBlockForAllAnotherAdminUnblocks =
       cath <# "#team bob> [marked deleted by alice] 2"
 
       cath ##> "/unblock #team bob"
-      cath <## "ok"
+      cath <## "#team: you unblocked bob"
       alice <## "#team: cath unblocked bob"
       bob <// 50000
 
