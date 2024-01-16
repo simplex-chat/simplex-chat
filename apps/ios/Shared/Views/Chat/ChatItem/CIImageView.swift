@@ -38,7 +38,7 @@ struct CIImageView: View {
                             case .rcvInvitation:
                                 Task {
                                     if let user = m.currentUser {
-                                        await receiveFile(user: user, fileId: file.fileId, encrypted: chatItem.encryptLocalFile)
+                                        await receiveFile(user: user, fileId: file.fileId)
                                     }
                                 }
                             case .rcvAccepted:
