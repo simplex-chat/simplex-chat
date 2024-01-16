@@ -32,7 +32,7 @@ mkdir deps 2> /dev/null || true
   cp /tmp/libffi-3.4.4/*-apple-darwin*/.libs/libffi.dylib $BUILD/deps || \
     ( \
     cd /tmp && \
-    curl "https://gitlab.haskell.org/ghc/libffi-tarballs/-/raw/libffi-3.4.4/libffi-3.4.4.tar.gz?inline=false" -o libffi.tar.gz && \
+    curl --tlsv1.2 "https://gitlab.haskell.org/ghc/libffi-tarballs/-/raw/libffi-3.4.4/libffi-3.4.4.tar.gz?inline=false" -o libffi.tar.gz && \
     tar -xzvf libffi.tar.gz && \
     cd "libffi-3.4.4" && \
     ./configure && \
