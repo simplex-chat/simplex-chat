@@ -1293,9 +1293,8 @@ processChatCommand' vr = \case
     m <- withStore $ \db -> do
       liftIO $ updateGroupMemberSettings db user gId gMemberId settings
       getGroupMember db user gId gMemberId
-    when (memberActive m) $ forM_ (memberConnId m) $ \connId -> do
-      let ntfOn = showMessages $ memberSettings m
-      withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchChatError` (toView . CRChatError (Just user))
+    let ntfOn = showMessages $ memberSettings m
+    setShowMessagesToggleNtf user m ntfOn
     ok user
   APIContactInfo contactId -> withUser $ \user@User {userId} -> do
     -- [incognito] print user's incognito profile for this contact
@@ -1412,11 +1411,20 @@ processChatCommand' vr = \case
   SetShowMessages cName ntfOn -> updateChatSettings cName (\cs -> cs {enableNtfs = ntfOn})
   SetSendReceipts cName rcptsOn_ -> updateChatSettings cName (\cs -> cs {sendRcpts = rcptsOn_})
   SetShowMemberMessages gName mName showMessages -> withUser $ \user -> do
-    -- TODO if admin, use APIBlockMemberForAll
     (gId, mId) <- getGroupAndMemberId user gName mName
+    gInfo <- withStore $ \db -> getGroupInfo db vr user gId
     m <- withStore $ \db -> getGroupMember db user gId mId
-    let settings = (memberSettings m) {showMessages}
-    processChatCommand $ APISetMemberSettings gId mId settings
+    if forAll gInfo m
+      then processChatCommand $ APIBlockMemberForAll gId mId showMessages
+      else do
+        let settings = (memberSettings m) {showMessages}
+        processChatCommand $ APISetMemberSettings gId mId settings
+    where
+      forAll :: GroupInfo -> GroupMember -> Bool
+      forAll
+        GroupInfo {membership = GroupMember {memberRole = membershipMemRole}}
+        GroupMember {memberRole} =
+          membershipMemRole >= memberRole
   ContactInfo cName -> withContactName cName APIContactInfo
   ShowGroupInfo gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
@@ -1725,15 +1733,26 @@ processChatCommand' vr = \case
                 ci <- saveSndChatItem user (CDGroupSnd gInfo) msg (CISndGroupEvent gEvent)
                 toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
           pure CRMemberRoleUser {user, groupInfo = gInfo, member = m {memberRole = memRole}, fromRole = mRole, toRole = memRole}
-  APIBlockMemberForAll groupId memberId -> withUser $ \user -> do
-    -- get group
-    -- assertUserGroupRole
-    -- filter out memberId member
-    -- send XGrpMemBlock to remaining members
-    -- set blocked_by_group_member_id
-    -- chat item CISndGroupEvent SGEMemberBlocked
-    -- response CRMemberBlockedForAll (or CRCmdOk? - to differentiate responce and received event)
-    throwChatError $ CECommandError "not implemented"
+  APIBlockMemberForAll groupId gmId blocked -> withUser $ \user -> do
+    Group gInfo members <- withStore $ \db -> getGroup db vr user groupId
+    let (targetMember, remainingMembers) = partition ((== gmId) . groupMemberId') members
+    case targetMember of
+      [blockedMember] -> do
+        assertUserGroupRole gInfo $ max GRAdmin bmRole
+        (msg, _) <- sendGroupMessage user gInfo remainingMembers $ XGrpMemBlock bmId blocked
+        let ciContent = CISndGroupEvent $ SGEMemberBlocked gmId (fromLocalProfile bmp) blocked
+        ci <- saveSndChatItem user (CDGroupSnd gInfo) msg ciContent
+        toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
+        m <- withStore $ \db -> do
+          liftIO $ updateGroupMemberBlockedForAll db user groupId gmId blockedByGroupMemberId
+          getGroupMember db user groupId gmId
+        setShowMessagesToggleNtf user m (not blocked)
+        ok user
+        where
+          blockedByGroupMemberId = if blocked then Just (groupMemberId' membership) else Nothing
+          GroupInfo {membership} = gInfo
+          GroupMember {memberId = bmId, memberRole = bmRole, memberProfile = bmp} = blockedMember
+      _ -> throwChatError $ CEException "expected to find a single blocked member"
   APIRemoveMember groupId memberId -> withUser $ \user -> do
     Group gInfo members <- withStore $ \db -> getGroup db vr user groupId
     case find ((== memberId) . groupMemberId') members of
@@ -2496,6 +2515,11 @@ processChatCommand' vr = \case
         cReqHashes :: (ConnReqUriHash, ConnReqUriHash)
         cReqHashes = bimap hash hash cReqSchemas
         hash = ConnReqUriHash . C.sha256Hash . strEncode
+
+setShowMessagesToggleNtf :: ChatMonad m => User -> GroupMember -> Bool -> m ()
+setShowMessagesToggleNtf user m ntfOn =
+  when (memberActive m) $ forM_ (memberConnId m) $ \connId ->
+    withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchChatError` (toView . CRChatError (Just user))
 
 data ChangedProfileContact = ChangedProfileContact
   { ct :: Contact,
@@ -4550,7 +4574,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           when (showMessages $ memberSettings m) $ autoAcceptFile file_
         newChatItem ciContent ciFile_ timed_ live = do
           ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs ciContent ciFile_ timed_ live
-          ci' <- blockedMember m ci $ withStore' $ \db -> markGroupChatItemBlocked db user gInfo ci
+          ci' <- processMemberBlocked m ci $ withStore' $ \db -> markGroupChatItemBlocked db user gInfo ci
           reactions <- maybe (pure []) (\sharedMsgId -> withStore' $ \db -> getGroupCIReactions db gInfo memberId sharedMsgId) sharedMsgId_
           groupMsgToView gInfo ci' {reactions}
 
@@ -4565,7 +4589,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         ci' <- withStore' $ \db -> do
           createChatItemVersion db (chatItemId' ci) brokerTs mc
           ci' <- updateGroupChatItem db user groupId ci content live Nothing
-          blockedMember m ci' $ markGroupChatItemBlocked db user gInfo ci'
+          processMemberBlocked m ci' $ markGroupChatItemBlocked db user gInfo ci'
         toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
       where
         content = CIRcvMsgContent mc
@@ -4641,12 +4665,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       let fileProtocol = if isJust xftpRcvFile then FPXFTP else FPSMP
           ciFile = Just $ CIFile {fileId, fileName, fileSize, fileSource = Nothing, fileStatus = CIFSRcvInvitation, fileProtocol}
       ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs (CIRcvMsgContent $ MCFile "") ciFile Nothing False
-      ci' <- blockedMember m ci $ withStore' $ \db -> markGroupChatItemBlocked db user gInfo ci
+      ci' <- processMemberBlocked m ci $ withStore' $ \db -> markGroupChatItemBlocked db user gInfo ci
       groupMsgToView gInfo ci'
 
     -- TODO if member is blocked by another member, mark as moderated (newGroupContentMessage applyModeration)
-    blockedMember :: Monad m' => GroupMember -> ChatItem c d -> m' (ChatItem c d) -> m' (ChatItem c d)
-    blockedMember m ci blockedCI
+    processMemberBlocked :: Monad m' => GroupMember -> ChatItem c d -> m' (ChatItem c d) -> m' (ChatItem c d)
+    processMemberBlocked m ci blockedCI
       | showMessages (memberSettings m) = pure ci
       | otherwise = blockedCI
 
@@ -5328,18 +5352,26 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       when (memberRole < GRAdmin || memberRole < memRole) $ throwChatError (CEGroupContactRole localDisplayName)
 
     xGrpMemBlock :: GroupInfo -> GroupMember -> MemberId -> Bool -> RcvMessage -> UTCTime -> m ()
-    xGrpMemBlock gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId blocked msg brokerTs
+    xGrpMemBlock gInfo@GroupInfo {groupId, membership} m@GroupMember {memberRole = senderRole} memId blocked msg brokerTs
       | membershipMemId == memId =
-        -- member shouldn't receive this message about themselves
-        messageError "x.grp.mem.block: admin blocks you"
-      | otherwise = do
-        -- getGroupMemberByMemberId
-        -- check role
-        -- set blocked_by_group_member_id
-        -- chat item CIRcvGroupEvent RGEMemberBlocked
-        -- event CRMemberBlockedForAll
-        pure ()
+          -- member shouldn't receive this message about themselves
+          messageError "x.grp.mem.block: admin blocks you"
+      | otherwise =
+          withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
+            Right bm@GroupMember {groupMemberId = bmId, memberRole, memberProfile = bmp}
+              | senderRole < GRAdmin || senderRole < memberRole -> messageError "x.grp.mem.block with insufficient member permissions"
+              | otherwise -> do
+                  bm' <- withStore $ \db -> do
+                    liftIO $ updateGroupMemberBlockedForAll db user groupId bmId blockedByGroupMemberId
+                    getGroupMember db user groupId bmId
+                  setShowMessagesToggleNtf user bm' (not blocked)
+                  let ciContent = CIRcvGroupEvent $ RGEMemberBlocked bmId (fromLocalProfile bmp) blocked
+                  ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs ciContent
+                  groupMsgToView gInfo ci
+                  toView CRMemberBlockedForAll {user, groupInfo = gInfo, byMember = m, member = bm, blocked}
+            Left _ -> messageError "x.grp.mem.block with unknown member ID"
       where
+        blockedByGroupMemberId = if blocked then Just (groupMemberId' m) else Nothing
         GroupMember {memberId = membershipMemId} = membership
 
     xGrpMemCon :: GroupInfo -> GroupMember -> MemberId -> m ()
@@ -6526,7 +6558,7 @@ chatCommandP =
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
       "/_join #" *> (APIJoinGroup <$> A.decimal),
       "/_member role #" *> (APIMemberRole <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
-      "/_block #" *> (APIBlockMemberForAll <$> A.decimal <* A.space <*> A.decimal),
+      "/_block #" *> (APIBlockMemberForAll <$> A.decimal <* A.space <*> A.decimal <* A.space <* "blocked=" <*> onOffP),
       "/_remove #" *> (APIRemoveMember <$> A.decimal <* A.space <*> A.decimal),
       "/_leave #" *> (APILeaveGroup <$> A.decimal),
       "/_members #" *> (APIListMembers <$> A.decimal),

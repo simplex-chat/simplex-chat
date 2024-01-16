@@ -98,6 +98,7 @@ module Simplex.Chat.Store.Groups
     deleteOldProbes,
     updateGroupSettings,
     updateGroupMemberSettings,
+    updateGroupMemberBlockedForAll,
     getXGrpMemIntroContDirect,
     getXGrpMemIntroContGroup,
     getHostConnId,
@@ -1770,6 +1771,18 @@ updateGroupMemberSettings db User {userId} gId gMemberId GroupMemberSettings {sh
       WHERE user_id = ? AND group_id = ? AND group_member_id = ?
     |]
     (showMessages, currentTs, userId, gId, gMemberId)
+
+updateGroupMemberBlockedForAll :: DB.Connection -> User -> GroupId -> GroupMemberId -> Maybe GroupMemberId -> IO ()
+updateGroupMemberBlockedForAll db User {userId} gId gMemberId blockedByGroupMemberId = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET blocked_by_group_member_id = ?, updated_at = ?
+      WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+    |]
+    (blockedByGroupMemberId, currentTs, userId, gId, gMemberId)
 
 getXGrpMemIntroContDirect :: DB.Connection -> User -> Contact -> IO (Maybe (Int64, XGrpMemIntroCont))
 getXGrpMemIntroContDirect db User {userId} Contact {contactId} = do

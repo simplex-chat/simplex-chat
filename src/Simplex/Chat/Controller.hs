@@ -294,7 +294,7 @@ data ChatCommand
   | APIAddMember GroupId ContactId GroupMemberRole
   | APIJoinGroup GroupId
   | APIMemberRole GroupId GroupMemberId GroupMemberRole
-  | APIBlockMemberForAll GroupId GroupMemberId
+  | APIBlockMemberForAll GroupId GroupMemberId Bool
   | APIRemoveMember GroupId GroupMemberId
   | APILeaveGroup GroupId
   | APIListMembers GroupId
