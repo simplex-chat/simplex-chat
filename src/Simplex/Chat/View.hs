@@ -966,9 +966,9 @@ viewMemberRoleChanged g@GroupInfo {membership} by m r r'
     memId = groupMemberId' m
     view s = [ttyGroup' g <> ": " <> ttyMember by <> " changed " <> s <> " from " <> showRole r <> " to " <> showRole r']
 
--- TODO
 viewMemberBlockedForAll :: GroupInfo -> GroupMember -> GroupMember -> Bool -> [StyledString]
-viewMemberBlockedForAll g by m blocked = []
+viewMemberBlockedForAll g by m blocked =
+  [ttyGroup' g <> ": " <> ttyMember by <> " " <> (if blocked then "blocked" else "unblocked") <> " " <> ttyMember m]
 
 viewMemberRoleUserChanged :: GroupInfo -> GroupMember -> GroupMemberRole -> GroupMemberRole -> [StyledString]
 viewMemberRoleUserChanged g@GroupInfo {membership} m r r'

@@ -291,7 +291,7 @@ isForwardedGroupMsg ev = case ev of
   XInfo _ -> True
   XGrpMemNew _ -> True
   XGrpMemRole {} -> True
-  XGrpMemBlock {} -> True -- TODO shouldn't be forwarded to blocked group member
+  XGrpMemBlock {} -> True
   XGrpMemDel _ -> True -- TODO there should be a special logic when deleting host member (e.g., host forwards it before deleting connections)
   XGrpLeave -> True
   XGrpDel -> True -- TODO there should be a special logic - host should forward before deleting connections
@@ -302,6 +302,14 @@ forwardedGroupMsg :: forall e. MsgEncodingI e => ChatMessage e -> Maybe (ChatMes
 forwardedGroupMsg msg@ChatMessage {chatMsgEvent} = case encoding @e of
   SJson | isForwardedGroupMsg chatMsgEvent -> Just msg
   _ -> Nothing
+
+-- applied after checking forwardedGroupMsg and building list of group members to forward to, see Chat
+forwardedToGroupMembers :: forall e. MsgEncodingI e => [GroupMember] -> ChatMessage e -> [GroupMember]
+forwardedToGroupMembers ms ChatMessage {chatMsgEvent} = case encoding @e of
+  SJson -> case chatMsgEvent of
+    XGrpMemBlock mId _ -> filter (\GroupMember {memberId} -> memberId /= mId) ms
+    _ -> ms
+  _ -> []
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)
