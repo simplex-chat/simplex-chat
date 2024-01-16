@@ -248,7 +248,7 @@ struct ChatListView: View {
                     ? (filtered(chat) || gInfo.membership.memberStatus == .memInvited)
                     : viewNameContains(cInfo, s)
                 case .local:
-                    return false
+                    return s == "" || viewNameContains(cInfo, s)
                 case .contactRequest:
                     return s == "" || viewNameContains(cInfo, s)
                 case let .contactConnection(conn):
