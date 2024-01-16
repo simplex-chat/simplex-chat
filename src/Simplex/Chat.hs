@@ -1742,7 +1742,7 @@ processChatCommand' vr = \case
         withChatLock "blockForAll" . procCmd $
           if blocked /= isJust blockedByGroupMemberId
             then do
-              (msg, _) <- sendGroupMessage user gInfo remainingMembers $ XGrpMemBlock bmMemberId blocked
+              (msg, _) <- sendGroupMessage' user gInfo remainingMembers $ XGrpMemBlock bmMemberId blocked
               let ciContent = CISndGroupEvent $ SGEMemberBlocked gmId (fromLocalProfile bmp) blocked
               ci <- saveSndChatItem user (CDGroupSnd gInfo) msg ciContent
               toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
