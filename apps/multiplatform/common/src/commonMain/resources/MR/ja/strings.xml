@@ -716,7 +716,7 @@
     <string name="you_will_be_connected_when_group_host_device_is_online">グループのホスト端末がオンラインになったら、接続されます。後でチェックするか、しばらくお待ちください。</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">連絡先がオンラインになったら、接続されます。後でチェックするか、しばらくお待ちください。</string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">あなたのチャットプロフィールが
-\n連絡相手に送られます。</string>
+\n連絡先に公開されます。</string>
     <string name="share_invitation_link">ワンタイムリンクを送る</string>
     <string name="scan_code">コードを読み込む</string>
     <string name="scan_code_from_contacts_app">連絡相手のアプリからセキュリティコードを読み込む</string>
@@ -739,9 +739,9 @@
     <string name="network_use_onion_hosts">.onionホストを使う</string>
     <string name="network_use_onion_hosts_prefer">利用可能時に</string>
     <string name="network_session_mode_transport_isolation">トランスポート隔離</string>
-    <string name="save_and_notify_contact">保存して、連絡先にに知らせる</string>
+    <string name="save_and_notify_contact">保存して、連絡先に公開</string>
     <string name="your_current_profile">現在のプロフィール</string>
-    <string name="save_and_notify_contacts">保存して、連絡先にに知らせる</string>
+    <string name="save_and_notify_contacts">保存して、連絡先に公開</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">あなたのプライバシーとセキュリティを守るメッセージとアプリのプラットフォーム</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">連絡先情報と届けたメッセージをサーバに保存することは一切ありません。</string>
     <string name="you_control_your_chat">あなたのチャットはあなたが決めます！</string>
@@ -864,7 +864,7 @@
     <string name="set_contact_name">連絡先を設定</string>
     <string name="contact_wants_to_connect_with_you">あなたと接続を希望しています！</string>
     <string name="you_can_also_connect_by_clicking_the_link"><![CDATA[リンクをクリックすることでも接続できます。ブラウザが起動すれば <b>Open in mobile app (アプリで開く)</b>ボタンをクリックしてください。]]></string>
-    <string name="your_chat_profiles">あなたのチャットプロフィール</string>
+    <string name="your_chat_profiles">チャットプロフィール</string>
     <string name="smp_servers_scan_qr">サーバのQRコードを読み込む</string>
     <string name="smp_servers_test_some_failed">テストに失敗したサーバがあります：</string>
     <string name="use_simplex_chat_servers__question">SimpleX Chatサーバを使いますか？</string>
@@ -901,7 +901,7 @@
     <string name="smp_servers_test_servers">テストサーバ</string>
     <string name="switch_receiving_address_desc">受信アドレスは別のサーバーに変更されます。アドレス変更は送信者がオンラインになった後に完了します。</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">あなたのプライバシーを守るために、他のアプリと違って、ユーザーIDの変わりに SimpleX メッセージ束毎にIDを配布し、各連絡先が別々と扱います。</string>
-    <string name="group_main_profile_sent">あなたのチャットプロフィールが他のグループメンバーに送られます。</string>
+    <string name="group_main_profile_sent">あなたのチャットプロフィールが他のグループメンバーに公開されます。</string>
     <string name="to_verify_compare">エンドツーエンド暗号化を確認するには、ご自分の端末と連絡先の端末のコードを比べます (スキャンします)。</string>
     <string name="trying_to_connect_to_server_to_receive_messages_with_error">このコンタクトから受信するメッセージのサーバに接続しようとしてます。(エラー： %1$s)。</string>
     <string name="connection_error_auth_desc">使用済みリンク、または連絡先による接続の削除ではなければ、バッグの可能性があります。開発者にお伝えください。
@@ -972,7 +972,7 @@
     <string name="one_time_link_short">使い捨てのリンク</string>
     <string name="address_section_title">アドレス</string>
     <string name="color_background">背景色</string>
-    <string name="confirm_password">パスワードを確認</string>
+    <string name="confirm_password">ご確認のため、再度ご入力ください。</string>
     <string name="settings_section_title_experimenta">β機能</string>
     <string name="decryption_error">復号化エラー</string>
     <string name="button_add_welcome_message">ウェルカムメッセージを追加</string>
@@ -1039,7 +1039,7 @@
     <string name="stop_sharing">共有を停止</string>
     <string name="invite_friends">友人を招待する</string>
     <string name="you_can_create_it_later">後からでも作成できます</string>
-    <string name="password_to_show">パスワードを表示する</string>
+    <string name="password_to_show">ここにパスワードを入力してください。</string>
     <string name="authentication_cancelled">認証がキャンセルされました</string>
     <string name="share_address">アドレスを共有する</string>
     <string name="theme_simplex">SimpleX</string>
@@ -1100,12 +1100,12 @@
     <string name="downgrade_and_open_chat">ダウングレードしてチャットを開く</string>
     <string name="la_please_remember_to_store_password">パスワードを覚えるか、安全に保管してください。失われたパスワードを回復する方法はありません。</string>
     <string name="smp_server_test_download_file">ファイルをダウンロード</string>
-    <string name="you_can_hide_or_mute_user_profile">ユーザープロフィールを非表示またはミュートすることができます（メニューを長押し）。</string>
+    <string name="you_can_hide_or_mute_user_profile">ユーザープロフィールを非表示またはミュートすることができます（名前を長押し）。</string>
     <string name="v4_6_group_moderation">グループのモデレーション</string>
     <string name="email_invite_body">こんにちは！
 \nSimpleX Chatの招待が届いています: %s</string>
     <string name="v4_6_group_welcome_message">グループのウェルカムメッセージ</string>
-    <string name="tap_to_activate_profile">タップしてプロフィールを有効化する。</string>
+    <string name="tap_to_activate_profile">タップでプロフィールを切り替え</string>
     <string name="profile_password">プロフィールのパスワード</string>
     <string name="v4_6_hidden_chat_profiles_descr">チャットのプロフィールをパスワードで保護します！</string>
     <string name="group_member_role_observer">オブザーバー</string>
@@ -1150,7 +1150,7 @@
     <string name="mtr_error_different">アプリ/データベースの異なる移行: %s / %s</string>
     <string name="user_hide">非表示</string>
     <string name="user_unhide">表示にする</string>
-    <string name="hidden_profile_password">非表示のプロフィール パスワード</string>
+    <string name="hidden_profile_password">非表示プロフィールのパスワード</string>
     <string name="show_dev_options">表示する：</string>
     <string name="create_address_and_let_people_connect">人々があなたとつながるためのアドレスを作成します。</string>
     <string name="error_setting_address">アドレス設定エラー</string>
@@ -1167,7 +1167,7 @@
     <string name="save_profile_password">プロフィールのパスワードを保存する</string>
     <string name="you_can_share_this_address_with_your_contacts">このアドレスを連絡先と共有して、%s に接続できるようにすることができます。</string>
     <string name="save_and_update_group_profile">グループプロフィールの保存と更新</string>
-    <string name="to_reveal_profile_enter_password">非表示のプロフィールを表示するには、チャット プロフィール ページの検索フィールドに完全なパスワードを入力します。</string>
+    <string name="to_reveal_profile_enter_password">非表示のプロフィールを戻すには、プロフィールページの検索欄にパスワードを入力します。</string>
     <string name="hide_dev_options">非表示 :</string>
     <string name="delete_chat_profile">チャット プロフィールを削除する</string>
     <string name="delete_profile">プロフィールの削除</string>
@@ -1576,4 +1576,23 @@
     <string name="possible_deadlock_desc">処理時間が異常にかかるようです: %1$d 秒。アプリが固まった恐れがあります: %2$s</string>
     <string name="remote_host_error_busy">携帯版 <b>%s</b> がただいま処理中</string>
     <string name="possible_slow_function_desc">機能の処理時間が以上にかかってます: %1$d 秒: %2$s</string>
+    <string name="show_internal_errors">内部エラーを表示</string>
+    <string name="agent_internal_error_desc">開発側にお伝えください:
+\n%s</string>
+    <string name="agent_critical_error_desc">開発側にお伝えください:
+\n%s
+\n
+\nアプリを再起動してください。</string>
+    <string name="failed_to_create_user_invalid_desc">表示名が無効です。別の名前にしてください。</string>
+    <string name="remote_host_error_inactive">携帯版 <b>%s</b> が非アクティブ</string>
+    <string name="remote_host_error_missing">携帯版 <b>%s</b> が見つかりません</string>
+    <string name="remote_host_error_timeout">携帯版に接続する段階で時間切れになりました <b>%s</b></string>
+    <string name="remote_ctrl_error_timeout">PC版に接続する段階で時間切れになりました</string>
+    <string name="restart_chat_button">チャットを再起動</string>
+    <string name="remote_host_error_disconnected">携帯版 <b>%s</b> が切断されました</string>
+    <string name="group_member_status_unknown_short">不明</string>
+    <string name="past_member_vName">過去のメンバー %1$s</string>
+    <string name="possible_slow_function_title">遅延が発生した機能</string>
+    <string name="show_slow_api_calls">遅いAPIコールを表示</string>
+    <string name="group_member_status_unknown">ステータス不明</string>
 </resources>
