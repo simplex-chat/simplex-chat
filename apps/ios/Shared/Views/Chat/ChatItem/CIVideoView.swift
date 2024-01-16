@@ -116,19 +116,15 @@ struct CIVideoView: View {
                 }
                 .onTapGesture {
                     decrypt(file: file) {
-                        DispatchQueue.main.async {
-                            showFullScreenPlayer = urlDecrypted != nil
-                        }
+                        showFullScreenPlayer = urlDecrypted != nil
                     }
                 }
                 if !decryptionInProgress {
                     Button {
                         decrypt(file: file) {
-                            DispatchQueue.main.async {
-                                if let decrypted = urlDecrypted {
-                                    videoPlaying = true
-                                    player?.play()
-                                }
+                            if let decrypted = urlDecrypted {
+                                videoPlaying = true
+                                player?.play()
                             }
                         }
                     } label: {
@@ -384,14 +380,14 @@ struct CIVideoView: View {
         decryptionInProgress = true
         Task {
             urlDecrypted = await file.fileSource?.decryptedGetOrCreate(&ChatModel.shared.filesToDelete)
-            DispatchQueue.main.async {
+            await MainActor.run {
                 if let decrypted = urlDecrypted {
                     player = VideoPlayerView.getOrCreatePlayer(decrypted, false)
                     fullPlayer = AVPlayer(url: decrypted)
                 }
                 decryptionInProgress = true
+                onDone?()
             }
-            onDone?()
         }
     }
 
