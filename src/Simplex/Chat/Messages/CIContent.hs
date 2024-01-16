@@ -169,7 +169,9 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvIntegrityError _ -> True
     CIRcvDecryptionError {} -> True
     CIRcvGroupInvitation {} -> True
-    CIRcvDirectEvent _ -> False
+    CIRcvDirectEvent rde -> case rde of
+      RDEContactDeleted -> False
+      RDEProfileUpdated {} -> True
     CIRcvGroupEvent rge -> case rge of
       RGEMemberAdded {} -> False
       RGEMemberConnected -> False
@@ -182,6 +184,7 @@ ciRequiresAttention content = case msgDirection @d of
       RGEGroupUpdated _ -> False
       RGEInvitedViaGroupLink -> False
       RGEMemberCreatedContact -> False
+      RGEMemberProfileUpdated {} -> False
     CIRcvConnEvent _ -> True
     CIRcvChatFeature {} -> False
     CIRcvChatPreference {} -> False
@@ -252,6 +255,7 @@ ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayN
 rcvDirectEventToText :: RcvDirectEvent -> Text
 rcvDirectEventToText = \case
   RDEContactDeleted -> "contact deleted"
+  RDEProfileUpdated {} -> "updated profile"
 
 rcvGroupEventToText :: RcvGroupEvent -> Text
 rcvGroupEventToText = \case
@@ -266,6 +270,7 @@ rcvGroupEventToText = \case
   RGEGroupUpdated _ -> "group profile updated"
   RGEInvitedViaGroupLink -> "invited via your group link"
   RGEMemberCreatedContact -> "started direct connection with you"
+  RGEMemberProfileUpdated {} -> "updated profile"
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case

@@ -1644,10 +1644,6 @@ data class ChatItem (
 
   val encryptedFile: Boolean? = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
 
-  val encryptLocalFile: Boolean
-    get() = content.msgContent !is MsgContent.MCVideo &&
-        chatController.appPrefs.privacyEncryptLocalFiles.get()
-
   val memberDisplayName: String? get() =
     if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.chatViewName
     else null
@@ -2432,10 +2428,36 @@ data class CryptoFile(
     tmpFile?.delete()
   }
 
+  private fun decryptToTmpFile(): URI? {
+    val absoluteFilePath = if (isAbsolutePath) filePath else getAppFilePath(filePath)
+    val tmpFile = createTmpFileIfNeeded()
+    decryptCryptoFile(absoluteFilePath, cryptoArgs ?: return null, tmpFile.absolutePath)
+    return tmpFile.toURI()
+  }
+
+  fun decryptedGet(): URI? {
+    val decrypted = decryptedUris[filePath]
+    return if (decrypted != null && decrypted.toFile().exists()) {
+      decrypted
+    } else {
+      null
+    }
+  }
+
+  fun decryptedGetOrCreate(): URI? {
+    val decrypted = decryptedGet() ?: decryptToTmpFile()
+    if (decrypted != null) {
+      decryptedUris[filePath] = decrypted
+    }
+    return decrypted
+  }
+
   companion object {
     fun plain(f: String): CryptoFile = CryptoFile(f, null)
 
     fun desktopPlain(f: URI): CryptoFile = CryptoFile(f.toFile().absolutePath, null)
+
+    private val decryptedUris = mutableMapOf<String, URI>()
   }
 }
 

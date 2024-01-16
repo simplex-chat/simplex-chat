@@ -2292,11 +2292,6 @@ public struct ChatItem: Identifiable, Decodable {
         return fileSource.cryptoArgs != nil
     }
 
-    public var encryptLocalFile: Bool {
-        content.msgContent?.isVideo == false &&
-        privacyEncryptLocalFilesGroupDefault.get()
-    }
-
     public var memberDisplayName: String? {
         get {
             if case let .groupRcv(groupMember) = chatDir {
@@ -2966,6 +2961,39 @@ public struct CryptoFile: Codable {
     public static func plain(_ f: String) -> CryptoFile {
         CryptoFile(filePath: f, cryptoArgs: nil)
     }
+
+    private func decryptToTmpFile(_ filesToDelete: inout Set<URL>) async -> URL? {
+        if let cfArgs = cryptoArgs {
+            let url = getAppFilePath(filePath)
+            let tempUrl = getTempFilesDirectory().appendingPathComponent(filePath)
+            _ = filesToDelete.insert(tempUrl)
+            do {
+                try decryptCryptoFile(fromPath: url.path, cryptoArgs: cfArgs, toPath: tempUrl.path)
+                return tempUrl
+            } catch {
+                logger.error("Error decrypting file: \(error.localizedDescription)")
+            }
+        }
+        return nil
+    }
+
+   public func decryptedGet() -> URL? {
+        let decrypted = CryptoFile.decryptedUrls[filePath]
+        return if let decrypted = decrypted, FileManager.default.fileExists(atPath: decrypted.path) { decrypted } else { nil }
+    }
+
+    public func decryptedGetOrCreate(_ filesToDelete: inout Set<URL>) async -> URL? {
+        if let decrypted = decryptedGet() {
+            return decrypted
+        } else if let decrypted = await decryptToTmpFile(&filesToDelete) {
+            CryptoFile.decryptedUrls[filePath] = decrypted
+            return decrypted
+        } else {
+            return nil
+        }
+    }
+
+    static var decryptedUrls = Dictionary<String, URL>()
 }
 
 public struct CryptoFileArgs: Codable {

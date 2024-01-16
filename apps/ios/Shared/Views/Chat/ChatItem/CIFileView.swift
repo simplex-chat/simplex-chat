@@ -85,8 +85,7 @@ struct CIFileView: View {
                     Task {
                         logger.debug("CIFileView fileAction - in .rcvInvitation, in Task")
                         if let user = m.currentUser {
-                            let encrypted = privacyEncryptLocalFilesGroupDefault.get()
-                            await receiveFile(user: user, fileId: file.fileId, encrypted: encrypted)
+                            await receiveFile(user: user, fileId: file.fileId)
                         }
                     }
                 } else {

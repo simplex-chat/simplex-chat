@@ -32,11 +32,10 @@ import java.net.URI
 fun CIImageView(
   image: String,
   file: CIFile?,
-  encryptLocalFile: Boolean,
   metaColor: Color,
   imageProvider: () -> ImageGalleryProvider,
   showMenu: MutableState<Boolean>,
-  receiveFile: (Long, Boolean) -> Unit
+  receiveFile: (Long) -> Unit
 ) {
   @Composable
   fun progressIndicator() {
@@ -181,7 +180,7 @@ fun CIImageView(
           when (file.fileStatus) {
             CIFileStatus.RcvInvitation ->
               if (fileSizeValid()) {
-                receiveFile(file.fileId, encryptLocalFile)
+                receiveFile(file.fileId)
               } else {
                 AlertManager.shared.showAlertMsg(
                   generalGetString(MR.strings.large_file),
