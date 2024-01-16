@@ -636,7 +636,7 @@ struct ChatView: View {
                     Button("Delete for me", role: .destructive) {
                         deleteMessage(.cidmInternal)
                     }
-                    if let di = deletingItem, di.meta.editable {
+                    if let di = deletingItem, di.meta.editable && !di.localNote {
                         Button(broadcastDeleteButtonText, role: .destructive) {
                             deleteMessage(.cidmBroadcast)
                         }
@@ -748,9 +748,9 @@ struct ChatView: View {
                 if revealed {
                     menu.append(hideUIAction())
                 }
-                if ci.meta.itemDeleted == nil,
+                if ci.meta.itemDeleted == nil && !ci.localNote,
                    let file = ci.file,
-                   let cancelAction = file.cancelAction  {
+                   let cancelAction = file.cancelAction {
                     menu.append(cancelFileUIAction(file.fileId, cancelAction))
                 }
                 if !live || !ci.meta.isLive {

@@ -88,8 +88,9 @@ struct CIImageView: View {
             switch file.fileStatus {
             case .sndStored:
                 switch file.fileProtocol {
-                case .xftp, .local: progressView()
+                case .xftp: progressView()
                 case .smp: EmptyView()
+                case .local: EmptyView()
                 }
             case .sndTransfer: progressView()
             case .sndComplete: fileIcon("checkmark", 10, 13)

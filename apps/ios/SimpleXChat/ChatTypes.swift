@@ -1110,7 +1110,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             switch self {
             case let .direct(contact): return contact.localDisplayName
             case let .group(groupInfo): return groupInfo.localDisplayName
-            case .local: return ChatInfo.privateNotesChatName
+            case .local: return ""
             case let .contactRequest(contactRequest): return contactRequest.localDisplayName
             case let .contactConnection(contactConnection): return contactConnection.localDisplayName
             case .invalidJSON: return ChatInfo.invalidChatName
@@ -1283,6 +1283,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             case .voice: return prefs.voice.on
             case .calls: return false
             }
+        case .local: return true
         default: return false
         }
     }
@@ -2272,7 +2273,7 @@ public struct ChatItem: Identifiable, Decodable {
     }
 
     public var allowAddReaction: Bool {
-        meta.itemDeleted == nil && !isLiveDummy && reactions.filter({ $0.userReacted }).count < 3
+        return !localNote && meta.itemDeleted == nil && !isLiveDummy && reactions.filter({ $0.userReacted }).count < 3
     }
 
     public func autoReceiveFile() -> CIFile? {
@@ -2299,6 +2300,13 @@ public struct ChatItem: Identifiable, Decodable {
             } else {
                 return nil
             }
+        }
+    }
+
+    public var localNote: Bool {
+        switch chatDir {
+        case .localSnd, .localRcv: return true
+        default: return false
         }
     }
 

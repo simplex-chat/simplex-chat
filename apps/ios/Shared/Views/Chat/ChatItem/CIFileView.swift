@@ -123,8 +123,9 @@ struct CIFileView: View {
             switch file.fileStatus {
             case .sndStored:
                 switch file.fileProtocol {
-                case .xftp, .local: progressView()
+                case .xftp: progressView()
                 case .smp: fileIcon("doc.fill")
+                case .local: EmptyView()
                 }
             case let .sndTransfer(sndProgress, sndTotal):
                 switch file.fileProtocol {
