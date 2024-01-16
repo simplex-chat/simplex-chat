@@ -375,7 +375,7 @@ struct CIVideoView: View {
         }
     }
 
-    private func decrypt(file: CIFile, onDone: (() -> Void)? = nil) {
+    private func decrypt(file: CIFile, completed: (() -> Void)? = nil) {
         if decryptionInProgress { return }
         decryptionInProgress = true
         Task {
@@ -386,7 +386,7 @@ struct CIVideoView: View {
                     fullPlayer = AVPlayer(url: decrypted)
                 }
                 decryptionInProgress = true
-                onDone?()
+                completed?()
             }
         }
     }
