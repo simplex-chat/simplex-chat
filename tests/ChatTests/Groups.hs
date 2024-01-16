@@ -145,6 +145,7 @@ chatGroupTests = do
     it "messages are marked as moderated" testBlockForAllModerated
     it "messages are fully deleted" testBlockForAllFullDelete
     it "another admin can unblock" testBlockForAllAnotherAdminUnblocks
+    it "can't repeat block/unblock" testBlockForAllCantRepeat
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -5868,6 +5869,52 @@ testBlockForAllAnotherAdminUnblocks =
       cath <## "#team: you unblocked bob"
       alice <## "#team: cath unblocked bob"
       bob <// 50000
+
+      bob #> "#team 3"
+      [alice, cath] *<# "#team bob> 3"
+
+      bob #$> ("/_get chat #1 count=3", chat, [(1, "1"), (1, "2"), (1, "3")])
+
+testBlockForAllCantRepeat :: HasCallStack => FilePath -> IO ()
+testBlockForAllCantRepeat =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      alice ##> "/unblock #team bob"
+      alice <## "bad chat command: already unblocked"
+
+      cath ##> "/unblock #team bob"
+      cath <## "bad chat command: already unblocked"
+
+      bob #> "#team 1"
+      [alice, cath] *<# "#team bob> 1"
+
+      alice ##> "/block #team bob"
+      alice <## "#team: you blocked bob"
+      cath <## "#team: alice blocked bob"
+      bob <// 50000
+
+      alice ##> "/block #team bob"
+      alice <## "bad chat command: already blocked"
+
+      cath ##> "/block #team bob"
+      cath <## "bad chat command: already blocked"
+
+      bob #> "#team 2"
+      alice <# "#team bob> [marked deleted by you] 2"
+      cath <# "#team bob> [marked deleted by alice] 2"
+
+      cath ##> "/unblock #team bob"
+      cath <## "#team: you unblocked bob"
+      alice <## "#team: cath unblocked bob"
+      bob <// 50000
+
+      alice ##> "/unblock #team bob"
+      alice <## "bad chat command: already unblocked"
+
+      cath ##> "/unblock #team bob"
+      cath <## "bad chat command: already unblocked"
 
       bob #> "#team 3"
       [alice, cath] *<# "#team bob> 3"
