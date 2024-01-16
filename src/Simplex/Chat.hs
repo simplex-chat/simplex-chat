@@ -1424,7 +1424,7 @@ processChatCommand' vr = \case
       forAll
         GroupInfo {membership = GroupMember {memberRole = membershipMemRole}}
         GroupMember {memberRole} =
-          membershipMemRole >= memberRole
+          membershipMemRole >= GRAdmin && membershipMemRole >= memberRole
   ContactInfo cName -> withContactName cName APIContactInfo
   ShowGroupInfo gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
