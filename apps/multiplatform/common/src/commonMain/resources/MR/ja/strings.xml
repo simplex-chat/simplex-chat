@@ -1556,4 +1556,24 @@
     <string name="no_connected_mobile">未接続のモバイル</string>
     <string name="search_or_paste_simplex_link">検索またはSimpleXリンクをペースト</string>
     <string name="blocked_item_description">ブロック済</string>
+    <string name="agent_internal_error_title">内部エラー</string>
+    <string name="agent_critical_error_title">重大エラー</string>
+    <string name="failed_to_create_user_invalid_title">表示名が無効です！</string>
+    <string name="remote_host_was_disconnected_title">切断されました。</string>
+    <string name="remote_ctrl_was_disconnected_title">切断されました。</string>
+    <string name="remote_host_disconnected_from">携帯 <b>%s</b> が次の理由で切断されました： %s</string>
+    <string name="remote_ctrl_disconnected_with_reason">次の理由で切断されました： %s</string>
+    <string name="remote_ctrl_error_bad_state">PC版との接続が不安定</string>
+    <string name="remote_host_error_bad_state">携帯 <b>%s</b> との接続が不安定</string>
+    <string name="remote_ctrl_error_inactive">PC版が非アクティブ</string>
+    <string name="remote_host_error_bad_version">携帯版 <b>%s</b> のバージョンがサポートされてません。。両端末のバージョンが同じかどうか、ご確認ください。</string>
+    <string name="remote_ctrl_error_bad_invitation">PC版の招待コードが正しくない</string>
+    <string name="remote_ctrl_error_busy">PC版が処理中</string>
+    <string name="remote_ctrl_error_disconnected">PC版が切断されました</string>
+    <string name="remote_ctrl_error_bad_version">ご利用のPC版のバージョンがサポートされてません。両端末が同じバージョンかどうか、ご確認ください。</string>
+    <string name="possible_deadlock_title">デッドロック状態</string>
+    <string name="developer_options_section">開発者向けの設定</string>
+    <string name="possible_deadlock_desc">処理時間が異常にかかるようです: %1$d 秒。アプリが固まった恐れがあります: %2$s</string>
+    <string name="remote_host_error_busy">携帯版 <b>%s</b> がただいま処理中</string>
+    <string name="possible_slow_function_desc">機能の処理時間が以上にかかってます: %1$d 秒: %2$s</string>
 </resources>
