@@ -678,7 +678,7 @@
     <string name="video_call_no_encryption">videochiamata (non crittografata e2e)</string>
     <string name="onboarding_notifications_mode_off">Quando l\'app è in esecuzione</string>
     <string name="contact_wants_to_connect_via_call">%1$s vuole connettersi con te via</string>
-    <string name="you_control_servers_to_receive_your_contacts_to_send"><![CDATA[Puoi controllare attraverso quale/i server <b>ricevere</b> i messaggi, i tuoi contatti – i server che usi per inviare loro i messaggi.]]></string>
+    <string name="you_control_servers_to_receive_your_contacts_to_send">Tu decidi attraverso quale/i server <b>ricevere</b> i messaggi, i tuoi contatti quali server usi per inviare loro i messaggi.</string>
     <string name="alert_text_skipped_messages_it_can_happen_when">Può accadere quando:
 \n1. I messaggi sono scaduti sul client mittente dopo 2 giorni o sul server dopo 30 giorni.
 \n2. La decifrazione del messaggio è fallita, perché tu o il tuo contatto avete usato un backup del database vecchio.
