@@ -4540,43 +4540,54 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         e -> throwError e
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> UTCTime -> Bool -> m ()
-    newGroupContentMessage gInfo m@GroupMember {memberId, memberRole} mc msg@RcvMessage {sharedMsgId_} brokerTs forwarded
-      | isVoice content && not (groupFeatureAllowed SGFVoice gInfo) = rejected GFVoice
-      | not (isVoice content) && isJust fInv_ && not (groupFeatureAllowed SGFFiles gInfo) = rejected GFFiles
-      | otherwise = do
-          let timed_ =
-                if forwarded
-                  then rcvCITimed_ (Just Nothing) itemTTL
-                  else rcvGroupCITimed gInfo itemTTL
-              live = fromMaybe False live_
-          withStore' (\db -> getCIModeration db user gInfo memberId sharedMsgId_) >>= \case
-            Just ciModeration -> do
-              applyModeration timed_ live ciModeration
-              withStore' $ \db -> deleteCIModeration db gInfo memberId sharedMsgId_
-            Nothing -> createItem timed_ live
-      where
-        rejected f = void $ newChatItem (CIRcvGroupFeatureRejected f) Nothing Nothing False
-        ExtMsgContent content fInv_ itemTTL live_ = mcExtMsgContent mc
-        applyModeration timed_ live CIModeration {moderatorMember = moderator@GroupMember {memberRole = moderatorRole}, createdByMsgId, moderatedAt}
-          | moderatorRole < GRAdmin || moderatorRole < memberRole =
-              createItem timed_ live
-          | groupFeatureAllowed SGFFullDelete gInfo = do
-              ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs CIRcvModerated Nothing timed_ False
-              ci' <- withStore' $ \db -> updateGroupChatItemModerated db user gInfo ci moderator moderatedAt
-              toView $ CRNewChatItem user $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci'
-          | otherwise = do
-              file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
-              ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs (CIRcvMsgContent content) (snd <$> file_) timed_ False
-              toView =<< markGroupCIDeleted user gInfo ci createdByMsgId False (Just moderator) moderatedAt
-        createItem timed_ live = do
-          file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
-          newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ live
-          when (showMessages $ memberSettings m) $ autoAcceptFile file_
-        newChatItem ciContent ciFile_ timed_ live = do
-          ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs ciContent ciFile_ timed_ live
-          ci' <- processMemberBlocked m ci $ withStore' $ \db -> markGroupChatItemBlocked db user gInfo ci
-          reactions <- maybe (pure []) (\sharedMsgId -> withStore' $ \db -> getGroupCIReactions db gInfo memberId sharedMsgId) sharedMsgId_
-          groupMsgToView gInfo ci' {reactions}
+    newGroupContentMessage
+      gInfo@GroupInfo {groupId}
+      m@GroupMember {memberId, memberRole, blockedByGroupMemberId}
+      mc
+      msg@RcvMessage {msgId, sharedMsgId_}
+      brokerTs
+      forwarded
+        | isVoice content && not (groupFeatureAllowed SGFVoice gInfo) = rejected GFVoice
+        | not (isVoice content) && isJust fInv_ && not (groupFeatureAllowed SGFFiles gInfo) = rejected GFFiles
+        | otherwise =
+            case blockedByGroupMemberId of
+              Just blockedByGMId ->
+                withStore' (\db -> runExceptT $ getGroupMember db user groupId blockedByGMId) >>= \case
+                  Right blockedByGM -> applyModeration' timed' live' blockedByGM msgId brokerTs
+                  Left _ -> createItem timed' live'
+              Nothing ->
+                withStore' (\db -> getCIModeration db user gInfo memberId sharedMsgId_) >>= \case
+                  Just ciModeration -> do
+                    applyModeration timed' live' ciModeration
+                    withStore' $ \db -> deleteCIModeration db gInfo memberId sharedMsgId_
+                  Nothing -> createItem timed' live'
+        where
+          rejected f = void $ newChatItem (CIRcvGroupFeatureRejected f) Nothing Nothing False
+          timed' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo itemTTL
+          live' = fromMaybe False live_
+          ExtMsgContent content fInv_ itemTTL live_ = mcExtMsgContent mc
+          applyModeration timed_ live CIModeration {moderatorMember, createdByMsgId, moderatedAt} =
+            applyModeration' timed_ live moderatorMember createdByMsgId moderatedAt
+          applyModeration' timed_ live moderator@GroupMember {memberRole = moderatorRole} createdByMsgId moderatedAt
+            | moderatorRole < GRAdmin || moderatorRole < memberRole =
+                createItem timed_ live
+            | groupFeatureAllowed SGFFullDelete gInfo = do
+                ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs CIRcvModerated Nothing timed_ False
+                ci' <- withStore' $ \db -> updateGroupChatItemModerated db user gInfo ci moderator moderatedAt
+                toView $ CRNewChatItem user $ AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci'
+            | otherwise = do
+                file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
+                ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs (CIRcvMsgContent content) (snd <$> file_) timed_ False
+                toView =<< markGroupCIDeleted user gInfo ci createdByMsgId False (Just moderator) moderatedAt
+          createItem timed_ live = do
+            file_ <- processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m
+            newChatItem (CIRcvMsgContent content) (snd <$> file_) timed_ live
+            when (showMessages $ memberSettings m) $ autoAcceptFile file_
+          newChatItem ciContent ciFile_ timed_ live = do
+            ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs ciContent ciFile_ timed_ live
+            ci' <- blockedMember m ci $ withStore' $ \db -> markGroupChatItemBlocked db user gInfo ci
+            reactions <- maybe (pure []) (\sharedMsgId -> withStore' $ \db -> getGroupCIReactions db gInfo memberId sharedMsgId) sharedMsgId_
+            groupMsgToView gInfo ci' {reactions}
 
     groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> m ()
     groupMessageUpdate gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId, memberId} sharedMsgId mc msg@RcvMessage {msgId} brokerTs ttl_ live_ =
@@ -4589,7 +4600,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         ci' <- withStore' $ \db -> do
           createChatItemVersion db (chatItemId' ci) brokerTs mc
           ci' <- updateGroupChatItem db user groupId ci content live Nothing
-          processMemberBlocked m ci' $ markGroupChatItemBlocked db user gInfo ci'
+          blockedMember m ci' $ markGroupChatItemBlocked db user gInfo ci'
         toView $ CRChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo) ci')
       where
         content = CIRcvMsgContent mc
@@ -4665,12 +4676,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       let fileProtocol = if isJust xftpRcvFile then FPXFTP else FPSMP
           ciFile = Just $ CIFile {fileId, fileName, fileSize, fileSource = Nothing, fileStatus = CIFSRcvInvitation, fileProtocol}
       ci <- saveRcvChatItem' user (CDGroupRcv gInfo m) msg sharedMsgId_ brokerTs (CIRcvMsgContent $ MCFile "") ciFile Nothing False
-      ci' <- processMemberBlocked m ci $ withStore' $ \db -> markGroupChatItemBlocked db user gInfo ci
+      ci' <- blockedMember m ci $ withStore' $ \db -> markGroupChatItemBlocked db user gInfo ci
       groupMsgToView gInfo ci'
 
     -- TODO if member is blocked by another member, mark as moderated (newGroupContentMessage applyModeration)
-    processMemberBlocked :: Monad m' => GroupMember -> ChatItem c d -> m' (ChatItem c d) -> m' (ChatItem c d)
-    processMemberBlocked m ci blockedCI
+    blockedMember :: Monad m' => GroupMember -> ChatItem c d -> m' (ChatItem c d) -> m' (ChatItem c d)
+    blockedMember m ci blockedCI
       | showMessages (memberSettings m) = pure ci
       | otherwise = blockedCI
 
