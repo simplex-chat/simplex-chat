@@ -295,7 +295,7 @@ struct ComposeView: View {
                             sendMessage(ttl: ttl)
                             resetLinkPreview()
                         },
-                        sendLiveMessage: sendLiveMessage,
+                        sendLiveMessage: chat.chatInfo.chatType != .local ? sendLiveMessage : nil,
                         updateLiveMessage: updateLiveMessage,
                         cancelLiveMessage: {
                             composeState.liveMessage = nil
