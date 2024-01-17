@@ -19,7 +19,7 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Version
 import System.Directory (copyFile)
 import System.FilePath ((</>))
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 chatGroupTests :: SpecWith FilePath
 chatGroupTests = do

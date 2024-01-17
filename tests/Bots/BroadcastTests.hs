@@ -15,7 +15,7 @@ import Simplex.Chat.Core
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Types (Profile (..))
 import System.FilePath ((</>))
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 broadcastBotTests :: SpecWith FilePath
 broadcastBotTests = do
