@@ -582,7 +582,7 @@
     <string name="v4_5_private_filenames">プライベートなファイル名</string>
     <string name="v4_5_reduced_battery_usage">電池使用量低減</string>
     <string name="error_removing_member">メンバー削除でエラー発生</string>
-    <string name="conn_level_desc_indirect">間接 (%1$s)</string>
+    <string name="conn_level_desc_indirect">間接 (<xliff:g xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2" id="conn_level">%1$s</xliff:g>)</string>
     <string name="incognito">シークレットモード</string>
     <string name="incognito_info_protects">シークレット モードでは、連絡先ごとに新しいランダムなプロファイルを使用してプライバシーを保護します。</string>
     <string name="chat_preferences_no">いいえ</string>
