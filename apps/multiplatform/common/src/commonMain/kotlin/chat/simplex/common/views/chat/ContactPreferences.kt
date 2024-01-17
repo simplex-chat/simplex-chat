@@ -35,7 +35,7 @@ fun ContactPreferencesView(
   var currentFeaturesAllowed by rememberSaveable(ct, stateSaver = serializableSaver()) { mutableStateOf(featuresAllowed) }
 
   fun savePrefs(afterSave: () -> Unit = {}) {
-    withApi {
+    withBGApi {
       val prefs = contactFeaturesAllowedToPrefs(featuresAllowed)
       val toContact = m.controller.apiSetContactPrefs(rhId, ct.contactId, prefs)
       if (toContact != null) {

@@ -31,8 +31,8 @@ import chat.simplex.common.views.remote.*
 import chat.simplex.common.views.usersettings.doWithAuth
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 @Composable
@@ -117,7 +117,9 @@ fun UserPicker(
   LaunchedEffect(Unit) {
     // Controller.ctrl can be null when self-destructing activates
     if (controller.ctrl != null && controller.ctrl != -1L) {
-      controller.reloadRemoteHosts()
+      withBGApi {
+        controller.reloadRemoteHosts()
+      }
     }
   }
   val UsersView: @Composable ColumnScope.() -> Unit = {
@@ -125,7 +127,7 @@ fun UserPicker(
       UserProfilePickerItem(u.user, u.unreadCount, openSettings = settingsClicked) {
         userPickerState.value = AnimatedViewState.HIDING
         if (!u.user.activeUser) {
-          scope.launch {
+          withBGApi {
             controller.showProgressIfNeeded {
               ModalManager.closeAllModalsEverywhere()
               chatModel.controller.changeActiveUser(u.user.remoteHostId, u.user.userId, null)
@@ -243,23 +245,31 @@ fun UserPicker(
 }
 
 @Composable
-fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit = {}, openSettings: () -> Unit = {}, onClick: () -> Unit) {
+fun UserProfilePickerItem(
+  u: User,
+  unreadCount: Int = 0,
+  enabled: Boolean = chatModel.chatRunning.value == true || chatModel.connectedToRemote,
+  onLongClick: () -> Unit = {},
+  openSettings: () -> Unit = {},
+  onClick: () -> Unit
+) {
   Row(
     Modifier
       .fillMaxWidth()
       .sizeIn(minHeight = 46.dp)
       .combinedClickable(
+        enabled = enabled,
         onClick = if (u.activeUser) openSettings else onClick,
         onLongClick = onLongClick,
         interactionSource = remember { MutableInteractionSource() },
         indication = if (!u.activeUser) LocalIndication.current else null
       )
-      .onRightClick { onLongClick() }
+      .onRightClick { if (enabled) onLongClick() }
       .padding(start = DEFAULT_PADDING_HALF, end = DEFAULT_PADDING),
     horizontalArrangement = Arrangement.SpaceBetween,
     verticalAlignment = Alignment.CenterVertically
   ) {
-    UserProfileRow(u)
+    UserProfileRow(u, enabled)
     if (u.activeUser) {
       Icon(painterResource(MR.images.ic_done_filled), null, Modifier.size(20.dp), tint = MaterialTheme.colors.onBackground)
     } else if (u.hidden) {
@@ -287,7 +297,7 @@ fun UserProfilePickerItem(u: User, unreadCount: Int = 0, onLongClick: () -> Unit
 }
 
 @Composable
-fun UserProfileRow(u: User) {
+fun UserProfileRow(u: User, enabled: Boolean = chatModel.chatRunning.value == true || chatModel.connectedToRemote) {
   Row(
     Modifier
       .widthIn(max = windowWidth() * 0.7f)
@@ -302,7 +312,7 @@ fun UserProfileRow(u: User) {
       u.displayName,
       modifier = Modifier
         .padding(start = 10.dp, end = 8.dp),
-      color = MenuTextColor,
+      color = if (enabled) MenuTextColor else MaterialTheme.colors.secondary,
       fontWeight = if (u.activeUser) FontWeight.Medium else FontWeight.Normal
     )
   }

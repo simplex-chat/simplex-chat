@@ -371,7 +371,7 @@ private fun createInvitation(
 ) {
   if (connReqInvitation.isNotEmpty() || contactConnection.value != null || creatingConnReq.value) return
   creatingConnReq.value = true
-  withApi {
+  withBGApi {
     val (r, alert) = controller.apiAddContact(rhId, incognito = controller.appPrefs.incognito.get())
     if (r != null) {
       chatModel.updateContactConnection(rhId, r.second)

@@ -43,7 +43,7 @@ import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import System.Directory (copyFile)
 import System.FilePath ((</>))
 import System.IO (utf8)
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 mobileTests :: HasCallStack => SpecWith FilePath
 mobileTests = do

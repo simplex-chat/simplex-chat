@@ -89,7 +89,7 @@ enum class MigrationConfirmation(val value: String) {
 }
 
 fun defaultMigrationConfirmation(appPrefs: AppPreferences): MigrationConfirmation =
-  if (appPrefs.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
+  if (appPrefs.developerTools.get() && appPrefs.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
 
 @Serializable
 sealed class MigrationError {

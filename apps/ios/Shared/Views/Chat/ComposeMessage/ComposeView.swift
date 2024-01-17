@@ -689,7 +689,7 @@ struct ComposeView: View {
                 let file = voiceCryptoFile(recordingFileName)
                 sent = await send(.voice(text: msgText, duration: duration), quoted: quoted, file: file, ttl: ttl)
             case let .filePreview(_, file):
-                if let savedFile = saveFileFromURL(file, encrypted: privacyEncryptLocalFilesGroupDefault.get()) {
+                if let savedFile = saveFileFromURL(file) {
                     sent = await send(.file(msgText), quoted: quoted, file: savedFile, live: live, ttl: ttl)
                 }
             }

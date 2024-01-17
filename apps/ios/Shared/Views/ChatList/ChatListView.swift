@@ -160,7 +160,7 @@ struct ChatListView: View {
                     ForEach(cs, id: \.viewId) { chat in
                         ChatListNavLink(chat: chat)
                             .padding(.trailing, -16)
-                            .disabled(chatModel.chatRunning != true)
+                            .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                     }
                     .offset(x: -8)
                 }

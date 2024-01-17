@@ -62,7 +62,7 @@ fun DatabaseEncryptionView(m: ChatModel) {
       initialRandomDBPassphrase,
       progressIndicator,
       onConfirmEncrypt = {
-        withApi {
+        withBGApi {
           encryptDatabase(currentKey, newKey, confirmNewKey, initialRandomDBPassphrase, useKeychain, storedKey, progressIndicator)
         }
       }

@@ -38,7 +38,9 @@ import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.runBlocking
 
 @Composable
 fun ConnectMobileView() {
@@ -46,7 +48,9 @@ fun ConnectMobileView() {
   val remoteHosts = remember { chatModel.remoteHosts }
   val deviceName = chatModel.controller.appPrefs.deviceNameForRemoteAccess
   LaunchedEffect(Unit) {
-    controller.reloadRemoteHosts()
+    withBGApi {
+      controller.reloadRemoteHosts()
+    }
   }
   ConnectMobileLayout(
     deviceName = remember { deviceName.state },

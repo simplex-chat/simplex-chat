@@ -24,7 +24,7 @@ fun SetDeliveryReceiptsView(m: ChatModel) {
     enableReceipts = {
       val currentUser = m.currentUser.value
       if (currentUser != null) {
-        withApi {
+        withBGApi {
           try {
             m.controller.apiSetAllContactReceipts(currentUser.remoteHostId, enable = true)
             m.currentUser.value = currentUser.copy(sendRcptsContacts = true)
