@@ -192,7 +192,7 @@ fun DeleteButton(onClick: () -> Unit) {
   )
 }
 
-private fun setContactAlias(rhId: Long?, contactConnection: PendingContactConnection, localAlias: String, chatModel: ChatModel) = withApi {
+private fun setContactAlias(rhId: Long?, contactConnection: PendingContactConnection, localAlias: String, chatModel: ChatModel) = withBGApi {
   chatModel.controller.apiSetConnectionAlias(rhId, contactConnection.pccConnId, localAlias)?.let {
     chatModel.updateContactConnection(rhId, it)
   }

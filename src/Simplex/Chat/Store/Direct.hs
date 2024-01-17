@@ -9,9 +9,11 @@
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Store.Direct
-  ( updateContact_,
+  ( updateContactLDN_,
     updateContactProfile_,
     updateContactProfile_',
+    updateMemberContactProfile_,
+    updateMemberContactProfile_',
     deleteContactProfile_,
     deleteUnusedProfile_,
 
@@ -316,7 +318,7 @@ updateContactProfile db user@User {userId} c p'
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
         updateContactProfile_' db userId profileId p' currentTs
-        updateContact_ db userId contactId localDisplayName ldn currentTs
+        updateContactLDN_ db userId contactId localDisplayName ldn currentTs
         pure $ Right c {localDisplayName = ldn, profile, mergedPreferences}
   where
     Contact {contactId, localDisplayName, profile = LocalProfile {profileId, displayName, localAlias}, userPreferences} = c
@@ -398,6 +400,7 @@ setUserChatsRead db User {userId} = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE contacts SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND unread_chat = ?" (False, updatedAt, userId, True)
   DB.execute db "UPDATE groups SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND unread_chat = ?" (False, updatedAt, userId, True)
+  DB.execute db "UPDATE note_folders SET unread_chat = ?, updated_at = ? WHERE user_id = ? AND unread_chat = ?" (False, updatedAt, userId, True)
   DB.execute db "UPDATE chat_items SET item_status = ?, updated_at = ? WHERE user_id = ? AND item_status = ?" (CISRcvRead, updatedAt, userId, CISRcvNew)
 
 updateContactStatus :: DB.Connection -> User -> Contact -> ContactStatus -> IO Contact
@@ -452,8 +455,25 @@ updateContactProfile_' db userId profileId Profile {displayName, fullName, image
     |]
     (displayName, fullName, image, contactLink, preferences, updatedAt, userId, profileId)
 
-updateContact_ :: DB.Connection -> UserId -> Int64 -> ContactName -> ContactName -> UTCTime -> IO ()
-updateContact_ db userId contactId displayName newName updatedAt = do
+-- update only member profile fields
+updateMemberContactProfile_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()
+updateMemberContactProfile_ db userId profileId profile = do
+  currentTs <- getCurrentTime
+  updateMemberContactProfile_' db userId profileId profile currentTs
+
+updateMemberContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
+updateMemberContactProfile_' db userId profileId Profile {displayName, fullName, image} updatedAt = do
+  DB.execute
+    db
+    [sql|
+      UPDATE contact_profiles
+      SET display_name = ?, full_name = ?, image = ?, updated_at = ?
+      WHERE user_id = ? AND contact_profile_id = ?
+    |]
+    (displayName, fullName, image, updatedAt, userId, profileId)
+
+updateContactLDN_ :: DB.Connection -> UserId -> Int64 -> ContactName -> ContactName -> UTCTime -> IO ()
+updateContactLDN_ db userId contactId displayName newName updatedAt = do
   DB.execute
     db
     "UPDATE contacts SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?"

@@ -56,6 +56,8 @@ object ChatModel {
   // current chat
   val chatId = mutableStateOf<String?>(null)
   val chatItems = mutableStateListOf<ChatItem>()
+  // rhId, chatId
+  val deletedChats = mutableStateOf<List<Pair<Long?, String>>>(emptyList())
   val chatItemStatuses = mutableMapOf<Long, CIStatus>()
   val groupMembers = mutableStateListOf<GroupMember>()
 
@@ -112,7 +114,8 @@ object ChatModel {
 
   val clipboardHasText = mutableStateOf(false)
 
-  var updatingChatsMutex: Mutex = Mutex()
+  val updatingChatsMutex: Mutex = Mutex()
+  val changingActiveUserMutex: Mutex = Mutex()
 
   val desktopNoUserNoRemote: Boolean @Composable get() = appPlatform.isDesktop && currentUser.value == null && currentRemoteHost.value == null
   fun desktopNoUserNoRemote(): Boolean = appPlatform.isDesktop && currentUser.value == null && currentRemoteHost.value == null
@@ -1258,19 +1261,36 @@ data class GroupMember (
   var activeConn: Connection? = null
 ) {
   val id: String get() = "#$groupId @$groupMemberId"
-  val displayName: String get() = memberProfile.localAlias.ifEmpty { memberProfile.displayName }
+  val displayName: String
+    get() {
+      val p = memberProfile
+      val name = p.localAlias.ifEmpty { p.displayName }
+      return pastMember(name)
+    }
   val fullName: String get() = memberProfile.fullName
   val image: String? get() = memberProfile.image
   val contactLink: String? = memberProfile.contactLink
   val verified get() = activeConn?.connectionCode != null
 
   val chatViewName: String
-    get() = memberProfile.localAlias.ifEmpty { displayName + (if (fullName == "" || fullName == displayName) "" else " / $fullName") }
+    get() {
+      val p = memberProfile
+      val name = p.localAlias.ifEmpty { p.displayName + (if (p.fullName == "" || p.fullName == p.displayName) "" else " / ${p.fullName}") }
+      return pastMember(name)
+    }
+
+  private fun pastMember(name: String): String {
+    return if (memberStatus == GroupMemberStatus.MemUnknown)
+      String.format(generalGetString(MR.strings.past_member_vName), name)
+    else
+      name
+  }
 
   val memberActive: Boolean get() = when (this.memberStatus) {
     GroupMemberStatus.MemRemoved -> false
     GroupMemberStatus.MemLeft -> false
     GroupMemberStatus.MemGroupDeleted -> false
+    GroupMemberStatus.MemUnknown -> false
     GroupMemberStatus.MemInvited -> false
     GroupMemberStatus.MemIntroduced -> false
     GroupMemberStatus.MemIntroInvited -> false
@@ -1285,6 +1305,7 @@ data class GroupMember (
     GroupMemberStatus.MemRemoved -> false
     GroupMemberStatus.MemLeft -> false
     GroupMemberStatus.MemGroupDeleted -> false
+    GroupMemberStatus.MemUnknown -> false
     GroupMemberStatus.MemInvited -> false
     GroupMemberStatus.MemIntroduced -> true
     GroupMemberStatus.MemIntroInvited -> true
@@ -1374,6 +1395,7 @@ enum class GroupMemberStatus {
   @SerialName("removed") MemRemoved,
   @SerialName("left") MemLeft,
   @SerialName("deleted") MemGroupDeleted,
+  @SerialName("unknown") MemUnknown,
   @SerialName("invited") MemInvited,
   @SerialName("introduced") MemIntroduced,
   @SerialName("intro-inv") MemIntroInvited,
@@ -1387,6 +1409,7 @@ enum class GroupMemberStatus {
     MemRemoved -> generalGetString(MR.strings.group_member_status_removed)
     MemLeft -> generalGetString(MR.strings.group_member_status_left)
     MemGroupDeleted -> generalGetString(MR.strings.group_member_status_group_deleted)
+    MemUnknown -> generalGetString(MR.strings.group_member_status_unknown)
     MemInvited -> generalGetString(MR.strings.group_member_status_invited)
     MemIntroduced -> generalGetString(MR.strings.group_member_status_introduced)
     MemIntroInvited -> generalGetString(MR.strings.group_member_status_intro_invitation)
@@ -1401,6 +1424,7 @@ enum class GroupMemberStatus {
     MemRemoved -> generalGetString(MR.strings.group_member_status_removed)
     MemLeft -> generalGetString(MR.strings.group_member_status_left)
     MemGroupDeleted -> generalGetString(MR.strings.group_member_status_group_deleted)
+    MemUnknown -> generalGetString(MR.strings.group_member_status_unknown_short)
     MemInvited -> generalGetString(MR.strings.group_member_status_invited)
     MemIntroduced -> generalGetString(MR.strings.group_member_status_connecting)
     MemIntroInvited -> generalGetString(MR.strings.group_member_status_connecting)
@@ -1619,10 +1643,6 @@ data class ChatItem (
   private val isLiveDummy: Boolean get() = meta.itemId == TEMP_LIVE_CHAT_ITEM_ID
 
   val encryptedFile: Boolean? = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
-
-  val encryptLocalFile: Boolean
-    get() = content.msgContent !is MsgContent.MCVideo &&
-        chatController.appPrefs.privacyEncryptLocalFiles.get()
 
   val memberDisplayName: String? get() =
     if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.chatViewName
@@ -2408,10 +2428,36 @@ data class CryptoFile(
     tmpFile?.delete()
   }
 
+  private fun decryptToTmpFile(): URI? {
+    val absoluteFilePath = if (isAbsolutePath) filePath else getAppFilePath(filePath)
+    val tmpFile = createTmpFileIfNeeded()
+    decryptCryptoFile(absoluteFilePath, cryptoArgs ?: return null, tmpFile.absolutePath)
+    return tmpFile.toURI()
+  }
+
+  fun decryptedGet(): URI? {
+    val decrypted = decryptedUris[filePath]
+    return if (decrypted != null && decrypted.toFile().exists()) {
+      decrypted
+    } else {
+      null
+    }
+  }
+
+  fun decryptedGetOrCreate(): URI? {
+    val decrypted = decryptedGet() ?: decryptToTmpFile()
+    if (decrypted != null) {
+      decryptedUris[filePath] = decrypted
+    }
+    return decrypted
+  }
+
   companion object {
     fun plain(f: String): CryptoFile = CryptoFile(f, null)
 
     fun desktopPlain(f: URI): CryptoFile = CryptoFile(f.toFile().absolutePath, null)
+
+    private val decryptedUris = mutableMapOf<String, URI>()
   }
 }
 

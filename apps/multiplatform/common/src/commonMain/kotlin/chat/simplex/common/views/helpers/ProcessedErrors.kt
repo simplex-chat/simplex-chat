@@ -43,9 +43,8 @@ class ProcessedErrors <T: AgentErrorType>(val interval: Long) {
             title = title,
             text = text,
             confirmText = generalGetString(MR.strings.restart_chat_button),
-            onConfirm = {
-              withApi { restartChatOrApp() }
-            })
+            onConfirm = ::restartChatOrApp
+          )
         } else {
           AlertManager.shared.showAlertMsg(
             title = title,
