@@ -3377,31 +3377,25 @@ public enum RcvDirectEvent: Decodable {
 
     private func profileUpdatedText(_ from: Profile, _ to: Profile) -> String {
         return if to.displayName != from.displayName || to.fullName != from.fullName {
-            String.localizedStringWithFormat(NSLocalizedString("contact %@ changed to %@", comment: "rcv direct event chat item"), from.profileViewName, to.profileViewName)
+            String.localizedStringWithFormat(NSLocalizedString("contact %@ changed to %@", comment: "profile update event chat item"), from.profileViewName, to.profileViewName)
         } else if to.image != from.image {
             if to.image == nil {
-                profileUpdatedRemovedPictureText
+                NSLocalizedString("removed profile picture", comment: "profile update event chat item")
             } else {
-                profileUpdatedSetNewPictureText
+                NSLocalizedString("set new profile picture", comment: "profile update event chat item")
             }
         } else if to.contactLink != from.contactLink {
             if to.contactLink == nil {
-                NSLocalizedString("removed contact address", comment: "rcv direct event chat item")
+                NSLocalizedString("removed contact address", comment: "profile update event chat item")
             } else {
-                NSLocalizedString("set new contact address", comment: "rcv direct event chat item")
+                NSLocalizedString("set new contact address", comment: "profile update event chat item")
             }
         } else {
             // shouldn't happen if backend correctly creates item; UI should be synchronized with backend
-            defaultProfileUpdatedText
+            NSLocalizedString("updated profile", comment: "profile update event chat item")
         }
     }
 }
-
-private var profileUpdatedRemovedPictureText: String = NSLocalizedString("removed profile picture", comment: "rcv direct or group event chat item")
-
-private var profileUpdatedSetNewPictureText: String = NSLocalizedString("set new profile picture", comment: "rcv direct or group event chat item")
-
-private var defaultProfileUpdatedText: String = NSLocalizedString("updated profile", comment: "rcv direct or group event chat item")
 
 public enum RcvGroupEvent: Decodable {
     case memberAdded(groupMemberId: Int64, profile: Profile)
@@ -3440,16 +3434,16 @@ public enum RcvGroupEvent: Decodable {
 
     private func profileUpdatedText(_ from: Profile, _ to: Profile) -> String {
         return if to.displayName != from.displayName || to.fullName != from.fullName {
-            String.localizedStringWithFormat(NSLocalizedString("member %@ changed to %@", comment: "rcv group event chat item"), from.profileViewName, to.profileViewName)
+            String.localizedStringWithFormat(NSLocalizedString("member %@ changed to %@", comment: "profile update event chat item"), from.profileViewName, to.profileViewName)
         } else if to.image != from.image {
             if to.image == nil {
-                profileUpdatedRemovedPictureText
+                NSLocalizedString("removed profile picture", comment: "profile update event chat item")
             } else {
-                profileUpdatedSetNewPictureText
+                NSLocalizedString("set new profile picture", comment: "profile update event chat item")
             }
         } else {
             // shouldn't happen if backend correctly creates item; UI should be synchronized with backend
-            defaultProfileUpdatedText
+            NSLocalizedString("updated profile", comment: "profile update event chat item")
         }
     }
 }
