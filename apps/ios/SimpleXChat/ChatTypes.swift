@@ -2244,7 +2244,11 @@ public struct ChatItem: Identifiable, Decodable {
         case .rcvDecryptionError: return showNtfDir
         case .rcvGroupInvitation: return showNtfDir
         case .sndGroupInvitation: return showNtfDir
-        case .rcvDirectEvent: return false
+        case .rcvDirectEvent(rcvDirectEvent: let rcvDirectEvent):
+            switch rcvDirectEvent {
+            case .contactDeleted: return false
+            case .profileUpdated: return true
+            }
         case .rcvGroupEvent(rcvGroupEvent: let rcvGroupEvent):
             switch rcvGroupEvent {
             case .groupUpdated: return false
@@ -2258,6 +2262,7 @@ public struct ChatItem: Identifiable, Decodable {
             case .memberDeleted: return false
             case .invitedViaGroupLink: return false
             case .memberCreatedContact: return false
+            case .memberProfileUpdated: return false
             }
         case .sndGroupEvent: return showNtfDir
         case .rcvConnEvent: return false
@@ -2298,12 +2303,17 @@ public struct ChatItem: Identifiable, Decodable {
     }
 
     public var memberDisplayName: String? {
-        get {
-            if case let .groupRcv(groupMember) = chatDir {
-                return groupMember.chatViewName
-            } else {
-                return nil
+        if case let .groupRcv(groupMember) = chatDir {
+            switch content {
+            case let .rcvGroupEvent(rcvGroupEvent: .memberProfileUpdated(fromProfile, toProfile)):
+                toProfile.displayName != fromProfile.displayName || toProfile.fullName != fromProfile.fullName
+                ? nil
+                : groupMember.chatViewName
+            default:
+                groupMember.chatViewName
             }
+        } else {
+            nil
         }
     }
 
@@ -3421,10 +3431,29 @@ public enum CIGroupInvitationStatus: String, Decodable {
 
 public enum RcvDirectEvent: Decodable {
     case contactDeleted
+    case profileUpdated(fromProfile: Profile, toProfile: Profile)
 
     var text: String {
         switch self {
         case .contactDeleted: return NSLocalizedString("deleted contact", comment: "rcv direct event chat item")
+        case let .profileUpdated(fromProfile, toProfile): return profileUpdatedText(fromProfile, toProfile)
+        }
+    }
+
+    private func profileUpdatedText(_ from: Profile, _ to: Profile) -> String {
+        if to.displayName != from.displayName || to.fullName != from.fullName {
+            String.localizedStringWithFormat(NSLocalizedString("contact %@ changed to %@", comment: "profile update event chat item"), from.profileViewName, to.profileViewName)
+        } else if to.image != from.image {
+            to.image == nil
+            ? NSLocalizedString("removed profile picture", comment: "profile update event chat item")
+            : NSLocalizedString("set new profile picture", comment: "profile update event chat item")
+        } else if to.contactLink != from.contactLink {
+            to.contactLink == nil
+            ? NSLocalizedString("removed contact address", comment: "profile update event chat item")
+            : NSLocalizedString("set new contact address", comment: "profile update event chat item")
+        } else {
+            // shouldn't happen if backend correctly creates item; UI should be synchronized with backend
+            NSLocalizedString("updated profile", comment: "profile update event chat item")
         }
     }
 }
@@ -3441,6 +3470,7 @@ public enum RcvGroupEvent: Decodable {
     case groupUpdated(groupProfile: GroupProfile)
     case invitedViaGroupLink
     case memberCreatedContact
+    case memberProfileUpdated(fromProfile: Profile, toProfile: Profile)
 
     var text: String {
         switch self {
@@ -3459,6 +3489,20 @@ public enum RcvGroupEvent: Decodable {
         case .groupUpdated: return NSLocalizedString("updated group profile", comment: "rcv group event chat item")
         case .invitedViaGroupLink: return NSLocalizedString("invited via your group link", comment: "rcv group event chat item")
         case .memberCreatedContact: return NSLocalizedString("connected directly", comment: "rcv group event chat item")
+        case let .memberProfileUpdated(fromProfile, toProfile): return profileUpdatedText(fromProfile, toProfile)
+        }
+    }
+
+    private func profileUpdatedText(_ from: Profile, _ to: Profile) -> String {
+        if to.displayName != from.displayName || to.fullName != from.fullName {
+            String.localizedStringWithFormat(NSLocalizedString("member %@ changed to %@", comment: "profile update event chat item"), from.profileViewName, to.profileViewName)
+        } else if to.image != from.image {
+            to.image == nil
+            ? NSLocalizedString("removed profile picture", comment: "profile update event chat item")
+            : NSLocalizedString("set new profile picture", comment: "profile update event chat item")
+        } else {
+            // shouldn't happen if backend correctly creates item; UI should be synchronized with backend
+            NSLocalizedString("updated profile", comment: "profile update event chat item")
         }
     }
 }

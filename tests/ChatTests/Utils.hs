@@ -35,7 +35,9 @@ import System.Environment (lookupEnv, withArgs)
 import System.FilePath ((</>))
 import System.IO.Silently (capture_)
 import System.Info (os)
-import Test.Hspec
+import Test.Hspec hiding (it)
+import qualified Test.Hspec as Hspec
+import UnliftIO (timeout)
 
 defaultPrefs :: Maybe Preferences
 defaultPrefs = Just $ toChatPrefs defaultChatPrefs
@@ -55,11 +57,17 @@ cathProfile = Profile {displayName = "cath", fullName = "Catherine", image = Not
 danProfile :: Profile
 danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
 
-xit' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
+it :: HasCallStack => String -> (FilePath -> Expectation) -> SpecWith (Arg (FilePath -> Expectation))
+it name test =
+  Hspec.it name $ \tmp -> timeout t (test tmp) >>= maybe (error "test timed out") pure
+  where
+    t = 90 * 1000000
+
+xit' :: HasCallStack => String -> (FilePath -> Expectation) -> SpecWith (Arg (FilePath -> Expectation))
 xit' = if os == "linux" then xit else it
 
 xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
-xit'' = ifCI xit it
+xit'' = ifCI xit Hspec.it
 
 xdescribe'' :: HasCallStack => String -> SpecWith a -> SpecWith a
 xdescribe'' = ifCI xdescribe describe
