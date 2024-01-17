@@ -385,7 +385,7 @@ func apiCreateChatItem(noteFolderId: Int64, file: CryptoFile?, msg: MsgContent) 
     if let networkErrorAlert = networkErrorAlert(r) {
         AlertManager.shared.showAlert(networkErrorAlert)
     } else {
-        sendMessageErrorAlert(r)
+        createChatItemErrorAlert(r)
     }
     endTask()
     return nil
@@ -395,6 +395,14 @@ private func sendMessageErrorAlert(_ r: ChatResponse) {
     logger.error("apiSendMessage error: \(String(describing: r))")
     AlertManager.shared.showAlertMsg(
         title: "Error sending message",
+        message: "Error: \(String(describing: r))"
+    )
+}
+
+private func createChatItemErrorAlert(_ r: ChatResponse) {
+    logger.error("apiCreateChatItem error: \(String(describing: r))")
+    AlertManager.shared.showAlertMsg(
+        title: "Error creating message",
         message: "Error: \(String(describing: r))"
     )
 }
