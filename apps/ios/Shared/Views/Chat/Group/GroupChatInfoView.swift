@@ -227,7 +227,7 @@ struct GroupChatInfoView: View {
                 }
                 Spacer()
                 let role = member.memberRole
-                if role == .owner || role == .admin {
+                if [.owner, .admin, .observer].contains(role) {
                     Text(member.memberRole.text)
                         .foregroundColor(.secondary)
                 }

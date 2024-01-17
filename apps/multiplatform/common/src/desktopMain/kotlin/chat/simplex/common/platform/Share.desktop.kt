@@ -22,7 +22,7 @@ actual fun ClipboardManager.shareText(text: String) {
 }
 
 actual fun shareFile(text: String, fileSource: CryptoFile) {
-  withBGApi {
+  withLongRunningApi {
     FileChooserLauncher(false) { to: URI? ->
       if (to != null) {
         val absolutePath = if (fileSource.isAbsolutePath) fileSource.filePath else getAppFilePath(fileSource.filePath)

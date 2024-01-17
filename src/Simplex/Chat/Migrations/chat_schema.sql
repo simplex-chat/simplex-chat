@@ -33,7 +33,8 @@ CREATE TABLE users(
   view_pwd_salt BLOB,
   show_ntfs INTEGER NOT NULL DEFAULT 1,
   send_rcpts_contacts INTEGER NOT NULL DEFAULT 0,
-  send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0,
+  user_member_profile_updated_at TEXT, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -118,7 +119,8 @@ CREATE TABLE groups(
   chat_ts TEXT,
   favorite INTEGER NOT NULL DEFAULT 0,
   send_rcpts INTEGER,
-  via_group_link_uri_hash BLOB, -- received
+  via_group_link_uri_hash BLOB,
+  user_member_profile_sent_at TEXT, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
