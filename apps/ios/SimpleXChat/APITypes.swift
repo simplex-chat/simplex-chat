@@ -94,7 +94,6 @@ public enum ChatCommand {
     case apiConnectContactViaAddress(userId: Int64, incognito: Bool, contactId: Int64)
     case apiDeleteChat(type: ChatType, id: Int64, notify: Bool?)
     case apiClearChat(type: ChatType, id: Int64)
-    case apiClearNoteFolder
     case apiListContacts(userId: Int64)
     case apiUpdateProfile(userId: Int64, profile: Profile)
     case apiSetContactPrefs(contactId: Int64, preferences: Preferences)
@@ -249,7 +248,6 @@ public enum ChatCommand {
                 return "/_delete \(ref(type, id))"
             }
             case let .apiClearChat(type, id): return "/_clear chat \(ref(type, id))"
-            case .apiClearNoteFolder: return "/clear *"
             case let .apiListContacts(userId): return "/_contacts \(userId)"
             case let .apiUpdateProfile(userId, profile): return "/_profile \(userId) \(encodeJSON(profile))"
             case let .apiSetContactPrefs(contactId, preferences): return "/_set prefs @\(contactId) \(encodeJSON(preferences))"
@@ -374,7 +372,6 @@ public enum ChatCommand {
             case .apiConnect: return "apiConnect"
             case .apiDeleteChat: return "apiDeleteChat"
             case .apiClearChat: return "apiClearChat"
-            case .apiClearNoteFolder: return "apiClearNoteFolder"
             case .apiListContacts: return "apiListContacts"
             case .apiUpdateProfile: return "apiUpdateProfile"
             case .apiSetContactPrefs: return "apiSetContactPrefs"

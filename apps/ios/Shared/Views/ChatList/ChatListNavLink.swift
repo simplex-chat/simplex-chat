@@ -391,7 +391,7 @@ struct ChatListNavLink: View {
             title: Text("Clear private notes?"),
             message: Text("All messages will be deleted - this cannot be undone!"),
             primaryButton: .destructive(Text("Clear")) {
-                Task { await clearNoteFolder(chat) }
+                Task { await clearChat(chat) }
             },
             secondaryButton: .cancel()
         )

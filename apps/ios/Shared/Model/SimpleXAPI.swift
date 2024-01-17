@@ -755,12 +755,6 @@ func apiClearChat(type: ChatType, id: Int64) async throws -> ChatInfo {
     throw r
 }
 
-func apiClearNoteFolder() async throws -> ChatInfo {
-    let r = await chatSendCmd(.apiClearNoteFolder, bgTask: false)
-    if case let .chatCleared(_, updatedChatInfo) = r { return updatedChatInfo }
-    throw r
-}
-
 func clearChat(_ chat: Chat) async {
     do {
         let cInfo = chat.chatInfo
@@ -768,16 +762,6 @@ func clearChat(_ chat: Chat) async {
         DispatchQueue.main.async { ChatModel.shared.clearChat(updatedChatInfo) }
     } catch {
         logger.error("clearChat apiClearChat error: \(responseError(error))")
-    }
-}
-
-func clearNoteFolder(_ chat: Chat) async {
-    do {
-        let cInfo = chat.chatInfo
-        let updatedChatInfo = try await apiClearNoteFolder()
-        DispatchQueue.main.async { ChatModel.shared.clearChat(updatedChatInfo) }
-    } catch {
-        logger.error("clearNoteFolder apiNoteFolder error: \(responseError(error))")
     }
 }
 
