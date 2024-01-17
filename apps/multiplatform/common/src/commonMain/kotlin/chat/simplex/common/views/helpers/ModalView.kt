@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.min
 
@@ -49,7 +50,9 @@ class ModalManager(private val placement: ModalPlacement? = null) {
   private val modalCount = mutableStateOf(0)
   private val toRemove = mutableSetOf<Int>()
   private var oldViewChanging = AtomicBoolean(false)
-  private var passcodeView: MutableState<(@Composable (close: () -> Unit) -> Unit)?> = mutableStateOf(null)
+  // Don't use mutableStateOf() here, because it produces this if showing from SimpleXAPI.startChat():
+  // java.lang.IllegalStateException: Reading a state that was created after the snapshot was taken or in a snapshot that has not yet been applied
+  private var passcodeView: MutableStateFlow<(@Composable (close: () -> Unit) -> Unit)?> = MutableStateFlow(null)
 
   fun showModal(settings: Boolean = false, showClose: Boolean = true, endButtons: @Composable RowScope.() -> Unit = {}, content: @Composable ModalData.() -> Unit) {
     val data = ModalData()
@@ -140,7 +143,7 @@ class ModalManager(private val placement: ModalPlacement? = null) {
 
   @Composable
   fun showPasscodeInView() {
-    remember { passcodeView }.value?.invoke { passcodeView.value = null }
+    passcodeView.collectAsState().value?.invoke { passcodeView.value = null }
   }
 
   /**
