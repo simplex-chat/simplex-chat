@@ -328,7 +328,7 @@
     <string name="callstatus_connecting">発信中…</string>
     <string name="callstate_ended">終了</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">プロトコル技術とコードはオープンソースで、どなたでもご自分のサーバを運用できます。</string>
-    <string name="privacy_redefined">プライバシーの基準を新境地に</string>
+    <string name="privacy_redefined">プライバシーを再定義</string>
     <string name="how_it_works">技術の説明</string>
     <string name="make_private_connection">プライベートな接続をする</string>
     <string name="onboarding_notifications_mode_title">プライベートな通知</string>
