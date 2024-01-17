@@ -62,7 +62,7 @@ fun SettingsView(chatModel: ChatModel, setPerformLA: (Boolean) -> Unit, drawerSt
     },
     showCustomModal = { modalView -> { ModalManager.start.showCustomModal { close -> modalView(chatModel, close) } } },
     showVersion = {
-      withApi {
+      withBGApi {
         val info = chatModel.controller.apiGetVersion()
         if (info != null) {
           ModalManager.start.showModal { VersionInfoView(info) }
@@ -89,7 +89,7 @@ fun SettingsLayout(
   showModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   showSettingsModalWithSearch: (@Composable (ChatModel, MutableState<String>) -> Unit) -> Unit,
-  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
+  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit,
   drawerState: DrawerState,
@@ -187,7 +187,7 @@ fun SettingsLayout(
 @Composable
 expect fun SettingsSectionApp(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
-  showCustomModal: (@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
+  showCustomModal: (@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit),
   showVersion: () -> Unit,
   withAuth: (title: String, desc: String, block: () -> Unit) -> Unit
 )
@@ -219,16 +219,14 @@ expect fun SettingsSectionApp(
   }
 }
 
-@Composable fun ChatPreferencesItem(showCustomModal: ((@Composable (ChatModel, () -> Unit) -> Unit) -> (() -> Unit)), stopped: Boolean) {
+@Composable fun ChatPreferencesItem(showCustomModal: ((@Composable ModalData.(ChatModel, () -> Unit) -> Unit) -> (() -> Unit)), stopped: Boolean) {
   SettingsActionItem(
     painterResource(MR.images.ic_toggle_on),
     stringResource(MR.strings.chat_preferences),
     click = if (stopped) null else ({
-      withApi {
-        showCustomModal { m, close ->
-          PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)
-        }()
-      }
+      showCustomModal { m, close ->
+        PreferencesView(m, m.currentUser.value ?: return@showCustomModal, close)
+      }()
     }),
     disabled = stopped,
     extraPadding = true

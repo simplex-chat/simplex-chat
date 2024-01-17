@@ -21,9 +21,9 @@
     <string name="marked_deleted_description">als gelöscht markiert</string>
     <string name="sending_files_not_yet_supported">Das Senden von Dateien wird noch nicht unterstützt</string>
     <string name="receiving_files_not_yet_supported">Der Empfang von Dateien wird noch nicht unterstützt</string>
-    <string name="sender_you_pronoun">Ihre Daten</string>
+    <string name="sender_you_pronoun">Profil</string>
     <string name="unknown_message_format">Unbekanntes Nachrichtenformat</string>
-    <string name="invalid_message_format">Unzulässiges Nachrichtenformat</string>
+    <string name="invalid_message_format">Ungültiges Nachrichtenformat</string>
     <!-- PendingContactConnection - ChatModel.kt -->
     <string name="connection_local_display_name">verbindung %1$d</string>
     <string name="display_name_connection_established">verbindung hergestellt</string>
@@ -75,7 +75,7 @@
     <string name="error_deleting_group">Fehler beim Löschen der Gruppe</string>
     <string name="error_deleting_contact_request">Fehler beim Löschen der Kontaktanfrage</string>
     <string name="error_deleting_pending_contact_connection">Fehler beim Löschen der anstehenden Kontaktaufnahme</string>
-    <string name="error_changing_address">Fehler beim Wechseln der Adresse</string>
+    <string name="error_changing_address">Fehler beim Wechseln der Empfängeradresse</string>
     <string name="error_smp_test_failed_at_step">Der Test ist beim Schritt %s fehlgeschlagen.</string>
     <string name="error_smp_test_server_auth">Um Warteschlangen zu erzeugen, benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort.</string>
     <string name="error_smp_test_certificate">Der Fingerabdruck des Zertifikats in der Serveradresse ist wahrscheinlich ungültig.</string>
@@ -98,7 +98,7 @@
     <string name="enter_passphrase_notification_title">Passwort wird benötigt</string>
     <string name="enter_passphrase_notification_desc">Geben Sie bitte das Datenbank-Passwort ein, um Benachrichtigungen zu erhalten.</string>
     <string name="database_initialization_error_title">Die Datenbank kann nicht initialisiert werden</string>
-    <string name="database_initialization_error_desc">Die Datenbank arbeitet nicht richtig. Tippen Sie für weitere Informationen.</string>
+    <string name="database_initialization_error_desc">Die Datenbank arbeitet nicht richtig. Für weitere Informationen antippen.</string>
     <!-- SimpleX Chat foreground Service -->
     <string name="simplex_service_notification_title">SimpleX-Chat-Hintergrunddienst</string>
     <string name="simplex_service_notification_text">Empfange Nachrichten …</string>
@@ -176,7 +176,7 @@
     <string name="group_preview_you_are_invited">Sie sind zu der Gruppe eingeladen</string>
     <string name="group_preview_join_as">Beitreten als %s</string>
     <string name="group_connection_pending">verbinde …</string>
-    <string name="tap_to_start_new_chat">Tippen Sie, um einen neuen Chat zu starten</string>
+    <string name="tap_to_start_new_chat">Zum Starten eines neuen Chats tippen</string>
     <string name="chat_with_developers">Chatten Sie mit den Entwicklern</string>
     <string name="you_have_no_chats">Sie haben keine Chats</string>
     <!-- ShareListView.kt -->
@@ -341,7 +341,7 @@
     <!-- CreateLinkView.kt -->
     <string name="one_time_link">Einmal-Einladungslink</string>
     <!-- settings - SettingsView.kt -->
-    <string name="your_settings">Ihre Einstellungen</string>
+    <string name="your_settings">Einstellungen</string>
     <string name="your_simplex_contact_address">Ihre SimpleX-Adresse</string>
     <string name="database_passphrase_and_export">Datenbank-Passwort &amp; -Export</string>
     <string name="about_simplex_chat">Über SimpleX Chat</string>
@@ -386,7 +386,7 @@
     <string name="configure_ICE_servers">ICE-Server konfigurieren</string>
     <string name="enter_one_ICE_server_per_line">ICE-Server (einer pro Zeile)</string>
     <string name="error_saving_ICE_servers">Fehler beim Speichern der ICE-Server</string>
-    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die WebRTC-ICE-Server-Adressen das richtige Format haben, zeilenweise separiert und nicht doppelt vorhanden sind.</string>
+    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die WebRTC-ICE-Server-Adressen das richtige Format haben, zeilenweise getrennt und nicht doppelt vorhanden sind.</string>
     <string name="save_servers_button">Speichern</string>
     <string name="network_and_servers">Netzwerk &amp; Server</string>
     <string name="network_settings">Erweiterte Netzwerkeinstellungen</string>
@@ -671,7 +671,7 @@
     <string name="database_restore_error">Fehler bei der Wiederherstellung der Datenbank</string>
     <string name="restore_passphrase_not_found_desc">Das Passwort wurde nicht im Schlüsselbund gefunden. Bitte geben Sie es manuell ein. Das kann passieren, wenn Sie die App-Daten mit einem Backup-Programm wieder hergestellt haben. Bitte nehmen Sie Kontakt mit den Entwicklern auf, wenn das nicht der Fall ist.</string>
     <!-- ChatModel.chatRunning interactions -->
-    <string name="chat_is_stopped_indication">Chat wurde beendet</string>
+    <string name="chat_is_stopped_indication">Der Chat wurde beendet</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">Sie können den Chat über die App-Einstellungen/Datenbank oder durch Neustart der App starten.</string>
     <!-- ChatArchiveView.kt -->
     <string name="chat_archive_header">Datenbank-Archiv</string>
@@ -693,7 +693,7 @@
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Sie werden von dieser Gruppe keine Nachrichten mehr erhalten. Der Chatverlauf wird beibehalten.</string>
     <string name="icon_descr_add_members">Mitglieder einladen</string>
     <string name="icon_descr_group_inactive">Gruppe inaktiv</string>
-    <string name="alert_title_group_invitation_expired">Einladung abgelaufen!</string>
+    <string name="alert_title_group_invitation_expired">Die Einladung ist abgelaufen!</string>
     <string name="alert_message_group_invitation_expired">Die Gruppeneinladung ist nicht mehr gültig, da sie vom Absender entfernt wurde.</string>
     <string name="alert_title_no_group">Die Gruppe wurde nicht gefunden!</string>
     <string name="alert_message_no_group">Diese Gruppe existiert nicht mehr.</string>
@@ -703,7 +703,7 @@
     <string name="you_sent_group_invitation">Sie haben eine Gruppeneinladung gesendet</string>
     <string name="you_are_invited_to_group">Sie sind zu der Gruppe eingeladen</string>
     <string name="group_invitation_tap_to_join">Zum Beitreten tippen</string>
-    <string name="group_invitation_tap_to_join_incognito">Tippen, um Inkognito beizutreten</string>
+    <string name="group_invitation_tap_to_join_incognito">Zum Inkognito beitreten tippen</string>
     <string name="you_joined_this_group">Sie sind dieser Gruppe beigetreten</string>
     <string name="you_rejected_group_invitation">Sie haben die Gruppeneinladung abgelehnt</string>
     <string name="group_invitation_expired">Die Gruppeneinladung ist abgelaufen</string>
@@ -724,12 +724,12 @@
     <string name="snd_group_event_user_left">hat die Gruppe verlassen</string>
     <string name="snd_group_event_group_profile_updated">Gruppenprofil aktualisiert</string>
     <!-- Conn event chat items -->
-    <string name="rcv_conn_event_switch_queue_phase_completed">wechselte die Adresse für Sie</string>
-    <string name="rcv_conn_event_switch_queue_phase_changing">Wechsel der Adresse…</string>
-    <string name="snd_conn_event_switch_queue_phase_completed_for_member">Sie haben die Adresse für %s gewechselt</string>
-    <string name="snd_conn_event_switch_queue_phase_changing_for_member">Wechsel der Adresse für %s…</string>
-    <string name="snd_conn_event_switch_queue_phase_completed">Sie haben die Adresse gewechselt</string>
-    <string name="snd_conn_event_switch_queue_phase_changing">Wechsel der Adresse…</string>
+    <string name="rcv_conn_event_switch_queue_phase_completed">wechselte die Empfängeradresse für Sie</string>
+    <string name="rcv_conn_event_switch_queue_phase_changing">Wechsel der Empfängeradresse wurde gestartet…</string>
+    <string name="snd_conn_event_switch_queue_phase_completed_for_member">Die Empfängeradresse für %s wurde gewechselt</string>
+    <string name="snd_conn_event_switch_queue_phase_changing_for_member">Wechsel der Empfängeradresse für %s wurde gestartet…</string>
+    <string name="snd_conn_event_switch_queue_phase_completed">Die Empfängeradresse wurde gewechselt</string>
+    <string name="snd_conn_event_switch_queue_phase_changing">Wechsel der Empfängeradresse wurde gestartet…</string>
     <!-- GroupMemberRole -->
     <string name="group_member_role_member">Mitglied</string>
     <string name="group_member_role_admin">Admin</string>
@@ -867,15 +867,15 @@
     <string name="feature_enabled_for_contact">Für Kontakt aktiviert</string>
     <string name="feature_off">Aus</string>
     <string name="feature_received_prohibited">empfangen, nicht erlaubt</string>
-    <string name="allow_your_contacts_irreversibly_delete">Erlauben Sie Ihren Kontakten gesendete Nachrichten unwiederbringlich zu löschen.</string>
-    <string name="allow_irreversible_message_deletion_only_if">Erlauben Sie das unwiederbringliche Löschen von Nachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</string>
+    <string name="allow_your_contacts_irreversibly_delete">Erlauben Sie Ihren Kontakten gesendete Nachrichten unwiederbringlich zu löschen (bis zu 24 Stunden).</string>
+    <string name="allow_irreversible_message_deletion_only_if">Erlauben Sie das unwiederbringliche Löschen von Nachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt (bis zu 24 Stunden).</string>
     <string name="contacts_can_mark_messages_for_deletion">Ihre Kontakte können Nachrichten zum Löschen markieren. Sie können diese Nachrichten trotzdem anschauen.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Erlauben Sie Ihre Kontakten Sprachnachrichten zu versenden.</string>
     <string name="allow_voice_messages_only_if">Erlauben Sie Sprachnachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.</string>
     <string name="prohibit_sending_voice_messages">Das Senden von Sprachnachrichten nicht erlauben.</string>
-    <string name="both_you_and_your_contacts_can_delete">Sowohl Ihr Kontakt als auch Sie können Nachrichten unwiederbringlich löschen.</string>
-    <string name="only_you_can_delete_messages">Nur Sie können Nachrichten unwiederbringlich löschen (Ihr Kontakt kann sie zum Löschen markieren).</string>
-    <string name="only_your_contact_can_delete">Nur Ihr Kontakt kann Nachrichten unwiederbringlich löschen (Sie können sie zum Löschen markieren).</string>
+    <string name="both_you_and_your_contacts_can_delete">Sowohl Ihr Kontakt als auch Sie können Nachrichten unwiederbringlich löschen (bis zu 24 Stunden).</string>
+    <string name="only_you_can_delete_messages">Nur Sie können Nachrichten unwiederbringlich löschen (Ihr Kontakt kann sie zum Löschen markieren) (bis zu 24 Stunden).</string>
+    <string name="only_your_contact_can_delete">Nur Ihr Kontakt kann Nachrichten unwiederbringlich löschen (Sie können sie zum Löschen markieren) (bis zu 24 Stunden).</string>
     <string name="message_deletion_prohibited">In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten nicht erlaubt.</string>
     <string name="both_you_and_your_contact_can_send_voice">Sowohl Ihr Kontakt als auch Sie können Sprachnachrichten versenden.</string>
     <string name="only_you_can_send_voice">Nur Sie können Sprachnachrichten versenden.</string>
@@ -883,13 +883,13 @@
     <string name="voice_prohibited_in_this_chat">In diesem Chat sind Sprachnachrichten nicht erlaubt.</string>
     <string name="allow_direct_messages">Das Senden von Direktnachrichten an Gruppenmitglieder erlauben.</string>
     <string name="prohibit_direct_messages">Das Senden von Direktnachrichten an Gruppenmitglieder nicht erlauben.</string>
-    <string name="allow_to_delete_messages">Unwiederbringliches löschen von gesendeten Nachrichten erlauben.</string>
+    <string name="allow_to_delete_messages">Unwiederbringliches löschen von gesendeten Nachrichten erlauben (bis zu 24 Stunden).</string>
     <string name="prohibit_message_deletion">Unwiederbringliches Löschen von Nachrichten nicht erlauben.</string>
     <string name="allow_to_send_voice">Das Senden von Sprachnachrichten erlauben.</string>
     <string name="prohibit_sending_voice">Das Senden von Sprachnachrichten nicht erlauben.</string>
     <string name="group_members_can_send_dms">Gruppenmitglieder können Direktnachrichten versenden.</string>
     <string name="direct_messages_are_prohibited_in_chat">In dieser Gruppe sind Direktnachrichten zwischen Mitgliedern nicht erlaubt.</string>
-    <string name="group_members_can_delete">Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen.</string>
+    <string name="group_members_can_delete">Gruppenmitglieder können gesendete Nachrichten unwiederbringlich löschen (bis zu 24 Stunden).</string>
     <string name="message_deletion_prohibited_in_chat">In dieser Gruppe ist das unwiederbringliche Löschen von Nachrichten nicht erlaubt.</string>
     <string name="group_members_can_send_voice">Gruppenmitglieder können Sprachnachrichten versenden.</string>
     <string name="voice_messages_are_prohibited">In dieser Gruppe sind Sprachnachrichten nicht erlaubt.</string>
@@ -993,7 +993,7 @@
     <string name="users_delete_profile_for">Chat-Profil löschen für</string>
     <string name="network_option_ping_count">PING-Zähler</string>
     <string name="update_network_session_mode_question">Transport-Isolations-Modus aktualisieren\?</string>
-    <string name="smp_servers_per_user">Server der neuen Verbindungen von Ihrem aktuellen Chat-Profil</string>
+    <string name="smp_servers_per_user">Mögliche Server für neue Verbindungen über Ihr aktuelles Chat-Profil</string>
     <string name="files_and_media_section">Dateien &amp; Medien</string>
     <string name="network_session_mode_transport_isolation">Transport-Isolation</string>
     <string name="users_delete_question">Chat-Profil löschen\?</string>
@@ -1058,7 +1058,7 @@
     <string name="enter_password_to_show">Für die Anzeige das Passwort im Suchfeld eingeben</string>
     <string name="make_profile_private">Privates Profil erzeugen!</string>
     <string name="user_mute">Stummschalten</string>
-    <string name="tap_to_activate_profile">Tippen Sie auf das Profil, um es zu aktivieren.</string>
+    <string name="tap_to_activate_profile">Zum Aktivieren des Profils tippen.</string>
     <string name="user_unmute">Stummschaltung aufheben</string>
     <string name="muted_when_inactive">Bei Inaktivität stummgeschaltet!</string>
     <string name="v4_6_hidden_chat_profiles_descr">Schützen Sie Ihre Chat-Profile mit einem Passwort!</string>
@@ -1151,7 +1151,7 @@
     <string name="alert_title_msg_bad_hash">Ungültiger Nachrichten-Hash</string>
     <string name="la_auth_failed">Authentifizierung fehlgeschlagen</string>
     <string name="alert_title_msg_bad_id">Falsche Nachrichten-ID</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die XFTP-Server-Adressen das richtige Format haben, zeilenweise separiert und nicht doppelt vorhanden sind.</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Stellen Sie sicher, dass die XFTP-Server-Adressen das richtige Format haben, zeilenweise getrennt und nicht doppelt vorhanden sind.</string>
     <string name="network_socks_toggle_use_socks_proxy">SOCKS-Proxy nutzen</string>
     <string name="la_lock_mode">SimpleX-Sperrmodus</string>
     <string name="lock_not_enabled">SimpleX-Sperre ist nicht aktiviert!</string>
@@ -1206,10 +1206,10 @@
     <string name="scan_qr_to_connect_to_contact">Um eine Verbindung herzustellen, kann Ihr Kontakt den QR-Code scannen oder den Link in der App verwenden.</string>
     <string name="simplex_address">SimpleX-Adresse</string>
     <string name="you_can_accept_or_reject_connection">Wenn Personen eine Verbindung anfordern, können Sie diese annehmen oder ablehnen.</string>
-    <string name="you_wont_lose_your_contacts_if_delete_address">Sie werden Ihre Kontakte nicht verlieren, falls Sie Ihre Adresse später löschen.</string>
+    <string name="you_wont_lose_your_contacts_if_delete_address">Sie werden Ihre damit verbundenen Kontakte nicht verlieren, wenn Sie diese Adresse später löschen.</string>
     <string name="customize_theme_title">Design anpassen</string>
     <string name="theme_colors_section_title">DESIGN-FARBEN</string>
-    <string name="add_address_to_your_profile">Fügen Sie die Adresse zu Ihrem Profil hinzu, damit Ihre Kontakte sie mit anderen Personen teilen können. Es wird eine Profilaktualisierung an Ihre Kontakte gesendet.</string>
+    <string name="add_address_to_your_profile">Fügen Sie die Adresse Ihrem Profil hinzu, damit Ihre Kontakte sie mit anderen Personen teilen können. Es wird eine Profilaktualisierung an Ihre Kontakte gesendet.</string>
     <string name="all_your_contacts_will_remain_connected_update_sent">Alle Ihre Kontakte bleiben verbunden. Es wird eine Profilaktualisierung an Ihre Kontakte gesendet.</string>
     <string name="create_address_and_let_people_connect">Erstellen Sie eine Adresse, damit sich Personen mit Ihnen verbinden können.</string>
     <string name="create_simplex_address">SimpleX-Adresse erstellen</string>
@@ -1313,7 +1313,7 @@
     <string name="custom_time_unit_hours">Stunden</string>
     <string name="v5_1_better_messages_descr">- Bis zu 5 Minuten lange Sprachnachrichten
 \n- Zeitdauer für verschwindende Nachrichten anpassen
-\n- Nachrichten-Historie bearbeiten</string>
+\n- Nachrichten-Verlauf bearbeiten</string>
     <string name="custom_time_picker_custom">benutzerdefiniert</string>
     <string name="custom_time_unit_months">Monate</string>
     <string name="custom_time_picker_select">Auswählen</string>
@@ -1324,7 +1324,7 @@
     <string name="share_text_deleted_at">Gelöscht um: %s</string>
     <string name="info_row_disappears_at">Verschwindet um</string>
     <string name="share_text_disappears_at">Verschwindet um: %s</string>
-    <string name="edit_history">Vergangenheit</string>
+    <string name="edit_history">Verlauf bearbeiten</string>
     <string name="message_reactions_prohibited_in_this_chat">In diesem Chat sind Reaktionen auf Nachrichten nicht erlaubt.</string>
     <string name="item_info_no_text">Kein Text</string>
     <string name="non_fatal_errors_occured_during_import">Während des Imports sind einige nicht schwerwiegende Fehler aufgetreten – weitere Details finden Sie in der Chat-Konsole.</string>
@@ -1338,12 +1338,12 @@
     <string name="files_and_media">Dateien und Medien</string>
     <string name="allow_to_send_files">Das Senden von Dateien und Medien erlauben.</string>
     <string name="prohibit_sending_files">Das Senden von Dateien und Medien nicht erlauben.</string>
-    <string name="abort_switch_receiving_address">Wechsel der Adresse abbrechen</string>
-    <string name="abort_switch_receiving_address_question">Wechsel der Adresse abbrechen\?</string>
+    <string name="abort_switch_receiving_address">Wechsel der Empfängeradresse abbrechen</string>
+    <string name="abort_switch_receiving_address_question">Wechsel der Empfängeradresse abbrechen?</string>
     <string name="files_and_media_prohibited">Dateien und Medien sind nicht erlaubt!</string>
     <string name="only_owners_can_enable_files_and_media">Nur Gruppenbesitzer können Dateien und Medien aktivieren.</string>
     <string name="group_members_can_send_files">Gruppenmitglieder können Dateien und Medien senden.</string>
-    <string name="abort_switch_receiving_address_desc">Der Wechsel der Adresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.</string>
+    <string name="abort_switch_receiving_address_desc">Der Wechsel der Empfängeradresse wird abgebrochen. Die bisherige Adresse wird weiter verwendet.</string>
     <string name="files_are_prohibited_in_group">In dieser Gruppe sind Dateien und Medien nicht erlaubt.</string>
     <string name="unfavorite_chat">Favorit entfernen</string>
     <string name="favorite_chat">Favorit</string>
@@ -1356,7 +1356,7 @@
     <string name="error_synchronizing_connection">Fehler beim Synchronisieren der Verbindung</string>
     <string name="sync_connection_force_question">Verschlüsselung neu aushandeln\?</string>
     <string name="fix_connection_question">Verbindung reparieren\?</string>
-    <string name="no_history">Keine Vergangenheit</string>
+    <string name="no_history">Kein Verlauf</string>
     <string name="sync_connection_force_confirm">Neu aushandeln</string>
     <string name="sync_connection_force_desc">Die Verschlüsselung funktioniert und ein neues Verschlüsselungsabkommen ist nicht erforderlich. Es kann zu Verbindungsfehlern kommen!</string>
     <string name="renegotiate_encryption">Verschlüsselung neu aushandeln</string>
@@ -1500,10 +1500,10 @@
     <string name="connect_plan_connect_via_link">Über einen Link verbinden?</string>
     <string name="connect_plan_already_joining_the_group">Sie sind bereits Mitglied der Gruppe!</string>
     <string name="group_members_n">%s, %s und %d Mitglieder</string>
-    <string name="moderated_items_description">%d Nachrichten von %s moderiert</string>
+    <string name="moderated_items_description">%1$d Nachrichten von %2$s moderiert</string>
     <string name="unblock_member_button">Mitglied freigeben</string>
     <string name="connect_plan_connect_to_yourself">Mit Ihnen selbst verbinden?</string>
-    <string name="contact_tap_to_connect">Zum Verbinden antippen</string>
+    <string name="contact_tap_to_connect">Zum Verbinden tippen</string>
     <string name="connect_plan_you_are_already_in_group_vName"><![CDATA[Sie sind bereits Mitglied in der Gruppe <b>%1$s</b>.]]></string>
     <string name="connect_plan_this_is_your_own_simplex_address">Das ist Ihre eigene SimpleX-Adresse!</string>
     <string name="correct_name_to">Richtiger Name für %s?</string>
@@ -1573,7 +1573,7 @@
     <string name="v5_4_better_groups_descr">Schnellerer Gruppenbeitritt und zuverlässigere Nachrichtenzustellung.</string>
     <string name="linked_mobiles">Verknüpfte Mobiltelefone</string>
     <string name="this_device_name">Dieser Gerätename</string>
-    <string name="waiting_for_mobile_to_connect">Auf die Mobiltelefonverbindung warten:</string>
+    <string name="waiting_for_mobile_to_connect">Auf die Verbindung des Mobiltelefons warten:</string>
     <string name="loading_remote_file_title">Laden der Datei</string>
     <string name="link_a_mobile">Zu einem Mobiltelefon verbinden</string>
     <string name="settings_section_title_use_from_desktop">Vom Desktop aus nutzen</string>
@@ -1607,4 +1607,64 @@
     <string name="app_was_crashed">Ansicht abgestürzt</string>
     <string name="error_showing_content">Fehler beim Anzeigen des Inhalts</string>
     <string name="error_showing_message">Fehler beim Anzeigen der Nachricht</string>
+    <string name="you_can_make_address_visible_via_settings">Sie können sie über Einstellungen für Ihre SimpleX-Kontakte sichtbar machen.</string>
+    <string name="recent_history_is_not_sent_to_new_members">Der Verlauf wird nicht an neue Gruppenmitglieder gesendet.</string>
+    <string name="retry_verb">Wiederholen</string>
+    <string name="camera_not_available">Kamera nicht verfügbar</string>
+    <string name="enable_sending_recent_history">Bis zu 100 der letzten Nachrichten an neue Gruppenmitglieder senden.</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Kontakt hinzufügen</b>: Um einen neuen Einladungslink zu erstellen oder eine Verbindung über einen Link herzustellen, den Sie erhalten haben.]]></string>
+    <string name="disable_sending_recent_history">Den Verlauf nicht an neue Mitglieder senden.</string>
+    <string name="or_show_this_qr_code">Oder diesen QR-Code anzeigen</string>
+    <string name="recent_history_is_sent_to_new_members">Bis zu 100 der letzten Nachrichten werden an neue Mitglieder gesendet.</string>
+    <string name="code_you_scanned_is_not_simplex_link_qr_code">Der von Ihnen gescannte Code ist kein SimpleX-Link-QR-Code.</string>
+    <string name="the_text_you_pasted_is_not_a_link">Der von Ihnen eingefügte Text ist kein SimpleX-Link.</string>
+    <string name="enable_camera_access">Kamera-Zugriff aktivieren</string>
+    <string name="you_can_view_invitation_link_again">Den Einladungslink können Sie in den Details der Verbindung nochmals sehen.</string>
+    <string name="keep_unused_invitation_question">Nicht genutzte Einladung behalten?</string>
+    <string name="share_this_1_time_link">Teilen Sie diesen Einmal-Einladungslink</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>Gruppe erstellen</b>: Um eine neue Gruppe zu erstellen.]]></string>
+    <string name="recent_history">Sichtbarer Verlauf</string>
+    <string name="la_app_passcode">App-Zugangscode</string>
+    <string name="new_chat">Neuer Chat</string>
+    <string name="loading_chats">Chats werden geladen…</string>
+    <string name="creating_link">Link wird erstellt…</string>
+    <string name="or_scan_qr_code">Oder den QR-Code scannen</string>
+    <string name="invalid_qr_code">Ungültiger QR-Code</string>
+    <string name="add_contact_tab">Kontakt hinzufügen</string>
+    <string name="tap_to_scan">Zum Scannen tippen</string>
+    <string name="keep_invitation_link">Behalten</string>
+    <string name="tap_to_paste_link">Zum Link einfügen tippen</string>
+    <string name="search_or_paste_simplex_link">Suchen oder fügen Sie den SimpleX-Link ein</string>
+    <string name="chat_is_stopped_you_should_transfer_database">Der Chat wurde gestoppt. Wenn diese Datenbank bereits auf einem anderen Gerät von Ihnen verwendet wurde, sollten Sie diese dorthin zurück übertragen, bevor Sie den Chat starten.</string>
+    <string name="start_chat_question">Chat starten?</string>
+    <string name="show_internal_errors">Interne Fehler anzeigen</string>
+    <string name="remote_ctrl_error_timeout">Während der Verbindung zum Desktop erfolgte eine Zeitüberschreitung</string>
+    <string name="failed_to_create_user_invalid_title">Ungültiger Anzeigename!</string>
+    <string name="remote_host_disconnected_from"><![CDATA[Vom Mobiltelefon <b>%s</b> aus folgendem Grund getrennt: %s]]></string>
+    <string name="remote_host_error_inactive"><![CDATA[Mobiltelefon <b>%s</b> ist nicht aktiv]]></string>
+    <string name="remote_ctrl_error_bad_state">Die Verbindung zum Desktop ist in einem schlechten Zustand</string>
+    <string name="remote_host_error_bad_state"><![CDATA[Die Verbindung zum Mobiltelefon <b>%s</b> ist in einem schlechten Zustand]]></string>
+    <string name="remote_ctrl_error_busy">Desktop ist besetzt</string>
+    <string name="remote_ctrl_error_inactive">Desktop ist nicht aktiv</string>
+    <string name="remote_ctrl_error_disconnected">Desktop ist getrennt</string>
+    <string name="remote_host_error_disconnected"><![CDATA[Mobiltelefon <b>%s</b> wurde getrennt]]></string>
+    <string name="remote_ctrl_error_bad_version">Auf dem Desktop wird eine nicht unterstützte Version verwendet. Bitte stellen Sie sicher, dass beide Geräte die selbe Version nutzen</string>
+    <string name="remote_ctrl_error_bad_invitation">Desktop hat einen falschen Einladungscode</string>
+    <string name="agent_critical_error_title">Kritischer Fehler</string>
+    <string name="remote_host_error_missing"><![CDATA[Mobiltelefon <b>%s</b> ist nicht vorhanden]]></string>
+    <string name="agent_internal_error_desc">Bitte melden Sie diesen Fehler den Entwicklern:
+\n%s</string>
+    <string name="agent_critical_error_desc">Bitte melden Sie diesen Fehler den Entwicklern:
+\n%s
+\n
+\nEs wird empfohlen die App neu zu starten.</string>
+    <string name="restart_chat_button">Chat neu starten</string>
+    <string name="failed_to_create_user_invalid_desc">Der Anzeigename ist ungültig. Bitte wählen Sie einen anderen Namen.</string>
+    <string name="remote_host_error_timeout"><![CDATA[Während der Verbindung zum Mobiltelefon <b>%s</b> erfolgte eine Zeitüberschreitung]]></string>
+    <string name="remote_host_was_disconnected_title">Verbindung wurde getrennt</string>
+    <string name="remote_ctrl_was_disconnected_title">Verbindung wurde getrennt</string>
+    <string name="remote_ctrl_disconnected_with_reason">Aus folgendem Grund getrennt: %s</string>
+    <string name="agent_internal_error_title">Interner Fehler</string>
+    <string name="remote_host_error_bad_version"><![CDATA[Auf dem Mobiltelefon <b>%s</b> wird eine nicht unterstützte Version verwendet. Bitte stellen Sie sicher, dass beide Geräte die selbe Version nutzen]]></string>
+    <string name="remote_host_error_busy"><![CDATA[Mobiltelefon <b>%s</b> ist besetzt]]></string>
 </resources>

@@ -2,7 +2,7 @@ package chat.simplex.common.views.call
 
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.helpers.withApi
+import chat.simplex.common.views.helpers.withBGApi
 import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.minutes
 
@@ -13,8 +13,8 @@ class CallManager(val chatModel: ChatModel) {
       callInvitations[invitation.contact.id] = invitation
       if (invitation.user.showNotifications) {
         if (Clock.System.now() - invitation.callTs <= 3.minutes) {
+          invitation.sentNotification = ntfManager.notifyCallInvitation(invitation)
           activeCallInvitation.value = invitation
-          ntfManager.notifyCallInvitation(invitation)
         } else {
           val contact = invitation.contact
           ntfManager.displayNotification(user = invitation.user, chatId = contact.id, displayName = contact.displayName, msgText = invitation.callTypeText)
@@ -28,13 +28,13 @@ class CallManager(val chatModel: ChatModel) {
     if (call == null) {
       justAcceptIncomingCall(invitation = invitation)
     } else {
-      withApi {
+      withBGApi {
         chatModel.switchingCall.value = true
         try {
           endCall(call = call)
           justAcceptIncomingCall(invitation = invitation)
         } finally {
-          withApi { chatModel.switchingCall.value = false }
+          chatModel.switchingCall.value = false
         }
       }
     }
@@ -90,7 +90,7 @@ class CallManager(val chatModel: ChatModel) {
         activeCallInvitation.value = null
         ntfManager.cancelCallNotification()
       }
-      withApi {
+      withBGApi {
         if (!controller.apiRejectCall(invitation.remoteHostId, invitation.contact)) {
           Log.e(TAG, "apiRejectCall error")
         }

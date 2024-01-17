@@ -267,7 +267,7 @@ fun ComposeView(
   fun loadLinkPreview(url: String, wait: Long? = null) {
     if (pendingLinkUrl.value == url) {
       composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(null))
-      withApi {
+      withBGApi {
         if (wait != null) delay(wait)
         val lp = getLinkPreview(url)
         if (lp != null && pendingLinkUrl.value == url) {
@@ -459,16 +459,15 @@ fun ComposeView(
         is ComposePreview.CLinkPreview -> msgs.add(checkLinkPreview())
         is ComposePreview.MediaPreview -> {
           preview.content.forEachIndexed { index, it ->
-            val encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get()
             val file = when (it) {
               is UploadContent.SimpleImage ->
-                if (remoteHost == null) saveImage(it.uri, encrypted = encrypted)
+                if (remoteHost == null) saveImage(it.uri)
                 else desktopSaveImageInTmp(it.uri)
               is UploadContent.AnimatedImage ->
-                if (remoteHost == null) saveAnimImage(it.uri, encrypted = encrypted)
+                if (remoteHost == null) saveAnimImage(it.uri)
                 else CryptoFile.desktopPlain(it.uri)
               is UploadContent.Video ->
-                if (remoteHost == null) saveFileFromUri(it.uri, encrypted = false)
+                if (remoteHost == null) saveFileFromUri(it.uri)
                 else CryptoFile.desktopPlain(it.uri)
             }
             if (file != null) {
@@ -506,7 +505,7 @@ fun ComposeView(
         }
         is ComposePreview.FilePreview -> {
           val file = if (remoteHost == null) {
-            saveFileFromUri(preview.uri, encrypted = chatController.appPrefs.privacyEncryptLocalFiles.get())
+            saveFileFromUri(preview.uri)
           } else {
             CryptoFile.desktopPlain(preview.uri)
           }
@@ -575,7 +574,7 @@ fun ComposeView(
 
   fun allowVoiceToContact() {
     val contact = (chat.chatInfo as ChatInfo.Direct?)?.contact ?: return
-    withApi {
+    withBGApi {
       chatModel.controller.allowFeatureToContact(chat.remoteHostId, contact, ChatFeature.Voice)
     }
   }

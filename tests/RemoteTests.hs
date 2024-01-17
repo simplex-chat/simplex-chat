@@ -21,7 +21,7 @@ import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String (strEncode)
 import Simplex.Messaging.Util
 import System.FilePath ((</>))
-import Test.Hspec
+import Test.Hspec hiding (it)
 import UnliftIO
 import UnliftIO.Concurrent
 import UnliftIO.Directory

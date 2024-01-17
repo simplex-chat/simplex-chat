@@ -36,6 +36,7 @@ import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpira
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.SQLite (MigrationConfirmation (..))
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..), defaultNetworkConfig)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM
@@ -73,21 +74,22 @@ testOpts =
     }
 
 testCoreOpts :: CoreChatOpts
-testCoreOpts = CoreChatOpts
-  { dbFilePrefix = undefined,
-    dbKey = "",
-    -- dbKey = "this is a pass-phrase to encrypt the database",
-    smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
-    xftpServers = ["xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"],
-    networkConfig = defaultNetworkConfig,
-    logLevel = CLLImportant,
-    logConnections = False,
-    logServerHosts = False,
-    logAgent = Nothing,
-    logFile = Nothing,
-    tbqSize = 16,
-    highlyAvailable = False
-  }
+testCoreOpts =
+  CoreChatOpts
+    { dbFilePrefix = undefined,
+      dbKey = "",
+      -- dbKey = "this is a pass-phrase to encrypt the database",
+      smpServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"],
+      xftpServers = ["xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"],
+      networkConfig = defaultNetworkConfig,
+      logLevel = CLLImportant,
+      logConnections = False,
+      logServerHosts = False,
+      logAgent = Nothing,
+      logFile = Nothing,
+      tbqSize = 16,
+      highlyAvailable = False
+    }
 
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
 getTestOpts maintenance dbKey = testOpts {maintenance, coreOptions = testCoreOpts {dbKey}}
@@ -190,7 +192,8 @@ groupLinkViaContactVRange = mkVersionRange 1 2
 
 createTestChat :: FilePath -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
 createTestChat tmp cfg opts@ChatOpts {coreOptions = CoreChatOpts {dbKey}} dbPrefix profile = do
-  Right db@ChatDatabase {chatStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False MCError
+  Right db@ChatDatabase {chatStore, agentStore} <- createChatDatabase (tmp </> dbPrefix) dbKey False MCError
+  withTransaction agentStore (`DB.execute_` "INSERT INTO users (user_id) VALUES (1);")
   Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
   startTestChat_ db cfg opts user
 
@@ -415,6 +418,7 @@ xftpServerConfig =
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
+      controlPort = Nothing,
       transportConfig = defaultTransportServerConfig
     }
 

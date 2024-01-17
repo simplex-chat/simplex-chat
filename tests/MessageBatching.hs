@@ -7,8 +7,8 @@
 module MessageBatching (batchingTests) where
 
 import Crypto.Number.Serialize (os2ip)
-import Data.ByteString.Builder (toLazyByteString)
-import qualified Data.ByteString.Lazy as LB
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
 import Data.Either (partitionEithers)
 import Data.Int (Int64)
 import Data.String (IsString (..))
@@ -26,7 +26,7 @@ batchingTests = describe "message batching tests" $ do
   it "image x.msg.new and x.msg.file.descr should fit into single batch" testImageFitsSingleBatch
 
 instance IsString SndMessage where
-  fromString s = SndMessage {msgId, sharedMsgId = SharedMsgId "", msgBody = LB.fromStrict s'}
+  fromString s = SndMessage {msgId, sharedMsgId = SharedMsgId "", msgBody = s'}
     where
       s' = encodeUtf8 $ T.pack s
       msgId = fromInteger $ os2ip s'
@@ -94,14 +94,14 @@ testImageFitsSingleBatch = do
   -- 261_120 bytes (MAX_IMAGE_SIZE in UI), rounded up, example was 743
   let descrRoundedSize = 800
 
-  let xMsgNewStr = LB.replicate xMsgNewRoundedSize 1
-      descrStr = LB.replicate descrRoundedSize 2
+  let xMsgNewStr = B.replicate xMsgNewRoundedSize 1
+      descrStr = B.replicate descrRoundedSize 2
       msg s = SndMessage {msgId = 0, sharedMsgId = SharedMsgId "", msgBody = s}
       batched = "[" <> xMsgNewStr <> "," <> descrStr <> "]"
 
   runBatcherTest' maxChatMsgSize [msg xMsgNewStr, msg descrStr] [] [batched]
 
-runBatcherTest :: Int64 -> [SndMessage] -> [ChatError] -> [LB.ByteString] -> Spec
+runBatcherTest :: Int -> [SndMessage] -> [ChatError] -> [ByteString] -> Spec
 runBatcherTest maxLen msgs expectedErrors expectedBatches =
   it
     ( (show (map (\SndMessage {msgBody} -> msgBody) msgs) <> ", limit " <> show maxLen <> ": should return ")
@@ -110,10 +110,10 @@ runBatcherTest maxLen msgs expectedErrors expectedBatches =
     )
     (runBatcherTest' maxLen msgs expectedErrors expectedBatches)
 
-runBatcherTest' :: Int64 -> [SndMessage] -> [ChatError] -> [LB.ByteString] -> IO ()
+runBatcherTest' :: Int -> [SndMessage] -> [ChatError] -> [ByteString] -> IO ()
 runBatcherTest' maxLen msgs expectedErrors expectedBatches = do
   let (errors, batches) = partitionEithers $ batchMessages maxLen msgs
-      batchedStrs = map (\(MsgBatch builder _) -> toLazyByteString builder) batches
+      batchedStrs = map (\(MsgBatch batchBody _) -> batchBody) batches
   testErrors errors `shouldBe` testErrors expectedErrors
   batchedStrs `shouldBe` expectedBatches
   where

@@ -19,7 +19,7 @@
     <string name="network_enable_socks_info">Toegang tot de servers via SOCKS proxy op poort %d\? De proxy moet worden gestart voordat u deze optie inschakelt.</string>
     <string name="alert_title_cant_invite_contacts">Kan geen contacten uitnodigen!</string>
     <string name="allow_direct_messages">Sta het verzenden van directe berichten naar leden toe.</string>
-    <string name="allow_to_delete_messages">Sta toe om verzonden berichten onomkeerbaar te verwijderen.</string>
+    <string name="allow_to_delete_messages">Sta toe om verzonden berichten onomkeerbaar te verwijderen. (24 uur)</string>
     <string name="allow_to_send_voice">Sta toe om spraak berichten te verzenden.</string>
     <string name="chat_is_running">Chat is actief</string>
     <string name="clear_chat_menu_action">Wissen</string>
@@ -59,7 +59,7 @@
     <string name="v4_2_auto_accept_contact_requests">Contact verzoeken automatisch accepteren</string>
     <string name="bold_text">vetgedrukt</string>
     <string name="attach">Bijvoegen</string>
-    <string name="allow_irreversible_message_deletion_only_if">Sta het onomkeerbaar verwijderen van berichten alleen toe als uw contact dit toestaat.</string>
+    <string name="allow_irreversible_message_deletion_only_if">Sta het onomkeerbaar verwijderen van berichten alleen toe als uw contact dit toestaat. (24 uur)</string>
     <string name="allow_to_send_disappearing">Sta toe om verdwijnende berichten te verzenden.</string>
     <string name="allow_your_contacts_to_send_voice_messages">Sta toe dat uw contacten spraak berichten verzenden.</string>
     <string name="all_your_contacts_will_remain_connected">Al uw contacten blijven verbonden.</string>
@@ -76,7 +76,7 @@
     <string name="clear_chat_warning">Alle berichten worden verwijderd, dit kan niet ongedaan worden gemaakt! De berichten worden ALLEEN voor jou verwijderd.</string>
     <string name="allow_disappearing_messages_only_if">Sta verdwijnende berichten alleen toe als uw contact dit toestaat.</string>
     <string name="allow_voice_messages_only_if">Sta spraak berichten alleen toe als uw contact ze toestaat.</string>
-    <string name="allow_your_contacts_irreversibly_delete">Laat uw contacten verzonden berichten onomkeerbaar verwijderen.</string>
+    <string name="allow_your_contacts_irreversibly_delete">Laat uw contacten verzonden berichten onomkeerbaar verwijderen. (24 uur)</string>
     <string name="allow_your_contacts_to_send_disappearing_messages">Sta toe dat uw contacten verdwijnende berichten verzenden.</string>
     <string name="chat_preferences_always">altijd</string>
     <string name="icon_descr_audio_off">Geluid uit</string>
@@ -97,7 +97,7 @@
     <string name="turning_off_service_and_periodic">Batterijoptimalisatie is actief, waardoor achtergrondservice en periodieke verzoeken om nieuwe berichten worden uitgeschakeld. Je kunt ze weer inschakelen via instellingen.</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Het beste voor de batterij</b>. U ontvangt alleen meldingen wanneer de app wordt uitgevoerd (GEEN achtergrondservice).]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Het kan worden uitgeschakeld via instellingen</b>, meldingen worden nog steeds weergegeven terwijl de app actief is.]]></string>
-    <string name="both_you_and_your_contacts_can_delete">Zowel jij als je contact kunnen verzonden berichten onherroepelijk verwijderen.</string>
+    <string name="both_you_and_your_contacts_can_delete">Zowel u als uw contact kunnen verzonden berichten onomkeerbaar verwijderen. (24 uur)</string>
     <string name="both_you_and_your_contact_can_send_disappearing">Zowel jij als je contact kunnen verdwijnende berichten sturen.</string>
     <string name="both_you_and_your_contact_can_send_voice">Zowel jij als je contact kunnen spraak berichten verzenden.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Let op</b>: u kunt het wachtwoord NIET herstellen of wijzigen als u het kwijt raakt.]]></string>
@@ -344,7 +344,7 @@
     <string name="feature_enabled">ingeschakeld</string>
     <string name="feature_enabled_for_contact">ingeschakeld voor contact</string>
     <string name="feature_enabled_for_you">voor u ingeschakeld</string>
-    <string name="group_members_can_delete">Groepsleden kunnen verzonden berichten onherroepelijk verwijderen.</string>
+    <string name="group_members_can_delete">Groepsleden kunnen verzonden berichten onomkeerbaar verwijderen. (24 uur)</string>
     <string name="group_members_can_send_dms">Groepsleden kunnen directe berichten sturen</string>
     <string name="group_members_can_send_voice">Groepsleden kunnen spraak berichten verzenden.</string>
     <string name="v4_5_transport_isolation_descr">Per chat profiel (standaard) of per verbinding (BETA).</string>
@@ -548,7 +548,7 @@
     <string name="smp_servers_preset_address">Vooraf ingesteld server adres</string>
     <string name="network_use_onion_hosts_no_desc_in_alert">Onion hosts worden niet gebruikt.</string>
     <string name="onboarding_notifications_mode_title">Privé meldingen</string>
-    <string name="paste_the_link_you_received">Plak de ontvangen link</string>
+    <string name="paste_the_link_you_received">Plak de link die je hebt ontvangen</string>
     <string name="onboarding_notifications_mode_periodic">Periodiek</string>
     <string name="open_verb">Open</string>
     <string name="open_simplex_chat_to_accept_call">Open SimpleX Chat om de oproep te accepteren</string>
@@ -560,7 +560,7 @@
     <string name="chat_preferences_on">aan</string>
     <string name="only_you_can_send_disappearing">Alleen jij kunt verdwijnende berichten verzenden.</string>
     <string name="only_your_contact_can_send_disappearing">Alleen uw contact kan verdwijnende berichten verzenden.</string>
-    <string name="only_you_can_delete_messages">Alleen jij kunt berichten onomkeerbaar verwijderen (je contact kan ze markeren voor verwijdering).</string>
+    <string name="only_you_can_delete_messages">Alleen u kunt berichten onomkeerbaar verwijderen (uw contact kan ze markeren voor verwijdering). (24 uur)</string>
     <string name="feature_offered_item_with_param">voorgesteld %s: %2s</string>
     <string name="old_database_archive">Oud database archief</string>
     <string name="enter_correct_current_passphrase">Voer het juiste huidige wachtwoord in.</string>
@@ -588,7 +588,7 @@
     <string name="network_use_onion_hosts_no_desc">Onion hosts worden niet gebruikt.</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Open-source protocol en code. Iedereen kan de servers draaien.</string>
     <string name="people_can_connect_only_via_links_you_share">Mensen kunnen alleen verbinding met u maken via de links die u deelt.</string>
-    <string name="only_your_contact_can_delete">Alleen uw contact kan berichten onherroepelijk verwijderen (u kunt ze markeren voor verwijdering).</string>
+    <string name="only_your_contact_can_delete">Alleen uw contact kan berichten onherroepelijk verwijderen (u kunt ze markeren voor verwijdering). (24 uur)</string>
     <string name="only_you_can_send_voice">Alleen jij kunt spraak berichten verzenden.</string>
     <string name="only_your_contact_can_send_voice">Alleen uw contact kan spraak berichten verzenden.</string>
     <string name="prohibit_message_deletion">Verbied het onomkeerbaar verwijderen van berichten.</string>
@@ -677,7 +677,7 @@
     <string name="you_invited_a_contact">Je hebt je contact uitgenodigd</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Uw contact moet online zijn om de verbinding te voltooien.
 \nU kunt deze verbinding verbreken en het contact verwijderen en later proberen met een nieuwe link.</string>
-    <string name="image_descr_qr_code">QR code</string>
+    <string name="image_descr_qr_code">QR-code</string>
     <string name="icon_descr_settings">Instellingen</string>
     <string name="contact_wants_to_connect_with_you">wil met je in contact komen!</string>
     <string name="icon_descr_address">SimpleX Adres</string>
@@ -1413,7 +1413,7 @@
     <string name="connect_plan_connect_via_link">Verbinden via link?</string>
     <string name="connect_plan_already_joining_the_group">Al lid van de groep!</string>
     <string name="group_members_n">%s, %s en %d leden</string>
-    <string name="moderated_items_description">%d berichten gemodereerd door %s</string>
+    <string name="moderated_items_description">%1$d berichten gemodereerd door %2$s</string>
     <string name="connect_plan_connect_to_yourself">Verbinding maken met jezelf?</string>
     <string name="contact_tap_to_connect">Tik om verbinding te maken</string>
     <string name="correct_name_to">Juiste naam voor %s?</string>
@@ -1524,4 +1524,32 @@
     <string name="open_port_in_firewall_title">Open poort in firewall</string>
     <string name="error_showing_content">Fout bij het tonen van inhoud</string>
     <string name="error_showing_message">fout bij weergeven bericht</string>
+    <string name="you_can_make_address_visible_via_settings">Je kunt het via Instellingen zichtbaar maken voor je SimpleX contacten.</string>
+    <string name="recent_history_is_not_sent_to_new_members">Geschiedenis wordt niet naar nieuwe leden gestuurd.</string>
+    <string name="retry_verb">Opnieuw proberen</string>
+    <string name="camera_not_available">Camera niet beschikbaar</string>
+    <string name="enable_sending_recent_history">Stuur tot 100 laatste berichten naar nieuwe leden.</string>
+    <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Contact toevoegen</b>: om een nieuwe uitnodigingslink te maken, of om verbinding te maken via een link die u heeft ontvangen.]]></string>
+    <string name="disable_sending_recent_history">Stuur geen geschiedenis naar nieuwe leden.</string>
+    <string name="or_show_this_qr_code">Of laat deze code zien</string>
+    <string name="recent_history_is_sent_to_new_members">Er worden maximaal 100 laatste berichten naar nieuwe leden verzonden.</string>
+    <string name="code_you_scanned_is_not_simplex_link_qr_code">De code die u heeft gescand is geen SimpleX link QR-code.</string>
+    <string name="the_text_you_pasted_is_not_a_link">De tekst die u hebt geplakt is geen SimpleX link.</string>
+    <string name="enable_camera_access">Schakel cameratoegang in</string>
+    <string name="you_can_view_invitation_link_again">U kunt de uitnodigingslink opnieuw bekijken in de verbindingsdetails.</string>
+    <string name="keep_unused_invitation_question">Ongebruikte uitnodiging bewaren?</string>
+    <string name="share_this_1_time_link">Deel deze eenmalige uitnodigingslink</string>
+    <string name="create_group_button_to_create_new_group"><![CDATA[<b>Groep aanmaken</b>: om een nieuwe groep aan te maken.]]></string>
+    <string name="recent_history">Zichtbare geschiedenis</string>
+    <string name="la_app_passcode">App toegangscode</string>
+    <string name="new_chat">Nieuw gesprek</string>
+    <string name="loading_chats">Gesprekken laden…</string>
+    <string name="creating_link">Link maken…</string>
+    <string name="or_scan_qr_code">Of scan de QR-code</string>
+    <string name="invalid_qr_code">Ongeldige QR-code</string>
+    <string name="add_contact_tab">Contact toevoegen</string>
+    <string name="tap_to_scan">Tik om te scannen</string>
+    <string name="keep_invitation_link">Bewaar</string>
+    <string name="tap_to_paste_link">Tik om de link te plakken</string>
+    <string name="search_or_paste_simplex_link">Zoek of plak de SimpleX link</string>
 </resources>

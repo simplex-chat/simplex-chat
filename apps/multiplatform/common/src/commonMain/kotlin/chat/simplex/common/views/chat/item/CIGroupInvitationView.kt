@@ -88,6 +88,7 @@ fun CIGroupInvitationView(
     }) else Modifier,
     shape = RoundedCornerShape(18.dp),
     color = if (sent) sentColor else receivedColor,
+    contentColor = LocalContentColor.current
   ) {
     Box(
       Modifier

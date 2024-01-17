@@ -1,0 +1,12 @@
+/* Bundle name */
+"CFBundleName" = "SimpleX";
+/* Privacy - Camera Usage Description */
+"NSCameraUsageDescription" = "SimpleX needs camera access to scan QR codes to connect to other users and for video calls.";
+/* Privacy - Face ID Usage Description */
+"NSFaceIDUsageDescription" = "SimpleX uses Face ID for local authentication";
+/* Privacy - Local Network Usage Description */
+"NSLocalNetworkUsageDescription" = "SimpleX uses local network access to allow using user chat profile via desktop app on the same network.";
+/* Privacy - Microphone Usage Description */
+"NSMicrophoneUsageDescription" = "SimpleX needs microphone access for audio and video calls, and to record voice messages.";
+/* Privacy - Photo Library Additions Usage Description */
+"NSPhotoLibraryAddUsageDescription" = "SimpleX needs access to Photo Library for saving captured and received media";

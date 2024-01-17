@@ -112,6 +112,9 @@ sealed class WCallResponse {
     CallMediaType.Video -> MR.strings.incoming_video_call
     CallMediaType.Audio -> MR.strings.incoming_audio_call
   })
+
+  // Shows whether notification was shown or not to prevent playing sound twice in both notification and in-app
+  var sentNotification: Boolean = false
 }
 @Serializable data class CallCapabilities(val encryption: Boolean)
 @Serializable data class ConnectionInfo(private val localCandidate: RTCIceCandidate?, private val remoteCandidate: RTCIceCandidate?) {

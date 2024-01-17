@@ -36,7 +36,7 @@ fun GroupWelcomeView(m: ChatModel, rhId: Long?, groupInfo: GroupInfo, close: () 
   val welcomeText = remember { mutableStateOf(gInfo.groupProfile.description ?: "") }
 
   fun save(afterSave: () -> Unit = {}) {
-    withApi {
+    withBGApi {
       var welcome: String? = welcomeText.value.trim('\n', ' ')
       if (welcome?.length == 0) {
         welcome = null

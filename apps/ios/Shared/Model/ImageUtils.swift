@@ -158,7 +158,8 @@ func imageHasAlpha(_ img: UIImage) -> Bool {
     return false
 }
 
-func saveFileFromURL(_ url: URL, encrypted: Bool) -> CryptoFile? {
+func saveFileFromURL(_ url: URL) -> CryptoFile? {
+    let encrypted = privacyEncryptLocalFilesGroupDefault.get()
     let savedFile: CryptoFile?
     if url.startAccessingSecurityScopedResource() {
         do {
@@ -185,10 +186,19 @@ func saveFileFromURL(_ url: URL, encrypted: Bool) -> CryptoFile? {
 
 func moveTempFileFromURL(_ url: URL) -> CryptoFile? {
     do {
+        let encrypted = privacyEncryptLocalFilesGroupDefault.get()
         let fileName = uniqueCombine(url.lastPathComponent)
-        try FileManager.default.moveItem(at: url, to: getAppFilePath(fileName))
+        let savedFile: CryptoFile?
+        if encrypted {
+            let cfArgs = try encryptCryptoFile(fromPath: url.path, toPath: getAppFilePath(fileName).path)
+            try FileManager.default.removeItem(atPath: url.path)
+            savedFile = CryptoFile(filePath: fileName, cryptoArgs: cfArgs)
+        } else {
+            try FileManager.default.moveItem(at: url, to: getAppFilePath(fileName))
+            savedFile = CryptoFile.plain(fileName)
+        }
         ChatModel.shared.filesToDelete.remove(url)
-        return CryptoFile.plain(fileName)
+        return savedFile
     } catch {
         logger.error("ImageUtils.moveTempFileFromURL error: \(error.localizedDescription)")
         return nil

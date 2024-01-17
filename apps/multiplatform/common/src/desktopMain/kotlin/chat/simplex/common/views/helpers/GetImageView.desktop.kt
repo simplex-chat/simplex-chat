@@ -45,7 +45,7 @@ actual fun GetImageBottomSheet(
       }
       val pickImageLauncher = rememberFileChooserLauncher(true, null, processPickedImage)
       ActionButton(null, stringResource(MR.strings.from_gallery_button), icon = painterResource(MR.images.ic_image)) {
-        withApi { pickImageLauncher.launch("image/*") }
+        withLongRunningApi { pickImageLauncher.launch("image/*") }
       }
     }
   }

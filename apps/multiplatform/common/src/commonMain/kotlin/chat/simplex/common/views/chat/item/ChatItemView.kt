@@ -50,7 +50,7 @@ fun ChatItemView(
   range: IntRange?,
   deleteMessage: (Long, CIDeleteMode) -> Unit,
   deleteMessages: (List<Long>) -> Unit,
-  receiveFile: (Long, Boolean) -> Unit,
+  receiveFile: (Long) -> Unit,
   cancelFile: (Long) -> Unit,
   joinGroup: (Long, () -> Unit) -> Unit,
   acceptCall: (Contact) -> Unit,
@@ -613,7 +613,7 @@ private fun ShrinkItemAction(revealed: MutableState<Boolean>, showMenu: MutableS
 @Composable
 fun ItemAction(text: String, icon: Painter, color: Color = Color.Unspecified, onClick: () -> Unit) {
   val finalColor = if (color == Color.Unspecified) {
-    if (isInDarkTheme()) MenuTextColorDark else Color.Black
+    MenuTextColor
   } else color
   DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -633,7 +633,7 @@ fun ItemAction(text: String, icon: Painter, color: Color = Color.Unspecified, on
 @Composable
 fun ItemAction(text: String, icon: ImageVector, onClick: () -> Unit, color: Color = Color.Unspecified) {
   val finalColor = if (color == Color.Unspecified) {
-    if (isInDarkTheme()) MenuTextColorDark else Color.Black
+    MenuTextColor
   } else color
   DropdownMenuItem(onClick, contentPadding = PaddingValues(horizontal = DEFAULT_PADDING * 1.5f)) {
     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -746,7 +746,7 @@ fun PreviewChatItemView() {
       range = 0..1,
       deleteMessage = { _, _ -> },
       deleteMessages = { _ -> },
-      receiveFile = { _, _ -> },
+      receiveFile = { _ -> },
       cancelFile = {},
       joinGroup = { _, _ -> },
       acceptCall = { _ -> },
@@ -780,7 +780,7 @@ fun PreviewChatItemViewDeletedContent() {
       range = 0..1,
       deleteMessage = { _, _ -> },
       deleteMessages = { _ -> },
-      receiveFile = { _, _ -> },
+      receiveFile = { _ -> },
       cancelFile = {},
       joinGroup = { _, _ -> },
       acceptCall = { _ -> },

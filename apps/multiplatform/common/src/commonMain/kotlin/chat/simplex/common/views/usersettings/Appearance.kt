@@ -131,7 +131,7 @@ object AppearanceScope {
         SectionItemView({
           val overrides = ThemeManager.currentThemeOverridesForExport(isInDarkTheme)
           theme.value = yaml.encodeToString<ThemeOverrides>(overrides)
-          withApi { exportThemeLauncher.launch("simplex.theme")}
+          withLongRunningApi { exportThemeLauncher.launch("simplex.theme")}
         }) {
           Text(generalGetString(MR.strings.export_theme), color = colors.primary)
         }
@@ -144,7 +144,7 @@ object AppearanceScope {
           }
         }
         // Can not limit to YAML mime type since it's unsupported by Android
-        SectionItemView({ withApi { importThemeLauncher.launch("*/*") } }) {
+        SectionItemView({ withLongRunningApi { importThemeLauncher.launch("*/*") } }) {
           Text(generalGetString(MR.strings.import_theme), color = colors.primary)
         }
       }
@@ -208,6 +208,7 @@ object AppearanceScope {
       "es" to "Español",
       "fi" to "Suomi",
       "fr" to "Français",
+      "hu" to "Magyar",
       "it" to "Italiano",
       "iw" to "עִברִית",
       "ja" to "日本語",
@@ -216,6 +217,7 @@ object AppearanceScope {
       "pt-BR" to "Português, Brasil",
       "ru" to "Русский",
       "th" to "ภาษาไทย",
+      "tr" to "Türkçe",
       "uk" to "Українська",
       "zh-CN" to "简体中文"
     )

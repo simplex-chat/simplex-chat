@@ -16,7 +16,7 @@ import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), GroupMemberRole (..), Profile (..))
 import Simplex.Messaging.Encoding.String (StrEncoding (..))
 import System.Directory (copyFile, createDirectoryIfMissing)
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 chatProfileTests :: SpecWith FilePath
 chatProfileTests = do
@@ -67,6 +67,7 @@ chatProfileTests = do
     xit'' "enable timed messages with contact" testEnableTimedMessagesContact
     it "enable timed messages in group" testEnableTimedMessagesGroup
     xit'' "timed messages enabled globally, contact turns on" testTimedMessagesEnabledGlobally
+    it "update multiple user preferences for multiple contacts" testUpdateMultipleUserPrefs
 
 testUpdateProfile :: HasCallStack => FilePath -> IO ()
 testUpdateProfile =
@@ -1558,7 +1559,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice <## "contact bob removed full name"
     alice <## "bob updated preferences for you:"
     alice <## "Voice messages: enabled (you allow: yes, contact allows: yes)"
-    alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "Voice messages: enabled")])
+    alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "updated profile"), (0, "Voice messages: enabled")])
     (alice </)
     bob ##> "/_set prefs @2 {}"
     bob <## "your preferences for alice did not change"
@@ -1569,7 +1570,7 @@ testSetContactPrefs = testChat2 aliceProfile bobProfile $
     alice ##> "/_set prefs @2 {\"voice\": {\"allow\": \"no\"}}"
     alice <## "you updated preferences for bob:"
     alice <## "Voice messages: off (you allow: no, contact allows: yes)"
-    alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "Voice messages: enabled"), (1, "Voice messages: off")])
+    alice #$> ("/_get chat @2 count=100", chat, startFeatures <> [(1, "Voice messages: enabled for contact"), (0, "voice message (00:10)"), (1, "Voice messages: off"), (0, "updated profile"), (0, "Voice messages: enabled"), (1, "Voice messages: off")])
     bob <## "alice updated preferences for you:"
     bob <## "Voice messages: off (you allow: default (yes), contact allows: no)"
     bob #$> ("/_get chat @2 count=100", chat, startFeatures <> [(0, "Voice messages: enabled for you"), (1, "voice message (00:10)"), (0, "Voice messages: off"), (1, "Voice messages: enabled"), (0, "Voice messages: off")])
@@ -1864,3 +1865,30 @@ testTimedMessagesEnabledGlobally =
       bob <## "timed message deleted: hey"
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)")])
+
+testUpdateMultipleUserPrefs :: HasCallStack => FilePath -> IO ()
+testUpdateMultipleUserPrefs = testChat3 aliceProfile bobProfile cathProfile $
+  \alice bob cath -> do
+    connectUsers alice bob
+    alice #> "@bob hi bob"
+    bob <# "alice> hi bob"
+
+    connectUsers alice cath
+    alice #> "@cath hi cath"
+    cath <# "alice> hi cath"
+
+    alice ##> "/_profile 1 {\"displayName\": \"alice\", \"fullName\": \"Alice\", \"preferences\": {\"fullDelete\": {\"allow\": \"always\"}, \"reactions\": {\"allow\": \"no\"}, \"receipts\": {\"allow\": \"yes\", \"activated\": true}}}"
+    alice <## "updated preferences:"
+    alice <## "Full deletion allowed: always"
+    alice <## "Message reactions allowed: no"
+
+    bob <## "alice updated preferences for you:"
+    bob <## "Full deletion: enabled for you (you allow: default (no), contact allows: always)"
+    bob <## "Message reactions: off (you allow: default (yes), contact allows: no)"
+
+    cath <## "alice updated preferences for you:"
+    cath <## "Full deletion: enabled for you (you allow: default (no), contact allows: always)"
+    cath <## "Message reactions: off (you allow: default (yes), contact allows: no)"
+
+    alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "hi bob"), (1, "Full deletion: enabled for contact"), (1, "Message reactions: off")])
+    alice #$> ("/_get chat @3 count=100", chat, chatFeatures <> [(1, "hi cath"), (1, "Full deletion: enabled for contact"), (1, "Message reactions: off")])

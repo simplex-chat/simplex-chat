@@ -50,7 +50,7 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
     chatModel.addTerminalItem(TerminalItem.resp(null, resp))
     composeState.value = ComposeState(useLinkPreviews = false)
   } else {
-    withApi {
+    withBGApi {
       // show "in progress"
       // TODO show active remote host in chat console?
       chatModel.controller.sendCmd(chatModel.remoteHostId(), CC.Console(s))
@@ -101,13 +101,16 @@ fun TerminalLayout(
           )
         }
       },
+      contentColor = LocalContentColor.current,
+      drawerContentColor = LocalContentColor.current,
       modifier = Modifier.navigationBarsWithImePadding()
     ) { contentPadding ->
       Surface(
         modifier = Modifier
           .padding(contentPadding)
           .fillMaxWidth(),
-        color = MaterialTheme.colors.background
+        color = MaterialTheme.colors.background,
+        contentColor = LocalContentColor.current
       ) {
         TerminalLog()
       }

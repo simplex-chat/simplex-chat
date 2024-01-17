@@ -75,6 +75,8 @@ fun ChatListView(chatModel: ChatModel, settingsState: SettingsViewState, setPerf
         SettingsView(chatModel, setPerformLA, scaffoldState.drawerState)
       }
     },
+    contentColor = LocalContentColor.current,
+    drawerContentColor = LocalContentColor.current,
     drawerScrimColor = MaterialTheme.colors.onSurface.copy(alpha = if (isInDarkTheme()) 0.16f else 0.32f),
     drawerGesturesEnabled = appPlatform.isAndroid,
     floatingActionButton = {
@@ -319,7 +321,7 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: URI, chatModel: ChatModel) {
   if (chatModel.currentUser.value == null) {
     chatModel.appOpenUrl.value = rhId to uri
   } else {
-    withApi {
+    withBGApi {
       planAndConnect(rhId, uri, incognito = null, close = null)
     }
   }

@@ -41,24 +41,23 @@ val appPreferences: AppPreferences
 
 val chatController: ChatController = ChatController
 
-fun initChatControllerAndRunMigrations(ignoreSelfDestruct: Boolean) {
-  if (ignoreSelfDestruct || DatabaseUtils.ksSelfDestructPassword.get() == null) {
-    withBGApi {
-      if (appPreferences.chatStopped.get() && appPreferences.storeDBPassphrase.get() && ksDatabasePassword.get() != null) {
-        initChatController(startChat = ::showStartChatAfterRestartAlert)
-      } else {
-        initChatController()
-      }
-      runMigrations()
+fun initChatControllerAndRunMigrations() {
+  withLongRunningApi(slow = 30_000, deadlock = 60_000) {
+    if (appPreferences.chatStopped.get() && appPreferences.storeDBPassphrase.get() && ksDatabasePassword.get() != null) {
+      initChatController(startChat = ::showStartChatAfterRestartAlert)
+    } else {
+      initChatController()
     }
+    runMigrations()
   }
 }
 
 suspend fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: () -> CompletableDeferred<Boolean> = { CompletableDeferred(true) }) {
   try {
+    if (chatModel.ctrlInitInProgress.value) return
     chatModel.ctrlInitInProgress.value = true
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
-    val confirm = confirmMigrations ?: if (appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
+    val confirm = confirmMigrations ?: if (appPreferences.developerTools.get() && appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
     val migrated: Array<Any> = chatMigrateInit(dbAbsolutePrefixPath, dbKey, confirm.value)
     val res: DBMigrationResult = kotlin.runCatching {
       json.decodeFromString<DBMigrationResult>(migrated[0] as String)
