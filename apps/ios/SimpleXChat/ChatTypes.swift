@@ -2248,21 +2248,17 @@ public struct ChatItem: Identifiable, Decodable {
     }
 
     public var memberDisplayName: String? {
-        get {
-            if case let .groupRcv(groupMember) = chatDir {
-                switch content {
-                case let .rcvGroupEvent(rcvGroupEvent: .memberProfileUpdated(fromProfile, toProfile)):
-                    if toProfile.displayName != fromProfile.displayName || toProfile.fullName != fromProfile.fullName {
-                        return nil
-                    } else {
-                        return groupMember.chatViewName
-                    }
-                default:
-                    return groupMember.chatViewName
-                }
-            } else {
-                return nil
+        if case let .groupRcv(groupMember) = chatDir {
+            switch content {
+            case let .rcvGroupEvent(rcvGroupEvent: .memberProfileUpdated(fromProfile, toProfile)):
+                toProfile.displayName != fromProfile.displayName || toProfile.fullName != fromProfile.fullName
+                ? nil
+                : groupMember.chatViewName
+            default:
+                groupMember.chatViewName
             }
+        } else {
+            nil
         }
     }
 
