@@ -34,7 +34,7 @@ fun LocalAuthView(m: ChatModel, authRequest: LocalAuthRequest) {
       } else {
         val r: LAResult = if (passcode.value == authRequest.password) {
           if (authRequest.selfDestruct && sdPassword != null && controller.ctrl == -1L) {
-            initChatControllerAndRunMigrations(true)
+            initChatControllerAndRunMigrations()
           }
           LAResult.Success
         } else {
@@ -67,8 +67,8 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
          * */
         chatCloseStore(ctrl)
       }
-      deleteChatDatabaseFiles()
-      // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
+      deleteAppDatabaseAndFiles()
+      // Clear sensitive data on screen just in case ModalManager fails to hide its modals while new database is created
       m.chatId.value = null
       m.chatItems.clear()
       m.chats.clear()

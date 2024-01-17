@@ -50,7 +50,7 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
     chatModel.addTerminalItem(TerminalItem.resp(null, resp))
     composeState.value = ComposeState(useLinkPreviews = false)
   } else {
-    withApi {
+    withBGApi {
       // show "in progress"
       // TODO show active remote host in chat console?
       chatModel.controller.sendCmd(chatModel.remoteHostId(), CC.Console(s))

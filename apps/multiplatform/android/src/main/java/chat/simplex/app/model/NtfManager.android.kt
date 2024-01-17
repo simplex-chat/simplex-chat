@@ -30,7 +30,7 @@ object NtfManager {
   const val ShowChatsAction: String = "chat.simplex.app.SHOW_CHATS"
 
   // DO NOT change notification channel settings / names
-  const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION_1"
+  const val CallChannel: String = "chat.simplex.app.CALL_NOTIFICATION_2"
   const val AcceptCallAction: String = "chat.simplex.app.ACCEPT_CALL"
   const val RejectCallAction: String = "chat.simplex.app.REJECT_CALL"
   const val CallNotificationId: Int = -1
@@ -59,7 +59,7 @@ object NtfManager {
       .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
       .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
       .build()
-    val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/" + R.raw.ring_once)
+    val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/raw/ring_once")
     Log.d(TAG, "callNotificationChannel sound: $soundUri")
     callChannel.setSound(soundUri, attrs)
     callChannel.enableVibration(true)
@@ -140,7 +140,7 @@ object NtfManager {
     }
   }
 
-  fun notifyCallInvitation(invitation: RcvCallInvitation) {
+  fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean {
     val keyguardManager = getKeyguardManager(context)
     Log.d(
       TAG,
@@ -149,7 +149,7 @@ object NtfManager {
           "callOnLockScreen ${appPreferences.callOnLockScreen.get()}, " +
           "onForeground ${isAppOnForeground}"
     )
-    if (isAppOnForeground) return
+    if (isAppOnForeground) return false
     val contactId = invitation.contact.id
     Log.d(TAG, "notifyCallInvitation $contactId")
     val image = invitation.contact.image
@@ -163,7 +163,7 @@ object NtfManager {
           .setFullScreenIntent(fullScreenPendingIntent, true)
           .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
       } else {
-        val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/" + R.raw.ring_once)
+        val soundUri = Uri.parse(ContentResolver.SCHEME_ANDROID_RESOURCE + "://" + context.packageName + "/raw/ring_once")
         val fullScreenPendingIntent = PendingIntent.getActivity(context, 0, Intent(), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         NotificationCompat.Builder(context, CallChannel)
           .setContentIntent(chatPendingIntent(OpenChatAction, invitation.user.userId, invitation.contact.id))
@@ -204,6 +204,39 @@ object NtfManager {
     with(NotificationManagerCompat.from(context)) {
       if (ActivityCompat.checkSelfPermission(SimplexApp.context, android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
         notify(CallNotificationId, notification)
+      }
+    }
+    return true
+  }
+
+  fun showMessage(title: String, text: String) {
+    val builder = NotificationCompat.Builder(context, MessageChannel)
+      .setContentTitle(title)
+      .setContentText(text)
+      .setPriority(NotificationCompat.PRIORITY_HIGH)
+      .setGroup(MessageGroup)
+      .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
+      .setSmallIcon(R.drawable.ntf_icon)
+      .setLargeIcon(null)
+      .setColor(0x88FFFF)
+      .setAutoCancel(true)
+      .setVibrate(null)
+      .setContentIntent(chatPendingIntent(ShowChatsAction, null, null))
+      .setSilent(false)
+
+    val summary = NotificationCompat.Builder(context, MessageChannel)
+      .setSmallIcon(R.drawable.ntf_icon)
+      .setColor(0x88FFFF)
+      .setGroup(MessageGroup)
+      .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)
+      .setGroupSummary(true)
+      .setContentIntent(chatPendingIntent(ShowChatsAction, null))
+      .build()
+
+    with(NotificationManagerCompat.from(context)) {
+      if (ActivityCompat.checkSelfPermission(SimplexApp.context, android.Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+        notify("MESSAGE".hashCode(), builder.build())
+        notify(0, summary)
       }
     }
   }
@@ -248,6 +281,7 @@ object NtfManager {
     manager.createNotificationChannel(callNotificationChannel(CallChannel, generalGetString(MR.strings.ntf_channel_calls)))
     // Remove old channels since they can't be edited
     manager.deleteNotificationChannel("chat.simplex.app.CALL_NOTIFICATION")
+    manager.deleteNotificationChannel("chat.simplex.app.CALL_NOTIFICATION_1")
     manager.deleteNotificationChannel("chat.simplex.app.LOCK_SCREEN_CALL_NOTIFICATION")
   }
 

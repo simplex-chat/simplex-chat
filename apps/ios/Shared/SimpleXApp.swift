@@ -44,8 +44,10 @@ struct SimpleXApp: App {
                     chatModel.appOpenUrl = url
                 }
                 .onAppear() {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                        initChatAndMigrate()
+                    if kcAppPassword.get() == nil || kcSelfDestructPassword.get() == nil {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                            initChatAndMigrate()
+                        }
                     }
                 }
                 .onChange(of: scenePhase) { phase in
@@ -98,12 +100,12 @@ struct SimpleXApp: App {
         if legacyDatabase, case .documents = dbContainerGroupDefault.get() {
             dbContainerGroupDefault.set(.documents)
             setMigrationState(.offer)
-            logger.debug("SimpleXApp init: using legacy DB in documents folder: \(getAppDatabasePath(), privacy: .public)*.db")
+            logger.debug("SimpleXApp init: using legacy DB in documents folder: \(getAppDatabasePath())*.db")
         } else {
             dbContainerGroupDefault.set(.group)
             setMigrationState(.ready)
-            logger.debug("SimpleXApp init: using DB in app group container: \(getAppDatabasePath(), privacy: .public)*.db")
-            logger.debug("SimpleXApp init: legacy DB\(legacyDatabase ? "" : " not", privacy: .public) present")
+            logger.debug("SimpleXApp init: using DB in app group container: \(getAppDatabasePath())*.db")
+            logger.debug("SimpleXApp init: legacy DB\(legacyDatabase ? "" : " not") present")
         }
     }
 

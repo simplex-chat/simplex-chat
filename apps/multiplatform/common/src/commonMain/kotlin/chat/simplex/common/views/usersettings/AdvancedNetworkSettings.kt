@@ -92,7 +92,7 @@ fun AdvancedNetworkSettingsView(chatModel: ChatModel) {
   }
 
   fun saveCfg(cfg: NetCfg) {
-    withApi {
+    withBGApi {
       chatModel.controller.apiSetNetworkConfig(cfg)
       currentCfg.value = cfg
       chatModel.controller.setNetCfg(cfg)

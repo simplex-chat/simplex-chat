@@ -46,8 +46,8 @@ class SimplexApp: Application(), LifecycleEventObserver {
           try {
             Looper.loop()
           } catch (e: Throwable) {
-            if (e.message != null && e.message!!.startsWith("Unable to start activity")) {
-              android.os.Process.killProcess(android.os.Process.myPid())
+            if (e is UnsatisfiedLinkError || e.message?.startsWith("Unable to start activity") == true) {
+              Process.killProcess(Process.myPid())
               break
             } else {
               // Send it to our exception handled because it will not get the exception otherwise
@@ -63,13 +63,15 @@ class SimplexApp: Application(), LifecycleEventObserver {
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
 
-    initChatControllerAndRunMigrations(false)
+    if (DatabaseUtils.ksSelfDestructPassword.get() == null) {
+      initChatControllerAndRunMigrations()
+    }
     ProcessLifecycleOwner.get().lifecycle.addObserver(this@SimplexApp)
   }
 
   override fun onStateChanged(source: LifecycleOwner, event: Lifecycle.Event) {
     Log.d(TAG, "onStateChanged: $event")
-    withApi {
+    withBGApi {
       when (event) {
         Lifecycle.Event.ON_START -> {
           isAppOnForeground = true
@@ -171,13 +173,14 @@ class SimplexApp: Application(), LifecycleEventObserver {
     androidAppContext = this
     APPLICATION_ID = BuildConfig.APPLICATION_ID
     ntfManager = object : chat.simplex.common.platform.NtfManager() {
-      override fun notifyCallInvitation(invitation: RcvCallInvitation) = NtfManager.notifyCallInvitation(invitation)
+      override fun notifyCallInvitation(invitation: RcvCallInvitation): Boolean = NtfManager.notifyCallInvitation(invitation)
       override fun hasNotificationsForChat(chatId: String): Boolean = NtfManager.hasNotificationsForChat(chatId)
       override fun cancelNotificationsForChat(chatId: String) = NtfManager.cancelNotificationsForChat(chatId)
       override fun displayNotification(user: UserLike, chatId: String, displayName: String, msgText: String, image: String?, actions: List<Pair<NotificationAction, () -> Unit>>) = NtfManager.displayNotification(user, chatId, displayName, msgText, image, actions.map { it.first })
       override fun androidCreateNtfChannelsMaybeShowAlert() = NtfManager.createNtfChannelsMaybeShowAlert()
       override fun cancelCallNotification() = NtfManager.cancelCallNotification()
       override fun cancelAllNotifications() = NtfManager.cancelAllNotifications()
+      override fun showMessage(title: String, text: String) = NtfManager.showMessage(title, text)
     }
     platform = object : PlatformInterface {
       override suspend fun androidServiceStart() {

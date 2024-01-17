@@ -12,7 +12,7 @@ import MobileTests
 import ProtocolTests
 import RemoteTests
 import SchemaDump
-import Test.Hspec
+import Test.Hspec hiding (it)
 import UnliftIO.Temporary (withTempDirectory)
 import ValidNames
 import ViewTests

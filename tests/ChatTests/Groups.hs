@@ -19,7 +19,7 @@ import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import Simplex.Messaging.Version
 import System.Directory (copyFile)
 import System.FilePath ((</>))
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 chatGroupTests :: SpecWith FilePath
 chatGroupTests = do
@@ -132,6 +132,15 @@ chatGroupTests = do
     it "deleted message is not included" testGroupHistoryDeletedMessage
     it "disappearing message is sent as disappearing" testGroupHistoryDisappearingMessage
     it "welcome message (group description) is sent after history" testGroupHistoryWelcomeMessage
+    it "unknown member messages are processed" testGroupHistoryUnknownMember
+  describe "membership profile updates" $ do
+    it "send profile update on next message to group" testMembershipProfileUpdateNextGroupMessage
+    it "multiple groups with same member, update is applied only once" testMembershipProfileUpdateSameMember
+    it "member contact is active" testMembershipProfileUpdateContactActive
+    it "member contact is deleted" testMembershipProfileUpdateContactDeleted
+    it "member contact is deleted silently, then considered disabled" testMembershipProfileUpdateContactDisabled
+    it "profile update without change is ignored" testMembershipProfileUpdateNoChangeIgnored
+    it "change of profile contact link is ignored" testMembershipProfileUpdateContactLinkIgnored
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -4125,12 +4134,10 @@ testMemberContactProfileUpdate =
       bob <# "#team alice> hello"
       cath <# "#team alice> hello"
 
-      bob #> "#team hello too"
-      alice <# "#team rob> hello too"
-      cath <# "#team bob> hello too" -- not updated profile
-      cath #> "#team hello there"
-      alice <# "#team kate> hello there"
-      bob <# "#team cath> hello there" -- not updated profile
+      alice `hasContactProfiles` ["alice", "rob", "kate"]
+      bob `hasContactProfiles` ["rob", "alice", "cath"]
+      cath `hasContactProfiles` ["kate", "alice", "bob"]
+
       bob `send` "@cath hi"
       bob
         <### [ "member #team cath does not have direct connection, creating",
@@ -5179,3 +5186,512 @@ testGroupHistoryWelcomeMessage =
       [alice, cath] *<# "#team bob> 2"
       cath #> "#team 3"
       [alice, bob] *<# "#team cath> 3"
+
+testGroupHistoryUnknownMember :: HasCallStack => FilePath -> IO ()
+testGroupHistoryUnknownMember =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup3 "team" alice bob cath
+
+      threadDelay 1000000
+
+      alice #> "#team hi from alice"
+      [bob, cath] *<# "#team alice> hi from alice"
+
+      threadDelay 1000000
+
+      bob #> "#team hi from bob"
+      [alice, cath] *<# "#team bob> hi from bob"
+
+      threadDelay 1000000
+
+      cath #> "#team hi from cath"
+      [alice, bob] *<# "#team cath> hi from cath"
+
+      bob ##> "/l team"
+      concurrentlyN_
+        [ do
+            bob <## "#team: you left the group"
+            bob <## "use /d #team to delete the group",
+          alice <## "#team: bob left the group",
+          cath <## "#team: bob left the group"
+        ]
+
+      connectUsers alice dan
+      addMember "team" alice dan GRAdmin
+      dan ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: dan joined the group",
+          dan
+            <### [ "#team: you joined the group",
+                   WithTime "#team alice> hi from alice [>>]",
+                   StartsWith "#team: alice forwarded a message from an unknown member, creating unknown member record",
+                   EndsWith "hi from bob [>>]",
+                   WithTime "#team cath> hi from cath [>>]",
+                   "#team: member cath (Catherine) is connected"
+                 ],
+          do
+            cath <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            cath <## "#team: new member dan is connected"
+        ]
+
+      dan ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine dan
+      r `shouldContain` [(0, "hi from alice"), (0, "hi from bob"), (0, "hi from cath")]
+
+      dan ##> "/ms team"
+      dan
+        <### [ "dan (Daniel): admin, you, connected",
+               "alice (Alice): owner, host, connected",
+               "cath (Catherine): admin, connected",
+               EndsWith "author, status unknown"
+             ]
+
+      -- message delivery works after sending history
+      alice #> "#team 1"
+      [cath, dan] *<# "#team alice> 1"
+      cath #> "#team 2"
+      [alice, dan] *<# "#team cath> 2"
+      dan #> "#team 3"
+      [alice, cath] *<# "#team dan> 3"
+
+testMembershipProfileUpdateNextGroupMessage :: HasCallStack => FilePath -> IO ()
+testMembershipProfileUpdateNextGroupMessage =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      -- create group 1
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team"
+      gLinkTeam <- getGroupLink alice "team" GRMember True
+      bob ##> ("/c " <> gLinkTeam)
+      bob <## "connection request sent!"
+      alice <## "bob (Bob): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: bob joined the group",
+          do
+            bob <## "#team: joining the group..."
+            bob <## "#team: you joined the group"
+        ]
+
+      -- create group 2
+      alice ##> "/g club"
+      alice <## "group #club is created"
+      alice <## "to add members use /a club <name> or /create link #club"
+      alice ##> "/create link #club"
+      gLinkClub <- getGroupLink alice "club" GRMember True
+      cath ##> ("/c " <> gLinkClub)
+      cath <## "connection request sent!"
+      alice <## "cath (Catherine): accepting request to join group #club..."
+      concurrentlyN_
+        [ alice <## "#club: cath joined the group",
+          do
+            cath <## "#club: joining the group..."
+            cath <## "#club: you joined the group"
+        ]
+
+      -- alice has no contacts
+      alice ##> "/contacts"
+
+      alice #> "#team hello team"
+      bob <# "#team alice> hello team"
+
+      alice #> "#club hello club"
+      cath <# "#club alice> hello club"
+
+      alice ##> "/p alisa"
+      alice <## "user profile is changed to alisa (your 0 contacts are notified)"
+
+      -- update profile in group 1
+
+      bob ##> "/ms team"
+      bob
+        <### [ "bob (Bob): member, you, connected",
+               "alice (Alice): owner, host, connected"
+             ]
+
+      alice #> "#team team 1"
+      bob <# "#team alisa> team 1"
+      cath <// 50000
+
+      bob ##> "/ms team"
+      bob
+        <### [ "bob (Bob): member, you, connected",
+               "alisa: owner, host, connected"
+             ]
+
+      alice #> "#team team 2"
+      bob <# "#team alisa> team 2"
+
+      bob ##> "/_get chat #1 count=100"
+      rb <- chat <$> getTermLine bob
+      rb `shouldContain` [(0, "updated profile")]
+
+      -- update profile in group 2
+
+      cath ##> "/ms club"
+      cath
+        <### [ "cath (Catherine): member, you, connected",
+               "alice (Alice): owner, host, connected"
+             ]
+
+      alice #> "#club club 1"
+      cath <# "#club alisa> club 1"
+
+      cath ##> "/ms club"
+      cath
+        <### [ "cath (Catherine): member, you, connected",
+               "alisa: owner, host, connected"
+             ]
+
+      alice #> "#club club 2"
+      cath <# "#club alisa> club 2"
+
+      cath ##> "/_get chat #1 count=100"
+      rc <- chat <$> getTermLine cath
+      rc `shouldContain` [(0, "updated profile")]
+
+testMembershipProfileUpdateSameMember :: HasCallStack => FilePath -> IO ()
+testMembershipProfileUpdateSameMember =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+      createGroup2' "club" alice bob False
+
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      alice ##> "/p alisa"
+      alice <## "user profile is changed to alisa (your 0 contacts are notified)"
+
+      bob `hasContactProfiles` ["alice", "bob"]
+
+      alice #> "#team team 1"
+      bob <## "contact alice changed to alisa"
+      bob <## "use @alisa <message> to send messages"
+      bob <# "#team alisa> team 1"
+
+      -- since members were related to the same contact, both member records are updated
+      bob `hasContactProfiles` ["alisa", "bob"]
+      checkMembers bob
+      checkItems bob
+
+      -- profile update is not processed in second group, since it hasn't changed
+      alice #> "#club club 1"
+      bob <# "#club alisa> club 1"
+
+      bob `hasContactProfiles` ["alisa", "bob"]
+      checkMembers bob
+      checkItems bob
+  where
+    checkMembers bob = do
+      bob ##> "/ms team"
+      bob
+        <### [ "bob (Bob): admin, you, connected",
+               "alisa: owner, host, connected"
+             ]
+      bob ##> "/ms club"
+      bob
+        <### [ "bob (Bob): admin, you, connected",
+               "alisa: owner, host, connected"
+             ]
+    checkItems bob = do
+      bob ##> "/_get chat @2 count=100"
+      rCt <- chat <$> getTermLine bob
+      rCt `shouldNotContain` [(0, "updated profile")]
+
+      bob ##> "/_get chat #1 count=100"
+      rTeam <- chat <$> getTermLine bob
+      rTeam `shouldContain` [(0, "updated profile")]
+
+      bob ##> "/_get chat #2 count=100"
+      rClub <- chat <$> getTermLine bob
+      rClub `shouldNotContain` [(0, "updated profile")]
+
+testMembershipProfileUpdateContactActive :: HasCallStack => FilePath -> IO ()
+testMembershipProfileUpdateContactActive =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/contacts"
+      alice <## "bob (Bob)"
+
+      alice #> "#team hello team"
+      bob <# "#team alice> hello team"
+
+      alice ##> "/p alisa"
+      alice <## "user profile is changed to alisa (your 1 contacts are notified)"
+      bob <## "contact alice changed to alisa"
+      bob <## "use @alisa <message> to send messages"
+
+      bob `hasContactProfiles` ["alisa", "bob"]
+
+      alice #> "#team team 1"
+      bob <# "#team alisa> team 1"
+
+      bob `hasContactProfiles` ["alisa", "bob"]
+
+      checkItems bob
+
+      alice ##> "/ad"
+      cLink <- getContactLink alice True
+      alice ##> "/pa on"
+      alice <## "new contact address set"
+      bob <## "alisa set new contact address, use /info alisa to view"
+
+      bob `hasContactProfiles` ["alisa", "bob"]
+      checkAliceProfileLink bob "alisa" cLink
+
+      -- profile update does not remove contact address from profile
+      alice ##> "/p 'Alice Smith'"
+      alice <## "user profile is changed to 'Alice Smith' (your 1 contacts are notified)"
+      bob <## "contact alisa changed to 'Alice Smith'"
+      bob <## "use @'Alice Smith' <message> to send messages"
+
+      bob `hasContactProfiles` ["Alice Smith", "bob"]
+      checkAliceProfileLink bob "'Alice Smith'" cLink
+
+      -- receiving group message does not remove contact address from profile
+      alice #> "#team team 2"
+      bob <# "#team 'Alice Smith'> team 2"
+
+      bob `hasContactProfiles` ["Alice Smith", "bob"]
+      checkAliceProfileLink bob "'Alice Smith'" cLink
+
+      checkItems bob
+  where
+    checkItems bob = do
+      bob ##> "/_get chat @2 count=100"
+      rCt <- chat <$> getTermLine bob
+      rCt `shouldContain` [(0, "updated profile")]
+
+      bob ##> "/_get chat #1 count=100"
+      rGrp <- chat <$> getTermLine bob
+      rGrp `shouldNotContain` [(0, "updated profile")]
+    checkAliceProfileLink bob name cLink = do
+      bob ##> ("/info #team " <> name)
+      bob <## "group ID: 1"
+      bob <## "member ID: 1"
+      bob <##. "receiving messages via"
+      bob <##. "sending messages via"
+      bob <## ("contact address: " <> cLink)
+      bob <## "connection not verified, use /code command to see security code"
+      bob <## currentChatVRangeInfo
+
+testMembershipProfileUpdateContactDeleted :: HasCallStack => FilePath -> IO ()
+testMembershipProfileUpdateContactDeleted =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/contacts"
+      alice <## "bob (Bob)"
+
+      alice #> "#team hello team"
+      bob <# "#team alice> hello team"
+
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      alice ##> "/p alisa"
+      alice <## "user profile is changed to alisa (your 0 contacts are notified)"
+
+      bob `hasContactProfiles` ["alice", "bob"]
+
+      alice #> "#team team 1"
+      bob <## "contact alice changed to alisa"
+      bob <## "use @alisa <message> to send messages"
+      bob <# "#team alisa> team 1"
+
+      bob `hasContactProfiles` ["alisa", "bob"]
+
+      checkItems bob
+
+      -- adding contact address to profile does not share it with member
+      alice ##> "/ad"
+      _ <- getContactLink alice True
+      alice ##> "/pa on"
+      alice <## "new contact address set"
+
+      bob `hasContactProfiles` ["alisa", "bob"]
+      checkAliceNoProfileLink bob "alisa"
+
+      alice #> "#team team 2"
+      bob <# "#team alisa> team 2"
+
+      bob `hasContactProfiles` ["alisa", "bob"]
+      checkAliceNoProfileLink bob "alisa"
+
+      -- profile update does not add contact address to member profile
+      alice ##> "/p 'Alice Smith'"
+      alice <## "user profile is changed to 'Alice Smith' (your 0 contacts are notified)"
+
+      bob `hasContactProfiles` ["alisa", "bob"]
+      checkAliceNoProfileLink bob "alisa"
+
+      alice #> "#team team 3"
+      bob <## "contact alisa changed to 'Alice Smith'"
+      bob <## "use @'Alice Smith' <message> to send messages"
+      bob <# "#team 'Alice Smith'> team 3"
+
+      bob `hasContactProfiles` ["Alice Smith", "bob"]
+      checkAliceNoProfileLink bob "'Alice Smith'"
+
+      checkItems bob
+  where
+    checkItems bob = do
+      bob ##> "/_get chat @2 count=100"
+      rCt <- chat <$> getTermLine bob
+      rCt `shouldNotContain` [(0, "updated profile")]
+
+      bob ##> "/_get chat #1 count=100"
+      rGrp <- chat <$> getTermLine bob
+      rGrp `shouldContain` [(0, "updated profile")]
+    checkAliceNoProfileLink bob name = do
+      bob ##> ("/info #team " <> name)
+      bob <## "group ID: 1"
+      bob <## "member ID: 1"
+      bob <##. "receiving messages via"
+      bob <##. "sending messages via"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <## currentChatVRangeInfo
+
+testMembershipProfileUpdateContactDisabled :: HasCallStack => FilePath -> IO ()
+testMembershipProfileUpdateContactDisabled =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/contacts"
+      alice <## "bob (Bob)"
+
+      alice #> "#team hello team"
+      bob <# "#team alice> hello team"
+
+      alice ##> "/_delete @2 notify=off"
+      alice <## "bob: contact is deleted"
+
+      alice ##> "/p alisa"
+      alice <## "user profile is changed to alisa (your 0 contacts are notified)"
+
+      bob `hasContactProfiles` ["alice", "bob"]
+
+      -- bob expects update from contact, so he doesn't update profile
+      alice #> "#team team 1"
+      bob <# "#team alice> team 1"
+
+      bob `hasContactProfiles` ["alice", "bob"]
+
+      -- bob sends any message to alice, increases auth err counter
+      bob `send` "/feed hi all"
+      bob <##. "/feed (1)"
+      bob <## "[alice, contactId: 2, connId: 1] error: connection authorization failed - this could happen if connection was deleted, secured with different credentials, or due to a bug - please re-create the connection"
+
+      -- on next profile update from alice member, bob considers contact disabled for purposes of profile update
+      alice #> "#team team 2"
+      bob <# "#team alice> team 2"
+
+      bob `hasContactProfiles` ["alice", "bob"]
+
+      alice ##> "/p 'Alice Smith'"
+      alice <## "user profile is changed to 'Alice Smith' (your 0 contacts are notified)"
+
+      alice #> "#team team 3"
+      bob <## "contact alice changed to 'Alice Smith'"
+      bob <## "use @'Alice Smith' <message> to send messages"
+      bob <# "#team 'Alice Smith'> team 3"
+
+      bob `hasContactProfiles` ["Alice Smith", "bob"]
+
+      bob ##> "/_get chat @2 count=100"
+      rCt <- chat <$> getTermLine bob
+      rCt `shouldNotContain` [(0, "updated profile")]
+
+      bob ##> "/_get chat #1 count=100"
+      rGrp <- chat <$> getTermLine bob
+      rGrp `shouldContain` [(0, "updated profile")]
+
+testMembershipProfileUpdateNoChangeIgnored :: HasCallStack => FilePath -> IO ()
+testMembershipProfileUpdateNoChangeIgnored =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/contacts"
+      alice <## "bob (Bob)"
+
+      alice #> "#team hello team"
+      bob <# "#team alice> hello team"
+
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      alice ##> "/p alisa"
+      alice <## "user profile is changed to alisa (your 0 contacts are notified)"
+
+      bob `hasContactProfiles` ["alice", "bob"]
+
+      alice ##> "/p alice Alice"
+      alice <## "user profile is changed to alice (Alice) (your 0 contacts are notified)"
+
+      bob `hasContactProfiles` ["alice", "bob"]
+
+      alice #> "#team team 1"
+      bob <# "#team alice> team 1"
+
+      bob `hasContactProfiles` ["alice", "bob"]
+
+      bob ##> "/_get chat @2 count=100"
+      rCt <- chat <$> getTermLine bob
+      rCt `shouldNotContain` [(0, "updated profile")]
+
+      bob ##> "/_get chat #1 count=100"
+      rGrp <- chat <$> getTermLine bob
+      rGrp `shouldNotContain` [(0, "updated profile")]
+
+testMembershipProfileUpdateContactLinkIgnored :: HasCallStack => FilePath -> IO ()
+testMembershipProfileUpdateContactLinkIgnored =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      createGroup2 "team" alice bob
+
+      alice ##> "/contacts"
+      alice <## "bob (Bob)"
+
+      alice #> "#team hello team"
+      bob <# "#team alice> hello team"
+
+      alice ##> "/d bob"
+      alice <## "bob: contact is deleted"
+      bob <## "alice (Alice) deleted contact with you"
+
+      alice ##> "/ad"
+      _ <- getContactLink alice True
+      alice ##> "/pa on"
+      alice <## "new contact address set"
+
+      bob `hasContactProfiles` ["alice", "bob"]
+
+      alice #> "#team team 1"
+      bob <# "#team alice> team 1"
+
+      bob ##> "/_get chat @2 count=100"
+      rCt <- chat <$> getTermLine bob
+      rCt `shouldNotContain` [(0, "updated profile")]
+
+      bob ##> "/_get chat #1 count=100"
+      rGrp <- chat <$> getTermLine bob
+      rGrp `shouldNotContain` [(0, "updated profile")]
+
+      bob ##> "/info #team alice"
+      bob <## "group ID: 1"
+      bob <## "member ID: 1"
+      bob <##. "receiving messages via"
+      bob <##. "sending messages via"
+      bob <## "connection not verified, use /code command to see security code"
+      bob <## currentChatVRangeInfo

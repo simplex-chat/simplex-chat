@@ -54,7 +54,7 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
     },
     inviteMembers = {
       allowModifyMembers = false
-      withApi {
+      withBGApi {
         for (contactId in selectedContacts) {
           val member = chatModel.controller.apiAddMember(rhId, groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {
@@ -68,7 +68,7 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
     },
     clearSelection = { selectedContacts.clear() },
     addContact = { contactId -> if (contactId !in selectedContacts) selectedContacts.add(contactId) },
-    removeContact = { contactId -> selectedContacts.removeIf { it == contactId } },
+    removeContact = { contactId -> selectedContacts.removeAll { it == contactId } },
     close = close,
   )
   KeyChangeEffect(chatModel.chatId.value) {

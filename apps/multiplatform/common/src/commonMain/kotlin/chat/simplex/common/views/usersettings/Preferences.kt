@@ -26,7 +26,7 @@ fun PreferencesView(m: ChatModel, user: User, close: () -> Unit,) {
     close()
   }
   fun savePrefs(afterSave: () -> Unit = {}) {
-    withApi {
+    withBGApi {
       val newProfile = user.profile.toProfile().copy(preferences = preferences.toPreferences())
       val updated = m.controller.apiUpdateProfile(user.remoteHostId, newProfile)
       if (updated != null) {

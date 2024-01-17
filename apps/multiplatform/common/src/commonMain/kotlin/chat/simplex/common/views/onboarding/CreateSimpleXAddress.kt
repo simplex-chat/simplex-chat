@@ -43,7 +43,7 @@ fun CreateSimpleXAddress(m: ChatModel, rhId: Long?) {
       )
     },
     createAddress = {
-      withApi {
+      withBGApi {
         progressIndicator = true
         val connReqContact = m.controller.apiCreateUserAddress(rhId)
         if (connReqContact != null) {
@@ -170,8 +170,8 @@ private fun ProgressIndicator() {
 
 private fun prepareChatBeforeAddressCreation(rhId: Long?) {
   if (chatModel.users.isNotEmpty()) return
-  withApi {
-    val user = chatModel.controller.apiGetActiveUser(rhId) ?: return@withApi
+  withBGApi {
+    val user = chatModel.controller.apiGetActiveUser(rhId) ?: return@withBGApi
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
       if (appPlatform.isDesktop) {

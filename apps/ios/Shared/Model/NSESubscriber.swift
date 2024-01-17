@@ -16,13 +16,13 @@ private var nseSubscribers: [UUID:NSESubscriber] = [:]
 private let SUSPENDING_TIMEOUT: TimeInterval = 2
 
 // timeout should be larger than SUSPENDING_TIMEOUT
-func waitNSESuspended(timeout: TimeInterval, dispatchQueue: DispatchQueue = DispatchQueue.main, suspended: @escaping (Bool) -> Void) {
+func waitNSESuspended(timeout: TimeInterval, suspended: @escaping (Bool) -> Void) {
     if timeout <= SUSPENDING_TIMEOUT {
         logger.warning("waitNSESuspended: small timeout \(timeout), using \(SUSPENDING_TIMEOUT + 1)")
     }
     var state = nseStateGroupDefault.get()
     if case .suspended = state {
-        dispatchQueue.async { suspended(true) }
+        DispatchQueue.main.async { suspended(true) }
         return
     }
     let id = UUID()
@@ -45,7 +45,7 @@ func waitNSESuspended(timeout: TimeInterval, dispatchQueue: DispatchQueue = Disp
             logger.debug("waitNSESuspended notifySuspended: calling suspended(\(ok))")
             suspendedCalled = true
             nseSubscribers.removeValue(forKey: id)
-            dispatchQueue.async { suspended(ok) }
+            DispatchQueue.main.async { suspended(ok) }
         }
     }
 

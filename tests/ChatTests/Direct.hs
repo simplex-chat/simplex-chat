@@ -24,7 +24,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 chatDirectTests :: SpecWith FilePath
 chatDirectTests = do
@@ -1149,7 +1149,7 @@ testSubscribeAppNSE tmp =
         alice ##> "/_app suspend 1"
         alice <## "ok"
         alice <## "chat suspended"
-        nseAlice ##> "/_start subscribe=off expire=off xftp=off"
+        nseAlice ##> "/_start main=off"
         nseAlice <## "chat started"
         nseAlice ##> "/ad"
         cLink <- getContactLink nseAlice True
@@ -1386,14 +1386,14 @@ testMultipleUserAddresses =
       cLinkAlisa <- getContactLink alice True
       bob ##> ("/c " <> cLinkAlisa)
       alice <#? bob
-      alice #$> ("/_get chats 2 pcc=on", chats, [("<@bob", "")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("<@bob", ""), ("*", "")])
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request..."
       concurrently_
         (bob <## "alisa: contact is connected")
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", lastChatFeature)])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", lastChatFeature), ("*", "")])
       alice <##> bob
 
       bob #> "@alice hey alice"
@@ -1424,7 +1424,7 @@ testMultipleUserAddresses =
         (cath <## "alisa: contact is connected")
         (alice <## "cath (Catherine): contact is connected")
       threadDelay 100000
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", lastChatFeature), ("@bob", "hey")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", lastChatFeature), ("@bob", "hey"), ("*", "")])
       alice <##> cath
 
       -- first user doesn't have cath as contact
@@ -1559,6 +1559,19 @@ testDeleteUser =
 
       alice ##> "/create user alisa3"
       showActiveUser alice "alisa3"
+      alice ##> "/delete user alisa3 del_smp=on"
+      alice <### ["ok", "completed deleting user"]
+      alice ##> "/users"
+      alice <## "no users"
+
+      alice ##> "/create user alisa4"
+      showActiveUser alice "alisa4"
+      connectUsers alice bob
+      alice <##> bob
+      alice ##> "/delete user alisa4 del_smp=on"
+      alice <### ["ok", "completed deleting user"]
+      alice ##> "/users"
+      alice <## "no users"
 
 testUsersDifferentCIExpirationTTL :: HasCallStack => FilePath -> IO ()
 testUsersDifferentCIExpirationTTL tmp = do

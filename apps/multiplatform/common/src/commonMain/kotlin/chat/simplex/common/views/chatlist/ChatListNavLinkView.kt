@@ -37,7 +37,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
   val showMarkRead = remember(chat.chatStats.unreadCount, chat.chatStats.unreadChat) {
     chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat
   }
-  val stopped = chatModel.chatRunning.value == false
+  val disabled = chatModel.chatRunning.value == false || chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)
   val linkMode by remember { chatModel.controller.appPrefs.simplexLinkMode.state }
   LaunchedEffect(chat.id) {
     showMenu.value = false
@@ -62,7 +62,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
       ChatListNavLinkLayout(
         chatLinkPreview = {
           tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
-            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, stopped, linkMode, inProgress = false, progressByTimeout = false)
+            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, disabled, linkMode, inProgress = false, progressByTimeout = false)
           }
         },
         click = { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) },
@@ -72,7 +72,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
           }
         },
         showMenu,
-        stopped,
+        disabled,
         selectedChat,
         nextChatSelected,
       )
@@ -81,7 +81,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
       ChatListNavLinkLayout(
         chatLinkPreview = {
           tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
-            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, stopped, linkMode, inProgress.value, progressByTimeout)
+            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress.value, progressByTimeout)
           }
         },
         click = { if (!inProgress.value) groupChatAction(chat.remoteHostId, chat.chatInfo.groupInfo, chatModel, inProgress) },
@@ -91,7 +91,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
           }
         },
         showMenu,
-        stopped,
+        disabled,
         selectedChat,
         nextChatSelected,
       )
@@ -109,7 +109,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
           }
         },
         showMenu,
-        stopped,
+        disabled,
         selectedChat,
         nextChatSelected,
       )
@@ -129,7 +129,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
           }
         },
         showMenu,
-        stopped,
+        disabled,
         selectedChat,
         nextChatSelected,
       )
@@ -145,7 +145,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         },
         dropdownMenuItems = null,
         showMenu,
-        stopped,
+        disabled,
         selectedChat,
         nextChatSelected,
       )
@@ -394,7 +394,7 @@ fun JoinGroupAction(
   inProgress: MutableState<Boolean>
 ) {
   val joinGroup: () -> Unit = {
-    withApi {
+    withBGApi {
       inProgress.value = true
       chatModel.controller.apiJoinGroup(chat.remoteHostId, groupInfo.groupId)
       inProgress.value = false
@@ -581,7 +581,7 @@ fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactReque
 }
 
 fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRequest: ChatInfo.ContactRequest?, isCurrentUser: Boolean, chatModel: ChatModel) {
-  withApi {
+  withBGApi {
     val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, apiId)
     if (contact != null && isCurrentUser && contactRequest != null) {
       val chat = Chat(remoteHostId = rhId, ChatInfo.Direct(contact), listOf())
@@ -591,7 +591,7 @@ fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRe
 }
 
 fun rejectContactRequest(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
-  withApi {
+  withBGApi {
     chatModel.controller.apiRejectContactRequest(rhId, contactRequest.apiId)
     chatModel.removeChat(rhId, contactRequest.id)
   }
@@ -606,7 +606,7 @@ fun deleteContactConnectionAlert(rhId: Long?, connection: PendingContactConnecti
     ),
     confirmText = generalGetString(MR.strings.delete_verb),
     onConfirm = {
-      withApi {
+      withBGApi {
         AlertManager.shared.hideAlert()
         if (chatModel.controller.apiDeleteChat(rhId, ChatType.ContactConnection, connection.apiId)) {
           chatModel.removeChat(rhId, connection.id)
@@ -625,7 +625,7 @@ fun pendingContactAlertDialog(rhId: Long?, chatInfo: ChatInfo, chatModel: ChatMo
     text = generalGetString(MR.strings.alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry),
     confirmText = generalGetString(MR.strings.button_delete_contact),
     onConfirm = {
-      withApi {
+      withBGApi {
         val r = chatModel.controller.apiDeleteChat(rhId, chatInfo.chatType, chatInfo.apiId)
         if (r) {
           chatModel.removeChat(rhId, chatInfo.id)
@@ -654,7 +654,7 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
       Column {
         SectionItemView({
           AlertManager.privacySensitive.hideAlert()
-          withApi {
+          withBGApi {
             close?.invoke()
             val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = false)
             if (ok && openChat) {
@@ -666,7 +666,7 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
         }
         SectionItemView({
           AlertManager.privacySensitive.hideAlert()
-          withApi {
+          withBGApi {
             close?.invoke()
             val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = true)
             if (ok && openChat) {
@@ -707,7 +707,7 @@ fun acceptGroupInvitationAlertDialog(rhId: Long?, groupInfo: GroupInfo, chatMode
     text = generalGetString(MR.strings.you_are_invited_to_group_join_to_connect_with_group_members),
     confirmText = if (groupInfo.membership.memberIncognito) generalGetString(MR.strings.join_group_incognito_button) else generalGetString(MR.strings.join_group_button),
     onConfirm = {
-      withApi {
+      withBGApi {
         inProgress?.value = true
         chatModel.controller.apiJoinGroup(rhId, groupInfo.groupId)
         inProgress?.value = false
@@ -728,7 +728,7 @@ fun cantInviteIncognitoAlert() {
 }
 
 fun deleteGroup(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel) {
-  withApi {
+  withBGApi {
     val r = chatModel.controller.apiDeleteChat(rhId, ChatType.Group, groupInfo.apiId)
     if (r) {
       chatModel.removeChat(rhId, groupInfo.id)
@@ -769,7 +769,7 @@ fun updateChatSettings(chat: Chat, chatSettings: ChatSettings, chatModel: ChatMo
     }
     else -> null
   }
-  withApi {
+  withBGApi {
     val res = when (newChatInfo) {
       is ChatInfo.Direct -> with(newChatInfo) {
         chatModel.controller.apiSetSettings(chat.remoteHostId, chatType, apiId, contact.chatSettings)
@@ -798,7 +798,7 @@ expect fun ChatListNavLinkLayout(
   click: () -> Unit,
   dropdownMenuItems: (@Composable () -> Unit)?,
   showMenu: MutableState<Boolean>,
-  stopped: Boolean,
+  disabled: Boolean,
   selectedChat: State<Boolean>,
   nextChatSelected: State<Boolean>,
 )
@@ -832,7 +832,7 @@ fun PreviewChatListNavLinkDirect() {
           null,
           null,
           null,
-          stopped = false,
+          disabled = false,
           linkMode = SimplexLinkMode.DESCRIPTION,
           inProgress = false,
           progressByTimeout = false
@@ -841,7 +841,7 @@ fun PreviewChatListNavLinkDirect() {
       click = {},
       dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) },
-      stopped = false,
+      disabled = false,
       selectedChat = remember { mutableStateOf(false) },
       nextChatSelected = remember { mutableStateOf(false) }
     )
@@ -877,7 +877,7 @@ fun PreviewChatListNavLinkGroup() {
           null,
           null,
           null,
-          stopped = false,
+          disabled = false,
           linkMode = SimplexLinkMode.DESCRIPTION,
           inProgress = false,
           progressByTimeout = false
@@ -886,7 +886,7 @@ fun PreviewChatListNavLinkGroup() {
       click = {},
       dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) },
-      stopped = false,
+      disabled = false,
       selectedChat = remember { mutableStateOf(false) },
       nextChatSelected = remember { mutableStateOf(false) }
     )
@@ -908,7 +908,7 @@ fun PreviewChatListNavLinkContactRequest() {
       click = {},
       dropdownMenuItems = null,
       showMenu = remember { mutableStateOf(false) },
-      stopped = false,
+      disabled = false,
       selectedChat = remember { mutableStateOf(false) },
       nextChatSelected = remember { mutableStateOf(false) }
     )
