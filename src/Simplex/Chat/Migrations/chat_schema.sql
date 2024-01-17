@@ -152,7 +152,7 @@ CREATE TABLE group_members(
   invited_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
-  blocked_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  blocked_by_admin INTEGER,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -829,6 +829,3 @@ CREATE INDEX idx_msg_deliveries_agent_msg_id ON "msg_deliveries"(
 CREATE INDEX chat_items_note_folder_id ON chat_items(note_folder_id);
 CREATE INDEX files_note_folder_id ON files(note_folder_id);
 CREATE INDEX note_folders_user_id ON note_folders(user_id);
-CREATE INDEX idx_group_members_blocked_by_group_member_id ON group_members(
-  blocked_by_group_member_id
-);

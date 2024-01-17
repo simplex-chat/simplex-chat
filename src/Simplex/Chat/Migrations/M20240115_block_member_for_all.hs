@@ -9,13 +9,11 @@ import Database.SQLite.Simple.QQ (sql)
 m20240115_block_member_for_all :: Query
 m20240115_block_member_for_all =
   [sql|
-ALTER TABLE group_members ADD COLUMN blocked_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL;
-CREATE INDEX idx_group_members_blocked_by_group_member_id ON group_members(blocked_by_group_member_id);
+ALTER TABLE group_members ADD COLUMN blocked_by_admin INTEGER;
 |]
 
 down_m20240115_block_member_for_all :: Query
 down_m20240115_block_member_for_all =
   [sql|
-DROP INDEX idx_group_members_blocked_by_group_member_id;
-ALTER TABLE group_members DROP COLUMN blocked_by_group_member_id;
+ALTER TABLE group_members DROP COLUMN blocked_by_admin;
 |]

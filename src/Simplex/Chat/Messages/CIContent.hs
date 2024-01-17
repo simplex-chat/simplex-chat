@@ -138,6 +138,7 @@ data CIContent (d :: MsgDirection) where
   CIRcvGroupFeatureRejected :: GroupFeature -> CIContent 'MDRcv
   CISndModerated :: CIContent 'MDSnd
   CIRcvModerated :: CIContent 'MDRcv
+  CIRcvBlocked :: CIContent 'MDRcv
   CIInvalidJSON :: Text -> CIContent d
 -- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
 -- ! ^ Nested sum types also have to use different encodings for database and API
@@ -193,6 +194,7 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvChatFeatureRejected _ -> True
     CIRcvGroupFeatureRejected _ -> True
     CIRcvModerated -> True
+    CIRcvBlocked -> False
     CIInvalidJSON _ -> False
 
 newtype DBMsgErrorType = DBME MsgErrorType
@@ -247,6 +249,7 @@ ciContentToText = \case
   CIRcvGroupFeatureRejected feature -> groupFeatureNameText feature <> ": received, prohibited"
   CISndModerated -> ciModeratedText
   CIRcvModerated -> ciModeratedText
+  CIRcvBlocked -> "blocked"
   CIInvalidJSON _ -> "invalid content JSON"
 
 ciGroupInvitationToText :: CIGroupInvitation -> GroupMemberRole -> Text
@@ -378,6 +381,7 @@ data JSONCIContent
   | JCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
   | JCISndModerated
   | JCIRcvModerated
+  | JCIRcvBlocked
   | JCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 jsonCIContent :: forall d. MsgDirectionI d => CIContent d -> JSONCIContent
@@ -407,6 +411,7 @@ jsonCIContent = \case
   CIRcvGroupFeatureRejected groupFeature -> JCIRcvGroupFeatureRejected {groupFeature}
   CISndModerated -> JCISndModerated
   CIRcvModerated -> JCIRcvModerated
+  CIRcvBlocked -> JCIRcvBlocked
   CIInvalidJSON json -> JCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentJSON :: JSONCIContent -> ACIContent
@@ -436,6 +441,7 @@ aciContentJSON = \case
   JCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
   JCISndModerated -> ACIContent SMDSnd CISndModerated
   JCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
+  JCIRcvBlocked -> ACIContent SMDRcv CIRcvBlocked
   JCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -466,6 +472,7 @@ data DBJSONCIContent
   | DBJCIRcvGroupFeatureRejected {groupFeature :: GroupFeature}
   | DBJCISndModerated
   | DBJCIRcvModerated
+  | DBJCIRcvBlocked
   | DBJCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 dbJsonCIContent :: forall d. MsgDirectionI d => CIContent d -> DBJSONCIContent
@@ -495,6 +502,7 @@ dbJsonCIContent = \case
   CIRcvGroupFeatureRejected groupFeature -> DBJCIRcvGroupFeatureRejected {groupFeature}
   CISndModerated -> DBJCISndModerated
   CIRcvModerated -> DBJCIRcvModerated
+  CIRcvBlocked -> DBJCIRcvBlocked
   CIInvalidJSON json -> DBJCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
@@ -524,6 +532,7 @@ aciContentDBJSON = \case
   DBJCIRcvGroupFeatureRejected {groupFeature} -> ACIContent SMDRcv $ CIRcvGroupFeatureRejected groupFeature
   DBJCISndModerated -> ACIContent SMDSnd CISndModerated
   DBJCIRcvModerated -> ACIContent SMDRcv CIRcvModerated
+  DBJCIRcvBlocked -> ACIContent SMDRcv CIRcvBlocked
   DBJCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -616,4 +625,5 @@ toCIContentTag ciContent = case ciContent of
   CIRcvGroupFeatureRejected _ -> "rcvGroupFeatureRejected"
   CISndModerated -> "sndModerated"
   CIRcvModerated -> "rcvModerated"
+  CIRcvBlocked -> "rcvBlocked"
   CIInvalidJSON _ -> "invalidJSON"

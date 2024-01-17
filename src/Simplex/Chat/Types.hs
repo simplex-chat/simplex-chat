@@ -619,8 +619,7 @@ data GroupMember = GroupMember
     memberCategory :: GroupMemberCategory,
     memberStatus :: GroupMemberStatus,
     memberSettings :: GroupMemberSettings,
-    -- used to mark chat items as moderated by this member
-    blockedByGroupMemberId :: Maybe GroupMemberId,
+    blockedByAdmin :: Bool,
     invitedBy :: InvitedBy,
     invitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,

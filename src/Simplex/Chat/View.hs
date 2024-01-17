@@ -438,15 +438,10 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
 userNtf :: User -> Bool
 userNtf User {showNtfs, activeUser} = showNtfs || activeUser
 
-chatNtf :: User -> ChatInfo c -> Bool -> Bool
-chatNtf user cInfo mention = case cInfo of
-  DirectChat ct -> contactNtf user ct mention
-  GroupChat g -> groupNtf user g mention
-  _ -> False
-
 chatDirNtf :: User -> ChatInfo c -> CIDirection c d -> Bool -> Bool
 chatDirNtf user cInfo chatDir mention = case (cInfo, chatDir) of
   (DirectChat ct, CIDirectRcv) -> contactNtf user ct mention
+  -- (GroupChat g, CIGroupRcv m) -> groupNtf user g mention && not (blockedByAdmin m) && showMessages (memberSettings m)
   (GroupChat g, CIGroupRcv m) -> groupNtf user g mention && showMessages (memberSettings m)
   _ -> True
 
@@ -470,6 +465,7 @@ chatItemDeletedText ChatItem {meta = CIMeta {itemDeleted}, content} membership_ 
       CIModerated _ m -> markedDeleted content <> byMember m
       CIDeleted _ -> markedDeleted content
       CIBlocked _ -> "blocked"
+      CIBlockedByAdmin _ -> "blocked by admin"
     markedDeleted = \case
       CISndModerated -> "deleted"
       CIRcvModerated -> "deleted"
@@ -552,6 +548,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {forwardedByMember}, 
           CIRcvIntegrityError err -> viewRcvIntegrityError from err ts tz meta
           CIRcvGroupInvitation {} -> showRcvItemProhibited from
           CIRcvModerated {} -> receivedWithTime_ ts tz (ttyFromGroup g m) quote meta [plainContent content] False
+          CIRcvBlocked {} -> receivedWithTime_ ts tz (ttyFromGroup g m) quote meta [plainContent content] False
           _ -> showRcvItem from
           where
             from = ttyFromGroup g m

@@ -5722,14 +5722,14 @@ testBlockForAllModerated =
       threadDelay 1000000
 
       bob #> "#team 2"
-      alice <# "#team bob> [marked deleted by you] 2"
-      cath <# "#team bob> [marked deleted by alice] 2"
+      alice <# "#team bob> 2 [blocked by admin]"
+      cath <# "#team bob> 2 [blocked by admin]"
 
       threadDelay 1000000
 
       bob #> "#team 3"
-      alice <# "#team bob> [marked deleted by you] 3"
-      cath <# "#team bob> [marked deleted by alice] 3"
+      alice <# "#team bob> 3 [blocked by admin]"
+      cath <# "#team bob> 3 [blocked by admin]"
 
       threadDelay 1000000
 
@@ -5748,8 +5748,8 @@ testBlockForAllModerated =
               chat,
               [ (0, "1"),
                 (1, "blocked bob (Bob)"),
-                (0, "2 [marked deleted by you]"),
-                (0, "3 [marked deleted by you]"),
+                (0, "2 [blocked by admin]"),
+                (0, "3 [blocked by admin]"),
                 (1, "unblocked bob (Bob)"),
                 (0, "4")
               ]
@@ -5759,8 +5759,8 @@ testBlockForAllModerated =
               chat,
               [ (0, "1"),
                 (0, "blocked bob (Bob)"),
-                (0, "2 [marked deleted by alice]"),
-                (0, "3 [marked deleted by alice]"),
+                (0, "2 [blocked by admin]"),
+                (0, "3 [blocked by admin]"),
                 (0, "unblocked bob (Bob)"),
                 (0, "4")
               ]
@@ -5802,14 +5802,14 @@ testBlockForAllFullDelete =
       threadDelay 1000000
 
       bob #> "#team 2"
-      alice <# "#team bob> moderated [deleted by you]"
-      cath <# "#team bob> moderated [deleted by alice]"
+      alice <# "#team bob> blocked [blocked by admin]"
+      cath <# "#team bob> blocked [blocked by admin]"
 
       threadDelay 1000000
 
       bob #> "#team 3"
-      alice <# "#team bob> moderated [deleted by you]"
-      cath <# "#team bob> moderated [deleted by alice]"
+      alice <# "#team bob> blocked [blocked by admin]"
+      cath <# "#team bob> blocked [blocked by admin]"
 
       threadDelay 1000000
 
@@ -5828,8 +5828,8 @@ testBlockForAllFullDelete =
               chat,
               [ (0, "1"),
                 (1, "blocked bob (Bob)"),
-                (0, "moderated [deleted by you]"),
-                (0, "moderated [deleted by you]"),
+                (0, "blocked [blocked by admin]"),
+                (0, "blocked [blocked by admin]"),
                 (1, "unblocked bob (Bob)"),
                 (0, "4")
               ]
@@ -5839,8 +5839,8 @@ testBlockForAllFullDelete =
               chat,
               [ (0, "1"),
                 (0, "blocked bob (Bob)"),
-                (0, "moderated [deleted by alice]"),
-                (0, "moderated [deleted by alice]"),
+                (0, "blocked [blocked by admin]"),
+                (0, "blocked [blocked by admin]"),
                 (0, "unblocked bob (Bob)"),
                 (0, "4")
               ]
@@ -5862,8 +5862,8 @@ testBlockForAllAnotherAdminUnblocks =
       bob <// 50000
 
       bob #> "#team 2"
-      alice <# "#team bob> [marked deleted by you] 2"
-      cath <# "#team bob> [marked deleted by alice] 2"
+      alice <# "#team bob> 2 [blocked by admin]"
+      cath <# "#team bob> 2 [blocked by admin]"
 
       cath ##> "/unblock #team bob"
       cath <## "#team: you unblocked bob"
@@ -5902,8 +5902,8 @@ testBlockForAllCantRepeat =
       cath <## "bad chat command: already blocked"
 
       bob #> "#team 2"
-      alice <# "#team bob> [marked deleted by you] 2"
-      cath <# "#team bob> [marked deleted by alice] 2"
+      alice <# "#team bob> 2 [blocked by admin]"
+      cath <# "#team bob> 2 [blocked by admin]"
 
       cath ##> "/unblock #team bob"
       cath <## "#team: you unblocked bob"
