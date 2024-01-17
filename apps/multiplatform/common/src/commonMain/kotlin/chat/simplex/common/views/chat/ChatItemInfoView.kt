@@ -156,7 +156,7 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
   fun Details() {
     AppBarTitle(stringResource(if (sent) MR.strings.sent_message else MR.strings.received_message))
     SectionView {
-      InfoRow(stringResource(MR.strings.info_row_sent_at), localTimestamp(ci.meta.itemTs))
+      InfoRow(stringResource(if (!ci.localNote) MR.strings.info_row_sent_at else MR.strings.info_row_created_at), localTimestamp(ci.meta.itemTs))
       if (!sent) {
         InfoRow(stringResource(MR.strings.info_row_received_at), localTimestamp(ci.meta.createdAt))
       }

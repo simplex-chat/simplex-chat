@@ -95,6 +95,25 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         selectedChat,
         nextChatSelected,
       )
+    is ChatInfo.Local -> {
+      ChatListNavLinkLayout(
+        chatLinkPreview = {
+          tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
+            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress = false, progressByTimeout = false)
+          }
+        },
+        click = { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) },
+        dropdownMenuItems = {
+          tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
+            NoteFolderMenuItems(chat, showMenu, showMarkRead)
+          }
+        },
+        showMenu,
+        disabled,
+        selectedChat,
+        nextChatSelected,
+      )
+    }
     is ChatInfo.ContactRequest ->
       ChatListNavLinkLayout(
         chatLinkPreview = {
@@ -172,6 +191,10 @@ fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, inP
     GroupMemberStatus.MemAccepted -> groupInvitationAcceptedAlert(rhId)
     else -> withBGApi { openChat(rhId, ChatInfo.Group(groupInfo), chatModel) }
   }
+}
+
+fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) {
+  withBGApi { openChat(rhId, ChatInfo.Local(noteFolder), chatModel) }
 }
 
 suspend fun openDirectChat(rhId: Long?, contactId: Long, chatModel: ChatModel) {
@@ -298,6 +321,16 @@ fun GroupMenuItems(
 }
 
 @Composable
+fun NoteFolderMenuItems(chat: Chat, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
+  if (showMarkRead) {
+    MarkReadChatAction(chat, chatModel, showMenu)
+  } else {
+    MarkUnreadChatAction(chat, chatModel, showMenu)
+  }
+  ClearNoteFolderAction(chat, showMenu)
+}
+
+@Composable
 fun MarkReadChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.mark_read),
@@ -353,6 +386,19 @@ fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boo
     painterResource(MR.images.ic_settings_backup_restore),
     onClick = {
       clearChatDialog(chat, chatModel)
+      showMenu.value = false
+    },
+    color = WarningOrange
+  )
+}
+
+@Composable
+fun ClearNoteFolderAction(chat: Chat, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    stringResource(MR.strings.clear_chat_menu_action),
+    painterResource(MR.images.ic_settings_backup_restore),
+    onClick = {
+      clearNoteFolderDialog(chat)
       showMenu.value = false
     },
     color = WarningOrange

@@ -663,6 +663,7 @@ data class ShowingInvitation(
 enum class ChatType(val type: String) {
   Direct("@"),
   Group("#"),
+  Local("*"),
   ContactRequest("<@"),
   ContactConnection(":");
 }
@@ -782,6 +783,7 @@ data class Chat(
     get() = when (chatInfo) {
       is ChatInfo.Direct -> true
       is ChatInfo.Group -> chatInfo.groupInfo.membership.memberRole >= GroupMemberRole.Member
+      is ChatInfo.Local -> true
       else -> false
     }
 
@@ -861,6 +863,30 @@ sealed class ChatInfo: SomeChat, NamedChat {
 
     companion object {
       val sampleData = Group(GroupInfo.sampleData)
+    }
+  }
+
+  @Serializable @SerialName("local")
+  data class Local(val noteFolder: NoteFolder): ChatInfo() {
+    override val chatType get() = ChatType.Local
+    override val localDisplayName get() = noteFolder.localDisplayName
+    override val id get() = noteFolder.id
+    override val apiId get() = noteFolder.apiId
+    override val ready get() = noteFolder.ready
+    override val sendMsgEnabled get() = noteFolder.sendMsgEnabled
+    override val ntfsEnabled get() = noteFolder.ntfsEnabled
+    override val incognito get() = noteFolder.incognito
+    override fun featureEnabled(feature: ChatFeature) = noteFolder.featureEnabled(feature)
+    override val timedMessagesTTL: Int? get() = noteFolder.timedMessagesTTL
+    override val createdAt get() = noteFolder.createdAt
+    override val updatedAt get() = noteFolder.updatedAt
+    override val displayName get() = noteFolder.displayName
+    override val fullName get() = noteFolder.fullName
+    override val image get() = noteFolder.image
+    override val localAlias get() = noteFolder.localAlias
+
+    companion object {
+      val sampleData = Local(NoteFolder.sampleData)
     }
   }
 
@@ -1467,6 +1493,40 @@ class MemberSubError (
 )
 
 @Serializable
+class NoteFolder(
+  val noteFolderId: Long,
+  val favorite: Boolean,
+  val unread: Boolean,
+  override val createdAt: Instant,
+  override val updatedAt: Instant
+): SomeChat, NamedChat {
+  override val chatType get() = ChatType.Local
+  override val id get() = "*$noteFolderId"
+  override val apiId get() = noteFolderId
+  override val ready get() = true
+  override val sendMsgEnabled get() = true
+  override val ntfsEnabled get() = false
+  override val incognito get() = false
+  override fun featureEnabled(feature: ChatFeature) = feature == ChatFeature.Voice
+  override val timedMessagesTTL: Int? get() = null
+  override val displayName get() = generalGetString(MR.strings.note_folder_local_display_name)
+  override val fullName get() = ""
+  override val image get() = null
+  override val localAlias get() = ""
+  override val localDisplayName: String get() = ""
+
+  companion object {
+    val sampleData = NoteFolder(
+      noteFolderId = 1,
+      favorite = false,
+      unread = false,
+      createdAt = Clock.System.now(),
+      updatedAt = Clock.System.now()
+    )
+  }
+}
+
+@Serializable
 class UserContactRequest (
   val contactRequestId: Long,
   val cReqChatVRange: VersionRange,
@@ -1647,6 +1707,8 @@ data class ChatItem (
   val memberDisplayName: String? get() =
     if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.chatViewName
     else null
+
+  val localNote: Boolean = chatDir is CIDirection.LocalSnd || chatDir is CIDirection.LocalRcv
 
   val isDeletedContent: Boolean get() =
     when (content) {
@@ -1911,12 +1973,16 @@ sealed class CIDirection {
   @Serializable @SerialName("directRcv") class DirectRcv: CIDirection()
   @Serializable @SerialName("groupSnd") class GroupSnd: CIDirection()
   @Serializable @SerialName("groupRcv") class GroupRcv(val groupMember: GroupMember): CIDirection()
+  @Serializable @SerialName("localSnd") class LocalSnd: CIDirection()
+  @Serializable @SerialName("localRcv") class LocalRcv: CIDirection()
 
   val sent: Boolean get() = when(this) {
     is DirectSnd -> true
     is DirectRcv -> false
     is GroupSnd -> true
     is GroupRcv -> false
+    is LocalSnd -> true
+    is LocalRcv -> false
   }
 }
 
@@ -2232,6 +2298,8 @@ class CIQuote (
     is CIDirection.DirectRcv -> null
     is CIDirection.GroupSnd -> membership?.displayName ?: generalGetString(MR.strings.sender_you_pronoun)
     is CIDirection.GroupRcv -> chatDir.groupMember.displayName
+    is CIDirection.LocalSnd -> generalGetString(MR.strings.sender_you_pronoun)
+    is CIDirection.LocalRcv -> null
     null -> null
   }
 
@@ -2503,7 +2571,8 @@ private val rcvCancelAction: CancelAction = CancelAction(
 @Serializable
 enum class FileProtocol {
   @SerialName("smp") SMP,
-  @SerialName("xftp") XFTP;
+  @SerialName("xftp") XFTP,
+  @SerialName("local") LOCAL;
 }
 
 @Serializable

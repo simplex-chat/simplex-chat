@@ -81,7 +81,7 @@ fun CIFileView(
         }
         is CIFileStatus.RcvAccepted ->
           when (file.fileProtocol) {
-            FileProtocol.XFTP ->
+            FileProtocol.XFTP, FileProtocol.LOCAL ->
               AlertManager.shared.showAlertMsg(
                 generalGetString(MR.strings.waiting_for_file),
                 generalGetString(MR.strings.file_will_be_received_when_contact_completes_uploading)
@@ -152,10 +152,11 @@ fun CIFileView(
             when (file.fileProtocol) {
               FileProtocol.XFTP -> progressIndicator()
               FileProtocol.SMP -> fileIcon()
+              FileProtocol.LOCAL -> fileIcon()
             }
           is CIFileStatus.SndTransfer ->
             when (file.fileProtocol) {
-              FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
+              FileProtocol.XFTP, FileProtocol.LOCAL -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
               FileProtocol.SMP -> progressIndicator()
             }
           is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))

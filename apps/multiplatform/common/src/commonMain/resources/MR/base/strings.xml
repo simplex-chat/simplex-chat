@@ -51,6 +51,9 @@
   <string name="decryption_error">Decryption error</string>
   <string name="encryption_renegotiation_error">Encryption re-negotiation error</string>
 
+  <!-- NoteFolder - ChatModel.kt -->
+  <string name="note_folder_local_display_name">Private notes</string>
+
   <!-- PendingContactConnection - ChatModel.kt -->
   <string name="connection_local_display_name">connection %1$d</string>
   <string name="display_name_connection_established">connection established</string>
@@ -99,6 +102,7 @@
   <string name="connection_error">Connection error</string>
   <string name="network_error_desc">Please check your network connection with %1$s and try again.</string>
   <string name="error_sending_message">Error sending message</string>
+  <string name="error_creating_message">Error creating message</string>
   <string name="error_loading_details">Error loading details</string>
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
@@ -116,6 +120,7 @@
   <string name="sender_may_have_deleted_the_connection_request">Sender may have deleted the connection request.</string>
   <string name="error_deleting_contact">Error deleting contact</string>
   <string name="error_deleting_group">Error deleting group</string>
+  <string name="error_deleting_note_folder">Error deleting private notes</string>
   <string name="error_deleting_contact_request">Error deleting contact request</string>
   <string name="error_deleting_pending_contact_connection">Error deleting pending contact connection</string>
   <string name="error_changing_address">Error changing address</string>
@@ -471,7 +476,9 @@
 
   <!-- Clear Chat - ChatListNavLinkView.kt -->
   <string name="clear_chat_question">Clear chat?</string>
+  <string name="clear_note_folder_question">Clear private notes?</string>
   <string name="clear_chat_warning">All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you.</string>
+  <string name="clear_note_folder_warning">All messages will be deleted - this cannot be undone!</string>
   <string name="clear_verb">Clear</string>
   <string name="clear_chat_button">Clear chat</string>
   <string name="clear_chat_menu_action">Clear</string>
@@ -1292,6 +1299,7 @@
   <string name="info_row_database_id">Database ID</string>
   <string name="info_row_updated_at">Record updated at</string>
   <string name="info_row_sent_at">Sent at</string>
+  <string name="info_row_created_at">Created at</string>
   <string name="info_row_received_at">Received at</string>
   <string name="info_row_deleted_at">Deleted at</string>
   <string name="info_row_moderated_at">Moderated at</string>

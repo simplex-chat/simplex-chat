@@ -24,9 +24,12 @@ import dev.icerock.moko.resources.ImageResource
 @Composable
 fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant) {
   val icon =
-    if (chatInfo is ChatInfo.Group) MR.images.ic_supervised_user_circle_filled
-    else MR.images.ic_account_circle_filled
-  ProfileImage(size, chatInfo.image, icon, iconColor)
+    when (chatInfo) {
+      is ChatInfo.Group -> MR.images.ic_supervised_user_circle_filled
+      is ChatInfo.Direct -> MR.images.ic_account_circle_filled
+      else -> MR.images.ic_folder_filled
+    }
+  ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) MaterialTheme.colors.primary.copy(0.33f) else iconColor)
 }
 
 @Composable

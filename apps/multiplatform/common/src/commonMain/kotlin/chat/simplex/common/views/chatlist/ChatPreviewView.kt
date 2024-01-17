@@ -305,7 +305,7 @@ fun ChatPreviewView(
             color = Color.White,
             fontSize = 11.sp,
             modifier = Modifier
-              .background(if (disabled || showNtfsIcon) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
+              .background(if (disabled || showNtfsIcon || chat.chatInfo is ChatInfo.Local) MaterialTheme.colors.secondary else MaterialTheme.colors.primaryVariant, shape = CircleShape)
               .badgeLayout()
               .padding(horizontal = 3.dp)
               .padding(vertical = 1.dp)

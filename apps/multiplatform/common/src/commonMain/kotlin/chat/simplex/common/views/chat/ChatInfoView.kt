@@ -275,6 +275,27 @@ fun clearChatDialog(chat: Chat, chatModel: ChatModel, close: (() -> Unit)? = nul
   )
 }
 
+fun clearNoteFolderDialog(chat: Chat, close: (() -> Unit)? = null) {
+  val chatInfo = chat.chatInfo
+  AlertManager.shared.showAlertDialog(
+    title = generalGetString(MR.strings.clear_note_folder_question),
+    text = generalGetString(MR.strings.clear_note_folder_warning),
+    confirmText = generalGetString(MR.strings.clear_verb),
+    onConfirm = {
+      withBGApi {
+        val chatRh = chat.remoteHostId
+        val updatedChatInfo = chatModel.controller.apiClearNoteFolder(chatRh)
+        if (updatedChatInfo != null) {
+          chatModel.clearChat(chatRh, updatedChatInfo)
+          ntfManager.cancelNotificationsForChat(chatInfo.id)
+          close?.invoke()
+        }
+      }
+    },
+    destructive = true,
+  )
+}
+
 @Composable
 fun ChatInfoLayout(
   chat: Chat,

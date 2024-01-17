@@ -77,7 +77,7 @@ fun CIVideoView(
                 receiveFileIfValidSize(file, receiveFile)
               CIFileStatus.RcvAccepted ->
                 when (file.fileProtocol) {
-                  FileProtocol.XFTP ->
+                  FileProtocol.XFTP, FileProtocol.LOCAL ->
                     AlertManager.shared.showAlertMsg(
                       generalGetString(MR.strings.waiting_for_video),
                       generalGetString(MR.strings.video_will_be_received_when_contact_completes_uploading)
@@ -377,10 +377,11 @@ private fun loadingIndicator(file: CIFile?) {
           when (file.fileProtocol) {
             FileProtocol.XFTP -> progressIndicator()
             FileProtocol.SMP -> {}
+            FileProtocol.LOCAL -> {}
           }
         is CIFileStatus.SndTransfer ->
           when (file.fileProtocol) {
-            FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
+            FileProtocol.XFTP, FileProtocol.LOCAL -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
             FileProtocol.SMP -> progressIndicator()
           }
         is CIFileStatus.SndComplete -> fileIcon(painterResource(MR.images.ic_check_filled), MR.strings.icon_descr_video_snd_complete)

@@ -1,6 +1,7 @@
 package chat.simplex.common.ui.theme
 
 import androidx.compose.material.LocalContentColor
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
@@ -29,3 +30,4 @@ val FileLight = Color(183, 190, 199, 255)
 val FileDark = Color(101, 101, 106, 255)
 
 val MenuTextColor: Color @Composable get () = if (isInDarkTheme()) LocalContentColor.current.copy(alpha = 0.8f) else Color.Black
+val NoteFolderIconColor: Color @Composable get() = MaterialTheme.colors.primary.copy(0.33f)
