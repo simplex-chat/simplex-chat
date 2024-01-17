@@ -270,7 +270,7 @@ fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMen
     }
     ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
     ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
-    ClearChatAction(chat, chatModel, showMenu)
+    ClearChatAction(chat, showMenu)
   }
   DeleteContactAction(chat, chatModel, showMenu)
 }
@@ -309,7 +309,7 @@ fun GroupMenuItems(
       }
       ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
       ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
-      ClearChatAction(chat, chatModel, showMenu)
+      ClearChatAction(chat, showMenu)
       if (groupInfo.membership.memberCurrent) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
@@ -380,12 +380,12 @@ fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled:
 }
 
 @Composable
-fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun ClearChatAction(chat: Chat, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.clear_chat_menu_action),
     painterResource(MR.images.ic_settings_backup_restore),
     onClick = {
-      clearChatDialog(chat, chatModel)
+      clearChatDialog(chat)
       showMenu.value = false
     },
     color = WarningOrange

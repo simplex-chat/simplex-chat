@@ -1016,17 +1016,21 @@ object ChatController {
     return success
   }
 
+  fun clearChat(chat: Chat, close: (() -> Unit)? = null) {
+    withBGApi {
+      val updatedChatInfo = apiClearChat(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId)
+      if (updatedChatInfo != null) {
+        chatModel.clearChat(chat.remoteHostId, updatedChatInfo)
+        ntfManager.cancelNotificationsForChat(chat.chatInfo.id)
+        close?.invoke()
+      }
+    }
+  }
+
   suspend fun apiClearChat(rh: Long?, type: ChatType, id: Long): ChatInfo? {
     val r = sendCmd(rh, CC.ApiClearChat(type, id))
     if (r is CR.ChatCleared) return r.chatInfo
     Log.e(TAG, "apiClearChat bad response: ${r.responseType} ${r.details}")
-    return null
-  }
-
-  suspend fun apiClearNoteFolder(rh: Long?): ChatInfo? {
-    val r = sendCmd(rh, CC.ApiClearNoteFolder())
-    if (r is CR.ChatCleared) return r.chatInfo
-    Log.e(TAG, "apiClearNoteFolder bad response: ${r.responseType} ${r.details}")
     return null
   }
 
@@ -2312,7 +2316,6 @@ sealed class CC {
   class ApiConnectContactViaAddress(val userId: Long, val incognito: Boolean, val contactId: Long): CC()
   class ApiDeleteChat(val type: ChatType, val id: Long, val notify: Boolean?): CC()
   class ApiClearChat(val type: ChatType, val id: Long): CC()
-  class ApiClearNoteFolder(): CC()
   class ApiListContacts(val userId: Long): CC()
   class ApiUpdateProfile(val userId: Long, val profile: Profile): CC()
   class ApiSetContactPrefs(val contactId: Long, val prefs: ChatPreferences): CC()
@@ -2451,7 +2454,6 @@ sealed class CC {
       "/_delete ${chatRef(type, id)}"
     }
     is ApiClearChat -> "/_clear chat ${chatRef(type, id)}"
-    is ApiClearNoteFolder -> "/clear *"
     is ApiListContacts -> "/_contacts $userId"
     is ApiUpdateProfile -> "/_profile $userId ${json.encodeToString(profile)}"
     is ApiSetContactPrefs -> "/_set prefs @$contactId ${json.encodeToString(prefs)}"
@@ -2577,7 +2579,6 @@ sealed class CC {
     is ApiConnectContactViaAddress -> "apiConnectContactViaAddress"
     is ApiDeleteChat -> "apiDeleteChat"
     is ApiClearChat -> "apiClearChat"
-    is ApiClearNoteFolder -> "apiClearNoteFolder"
     is ApiListContacts -> "apiListContacts"
     is ApiUpdateProfile -> "apiUpdateProfile"
     is ApiSetContactPrefs -> "apiSetContactPrefs"
