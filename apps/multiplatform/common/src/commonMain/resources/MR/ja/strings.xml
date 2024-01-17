@@ -620,7 +620,7 @@
     <string name="rcv_group_event_changed_member_role">%s の役割を %s に変えました。</string>
     <string name="rcv_group_event_changed_your_role">役割を %s に変えました。</string>
     <string name="rcv_group_event_member_added">招待された %1$s</string>
-    <string name="snd_conn_event_switch_queue_phase_changing_for_member">アドレスを変更いたします： %s</string>
+    <string name="snd_conn_event_switch_queue_phase_changing_for_member">アドレスを変更しています： %s</string>
     <string name="group_member_role_owner">オーナー</string>
     <string name="group_member_status_connecting">接続待ち</string>
     <string name="icon_descr_expand_role">役割の選択を拡大</string>
@@ -873,7 +873,7 @@
     <string name="core_simplexmq_version">simplexmq: バージョン%s (%2s)</string>
     <string name="callstate_waiting_for_answer">応答を待機中…</string>
     <string name="callstate_waiting_for_confirmation">確認を待機中…</string>
-    <string name="first_platform_without_user_ids">世界初のユーザーIDのないプラットフォーム｜設計も元からプライベート</string>
+    <string name="first_platform_without_user_ids">世界初のユーザーIDのないプラットフォーム - プライバシーに配慮した設計</string>
     <string name="use_chat">チャット</string>
     <string name="contact_wants_to_connect_via_call">%1$sは次の方法であなたと繋がりたいです：</string>
     <string name="video_call_no_encryption">ビデオ通話 (非エンドツーエンド暗号化)</string>
