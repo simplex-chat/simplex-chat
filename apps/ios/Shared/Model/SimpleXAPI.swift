@@ -366,28 +366,9 @@ func apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: 
 }
 
 func apiCreateChatItem(noteFolderId: Int64, file: CryptoFile?, msg: MsgContent) async -> ChatItem? {
-    let chatModel = ChatModel.shared
-    let cmd: ChatCommand = .apiCreateChatItem(noteFolderId: noteFolderId, file: file, msg: msg)
-    var cItem: ChatItem? = nil
-    let endTask = beginBGTask({
-        if let cItem = cItem {
-            DispatchQueue.main.async {
-                chatModel.messageDelivery.removeValue(forKey: cItem.id)
-            }
-        }
-    })
-    let r: ChatResponse = await chatSendCmd(cmd, bgTask: false)
-    if case let .newChatItem(_, aChatItem) = r {
-        cItem = aChatItem.chatItem
-        chatModel.messageDelivery[aChatItem.chatItem.id] = endTask
-        return cItem
-    }
-    if let networkErrorAlert = networkErrorAlert(r) {
-        AlertManager.shared.showAlert(networkErrorAlert)
-    } else {
-        createChatItemErrorAlert(r)
-    }
-    endTask()
+    let r = await chatSendCmd(.apiCreateChatItem(noteFolderId: noteFolderId, file: file, msg: msg))
+    if case let .newChatItem(_, aChatItem) = r { return aChatItem.chatItem }
+    createChatItemErrorAlert(r)
     return nil
 }
 
