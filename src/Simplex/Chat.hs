@@ -1734,10 +1734,11 @@ processChatCommand' vr = \case
                 toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
           pure CRMemberRoleUser {user, groupInfo = gInfo, member = m {memberRole = memRole}, fromRole = mRole, toRole = memRole}
   APIBlockMemberForAll groupId gmId blocked -> withUser $ \user -> do
-    Group gInfo members <- withStore $ \db -> getGroup db vr user groupId
-    let (targetMember, remainingMembers) = partition ((== gmId) . groupMemberId') members
-    case targetMember of
-      [blockedMember] -> do
+    Group gInfo@GroupInfo {membership} members <- withStore $ \db -> getGroup db vr user groupId
+    let (blockedMember, remainingMembers) = partition ((== gmId) . groupMemberId') members
+    case blockedMember of
+      [bm] -> do
+        let GroupMember {memberId = bmMemberId, memberRole = bmRole, memberProfile = bmp, blockedByGroupMemberId} = bm
         assertUserGroupRole gInfo $ max GRAdmin bmRole
         withChatLock "blockForAll" . procCmd $
           if blocked /= isJust blockedByGroupMemberId
@@ -1747,15 +1748,12 @@ processChatCommand' vr = \case
               ci <- saveSndChatItem user (CDGroupSnd gInfo) msg ciContent
               toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
               bm' <- withStore $ \db -> do
-                liftIO $ updateGroupMemberBlockedForAll db user groupId gmId byGMId_
+                let byGMId_ = if blocked then Just (groupMemberId' membership) else Nothing
+                liftIO $ updateGroupMemberBlocked db user groupId gmId byGMId_
                 getGroupMember db user groupId gmId
               toggleNtf user bm' (not blocked)
               pure CRMemberBlockedForAllUser {user, groupInfo = gInfo, member = bm', blocked}
             else throwChatError $ CECommandError $ if blocked then "already blocked" else "already unblocked"
-        where
-          byGMId_ = if blocked then Just (groupMemberId' membership) else Nothing
-          GroupInfo {membership} = gInfo
-          GroupMember {memberId = bmMemberId, memberRole = bmRole, memberProfile = bmp, blockedByGroupMemberId} = blockedMember
       _ -> throwChatError $ CEException "expected to find a single blocked member"
   APIRemoveMember groupId memberId -> withUser $ \user -> do
     Group gInfo members <- withStore $ \db -> getGroup db vr user groupId
@@ -4546,7 +4544,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> UTCTime -> Bool -> m ()
     newGroupContentMessage
       gInfo@GroupInfo {groupId}
-      m@GroupMember {memberId, memberRole, blockedByGroupMemberId}
+      m@GroupMember {memberId, memberRole}
       mc
       msg@RcvMessage {sharedMsgId_}
       brokerTs
@@ -4554,11 +4552,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         | isVoice content && not (groupFeatureAllowed SGFVoice gInfo) = rejected GFVoice
         | not (isVoice content) && isJust fInv_ && not (groupFeatureAllowed SGFFiles gInfo) = rejected GFFiles
         | otherwise =
-            case blockedByGroupMemberId of
-              Just blockedByGMId ->
-                withStore' (\db -> runExceptT $ getGroupMember db user groupId blockedByGMId) >>= \case
-                  Right blockedByGM -> applyModeration' timed' live' blockedByGM Nothing brokerTs
-                  Left _ -> createItem timed' live'
+            case blockedByGroupMemberId m of
+              Just blockedByGMId -> moderateBlockedMember blockedByGMId
               Nothing ->
                 withStore' (\db -> getCIModeration db user gInfo memberId sharedMsgId_) >>= \case
                   Just ciModeration -> do
@@ -4570,6 +4565,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           timed' = if forwarded then rcvCITimed_ (Just Nothing) itemTTL else rcvGroupCITimed gInfo itemTTL
           live' = fromMaybe False live_
           ExtMsgContent content fInv_ itemTTL live_ = mcExtMsgContent mc
+          moderateBlockedMember blockedByGMId =
+            withStore' (\db -> runExceptT $ getGroupMember db user groupId blockedByGMId) >>= \case
+              Right blockedByGM -> applyModeration' timed' live' blockedByGM Nothing brokerTs
+              Left _ -> createItem timed' live'
           applyModeration timed_ live CIModeration {moderatorMember, createdByMsgId, moderatedAt} =
             applyModeration' timed_ live moderatorMember (Just createdByMsgId) moderatedAt
           applyModeration' timed_ live moderator@GroupMember {memberRole = moderatorRole} createdByMsgId_ moderatedAt
@@ -5376,7 +5375,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               | senderRole < GRAdmin || senderRole < memberRole -> messageError "x.grp.mem.block with insufficient member permissions"
               | otherwise -> do
                   bm' <- withStore $ \db -> do
-                    liftIO $ updateGroupMemberBlockedForAll db user groupId bmId blockedByGroupMemberId
+                    liftIO $ updateGroupMemberBlocked db user groupId bmId blockedByGroupMemberId
                     getGroupMember db user groupId bmId
                   toggleNtf user bm' (not blocked)
                   let ciContent = CIRcvGroupEvent $ RGEMemberBlocked bmId (fromLocalProfile bmp) blocked

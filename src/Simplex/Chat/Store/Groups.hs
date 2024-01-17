@@ -98,7 +98,7 @@ module Simplex.Chat.Store.Groups
     deleteOldProbes,
     updateGroupSettings,
     updateGroupMemberSettings,
-    updateGroupMemberBlockedForAll,
+    updateGroupMemberBlocked,
     getXGrpMemIntroContDirect,
     getXGrpMemIntroContGroup,
     getHostConnId,
@@ -1772,8 +1772,8 @@ updateGroupMemberSettings db User {userId} gId gMemberId GroupMemberSettings {sh
     |]
     (showMessages, currentTs, userId, gId, gMemberId)
 
-updateGroupMemberBlockedForAll :: DB.Connection -> User -> GroupId -> GroupMemberId -> Maybe GroupMemberId -> IO ()
-updateGroupMemberBlockedForAll db User {userId} gId gMemberId blockedByGroupMemberId = do
+updateGroupMemberBlocked :: DB.Connection -> User -> GroupId -> GroupMemberId -> Maybe GroupMemberId -> IO ()
+updateGroupMemberBlocked db User {userId} gId gMemberId blockedByGroupMemberId = do
   currentTs <- getCurrentTime
   DB.execute
     db
