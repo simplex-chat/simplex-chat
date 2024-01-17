@@ -992,8 +992,7 @@ createNewMember_
       memProfileId = memberContactProfileId
     }
   createdAt = do
-    let blockedByAdmin = blocked == Just True
-        invitedById = fromInvitedBy userContactId invitedBy
+    let invitedById = fromInvitedBy userContactId invitedBy
         activeConn = Nothing
         mcvr@(VersionRange minV maxV) = maybe chatInitialVRange fromChatVRange memChatVRange
     DB.execute
@@ -1005,7 +1004,7 @@ createNewMember_
            peer_chat_min_version, peer_chat_max_version)
           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       |]
-      ( (groupId, memberId, memberRole, memberCategory, memberStatus, blockedByAdmin, invitedById, memInvitedByGroupMemberId)
+      ( (groupId, memberId, memberRole, memberCategory, memberStatus, blocked, invitedById, memInvitedByGroupMemberId)
           :. (userId, localDisplayName, memberContactId, memberContactProfileId, createdAt, createdAt)
           :. (minV, maxV)
       )
@@ -1019,7 +1018,7 @@ createNewMember_
           memberCategory,
           memberStatus,
           memberSettings = defaultMemberSettings,
-          blockedByAdmin = False,
+          blockedByAdmin = blocked == Just True,
           invitedBy,
           invitedByGroupMemberId = memInvitedByGroupMemberId,
           localDisplayName,
