@@ -3425,18 +3425,16 @@ public enum RcvGroupEvent: Decodable {
     }
 
     private func profileUpdatedText(_ from: Profile, _ to: Profile) -> String {
-        to.displayName != from.displayName || to.fullName != from.fullName
-        ? String.localizedStringWithFormat(NSLocalizedString("member %@ changed to %@", comment: "profile update event chat item"), from.profileViewName, to.profileViewName)
-        : (
-            to.image != from.image
-            ? (
-                to.image == nil
-                ? NSLocalizedString("removed profile picture", comment: "profile update event chat item")
-                : NSLocalizedString("set new profile picture", comment: "profile update event chat item")
-            )
+        if to.displayName != from.displayName || to.fullName != from.fullName {
+            String.localizedStringWithFormat(NSLocalizedString("member %@ changed to %@", comment: "profile update event chat item"), from.profileViewName, to.profileViewName)
+        } else if to.image != from.image {
+            to.image == nil
+            ? NSLocalizedString("removed profile picture", comment: "profile update event chat item")
+            : NSLocalizedString("set new profile picture", comment: "profile update event chat item")
+        } else {
             // shouldn't happen if backend correctly creates item; UI should be synchronized with backend
-            : NSLocalizedString("updated profile", comment: "profile update event chat item")
-        )
+            NSLocalizedString("updated profile", comment: "profile update event chat item")
+        }
     }
 }
 
