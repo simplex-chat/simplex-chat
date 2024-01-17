@@ -84,7 +84,7 @@ import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
 import Simplex.FileTransfer.Description (ValidFileDescription, gb, kb, mb)
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, temporaryAgentError)
+import Simplex.Messaging.Agent.Client (AgentStatsKey (..), SubInfo (..), agentClientStore, getAgentWorkersDetails, getAgentWorkersSummary, temporaryAgentError)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), createAgentStore, defaultAgentConfig)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
@@ -108,9 +108,9 @@ import Simplex.Messaging.Util
 import Simplex.Messaging.Version
 import Simplex.RemoteControl.Invitation (RCInvitation (..), RCSignedInvitation (..))
 import Simplex.RemoteControl.Types (RCCtrlAddress (..))
-import System.Exit (ExitCode, exitFailure, exitSuccess)
+import System.Exit (ExitCode, exitSuccess)
 import System.FilePath (takeFileName, (</>))
-import System.IO (Handle, IOMode (..), SeekMode (..), hFlush, stdout)
+import System.IO (Handle, IOMode (..), SeekMode (..), hFlush)
 import System.Random (randomRIO)
 import Text.Read (readMaybe)
 import UnliftIO.Async
@@ -454,17 +454,14 @@ processChatCommand' vr = \case
     u <- asks currentUser
     (smp, smpServers) <- chooseServers SPSMP
     (xftp, xftpServers) <- chooseServers SPXFTP
-    auId <-
-      withStore' getUsers >>= \case
-        [] -> pure 1
-        users -> do
-          forM_ users $ \User {localDisplayName = n, activeUser, viewPwdHash} ->
-            when (n == displayName) . throwChatError $
-              if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
-          withAgent (\a -> createUser a smp xftp)
+    users <- withStore' getUsers
+    forM_ users $ \User {localDisplayName = n, activeUser, viewPwdHash} ->
+      when (n == displayName) . throwChatError $
+        if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
+    auId <- withAgent (\a -> createUser a smp xftp)
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withStore $ \db -> createUserRecordAt db (AgentUserId auId) p True ts
-    when (auId == 1) $ withStore (\db -> createContact db user simplexContactProfile) `catchChatError` \_ -> pure ()
+    when (null users) $ withStore (\db -> createContact db user simplexContactProfile) `catchChatError` \_ -> pure ()
     withStore $ \db -> createNoteFolder db user
     storeServers user smpServers
     storeServers user xftpServers
@@ -2085,6 +2082,8 @@ processChatCommand' vr = \case
     chatLockName <- atomically . tryReadTMVar =<< asks chatLock
     agentLocks <- withAgent debugAgentLocks
     pure CRDebugLocks {chatLockName, agentLocks}
+  GetAgentWorkers -> CRAgentWorkersSummary <$> withAgent getAgentWorkersSummary
+  GetAgentWorkersDetails -> CRAgentWorkersDetails <$> withAgent getAgentWorkersDetails
   GetAgentStats -> CRAgentStats . map stat <$> withAgent getAgentStats
     where
       stat (AgentStatsKey {host, clientTs, cmd, res}, count) =
@@ -2313,6 +2312,7 @@ processChatCommand' vr = \case
       pure $ CRGroupUpdated user g g' Nothing
     checkValidName :: GroupName -> m ()
     checkValidName displayName = do
+      when (T.null displayName) $ throwChatError CEInvalidDisplayName {displayName, validName = ""}
       let validName = T.pack $ mkValidName $ T.unpack displayName
       when (displayName /= validName) $ throwChatError CEInvalidDisplayName {displayName, validName}
     assertUserGroupRole :: GroupInfo -> GroupMemberRole -> m ()
@@ -6377,68 +6377,6 @@ createLocalChatItem user cd content createdAt = do
       let smi_ = Just (SharedMsgId sharedMsgId)
        in createNewChatItem_ db user cd Nothing smi_ content (Nothing, Nothing, Nothing, Nothing, Nothing) Nothing False createdAt Nothing createdAt
 
-getCreateActiveUser :: SQLiteStore -> Bool -> IO User
-getCreateActiveUser st testView = do
-  user <-
-    withTransaction st getUsers >>= \case
-      [] -> newUser
-      users -> maybe (selectUser users) pure (find activeUser users)
-  unless testView $ putStrLn $ "Current user: " <> userStr user
-  pure user
-  where
-    newUser :: IO User
-    newUser = do
-      putStrLn
-        "No user profiles found, it will be created now.\n\
-        \Please choose your display name and your full name.\n\
-        \They will be sent to your contacts when you connect.\n\
-        \They are only stored on your device and you can change them later."
-      loop
-      where
-        loop = do
-          displayName <- getContactName
-          withTransaction st (\db -> runExceptT $ createUserRecord db (AgentUserId 1) (profileFromName displayName) True) >>= \case
-            Left SEDuplicateName -> do
-              putStrLn "chosen display name is already used by another profile on this device, choose another one"
-              loop
-            Left e -> putStrLn ("database error " <> show e) >> exitFailure
-            Right user -> do
-              void . withTransaction st $ \db -> runExceptT $ createNoteFolder db user
-              pure user
-    selectUser :: [User] -> IO User
-    selectUser [user@User {userId}] = do
-      withTransaction st (`setActiveUser` userId)
-      pure user
-    selectUser users = do
-      putStrLn "Select user profile:"
-      forM_ (zip [1 ..] users) $ \(n :: Int, user) -> putStrLn $ show n <> " - " <> userStr user
-      loop
-      where
-        loop = do
-          nStr <- getWithPrompt $ "user profile number (1 .. " <> show (length users) <> ")"
-          case readMaybe nStr :: Maybe Int of
-            Nothing -> putStrLn "invalid user number" >> loop
-            Just n
-              | n <= 0 || n > length users -> putStrLn "invalid user number" >> loop
-              | otherwise -> do
-                  let user@User {userId} = users !! (n - 1)
-                  withTransaction st (`setActiveUser` userId)
-                  pure user
-    userStr :: User -> String
-    userStr User {localDisplayName, profile = LocalProfile {fullName}} =
-      T.unpack $ localDisplayName <> if T.null fullName || localDisplayName == fullName then "" else " (" <> fullName <> ")"
-    getContactName :: IO ContactName
-    getContactName = do
-      displayName <- getWithPrompt "display name"
-      let validName = mkValidName displayName
-      if
-        | null displayName -> putStrLn "display name can't be empty" >> getContactName
-        | null validName -> putStrLn "display name is invalid, please choose another" >> getContactName
-        | displayName /= validName -> putStrLn ("display name is invalid, you could use this one: " <> validName) >> getContactName
-        | otherwise -> pure $ T.pack displayName
-    getWithPrompt :: String -> IO String
-    getWithPrompt s = putStr (s <> ": ") >> hFlush stdout >> getLine
-
 withUser' :: ChatMonad m => (User -> m ChatResponse) -> m ChatResponse
 withUser' action =
   asks currentUser
@@ -6777,7 +6715,9 @@ chatCommandP =
       "/get stats" $> GetAgentStats,
       "/reset stats" $> ResetAgentStats,
       "/get subs" $> GetAgentSubs,
-      "/get subs details" $> GetAgentSubsDetails
+      "/get subs details" $> GetAgentSubsDetails,
+      "/get workers" $> GetAgentWorkers,
+      "/get workers details" $> GetAgentWorkersDetails
     ]
   where
     choice = A.choice . map (\p -> p <* A.takeWhile (== ' ') <* A.endOfInput)

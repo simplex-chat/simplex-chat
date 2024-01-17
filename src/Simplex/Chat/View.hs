@@ -358,6 +358,11 @@ responseToView hu@(currentRH, user_) ChatConfig {logLevel, showReactions, showRe
     ("active subscriptions:" : map sShow activeSubscriptions)
       <> ("pending subscriptions: " : map sShow pendingSubscriptions)
       <> ("removed subscriptions: " : map sShow removedSubscriptions)
+  CRAgentWorkersSummary {agentWorkersSummary} -> ["agent workers summary: " <> plain (LB.unpack $ J.encode agentWorkersSummary)]
+  CRAgentWorkersDetails {agentWorkersDetails} ->
+    [ "agent workers details:",
+      plain . LB.unpack $ J.encode agentWorkersDetails -- this would be huge, but copypastable when has its own line
+    ]
   CRConnectionDisabled entity -> viewConnectionEntityDisabled entity
   CRAgentRcvQueueDeleted acId srv aqId err_ ->
     [ ("completed deleting rcv queue, agent connection id: " <> sShow acId)
@@ -1821,7 +1826,7 @@ viewChatError logLevel testView = \case
     CEUserNotHidden _ -> ["user is not hidden"]
     CEInvalidDisplayName {displayName, validName} ->
       map plain $
-        ["invalid display name: " <> viewName displayName]
+        [if T.null displayName then "display name can't be empty" else "invalid display name: " <> viewName displayName]
           <> ["you could use this one: " <> viewName validName | not (T.null validName)]
     CEChatNotStarted -> ["error: chat not started"]
     CEChatNotStopped -> ["error: chat not stopped"]
@@ -1934,6 +1939,8 @@ viewChatError logLevel testView = \case
     AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug]
     AGENT A_PROHIBITED -> [withConnEntity <> "error: AGENT A_PROHIBITED" | logLevel <= CLLWarning]
     CONN NOT_FOUND -> [withConnEntity <> "error: CONN NOT_FOUND" | logLevel <= CLLWarning]
+    CRITICAL restart e -> [plain $ "critical error: " <> e] <> ["please restart the app" | restart]
+    INTERNAL e -> [plain $ "internal error: " <> e]
     e -> [withConnEntity <> "smp agent error: " <> sShow e | logLevel <= CLLWarning]
     where
       withConnEntity = case entity_ of
