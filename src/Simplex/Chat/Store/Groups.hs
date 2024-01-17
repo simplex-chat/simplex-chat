@@ -2027,13 +2027,13 @@ updateContactMemberProfile :: DB.Connection -> User -> GroupMember -> Contact ->
 updateContactMemberProfile db User {userId} m ct@Contact {contactId} p'
   | displayName == newName = do
       liftIO $ updateMemberContactProfile_ db userId profileId p'
-      pure (m {memberProfile = profile}, ct {profile})
+      pure (m {memberProfile = profile}, ct {profile} :: Contact)
   | otherwise =
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
         updateMemberContactProfile_' db userId profileId p' currentTs
         updateContactLDN_ db userId contactId localDisplayName ldn currentTs
-        pure $ Right (m {localDisplayName = ldn, memberProfile = profile}, ct {localDisplayName = ldn, profile})
+        pure $ Right (m {localDisplayName = ldn, memberProfile = profile}, ct {localDisplayName = ldn, profile} :: Contact)
   where
     GroupMember {localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
     Profile {displayName = newName} = p'
