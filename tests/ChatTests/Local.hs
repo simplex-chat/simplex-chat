@@ -11,7 +11,7 @@ import Data.Time.Format.ISO8601 (iso8601Show)
 import Simplex.Chat.Controller (ChatConfig (..), InlineFilesConfig (..), defaultInlineFilesConfig)
 import System.Directory (copyFile, doesFileExist)
 import System.FilePath ((</>))
-import Test.Hspec
+import Test.Hspec hiding (it)
 import UnliftIO.Async (concurrently_)
 
 chatLocalChatsTests :: SpecWith FilePath

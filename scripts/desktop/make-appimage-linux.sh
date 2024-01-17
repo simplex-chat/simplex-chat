@@ -37,7 +37,7 @@ cp *imple*.desktop usr/share/applications/
 cp $multiplatform_dir/desktop/src/jvmMain/resources/distribute/*.appdata.xml usr/share/metainfo
 
 if [ ! -f ../appimagetool-x86_64.AppImage ]; then
-    wget https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O ../appimagetool-x86_64.AppImage
+    wget --secure-protocol=TLSv1_3 https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O ../appimagetool-x86_64.AppImage
     chmod +x ../appimagetool-x86_64.AppImage
 fi
 ../appimagetool-x86_64.AppImage .

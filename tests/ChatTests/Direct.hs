@@ -24,7 +24,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Version
 import System.Directory (copyFile, doesDirectoryExist, doesFileExist)
 import System.FilePath ((</>))
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 chatDirectTests :: SpecWith FilePath
 chatDirectTests = do
@@ -1559,6 +1559,19 @@ testDeleteUser =
 
       alice ##> "/create user alisa3"
       showActiveUser alice "alisa3"
+      alice ##> "/delete user alisa3 del_smp=on"
+      alice <### ["ok", "completed deleting user"]
+      alice ##> "/users"
+      alice <## "no users"
+
+      alice ##> "/create user alisa4"
+      showActiveUser alice "alisa4"
+      connectUsers alice bob
+      alice <##> bob
+      alice ##> "/delete user alisa4 del_smp=on"
+      alice <### ["ok", "completed deleting user"]
+      alice ##> "/users"
+      alice <## "no users"
 
 testUsersDifferentCIExpirationTTL :: HasCallStack => FilePath -> IO ()
 testUsersDifferentCIExpirationTTL tmp = do

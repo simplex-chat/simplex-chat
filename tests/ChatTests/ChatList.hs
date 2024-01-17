@@ -4,7 +4,7 @@ import ChatClient
 import ChatTests.Utils
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.Format.ISO8601 (iso8601Show)
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 chatListTests :: SpecWith FilePath
 chatListTests = do
