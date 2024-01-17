@@ -3372,26 +3372,20 @@ public enum RcvDirectEvent: Decodable {
     }
 
     private func profileUpdatedText(_ from: Profile, _ to: Profile) -> String {
-        to.displayName != from.displayName || to.fullName != from.fullName
-        ? String.localizedStringWithFormat(NSLocalizedString("contact %@ changed to %@", comment: "profile update event chat item"), from.profileViewName, to.profileViewName)
-        : (
-            to.image != from.image
-            ? (
-                to.image == nil
-                ? NSLocalizedString("removed profile picture", comment: "profile update event chat item")
-                : NSLocalizedString("set new profile picture", comment: "profile update event chat item")
-            )
-            : (
-                to.contactLink != from.contactLink
-                ? (
-                    to.contactLink == nil
-                    ? NSLocalizedString("removed contact address", comment: "profile update event chat item")
-                    : NSLocalizedString("set new contact address", comment: "profile update event chat item")
-                )
-                // shouldn't happen if backend correctly creates item; UI should be synchronized with backend
-                : NSLocalizedString("updated profile", comment: "profile update event chat item")
-            )
-        )
+        if to.displayName != from.displayName || to.fullName != from.fullName {
+            String.localizedStringWithFormat(NSLocalizedString("contact %@ changed to %@", comment: "profile update event chat item"), from.profileViewName, to.profileViewName)
+        } else if to.image != from.image {
+            to.image == nil
+            ? NSLocalizedString("removed profile picture", comment: "profile update event chat item")
+            : NSLocalizedString("set new profile picture", comment: "profile update event chat item")
+        } else if to.contactLink != from.contactLink {
+            to.contactLink == nil
+            ? NSLocalizedString("removed contact address", comment: "profile update event chat item")
+            : NSLocalizedString("set new contact address", comment: "profile update event chat item")
+        } else {
+            // shouldn't happen if backend correctly creates item; UI should be synchronized with backend
+            NSLocalizedString("updated profile", comment: "profile update event chat item")
+        }
     }
 }
 
