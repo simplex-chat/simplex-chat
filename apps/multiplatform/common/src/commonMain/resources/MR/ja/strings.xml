@@ -1351,11 +1351,11 @@
     <string name="rcv_group_event_3_members_connected">%s, %s と %s は接続中</string>
     <string name="in_developing_desc">この機能はまだサポートされていません。次のリリースをお試しください。</string>
     <string name="receipts_contacts_enable_keep_overrides">有効にする（設定の優先を維持）</string>
-    <string name="receipts_groups_disable_keep_overrides">無効にする（グループの設定の優先を維持）</string>
+    <string name="receipts_groups_disable_keep_overrides">無効にする (グループの上書きを維持)</string>
     <string name="receipts_groups_enable_keep_overrides">有効にする（グループの設定の優先を維持）</string>
-    <string name="receipts_contacts_disable_keep_overrides">無効にする（設定の優先を維持）</string>
+    <string name="receipts_contacts_disable_keep_overrides">無効化（設定した内容は保持されます）</string>
     <string name="v5_2_disappear_one_message_descr">会話中に無効になっている場合でも。</string>
-    <string name="v5_2_message_delivery_receipts">メッセージ配信の通知！</string>
+    <string name="v5_2_message_delivery_receipts">メッセージの配送通知</string>
     <string name="delivery_receipts_title">配信通知！</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">配信通知の送信はすべてのチャットプロフィールのすべての連絡先に対して有効になります。</string>
     <string name="message_delivery_error_title">メッセージ配信でエラー発生</string>
