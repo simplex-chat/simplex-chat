@@ -205,6 +205,9 @@ struct ChatListNavLink: View {
             disabled: !noteFolder.ready
         )
         .frame(height: rowHeights[dynamicTypeSize])
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            markReadButton()
+        }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             if !chat.chatItems.isEmpty {
                 clearNoteFolderButton()

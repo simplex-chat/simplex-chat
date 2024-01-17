@@ -1283,7 +1283,11 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat {
             case .voice: return prefs.voice.on
             case .calls: return false
             }
-        case .local: return true
+        case .local:
+            switch feature {
+            case .voice: return true
+            default: return false
+            }
         default: return false
         }
     }
@@ -2273,7 +2277,7 @@ public struct ChatItem: Identifiable, Decodable {
     }
 
     public var allowAddReaction: Bool {
-        return !localNote && meta.itemDeleted == nil && !isLiveDummy && reactions.filter({ $0.userReacted }).count < 3
+        return meta.itemDeleted == nil && !isLiveDummy && reactions.filter({ $0.userReacted }).count < 3
     }
 
     public func autoReceiveFile() -> CIFile? {

@@ -151,6 +151,8 @@ struct ChatView: View {
                             )
                         )
                     }
+                } else if case .local = cInfo {
+                    ChatInfoToolbar(chat: chat)
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
@@ -722,7 +724,7 @@ struct ChatView: View {
                     }
                     menu.append(rm)
                 }
-                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && chat.chatInfo.chatType != .local {
+                if ci.meta.itemDeleted == nil && !ci.isLiveDummy && !live && !ci.localNote {
                     menu.append(replyUIAction(ci))
                 }
                 let fileSource = getLoadedFileSource(ci.file)
