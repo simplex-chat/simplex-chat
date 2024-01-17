@@ -145,6 +145,7 @@ chatGroupTests = do
     it "messages are marked as moderated" testBlockForAllModerated
     it "messages are fully deleted" testBlockForAllFullDelete
     it "another admin can unblock" testBlockForAllAnotherAdminUnblocks
+    it "member was blocked before joining group" testBlockForAllBeforeJoining
     it "can't repeat block/unblock" testBlockForAllCantRepeat
   where
     _0 = supportedChatVRange -- don't create direct connections
@@ -5874,6 +5875,74 @@ testBlockForAllAnotherAdminUnblocks =
       [alice, cath] *<# "#team bob> 3"
 
       bob #$> ("/_get chat #1 count=3", chat, [(1, "1"), (1, "2"), (1, "3")])
+
+testBlockForAllBeforeJoining :: HasCallStack => FilePath -> IO ()
+testBlockForAllBeforeJoining =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup3 "team" alice bob cath
+
+      bob #> "#team 1"
+      [alice, cath] *<# "#team bob> 1"
+
+      alice ##> "/block #team bob"
+      alice <## "#team: you blocked bob"
+      cath <## "#team: alice blocked bob"
+      bob <// 50000
+
+      bob #> "#team 2"
+      [alice, cath] *<# "#team bob> 2 [blocked by admin]"
+
+      connectUsers alice dan
+      addMember "team" alice dan GRAdmin
+      dan ##> "/j team"
+      concurrentlyN_
+        [ alice <## "#team: dan joined the group",
+          do
+            dan <## "#team: you joined the group"
+            dan
+              <### [ "#team: member bob (Bob) is connected",
+                     "#team: member cath (Catherine) is connected"
+                   ],
+          aliceAddedDan bob,
+          aliceAddedDan cath
+        ]
+
+      threadDelay 1000000
+
+      bob #> "#team 3"
+      [alice, cath, dan] *<# "#team bob> 3 [blocked by admin]"
+
+      threadDelay 1000000
+
+      bob #> "#team 4"
+      [alice, cath, dan] *<# "#team bob> 4 [blocked by admin]"
+
+      threadDelay 1000000
+
+      alice ##> "/unblock #team bob"
+      alice <## "#team: you unblocked bob"
+      cath <## "#team: alice unblocked bob"
+      dan <## "#team: alice unblocked bob"
+      bob <// 50000
+
+      threadDelay 1000000
+
+      bob #> "#team 5"
+      [alice, cath, dan] *<# "#team bob> 5"
+
+      dan ##> "/_get chat #1 count=100"
+      r <- chat <$> getTermLine dan
+      r `shouldContain` [(0, "3 [blocked by admin]"), (0, "4 [blocked by admin]"), (0, "unblocked bob (Bob)"), (0, "5")]
+      r `shouldNotContain` [(0, "1")]
+      r `shouldNotContain` [(0, "1 [blocked by admin]")]
+      r `shouldNotContain` [(0, "2")]
+      r `shouldNotContain` [(0, "2 [blocked by admin]")]
+  where
+    aliceAddedDan :: HasCallStack => TestCC -> IO ()
+    aliceAddedDan cc = do
+      cc <## "#team: alice added dan (Daniel) to the group (connecting...)"
+      cc <## "#team: new member dan is connected"
 
 testBlockForAllCantRepeat :: HasCallStack => FilePath -> IO ()
 testBlockForAllCantRepeat =

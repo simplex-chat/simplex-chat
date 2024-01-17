@@ -982,7 +982,7 @@ createNewMember_
   User {userId, userContactId}
   GroupInfo {groupId}
   NewGroupMember
-    { memInfo = MemberInfo memberId memberRole memChatVRange memberProfile,
+    { memInfo = MemberInfo memberId memberRole blocked memChatVRange memberProfile,
       memCategory = memberCategory,
       memStatus = memberStatus,
       memInvitedBy = invitedBy,
@@ -992,19 +992,20 @@ createNewMember_
       memProfileId = memberContactProfileId
     }
   createdAt = do
-    let invitedById = fromInvitedBy userContactId invitedBy
+    let blockedByAdmin = blocked == Just True
+        invitedById = fromInvitedBy userContactId invitedBy
         activeConn = Nothing
         mcvr@(VersionRange minV maxV) = maybe chatInitialVRange fromChatVRange memChatVRange
     DB.execute
       db
       [sql|
         INSERT INTO group_members
-          (group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+          (group_id, member_id, member_role, member_category, member_status, blocked_by_admin, invited_by, invited_by_group_member_id,
            user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
            peer_chat_min_version, peer_chat_max_version)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       |]
-      ( (groupId, memberId, memberRole, memberCategory, memberStatus, invitedById, memInvitedByGroupMemberId)
+      ( (groupId, memberId, memberRole, memberCategory, memberStatus, blockedByAdmin, invitedById, memInvitedByGroupMemberId)
           :. (userId, localDisplayName, memberContactId, memberContactProfileId, createdAt, createdAt)
           :. (minV, maxV)
       )
@@ -1195,7 +1196,7 @@ getForwardInvitedMembers db user forwardMember highlyAvailable = do
       |]
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberInfo -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> SubscriptionMode -> ExceptT StoreError IO GroupMember
-createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupMember {memberContactId, activeConn} memInfo@(MemberInfo _ _ memChatVRange memberProfile) (groupCmdId, groupAgentConnId) directConnIds customUserProfileId subMode = do
+createIntroReMember db user@User {userId} gInfo@GroupInfo {groupId} _host@GroupMember {memberContactId, activeConn} memInfo@(MemberInfo _ _ _ memChatVRange memberProfile) (groupCmdId, groupAgentConnId) directConnIds customUserProfileId subMode = do
   let mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
       cLevel = 1 + maybe 0 (\Connection {connLevel} -> connLevel) activeConn
   currentTs <- liftIO getCurrentTime

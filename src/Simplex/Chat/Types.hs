@@ -589,16 +589,21 @@ data IntroInvitation = IntroInvitation
 data MemberInfo = MemberInfo
   { memberId :: MemberId,
     memberRole :: GroupMemberRole,
+    blocked :: Maybe Bool,
     v :: Maybe ChatVersionRange,
     profile :: Profile
   }
   deriving (Eq, Show)
 
 memberInfo :: GroupMember -> MemberInfo
-memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
-  MemberInfo memberId memberRole cvr (redactedMemberProfile $ fromLocalProfile memberProfile)
-  where
-    cvr = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn
+memberInfo GroupMember {memberId, memberRole, blockedByAdmin, memberProfile, activeConn} =
+  MemberInfo {
+    memberId,
+    memberRole,
+    blocked = if blockedByAdmin then Just True else Nothing,
+    v = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn,
+    profile = redactedMemberProfile $ fromLocalProfile memberProfile
+  }
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,

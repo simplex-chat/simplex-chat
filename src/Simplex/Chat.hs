@@ -3796,7 +3796,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 | otherwise = Nothing
               itemForwardEvents :: CChatItem 'CTGroup -> m [ChatMsgEvent 'Json]
               itemForwardEvents cci = case cci of
-                (CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv sender, content = CIRcvMsgContent mc, file}) -> do
+                (CChatItem SMDRcv ci@ChatItem {chatDir = CIGroupRcv sender@GroupMember {blockedByAdmin = False}, content = CIRcvMsgContent mc, file}) -> do
                   fInvDescr_ <- join <$> forM file getRcvFileInvDescr
                   processContentItem sender ci mc fInvDescr_
                 (CChatItem SMDSnd ci@ChatItem {content = CISndMsgContent mc, file}) -> do
@@ -3894,7 +3894,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           checkSendRcpt $ rights aChatMsgs
         -- currently only a single message is forwarded
         let GroupMember {memberRole = membershipMemRole} = membership
-        when (membershipMemRole >= GRAdmin) $ case aChatMsgs of
+        when (membershipMemRole >= GRAdmin && not (blockedByAdmin m)) $ case aChatMsgs of
           [Right (ACMsg _ chatMsg)] -> forwardMsg_ chatMsg
           _ -> pure ()
         where
@@ -5259,7 +5259,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         _ -> pure conn'
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> RcvMessage -> UTCTime -> m ()
-    xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _) msg brokerTs = do
+    xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _ _) msg brokerTs = do
       checkHostRole m memRole
       unless (sameMemberId memId $ membership gInfo) $
         withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
@@ -5279,7 +5279,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           toView $ CRJoinedGroupMemberConnecting user gInfo m announcedMember
 
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> m ()
-    xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _) = do
+    xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ _ memChatVRange _) = do
       case memberCategory m of
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
@@ -5321,7 +5321,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> m ()
-    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings} m memInfo@(MemberInfo memId memRole memChatVRange _) introInv@IntroInvitation {groupConnReq, directConnReq} = do
+    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings} m memInfo@(MemberInfo memId memRole _ memChatVRange _) introInv@IntroInvitation {groupConnReq, directConnReq} = do
       let GroupMember {memberId = membershipMemId} = membership
       checkHostRole m memRole
       toMember <-
