@@ -2017,7 +2017,7 @@ updateContactMemberProfile db User {userId} m ct@Contact {contactId} p'
         currentTs <- getCurrentTime
         updateMemberContactProfile_' db userId profileId p' currentTs
         updateContactLDN_ db userId contactId localDisplayName ldn currentTs
-        pure $ Right (m {localDisplayName = ldn, memberProfile = profile}, ct {localDisplayName = ldn, profile})
+        pure $ Right (m {localDisplayName = ldn, memberProfile = profile}, ct {localDisplayName = ldn, profile} :: Contact)
   where
     GroupMember {localDisplayName, memberProfile = LocalProfile {profileId, displayName, localAlias}} = m
     Profile {displayName = newName} = p'
