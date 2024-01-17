@@ -5379,16 +5379,22 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Right bm@GroupMember {groupMemberId = bmId, memberRole, memberProfile = bmp}
               | senderRole < GRAdmin || senderRole < memberRole -> messageError "x.grp.mem.block with insufficient member permissions"
               | otherwise -> do
-                  bm' <- withStore $ \db -> do
-                    liftIO $ updateGroupMemberBlocked db user groupId bmId blockedByAdmin
-                    getGroupMember db user groupId bmId
+                  bm' <- setMemberBlocked bmId
                   toggleNtf user bm' (not blocked)
                   let ciContent = CIRcvGroupEvent $ RGEMemberBlocked bmId (fromLocalProfile bmp) blocked
                   ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs ciContent
                   groupMsgToView gInfo ci
                   toView CRMemberBlockedForAll {user, groupInfo = gInfo, byMember = m, member = bm, blocked}
-            Left _ -> messageError "x.grp.mem.block with unknown member ID"
+            Left (SEGroupMemberNotFoundByMemberId _) -> do
+              bm <- createUnknownMember gInfo memId
+              bm' <- setMemberBlocked $ groupMemberId' bm
+              toView $ CRUnknownMemberBlocked user gInfo m bm'
+            Left e -> throwError $ ChatErrorStore e
       where
+        setMemberBlocked bmId =
+          withStore $ \db -> do
+            liftIO $ updateGroupMemberBlocked db user groupId bmId blockedByAdmin
+            getGroupMember db user groupId bmId
         blockedByAdmin = if blocked then Just (groupMemberId' m) else Nothing
         GroupMember {memberId = membershipMemId} = membership
 
@@ -5551,8 +5557,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memberId) >>= \case
         Right author -> processForwardedMsg author msg
         Left (SEGroupMemberNotFoundByMemberId _) -> do
-          let name = T.take 7 . safeDecodeUtf8 . B64.encode . unMemberId $ memberId
-          unknownAuthor <- withStore $ \db -> createNewUnknownGroupMember db vr user gInfo memberId name
+          unknownAuthor <- createUnknownMember gInfo memberId
           toView $ CRUnknownMemberCreated user gInfo m unknownAuthor
           processForwardedMsg unknownAuthor msg
         Left e -> throwError $ ChatErrorStore e
@@ -5577,6 +5582,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XGrpDel -> xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> xGrpInfo gInfo author p' rcvMsg msgTs
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
+
+    createUnknownMember :: GroupInfo -> MemberId -> m GroupMember
+    createUnknownMember gInfo memberId = do
+      let name = T.take 7 . safeDecodeUtf8 . B64.encode . unMemberId $ memberId
+      withStore $ \db -> createNewUnknownGroupMember db vr user gInfo memberId name
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> m ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do

@@ -5723,14 +5723,14 @@ testBlockForAllModerated =
       threadDelay 1000000
 
       bob #> "#team 2"
-      alice <# "#team bob> 2 [blocked by admin]"
-      cath <# "#team bob> 2 [blocked by admin]"
+      alice <# "#team bob> 2 [blocked by admin] <muted>"
+      cath <# "#team bob> 2 [blocked by admin] <muted>"
 
       threadDelay 1000000
 
       bob #> "#team 3"
-      alice <# "#team bob> 3 [blocked by admin]"
-      cath <# "#team bob> 3 [blocked by admin]"
+      alice <# "#team bob> 3 [blocked by admin] <muted>"
+      cath <# "#team bob> 3 [blocked by admin] <muted>"
 
       threadDelay 1000000
 
@@ -5803,14 +5803,14 @@ testBlockForAllFullDelete =
       threadDelay 1000000
 
       bob #> "#team 2"
-      alice <# "#team bob> blocked [blocked by admin]"
-      cath <# "#team bob> blocked [blocked by admin]"
+      alice <# "#team bob> blocked [blocked by admin] <muted>"
+      cath <# "#team bob> blocked [blocked by admin] <muted>"
 
       threadDelay 1000000
 
       bob #> "#team 3"
-      alice <# "#team bob> blocked [blocked by admin]"
-      cath <# "#team bob> blocked [blocked by admin]"
+      alice <# "#team bob> blocked [blocked by admin] <muted>"
+      cath <# "#team bob> blocked [blocked by admin] <muted>"
 
       threadDelay 1000000
 
@@ -5863,8 +5863,8 @@ testBlockForAllAnotherAdminUnblocks =
       bob <// 50000
 
       bob #> "#team 2"
-      alice <# "#team bob> 2 [blocked by admin]"
-      cath <# "#team bob> 2 [blocked by admin]"
+      alice <# "#team bob> 2 [blocked by admin] <muted>"
+      cath <# "#team bob> 2 [blocked by admin] <muted>"
 
       cath ##> "/unblock #team bob"
       cath <## "#team: you unblocked bob"
@@ -5891,7 +5891,7 @@ testBlockForAllBeforeJoining =
       bob <// 50000
 
       bob #> "#team 2"
-      [alice, cath] *<# "#team bob> 2 [blocked by admin]"
+      [alice, cath] *<# "#team bob> 2 [blocked by admin] <muted>"
 
       connectUsers alice dan
       addMember "team" alice dan GRAdmin
@@ -5911,12 +5911,12 @@ testBlockForAllBeforeJoining =
       threadDelay 1000000
 
       bob #> "#team 3"
-      [alice, cath, dan] *<# "#team bob> 3 [blocked by admin]"
+      [alice, cath, dan] *<# "#team bob> 3 [blocked by admin] <muted>"
 
       threadDelay 1000000
 
       bob #> "#team 4"
-      [alice, cath, dan] *<# "#team bob> 4 [blocked by admin]"
+      [alice, cath, dan] *<# "#team bob> 4 [blocked by admin] <muted>"
 
       threadDelay 1000000
 
@@ -5971,8 +5971,8 @@ testBlockForAllCantRepeat =
       cath <## "bad chat command: already blocked"
 
       bob #> "#team 2"
-      alice <# "#team bob> 2 [blocked by admin]"
-      cath <# "#team bob> 2 [blocked by admin]"
+      alice <# "#team bob> 2 [blocked by admin] <muted>"
+      cath <# "#team bob> 2 [blocked by admin] <muted>"
 
       cath ##> "/unblock #team bob"
       cath <## "#team: you unblocked bob"
