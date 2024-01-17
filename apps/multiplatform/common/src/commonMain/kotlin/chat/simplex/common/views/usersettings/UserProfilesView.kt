@@ -30,17 +30,17 @@ import chat.simplex.common.views.chatlist.UserProfileRow
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.CreateProfile
 import chat.simplex.common.views.database.*
-import chat.simplex.common.views.localauth.reinitChatController
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.*
 
 @Composable
-fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>, toggleSettings: () -> Unit) {
+fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: MutableState<Boolean>, drawerState: DrawerState) {
   val searchTextOrPassword = rememberSaveable { search }
   val users by remember { derivedStateOf { m.users.map { it.user } } }
   val filteredUsers by remember { derivedStateOf { filteredUsers(m, searchTextOrPassword.value) } }
+  val scope = rememberCoroutineScope()
   UserProfilesLayout(
     users = users,
     filteredUsers = filteredUsers,
@@ -49,12 +49,14 @@ fun UserProfilesView(m: ChatModel, search: MutableState<String>, profileHidden: 
     showHiddenProfilesNotice = m.controller.appPrefs.showHiddenProfilesNotice,
     visibleUsersCount = visibleUsersCount(m),
     addUser = {
-      // Hide settings to allow clicks to pass through to CreateProfile view
-      if (appPlatform.isDesktop) { toggleSettings() }
       ModalManager.center.showModalCloseable { close ->
         CreateProfile(m, close)
-        // Show settings again to allow intercept clicks to close modals after profile creation finishes
-        if (appPlatform.isDesktop) { DisposableEffectOnGone { toggleSettings() } }
+        if (appPlatform.isDesktop) {
+          // Hide settings to allow clicks to pass through to CreateProfile view
+          DisposableEffectOnGone(always = { scope.launch { drawerState.close() } }) {
+            // Show settings again to allow intercept clicks to close modals after profile creation finishes
+            scope.launch(NonCancellable) { drawerState.open() } }
+        }
       }
     },
     activateUser = { user ->

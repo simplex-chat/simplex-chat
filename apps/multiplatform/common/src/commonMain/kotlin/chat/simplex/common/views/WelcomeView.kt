@@ -177,6 +177,9 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
 fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
   withBGApi {
     val user = controller.apiCreateActiveUser(null, Profile(displayName.trim(), "", null)) ?: return@withBGApi
+    if (!chatModel.connectedToRemote()) {
+      chatModel.localUserCreated.value = true
+    }
     controller.appPrefs.onboardingStage.set(OnboardingStage.Step3_CreateSimpleXAddress)
     controller.startChat(user)
     controller.switchUIRemoteHost(null)
