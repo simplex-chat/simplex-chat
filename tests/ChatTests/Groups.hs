@@ -5720,6 +5720,27 @@ testBlockForAllModerated =
       cath <## "#team: alice blocked bob"
       bob <// 50000
 
+      alice ##> "/ms team"
+      alice
+        <### [ "alice (Alice): owner, you, created group",
+               "bob (Bob): admin, invited, connected, blocked by admin",
+               "cath (Catherine): admin, invited, connected"
+             ]
+
+      cath ##> "/ms team"
+      cath
+        <### [ "cath (Catherine): admin, you, connected",
+               "alice (Alice): owner, host, connected",
+               "bob (Bob): admin, connected, blocked by admin"
+             ]
+
+      bob ##> "/ms team"
+      bob
+        <### [ "bob (Bob): admin, you, connected",
+               "alice (Alice): owner, host, connected",
+               "cath (Catherine): admin, connected"
+             ]
+
       threadDelay 1000000
 
       bob #> "#team 2"

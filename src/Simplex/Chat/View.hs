@@ -1006,8 +1006,9 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       GSMemCreator -> ["created group"]
       _ -> []
     muted m
-      | showMessages (memberSettings m) = []
-      | otherwise = ["blocked"]
+      | blockedByAdmin m = ["blocked by admin"]
+      | not (showMessages $ memberSettings m) = ["blocked"]
+      | otherwise = []
 
 viewContactConnected :: Contact -> Maybe Profile -> Bool -> [StyledString]
 viewContactConnected ct userIncognitoProfile testView =
