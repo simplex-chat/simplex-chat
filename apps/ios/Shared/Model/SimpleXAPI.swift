@@ -855,8 +855,8 @@ func apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool) async throws {
     try await sendCommandOkResp(.apiChatUnread(type: type, id: id, unreadChat: unreadChat))
 }
 
-func receiveFile(user: any UserLike, fileId: Int64, encrypted: Bool, auto: Bool = false) async {
-    if let chatItem = await apiReceiveFile(fileId: fileId, encrypted: encrypted, auto: auto) {
+func receiveFile(user: any UserLike, fileId: Int64, auto: Bool = false) async {
+    if let chatItem = await apiReceiveFile(fileId: fileId, encrypted: privacyEncryptLocalFilesGroupDefault.get(), auto: auto) {
         await chatItemSimpleUpdate(user, chatItem)
     }
 }
@@ -1516,7 +1516,7 @@ func processReceivedMsg(_ res: ChatResponse) async {
         }
         if let file = cItem.autoReceiveFile() {
             Task {
-                await receiveFile(user: user, fileId: file.fileId, encrypted: cItem.encryptLocalFile, auto: true)
+                await receiveFile(user: user, fileId: file.fileId, auto: true)
             }
         }
         if cItem.showNotification {

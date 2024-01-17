@@ -112,7 +112,8 @@ data User = User
     viewPwdHash :: Maybe UserPwdHash,
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
-    sendRcptsSmallGroups :: Bool
+    sendRcptsSmallGroups :: Bool,
+    userMemberProfileUpdatedAt :: Maybe UTCTime
   }
   deriving (Show)
 
@@ -346,7 +347,8 @@ data GroupInfo = GroupInfo
     chatSettings :: ChatSettings,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    chatTs :: Maybe UTCTime
+    chatTs :: Maybe UTCTime,
+    userMemberProfileSentAt :: Maybe UTCTime
   }
   deriving (Eq, Show)
 
@@ -481,6 +483,10 @@ profilesMatch
   LocalProfile {displayName = n2, fullName = fn2, image = i2} =
     n1 == n2 && fn1 == fn2 && i1 == i2
 
+redactedMemberProfile :: Profile -> Profile
+redactedMemberProfile Profile {displayName, fullName, image} =
+  Profile {displayName, fullName, image, contactLink = Nothing, preferences = Nothing}
+
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
 type LocalAlias = Text
@@ -590,7 +596,7 @@ data MemberInfo = MemberInfo
 
 memberInfo :: GroupMember -> MemberInfo
 memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
-  MemberInfo memberId memberRole cvr (fromLocalProfile memberProfile)
+  MemberInfo memberId memberRole cvr (redactedMemberProfile $ fromLocalProfile memberProfile)
   where
     cvr = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn
 

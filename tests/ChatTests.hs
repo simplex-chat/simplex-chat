@@ -6,7 +6,7 @@ import ChatTests.Files
 import ChatTests.Groups
 import ChatTests.Local
 import ChatTests.Profiles
-import Test.Hspec
+import Test.Hspec hiding (it)
 
 chatTests :: SpecWith FilePath
 chatTests = do

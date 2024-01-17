@@ -1165,11 +1165,12 @@ viewGroupInfo GroupInfo {groupId} s =
   ]
 
 viewGroupMemberInfo :: GroupInfo -> GroupMember -> Maybe ConnectionStats -> [StyledString]
-viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias}, activeConn} stats =
+viewGroupMemberInfo GroupInfo {groupId} m@GroupMember {groupMemberId, memberProfile = LocalProfile {localAlias, contactLink}, activeConn} stats =
   [ "group ID: " <> sShow groupId,
     "member ID: " <> sShow groupMemberId
   ]
     <> maybe ["member not connected"] viewConnectionStats stats
+    <> maybe [] (\l -> ["contact address: " <> (plain . strEncode) (simplexChatContact l)]) contactLink
     <> ["alias: " <> plain localAlias | localAlias /= ""]
     <> [viewConnectionVerified (memberSecurityCode m) | isJust stats]
     <> maybe [] (\ac -> [viewPeerChatVRange (peerChatVRange ac)]) activeConn
@@ -1816,7 +1817,7 @@ viewChatError logLevel testView = \case
     CEUserNotHidden _ -> ["user is not hidden"]
     CEInvalidDisplayName {displayName, validName} ->
       map plain $
-        ["invalid display name: " <> viewName displayName]
+        [if T.null displayName then "display name can't be empty" else "invalid display name: " <> viewName displayName]
           <> ["you could use this one: " <> viewName validName | not (T.null validName)]
     CEChatNotStarted -> ["error: chat not started"]
     CEChatNotStopped -> ["error: chat not stopped"]
@@ -1929,6 +1930,8 @@ viewChatError logLevel testView = \case
     AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug]
     AGENT A_PROHIBITED -> [withConnEntity <> "error: AGENT A_PROHIBITED" | logLevel <= CLLWarning]
     CONN NOT_FOUND -> [withConnEntity <> "error: CONN NOT_FOUND" | logLevel <= CLLWarning]
+    CRITICAL restart e -> [plain $ "critical error: " <> e] <> ["please restart the app" | restart]
+    INTERNAL e -> [plain $ "internal error: " <> e]
     e -> [withConnEntity <> "smp agent error: " <> sShow e | logLevel <= CLLWarning]
     where
       withConnEntity = case entity_ of
