@@ -93,11 +93,11 @@ struct ChatPreviewView: View {
         case let .direct(contact):
             previewTitle(contact.verified == true ? verifiedIcon + t : t).foregroundColor(deleting ? Color.secondary : nil)
         case let .group(groupInfo):
-            let v = previewTitle(t).foregroundColor(deleting ? Color.secondary : nil)
+            let v = previewTitle(t)
             switch (groupInfo.membership.memberStatus) {
             case .memInvited: v.foregroundColor(deleting ? .secondary : chat.chatInfo.incognito ? .indigo : .accentColor)
             case .memAccepted: v.foregroundColor(.secondary)
-            default: v.foregroundColor(deleting ? Color.secondary : nil)
+            default: if deleting  { v.foregroundColor(.secondary) } else { v }
             }
         default: previewTitle(t)
         }
