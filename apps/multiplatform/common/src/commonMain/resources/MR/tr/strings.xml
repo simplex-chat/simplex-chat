@@ -114,8 +114,6 @@
     <string name="save_group_profile">Grup profilini kaydet</string>
     <string name="network_option_seconds_label">sn</string>
     <string name="network_options_save">Kaydet</string>
-    <string name="should_be_at_least_one_visible_profile">There should be at least one visible user profile.</string>
-    <string name="should_be_at_least_one_profile">En az bir kullanıcı profili olmalıdır.</string>
     <string name="incognito_info_protects">Gizli mod her farklı kişi için yeni rasgele profil kullanarak gizliliğini korur.</string>
     <string name="theme_system">Sistem</string>
     <string name="language_system">Sistem</string>
@@ -753,7 +751,6 @@
     <string name="invite_to_group_button">Gruba davet edin</string>
     <string name="invite_prohibited">Kişi davet edilemiyor!</string>
     <string name="button_add_members">Üyeleri davet edin</string>
-    <string name="cant_delete_user_profile">Kullanıcı profili silinemiyor!</string>
     <string name="color_background">Arka plan</string>
     <string name="message_deletion_prohibited">Bu sohbette geri alınamaz mesaj silme yasaktır.</string>
     <string name="delete_contact_question">Kişiyi sil\?</string>
