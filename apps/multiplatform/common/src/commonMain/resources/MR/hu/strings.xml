@@ -1597,4 +1597,12 @@
     <string name="profile_update_event_set_new_picture">új profilkép beállítása</string>
     <string name="profile_update_event_updated_profile">frissített profil</string>
     <string name="profile_update_event_contact_name_changed">%1$s ismerős %2$s-ra/re változott</string>
+    <string name="note_folder_local_display_name">Privát jegyzetek</string>
+    <string name="error_deleting_note_folder">Hiba a privát jegyzetek törlésekor</string>
+    <string name="error_creating_message">Hiba az üzenet létrehozásakor</string>
+    <string name="clear_note_folder_question">Törlöd a privát jegyzeteket?</string>
+    <string name="info_row_created_at">Létrehozva ekkor:</string>
+    <string name="saved_message_title">Mentett üzenet</string>
+    <string name="share_text_created_at">Létrehozva ekkor: %s</string>
+    <string name="clear_note_folder_warning">Az összes üzenet törlődik – ez nem vonható vissza!</string>
 </resources>
