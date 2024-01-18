@@ -1681,7 +1681,7 @@
   <string name="v5_4_more_things_descr">- optionally notify deleted contacts.\n- profile names with spaces.\n- and more!</string>
   <string name="v5_5_private_notes">Private notes</string>
   <string name="v5_5_private_notes_descr">With encrypted files and media.</string>
-  <string name="v5_5_simpler_connect_ui">Paste to connect!</string>
+  <string name="v5_5_simpler_connect_ui">Paste link to connect!</string>
   <string name="v5_5_simpler_connect_ui_descr">Search bar accepts invitation links.</string>
   <string name="v5_5_join_group_conversation">Join group conversations</string>
   <string name="v5_5_join_group_conversation_descr">Recent history and improved directory bot.</string>

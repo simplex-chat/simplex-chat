@@ -325,7 +325,7 @@ private let versionDescriptions: [VersionDescription] = [
             ),
             FeatureDescription(
                 icon: "link",
-                title: "Paste to connect!",
+                title: "Paste link to connect!",
                 description: "Search bar accepts invitation links."
             ),
             FeatureDescription(
