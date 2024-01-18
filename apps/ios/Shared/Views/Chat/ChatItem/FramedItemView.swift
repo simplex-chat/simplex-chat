@@ -10,7 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 let notesChatColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.21)
-let notesChatColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.23)
+let notesChatColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.19)
 let sentColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.12)
 let sentColorDark = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.17)
 private let sentQuoteColorLight = Color(.sRGB, red: 0.27, green: 0.72, blue: 1, opacity: 0.11)
