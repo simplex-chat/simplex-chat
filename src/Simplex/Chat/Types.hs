@@ -589,21 +589,55 @@ data IntroInvitation = IntroInvitation
 data MemberInfo = MemberInfo
   { memberId :: MemberId,
     memberRole :: GroupMemberRole,
-    blocked :: Maybe Bool,
     v :: Maybe ChatVersionRange,
     profile :: Profile
   }
   deriving (Eq, Show)
 
 memberInfo :: GroupMember -> MemberInfo
-memberInfo GroupMember {memberId, memberRole, blockedByAdmin, memberProfile, activeConn} =
-  MemberInfo {
-    memberId,
-    memberRole,
-    blocked = if blockedByAdmin then Just True else Nothing,
-    v = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn,
-    profile = redactedMemberProfile $ fromLocalProfile memberProfile
+memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
+  MemberInfo
+    { memberId,
+      memberRole,
+      v = ChatVersionRange . fromJVersionRange . peerChatVRange <$> activeConn,
+      profile = redactedMemberProfile $ fromLocalProfile memberProfile
+    }
+
+data MemberBlockStatus
+  = MBSBlocked
+  | MBSNotBlocked
+  deriving (Eq, Show)
+
+instance FromField MemberBlockStatus where fromField = fromBlobField_ strDecode
+
+instance ToField MemberBlockStatus where toField = toField . strEncode
+
+instance StrEncoding MemberBlockStatus where
+  strEncode = \case
+    MBSBlocked -> "blocked"
+    MBSNotBlocked -> "not_blocked"
+  strDecode = \case
+    "blocked" -> Right MBSBlocked
+    "not_blocked" -> Right MBSNotBlocked
+    r -> Left $ "bad MemberBlockStatus " <> B.unpack r
+  strP = strDecode <$?> A.takeByteString
+
+instance FromJSON MemberBlockStatus where
+  parseJSON = strParseJSON "MemberBlockStatus"
+
+instance ToJSON MemberBlockStatus where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
+data MemberRestrictions = MemberRestrictions
+  { blocked :: Maybe MemberBlockStatus
   }
+  deriving (Eq, Show)
+
+memberRestrictions :: GroupMember -> Maybe MemberRestrictions
+memberRestrictions GroupMember {memberBlocked}
+  | memberBlocked == MBSBlocked = Just MemberRestrictions {blocked = Just MBSBlocked}
+  | otherwise = Nothing
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
   { fromMember :: GroupMember,
@@ -624,7 +658,7 @@ data GroupMember = GroupMember
     memberCategory :: GroupMemberCategory,
     memberStatus :: GroupMemberStatus,
     memberSettings :: GroupMemberSettings,
-    blockedByAdmin :: Bool,
+    memberBlocked :: MemberBlockStatus,
     invitedBy :: InvitedBy,
     invitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
@@ -1646,6 +1680,8 @@ $(JQ.deriveJSON defaultJSON ''GroupLinkInvitation)
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 
 $(JQ.deriveJSON defaultJSON ''MemberInfo)
+
+$(JQ.deriveJSON defaultJSON ''MemberRestrictions)
 
 $(JQ.deriveJSON defaultJSON ''GroupMemberRef)
 

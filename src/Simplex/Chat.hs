@@ -1740,7 +1740,7 @@ processChatCommand' vr = \case
           withChatLock "blockForAll" . procCmd $
             if blocked /= blockedByAdmin
               then do
-                (msg, _) <- sendGroupMessage' user gInfo remainingMembers $ XGrpMemBlock bmMemberId blocked
+                (msg, _) <- sendGroupMessage' user gInfo remainingMembers $ XGrpMemRestrict bmMemberId blocked
                 let ciContent = CISndGroupEvent $ SGEMemberBlocked memberId (fromLocalProfile bmp) blocked
                 ci <- saveSndChatItem user (CDGroupSnd gInfo) msg ciContent
                 toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
@@ -3922,7 +3922,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpMemInv memId introInv -> xGrpMemInv gInfo m' memId introInv
               XGrpMemFwd memInfo introInv -> xGrpMemFwd gInfo m' memInfo introInv
               XGrpMemRole memId memRole -> xGrpMemRole gInfo m' memId memRole msg brokerTs
-              XGrpMemBlock memId blocked -> xGrpMemBlock gInfo m' memId blocked msg brokerTs
+              XGrpMemRestrict memId blocked -> xGrpMemRestrict gInfo m' memId blocked msg brokerTs
               XGrpMemCon memId -> xGrpMemCon gInfo m' memId
               XGrpMemDel memId -> xGrpMemDel gInfo m' memId msg brokerTs
               XGrpLeave -> xGrpLeave gInfo m' msg brokerTs
@@ -5369,15 +5369,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     checkHostRole GroupMember {memberRole, localDisplayName} memRole =
       when (memberRole < GRAdmin || memberRole < memRole) $ throwChatError (CEGroupContactRole localDisplayName)
 
-    xGrpMemBlock :: GroupInfo -> GroupMember -> MemberId -> Bool -> RcvMessage -> UTCTime -> m ()
-    xGrpMemBlock gInfo@GroupInfo {groupId, membership} m@GroupMember {memberRole = senderRole} memId blocked msg brokerTs
+    xGrpMemRestrict :: GroupInfo -> GroupMember -> MemberId -> Bool -> RcvMessage -> UTCTime -> m ()
+    xGrpMemRestrict gInfo@GroupInfo {groupId, membership} m@GroupMember {memberRole = senderRole} memId blocked msg brokerTs
       | membershipMemId == memId =
           -- member shouldn't receive this message about themselves
-          messageError "x.grp.mem.block: admin blocks you"
+          messageError "x.grp.mem.restrict: admin blocks you"
       | otherwise =
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db user gInfo memId) >>= \case
             Right bm@GroupMember {groupMemberId = bmId, memberRole, memberProfile = bmp}
-              | senderRole < GRAdmin || senderRole < memberRole -> messageError "x.grp.mem.block with insufficient member permissions"
+              | senderRole < GRAdmin || senderRole < memberRole -> messageError "x.grp.mem.restrict with insufficient member permissions"
               | otherwise -> do
                   bm' <- setMemberBlocked bmId
                   toggleNtf user bm' (not blocked)
