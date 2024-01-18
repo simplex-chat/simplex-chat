@@ -1564,4 +1564,40 @@
 \n
 \nيوصى بإعادة تشغيل التطبيق.</string>
     <string name="restart_chat_button">أعد تشغيل الدردشة</string>
+    <string name="remote_host_error_inactive">الجوال <b>%s</b> غير نشط</string>
+    <string name="show_slow_api_calls">أظهر مكالمات API البطيئة</string>
+    <string name="group_member_status_unknown_short">غير معروف</string>
+    <string name="profile_update_event_updated_profile">حدّثت الملف الشخصي</string>
+    <string name="remote_host_error_missing">الجوال <b>%s</b> مفقود</string>
+    <string name="remote_host_error_bad_version">الجوال <b>%s</b> لديه إصدار غير مدعوم. يُرجى التأكد من استخدام نفس الإصدار على كلا الجهازين</string>
+    <string name="remote_host_error_bad_state">الاتصال بالجوال <b>%s</b> في حالة سيئة</string>
+    <string name="failed_to_create_user_invalid_title">اسم العرض غير صالح!</string>
+    <string name="failed_to_create_user_invalid_desc">اسم العرض هذا غير صالح. الرجاء اختيار اسم آخر.</string>
+    <string name="remote_host_was_disconnected_title">توقف الاتصال</string>
+    <string name="remote_ctrl_was_disconnected_title">توقف الاتصال</string>
+    <string name="remote_host_disconnected_from">قُطع الاتصال بالجوال <b>%s</b> بسبب: %s</string>
+    <string name="remote_ctrl_disconnected_with_reason">قُطع الاتصال بسبب: %s</string>
+    <string name="remote_host_error_disconnected">قُطع اتصال الجوال <b>%s</b></string>
+    <string name="remote_host_error_timeout">انتهت المهلة أثناء الاتصال بالجوال <b>%s</b></string>
+    <string name="remote_ctrl_error_inactive">سطح المكتب غير نشط</string>
+    <string name="remote_host_error_busy">الجوال <b>%s</b> مشغول</string>
+    <string name="remote_ctrl_error_timeout">انتهت المهلة أثناء الاتصال بسطح المكتب</string>
+    <string name="remote_ctrl_error_disconnected">قُطع اتصال سطح المكتب</string>
+    <string name="remote_ctrl_error_bad_state">الاتصال بسطح المكتب في حالة سيئة</string>
+    <string name="remote_ctrl_error_bad_invitation">يحتوي سطح المكتب على رمز دعوة خاطئ</string>
+    <string name="remote_ctrl_error_busy">سطح المكتب مشغول</string>
+    <string name="remote_ctrl_error_bad_version">يحتوي سطح المكتب على إصدار غير مدعوم. يُرجى التأكد من استخدام نفس الإصدار على كلا الجهازين</string>
+    <string name="past_member_vName">العضو السابق %1$s</string>
+    <string name="possible_deadlock_title">مأزق</string>
+    <string name="possible_deadlock_desc">يستغرق تنفيذ التعليمات البرمجية وقتًا طويلاً جدًا: %1$d ثانية. من المحتمل أن التطبيق مجمّد: %2$s</string>
+    <string name="possible_slow_function_title">وظيفة بطيئة</string>
+    <string name="developer_options_section">خيارات المطور</string>
+    <string name="profile_update_event_member_name_changed">تغيّر العضو %1$s إلى %2$s</string>
+    <string name="profile_update_event_removed_address">أزلت عنوان الاتصال</string>
+    <string name="profile_update_event_removed_picture">أزلت الصورة الشخصية</string>
+    <string name="profile_update_event_set_new_address">عيّن عنوان جهة اتصال جديد</string>
+    <string name="profile_update_event_set_new_picture">عيّن صورة شخصية جديدة</string>
+    <string name="group_member_status_unknown">حالة غير معروفة</string>
+    <string name="profile_update_event_contact_name_changed">تغيّر جهة الاتصال %1$s إلى %2$s</string>
+    <string name="possible_slow_function_desc">يستغرق تنفيذ الوظيفة وقتًا طويلاً جدًا: %1$d ثانية: %2$s</string>
 </resources>
