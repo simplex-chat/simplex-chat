@@ -1593,4 +1593,21 @@
     <string name="remote_host_error_bad_version">Mobiel <b>%s</b> heeft een niet-ondersteunde versie. Zorg ervoor dat u op beide apparaten dezelfde versie gebruikt</string>
     <string name="remote_ctrl_error_timeout">Time-out bereikt tijdens het verbinden met de desktop</string>
     <string name="group_member_status_unknown">onbekende status</string>
+    <string name="v5_5_message_delivery">Verbeterde berichtbezorging</string>
+    <string name="v5_5_join_group_conversation">Neem deel aan groep gesprekken</string>
+    <string name="v5_5_simpler_connect_ui">Plak link om te verbinden!</string>
+    <string name="v5_5_private_notes">Privé notities</string>
+    <string name="clear_note_folder_warning">Alle berichten worden verwijderd. Dit kan niet ongedaan worden gemaakt!</string>
+    <string name="v5_5_safer_groups_descr">- blokkeer een lid om spam voor iedereen te stoppen.
+\n- Contactadres wordt niet gedeeld.</string>
+    <string name="info_row_created_at">Gemaakt op</string>
+    <string name="error_creating_message">Fout bij het maken van een bericht</string>
+    <string name="v5_5_new_interface_languages">Hongaarse en Turkse gebruikersinterface</string>
+    <string name="v5_5_join_group_conversation_descr">Recente geschiedenis en verbeterde directory-bot.</string>
+    <string name="note_folder_local_display_name">Privé notities</string>
+    <string name="share_text_created_at">Gemaakt op: %s</string>
+    <string name="profile_update_event_member_name_changed">lid %1$s gewijzigd in %2$s</string>
+    <string name="profile_update_event_contact_name_changed">contactpersoon %1$s gewijzigd in %2$s</string>
+    <string name="error_deleting_note_folder">Fout bij verwijderen van privénotities</string>
+    <string name="clear_note_folder_question">Privénotities verwijderen?</string>
 </resources>
