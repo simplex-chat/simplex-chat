@@ -365,10 +365,25 @@ func apiSendMessage(type: ChatType, id: Int64, file: CryptoFile?, quotedItemId: 
     }
 }
 
+func apiCreateChatItem(noteFolderId: Int64, file: CryptoFile?, msg: MsgContent) async -> ChatItem? {
+    let r = await chatSendCmd(.apiCreateChatItem(noteFolderId: noteFolderId, file: file, msg: msg))
+    if case let .newChatItem(_, aChatItem) = r { return aChatItem.chatItem }
+    createChatItemErrorAlert(r)
+    return nil
+}
+
 private func sendMessageErrorAlert(_ r: ChatResponse) {
     logger.error("apiSendMessage error: \(String(describing: r))")
     AlertManager.shared.showAlertMsg(
         title: "Error sending message",
+        message: "Error: \(String(describing: r))"
+    )
+}
+
+private func createChatItemErrorAlert(_ r: ChatResponse) {
+    logger.error("apiCreateChatItem error: \(String(describing: r))")
+    AlertManager.shared.showAlertMsg(
+        title: "Error creating message",
         message: "Error: \(String(describing: r))"
     )
 }

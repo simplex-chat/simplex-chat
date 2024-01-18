@@ -44,6 +44,8 @@ struct ChatListNavLink: View {
                 contactNavLink(contact)
             case let .group(groupInfo):
                 groupNavLink(groupInfo)
+            case let .local(noteFolder):
+                noteFolderNavLink(noteFolder)
             case let .contactRequest(cReq):
                 contactRequestNavLink(cReq)
             case let .contactConnection(cConn):
@@ -195,6 +197,24 @@ struct ChatListNavLink: View {
         }
     }
 
+    @ViewBuilder private func noteFolderNavLink(_ noteFolder: NoteFolder) -> some View {
+        NavLinkPlain(
+            tag: chat.chatInfo.id,
+            selection: $chatModel.chatId,
+            label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) },
+            disabled: !noteFolder.ready
+        )
+        .frame(height: rowHeights[dynamicTypeSize])
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            markReadButton()
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            if !chat.chatItems.isEmpty {
+                clearNoteFolderButton()
+            }
+        }
+    }
+
     private func joinGroupButton() -> some View {
         Button {
             inProgress = true
@@ -247,6 +267,15 @@ struct ChatListNavLink: View {
     private func clearChatButton() -> some View {
         Button {
             AlertManager.shared.showAlert(clearChatAlert())
+        } label: {
+            Label("Clear", systemImage: "gobackward")
+        }
+        .tint(Color.orange)
+    }
+
+    private func clearNoteFolderButton() -> some View {
+        Button {
+            AlertManager.shared.showAlert(clearNoteFolderAlert())
         } label: {
             Label("Clear", systemImage: "gobackward")
         }
@@ -350,6 +379,17 @@ struct ChatListNavLink: View {
         Alert(
             title: Text("Clear conversation?"),
             message: Text("All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you."),
+            primaryButton: .destructive(Text("Clear")) {
+                Task { await clearChat(chat) }
+            },
+            secondaryButton: .cancel()
+        )
+    }
+
+    private func clearNoteFolderAlert() -> Alert {
+        Alert(
+            title: Text("Clear private notes?"),
+            message: Text("All messages will be deleted - this cannot be undone!"),
             primaryButton: .destructive(Text("Clear")) {
                 Task { await clearChat(chat) }
             },
