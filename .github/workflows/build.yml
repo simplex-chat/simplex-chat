@@ -9,6 +9,7 @@ on:
     tags:
       - "v*"
       - "!*-fdroid"
+      - "!*-armv7a"
   pull_request:
 
 jobs:
