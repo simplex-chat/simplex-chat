@@ -67,12 +67,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
          * */
         chatCloseStore(ctrl)
       }
-      deleteAppDatabaseAndFiles()
-      // Clear sensitive data on screen just in case ModalManager fails to hide its modals while new database is created
-      m.chatId.value = null
-      m.chatItems.clear()
-      m.chats.clear()
-      m.users.clear()
+      deleteChatDatabaseFilesAndState()
       ksAppPassword.set(password)
       ksSelfDestructPassword.remove()
       ntfManager.cancelAllNotifications()
@@ -81,14 +76,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       val displayName = displayNamePref.get()
       selfDestructPref.set(false)
       displayNamePref.set(null)
-      m.chatDbChanged.value = true
-      m.chatDbStatus.value = null
-      try {
-        initChatController()
-      } catch (e: Exception) {
-        Log.d(TAG, "initializeChat ${e.stackTraceToString()}")
-      }
-      m.chatDbChanged.value = false
+      reinitChatController()
       if (m.currentUser.value != null) {
         return@withBGApi
       }
@@ -100,7 +88,6 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       m.currentUser.value = createdUser
       m.controller.appPrefs.onboardingStage.set(OnboardingStage.OnboardingComplete)
       if (createdUser != null) {
-        controller.chatModel.chatRunning.value = false
         m.controller.startChat(createdUser)
       }
       ModalManager.closeAllModalsEverywhere()
@@ -112,4 +99,15 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       completed(LAResult.Error(generalGetString(MR.strings.incorrect_passcode)))
     }
   }
+}
+
+suspend fun reinitChatController() {
+  chatModel.chatDbChanged.value = true
+  chatModel.chatDbStatus.value = null
+  try {
+    initChatController()
+  } catch (e: Exception) {
+    Log.d(TAG, "initializeChat ${e.stackTraceToString()}")
+  }
+  chatModel.chatDbChanged.value = false
 }

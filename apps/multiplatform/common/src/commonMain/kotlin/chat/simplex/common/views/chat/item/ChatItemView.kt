@@ -183,7 +183,7 @@ fun ChatItemView(
                 if (cInfo.featureEnabled(ChatFeature.Reactions) && cItem.allowAddReaction) {
                   MsgReactionsMenu()
                 }
-                if (cItem.meta.itemDeleted == null && !live) {
+                if (cItem.meta.itemDeleted == null && !live && !cItem.localNote) {
                   ItemAction(stringResource(MR.strings.reply_verb), painterResource(MR.images.ic_reply), onClick = {
                     if (composeState.value.editing) {
                       composeState.value = ComposeState(contextItem = ComposeContextItem.QuotedItem(cItem), useLinkPreviews = useLinkPreviews)
@@ -240,7 +240,7 @@ fun ChatItemView(
                 if (revealed.value) {
                   HideItemAction(revealed, showMenu)
                 }
-                if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancelAction != null) {
+                if (cItem.meta.itemDeleted == null && cItem.file != null && cItem.file.cancelAction != null && !cItem.localNote) {
                   CancelFileItemAction(cItem.file.fileId, showMenu, cancelFile = cancelFile, cancelAction = cItem.file.cancelAction)
                 }
                 if (!(live && cItem.meta.isLive)) {
@@ -677,7 +677,7 @@ fun deleteMessageAlertDialog(chatItem: ChatItem, questionText: String, deleteMes
           deleteMessage(chatItem.id, CIDeleteMode.cidmInternal)
           AlertManager.shared.hideAlert()
         }) { Text(stringResource(MR.strings.for_me_only), color = MaterialTheme.colors.error) }
-        if (chatItem.meta.editable) {
+        if (chatItem.meta.editable && !chatItem.localNote) {
           Spacer(Modifier.padding(horizontal = 4.dp))
           TextButton(onClick = {
             deleteMessage(chatItem.id, CIDeleteMode.cidmBroadcast)

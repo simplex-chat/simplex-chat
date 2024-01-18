@@ -95,6 +95,25 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         selectedChat,
         nextChatSelected,
       )
+    is ChatInfo.Local -> {
+      ChatListNavLinkLayout(
+        chatLinkPreview = {
+          tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
+            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress = false, progressByTimeout = false)
+          }
+        },
+        click = { noteFolderChatAction(chat.remoteHostId, chat.chatInfo.noteFolder) },
+        dropdownMenuItems = {
+          tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
+            NoteFolderMenuItems(chat, showMenu, showMarkRead)
+          }
+        },
+        showMenu,
+        disabled,
+        selectedChat,
+        nextChatSelected,
+      )
+    }
     is ChatInfo.ContactRequest ->
       ChatListNavLinkLayout(
         chatLinkPreview = {
@@ -174,6 +193,10 @@ fun groupChatAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, inP
   }
 }
 
+fun noteFolderChatAction(rhId: Long?, noteFolder: NoteFolder) {
+  withBGApi { openChat(rhId, ChatInfo.Local(noteFolder), chatModel) }
+}
+
 suspend fun openDirectChat(rhId: Long?, contactId: Long, chatModel: ChatModel) {
   val chat = chatModel.controller.apiGetChat(rhId, ChatType.Direct, contactId)
   if (chat != null) {
@@ -247,7 +270,7 @@ fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMen
     }
     ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
     ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
-    ClearChatAction(chat, chatModel, showMenu)
+    ClearChatAction(chat, showMenu)
   }
   DeleteContactAction(chat, chatModel, showMenu)
 }
@@ -286,7 +309,7 @@ fun GroupMenuItems(
       }
       ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
       ToggleNotificationsChatAction(chat, chatModel, chat.chatInfo.ntfsEnabled, showMenu)
-      ClearChatAction(chat, chatModel, showMenu)
+      ClearChatAction(chat, showMenu)
       if (groupInfo.membership.memberCurrent) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
@@ -295,6 +318,16 @@ fun GroupMenuItems(
       }
     }
   }
+}
+
+@Composable
+fun NoteFolderMenuItems(chat: Chat, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
+  if (showMarkRead) {
+    MarkReadChatAction(chat, chatModel, showMenu)
+  } else {
+    MarkUnreadChatAction(chat, chatModel, showMenu)
+  }
+  ClearNoteFolderAction(chat, showMenu)
 }
 
 @Composable
@@ -347,12 +380,25 @@ fun ToggleNotificationsChatAction(chat: Chat, chatModel: ChatModel, ntfsEnabled:
 }
 
 @Composable
-fun ClearChatAction(chat: Chat, chatModel: ChatModel, showMenu: MutableState<Boolean>) {
+fun ClearChatAction(chat: Chat, showMenu: MutableState<Boolean>) {
   ItemAction(
     stringResource(MR.strings.clear_chat_menu_action),
     painterResource(MR.images.ic_settings_backup_restore),
     onClick = {
-      clearChatDialog(chat, chatModel)
+      clearChatDialog(chat)
+      showMenu.value = false
+    },
+    color = WarningOrange
+  )
+}
+
+@Composable
+fun ClearNoteFolderAction(chat: Chat, showMenu: MutableState<Boolean>) {
+  ItemAction(
+    stringResource(MR.strings.clear_chat_menu_action),
+    painterResource(MR.images.ic_settings_backup_restore),
+    onClick = {
+      clearNoteFolderDialog(chat)
       showMenu.value = false
     },
     color = WarningOrange

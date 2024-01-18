@@ -45,7 +45,6 @@
     <string name="both_you_and_your_contact_can_send_disappearing">Mindketten, te is és az ismerősöd is küldhet eltűnő üzeneteket.</string>
     <string name="keychain_is_storing_securely">Az Android Keystore-t a jelmondat biztonságos tárolására használják - lehetővé teszi az értesítési szolgáltatás működését.</string>
     <string name="alert_title_msg_bad_hash">Téves üzenet hash</string>
-    <string name="cant_delete_user_profile">Felhasználói profil törlése nem lehetséges!</string>
     <string name="color_background">Háttér</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Tudnivaló</b>: az üzenet- és fájl relay szerverek SOCKS proxy által vannak kapcsolatban. A hívások és URL link előnézetek közvetlen kapcsolatot használnak.]]></string>
     <string name="full_backup">App adatmentés</string>
@@ -1493,7 +1492,6 @@
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">A Te adatvédelmedet és biztonságodat védő üzenetküldő és alkalmazásplatform.</string>
     <string name="tap_to_activate_profile">Érintsd meg a profil aktiválásához.</string>
     <string name="receipts_contacts_override_disabled">A kézbesítési jelentés le van tiltva %d ismerősödnél</string>
-    <string name="should_be_at_least_one_profile">Legalább egy felhasználói profilnak kell lennie.</string>
     <string name="session_code">Munkamenet kód</string>
     <string name="v4_4_french_interface_descr">Köszönet a felhasználóknak - hozzájárulás a Weblaten!</string>
     <string name="receipts_section_groups">Kis csoportok (max. 20 tag)</string>
@@ -1510,7 +1508,6 @@
     <string name="receiving_via">Fogadás a</string>
     <string name="store_passphrase_securely_without_recover">Kérjük, hogy a jelmondatot biztonságosan tárold, ha elveszíted, NEM fogsz tudni hozzáférni a chathez.</string>
     <string name="member_role_will_be_changed_with_invitation">A szerepkör \"%s\"-re fog változni. A tag új meghívót kap.</string>
-    <string name="should_be_at_least_one_visible_profile">Legalább egy látható felhasználói profilnak kell lennie.</string>
     <string name="icon_descr_profile_image_placeholder">profilkép helyőrző</string>
     <string name="sync_connection_force_desc">A titkosítás működik, és új titkosítási egyezményre nincs szükség. Ez kapcsolati hibákat eredményezhet!</string>
     <string name="delete_chat_profile_action_cannot_be_undone_warning">Ez a művelet nem vonható vissza - profilod, ismerőseid, üzeneteid és fájljaid visszafordíthatatlanul törlésre kerülnek.</string>

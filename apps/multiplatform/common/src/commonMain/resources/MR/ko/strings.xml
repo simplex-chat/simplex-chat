@@ -111,7 +111,6 @@
     <string name="change_member_role_question">그룹 역할을 바꾸시겠습니까\?</string>
     <string name="info_row_connection">연결</string>
     <string name="users_add">프로필 추가</string>
-    <string name="cant_delete_user_profile">사용자 프로필을 삭제할 수 없습니다!</string>
     <string name="chat_preferences_always">항상</string>
     <string name="chat_preferences_contact_allows">대화 상대가 허용함</string>
     <string name="contact_preferences">연락처 개별 설정</string>
@@ -826,12 +825,10 @@
     <string name="stop_chat_confirmation">멈추기</string>
     <string name="snd_group_event_changed_member_role">%s의 역할을 %s로 변경했어요.</string>
     <string name="section_title_for_console">콘솔용</string>
-    <string name="should_be_at_least_one_visible_profile">적어도 하나의 숨겨지지 않은 사용자 프로필이 있어야 해요.</string>
     <string name="set_group_preferences">그룹 설정 지정하기</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">%s의 주소를 바꿨어요</string>
     <string name="snd_conn_event_switch_queue_phase_completed">주소를 바꿨어요</string>
     <string name="snd_group_event_group_profile_updated">그룹 프로필 업데이트됨</string>
-    <string name="should_be_at_least_one_profile">적어도 하나의 사용자 프로필이 있어야 해요.</string>
     <string name="smp_servers_test_server">서버 테스트하기</string>
     <string name="smp_servers_use_server">서버 사용하기</string>
     <string name="smp_servers_use_server_for_new_conn">새로운 대화에 사용</string>
