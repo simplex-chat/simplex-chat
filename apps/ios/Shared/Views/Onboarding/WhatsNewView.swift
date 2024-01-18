@@ -325,23 +325,23 @@ private let versionDescriptions: [VersionDescription] = [
             ),
             FeatureDescription(
                 icon: "link",
-                title: "Simpler interface to connect",
-                description: "Paste the link into the search bar!"
+                title: "Paste to connect!",
+                description: "Search bar accepts invitation links."
             ),
             FeatureDescription(
                 icon: "bubble.left.and.bubble.right",
                 title: "Join group conversations",
-                description: "Recent history and improved [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)"
+                description: "Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)."
             ),
             FeatureDescription(
                 icon: "person.2",
                 title: "Safer groups",
-                description: "- block member for all to stop spam.\n- contact address in profile is not shared."
+                description: "- block a member to stop spam for all.\n- contact address is not shared."
             ),
             FeatureDescription(
                 icon: "battery.50",
-                title: "More stable message delivery",
-                description: "With reduced battery consumption."
+                title: "Improved message delivery",
+                description: "With reduced battery usage."
             ),
             FeatureDescription(
                 icon: "character",
