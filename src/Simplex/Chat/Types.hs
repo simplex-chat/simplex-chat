@@ -629,14 +629,19 @@ instance ToJSON MemberBlockStatus where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+mbsBool :: MemberBlockStatus -> Bool
+mbsBool = \case
+  MBSBlocked -> True
+  MBSNotBlocked -> False
+
 data MemberRestrictions = MemberRestrictions
   { blocked :: Maybe MemberBlockStatus
   }
   deriving (Eq, Show)
 
 memberRestrictions :: GroupMember -> Maybe MemberRestrictions
-memberRestrictions GroupMember {memberBlocked}
-  | memberBlocked == MBSBlocked = Just MemberRestrictions {blocked = Just MBSBlocked}
+memberRestrictions m
+  | memberBlocked' m = Just MemberRestrictions {blocked = Just MBSBlocked}
   | otherwise = Nothing
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
@@ -715,10 +720,14 @@ incognitoMembershipProfile GroupInfo {membership = m@GroupMember {memberProfile}
 memberSecurityCode :: GroupMember -> Maybe SecurityCode
 memberSecurityCode GroupMember {activeConn} = connectionCode =<< activeConn
 
+memberBlocked' :: GroupMember -> Bool
+memberBlocked' GroupMember {memberBlocked} = memberBlocked == MBSBlocked
+
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
     memCategory :: GroupMemberCategory,
     memStatus :: GroupMemberStatus,
+    memBlocked :: Maybe MemberBlockStatus,
     memInvitedBy :: InvitedBy,
     memInvitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
