@@ -1705,8 +1705,26 @@ data class ChatItem (
   val encryptedFile: Boolean? = if (file?.fileSource == null) null else file.fileSource.cryptoArgs != null
 
   val memberDisplayName: String? get() =
-    if (chatDir is CIDirection.GroupRcv) chatDir.groupMember.chatViewName
-    else null
+    when (chatDir) {
+      is CIDirection.GroupRcv -> when (content) {
+        is CIContent.RcvGroupEventContent -> when (val event = content.rcvGroupEvent) {
+          is RcvGroupEvent.MemberProfileUpdated -> {
+            val to = event.toProfile
+            val from = event.fromProfile
+            when {
+              to.displayName != from.displayName || to.fullName != from.fullName -> null
+              else -> chatDir.groupMember.chatViewName
+            }
+          }
+
+          else -> chatDir.groupMember.chatViewName
+        }
+
+        else -> chatDir.groupMember.chatViewName
+      }
+
+      else -> null
+    }
 
   val localNote: Boolean = chatDir is CIDirection.LocalSnd || chatDir is CIDirection.LocalRcv
 
@@ -1781,7 +1799,10 @@ data class ChatItem (
       is CIContent.RcvDecryptionError -> showNtfDir
       is CIContent.RcvGroupInvitation -> showNtfDir
       is CIContent.SndGroupInvitation -> showNtfDir
-      is CIContent.RcvDirectEventContent -> false
+      is CIContent.RcvDirectEventContent -> when (content.rcvDirectEvent) {
+        is RcvDirectEvent.ContactDeleted -> false
+        is RcvDirectEvent.ProfileUpdated -> true
+      }
       is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
         is RcvGroupEvent.MemberAdded -> false
         is RcvGroupEvent.MemberConnected -> false
@@ -1794,6 +1815,7 @@ data class ChatItem (
         is RcvGroupEvent.GroupUpdated -> false
         is RcvGroupEvent.InvitedViaGroupLink -> false
         is RcvGroupEvent.MemberCreatedContact -> false
+        is RcvGroupEvent.MemberProfileUpdated -> false
       }
       is CIContent.SndGroupEventContent -> showNtfDir
       is CIContent.RcvConnEventContent -> false
@@ -2904,10 +2926,30 @@ sealed class MsgErrorType() {
 @Serializable
 sealed class RcvDirectEvent() {
   @Serializable @SerialName("contactDeleted") class ContactDeleted(): RcvDirectEvent()
+  @Serializable @SerialName("profileUpdated") class ProfileUpdated(val fromProfile: Profile, val toProfile: Profile): RcvDirectEvent()
 
   val text: String get() = when (this) {
     is ContactDeleted -> generalGetString(MR.strings.rcv_direct_event_contact_deleted)
+    is ProfileUpdated -> profileUpdatedText(fromProfile, toProfile)
   }
+
+  private fun profileUpdatedText(from: Profile, to: Profile): String =
+    when {
+      to.displayName != from.displayName || to.fullName != from.fullName ->
+        generalGetString(MR.strings.profile_update_event_contact_name_changed).format(from.profileViewName, to.profileViewName)
+
+      to.image != from.image -> when (to.image) {
+        null -> generalGetString(MR.strings.profile_update_event_removed_picture)
+        else -> generalGetString(MR.strings.profile_update_event_set_new_picture)
+      }
+
+      to.contactLink != from.contactLink -> when (to.contactLink) {
+        null -> generalGetString(MR.strings.profile_update_event_removed_address)
+        else -> generalGetString(MR.strings.profile_update_event_set_new_address)
+      }
+      // shouldn't happen if backend correctly creates item; UI should be synchronized with backend
+      else -> generalGetString(MR.strings.profile_update_event_updated_profile)
+    }
 }
 
 @Serializable
@@ -2923,6 +2965,7 @@ sealed class RcvGroupEvent() {
   @Serializable @SerialName("groupUpdated") class GroupUpdated(val groupProfile: GroupProfile): RcvGroupEvent()
   @Serializable @SerialName("invitedViaGroupLink") class InvitedViaGroupLink(): RcvGroupEvent()
   @Serializable @SerialName("memberCreatedContact") class MemberCreatedContact(): RcvGroupEvent()
+  @Serializable @SerialName("memberProfileUpdated") class MemberProfileUpdated(val fromProfile: Profile, val toProfile: Profile): RcvGroupEvent()
 
   val text: String get() = when (this) {
     is MemberAdded -> String.format(generalGetString(MR.strings.rcv_group_event_member_added), profile.profileViewName)
@@ -2936,7 +2979,21 @@ sealed class RcvGroupEvent() {
     is GroupUpdated -> generalGetString(MR.strings.rcv_group_event_updated_group_profile)
     is InvitedViaGroupLink -> generalGetString(MR.strings.rcv_group_event_invited_via_your_group_link)
     is MemberCreatedContact -> generalGetString(MR.strings.rcv_group_event_member_created_contact)
+    is MemberProfileUpdated -> profileUpdatedText(fromProfile, toProfile)
   }
+
+  private fun profileUpdatedText(from: Profile, to: Profile): String =
+    when {
+      to.displayName != from.displayName || to.fullName != from.fullName ->
+        generalGetString(MR.strings.profile_update_event_member_name_changed).format(from.profileViewName, to.profileViewName)
+
+      to.image != from.image -> when (to.image) {
+        null -> generalGetString(MR.strings.profile_update_event_removed_picture)
+        else -> generalGetString(MR.strings.profile_update_event_set_new_picture)
+      }
+      // shouldn't happen if backend correctly creates item; UI should be synchronized with backend
+      else -> generalGetString(MR.strings.profile_update_event_updated_profile)
+    }
 }
 
 @Serializable
