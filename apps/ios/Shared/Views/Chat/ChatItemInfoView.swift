@@ -53,7 +53,9 @@ struct ChatItemInfoView: View {
     }
 
     private var title: String {
-        ci.chatDir.sent
+        ci.localNote
+        ? NSLocalizedString("Saved message", comment: "message info title")
+        : ci.chatDir.sent
         ? NSLocalizedString("Sent message", comment: "message info title")
         : NSLocalizedString("Received message", comment: "message info title")
     }
@@ -110,7 +112,11 @@ struct ChatItemInfoView: View {
                 .bold()
                 .padding(.bottom)
 
-            infoRow("Sent at", localTimestamp(meta.itemTs))
+            if ci.localNote {
+                infoRow("Created at", localTimestamp(meta.itemTs))
+            } else {
+                infoRow("Sent at", localTimestamp(meta.itemTs))
+            }
             if !ci.chatDir.sent {
                 infoRow("Received at", localTimestamp(meta.createdAt))
             }
@@ -350,7 +356,12 @@ struct ChatItemInfoView: View {
     private func itemInfoShareText() -> String {
         let meta = ci.meta
         var shareText: [String] = [String.localizedStringWithFormat(NSLocalizedString("# %@", comment: "copied message info title, # <title>"), title), ""]
-        shareText += [String.localizedStringWithFormat(NSLocalizedString("Sent at: %@", comment: "copied message info"), localTimestamp(meta.itemTs))]
+        shareText += [String.localizedStringWithFormat(
+            ci.localNote
+                ? NSLocalizedString("Created at: %@", comment: "copied message info")
+                : NSLocalizedString("Sent at: %@", comment: "copied message info"),
+            localTimestamp(meta.itemTs))
+        ]
         if !ci.chatDir.sent {
             shareText += [String.localizedStringWithFormat(NSLocalizedString("Received at: %@", comment: "copied message info"), localTimestamp(meta.createdAt))]
         }

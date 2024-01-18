@@ -83,6 +83,7 @@ struct CIVideoView: View {
                                         title: "Waiting for video",
                                         message: "Video will be received when your contact is online, please wait or check later!"
                                     )
+                                case .local: ()
                                 }
                             case .rcvTransfer: () // ?
                             case .rcvComplete: () // ?
@@ -107,7 +108,7 @@ struct CIVideoView: View {
     private func videoViewEncrypted(_ file: CIFile, _ defaultPreview: UIImage, _ duration: Int) -> some View {
         return ZStack(alignment: .topTrailing) {
             ZStack(alignment: .center) {
-                let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete
+                let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
                 imageView(defaultPreview)
                 .fullScreenCover(isPresented: $showFullScreenPlayer) {
                     if let decrypted = urlDecrypted {
@@ -143,7 +144,7 @@ struct CIVideoView: View {
         DispatchQueue.main.async { videoWidth = w }
         return ZStack(alignment: .topTrailing) {
             ZStack(alignment: .center) {
-                let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete
+                let canBePlayed = !chatItem.chatDir.sent || file.fileStatus == CIFileStatus.sndComplete || (file.fileStatus == .sndStored && file.fileProtocol == .local)
                 VideoPlayerView(player: player, url: url, showControls: false)
                 .frame(width: w, height: w * preview.size.height / preview.size.width)
                 .onChange(of: m.stopPreviousRecPlay) { playingUrl in
@@ -254,11 +255,13 @@ struct CIVideoView: View {
                 switch file.fileProtocol {
                 case .xftp: progressView()
                 case .smp: EmptyView()
+                case .local: EmptyView()
                 }
             case let .sndTransfer(sndProgress, sndTotal):
                 switch file.fileProtocol {
                 case .xftp: progressCircle(sndProgress, sndTotal)
                 case .smp: progressView()
+                case .local: EmptyView()
                 }
             case .sndComplete: fileIcon("checkmark", 10, 13)
             case .sndCancelled: fileIcon("xmark", 10, 13)

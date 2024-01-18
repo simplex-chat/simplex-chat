@@ -1044,8 +1044,6 @@
     <string name="v4_6_audio_video_calls">Аудио и видео звонки</string>
     <string name="error_saving_user_password">Ошибка при сохранении пароля пользователя</string>
     <string name="smp_save_servers_question">Сохранить серверы\?</string>
-    <string name="should_be_at_least_one_profile">Должен быть хотя бы один профиль пользователя.</string>
-    <string name="should_be_at_least_one_visible_profile">Должен быть хотя бы один открытый профиль пользователя.</string>
     <string name="to_reveal_profile_enter_password">Чтобы показать Ваш скрытый профиль, введите пароль в поле поиска на странице Ваши профили.</string>
     <string name="user_unmute">Уведомлять</string>
     <string name="group_welcome_title">Приветственное сообщение</string>
@@ -1054,7 +1052,6 @@
     <string name="button_welcome_message">Приветственное сообщение</string>
     <string name="save_and_update_group_profile">Сохранить сообщение и обновить группу</string>
     <string name="muted_when_inactive">Без звука, когда не активный!</string>
-    <string name="cant_delete_user_profile">Нельзя удалить профиль пользователя!</string>
     <string name="enter_password_to_show">Введите пароль в поиске!</string>
     <string name="save_profile_password">Сохранить пароль профиля</string>
     <string name="v4_6_chinese_spanish_interface">Китайский и Испанский интерфейс</string>

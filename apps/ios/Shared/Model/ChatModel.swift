@@ -756,6 +756,8 @@ final class Chat: ObservableObject, Identifiable {
         case let .group(groupInfo):
             let m = groupInfo.membership
             return m.memberActive && m.memberRole >= .member
+        case .local:
+            return true
         default: return false
         }
     }

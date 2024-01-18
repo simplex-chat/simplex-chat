@@ -351,7 +351,6 @@ object ChatController {
   suspend fun startChat(user: User) {
     Log.d(TAG, "user: $user")
     try {
-      if (chatModel.chatRunning.value == true) return
       apiSetNetworkConfig(getNetCfg())
       val justStarted = apiStartChat()
       appPrefs.chatStopped.set(false)
@@ -410,9 +409,9 @@ object ChatController {
     }
   }
 
-  suspend fun changeActiveUser_(rhId: Long?, toUserId: Long, viewPwd: String?) {
+  suspend fun changeActiveUser_(rhId: Long?, toUserId: Long?, viewPwd: String?) {
     val currentUser = changingActiveUserMutex.withLock {
-      apiSetActiveUser(rhId, toUserId, viewPwd).also {
+      (if (toUserId != null) apiSetActiveUser(rhId, toUserId, viewPwd) else apiGetActiveUser(rhId)).also {
         chatModel.currentUser.value = it
       }
     }
@@ -421,7 +420,7 @@ object ChatController {
     chatModel.users.addAll(users)
     getUserChatData(rhId)
     val invitation = chatModel.callInvitations.values.firstOrNull { inv -> inv.user.userId == toUserId }
-    if (invitation != null) {
+    if (invitation != null && currentUser != null) {
       chatModel.callManager.reportNewIncomingCall(invitation.copy(user = currentUser))
     }
   }
