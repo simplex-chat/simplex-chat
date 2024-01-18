@@ -145,7 +145,6 @@
     <string name="settings_section_title_calls">المكالمات</string>
     <string name="alert_title_cant_invite_contacts">لا يمكن دعوة جهات الاتصال!</string>
     <string name="rcv_conn_event_switch_queue_phase_completed">تم تغيير العنوان من أجلك</string>
-    <string name="cant_delete_user_profile">لا يمكن حذف ملف تعريف المستخدم!</string>
     <string name="icon_descr_video_asked_to_receive">طلب لاستلام الفيديو</string>
     <string name="callstatus_in_progress">مكالمتك تحت الإجراء</string>
     <string name="change_database_passphrase_question">تغيير عبارة مرور قاعدة البيانات؟</string>
@@ -1127,7 +1126,6 @@
     <string name="database_initialization_error_desc">قاعدة البيانات لا تعمل بشكل صحيح. انقر لمعرفة المزيد</string>
     <string name="theme_colors_section_title">ألوان السمة</string>
     <string name="tap_to_activate_profile">انقر لتنشيط الملف الشخصي.</string>
-    <string name="should_be_at_least_one_profile">يجب أن يكون هناك ملف تعريف مستخدم واحد على الأقل.</string>
     <string name="v4_5_transport_isolation">عزل النقل</string>
     <string name="this_string_is_not_a_connection_link">هذه السلسلة ليست رابط اتصال!</string>
     <string name="receipts_section_description">هذه الإعدادات لملف التعريف الحالي الخاص بك</string>
@@ -1138,7 +1136,6 @@
     <string name="whats_new_thanks_to_users_contribute_weblate">بفضل المستخدمين - المساهمة عبر Weblate!</string>
     <string name="database_backup_can_be_restored">لم تكتمل محاولة تغيير عبارة مرور قاعدة البيانات.</string>
     <string name="enter_passphrase_notification_desc">لتلقي الإشعارات، يرجى إدخال عبارة مرور قاعدة البيانات</string>
-    <string name="should_be_at_least_one_visible_profile">يجب أن يكون هناك ملف تعريف مستخدم مرئي واحد على الأقل.</string>
     <string name="la_lock_mode_system">مصادقة النظام</string>
     <string name="sync_connection_force_desc">يعمل التشفير واتفاقية التشفير الجديدة غير مطلوبة. قد ينتج عن ذلك أخطاء في الاتصال!</string>
     <string name="image_decoding_exception_desc">لا يمكن فك ترميز الصورة. من فضلك، جرب صورة مختلفة أو تواصل مع المطورين.</string>

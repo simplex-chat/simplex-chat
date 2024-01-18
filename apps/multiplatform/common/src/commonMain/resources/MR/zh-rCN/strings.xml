@@ -978,7 +978,6 @@
     <string name="v4_6_hidden_chat_profiles_descr">使用密码保护您的聊天资料！</string>
     <string name="confirm_password">确认密码</string>
     <string name="error_updating_user_privacy">更新用户隐私错误</string>
-    <string name="cant_delete_user_profile">无法删除用户资料！</string>
     <string name="error_saving_user_password">保存用户密码错误</string>
     <string name="enter_password_to_show">在搜索中输入密码</string>
     <string name="v4_6_group_welcome_message">群组欢迎消息</string>
@@ -990,12 +989,10 @@
     <string name="to_reveal_profile_enter_password">要显示您的隐藏的个人资料，请在您的聊天个人资料页面的搜索字段中输入完整密码。</string>
     <string name="save_welcome_message_question">保存欢迎信息？</string>
     <string name="tap_to_activate_profile">点击以激活个人资料。</string>
-    <string name="should_be_at_least_one_profile">应该至少有一个用户资料。</string>
     <string name="user_unhide">取消隐藏</string>
     <string name="v4_6_group_welcome_message_descr">设置向新成员显示的消息！</string>
     <string name="v4_6_audio_video_calls_descr">支持蓝牙和其他改进。</string>
     <string name="v4_6_chinese_spanish_interface_descr">感谢用户——通过 Weblate 做出贡献！</string>
-    <string name="should_be_at_least_one_visible_profile">应该至少有一个可见的用户资料。</string>
     <string name="user_unmute">解除静音</string>
     <string name="button_welcome_message">欢迎消息</string>
     <string name="you_will_still_receive_calls_and_ntfs">当静音配置文件处于活动状态时，您仍会收到来自静音配置文件的电话和通知。</string>

@@ -110,7 +110,7 @@ fun GroupChatInfoView(chatModel: ChatModel, rhId: Long?, chatId: String, groupLi
         }
       },
       deleteGroup = { deleteGroupDialog(chat, groupInfo, chatModel, close) },
-      clearChat = { clearChatDialog(chat, chatModel, close) },
+      clearChat = { clearChatDialog(chat, close) },
       leaveGroup = { leaveGroupDialog(rhId, groupInfo, chatModel, close) },
       manageGroupLink = {
           ModalManager.end.showModal { GroupLinkView(chatModel, rhId, groupInfo, groupLink, groupLinkMemberRole, onGroupLinkUpdated) }
