@@ -212,7 +212,7 @@ val DarkColorPalette = darkColors(
 )
 val DarkColorPaletteApp = AppColors(
   title = SimplexBlue,
-  sentMessage = Color(0x1E45B8FF),
+  sentMessage = SentMessageColor,
   receivedMessage = Color(0x20B1B0B5)
 )
 
@@ -231,7 +231,7 @@ val LightColorPalette = lightColors(
 )
 val LightColorPaletteApp = AppColors(
   title = SimplexBlue,
-  sentMessage = Color(0x1E45B8FF),
+  sentMessage = SentMessageColor,
   receivedMessage = Color(0x20B1B0B5)
 )
 
@@ -251,7 +251,7 @@ val SimplexColorPalette = darkColors(
 )
 val SimplexColorPaletteApp = AppColors(
   title = Color(0xFF267BE5),
-  sentMessage = Color(0x1E45B8FF),
+  sentMessage = SentMessageColor,
   receivedMessage = Color(0x20B1B0B5)
 )
 

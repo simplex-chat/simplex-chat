@@ -680,6 +680,17 @@ object ChatController {
       }
     }
   }
+   suspend fun apiCreateChatItem(rh: Long?, noteFolderId: Long, file: CryptoFile? = null, mc: MsgContent): AChatItem? {
+    val cmd = CC.ApiCreateChatItem(noteFolderId, file, mc)
+    val r = sendCmd(rh, cmd)
+    return when (r) {
+      is CR.NewChatItem -> r.chatItem
+      else -> {
+        apiErrorAlert("apiCreateChatItem", generalGetString(MR.strings.error_creating_message), r)
+        null
+      }
+    }
+  }
 
   suspend fun apiGetChatItemInfo(rh: Long?, type: ChatType, id: Long, itemId: Long): ChatItemInfo? {
     return when (val r = sendCmd(rh, CC.ApiGetChatItemInfo(type, id, itemId))) {
@@ -990,6 +1001,7 @@ object ChatController {
         val titleId = when (type) {
           ChatType.Direct -> MR.strings.error_deleting_contact
           ChatType.Group -> MR.strings.error_deleting_group
+          ChatType.Local -> MR.strings.error_deleting_note_folder
           ChatType.ContactRequest -> MR.strings.error_deleting_contact_request
           ChatType.ContactConnection -> MR.strings.error_deleting_pending_contact_connection
         }
@@ -999,6 +1011,17 @@ object ChatController {
     }
     chatModel.deletedChats.value -= rh to type.type + id
     return success
+  }
+
+  fun clearChat(chat: Chat, close: (() -> Unit)? = null) {
+    withBGApi {
+      val updatedChatInfo = apiClearChat(chat.remoteHostId, chat.chatInfo.chatType, chat.chatInfo.apiId)
+      if (updatedChatInfo != null) {
+        chatModel.clearChat(chat.remoteHostId, updatedChatInfo)
+        ntfManager.cancelNotificationsForChat(chat.chatInfo.id)
+        close?.invoke()
+      }
+    }
   }
 
   suspend fun apiClearChat(rh: Long?, type: ChatType, id: Long): ChatInfo? {
@@ -2243,6 +2266,7 @@ sealed class CC {
   class ApiGetChat(val type: ChatType, val id: Long, val pagination: ChatPagination, val search: String = ""): CC()
   class ApiGetChatItemInfo(val type: ChatType, val id: Long, val itemId: Long): CC()
   class ApiSendMessage(val type: ChatType, val id: Long, val file: CryptoFile?, val quotedItemId: Long?, val mc: MsgContent, val live: Boolean, val ttl: Int?): CC()
+  class ApiCreateChatItem(val noteFolderId: Long, val file: CryptoFile?, val mc: MsgContent): CC()
   class ApiUpdateChatItem(val type: ChatType, val id: Long, val itemId: Long, val mc: MsgContent, val live: Boolean): CC()
   class ApiDeleteChatItem(val type: ChatType, val id: Long, val itemId: Long, val mode: CIDeleteMode): CC()
   class ApiDeleteMemberChatItem(val groupId: Long, val groupMemberId: Long, val itemId: Long): CC()
@@ -2374,6 +2398,9 @@ sealed class CC {
       val ttlStr = if (ttl != null) "$ttl" else "default"
       "/_send ${chatRef(type, id)} live=${onOff(live)} ttl=${ttlStr} json ${json.encodeToString(ComposedMessage(file, quotedItemId, mc))}"
     }
+    is ApiCreateChatItem -> {
+      "/_create *$noteFolderId json ${json.encodeToString(ComposedMessage(file, null, mc))}"
+    }
     is ApiUpdateChatItem -> "/_update item ${chatRef(type, id)} $itemId live=${onOff(live)} ${mc.cmdString}"
     is ApiDeleteChatItem -> "/_delete item ${chatRef(type, id)} $itemId ${mode.deleteMode}"
     is ApiDeleteMemberChatItem -> "/_delete member item #$groupId $groupMemberId $itemId"
@@ -2502,6 +2529,7 @@ sealed class CC {
     is ApiGetChat -> "apiGetChat"
     is ApiGetChatItemInfo -> "apiGetChatItemInfo"
     is ApiSendMessage -> "apiSendMessage"
+    is ApiCreateChatItem -> "apiCreateChatItem"
     is ApiUpdateChatItem -> "apiUpdateChatItem"
     is ApiDeleteChatItem -> "apiDeleteChatItem"
     is ApiDeleteMemberChatItem -> "apiDeleteMemberChatItem"

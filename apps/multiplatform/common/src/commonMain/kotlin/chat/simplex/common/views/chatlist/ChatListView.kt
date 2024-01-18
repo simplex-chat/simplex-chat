@@ -518,6 +518,7 @@ private fun filteredChats(
           } else {
             viewNameContains(cInfo, s)
           }
+          is ChatInfo.Local -> s.isEmpty() || viewNameContains(cInfo, s)
           is ChatInfo.ContactRequest -> s.isEmpty() || viewNameContains(cInfo, s)
           is ChatInfo.ContactConnection -> (s.isNotEmpty() && cInfo.contactConnection.localAlias.lowercase().contains(s)) || (s.isEmpty() && chat.id == chatModel.chatId.value)
           is ChatInfo.InvalidJSON -> chat.id == chatModel.chatId.value

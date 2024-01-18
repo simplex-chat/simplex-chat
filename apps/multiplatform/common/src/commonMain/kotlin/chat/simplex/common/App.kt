@@ -66,7 +66,7 @@ fun MainScreen() {
       !chatModel.controller.appPrefs.laNoticeShown.get()
       && showAdvertiseLAAlert
       && chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete
-      && chatModel.chats.count() > 1
+      && chatModel.chats.size > 2
       && chatModel.activeCallInvitation.value == null
     ) {
       AppLock.showLANotice(ChatModel.controller.appPrefs.laNoticeShown) }

@@ -353,7 +353,10 @@ fun ComposeView(
 
   suspend fun send(chat: Chat, mc: MsgContent, quoted: Long?, file: CryptoFile? = null, live: Boolean = false, ttl: Int?): ChatItem? {
     val cInfo = chat.chatInfo
-    val aChatItem = chatModel.controller.apiSendMessage(
+    val aChatItem = if (chat.chatInfo.chatType == ChatType.Local)
+      chatModel.controller.apiCreateChatItem(rh = chat.remoteHostId, noteFolderId = chat.chatInfo.apiId, file = file, mc = mc)
+    else
+      chatModel.controller.apiSendMessage(
       rh = chat.remoteHostId,
       type = cInfo.chatType,
       id = cInfo.apiId,
@@ -877,7 +880,7 @@ fun ComposeView(
           sendMessage(ttl)
           resetLinkPreview()
         },
-        sendLiveMessage = ::sendLiveMessage,
+        sendLiveMessage = if (chat.chatInfo.chatType != ChatType.Local) ::sendLiveMessage else null,
         updateLiveMessage = ::updateLiveMessage,
         cancelLiveMessage = {
           composeState.value = composeState.value.copy(liveMessage = null)
