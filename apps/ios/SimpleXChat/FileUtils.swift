@@ -241,8 +241,8 @@ public func cleanupFile(_ aChatItem: AChatItem) {
 public func getMaxFileSize(_ fileProtocol: FileProtocol) -> Int64 {
     switch fileProtocol {
     case .xftp: return MAX_FILE_SIZE_XFTP
-    case .local: return MAX_FILE_SIZE_LOCAL
     case .smp: return MAX_FILE_SIZE_SMP
+    case .local: return MAX_FILE_SIZE_LOCAL
     }
 }
 
