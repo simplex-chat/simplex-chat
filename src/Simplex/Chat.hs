@@ -1409,19 +1409,9 @@ processChatCommand' vr = \case
   SetSendReceipts cName rcptsOn_ -> updateChatSettings cName (\cs -> cs {sendRcpts = rcptsOn_})
   SetShowMemberMessages gName mName showMessages -> withUser $ \user -> do
     (gId, mId) <- getGroupAndMemberId user gName mName
-    gInfo <- withStore $ \db -> getGroupInfo db vr user gId
     m <- withStore $ \db -> getGroupMember db user gId mId
-    if forAll gInfo m
-      then processChatCommand $ APIBlockMemberForAll gId mId (not showMessages)
-      else do
-        let settings = (memberSettings m) {showMessages}
-        processChatCommand $ APISetMemberSettings gId mId settings
-    where
-      forAll :: GroupInfo -> GroupMember -> Bool
-      forAll
-        GroupInfo {membership = GroupMember {memberRole = membershipMemRole}}
-        GroupMember {memberRole} =
-          membershipMemRole >= GRAdmin && membershipMemRole >= memberRole
+    let settings = (memberSettings m) {showMessages}
+    processChatCommand $ APISetMemberSettings gId mId settings
   ContactInfo cName -> withContactName cName APIContactInfo
   ShowGroupInfo gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
@@ -1798,6 +1788,7 @@ processChatCommand' vr = \case
     groupId <- withStore $ \db -> getGroupIdByName db user gName
     processChatCommand $ APIJoinGroup groupId
   MemberRole gName gMemberName memRole -> withMemberName gName gMemberName $ \gId gMemberId -> APIMemberRole gId gMemberId memRole
+  BlockForAll gName gMemberName blocked -> withMemberName gName gMemberName $ \gId gMemberId -> APIBlockMemberForAll gId gMemberId blocked
   RemoveMember gName gMemberName -> withMemberName gName gMemberName APIRemoveMember
   LeaveGroup gName -> withUser $ \user -> do
     groupId <- withStore $ \db -> getGroupIdByName db user gName
@@ -6608,6 +6599,8 @@ chatCommandP =
       ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayName <* A.space <* char_ '@' <*> displayName <*> (memberRole <|> pure GRMember)),
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayName),
       ("/member role " <|> "/mr ") *> char_ '#' *> (MemberRole <$> displayName <* A.space <* char_ '@' <*> displayName <*> memberRole),
+      "/block for all #" *> (BlockForAll <$> displayName <* A.space <*> (char_ '@' *> displayName) <*> pure True),
+      "/unblock for all #" *> (BlockForAll <$> displayName <* A.space <*> (char_ '@' *> displayName) <*> pure False),
       ("/remove " <|> "/rm ") *> char_ '#' *> (RemoveMember <$> displayName <* A.space <* char_ '@' <*> displayName),
       ("/leave " <|> "/l ") *> char_ '#' *> (LeaveGroup <$> displayName),
       ("/delete #" <|> "/d #") *> (DeleteGroup <$> displayName),

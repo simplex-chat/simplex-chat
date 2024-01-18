@@ -394,6 +394,7 @@ data ChatCommand
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup GroupName
   | MemberRole GroupName ContactName GroupMemberRole
+  | BlockForAll GroupName ContactName Bool
   | RemoveMember GroupName ContactName
   | LeaveGroup GroupName
   | DeleteGroup GroupName

@@ -142,11 +142,11 @@ chatGroupTests = do
     it "profile update without change is ignored" testMembershipProfileUpdateNoChangeIgnored
     it "change of profile contact link is ignored" testMembershipProfileUpdateContactLinkIgnored
   describe "block member for all" $ do
-    it "messages are marked as moderated" testBlockForAllModerated
+    it "messages are marked blocked" testBlockForAllMarkedBlocked
     it "messages are fully deleted" testBlockForAllFullDelete
     it "another admin can unblock" testBlockForAllAnotherAdminUnblocks
     it "member was blocked before joining group" testBlockForAllBeforeJoining
-    it "can't repeat block/unblock" testBlockForAllCantRepeat
+    it "can't repeat block, unblock" testBlockForAllCantRepeat
   where
     _0 = supportedChatVRange -- don't create direct connections
     _1 = groupCreateDirectVRange
@@ -5702,8 +5702,8 @@ testMembershipProfileUpdateContactLinkIgnored =
       bob <## "connection not verified, use /code command to see security code"
       bob <## currentChatVRangeInfo
 
-testBlockForAllModerated :: HasCallStack => FilePath -> IO ()
-testBlockForAllModerated =
+testBlockForAllMarkedBlocked :: HasCallStack => FilePath -> IO ()
+testBlockForAllMarkedBlocked =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
@@ -5715,7 +5715,7 @@ testBlockForAllModerated =
 
       threadDelay 1000000
 
-      alice ##> "/block #team bob"
+      alice ##> "/block for all #team bob"
       alice <## "#team: you blocked bob"
       cath <## "#team: alice blocked bob"
       bob <// 50000
@@ -5755,7 +5755,7 @@ testBlockForAllModerated =
 
       threadDelay 1000000
 
-      alice ##> "/unblock #team bob"
+      alice ##> "/unblock for all #team bob"
       alice <## "#team: you unblocked bob"
       cath <## "#team: alice unblocked bob"
       bob <// 50000
@@ -5816,7 +5816,7 @@ testBlockForAllFullDelete =
 
       threadDelay 1000000
 
-      alice ##> "/block #team bob"
+      alice ##> "/block for all #team bob"
       alice <## "#team: you blocked bob"
       cath <## "#team: alice blocked bob"
       bob <// 50000
@@ -5835,7 +5835,7 @@ testBlockForAllFullDelete =
 
       threadDelay 1000000
 
-      alice ##> "/unblock #team bob"
+      alice ##> "/unblock for all #team bob"
       alice <## "#team: you unblocked bob"
       cath <## "#team: alice unblocked bob"
       bob <// 50000
@@ -5878,7 +5878,7 @@ testBlockForAllAnotherAdminUnblocks =
       bob #> "#team 1"
       [alice, cath] *<# "#team bob> 1"
 
-      alice ##> "/block #team bob"
+      alice ##> "/block for all #team bob"
       alice <## "#team: you blocked bob"
       cath <## "#team: alice blocked bob"
       bob <// 50000
@@ -5887,7 +5887,7 @@ testBlockForAllAnotherAdminUnblocks =
       alice <# "#team bob> 2 [blocked by admin] <muted>"
       cath <# "#team bob> 2 [blocked by admin] <muted>"
 
-      cath ##> "/unblock #team bob"
+      cath ##> "/unblock for all #team bob"
       cath <## "#team: you unblocked bob"
       alice <## "#team: cath unblocked bob"
       bob <// 50000
@@ -5906,7 +5906,7 @@ testBlockForAllBeforeJoining =
       bob #> "#team 1"
       [alice, cath] *<# "#team bob> 1"
 
-      alice ##> "/block #team bob"
+      alice ##> "/block for all #team bob"
       alice <## "#team: you blocked bob"
       cath <## "#team: alice blocked bob"
       bob <// 50000
@@ -5941,7 +5941,7 @@ testBlockForAllBeforeJoining =
 
       threadDelay 1000000
 
-      alice ##> "/unblock #team bob"
+      alice ##> "/unblock for all #team bob"
       alice <## "#team: you unblocked bob"
       cath <## "#team: alice unblocked bob"
       dan <## "#team: alice unblocked bob"
@@ -5971,39 +5971,39 @@ testBlockForAllCantRepeat =
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
 
-      alice ##> "/unblock #team bob"
+      alice ##> "/unblock for all #team bob"
       alice <## "bad chat command: already unblocked"
 
-      cath ##> "/unblock #team bob"
+      cath ##> "/unblock for all #team bob"
       cath <## "bad chat command: already unblocked"
 
       bob #> "#team 1"
       [alice, cath] *<# "#team bob> 1"
 
-      alice ##> "/block #team bob"
+      alice ##> "/block for all #team bob"
       alice <## "#team: you blocked bob"
       cath <## "#team: alice blocked bob"
       bob <// 50000
 
-      alice ##> "/block #team bob"
+      alice ##> "/block for all #team bob"
       alice <## "bad chat command: already blocked"
 
-      cath ##> "/block #team bob"
+      cath ##> "/block for all #team bob"
       cath <## "bad chat command: already blocked"
 
       bob #> "#team 2"
       alice <# "#team bob> 2 [blocked by admin] <muted>"
       cath <# "#team bob> 2 [blocked by admin] <muted>"
 
-      cath ##> "/unblock #team bob"
+      cath ##> "/unblock for all #team bob"
       cath <## "#team: you unblocked bob"
       alice <## "#team: cath unblocked bob"
       bob <// 50000
 
-      alice ##> "/unblock #team bob"
+      alice ##> "/unblock for all #team bob"
       alice <## "bad chat command: already unblocked"
 
-      cath ##> "/unblock #team bob"
+      cath ##> "/unblock for all #team bob"
       cath <## "bad chat command: already unblocked"
 
       bob #> "#team 3"
