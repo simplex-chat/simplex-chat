@@ -134,7 +134,7 @@ struct ChatPreviewView: View {
                     .foregroundColor(.white)
                     .padding(.horizontal, 4)
                     .frame(minWidth: 18, minHeight: 18)
-                    .background(chat.chatInfo.ntfsEnabled ? Color.accentColor : Color.secondary)
+                    .background(chat.chatInfo.ntfsEnabled || chat.chatInfo.chatType == .local ? Color.accentColor : Color.secondary)
                     .cornerRadius(10)
             } else if !chat.chatInfo.ntfsEnabled && chat.chatInfo.chatType != .local {
                 Image(systemName: "speaker.slash.fill")
