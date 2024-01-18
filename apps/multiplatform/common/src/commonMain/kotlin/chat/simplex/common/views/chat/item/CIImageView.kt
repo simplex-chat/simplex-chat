@@ -190,7 +190,7 @@ fun CIImageView(
               }
             CIFileStatus.RcvAccepted ->
               when (file.fileProtocol) {
-                FileProtocol.XFTP, FileProtocol.LOCAL ->
+                FileProtocol.XFTP ->
                   AlertManager.shared.showAlertMsg(
                     generalGetString(MR.strings.waiting_for_image),
                     generalGetString(MR.strings.image_will_be_received_when_contact_completes_uploading)
@@ -200,6 +200,7 @@ fun CIImageView(
                     generalGetString(MR.strings.waiting_for_image),
                     generalGetString(MR.strings.image_will_be_received_when_contact_is_online)
                   )
+                FileProtocol.LOCAL -> {}
               }
             CIFileStatus.RcvTransfer(rcvProgress = 7, rcvTotal = 10) -> {} // ?
             CIFileStatus.RcvComplete -> {} // ?

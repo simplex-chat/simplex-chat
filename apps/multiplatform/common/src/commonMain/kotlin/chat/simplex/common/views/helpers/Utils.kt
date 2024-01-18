@@ -132,7 +132,7 @@ const val MAX_FILE_SIZE_SMP: Long = 8000000
 
 const val MAX_FILE_SIZE_XFTP: Long = 1_073_741_824 // 1GB
 
-const val MAX_FILE_SIZE_LOCAL: Long = 1_073_741_824 // 1GB
+const val MAX_FILE_SIZE_LOCAL: Long = Long.MAX_VALUE
 
 expect fun getAppFileUri(fileName: String): URI
 
@@ -358,8 +358,8 @@ fun directoryFileCountAndSize(dir: String): Pair<Int, Long> { // count, size in 
 fun getMaxFileSize(fileProtocol: FileProtocol): Long {
   return when (fileProtocol) {
     FileProtocol.XFTP -> MAX_FILE_SIZE_XFTP
-    FileProtocol.LOCAL -> MAX_FILE_SIZE_LOCAL
     FileProtocol.SMP -> MAX_FILE_SIZE_SMP
+    FileProtocol.LOCAL -> MAX_FILE_SIZE_LOCAL
   }
 }
 

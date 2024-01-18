@@ -687,9 +687,7 @@ object ChatController {
     return when (r) {
       is CR.NewChatItem -> r.chatItem
       else -> {
-        if (!(networkErrorAlert(r))) {
-          apiErrorAlert("apiCreateChatItem", generalGetString(MR.strings.error_creating_message), r)
-        }
+        apiErrorAlert("apiCreateChatItem", generalGetString(MR.strings.error_creating_message), r)
         null
       }
     }

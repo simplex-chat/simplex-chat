@@ -68,8 +68,8 @@ fun CIFileView(
 
   fun fileAction() {
     if (file != null) {
-      when (file.fileStatus) {
-        is CIFileStatus.RcvInvitation -> {
+      when {
+        file.fileStatus is CIFileStatus.RcvInvitation -> {
           if (fileSizeValid()) {
             receiveFile(file.fileId)
           } else {
@@ -79,9 +79,9 @@ fun CIFileView(
             )
           }
         }
-        is CIFileStatus.RcvAccepted ->
+        file.fileStatus is CIFileStatus.RcvAccepted ->
           when (file.fileProtocol) {
-            FileProtocol.XFTP, FileProtocol.LOCAL ->
+            FileProtocol.XFTP ->
               AlertManager.shared.showAlertMsg(
                 generalGetString(MR.strings.waiting_for_file),
                 generalGetString(MR.strings.file_will_be_received_when_contact_completes_uploading)
@@ -91,8 +91,9 @@ fun CIFileView(
                 generalGetString(MR.strings.waiting_for_file),
                 generalGetString(MR.strings.file_will_be_received_when_contact_is_online)
               )
+            FileProtocol.LOCAL -> {}
           }
-        is CIFileStatus.RcvComplete -> {
+        file.fileStatus is CIFileStatus.RcvComplete || (file.fileStatus is CIFileStatus.SndStored && file.fileProtocol == FileProtocol.LOCAL) -> {
           withBGApi {
             var filePath = getLoadedFilePath(file)
             if (chatModel.connectedToRemote() && filePath == null) {
@@ -156,8 +157,9 @@ fun CIFileView(
             }
           is CIFileStatus.SndTransfer ->
             when (file.fileProtocol) {
-              FileProtocol.XFTP, FileProtocol.LOCAL -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
+              FileProtocol.XFTP -> progressCircle(file.fileStatus.sndProgress, file.fileStatus.sndTotal)
               FileProtocol.SMP -> progressIndicator()
+              FileProtocol.LOCAL -> {}
             }
           is CIFileStatus.SndComplete -> fileIcon(innerIcon = painterResource(MR.images.ic_check_filled))
           is CIFileStatus.SndCancelled -> fileIcon(innerIcon = painterResource(MR.images.ic_close))

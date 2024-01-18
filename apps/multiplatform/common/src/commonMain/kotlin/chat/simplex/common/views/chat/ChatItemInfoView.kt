@@ -154,7 +154,7 @@ fun ChatItemInfoView(chatModel: ChatModel, ci: ChatItem, ciInfo: ChatItemInfo, d
 
   @Composable
   fun Details() {
-    AppBarTitle(stringResource(if (sent) MR.strings.sent_message else MR.strings.received_message))
+    AppBarTitle(stringResource(if (ci.localNote) MR.strings.saved_message_title else if (sent) MR.strings.sent_message else MR.strings.received_message))
     SectionView {
       InfoRow(stringResource(if (!ci.localNote) MR.strings.info_row_sent_at else MR.strings.info_row_created_at), localTimestamp(ci.meta.itemTs))
       if (!sent) {
@@ -393,9 +393,9 @@ private fun membersStatuses(chatModel: ChatModel, memberDeliveryStatuses: List<M
 fun itemInfoShareText(chatModel: ChatModel, ci: ChatItem, chatItemInfo: ChatItemInfo, devTools: Boolean): String {
   val meta = ci.meta
   val sent = ci.chatDir.sent
-  val shareText = mutableListOf<String>("# " + generalGetString(if (sent) MR.strings.sent_message else MR.strings.received_message), "")
+  val shareText = mutableListOf<String>("# " + generalGetString(if (ci.localNote) MR.strings.saved_message_title else if (sent) MR.strings.sent_message else MR.strings.received_message), "")
 
-  shareText.add(String.format(generalGetString(MR.strings.share_text_sent_at), localTimestamp(meta.itemTs)))
+  shareText.add(String.format(generalGetString(if (ci.localNote) MR.strings.share_text_created_at else MR.strings.share_text_sent_at), localTimestamp(meta.itemTs)))
   if (!ci.chatDir.sent) {
     shareText.add(String.format(generalGetString(MR.strings.share_text_received_at), localTimestamp(meta.createdAt)))
   }

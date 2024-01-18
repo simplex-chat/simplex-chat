@@ -1307,6 +1307,7 @@
   <string name="share_text_database_id">Database ID: %d</string>
   <string name="share_text_updated_at">Record updated at: %s</string>
   <string name="share_text_sent_at">Sent at: %s</string>
+  <string name="share_text_created_at">Created at: %s</string>
   <string name="share_text_received_at">Received at: %s</string>
   <string name="share_text_deleted_at">Deleted at: %s</string>
   <string name="share_text_moderated_at">Moderated at: %s</string>
@@ -1316,6 +1317,7 @@
   <string name="current_version_timestamp">%s (current)</string>
   <string name="item_info_no_text">no text</string>
   <string name="recipient_colon_delivery_status">%s: %s</string>
+  <string name="saved_message_title">Saved message</string>
 
   <!-- GroupMemberInfoView.kt -->
   <string name="button_remove_member_question">Remove member?</string>
