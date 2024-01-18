@@ -1610,4 +1610,14 @@
     <string name="profile_update_event_contact_name_changed">contactpersoon %1$s gewijzigd in %2$s</string>
     <string name="error_deleting_note_folder">Fout bij verwijderen van privénotities</string>
     <string name="clear_note_folder_question">Privénotities verwijderen?</string>
+    <string name="v5_5_safer_groups">Veiligere groepen</string>
+    <string name="v5_5_simpler_connect_ui_descr">Zoekbalk accepteert uitnodigingslinks.</string>
+    <string name="v5_5_private_notes_descr">‐Met versleutelde bestanden en media.</string>
+    <string name="v5_5_message_delivery_descr">Met verminderd batterijgebruik.</string>
+    <string name="saved_message_title">Opgeslagen bericht</string>
+    <string name="profile_update_event_updated_profile">bijgewerkt profiel</string>
+    <string name="profile_update_event_removed_address">contactadres verwijderd</string>
+    <string name="profile_update_event_removed_picture">profielfoto verwijderd</string>
+    <string name="profile_update_event_set_new_address">nieuw contactadres instellen</string>
+    <string name="profile_update_event_set_new_picture">nieuwe profielfoto instellen</string>
 </resources>
