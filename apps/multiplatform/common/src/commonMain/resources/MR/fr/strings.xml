@@ -1595,4 +1595,31 @@
     <string name="remote_ctrl_error_bad_invitation">Le bureau ne possède pas le bon code d\'invitation</string>
     <string name="remote_ctrl_error_busy">Le bureau est occupé</string>
     <string name="remote_ctrl_error_inactive">Le bureau est inactif</string>
+    <string name="v5_5_private_notes_descr">Avec les fichiers et les médias chiffrés.</string>
+    <string name="v5_5_join_group_conversation_descr">Historique récent et bot d\'annuaire amélioré.</string>
+    <string name="v5_5_safer_groups">Groupes plus sûrs</string>
+    <string name="v5_5_simpler_connect_ui_descr">La barre de recherche accepte les liens d\'invitation.</string>
+    <string name="v5_5_message_delivery_descr">Consommation réduite de la batterie.</string>
+    <string name="clear_note_folder_warning">Tous les messages seront supprimés - il n\'est pas possible de revenir en arrière !</string>
+    <string name="v5_5_safer_groups_descr">- bloquer un membre pour arrêter le spam pour tous.
+\n- L\'adresse de contact n\'est pas partagée.</string>
+    <string name="v5_5_new_interface_languages">Interface utilisateur en hongrois et en turc</string>
+    <string name="v5_5_private_notes">Notes privées</string>
+    <string name="info_row_created_at">Créé à</string>
+    <string name="error_creating_message">Erreur lors de la création du message</string>
+    <string name="v5_5_message_delivery">Amélioration de la transmission des messages</string>
+    <string name="v5_5_join_group_conversation">Participez aux conversations de groupe</string>
+    <string name="share_text_created_at">Créé à : %s</string>
+    <string name="error_deleting_note_folder">Erreur lors de la suppression de notes privées</string>
+    <string name="v5_5_simpler_connect_ui">Collez le lien pour vous connecter !</string>
+    <string name="note_folder_local_display_name">Notes privées</string>
+    <string name="profile_update_event_contact_name_changed">le contact %1$s est devenu %2$s</string>
+    <string name="profile_update_event_member_name_changed">le membre %1$s est devenu %2$s</string>
+    <string name="profile_update_event_removed_address">suppression de l\'adresse de contact</string>
+    <string name="profile_update_event_removed_picture">suppression de la photo de profil</string>
+    <string name="profile_update_event_set_new_address">définir une nouvelle adresse de contact</string>
+    <string name="profile_update_event_set_new_picture">définir une nouvelle image de profil</string>
+    <string name="profile_update_event_updated_profile">profil mis à jour</string>
+    <string name="clear_note_folder_question">Effacer les notes privées ?</string>
+    <string name="saved_message_title">Message enregistré</string>
 </resources>
