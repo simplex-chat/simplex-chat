@@ -1990,12 +1990,12 @@ createMemberContactConn_
 updateMemberProfile :: DB.Connection -> User -> GroupMember -> Profile -> ExceptT StoreError IO GroupMember
 updateMemberProfile db User {userId} m p'
   | displayName == newName = do
-      liftIO $ updateMemberContactProfile_ db userId profileId p'
+      liftIO $ updateMemberContactProfileReset_ db userId profileId p'
       pure m {memberProfile = profile}
   | otherwise =
       ExceptT . withLocalDisplayName db userId newName $ \ldn -> do
         currentTs <- getCurrentTime
-        updateMemberContactProfile_' db userId profileId p' currentTs
+        updateMemberContactProfileReset_' db userId profileId p' currentTs
         DB.execute
           db
           "UPDATE group_members SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_member_id = ?"
