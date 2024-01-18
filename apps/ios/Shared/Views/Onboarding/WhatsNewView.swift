@@ -314,6 +314,42 @@ private let versionDescriptions: [VersionDescription] = [
             ),
         ]
     ),
+    VersionDescription(
+        version: "v5.5",
+        post: URL(string: "https://simplex.chat/blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.html"),
+        features: [
+            FeatureDescription(
+                icon: "folder",
+                title: "Private notes",
+                description: "With encrypted files and media."
+            ),
+            FeatureDescription(
+                icon: "link",
+                title: "Paste link to connect!",
+                description: "Search bar accepts invitation links."
+            ),
+            FeatureDescription(
+                icon: "bubble.left.and.bubble.right",
+                title: "Join group conversations",
+                description: "Recent history and improved [directory bot](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)."
+            ),
+            FeatureDescription(
+                icon: "person.2",
+                title: "Safer groups",
+                description: "- block a member to stop spam for all.\n- contact address is not shared."
+            ),
+            FeatureDescription(
+                icon: "battery.50",
+                title: "Improved message delivery",
+                description: "With reduced battery usage."
+            ),
+            FeatureDescription(
+                icon: "character",
+                title: "Turkish interface",
+                description: "Thanks to the users – [contribute via Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat)!"
+            ),
+        ]
+    )
 ]
 
 private let lastVersion = versionDescriptions.last!.version

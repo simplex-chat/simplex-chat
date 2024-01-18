@@ -462,6 +462,44 @@ private val versionDescriptions: List<VersionDescription> = listOf(
       )
     )
   ),
+  VersionDescription(
+    version = "v5.5",
+    post = "https://simplex.chat/blog/20240124-simplex-chat-infrastructure-costs-v5-5-simplex-ux-private-notes-group-history.html",
+    features = listOf(
+      FeatureDescription(
+        icon = MR.images.ic_folder_pen,
+        titleId = MR.strings.v5_5_private_notes,
+        descrId = MR.strings.v5_5_private_notes_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_link,
+        titleId = MR.strings.v5_5_simpler_connect_ui,
+        descrId = MR.strings.v5_5_simpler_connect_ui_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_forum,
+        titleId = MR.strings.v5_5_join_group_conversation,
+        descrId = MR.strings.v5_5_join_group_conversation_descr,
+        link = "simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_group,
+        titleId = MR.strings.v5_5_safer_groups,
+        descrId = MR.strings.v5_5_safer_groups_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_battery_3_bar,
+        titleId = MR.strings.v5_5_message_delivery,
+        descrId = MR.strings.v5_5_message_delivery_descr
+      ),
+      FeatureDescription(
+        icon = MR.images.ic_translate,
+        titleId = MR.strings.v5_5_new_interface_languages,
+        descrId = MR.strings.whats_new_thanks_to_users_contribute_weblate,
+        link = "https://github.com/simplex-chat/simplex-chat/tree/stable#help-translating-simplex-chat"
+      )
+    )
+  ),
 )
 
 private val lastVersion = versionDescriptions.last().version

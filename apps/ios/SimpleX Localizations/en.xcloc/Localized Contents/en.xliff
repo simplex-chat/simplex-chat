@@ -372,6 +372,13 @@
         <target>, </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="- block a member to stop spam for all.&#10;- contact address is not shared." xml:space="preserve">
+        <source>- block a member to stop spam for all.
+- contact address is not shared.</source>
+        <target>- block a member to stop spam for all.
+- contact address is not shared.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!&#10;- delivery receipts (up to 20 members).&#10;- faster and more stable." xml:space="preserve">
         <source>- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!
 - delivery receipts (up to 20 members).
@@ -636,6 +643,11 @@
       <trans-unit id="All group members will remain connected." xml:space="preserve">
         <source>All group members will remain connected.</source>
         <target>All group members will remain connected.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="All messages will be deleted - this cannot be undone!" xml:space="preserve">
+        <source>All messages will be deleted - this cannot be undone!</source>
+        <target>All messages will be deleted - this cannot be undone!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="All messages will be deleted - this cannot be undone! The messages will be deleted ONLY for you." xml:space="preserve">
@@ -1144,6 +1156,11 @@
         <target>Clear conversation?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Clear private notes?" xml:space="preserve">
+        <source>Clear private notes?</source>
+        <target>Clear private notes?</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Clear verification" xml:space="preserve">
         <source>Clear verification</source>
         <target>Clear verification</target>
@@ -1437,6 +1454,16 @@ This is your own one-time link!</target>
         <source>Create your profile</source>
         <target>Create your profile</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Created at" xml:space="preserve">
+        <source>Created at</source>
+        <target>Created at</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Created at: %@" xml:space="preserve">
+        <source>Created at: %@</source>
+        <target>Created at: %@</target>
+        <note>copied message info</note>
       </trans-unit>
       <trans-unit id="Created on %@" xml:space="preserve">
         <source>Created on %@</source>
@@ -2223,6 +2250,11 @@ This cannot be undone!</target>
         <target>Error creating member contact</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error creating message" xml:space="preserve">
+        <source>Error creating message</source>
+        <target>Error creating message</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Error creating profile!" xml:space="preserve">
         <source>Error creating profile!</source>
         <target>Error creating profile!</target>
@@ -2893,6 +2925,11 @@ This cannot be undone!</target>
         <target>Import database</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Improved message delivery" xml:space="preserve">
+        <source>Improved message delivery</source>
+        <target>Improved message delivery</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Improved privacy and security" xml:space="preserve">
         <source>Improved privacy and security</source>
         <target>Improved privacy and security</target>
@@ -3114,6 +3151,11 @@ This cannot be undone!</target>
       <trans-unit id="Join group" xml:space="preserve">
         <source>Join group</source>
         <target>Join group</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Join group conversations" xml:space="preserve">
+        <source>Join group conversations</source>
+        <target>Join group conversations</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Join group?" xml:space="preserve">
@@ -3822,6 +3864,11 @@ This is your link for group %@!</target>
         <target>Password to show</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Past member %@" xml:space="preserve">
+        <source>Past member %@</source>
+        <target>Past member %@</target>
+        <note>past/unknown group member</note>
+      </trans-unit>
       <trans-unit id="Paste desktop address" xml:space="preserve">
         <source>Paste desktop address</source>
         <target>Paste desktop address</target>
@@ -3830,6 +3877,11 @@ This is your link for group %@!</target>
       <trans-unit id="Paste image" xml:space="preserve">
         <source>Paste image</source>
         <target>Paste image</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Paste link to connect!" xml:space="preserve">
+        <source>Paste link to connect!</source>
+        <target>Paste link to connect!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Paste the link you received" xml:space="preserve">
@@ -3963,6 +4015,11 @@ Error: %@</target>
         <source>Private filenames</source>
         <target>Private filenames</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Private notes" xml:space="preserve">
+        <source>Private notes</source>
+        <target>Private notes</target>
+        <note>name of notes to self</note>
       </trans-unit>
       <trans-unit id="Profile and server connections" xml:space="preserve">
         <source>Profile and server connections</source>
@@ -4142,6 +4199,11 @@ Error: %@</target>
       <trans-unit id="Receiving via" xml:space="preserve">
         <source>Receiving via</source>
         <target>Receiving via</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Recent history and improved [directory bot](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)." xml:space="preserve">
+        <source>Recent history and improved [directory bot](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).</source>
+        <target>Recent history and improved [directory bot](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion).</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Recipients see updates as you type them." xml:space="preserve">
@@ -4344,6 +4406,11 @@ Error: %@</target>
         <target>SMP servers</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Safer groups" xml:space="preserve">
+        <source>Safer groups</source>
+        <target>Safer groups</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Save" xml:space="preserve">
         <source>Save</source>
         <target>Save</target>
@@ -4429,6 +4496,11 @@ Error: %@</target>
         <target>Saved WebRTC ICE servers will be removed</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Saved message" xml:space="preserve">
+        <source>Saved message</source>
+        <target>Saved message</target>
+        <note>message info title</note>
+      </trans-unit>
       <trans-unit id="Scan QR code" xml:space="preserve">
         <source>Scan QR code</source>
         <target>Scan QR code</target>
@@ -4457,6 +4529,11 @@ Error: %@</target>
       <trans-unit id="Search" xml:space="preserve">
         <source>Search</source>
         <target>Search</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Search bar accepts invitation links." xml:space="preserve">
+        <source>Search bar accepts invitation links.</source>
+        <target>Search bar accepts invitation links.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Search or paste SimpleX link" xml:space="preserve">
@@ -5303,6 +5380,11 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Trying to connect to the server used to receive messages from this contact.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Turkish interface" xml:space="preserve">
+        <source>Turkish interface</source>
+        <target>Turkish interface</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Turn off" xml:space="preserve">
         <source>Turn off</source>
         <target>Turn off</target>
@@ -5690,9 +5772,19 @@ To connect, please ask your contact to create another connection link and check 
         <target>When you share an incognito profile with somebody, this profile will be used for the groups they invite you to.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="With encrypted files and media." xml:space="preserve">
+        <source>With encrypted files and media.</source>
+        <target>With encrypted files and media.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="With optional welcome message." xml:space="preserve">
         <source>With optional welcome message.</source>
         <target>With optional welcome message.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="With reduced battery usage." xml:space="preserve">
+        <source>With reduced battery usage.</source>
+        <target>With reduced battery usage.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Wrong database passphrase" xml:space="preserve">
@@ -6318,6 +6410,11 @@ SimpleX servers cannot see your profile.</target>
         <target>connection:%@</target>
         <note>connection information</note>
       </trans-unit>
+      <trans-unit id="contact %@ changed to %@" xml:space="preserve">
+        <source>contact %1$@ changed to %2$@</source>
+        <target>contact %1$@ changed to %2$@</target>
+        <note>profile update event chat item</note>
+      </trans-unit>
       <trans-unit id="contact has e2e encryption" xml:space="preserve">
         <source>contact has e2e encryption</source>
         <target>contact has e2e encryption</target>
@@ -6588,6 +6685,11 @@ SimpleX servers cannot see your profile.</target>
         <target>member</target>
         <note>member role</note>
       </trans-unit>
+      <trans-unit id="member %@ changed to %@" xml:space="preserve">
+        <source>member %1$@ changed to %2$@</source>
+        <target>member %1$@ changed to %2$@</target>
+        <note>profile update event chat item</note>
+      </trans-unit>
       <trans-unit id="member connected" xml:space="preserve">
         <source>connected</source>
         <target>connected</target>
@@ -6710,6 +6812,16 @@ SimpleX servers cannot see your profile.</target>
         <target>removed %@</target>
         <note>rcv group event chat item</note>
       </trans-unit>
+      <trans-unit id="removed contact address" xml:space="preserve">
+        <source>removed contact address</source>
+        <target>removed contact address</target>
+        <note>profile update event chat item</note>
+      </trans-unit>
+      <trans-unit id="removed profile picture" xml:space="preserve">
+        <source>removed profile picture</source>
+        <target>removed profile picture</target>
+        <note>profile update event chat item</note>
+      </trans-unit>
       <trans-unit id="removed you" xml:space="preserve">
         <source>removed you</source>
         <target>removed you</target>
@@ -6740,6 +6852,16 @@ SimpleX servers cannot see your profile.</target>
         <target>send direct message</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="set new contact address" xml:space="preserve">
+        <source>set new contact address</source>
+        <target>set new contact address</target>
+        <note>profile update event chat item</note>
+      </trans-unit>
+      <trans-unit id="set new profile picture" xml:space="preserve">
+        <source>set new profile picture</source>
+        <target>set new profile picture</target>
+        <note>profile update event chat item</note>
+      </trans-unit>
       <trans-unit id="starting…" xml:space="preserve">
         <source>starting…</source>
         <target>starting…</target>
@@ -6760,10 +6882,20 @@ SimpleX servers cannot see your profile.</target>
         <target>unknown</target>
         <note>connection info</note>
       </trans-unit>
+      <trans-unit id="unknown status" xml:space="preserve">
+        <source>unknown status</source>
+        <target>unknown status</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="updated group profile" xml:space="preserve">
         <source>updated group profile</source>
         <target>updated group profile</target>
         <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="updated profile" xml:space="preserve">
+        <source>updated profile</source>
+        <target>updated profile</target>
+        <note>profile update event chat item</note>
       </trans-unit>
       <trans-unit id="v%@" xml:space="preserve">
         <source>v%@</source>
