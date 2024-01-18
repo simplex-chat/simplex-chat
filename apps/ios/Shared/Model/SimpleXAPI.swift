@@ -1324,7 +1324,7 @@ func startChat(refreshInvitations: Bool = true) throws {
     chatLastStartGroupDefault.set(Date.now)
 }
 
-func changeActiveUser(_ userId: Int64, viewPwd: String?) {
+func changeActiveUser(_ userId: Int64?, viewPwd: String?) {
     do {
         try changeActiveUser_(userId, viewPwd: viewPwd)
     } catch let error {
@@ -1332,15 +1332,23 @@ func changeActiveUser(_ userId: Int64, viewPwd: String?) {
     }
 }
 
-private func changeActiveUser_(_ userId: Int64, viewPwd: String?) throws {
+private func changeActiveUser_(_ userId: Int64?, viewPwd: String?) throws {
     let m = ChatModel.shared
-    m.currentUser = try apiSetActiveUser(userId, viewPwd: viewPwd)
+    m.currentUser = if let userId = userId {
+        try apiSetActiveUser(userId, viewPwd: viewPwd)
+    } else {
+        try apiGetActiveUser()
+    }
     m.users = try listUsers()
     try getUserChatData()
 }
 
-func changeActiveUserAsync_(_ userId: Int64, viewPwd: String?) async throws {
-    let currentUser = try await apiSetActiveUserAsync(userId, viewPwd: viewPwd)
+func changeActiveUserAsync_(_ userId: Int64?, viewPwd: String?) async throws {
+    let currentUser = if let userId = userId {
+        try await apiSetActiveUserAsync(userId, viewPwd: viewPwd)
+    } else {
+        try apiGetActiveUser()
+    }
     let users = try await listUsersAsync()
     await MainActor.run {
         let m = ChatModel.shared
@@ -1349,7 +1357,7 @@ func changeActiveUserAsync_(_ userId: Int64, viewPwd: String?) async throws {
     }
     try await getUserChatDataAsync()
     await MainActor.run {
-        if var (_, invitation) = ChatModel.shared.callInvitations.first(where: { _, inv in inv.user.userId == userId }) {
+        if let currentUser = currentUser, var (_, invitation) = ChatModel.shared.callInvitations.first(where: { _, inv in inv.user.userId == userId }) {
             invitation.user = currentUser
             activateCall(invitation)
         }
@@ -1365,14 +1373,21 @@ func getUserChatData() throws {
 }
 
 private func getUserChatDataAsync() async throws {
-    let userAddress = try await apiGetUserAddressAsync()
-    let chatItemTTL = try await getChatItemTTLAsync()
-    let chats = try await apiGetChatsAsync()
-    await MainActor.run {
-        let m = ChatModel.shared
-        m.userAddress = userAddress
-        m.chatItemTTL = chatItemTTL
-        m.chats = chats.map { Chat.init($0) }
+    let m = ChatModel.shared
+    if m.currentUser != nil {
+        let userAddress = try await apiGetUserAddressAsync()
+        let chatItemTTL = try await getChatItemTTLAsync()
+        let chats = try await apiGetChatsAsync()
+        await MainActor.run {
+            m.userAddress = userAddress
+            m.chatItemTTL = chatItemTTL
+            m.chats = chats.map { Chat.init($0) }
+        }
+    } else {
+        await MainActor.run {
+            m.userAddress = nil
+            m.chats = []
+        }
     }
 }
 

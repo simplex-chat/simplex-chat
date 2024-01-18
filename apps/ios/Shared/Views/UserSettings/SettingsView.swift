@@ -151,15 +151,16 @@ struct SettingsView: View {
 
     var body: some View {
         ZStack {
-            settingsView()
+            if let user = chatModel.currentUser {
+                settingsView(user: user)
+            }
             if let la = chatModel.laRequest {
                 LocalAuthView(authRequest: la)
             }
         }
     }
 
-    @ViewBuilder func settingsView() -> some View {
-        let user: User = chatModel.currentUser!
+    @ViewBuilder func settingsView(user: User) -> some View {
         NavigationView {
             List {
                 Section("You") {
@@ -172,7 +173,7 @@ struct SettingsView: View {
                     }
 
                     NavigationLink {
-                        UserProfilesView()
+                        UserProfilesView(showSettings: $showSettings)
                     } label: {
                         settingsRow("person.crop.rectangle.stack") { Text("Your chat profiles") }
                     }
