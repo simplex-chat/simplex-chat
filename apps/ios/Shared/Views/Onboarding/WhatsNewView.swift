@@ -329,8 +329,8 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "Paste the link into the search bar!"
             ),
             FeatureDescription(
-                icon: "list.bullet.rectangle",
-                title: "Join group conversations!",
+                icon: "bubble.left.and.bubble.right",
+                title: "Join group conversations",
                 description: "Recent history and improved [directory service](simplex:/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion)"
             ),
             FeatureDescription(
