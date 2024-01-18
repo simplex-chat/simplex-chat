@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatInfo
 import chat.simplex.common.platform.base64ToBitmap
+import chat.simplex.common.ui.theme.NoteFolderIconColor
 import chat.simplex.common.ui.theme.SimpleXTheme
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
@@ -29,7 +30,7 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
       is ChatInfo.Direct -> MR.images.ic_account_circle_filled
       else -> MR.images.ic_folder_filled
     }
-  ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) MaterialTheme.colors.primary.copy(0.33f) else iconColor)
+  ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor)
 }
 
 @Composable
