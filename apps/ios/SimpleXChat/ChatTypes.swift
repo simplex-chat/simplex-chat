@@ -2193,6 +2193,7 @@ public struct ChatItem: Identifiable, Decodable {
         case .rcvDeleted: return true
         case .sndModerated: return true
         case .rcvModerated: return true
+        case .rcvBlocked: return true
         default: return false
         }
     }

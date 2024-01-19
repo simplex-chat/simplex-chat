@@ -65,8 +65,8 @@ struct MarkedDeletedItemView: View {
     var markedDeletedText: LocalizedStringKey {
         switch chatItem.meta.itemDeleted {
         case let .moderated(_, byGroupMember): "moderated by \(byGroupMember.displayName)"
-        case .blocked: "blocked"
-        default: "marked deleted"
+        case .blocked, .blockedByAdmin: "blocked"
+        case .deleted, nil: "marked deleted"
         }
     }
 }
