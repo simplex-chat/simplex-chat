@@ -99,7 +99,7 @@
     <string name="cannot_receive_file">لا يمكن استقبال الملف</string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b> جيد للبطارية </b>. خدمة الخلفية تتحقق من الرسائل كل 10 دقائق. قد تفوتك مكالمات أو رسائل عاجلة.]]></string>
     <string name="bold_text">عريض</string>
-    <string name="audio_call_no_encryption">مكالمات الصوت (ليست مشفرة بين الطرفين)</string>
+    <string name="audio_call_no_encryption">مكالمات الصوت (ليست مُعمّاة بين الطرفين)</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b> الأفضل للبطارية </b>. ستتلقى إشعارات فقط عندما يكون التطبيق قيد التشغيل (لا توجد خدمة في الخلفية).]]></string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b> تستهلك المزيد من البطارية </b>! تعمل خدمة الخلفية دائمًا - تظهر الإشعارات بمجرد توفر الرسائل.]]></string>
     <string name="call_already_ended">انتهت المكالمة بالفعل!</string>
@@ -179,8 +179,8 @@
     <string name="create_address">إنشاء عنوان</string>
     <string name="settings_section_title_chats">الدردشات</string>
     <string name="confirm_new_passphrase">تأكيد عبارة المرور الجديدة…</string>
-    <string name="encrypt_database_question">تشفير قاعدة بيانات</string>
-    <string name="encrypted_database">قاعدة بيانات مشفرة</string>
+    <string name="encrypt_database_question">تعمية قاعدة البيانات؟</string>
+    <string name="encrypted_database">قاعدة البيانات مُعمّاة</string>
     <string name="rcv_group_event_changed_member_role">غيرت دور %s إلى %s</string>
     <string name="switch_receiving_address">تغيير عنوان الاستلام</string>
     <string name="failed_to_create_user_title">خطأ في إنشاء الملف الشخصي!</string>
@@ -219,7 +219,7 @@
     <string name="enable_lock">تفعيل القفل</string>
     <string name="confirm_passcode">تأكيد رمز المرور</string>
     <string name="error_deleting_database">خطأ في حذف قاعدة بيانات الدردشة</string>
-    <string name="error_encrypting_database">خطأ في تشفير قاعدة بيانات</string>
+    <string name="error_encrypting_database">خطأ في تعمية قاعدة البيانات</string>
     <string name="chat_is_stopped_indication">توقفت الدردشة</string>
     <string name="group_member_status_complete">مكتمل</string>
     <string name="group_member_status_announced">جاري الاتصال (أعلن)</string>
@@ -234,10 +234,10 @@
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">جارِ تغيير العنوان ل%s…</string>
     <string name="allow_to_send_files">السماح بإرسال الملفات والوسائط.</string>
     <string name="enter_welcome_message_optional">أدخل رسالة ترحيب… (اختياري)</string>
-    <string name="snd_conn_event_ratchet_sync_agreed">وافق التشفير ل%s</string>
-    <string name="snd_conn_event_ratchet_sync_allowed">سمح بإعادة التفاوض على التشفير ل%s</string>
+    <string name="snd_conn_event_ratchet_sync_agreed">وافق التعمية ل%s</string>
+    <string name="snd_conn_event_ratchet_sync_allowed">سمح بإعادة التفاوض على التعمية ل%s</string>
     <string name="error_accepting_contact_request">خطأ في قبول طلب جهة الاتصال</string>
-    <string name="status_contact_has_no_e2e_encryption">ليس لدى جهة الاتصال التشفير بين الطريفين</string>
+    <string name="status_contact_has_no_e2e_encryption">ليس لدى جهة الاتصال التعمية بين الطريفين</string>
     <string name="change_self_destruct_mode">تغيير وضع التدمير الذاتي</string>
     <string name="change_self_destruct_passcode">تغيير رمز المرور التدمير الذاتي</string>
     <string name="confirm_database_upgrades">تأكيد ترقيات قاعدة البيانات</string>
@@ -290,7 +290,7 @@
     <string name="connection_local_display_name">الاتصال %1$d</string>
     <string name="display_name_connection_established">انشأت الاتصال</string>
     <string name="callstatus_connecting">مكالمة جارية…</string>
-    <string name="encrypt_database">تشفير</string>
+    <string name="encrypt_database">عَمِّ</string>
     <string name="enter_passphrase">أدخل عبارة المرور…</string>
     <string name="group_member_status_creator">المنشئ</string>
     <string name="error_adding_members">خطأ في إضافة الأعضاء</string>
@@ -316,20 +316,20 @@
     <string name="create_address_and_let_people_connect">أنشئ عنوانًا للسماح للأشخاص بالتواصل معك.</string>
     <string name="smp_servers_enter_manually">أدخل الخادم يدويًا</string>
     <string name="colored_text">ملون</string>
-    <string name="status_contact_has_e2e_encryption">لدى جهة الاتصال التشفير بين الطريفين</string>
+    <string name="status_contact_has_e2e_encryption">لدى جهة الاتصال التعمية بين الطريفين</string>
     <string name="create_profile_button">إنشاء</string>
     <string name="create_your_profile">إنشاء حسابك الشخصي</string>
     <string name="icon_descr_call_connecting">مكالمة جارية...</string>
     <string name="enable_self_destruct">تفعيل التدمير الذاتي</string>
-    <string name="conn_event_ratchet_sync_started">الموافقة على التشفير…</string>
-    <string name="snd_conn_event_ratchet_sync_started">الموافقة على التشفير لـ%s…</string>
+    <string name="conn_event_ratchet_sync_started">الموافقة على التعمية…</string>
+    <string name="snd_conn_event_ratchet_sync_started">الموافقة على التعمية لـ%s…</string>
     <string name="group_member_status_introduced">متصل (مقدم)</string>
-    <string name="conn_event_ratchet_sync_agreed">وافق التشفير</string>
-    <string name="conn_event_ratchet_sync_ok">التشفير نعم</string>
-    <string name="snd_conn_event_ratchet_sync_ok">التشفير نعم ل%s</string>
-    <string name="conn_event_ratchet_sync_allowed">سمح بإعادة التفاوض على التشفير</string>
-    <string name="conn_event_ratchet_sync_required">مطلوب إعادة التفاوض على التشفير</string>
-    <string name="snd_conn_event_ratchet_sync_required">مطلوب إعادة التفاوض على التشفير ل%s</string>
+    <string name="conn_event_ratchet_sync_agreed">وافق التعمية</string>
+    <string name="conn_event_ratchet_sync_ok">التعمية نعم</string>
+    <string name="snd_conn_event_ratchet_sync_ok">التعمية نعم ل%s</string>
+    <string name="conn_event_ratchet_sync_allowed">سمح بإعادة التفاوض على التعمية</string>
+    <string name="conn_event_ratchet_sync_required">مطلوب إعادة التفاوض على التعمية</string>
+    <string name="snd_conn_event_ratchet_sync_required">مطلوب إعادة التفاوض على التعمية ل%s</string>
     <string name="error_changing_message_deletion">خطأ في تغيير الإعداد</string>
     <string name="error_changing_role">خطأ في تغيير الدور</string>
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d فشل فك تشفير الرسائل.</string>
@@ -344,7 +344,7 @@
     <string name="delete_group_menu_action">حذف</string>
     <string name="delete_messages">حذف الرسائل</string>
     <string name="delete_messages_after">حذف الرسائل بعد</string>
-    <string name="database_encrypted">قاعدة بيانات مشفرة!</string>
+    <string name="database_encrypted">قاعدة البيانات مُعمّاة!</string>
     <string name="passphrase_is_different">تختلف عبارة مرور قاعدة البيانات عن تلك المحفوظة في Keystore.</string>
     <string name="database_error">خطأ في قاعدة البيانات</string>
     <string name="database_upgrade">ترقية قاعدة البيانات</string>
@@ -360,8 +360,8 @@
     <string name="delete_database">حذف قاعدة البيانات</string>
     <string name="delete_chat_profile_question">حذف ملف تعريف الدردشة؟</string>
     <string name="delete_files_and_media_for_all_users">حذف الملفات لجميع ملفات تعريف الدردشة</string>
-    <string name="encrypted_with_random_passphrase">قاعدة البيانات مشفرة باستخدام عبارة مرور عشوائية، يمكنك تغييرها.</string>
-    <string name="database_will_be_encrypted_and_passphrase_stored">سيتم تشفير قاعدة البيانات وتخزين عبارة المرور في Keystore.</string>
+    <string name="encrypted_with_random_passphrase">قاعدة البيانات مُعمّاة باستخدام عبارة مرور عشوائية، يمكنك تغييرها.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored">سيتم تعمية قاعدة البيانات وتخزين عبارة المرور في Keystore.</string>
     <string name="database_passphrase_is_required">عبارة مرور قاعدة البيانات مطلوبة لفتح الدردشة.</string>
     <string name="mtr_error_no_down_migration">إصدار قاعدة البيانات أحدث من التطبيق، ولكن لا يوجد ترحيل لأسفل ل%s</string>
     <string name="share_text_database_id">معرّف قاعدة البيانات: %d</string>
@@ -370,13 +370,13 @@
     <string name="full_deletion">حذف للجميع</string>
     <string name="custom_time_unit_days">أيام</string>
     <string name="delete_address">حذف العنوان</string>
-    <string name="database_passphrase_will_be_updated">سيتم تحديث عبارة مرور تشفير قاعدة البيانات.</string>
+    <string name="database_passphrase_will_be_updated">سيتم تحديث عبارة مرور تعمية قاعدة البيانات.</string>
     <string name="delete_archive">حذف الأرشيف</string>
     <string name="delete_link_question">حذف الرابط؟</string>
     <string name="database_downgrade">الرجوع إلى إصدار سابق من قاعدة البيانات</string>
-    <string name="set_password_to_export_desc">يتم تشفير قاعدة البيانات باستخدام عبارة مرور عشوائية. يرجى تغييره قبل التصدير.</string>
+    <string name="set_password_to_export_desc">قاعدة البيانات مُعمّاة باستخدام عبارة مرور عشوائية. يُرجى تغييره قبل التصدير.</string>
     <string name="ttl_day">%d يوم</string>
-    <string name="database_will_be_encrypted">سيتم تشفير قاعدة البيانات.</string>
+    <string name="database_will_be_encrypted">سيتم تعمية قاعدة البيانات.</string>
     <string name="delete_contact_menu_action">حذف</string>
     <string name="delete_files_and_media_question">حذف الملفات والوسائط؟</string>
     <string name="button_delete_contact">حذف جهة الاتصال</string>
@@ -396,7 +396,7 @@
     <string name="decentralized">لامركزي</string>
     <string name="database_passphrase">عبارة مرور قاعدة البيانات</string>
     <string name="current_passphrase">عبارة المرور الحالية…</string>
-    <string name="database_encryption_will_be_updated">سيتم تحديث عبارة مرور تشفير قاعدة البيانات وتخزينها في Keystore.</string>
+    <string name="database_encryption_will_be_updated">سيتم تحديث عبارة مرور تعمية قاعدة البيانات وتخزينها في Keystore.</string>
     <string name="info_row_database_id">معرّف قاعدة البيانات</string>
     <string name="info_row_deleted_at">حُذِفت في</string>
     <string name="ttl_d">%d يوم</string>
@@ -552,7 +552,7 @@
 \n2. فشل فك تشفير الرسالة، لأنك أو جهة اتصالك استخدمت نسخة احتياطية قديمة من قاعدة البيانات.
 \n3. اُخترق الاتصال.</string>
     <string name="v5_1_japanese_portuguese_interface">واجهة أستخدام يابانية وبرتغالية</string>
-    <string name="alert_text_fragment_encryption_out_of_sync_old_database">يمكن أن يحدث ذلك عندما تستخدم أنت أو اتصالك النسخة الاحتياطية القديمة لقاعدة البيانات.</string>
+    <string name="alert_text_fragment_encryption_out_of_sync_old_database">يمكن أن يحدث ذلك عندما تستخدم أنت أو اتصالك النُسخة الاحتياطية القديمة لقاعدة البيانات.</string>
     <string name="group_preview_join_as">انضمام ك%s</string>
     <string name="invalid_QR_code">رمز QR غير صالح</string>
     <string name="v4_5_italian_interface">الواجهة الإيطالية</string>
@@ -615,7 +615,7 @@
     <string name="integrity_msg_duplicate">كرر الرسالة</string>
     <string name="share_text_disappears_at">يختفي في: %s</string>
     <string name="disappearing_prohibited_in_this_chat">الرسائل المختفية ممنوعة في هذه الدردشة.</string>
-    <string name="status_e2e_encrypted">مشفر بين الطريفين</string>
+    <string name="status_e2e_encrypted">مُعمّى بين الطريفين</string>
     <string name="icon_descr_edited">حُرر</string>
     <string name="downgrade_and_open_chat">الرجوع إلى إصدار سابق وفتح الدردشة</string>
     <string name="direct_messages">رسائل مباشرة</string>
@@ -625,7 +625,7 @@
     <string name="settings_section_title_device">الجهاز</string>
     <string name="ttl_week">%d أسبوع</string>
     <string name="display_name_cannot_contain_whitespace">لا يمكن أن يحتوي اسم العرض على مسافة فارغة.</string>
-    <string name="encrypted_video_call">مكالمة فيديو مشفرة بين الطريفين</string>
+    <string name="encrypted_video_call">مكالمة فيديو مُعمّاة بين الطريفين</string>
     <string name="direct_messages_are_prohibited_in_chat">الرسائل المباشرة بين الأعضاء ممنوعة في هذه المجموعة.</string>
     <string name="ttl_hour">%d ساعة</string>
     <string name="ttl_h">%d ساعة</string>
@@ -650,7 +650,7 @@
     <string name="dont_enable_receipts">لا تُفعل</string>
     <string name="la_minutes">%d دقائق</string>
     <string name="la_seconds">%d ثواني</string>
-    <string name="encrypted_audio_call">مكالمة صوتية مشفرة بين الطريفين</string>
+    <string name="encrypted_audio_call">مكالمة صوتية مُعمّاة بين الطريفين</string>
     <string name="ttl_sec">%d ثانية</string>
     <string name="icon_descr_server_status_disconnected">قُطع الاتصال</string>
     <string name="disappearing_message">رسالة تختفي</string>
@@ -694,7 +694,7 @@
     <string name="v5_2_favourites_filter">البحث عن الدردشات بشكل أسرع</string>
     <string name="enable_receipts_all">تفعيل</string>
     <string name="v5_2_disappear_one_message_descr">حتى عندما يتم تعطيله في المحادثة.</string>
-    <string name="v5_2_fix_encryption_descr">إصلاح التشفير بعد استعادة النسخ الاحتياطية.</string>
+    <string name="v5_2_fix_encryption_descr">إصلاح التعمية بعد استعادة النُسخ الاحتياطية.</string>
     <string name="v5_2_disappear_one_message">اجعل رسالة واحدة تختفي</string>
     <string name="error_enabling_delivery_receipts">خطأ في تفعيل إيصالات التسليم!</string>
     <string name="error_saving_smp_servers">خطأ في حفظ خوادم SMP</string>
@@ -748,7 +748,7 @@
     <string name="v4_5_message_draft">مسودة الرسالة</string>
     <string name="v4_5_multiple_chat_profiles">ملفات تعريف دردشة متعددة</string>
     <string name="settings_notification_preview_title">معاينة الإشعار</string>
-    <string name="status_no_e2e_encryption">لا يوجد تشفير بين الطريفين</string>
+    <string name="status_no_e2e_encryption">لا يوجد تعمية بين الطريفين</string>
     <string name="chat_preferences_no">لا</string>
     <string name="notification_preview_new_message">رسالة جديدة</string>
     <string name="images_limit_desc">يمكن إرسال 10 صور فقط في نفس الوقت</string>
@@ -829,7 +829,7 @@
     <string name="call_connection_peer_to_peer">ندّ لِندّ</string>
     <string name="people_can_connect_only_via_links_you_share">يمكن للناس التواصل معك فقط عبر الرابط الذي تقوم بمشاركته</string>
     <string name="icon_descr_call_pending_sent">مكالمة في الانتظار</string>
-    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages"><![CDATA[تقوم أجهزة العميل فقط بتخزين ملفات تعريف المستخدمين وجهات الاتصال والمجموعات والرسائل المرسلة باستخدام <b>تشفير ثنائي الطبقات من بين الطريفين</b>.]]></string>
+    <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">تقوم أجهزة العميل فقط بتخزين ملفات تعريف المستخدمين وجهات الاتصال والمجموعات والرسائل المُرسلة باستخدام <b>تعمية ثنائية الطبقات من بين الطريفين</b>.</string>
     <string name="reset_color">إعادة تعيين الألوان</string>
     <string name="save_verb">حفظ</string>
     <string name="smp_servers_preset_address">عنوان الخادم المحدد مسبقًا</string>
@@ -932,7 +932,7 @@
     <string name="simplex_service_notification_text">يتم استلام الرسائل…</string>
     <string name="observer_cant_send_message_desc">يرجى الاتصال بمسؤول المجموعة.</string>
     <string name="sync_connection_force_confirm">أعد التفاوض</string>
-    <string name="sync_connection_force_question">إعادة تفاوض التشفير</string>
+    <string name="sync_connection_force_question">إعادة تفاوض التعمية</string>
     <string name="revoke_file__action">سحب وصول الملف</string>
     <string name="revoke_file__title">سحب وصول الملف؟</string>
     <string name="toast_permission_denied">رٌفض الإذن!</string>
@@ -947,7 +947,7 @@
     <string name="save_and_notify_contact">حفظ وإشعار جهة الاتصال</string>
     <string name="settings_restart_app">إعادة التشغيل</string>
     <string name="share_text_received_at">استلمت في: %s</string>
-    <string name="renegotiate_encryption">إعادة تفاوض التشفير</string>
+    <string name="renegotiate_encryption">إعادة تفاوض التعمية</string>
     <string name="sender_at_ts">%s في %s</string>
     <string name="save_group_profile">حفظ ملف المجموعة</string>
     <string name="color_secondary">ثانوي</string>
@@ -1090,7 +1090,7 @@
     <string name="language_system">النظام</string>
     <string name="theme">السمة</string>
     <string name="to_start_a_new_chat_help_header">لبدء محادثة جديدة</string>
-    <string name="to_verify_compare">للتحقق من التشفير بين الطريفين مع جهة اتصالك، قارن (أو امسح) الرمز الموجود على أجهزتك.</string>
+    <string name="to_verify_compare">للتحقق من التعمية بين الطريفين مع جهة اتصالك، قارن (أو امسح) الرمز الموجود على أجهزتك.</string>
     <string name="group_is_decentralized">لامركزية بالكامل – مرئية للأعضاء فقط.</string>
     <string name="theme_system">النظام</string>
     <string name="error_smp_test_failed_at_step">فشل الاختبار في الخطوة %s.</string>
@@ -1137,7 +1137,7 @@
     <string name="database_backup_can_be_restored">لم تكتمل محاولة تغيير عبارة مرور قاعدة البيانات.</string>
     <string name="enter_passphrase_notification_desc">لتلقي الإشعارات، يرجى إدخال عبارة مرور قاعدة البيانات</string>
     <string name="la_lock_mode_system">مصادقة النظام</string>
-    <string name="sync_connection_force_desc">يعمل التشفير واتفاقية التشفير الجديدة غير مطلوبة. قد ينتج عن ذلك أخطاء في الاتصال!</string>
+    <string name="sync_connection_force_desc">يعمل التعمية واتفاقية التعمية الجديدة غير مطلوبة. قد ينتج عن ذلك أخطاء في الاتصال!</string>
     <string name="image_decoding_exception_desc">لا يمكن فك ترميز الصورة. من فضلك، جرب صورة مختلفة أو تواصل مع المطورين.</string>
     <string name="moderate_message_will_be_deleted_warning">سيتم حذف الرسالة لجميع الأعضاء.</string>
     <string name="images_limit_title">الصور كثيرة!</string>
@@ -1220,7 +1220,7 @@
     <string name="v4_3_irreversible_message_deletion_desc">يمكن أن تسمح جهات اتصالك بحذف الرسائل بالكامل.</string>
     <string name="unknown_message_format">تنسيق رسالة غير معروف</string>
     <string name="description_via_one_time_link">عبر رابط لمرة واحدة</string>
-    <string name="video_call_no_encryption">مكالمة الفيديو ليست مشفرة بين الطريفين</string>
+    <string name="video_call_no_encryption">مكالمة الفيديو ليست مُعمّاة بين الطريفين</string>
     <string name="snd_conn_event_switch_queue_phase_completed">غيّرتَ العنوان</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">سوف تكون متصلاً عندما يكون جهاز جهة الاتصال الخاصة بك متصلاً بالإنترنت، يرجى الانتظار أو التحقق لاحقًا!</string>
     <string name="snd_group_event_user_left">غادرت</string>
@@ -1230,7 +1230,7 @@
     <string name="you_can_share_this_address_with_your_contacts">يمكنك مشاركة هذا العنوان مع جهات اتصالك للسماح لهم بالاتصال بـ%s.</string>
     <string name="snd_group_event_member_deleted">أُزيلت %1$s</string>
     <string name="update_database">تحديث</string>
-    <string name="database_is_not_encrypted">قاعدة بيانات الدردشة الخاصة بك غير مشفرة - قم بتعيين عبارة المرور لحمايتها.</string>
+    <string name="database_is_not_encrypted">قاعدة بيانات الدردشة الخاصة بك غير مُعمّاة - عيّن عبارة مرور لحمايتها.</string>
     <string name="wrong_passphrase">عبارة مرور قاعدة بيانات خاطئة</string>
     <string name="group_main_profile_sent">سيتم إرسال ملف تعريف الدردشة الخاص بك إلى أعضاء المجموعة</string>
     <string name="personal_welcome">مرحبًا! %1$s</string>
@@ -1364,10 +1364,10 @@
     <string name="privacy_show_last_messages">إظهار الرسائل الأخيرة</string>
     <string name="rcv_group_event_n_members_connected">%s، %s و %d أعضاء آخرين متصلون</string>
     <string name="rcv_group_event_3_members_connected">%s، %s و %s متصل</string>
-    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">سيتم تشفير قاعدة البيانات وتخزين عبارة المرور في الإعدادات.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">سيتم تعمية قاعدة البيانات وتخزين عبارة المرور في الإعدادات.</string>
     <string name="you_can_change_it_later">يُخزين عبارة المرور العشوائية في الإعدادات كنص عادي.
 \nيمكنك تغييره لاحقا.</string>
-    <string name="database_encryption_will_be_updated_in_settings">سيتم تحديث عبارة مرور تشفير قاعدة البيانات وتخزينها في الإعدادات.</string>
+    <string name="database_encryption_will_be_updated_in_settings">سيتم تحديث عبارة مرور تعمية قاعدة البيانات وتخزينها في الإعدادات.</string>
     <string name="remove_passphrase_from_settings">هل تريد إزالة عبارة المرور من الإعدادات؟</string>
     <string name="use_random_passphrase">استخدم عبارة مرور عشوائية</string>
     <string name="save_passphrase_in_settings">حفظ عبارة المرور في الإعدادات</string>
@@ -1377,11 +1377,11 @@
     <string name="passphrase_will_be_saved_in_settings">سيتم تخزين عبارة المرور في الإعدادات كنص عادي بعد تغييرها أو إعادة تشغيل التطبيق.</string>
     <string name="settings_is_storing_in_clear_text">يُخزين عبارة المرور في الإعدادات كنص عادي.</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>يُرجى الملاحظة</b>: يتم توصيل مرحلات الرسائل والملفات عبر وكيل SOCKS. تستخدم المكالمات وإرسال معاينات الارتباط الاتصال المباشر.]]></string>
-    <string name="encrypt_local_files">تشفير الملفات المحلية</string>
-    <string name="v5_3_encrypt_local_files">تشفير الملفات والوسائط المخزنة</string>
+    <string name="encrypt_local_files">عَمِّ الملفات المحلية</string>
+    <string name="v5_3_encrypt_local_files">عَمِّ الملفات والوسائط المخزنة</string>
     <string name="v5_3_new_desktop_app">تطبيق سطح المكتب الجديد!</string>
     <string name="v5_3_new_interface_languages">6 لغات واجهة جديدة</string>
-    <string name="v5_3_encrypt_local_files_descr">يقوم التطبيق بتشفير الملفات المحلية الجديدة (باستثناء مقاطع الفيديو).</string>
+    <string name="v5_3_encrypt_local_files_descr">يُعمِّي الملفات المحلية الجديدة (باستثناء مقاطع الفيديو).</string>
     <string name="v5_3_discover_join_groups">اكتشاف والانضمام إلى المجموعات</string>
     <string name="v5_3_new_interface_languages_descr">العربية والبلغارية والفنلندية والعبرية والتايلاندية والأوكرانية - شكرًا للمستخدمين و Weblate.</string>
     <string name="v5_3_new_desktop_app_descr">إنشاء ملف تعريف جديد في تطبيق سطح المكتب. 💻</string>
@@ -1439,7 +1439,7 @@
     <string name="desktop_app_version_is_incompatible">إصدار تطبيق سطح المكتب %s غير متوافق مع هذا التطبيق.</string>
     <string name="expand_verb">توسيع</string>
     <string name="connect_plan_repeat_connection_request">هل تريد تكرار طلب الاتصال؟</string>
-    <string name="encryption_renegotiation_error">خطأ في إعادة التفاوض بشأن التشفير</string>
+    <string name="encryption_renegotiation_error">خطأ في إعادة التفاوض بشأن التعمية</string>
     <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[أنت متصل بالفعل بـ <b>%1$s</b>.]]></string>
     <string name="error_alert_title">خطأ</string>
     <string name="connect_plan_you_are_already_joining_the_group_via_this_link">لقد انضممت بالفعل إلى المجموعة عبر هذا الرابط.</string>
@@ -1476,7 +1476,7 @@
     <string name="connect_plan_this_is_your_own_simplex_address">هذا هو عنوان SimpleX الخاص بك!</string>
     <string name="loading_remote_file_title">جارِ تحميل الملف</string>
     <string name="found_desktop">وجدت سطح المكتب</string>
-    <string name="alert_text_encryption_renegotiation_failed">فشلت إعادة التفاوض على التشفير.</string>
+    <string name="alert_text_encryption_renegotiation_failed">فشلت إعادة التفاوض على التعمية.</string>
     <string name="not_compatible">غير متوافق!</string>
     <string name="link_a_mobile">ربط الجوّال</string>
     <string name="remove_member_button">إزالة العضو</string>
@@ -1600,4 +1600,24 @@
     <string name="group_member_status_unknown">حالة غير معروفة</string>
     <string name="profile_update_event_contact_name_changed">تغيّر جهة الاتصال %1$s إلى %2$s</string>
     <string name="possible_slow_function_desc">يستغرق تنفيذ الوظيفة وقتًا طويلاً جدًا: %1$d ثانية: %2$s</string>
+    <string name="v5_5_private_notes">ملاحظات خاصة</string>
+    <string name="v5_5_join_group_conversation">انضم إلى المحادثات الجماعية</string>
+    <string name="v5_5_safer_groups">مجموعات أكثر أمانا</string>
+    <string name="v5_5_simpler_connect_ui_descr">يقبل شريط البحث روابط الدعوة.</string>
+    <string name="v5_5_message_delivery">تحسّن تسليم الرسائل</string>
+    <string name="v5_5_message_delivery_descr">مع انخفاض استخدام البطارية.</string>
+    <string name="clear_note_folder_warning">سيتم حذف كافة الرسائل - لا يمكن التراجع عن هذا!</string>
+    <string name="v5_5_safer_groups_descr">- حظر عضو لإيقاف الرسائل المزعجة للجميع.
+\n- لا تتم مشاركة عنوان الاتصال.</string>
+    <string name="info_row_created_at">أُنشئ في</string>
+    <string name="v5_5_new_interface_languages">واجهة المستخدم المجرية والتركية</string>
+    <string name="v5_5_simpler_connect_ui">الصق الرابط للاتصال!</string>
+    <string name="v5_5_join_group_conversation_descr">التاريخ الحديث وبوت الدليل المحسن.</string>
+    <string name="v5_5_private_notes_descr">مع الملفات والوسائط المُعمّاة.</string>
+    <string name="error_creating_message">حدث خطأ أثناء إنشاء الرسالة</string>
+    <string name="error_deleting_note_folder">حدث خطأ أثناء حذف الملاحظات الخاصة</string>
+    <string name="note_folder_local_display_name">ملاحظات خاصة</string>
+    <string name="clear_note_folder_question">مسح الملاحظات الخاصة؟</string>
+    <string name="share_text_created_at">أُنشئ في: %s</string>
+    <string name="saved_message_title">رسالة محفوظة</string>
 </resources>
