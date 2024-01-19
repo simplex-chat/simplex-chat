@@ -4012,17 +4012,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction, cmdId} ->
           when (cmdFunction == CFAckMessage) $ ackMsgDeliveryEvent conn cmdId
       MERR msgId err -> do
-        let GroupMember {groupMemberId} = m
-        withStore' $ \db -> updateGroupItemErrorStatus db msgId groupMemberId $ agentErrToItemStatus err
+        withStore' $ \db -> updateGroupItemErrorStatus db msgId (groupMemberId' m) $ agentErrToItemStatus err
         -- group errors are silenced to reduce load on UI event log
         -- toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
         incAuthErrCounter connEntity conn err
       MERRS msgIds err -> do
-        let GroupMember {groupMemberId} = m
-            newStatus = agentErrToItemStatus err
+        let newStatus = agentErrToItemStatus err
         -- error cannot be AUTH error here
         withStore' $ \db -> forM_ msgIds $ \msgId ->
-          updateGroupItemErrorStatus db msgId groupMemberId newStatus `catchAll_` pure ()
+          updateGroupItemErrorStatus db msgId (groupMemberId' m) newStatus `catchAll_` pure ()
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
       ERR err -> do
         toView $ CRChatError (Just user) (ChatErrorAgent err $ Just connEntity)
