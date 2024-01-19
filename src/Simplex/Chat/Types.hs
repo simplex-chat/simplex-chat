@@ -35,6 +35,7 @@ import Data.Int (Int64)
 import Data.Maybe (isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime)
 import Data.Typeable (Typeable)
 import Database.SQLite.Simple (ResultError (..), SQLData (..))
@@ -50,7 +51,7 @@ import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fromTextField_, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI)
-import Simplex.Messaging.Util ((<$?>))
+import Simplex.Messaging.Util (safeDecodeUtf8, (<$?>))
 import Simplex.Messaging.Version
 
 class IsContact a where
@@ -603,45 +604,47 @@ memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
       profile = redactedMemberProfile $ fromLocalProfile memberProfile
     }
 
-data MemberBlockStatus
-  = MBSBlocked
-  | MBSNotBlocked
+data MemberRestrictionStatus
+  = MRSBlocked
+  | MRSUnrestricted
+  | MRSUnknown Text
   deriving (Eq, Show)
 
-instance FromField MemberBlockStatus where fromField = fromBlobField_ strDecode
+instance FromField MemberRestrictionStatus where fromField = fromBlobField_ strDecode
 
-instance ToField MemberBlockStatus where toField = toField . strEncode
+instance ToField MemberRestrictionStatus where toField = toField . strEncode
 
-instance StrEncoding MemberBlockStatus where
+instance StrEncoding MemberRestrictionStatus where
   strEncode = \case
-    MBSBlocked -> "blocked"
-    MBSNotBlocked -> "not_blocked"
-  strDecode = \case
-    "blocked" -> Right MBSBlocked
-    "not_blocked" -> Right MBSNotBlocked
-    r -> Left $ "bad MemberBlockStatus " <> B.unpack r
+    MRSBlocked -> "blocked"
+    MRSUnrestricted -> "unrestricted"
+    MRSUnknown tag -> encodeUtf8 tag
+  strDecode s = Right $ case s of
+    "blocked" -> MRSBlocked
+    "unrestricted" -> MRSUnrestricted
+    tag -> MRSUnknown $ safeDecodeUtf8 tag
   strP = strDecode <$?> A.takeByteString
 
-instance FromJSON MemberBlockStatus where
-  parseJSON = strParseJSON "MemberBlockStatus"
+instance FromJSON MemberRestrictionStatus where
+  parseJSON = strParseJSON "MemberRestrictionStatus"
 
-instance ToJSON MemberBlockStatus where
+instance ToJSON MemberRestrictionStatus where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-mbsBool :: MemberBlockStatus -> Bool
-mbsBool = \case
-  MBSBlocked -> True
-  MBSNotBlocked -> False
+mrsBlocked :: MemberRestrictionStatus -> Bool
+mrsBlocked = \case
+  MRSBlocked -> True
+  _ -> False
 
 data MemberRestrictions = MemberRestrictions
-  { blocked :: Maybe MemberBlockStatus
+  { restriction :: MemberRestrictionStatus
   }
   deriving (Eq, Show)
 
 memberRestrictions :: GroupMember -> Maybe MemberRestrictions
 memberRestrictions m
-  | blockedByAdmin m = Just MemberRestrictions {blocked = Just MBSBlocked}
+  | blockedByAdmin m = Just MemberRestrictions {restriction = MRSBlocked}
   | otherwise = Nothing
 
 data ReceivedGroupInvitation = ReceivedGroupInvitation
@@ -663,7 +666,7 @@ data GroupMember = GroupMember
     memberCategory :: GroupMemberCategory,
     memberStatus :: GroupMemberStatus,
     memberSettings :: GroupMemberSettings,
-    memberBlocked :: MemberBlockStatus,
+    memberRestriction :: MemberRestrictionStatus,
     invitedBy :: InvitedBy,
     invitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
@@ -721,13 +724,13 @@ memberSecurityCode :: GroupMember -> Maybe SecurityCode
 memberSecurityCode GroupMember {activeConn} = connectionCode =<< activeConn
 
 blockedByAdmin :: GroupMember -> Bool
-blockedByAdmin GroupMember {memberBlocked} = memberBlocked == MBSBlocked
+blockedByAdmin GroupMember {memberRestriction} = memberRestriction == MRSBlocked
 
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
     memCategory :: GroupMemberCategory,
     memStatus :: GroupMemberStatus,
-    memBlocked :: Maybe MemberBlockStatus,
+    memRestriction :: Maybe MemberRestrictionStatus,
     memInvitedBy :: InvitedBy,
     memInvitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,

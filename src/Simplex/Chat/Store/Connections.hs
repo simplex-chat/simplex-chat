@@ -6,14 +6,13 @@
 {-# LANGUAGE TypeOperators #-}
 {-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
-module Simplex.Chat.Store.Connections
-  ( getConnectionEntity,
-    getConnectionEntityByConnReq,
-    getContactConnEntityByConnReqHash,
-    getConnectionsToSubscribe,
-    unsetConnectionToSubscribe,
-  )
-where
+module Simplex.Chat.Store.Connections (
+  getConnectionEntity,
+  getConnectionEntityByConnReq,
+  getContactConnEntityByConnReqHash,
+  getConnectionsToSubscribe,
+  unsetConnectionToSubscribe,
+) where
 
 import Control.Applicative ((<|>))
 import Control.Monad
@@ -101,11 +100,11 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
               g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
               -- GroupInfo {membership}
               mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-              mu.member_status, mu.show_messages, mu.member_blocked, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+              mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
               -- GroupInfo {membership = GroupMember {memberProfile}}
               pu.display_name, pu.full_name, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
               -- from GroupMember
-              m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_blocked,
+              m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
               m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.image, p.contact_link, p.local_alias, p.preferences
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)

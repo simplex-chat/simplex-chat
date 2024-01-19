@@ -1733,14 +1733,14 @@ processChatCommand' vr = \case
           withChatLock "blockForAll" . procCmd $
             if blocked /= blockedByAdmin bm
               then do
-                let mbs = if blocked then MBSBlocked else MBSNotBlocked
-                    event = XGrpMemRestrict bmMemberId MemberRestrictions {blocked = Just mbs}
+                let mrs = if blocked then MRSBlocked else MRSUnrestricted
+                    event = XGrpMemRestrict bmMemberId MemberRestrictions {restriction = mrs}
                 (msg, _) <- sendGroupMessage' user gInfo remainingMembers event
                 let ciContent = CISndGroupEvent $ SGEMemberBlocked memberId (fromLocalProfile bmp) blocked
                 ci <- saveSndChatItem user (CDGroupSnd gInfo) msg ciContent
                 toView $ CRNewChatItem user (AChatItem SCTGroup SMDSnd (GroupChat gInfo) ci)
                 bm' <- withStore $ \db -> do
-                  liftIO $ updateGroupMemberBlocked db user groupId memberId mbs
+                  liftIO $ updateGroupMemberBlocked db user groupId memberId mrs
                   getGroupMember db user groupId memberId
                 toggleNtf user bm' (not blocked)
                 pure CRMemberBlockedForAllUser {user, groupInfo = gInfo, member = bm', blocked}
@@ -2520,8 +2520,9 @@ processChatCommand' vr = \case
 
 toggleNtf :: ChatMonad m => User -> GroupMember -> Bool -> m ()
 toggleNtf user m ntfOn =
-  when (memberActive m) $ forM_ (memberConnId m) $ \connId ->
-    withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchChatError` (toView . CRChatError (Just user))
+  when (memberActive m) $
+    forM_ (memberConnId m) $ \connId ->
+      withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchChatError` (toView . CRChatError (Just user))
 
 data ChangedProfileContact = ChangedProfileContact
   { ct :: Contact,
@@ -5375,7 +5376,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       gInfo@GroupInfo {groupId, membership}
       m@GroupMember {memberRole = senderRole}
       memId
-      MemberRestrictions {blocked}
+      MemberRestrictions {restriction}
       msg
       brokerTs
         | membershipMemId == memId =
@@ -5387,11 +5388,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 | senderRole < GRAdmin || senderRole < memberRole -> messageError "x.grp.mem.restrict with insufficient member permissions"
                 | otherwise -> do
                     bm' <- setMemberBlocked bmId
-                    toggleNtf user bm' (not blockedBool)
-                    let ciContent = CIRcvGroupEvent $ RGEMemberBlocked bmId (fromLocalProfile bmp) blockedBool
+                    toggleNtf user bm' (not blocked)
+                    let ciContent = CIRcvGroupEvent $ RGEMemberBlocked bmId (fromLocalProfile bmp) blocked
                     ci <- saveRcvChatItem user (CDGroupRcv gInfo m) msg brokerTs ciContent
                     groupMsgToView gInfo ci
-                    toView CRMemberBlockedForAll {user, groupInfo = gInfo, byMember = m, member = bm, blocked = blockedBool}
+                    toView CRMemberBlockedForAll {user, groupInfo = gInfo, byMember = m, member = bm, blocked}
               Left (SEGroupMemberNotFoundByMemberId _) -> do
                 bm <- createUnknownMember gInfo memId
                 bm' <- setMemberBlocked $ groupMemberId' bm
@@ -5400,10 +5401,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         where
           setMemberBlocked bmId =
             withStore $ \db -> do
-              liftIO $ updateGroupMemberBlocked db user groupId bmId memberBlocked
+              liftIO $ updateGroupMemberBlocked db user groupId bmId restriction
               getGroupMember db user groupId bmId
-          memberBlocked = fromMaybe MBSNotBlocked blocked
-          blockedBool = mbsBool memberBlocked
+          blocked = mrsBlocked restriction
           GroupMember {memberId = membershipMemId} = membership
 
     xGrpMemCon :: GroupInfo -> GroupMember -> MemberId -> m ()
