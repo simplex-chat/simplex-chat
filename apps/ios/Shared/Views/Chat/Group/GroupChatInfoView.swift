@@ -226,11 +226,7 @@ struct GroupChatInfoView: View {
                         .foregroundColor(.secondary)
                 }
                 Spacer()
-                let role = member.memberRole
-                if [.owner, .admin, .observer].contains(role) {
-                    Text(member.memberRole.text)
-                        .foregroundColor(.secondary)
-                }
+                memberInfo(member)
             }
 
             if user {
