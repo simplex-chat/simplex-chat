@@ -419,7 +419,7 @@ struct GroupMemberInfoView: View {
 
     private func blockForAllButton(_ mem: GroupMember) -> some View {
         Button(role: .destructive) {
-            alert = .blockMemberAlert(mem: mem)
+            alert = .blockForAllAlert(mem: mem)
         } label: {
             Label("Block for all", systemImage: "hand.raised")
                 .foregroundColor(.red)
@@ -428,7 +428,7 @@ struct GroupMemberInfoView: View {
 
     private func unblockForAllButton(_ mem: GroupMember) -> some View {
         Button {
-            alert = .unblockMemberAlert(mem: mem)
+            alert = .unblockForAllAlert(mem: mem)
         } label: {
             Label("Unblock for all", systemImage: "hand.raised.slash")
         }
